@@ -1,6 +1,7 @@
 import Foundation
 import CryptoKit
 import Testing
+import Observation
 import CJMessageClient
 import CJMessageHTTP
 import CJAPI
@@ -58,7 +59,7 @@ private actor HistoryInterceptor: ClientTransport {
                            "input_sha256":SHA256.hash(data: raw).map { String(format:"%02x",$0) }.joined()],
                 "original_utf8_base64":raw.base64EncodedString(),"text":"synthetic "+conversation]
     }
-    private func setup(_ shell: ShellState, _ transport: HistoryInterceptor,tripDiscussions:Bool=false) throws -> ServerHistoryHost {
+    private func setup(_ shell: ShellState, _ transport: HistoryInterceptor,tripDiscussions:Bool=false,preservedHumanHistory:Bool=false) throws -> ServerHistoryHost {
         let recovery = MessageRecovery(storage: HistoryStore())
         let scope = try StorageScope(environment: UUID().uuidString, account: "synthetic")
         let lease = try recovery.activate(scope)
@@ -67,7 +68,7 @@ private actor HistoryInterceptor: ClientTransport {
             credentials: HistoryCredentials(), interceptedTestTransport: transport)
         let host = ServerHistoryHost(shell: shell)
         #expect(host.bind(ServerHistoryBinding(client: client, recovery: recovery, scope: scope, lease: lease, generation: shell.generation,
-            limit:2, limits:try MessageReadLimits(maximumPageItems:2,maximumCursorBytes:128,maximumDecodedBytes:4096,maximumPages:5), synthetic:true,tripDiscussions:tripDiscussions,isCurrent:{true})))
+            limit:2, limits:try MessageReadLimits(maximumPageItems:2,maximumCursorBytes:128,maximumDecodedBytes:4096,maximumPages:5), synthetic:true,tripDiscussions:tripDiscussions,preservedHumanHistory:preservedHumanHistory,isCurrent:{true})))
         return host
     }
     private func waitForHold(_ transport: HistoryInterceptor) async {
@@ -81,6 +82,73 @@ private actor HistoryInterceptor: ClientTransport {
         var ref=receipt
         ref.merge(["version":"MESSAGE-trip-reference.1","message_version":"MESSAGE-send.3","selection_epoch":1,"context_kind":"none","context_id":NSNull(),"context_version":NSNull(),"trip_context":NSNull(),"content_version":NSNull(),"content_sha256":NSNull()],uniquingKeysWith:{ _,new in new })
         return ["receipt":receipt,"reference":ref,"text":text,"original_utf8_base64":raw.base64EncodedString()]
+    }
+    private func erasedHumanRow(_ conversation: String) throws -> [String: Any] {
+        var row = try tripHistory(conversation)
+        let encoded = try #require(row["original_utf8_base64"] as? String)
+        let original = try #require(Data(base64Encoded: encoded))
+        let object = try JSONSerialization.jsonObject(with: original)
+        var command = try #require(object as? [String: Any])
+        command["trip_context"] = ["id":"trip-a", "expected_version":1, "day":NSNull(), "item_id":NSNull()]
+        let raw = try JSONSerialization.data(withJSONObject: command, options: [.sortedKeys])
+        var receipt = try #require(row["receipt"] as? [String: Any])
+        receipt["input_sha256"] = SHA256.hash(data: raw).map { String(format:"%02x", $0) }.joined()
+        row["receipt"] = receipt; row["original_utf8_base64"] = raw.base64EncodedString()
+        row["reference"] = NSNull(); row["source_state"] = "erased"
+        return row
+    }
+    private func humanRunReply(_ conversation: String) throws -> Data {
+        let message = "m-" + conversation + "-1"
+        return try json(["version":"RUN-display.6", "reference":NSNull(), "source_state":"erased",
+            "snapshot":["conversation_id":conversation,"generation":"g1","message_id":message,"run_id":"run-"+message,
+                "message_sequence":1,"status":"completed","event_highwater":2,"text":"历史回答仍可读","text_state":"complete"]])
+    }
+    @Test func preservedHumanHistoryHasNoTypedWriterProjectionAndReadsOriginalAnswer() async throws {
+        let wire = HistoryInterceptor([try json(["conversations":[chat("a",1)],"next_cursor":NSNull()]),
+            try json(["version":"MESSAGE-history.5","messages":[erasedHumanRow("a")],"next_cursor":NSNull()]),
+            try humanRunReply("a")], noStore:true)
+        let host = try setup(shell(),wire,preservedHumanHistory:true)
+        await host.loadConversations(context:host.captureReadContext())
+        #expect(host.selectConversation(try #require(host.conversations.first),token:host.conversationSelectionToken))
+        await host.loadHistory(context:host.captureReadContext())
+        let row = try #require(host.humanMessages.first)
+        #expect(host.messages.isEmpty && host.tripMessages.isEmpty && row.sourceState == .erased)
+        await host.loadHumanRun(context:host.captureHumanRun(row))
+        let value = try #require(host.humanRun(row))
+        #expect(value.snapshot.text == "历史回答仍可读" && value.sourceState == .erased)
+        #expect(await wire.operations == ["listConversations","readPreservedMessageHistoryV5","readPreservedRunDisplayV6"])
+        #expect(await wire.methods == [.get,.get,.get])
+    }
+    @Test func lateHumanAnswerCannotAppearInNewConversation() async throws {
+        let wire = HistoryInterceptor([try json(["conversations":[chat("a",1),chat("b",2)],"next_cursor":NSNull()]),
+            try json(["version":"MESSAGE-history.5","messages":[erasedHumanRow("a")],"next_cursor":NSNull()]),
+            try humanRunReply("a")],hold:"readPreservedRunDisplayV6",noStore:true)
+        let host = try setup(shell(),wire,preservedHumanHistory:true)
+        await host.loadConversations(context:host.captureReadContext())
+        #expect(host.selectConversation(host.conversations[0],token:host.conversationSelectionToken))
+        await host.loadHistory(context:host.captureReadContext())
+        let row = try #require(host.humanMessages.first), context = try #require(host.captureHumanRun(row))
+        let task = Task { await host.loadHumanRun(context:context) }
+        await waitForHold(wire)
+        #expect(host.selectConversation(host.conversations[1],token:host.conversationSelectionToken))
+        await wire.release(); await task.value
+        #expect(host.humanRun(row) == nil && host.humanMessages.isEmpty && host.historyStatus == .idle)
+    }
+    @Test func observationSelectionChangeBeforeHumanOutflowPreventsRequest() async throws {
+        let wire = HistoryInterceptor([try json(["conversations":[chat("a",1),chat("b",2)],"next_cursor":NSNull()]),
+            try json(["version":"MESSAGE-history.5","messages":[erasedHumanRow("a")],"next_cursor":NSNull()])],noStore:true)
+        let host = try setup(shell(),wire,preservedHumanHistory:true)
+        await host.loadConversations(context:host.captureReadContext())
+        #expect(host.selectConversation(host.conversations[0],token:host.conversationSelectionToken))
+        await host.loadHistory(context:host.captureReadContext())
+        let row = try #require(host.humanMessages.first), context = try #require(host.captureHumanRun(row))
+        let other = host.conversations[1], token = host.conversationSelectionToken
+        withObservationTracking { _ = host.humanRunStatus(row) } onChange: {
+            MainActor.assumeIsolated { _ = host.selectConversation(other,token:token) }
+        }
+        await host.loadHumanRun(context:context)
+        #expect(host.humanMessages.isEmpty && host.humanRun(row) == nil)
+        #expect(await wire.operations == ["listConversations","readPreservedMessageHistoryV5"])
     }
     @Test func discussionHistoryUsesTypedRouteAndRetainsReferencesBesideTextProjection() async throws {
         let first=try tripHistory("a"),second=try tripHistory("a",sequence:2)

@@ -48,7 +48,7 @@ public enum MemoryRoute: Hashable, Sendable {
     case memoryItems, memoryDetail, manualMemory, memoryActions
     case typedMemoryDetail(owner: UUID,itemID: Data)
     case feedback(FeedbackContainerEntry?)
-    case memoryHistory, memoryCandidates
+    case memoryHistory, memoryCandidates, memoryErasure
 }
 
 /// Retained opaquely during UI navigation; never an authority or an ID generator.
