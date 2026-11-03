@@ -19,13 +19,15 @@ struct AccountDeletionLink: View {
 /// Opening this page does not create an operation, submit a request or erase a file.
 struct AccountDeletionView: View {
     let language: ShellLanguage
+    @Environment(\.accountCleanupHost) private var cleanup
     var body: some View {
         List {
-            section(language.text("Availability", "当前状态")) {
+            if let cleanup { AccountCleanupControls(host: cleanup, language: language) }
+            else { section(language.text("Availability", "当前状态")) {
                 paragraph(language.text(
                     "Account deletion is not available yet. No deletion request has been sent.",
                     "账号注销尚未开放，未发送注销请求。"), id: "account.deletion.unavailable")
-            }
+            } }
             section(language.text("Memory and account deletion", "删除记忆与注销账号")) {
                 paragraph(language.text(
                     "Deleting one memory stops its future use and cleans its related records. It keeps your account and original chat. Signing out on this device also keeps your account.",
@@ -41,8 +43,8 @@ struct AccountDeletionView: View {
             }
             section(language.text("Devices and retained copies", "设备与留存副本")) {
                 paragraph(language.text(
-                    "Offline trips are readable for up to 14 days from the last successful sync; every successful sync starts a new period. Reading stops at expiry. After reconnecting, an invalid or expired cache is cleared; reading resumes only after online verification. Another offline device cannot be erased immediately from here.",
-                    "离线行程从最后成功同步起最多可读 14 天，每次成功同步重新起算。到期停止读取；重连后发现失效或到期会清理缓存，联网核验后才恢复读取。此处无法即时擦除另一台断网设备。"), id: "account.deletion.offlineScope")
+                    "Offline trips are readable for up to 14 days from the last successful sync; every successful sync starts a new period. Reading stops at expiry. Online verification and a fresh successful formal-trip sync are required to restore reading. Reconnection clears this cache only after an explicit server identity rejection; temporary failures keep it. Another offline device cannot be erased immediately from here.",
+                    "离线行程从最后成功同步起最多可读 14 天，每次成功同步重新起算。到期停止读取，联网核验并成功同步正式行程后才恢复读取。重连仅在服务端明确拒绝身份后清理本机缓存，临时失败会保留缓存。此处无法即时擦除另一台断网设备。"), id: "account.deletion.offlineScope")
                 paragraph(language.text(
                     "The backup retention period is 30 rolling days. Deleted data in backups disappears as those backups expire. Already displayed history and requests already sent to a model cannot be recalled; external providers may retain their copies.",
                     "备份留存期限为 30 天滚动，备份中的已删数据随备份到期消除。已展示的历史和已发给模型的请求无法撤回，外部提供方可能留有副本。"), id: "account.deletion.retentionScope")

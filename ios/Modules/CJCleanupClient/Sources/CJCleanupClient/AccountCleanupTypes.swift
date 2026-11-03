@@ -118,6 +118,10 @@ struct AccountCleanupDeviceBinding: CustomStringConvertible, CustomDebugStringCo
     let stateRef: String
     let scopeDigest: String
     let deviceToken: String
+    init(v3 enrollment: DeviceCleanupEnrollment) {
+        bindingID = enrollment.bindingID; deviceID = enrollment.deviceID; stateRef = enrollment.stateRef
+        scopeDigest = enrollment.scopeDigest; deviceToken = enrollment.deviceCredential
+    }
     init(_ value: StrictJSONValue, deviceID: String, stateRef: String) throws {
         let object = try accountCleanupObject(value, fields: ["version", "request_id", "binding_id", "device_id", "state_ref", "scope_digest", "device_token", "server_time", "business_access"])
         guard try accountCleanupString(object["version"]) == "CLEANUP-DEVICE@1",

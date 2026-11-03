@@ -17,7 +17,9 @@ INVENTORY = ('business','business/message','business/usage','business/memory-aut
  'device-cache/memory-manual-pending','device-cache/memory-lifecycle-pending','device-cache/memory-typed-pending',
  'device-cache/memory-key-keychain','device-cache/needs-pending','device-cache/needs-key-keychain','device-cache/memory-history-pending','device-cache/trip-scoped-pending',
  'device-cache/needs-planning-pending','device-cache/trip-key-keychain','device-cache/offline-key-keychain',
- 'device-cache/offline-write-residue','external-processing')
+ 'device-cache/offline-write-residue','external-processing',
+ 'cleanup-control','cleanup-control/selected','cleanup-control/manifest',
+ 'cleanup-control/execution','cleanup-control/device','cleanup-control/account')
 
 class CleanupTests(unittest.TestCase):
     def setUp(self):
@@ -57,6 +59,8 @@ class CleanupTests(unittest.TestCase):
         self.assertTrue(any(s.target=='store:device-cache/needs-key-keychain' for s in op.steps))
         self.assertTrue(any(s.target=='store:device-cache/memory-history-pending' for s in op.steps))
         self.assertTrue(any(s.target=='store:device-cache/offline-write-residue' for s in op.steps))
+        self.assertTrue(any(s.target=='store:cleanup-control/device' and not s.available for s in op.steps))
+        self.assertTrue(any(s.target=='store:cleanup-control/account' and not s.available for s in op.steps))
         with self.assertRaises(Denied): intent(op,'auth_revocation','call')
 
     def test_missing_manifest_or_inventory(self):
