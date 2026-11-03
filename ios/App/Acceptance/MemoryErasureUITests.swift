@@ -132,6 +132,7 @@ import Foundation
         XCTAssertFalse(actionID.isEmpty)
         if reopenUnknown {
             text("memoryErasure.status", contains: language == "en" ? "uncertain" : "尚不明确")
+            reveal(app.buttons["memoryErasure.reconcile"])
             XCTAssertFalse(app.buttons["memoryErasure.reconcile"].isEnabled)
             app.terminate(); app.launch()
             XCTAssertTrue(app.tabBars.element.waitForExistence(timeout: 30))
@@ -139,6 +140,7 @@ import Foundation
             tap("memory.erasure.originals"); tap("memoryErasure.loadOriginals")
             tap("memoryErasure.original." + actionID)
             text("memoryErasure.originalID", contains: actionID)
+            reveal(app.buttons["memoryErasure.reconcile"])
             XCTAssertFalse(app.buttons["memoryErasure.reconcile"].isEnabled)
             tap("memoryErasure.query")
         }
