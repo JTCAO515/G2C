@@ -64,35 +64,16 @@ def with_headers(service,principal,project,*,max_refs,max_result_bytes,check_con
         raise InvalidInput('explicit bounded erasure metadata limits required')
     snapshot=None
     with service.repository.transaction() as tx:
-        tx.lock_scope()
         _current(tx.cur,tx.scope)
-        # Include nonempty heads and every unsupported kind, including inactive
-        # chats. Empty travel chats have no original message references to freeze.
-        tx.cur.execute("SELECT conversation_id,generation,last_sequence,conversation_type::text FROM cj_message_chat "
-            "WHERE scope=%s AND (last_sequence>0 OR conversation_type::text<>'travel') "
-            'ORDER BY conversation_id COLLATE "C",generation COLLATE "C" LIMIT %s',(tx.scope,max_refs+1))
-        heads={};total=0
-        for cid,generation,through,kind in tx.cur.fetchall():
-            _identity(cid);_identity(generation)
-            if kind!='travel' or type(through) is not int or not 1<=through<=2**63-1:
-                raise Unavailable('original message head unavailable')
-            total+=through
-            if total>max_refs:raise Unavailable('complete erasure metadata exceeds reference bound')
-            heads[cid,generation]=through
-        tx.cur.execute('SELECT conversation_id,generation,sequence,message_id,input_sha256,encode(sha256(raw_input),\'hex\') '
-            'FROM cj_message_receipt WHERE scope=%s ORDER BY conversation_id COLLATE "C",generation COLLATE "C",sequence LIMIT %s',
-            (tx.scope,max_refs+1))
-        references=[];seen={}
-        for cid,generation,sequence,mid,stored_sha,actual_sha in tx.cur.fetchall():
-            _identity(cid);_identity(generation);_identity(mid)
-            key=(cid,generation)
-            if (key not in heads or type(sequence) is not int or sequence!=seen.get(key,0)+1
-                    or sequence>heads[key] or type(stored_sha) is not str or stored_sha!=actual_sha):
-                raise Unavailable('original message coordinates or digest unavailable')
-            seen[key]=sequence
-            references.append(MessageReference(cid,generation,sequence,mid,stored_sha))
-            if len(references)>max_refs:raise Unavailable('complete erasure metadata exceeds reference bound')
-        if len(references)!=total or seen!=heads:raise Unavailable('complete original message metadata unavailable')
+        # Declare only the already-implemented shared-table read compatibility.
+        # Restore before any caller/C callback; scope/account RLS stays active.
+        tx.cur.execute("SELECT current_setting('cj.message_edit_result_abi',true)")
+        previous=tx.cur.fetchone()[0]
+        from .edit_result_protocol import CONFIGURATION_ABI
+        tx.cur.execute("SELECT set_config('cj.message_edit_result_abi',%s,true)",(CONFIGURATION_ABI,))
+        tx.lock_scope()
+        references=_references(tx,max_refs)
+        tx.cur.execute("SELECT set_config('cj.message_edit_result_abi',%s,true)",(previous,))
         admit('erasure_headers_before_callback')
         _current(tx.cur,tx.scope)
         snapshot=HeaderSnapshot(principal,tx.scope,tuple(references),check_context)
@@ -107,3 +88,34 @@ def with_headers(service,principal,project,*,max_refs,max_result_bytes,check_con
             admit('erasure_headers_after_callback')
         finally:snapshot._active=False
     return result
+
+
+def _references(tx,max_refs):
+    # Include nonempty heads and every unsupported kind, including inactive
+    # chats. Empty travel chats have no original message references to freeze.
+    tx.cur.execute("SELECT conversation_id,generation,last_sequence,conversation_type::text FROM cj_message_chat "
+        "WHERE scope=%s AND (last_sequence>0 OR conversation_type::text<>'travel') "
+        'ORDER BY conversation_id COLLATE "C",generation COLLATE "C" LIMIT %s',(tx.scope,max_refs+1))
+    heads={};total=0
+    for cid,generation,through,kind in tx.cur.fetchall():
+        _identity(cid);_identity(generation)
+        if kind!='travel' or type(through) is not int or not 1<=through<=2**63-1:
+            raise Unavailable('original message head unavailable')
+        total+=through
+        if total>max_refs:raise Unavailable('complete erasure metadata exceeds reference bound')
+        heads[cid,generation]=through
+    tx.cur.execute('SELECT conversation_id,generation,sequence,message_id,input_sha256,encode(sha256(raw_input),\'hex\') '
+        'FROM cj_message_receipt WHERE scope=%s ORDER BY conversation_id COLLATE "C",generation COLLATE "C",sequence LIMIT %s',
+        (tx.scope,max_refs+1))
+    references=[];seen={}
+    for cid,generation,sequence,mid,stored_sha,actual_sha in tx.cur.fetchall():
+        _identity(cid);_identity(generation);_identity(mid)
+        key=(cid,generation)
+        if (key not in heads or type(sequence) is not int or sequence!=seen.get(key,0)+1
+                or sequence>heads[key] or type(stored_sha) is not str or stored_sha!=actual_sha):
+            raise Unavailable('original message coordinates or digest unavailable')
+        seen[key]=sequence
+        references.append(MessageReference(cid,generation,sequence,mid,stored_sha))
+        if len(references)>max_refs:raise Unavailable('complete erasure metadata exceeds reference bound')
+    if len(references)!=total or seen!=heads:raise Unavailable('complete original message metadata unavailable')
+    return tuple(references)

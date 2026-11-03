@@ -25,6 +25,16 @@ the original fresh identity/admission guards additionally bracket callback,
 commit/physical close and final return. The existing canonical ACCOUNT2 host
 must issue the context, as used by C's merged collection/erasure host.
 
+Pure metadata reading supports the existing message scope families without a C
+editing producer or publisher. Internally the B reader temporarily declares the
+already-implemented edit-result shared-table compatibility while it SELECTs the
+scope/headers. Owner/account RLS remains active. The original transaction-local
+ABI setting is restored **before any caller callback**; the row lock remains.
+No connection/cursor or publisher configuration is exposed, no DML is performed,
+and the unconfigured host's ordinary reads/writes/dispatch still refuse. A SQL
+failure before restoration propagates unchanged and outer rollback/close clears
+LOCAL settings; no restore query is attempted on an aborted transaction.
+
 `HeaderSnapshot` exposes:
 
 | Property/method | Meaning |
