@@ -25,7 +25,8 @@ ROOT=Path(__file__).resolve().parents[3]
 HERE=Path(__file__).resolve().parent
 BUNDLE='space.go2china.memory-erasure.acceptance'
 CASES={'testMemoryErasureEnglish':'complete-en','testMemoryErasureChinese':'complete-zh-Hans',
-       'testUnknownErasureReopensEnglish':'lost-ack-en','testUnknownErasureReopensChinese':'lost-ack-zh-Hans'}
+       'testUnknownErasureReopensEnglish':'lost-ack-en','testUnknownErasureReopensChinese':'lost-ack-zh-Hans',
+       'testErasureJournalAccountCleanupEnglish':'account-en'}
 
 
 def main():
@@ -204,7 +205,9 @@ def main():
                     if run.returncode:report['cases'][test]='FAIL';save();run.check_returncode()
                     summary=json.loads(subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)],env=env,text=True))
                     value={k:summary[k] for k in ('passedTests','failedTests','skippedTests')};assert value==dict(passedTests=1,failedTests=0,skippedTests=0)
-                    proof=local_proof(case);assert not proof['item_journals'] and proof['other_journals'] and proof['erasure_originals'] and proof['erasure_post_count']==1
+                    proof=local_proof(case);assert not proof['item_journals'] and proof['erasure_post_count']==1
+                    if case=='account-en':assert not proof['other_journals'] and not proof['erasure_originals']
+                    else:assert proof['other_journals'] and proof['erasure_originals']
                     report.setdefault('results',{})[test]=value;report.setdefault('proofs',{})[test]=proof;report['cases'][test]='PASS';save()
                 container=Path(subprocess.check_output(['xcrun','simctl','get_app_container',args.simulator,BUNDLE,'data'],env=env,text=True).strip())
                 for path in [*container.rglob('*'),*output.rglob('*')]:

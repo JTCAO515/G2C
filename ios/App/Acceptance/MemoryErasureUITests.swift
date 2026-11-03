@@ -96,9 +96,9 @@ import Foundation
         let back = app.navigationBars.buttons.matching(NSPredicate(format: "label == %@", language == "en" ? "Memory" : "记忆"))
         XCTAssertEqual(back.count, 1); back.element.tap()
     }
-    func verify(_ language: String, reopenUnknown: Bool = false) async throws {
+    func verify(_ language: String, reopenUnknown: Bool = false, deleteAccount: Bool = false) async throws {
         continueAfterFailure = false
-        let fixture = try JSONDecoder().decode(Fixture.self, from: await call("/fixture", query: ["case": (reopenUnknown ? "lost-ack-" : "complete-") + language]))
+        let fixture = try JSONDecoder().decode(Fixture.self, from: await call("/fixture", query: ["case": (deleteAccount ? "account-" : reopenUnknown ? "lost-ack-" : "complete-") + language]))
         _ = try await call("/size", query: ["value": "standard"])
         app = XCUIApplication(bundleIdentifier: fixture.bundle)
         app.launchArguments = ["-cj.ui.language.v1", language]
@@ -163,9 +163,41 @@ import Foundation
         tap("memoryErasure.query")
         text("memoryErasure.stopUse", contains: language == "en" ? "Stopped using" : "已停止使用")
         try audit("erasure-complete-" + language + "-max", target: app.staticTexts["memoryErasure.localProgress"])
+        if deleteAccount {
+            // Reopen the ordinary root; no protected ID or deletion receipt is injected.
+            app.terminate(); app.launch()
+            XCTAssertTrue(app.tabBars.element.waitForExistence(timeout: 30))
+            signIn(fixture, language: language)
+            tap("memory.accountDeletion"); tap("account.cleanup.review")
+            let consent = app.switches.matching(identifier: "account.cleanup.consent")
+            reveal(consent.element); XCTAssertEqual(consent.count, 1)
+            if consent.element.value as? String != "1" {
+                consent.element.coordinate(withNormalizedOffset: .init(dx: 0.9, dy: 0.5)).tap()
+            }
+            XCTAssertEqual(consent.element.value as? String, "1")
+            tap("account.cleanup.confirm")
+            text("account.cleanup.access", contains: "stopped")
+            tap("account.cleanup.cleanDevice")
+            text("account.cleanup.native", contains: "clear")
+            tap("account.cleanup.read")
+            text("account.cleanup.progress", contains: "Confirmed for the listed online domains")
+            text("account.cleanup.areas", contains: "31 of 31")
+            let cleared = try JSONDecoder().decode(LocalProof.self, from: await call("/local-proof"))
+            XCTAssertTrue(cleared.item_journals.isEmpty)
+            XCTAssertTrue(cleared.other_journals.isEmpty)
+            XCTAssertTrue(cleared.erasure_originals.isEmpty)
+            XCTAssertEqual(cleared.erasure_post_count, 1)
+            XCTAssertEqual(cleared.original_action_id, actionID)
+            XCTAssertEqual(cleared.operation_id, before.operation_id)
+            tap("account.cleanup.readDevice")
+            text("account.cleanup.deviceReceipt", contains: "confirmed")
+            tap("account.cleanup.finalizeControls")
+            text("account.cleanup.controls", contains: "removed and verified")
+        }
     }
     func testMemoryErasureEnglish() async throws { try await verify("en") }
     func testMemoryErasureChinese() async throws { try await verify("zh-Hans") }
     func testUnknownErasureReopensEnglish() async throws { try await verify("en", reopenUnknown: true) }
     func testUnknownErasureReopensChinese() async throws { try await verify("zh-Hans", reopenUnknown: true) }
+    func testErasureJournalAccountCleanupEnglish() async throws { try await verify("en", deleteAccount: true) }
 }

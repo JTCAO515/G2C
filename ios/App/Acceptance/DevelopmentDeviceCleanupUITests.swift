@@ -257,7 +257,7 @@ import Foundation
         // must finish before this stronger case accepts online completion.
         tap("account.cleanup.read")
         contains("account.cleanup.progress", "Confirmed for the listed online domains")
-        contains("account.cleanup.areas", "29 of 29")
+        contains("account.cleanup.areas", "31 of 31")
         try await call("/native-files", name, ["stage": "after"])
         try launch(f, language: "zh-Hans"); deletion("zh-Hans")
         tap("account.cleanup.readDevice")
