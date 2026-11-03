@@ -39,7 +39,7 @@ struct ServerHistoryView: View {
                     .accessibilityAddTraits(.isHeader)
             }
             if let selected = host.selectedConversation {
-                Section(language.text("Stored messages", "已存消息") + " · " + selected.conversation_id) {
+                Section {
                     status(host.historyStatus).accessibilityIdentifier("history.messages.status")
                     Button(language.text("Load messages from first page", "从第一页读取消息")) { Task { await host.loadHistory(context: readContext) } }
                         .accessibilityIdentifier("history.loadMessages")
@@ -54,8 +54,8 @@ struct ServerHistoryView: View {
                         Button(language.text("Next messages page", "下一页消息")) { Task { await host.loadHistory(context: readContext, more: true) } }
                             .accessibilityIdentifier("history.nextMessages")
                     }
-                }
-                Section(language.text("Server draft — read only", "服务器草稿——只读")) {
+                } header: { historyHeading(language.text("Stored messages", "已存消息") + " · " + selected.conversation_id) }
+                Section {
                     status(host.draftStatus)
                     Button(language.text("Read server draft", "读取服务器草稿")) { Task { await host.loadServerDraft(context: readContext) } }
                         .disabled(host.draftStatus == .loading)
@@ -65,11 +65,10 @@ struct ServerHistoryView: View {
                             Text(text.isEmpty ? language.text("Saved empty draft", "已保存的空草稿") : text).textSelection(.enabled)
                         }
                     }
-                }
-                Section(language.text("Server draft save", "服务器草稿保存")) {
-                    Text(writeStatus)
-                    Text(language.text("Live writes remain unavailable. Only an explicitly injected test capability can save here.", "实际服务器写入仍未开放；此处仅显式注入的测试能力可保存。"))
-                        .font(.footnote)
+                } header: { historyHeading(language.text("Server draft — read only", "服务器草稿——只读")) }
+                Section {
+                    RunReadableText(text: writeStatus)
+                    RunReadableText(text: language.text("Draft saving is unavailable in this session. Reading history does not grant permission to save.", "此会话暂不能保存草稿。读取历史不会授予保存权限。"), style: .caption)
                     Button(language.text("Save current editor draft", "保存当前编辑草稿")) {
                         host.saveServerDraft(context: writeContext)
                     }.disabled(writeContext == nil)
@@ -80,10 +79,13 @@ struct ServerHistoryView: View {
                     Button(language.text("Query original draft operation", "查询原草稿操作")) {
                         Task { await host.queryOriginalDraft(context: queryContext) }
                     }.disabled(queryContext == nil)
-                    Text(queryStatus).font(.footnote)
-                }
+                    RunReadableText(text: queryStatus, style: .caption)
+                } header: { historyHeading(language.text("Server draft save", "服务器草稿保存")) }
             }
         }.navigationTitle(language.text("Server history", "服务器历史"))
+    }
+    private func historyHeading(_ text: String) -> some View {
+        RunReadableText(text: text, style: .headline).accessibilityAddTraits(.isHeader).textCase(nil)
     }
     @ViewBuilder private func humanMessage(_ row: MessageHumanHistoryItem) -> some View {
         let run = host.humanRun(row)
