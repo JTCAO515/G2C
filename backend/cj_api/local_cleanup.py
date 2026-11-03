@@ -9,7 +9,7 @@ from cj_auth.jwt_adapter import PyJWTVerifier
 from cj_auth.account_revocation import AccountRevocationAccess
 from cj_cleanup.core import Scope,encode,digest,Denied
 from cj_cleanup.capabilities import Issuer
-from cj_cleanup.registry import freeze
+from cj_cleanup.registry import freeze,freeze_controls
 from cj_cleanup.store import Store
 from cj_cleanup.gateway import Gateway,Binding
 from cj_cleanup.gateway_store import GatewayStore
@@ -33,11 +33,12 @@ class Configuration:
     registry_path:Path
     clock:object=time.time
     extra_hooks:object=None
+    control_records:bool=False
 
 
 def load_configuration(path):
     value=json.loads(Path(path).read_text())
-    if set(value)!={'version','key_file','key_id','lifetime_seconds','inventory'} or value['version'] not in ('CJ-LOCAL-CLEANUP@1','CJ-LOCAL-CLEANUP@2'):
+    if set(value)!={'version','key_file','key_id','lifetime_seconds','inventory'} or value['version'] not in ('CJ-LOCAL-CLEANUP@1','CJ-LOCAL-CLEANUP@2','CJ-LOCAL-CLEANUP@3'):
         raise ValueError('explicit local cleanup configuration required')
     fd=os.open(value['key_file'],os.O_RDONLY|os.O_NOFOLLOW)
     try:
@@ -48,11 +49,12 @@ def load_configuration(path):
     finally:os.close(fd)
     if len(key)!=32:raise ValueError('32-byte local cleanup key required')
     extra_hooks=None
-    if value['version']=='CJ-LOCAL-CLEANUP@2':
+    if value['version'] in ('CJ-LOCAL-CLEANUP@2','CJ-LOCAL-CLEANUP@3'):
         from cj_memory_withdrawal.account_cleanup import account_hooks
         extra_hooks=account_hooks
     return Configuration({value['key_id']:key},value['key_id'],value['lifetime_seconds'],tuple(value['inventory']),
-                         Path(__file__).resolve().parents[1]/'storage-registry.json',extra_hooks=extra_hooks)
+                         Path(__file__).resolve().parents[1]/'storage-registry.json',extra_hooks=extra_hooks,
+                         control_records=value['version']=='CJ-LOCAL-CLEANUP@3')
 
 
 class Runtime:
@@ -63,7 +65,8 @@ class Runtime:
                            lifetime_seconds=configuration.lifetime_seconds,clock=configuration.clock)
 
     def registry(self):
-        return freeze(self.configuration.registry_path.read_bytes(),self.configuration.inventory,
+        freeze_registry=freeze_controls if self.configuration.control_records else freeze
+        return freeze_registry(self.configuration.registry_path.read_bytes(),self.configuration.inventory,
                       versions=('CLEANUP@1.0','CLEANUP@1.1'))
 
     def connect(self):
