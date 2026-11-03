@@ -338,6 +338,14 @@
       "sha256": "3b4a7caaa7d810d1eba9708feaf998f6a751dbe7b895cd96964a336c52336b23",
       "down": "backend/migrations/down/0042_memory_decision_source.down.sql",
       "down_sha256": "4860706f9ec3a92922d60bd8c3adf8ea5a789a2da6b4af3adb5e78acfb91bd64"
+    },
+    {
+      "version": 43,
+      "name": "background_v3",
+      "file": "backend/migrations/0043_background_v3.sql",
+      "sha256": "4695caa52c6a39d380a2f2d0062d054aae6d6b48ca4949df2fb3d655488a2e5e",
+      "down": "backend/migrations/down/0043_background_v3.down.sql",
+      "down_sha256": "37480206642d7829ed05b7ec30a64b0d4a541af8a275e27fd0b383a09a04e169"
     }
   ]
 }

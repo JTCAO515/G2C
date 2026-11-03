@@ -1,8 +1,12 @@
 import json,unittest
+from hashlib import sha256
+from types import SimpleNamespace
 from cj_message.source import SourceQuery
 from cj_message.travel import Selection
 from cj_run.background_store import JobRequest
 from cj_run.background_store_v3 import JobRequestV3
+from cj_run.background_v3 import BackgroundJobsV3
+from cj_run.core import Conflict
 
 
 class BackgroundV3InputChecks(unittest.TestCase):
@@ -26,6 +30,21 @@ class BackgroundV3InputChecks(unittest.TestCase):
         for version,role in (('MEMORY-EXTRACT-DATA@2','user'),('MEMORY-EXTRACT-DATA@3','tool')):
             raw=json.dumps(dict(system='fixed',messages=[dict(role=role,content=json.dumps(dict(version=version,decision_source_sha256='a'*64)))])).encode()
             with self.subTest(version=version,role=role),self.assertRaises(ValueError):self.request(prepared_input=raw)
+
+    def test_pub3_requires_exact_original_version_and_all_bound_digests(self):
+        record=SimpleNamespace(protocol='RUN-BACKGROUND@3',job_id='job',attempt_id='attempt',
+            prepared_input_sha256='a'*64,output_sha256='b'*64,decision_source_sha256='c'*64)
+        value=dict(version='MEMORY-PUBLICATION-result@3',job_id='job',attempt_id='attempt',
+            prepared_input_sha256='a'*64,model_output_sha256='b'*64,decision_source_sha256='c'*64,
+            enqueue_input_sha256='d'*64,receipts=[])
+        raw=json.dumps(value).encode()
+        self.assertEqual(BackgroundJobsV3._publication(None,raw,record),sha256(raw).hexdigest())
+        for field,bad in (('version','MEMORY-PUBLICATION-result@2'),('job_id','other'),('attempt_id','other'),
+                          ('prepared_input_sha256','0'*64),('model_output_sha256','0'*64),
+                          ('decision_source_sha256','0'*64),('enqueue_input_sha256','not-a-hash')):
+            with self.subTest(field=field),self.assertRaises(Conflict):
+                BackgroundJobsV3._publication(None,json.dumps(value|{field:bad}).encode(),record)
+        with self.assertRaises(Conflict):BackgroundJobsV3._publication(None,raw[:-1]+b',"job_id":"job"}',record)
 
 
 if __name__=='__main__':unittest.main()

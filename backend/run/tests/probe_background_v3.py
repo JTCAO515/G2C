@@ -7,7 +7,7 @@ import pg_suites,migrate,psycopg
 
 def main():
     statuses=[]
-    for i,case in enumerate(('success','unknown','ack','output','time','tail','budget','stale','cancel')):
+    for i,case in enumerate(sys.argv[1:] or ('success','unknown','ack','output','time','tail','budget','corrupt-trip','cancel','account','stale')):
         with tempfile.TemporaryDirectory(prefix='cj-bg3-',dir='/tmp') as folder:
             root=Path(folder)
             with pg_suites.cluster('background_v3_'+case,port=55815,role='cj_bg3_'+str(i),root=root/'pg',socket=root/'s') as config:
