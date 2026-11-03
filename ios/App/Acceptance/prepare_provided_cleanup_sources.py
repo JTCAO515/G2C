@@ -40,13 +40,7 @@ def seed_c_sources(connection, auth, context, subject, token, other_token):
             text='我明确确认偏好轻松节奏', extent='long_term', context=None, occurred_at='时间不详')
         expect(client.post('/v3/memory-candidate-actions', content=encode(action), headers=headers))
 
-    profile = dict(subjects=['self'], slots={
-        name: dict(kind='preference', collection_allowed=True, semantic_resolved=True)
-        for name in ('pace', 'budget')}, extents=['long_term'], context_ids=[])
-    configuration = TypedConfiguration.from_bytes(encode(dict(version='local-memory-typed.1',
-        collection=dict(version='local-memory-policy.1',
-            expires_at=(datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
-            profiles={subject: profile}), travel_contexts={subject: []})))
+    configuration = TypedConfiguration.from_bytes(encode(configuration_document([subject])))
     typed = create_local_typed_app(conninfo_path=connection, auth_dir=auth, configuration=configuration)
     manual_id = str(uuid.uuid4())
     with TestClient(typed) as client:
@@ -70,6 +64,24 @@ def seed_c_sources(connection, auth, context, subject, token, other_token):
     with host.database.connect(scope_for(ISSUER, subject)) as connection_cursor:
         assert connection_cursor.execute('SELECT current_user').fetchone() == ('cj_m1_runtime',)
     return dict(app=typed, proof=proof, item_hashes=hashes, model_calls=model.calls)
+
+
+def configuration_document(subjects):
+    profile = dict(subjects=['self'], slots={
+        name: dict(kind='preference', collection_allowed=True, semantic_resolved=True)
+        for name in ('pace', 'budget')}, extents=['long_term'], context_ids=[])
+    return dict(version='local-memory-typed.1', collection=dict(version='local-memory-policy.1',
+        expires_at=(datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
+        profiles={subject: profile for subject in subjects}), travel_contexts={subject: [] for subject in subjects})
+
+
+def runtime_configuration(subjects):
+    from cj_memory.typed_runtime import TypedRuntimeConfiguration
+    # Existing live Memory must enter the worker through its actual typed
+    # runtime authority. No deletion or empty-memory fallback is permitted.
+    value = dict(version='local-memory-run.2', collection=configuration_document(subjects),
+        selections={subject: dict(subject='self', slots=['pace', 'budget'], max_bytes=16384) for subject in subjects})
+    return TypedRuntimeConfiguration.from_bytes(json.dumps(value).encode())
 
 
 def verify_retained_source(source, token):

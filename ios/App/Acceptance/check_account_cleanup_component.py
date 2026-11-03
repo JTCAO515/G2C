@@ -189,7 +189,11 @@ def main():
                             feedback_raw=json.dumps(dict(action_id='native-feedback',problem='中文组件反馈 '+subject,expectation='',references=[])).encode()
                             api.post('/v1/feedback',content=feedback_raw,headers=headers).raise_for_status()
                             feedback_hashes[case][k]=hashlib.sha256(feedback_raw).hexdigest()
-                    run_worker.run_once(database,model,auth)
+                    if args.all_provided:
+                        from prepare_provided_cleanup_sources import runtime_configuration
+                        configured_memory=runtime_configuration(list(subjects[case].values()))
+                        run_worker.run_once(database,model,auth,memory_configuration=configured_memory)
+                    else:run_worker.run_once(database,model,auth)
                     source_calls=sum(v['model_calls'] for v in c_sources.get(case,{}).values())
                     provider_counts[case]=model.calls-before+source_calls
                     assert provider_counts[case]==(8 if args.all_provided else 3 if case in source_runs else 2),'actual original FakeProvider runs did not complete'
