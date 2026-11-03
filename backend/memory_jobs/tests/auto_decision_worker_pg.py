@@ -212,6 +212,40 @@ class AutomaticDecisionChecks(manual.ManualChecks):
         self.assertNotIn('Discuss my accepted plan',json.dumps(answer.inputs,ensure_ascii=False))
         self.assertEqual(run_worker.run_once(database,answer,self.auth,formal_memory_configuration=formal),[])
         self.assertEqual(answer.calls,4)
+        # A genuine accepted-decision deletion must also reject a fresh capture
+        # of that same DG; a new current Memory epoch is not a history grant.
+        from cj_api.local_cleanup import Configuration
+        from cj_cleanup.memory_payloads import hooks,hold_payloads
+        from cj_memory_withdrawal.erasure_app import create_erasure_app_v2
+        from cj_memory_withdrawal.erasure_service import ORDER
+        sys.path.insert(0,str(ROOT/'backend/memory_withdrawal/tests'))
+        from memory_test_inventory import write_inventory
+        registry=Path(self.tmp.name)/'ending-dg-erasure.json';write_inventory(registry,'ending-genuine-dg-erasure')
+        cleanup=Configuration({'local':b'ending-dg-synthetic-erasure-key-123456789'},'local',3600,ORDER,registry)
+        erasing=create_erasure_app_v2(conninfo_path=path,auth_dir=self.auth,resolve_collection=resolver,run_context=run,
+            cleanup_configuration=cleanup,resolve_backend_hooks=hooks,hold_payloads=hold_payloads)
+        with database.connect(self.owner) as conn:
+            item_version=conn.execute('SELECT version FROM cj_memory_item WHERE item_id=%s',(plan['candidate_id'],)).fetchone()[0]
+        with TestClient(erasing) as client:
+            erased=client.post('/v1/memory-erasures',content=packed(dict(version='MEMORY-ERASURE@1',action_id='erase-confirmed-decision',
+                item_id=plan['candidate_id'],expected_version=item_version,derived_range='owned_trip_derived_scope')),headers=headers)
+            self.assertEqual(erased.status_code,200,erased.text);self.assertEqual(erased.json()['result']['online_status'],'complete',erased.text)
+        def send_after(key,text,trip):
+            with TestClient(foreground) as client:
+                head=client.put('/v1/conversations',params={'conversation_id':key},headers=headers).json()
+                response=client.post('/v3/messages',content=packed(dict(version='MESSAGE-send.3',conversation_id=key,message_id=key,text=text,
+                    trip_id=None,creation_intent='none',expected_generation=head['generation'],expected_sequence=0,
+                    travel_context=None,needs_reference=None,trip_context=trip)),headers=headers)
+                self.assertEqual(response.status_code,200,response.text)
+        send_after('same-erased-dg','Explain this retained accepted Trip',dict(id=self.trip_id,expected_version=self.base_version,day=None,item_id=None))
+        rejected=Foreground();outcomes=run_worker.run_once(database,rejected,self.auth,formal_memory_configuration=formal)
+        self.assertEqual(rejected.calls,0);self.assertEqual(len(outcomes),1)
+        self.assertNotEqual(outcomes[0].status,'completed');self.assertIsNone(outcomes[0].proposal_id)
+        send_after('independent-after-dg','只使用仍然有效的独立记忆',None)
+        valid=Foreground();outcomes=run_worker.run_once(database,valid,self.auth,formal_memory_configuration=formal)
+        self.assertTrue(all(v.status=='completed' for v in outcomes),outcomes);self.assertEqual(valid.calls,1)
+        self.assertEqual({i['slot']:i['text'] for i in next(iter(valid.contexts.values()))['items']},{'diet.spicy':'No spicy food'})
+        print('PASS actual confirmed accepted-DG erasure C4+B3 complete; fresh same-DG foreground rejected before provider while new independent context retains unrelated canonical Memory')
         print('PASS actual signed MSG3 mixed -> original BG2/BG3/Meter/Fake -> genuine end -> V6/Action1 confirm -> actual new formal/none/two distinct Travel foreground model inputs; no original dialogue/manual save, pending process recovery and repeated ticks/POSTs zero resend')
 
 
