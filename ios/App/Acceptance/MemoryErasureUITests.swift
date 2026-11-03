@@ -37,7 +37,10 @@ import Foundation
     func reveal(_ element: XCUIElement) {
         for _ in 0..<40 { if element.exists && element.isHittable { return }; app.swipeUp() }
         for _ in 0..<60 { if element.exists && element.isHittable { return }; app.swipeDown() }
-        XCTFail("Exact erasure element is not visible")
+        print("ERASURE_UI_TREE", app.debugDescription)
+        let failure = XCTAttachment(screenshot: app.screenshot())
+        failure.name = "erasure-missing-control"; failure.lifetime = .keepAlways; add(failure)
+        XCTFail("Exact erasure element is not visible: " + element.identifier)
     }
     func tap(_ id: String) {
         let query = app.buttons.matching(identifier: id), button = query.element
