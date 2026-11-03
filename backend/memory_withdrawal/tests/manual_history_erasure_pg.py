@@ -1,5 +1,5 @@
 """Manual item erasure must also fence pre-existing unprocessed authorized history."""
-import json,sys,time,tempfile,os
+import base64,json,sys,time,tempfile,os
 from pathlib import Path
 from datetime import datetime,timedelta,timezone
 from fastapi.testclient import TestClient
@@ -10,7 +10,7 @@ from cj_api.local_app import scope_for,ISSUER
 from cj_api.local_run_context import load_run_context
 from cj_api.local_background import LocalBackgroundHost
 from cj_api.local_cleanup import Configuration
-from cj_agent.provider import FakeProvider
+from cj_agent.provider import FakeProvider,ProviderFailed
 from cj_memory.manual import ManualPolicy
 from cj_memory.typed_runtime import TypedRuntimeConfiguration
 from cj_memory.typed_api import create_local_typed_app
@@ -27,7 +27,7 @@ from cj_run.background import BackgroundJobsV2
 from cj_run.background_store import JobRequest
 from memory_test_inventory import write_inventory
 
-def exercise(root,path):
+def exercise(root,path,*,phase='unprepared'):
     who='manual-before-history';owner=scope_for(ISSUER,who)
     auth=root/'auth';dev_auth.init(auth,[who]);now=int(time.time())
     quota=root/'quota.json';quota.write_bytes(encode(dict(version='CJ-LOCAL-RUN@2',history=[],current=dict(
@@ -57,6 +57,25 @@ def exercise(root,path):
         ok(client.post('/v3/memory-history-actions',content=encode(dict(version='MEMORY-HISTORY@1',action_id='enable-old',operation='enable',
             conversation_id='old-chat',expected_generation=head['generation'],expected_epoch=0,expected_source_version=0)),headers=headers))
         assert [r.status for r in run_worker.run_once(host.database,FakeProvider(),auth,memory_configuration=runtime)]==['completed']
+    jobs=BackgroundJobsV2(database=host.database,boundary=host.boundary,collection=MemoryCollectionAdapterV2(c),max_payload_bytes=262144)
+    prepared=[];records=[]
+    def submit(t,jid,attempt,query,data):
+        prepared.append(data);result=jobs.prepare(t,JobRequest(jid,attempt,query,None,data));records.append(result);return result
+    def no_decision(*args):raise AssertionError('ordinary source became a Trip grant')
+    producer=DecisionConversationProducer(c,submit,no_decision,max_payload_bytes=262144,max_conversations=100)
+    background=LocalBackgroundHost(jobs,auth)
+    combined=ProducerHost(producer,lambda:[dev_auth.token(auth,who,5)],background)
+    if phase=='pending':
+        planned=producer.incremental._plan(token)
+        assert len(planned)==1
+        c.enqueue_serialized(token,base64.b64decode(planned[0]))
+    elif phase in ('prepared','unknown'):
+        assert len(producer.poll(token).submitted)==1 and len(records)==1
+        if phase=='unknown':
+            class Unknown(FakeProvider):
+                def stream(self,messages,system=None):self.calls+=1;raise ProviderFailed('synthetic original outcome unknown')
+            uncertain=Unknown();run_worker.run_once(host.database,uncertain,auth,memory_configuration=runtime,background_jobs=background)
+            assert uncertain.calls==1
     with TestClient(create_local_typed_app(conninfo_path=path,auth_dir=auth,configuration=runtime.collection)) as manager:
         ok(manager.post('/v2/memories',content=encode(dict(version='MEMORY-manual.2',operation_id='explicit-save',item_id='explicit-item',subject='self',
             slot='diet.spicy',kind='preference',text='No spicy food',extent='long_term',context=None,occurred_at='date unknown')),headers=headers))
@@ -69,12 +88,12 @@ def exercise(root,path):
             expected_version=1,derived_range='owned_trip_derived_scope')),headers=headers))['result']
         assert deleted['online_status']=='complete',deleted
     with host.database.connect(owner) as conn:assert conn.execute('SELECT count(*) FROM cj_memory_item').fetchone()==(0,)
-    jobs=BackgroundJobsV2(database=host.database,boundary=host.boundary,collection=MemoryCollectionAdapterV2(c),max_payload_bytes=262144)
-    prepared=[]
-    def submit(t,jid,attempt,query,data):prepared.append(data);return jobs.prepare(t,JobRequest(jid,attempt,query,None,data))
-    def no_decision(*args):raise AssertionError('ordinary source became a Trip grant')
-    producer=DecisionConversationProducer(c,submit,no_decision,max_payload_bytes=262144,max_conversations=100)
-    combined=ProducerHost(producer,lambda:[dev_auth.token(auth,who,5)],LocalBackgroundHost(jobs,auth))
+    if phase!='unprepared':
+        with host.database.connect(owner) as conn:copied=conn.execute('SELECT job_id,state FROM cj_memory_history_job').fetchall()
+        originals=[jobs.query_original(token,r['job_id'],r['attempt_id']) for r in records]
+        print(json.dumps({'phase':phase,'delete':deleted['online_status'],'C_retained_jobs':copied,'B_originals':originals},ensure_ascii=False),flush=True)
+        assert not copied,'deletion reported complete while old C source/job copy remained'
+        assert all(r['input_state']=='erased' for r in originals),'deletion retained original B input copies'
     class Model(FakeProvider):
         def __init__(self):super().__init__();self.normal=[]
         def stream(self,messages,system=None):
@@ -92,5 +111,8 @@ def exercise(root,path):
 
 
 if __name__=='__main__':
+    import argparse
+    parser=argparse.ArgumentParser();parser.add_argument('--phase',choices=('unprepared','pending','prepared','unknown'),default='unprepared')
+    options=parser.parse_args()
     with tempfile.TemporaryDirectory(prefix='manual-history-erasure-') as folder:
-        exercise(Path(folder),Path(os.environ['CJ_E2E_CONNINFO']))
+        exercise(Path(folder),Path(os.environ['CJ_E2E_CONNINFO']),phase=options.phase)
