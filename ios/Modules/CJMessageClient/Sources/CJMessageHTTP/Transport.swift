@@ -109,6 +109,8 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     private let accountCleanup: EndpointCapability?
     private let memoryCandidates: EndpointCapability?
     private let memoryErasure: EndpointCapability?
+    private let deviceCleanup: EndpointCapability?
+    private let deviceCompletion: EndpointCapability?
 
     public convenience init(requestTimeout: TimeInterval, resourceTimeout: TimeInterval) throws {
         try self.init(requestTimeout:requestTimeout,resourceTimeout:resourceTimeout,preview:nil)
@@ -286,6 +288,8 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     init(interceptedTransport: any ClientTransport, memoryCandidateEndpoint: MessageEndpoint,
          validateMemoryCandidates: @escaping @MainActor @Sendable () throws -> Void) {
         memoryErasure = nil
+        deviceCompletion = nil
+        deviceCleanup = nil
         session=nil;transport=interceptedTransport;preview=nil;messages=nil;memory=nil;memoryManagement=nil
         typedMemory=nil;needs=nil;tripEditing=nil;feedback=nil;memoryHistory=nil;accountCleanup=nil
         memoryCandidates=EndpointCapability(endpoint:memoryCandidateEndpoint,validate:validateMemoryCandidates)
@@ -306,6 +310,8 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     /// Non-network unit seam, unavailable to App callers.
     init(interceptedTransport: any ClientTransport, memoryErasureEndpoint: MessageEndpoint,
          validateMemoryErasure: @escaping @MainActor @Sendable () throws -> Void) {
+        deviceCleanup = nil; deviceCompletion = nil
+
         session=nil;transport=interceptedTransport;preview=nil;messages=nil;memory=nil;memoryManagement=nil
         typedMemory=nil;needs=nil;tripEditing=nil;feedback=nil;memoryHistory=nil;accountCleanup=nil;memoryCandidates=nil
         memoryErasure=EndpointCapability(endpoint:memoryErasureEndpoint,validate:validateMemoryErasure)
@@ -330,13 +336,63 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     init(interceptedTransport: any ClientTransport, accountCleanupEndpoint: MessageEndpoint,
          validateAccountCleanup: @escaping @MainActor @Sendable () throws -> Void) {
         memoryErasure = nil
+        deviceCompletion = nil
+        deviceCleanup = nil
         memoryCandidates = nil
         session=nil;transport=interceptedTransport;preview=nil;messages=nil;memory=nil;memoryManagement=nil
         typedMemory=nil;needs=nil;tripEditing=nil;feedback=nil;memoryHistory=nil
         accountCleanup=EndpointCapability(endpoint:accountCleanupEndpoint,validate:validateAccountCleanup)
     }
 
-    private init(requestTimeout: TimeInterval, resourceTimeout: TimeInterval, preview: EndpointCapability?, messages: MessageCapability? = nil, memory: EndpointCapability? = nil, memoryManagement: EndpointCapability? = nil, typedMemory: EndpointCapability? = nil, needs: EndpointCapability? = nil, tripEditing: EndpointCapability? = nil, feedback: EndpointCapability? = nil, memoryHistory: EndpointCapability? = nil, accountCleanup: EndpointCapability? = nil, memoryCandidates: EndpointCapability? = nil, memoryErasure: EndpointCapability? = nil) throws {
+    /// Bounded original-invocation completion representation only. It grants
+    /// neither generic account progress nor any content/control erase or write.
+    public static func developmentDeviceCompletion(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
+        resourceTimeout: TimeInterval, validate: @escaping @MainActor @Sendable () throws -> Void) throws -> NoRedirectTransport {
+        #if DEBUG && targetEnvironment(simulator)
+        guard endpoint.url.scheme == "http", endpoint.url.host == "127.0.0.1", let port = endpoint.url.port,
+              (1...65535).contains(port), endpoint.maximumRequestBytes <= 16384, endpoint.maximumResponseBytes <= 65536 else { throw MessageHTTPFailure.invalidConfiguration }
+        let bounded = try MessageEndpoint(url: endpoint.url, maximumRequestBytes: endpoint.maximumRequestBytes,
+            maximumResponseBytes: min(endpoint.maximumResponseBytes, 4096), allowLoopbackHTTP: true)
+        return try NoRedirectTransport(requestTimeout: requestTimeout, resourceTimeout: resourceTimeout,
+            preview: nil, deviceCompletion: EndpointCapability(endpoint: bounded, validate: validate))
+        #else
+        throw MessageHTTPFailure.productionActivationUnavailable
+        #endif
+    }
+    /// Non-network boundary-test seam; not available to App consumers.
+    init(interceptedTransport: any ClientTransport, deviceCompletionEndpoint: MessageEndpoint,
+         validateDeviceCompletion: @escaping @MainActor @Sendable () throws -> Void) {
+        memoryErasure = nil
+
+        session=nil;transport=interceptedTransport;preview=nil;messages=nil;memory=nil;memoryManagement=nil
+        typedMemory=nil;needs=nil;tripEditing=nil;feedback=nil;memoryHistory=nil;accountCleanup=nil;memoryCandidates=nil;deviceCleanup=nil
+        deviceCompletion=EndpointCapability(endpoint:deviceCompletionEndpoint,validate:validateDeviceCompletion)
+    }
+
+    /// Version-fixed V3 device control exits; no arbitrary business or domain write.
+    public static func developmentDeviceCleanup(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
+        resourceTimeout: TimeInterval, validate: @escaping @MainActor @Sendable () throws -> Void) throws -> NoRedirectTransport {
+        #if DEBUG && targetEnvironment(simulator)
+        guard endpoint.url.scheme == "http", endpoint.url.host == "127.0.0.1", let port = endpoint.url.port,
+              (1...65535).contains(port), endpoint.maximumRequestBytes <= 16384, endpoint.maximumResponseBytes <= 65536 else { throw MessageHTTPFailure.invalidConfiguration }
+        return try NoRedirectTransport(requestTimeout: requestTimeout, resourceTimeout: resourceTimeout,
+            preview: nil, deviceCleanup: EndpointCapability(endpoint: endpoint, validate: validate))
+        #else
+        throw MessageHTTPFailure.productionActivationUnavailable
+        #endif
+    }
+    init(interceptedTransport: any ClientTransport, deviceCleanupEndpoint: MessageEndpoint,
+         validateDeviceCleanup: @escaping @MainActor @Sendable () throws -> Void) {
+        memoryErasure = nil
+
+        deviceCompletion = nil
+        memoryCandidates=nil
+        session=nil;transport=interceptedTransport;preview=nil;messages=nil;memory=nil;memoryManagement=nil
+        typedMemory=nil;needs=nil;tripEditing=nil;feedback=nil;memoryHistory=nil;accountCleanup=nil
+        deviceCleanup=EndpointCapability(endpoint:deviceCleanupEndpoint,validate:validateDeviceCleanup)
+    }
+
+    private init(requestTimeout: TimeInterval, resourceTimeout: TimeInterval, preview: EndpointCapability?, messages: MessageCapability? = nil, memory: EndpointCapability? = nil, memoryManagement: EndpointCapability? = nil, typedMemory: EndpointCapability? = nil, needs: EndpointCapability? = nil, tripEditing: EndpointCapability? = nil, feedback: EndpointCapability? = nil, memoryHistory: EndpointCapability? = nil, accountCleanup: EndpointCapability? = nil, memoryCandidates: EndpointCapability? = nil, deviceCleanup: EndpointCapability? = nil, deviceCompletion: EndpointCapability? = nil, memoryErasure: EndpointCapability? = nil) throws {
         guard requestTimeout > 0, resourceTimeout > 0, requestTimeout.isFinite, resourceTimeout.isFinite else {
             throw MessageHTTPFailure.invalidConfiguration
         }
@@ -344,13 +400,15 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         config.httpCookieStorage = nil; config.urlCache = nil; config.urlCredentialStorage = nil
         config.timeoutIntervalForRequest = requestTimeout; config.timeoutIntervalForResource = resourceTimeout
         let session = URLSession(configuration: config, delegate: RedirectBlocker(), delegateQueue: nil)
-        self.session = session; transport = URLSessionTransport(configuration: .init(session: session)); self.preview=preview; self.messages=messages; self.memory=memory; self.memoryManagement=memoryManagement;self.typedMemory=typedMemory;self.needs=needs;self.tripEditing=tripEditing;self.feedback=feedback;self.memoryHistory=memoryHistory;self.accountCleanup=accountCleanup;self.memoryCandidates=memoryCandidates;self.memoryErasure=memoryErasure
+        self.session = session; transport = URLSessionTransport(configuration: .init(session: session)); self.preview=preview; self.messages=messages; self.memory=memory; self.memoryManagement=memoryManagement;self.typedMemory=typedMemory;self.needs=needs;self.tripEditing=tripEditing;self.feedback=feedback;self.memoryHistory=memoryHistory;self.accountCleanup=accountCleanup;self.memoryCandidates=memoryCandidates;self.memoryErasure=memoryErasure;self.deviceCleanup=deviceCleanup;self.deviceCompletion=deviceCompletion
     }
 
     /// Internal non-network seam for module tests; never used by live callers.
     init(interceptedTransport: any ClientTransport, previewEndpoint: MessageEndpoint?,
          validatePreview: (@MainActor @Sendable () throws -> Void)?) throws {
         memoryErasure = nil
+        deviceCompletion = nil
+        deviceCleanup = nil
         memoryCandidates = nil
         accountCleanup = nil
         if let endpoint=previewEndpoint, let validate=validatePreview {
@@ -367,6 +425,8 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     init(interceptedTransport: any ClientTransport, messageEndpoint: MessageEndpoint,
          validateMessage: @escaping @MainActor @Sendable () throws -> Void) throws {
         memoryErasure = nil
+        deviceCompletion = nil
+        deviceCleanup = nil
         memoryCandidates = nil
         accountCleanup = nil
         memoryHistory = nil;feedback = nil;tripEditing = nil; needs = nil;typedMemory = nil
@@ -378,6 +438,8 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     init(interceptedTransport: any ClientTransport,travelMessageEndpoint: MessageEndpoint,
          validateMessage: @escaping @MainActor @Sendable () throws -> Void) {
         memoryErasure = nil
+        deviceCompletion = nil
+        deviceCleanup = nil
         memoryCandidates = nil
         accountCleanup = nil
         memoryHistory=nil;feedback=nil;tripEditing=nil;needs=nil;typedMemory=nil
@@ -389,6 +451,8 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     init(interceptedTransport: any ClientTransport, tripDiscussionEndpoint: MessageEndpoint,
          validateDiscussion: @escaping @MainActor @Sendable () throws -> Void) {
         memoryErasure = nil
+        deviceCompletion = nil
+        deviceCleanup = nil
         memoryCandidates = nil
         accountCleanup = nil
         memoryHistory=nil;feedback=nil;tripEditing=nil; needs=nil; typedMemory=nil; session=nil; transport=interceptedTransport
@@ -399,6 +463,8 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     init(interceptedTransport: any ClientTransport, tripEditEndpoint: MessageEndpoint,
          validateEdit: @escaping @MainActor @Sendable () throws -> Void) {
         memoryErasure = nil
+        deviceCompletion = nil
+        deviceCleanup = nil
         memoryCandidates = nil
         accountCleanup = nil
         memoryHistory=nil;feedback=nil;tripEditing=nil; needs=nil; typedMemory=nil; session=nil; transport=interceptedTransport
@@ -410,6 +476,8 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     init(interceptedTransport: any ClientTransport, memoryEndpoint: MessageEndpoint,
          validateMemory: @escaping @MainActor @Sendable () throws -> Void) {
         memoryErasure = nil
+        deviceCompletion = nil
+        deviceCleanup = nil
         memoryCandidates = nil
         accountCleanup = nil
         memoryHistory = nil;feedback = nil;tripEditing = nil; needs = nil;typedMemory = nil
@@ -421,6 +489,8 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     init(interceptedTransport: any ClientTransport, memoryManagementEndpoint: MessageEndpoint,
          validateManagement: @escaping @MainActor @Sendable () throws -> Void) {
         memoryErasure = nil
+        deviceCompletion = nil
+        deviceCleanup = nil
         memoryCandidates = nil
         accountCleanup = nil
         memoryHistory = nil;feedback = nil;tripEditing = nil; needs = nil;typedMemory = nil
@@ -432,6 +502,8 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     init(interceptedTransport: any ClientTransport,typedMemoryEndpoint: MessageEndpoint,
          validateTypedMemory: @escaping @MainActor @Sendable () throws -> Void) {
         memoryErasure = nil
+        deviceCompletion = nil
+        deviceCleanup = nil
         memoryCandidates = nil
         accountCleanup = nil
         session=nil;transport=interceptedTransport;preview=nil;messages=nil;memory=nil;memoryManagement=nil
@@ -442,6 +514,8 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     init(interceptedTransport: any ClientTransport, needsEndpoint: MessageEndpoint,
          validateNeeds: @escaping @MainActor @Sendable () throws -> Void) {
         memoryErasure = nil
+        deviceCompletion = nil
+        deviceCleanup = nil
         memoryCandidates = nil
         accountCleanup = nil
         session=nil;transport=interceptedTransport;preview=nil;messages=nil;memory=nil;memoryManagement=nil;typedMemory=nil
@@ -452,6 +526,8 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     init(interceptedTransport: any ClientTransport, feedbackEndpoint: MessageEndpoint,
          validateFeedback: @escaping @MainActor @Sendable () throws -> Void) {
         memoryErasure = nil
+        deviceCompletion = nil
+        deviceCleanup = nil
         memoryCandidates = nil
         accountCleanup = nil
         session=nil;transport=interceptedTransport;preview=nil;messages=nil;memory=nil;memoryManagement=nil;typedMemory=nil;needs=nil;tripEditing=nil
@@ -462,6 +538,8 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     init(interceptedTransport: any ClientTransport, memoryHistoryEndpoint: MessageEndpoint,
          validateHistory: @escaping @MainActor @Sendable () throws -> Void) {
         memoryErasure = nil
+        deviceCompletion = nil
+        deviceCleanup = nil
         memoryCandidates = nil
         accountCleanup = nil
         session=nil;transport=interceptedTransport;preview=nil;messages=nil;memory=nil;memoryManagement=nil
@@ -477,6 +555,8 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     init(interceptedTransport: any ClientTransport, tripEditingEndpoint: MessageEndpoint,
          validateTripEditing: @escaping @MainActor @Sendable () throws -> Void) {
         memoryErasure = nil
+        deviceCompletion = nil
+        deviceCleanup = nil
         memoryCandidates = nil
         accountCleanup = nil
         session=nil;transport=interceptedTransport;preview=nil;messages=nil;memory=nil;memoryManagement=nil;typedMemory=nil;needs=nil
@@ -529,6 +609,33 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
             }
             return try await sendLocalRead(request, baseURL: baseURL, operationID: operationID, capability: memoryErasure)
         }
+        if let deviceCompletion {
+            guard baseURL == deviceCompletion.endpoint.url,
+                  LocalDeviceCompletionRoute.accepts(request, hasBody: body != nil, operationID: operationID) else { throw MessageHTTPFailure.productionActivationUnavailable }
+            try await deviceCompletion.validate(); try Task.checkCancellation()
+            let (response, responseBody) = try await transport.send(request, body: nil, baseURL: baseURL, operationID: operationID)
+            try await deviceCompletion.validate(); try Task.checkCancellation()
+            guard !(300..<400).contains(response.status.code), let responseBody else { throw MessageHTTPFailure.invalidResponse }
+            let bytes = try await Data(collecting: responseBody, upTo: deviceCompletion.endpoint.maximumResponseBytes)
+            try await deviceCompletion.validate(); try Task.checkCancellation()
+            return (response, HTTPBody(bytes))
+        }
+        if let deviceCleanup {
+            guard baseURL == deviceCleanup.endpoint.url,
+                  LocalDeviceCleanupRoute.accepts(request, hasBody: body != nil, operationID: operationID) else { throw MessageHTTPFailure.productionActivationUnavailable }
+            if let body {
+                return try await sendLocalWrite(request, body: body, baseURL: baseURL, operationID: operationID,
+                    capability: deviceCleanup, messageWire: nil)
+            }
+            try await deviceCleanup.validate(); try Task.checkCancellation()
+            let (response, body) = try await transport.send(request, body: nil, baseURL: baseURL, operationID: operationID)
+            try await deviceCleanup.validate(); try Task.checkCancellation()
+            guard !(300..<400).contains(response.status.code), let body else { throw MessageHTTPFailure.invalidResponse }
+            let bytes = try await Data(collecting: body, upTo: deviceCleanup.endpoint.maximumResponseBytes)
+            try await deviceCleanup.validate(); try Task.checkCancellation()
+            return (response, HTTPBody(bytes))
+        }
+
         if let memoryCandidates {
             guard baseURL == memoryCandidates.endpoint.url,
                   LocalMemoryCandidateRoute.accepts(request, hasBody: body != nil, operationID: operationID) else {

@@ -99,4 +99,31 @@ private actor ErasureExitSpy: ClientTransport {
         }
         #endif
     }
+    @Test(arguments: ["erasure", "device", "completion"])
+    func mergedCapabilitiesCannotBorrowAnotherPurpose(kind: String) async throws {
+        let endpoint = try endpoint(), spy = ErasureExitSpy()
+        let transport: NoRedirectTransport
+        let routes: [(String, String, Bool)]
+        switch kind {
+        case "erasure":
+            transport = NoRedirectTransport(interceptedTransport: spy, memoryErasureEndpoint: endpoint, validateMemoryErasure: {})
+            routes = [("/v3/cleanup-device-calls", "createCleanupDeviceCallV3", true),
+                ("/v1/cleanup-device-completions/original?request_digest=" + String(repeating: "a", count: 64), "readCleanupDeviceCompletionV1", false)]
+        case "device":
+            transport = NoRedirectTransport(interceptedTransport: spy, deviceCleanupEndpoint: endpoint, validateDeviceCleanup: {})
+            routes = [("/v1/memory-erasures", "eraseMemoryV1", true),
+                ("/v1/memory-erasure-progress?action_id=original", "readMemoryErasureProgressV1", false)]
+        default:
+            transport = NoRedirectTransport(interceptedTransport: spy, deviceCompletionEndpoint: endpoint, validateDeviceCompletion: {})
+            routes = [("/v1/memory-erasures", "eraseMemoryV1", true),
+                ("/v1/memory-erasure-progress?action_id=original", "readMemoryErasureProgressV1", false)]
+        }
+        for (path, operation, post) in routes {
+            await #expect(throws: MessageHTTPFailure.productionActivationUnavailable) {
+                _ = try await transport.send(request(path, post: post), body: post ? HTTPBody("{}".utf8) : nil,
+                    baseURL: endpoint.url, operationID: operation)
+            }
+        }
+        #expect(await spy.requests.isEmpty)
+    }
 }

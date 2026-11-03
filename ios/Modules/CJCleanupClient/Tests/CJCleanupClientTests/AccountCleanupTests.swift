@@ -159,6 +159,18 @@ private struct AccountIntercept: ClientTransport {
 }
 
 @MainActor struct AccountCleanupTests {
+    @Test func preparedOriginalGETPreservesConfirmationAcrossReconstruction() async throws {
+        let h = try AccountHarness(), prepared = try await h.prepare()
+        let preparationBytes = try h.secure.record().preparation
+        _ = try await h.client.read(h.client.prepareOriginalRead())
+        h.client = try h.ordinary()
+        guard case .awaitingConfirmation(let original) = h.client.state else { Issue.record("Prepared GET removed original confirmation"); return }
+        #expect(original.operationID == prepared.operationID && original.registryDigest == prepared.registryDigest)
+        try await h.client.perform(h.confirmation(original))
+        #expect(try h.secure.record().preparation == preparationBytes)
+        #expect(h.server.requests.filter { $0.operation == "prepareAccountCleanupV1" }.count == 1)
+        #expect(h.server.requests.filter { $0.operation == "confirmAccountCleanupV1" }.count == 1)
+    }
     @Test func exactBytesAreSecureBeforePostAndOnlyServerCreatesOperation() async throws {
         let h = try AccountHarness()
         let registration = try h.client.prepareDeviceRegistration(stateRef: accountHash)
@@ -344,6 +356,39 @@ private struct AccountIntercept: ClientTransport {
         #expect(try !h.client.requiresRestrictedProgress)
         #expect(try !h.secure.record().confirmationDispatched)
         #expect(h.server.requests.filter { $0.operation == "confirmAccountCleanupV1" }.isEmpty)
+    }
+
+    private func sealedV3(_ scope: AccountCleanupScope) throws -> DeviceCleanupEnrollment {
+        let request = try JSONSerialization.data(withJSONObject: ["version":"CLEANUP-DEVICE@3", "action_id":"v3-original", "device_id":"native-device", "state_ref":accountHash], options: [.sortedKeys])
+        let reply = try JSONSerialization.data(withJSONObject: ["version":"CLEANUP-DEVICE@3", "request_id":accountTrace, "binding_id":"server-binding", "device_id":"native-device", "state_ref":accountHash,
+            "scope_digest":accountHash, "device_token":"V3.SYNTHETIC.DEVICE.CAP", "server_time":1000, "business_access":"not_granted"], options: [.sortedKeys])
+        return try DeviceCleanupEnrollment(originalUTF8: request, replyUTF8: reply, fromQuery: false, scope: scope)
+    }
+    @Test func actualSealedV3EnrollmentFeedsOriginalAccountAndRevokedDeviceAuthorization() async throws {
+        let h = try AccountHarness(), enrollment = try sealedV3(h.scope)
+        try h.client.adoptDeviceEnrollment(enrollment)
+        #expect(try h.secure.record().version == "AccountCleanup.Native@2")
+        #expect(try h.secure.record().registration == enrollment.originalUTF8)
+        try await h.client.perform(h.client.prepareAccountDeletion())
+        guard case .awaitingConfirmation(let original) = h.client.state else { Issue.record("no original account preparation"); return }
+        #expect(throws: CleanupFailure.unavailable) { try h.client.originalDeviceAuthorization() }
+        try await h.client.perform(h.confirmation(original))
+        try h.session.clear()
+        h.client = try h.restricted()
+        let authorization = try h.client.originalDeviceAuthorization()
+        #expect(authorization.operationID == original.operationID && authorization.bindingID == enrollment.bindingID)
+        #expect(authorization.scope == h.scope && authorization.stateRef == enrollment.stateRef)
+        #expect(h.server.requests.filter { $0.operation == "registerCleanupDeviceV1" }.isEmpty)
+    }
+    @Test func v3AdoptionNeverOverwritesUncertainLegacyRegistrationOrAnotherScope() throws {
+        let h = try AccountHarness(), enrollment = try sealedV3(h.scope)
+        _ = try h.client.prepareDeviceRegistration(stateRef: accountHash)
+        let bytes = h.secure.bytes
+        #expect(throws: CleanupFailure.unavailable) { try h.client.adoptDeviceEnrollment(enrollment) }
+        #expect(h.secure.bytes == bytes)
+        let other = try AccountHarness()
+        #expect(throws: CleanupFailure.unavailable) { try other.client.adoptDeviceEnrollment(enrollment) }
+        #expect(other.secure.bytes == nil)
     }
 
 }

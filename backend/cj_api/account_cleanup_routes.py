@@ -116,3 +116,8 @@ def register_account_cleanup_routes(app,gateway):
     async def original_device_action(request:Request):
         return await invoke(request,lambda token,v,raw,p:gateway.device_action_query(token,v['action_id'],v['input_sha256'],p),
             write=False,scheme='Device',query_fields=('action_id','input_sha256'))
+
+    @app.get('/v1/cleanup-device-completions/{invocation_id}')
+    async def original_device_completion(invocation_id:str,request:Request):
+        return await invoke(request,lambda token,v,raw,p:gateway.device_completion(token,identifier(invocation_id),v['request_digest'],p),
+            write=False,scheme='Device',query_fields=('request_digest',))

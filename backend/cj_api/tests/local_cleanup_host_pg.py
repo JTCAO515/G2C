@@ -73,13 +73,19 @@ def exercise(root,path):
 
     auth=root/'host-auth';dev_auth.init(auth,['host-user'])
     token=dev_auth.token(auth,'host-user',30);headers={'Authorization':'Bearer '+token,'Content-Type':'application/octet-stream'}
-    full=configuration_file(root/'full-config','CJ-LOCAL-CLEANUP@2',INVENTORY)
+    full=configuration_file(root/'full-config','CJ-LOCAL-CLEANUP@3',INVENTORY)
     loaded=load_configuration(full);assert loaded.inventory==INVENTORY and loaded.extra_hooks is account_hooks
     database=LocalDatabase(path);principal=checker_for(auth).check(token).principal
     runtime=Runtime(database,loaded,scope_for);manifest=runtime.registry()
     assert not manifest.gaps and set(manifest.inventory)==set(INVENTORY)
+    controls={'cleanup-control/selected','cleanup-control/manifest','cleanup-control/execution','cleanup-control/device','cleanup-control/account'}
+    assert {name for name,_ in manifest.retained_controls}==controls
     binding=runtime.bind(principal);verify_binding(binding,INVENTORY)
     assert {e.registry_id for e in manifest.entries if not e.hook_available or e.registry_id not in binding.hooks}=={'external-processing'}
+    old_full=configuration_file(root/'old-full-config','CJ-LOCAL-CLEANUP@2',INVENTORY)
+    old_manifest=Runtime(database,load_configuration(old_full),scope_for).registry()
+    assert set(old_manifest.gaps)==controls and not old_manifest.retained_controls
+    assert not (controls & set(binding.plan)) and not (controls & set(binding.hooks))
     legacy_path=configuration_file(root/'legacy-config','CJ-LOCAL-CLEANUP@1',INVENTORY)
     legacy=load_configuration(legacy_path);assert legacy.extra_hooks is None and legacy.inventory==INVENTORY
     assert C_TARGETS.isdisjoint(Runtime(database,legacy,scope_for).bind(principal).hooks)
@@ -99,7 +105,7 @@ def exercise(root,path):
         assert {s['target'] for s in progress['steps']}==set(INVENTORY)
         assert all(s['state']=='pending' for s in progress['steps']) and progress['reason']=='domain_hooks_unavailable'
     assert runtime.retired(principal) is Fact.NO
-    print('PASS actual app_from_environment V2 installs all C/B hooks, preserves all30 independent targets; unavailable external proof blocks with no retirement; V1 remains uninstalled')
+    print('PASS actual app_from_environment V3 preserves all30 independent content targets and5 retained client controls; external blocks without retirement, old V2 full registry has5 real gaps, V1 remains uninstalled; no native finalization claimed')
 
     # Run the original worker main/argparse/loader/PG path. The observation wrapper
     # adds assertions only; no binding, hook, identity or outcome is substituted.
@@ -114,7 +120,7 @@ def exercise(root,path):
     assert len(observed)==1
     result=json.loads(output.getvalue());assert result['status']=='complete',result
     assert checker_for(auth).check(token).status is AdmissionStatus.ALLOWED
-    print('PASS actual cleanup_worker.main --once uses V2/C factory with full B/device inventory; real diagnostic operation completes, no account/owner erased')
+    print('PASS actual cleanup_worker.main --once uses V3/C factory and original retained-control profile; real diagnostic operation completes without account erasure or native-control confirmation')
 
 
 if __name__=='__main__':

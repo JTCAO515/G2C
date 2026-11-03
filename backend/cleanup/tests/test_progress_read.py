@@ -40,6 +40,11 @@ class ProgressTests(unittest.TestCase):
         self.principal=TrustedPrincipal('issuer','synthetic-'+uuid.uuid4().hex,'aud',1,1,100)
         self.scope=core.Scope.from_principal('synthetic',self.principal)
         f=fixtures.CleanupTests();f.setUp();self.f=f
+        # This is the frozen rc metadata reader's synthetic operation, not a
+        # current M3 inventory acceptance. Keep private-field byte sentinels
+        # independent from legitimate future public resource names.
+        f.manifest=core.freeze_registry(core.encode(dict(version='rc-progress-component',
+            stores=[dict(id='metadata',cleanup_hook='UNIMPLEMENTED')])),('metadata',))
         self.op=f.op(True,self.scope)
         self.admin=lambda:psycopg.connect(**ADMIN)
         self.writer=Repository(self.admin,self.scope,lambda s:None)
@@ -82,11 +87,26 @@ class ProgressTests(unittest.TestCase):
         self.op=self.writer.intent(self.op.operation_id,self.op.revision,'auth_revocation','PRIVATE_ORIGINAL_INVOCATION')
         self.op=self.writer.receipt(self.op.operation_id,self.op.revision,'auth_revocation',self.f.result(self.op,'auth_revocation','unknown'))
         before=self.before();raw=self.read();value=json.loads(raw)
+        self.assertIn(b'"manifest"',bytes(before[2]))
         self.assertEqual(value['status'],'unknown')
         self.assertEqual(value['steps'][0]['reason'],'original_result_unknown')
         for secret in (self.scope.subject,self.op.confirmation_digest,'PRIVATE_ORIGINAL_INVOCATION','scope_digest','receipt_bytes','manifest','journal','confirmation_digest'):
             self.assertNotIn(secret.encode(),raw)
         self.assertEqual(self.before(),before)
+
+    def test_current_public_target_name_does_not_expose_private_manifest(self):
+        principal=replace(self.principal,subject=self.principal.subject+'-public-target')
+        scope=core.Scope.from_principal('synthetic',principal)
+        current=fixtures.CleanupTests();current.setUp()
+        op=current.op(True,scope)
+        Repository(self.admin,scope,lambda stage:None).create(op)
+        self.verifier.principal=principal
+        raw=self.reader.read(self.token,op.operation_id);value=json.loads(raw)
+        self.assertEqual(set(value),{'operation_id','revision','status','steps','reasons'})
+        self.assertTrue(any(s['target']=='store:cleanup-control/manifest' for s in value['steps']))
+        self.assertTrue(all(set(s)=={'target','state','reason'} for s in value['steps']))
+        self.assertNotIn(b'"manifest":',raw)
+        self.assertNotIn(principal.subject.encode(),raw)
 
     def test_inflight_query_does_not_recover_write(self):
         self.op=self.writer.intent(self.op.operation_id,0,'auth_revocation','original')

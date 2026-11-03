@@ -30,6 +30,7 @@ public struct KeychainSessionScope: Sendable {
     var copy: ([String: Any]) -> (OSStatus, Data?)
     var add: ([String: Any]) -> OSStatus
     var update: ([String: Any], [String: Any]) -> OSStatus
+    var delete: ([String: Any]) -> OSStatus
     #if os(iOS)
     static var system: Self {
         Self(copy: { query in
@@ -37,7 +38,8 @@ public struct KeychainSessionScope: Sendable {
             let status = SecItemCopyMatching(query as CFDictionary, &result)
             return (status, result as? Data)
         }, add: { SecItemAdd($0 as CFDictionary, nil) },
-             update: { SecItemUpdate($0 as CFDictionary, $1 as CFDictionary) })
+             update: { SecItemUpdate($0 as CFDictionary, $1 as CFDictionary) },
+             delete: { SecItemDelete($0 as CFDictionary) })
     }
     #endif
 }
@@ -83,6 +85,29 @@ public struct KeychainSessionScope: Sendable {
         // Replaces all secret data with a durable non-secret marker, including after restart.
         // A failed write is reported; lifecycle stays blocked. No broad delete is performed.
         try write(prefix + Data([0]))
+    }
+    /// Exact control-record removal for a trusted host that has already retired
+    /// every writer and verified its terminal cleanup authority. This is not a
+    /// session-lifecycle clear or a cross-process compare-and-delete primitive.
+    /// A different/missing value is untouched. Unknown deletion/readback throws.
+    public func removeIfMatching(_ expected: SessionMaterial) throws -> Bool {
+        let expectedBytes = expected.withBytes { prefix + Data([1]) + $0 }
+        var request = query
+        request[kSecReturnData as String] = true
+        request[kSecMatchLimit as String] = kSecMatchLimitOne
+        let (status, data) = operations.copy(request)
+        if status == errSecItemNotFound { return false }
+        guard status == errSecSuccess else { throw SessionFailure.keychain(status) }
+        guard let data else { throw SessionFailure.malformedRecord }
+        guard data == expectedBytes else { return false }
+        // Synchronous MainActor region: no caller callback/await occurs between
+        // the final comparison and this exact immutable namespace query.
+        let removed = operations.delete(query)
+        guard removed == errSecSuccess else { throw SessionFailure.keychain(removed) }
+        let (observed, _) = operations.copy(request)
+        if observed == errSecItemNotFound { return true }
+        guard observed == errSecSuccess else { throw SessionFailure.keychain(observed) }
+        throw SessionFailure.staleOperation
     }
     private func write(_ data: Data) throws {
         let values: [String: Any] = [kSecValueData as String: data, kSecAttrAccessible as String: protection.value]
