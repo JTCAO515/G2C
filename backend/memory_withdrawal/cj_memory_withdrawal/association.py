@@ -10,7 +10,8 @@ from cj_memory_jobs.postgres import Transaction,encode
 from .source_graph import capture
 
 
-def prepare(memory,item_id,*,expected_version,expected_scope_epoch,max_sources,max_jobs,max_bytes):
+def prepare(memory,item_id,*,expected_version,expected_scope_epoch,max_sources,max_jobs,max_bytes,
+            headers=None,require_coverage=False):
     """Include ALL matching C jobs, not only the first publication producer.
 
     The caller holds the canonical Memory transaction. This function stops,
@@ -25,6 +26,20 @@ def prepare(memory,item_id,*,expected_version,expected_scope_epoch,max_sources,m
         raise Conflict('original erasure selection changed')
     scope,cur=memory.scope,memory.cur
     sources=[ref['source_id'] for ref in graph['source_refs']]
+    if require_coverage:
+        cur.execute('SELECT DISTINCT source_id FROM cj_memory_history_origin WHERE scope=%s AND source_id=ANY(%s)',(scope,sources))
+        represented={row[0] for row in cur.fetchall()}
+        if set(sources)-represented:
+            if headers is None:raise Unavailable('complete owned history metadata required for unlinked source erasure')
+            headers.check()
+            if headers.scope!=scope or headers.complete is not True:raise Unavailable('complete original history scope unavailable')
+            # No text matching or collection grant: the explicit owner deletion
+            # conservatively excludes pre-delete history when an individual
+            # source has no exact origin. Other canonical items remain intact.
+            original={encode(ref) for ref in graph['message_refs']}
+            references={encode(ref.to_dict()):ref.to_dict() for ref in headers.references}
+            if not original<=set(references):raise Unavailable('original source missing from complete metadata')
+            graph['message_refs']=[references[key] for key in sorted(references)]
     cur.execute('SELECT approved_input FROM cj_memory_source WHERE scope=%s AND source_id=ANY(%s)',(scope,sources))
     operation_refs={};source_commands={}
     for (raw,) in cur.fetchall():
@@ -75,6 +90,7 @@ def prepare(memory,item_id,*,expected_version,expected_scope_epoch,max_sources,m
     matches.update((ref['job_id'],ref['attempt_id']) for ref in graph['origin_producers'])
     if len(matches)>max_jobs:raise Unavailable('overlapping original jobs exceed bound')
     jobs=Transaction(memory);job_refs=[]
+    decisions=set(graph['decision_source_sha256s'])
     for jid,attempt in sorted(matches):
         ref_digest=sha256(encode(dict(job_id=jid,attempt_id=attempt))).hexdigest()
         cur.execute("SELECT original_input_sha256 FROM cj_memory_erasure_fence WHERE scope_digest=%s AND kind='job' AND reference_sha256=%s",
@@ -88,6 +104,11 @@ def prepare(memory,item_id,*,expected_version,expected_scope_epoch,max_sources,m
             job_refs.append(dict(job_id=jid,attempt_id=attempt,original_input_sha256=erased[0],state='erased'))
             continue
         row=jobs.job(jid,attempt)
+        decision=json.loads(row[2]).get('decision_source_sha256')
+        if decision is not None:
+            if type(decision) is not str or len(decision)!=64 or any(c not in '0123456789abcdef' for c in decision):
+                raise Unavailable('original copied decision digest unavailable')
+            decisions.add(decision)
         if erased is not None and erased[0]!=row[0].input_sha256:
             raise Unavailable('current job differs from permanently erased original input')
         job_refs.append(dict(job_id=jid,attempt_id=attempt,original_input_sha256=row[0].input_sha256,
@@ -95,7 +116,7 @@ def prepare(memory,item_id,*,expected_version,expected_scope_epoch,max_sources,m
     result=dict(version='MEMORY-ERASURE-ASSOCIATION-DRAFT@1',item_id=item_id,item_version=expected_version,
         scope_epoch=expected_scope_epoch,source_refs=graph['source_refs'],
         operation_refs=[dict(operation_id=oid,input_sha256=digest) for oid,digest in sorted(operation_refs.items())],
-        message_refs=refs,job_refs=job_refs,decision_source_sha256s=graph['decision_source_sha256s'])
+        message_refs=refs,job_refs=job_refs,decision_source_sha256s=sorted(decisions))
     raw=encode(result)
     if len(raw)>max_bytes:raise Unavailable('erasure association exceeds explicit byte bound')
     return raw

@@ -66,7 +66,16 @@ def parse_original(raw,request,memory_scope):
     if not value['source_refs']:raise Denied('complete original source inventory required')
     _rows(value['operation_refs'],('operation_id','input_sha256'),('operation_id',),('input_sha256',))
     _rows(value['message_refs'],('conversation_id','generation','sequence','message_id','input_sha256'),
-          ('conversation_id','generation','message_id'),('input_sha256',),('sequence',),limit=10000)
+          (),('input_sha256',),('sequence',),limit=10000)
+    # SEND1 accepted identifiers beyond the command/item 4096-char limit.
+    # These original metadata values are bounded by the entire association.
+    for ref in value['message_refs']:
+        for key in ('conversation_id','generation','message_id'):
+            identifier=ref[key]
+            if type(identifier) is not str or not identifier.strip() or '\0' in identifier:
+                raise Denied('invalid original message identifier')
+            try:identifier.encode('utf-8')
+            except UnicodeError as error:raise Denied('invalid original message identifier') from error
     _rows(value['job_refs'],('job_id','attempt_id','original_input_sha256','state'),
           ('job_id','attempt_id','state'),('original_input_sha256',))
     if any(r['state'] not in ('pending','inflight','unknown','completed','failed','cancelled','erased') for r in value['job_refs']):

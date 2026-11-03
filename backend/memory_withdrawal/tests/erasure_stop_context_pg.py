@@ -25,6 +25,7 @@ from cj_cleanup.store import receipt_for
 from cj_run.background import BackgroundJobsV2
 from cj_run.background_store import JobRequest
 from cj_run.step_usage import ledger_scope_for
+from memory_test_inventory import write_inventory
 
 ROOT=Path(__file__).resolve().parents[3]
 sys.path[:0]=[str(ROOT/'scripts'),str(ROOT/'backend/memory_jobs/tests')]
@@ -112,10 +113,7 @@ def exercise(root,path,*,backend_hooks=None,hold_payloads=None,expect_complete=F
         assert copies>0
         assert any(a['state']=='unknown' and a['receipt'] is None for a in retained['ledger']['attempts'].values())
     registry=root/'selected-registry.json'
-    stores=[dict(id='memory-derived',cleanup_protocol='CLEANUP@1.1'),
-        dict(id='checkpoints',objects=[dict(id='run',cleanup_protocol='CLEANUP@1.1')]),
-        dict(id='business',objects=[dict(id=t.split('/')[1],cleanup_protocol='CLEANUP@1.1') for t in ORDER if t.startswith('business/')])]
-    registry.write_bytes(encode(dict(version='controlled-online-memory-component',stores=stores)))
+    write_inventory(registry,'controlled-online-memory-component')
     cleanup=Configuration({'local':b'local-context-component-synthetic-only'},'local',3600,ORDER,registry)
     observations=[]
     class ObserveUnknown:
@@ -188,5 +186,12 @@ def exercise(root,path,*,backend_hooks=None,hold_payloads=None,expect_complete=F
 
 
 if __name__=='__main__':
+    import argparse
+    parser=argparse.ArgumentParser();parser.add_argument('--complete',action='store_true')
+    options=parser.parse_args()
     with tempfile.TemporaryDirectory(prefix='erasure-stop-context-') as folder:
-        exercise(Path(folder),Path(os.environ['CJ_E2E_CONNINFO']))
+        if options.complete:
+            from cj_cleanup.memory_payloads import hooks,hold_payloads
+            exercise(Path(folder),Path(os.environ['CJ_E2E_CONNINFO']),backend_hooks=hooks,
+                     hold_payloads=hold_payloads,expect_complete=True)
+        else:exercise(Path(folder),Path(os.environ['CJ_E2E_CONNINFO']))

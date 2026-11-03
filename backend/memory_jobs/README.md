@@ -186,6 +186,11 @@ sources without pretending they were extracted or changing their UNKNOWN/fee
 records. A first not-yet-enqueued advanced/rejected decision, erased-copy range
 or an existing pending command on an obsolete Memory basis cannot starve an
 independent eligible source. Unknown reads and unproven mismatches still fail.
+After physical B source-cache erasure, the old strict Trip reader still refuses
+the missing original bytes. Only B's protected `history_reference_v5` original
+erasure proof classifies that source as unavailable for this planner. Retained,
+missing-proof and reader failures remain errors; no source bytes are rebuilt,
+cursor advanced, UNKNOWN changed or original attempt resent.
 
 The existing registered `memory_decision` PG group retains its original case
 and additionally runs automatic mixed BG2/BG3/true-end intake on a fresh private

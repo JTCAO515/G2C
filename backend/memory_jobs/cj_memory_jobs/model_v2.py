@@ -49,6 +49,8 @@ def erased_references(tx,messages):
 
 
 def visible(tx,messages):
+    from cj_memory.erasure_fence import require_complete_erasure_actions
+    require_complete_erasure_actions(tx)
     # These immutable origin rows are the producer's same-transaction source
     # association ledger, not an independently authoritative Memory value/index.
     # An incomplete provided history graph cannot silently become permission.

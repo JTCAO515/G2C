@@ -3,7 +3,7 @@ from dataclasses import asdict,dataclass,replace
 from hashlib import sha256
 import base64,json
 
-from cj_message.domain import Command
+from cj_message.domain import Command,Unavailable as MessageUnavailable
 from cj_message.source import SourceQuery
 from cj_trip.decision_source import DecisionQuery
 from .codec import Unavailable
@@ -90,7 +90,15 @@ class _DecisionPlanning:
             for message in metadata:
                 selected=None
                 if message['decision']:
-                    original=context.query_trip_message(message['receipt']['message_id'])
+                    message_id=message['receipt']['message_id']
+                    try:original=context.query_trip_message(message_id)
+                    except MessageUnavailable:
+                        # Only B's authenticated original erasure proof makes
+                        # this a permanently unavailable source. Retained or
+                        # unproven failures keep their original semantics.
+                        _,state=context.history_reference_v5(message_id)
+                        if state=='erased':raise _SourceUnavailable(query.conversation_id)
+                        raise
                     if original is None or asdict(original.stored.receipt)!=message['receipt']:
                         raise Unavailable('original discussion receipt differs')
                     reference=original.reference

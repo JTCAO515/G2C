@@ -2,6 +2,8 @@
 from hashlib import sha256
 import json
 from cj_memory.domain import Conflict,Unavailable
+from cj_memory.erasure_fence import record_coverage
+from cj_api.local_account_admission_v2 import subject_digest as principal_digest
 from cj_memory_jobs.postgres import encode
 from .association import prepare
 from .association_codec import VERSION
@@ -14,7 +16,7 @@ def reference_digest(kind,value):
     return sha256(raw).hexdigest()
 
 
-def freeze(memory,command,subject_digest,*,max_sources,max_jobs,max_bytes):
+def freeze(memory,command,subject_digest,*,max_sources,max_jobs,max_bytes,headers=None):
     """Caller owns canonical current principal + Memory transaction and guard.
 
     Stops and freezes exactly one item. No DTO authorizes account deletion,
@@ -31,8 +33,13 @@ def freeze(memory,command,subject_digest,*,max_sources,max_jobs,max_bytes):
         return raw
     cur.execute('SELECT 1 FROM cj_memory_erasure_manifest WHERE scope=%s AND item_id=%s',(scope,command.item_id))
     if cur.fetchone() is not None:raise Conflict('item already belongs to an original erasure')
+    if headers is not None:
+        headers.check()
+        if headers.scope!=scope or principal_digest(headers.principal)!=subject_digest:
+            raise Unavailable('original history metadata principal differs')
     original=json.loads(prepare(memory,command.item_id,expected_version=command.expected_version,
-        expected_scope_epoch=epoch,max_sources=max_sources,max_jobs=max_jobs,max_bytes=max_bytes))
+        expected_scope_epoch=epoch,max_sources=max_sources,max_jobs=max_jobs,max_bytes=max_bytes,
+        headers=headers,require_coverage=True))
     if command.expected_version==2**63-1 or epoch==2**63-1:raise Unavailable('erasure version advancement unavailable')
     sources=[ref['source_id'] for ref in original['source_refs']]
     cur.execute('UPDATE cj_memory_source SET active=false WHERE scope=%s AND source_id=ANY(%s)',(scope,sources))
@@ -76,4 +83,5 @@ def freeze(memory,command,subject_digest,*,max_sources,max_jobs,max_bytes):
         (scope_digest,kind,reference_sha256,original_input_sha256,operation_id,item_version,scope_epoch)
         VALUES(%s,'action',%s,%s,%s,%s,%s)''',(scope_digest,reference_digest('action',command.action_id),
         sha256(command.raw).hexdigest(),operation,stopped[0],stopped_epoch))
+    record_coverage(memory,operation,selection,raw)
     return raw
