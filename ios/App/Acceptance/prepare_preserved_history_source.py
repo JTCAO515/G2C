@@ -135,5 +135,5 @@ def prepare_preserved_history(connection, auth, context, subjects, tokens, direc
         original_sha256=hashlib.sha256(original).hexdigest(),trip_id=trip['trip_id'],trip_version=retained_trip['version'],
         source_state='erased',provider_calls=model.calls+formal_model.calls,operation_id=erased['operation_id'])
     if include_apps:
-        return human, proof, dict(erasure=erasure, typed=typed_app, structured=structured, policy=profile)
+        return human, proof, dict(erasure=erasure, typed=typed_app, structured=structured, policy=profile, cleanup_options=options)
     return human, proof

@@ -92,7 +92,7 @@ import Foundation
     }
     func verify(_ language: String, reopenUnknown: Bool = false) async throws {
         continueAfterFailure = false
-        let fixture = try JSONDecoder().decode(Fixture.self, from: await call("/fixture", query: ["case": reopenUnknown ? "lost-ack" : "complete"]))
+        let fixture = try JSONDecoder().decode(Fixture.self, from: await call("/fixture", query: ["case": (reopenUnknown ? "lost-ack-" : "complete-") + language]))
         _ = try await call("/size", query: ["value": "standard"])
         app = XCUIApplication(bundleIdentifier: fixture.bundle)
         app.launchArguments = ["-cj.ui.language.v1", language]
