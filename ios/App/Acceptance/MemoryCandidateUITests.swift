@@ -63,7 +63,8 @@ import Foundation
         XCTFail("The exact candidate control is not visible")
     }
     func tap(_ id: String) {
-        let query = app.buttons.matching(NSPredicate(format: "identifier == %@", id)), button = query.element
+        let label = ["Memory", "记忆", "Assistant", "助手", "Preference", "偏好"].contains(id)
+        let query = app.buttons.matching(NSPredicate(format: label ? "label == %@" : "identifier == %@", id)), button = query.element
         reveal(button, centered: id.hasPrefix("memoryCandidate.") || id.hasPrefix("account.cleanup."))
         XCTAssertEqual(query.count, 1, id)
         let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: button)
