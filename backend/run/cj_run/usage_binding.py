@@ -58,3 +58,23 @@ class UsageBinding:
     def check_run(self, run_id):
         if self._command.run_id != run_id:
             raise ValueError('command run differs from original run')
+
+
+@dataclass(frozen=True,repr=False)
+class ErasedUsageBinding:
+    """Proven original header only; never accepted as a fresh UsageBinding.
+
+    Constructed by the persisted-proof reader after original payload erasure.
+    Legacy bytes-required wire reads still withhold; accounting IDs/hash remain.
+    """
+    command_bytes:bytes
+    _command:Command
+    input_bytes:None=None
+
+    @property
+    def command(self):return self._command
+
+    def values(self):return asdict(self._command)
+
+    def check_run(self,run_id):
+        if self._command.run_id!=run_id:raise ValueError('original erased command run differs')

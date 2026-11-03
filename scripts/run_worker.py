@@ -178,8 +178,22 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
         else:
             from cj_api.local_current_plan import publisher
             drafts=publisher(database,checker,message_context,token,scope)
+    history=None
+    if editing:
+        from cj_memory.edit_runtime import EditRuntimeConfiguration
+        from cj_memory.scoped_capture import ScopedMemoryConfiguration
+        # Only the provided canonical C factories opt into the new history ABI.
+        # Existing test-only/custom EDIT-MEMORY@1 adapters retain their original
+        # capture contract; they are not an accepted #26 history implementation.
+        history_supported=type(edit_config.memory) in (EditRuntimeConfiguration,ScopedMemoryConfiguration)
+    else:history_supported=True
+    if memory is not None and history_supported:
+        from cj_api.local_memory_history import HistoryMemory,OriginalHistory,OriginalDecisions
+        decisions=OriginalDecisions(database,Path(auth_dir),memory_credential,memory_admit,message_context)
+        history=HistoryMemory(memory,OriginalHistory(messages,decisions))
     return RunWorker(scope=scope, messages=messages, runs=runs, provider=model, drafts=drafts,
         memory=memory,edit_publisher=None if edit_config is None else edit_config.publisher,edit_results=database.edit_results,
+        memory_history=history is not None,history_adapter=history,
         message_context=message_context,
         tools=tools_configuration,place_sources=place_sources,
         execution_guard=lambda binding:database.require_execution(binding.scope,binding),
