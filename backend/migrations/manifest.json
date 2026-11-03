@@ -351,9 +351,9 @@
       "version": 44,
       "name": "memory_item_erasure",
       "file": "backend/migrations/0044_memory_item_erasure.sql",
-      "sha256": "18ff0bf14913ab8e3092ecb8ee72bf8fbcb10a006f6a48dba0acef84ac043694",
+      "sha256": "f132f06a0ac4bd6c5fe732f076e6d21226ccea7c04d714a6195753f7e9ec692f",
       "down": "backend/migrations/down/0044_memory_item_erasure.down.sql",
-      "down_sha256": "2133e8156a4c662bc29d5be09b1ed8e068360ae7e73e408fec5bc2f5f312dd39"
+      "down_sha256": "d83fb12c7acb70da3fa4391fce456fbf9d88befb210d96c2943f5a522e74769f"
     }
   ]
 }

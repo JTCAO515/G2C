@@ -44,6 +44,7 @@ def exercise(root,path):
         source=dict(conversation_id='source',generation=head['generation'],epoch=0,after=0,through=1,source_version=1,withdrawal_epoch=1,mode='incremental')
         post('/internal/v1/memory-history/jobs',dict(version='MEMORY-JOBS@1',job_id='job',attempt_id='attempt',source=source))
         c.transition(token,'job','attempt','inflight')
+        original_prepared=c.prepare_model_input_v2(token,'job','attempt',max_payload_bytes=262144)
         output=json.dumps(dict(version='MEMORY-EXTRACT@1',entries=[dict(subject='self',slot='pace',kind='inference',text=text,
             extent='long_term',occurred_at='date unknown',evidence=[dict(message_id='origin',quote=text)])])).encode()
         c.record_output(token,'job','attempt',output);c.publish_output(token,'job','attempt')
@@ -94,7 +95,7 @@ def exercise(root,path):
         with psycopg.connect(**admin) as conn:conn.execute("DELETE FROM cj_memory_source WHERE scope=%s AND source_id='orphan-source'",(scope,))
     assert graph()==raw
     print('PASS actual signed history candidate→confirmation→typed edit graph includes all three canonical sources and original message/producer refs; no values leaked, foreign/bounds/unlinked source denied, read-only stable; immutable cleanup descriptor/physical erasure UNRUN')
-    return dict(auth=auth,tokens=tokens,headers=headers,scope=scope,item_id=iid,database=host.database)
+    return dict(auth=auth,tokens=tokens,headers=headers,scope=scope,item_id=iid,database=host.database,prepared=original_prepared)
 
 
 if __name__=='__main__':

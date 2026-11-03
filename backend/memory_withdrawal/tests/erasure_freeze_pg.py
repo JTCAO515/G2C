@@ -162,16 +162,34 @@ def exercise(root,path,*,physical=False):
         return
     if physical:
         from cj_memory_withdrawal.item_cleanup import DerivedItemHook,ManagementItemHook,TripDerivedItemHook,AuthorityItemHook
+        from cj_memory_withdrawal.erasure_service import ErasureService
+        from cj_cleanup.postgres import CommitUnknown
         from cj_agent.draft import trip_scope_for
         hooks={c.target:c(store,fixture['scope']) for c in (DerivedItemHook,ManagementItemHook,TripDerivedItemHook,AuthorityItemHook)}
+        calls=[]
+        class LostAuthorityReply(AuthorityItemHook):
+            def execute(self,request):
+                calls.append(request.digest)
+                super().execute(request)  # Real physical erasure + original result COMMIT.
+                raise CommitUnknown('synthetic loss of committed original hook reply')
+        hooks['business/memory-authoritative']=LostAuthorityReply(store,fixture['scope'])
         coordinator=Coordinator(store,lambda:registry,hooks)
         plan={t:dict(domain_scope=trip_scope_for(fixture['scope']) if t=='business/trip-authoritative' else fixture['scope'],
                      selection=selection.to_dict()) for t in targets}
         coordinator.create(operation,digest(original),'memory',plan)
         for target in targets:
             request=coordinator.request(operation,target,plan[target]['domain_scope'],selection)
-            coordinator.advance(request)
+            if target=='business/memory-authoritative':
+                try:coordinator.advance(request)
+                except CommitUnknown:pass
+                else:raise AssertionError('committed authority reply loss was hidden')
+                try:reader.read_original(request)
+                except Denied:pass
+                else:raise AssertionError('erased manifest reconstructed for recovery')
+                assert ErasureService._advance_targets(coordinator,operation,plan,selection,None,(target,))
+            else:coordinator.advance(request)
         assert coordinator.query(operation)['status']=='complete'
+        assert len(calls)==1
         with psycopg.connect(**json.loads(path.read_text())) as conn:
             assert conn.execute('SELECT count(*) FROM cj_memory_item WHERE scope=%s AND item_id=%s',(fixture['scope'],fixture['item_id'])).fetchone()==(0,)
             assert conn.execute('SELECT count(*) FROM cj_memory_erasure_manifest WHERE scope=%s',(fixture['scope'],)).fetchone()==(0,)

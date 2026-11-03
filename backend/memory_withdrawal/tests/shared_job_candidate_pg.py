@@ -12,6 +12,7 @@ from cj_memory_jobs.model_v2 import prepared
 from cj_message.source import SourceQuery
 from cj_memory_jobs.codec import Conflict
 from cj_memory.manual import ManualPolicy
+from cj_memory.domain import Unavailable
 from cj_memory_withdrawal.erasure_command import ErasureCommand,VERSION
 from cj_memory_withdrawal.erasure_store import freeze
 from cj_api.local_account_admission_v2 import subject_digest
@@ -91,6 +92,26 @@ def exercise(root,path):
     with psycopg.connect(**json.loads(path.read_text())) as conn:
         assert conn.execute('SELECT count(*) FROM cj_memory_history_job WHERE scope=%s',(scope[0],)).fetchone()==(0,)
         assert conn.execute('SELECT item_id,status FROM cj_memory_item WHERE scope=%s',(scope[0],)).fetchall()==[(other['candidate_id'],'active')]
+    with TestClient(app) as client:
+        fresh=ok(client.put('/v1/conversations',params={'conversation_id':'independent'},headers=headers))
+        ok(client.post('/v1/messages',content=encode(dict(version='MESSAGE-send.1',conversation_id='independent',message_id='independent-message',
+            text='A separate future source',trip_id=None,creation_intent='none',expected_generation=fresh['generation'],expected_sequence=0)),headers=headers))
+        service.apply_consent(token,encode(dict(version='MEMORY-HISTORY@1',action_id='enable-independent',operation='enable',conversation_id='independent',
+            expected_generation=fresh['generation'],expected_epoch=0,expected_source_version=0)))
+        fresh_source=dict(conversation_id='independent',generation=fresh['generation'],epoch=0,after=0,through=1,source_version=1,withdrawal_epoch=1,mode='incremental')
+        for jid,attempt in (('shared-job','shared-attempt'),('shared-job','new-attempt'),('new-job','shared-attempt')):
+            try:service.enqueue(token,encode(dict(version='MEMORY-JOBS@1',job_id=jid,attempt_id=attempt,source=fresh_source)))
+            except Conflict:pass
+            else:raise AssertionError('erased job/attempt identity reused for independent new source')
+        fresh_raw=encode(dict(version='MEMORY-JOBS@1',job_id='independent-job',attempt_id='independent-attempt',source=fresh_source))
+        service.enqueue(token,fresh_raw)
+    bad_raw=encode(dict(version='MEMORY-JOBS@1',job_id='shared-job',attempt_id='shared-attempt',source=fresh_source))
+    with app.state.memory_history.database.connect(scope[0]) as conn:
+        try:conn.execute('''INSERT INTO cj_memory_history_job(scope,job_id,attempt_id,source_key,stream_key,original_input,batch,memory_epoch,state,processed)
+            SELECT scope,'shared-job','shared-attempt',source_key,stream_key,%s,batch,memory_epoch,'pending',processed
+            FROM cj_memory_history_job WHERE job_id='independent-job' ''',(bad_raw,))
+        except psycopg.errors.InsufficientPrivilege:pass
+        else:raise AssertionError('runtime SQL resurrected erased job identity')
     second_command=encode(dict(version=VERSION,action_id='erase-retained-later',item_id=other['candidate_id'],expected_version=2,
                                derived_range='owned_trip_derived_scope'))
     def stop_second(context):
@@ -99,6 +120,17 @@ def exercise(root,path):
             result=freeze(tx,ErasureCommand.parse(second_command),subject_digest(principal),
                           max_sources=1000,max_jobs=1000,max_bytes=1_000_000)
             guard('second_shared_payload_erasure');return result
+    # Controlled restore/corruption probe: valid new bytes at an old identifier
+    # must be refused, never silently substituted into an immutable association.
+    with psycopg.connect(**json.loads(path.read_text())) as conn:
+        conn.execute("UPDATE cj_memory_history_job SET job_id='shared-job',attempt_id='shared-attempt',original_input=%s WHERE scope=%s AND job_id='independent-job'",(bad_raw,scope[0]))
+    try:
+        try:service.boundary.with_history_context(token,stop_second)
+        except Unavailable:pass
+        else:raise AssertionError('association substituted restored unrelated original input hash')
+    finally:
+        with psycopg.connect(**json.loads(path.read_text())) as conn:
+            conn.execute("UPDATE cj_memory_history_job SET job_id='independent-job',attempt_id='independent-attempt',original_input=%s WHERE scope=%s AND job_id='shared-job'",(fresh_raw,scope[0]))
     second=json.loads(service.boundary.with_history_context(token,stop_second))
     assert second['job_refs']==[dict(job_id='shared-job',attempt_id='shared-attempt',
                                      original_input_sha256=association['job_refs'][0]['original_input_sha256'],state='erased')]
@@ -110,6 +142,8 @@ def exercise(root,path):
     with psycopg.connect(**json.loads(path.read_text())) as conn:
         assert conn.execute('SELECT count(*) FROM cj_memory_item WHERE scope=%s',(scope[0],)).fetchone()==(0,)
         assert conn.execute('SELECT count(*) FROM cj_memory_history_origin WHERE scope=%s',(scope[0],)).fetchone()==(0,)
+        assert conn.execute('SELECT job_id,attempt_id,original_input FROM cj_memory_history_job WHERE scope=%s',(scope[0],)).fetchall()==[
+            ('independent-job','independent-attempt',fresh_raw)]
     print('PASS actual shared-job one-item deletion preserves unrelated candidate/discovery/Action1, actual retained-message Data2 contains no erased text even with other origin retained; re-enabled source/index rebuild cannot recopy old bytes or recreate canonical memory')
 
 

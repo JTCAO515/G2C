@@ -1,5 +1,10 @@
 # M3 single-memory erasure preparation (#26 / C hooks #27)
 
+Historical preparation snapshot. The implemented versions and current boundaries
+are in contracts/memory-withdrawal/ERASURE-V1.md, EVIDENCE-V1.md,
+DECISION-FENCE-V1.md and COMPOSITION-V2.md. The pending statements below record the
+earlier design state; they are not current activation or acceptance claims.
+
 Memory-item implementation is pending. This document provides no approved item
 cleanup intent, immutable descriptor or registered item store. Account-only hooks
 are now main via PR461, described in ACCOUNT-CLEANUP-V1.md with their same-PR

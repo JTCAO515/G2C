@@ -15,6 +15,7 @@ DROP POLICY item_cleanup_delete ON cj_memory_history_job;
 DROP TRIGGER cj_memory_erasure_identifier ON cj_memory_item;
 DROP TRIGGER cj_memory_erasure_identifier ON cj_memory_source;
 DROP TRIGGER cj_memory_erasure_identifier ON cj_memory_operation;
+DROP TRIGGER cj_memory_erasure_identifier ON cj_memory_history_job;
 DROP FUNCTION cj_memory_erasure_identifier();
 DROP TABLE cj_memory_erasure_manifest;
 DROP TABLE cj_memory_erasure_fence;

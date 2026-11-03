@@ -1,8 +1,9 @@
 """MEMORY-ERASURE-ASSOCIATION@1 persisted boundary; no cleanup authority."""
 from hashlib import sha256
+import json
 
 from cj_cleanup.core import Denied
-from cj_memory.domain import InvalidInput,strict_object
+from cj_memory.domain import InvalidInput,unique_fields
 
 VERSION='MEMORY-ERASURE-ASSOCIATION@1'
 MAX_BYTES=1_000_000
@@ -44,7 +45,7 @@ def parse_original(raw,request,memory_scope):
     obtain bytes from AssociationReader.read_original with its exact request.
     """
     if type(raw) is not bytes or not 0<len(raw)<=MAX_BYTES:raise Denied('bounded original association required')
-    try:value=strict_object(raw)
+    try:value=json.loads(raw.decode('utf-8'),object_pairs_hook=unique_fields)
     except (InvalidInput,ValueError,RecursionError) as error:raise Denied('invalid original association JSON') from error
     fields={'version','operation_id','subject_digest','memory_scope_digest','selection','original_selection',
             'source_refs','operation_refs','message_refs','job_refs','decision_source_sha256s','derived_range'}

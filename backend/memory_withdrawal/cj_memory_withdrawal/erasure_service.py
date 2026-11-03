@@ -76,18 +76,7 @@ class ErasureService:
                 store.subject_digest if target=='business/cleanup-metadata' else repo.scope,selection=selection.to_dict()) for target in ORDER}
             if association is not None:
                 coordinator.create(operation,digest(original),'memory',plan)
-            for target in ORDER:
-                progress=coordinator.query(operation)
-                if progress['status'] in ('blocked','failed'):break
-                state=next(s['state'] for s in progress['steps'] if s['target']==target)
-                if state=='confirmed':continue
-                if association is None and target!='business/cleanup-metadata':
-                    raise Unavailable('original association gone before all domains confirmed')
-                request=coordinator.request(operation,target,plan[target]['domain_scope'],selection)
-                if state=='pending':coordinator.advance(request)
-                else:coordinator.reconcile(request)
-                updated=coordinator.query(operation)
-                if next(s['state'] for s in updated['steps'] if s['target']==target)!='confirmed':break
+            self._clean(store,repo.scope,coordinator,operation,plan,selection,association,guard)
             progress=coordinator.query(operation);guard('item_erasure_final_projection')
             return encode(dict(action_id=command.action_id,operation_id=operation,item_id=command.item_id,
                 item_version=version,scope_epoch=epoch,stop_use='stopped',online_status=progress['status'],steps=progress['steps'],
@@ -99,6 +88,26 @@ class ErasureService:
         except Exception as error:
             if possible:raise OperationWithheld(command.action_id) from error
             raise
+
+    @staticmethod
+    def _advance_targets(coordinator,operation,plan,selection,association,targets):
+        for target in targets:
+            progress=coordinator.query(operation)
+            if progress['status'] in ('blocked','failed'):return False
+            state=next(s['state'] for s in progress['steps'] if s['target']==target)
+            if state=='confirmed':continue
+            request=coordinator.request(operation,target,plan[target]['domain_scope'],selection)
+            if state=='pending':
+                if association is None and target!='business/cleanup-metadata':
+                    raise Unavailable('original association gone before all domains confirmed')
+                coordinator.advance(request)
+            else:coordinator.reconcile(request)
+            updated=coordinator.query(operation)
+            if next(s['state'] for s in updated['steps'] if s['target']==target)!='confirmed':return False
+        return True
+
+    def _clean(self,store,scope,coordinator,operation,plan,selection,association,guard):
+        self._advance_targets(coordinator,operation,plan,selection,association,ORDER)
 
     def query(self,token,original,*,request_id=None):
         """Exact original command required; safe read never dispatches/recreates."""

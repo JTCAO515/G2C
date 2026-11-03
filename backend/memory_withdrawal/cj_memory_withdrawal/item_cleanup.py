@@ -48,8 +48,8 @@ class DerivedItemHook(_ItemHook):
         cursor.execute('DELETE FROM cj_memory_history_candidate_action WHERE scope=%s AND candidate_id=%s',(scope,iid))
         cursor.execute('DELETE FROM cj_memory_history_origin WHERE scope=%s AND (item_id=%s OR source_id=ANY(%s))',(scope,iid,sources))
         for ref in association['job_refs']:
-            cursor.execute('DELETE FROM cj_memory_history_job WHERE scope=%s AND job_id=%s AND attempt_id=%s',
-                           (scope,ref['job_id'],ref['attempt_id']))
+            cursor.execute("DELETE FROM cj_memory_history_job WHERE scope=%s AND job_id=%s AND attempt_id=%s AND encode(sha256(original_input),'hex')=%s",
+                           (scope,ref['job_id'],ref['attempt_id'],ref['original_input_sha256']))
             cursor.execute('SELECT 1 FROM cj_memory_history_job WHERE scope=%s AND job_id=%s',(scope,ref['job_id']))
             if cursor.fetchone() is not None:raise Denied('original copied job retained')
         cursor.execute('SELECT 1 FROM cj_memory_history_origin WHERE scope=%s AND (item_id=%s OR source_id=ANY(%s)) LIMIT 1',(scope,iid,sources))

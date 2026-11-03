@@ -7,6 +7,8 @@ CREATE TABLE cj_memory_erasure_manifest (
  input_sha256 text NOT NULL CHECK(input_sha256=encode(sha256(original_input),'hex')),
  association bytea NOT NULL CHECK(octet_length(association) BETWEEN 1 AND 1000000),
  association_sha256 text NOT NULL CHECK(association_sha256=encode(sha256(association),'hex')),
+ evidence bytea NOT NULL CHECK(octet_length(evidence) BETWEEN 1 AND 8000000),
+ evidence_sha256 text NOT NULL CHECK(evidence_sha256=encode(sha256(evidence),'hex')),
  item_id text NOT NULL,item_version bigint NOT NULL CHECK(item_version>0),
  scope_epoch bigint NOT NULL CHECK(scope_epoch>0),
  PRIMARY KEY(scope,operation_id),UNIQUE(scope,action_id),UNIQUE(scope,item_id)
@@ -20,7 +22,7 @@ GRANT SELECT,INSERT ON cj_memory_erasure_manifest TO cj_m1_runtime;
 
 CREATE TABLE cj_memory_erasure_fence (
  scope_digest text NOT NULL CHECK(scope_digest ~ '^[0-9a-f]{64}$'),
- kind text NOT NULL CHECK(kind IN ('item','source','operation','message','decision','job','action')),
+ kind text NOT NULL CHECK(kind IN ('item','source','operation','message','decision','job','job_id','attempt_id','action')),
  reference_sha256 text NOT NULL CHECK(reference_sha256 ~ '^[0-9a-f]{64}$'),
  original_input_sha256 text CHECK(original_input_sha256 IS NULL OR original_input_sha256 ~ '^[0-9a-f]{64}$'),
  -- Only irreversible original-operation metadata; no IDs, source text or value.
@@ -73,11 +75,15 @@ BEGIN
    WHEN 'cj_memory_item' THEN field_name:='item_id';fence_kind:='item';
    WHEN 'cj_memory_source' THEN field_name:='source_id';fence_kind:='source';
    WHEN 'cj_memory_operation' THEN field_name:='operation_id';fence_kind:='operation';
+   WHEN 'cj_memory_history_job' THEN field_name:='job_id';fence_kind:='job_id';
   END CASE;
   identifier:=to_jsonb(NEW)->>field_name;
   IF EXISTS(SELECT 1 FROM cj_memory_erasure_fence f
    WHERE f.scope_digest=encode(sha256(convert_to(NEW.scope,'UTF8')),'hex') AND f.kind=fence_kind
-    AND f.reference_sha256=encode(sha256(convert_to(identifier,'UTF8')),'hex')) THEN
+    AND f.reference_sha256=encode(sha256(convert_to(identifier,'UTF8')),'hex'))
+    OR (TG_TABLE_NAME='cj_memory_history_job' AND EXISTS(
+      SELECT 1 FROM cj_memory_erasure_fence f WHERE f.scope_digest=encode(sha256(convert_to(NEW.scope,'UTF8')),'hex')
+       AND f.kind='attempt_id' AND f.reference_sha256=encode(sha256(convert_to(to_jsonb(NEW)->>'attempt_id','UTF8')),'hex'))) THEN
    RAISE EXCEPTION USING ERRCODE='42501',MESSAGE='original Memory identifier erased';
   END IF;
  END IF;
@@ -90,6 +96,8 @@ CREATE TRIGGER cj_memory_erasure_identifier BEFORE INSERT OR UPDATE ON cj_memory
 CREATE TRIGGER cj_memory_erasure_identifier BEFORE INSERT OR UPDATE ON cj_memory_source
  FOR EACH ROW EXECUTE FUNCTION cj_memory_erasure_identifier();
 CREATE TRIGGER cj_memory_erasure_identifier BEFORE INSERT ON cj_memory_operation
+ FOR EACH ROW EXECUTE FUNCTION cj_memory_erasure_identifier();
+CREATE TRIGGER cj_memory_erasure_identifier BEFORE INSERT ON cj_memory_history_job
  FOR EACH ROW EXECUTE FUNCTION cj_memory_erasure_identifier();
 
 DO $item_cleanup$
