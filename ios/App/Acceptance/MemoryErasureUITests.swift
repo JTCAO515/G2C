@@ -73,7 +73,11 @@ import Foundation
         tap("memory.add"); tap("memory2.manual.option"); tap(option)
         enter("memory2.manual.text", value: value)
         enter("memory2.manual.time", value: occurredAt)
-        tap(language == "en" ? "Done" : "完成")
+        let timeField = app.textFields.matching(identifier: "memory2.manual.time")
+        XCTAssertEqual(timeField.count, 1)
+        timeField.element.typeText("\n") // The actual single-line field's submit action dismisses focus.
+        let hidden = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.keyboards.element)
+        XCTAssertEqual(XCTWaiter.wait(for: [hidden], timeout: 10), .completed)
         tap("memory2.manual.review"); tap("memory2.manual.confirm")
         text("memory2.save.status", contains: language == "en" ? "Saved." : "已保存")
         let saved = try JSONDecoder().decode(Saved.self, from: await call("/observed-save"))
