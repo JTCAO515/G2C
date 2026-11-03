@@ -93,6 +93,12 @@ class PublicationTransaction(Transaction):
         row,raw=self.output(job_id,attempt_id)
         if raw is None:raise Unavailable('original extraction output unavailable')
         entries=(parse_output if decoder is None else decoder)(raw,messages,extraction_policy)
+        from .model_v2 import erased_references,origin_reference
+        erased=erased_references(self,messages)
+        by_id={m.receipt.message_id:m for m in messages}
+        if row[0].state!='completed' and any(encode(origin_reference(by_id[e.message_id])) in erased
+                for parsed in entries for e in parsed.entry.evidence):
+            raise Conflict('erased original message cannot produce new canonical memory')
         if row[0].state!='completed' and (row[0].state not in ('inflight','unknown') or row[7]!=self.epoch):
             raise Conflict('original extraction attempt or Memory basis changed')
         receipts=[]

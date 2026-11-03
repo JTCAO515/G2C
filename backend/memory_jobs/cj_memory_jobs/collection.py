@@ -131,6 +131,32 @@ class CollectionService(Service):
             return raw
         return self._invoke(token,query,request_id,'MEMORY-CANDIDATE-JOBS@1')
 
+    def current_conversation_candidates(self,token,conversation_id,after_candidate_id,*,request_id=None):
+        """Current canonical candidates survive erasure of a shared job payload."""
+        from .codec import pg_identity
+        import json
+        pg_identity(conversation_id,256)
+        if after_candidate_id:pg_identity(after_candidate_id,16384)
+        def query(context):
+            repository,_,guard=self._binding(context,token)
+            if context.send_status(conversation_id).head is None:raise Unavailable('candidate conversation unavailable')
+            with repository.transaction() as memory:
+                tx=PublicationTransaction(memory);tx.require_live()
+                tx.cur.execute('''SELECT i.item_id,o.job_id,o.attempt_id FROM cj_memory_item i
+                    JOIN cj_memory_history_origin o ON (o.scope,o.source_id,o.item_id)=(i.scope,i.source_id,i.item_id)
+                    WHERE i.scope=%s AND i.status='candidate' AND i.item_id>%s AND o.origin_refs @> %s::jsonb
+                    ORDER BY i.item_id LIMIT 51''',(tx.scope,after_candidate_id,json.dumps([dict(conversation_id=conversation_id)])))
+                rows=tx.cur.fetchall();values=[]
+                for iid,jid,attempt in rows[:50]:
+                    item=memory.detail(iid)
+                    if item is None:raise Unavailable('current candidate unavailable')
+                    value=_candidate(item);value['review']=dict(job_id=jid,attempt_id=attempt);values.append(value)
+                raw=encode(dict(conversation_id=conversation_id,memory_epoch=tx.epoch,candidates=values,
+                                next_after_candidate_id=rows[49][0] if len(rows)>50 else None))
+                if len(raw)>524288:raise Unavailable('current candidate projection exceeds bound')
+                guard('current_candidate_projection');return raw
+        return self._invoke(token,query,request_id,'MEMORY-CANDIDATE-projection@2')
+
     def ending_processing_policy(self,context,token,job_id,attempt_id,original_input,prepared_input_sha256,*,max_payload_bytes):
         from .ending import EndingProcessingPolicy
         repository,principal,guard,command,actual,extraction,_=self._ending_binding(context,token,job_id,attempt_id)
