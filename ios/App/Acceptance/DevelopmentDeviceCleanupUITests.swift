@@ -245,4 +245,30 @@ import Foundation
         XCTAssertFalse(app.staticTexts["offline.title"].exists)
     }
 
+    func testActualAllProvidedDomains() async throws {
+        let name = "testActualAllProvidedDomains", f = try await fixture(name)
+        _ = try await initial(f, seedPrivateDraft: true); defer { app?.terminate() }
+        try audit("all-provided-review-en-max", target: "account.cleanup.confirm")
+        consentAndConfirm()
+        contains("account.cleanup.access", "stopped")
+        tap("account.cleanup.cleanDevice")
+        contains("account.cleanup.native", "clear")
+        // Every provided online target, including the real native receipt,
+        // must finish before this stronger case accepts online completion.
+        tap("account.cleanup.read")
+        contains("account.cleanup.progress", "Confirmed for the listed online domains")
+        contains("account.cleanup.areas", "29 of 29")
+        try await call("/native-files", name, ["stage": "after"])
+        try launch(f, language: "zh-Hans"); deletion("zh-Hans")
+        tap("account.cleanup.readDevice")
+        contains("account.cleanup.deviceReceipt", "已确认")
+        tap("account.cleanup.finalizeControls")
+        contains("account.cleanup.controls", "已移除并核验")
+        try audit("all-provided-controls-zh-max", target: "account.cleanup.controls", staticTarget: true)
+        try launch(f, language: "zh-Hans"); deletion("zh-Hans")
+        contains("account.cleanup.controls", "已移除并核验")
+        XCTAssertFalse(app.buttons["account.cleanup.readDevice"].exists)
+        try await call("/validate", name)
+    }
+
 }
