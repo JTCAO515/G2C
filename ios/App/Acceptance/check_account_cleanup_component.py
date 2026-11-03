@@ -2,7 +2,7 @@
 
 The positive host selects actual B-owned domains from the unmodified main registry;
 it is explicitly NOT whole-App/device completion. The second host uses the full
-actual registry and the formal V2 environment factory; unavailable external
+actual registry and the formal V3 environment factory; unavailable external
 obligations must preserve blocked/prepared state before retirement.
 No account operation, binding, receipt or progress token is injected into the App.
 """
@@ -61,7 +61,7 @@ def main():
     import cj_agent.provider as provider
     from cj_api.local_run_context import load_run_context
     from cj_api.local_worker_context import checker_for
-    from cj_cleanup.registry import freeze
+    from cj_cleanup.registry import freeze_controls
     from cj_cleanup.core import encode
     from fastapi.testclient import TestClient
     from pg_suites import cluster
@@ -77,7 +77,7 @@ def main():
     for module in ('CJCleanupClient','CJMessageClient'):
         sources+=list((ROOT/'ios/Modules'/module/'Sources').rglob('*.swift'))
     if args.native_device:
-        sources += [ROOT/'ios/App/CJProbeApp.swift', ROOT/'ios/App/DevelopmentTripHost.swift', HERE/'DevelopmentDeviceCleanupUITests.swift']
+        sources += [ROOT/'ios/App/CJProbeApp.swift', ROOT/'ios/App/DevelopmentTripHost.swift', ROOT/'ios/App/DevelopmentControlRecordStore.swift', HERE/'DevelopmentDeviceCleanupUITests.swift']
         for module in ('CJShell','CJOfflineTrip','CJAuth','CJTripClient','CJManualPreviewClient','CJMemoryClient','CJNeedsClient','CJFeedbackClient'):
             sources += list((ROOT/'ios/Modules'/module/'Sources').rglob('*.swift'))
         report['unrun']=['all C online cleanup domains', 'physical device/VoiceOver', 'real accounts/cloud/providers/fees/deployment']
@@ -100,7 +100,7 @@ def main():
                     for subject in pair.values(): local_run_context.provision_budget(connection,context,subject)
                 database=local_app.LocalDatabase(connection,run_context=context)
                 registry=backend/'backend/storage-registry.json';manifest=json.loads(registry.read_bytes())
-                full=freeze(registry.read_bytes(),FULL_INVENTORY,versions=('CLEANUP@1.0','CLEANUP@1.1'))
+                full=freeze_controls(registry.read_bytes(),FULL_INVENTORY,versions=('CLEANUP@1.0','CLEANUP@1.1'))
                 assert not full.gaps,'explicit full inventory differs from actual main'
                 def project(node,parent=''):
                     target=parent+node['id'];children=node.get('objects',[])
@@ -109,32 +109,34 @@ def main():
                         assert len(nested)==len(children),'mixed registry children'
                         selected=[value for child in nested if (value:=project(child,target+'/')) is not None]
                         return dict(node,objects=selected) if selected else None
-                    return node if target in B_DOMAINS else None
+                    return node if target in B_DOMAINS or target.startswith('cleanup-control/') else None
                 selected=[value for node in manifest['stores'] if (value:=project(node)) is not None]
                 component_registry=root/'component-registry.json'
                 component_registry.write_bytes(encode(dict(version='CJ443-B-COMPONENT-1',stores=selected)))
-                component=freeze(component_registry.read_bytes(),B_DOMAINS,versions=('CLEANUP@1.0','CLEANUP@1.1'))
+                component=freeze_controls(component_registry.read_bytes(),B_DOMAINS,versions=('CLEANUP@1.0','CLEANUP@1.1'))
                 actual={entry.registry_id:entry for entry in full.entries}
                 assert not component.gaps and all(entry==actual[entry.registry_id] for entry in component.entries)
+                assert len(full.retained_controls)==5 and component.retained_controls==full.retained_controls
                 report['component_registry']=dict(scope='B-owned component only; not full account/device',
-                    sha256=component.digest,full_main_sha256=full.digest,entry_digests={entry.registry_id:entry.version for entry in component.entries})
+                    sha256=component.digest,full_main_sha256=full.digest,entry_digests={entry.registry_id:entry.version for entry in component.entries},retained_controls=dict(component.retained_controls))
                 report['full_inventory']=list(FULL_INVENTORY);save()
                 key=os.urandom(32); secrets.append(key)
-                options=cleanup.Configuration({'native-local':key},'native-local',7200,B_DOMAINS,component_registry)
-                # The complete host consumes B's explicit V2 loader. The B-only
-                # positive component remains separately labelled and unchanged.
+                # Both hosts consume the formal V3 loader and its exact retained-control catalog.
+                # Only the positive component's actual online content inventory is narrower.
                 key_file=root/'cleanup.key';key_file.write_bytes(key);key_file.chmod(0o600)
                 full_config=root/'cleanup.json'
-                full_config.write_text(json.dumps(dict(version='CJ-LOCAL-CLEANUP@2',key_file=str(key_file),
+                full_config.write_text(json.dumps(dict(version='CJ-LOCAL-CLEANUP@3',key_file=str(key_file),
                     key_id='native-local',lifetime_seconds=7200,inventory=list(FULL_INVENTORY))))
                 full_config.chmod(0o600)
                 full_options=cleanup.load_configuration(full_config)
-                assert full_options.inventory==FULL_INVENTORY and full_options.registry_path==registry
+                assert full_options.inventory==FULL_INVENTORY and full_options.registry_path==registry and full_options.control_records
+                from dataclasses import replace
+                options=replace(full_options,inventory=B_DOMAINS,registry_path=component_registry)
                 full_binding=cleanup.Runtime(database,full_options,local_app.scope_for).bind(
                     checker_for(auth).check(tokens[CASES[0]]['A']).principal)
                 missing={entry.registry_id for entry in full.entries
                     if not entry.hook_available or entry.registry_id not in full_binding.hooks}
-                assert missing=={'external-processing'},'formal V2 host must retain every provided domain hook'
+                assert missing=={'external-processing'},'formal V3 host must retain every provided domain hook'
                 for target in (os.environ,env):
                     target.update(CJ_LOCAL_CONNINFO=str(connection),CJ_LOCAL_AUTH_DIR=str(auth),
                         CJ_LOCAL_RUN_CONTEXT=str(args.run_context.resolve()),CJ_LOCAL_CLEANUP_CONFIG=str(full_config))
@@ -142,7 +144,7 @@ def main():
                     history_configuration=local_app.load_history_configuration(auth) if args.native_device else None,
                     confirmation_signer=local_app.load_confirmation_signer(auth) if args.native_device else None),
                     'full':local_app.app_from_environment()}
-                report['full_host']=dict(version='CJ-LOCAL-CLEANUP@2',factory='app_from_environment',
+                report['full_host']=dict(version='CJ-LOCAL-CLEANUP@3',factory='app_from_environment',
                     inventory_count=len(FULL_INVENTORY),unavailable=sorted(missing))
                 save()
                 runtime=cleanup.Runtime(database,options,local_app.scope_for)
@@ -215,7 +217,7 @@ def main():
                                 entry['action']=dict(action_id=command[0],kind=command[1],proposal_id=command[2],candidate_hash=command[3],confirmation_ref_sha256=hashlib.sha256(command[4].encode()).hexdigest())
                             else:entry['action']=command
                         if isinstance(response.get('error'),dict):entry['error_code']=response['error'].get('code')
-                        for name in ('operation_id','binding_id','registry_digest','phase','status','business_access'):
+                        for name in ('operation_id','binding_id','invocation_id','request_digest','receipt_digest','registry_digest','control_record_protocol','content_status','reason','device_state','phase','status','business_access'):
                             if name in response:entry[name]=response[name]
                         if isinstance(response.get('preparation'),dict): entry['operation_id']=response['preparation']['operation_id']
                         if isinstance(response.get('invocation'),dict):
@@ -382,6 +384,13 @@ def main():
                                         assert receipts[0]['device_state']=='confirmed' and receipts[0]['action']['outcome']=='confirmed'
                                         original_reads=[e for e in value['api'] if e['method']=='GET' and e['path']=='/v3/cleanup-device-calls/'+call['invocation_id']]
                                         assert original_reads and original_reads[-1]['device_state']=='confirmed'
+                                        completions=[e for e in value['api'] if e['method']=='GET' and e['path']=='/v1/cleanup-device-completions/'+call['invocation_id']]
+                                        assert len(completions)==1 and completions[0]['http_status']==200
+                                        completion=completions[0]
+                                        assert completion['authorization_scheme']=='Device' and completion['operation_id']==call['operation_id']
+                                        assert completion['request_digest']==receipts[0]['action']['request_digest'] and completion['device_state']=='confirmed'
+                                        assert completion['content_status']=='complete' and completion['control_record_protocol']=='CLEANUP-CONTROL-RECORDS@1'
+                                        report.setdefault('completion_reads',{})[case]=completion
                                     else:assert not calls and not receipts
                                     if case==REMOTE_CASE:
                                         refused=[e for e in value['api'] if e['producer']=='App' and e['path']=='/v1/message-receipts' and e['http_status'] in (401,403)]

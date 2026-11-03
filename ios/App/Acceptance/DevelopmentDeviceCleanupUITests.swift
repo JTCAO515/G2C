@@ -111,8 +111,8 @@ import Foundation
         XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 5), .completed, "consent switch must actually turn on")
         tap("account.cleanup.confirm")
     }
-    func audit(_ name: String, target: String) throws {
-        let query = app.buttons.matching(identifier: target)
+    func audit(_ name: String, target: String, staticTarget: Bool = false) throws {
+        let query = staticTarget ? app.staticTexts.matching(identifier: target) : app.buttons.matching(identifier: target)
         let item = query.element
         reveal(item); XCTAssertEqual(query.count, 1, target); XCTAssertTrue(item.isHittable, target)
         continueAfterFailure = true
@@ -174,6 +174,13 @@ import Foundation
         try launch(f, language: "zh-Hans"); deletion("zh-Hans"); tap("account.cleanup.readDevice")
         contains("account.cleanup.deviceReceipt", "已确认")
         try audit("delete-account-zh-max-original-device", target: "account.cleanup.readDevice")
+        tap("account.cleanup.finalizeControls")
+        contains("account.cleanup.controls", "已移除并核验")
+        try audit("delete-account-controls-zh-max", target: "account.cleanup.controls", staticTarget: true)
+        try launch(f, language: "zh-Hans"); deletion("zh-Hans")
+        contains("account.cleanup.controls", "已移除并核验")
+        XCTAssertFalse(app.buttons["account.cleanup.readDevice"].exists)
+        XCTAssertFalse(app.buttons["account.cleanup.confirm"].exists)
         try await call("/validate", name)
         account("zh-Hans"); tap("account.development.signin.B"); contains("account.development.status", f.subjects["B"]!)
         deletion("zh-Hans"); XCTAssertTrue(app.buttons["account.cleanup.review"].waitForExistence(timeout: 20))
@@ -223,6 +230,12 @@ import Foundation
         try launch(f, language: "zh-Hans"); deletion("zh-Hans"); tap("account.cleanup.readDevice")
         contains("account.cleanup.deviceReceipt", "已确认")
         try audit("remote-original-device-zh-max", target: "account.cleanup.readDevice")
+        tap("account.cleanup.finalizeControls")
+        contains("account.cleanup.controls", "已移除并核验")
+        try audit("remote-controls-zh-max", target: "account.cleanup.controls", staticTarget: true)
+        try launch(f, language: "zh-Hans"); deletion("zh-Hans")
+        contains("account.cleanup.controls", "已移除并核验")
+        XCTAssertFalse(app.buttons["account.cleanup.readDevice"].exists)
         try await call("/validate", name)
         tap("行程"); tap("offline.open")
         XCTAssertFalse(app.staticTexts["offline.title"].exists)

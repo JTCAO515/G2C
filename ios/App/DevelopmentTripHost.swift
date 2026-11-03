@@ -1599,7 +1599,15 @@ private func developmentCleanupHash(_ value: Data) -> String {
         enrolling = true; refresh()
         do {
             if manifest == nil { try prepareResources() }
-            guard let device, let manifest else { throw CleanupFailure.unavailable }
+            guard let device, let manifest, let ordinary,
+                  ordinary.lease.session.isCurrent(ordinary.lease.operation),
+                  try sdkStore.load()?.withBytes(developmentCleanupHash) == manifest.sdkHash else { throw CleanupFailure.stale }
+            // A verified switch back to an existing account must restore its own
+            // original recovery locator. Never replace an unfinished clear plan.
+            if case .finalizing = try Self.selection(environment: lifetime.scope.environment) { throw CleanupFailure.unavailable }
+            let selected = try JSONEncoder().encode(manifest.scope)
+            try indexStore.save(SessionMaterial(trustedSDKBytes: selected))
+            guard try indexStore.load()?.withBytes({ $0 }) == selected else { throw CleanupFailure.exchangeUnknown }
             if case .ready = device.state {
                 _ = try await device.perform(device.prepareRegistration(stateRef: manifest.stateRef)); try check()
             }
