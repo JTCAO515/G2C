@@ -39,6 +39,38 @@ def exercise():
                 value=freeze(memory,ErasureCommand.parse(original),subject_digest(principal),max_sources=1000,max_jobs=1000,max_bytes=1_000_000)
                 guard('decision_evidence_freeze');return value
         association=json.loads(service.boundary.with_history_context(token,stop));scope=bindings['repo'].scope
+        # A later model adds a real formal Trip document to a current capture.
+        # Tail's original message was never a canonical origin; its message hash
+        # alone is still eligible. The actual decision digest is now erased.
+        tail_input=inputs[('tail-job','tail-attempt')]
+        def late_context(context):
+            from cj_memory.runtime import RuntimeMemory,RuntimeDenied,Selection as RuntimeSelection
+            from cj_memory.scoped_capture import TrackedMemory,CaptureRegistry
+            from cj_memory.domain import Service
+            from cj_run.core import Binding
+            from cj_message.source import SourceQuery
+            from cj_message.domain import Receipt
+            from cj_memory_jobs.source_policy import SourcePolicy
+            from cj_memory_jobs.model_v2 import origin_reference
+            from dataclasses import asdict
+            repo,principal,guard=service._binding(context,token)
+            source=json.loads(json.loads(tail_input)['messages'][0]['content'])
+            tail=next(j for j in json.loads(proof_raw)['jobs'] if j['job_id']=='tail-job')
+            original=tail['source_comparison']['messages'][0]['original']
+            query=SourceQuery(**json.loads(tail['original_utf8'])['source'])
+            def read_receipt(snapshot):
+                assert origin_reference(snapshot.messages[0])==original
+                return encode(asdict(snapshot.messages[0].receipt))
+            receipt=Receipt(**json.loads(context.with_enabled_source(query,SourcePolicy(repo,principal,guard),read_receipt)))
+            binding=Binding(repo.scope,receipt.conversation_id,receipt.generation,receipt.message_id,receipt.run_id,receipt.sequence)
+            def admit(stage):guard(stage);return principal,repo.scope
+            memory=TrackedMemory(RuntimeMemory(Service(repo),admit,RuntimeSelection('self',frozenset({'planning.choice'}),32768)),CaptureRegistry())
+            run=memory.capture_history(binding,[original],decision_source_sha256s=[])
+            try:memory.with_history(run,[],decision_source_sha256s=[source['decision_source_sha256']])
+            except RuntimeDenied:pass
+            else:raise AssertionError('later actual erased Trip context bypassed original capture fence')
+            assert memory.registry.captured(binding) is run
+            return b'late actual decision refused'
         from decision_jobs_pg import manual
         store=Store(lambda:psycopg.connect(**dict(json.loads(Path(manual.CONNINFO).read_text()),user='cj_local_cleanup')),
                     association['subject_digest'],bindings['guard'])
@@ -47,7 +79,9 @@ def exercise():
             dict(id='message',cleanup_protocol='CLEANUP@1.1')])])),(target,),versions=('CLEANUP@1.1',))
         class Observe:
             def execute(self,request):
-                proof=json.loads(reader.read_evidence(request));assert len(proof['jobs'])==4
+                nonlocal proof_raw
+                proof_raw=reader.read_evidence(request)
+                proof=json.loads(proof_raw);assert len(proof['jobs'])==4
                 for job in proof['jobs']:
                     prepared=inputs[(job['job_id'],job['attempt_id'])]
                     assert compare_prepared(job,prepared)==sha256(prepared).hexdigest()
@@ -63,11 +97,13 @@ def exercise():
                     else:raise AssertionError('original decision proof accepted another document')
                 observed.append(proof);return receipt_for(request,'unknown')
             def reconcile(self,request):return receipt_for(request,'unknown')
+        proof_raw=None
         coordinator=Coordinator(store,lambda:registry,{target:Observe()});operation=association['operation_id']
         selection=Selection.from_dict(association['selection'])
         coordinator.create(operation,digest(bindings['original']),'memory',{target:dict(domain_scope=scope,selection=selection.to_dict())})
         coordinator.advance(coordinator.request(operation,target,scope,selection))
         assert coordinator.query(operation)['status']=='unknown'
+        service.boundary.with_history_context(token,late_context)
         return result
     suite=unittest.TestSuite([DecisionInputChecks('test_real_modified_trip_and_committed_discussion_feed_bounded_data')])
     with patch.object(DecisionCollectionService,'prepare_decision_input',prepared),patch.object(DecisionCollectionService,'apply_candidate',apply):

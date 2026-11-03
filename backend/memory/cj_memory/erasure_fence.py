@@ -14,6 +14,11 @@ class References:
     messages:frozenset[str]
     decisions:frozenset[str]
 
+    def union(self,other):
+        messages=self.messages|other.messages;decisions=self.decisions|other.decisions
+        if len(messages)>10000 or len(decisions)>1000:raise InvalidInput('combined original history references exceed bound')
+        return References(messages,decisions)
+
     @classmethod
     def capture(cls,message_refs,decision_source_sha256s):
         # The host supplies ALL original context coordinates, never model text
@@ -57,3 +62,6 @@ class HistoryRuntimeRun(RuntimeRun):
 
     def _check_additional(self,tx):
         self.references.require_current(tx)
+
+    def _merge_history(self,references):
+        return self.references.union(references)
