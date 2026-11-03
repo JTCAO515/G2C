@@ -80,11 +80,20 @@ def exercise(root,path):
             post('/v3/cleanup-device-receipts',value,scheme='Cleanup',credential=data['receipt_token'],raw=raw)
             if key=='initiator':assert read()['content_status']=='unknown'
         before=snapshot();complete=read();again=read();assert snapshot()==before
-        assert complete['content_status']=='complete' and complete['device_state']=='confirmed'
+        assert complete['content_status']=='complete' and complete['device_state']=='confirmed',complete
         assert complete['receipt_digest']==receipts['remote'] and complete['request_digest']==request
         assert complete['registry_digest']==operation['registry_digest'] and complete['complete_scope']=='frozen_online_domains_only'
         assert {k:v for k,v in complete.items() if k!='request_id'}=={k:v for k,v in again.items() if k!='request_id'}
         assert all(secret not in json.dumps(complete) for secret in (cap,operation['progress_token'],tokens['completion-a']))
+        with psycopg.connect(**config) as audit:
+            targets=audit.execute('SELECT targets FROM cj_cleanup_operation WHERE subject_digest=%s AND operation_id=%s',
+                (remote['scope_digest'],operation['operation_id'])).fetchone()[0]
+            audit.execute('UPDATE cj_cleanup_operation SET targets=%s::jsonb WHERE subject_digest=%s AND operation_id=%s',
+                (json.dumps([inventory[0]]),remote['scope_digest'],operation['operation_id']))
+        read(503)
+        with psycopg.connect(**config) as audit:
+            audit.execute('UPDATE cj_cleanup_operation SET targets=%s::jsonb WHERE subject_digest=%s AND operation_id=%s',
+                (json.dumps(targets),remote['scope_digest'],operation['operation_id']))
         store=runtime.by_subject(remote['scope_digest']).store
         with store.snapshot(operation['operation_id']) as cursor:
             assert cursor.execute('SHOW transaction_read_only').fetchone()==('on',)

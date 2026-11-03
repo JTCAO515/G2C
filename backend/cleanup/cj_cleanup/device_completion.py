@@ -61,6 +61,7 @@ def _account(cur,store,operation,current):
         raise Denied('original retired account operation unavailable')
     if (manifest.raw!=prepared.registry_bytes or manifest.inventory!=prepared.inventory):
         raise Unavailable('original account registry differs')
+    if tuple(sorted(targets))!=manifest.inventory:raise Unavailable('original account target inventory differs')
     matches=(manifest.raw,manifest.inventory,manifest.versions)==(current.raw,current.inventory,current.versions)
     policy=CONTROL if CONTROL in manifest.versions and len(manifest.retained_controls)==5 else None
     if blocked or manifest.gaps or current.gaps or not matches:return 'blocked',manifest.digest,policy
@@ -79,7 +80,8 @@ def _account(cur,store,operation,current):
         receipt=CODECS[entries[target].protocol].HookReceipt.from_digest(bytes(result_raw),request_sha)
         if receipt.outcome!='confirmed':return 'unknown',manifest.digest,policy
     cur.execute('SELECT reason FROM cj_cleanup_account_gate WHERE subject_digest=%s AND operation_id=%s',(store.subject_digest,operation))
-    if cur.fetchone() is not None:return 'unknown',manifest.digest,policy
+    gate=cur.fetchone()
+    if gate is not None and gate[0] is not None:return 'unknown',manifest.digest,policy
     return 'complete',manifest.digest,policy
 
 
