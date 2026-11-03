@@ -104,6 +104,9 @@ if __name__=='__main__':
         root=Path(folder)
         if os.environ.get('CJ_E2E_CONNINFO'):
             exercise(root,Path(os.environ['CJ_E2E_CONNINFO']))
+            from erasure_stop_context_pg import exercise as actual_context
+            context_root=root/'actual-worker-context';context_root.mkdir()
+            actual_context(context_root,Path(os.environ['CJ_E2E_CONNINFO']))
             sys.exit(0)
         with pg_suites.cluster('item_api',port=55818,role='cj_c_item_api',root=root/'pg',socket=root/'s') as config:
             with psycopg.connect(**config,autocommit=True) as conn:
