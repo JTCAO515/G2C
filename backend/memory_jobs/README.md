@@ -171,3 +171,19 @@ original message/decision barriers before enqueue, model-data construction and
 new publication. V6 current candidate projection retains unrelated candidates
 after a shared job payload is erased; existing candidate Action1 remains valid.
 Old historical V3/V4 discovery protocols keep their original semantics.
+
+Automatic accepted-Trip intake uses the explicit
+`create_automatic_decision_collection_app` and `DecisionConversationProducer`.
+The producer reads only committed, explicitly enabled original metadata; plain
+history and full original MSG3 Trip discussions are segmented at source-kind or
+decision changes. Existing JOBS1/END-JOBS1 use the original BG2 submitter; actual
+accepted decisions use existing DECISION-JOBS1/BG3. Original pending bytes are
+never translated or rekeyed. The genuine end still follows incremental progress,
+and the source/Trip/Memory policy rechecks before enqueue, model and publication.
+No new wire, storage, Meter, producer authorization or old MSG3 guard change.
+`ProducerPass.unavailable` reports permanently invalid original conversations
+without pretending they were extracted or changing their UNKNOWN/fee records.
+
+The existing registered `memory_decision` PG group retains its original case
+and additionally runs automatic mixed BG2/BG3/true-end intake on a fresh private
+cluster; a genuinely new Python process verifies exact pending D3 reconstruction.

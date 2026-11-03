@@ -148,18 +148,7 @@ class Service:
         def apply(context):
             nonlocal policy
             repository, principal, guard = self._binding(context,token)
-            invalid_originals=set()
-            if serialized:
-                # Detached comparisons only; release MEMORY before public
-                # MESSAGE reads and the normal MESSAGE -> MEMORY acquisition.
-                with repository.transaction() as memory:
-                    tx=Transaction(memory);tx.require_live()
-                    originals=tx.current_unresolved()
-                for row in originals:
-                    cursor=row[3].cursor
-                    head=context.send_status(cursor.conversation_id).head
-                    if head is None or (head.generation,head.epoch)!=(cursor.generation,cursor.epoch):
-                        invalid_originals.add(row[0].job_id)
+            invalid_originals=self._invalid_serialized(context,token,principal,repository) if serialized else set()
             policy = SourcePolicy(repository,principal,guard)
 
             def persist(snapshot):
@@ -184,6 +173,17 @@ class Service:
             if policy is not None and policy.commit_attempted:
                 raise OperationWithheld(job_id,attempt_id) from error
             raise
+
+    def _invalid_serialized(self,context,token,principal,repository):
+        # No MEMORY holder spans public MESSAGE metadata reads.
+        with repository.transaction() as memory:
+            tx=Transaction(memory);tx.require_live();originals=tx.current_unresolved()
+        invalid=set()
+        for row in originals:
+            cursor=row[3].cursor;head=context.send_status(cursor.conversation_id).head
+            if head is None or (head.generation,head.epoch)!=(cursor.generation,cursor.epoch):
+                invalid.add(row[0].job_id)
+        return invalid
 
     def query_original(self, token, job_id, attempt_id, *, request_id=None):
         """Fresh account-only status read; disabled/stale sources need no renewal."""

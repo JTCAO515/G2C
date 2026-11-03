@@ -20,8 +20,16 @@ def create_decision_collection_app(*,conninfo_path,auth_dir,resolve_collection,r
     return _collection_app(conninfo_path,auth_dir,resolve_collection,run_context,decisions=True)
 
 
-def _collection_app(conninfo_path,auth_dir,resolve_collection,run_context,*,decisions):
-    database=LocalDatabase(conninfo_path,run_context=run_context,travel_context=True)
+def create_automatic_decision_collection_app(*,conninfo_path,auth_dir,resolve_collection,run_context=None):
+    """New explicit host: protected original formal-reference reads for planning.
+
+    Old factories and the old MESSAGE3 producer Memory guard stay unchanged.
+    """
+    return _collection_app(conninfo_path,auth_dir,resolve_collection,run_context,decisions=True,automatic=True)
+
+
+def _collection_app(conninfo_path,auth_dir,resolve_collection,run_context,*,decisions,automatic=False):
+    database=LocalDatabase(conninfo_path,run_context=run_context,travel_context=True,trip_context=automatic)
     boundary=Boundary(account_checker_for(Path(auth_dir),database),
         lambda principal:database.message_repository(scope_for(principal.issuer,principal.subject)),
         lambda:uuid.uuid4().hex)
@@ -33,11 +41,15 @@ def _collection_app(conninfo_path,auth_dir,resolve_collection,run_context,*,deci
         from cj_trip.decision_lease import DecisionAuthority
         from cj_agent.draft import trip_scope_for
         from .decision_service import DecisionCollectionService
+        if automatic:
+            from .automatic_service import AutomaticDecisionCollectionService
+            service_type=AutomaticDecisionCollectionService
+        else:service_type=DecisionCollectionService
         def trip_resolve(principal):
             owner=scope_for(principal.issuer,principal.subject)
             return lambda:database.connect(owner),trip_scope_for(owner)
         trip=TripBoundary(boundary.checker,trip_resolve,structured=True)
-        service=DecisionCollectionService(boundary,resolve,resolve_collection,
+        service=service_type(boundary,resolve,resolve_collection,
             resolve_decision_authority=lambda token:DecisionAuthority(trip,token))
     else:service=CollectionService(boundary,resolve,resolve_collection)
     app=create_local_app(conninfo_path=conninfo_path,auth_dir=auth_dir,run_context=run_context,

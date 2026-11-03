@@ -315,4 +315,19 @@ class DecisionInputChecks(manual.ManualChecks):
 
 
 if __name__=='__main__':
-    unittest.main(defaultTest='DecisionInputChecks.test_real_modified_trip_and_committed_discussion_feed_bounded_data',verbosity=2)
+    program=unittest.main(defaultTest='DecisionInputChecks.test_real_modified_trip_and_committed_discussion_feed_bounded_data',verbosity=2,exit=False)
+    if not program.result.wasSuccessful():raise SystemExit(1)
+    # Keep the existing registered memory_decision group and all original
+    # assertions. Automatic intake needs a new isolated account/database after
+    # the original case's genuine account retirement, not a reused retired row.
+    import tempfile,subprocess
+    import pg_suites
+    with tempfile.TemporaryDirectory(prefix='automatic-decision-suite-') as folder:
+        root=Path(folder)
+        with pg_suites.cluster('automatic_decision',port=55832,role='cj_automatic_decision',root=root/'pg',socket=root/'s') as config:
+            with psycopg.connect(**config,autocommit=True) as connection:
+                chain=migrate.load();migrate.up(connection,chain,chain[-1]['version'])
+            path=root/'conninfo.json';path.write_text(json.dumps(config));path.chmod(0o600)
+            env=dict(pg_suites.clean_env(),CJ_E2E_CONNINFO=str(path),PYTHONPATH=pg_suites.pythonpath(ROOT/'backend/memory_jobs/tests'))
+            result=subprocess.run([sys.executable,'-B',str(ROOT/'backend/memory_jobs/tests/auto_decision_worker_pg.py')],env=env)
+            raise SystemExit(result.returncode)
