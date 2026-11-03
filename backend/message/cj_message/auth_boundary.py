@@ -283,6 +283,13 @@ class Boundary:
     def receive_v3(self, token, raw):
         return self._service(token).receive_v3(raw)
 
+    def receive_formal_memory(self,token,raw,producer_factory,project):
+        service,principal,scope,guard=self._bind(token)
+        producer=producer_factory(principal,scope,guard)
+        value=project(service.receive_formal_memory(raw,producer))
+        guard('return')
+        return value
+
     def send_status_v3(self,token,conversation_id,message_id=None):
         return self._service(token).send_status_v3(conversation_id,message_id)
 

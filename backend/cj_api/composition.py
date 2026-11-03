@@ -95,7 +95,7 @@ def create_composed_app(*, environment, jwt_configuration, verification_keys,
                         usage_status_configuration=None,resolve_usage_status=None,
                         original_usage_configuration=None,resolve_original_usage_run=None,
                         cleanup_progress_configuration=None,resolve_cleanup_progress=None,
-                        run_events_configuration=None, resolve_travel_repository=None):
+                        run_events_configuration=None, resolve_travel_repository=None,formal_memory_producer=None):
     """No zero-argument/public production configuration exists."""
     if type(max_body_bytes) is not int or max_body_bytes <= 0:
         raise CompositionUnavailable('Explicit positive body byte limit required')
@@ -174,7 +174,9 @@ def create_composed_app(*, environment, jwt_configuration, verification_keys,
         cleanup_progress_dependencies = _cleanup_progress_from_checker(boundary.checker,resolve_cleanup_progress,cleanup_progress_configuration,
             environment=environment,issuer=jwt_configuration.issuer,audience=jwt_configuration.audience)
     from .app import create_app
+    def formal_receive(token,raw,project):return boundary.receive_formal_memory(token,raw,formal_memory_producer,project)
     app=create_app(_message_boundary=boundary, _max_body_bytes=max_body_bytes,
+                      _formal_message_receiver=None if formal_memory_producer is None else formal_receive,
                       _history_configuration=history_configuration, _history_environment=environment,
                       _memory_boundary=memory_boundary, _memory_configuration=memory_configuration,
                       _trip_boundary=trip_boundary, _trip_configuration=trip_configuration, _trip_modules=trip_modules,
