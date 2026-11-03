@@ -1,5 +1,20 @@
 # CJ-CLEANUP-INTERNAL@0.1.0-rc.1
 
+## M3 当前入口与版本消费者（2026-11-03）
+
+以下按 main `6e01aabb` 和已合 PR453 核实；下文保留历史候选原文，不作为新宿主入口。
+
+| 契约 | 当前消费者 / 替代关系 |
+|---|---|
+| [CLEANUP@1.1](V1.1.md) | B/C实际域钩子当前版；取代新操作的1.0 ASCII-only选区，旧1.0只保留原格式恢复/既有历史断言，无当前新业务消费者。 |
+| [CLEANUP-API@1](API-V1.md) | A453真实Root的原创建/确认/撤权后原操作进度；没有被DEVICE协议取代。 |
+| [CLEANUP-DEVICE@3](DEVICE-V3.md) | A453的六条实际设备路径、19目标及原action恢复；取代[DEVICE1](API-V1.md)设备部分/[DEVICE2](DEVICE-V2.md)，1/2无当前App消费者，只保留原记录恢复和既有历史测试，不补新适配/新测试。 |
+| [CONTROL-RECORDS@1](CONTROL-RECORDS-V1.md) / [DEVICE-COMPLETION@1](DEVICE-COMPLETION-V1.md) | A453已合消费的5个独立控制槽/原Device受限完成证据；补API1/DEVICE3的真实缺口，不取代其原请求/回执。 |
+| CJ-LOCAL-CLEANUP@3 | 当前全清单宿主：保留30内容目标与5控制槽；取代1/2作为新全量App宿主，旧1/2仅历史/显式组件及原记录恢复。external未提供时仍blocked，不得缩清单。 |
+| [B-MEMORY-PAYLOAD@1 / RUN-MEMORY-HISTORY@1](MEMORY-PAYLOAD-V1.md) | PR474候选，消费已合C467的COMPOSITION2/ASSOCIATION/EVIDENCE与真实history fence，解决#472的B副本缺口；首次提供此能力，不取代账号钩子，不代表已合并或App原生验收。 |
+
+新代码只指向适用的当前入口。无消费者旧版本不再增加测试或适配；保留现有测试/FAIL和已冻结文件，不重解旧字节。新增版本须有已合消费方的实际阻断，并在PR说明替代哪版及旧消费者。
+
 内部候选，固定 base `8deb696f8149b4f5aa70c767be6c3a263b036227`，Issue #27。
 不是 CLEANUP@1.0、第二 AUTH、HTTP API 或公开注销后凭证。后续唯一 wire owner CJ005。
 

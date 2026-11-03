@@ -1,5 +1,16 @@
 # RUN@1.0 candidate — internal RC1, not frozen wire
 
+## Current M3 worker contracts and consumers (2026-11-03)
+
+| Contract | Merged consumer and replacement status |
+|---|---|
+| [RUN-BACKGROUND@2](BACKGROUND-V2.md) | Current C ordinary/incremental/end Data2/Pub2 consumer, exercised by merged C436/C471 through original run_once/Meter. Replaces the unsafe, never-main [BG1 candidate](BACKGROUND-V1.md), which has no accepted direct consumer. No new BG1 adapter/tests. |
+| [RUN-BACKGROUND@3](BACKGROUND-V3.md) | Current accepted-decision Data3/Pub3 consumer in merged C467/C471; fixes that actual consumer's original digest/protocol gap. It does not replace BG2/Data2: BG2 still has the above active consumer. New ordinary work uses BG2; accepted-decision work uses BG3. |
+| [RUN-MEMORY-HISTORY@1](../cleanup/MEMORY-PAYLOAD-V1.md) | PR474 candidate: original C capture plus per-model history/decision augmentation for #472. First provided B consumer; no claimed replacement of the C snapshot/payload or enabling of unadapted MSG3. |
+| [RUN-display.6](../message/HISTORY-V5.md) | PR474 candidate human-history read after proven input/source erasure. Existing merged A history/display readers require intact formal sources and actually withhold after physical deletion. RUN1–5 remain active for their old scopes; especially RUN5's scoped-result authority is not replaced by this text-only view. App adoption remains A's work. |
+
+New code selects the latest applicable protocol, never a silent fallback. Preserve old frozen bytes, original-ID recovery and existing tests/FAIL; add no adapters/tests for superseded versions without consumers. Any further version requires a merged consumer blocked by an actual defect and an explicit replacement/consumer statement in its PR.
+
 CJ010 / Issue 11; base d30cbc5200f8fdaa59558a07984049caa5ba5999.
 This candidate implements the accepted RUN scope, not a declaration that RUN@1.0
 is frozen. CJ005 owns formal OpenAPI and generation. No public routes/schema,
