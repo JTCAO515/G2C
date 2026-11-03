@@ -44,6 +44,7 @@ public struct MemoryCandidateJobPage: Sendable {
 /// The client separately binds this data to its session/read/selection lifetime.
 public struct MemoryCandidate: Sendable, CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable {
     public let id: String
+    var actionV1IdentifierIsSupported: Bool { id.utf8.count <= 4096 }
     public let version: Int64
     public let status: Components.Schemas.MemoryItemV2.statusPayload
     public let subject: String
@@ -58,7 +59,7 @@ public struct MemoryCandidate: Sendable, CustomStringConvertible, CustomDebugStr
     public var customMirror: Mirror { Mirror(self, children: [:]) }
     init(_ value: StrictJSONValue) throws {
         let fields = try historyObject(value, fields: ["candidate_id", "version", "status", "subject", "slot", "kind", "text", "extent", "occurred_at", "context"])
-        id = try historyString(fields["candidate_id"], limit: 4096)
+        id = try candidateItemIdentity(fields["candidate_id"])
         version = try historyInteger(fields["version"])
         guard version > 0,
               let status = Components.Schemas.MemoryItemV2.statusPayload(rawValue: try historyString(fields["status"], limit: 32)),

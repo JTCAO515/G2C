@@ -21,11 +21,15 @@ struct MemoryCandidateAction: Sendable {
 
     init(page: MemoryCandidatePage, candidateID: String, review: MemoryCandidateReview) throws {
         guard let candidate = page.candidates.first(where: { same($0.id, candidateID) }), candidate.status == .candidate else { throw MemoryFailure.invalidInput }
-        actionID = UUID().uuidString; producer = page.producer; self.candidateID = candidate.id
-        expectedCandidateVersion = candidate.version; expectedMemoryEpoch = page.memoryEpoch
+        try self.init(candidate: candidate, producer: page.producer, memoryEpoch: page.memoryEpoch, review: review)
+    }
+    init(candidate: MemoryCandidate, producer: MemoryCandidateJob, memoryEpoch: Int64, review: MemoryCandidateReview) throws {
+        guard candidate.status == .candidate, candidate.actionV1IdentifierIsSupported else { throw MemoryFailure.invalidInput }
+        actionID = UUID().uuidString; self.producer = producer; candidateID = candidate.id
+        expectedCandidateVersion = candidate.version; expectedMemoryEpoch = memoryEpoch
         var fields: [String: Any] = ["version": "MEMORY-CANDIDATE@1", "action_id": actionID,
             "job_id": producer.jobID, "attempt_id": producer.attemptID, "candidate_id": candidate.id,
-            "expected_candidate_version": candidate.version, "expected_memory_epoch": page.memoryEpoch]
+            "expected_candidate_version": candidate.version, "expected_memory_epoch": memoryEpoch]
         switch review {
         case .reject: operation = "reject"
         case .confirm(let kind, let text, let occurredAt, let travel):
@@ -72,12 +76,16 @@ struct MemoryCandidateAction: Sendable {
         }
         actionID = try candidateIdentity(fields["action_id"])
         producer = try MemoryCandidateJob(.object(["job_id": fields["job_id"]!, "attempt_id": fields["attempt_id"]!]))
-        candidateID = try historyString(fields["candidate_id"], limit: 4096)
+        candidateID = try candidateActionItemIdentity(fields["candidate_id"])
         expectedCandidateVersion = try historyInteger(fields["expected_candidate_version"])
         expectedMemoryEpoch = try historyInteger(fields["expected_memory_epoch"])
         guard expectedCandidateVersion > 0, expectedMemoryEpoch > 0 else { throw MemoryFailure.invalidResponse }
         originalUTF8 = raw
     }
+}
+/// Action1's byte bound is distinct from the canonical V6 read/cursor.
+private func candidateActionItemIdentity(_ value: StrictJSONValue?) throws -> String {
+    try historyString(value, limit: 4096)
 }
 private func validCandidateEdit(_ value: String) -> Bool {
     !value.contains("\0") && !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -96,7 +104,7 @@ public struct MemoryCandidateReceipt: Sendable {
     init(_ value: StrictJSONValue, original: MemoryCandidateAction) throws {
         let fields = try historyObject(value, fields: ["version", "action_id", "candidate_id", "input_sha256", "receipt"])
         guard try historyString(fields["version"], limit: 64) == "MEMORY-CANDIDATE-result@1" else { throw MemoryFailure.invalidResponse }
-        actionID = try candidateIdentity(fields["action_id"]); candidateID = try historyString(fields["candidate_id"], limit: 4096)
+        actionID = try candidateIdentity(fields["action_id"]); candidateID = try candidateActionItemIdentity(fields["candidate_id"])
         inputSHA256 = try historyString(fields["input_sha256"], limit: 64)
         guard same(actionID, original.actionID), same(candidateID, original.candidateID),
               same(inputSHA256, original.inputSHA256), let value = fields["receipt"], case .object(let receipt) = value else { throw MemoryFailure.invalidResponse }
@@ -104,7 +112,7 @@ public struct MemoryCandidateReceipt: Sendable {
         active = status == "active"
         guard (original.operation == "confirm" && active) || (original.operation == "reject" && status == "rejected"),
               Set(receipt.keys) == (active ? ["item_id", "version", "status", "source_id", "source_version"] : ["item_id", "version", "status"]),
-              same(try historyString(receipt["item_id"], limit: 4096), candidateID) else { throw MemoryFailure.invalidResponse }
+              same(try candidateActionItemIdentity(receipt["item_id"]), candidateID) else { throw MemoryFailure.invalidResponse }
         itemVersion = try historyInteger(receipt["version"])
         let (expected, overflow) = original.expectedCandidateVersion.addingReportingOverflow(1)
         guard !overflow, itemVersion == expected else { throw MemoryFailure.invalidResponse }

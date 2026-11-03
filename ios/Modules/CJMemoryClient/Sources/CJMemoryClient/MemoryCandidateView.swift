@@ -23,7 +23,7 @@ public struct MemoryCandidateView: View {
                 MemoryLifecycleButton(title: language.text("Read conversation suggestions", "读取本会话建议"), identifier: "memoryCandidate.discover", enabled: model.canRead) {
                     perform(model.prepareDiscovery())
                 }
-                if model.state == .ready && model.jobs.isEmpty && model.producer == nil {
+                if !model.usesCurrentProjection && model.state == .ready && model.jobs.isEmpty && model.producer == nil {
                     MemoryRowText(text: language.text("This conversation currently has no suggestions awaiting confirmation.", "这段会话当前没有待确认建议。"), style: .body)
                         .accessibilityIdentifier("memoryCandidate.emptyDiscovery")
                 }
@@ -45,10 +45,10 @@ public struct MemoryCandidateView: View {
                     }
                 } header: { heading(language.text("Conversation suggestions", "会话建议")) }
             }
-            if model.producer != nil {
+            if model.producer != nil || model.usesCurrentProjection {
                 Section {
                     if model.candidates.isEmpty && model.state == .ready {
-                        MemoryRowText(text: language.text("This group currently has no suggestions.", "这个建议组当前没有内容。"), style: .body)
+                        MemoryRowText(text: model.usesCurrentProjection ? language.text("This conversation currently has no suggestions awaiting confirmation.", "这段会话当前没有待确认建议。") : language.text("This group currently has no suggestions.", "这个建议组当前没有内容。"), style: .body)
                             .accessibilityIdentifier("memoryCandidate.empty")
                     }
                     ForEach(model.candidates, id: \.utf8Identity) { candidate in
@@ -58,6 +58,10 @@ public struct MemoryCandidateView: View {
                             MemoryRowText(text: language.text("Time: ", "时间：") + candidate.occurredAt, style: .body)
                             MemoryRowText(text: candidate.extent == .long_term ? language.text("Scope: long-term memory", "范围：长期记忆") : language.text("Scope: this trip", "范围：本次行程"), style: .body)
                             MemoryRowText(text: stateTitle(candidate), style: .body)
+                            if !candidate.actionV1IdentifierIsSupported {
+                                MemoryRowText(text: language.text("This suggestion can be viewed, but cannot be reviewed with the current service. No action was submitted.", "这条建议可查看，但当前服务暂不支持核对它，未提交操作。"), style: .body)
+                                    .accessibilityIdentifier("memoryCandidate.reviewUnavailable")
+                            }
                             MemoryLifecycleButton(title: language.text("Review this suggestion", "核对这条建议"), identifier: "memoryCandidate.review." + candidate.utf8Identity.base64EncodedString(), enabled: model.canReview(candidateID: candidate.id)) {
                                 editor = model.captureReview(candidateID: candidate.id)
                             }
@@ -66,6 +70,11 @@ public struct MemoryCandidateView: View {
                         .background(.quaternary, in: RoundedRectangle(cornerRadius: 16))
                     }
                 } header: { heading(language.text("Current suggestion status", "建议当前状态")) }
+            }
+            if model.usesCurrentProjection && model.hasMore {
+                MemoryLifecycleButton(title: language.text("More suggestions", "更多建议"), identifier: "memoryCandidate.more", enabled: model.canRead) {
+                    perform(model.prepareDiscovery(more: true))
+                }
             }
             Section {
                 MemoryRowText(text: language.text("If a submission is uncertain, keep its original record and check it. Reopening never sends it again.", "提交结果不明确时，请保留并查询原记录；重新打开不会再次发送。"), style: .body)

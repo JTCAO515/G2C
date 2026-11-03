@@ -13,12 +13,13 @@ struct AssistantShell: View {
     @Bindable var state: ShellState
     let messageHost: AssistantMessageHost
     let serverHistoryHost: ServerHistoryHost
+    let candidateHost: MemoryCandidateContainerHost
     let needsHost: NeedsContainerHost
     let feedbackHost: FeedbackContainerHost
     let runHost: RunContainerHost
     let usageHost: OriginalUsageContainerHost
     let bodyText: String?
-    private enum Panel: String, Identifiable { case local, server, needs, feedback, usage, travel; var id: String { rawValue } }
+    private enum Panel: String, Identifiable { case local, server, needs, feedback, usage, travel, memoryCandidates; var id: String { rawValue } }
     @State private var panel: Panel?
     @State private var feedbackEntry: FeedbackContainerEntry?
     @FocusState private var draftFocused: Bool
@@ -36,6 +37,7 @@ struct AssistantShell: View {
                     ShellStatusView(state: state.assistantState, language: state.language)
                 }
                 unavailableHint
+                MemoryCandidateConversationBubble(host: candidateHost, language: state.language) { panel = .memoryCandidates }
                 if let bodyText, !runHost.isShowingOriginal {
                     Text(bodyText).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
                     Button(state.language.text("Report a problem with this answer", "反馈此回答的问题")) {
@@ -125,6 +127,7 @@ struct AssistantShell: View {
         }
         .onChange(of: panel) { _, selected in
             if selected != nil { draftFocused = false }
+            else { candidateHost.synchronizeConversation() }
         }
         .sheet(item: $panel) { selectedPanel in
             NavigationStack {
@@ -143,6 +146,8 @@ struct AssistantShell: View {
                         NeedsContainerView(host: needsHost, runs: runHost, language: state.language).id(needsHost.viewIdentity)
                     } else if selectedPanel == .server {
                         ServerHistoryView(host: serverHistoryHost, language: state.language)
+                    } else if selectedPanel == .memoryCandidates {
+                        MemoryCandidateContainerView(host: candidateHost, language: state.language)
                     } else {
                         LocalRecoveryList(host: messageHost, language: state.language)
                             .navigationTitle(state.language.text("Local recovery", "本地恢复"))

@@ -65,7 +65,7 @@ public struct ShellView: View {
 
     public var body: some View {
         TabView(selection: $state.selectedTab) {
-            NavigationStack { AssistantShell(state: state, messageHost: messageHost, serverHistoryHost: serverHistoryHost, needsHost: needsContainerHost, feedbackHost: answerFeedbackHost, runHost: runContainerHost, usageHost: originalUsageContainerHost, bodyText: state.assistantBody) }
+            NavigationStack { AssistantShell(state: state, messageHost: messageHost, serverHistoryHost: serverHistoryHost, candidateHost: memoryCandidateContainerHost, needsHost: needsContainerHost, feedbackHost: answerFeedbackHost, runHost: runContainerHost, usageHost: originalUsageContainerHost, bodyText: state.assistantBody) }
                 .tabItem { Label(ShellTab.assistant.title(state.language), systemImage: "bubble.left.and.bubble.right") }
                 .tag(ShellTab.assistant)
             Group {

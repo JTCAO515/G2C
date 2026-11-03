@@ -137,6 +137,19 @@ private struct HistoryHostNeverTransport: ClientTransport {
     func current() -> MemoryBinding? { let run=callback; callback=nil; run?(); return value }
 }
 
+private actor CandidateBubbleWire: ClientTransport {
+    var paths: [String] = []
+    func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
+        #expect(request.method == .get && body == nil && operationID == "readMemoryCandidateProjectionV2")
+        paths.append(request.path!)
+        let bytes = try JSONSerialization.data(withJSONObject: ["request_id":runTrace,"version":"MEMORY-CANDIDATE-projection@2",
+            "result":["conversation_id":"chat-e\u{301}","memory_epoch":1,"candidates":[],"next_after_candidate_id":NSNull()]])
+        var response = HTTPResponse(status: .ok); response.headerFields[.contentType] = "application/json"
+        response.headerFields[HTTPField.Name("X-Request-ID")!] = runTrace; response.headerFields[.cacheControl] = "no-store"
+        return (response, HTTPBody(bytes))
+    }
+}
+
 @Suite @MainActor struct RunContainerHostTests {
     private func shell() throws -> ShellState { ShellState(preferences: try #require(UserDefaults(suiteName: UUID().uuidString))) }
     private func wait(_ wire: RunHostWire) async {
@@ -155,6 +168,77 @@ private struct HistoryHostNeverTransport: ClientTransport {
             messages: f.messages, session: f.session, sessionOperation: f.operation, currentBinding: { current.current() })
         #expect(host.bind(value))
         return (host, value)
+    }
+    private func candidate(_ f: RunHostFixture, current: HistoryHostCurrent, directory: URL, wire: CandidateBubbleWire) throws -> (MemoryCandidateContainerHost, MemoryCandidateContainerBinding) {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+        let key = SymmetricKey(size: .bits256)
+        let store = try MemoryCandidatePendingStore(directory: directory, maximumBytes: 100_000, maximumRecords: 10,
+            namespace: .init(environment: current.value.environment, account: current.value.account, purpose: .localMemoryPendingV1), keyID: UUID(), key: { key })
+        let client = MemoryCandidateClient(endpoint: try MemoryEndpoint(url: #require(URL(string: "https://synthetic.invalid")), maximumRequestBytes: 32768, maximumResponseBytes: 65536),
+            credentials: { _ in "SYNTHETIC" }, currentBinding: { current.current() }, currentConversation: { f.messages.selectedConversation },
+            session: f.session, sessionOperation: f.operation, pendingStore: store, interceptedTransport: wire, readWire: .canonicalProjectionV2)
+        let host = MemoryCandidateContainerHost(shell: f.shell)
+        let value = MemoryCandidateContainerBinding(client: client, memory: current.value, shellGeneration: f.shell.generation,
+            messages: f.messages, session: f.session, sessionOperation: f.operation, currentBinding: { current.current() })
+        #expect(host.bind(value)); return (host, value)
+    }
+    @Test func suggestionBubbleReadsActualMessageSelectionAndNeverTheUIContext() async throws {
+        let f = try RunHostFixture(shell: shell()); try f.bind(nil)
+        let dir = FileManager.default.temporaryDirectory.resolvingSymlinksInPath().appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let wire = CandidateBubbleWire(), (host, _) = try candidate(f, current: HistoryHostCurrent(), directory: dir, wire: wire)
+        #expect(f.shell.apply(.init(context: .init(conversationReference: "forged")), for: f.shell.generation))
+        let context = try #require(host.captureConversationRead())
+        await host.loadSuggestions(context: context)
+        let model = try #require(host.presentation)
+        #expect(model.state == .ready && model.candidates.isEmpty && model.conversationID == "chat-e\u{301}")
+        let paths = await wire.paths
+        #expect(paths.count == 1)
+        let path = try #require(paths.first)
+        let query = try #require(URLComponents(string: path)?.queryItems)
+        #expect(query.first(where: { $0.name == "conversation_id" })?.value == "chat-e\u{301}")
+    }
+    @Test func oldSuggestionButtonCannotReadAfterTheSameBindingIsReinstalled() async throws {
+        let f = try RunHostFixture(shell: shell()); try f.bind(nil)
+        let dir = FileManager.default.temporaryDirectory.resolvingSymlinksInPath().appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let wire = CandidateBubbleWire(), (host, binding) = try candidate(f, current: HistoryHostCurrent(), directory: dir, wire: wire)
+        let context = try #require(host.captureConversationRead())
+        host.invalidate(); #expect(host.bind(binding))
+        #expect(!host.isCurrent(context))
+        await host.loadSuggestions(context: context)
+        #expect(await wire.paths.isEmpty)
+        await host.loadSuggestions(context: host.captureConversationRead())
+        #expect(await wire.paths.count == 1)
+    }
+    @Test func lastCurrentCallbackRetiresTheOldSuggestionReadBeforeHTTP() async throws {
+        let f = try RunHostFixture(shell: shell()); try f.bind(nil)
+        let dir = FileManager.default.temporaryDirectory.resolvingSymlinksInPath().appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let wire = CandidateBubbleWire(), current = HistoryHostCurrent()
+        let (host, binding) = try candidate(f, current: current, directory: dir, wire: wire)
+        let context = try #require(host.captureConversationRead())
+        current.callback = { host.invalidate(); #expect(host.bind(binding)) }
+        await host.loadSuggestions(context: context)
+        #expect(await wire.paths.isEmpty)
+        #expect(!host.isCurrent(context))
+        await host.loadSuggestions(context: host.captureConversationRead())
+        #expect(await wire.paths.count == 1)
+        let reviewContext = try #require(host.captureConversationRead())
+        current.callback = { host.invalidate(); #expect(host.bind(binding)) }
+        #expect(!host.isCurrent(reviewContext))
+        #expect(await wire.paths.count == 1)
+    }
+    @Test func suggestionReadPreparedByAClosedPageCannotDispatch() async throws {
+        let f = try RunHostFixture(shell: shell()); try f.bind(nil)
+        let dir = FileManager.default.temporaryDirectory.resolvingSymlinksInPath().appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let wire = CandidateBubbleWire(), (host, _) = try candidate(f, current: HistoryHostCurrent(), directory: dir, wire: wire)
+        host.synchronizeConversation()
+        let context = try #require(host.captureConversationRead())
+        host.retirePresentation()
+        await host.loadSuggestions(context: context)
+        #expect(await wire.paths.isEmpty)
     }
     @Test func historyUsesActualMessageConversationAndRetiresOnIdentityChange() throws {
         let f = try RunHostFixture(shell: shell()); try f.bind(nil)

@@ -658,6 +658,50 @@ import Observation
     func invalidate() { client.invalidate() }
 }
 
+/// Exact provided candidate family. Ordinary Root activation waits for B's
+/// merged device coverage and shared Memory-key emptiness rule for this family.
+/// No environment job, attempt or candidate ID is accepted by the constructor.
+@MainActor final class DevelopmentMemoryCandidateComponents {
+    let host: MemoryCandidateContainerHost
+    private let client: MemoryCandidateClient
+    init(configuration: DevelopmentSessionConfiguration, endpointURL: URL, binding: MemoryBinding,
+        key: MessageEncryptionKey, keys: ScopedMessageKeyProvider, shell: ShellState,
+        messages: AssistantMessageHost, session: SessionLifecycle, operation: SessionOperation,
+        current: @escaping @MainActor () -> MemoryBinding?) throws {
+        let files = FileManager.default
+        let support = try files.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+        let legacy = support.appendingPathComponent("G2CDevelopmentMemory", isDirectory: true)
+            .appendingPathComponent(configuration.environmentID.uuidString, isDirectory: true)
+            .appendingPathComponent(configuration.accountID.uuidString, isDirectory: true)
+        let existing = try keys.existing(expectedID: key.id, for: keys.begin(.lookup))
+        guard binding.environment == configuration.environmentID, binding.account == configuration.accountID,
+              key.namespace == keys.namespace, key.id == existing?.id,
+              current() == binding, session.isCurrent(operation) else { throw MemoryFailure.staleBinding }
+        let root = legacy.appendingPathExtension("candidate-v1")
+        if !files.fileExists(atPath: root.path) {
+            try files.createDirectory(at: root, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+        }
+        try provisionJournalSiblings(of: root, suffixes: ["CJMemoryCandidateRejectionsV1"])
+        let store = try MemoryCandidatePendingStore(directory: root, maximumBytes: 100_000, maximumRecords: 100,
+            binding: binding, expectedKeyID: key.id, provider: keys)
+        let endpoint = try MemoryEndpoint(url: endpointURL, maximumRequestBytes: 32768, maximumResponseBytes: 524288, allowLoopbackHTTP: true)
+        client = try MemoryCandidateClient(development: endpoint, readWire: .canonicalProjectionV2,
+            credentials: { requested in
+                guard requested == binding, current() == binding, session.isCurrent(operation) else { return nil }
+                return configuration.token
+            }, currentBinding: current, currentConversation: {
+                guard current() == binding, session.isCurrent(operation) else { return nil }
+                let selected = messages.selectedConversation
+                guard current() == binding, session.isCurrent(operation) else { return nil }
+                return selected
+            }, session: session, sessionOperation: operation, pendingStore: store, requestTimeout: 10, resourceTimeout: 20)
+        host = MemoryCandidateContainerHost(shell: shell)
+        guard host.bind(.init(client: client, memory: binding, shellGeneration: shell.generation, messages: messages,
+            session: session, sessionOperation: operation, currentBinding: current)) else { throw MemoryFailure.staleBinding }
+    }
+    func invalidate() { host.invalidate(); client.invalidate() }
+}
+
 @MainActor private final class DevelopmentMessageLifetime {
     var active = true
     let isCurrent: @MainActor () -> Bool
