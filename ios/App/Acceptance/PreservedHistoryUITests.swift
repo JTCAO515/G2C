@@ -66,14 +66,24 @@ import Foundation
         tap("assistant.serverHistory"); tap("history.loadConversations")
         tap("history.conversation." + f.conversation_id)
         tap("history.loadMessages")
-        let original = app.staticTexts["history.message." + f.message_id]
-        reveal(original); XCTAssertEqual(original.label, f.text)
+        let original = app.textViews["history.message." + f.message_id]
+        reveal(original); XCTAssertEqual(Array(try XCTUnwrap(original.value as? String).utf8), Array(f.text.utf8))
+        original.press(forDuration: 1)
+        let copyNames = NSPredicate(format: "label IN %@", ["Copy", "拷贝", "复制"])
+        let copyMenu = app.menuItems.matching(copyNames)
+        let copyButtons = app.buttons.matching(copyNames)
+        let nativeCopy = copyMenu.element.waitForExistence(timeout: 2) ? copyMenu : copyButtons
+        XCTAssertTrue(nativeCopy.element.waitForExistence(timeout: 5))
+        XCTAssertEqual(nativeCopy.count, 1); XCTAssertTrue(nativeCopy.element.isEnabled)
+        let selection = XCTAttachment(screenshot: app.screenshot()); selection.name = "history-copy-menu-" + language
+        selection.lifetime = .keepAlways; add(selection)
+        app.swipeUp()
         let erased = app.staticTexts["history.source.erased." + f.message_id]
         reveal(erased)
         XCTAssertTrue(erased.label.contains(language == "en" ? "viewing only" : "仅供查看"))
         tap("history.answer.read." + f.message_id)
-        let answer = app.staticTexts["history.answer.text." + f.message_id]
-        reveal(answer); XCTAssertEqual(answer.label, f.answer)
+        let answer = app.textViews["history.answer.text." + f.message_id]
+        reveal(answer); XCTAssertEqual(Array(try XCTUnwrap(answer.value as? String).utf8), Array(f.answer.utf8))
         let readonly = app.staticTexts["history.answer.readonly." + f.message_id]
         reveal(readonly)
         XCTAssertTrue(readonly.label.contains(language == "en" ? "does not resend" : "不会重发"))

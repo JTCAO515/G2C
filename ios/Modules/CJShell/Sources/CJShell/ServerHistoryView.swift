@@ -49,7 +49,7 @@ struct ServerHistoryView: View {
                         humanMessage(row)
                     }
                     ForEach(host.messages, id: \.messageBytes) { row in
-                        RunReadableText(text: row.text).textSelection(.enabled).accessibilityIdentifier("history.message." + row.receipt.message_id)
+                        RunSelectableText(text: row.text).accessibilityIdentifier("history.message." + row.receipt.message_id)
                     }
                     if host.hasMoreMessages {
                         historyButton(language.text("Next messages page", "下一页消息")) { Task { await host.loadHistory(context: readContext, more: true) } }
@@ -63,7 +63,7 @@ struct ServerHistoryView: View {
                     if let draft = host.serverDraft {
                         RunReadableText(text: language.text("Saved revision", "保存版本") + " \(draft.revision)")
                         if let bytes = Data(base64Encoded: draft.original_utf8_base64), let text = String(data: bytes, encoding: .utf8) {
-                            RunReadableText(text: text.isEmpty ? language.text("Saved empty draft", "已保存的空草稿") : text).textSelection(.enabled)
+                            RunSelectableText(text: text.isEmpty ? language.text("Saved empty draft", "已保存的空草稿") : text)
                         }
                     }
                 } header: { historyHeading(language.text("Server draft — read only", "服务器草稿——只读")) }
@@ -99,7 +99,7 @@ struct ServerHistoryView: View {
         let run = host.humanRun(row)
         let source = run?.sourceState ?? row.sourceState
         let context = host.captureHumanRun(row)
-        RunReadableText(text: row.text).textSelection(.enabled)
+        RunSelectableText(text: row.text)
             .accessibilityIdentifier("history.message." + row.receipt.message_id)
         if source == .erased {
             RunReadableText(text: language.text(
@@ -114,7 +114,7 @@ struct ServerHistoryView: View {
         status(host.humanRunStatus(row))
             .accessibilityIdentifier("history.answer.status." + row.receipt.message_id)
         if let run {
-            RunReadableText(text: run.snapshot.text).textSelection(.enabled)
+            RunSelectableText(text: run.snapshot.text)
                 .accessibilityIdentifier("history.answer.text." + row.receipt.message_id)
             RunReadableText(text: language.text(
                 "Reading this answer does not resend the message or restart its task.",
