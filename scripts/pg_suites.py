@@ -602,6 +602,13 @@ def group_deploy_recovery():
 GROUPS.update(deploy_recovery=group_deploy_recovery)
 
 
+def group_supabase_namespace():
+    return script('scripts/supabase_m4_pg_check.py')
+
+
+GROUPS.update(supabase_namespace=group_supabase_namespace)
+
+
 def main(argv):
     if argv[:1] == ['--shard']:
         index, count = map(int, argv[1].split('/'))

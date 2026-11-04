@@ -56,6 +56,7 @@ def main():
     results = [run('backend/tests', [*pytest, 'backend/tests'])]
     results.append(run('deploy boundaries', [*pytest, 'deploy/tests'],
                        extra_path=os.pathsep.join((str(ROOT),str(ROOT/'scripts')))))
+    results.append(run('Supabase M4 boundaries', [*pytest, 'scripts/test_supabase_m4.py'],extra_path=ROOT/'scripts'))
     tests = BACKEND / 'cj_api/tests'
     results.append(run('cj_api unit', ['-B', '-m', 'unittest', 'discover', '-s', '.', '-p', 'test_*.py'], tests, tests))
     for check in sorted(p.name for p in tests.glob('*_checks.py') if p.name not in PG_WIRE_CHECKS):
