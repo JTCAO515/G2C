@@ -1,11 +1,17 @@
 """JT's approved M4 quality rules; no provider calls or release side effects."""
 import math
 from fractions import Fraction
+from judge import required_checks
 
 
 POLICY = dict(id='JT-2026-11-04-M4', source='docs/scope.md; #495; PR518',
               completion_rate_minimum=0.90, serious_errors_maximum=0,
               first_body_p95_maximum_seconds=5, full_answer_p95_maximum_seconds=90)
+
+
+def known_reference(value):
+    return (isinstance(value,str) and bool(value.strip())
+            and not value.strip().upper().startswith(('UNKNOWN','UNRUN')))
 
 
 def _combine(statuses):
@@ -18,21 +24,63 @@ def _combine(statuses):
     return 'PASS'
 
 
-def hard_status(row):
+def program_proof(row):
     """Use independent program evidence, never a model's hard-success claim."""
-    verdict = row.get('judgment', {})
-    proof = row.get('independent_judgment', {})
+    verdict = row.get('judgment') or {}
+    proof = row.get('independent_judgment') or {}
     program = (proof.get('kind') == 'program' and proof.get('independent') is True
                and proof.get('ref') == 'eval/judge.py')
     legacy = (not any(k in proof for k in ('kind','independent','ref'))
               and verdict.get('kind') == 'program' and verdict.get('independent') is True
               and verdict.get('ref') == 'eval/judge.py')
-    if not (program or legacy) or not row.get('raw_evidence_ref'):
+    return bool((program or legacy) and known_reference(row.get('raw_evidence_ref')))
+
+
+def check_status(check, scenario=None):
+    if check['status'] != 'PASS':
+        return check['status']
+    if 'actual' not in check or 'expected' not in check or check['actual'] is None:
+        return 'UNKNOWN'
+    actual, expected = check['actual'], check['expected']
+    fixed = {}
+    if scenario is not None:
+        recipe = scenario.get('recipe','')
+        fixed = dict(restricted_role='cj_m1_runtime',foreign_read=0,foreign_write=0,
+                     unconfirmed_memory_write_count=0,original_memory_presence=1,
+                     formal_write_count=1 if recipe=='accept' else 0,formal_version=1)
+        if recipe.startswith('memory-'):
+            fixed['persisted_memory_kind']=scenario.get('memory_kind','preference')
+            fixed['persisted_memory_status']='disabled' if recipe=='memory-pause' else 'withdrawn' if recipe=='memory-stop' else 'active'
+            if recipe in ('memory-pause','memory-stop'):
+                fixed['current_memory_context']=[]
+        fixed.update({k:dict(maximum=scenario[k]) for k in ('max_days','max_daily_items','budget_limit') if k in scenario})
+        if 'transfer_minutes' in scenario:
+            fixed['verified_transfer_feasibility']=False
+    required_expected = fixed.get(check.get('name'),expected)
+    mismatch = expected != required_expected
+    expected = required_expected
+    if isinstance(expected, dict) and set(expected) == {'maximum'}:
+        if (type(actual) not in (int,float) or not math.isfinite(actual)
+                or type(expected['maximum']) not in (int,float) or not math.isfinite(expected['maximum'])):
+            return 'UNKNOWN'
+        return 'FAIL' if actual > expected['maximum'] else 'UNKNOWN' if mismatch else 'PASS'
+    if type(actual) is not type(expected):
+        return 'UNKNOWN'
+    return 'FAIL' if actual != expected else 'UNKNOWN' if mismatch else 'PASS'
+
+
+def hard_status(row, scenario):
+    """Check complete scenario coverage and serialized proof consistency."""
+    proof = row.get('independent_judgment') or {}
+    if not program_proof(row):
         return 'UNKNOWN'
     checks = proof.get('checks', [])
-    if proof.get('hard_outcome') == 'FAIL' or any(c['status'] == 'FAIL' for c in checks):
+    if proof.get('hard_outcome') == 'FAIL' or any(check_status(c,scenario) == 'FAIL' for c in checks):
         return 'FAIL'
-    if not checks or any(c['status'] != 'PASS' for c in checks):
+    required = required_checks(scenario)
+    if required is None or not required <= {c.get('name') for c in checks}:
+        return 'UNKNOWN'
+    if any(check_status(c,scenario) != 'PASS' for c in checks):
         return 'UNKNOWN'
     return 'PASS' if proof.get('hard_outcome') == 'PASS' else 'UNKNOWN'
 
@@ -40,7 +88,7 @@ def hard_status(row):
 def _reviewed(row):
     review = row.get('serious_error_review')
     return bool(review and review['kind'] in ('human', 'program')
-                and review['independent'] and review['ref'] and review['outcome'] == 'PASS')
+                and review['independent'] and known_reference(review['ref']) and review['outcome'] == 'PASS')
 
 
 def _timing(stats, rows, field, limit, started):
@@ -58,7 +106,19 @@ def _timing(stats, rows, field, limit, started):
                 maximum_seconds=limit, known_slow_n=slow, **stats)
 
 
-def profile_gate(*, counts, rows, first_body, full_answer, serious_errors, real):
+def network_status(network):
+    proof = network.get('measurement') or {}
+    if (network.get('kind') not in ('local_real_services','target_network')
+            or proof.get('kind') not in ('human','program') or proof.get('independent') is not True
+            or proof.get('outcome') != 'PASS' or not known_reference(proof.get('ref'))
+            or not known_reference(network.get('client_environment')) or not known_reference(network.get('endpoint'))):
+        return 'UNKNOWN'
+    if network['kind'] == 'target_network' and network['endpoint'] != 'https://api-beta.go2china.space':
+        return 'UNKNOWN'
+    return 'PASS'
+
+
+def profile_gate(*, counts, rows, first_body, full_answer, serious_errors, real, scenarios, network):
     planned = len(rows)
     started = planned - counts['UNRUN']
     minimum = Fraction(str(POLICY['completion_rate_minimum']))
@@ -71,8 +131,8 @@ def profile_gate(*, counts, rows, first_body, full_answer, serious_errors, real)
     else:
         completion = 'PASS'
     current = [r for r in rows if r is not None]
-    hard_failures = [r['raw_evidence_ref'] for r in current if hard_status(r) == 'FAIL']
-    hard_unknown_n = sum(hard_status(r) == 'UNKNOWN' for r in current)
+    hard_failures = [r['raw_evidence_ref'] for r in current if hard_status(r,scenarios[r['scenario_id']]) == 'FAIL']
+    hard_unknown_n = sum(hard_status(r,scenarios[r['scenario_id']]) == 'UNKNOWN' for r in current)
     reviewed = sum(_reviewed(r) for r in current)
     review_failures = [r['serious_error_review']['ref'] for r in current
                       if r.get('serious_error_review') and r['serious_error_review']['kind'] in ('human', 'program')
@@ -98,8 +158,11 @@ def profile_gate(*, counts, rows, first_body, full_answer, serious_errors, real)
         first_body_p95=_timing(first_body, rows, 'first_body_seconds', POLICY['first_body_p95_maximum_seconds'], started),
         full_answer_p95=_timing(full_answer, rows, 'full_answer_seconds', POLICY['full_answer_p95_maximum_seconds'], started))
     diagnostic = _combine([c['status'] for c in criteria.values()])
+    net = network_status(network)
+    real_decision = _combine([diagnostic,net]) if real and started else 'UNRUN'
     return dict(criteria=criteria, diagnostic_status=diagnostic,
-                evaluation_release_decision=diagnostic if real else 'UNRUN',
+                network_evidence_status=net,
+                evaluation_release_decision=real_decision,
                 evidence_scope='real evaluation' if real else 'format-only; not a real quality conclusion')
 
 
@@ -107,8 +170,13 @@ def acceptance(profiles, plan):
     candidates = []
     for candidate in plan['candidates']:
         groups = [p for p in profiles if p['candidate_id'] == candidate['id']]
+        target = any(p['network'].get('kind') == 'target_network' for p in groups)
+        status = _combine([p['evaluation_release_decision'] for p in groups])
+        if plan['evidence_layer'] == 'real' and not target and status != 'FAIL':
+            status = 'UNKNOWN' if any(p['criteria']['completion_rate']['denominator'] for p in groups) else 'UNRUN'
         candidates.append(dict(candidate_id=candidate['id'],
-                               evaluation_release_decision=_combine([p['evaluation_release_decision'] for p in groups])))
+                               target_network_planned=target,
+                               evaluation_release_decision=status))
     return dict(policy=POLICY, profiles=profiles, candidates=candidates,
                 evaluation_release_decision=candidates[0]['evaluation_release_decision'] if len(candidates) == 1 else 'UNKNOWN',
                 scope='M4 evaluated candidate/language/network only; does not close other release prerequisites',

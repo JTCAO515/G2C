@@ -120,7 +120,9 @@ p95超标时可FAIL，其他缺测为UNKNOWN/UNRUN。没有完整观测不能凭
   `draft_seconds` 推造。原任务类别/集合的独立统计仍保留。
 - `independent_judgment`：独立程序的实际硬检查。新记录带
   `kind=program, independent=true, ref=eval/judge.py`；旧#497记录按原程序引用
-  保留兼容。模型自评或缺少检查不能认证硬项，FAIL标签不能被PASS标签覆盖。
+  保留兼容。按冻结场景核对全部适用检查名称与actual/expected一致性；只给一项
+  PASS或缺owner/写入/撤回断言不能认证硬项。硬FAIL或任何来源已知严重错误会
+  先覆盖任务PASS，再计算分组/完成率；嵌套程序错误与原顶层错误都保留，原观测不改。
 - `serious_error_review`：`kind=human/program`、`independent=true`、
   `outcome=PASS/FAIL/UNKNOWN` 和非空`ref`。这是完整严重错误审查的依据，
   不能由model声明零错误。已观察的严重错误，即使`resolved=true`，也仍使
@@ -129,10 +131,15 @@ p95超标时可FAIL，其他缺测为UNKNOWN/UNRUN。没有完整观测不能凭
   为null/UNKNOWN，不填零。费用沿原`cost.components`，金额为十进制字符串、
   币种与来源保留；新增`basis=billed/estimated/reserved`，真实账单还需要
   `receipt_ref`。只有完整账单覆盖才是已知实际总额；估算、预留与缺账单分别展示，
-  不当成实付。费用完整性是报告字段，不添加JT未批准的单任务费用门槛。
+  不当成实付；原`groups[].cost`也仅统计有账单依据的实付，不合计估算与预留为
+  “已知费用”。原始components仍完整保留。费用完整性不添加JT未批准的单任务费用门槛。
 
-`plan.networks` 冻结每个真实网络组及其环境/证据；本机ASGI不冒充目标网络，
-测试后端 `api-beta.go2china.space` 的测量等B在#30通知就绪后再执行。
+`plan.networks` 冻结每个真实网络组及其环境/证据。真实组须有
+`kind=local_real_services/target_network`、`endpoint`、`client_environment`和
+`measurement={kind:program/human,independent:true,outcome:PASS,ref:...}`。空值或
+UNKNOWN标记不能认证测量。本机ASGI不冒充目标网络；完整候选放行还须计划并测量
+`target_network`组，endpoint为`https://api-beta.go2china.space`。该组测量等B在#30
+通知就绪后再执行，缺组/未测不输出候选PASS；本机真实服务范围的四指标可先单独报告。
 
 Fake/local/synthetic 报告会显示门槛的诊断PASS/FAIL/UNKNOWN，但
 `evaluation_release_decision=UNRUN`，不算真实结论。只有`evidence_layer=real`

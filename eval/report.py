@@ -2,8 +2,33 @@
 from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'evaluation/cj028'))
-from evaluate import summarize, latency, require, number, amount, exact_sum, nonempty
-from gates import profile_gate, acceptance, hard_status
+from evaluate import summarize, validate, outcome, latency, require, number, amount, exact_sum, nonempty
+from gates import profile_gate, acceptance, hard_status, program_proof, known_reference
+
+
+def effective_observation(row, scenario):
+    """Reconcile deserialized program evidence before computing any numerator."""
+    effective = dict(row)
+    proof = row.get('independent_judgment') or {}
+    errors = list(row.get('serious_errors', []))
+    if program_proof(row):
+        for error in proof.get('serious_errors') or []:
+            if error not in errors:
+                errors.append(error)
+        effective['independent_judgment'] = dict(proof,kind='program',independent=True,ref='eval/judge.py')
+    hard = hard_status(row,scenario)
+    if hard == 'FAIL' and not errors:
+        errors.append(dict(kind='program',ref='eval/judge.py:hard_failure',
+                           description='Independent hard-state/constraint check failed',resolved=False))
+    if errors or hard == 'FAIL':
+        effective.update(judgment=dict(kind='program',independent=True,outcome='FAIL',ref='eval/gates.py'),
+                         serious_errors=errors,normalization='Known serious/hard failure overrides task PASS, including resolved history')
+        if row['status'] == 'missing':
+            effective['status'] = 'failure'
+    elif hard == 'UNKNOWN' and outcome(row) == 'PASS':
+        effective.update(judgment=dict(kind='program',independent=True,outcome='UNKNOWN',ref='eval/gates.py'),
+                         normalization='Incomplete independent hard coverage cannot certify task PASS')
+    return effective
 
 
 def real_fees(rows):
@@ -18,7 +43,7 @@ def real_fees(rows):
         for component in cost['components']:
             basis = component.get('basis')
             known = component.get('amount') is not None
-            if basis == 'billed' and not nonempty(component.get('receipt_ref')):
+            if basis == 'billed' and (not known_reference(component.get('receipt_ref')) or not known_reference(component['source'])):
                 basis = None
             if basis in subtotals and known:
                 subtotals[basis].setdefault(component['currency'], []).append(amount(component['amount']))
@@ -35,7 +60,17 @@ def real_fees(rows):
 
 
 def report(plan, observations):
-    result = summarize(plan, observations)
+    scenarios,_,_ = validate(plan,observations)
+    for network in plan['networks']:
+        measurement = network.get('measurement')
+        require(measurement is None or isinstance(measurement,dict), 'invalid network measurement')
+        if measurement is not None:
+            require(measurement.get('kind') in ('human','program','model')
+                    and type(measurement.get('independent')) is bool
+                    and nonempty(measurement.get('ref'))
+                    and measurement.get('outcome') in ('PASS','FAIL','UNKNOWN'), 'invalid network measurement evidence')
+        for field in ('endpoint','client_environment','kind'):
+            require(network.get(field) is None or nonempty(network[field]), 'invalid network '+field)
     for row in observations:
         for field in ('model_calls', 'tool_calls', 'memory_calls'):
             calls = row.get(field)
@@ -52,12 +87,16 @@ def report(plan, observations):
         if proof is not None:
             require(isinstance(proof, dict), 'invalid independent judgment')
             checks = proof.get('checks', [])
-            require(isinstance(checks, list) and all(isinstance(c, dict) and c.get('status') in ('PASS','FAIL','UNKNOWN') for c in checks),
+            require(isinstance(checks, list) and all(isinstance(c, dict) and nonempty(c.get('name')) and c.get('status') in ('PASS','FAIL','UNKNOWN') for c in checks),
                     'invalid independent program checks')
+            require(proof.get('serious_errors') is None or isinstance(proof['serious_errors'],list), 'invalid nested serious errors')
         cost = row.get('cost')
         for component in cost['components'] if cost is not None else []:
             require(component.get('basis') is None or isinstance(component['basis'], str), 'invalid fee basis')
             require(component.get('receipt_ref') is None or nonempty(component['receipt_ref']), 'invalid fee receipt ref')
+    effective = [effective_observation(row,scenarios[row['scenario_id']]) for row in observations]
+    result = summarize(plan,effective)
+    result['raw_observations'] = observations
     for group in result['groups']:
         rows = [a['observation'] for a in group['attempts']]
         counts = [r.get('model_calls') for r in rows if r is not None]
@@ -69,9 +108,18 @@ def report(plan, observations):
         group['latency_scope'] = 'signed API submit through original worker and final authoritative read; not UI first-body timing'
         def hard(row):
             if row is None or row['status']=='missing': return 'UNRUN'
-            return hard_status(row)
+            return hard_status(row,scenarios[row['scenario_id']])
         group['hard_outcomes'] = {status:sum(hard(r)==status for r in rows)
                                   for status in ('PASS','FAIL','UNKNOWN','UNRUN')}
+        fees = real_fees(rows)
+        group['real_fees'] = fees
+        # The established cost field must not call estimates or reservations
+        # known actual money. Original components stay in raw observations.
+        group['cost'] = dict(known_subtotals_by_currency=fees['subtotals_by_basis']['billed'],
+                            complete_attempt_n=fees['complete_billed_attempt_n'],
+                            unknown_or_missing_attempt_n=fees['unknown_or_missing_attempt_n'],
+                            unknown_component_n=fees['unknown_component_n'],planned_attempt_n=len(rows),
+                            total_cost_known=fees['status']=='PASS',budget_decision='UNKNOWN')
     profiles = []
     for candidate in plan['candidates']:
         for language in ('zh','en'):
@@ -89,7 +137,7 @@ def report(plan, observations):
                                real_fees=real_fees(rows),
                                **profile_gate(counts=counts,rows=rows,first_body=latency(rows,'first_body_seconds'),
                                               full_answer=latency(rows,'full_answer_seconds'),serious_errors=errors,
-                                              real=plan['evidence_layer']=='real'))
+                                              real=plan['evidence_layer']=='real',scenarios=scenarios,network=network))
                 profile['call_volume'] = {}
                 for field in ('model_calls','tool_calls','memory_calls'):
                     values = [r.get(field) for r in rows if r is not None]
