@@ -15,11 +15,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--only', nargs='+')
+    parser.add_argument('--suite', choices=('isolation', 'commit'), default='isolation')
     args = parser.parse_args()
     # Refuse overwriting prior FAIL/UNKNOWN evidence.
     args.output.mkdir(parents=True, exist_ok=False)
-    from isolation import EXPERIMENTS
-    experiments = EXPERIMENTS
+    from importlib import import_module
+    experiments = import_module(args.suite).EXPERIMENTS
     if args.only:
         unknown = set(args.only) - {row[0] for row in experiments}
         if unknown:
