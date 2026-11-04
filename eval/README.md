@@ -237,6 +237,7 @@ SHA，分别记录B后端pin和C runner pin。该overlay只加入已提交的eva
 只提供`CJ_ENV=local`、`CJ_DEPLOY_TARGET=hk-beta`、`CJ_M4_SYNTHETIC_ONLY=1`、
 原producer、已核试用期限及上述非秘密来源pin。不得提供Supabase/operator/cleanup/
 签名私钥/OSS身份或Docker socket。C只用全新私有Unix PG、`search_path=public`、
+镜像中显式`CJ_PG_BINDIR=/usr/lib/postgresql/17/bin`（不依赖宿主pg_config）、
 原受限业务角色与原worker；B的授权期限守卫传入原`RealServices.from_environment`。
 服务凭据只在构造原服务时暂入进程，随即移除；PG子进程不继承，重启worker从同一
 0600子集重新构造服务，不沿用旧Mac SDK。缺件/错误权限/源码不符均停下，不走备用出口。
