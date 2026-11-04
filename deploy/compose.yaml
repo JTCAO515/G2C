@@ -1,0 +1,82 @@
+name: ${COMPOSE_PROJECT_NAME:?explicit local project name required}
+services:
+  database:
+    image: g2c-m4-postgres:current
+    environment:
+      POSTGRES_USER: cj_deploy_admin
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD_FILE: /run/secrets/database-password
+    command: [postgres, -c, "listen_addresses=", -c, "unix_socket_permissions=0777", -c, "hba_file=/etc/g2c/pg_hba.conf", -c, "ident_file=/etc/g2c/pg_ident.conf"]
+    volumes:
+      - database:/var/lib/postgresql/data
+      - socket:/var/run/postgresql
+      - ${CJ_DEPLOY_CONFIG:?explicit config directory required}/operator/database-password:/run/secrets/database-password:ro
+    healthcheck:
+      test: [CMD, pg_isready, -h, /var/run/postgresql, -U, cj_deploy_admin, -d, postgres]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+  migrate:
+    image: g2c-m4-local:current
+    user: "0:0"
+    command: [migrate]
+    environment:
+      <<: &runtime_environment
+        CJ_ENV: local
+        CJ_LOCAL_CONNINFO: /run/runtime/runtime.json
+        CJ_LOCAL_AUTH_DIR: /run/runtime/auth
+        CJ_LOCAL_RUN_CONTEXT: /run/runtime/run.json
+        CJ_DEPLOY_CONTROL: /control
+        CJ_DEPLOY_HEARTBEAT: /heartbeat
+        CJ_DEPLOY_PROVIDER: fake
+        CJ_DEPLOY_RECOVERY_PUBLIC_KEY_FILE: /run/runtime/recovery.pub
+      CJ_DEPLOY_MIGRATION_CONNINFO: /run/operator/migration.json
+      CJ_DEPLOY_RECOVERY_KEY_FILE: /run/operator/recovery.key
+    volumes:
+      - socket:/var/run/postgresql
+      - ${CJ_DEPLOY_CONFIG:?explicit config directory required}/runtime:/run/runtime:ro
+      - ${CJ_DEPLOY_CONFIG:?explicit config directory required}/operator:/run/operator:ro
+      - ${CJ_DEPLOY_CONTROL_DIR:?explicit control directory required}:/control
+    depends_on:
+      database: {condition: service_healthy}
+  api:
+    image: g2c-m4-local:current
+    user: &user "${CJ_DEPLOY_UID:?explicit uid required}:${CJ_DEPLOY_GID:?explicit gid required}"
+    command: [api]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    read_only: true
+    tmpfs: [/tmp]
+    environment: *runtime_environment
+    volumes:
+      - socket:/var/run/postgresql
+      - ${CJ_DEPLOY_CONFIG:?explicit config directory required}/runtime:/run/runtime:ro
+      - ${CJ_DEPLOY_CONTROL_DIR:?explicit control directory required}:/control:ro
+      - ${CJ_DEPLOY_HEARTBEAT_DIR:?explicit heartbeat directory required}:/heartbeat:ro
+    ports: ["127.0.0.1:${CJ_DEPLOY_PORT:?explicit loopback port required}:8765"]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    healthcheck:
+      test: [CMD, python, -m, deploy.healthcheck]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+  worker:
+    image: g2c-m4-local:current
+    user: *user
+    command: [worker]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    read_only: true
+    tmpfs: [/tmp]
+    environment: *runtime_environment
+    volumes:
+      - socket:/var/run/postgresql
+      - ${CJ_DEPLOY_CONFIG:?explicit config directory required}/runtime:/run/runtime:ro
+      - ${CJ_DEPLOY_CONTROL_DIR:?explicit control directory required}:/control:ro
+      - ${CJ_DEPLOY_HEARTBEAT_DIR:?explicit heartbeat directory required}:/heartbeat
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+volumes:
+  database:
+  socket:
