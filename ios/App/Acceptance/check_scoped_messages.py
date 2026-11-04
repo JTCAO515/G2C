@@ -24,6 +24,7 @@ if ARGS.device:
  if CASE.endswith('Largest'):parser.error('Device maximum-font case needs actual system font setup; not a launch-argument substitute')
  if CASE=='testFormalPlaceMapUnavailable':parser.error('Device map outage needs a real device network case; simulator delegate fault is not device evidence')
  from m4_device import LocalTLS,configure_project,scan_app_container
+ from m4_artifacts import export_native_logs,redact
  TLS=LocalTLS.load(ARGS.local_tls)
 elif ARGS.local_tls or ARGS.amap_device:parser.error('Device options require --device')
 if ARGS.amap_device and not PLACE_MAP:parser.error('AMap device configuration is restricted to the formal PLACE map cases')
@@ -62,7 +63,7 @@ def expect(response,phase):
 def known(x):return dict(state='known',value=x)
 def event(date,clock):return dict(date=known(date),time=known(clock),timezone=known('Asia/Shanghai'),utc_offset=known('+08:00'))
 sources=[*list((ROOT/'ios/App').glob('*.swift')),HERE/'DevelopmentScopedMessageUITests.swift',Path(__file__)]
-if TLS:sources += [HERE/'m4_device.py',HERE/'M4DeviceControl.swift']
+if TLS:sources += [HERE/'m4_device.py',HERE/'m4_artifacts.py',HERE/'M4DeviceControl.swift']
 for name in ('CJManualPreviewClient','CJShell','CJMessageClient','CJRunClient','CJTripClient','CJNeedsClient','CJMemoryClient'):
  sources+=list((ROOT/'ios/Modules'/name/'Sources').rglob('*.swift'))
 r['source_hashes']={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sources};save()
@@ -603,22 +604,37 @@ try:
      subprocess.run(['xcrun','simctl','ui',ARGS.simulator,'content_size',desired],check=True,capture_output=True);r['simulator_content_size']=subprocess.check_output(['xcrun','simctl','ui',ARGS.simulator,'content_size'],text=True).strip();assert r['simulator_content_size']==desired;save()
     (builder.directory/'G2CControl.swift').write_text(test_source)
     destination='platform=iOS,id='+ARGS.device if TLS else 'platform=iOS Simulator,id='+ARGS.simulator
-    result=OUT/(CASE+'.xcresult');command=['xcodebuild','-project',str(project),'-scheme','G2CControl','-configuration','Debug','-destination',destination,'-derivedDataPath',str(BUILD),'-resultBundlePath',str(result),'-scmProvider','system','-skipPackageUpdates','-onlyUsePackageVersionsFromResolvedFile','-parallel-testing-enabled','NO','-collect-test-diagnostics','never','ARCHS=arm64','ONLY_ACTIVE_ARCH=YES','CODE_SIGNING_ALLOWED=YES','CODE_SIGN_IDENTITY=-','-only-testing:G2CControl/DevelopmentScopedMessageUITests/'+CASE,'test']
+    if TLS:
+     quarantine=Path(tempfile.mkdtemp(prefix='g2c-m4-private-native-'));quarantine.chmod(0o700)
+     result=quarantine/(CASE+'.xcresult');r['private_native_result']=str(result);r['raw_native_bundle_shareable']=False;save()
+    else:result=OUT/(CASE+'.xcresult')
+    command=['xcodebuild','-project',str(project),'-scheme','G2CControl','-configuration','Debug','-destination',destination,'-derivedDataPath',str(BUILD),'-resultBundlePath',str(result),'-scmProvider','system','-skipPackageUpdates','-onlyUsePackageVersionsFromResolvedFile','-parallel-testing-enabled','NO','-collect-test-diagnostics','never','ARCHS=arm64','ONLY_ACTIVE_ARCH=YES','CODE_SIGNING_ALLOWED=YES','CODE_SIGN_IDENTITY=-','-only-testing:G2CControl/DevelopmentScopedMessageUITests/'+CASE,'test']
     if TLS:
      command.remove('CODE_SIGN_IDENTITY=-')
      command[1:1]=['-xcconfig',str(device_configuration),'-allowProvisioningUpdates','-allowProvisioningDeviceRegistration']
     print('SCOPED '+CASE,flush=True);run=subprocess.run(command,cwd=ROOT,capture_output=True,text=True,timeout=1800)
+    r['native_exit_code']=run.returncode
     log=run.stdout+run.stderr
-    for temporary_token in native_tokens.values():log=log.replace(temporary_token,'<redacted-local-token>')
-    if TLS:log=log.replace(control_token,'<redacted-control-token>')
+    private_values=list(native_tokens.values())+([control_token] if TLS else [])
     if ARGS.amap_device:
      sdk_key=plistlib.loads((ROOT/'ios/.local-amap-device/AMapLocalKey.plist').read_bytes())['apiKey']
+     private_values.append(sdk_key)
      r['sdk_console_key_redactions']=log.count(sdk_key)
-     log=log.replace(sdk_key,'<redacted-sdk-key>')
+    if TLS:
+     r['native_artifacts']=export_native_logs(result,OUT,private_values,log)
+     log=redact(log,private_values)[0]
+    for temporary_token in native_tokens.values():log=log.replace(temporary_token,'<redacted-local-token>')
     assert all(temporary_token not in log for temporary_token in native_tokens.values())
     r['redacted_log_accounts']=sorted(native_tokens);r['token_scan_accounts']=sorted(native_tokens)
-    (OUT/(CASE+'.log')).write_text(log);r['cases'][CASE]='FAIL' if run.returncode else 'VERIFYING';save();run.check_returncode()
-    summary=json.loads(subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)]));(OUT/'test-summary.json').write_text(json.dumps(summary,indent=2));assert summary['passedTests']==1 and summary['failedTests']==summary['skippedTests']==0
+    (OUT/(CASE+'.log')).write_text(log);r['cases'][CASE]='FAIL' if run.returncode else 'VERIFYING';save()
+    if TLS and not r['native_artifacts']['status'].startswith('PASS'):raise RuntimeError('Native logs failed credential/export gate; raw bundle quarantined')
+    run.check_returncode()
+    summary_text=subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)],text=True)
+    if TLS:
+     summary_text,summary_hits=redact(summary_text,private_values)
+     if summary_hits:
+      (OUT/'test-summary-redacted.json').write_text(summary_text);raise RuntimeError('Native summary contained credential; raw bundle quarantined')
+    summary=json.loads(summary_text);(OUT/'test-summary.json').write_text(json.dumps(summary,indent=2));assert summary['passedTests']==1 and summary['failedTests']==summary['skippedTests']==0
     if PLACE_MAP:map_source_proof()
     elif CASE=='testFormalMapNoPlaceSources':map_no_place_proof()
     elif CASE=='testScopedResultExpansionReselection':
@@ -644,7 +660,7 @@ try:
        data=file.read_bytes();assert all(temporary_token.encode() not in data for temporary_token in native_tokens.values()) and b'-----BEGIN PRIVATE KEY-----' not in data
     assert r['head']==subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'head changed during acceptance'
     assert all(hashlib.sha256((ROOT/name).read_bytes()).hexdigest()==digest for name,digest in r['source_hashes'].items()),'source changed during acceptance'
-    r['token_key_scan']='PASS';r['cases'][CASE]='PASS';r['status']='PASS';save()
+    r['token_key_scan']='PASS';r['token_key_scan_scope']='App data and exported native text; opaque raw bundle not shareable' if TLS else 'existing simulator App-data/log scope';r['cases'][CASE]='PASS';r['status']='PASS';save()
    finally:
     r['observed_requests']=list(audit);r['worker_errors']=list(worker_errors);save()
     if original_size is not None:subprocess.run(['xcrun','simctl','ui',ARGS.simulator,'content_size',original_size],check=True,capture_output=True)

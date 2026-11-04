@@ -9,6 +9,7 @@ import re
 import socket
 import ssl
 import subprocess
+from m4_artifacts import verified_public_certificate
 
 ROOT = Path(__file__).resolve().parents[3]
 HERE = Path(__file__).resolve().parent
@@ -21,6 +22,7 @@ class LocalTLS:
     private_key: Path
     public_certificate: Path
     team: str
+    public_der: bytes
 
     @classmethod
     def load(cls, path):
@@ -43,7 +45,8 @@ class LocalTLS:
                 raise ValueError('Owned regular TLS files required')
         if files[1].stat().st_mode & 0o777 != 0o600:
             raise ValueError('TLS private key must be 0600')
-        return cls(host, *files, data['team'])
+        public_der = verified_public_certificate(files[0].read_bytes(), files[2].read_bytes())
+        return cls(host, *files, data['team'], public_der)
 
     def listener(self):
         listener = socket.socket()
@@ -94,7 +97,11 @@ def configure_project(project, tls, control_url, control_token, amap=False):
                         f'{build} = {{isa = PBXBuildFile; fileRef = {ref}; }};'])
         return build
 
-    resource_ids.append(resource(tls.public_certificate))
+    pin_file = project.parent / 'G2CM4LocalServer.cer'
+    with pin_file.open('xb') as output:
+        output.write(tls.public_der)
+    pin_file.chmod(0o600)
+    resource_ids.append(resource(pin_file))
     local = ROOT / 'ios/.local-amap-device'
     if amap:
         if not (local / 'AMapLocalKey.plist').is_file():
@@ -108,7 +115,7 @@ def configure_project(project, tls, control_url, control_token, amap=False):
     with bootstrap.open('xb') as output:
         output.write(plistlib.dumps(dict(endpoint=control_url, token=control_token)))
     bootstrap.chmod(0o600)
-    control_resources = [resource(tls.public_certificate), resource(bootstrap)]
+    control_resources = [resource(pin_file), resource(bootstrap)]
     control_anchor = f'A{9:023X} = {{isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = ('
     if text.count(control_anchor) != 1:
         raise ValueError('Control resource phase changed')
@@ -124,12 +131,16 @@ def configure_project(project, tls, control_url, control_token, amap=False):
     configuration = project.parent / 'M4Device.xcconfig'
     lines = ['OTHER_SWIFT_FLAGS = $(inherited) -D G2C_M4_DEVICE_ACCEPTANCE',
              'SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) DEBUG',
+             'DEBUG_INFORMATION_FORMAT = dwarf',
              'CODE_SIGNING_ALLOWED = YES', 'CODE_SIGN_STYLE = Automatic',
              'CODE_SIGN_IDENTITY = Apple Development', 'DEVELOPMENT_TEAM = ' + tls.team]
     if amap:
         # This include supplies only local SDK paths/flags; no key value.
         lines = ['#include ' + json.dumps(str(local / 'AMap.xcconfig'))] + lines
         lines[1] += ' -D G2C_AMAP_LOCAL'
+        sdk_flags = '-ObjC -framework MAMapKit -framework AMapFoundationKit -framework GLKit -framework OpenGLES -framework CoreLocation -framework CoreTelephony -framework CoreMotion -framework SystemConfiguration -framework Security -framework CFNetwork -framework Metal -framework MetalKit -lc++ -lz'
+        lines += ['M4_AMAP_LDFLAGS_CJProbeApp = '+sdk_flags,
+                  'OTHER_LDFLAGS = $(inherited) $(M4_AMAP_LDFLAGS_$(TARGET_NAME))']
     configuration.write_text('\n'.join(lines) + '\n')
     return bundle, configuration
 

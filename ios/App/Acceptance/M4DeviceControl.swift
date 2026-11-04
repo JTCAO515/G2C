@@ -41,6 +41,14 @@ private final class M4ControlBundle: NSObject {}
         request.setValue(connection.token,forHTTPHeaderField:"X-G2C-M4-Control")
         return try await connection.session.data(for:request)
     }
+    static func unauthenticatedData(from url: URL) async throws -> (Data, URLResponse) {
+        let connection = try connection.get()
+        guard url.scheme == "https", url.host == connection.endpoint.host,
+              url.port == connection.endpoint.port, url.user == nil, url.password == nil else {
+            throw M4LocalTLSFailure.invalidCertificate
+        }
+        return try await connection.session.data(from:url)
+    }
 }
 
 private final class M4ControlDelegate: NSObject, URLSessionTaskDelegate, Sendable {

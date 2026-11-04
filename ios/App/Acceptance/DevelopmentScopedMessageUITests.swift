@@ -55,6 +55,13 @@ import Foundation
     }
     private func prepare(_ name:String) async throws -> Fixture {
         continueAfterFailure=false;executionTimeAllowance=900
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        var probe=URLComponents(string:control+"/prepare")!
+        probe.queryItems=[.init(name:"case",value:name)]
+        let (denied,reply)=try await M4DeviceControl.unauthenticatedData(from:XCTUnwrap(probe.url))
+        XCTAssertEqual((reply as? HTTPURLResponse)?.statusCode,403)
+        XCTAssertFalse(String(decoding:denied,as:UTF8.self).contains("accounts"))
+        #endif
         return try JSONDecoder().decode(Fixture.self,from:await call("/prepare",caseID:name))
     }
     private func textElement(_ id:String) -> XCUIElement {
