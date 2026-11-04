@@ -152,8 +152,19 @@ import Foundation
             end.press(forDuration:1.1)
             let names = NSPredicate(format:"label IN %@",["Select All","全选"])
             let menu = app.menuItems.matching(names).firstMatch
-            let select = menu.waitForExistence(timeout:2) ? menu : app.buttons.matching(names).firstMatch
+            let button = app.buttons.matching(names).firstMatch
+            _ = menu.waitForExistence(timeout:2)
+            // At the system maximum size iOS 17 presents a scrolling edit menu;
+            // Select All exists below the visible Paste/Select rows.
+            if !(menu.exists && menu.isHittable) && !(button.exists && button.isHittable) {
+                let rowNames = NSPredicate(format:"label IN %@",["Select","选择"])
+                let row = app.menuItems.matching(rowNames).firstMatch
+                XCTAssertTrue(row.exists && row.isHittable,"The native edit menu must expose a visible scroll surface")
+                row.swipeUp()
+            }
+            let select = menu.exists && menu.isHittable ? menu : button
             XCTAssertTrue(select.waitForExistence(timeout:5),"Select the full old value before replacement")
+            if !select.isHittable { capture("native-select-all-not-hittable") }
             XCTAssertTrue(select.isHittable); select.tap()
         }
         target.typeText(value)
