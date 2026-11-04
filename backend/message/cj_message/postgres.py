@@ -159,7 +159,10 @@ class Transaction:
 
     def pending(self, limit):
         self.local_execution()
-        self.cur.execute('SELECT r.message_id, r.conversation_id, r.generation, r.sequence, r.run_id, r.input_sha256 FROM cj_message_delivery d JOIN cj_message_receipt r ON (r.scope, r.message_id, r.run_id) = (d.scope, d.message_id, d.run_id) JOIN cj_message_chat c ON (c.scope, c.conversation_id, c.generation) = (r.scope, r.conversation_id, r.generation) WHERE d.scope = %s AND c.active AND NOT d.acknowledged ORDER BY r.conversation_id, r.sequence LIMIT %s', (self.scope, limit))
+        # Round-robin by position within each conversation: one blocked
+        # conversation's backlog cannot fill the limit and starve the others,
+        # while each conversation keeps its own sequence order.
+        self.cur.execute('SELECT message_id, conversation_id, generation, sequence, run_id, input_sha256 FROM (SELECT r.message_id, r.conversation_id, r.generation, r.sequence, r.run_id, r.input_sha256, row_number() OVER (PARTITION BY r.conversation_id ORDER BY r.sequence) AS position FROM cj_message_delivery d JOIN cj_message_receipt r ON (r.scope, r.message_id, r.run_id) = (d.scope, d.message_id, d.run_id) JOIN cj_message_chat c ON (c.scope, c.conversation_id, c.generation) = (r.scope, r.conversation_id, r.generation) WHERE d.scope = %s AND c.active AND NOT d.acknowledged) pending ORDER BY position, conversation_id, sequence LIMIT %s', (self.scope, limit))
         return [Receipt(*row) for row in self.cur.fetchall()]
 
     def acknowledge(self, message_id, run_id):
