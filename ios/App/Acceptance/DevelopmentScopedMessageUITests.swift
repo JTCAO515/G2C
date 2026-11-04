@@ -301,6 +301,10 @@ import UIKit
             }
             if f.map_loading_failure == true { text("trip.map.unavailable",contains:language=="en" ? "Map unavailable" : "地图暂不可用");for point in points { text("trip.map.name."+point.id,contains:point.name_zh);text("trip.map.coordinate."+point.id,contains:point.coordinate?.raw ?? "UNKNOWN") } }
             _ = try await call("/map-source-proof",caseID:name)
+            if f.amap == true && !located.isEmpty {
+                let canvas=app.descendants(matching:.any).matching(identifier:"trip.map.canvas").firstMatch
+                print("M4_AMAP_LOADED",language,try XCTUnwrap(canvas.value as? String))
+            }
             capture(name+"-"+language);try audit(name+"-"+language)
         }
     }

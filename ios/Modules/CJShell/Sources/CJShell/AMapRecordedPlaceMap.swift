@@ -36,6 +36,11 @@ struct AMapRecordedPlaceMap: UIViewRepresentable {
         AMapServices.shared().analysisAgree = false
         AMapServices.shared().regionLanguageType = language == .english ? .en : .zhHans
         let map = AMapRecordedCanvas(frame: .zero)
+        // regionLanguageType controls regional/reverse-address language. The
+        // standard basemap has its own documented Chinese/English switch.
+        map.mapType = .standard
+        map.mapLanguage = NSNumber(value: language == .english ? 1 : 0)
+        map.logoLanguage = language == .english ? .english : .chinese
         map.delegate = context.coordinator
         map.showsUserLocation = false
         map.isShowsIndoorMap = false
@@ -51,6 +56,8 @@ struct AMapRecordedPlaceMap: UIViewRepresentable {
         guard context.coordinator.signature != signature else { return }
         context.coordinator.signature = signature
         AMapServices.shared().regionLanguageType = language == .english ? .en : .zhHans
+        map.mapLanguage = NSNumber(value: language == .english ? 1 : 0)
+        map.logoLanguage = language == .english ? .english : .chinese
         map.removeAnnotations(map.annotations)
         let annotations = places.compactMap { place in place.markerCoordinate.map { Annotation(place: place, coordinate: $0) } }
         map.addAnnotations(annotations)
