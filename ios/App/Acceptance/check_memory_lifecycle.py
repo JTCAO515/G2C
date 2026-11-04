@@ -38,12 +38,13 @@ def main():
     tls=None
     if args.device:
         if not args.local_tls:p.error('--device requires the approved --local-tls profile')
-        from m4_device import LocalTLS,configure_project
+        from m4_device import LocalTLS,configure_project,private_workspace
         from m4_native import DeviceNative,authenticated_control
         tls=LocalTLS.load(args.local_tls)
     elif args.local_tls or args.prepare_only:p.error('Device options require --device')
     os.umask(0o077)
     output=args.output.resolve();build=args.build_dir.resolve()
+    if tls: device_project_root, build = private_workspace(output, build)
     if output.is_relative_to(ROOT) or build.is_relative_to(ROOT):raise ValueError('external evidence only')
     output.mkdir(parents=True)
     if subprocess.check_output(['git','status','--porcelain'],cwd=ROOT):raise ValueError('commit candidate first')
@@ -286,12 +287,12 @@ def main():
                     if set(query)!={'case'} or query['case']!=[active_case]:raise ValueError('Staging requires the active case')
                     native.stage(tokens[active_case])
                 control=ThreadingHTTPServer((tls.host if tls else '127.0.0.1',0),
-                    authenticated_control(Control,control_token,stage_input) if tls else Control)
+                    authenticated_control(Control,control_token,stage_input,lambda: active_case) if tls else Control)
                 if tls:tls.secure_http_server(control)
                 threading.Thread(target=control.serve_forever,daemon=True).start()
                 try:
                     spec=importlib.util.spec_from_file_location('trip_builder',ROOT/'scripts/check_ios_trip_confirm.py');module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
-                    builder=object.__new__(module.XCTestDriver);builder.directory=output/'project';builder.directory.mkdir();builder.write_project(0)
+                    builder=object.__new__(module.XCTestDriver);builder.directory=(device_project_root if tls else output)/'project';builder.directory.mkdir();builder.write_project(0)
                     control_url=('https://'+tls.host if tls else 'http://127.0.0.1')+':'+str(control.server_port)
                     (builder.directory/'G2CControl.swift').write_text((HERE/'DevelopmentMemoryLifecycleUITests.swift').read_text().replace('__FIXTURE_URL__',control_url))
                     project=builder.directory/'G2CAcceptance.xcodeproj';pbx=project/'project.pbxproj';text=pbx.read_text().replace('space.go2china.foundation.local',BUNDLE).replace('space.go2china.foundation.control',BUNDLE+'.control')
@@ -349,7 +350,7 @@ def main():
                     if tls:
                         try:
                             if native is not None:native.cleanup_input()
-                        finally:(output/'project/M4ControlBootstrap.plist').unlink(missing_ok=True)
+                        finally:(device_project_root/'project/M4ControlBootstrap.plist').unlink(missing_ok=True)
                         secrets_to_scan=[token.encode() for pair in tokens.values() for token in pair.values()]+[control_token.encode()]
                         for file in output.rglob('*'):
                             if file.is_file() and not file.is_symlink():

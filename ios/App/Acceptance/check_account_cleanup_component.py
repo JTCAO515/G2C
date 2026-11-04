@@ -49,7 +49,7 @@ def main():
     if args.device:
         if not args.local_tls:parser.error('--device requires the approved --local-tls profile')
         if not args.native_device or not args.all_provided:parser.error('Physical mode is the actual CJProbeApp all-provided path; component/full-blocked cases remain separate')
-        from m4_device import LocalTLS,configure_project,scan_app_container
+        from m4_device import LocalTLS,configure_project,private_workspace,scan_app_container
         from m4_native import DeviceNative,authenticated_control
         tls=LocalTLS.load(args.local_tls)
     elif args.local_tls:parser.error('--local-tls requires --device')
@@ -64,6 +64,7 @@ def main():
     if args.prepare_only and not args.all_provided:raise ValueError('prepare-only is restricted to the additional provided profile')
     positive_inventory=tuple(t for t in FULL_INVENTORY if t!='external-processing') if args.all_provided else B_DOMAINS
     backend = args.backend_source.resolve(); output = args.output.resolve(); build = args.build_dir.resolve()
+    if tls: device_project_root, build = private_workspace(output, build)
     for path in (output, build):
         if path.is_relative_to(ROOT) or path.is_relative_to(backend): raise ValueError('external artifact/build root required')
     output.mkdir(parents=True)
@@ -471,11 +472,11 @@ def main():
                         scan_app_container(args.device,BUNDLE,path,tokens[current['case']].values());return path
                     return Path(subprocess.check_output(['xcrun','simctl','get_app_container',args.simulator,BUNDLE,'data'],env=env,text=True).strip())
                 control=ThreadingHTTPServer((tls.host if tls else '127.0.0.1',0),
-                    authenticated_control(Control,control_token,stage_input) if tls else Control)
+                    authenticated_control(Control,control_token,stage_input,lambda: current['case']) if tls else Control)
                 if tls:tls.secure_http_server(control)
                 threading.Thread(target=control.serve_forever,daemon=True).start()
                 spec=importlib.util.spec_from_file_location('cleanup_component_builder',ROOT/'scripts/check_ios_trip_confirm.py');module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
-                builder=object.__new__(module.XCTestDriver);builder.directory=output/'project';builder.directory.mkdir();builder.write_project(0)
+                builder=object.__new__(module.XCTestDriver);builder.directory=(device_project_root if tls else output)/'project';builder.directory.mkdir();builder.write_project(0)
                 test_file='DevelopmentDeviceCleanupUITests.swift' if args.native_device else 'AccountCleanupComponentUITests.swift'
                 control_url=('https://'+tls.host if tls else 'http://127.0.0.1')+':'+str(control.server_port)
                 (builder.directory/'G2CControl.swift').write_text((HERE/test_file).read_text().replace('__CONTROL_URL__',control_url))
@@ -526,38 +527,45 @@ def main():
                     report['credential_scan']='PASS';report['status']='VERIFYING_CLEANUP';save()
                 else:report.update(status='PREPARED_EXECUTION_UNRUN',source_status='PASS',native='UNRUN');save()
             report['pg_stopped']=True;save()
-    except Exception as error:
+    except BaseException as error:
         report['status']='FAIL';report['error_type']=type(error).__name__;report['last_api']=audits;save();raise
     finally:
-        if args.native_device and not tls and 'original_size' in locals():
-            subprocess.run(['xcrun','simctl','ui',args.simulator,'content_size',original_size],env=env,check=True)
-        if control:control.shutdown();control.server_close()
-        for server in servers:server.should_exit=True
-        for thread in threads:thread.join(timeout=10)
-        if tls:
-            try:
-                if native is not None:native.cleanup_input()
-            except Exception:
-                report['status']='FAIL';raise
-            finally:
-                (output/'project/M4ControlBootstrap.plist').unlink(missing_ok=True);save()
-            if control_token is not None:
-                for path in output.rglob('*'):
-                    if path.is_file() and not path.is_symlink() and control_token.encode() in path.read_bytes():
-                        report['status']='FAIL';save();raise AssertionError('control credential in evidence export')
-            if any(thread.is_alive() for thread in threads):
-                report['status']='FAIL';save();raise RuntimeError('cleanup host did not stop')
-        if args.prepare_only and report.get('source_status')=='PASS':
-            report.update(pg_stopped=True,task_credentials_destroyed=True);save()
-        if report['status']!='FAIL' and not (args.prepare_only and not tls):
-            try:
-                assert subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()==report['head'],'App head changed during execution'
-                assert subprocess.check_output(['git','rev-parse','HEAD'],cwd=backend,text=True).strip()==args.backend_head,'backend pin changed during execution'
-                assert all(hashlib.sha256((ROOT/name).read_bytes()).hexdigest()==digest for name,digest in report['source_hashes'].items()),'source changed during execution'
-            except BaseException as error:
-                report.update(status='FAIL',error_type=type(error).__name__);save();raise
-            report['status']='PREPARED_EXECUTION_UNRUN' if args.prepare_only else ('PASS' if len(report['cases'])==len(CASES) else 'PARTIAL_PASS')
-            save()
+        try:
+            if args.native_device and not tls and 'original_size' in locals():
+                subprocess.run(['xcrun','simctl','ui',args.simulator,'content_size',original_size],env=env,check=True)
+            if control:control.shutdown();control.server_close()
+            for server in servers:server.should_exit=True
+            for thread in threads:thread.join(timeout=10)
+            if tls:
+                try:
+                    if native is not None:native.cleanup_input()
+                except Exception:
+                    report['status']='FAIL';raise
+                finally:
+                    (device_project_root/'project/M4ControlBootstrap.plist').unlink(missing_ok=True);save()
+                if control_token is not None:
+                    for path in output.rglob('*'):
+                        if path.is_file() and not path.is_symlink() and control_token.encode() in path.read_bytes():
+                            report['status']='FAIL';save();raise AssertionError('control credential in evidence export')
+                if any(thread.is_alive() for thread in threads):
+                    report['status']='FAIL';save();raise RuntimeError('cleanup host did not stop')
+            if args.prepare_only and report.get('source_status')=='PASS':
+                report.update(pg_stopped=True,task_credentials_destroyed=True);save()
+            if report['status']!='FAIL' and not (args.prepare_only and not tls):
+                try:
+                    assert subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()==report['head'],'App head changed during execution'
+                    assert subprocess.check_output(['git','rev-parse','HEAD'],cwd=backend,text=True).strip()==args.backend_head,'backend pin changed during execution'
+                    assert all(hashlib.sha256((ROOT/name).read_bytes()).hexdigest()==digest for name,digest in report['source_hashes'].items()),'source changed during execution'
+                except BaseException as error:
+                    report.update(status='FAIL',error_type=type(error).__name__);save();raise
+                selected=[args.case] if args.case else CASES
+                expected='UNRUN' if args.prepare_only else 'PASS'
+                assert set(report['cases'])==set(selected) and all(value==expected for value in report['cases'].values()),'required cleanup cases incomplete'
+                report['status']='PREPARED_EXECUTION_UNRUN' if args.prepare_only else ('PASS' if len(selected)==len(CASES) else 'PARTIAL_PASS')
+                save()
+        except BaseException as error:
+            report.update(status='FAIL',error_type=type(error).__name__);save();raise
+
     print(json.dumps(dict(status=report['status'],head=report['head'],cases=report['cases'],unrun=report['unrun']),ensure_ascii=False))
 
 if __name__=='__main__':main()

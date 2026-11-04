@@ -23,9 +23,10 @@ if ARGS.device:
  if not ARGS.local_tls:parser.error('--device requires the approved --local-tls profile')
  if CASE.endswith('Largest'):parser.error('Device maximum-font case needs actual system font setup; not a launch-argument substitute')
  if CASE=='testFormalPlaceMapUnavailable':parser.error('Device map outage needs a real device network case; simulator delegate fault is not device evidence')
- from m4_device import LocalTLS,configure_project,scan_app_container,stage_accounts,discard_staged_accounts
+ from m4_device import LocalTLS,configure_project,private_workspace,scan_app_container,stage_accounts,discard_staged_accounts
  from m4_artifacts import export_native_logs,redact
  TLS=LocalTLS.load(ARGS.local_tls)
+ device_project_root,BUILD=private_workspace(OUT,BUILD)
 elif ARGS.local_tls or ARGS.amap_device:parser.error('Device options require --device')
 if ARGS.amap_device and not PLACE_MAP:parser.error('AMap device configuration is restricted to the formal PLACE map cases')
 if OUT.is_relative_to(ROOT) or BUILD.is_relative_to(ROOT):raise ValueError('external evidence required')
@@ -589,7 +590,7 @@ try:
    original_size=None;staging_attempted=False
    try:
     module_spec=importlib.util.spec_from_file_location('scoped_builder',ROOT/'scripts/check_ios_trip_confirm.py');module=importlib.util.module_from_spec(module_spec);module_spec.loader.exec_module(module)
-    builder=object.__new__(module.XCTestDriver);builder.directory=OUT/'project';builder.directory.mkdir();builder.write_project(0)
+    builder=object.__new__(module.XCTestDriver);builder.directory=(device_project_root if TLS else OUT)/'project';builder.directory.mkdir();builder.write_project(0)
     control_url=('https://'+TLS.host if TLS else 'http://127.0.0.1')+':'+str(control.server_port)
     test_source=(HERE/'DevelopmentScopedMessageUITests.swift').read_text().replace('__FIXTURE_URL__',control_url)
     project=builder.directory/'G2CAcceptance.xcodeproj';pbx=project/'project.pbxproj';bundle='space.go2china.scoped.acceptance'
@@ -678,7 +679,7 @@ try:
      assert verified['messages']==verified['posts']==1 and verified['forbidden_writes']==0 and not worker_errors
      if CASE=='testScopedUndeterminedDayWithoutModel':assert verified['model_calls']==verified['registered_operations']==verified['pending_proposals']==0 and verified['draft_outcome']=='validation_failed'
      else:assert verified['model_calls']==verified['registered_operations']==verified['pending_proposals']==1 and verified['draft_outcome']=='published'
-    if TLS:scan_app_container(ARGS.device,bundle,OUT/'device-app-data',native_tokens.values())
+    if TLS:scan_app_container(ARGS.device,bundle,quarantine/'device-app-data',native_tokens.values())
     else:
      container=Path(subprocess.check_output(['xcrun','simctl','get_app_container',ARGS.simulator,bundle,'data'],text=True).strip())
      for file in container.rglob('*'):
@@ -686,7 +687,7 @@ try:
        data=file.read_bytes();assert all(temporary_token.encode() not in data for temporary_token in native_tokens.values()) and b'-----BEGIN PRIVATE KEY-----' not in data
     assert r['head']==subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'head changed during acceptance'
     assert all(hashlib.sha256((ROOT/name).read_bytes()).hexdigest()==digest for name,digest in r['source_hashes'].items()),'source changed during acceptance'
-    r['token_key_scan']='PASS';r['token_key_scan_scope']='App data and exported build/action/process text; opaque raw bundle not shareable' if TLS else 'existing simulator App-data/log scope';r['cases'][CASE]='PASS';r['status']='PASS';save()
+    r['token_key_scan']='PASS';r['token_key_scan_scope']='App data and exported build/action/process text; opaque raw bundle not shareable' if TLS else 'existing simulator App-data/log scope';r['cases'][CASE]='PASS';r['status']='VERIFYING_CLEANUP';save()
    finally:
     input_cleanup_error=None
     if TLS and staging_attempted:
@@ -699,6 +700,8 @@ try:
     late_release.set();stop.set();worker_thread.join(10);server.should_exit=True;api_thread.join(10);sock.close();control.shutdown();control.server_close()
     if input_cleanup_error is not None:raise input_cleanup_error
   r['private_pg_stopped']=True
+  if TLS:(device_project_root/'project/M4ControlBootstrap.plist').unlink(missing_ok=True)
+  r['status']='PASS'
 except BaseException as error:
  r['status']='FAIL';r['error']=type(error).__name__;raise
 finally:save()

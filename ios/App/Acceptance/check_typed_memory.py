@@ -26,10 +26,11 @@ def main():
     tls=None
     if args.device:
         if not args.local_tls:parser.error('--device requires the approved --local-tls profile')
-        from m4_device import LocalTLS,configure_project
+        from m4_device import LocalTLS,configure_project,private_workspace
         from m4_native import DeviceNative,authenticated_control
         tls=LocalTLS.load(args.local_tls)
     elif args.local_tls or args.prepare_only:parser.error('Device options require --device')
+    if tls: device_project_root, build = private_workspace(output, build)
     chinese=args.case in ('testChineseLargeSaveReadAndRecall','testTypedQuestionsChineseLargest')
     collection_questions=args.case in ('testTypedQuestionsEnglish','testTypedQuestionsChineseLargest')
     collection_groups=args.case in ('testTypedGroupsPaged','testTypedGroupsLateAccount')
@@ -330,7 +331,7 @@ def main():
                 try:
                     spec=importlib.util.spec_from_file_location('typed_builder',ROOT/'scripts/check_ios_trip_confirm.py')
                     builder_module=importlib.util.module_from_spec(spec);spec.loader.exec_module(builder_module)
-                    builder=object.__new__(builder_module.XCTestDriver);builder.directory=output/'project';builder.directory.mkdir();builder.write_project(0)
+                    builder=object.__new__(builder_module.XCTestDriver);builder.directory=(device_project_root if tls else output)/'project';builder.directory.mkdir();builder.write_project(0)
                     control_url=('https://'+tls.host if tls else 'http://127.0.0.1')+':'+str(control.server_port)
                     (builder.directory/'G2CControl.swift').write_text((HERE/'DevelopmentTypedMemoryUITests.swift').read_text().replace('__FIXTURE_URL__',control_url))
                     project=builder.directory/'G2CAcceptance.xcodeproj';pbx=project/'project.pbxproj'
@@ -503,7 +504,7 @@ def main():
                     if tls:
                         try:
                             if native is not None:native.cleanup_input()
-                        finally:(output/'project/M4ControlBootstrap.plist').unlink(missing_ok=True)
+                        finally:(device_project_root/'project/M4ControlBootstrap.plist').unlink(missing_ok=True)
                         for path in output.rglob('*'):
                             if path.is_file() and not path.is_symlink():
                                 assert not any(secret.encode() in path.read_bytes() for secret in [*tokens.values(),control_token]),'credential in evidence export'

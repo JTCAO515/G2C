@@ -22,9 +22,10 @@ a=p.parse_args();BACKEND=a.backend_root.resolve();OUT=a.output.resolve();BUILD=a
 TLS=None
 if a.device:
  if not a.local_tls:p.error('--device requires the approved --local-tls profile')
- from m4_device import LocalTLS,configure_project
+ from m4_device import LocalTLS,configure_project,private_workspace
  from m4_native import DeviceNative,authenticated_control
  TLS=LocalTLS.load(a.local_tls)
+ device_project_root,BUILD=private_workspace(OUT,BUILD)
 elif a.local_tls or a.prepare_only:p.error('Device options require --device')
 if a.largest_recovery and CASE!='testNeedsPlanningAccept':p.error('--largest-recovery applies to the existing source1 acceptance/recovery case only')
 HISTORY_LARGEST=CASE=='testNeedsPlanningOriginalsLargest'
@@ -478,7 +479,7 @@ try:
    threading.Thread(target=control.serve_forever,daemon=True).start()
    try:
     spec=importlib.util.spec_from_file_location('manual_native_builder',APP/'scripts/check_ios_trip_confirm.py');builder_module=importlib.util.module_from_spec(spec);spec.loader.exec_module(builder_module)
-    builder=object.__new__(builder_module.XCTestDriver);builder.directory=OUT/'project';builder.directory.mkdir();builder.write_project(0)
+    builder=object.__new__(builder_module.XCTestDriver);builder.directory=(device_project_root if TLS else OUT)/'project';builder.directory.mkdir();builder.write_project(0)
     control_url=('https://'+TLS.host if TLS else 'http://127.0.0.1')+':'+str(control.server_port)
     (builder.directory/'G2CControl.swift').write_text((HERE/'DevelopmentScopedMessageUITests.swift').read_text().replace('__FIXTURE_URL__',control_url))
     project=builder.directory/'G2CAcceptance.xcodeproj';pbx=project/'project.pbxproj';bundle='space.go2china.scoped.acceptance'
@@ -517,7 +518,7 @@ try:
     if TLS:
      try:
       if native is not None:native.cleanup_input()
-     finally:(OUT/'project/M4ControlBootstrap.plist').unlink(missing_ok=True)
+     finally:(device_project_root/'project/M4ControlBootstrap.plist').unlink(missing_ok=True)
      for path in OUT.rglob('*'):
       if path.is_file() and not path.is_symlink():
        assert not any(secret.encode() in path.read_bytes() for secret in [*tokens.values(),control_token]),'credential in evidence export'

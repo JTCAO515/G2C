@@ -45,12 +45,13 @@ def main():
     tls = None
     if args.device:
         if not args.local_tls: parser.error('--device requires the approved --local-tls profile')
-        from m4_device import LocalTLS, configure_project
+        from m4_device import LocalTLS, configure_project, private_workspace
         from m4_native import DeviceNative, authenticated_control
         tls = LocalTLS.load(args.local_tls)
     elif args.local_tls or args.prepare_only: parser.error('Device options require --device')
     os.umask(0o077)
     output, build, backend = args.output.resolve(), args.build_dir.resolve(), args.backend_source.resolve()
+    if tls: device_project_root, build = private_workspace(output, build)
     if any(p.is_relative_to(ROOT) or p.is_relative_to(backend) for p in (output, build)):
         raise ValueError('External evidence/build directory required')
     output.mkdir(parents=True)
@@ -271,12 +272,12 @@ def main():
                         if set(query) != {'case'} or query['case'] != [active_case]: raise ValueError('Staging requires the active feedback case')
                         native.stage(tokens[active_case])
                     control = ThreadingHTTPServer((tls.host if tls else '127.0.0.1', 0),
-                        authenticated_control(Control, control_token, stage_input) if tls else Control)
+                        authenticated_control(Control, control_token, stage_input, lambda: active_case) if tls else Control)
                     if tls: tls.secure_http_server(control)
                     threading.Thread(target=control.serve_forever, daemon=True).start()
                     spec = importlib.util.spec_from_file_location('feedback_builder', ROOT / 'scripts/check_ios_trip_confirm.py')
                     module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
-                    builder = object.__new__(module.XCTestDriver); builder.directory = output / 'project'; builder.directory.mkdir(); builder.write_project(0)
+                    builder = object.__new__(module.XCTestDriver); builder.directory = (device_project_root if tls else output) / 'project'; builder.directory.mkdir(); builder.write_project(0)
                     control_url = ('https://' + tls.host if tls else 'http://127.0.0.1') + ':' + str(control.server_port)
                     (builder.directory / 'G2CControl.swift').write_text((HERE / 'DevelopmentFeedbackUITests.swift').read_text().replace('__FIXTURE_URL__', control_url))
                     project = builder.directory / 'G2CAcceptance.xcodeproj'; pbx = project / 'project.pbxproj'
@@ -354,7 +355,7 @@ def main():
             except Exception:
                 report['status'] = 'FAIL'; raise
             finally:
-                (output / 'project/M4ControlBootstrap.plist').unlink(missing_ok=True); save()
+                (device_project_root / 'project/M4ControlBootstrap.plist').unlink(missing_ok=True); save()
             if control_token is not None:
                 for path in output.rglob('*'):
                     if path.is_file() and not path.is_symlink():

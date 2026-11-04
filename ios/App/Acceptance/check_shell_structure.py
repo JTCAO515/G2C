@@ -35,7 +35,7 @@ def main():
     tls = None
     if args.device:
         if not args.local_tls: parser.error("--device requires the approved --local-tls profile")
-        from m4_device import LocalTLS, configure_project, scan_app_container
+        from m4_device import LocalTLS, configure_project, private_workspace
         from m4_native import DeviceNative
         tls = LocalTLS.load(args.local_tls)
         if subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT): raise ValueError("commit device candidate first")
@@ -45,6 +45,7 @@ def main():
     if output.is_relative_to(ROOT):
         raise ValueError("Evidence output must be outside the repository")
     build_directory = (args.build_dir or output / "dd").resolve()
+    if tls: device_project_root, build_directory = private_workspace(output, args.build_dir)
     if build_directory.is_relative_to(ROOT):
         raise ValueError("Build cache must be outside the repository")
     output.mkdir(parents=True, exist_ok=True)
@@ -134,7 +135,7 @@ def main():
             # Reuse only the existing external Xcode project generator, not its Trip
             # API/PG setup or polling driver. Our XCTest source drives UI directly.
             builder = object.__new__(module.XCTestDriver)
-            builder.directory = output / variant; builder.directory.mkdir()
+            builder.directory = (device_project_root if tls else output) / variant; builder.directory.mkdir()
             builder.write_project(0)
             source = (HERE / (test_class + ".swift")).read_text()
             control_url = ("https://" + tls.host if tls else "http://127.0.0.1") + ":" + str(server.server_port)
@@ -158,7 +159,7 @@ def main():
                 if args.prepare_only:
                     detail["status"] = "PREPARED_EXECUTION_UNRUN"; report["cases"][variant] = dict(status="UNRUN", tests=tests); continue
                 native.run("Debug", selected, env)
-                scan_app_container(args.device, BUNDLE, variant_output / "app-data", [control_token])
+                native.scan("Debug")
                 detail["status"] = "PASS"; report["cases"][variant] = dict(status="PASS", tests=tests); continue
             result = output / (variant + ".xcresult")
             command = ["xcodebuild", "-project", str(project), "-scheme", "G2CControl", "-destination",
@@ -194,7 +195,7 @@ def main():
             for released in releases.values(): released.set()
         server.shutdown(); server.server_close()
         if tls:
-            for bootstrap in output.glob("*/M4ControlBootstrap.plist"): bootstrap.unlink()
+            for bootstrap in device_project_root.glob("*/M4ControlBootstrap.plist"): bootstrap.unlink()
             for path in output.rglob("*"):
                 if path.is_file() and not path.is_symlink() and control_token.encode() in path.read_bytes():
                     report["status"] = "FAIL"; report_path.write_text(json.dumps(report, indent=2)); raise AssertionError("control credential in evidence export")

@@ -40,7 +40,7 @@ def main():
     tls = None
     if args.device:
         if not args.local_tls: parser.error('--device requires the approved --local-tls profile')
-        from m4_device import LocalTLS, configure_project
+        from m4_device import LocalTLS, configure_project, private_workspace
         from m4_native import DeviceNative, authenticated_control
         tls = LocalTLS.load(args.local_tls)
         if subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT):
@@ -50,6 +50,7 @@ def main():
     os.umask(0o077)
     output = args.output.resolve()
     build = (args.build_dir or output / 'dd').resolve()
+    if tls: device_project_root, build = private_workspace(output, args.build_dir)
     if output.is_relative_to(ROOT) or build.is_relative_to(ROOT):
         raise ValueError('Evidence/build output must be outside repository')
     output.mkdir(parents=True, exist_ok=True)
@@ -170,7 +171,7 @@ def main():
                 spec = importlib.util.spec_from_file_location('trip_acceptance', ROOT / 'scripts/check_ios_trip_confirm.py')
                 module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
                 builder = object.__new__(module.XCTestDriver)
-                builder.directory = output / 'project'; builder.directory.mkdir()
+                builder.directory = (device_project_root if tls else output) / 'project'; builder.directory.mkdir()
                 builder.write_project(0)
                 control_url = f'https://{tls.host}:{control.server_port}' if tls else f'http://127.0.0.1:{control.server_port}'
                 source = (HERE / 'DevelopmentAccountUITests.swift').read_text().replace('__FIXTURE_URL__', control_url)
@@ -255,7 +256,7 @@ def main():
                     if tls:
                         # Generated build input contains the control token. It
                         # is not part of the redacted evidence export.
-                        bootstrap = output / 'project/M4ControlBootstrap.plist'
+                        bootstrap = device_project_root / 'project/M4ControlBootstrap.plist'
                         bootstrap.unlink(missing_ok=True)
                     else:
                         subprocess.run(['xcrun', 'simctl', 'terminate', args.simulator, BUNDLE], env=env, capture_output=True)

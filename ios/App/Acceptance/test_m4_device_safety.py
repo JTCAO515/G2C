@@ -2,6 +2,8 @@
 from datetime import datetime, timezone
 from pathlib import Path
 import tempfile
+import importlib.util
+import shutil
 import plistlib
 from types import SimpleNamespace
 import unittest
@@ -11,7 +13,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
 from m4_artifacts import export_native_logs, verified_public_certificate
-from m4_device import freeze_amap_key, stage_accounts
+from m4_device import ROOT, configure_project, freeze_amap_key, private_workspace, stage_accounts
 
 
 class CertificatePackagingTests(unittest.TestCase):
@@ -107,6 +109,46 @@ class OneUseInputTests(unittest.TestCase):
                             stage_accounts('synthetic-device','synthetic.bundle',Path('synthetic.app'),Path(directory),{'A':'SYNTHETIC'})
                 self.assertTrue(source_paths)
                 self.assertTrue(all(not source.exists() for source in source_paths))
+
+
+class DeviceWorkspaceTests(unittest.TestCase):
+    def test_implicit_build_and_generated_inputs_are_private(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output=Path(directory)/'exports';output.mkdir()
+            private,build=private_workspace(output)
+            try:
+                self.assertFalse(private.is_relative_to(output))
+                self.assertEqual(private.stat().st_mode&0o777,0o700)
+                self.assertTrue(build.is_relative_to(private))
+                self.assertEqual(list(output.iterdir()),[])
+            finally:shutil.rmtree(private)
+
+    def test_nested_or_symlinked_export_build_paths_are_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);output=root/'exports';output.mkdir()
+            alias=root/'alias';alias.symlink_to(output,target_is_directory=True)
+            for build in (output,output/'dd',root,alias/'dd'):
+                with self.subTest(build=build):
+                    with self.assertRaises(ValueError):private_workspace(output,build)
+
+    def test_actual_generator_removes_production_in_both_device_modes(self):
+        spec=importlib.util.spec_from_file_location('m4_fixture_generator',ROOT/'scripts/check_ios_trip_confirm.py')
+        module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+        for release in (False,True):
+            with self.subTest(include_release=release),tempfile.TemporaryDirectory() as directory:
+                builder=object.__new__(module.XCTestDriver);builder.directory=Path(directory)
+                builder.write_project(0)
+                project=builder.directory/'G2CAcceptance.xcodeproj'
+                tls=SimpleNamespace(public_der=b'SYNTHETIC-PUBLIC-CERTIFICATE',team='SYNTHETIC1')
+                bundle,config,_=configure_project(project,tls,'https://192.168.1.1:1234','SYNTHETIC-CONTROL',include_release=release)
+                pbx=(project/'project.pbxproj').read_text()
+                self.assertNotIn('name = Production;',pbx)
+                self.assertNotIn('PRODUCT_BUNDLE_IDENTIFIER = space.go2china.app;',pbx)
+                project_configs='000000000000000000000012'+(', 000000000000000000000013' if release else '')
+                app_configs='000000000000000000000014'+(', 000000000000000000000015' if release else '')
+                self.assertIn('buildConfigurations = ('+project_configs+');',pbx)
+                self.assertIn('buildConfigurations = ('+app_configs+');',pbx)
+                if release:self.assertIn('M4_LOCAL_CERT_EXCLUDE_Release_CJProbeApp = G2CM4LocalServer.cer',config.read_text())
 
 
 if __name__=='__main__':unittest.main()

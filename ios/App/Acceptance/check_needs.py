@@ -26,11 +26,12 @@ def main():
     tls=None
     if args.device:
         if not args.local_tls:p.error('--device requires the approved --local-tls profile')
-        from m4_device import LocalTLS,configure_project
+        from m4_device import LocalTLS,configure_project,private_workspace
         from m4_native import DeviceNative,authenticated_control
         tls=LocalTLS.load(args.local_tls)
     elif args.local_tls or args.prepare_only:p.error('Device options require --device')
     output=args.output.resolve();build=args.build_dir.resolve()
+    if tls: device_project_root, build = private_workspace(output, build)
     if output.is_relative_to(ROOT) or build.is_relative_to(ROOT):raise ValueError('external evidence required')
     if subprocess.check_output(['git','status','--porcelain'],cwd=ROOT):raise ValueError('commit candidate first')
     os.umask(0o077);output.mkdir(parents=True,mode=0o700);output.chmod(0o700)
@@ -91,7 +92,7 @@ def main():
                         subprocess.run([sys.executable,'-B',str(ROOT/'scripts/local_run_context.py'),'--conninfo-json',str(connection),
                             '--auth-dir',str(auth),'--run-context',str(args.run_context.resolve()),'--subject',subject,'init-budget'],cwd=ROOT,env=env,check=True,capture_output=True)
                 app=app_from_environment();database=LocalDatabase(connection,run_context=context,needs_context=True)
-                specs={};audit=[];worker_errors=[];active=[None];stop=threading.Event()
+                specs={};audit=[];worker_errors=[];active=[None];executing_case=None;stop=threading.Event()
                 def worker():
                     try:
                         while not stop.is_set():
@@ -237,16 +238,16 @@ def main():
                 native=None;last_device_container=None
                 def stage_input(request):
                     query=parse_qs(urlparse(request).query)
-                    if set(query)!={'case'} or len(query['case'])!=1 or query['case'][0]!=active[0]:
+                    if set(query)!={'case'} or len(query['case'])!=1 or query['case'][0]!=executing_case:
                         raise ValueError('Staging requires the prepared active case')
                     native.stage(tokens[query['case'][0]])
                 control=ThreadingHTTPServer((tls.host if tls else '127.0.0.1',0),
-                    authenticated_control(Control,control_token,stage_input) if tls else Control)
+                    authenticated_control(Control,control_token,stage_input,lambda: executing_case) if tls else Control)
                 if tls:tls.secure_http_server(control)
                 threading.Thread(target=control.serve_forever,daemon=True).start()
                 try:
                     spec=importlib.util.spec_from_file_location('needs_builder',ROOT/'scripts/check_ios_trip_confirm.py');module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
-                    builder=object.__new__(module.XCTestDriver);builder.directory=output/'project';builder.directory.mkdir();builder.write_project(0)
+                    builder=object.__new__(module.XCTestDriver);builder.directory=(device_project_root if tls else output)/'project';builder.directory.mkdir();builder.write_project(0)
                     control_url=('https://'+tls.host if tls else 'http://127.0.0.1')+':'+str(control.server_port)
                     (builder.directory/'G2CControl.swift').write_text((HERE/'DevelopmentNeedsUITests.swift').read_text().replace('__FIXTURE_URL__',control_url))
                     project=builder.directory/'G2CAcceptance.xcodeproj';pbx=project/'project.pbxproj'
@@ -259,6 +260,7 @@ def main():
                         _,configuration_file,_=configure_project(project,tls,control_url,control_token,bundle=BUNDLE,include_release=True)
                         private_tokens={case+'.'+key:token for case,pair in tokens.items() for key,token in pair.items()}
                     for case in ([args.case] if args.case else CASES):
+                        executing_case=case
                         if tls:
                             case_report=dict(status='RUNNING')
                             report.setdefault('device_native',{})[case]=case_report;save()
@@ -328,7 +330,7 @@ def main():
                         try:
                             if native is not None:native.cleanup_input()
                         finally:
-                            (output/'project/M4ControlBootstrap.plist').unlink(missing_ok=True)
+                            (device_project_root/'project/M4ControlBootstrap.plist').unlink(missing_ok=True)
                         secrets_to_scan=[*[token.encode() for pair in tokens.values() for token in pair.values()],control_token.encode()]
                         for path in output.rglob('*'):
                             if path.is_file() and not path.is_symlink():

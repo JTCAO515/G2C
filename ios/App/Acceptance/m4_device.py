@@ -99,6 +99,18 @@ class LocalTLS:
                     ssl_version=ssl.PROTOCOL_TLS_SERVER, ssl_ciphers='ECDHE+AESGCM:ECDHE+CHACHA20')
 
 
+def private_workspace(output, build=None):
+    """Keep device inputs and derived products outside the export boundary."""
+    output = Path(output).resolve()
+    if build is not None:
+        build = Path(build).resolve()
+        if build.is_relative_to(output) or output.is_relative_to(build) or build.is_relative_to(ROOT):
+            raise ValueError('Device build cache must be separate from repository and evidence exports')
+    private = Path(tempfile.mkdtemp(prefix='g2c-m4-private-project-'))
+    private.chmod(0o700)
+    return private, build if build is not None else private / 'build'
+
+
 def configure_project(project, tls, control_url, control_token, amap=False,
                       bundle=None, include_release=False):
     """Adapt the existing generated native project; real keys stay local-only."""
@@ -118,11 +130,14 @@ def configure_project(project, tls, control_url, control_token, amap=False,
     text = text.replace(bundle + '.control', 'space.go2china.m4.device.control')
     text = text.replace('GENERATE_INFOPLIST_FILE = YES;',
         'GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_NSLocalNetworkUsageDescription = "M4 synthetic-data test control on the development Mac";')
-    if not include_release:
-        text = re.sub(r'buildConfigurations = \(000000000000000000000012[^)]*\)',
-                      'buildConfigurations = (000000000000000000000012)', text)
-        text = re.sub(r'buildConfigurations = \(000000000000000000000014[^)]*\)',
-                      'buildConfigurations = (000000000000000000000014)', text)
+    # The acceptance project has no Production configuration. Its only product
+    # identities are the isolated Debug/Release acceptance IDs (or Debug AMap).
+    for first, release, production in (('12', '13', '16'), ('14', '15', '17')):
+        prefix = '0000000000000000000000'
+        permitted = [prefix + first] + ([prefix + release] if include_release else [])
+        text = re.sub(r'buildConfigurations = \(' + prefix + first + r'[^)]*\)',
+                      'buildConfigurations = (' + ', '.join(permitted) + ')', text)
+        text = re.sub(r'^' + prefix + production + r' = \{isa = XCBuildConfiguration;[^\n]*\n', '', text, flags=re.MULTILINE)
     # The simulator entitlement is never reused as a device signing identity.
     text = re.sub(r'"CODE_SIGN_ENTITLEMENTS\[sdk=iphonesimulator\*\]"\s*=\s*[^;]+;', '', text)
     device_entitlements = project.parent/'M4Device.entitlements'
@@ -240,14 +255,18 @@ def copy_accounts(device, bundle, private_directory, tokens):
         if result.returncode:raise RuntimeError('Device one-use credential staging failed')
 
 
+def staged_accounts_present(device,bundle):
+    result=subprocess.run(['xcrun','devicectl','device','info','files','--device',device,
+        '--domain-type','appDataContainer','--domain-identifier',bundle,'--subdirectory','Library/Caches',
+        '--no-recurse','--json-output','-','--quiet','--timeout','20'],capture_output=True)
+    if result.returncode:raise RuntimeError('Device staged-input cleanup state UNKNOWN')
+    data=json.loads(result.stdout)['result']['files']
+    return any(item['name']=='G2CM4DeviceAccounts.json' for item in data)
+
+
 def discard_staged_accounts(device,bundle):
     def present():
-        result=subprocess.run(['xcrun','devicectl','device','info','files','--device',device,
-            '--domain-type','appDataContainer','--domain-identifier',bundle,'--subdirectory','Library/Caches',
-            '--no-recurse','--json-output','-','--quiet','--timeout','20'],capture_output=True)
-        if result.returncode:raise RuntimeError('Device staged-input cleanup state UNKNOWN')
-        data=json.loads(result.stdout)['result']['files']
-        return any(item['name']=='G2CM4DeviceAccounts.json' for item in data)
+        return staged_accounts_present(device,bundle)
     if not present():return
     # This App-owned one-use input is the only cleanup target, never a business
     # journal or Keychain item. The App rejects symlinks and verifies removal.

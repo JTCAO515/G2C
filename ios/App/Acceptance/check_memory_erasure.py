@@ -43,10 +43,11 @@ def main():
     tls=None
     if args.device:
         if not args.local_tls:parser.error('--device requires the approved --local-tls profile')
-        from m4_device import LocalTLS,configure_project,scan_app_container
+        from m4_device import LocalTLS,configure_project,private_workspace,scan_app_container
         from m4_native import DeviceNative,authenticated_control
         tls=LocalTLS.load(args.local_tls)
     elif args.local_tls:parser.error('--local-tls requires --device')
+    if tls: device_project_root, build = private_workspace(output, build)
     os.umask(0o077)
     for path in (output,build):
         if path.is_relative_to(ROOT) or path.is_relative_to(backend):raise ValueError('external artifact roots required')
@@ -83,7 +84,8 @@ def main():
         raw_native_bundle_shareable=False,build_inputs_shareable=False,
         device_font_scope='actual system maximum throughout case; original simulator transition remains separate',
         unrun=['VoiceOver','actual system font setting record','in-place system-font transition','real accounts/cloud/providers/fees/backups'])
-    save();secrets=[];server=None;control=None;thread=None;native=None;control_token=None;original_size=None;active={'case':None};lock=threading.Lock();observations={}
+    save();secrets=[];server=None;control=None;thread=None;native=None;control_token=None;original_size=None;executing_case=None;active={'case':None};lock=threading.Lock();observations={}
+    suite_complete=False
     try:
         with tempfile.TemporaryDirectory(prefix='cj468-app-',dir='/tmp') as temp:
             folder=Path(temp)
@@ -216,15 +218,15 @@ def main():
                 control_token=random_secrets.token_urlsafe(32) if tls else None
                 def stage_input(request):
                     query=parse_qs(urlsplit(request).query)
-                    if set(query)!={'case'} or query['case']!=[active['case']]:raise ValueError('Staging requires the active erasure case')
+                    if set(query)!={'case'} or query['case']!=[executing_case]:raise ValueError('Staging requires the active erasure case')
                     native.stage(tokens[active['case']])
                 control=ThreadingHTTPServer((tls.host if tls else '127.0.0.1',0),
-                    authenticated_control(Control,control_token,stage_input) if tls else Control)
+                    authenticated_control(Control,control_token,stage_input,lambda: executing_case) if tls else Control)
                 if tls:tls.secure_http_server(control)
                 threading.Thread(target=control.serve_forever,daemon=True).start()
                 if not tls:original_size=subprocess.check_output(['xcrun','simctl','ui',args.simulator,'content_size'],env=env,text=True).strip()
                 spec=importlib.util.spec_from_file_location('erasure_builder',ROOT/'scripts/check_ios_trip_confirm.py');module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
-                builder=object.__new__(module.XCTestDriver);builder.directory=output/'project';builder.directory.mkdir();builder.write_project(0)
+                builder=object.__new__(module.XCTestDriver);builder.directory=(device_project_root if tls else output)/'project';builder.directory.mkdir();builder.write_project(0)
                 control_url=('https://'+tls.host if tls else 'http://127.0.0.1')+':'+str(control.server_port)
                 (builder.directory/'G2CControl.swift').write_text((HERE/'MemoryErasureUITests.swift').read_text().replace('__CONTROL_URL__',control_url))
                 project=builder.directory/'G2CAcceptance.xcodeproj';pbx=project/'project.pbxproj';text=pbx.read_text().replace('space.go2china.foundation.local',BUNDLE).replace('space.go2china.foundation.control',BUNDLE+'.control')
@@ -232,6 +234,7 @@ def main():
                 pbx.write_text(text.replace(json.dumps(str(ROOT/'ios/App/Development.entitlements')),json.dumps(str(entitlement))))
                 if tls:_,configuration_file,_=configure_project(project,tls,control_url,control_token,bundle=BUNDLE)
                 for test,case in cases.items():
+                    executing_case=case
                     report['cases'][test]='RUNNING';save()
                     if tls:
                         active['case']=case
@@ -273,31 +276,41 @@ def main():
         assert report['head']==subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'App head changed during acceptance'
         assert args.backend_head==subprocess.check_output(['git','rev-parse','HEAD'],cwd=backend,text=True).strip(),'backend head changed during acceptance'
         assert all(hashlib.sha256((ROOT/name).read_bytes()).hexdigest()==digest for name,digest in report['source_hashes'].items()),'source changed during acceptance'
-        report['status']='PREPARED_EXECUTION_UNRUN' if args.prepare_only else 'PASS'
+        suite_complete=True
+        report['status']='VERIFYING_CLEANUP'
     except BaseException as error:
         report.update(status='FAIL',error_type=type(error).__name__);raise
     finally:
-        report['api']={case:value['api'] for case,value in observations.items()}
-        if control:control.shutdown();control.server_close()
-        if server:server.should_exit=True
-        if thread:thread.join(timeout=10)
-        if tls:
-            try:
-                if native is not None:native.cleanup_input()
-            except Exception:
-                report['status']='FAIL';raise
-            finally:
-                (output/'project/M4ControlBootstrap.plist').unlink(missing_ok=True)
+        try:
+            report['api']={case:value['api'] for case,value in observations.items()}
+            if control:control.shutdown();control.server_close()
+            if server:server.should_exit=True
+            if thread:thread.join(timeout=10)
+            if tls:
+                try:
+                    if native is not None:native.cleanup_input()
+                except Exception:
+                    report['status']='FAIL';raise
+                finally:
+                    (device_project_root/'project/M4ControlBootstrap.plist').unlink(missing_ok=True)
+                    save()
+                if control_token is not None:
+                    for path in output.rglob('*'):
+                        if path.is_file() and not path.is_symlink() and control_token.encode() in path.read_bytes():
+                            report['status']='FAIL';save();raise AssertionError('control credential in evidence export')
+                if thread and thread.is_alive():
+                    report['status']='FAIL';save();raise RuntimeError('erasure host did not stop')
+            if original_size:subprocess.run(['xcrun','simctl','ui',args.simulator,'content_size',original_size],env=env,check=True)
+            if args.prepare_only and report['source_status']=='PASS':report.update(pg_stopped=True,task_credentials_destroyed=True)
+            save()
+            if suite_complete:
+                expected='UNRUN' if args.prepare_only else 'PASS'
+                assert report['cases'] and all(value==expected for value in report['cases'].values())
+                report['status']='PREPARED_EXECUTION_UNRUN' if args.prepare_only else 'PASS'
                 save()
-            if control_token is not None:
-                for path in output.rglob('*'):
-                    if path.is_file() and not path.is_symlink() and control_token.encode() in path.read_bytes():
-                        report['status']='FAIL';save();raise AssertionError('control credential in evidence export')
-            if thread and thread.is_alive():
-                report['status']='FAIL';save();raise RuntimeError('erasure host did not stop')
-        if original_size:subprocess.run(['xcrun','simctl','ui',args.simulator,'content_size',original_size],env=env,check=True)
-        if args.prepare_only and report['source_status']=='PASS':report.update(pg_stopped=True,task_credentials_destroyed=True)
-        save()
+        except BaseException as error:
+            report.update(status='FAIL',error_type=type(error).__name__);save();raise
+
 
 
 if __name__=='__main__':main()

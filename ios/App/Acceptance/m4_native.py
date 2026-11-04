@@ -3,6 +3,7 @@
 Owning suites retain their API/database assertions. Raw native bundles remain
 private; only gated, redacted text is exported. No SDK or Keychain discovery.
 """
+import hashlib
 import hmac
 import json
 from pathlib import Path
@@ -10,19 +11,25 @@ import plistlib
 import subprocess
 import tempfile
 import time
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
 
 from m4_artifacts import export_native_logs, redact
-from m4_device import copy_accounts, discard_staged_accounts, scan_app_container
+from m4_device import copy_accounts, discard_staged_accounts, scan_app_container, staged_accounts_present
 
 
-def authenticated_control(base, token, stage):
+def authenticated_control(base, token, stage, current_case=None):
     class AuthenticatedControl(base):
         def do_GET(self):
             supplied = self.headers.get('X-G2C-M4-Control', '')
             if not hmac.compare_digest(supplied.encode(), token.encode()):
                 self.send_response(403); self.end_headers(); self.wfile.write(b'forbidden')
                 return
+            requested_case = parse_qs(urlsplit(self.path).query).get('case')
+            if current_case is not None and requested_case is not None:
+                expected = current_case()
+                if expected is None or requested_case != [expected]:
+                    self.send_error(409, 'request does not match operator-selected case')
+                    return
             if urlsplit(self.path).path == '/m4-stage-accounts':
                 try:
                     stage(self.path)
@@ -41,6 +48,9 @@ class DeviceNative:
         self.device, self.bundle = device, bundle
         self.project, self.configuration_file = Path(project), Path(configuration_file)
         self.build, self.root, self.output = Path(build), Path(root), Path(output)
+        for path in (self.build, self.project):
+            if path.resolve().is_relative_to(self.output.resolve()):
+                raise ValueError('Device inputs and build products must be outside evidence exports')
         self.tokens = tokens
         self.secrets = [*tokens.values(), control_token]
         self.report = report
@@ -147,11 +157,24 @@ class DeviceNative:
         return summary
 
     def scan(self, configuration):
-        # During Release the unconfigured product must ignore the staged file.
-        # Remove that exact operator input before scanning other App data.
+        if self.staging_attempted:
+            present = staged_accounts_present(self.device, self.bundle)
+            self.report['app_staged_input_consumption'] = (
+                'UNRUN: Release must ignore operator input' if configuration == 'Release'
+                else ('FAIL: App left one-use input' if present else 'PASS: App consumed one-use input'))
         self.cleanup_input()
-        container = self.output / (configuration + '-app-data')
-        scan_app_container(self.device, self.bundle, container, self.tokens.values())
+        # Even an interrupted copy or rejected credential scan stays private.
+        container = self.private / (configuration + '-app-data')
+        scan_app_container(self.device, self.bundle, container, self.secrets)
+        digest = hashlib.sha256(); count = 0
+        for path in sorted(container.rglob('*')):
+            if path.is_file() and not path.is_symlink():
+                data = path.read_bytes(); count += 1
+                digest.update(hashlib.sha256(data).digest())
+        self.report['container_scan'] = dict(status='PASS', files=count,
+            content_hash=digest.hexdigest(), raw_container_shareable=False)
+        if self.report.get('app_staged_input_consumption', '').startswith('FAIL'):
+            raise AssertionError('App failed to consume its one-use input; operator cleanup is separate')
         return container
 
     def cleanup_input(self):

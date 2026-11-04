@@ -46,13 +46,14 @@ def main():
     tls = None
     if args.device:
         if not args.local_tls: parser.error('--device requires the approved --local-tls profile')
-        from m4_device import LocalTLS, configure_project, scan_app_container
+        from m4_device import LocalTLS, configure_project, private_workspace, scan_app_container
         from m4_native import DeviceNative, authenticated_control
         tls = LocalTLS.load(args.local_tls)
     elif args.local_tls or args.prepare_only: parser.error('Device options require --device')
     if args.seed_only and args.prepare_only: parser.error('Choose source diagnostic or device build preparation')
     os.umask(0o077)
     output, build = args.output.resolve(), args.build_dir.resolve()
+    if tls: device_project_root, build = private_workspace(output, build)
     if output.is_relative_to(ROOT) or build.is_relative_to(ROOT):
         raise ValueError('Evidence and build output must stay outside the repository')
     output.mkdir(parents=True)
@@ -321,13 +322,13 @@ def main():
                     if set(query) != {'case'} or query['case'] != [active_case]: raise ValueError('Staging requires the active offline case')
                     native.stage(tokens[active_case])
                 control = ThreadingHTTPServer((tls.host if tls else '127.0.0.1', 0),
-                    authenticated_control(Control, control_token, stage_input) if tls else Control)
+                    authenticated_control(Control, control_token, stage_input, lambda: active_case) if tls else Control)
                 if tls: tls.secure_http_server(control)
                 threading.Thread(target=control.serve_forever, daemon=True).start()
                 try:
                     spec = importlib.util.spec_from_file_location('trip_builder', ROOT / 'scripts/check_ios_trip_confirm.py')
                     module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
-                    builder = object.__new__(module.XCTestDriver); builder.directory = output / 'project'
+                    builder = object.__new__(module.XCTestDriver); builder.directory = (device_project_root if tls else output) / 'project'
                     builder.directory.mkdir(); builder.write_project(0)
                     control_url = ('https://' + tls.host if tls else 'http://127.0.0.1') + ':' + str(control.server_port)
                     (builder.directory / 'G2CControl.swift').write_text((HERE / 'DevelopmentOfflineTripUITests.swift').read_text()
@@ -389,7 +390,7 @@ def main():
                     if tls:
                         try:
                             if native is not None: native.cleanup_input()
-                        finally: (output / 'project/M4ControlBootstrap.plist').unlink(missing_ok=True)
+                        finally: (device_project_root / 'project/M4ControlBootstrap.plist').unlink(missing_ok=True)
                         for path in output.rglob('*'):
                             if path.is_file() and not path.is_symlink():
                                 assert not any(value.encode() in path.read_bytes() for value in [*[t for pair in tokens.values() for t in pair.values()], control_token]), 'credential in evidence export'
