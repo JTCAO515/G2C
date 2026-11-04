@@ -86,7 +86,8 @@ binding, real collection policy and actual save activation are still unconnected
   before transport. Reopen is query-only until the exact original is reconciled.
 - The original body and ID are encrypted with the existing same account/environment
   `localNeedsPendingV1` key before outflow. Lookup only: no key creation, replacement,
-  plaintext fallback or cleanup. Records use exclusive append, fsync, canonical
+  plaintext fallback or cleanup. Records use exclusive append (synced temporary entry, no-replace rename; a crash
+  leaves only that entry, skipped by readers and erased by cleanup), fsync, canonical
   directory identity and a final callback-free exact ciphertext durability check.
   Confirmed originals remain on disk; no retention/deletion policy is invented.
   No claim is made against arbitrary hostile same-UID filesystem races or backup rollback.

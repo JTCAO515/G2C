@@ -2,6 +2,7 @@
 import Foundation
 import CryptoKit
 import Darwin
+import enum CJMessageClient.LocalJournalFile
 import CJMessageKeys
 
 func digest(_ data: Data) -> String { SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined() }
@@ -62,11 +63,7 @@ func digest(_ data: Data) -> String { SHA256.hash(data: data).map { String(forma
         try validateDirectory()
         try validateBinding()
         try validateDirectory()
-        let fd = openat(directory, try name(pending.actionID), O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, 0o600)
-        guard fd >= 0 else { throw FeedbackFailure.storageUnavailable }
-        defer { close(fd) }
-        let count = bytes.withUnsafeBytes { write(fd, $0.baseAddress, $0.count) }
-        guard count == bytes.count, fsync(fd) == 0, fsync(directory) == 0 else { throw FeedbackFailure.storageUnavailable }
+        guard LocalJournalFile.createExclusive(try name(pending.actionID), in: directory, bytes: bytes) else { throw FeedbackFailure.storageUnavailable }
         try validateDirectory()
     }
     /// Retires this store before exact local erasure. No server receipt is implied.
@@ -122,13 +119,13 @@ func digest(_ data: Data) -> String { SHA256.hash(data: data).map { String(forma
     /// Callback-free complete inventory fence, including newly inserted records.
     func validateInventory(_ records: [FeedbackPending]) throws {
         try validateDirectory()
-        let names = try FileManager.default.contentsOfDirectory(atPath: root.path)
+        let names = try LocalJournalFile.recordNames(atPath: root.path)
         guard Set(names) == Set(try records.map { try name($0.actionID) }) else { throw FeedbackFailure.storageUnavailable }
         try validateDirectory()
     }
     public func pending() throws -> [FeedbackPending] {
         try validateDirectory()
-        let names = try FileManager.default.contentsOfDirectory(atPath: root.path)
+        let names = try LocalJournalFile.recordNames(atPath: root.path)
         guard names.count <= maximumRecords else { throw FeedbackFailure.storageUnavailable }
         let result = try names.sorted().map { filename in
             let stem = String(filename.dropLast(9))
