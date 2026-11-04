@@ -290,9 +290,11 @@ class MeteredDashScopeProvider:
                 try:loop.run_until_complete(asyncio.gather(task,return_exceptions=True))
                 finally:loop.close()
 
-    def invoke(self,messages,system,attempt,*,tools=None,receipt,guard,native_reply=None):
+    def invoke(self,messages,system,attempt,*,tools=None,receipt,guard,native_reply=None,tool_choice=None):
         from cj_usage.authorization_budget import canonical
         native_tools=tools or []
+        if tool_choice is not None and (tool_choice!='none' or not native_tools):
+            raise ProviderFailed('explicit native final-answer strategy required')
         wire_messages=[]
         for message in messages:
             if message['role']=='tool' and 'tool_call_id' not in message:
@@ -304,6 +306,7 @@ class MeteredDashScopeProvider:
         body=dict(model=M4_MODEL,messages=[dict(role='system',content=prompt),*wire_messages],stream=True,
                   stream_options={'include_usage':True},enable_thinking=False,max_tokens=self.config.max_output_tokens)
         if native_tools:body.update(tools=native_tools,parallel_tool_calls=False)
+        if tool_choice is not None:body['tool_choice']=tool_choice
         if system is not None:body['response_format']={'type':'json_object'}
         raw=canonical(body)
         if len(raw)>32768:raise ProviderFailed('bounded M4 model input required')
@@ -351,6 +354,8 @@ class MeteredDashScopeProvider:
                         if type(choice) is not dict:raise ProviderUnknown('M4 stream choice invalid')
                         if choice.get('finish_reason') is not None:
                             if choice['finish_reason'] not in ('stop','tool_calls'):raise ProviderUnknown('M4 model output incomplete')
+                            if tool_choice=='none' and choice['finish_reason']!='stop':
+                                raise ProviderUnknown('M4 final answer stop unavailable')
                             finished=True
                         delta=choice.get('delta',{})
                         if type(delta) is not dict:raise ProviderUnknown('M4 stream delta invalid')
@@ -398,6 +403,7 @@ class MeteredDashScopeProvider:
                         raise ProviderUnknown('M4 structured model secret echo rejected')
                 if native_tools:
                     phase='native_turn'
+                    if tool_choice=='none' and calls:raise ProviderUnknown('M4 disabled tool call returned')
                     if calls:
                         result=dict(version='MODEL-tool-turn.1',kind='tool',answer=None,calls=[
                             dict(name=c['name'],arguments=json.loads(c['arguments'],object_pairs_hook=reject_duplicates(ValueError,'duplicate_native_argument_field'))) for _,c in sorted(calls.items())])

@@ -64,6 +64,39 @@ class Boundaries(unittest.TestCase):
         self.assertNotIn(KEY,self.budget.path.read_bytes().decode('latin1'))
         with self.assertRaises(BudgetUnknown):self.invoke(p,tools=TOOLS)
         self.assertEqual(len(self.sent),1)
+        self.assertNotIn('tool_choice',json.loads(self.sent[0].content))
+
+    def test_native_final_answer_disables_tools_without_an_extra_model_round(self):
+        result=self.invoke(self.provider(sse()),tools=TOOLS,tool_choice='none')
+        self.assertEqual(json.loads(self.sent[0].content)['tool_choice'],'none')
+        self.assertEqual(parse_turn(''.join(result).encode(),{'place_search'}).answer_en,'Needs verification.')
+        self.assertEqual(self.budget.inspect()[0]['state'],'RECEIVED')
+
+    def test_supplier_cannot_dispatch_a_disabled_final_tool_or_rearm_it(self):
+        provider=self.provider(sse(tool=True));receipt={}
+        with self.assertRaises(ProviderUnknown):self.invoke(provider,tools=TOOLS,tool_choice='none',receipt=receipt)
+        self.assertEqual(receipt,{})
+        self.assertEqual(self.budget.inspect()[0]['state'],'INTENT')
+        with self.assertRaises(BudgetUnknown):self.invoke(provider,tools=TOOLS,tool_choice='none')
+        self.assertEqual(len(self.sent),1)
+
+    def test_unknown_final_strategy_refused_before_registration_or_http(self):
+        with self.assertRaises(ProviderFailed):self.invoke(self.provider(sse()),tools=TOOLS,tool_choice='required')
+        self.assertEqual(self.sent,[]);self.assertEqual(self.budget.inspect(),[])
+
+    def test_final_tool_finish_without_call_fragments_is_not_a_completed_answer(self):
+        body=sse().replace('"finish_reason": "stop"','"finish_reason": "tool_calls"')
+        receipt={}
+        with self.assertRaises(ProviderUnknown):self.invoke(self.provider(body),tools=TOOLS,tool_choice='none',receipt=receipt)
+        self.assertEqual(receipt,{})
+        self.assertEqual(self.budget.inspect()[0]['state'],'INTENT')
+
+    def test_final_stop_with_call_payload_still_cannot_dispatch(self):
+        body=sse(tool=True).replace('"finish_reason": "tool_calls"','"finish_reason": "stop"')
+        receipt={}
+        with self.assertRaises(ProviderUnknown):self.invoke(self.provider(body),tools=TOOLS,tool_choice='none',receipt=receipt)
+        self.assertEqual(receipt,{})
+        self.assertEqual(self.budget.inspect()[0]['state'],'INTENT')
 
     def test_native_assistant_and_tool_identity_are_preserved_for_continuation(self):
         reply={};self.invoke(self.provider(sse(tool=True)),tools=TOOLS,native_reply=reply)
