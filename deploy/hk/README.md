@@ -8,7 +8,7 @@
 
 `*.env.example` 只有占位符。正式配置在服务器 `/srv/g2c-beta/`，目录0700，所有实际环境文件0600；
 从指定钥匙串私下交接，不复制到 Git/镜像/日志，不把值放在命令参数或聊天。
-Compose仅用 `env_file.format: raw` 传非秘密common配置。秘密文件以只读bind挂载，由各入口按角色校验0600/UID/字段后读入进程；Docker Config.Env不持久保存密钥。
+Compose以普通env_file传非秘密common配置（固定JSON、base64公钥和类型化路径，不含需要插值的变量）；兼容该试用机已装Compose2.27。秘密文件以只读bind挂载，由各入口按角色校验0600/UID/字段后读入进程；Docker Config.Env不持久保存密钥。
 API仅收到运行角色、确认/history密钥和验签公钥；worker另收模型/高德和对应签名私钥；
 operator另收既有数据库初始化凭据和恢复签名私钥；OSS凭据只进backup容器。应用和operator均UID10001；相应实际环境文件由10001拥有，宿主父目录保持0700。
 worker的旧token供应器通过Linux memfd读取私钥，磁盘上只有指向进程FD的链接。
