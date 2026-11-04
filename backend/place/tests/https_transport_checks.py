@@ -228,6 +228,22 @@ class LoopbackTLSTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(receipt.state, "received")
             self.assertEqual(parse_response(CONFIG, request, receipt.response, now=datetime.now(timezone.utc)).outcome, Outcome.OK)
 
+    async def test_coordinate_only_profile_is_bound_before_dial_and_sends_no_poi_override(self):
+        query=RouteQuery(Endpoint('SYNTH_A',Coordinate('116.1,39.1'),'poi_center'),Endpoint('SYNTH_B',Coordinate('116.2,39.2'),'poi_center'),'walking',Departure('at_query_time',None))
+        at=datetime.now(timezone.utc)
+        legacy=prepare(CONFIG,query,'coordinate-test',at,basic=True)
+        request=prepare(CONFIG,query,'coordinate-test',at,basic=True,coordinate_only=True)
+        for prepared,coordinate in ((legacy,True),(request,False)):
+            result=await fetch_candidate(CONFIG,prepared,self.credentials(),basic=True,coordinate_only=coordinate)
+            self.assertEqual((result.state,result.reason),('rejected','request_binding_invalid'))
+        self.assertEqual(self.dials,0)
+        result=await fetch_candidate(CONFIG,request,self.credentials(),basic=True,coordinate_only=True)
+        self.assertEqual(result.state,'received');self.assertEqual(self.dials,1)
+        target=urlsplit(self.calls[0].split(b' ',2)[1].decode())
+        params=parse_qs(target.query)
+        self.assertEqual(params,dict(origin=['116.1,39.1'],destination=['116.2,39.2'],output=['JSON'],key=[SENTINEL]))
+        self.assertEqual(result.response.binding_digest,request.binding_digest)
+
     async def test_tampering_key_in_descriptor_and_request_size_reject_before_dial(self):
         request = self.request()
         for altered in (replace(request, origin=ORIGIN + ".invalid"),

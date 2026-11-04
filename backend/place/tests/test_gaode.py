@@ -51,6 +51,20 @@ def parse(body, query=SEARCH, *, config=CONFIG, **kwargs):
 
 
 class PlaceTests(unittest.TestCase):
+    def test_coordinate_only_profile_preserves_legacy_and_cannot_cross_bind(self):
+        for mode in ('walking','driving'):
+            query=route_query(mode)
+            original=prepare(CONFIG,query,'coordinate-profile',AT,basic=True)
+            coordinate=prepare(CONFIG,query,'coordinate-profile',AT,basic=True,coordinate_only=True)
+            self.assertNotEqual(original.binding_digest,coordinate.binding_digest)
+            params=dict(coordinate.params)
+            self.assertEqual((params['origin'],params['destination']),('116.1,39.1','116.2,39.2'))
+            self.assertTrue({'origin_id','destination_id','originid','destinationid'}.isdisjoint(params))
+            self.assertTrue({'origin_id','destination_id','originid','destinationid'}&set(dict(original.params)))
+            self.assertEqual(parse_response(CONFIG,coordinate,response(coordinate,route_body()),now=AT+timedelta(seconds=2),basic=True).outcome,Outcome.BINDING_MISMATCH)
+        for basic,query in ((False,route_query()),(True,SEARCH)):
+            with self.assertRaises(PreparationError):prepare(CONFIG,query,'profile-mismatch',AT,basic=basic,coordinate_only=True)
+
     def test_search_keeps_same_name_branches_and_entrances(self):
         a = poi(entr_location="116.1001,39.1001", parent="SYNTH_PARENT", navi_poiid="SYNTH_NAV")
         b = poi("SYNTH_B", entr_location="116.1002,39.1002")

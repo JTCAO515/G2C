@@ -77,10 +77,12 @@ def _binding_json(value):
     raise TypeError("binding_type")
 
 
-def prepare(config: Config, query: Query, request_ref: str, started_at: datetime,*,basic=False) -> PreparedRequest:
+def prepare(config: Config, query: Query, request_ref: str, started_at: datetime,*,basic=False,coordinate_only=False) -> PreparedRequest:
     if type(config) is not Config:
         raise PreparationError("configuration_required")
     if type(basic) is not bool:raise PreparationError('explicit_basic_profile_required')
+    if type(coordinate_only) is not bool or coordinate_only and (not basic or type(query) is not RouteQuery):
+        raise PreparationError('explicit_basic_coordinate_route_required')
     aware(started_at)
     identifier(request_ref)
     if type(query) not in (Search, Detail, RouteQuery):
@@ -106,10 +108,10 @@ def prepare(config: Config, query: Query, request_ref: str, started_at: datetime
         path = "/v3/direction/" + query.mode
         params.update(origin=query.origin.coordinate.raw, destination=query.destination.coordinate.raw)
         if query.mode == "walking":
-            params.update(origin_id=query.origin.provider_id, destination_id=query.destination.provider_id)
+            if not coordinate_only:params.update(origin_id=query.origin.provider_id, destination_id=query.destination.provider_id)
         else:
-            params.update(originid=query.origin.provider_id, destinationid=query.destination.provider_id,
-                          strategy="10", extensions="base")
+            if not coordinate_only:params.update(originid=query.origin.provider_id,destinationid=query.destination.provider_id)
+            params.update(strategy="10",extensions="base")
     pairs = tuple(sorted(params.items()))
     # Credential-free request size only. A future host must bound the final signed URL too.
     if len((config.origin + path + "?" + urlencode(pairs)).encode("ascii")) > config.max_request_bytes:
@@ -198,7 +200,7 @@ _RATE_CODES = frozenset({"10003", "10004", "10010", "10014", "10015", "10019", "
 
 
 def parse_response(config: Config, request: PreparedRequest, response: Response,
-                   *, now: datetime, evidence="unverified_bytes",basic=False) -> Result:
+                   *, now: datetime, evidence="unverified_bytes",basic=False,coordinate_only=False) -> Result:
     """Pure parsing. Binding checks are correlation checks, NOT authentication.
 
     The host associates exact original request with response; Gaode does not echo
@@ -206,7 +208,7 @@ def parse_response(config: Config, request: PreparedRequest, response: Response,
     """
     if type(request) is not PreparedRequest:
         raise ValueError("prepared_request_required")
-    expected = prepare(config, request.query, request.request_ref, request.started_at,basic=basic)
+    expected = prepare(config, request.query, request.request_ref, request.started_at,basic=basic,coordinate_only=coordinate_only)
     if expected != request:
         return Result(Outcome.BINDING_MISMATCH, request.query, "request_changed")
     if evidence not in ("synthetic", "unverified_bytes"):

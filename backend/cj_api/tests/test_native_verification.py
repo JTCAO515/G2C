@@ -77,6 +77,7 @@ class Verification(unittest.TestCase):
                 saved=root/record['file'];self.assertEqual(saved.read_bytes(),expected)
                 self.assertEqual(saved.stat().st_mode&0o777,0o600)
                 self.assertEqual(record['response_sha256'],hashlib.sha256(expected).hexdigest())
+                self.assertNotIn('key',dict(record['request_params']))
 
     def test_diagnostic_still_requires_actual_tool_and_complete_continuation(self):
         batch,attempts=proof();batch['verification_profile']='native-diagnostics-1'

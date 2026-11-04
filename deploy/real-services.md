@@ -85,3 +85,7 @@ secret-body检查后的原HTTP200公共地图响应留在固定批次私有目�
 退出成功仅表示三份原HTTP响应已留存并匹配固定查询，不计路线几何或产品质量PASS；`geometry_acceptance=UNASSESSED`。
 原C两语言119米投影和英文八轮UNKNOWN保留，不把新取证冒充旧请求的原body或重派旧RUN。
 [高德原生参数](https://lbs.amap.com/api/webservice/guide/api/direction)允许坐标外同时提供可选POI ID；端点实际语义须依据原响应核查，不凭两个echo坐标假定入口。
+
+`capture-route-coordinate` 是独立C1对照：同一固定两地点，但显式选择坐标路线profile，原POI ID仍绑定在原query/注册输入中；HTTP仅送原始坐标，不送可选POI覆盖参数。
+该profile的prepare、transport复核和parser必须同时选择`coordinate_only=True`；交叉混用在拨号前或解析前拒绝。
+默认profile与G1/R1仍保留原参数/绑定，不覆盖旧batch。C1沿用10/3上限、secret检查和只读恢复，只作原响应取证，几何仍UNASSESSED，不是生产默认或新wire。

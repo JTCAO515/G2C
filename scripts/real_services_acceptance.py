@@ -170,7 +170,7 @@ def record_place_responses(root,batch,batch_path,*,geometry=False):
         result=await original(config,request,credentials,**kwargs)
         if result.state=='received' and result.response.http_status==200:
             response=result.response
-            parsed=parse_response(config,request,response,now=response.received_at,basic=True)
+            parsed=parse_response(config,request,response,now=response.received_at,basic=True,coordinate_only=kwargs.get('coordinate_only',False))
             if type(query) is Search and parsed.outcome.value=='ok':
                 place=parsed.places[0];searches[query.keyword]=place
                 batch['route_audit'].append(dict(kind='search',keyword=query.keyword,provider_id=place.provider_id,
@@ -186,6 +186,7 @@ def record_place_responses(root,batch,batch_path,*,geometry=False):
                 with (folder/name).open('xb') as output:
                     os.fchmod(output.fileno(),0o600);output.write(response.body);output.flush();os.fsync(output.fileno())
                 batch['provider_responses'].append(dict(path=request.path,binding_digest=request.binding_digest,
+                    request_params=list(request.params),
                     response_sha256=hashlib.sha256(response.body).hexdigest(),response_bytes=len(response.body),
                     http_status=response.http_status,request_ref=request.request_ref,started_at=request.started_at.isoformat(),
                     received_at=response.received_at.isoformat(),file='provider/'+name))
@@ -207,12 +208,13 @@ def provider_diagnostics():
     finally:logger.removeHandler(sink)
 
 
-def run_batch(*,resume_setup=False,verification=False,basic_verification=False,diagnostic_verification=False,route_diagnostic=False,geometry_diagnostic=False):
+def run_batch(*,resume_setup=False,verification=False,basic_verification=False,diagnostic_verification=False,route_diagnostic=False,geometry_diagnostic=False,coordinate_diagnostic=False):
     STATE.mkdir(parents=True,exist_ok=True,mode=0o700)
     with (STATE/'acceptance.lock').open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX)
+        geometry_diagnostic=geometry_diagnostic or coordinate_diagnostic
         route_capture=route_diagnostic or geometry_diagnostic
-        tag='verification-route-geometry-1' if geometry_diagnostic else 'verification-route-diagnostics-1' if route_diagnostic else 'verification-native-diagnostics-1' if diagnostic_verification else 'verification-base-search-1' if basic_verification else 'verification-native-1' if verification else 'acceptance'
+        tag='verification-route-coordinate-1' if coordinate_diagnostic else 'verification-route-geometry-1' if geometry_diagnostic else 'verification-route-diagnostics-1' if route_diagnostic else 'verification-native-diagnostics-1' if diagnostic_verification else 'verification-base-search-1' if basic_verification else 'verification-native-1' if verification else 'acceptance'
         path=STATE/(tag+'.json')
         budget=AuthorizationBudget(STATE);budget.check_date()
         previous=None
@@ -244,10 +246,10 @@ def run_batch(*,resume_setup=False,verification=False,basic_verification=False,d
         if basic_verification:cases={'place-zh':'合成基础地点验证：使用place_search查询北京故宫，city北京，page1/page_size1，只请求基础资料。根据结果说明地点名称、坐标与来源，未知详情明确待核实，不写行程。'}
         if diagnostic_verification:cases={'place-zh':'合成接口诊断D1：使用place_search查询北京天安门，city北京，page1/page_size1；仅需一次基础地点查询，再根据返回的地点、来源与未知项答复，不调用路线，不写行程。'}
         if route_diagnostic:cases={'route-zh':'合成路线诊断R1：用place_search分别查询北京北海公园与恭王府，city北京，各page1/page_size1；再只用实际返回POI ID、GCJ-02原坐标和poi_center调用一次walking place_route。根据工具结果说明查询时估计、来源和未知项，不重试相同查询，不写行程。'}
-        if geometry_diagnostic:cases={'route-zh':'合成路线几何取证G1：用place_search查询北京故宫、景山公园各一次，city北京/page1/page_size1。复制本次实际返回的POI ID、原始GCJ-02坐标和poi_center，以故宫为起点、景山公园为终点，只查询一次walking place_route。不换模式、反向或更换地点。不重试相同查询，不写行程。根据实际工具说明估计和未知项。'}
+        if geometry_diagnostic:cases={'route-zh':('合成路线几何取证C1：' if coordinate_diagnostic else '合成路线几何取证G1：')+'用place_search查询北京故宫、景山公园各一次，city北京/page1/page_size1。复制本次实际返回的POI ID、原始GCJ-02坐标和poi_center，以故宫为起点、景山公园为终点，只查询一次walking place_route。不换模式、反向或更换地点。不重试相同查询，不写行程。根据实际工具说明估计和未知项。'}
         value=dict(state='INTENT',model_id=M4_MODEL,endpoint=M4_BASE,region='cn-beijing',
             packages={k:version(k) for k in ('httpx','psycopg','fastapi','pydantic')},cases={k:dict(state='PLANNED') for k in cases})
-        if geometry_diagnostic:value.update(verification_profile='route-geometry-capture-1',provider_responses=[],geometry_acceptance='UNASSESSED')
+        if geometry_diagnostic:value.update(verification_profile='route-coordinate-capture-1' if coordinate_diagnostic else 'route-geometry-capture-1',provider_responses=[],geometry_acceptance='UNASSESSED')
         elif route_diagnostic:value.update(verification_profile='route-diagnostics-1',provider_responses=[])
         elif diagnostic_verification:value['verification_profile']='native-diagnostics-1'
         elif basic_verification:value['verification_profile']='base-search-1'
@@ -257,7 +259,7 @@ def run_batch(*,resume_setup=False,verification=False,basic_verification=False,d
         root=STATE/(tag+'-pg')
         if root.exists():raise ValueError('original_private_acceptance_cluster_exists')
         model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,keychain('g2c-dashscope')),budget)
-        subject='m4-synthetic-real-services-geometry1' if geometry_diagnostic else 'm4-synthetic-real-services-route1' if route_diagnostic else 'm4-synthetic-real-services-diagnostic1' if diagnostic_verification else 'm4-synthetic-real-services-base1' if basic_verification else 'm4-synthetic-real-services-verify1' if verification else 'm4-synthetic-real-services'
+        subject='m4-synthetic-real-services-coordinate1' if coordinate_diagnostic else 'm4-synthetic-real-services-geometry1' if geometry_diagnostic else 'm4-synthetic-real-services-route1' if route_diagnostic else 'm4-synthetic-real-services-diagnostic1' if diagnostic_verification else 'm4-synthetic-real-services-base1' if basic_verification else 'm4-synthetic-real-services-verify1' if verification else 'm4-synthetic-real-services'
         services=RealServices(model,keychain('g2c-amap-web-key'),frozenset({subject}));tools=RealTools(services)
         output=io.StringIO()
         try:
@@ -278,7 +280,7 @@ def run_batch(*,resume_setup=False,verification=False,basic_verification=False,d
                     headers=dict(Authorization='Bearer '+dev_auth.token(auth,subject,30))
                     with TestClient(app) as client:
                         for case,prompt in cases.items():
-                            case_tools=(RealTools(services,allowed_native=frozenset({'place_search','place_route'})) if diagnostic_verification or route_capture else
+                            case_tools=(RealTools(services,allowed_native=frozenset({'place_search','place_route'}),coordinate_routes=coordinate_diagnostic) if diagnostic_verification or route_capture else
                                         RealTools(services,allowed_native=frozenset({'place_search' if case=='place-zh' else 'weather'}))
                                         if verification or basic_verification else tools)
                             cid='m4-'+case
@@ -320,13 +322,13 @@ def run_batch(*,resume_setup=False,verification=False,basic_verification=False,d
 
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('command',choices=('run','inspect','resume-setup','verify-native','verify-base-search','verify-diagnostics','verify-route','capture-route-geometry'));args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('command',choices=('run','inspect','resume-setup','verify-native','verify-base-search','verify-diagnostics','verify-route','capture-route-geometry','capture-route-coordinate'));args=parser.parse_args()
     if args.command=='inspect':
         path=STATE/'acceptance.json'
         result=dict(batch=None if not path.exists() else json.loads(path.read_text()),attempts=AuthorizationBudget(STATE).inspect())
-    else:result=run_batch(resume_setup=args.command=='resume-setup',verification=args.command=='verify-native',basic_verification=args.command=='verify-base-search',diagnostic_verification=args.command=='verify-diagnostics',route_diagnostic=args.command=='verify-route',geometry_diagnostic=args.command=='capture-route-geometry')
+    else:result=run_batch(resume_setup=args.command=='resume-setup',verification=args.command=='verify-native',basic_verification=args.command=='verify-base-search',diagnostic_verification=args.command=='verify-diagnostics',route_diagnostic=args.command=='verify-route',geometry_diagnostic=args.command=='capture-route-geometry',coordinate_diagnostic=args.command=='capture-route-coordinate')
     print(json.dumps(result,ensure_ascii=False,separators=(',',':')))
-    if args.command=='capture-route-geometry':
+    if args.command in ('capture-route-geometry','capture-route-coordinate'):
         batch=result['batch']
         return 0 if not batch.get('response_capture_failed') and len(batch.get('provider_responses',[]))==3 and route_audit_passed(batch.get('route_audit',[]),geometry=True) else 1
     if args.command in ('verify-native','verify-base-search','verify-diagnostics','verify-route') and not verification_passed(result['batch'],AuthorizationBudget(STATE).inspect()):
