@@ -113,6 +113,9 @@ def configure_project(project, tls, control_url, control_token, amap=False,
         raise ValueError('Local AMap device configuration is Debug only')
     text = text.replace('space.go2china.foundation.local', bundle).replace(
         'space.go2china.foundation.control', 'space.go2china.m4.device.control')
+    # Owning generators may already have replaced the foundation IDs. Keep
+    # the controller identity stable while each business App retains its ID.
+    text = text.replace(bundle + '.control', 'space.go2china.m4.device.control')
     text = text.replace('GENERATE_INFOPLIST_FILE = YES;',
         'GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_NSLocalNetworkUsageDescription = "M4 synthetic-data test control on the development Mac";')
     if not include_release:
