@@ -261,6 +261,7 @@ def run_case(client, database, conninfo, auth, context, services, scenario, lang
         future = executor.submit(work)
         events, answer, first, terminal, outcomes = stream_run(client, headers, mid, future, started, evidence)
     evidence.update(events=events, answer=answer, outcomes=[o.__dict__ for o in outcomes])
+    evidence['time_to_terminal_seconds'] = terminal
     current = next(o for o in outcomes if o.message_id == mid)
     observed = dict(message_receipt=receipt, run_status=current.status)
     if current.proposal_id is not None:
@@ -288,7 +289,8 @@ def run_case(client, database, conninfo, auth, context, services, scenario, lang
     # Inputs from the original persisted registration, not from model self-report.
     observed['provider_inputs'] = [v['input']['messages'] for v in evidence['operations']
         if v['run_id'] == receipt['run_id'] and v['registration_id'].startswith('model.')]
-    return observed, expected, first, terminal
+    artifact_complete = recipe not in ('preview','accept','reject') or 'candidate_document' in observed
+    return observed, expected, first, terminal if current.status == 'completed' and artifact_complete else None
 
 
 def main():

@@ -10,6 +10,7 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 os.environ.setdefault('CJ_ENV', 'local')
 import real
+from real_report import reconcile
 
 
 class RealCollectorChecks(unittest.TestCase):
@@ -42,6 +43,31 @@ class RealCollectorChecks(unittest.TestCase):
             events, text, first, full, outcomes = real.stream_run(Client(), {}, 'original', Future(), 0, evidence)
         self.assertEqual((first, full, outcomes), (4, 6, ['original outcome']))
         self.assertEqual(evidence['events'], events)
+
+    def test_failed_terminal_clock_never_counts_as_a_complete_answer(self):
+        row = dict(scenario_id='original', language='zh', attempt=1, raw_evidence_ref='raw/original.json',
+                   status='failure', first_body_seconds=None, full_answer_seconds=2.5,
+                   judgment=dict(kind='program', outcome='FAIL'), serious_errors=['original error'],
+                   cost=dict(complete=False), model_calls=1)
+        original = json.dumps(row, sort_keys=True)
+        corrected, changes = reconcile([row], {'raw/original.json': dict(observed=dict(run_status='unknown'))})
+        self.assertEqual(json.dumps(row, sort_keys=True), original)
+        self.assertIsNone(corrected[0]['full_answer_seconds'])
+        self.assertEqual(corrected[0]['time_to_terminal_seconds'], 2.5)
+        self.assertEqual(corrected[0]['serious_errors'], row['serious_errors'])
+        self.assertEqual(corrected[0]['judgment'], row['judgment'])
+        self.assertEqual(corrected[0]['cost'], row['cost'])
+        self.assertEqual(changes[0]['original'], 2.5)
+
+    def test_completed_run_with_missing_required_candidate_has_no_full_answer(self):
+        row = dict(scenario_id='original', language='en', attempt=1, raw_evidence_ref='raw/original.json', full_answer_seconds=4)
+        corrected, changes = reconcile([row], {'raw/original.json': dict(
+            observed=dict(run_status='completed'), requested_candidate_missing=True)})
+        self.assertIsNone(corrected[0]['full_answer_seconds'])
+        corrected, changes = reconcile([row], {'raw/original.json': dict(
+            observed=dict(run_status='completed'), requested_candidate_missing=False)})
+        self.assertEqual(corrected[0]['full_answer_seconds'], 4)
+        self.assertEqual(changes, [])
 
 
 if __name__ == '__main__': unittest.main()
