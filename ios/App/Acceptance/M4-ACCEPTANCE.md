@@ -154,6 +154,25 @@ CJ_PG_BINDIR='<PostgreSQL-17-bin>' uv run --locked python -B \
 实际 HTTPS；原回执/版本/跨账号检查不变。预编译不执行这些业务证明，实际真机、
 系统设置记录和 VoiceOver 必须分别验收。
 
+### 记忆管理领域的指定真机入口
+
+`check_memory_lifecycle.py` 也支持设备/TLS profile/预编译参数及原 `--case`。
+主读取与管理 API 仍使用各自正式 ASGI 生产者和签名账号，共用批准的本机证书；
+App 只列出这两个明确端口。夹具预备的原始记忆仍经原签名 API 写入，设备用例
+修改/暂停/恢复/停止使用及原动作、来源不变/跨账号证明不删改。
+
+```sh
+CJ_PG_BINDIR='<PostgreSQL-17-bin>' uv run --locked python -B \
+  ios/App/Acceptance/check_memory_lifecycle.py --device '<approved-iPhone-UDID>' \
+  --local-tls '<approved-external-profile/operator.json>' \
+  --run-context '<explicit-context.json>' --case testEnglish \
+  --output '<new-external-directory>' --build-dir '<external-build-cache>'
+```
+
+一次性账号输入与当前已 prepare 的 case 绑定；预编译可预备合成数据和签名包，
+设备交互/文件扫描仍为 UNRUN。实际测试结束后才核 App 文件、导出凭据和服务/PG
+收尾，再写终态，不能用预编译或 AX 代替完整领域、系统设置或 VoiceOver 验收。
+
 ## #4 的候选矩阵
 
 包版本以当前锁文件为准；Swift OpenAPI Generator 的真实生成与结构化错误/流式
