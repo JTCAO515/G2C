@@ -38,8 +38,29 @@ def main():
 
     headers = {'Authorization': 'Bearer ' + dev_auth.token(args.root / 'config/runtime/auth', 'synthetic-alice', 30),
                'Content-Type': 'application/octet-stream'}
+    isolation_probe="""
+import os
+from pathlib import Path
+import psycopg
+assert not Path('/run/operator').exists()
+assert 'CJ_DEPLOY_MIGRATION_CONNINFO' not in os.environ
+assert 'CJ_DEPLOY_RECOVERY_KEY_FILE' not in os.environ
+try:Path('/control/runtime-must-not-write').write_text('forbidden')
+except OSError:pass
+else:raise AssertionError('runtime can write recovery control')
+try:
+ with psycopg.connect(host='/var/run/postgresql',dbname='postgres',user='cj_deploy_admin',connect_timeout=3):pass
+except psycopg.OperationalError:pass
+else:raise AssertionError('runtime can authenticate as administrator')
+with psycopg.connect(host='/var/run/postgresql',dbname='postgres',user='cj_m1_runtime',connect_timeout=3,autocommit=True) as conn:
+ try:conn.execute('UPDATE cj.deployment_identity SET instance=gen_random_uuid()')
+ except psycopg.errors.InsufficientPrivilege:pass
+ else:raise AssertionError('runtime can rotate recovery identity')
+print('PASS peer role/private-signing-key/control-write isolation')
+"""
     with httpx.Client(base_url=base, trust_env=False, timeout=5) as client:
         wait_ready(client)
+        for service in ('api','worker'):command('exec','-T',service,'python','-c',isolation_probe)
         assert client.get('/health/live').status_code == 200
         assert client.get('/v1/trips').status_code == 401
         cid = 'container-' + uuid.uuid4().hex
