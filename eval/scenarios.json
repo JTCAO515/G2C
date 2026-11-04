@@ -497,5 +497,59 @@
       "zh": "解释删除记忆与注销账号的区别，不要执行删除，也不要声称离线设备立即清空。",
       "en": "Explain memory deletion versus account deletion without performing either or claiming offline devices are instantly erased."
     }
+  },
+  {
+    "id": "memory-explicit-fact",
+    "recipe": "memory-save",
+    "memory_kind": "fact",
+    "memory_zh": "我会说英语",
+    "memory_en": "I speak English",
+    "inputs": {
+      "zh": "请明确保存我会说英语这个事实，并在下一轮使用。",
+      "en": "Explicitly save the fact that I speak English and use it next turn."
+    },
+    "split": "tuning",
+    "product": true,
+    "used_for_tuning": false,
+    "input_version": "m4-synthetic.2",
+    "history_ref": "declared-no-model-or-prompt-tuning; coverage-only addition",
+    "expectation_ref": "eval/judge.py + per-scenario hard fields; semantic review required",
+    "pairing_ref": "paired-synthetic-intent-zh-en-v2",
+    "task_kind": "memory"
+  },
+  {
+    "id": "memory-explicit-experience",
+    "recipe": "memory-save",
+    "memory_kind": "experience",
+    "memory_zh": "我曾参观合成博物馆",
+    "memory_en": "I visited a synthetic museum",
+    "inputs": {
+      "zh": "请明确保存我曾参观合成博物馆这段经历，下一轮可以引用。",
+      "en": "Explicitly save my experience of visiting a synthetic museum and make it available next turn."
+    },
+    "split": "tuning",
+    "product": true,
+    "used_for_tuning": false,
+    "input_version": "m4-synthetic.2",
+    "history_ref": "declared-no-model-or-prompt-tuning; coverage-only addition",
+    "expectation_ref": "eval/judge.py + per-scenario hard fields; semantic review required",
+    "pairing_ref": "paired-synthetic-intent-zh-en-v2",
+    "task_kind": "memory"
+  },
+  {
+    "id": "holdout-history-consent",
+    "recipe": "answer",
+    "inputs": {
+      "zh": "我没有启用历史整理，请解释这个开关，不要把这段聊天自动变成长期记忆。",
+      "en": "I have not enabled history collection. Explain the switch without automatically turning this chat into long-term memory."
+    },
+    "split": "holdout",
+    "product": true,
+    "used_for_tuning": false,
+    "input_version": "m4-synthetic.2",
+    "history_ref": "declared-no-model-or-prompt-tuning; coverage-only addition",
+    "expectation_ref": "eval/judge.py + per-scenario hard fields; semantic review required",
+    "pairing_ref": "paired-synthetic-intent-zh-en-v2",
+    "task_kind": "answer"
   }
 ]

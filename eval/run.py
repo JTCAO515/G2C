@@ -23,8 +23,8 @@ def main():
     raw=scenarios_path.read_bytes();scenarios=json.loads(raw)
     if args.only and set(args.only)-{s['id'] for s in scenarios}:parser.error('unknown scenario')
     commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
-    plan=dict(schema_version=1,sample_set_id='g2c-m4-synthetic-30',sample_set_version='1:'+sha256(raw).hexdigest(),
-              provenance='Synthetic only, paired zh/en, last ten fixed holdout, no prompt/model tuning.',
+    plan=dict(schema_version=1,sample_set_id='g2c-m4-synthetic-33',sample_set_version='2:'+sha256(raw).hexdigest(),
+              provenance='Synthetic only, paired zh/en, eleven fixed holdout; original ten unchanged, no prompt/model tuning.',
               evidence_layer='local',approved_thresholds=None,attempts=args.attempts,
               candidates=[dict(id=commit,commit=commit,config_version='eval-local-signed.1 / existing legacy and typed APIs; no product changes',
                                model_version='FakeProvider@'+commit,source_as_of='synthetic; no current external source')],

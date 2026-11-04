@@ -2,10 +2,15 @@
 from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'evaluation/cj028'))
-from evaluate import summarize, latency
+from evaluate import summarize, latency, require, number
 
 
 def report(plan, observations):
+    for row in observations:
+        calls = row.get('model_calls')
+        require(calls is None or type(calls) is int and calls >= 0, 'model_calls must be a nonnegative integer or null')
+        elapsed = row.get('api_task_seconds')
+        require(elapsed is None or number(elapsed), 'invalid API task latency')
     result = summarize(plan, observations)
     for group in result['groups']:
         rows = [a['observation'] for a in group['attempts']]
@@ -15,8 +20,16 @@ def report(plan, observations):
                                     unknown_or_unrun_attempt_n=len(rows)-sum(c is not None for c in counts))
         group['api_task_seconds'] = latency(rows, 'api_task_seconds')
         group['latency_scope'] = 'signed API submit through original worker and final authoritative read; not UI first-body timing'
-        group['hard_outcomes'] = {status:sum(r is not None and r.get('independent_judgment',{}).get('hard_outcome')==status for r in rows)
-                                  for status in ('PASS','FAIL','UNKNOWN')}
+        def hard(row):
+            if row is None or row['status']=='missing': return 'UNRUN'
+            verdict=row.get('judgment',{})
+            if (verdict.get('kind')!='program' or verdict.get('independent') is not True
+                    or verdict.get('ref')!='eval/judge.py' or not row.get('raw_evidence_ref')):
+                return 'UNKNOWN'
+            value=row.get('independent_judgment',{}).get('hard_outcome')
+            return value if value in ('PASS','FAIL','UNKNOWN') else 'UNKNOWN'
+        group['hard_outcomes'] = {status:sum(hard(r)==status for r in rows)
+                                  for status in ('PASS','FAIL','UNKNOWN','UNRUN')}
     return result
 
 

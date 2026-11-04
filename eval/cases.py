@@ -97,15 +97,27 @@ def memory_case(scenario, language, fixture):
     try:
         h.setUp()
         model = ObservedProvider()
-        configuration, document = h.runtime_configuration()
+        _, document = h.runtime_configuration()
+        kind = scenario.get('memory_kind', 'preference')
+        for profile in document['collection']['collection']['profiles'].values():
+            profile['slots']['pace-'+h.tag]['kind'] = kind
+        from cj_memory.typed_runtime import TypedRuntimeConfiguration
+        from cj_memory.typed_local import TypedConfiguration
+        from cj_memory.typed_api import create_local_typed_app
+        import e2e_local
+        configuration = TypedRuntimeConfiguration.from_bytes(json.dumps(document).encode())
+        memory_app = create_local_typed_app(conninfo_path=e2e_local.CONNINFO,auth_dir=h.auth,
+            configuration=TypedConfiguration.from_bytes(json.dumps(document['collection']).encode()))
         memory = scenario['memory_' + language]
         cid = 'eval-memory-' + h.tag
         recipe = scenario['recipe']
-        with TestClient(h.typed_app()) as api, TestClient(h.app) as client:
+        with TestClient(memory_app) as api, TestClient(h.app) as client:
             started=time.monotonic()
             before, _ = h.send_v2(client, cid, None, text='合成基线' if language=='zh' else 'Synthetic baseline')
             run_worker.run_once(h.database, model, h.auth, memory_configuration=configuration)
-            body = h.raw(text=memory)
+            command = json.loads(h.raw(text=memory))
+            command['kind'] = kind
+            body = json.dumps(command,ensure_ascii=False).encode()
             saved = api.post('/v2/memories', content=body, headers={**h.headers('alice'),'Content-Type':'application/octet-stream'})
             assert saved.status_code == 200, saved.text
             iid = saved.json()['receipt']['item_id']
@@ -157,12 +169,12 @@ def memory_case(scenario, language, fixture):
             item=current_item.json()['item']
             observed=dict(message_receipt=receipt['receipt'],provider_inputs=model.inputs,
                           model_calls=model.calls,run_status=run_status,
-                          memory_status=item['status'],memory_text=item['command']['text'])
+                          memory_status=item['status'],memory_text=item['command']['text'],memory_kind=item['command']['kind'])
             observed.update(state(h.database,h.scope))
             with h.database.connect(h.scope) as conn:
                 observed['memory_item_count']=conn.execute('SELECT count(*) FROM cj_memory_item WHERE item_id=%s',(iid,)).fetchone()[0]
             observed['api_task_seconds']=time.monotonic()-started
-            expected=dict(memory_item_count=1, memory_texts=[] if status in ('disabled','withdrawn') else [expected_text],
+            expected=dict(memory_kind=kind, memory_item_count=1, memory_texts=[] if status in ('disabled','withdrawn') else [expected_text],
                           memory_status=status,memory_text=expected_text)
             return observed,expected
     finally:

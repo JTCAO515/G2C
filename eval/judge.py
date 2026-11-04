@@ -30,6 +30,8 @@ def judge(scenario, evidence, expected):
         equal('current_memory_context', texts, expected['memory_texts'])
         equal('persisted_memory_status', evidence.get('memory_status'), expected['memory_status'])
         equal('persisted_memory_text', evidence.get('memory_text'), expected['memory_text'])
+        if 'memory_kind' in expected:
+            equal('persisted_memory_kind', evidence.get('memory_kind'), expected['memory_kind'])
     for field, observation in (('max_days', 'candidate_day_count'), ('max_daily_items', 'max_candidate_daily_items'),
                                ('budget_limit', 'verified_daily_cost')):
         if field in scenario:
