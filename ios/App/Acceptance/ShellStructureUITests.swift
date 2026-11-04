@@ -12,7 +12,7 @@ import Foundation
         app?.terminate()
         app = XCUIApplication(bundleIdentifier: bundle)
         runID = UUID().uuidString
-        app.launchEnvironment = ["G2C_DEV_API_BASE_URL": "", "G2C_DEV_TOKEN": ""]
+        app.launchEnvironment = ["OS_ACTIVITY_MODE":"disable", "G2C_DEV_API_BASE_URL": "", "G2C_DEV_TOKEN": ""]
         if let mode {
             app.launchEnvironment.merge(["SHELL_FIXTURE_RUN": runID, "SHELL_FIXTURE_MEMORY": mode,
                 "SHELL_FIXTURE_LANGUAGE": language, "SHELL_FIXTURE_URL": fixtureURL]) { _, new in new }
@@ -29,9 +29,23 @@ import Foundation
     }
 
     private func tap(_ label: String) {
-        let element = app.buttons.matching(identifier: label).firstMatch
+        let tab = ["Assistant","Trips","Plugins","Memory","助手","行程","插件","记忆"].contains(label)
+        let identifier = ["Privacy notice (beta)","隐私说明（内测版）"].contains(label) ? "memory.privacy" : label
+        let element = tab ? app.tabBars.buttons.matching(identifier:identifier).firstMatch : app.buttons.matching(identifier:identifier).firstMatch
+        if !tab {
+            for attempt in 0..<30 {
+                let navigation = app.navigationBars.firstMatch
+                let top = navigation.exists ? navigation.frame.maxY+4 : app.frame.minY+60
+                let bar = app.tabBars.firstMatch
+                let bottom = bar.exists ? bar.frame.minY : app.frame.maxY-24
+                let frame = element.exists ? element.frame : .zero
+                if element.exists && element.isHittable && frame.midY>top && frame.midY<bottom { break }
+                let located = !frame.isEmpty && frame.midY.isFinite
+                if located ? frame.midY<=top : attempt>=15 { app.swipeDown() }
+                else { app.swipeUp() }
+            }
+        }
         XCTAssertTrue(element.waitForExistence(timeout: 5), label)
-        if !element.isHittable { app.swipeUp() }
         XCTAssertTrue(element.isHittable, label)
         element.tap()
     }

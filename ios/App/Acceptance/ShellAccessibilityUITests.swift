@@ -16,7 +16,7 @@ import Foundation
         for language in ["en", "zh-Hans"] {
             app?.terminate()
             app = XCUIApplication(bundleIdentifier: bundle)
-            app.launchEnvironment = ["G2C_DEV_API_BASE_URL": "", "G2C_DEV_TOKEN": ""]
+            app.launchEnvironment = ["OS_ACTIVITY_MODE":"disable", "G2C_DEV_API_BASE_URL": "", "G2C_DEV_TOKEN": ""]
             app.launchArguments = ["-cj.ui.language.v1", language]
             app.launch()
             XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
@@ -46,7 +46,7 @@ import Foundation
         continueAfterFailure = false
         app = XCUIApplication(bundleIdentifier: bundle)
         defer { app.terminate() }
-        app.launchEnvironment = ["G2C_DEV_API_BASE_URL": "", "G2C_DEV_TOKEN": "",
+        app.launchEnvironment = ["OS_ACTIVITY_MODE":"disable", "G2C_DEV_API_BASE_URL": "", "G2C_DEV_TOKEN": "",
             "SHELL_FIXTURE_RUN": UUID().uuidString, "SHELL_FIXTURE_MEMORY": "unconfigured",
             "SHELL_FIXTURE_LANGUAGE": "zh-Hans", "SHELL_FIXTURE_SIZE": "maximum"]
         app.launch()
@@ -84,7 +84,7 @@ import Foundation
         app?.terminate()
         app = XCUIApplication(bundleIdentifier: bundle)
         runID = UUID().uuidString
-        app.launchEnvironment = ["G2C_DEV_API_BASE_URL": "", "G2C_DEV_TOKEN": "",
+        app.launchEnvironment = ["OS_ACTIVITY_MODE":"disable", "G2C_DEV_API_BASE_URL": "", "G2C_DEV_TOKEN": "",
             "SHELL_FIXTURE_RUN": runID, "SHELL_FIXTURE_MEMORY": memory, "SHELL_FIXTURE_TRIPS": trip,
             "SHELL_FIXTURE_ASSISTANT": assistant, "SHELL_FIXTURE_LANGUAGE": language,
             "SHELL_FIXTURE_SIZE": size, "SHELL_FIXTURE_LONG_TEXT": longText ? "1" : "0",
