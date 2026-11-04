@@ -122,14 +122,17 @@ def prepare(value,root=ROOT):
 
 
 def require_host():
-    if os.getuid()!=0 or Path('/run/config/host-name').read_text().strip()!='iZj6c3ldt64bg18flzpr7hZ':
-        raise ValueError('specified_trial_host_required')
-    mounted=False
+    if os.getuid()!=0:raise ValueError('specified_trial_host_required')
+    mounted=hostname=False
     for line in Path('/proc/self/mountinfo').read_text().splitlines():
-        fields,_,filesystem=line.partition(' - ');parts=fields.split()
+        fields,_,filesystem=line.partition(' - ');parts=fields.split();kind=filesystem.split()[0]
         if (parts[4]=='/host' and parts[3]=='/srv/g2c-beta' and 'rw' in parts[5].split(',')
-                and filesystem.split()[0] in ('ext4','xfs','btrfs')):mounted=True
-    if not mounted:raise ValueError('specified_persistent_host_bind_required')
+                and kind in ('ext4','xfs','btrfs')):mounted=True
+        if (parts[4]=='/run/config/host-name' and parts[3]=='/etc/hostname' and 'ro' in parts[5].split(',')
+                and kind in ('ext4','xfs','btrfs')):hostname=True
+    if not mounted or not hostname:raise ValueError('specified_persistent_host_bind_required')
+    if Path('/run/config/host-name').read_text().strip()!='iZj6c3ldt64bg18flzpr7hZ':
+        raise ValueError('specified_trial_host_required')
 
 
 def main():

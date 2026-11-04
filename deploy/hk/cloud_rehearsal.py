@@ -17,7 +17,7 @@ import time
 import uuid
 
 from fastapi.testclient import TestClient
-import psycopg
+from psycopg import sql
 
 import dev_auth
 import run_worker
@@ -113,9 +113,11 @@ class Host:
     def seed(self):
         if self.state_path.exists():return self.inspect()
         state=dict(version='g2c-beta-cloud-rehearsal.1',subjects=self.subjects,item=self.item,stage='SEED_INTENT',real_model_calls=0)
-        self.save(state)
         a,b=self.subjects
         with self.operator() as (connection,_),connection.transaction():
+            connection.execute('SELECT pg_advisory_xact_lock_shared(%s)',(checkpoint.RELEASE_LOCK,))
+            checkpoint.require_release(connection,self.control)
+            self.save(state)
             for subject in self.subjects:provision_budget_connection(connection,self.runtime.context,subject)
         with TestClient(self.app) as client:self.send(client,a)
         model=FakeProvider();outcomes=run_worker.run_once(self.database,model,self.auth,account_admission=True)
@@ -161,13 +163,15 @@ class Host:
             state['account_operation_id']=operation['operation_id'];self.save(state)
             result=post('/v1/account-cleanup-operations/'+operation['operation_id']+'/confirmation',dict(version='CLEANUP-API@1',registry_digest=operation['registry_digest'],confirmation='DELETE_ACCOUNT'))
             if result['business_access']!='revoked' or result['online_status']!='complete':raise ValueError('original_selected_account_cleanup_incomplete')
-        raw=encode(dict(version='MEMORY-ERASURE@1',action_id='recovery-delete-'+self.nonce,item_id=self.item,expected_version=1,derived_range='owned_trip_derived_scope'))
-        result=json.loads(self.erasure.delete(self.token(b),raw))
+        result=json.loads(self.erasure.delete(self.token(b),self.erasure_command()))
         if result['online_status']!='complete':raise ValueError('original_item_cleanup_incomplete')
         state.update(memory_action_id='recovery-delete-'+self.nonce,memory_operation_id=result['operation_id']);self.save(state)
         proof=self.inspect();self.require_deleted(proof)
         state.update(stage='DELETED');self.save(state)
         return self.inspect()
+
+    def erasure_command(self):
+        return encode(dict(version='MEMORY-ERASURE@1',action_id='recovery-delete-'+self.nonce,item_id=self.item,expected_version=1,derived_range='owned_trip_derived_scope'))
 
     @staticmethod
     def require_seeded(proof):
@@ -193,33 +197,51 @@ class Host:
                 or checkpoint.local.checksum(self.base/'database.dump')!=base['dump_sha256']):
             raise ValueError('original_seeded_base_checkpoint_required')
         self.require_seeded(self.inspect())
-        with self.operator() as (connection,_),connection.transaction():
-            connection.execute('SELECT pg_advisory_xact_lock_shared(%s)',(checkpoint.RELEASE_LOCK,))
-            checkpoint.require_release(connection,self.control)
-            connection.execute("SET TIME ZONE 'UTC'")
-            if (checkpoint.identity(connection)[1]!=base['lineage'] or migrate.inventory(connection)!=base['tables']
-                    or staging.state(connection,base['tables'])!=base['row_state']
-                    or staging.sequence_state(connection,list(base['sequences']))!=base['sequences']
-                    or checkpoint.local.fence_state(connection)!=base['fences']):
-                raise ValueError('original_seeded_base_does_not_match_current_source')
+        with self.operator() as (connection,_):
+            # Acquire the session barrier before creating the repeatable-read
+            # snapshot. A writer finishing while we wait must be visible.
+            connection.execute('SELECT pg_advisory_lock(%s)',(checkpoint.RELEASE_LOCK,))
+            try:
+                with connection.transaction():
+                    connection.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ')
+                    checkpoint.require_release(connection,self.control)
+                    connection.execute("SET TIME ZONE 'UTC'")
+                    for table in base['tables']:
+                        connection.execute(sql.SQL('LOCK TABLE {} IN SHARE MODE').format(sql.Identifier(*table.split('.'))))
+                    if (checkpoint.identity(connection)[1]!=base['lineage'] or migrate.inventory(connection)!=base['tables']
+                            or staging.state(connection,base['tables'])!=base['row_state']
+                            or staging.sequence_state(connection,list(base['sequences']))!=base['sequences']
+                            or checkpoint.local.fence_state(connection)!=base['fences']):
+                        raise ValueError('original_seeded_base_does_not_match_current_source')
+            finally:connection.execute('SELECT pg_advisory_unlock(%s)',(checkpoint.RELEASE_LOCK,))
         return base
 
     def inspect(self):
         state=self.load();a,b=self.subjects;owner_a=digest(self.scope(a).encode());owner_b=digest(self.scope(b).encode())
         with self.operator() as (connection,_):
+            prepared=connection.execute('SELECT operation_id FROM cj_cleanup_request WHERE subject_digest=%s AND action_id=%s',
+                (state.get('account_subject_digest'),'recovery-retire-'+self.nonce)).fetchone()
+            account_operation=None if prepared is None else prepared[0]
+            action=connection.execute("SELECT operation_id,original_input_sha256 FROM cj_memory_erasure_fence WHERE scope_digest=%s AND kind='action' AND reference_sha256=%s",
+                (owner_b,digest(('recovery-delete-'+self.nonce).encode()))).fetchone()
+            memory_operation=None if action is None else action[0]
+            if (state.get('account_operation_id') is not None and state['account_operation_id']!=account_operation
+                    or state.get('memory_operation_id') is not None and state['memory_operation_id']!=memory_operation
+                    or action is not None and action[1]!=digest(self.erasure_command())):
+                raise ValueError('original_erasure_action_binding_differs')
             rows=dict(account_messages=connection.execute('SELECT count(*) FROM cj_message_receipt WHERE scope=%s',(self.scope(a),)).fetchone()[0],
                 retained_messages=connection.execute('SELECT count(*) FROM cj_message_receipt WHERE scope=%s',(self.scope(b),)).fetchone()[0],
                 selected_memory=connection.execute('SELECT count(*) FROM cj_memory_item WHERE scope=%s AND item_id=%s',(self.scope(b),self.item)).fetchone()[0])
             account=connection.execute('SELECT count(*) FROM cj_account_fence WHERE owner_digest=%s AND subject_digest=%s AND operation_id=%s',
-                (owner_a,state.get('account_subject_digest'),state.get('account_operation_id'))).fetchone()[0]
+                (owner_a,state.get('account_subject_digest'),account_operation)).fetchone()[0]
             item=connection.execute("SELECT count(*) FROM cj_memory_erasure_fence WHERE scope_digest=%s AND kind='item' AND reference_sha256=%s",
                 (owner_b,digest(self.item.encode()))).fetchone()[0]
             action=connection.execute("SELECT count(*) FROM cj_memory_erasure_fence WHERE scope_digest=%s AND kind='action' AND reference_sha256=%s AND operation_id=%s",
-                (owner_b,digest(('recovery-delete-'+self.nonce).encode()),state.get('memory_operation_id'))).fetchone()[0]
+                (owner_b,digest(('recovery-delete-'+self.nonce).encode()),memory_operation)).fetchone()[0]
         proof=dict(mode='READ_ONLY',stage=state['stage'],subjects=self.subjects,item=self.item,rows=rows,
             account_access=self.checker.check(self.token(a)).status.value,memory_owner_access=self.checker.check(self.token(b)).status.value,
             fence_counts=dict(cj_account_fence=account,item=item,action=action),
-            account_operation_id=state.get('account_operation_id'),memory_operation_id=state.get('memory_operation_id'),
+            account_operation_id=account_operation,memory_operation_id=memory_operation,
             original_unknown_run_id=state.get('unknown_run_id'),real_model_calls=0,actual_cost='UNKNOWN')
         if state['stage']=='SEEDED':self.require_seeded(proof)
         if state['stage']=='DELETED':self.require_deleted(proof)

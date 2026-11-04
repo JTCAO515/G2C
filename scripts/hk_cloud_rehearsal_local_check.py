@@ -54,7 +54,19 @@ def main():
             def initialize(connection):
                 for subject in beta_subjects:local_run_context.provision_budget_connection(connection,context,subject)
             with patch.object(checkpoint,'operator',operator),patch.object(staging,'PG17',pg_suites.bindir()):
+                try:host.seed()
+                except FileNotFoundError:pass
+                else:raise AssertionError('unreleased source seeded')
+                assert not host.state_path.exists()
+                with operator() as (connection,_):assert connection.execute('SELECT count(*) FROM cj_usage_ledger_candidate').fetchone()==(0,)
                 checkpoint.bootstrap(host.control,initialize)
+                release=host.control/'release.json';release.rename(host.control/'fixture-suspended-release.json')
+                try:host.seed()
+                except FileNotFoundError:pass
+                else:raise AssertionError('suspended source seeded')
+                assert not host.state_path.exists()
+                with operator() as (connection,_):assert connection.execute('SELECT count(*) FROM cj_usage_ledger_candidate').fetchone()==(2,)
+                (host.control/'fixture-suspended-release.json').rename(release)
                 # Different keys and invite sets: neither can act in the other host.
                 assert account_checker_for(beta,database).check(dev_auth.token(auth,beta_subjects[0],15)).status is AdmissionStatus.DENIED
                 assert host.checker.check(dev_auth.token(beta,subjects[0],15)).status is AdmissionStatus.DENIED
@@ -70,11 +82,26 @@ def main():
                 assert host.inspect()['stage']=='SEEDED'
                 (host.base/'manifest.json').unlink();host.base.rmdir()
                 checkpoint.export(host.base,host.control,schema_root=root/'schema')
+                original_state=staging.state
+                def checked_snapshot(connection,tables):
+                    assert connection.execute('SHOW transaction_isolation').fetchone()==('repeatable read',)
+                    with psycopg.connect(**config) as writer:
+                        assert writer.execute('SELECT pg_try_advisory_xact_lock_shared(%s)',(checkpoint.RELEASE_LOCK,)).fetchone()==(False,)
+                    return original_state(connection,tables)
+                with patch.object(staging,'state',checked_snapshot):host.require_base(host.load())
                 deleted=host.erase();assert deleted['stage']=='DELETED',deleted
                 assert deleted['rows']==dict(account_messages=0,retained_messages=1,selected_memory=0),deleted
                 assert deleted['account_access']=='denied' and deleted['memory_owner_access']=='allowed',deleted
                 assert deleted['fence_counts']==dict(cj_account_fence=1,item=1,action=1),deleted
                 assert host.erase()['rows']==deleted['rows']
+                interrupted=host.load();interrupted['stage']='ERASURE_INTENT'
+                del interrupted['account_operation_id'];del interrupted['memory_operation_id']
+                host.save(interrupted)
+                with patch.object(host.erasure,'delete',side_effect=AssertionError('no original resend')),patch('fastapi.testclient.TestClient.post',side_effect=AssertionError('no original resend')):
+                    reconciled=host.erase()
+                assert reconciled['account_operation_id']==deleted['account_operation_id']
+                assert reconciled['memory_operation_id']==deleted['memory_operation_id']
+                assert reconciled['fence_counts']==deleted['fence_counts']
             host.close()
     print('PASS L1 actual private PG: separate signatures/invites in both directions, signed producer/Meter FakeProvider/UNKNOWN, real native base dump before canonical retirement/item erasure, target-specific physical/fence proof, retained owner, original stage only-read; cloud UNRUN')
 

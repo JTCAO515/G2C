@@ -80,6 +80,12 @@ def test_real_secret_cli_rejects_wrong_or_ephemeral_mount_before_reading_credent
     mount[0]='1 2 8:1 /srv/wrong /host rw - ext4 /dev/vda1 rw\n'
     with pytest.raises(ValueError):secret_setup.require_host()
     mount[0]='1 2 8:1 /srv/g2c-beta /host rw - ext4 /dev/vda1 rw\n'
+    with pytest.raises(ValueError):secret_setup.require_host()
+    mount[0]+='3 2 8:1 /etc/wrong /run/config/host-name ro - ext4 /dev/vda1 rw\n'
+    with pytest.raises(ValueError):secret_setup.require_host()
+    mount[0]=mount[0].replace('/etc/wrong','/etc/hostname').replace('host-name ro','host-name rw')
+    with pytest.raises(ValueError):secret_setup.require_host()
+    mount[0]=mount[0].replace('host-name rw','host-name ro')
     secret_setup.require_host()
     host[0]='another-host'
     with pytest.raises(ValueError):secret_setup.require_host()
