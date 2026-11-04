@@ -7,6 +7,7 @@ from pathlib import Path
 import subprocess
 import time
 import traceback
+from cj_strict_json import reject_duplicates
 from runtime import ROOT, private_database
 from cases import run_case, case_session
 from judge import judge
@@ -20,7 +21,7 @@ def main():
     parser.add_argument('--only',nargs='+')
     args=parser.parse_args()
     scenarios_path=Path(__file__).with_name('scenarios.json')
-    raw=scenarios_path.read_bytes();scenarios=json.loads(raw)
+    raw=scenarios_path.read_bytes();scenarios=json.loads(raw,object_pairs_hook=reject_duplicates(ValueError,'duplicate scenario field'))
     if args.only and set(args.only)-{s['id'] for s in scenarios}:parser.error('unknown scenario')
     commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
     plan=dict(schema_version=1,sample_set_id='g2c-m4-synthetic-33',sample_set_version='2:'+sha256(raw).hexdigest(),
