@@ -3,6 +3,7 @@
 import Foundation
 import CryptoKit
 import Darwin
+import enum CJMessageClient.LocalJournalFile
 import CJMessageKeys
 import CJAPI
 
@@ -89,11 +90,7 @@ struct NeedsRejectedOriginal: NeedsJournalRecord {
         try validateDirectory()
         try validateBinding()
         try validateDirectory()
-        let fd = openat(directory, try name(pending.actionID), O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, 0o600)
-        guard fd >= 0 else { throw NeedsFailure.storageUnavailable }
-        defer { close(fd) }
-        let count = bytes.withUnsafeBytes { write(fd, $0.baseAddress, $0.count) }
-        guard count == bytes.count, fsync(fd) == 0, fsync(directory) == 0 else { throw NeedsFailure.storageUnavailable }
+        guard LocalJournalFile.createExclusive(try name(pending.actionID), in: directory, bytes: bytes) else { throw NeedsFailure.storageUnavailable }
         try validateDirectory()
     }
     func validateDirectory() throws {
@@ -107,7 +104,7 @@ struct NeedsRejectedOriginal: NeedsJournalRecord {
     }
     func validateInventory(_ ids: [String]) throws {
         try validateDirectory()
-        guard try ids.map(name).sorted() == FileManager.default.contentsOfDirectory(atPath: root.path).sorted() else {
+        guard try ids.map(name).sorted() == LocalJournalFile.recordNames(atPath: root.path).sorted() else {
             throw NeedsFailure.storageUnavailable
         }
     }
@@ -152,7 +149,7 @@ struct NeedsRejectedOriginal: NeedsJournalRecord {
     }
     func pending() throws -> [Record] {
         try validateDirectory()
-        let names = try FileManager.default.contentsOfDirectory(atPath: root.path)
+        let names = try LocalJournalFile.recordNames(atPath: root.path)
         guard names.count <= maximumRecords else { throw NeedsFailure.storageUnavailable }
         let result = try names.sorted().map { filename in
             let stem = String(filename.dropLast(6))
@@ -167,7 +164,7 @@ struct NeedsRejectedOriginal: NeedsJournalRecord {
             return pending
         }
         try validateDirectory()
-        guard try names.sorted() == FileManager.default.contentsOfDirectory(atPath: root.path).sorted() else { throw NeedsFailure.storageUnavailable }
+        guard try names.sorted() == LocalJournalFile.recordNames(atPath: root.path).sorted() else { throw NeedsFailure.storageUnavailable }
         guard Set(result.map { Data($0.actionID.utf8) }).count == result.count else { throw NeedsFailure.storageUnavailable }
         return result
     }

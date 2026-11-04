@@ -2,6 +2,7 @@ import Foundation
 import CryptoKit
 import Darwin
 import CJAPI
+import enum CJMessageClient.LocalJournalFile
 import CJMessageKeys
 
 public enum MemoryFailure: Error, Equatable, Sendable {
@@ -171,11 +172,7 @@ struct MemoryRejectedOperation<Original: MemoryJournalRecord>: MemoryJournalReco
         try validateDirectory()
         try validateBinding()
         try validateDirectory()
-        let fd = openat(directory, try name(pending.journalID), O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, 0o600)
-        guard fd >= 0 else { throw MemoryFailure.storageUnavailable }
-        defer { close(fd) }
-        let count = bytes.withUnsafeBytes { write(fd, $0.baseAddress, $0.count) }
-        guard count == bytes.count, fsync(fd) == 0, fsync(directory) == 0 else { throw MemoryFailure.storageUnavailable }
+        guard LocalJournalFile.createExclusive(try name(pending.journalID), in: directory, bytes: bytes) else { throw MemoryFailure.storageUnavailable }
         try validateDirectory()
     }
     func validateDirectory() throws {
@@ -231,7 +228,7 @@ struct MemoryRejectedOperation<Original: MemoryJournalRecord>: MemoryJournalReco
     func validateInventory(_ records: [Record]) throws {
         try validateDirectory()
         let expected = try Set(records.map { try name($0.journalID) })
-        let actual = try Set(FileManager.default.contentsOfDirectory(atPath: root.path))
+        let actual = try Set(LocalJournalFile.recordNames(atPath: root.path))
         guard expected == actual else { throw MemoryFailure.storageUnavailable }
     }
     /// Exact per-record plan for item erasure. Building it decrypts/validates the
@@ -245,7 +242,7 @@ struct MemoryRejectedOperation<Original: MemoryJournalRecord>: MemoryJournalReco
     }
     func prepareRemoval(where matches: (Record) throws -> Bool) throws -> Removal {
         let records = try pending()
-        let names = try FileManager.default.contentsOfDirectory(atPath: root.path)
+        let names = try LocalJournalFile.recordNames(atPath: root.path)
         var inventory: [Durability] = [], selected = Set<String>()
         var identities: [String: (dev_t, ino_t)] = [:]
         for record in records {
@@ -274,7 +271,7 @@ struct MemoryRejectedOperation<Original: MemoryJournalRecord>: MemoryJournalReco
     func validateRemoval(_ plan: Removal) throws {
         guard plan.owner === self else { throw MemoryFailure.storageUnavailable }
         try validateDirectory()
-        guard try Set(FileManager.default.contentsOfDirectory(atPath: root.path)) == Set(plan.inventory.map(\.filename)) else {
+        guard try Set(LocalJournalFile.recordNames(atPath: root.path)) == Set(plan.inventory.map(\.filename)) else {
             throw MemoryFailure.storageUnavailable
         }
         for proof in plan.inventory { try validateRemovalEntry(proof, plan: plan) }
@@ -295,14 +292,14 @@ struct MemoryRejectedOperation<Original: MemoryJournalRecord>: MemoryJournalReco
         }
         guard fsync(directory) == 0 else { throw MemoryFailure.exchangeUnknown }
         try validateDirectory()
-        guard try Set(FileManager.default.contentsOfDirectory(atPath: root.path)) == Set(plan.inventory.map(\.filename)).subtracting(plan.selected) else {
+        guard try Set(LocalJournalFile.recordNames(atPath: root.path)) == Set(plan.inventory.map(\.filename)).subtracting(plan.selected) else {
             throw MemoryFailure.exchangeUnknown
         }
         for proof in plan.inventory where !plan.selected.contains(proof.filename) { try validateDurability(proof) }
     }
     func pending() throws -> [Record] {
         try validateDirectory()
-        let names = try FileManager.default.contentsOfDirectory(atPath: root.path)
+        let names = try LocalJournalFile.recordNames(atPath: root.path)
         guard names.count <= maximumRecords else { throw MemoryFailure.storageUnavailable }
         let result = try names.sorted().map { filename in
             let stem = String(filename.dropLast(7))

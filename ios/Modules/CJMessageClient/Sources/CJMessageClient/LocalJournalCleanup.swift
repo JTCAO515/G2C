@@ -98,8 +98,10 @@ public extension LocalJournalCleanupPolicy {
                 let stem = name.dropLast(Policy.recordExtension.utf8.count + 1)
                 var entry = stat()
                 let hash = stem.count == 64 && stem.utf8.allSatisfy { (48...57).contains($0) || (97...102).contains($0) }
-                guard name.hasSuffix("." + Policy.recordExtension),
-                      hash || (Policy.acceptsUUIDStem && UUID(uuidString: String(stem)) != nil),
+                let record = name.hasSuffix("." + Policy.recordExtension) &&
+                    (hash || (Policy.acceptsUUIDStem && UUID(uuidString: String(stem)) != nil))
+                // A crash during append leaves only the writer's temporary entry; it is erased like a record.
+                guard record || LocalJournalFile.isTemporary(name),
                       fstatat(fd, name, &entry, AT_SYMLINK_NOFOLLOW) == 0,
                       entry.st_mode & S_IFMT == S_IFREG, entry.st_nlink == 1, entry.st_uid == getuid() else {
                     throw Policy.unavailable
