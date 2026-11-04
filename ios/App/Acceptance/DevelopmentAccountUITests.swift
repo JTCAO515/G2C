@@ -5,6 +5,9 @@ import Foundation
     private let bundle = "space.go2china.accounts.acceptance"
     private let control = "__FIXTURE_URL__"
     private var app: XCUIApplication!
+    #if G2C_M4_DEVICE_ACCEPTANCE
+    private lazy var deviceSession = M4DeviceTestSession(test: self, control: control)
+    #endif
     private struct Fixture: Decodable {
         let endpoint: String
         let accounts: [String: String]
@@ -12,7 +15,11 @@ import Foundation
     }
 
     private func call(_ path: String) async throws -> Data {
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        let (data, response) = try await deviceSession.data(path)
+        #else
         let (data, response) = try await URLSession.shared.data(from: XCTUnwrap(URL(string: control + path)))
+        #endif
         XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
         return data
     }
@@ -21,17 +28,29 @@ import Foundation
         try JSONDecoder().decode(Fixture.self, from: await call("/config"))
     }
 
-    private func launch(_ fixture: Fixture, language: String, tokens: Bool = true) throws {
+    private func launch(_ fixture: Fixture, language: String, tokens: Bool = true) async throws {
         continueAfterFailure = false
         app?.terminate()
         app = XCUIApplication(bundleIdentifier: bundle)
         app.launchArguments = ["-cj.ui.language.v1", language]
         app.launchEnvironment = ["G2C_DEV_ACCOUNT_MODE": "1", "G2C_DEV_API_BASE_URL": fixture.endpoint,
                                  "G2C_DEV_TOKEN": "", "G2C_DEV_ACCOUNTS": "{}", "OS_ACTIVITY_MODE": "disable"]
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        if tokens { try await deviceSession.stageAccounts() }
+        app.launchEnvironment.merge(try deviceSession.applicationEnvironment(
+            endpoint: fixture.endpoint, injecting: tokens)) { _, value in value }
+        #else
         if tokens {
             app.launchEnvironment["G2C_DEV_ACCOUNTS"] = String(data: try JSONEncoder().encode(fixture.accounts), encoding: .utf8)
         }
+        #endif
         app.launch()
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        for _ in 0..<8 {
+            deviceSession.handleAppConsent()
+            try await Task.sleep(for: .milliseconds(500))
+        }
+        #endif
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
         account(language)
     }
@@ -91,7 +110,7 @@ import Foundation
     private func lifecycle(_ language: String) async throws {
         _ = try await call("/normal")
         let fixture = try await configuration()
-        try launch(fixture, language: language)
+        try await launch(fixture, language: language)
         tap("account.development.signout"); signedOut(language)
         for choice in ["A", "B"] {
             tap("account.development.signin." + choice); try signed(fixture, choice, language)
@@ -99,16 +118,16 @@ import Foundation
             enterDraft(language); account(language)
             tap("account.development.signout"); signedOut(language); draftCleared(language)
             tap("account.development.signin." + choice); try signed(fixture, choice, language)
-            try launch(fixture, language: language, tokens: false)
+            try await launch(fixture, language: language, tokens: false)
             signedOut(language) // no automatic restoration or injected credential
             tap("account.development.restore"); try signed(fixture, choice, language)
             capture(language + "-keychain-restored-" + choice)
-            try launch(fixture, language: language)
+            try await launch(fixture, language: language)
             tap("account.development.restore"); try signed(fixture, choice, language)
             enterDraft(language); account(language)
         }
         tap("account.development.signout"); signedOut(language); draftCleared(language)
-        try launch(fixture, language: language, tokens: false)
+        try await launch(fixture, language: language, tokens: false)
         tap("account.development.restore"); signedOut(language)
         capture(language + "-logout-marker")
         app.terminate()
@@ -121,7 +140,7 @@ import Foundation
         defer { app?.terminate() }
         _ = try await call("/normal")
         let fixture = try await configuration()
-        try launch(fixture, language: language)
+        try await launch(fixture, language: language)
         tap("account.development.signout"); signedOut(language)
         tap("account.development.signin.A"); try signed(fixture, "A", language)
         let links = app.buttons.matching(identifier: "account.deletion.open")
@@ -146,7 +165,7 @@ import Foundation
     private func failures(_ language: String) async throws {
         _ = try await call("/normal")
         let fixture = try await configuration()
-        try launch(fixture, language: language)
+        try await launch(fixture, language: language)
         tap("account.development.signout")
         tap("account.development.signin.Denied")
         state(language == "en" ? "Sign-in was rejected. Check the account and try again." : "登录被拒绝，请核对账号后重试。")
@@ -160,7 +179,7 @@ import Foundation
         state(language == "en" ? "Cannot verify the session right now. Saved credentials have been kept." : "暂时无法验证会话，已保留保存的凭据。")
         capture(language + "-offline-unknown")
         _ = try await call("/online")
-        try launch(fixture, language: language, tokens: false)
+        try await launch(fixture, language: language, tokens: false)
         tap("account.development.restore"); try signed(fixture, "A", language)
         capture(language + "-credential-preserved")
         app.terminate()
@@ -172,7 +191,7 @@ import Foundation
     private func late(_ language: String) async throws {
         _ = try await call("/normal")
         let fixture = try await configuration()
-        try launch(fixture, language: language)
+        try await launch(fixture, language: language)
         tap("account.development.signin.A"); try signed(fixture, "A", language)
         enterDraft(language); account(language)
         _ = try await call("/hold")
@@ -182,7 +201,7 @@ import Foundation
         tap("account.development.signin.B"); try signed(fixture, "B", language)
         _ = try await call("/release")
         draftCleared(language); try signed(fixture, "B", language)
-        try launch(fixture, language: language, tokens: false)
+        try await launch(fixture, language: language, tokens: false)
         tap("account.development.restore"); try signed(fixture, "B", language)
         capture(language + "-late-A-cannot-replace-B")
         app.terminate()
@@ -195,7 +214,7 @@ import Foundation
         _ = try await call("/normal")
         let before = try await call("/audit")
         let fixture = try await configuration()
-        try launch(fixture, language: "en")
+        try await launch(fixture, language: "en")
         XCTAssertFalse(app.staticTexts["account.development.status"].exists)
         XCTAssertFalse(app.buttons["account.development.restore"].exists)
         let after = try await call("/audit")

@@ -99,20 +99,27 @@ class LocalTLS:
                     ssl_version=ssl.PROTOCOL_TLS_SERVER, ssl_ciphers='ECDHE+AESGCM:ECDHE+CHACHA20')
 
 
-def configure_project(project, tls, control_url, control_token, amap=False):
+def configure_project(project, tls, control_url, control_token, amap=False,
+                      bundle=None, include_release=False):
     """Adapt the existing generated native project; real keys stay local-only."""
     project = Path(project)
     pbx = project / 'project.pbxproj'
     text = pbx.read_text()
-    bundle = 'space.go2china.app' if amap else 'space.go2china.scoped.acceptance'
+    if bundle is None:
+        bundle = 'space.go2china.app' if amap else 'space.go2china.scoped.acceptance'
+    if amap and bundle != 'space.go2china.app':
+        raise ValueError('AMap requires its authorized formal Bundle ID')
+    if amap and include_release:
+        raise ValueError('Local AMap device configuration is Debug only')
     text = text.replace('space.go2china.foundation.local', bundle).replace(
         'space.go2china.foundation.control', 'space.go2china.m4.device.control')
     text = text.replace('GENERATE_INFOPLIST_FILE = YES;',
         'GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_NSLocalNetworkUsageDescription = "M4 synthetic-data test control on the development Mac";')
-    text = re.sub(r'buildConfigurations = \(000000000000000000000012[^)]*\)',
-                  'buildConfigurations = (000000000000000000000012)', text)
-    text = re.sub(r'buildConfigurations = \(000000000000000000000014[^)]*\)',
-                  'buildConfigurations = (000000000000000000000014)', text)
+    if not include_release:
+        text = re.sub(r'buildConfigurations = \(000000000000000000000012[^)]*\)',
+                      'buildConfigurations = (000000000000000000000012)', text)
+        text = re.sub(r'buildConfigurations = \(000000000000000000000014[^)]*\)',
+                      'buildConfigurations = (000000000000000000000014)', text)
     # The simulator entitlement is never reused as a device signing identity.
     text = re.sub(r'"CODE_SIGN_ENTITLEMENTS\[sdk=iphonesimulator\*\]"\s*=\s*[^;]+;', '', text)
     device_entitlements = project.parent/'M4Device.entitlements'
@@ -161,7 +168,10 @@ def configure_project(project, tls, control_url, control_token, amap=False):
         raise ValueError('Control resource phase changed')
     text = text.replace(control_anchor, control_anchor + ', '.join(control_resources))
     sources = []
-    for source in [HERE / 'M4DeviceControl.swift', ROOT / 'ios/Modules/CJMessageClient/Sources/CJMessageHTTP/M4LocalServerTrust.swift']:
+    control_sources = [HERE / 'M4DeviceControl.swift', ROOT / 'ios/Modules/CJMessageClient/Sources/CJMessageHTTP/M4LocalServerTrust.swift']
+    if include_release:
+        control_sources.append(HERE / 'M4DeviceTestSession.swift')
+    for source in control_sources:
         sources.append(resource(source))
     source_anchor = f'A{7:023X} = {{isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = ('
     if text.count(source_anchor) != 1:
@@ -174,6 +184,13 @@ def configure_project(project, tls, control_url, control_token, amap=False):
              'DEBUG_INFORMATION_FORMAT = dwarf',
              'CODE_SIGNING_ALLOWED = YES', 'CODE_SIGN_STYLE = Automatic',
              'CODE_SIGN_IDENTITY = Apple Development', 'DEVELOPMENT_TEAM = ' + tls.team]
+    if include_release:
+        # Release product stays disconnected. Only its separate XCTest runner
+        # needs the pinned control connection, not the product or its packages.
+        lines[:2] = [
+            'M4_DEVICE_FLAGS_Debug = -D DEBUG -D G2C_M4_DEVICE_ACCEPTANCE',
+            'M4_CONTROL_FLAGS_G2CControl = -D DEBUG -D G2C_M4_DEVICE_ACCEPTANCE',
+            'OTHER_SWIFT_FLAGS = $(inherited) $(M4_DEVICE_FLAGS_$(CONFIGURATION)) $(M4_CONTROL_FLAGS_$(TARGET_NAME))']
     if amap:
         # This include supplies only local SDK paths/flags; no key value.
         lines = ['#include ' + json.dumps(str(local / 'AMap.xcconfig'))] + lines
@@ -204,6 +221,11 @@ def stage_accounts(device, bundle, app, private_directory, tokens):
     result=subprocess.run(['xcrun','devicectl','device','install','app','--device',device,str(app),
         '--timeout','60'],capture_output=True)
     if result.returncode:raise RuntimeError('Approved device App install failed')
+    copy_accounts(device,bundle,private_directory,tokens)
+
+
+def copy_accounts(device, bundle, private_directory, tokens):
+    """Stage a fresh one-use input for a relaunch, without reinstalling the App."""
     with tempfile.TemporaryDirectory(prefix='operator-input-',dir=private_directory) as temporary:
         source=Path(temporary)/'G2CM4DeviceAccounts.json'
         with source.open('x') as output:json.dump(tokens,output)
