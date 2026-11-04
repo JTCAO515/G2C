@@ -18,21 +18,24 @@ class GateChecks(unittest.TestCase):
         # It is never emitted as a real evaluation report.
         self.plan['evidence_layer']='real'
         for scenario in self.plan['scenarios']:scenario['recipe']='answer'
-        self.plan['networks'][0].update(kind='target_network',endpoint='https://api-beta.go2china.space',
+        self.plan['networks'][0].update(travel_phase='overseas_pretrip',kind='target_network',endpoint='https://api-beta.go2china.space',
             client_environment='Controlled unit fixture; no network execution',
             measurement=dict(kind='program',independent=True,outcome='PASS',ref='synthetic:network-measurement'))
+        china=deepcopy(self.plan['networks'][0]);china.update(id='synthetic-china',travel_phase='china_travel')
+        self.plan['networks'].append(china)
         self.rows=[]
         for language in ('zh','en'):
             for scenario in self.plan['scenarios']:
+              for network in self.plan['networks']:
                 self.rows.append(dict(candidate_id=self.plan['candidates'][0]['id'],scenario_id=scenario['id'],
-                    language=language,network_id=self.plan['networks'][0]['id'],attempt=1,
+                    language=language,network_id=network['id'],attempt=1,
                     purpose='holdout' if scenario['split']=='holdout' else 'evaluation',status='success',
                     attempt_source='synthetic metric fixture, no execution',observed_at='synthetic',source_as_of='synthetic',
                     raw_evidence_ref='synthetic:metric-record',first_body_seconds=5,full_answer_seconds=90,
                     model_calls=1,tool_calls=2,memory_calls=0,
-                    judgment=dict(kind='program',independent=True,outcome='PASS',ref='eval/judge.py'),
+                    judgment=dict(kind='human',independent=True,outcome='PASS',ref='synthetic:grounded-task-review'),
                     independent_judgment=dict(kind='program',independent=True,ref='eval/judge.py',
-                        hard_outcome='PASS',checks=[dict(name=name,status='PASS',actual=value,expected=value)
+                        hard_outcome='PASS',task_outcome='UNKNOWN',checks=[dict(name=name,status='PASS',actual=value,expected=value)
                             for name,value in (('restricted_role','cj_m1_runtime'),('foreign_read',0),('foreign_write',0),
                                                ('unconfirmed_memory_write_count',0),('formal_write_count',0))]),
                     serious_error_review=dict(kind='program',independent=True,outcome='PASS',ref='synthetic:review')))
@@ -240,13 +243,14 @@ class GateChecks(unittest.TestCase):
     def test_unknown_network_cannot_become_real_scope_pass(self):
         network=self.plan['networks'][0]
         self.plan['networks']=[dict(id=network['id'],description='UNKNOWN: collector did not measure network')]
+        self.rows=[r for r in self.rows if r['network_id']==network['id']]
         result=report(self.plan,self.rows);p=self.profile(result)
         self.assertEqual({c['status'] for c in p['criteria'].values()},{'PASS'})
         self.assertEqual(p['network_evidence_status'],'UNKNOWN')
         self.assertEqual(result['quality_acceptance']['evaluation_release_decision'],'UNKNOWN')
 
     def test_local_real_metrics_do_not_omit_required_target_network(self):
-        self.plan['networks'][0].update(kind='local_real_services',endpoint='local-signed-api')
+        for network in self.plan['networks']:network.update(kind='local_real_services',endpoint='local-signed-api')
         result=report(self.plan,self.rows)
         self.assertEqual(self.profile(result)['evaluation_release_decision'],'PASS')
         self.assertEqual(result['quality_acceptance']['evaluation_release_decision'],'UNKNOWN')
@@ -274,6 +278,61 @@ class GateChecks(unittest.TestCase):
         p=self.profile(report(self.plan,self.rows))
         self.assertEqual(p['real_fees']['status'],'UNKNOWN')
         self.assertEqual(p['criteria']['serious_errors']['status'],'UNKNOWN')
+
+    def test_unknown_task_verdict_reference_does_not_enter_completion_numerator(self):
+        self.rows[0]['judgment']['ref']='UNKNOWN: no semantic verification'
+        p=self.profile(report(self.plan,self.rows))
+        self.assertEqual(p['outcomes']['UNKNOWN'],1)
+        self.assertEqual(p['criteria']['completion_rate']['numerator'],2)
+
+    def test_task_pass_cannot_contradict_cited_program_unknown_result(self):
+        self.rows[0]['judgment']=dict(kind='program',independent=True,outcome='PASS',ref='eval/judge.py')
+        self.rows[0]['independent_judgment']['task_outcome']='UNKNOWN'
+        p=self.profile(report(self.plan,self.rows))
+        self.assertEqual(p['outcomes']['UNKNOWN'],1)
+        self.assertEqual(p['criteria']['completion_rate']['numerator'],2)
+
+    def test_serious_review_fail_survives_missing_status_and_counts_as_failed_task(self):
+        for status in ('success','missing'):
+            rows=deepcopy(self.rows);rows[0]['status']=status
+            rows[0]['serious_error_review']['outcome']='FAIL'
+            p=self.profile(report(self.plan,rows))
+            self.assertEqual(p['outcomes']['FAIL'],1)
+            self.assertEqual(p['criteria']['completion_rate']['numerator'],2)
+            self.assertEqual(p['criteria']['serious_errors']['observed_n'],1)
+
+    def test_unknown_currency_is_not_billed_money(self):
+        for row in self.rows:
+            row['cost']=dict(complete=True,components=[dict(name='model',amount='3',currency='UNKNOWN',source='synthetic:bill',basis='billed',receipt_ref='synthetic:receipt')])
+        result=report(self.plan,self.rows)
+        for group in result['groups']:
+            self.assertFalse(group['cost']['total_cost_known'])
+            self.assertEqual(group['cost']['known_subtotals_by_currency'],{})
+
+    def test_missing_attempt_bills_are_not_known_in_old_or_new_cost_fields(self):
+        for row in self.rows:
+            row['status']='missing'
+            row['cost']=dict(complete=True,components=[dict(name='model',amount='3',currency='CNY',source='synthetic:bill',basis='billed',receipt_ref='synthetic:receipt')])
+        result=report(self.plan,self.rows)
+        for group in result['groups']:
+            self.assertFalse(group['cost']['total_cost_known'])
+            self.assertEqual(group['cost']['known_subtotals_by_currency'],{})
+        self.assertEqual(self.profile(result)['real_fees']['status'],'UNKNOWN')
+
+    def test_one_region_cannot_release_both_overseas_and_china_scope(self):
+        china=self.plan['networks'][1]
+        self.plan['networks']=[china]
+        self.rows=[r for r in self.rows if r['network_id']==china['id']]
+        result=report(self.plan,self.rows)
+        self.assertEqual(self.profile(result)['evaluation_release_decision'],'PASS')
+        candidate=result['quality_acceptance']['candidates'][0]
+        self.assertEqual(candidate['missing_target_phases'],{'overseas_pretrip':'UNRUN'})
+        self.assertEqual(candidate['evaluation_release_decision'],'UNKNOWN')
+
+    def test_impossible_monotonic_timing_pair_is_rejected(self):
+        self.rows[0]['first_body_seconds']=5
+        self.rows[0]['full_answer_seconds']=1
+        with self.assertRaises(InputError):report(self.plan,self.rows)
 
 
 if __name__=='__main__':unittest.main()

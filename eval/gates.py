@@ -6,7 +6,8 @@ from judge import required_checks
 
 POLICY = dict(id='JT-2026-11-04-M4', source='docs/scope.md; #495; PR518',
               completion_rate_minimum=0.90, serious_errors_maximum=0,
-              first_body_p95_maximum_seconds=5, full_answer_p95_maximum_seconds=90)
+              first_body_p95_maximum_seconds=5, full_answer_p95_maximum_seconds=90,
+              required_target_phases=['overseas_pretrip','china_travel'])
 
 
 def known_reference(value):
@@ -115,6 +116,8 @@ def network_status(network):
         return 'UNKNOWN'
     if network['kind'] == 'target_network' and network['endpoint'] != 'https://api-beta.go2china.space':
         return 'UNKNOWN'
+    if network['kind'] == 'target_network' and network.get('travel_phase') not in POLICY['required_target_phases']:
+        return 'UNKNOWN'
     return 'PASS'
 
 
@@ -171,11 +174,14 @@ def acceptance(profiles, plan):
     for candidate in plan['candidates']:
         groups = [p for p in profiles if p['candidate_id'] == candidate['id']]
         target = any(p['network'].get('kind') == 'target_network' for p in groups)
+        phases = {p['network'].get('travel_phase') for p in groups if p['network'].get('kind')=='target_network'}
+        missing = [phase for phase in POLICY['required_target_phases'] if phase not in phases]
         status = _combine([p['evaluation_release_decision'] for p in groups])
-        if plan['evidence_layer'] == 'real' and not target and status != 'FAIL':
+        if plan['evidence_layer'] == 'real' and missing and status != 'FAIL':
             status = 'UNKNOWN' if any(p['criteria']['completion_rate']['denominator'] for p in groups) else 'UNRUN'
         candidates.append(dict(candidate_id=candidate['id'],
                                target_network_planned=target,
+                               missing_target_phases={phase:'UNRUN' for phase in missing},
                                evaluation_release_decision=status))
     return dict(policy=POLICY, profiles=profiles, candidates=candidates,
                 evaluation_release_decision=candidates[0]['evaluation_release_decision'] if len(candidates) == 1 else 'UNKNOWN',

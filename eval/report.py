@@ -1,5 +1,6 @@
 """Reuse the accepted CJ028 matrix/cost/UNKNOWN accounting, adding call counts."""
 from pathlib import Path
+import re
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'evaluation/cj028'))
 from evaluate import summarize, validate, outcome, latency, require, number, amount, exact_sum, nonempty
@@ -17,6 +18,11 @@ def effective_observation(row, scenario):
                 errors.append(error)
         effective['independent_judgment'] = dict(proof,kind='program',independent=True,ref='eval/judge.py')
     hard = hard_status(row,scenario)
+    review = row.get('serious_error_review') or {}
+    if (review.get('kind') in ('human','program') and review.get('independent') is True
+            and known_reference(review.get('ref')) and review.get('outcome') == 'FAIL'):
+        errors.append(dict(kind=review['kind'],ref=review['ref'],
+                           description='Independent serious-error review reported FAIL',resolved=False))
     if hard == 'FAIL' and not errors:
         errors.append(dict(kind='program',ref='eval/judge.py:hard_failure',
                            description='Independent hard-state/constraint check failed',resolved=False))
@@ -28,6 +34,12 @@ def effective_observation(row, scenario):
     elif hard == 'UNKNOWN' and outcome(row) == 'PASS':
         effective.update(judgment=dict(kind='program',independent=True,outcome='UNKNOWN',ref='eval/gates.py'),
                          normalization='Incomplete independent hard coverage cannot certify task PASS')
+    elif outcome(row) == 'PASS':
+        verdict = row.get('judgment') or {}
+        program_result = proof.get('task_outcome') if program_proof(row) and verdict.get('ref')=='eval/judge.py' else None
+        if not known_reference(verdict.get('ref')) or program_result != 'PASS' and verdict.get('ref')=='eval/judge.py':
+            effective.update(judgment=dict(kind='program',independent=True,outcome='FAIL' if program_result=='FAIL' else 'UNKNOWN',ref='eval/gates.py'),
+                             normalization='Task PASS needs a known independent verdict and cannot contradict the cited program output')
     return effective
 
 
@@ -36,13 +48,14 @@ def real_fees(rows):
     complete = 0
     unknown_components = 0
     for row in rows:
-        cost = row.get('cost') if row else None
+        cost = row.get('cost') if row and row['status']!='missing' else None
         if cost is None:
             continue
         all_billed = bool(cost['components'])
         for component in cost['components']:
             basis = component.get('basis')
             known = component.get('amount') is not None
+            known = known and bool(re.fullmatch(r'[A-Z]{3}',component['currency'])) and component['currency'] not in ('UNK','XXX')
             if basis == 'billed' and (not known_reference(component.get('receipt_ref')) or not known_reference(component['source'])):
                 basis = None
             if basis in subtotals and known:
@@ -78,6 +91,8 @@ def report(plan, observations):
         for field in ('api_task_seconds', 'full_answer_seconds'):
             elapsed = row.get(field)
             require(elapsed is None or number(elapsed), 'invalid '+field)
+        if row.get('first_body_seconds') is not None and row.get('full_answer_seconds') is not None:
+            require(row['first_body_seconds'] <= row['full_answer_seconds'], 'same-task full answer precedes first body')
         review = row.get('serious_error_review')
         if review is not None:
             require(isinstance(review, dict) and review.get('kind') in ('human','program','model')

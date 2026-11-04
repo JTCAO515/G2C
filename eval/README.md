@@ -111,13 +111,16 @@ uv run --locked python -B eval/report.py --plan PLAN.json --observations OBSERVA
 完成率沿原口径 P/(P+F+U)，缺测R保留并阻止PASS。延迟使用全计划样本的最近秩
 p95；缺时延不能从分母删除，只给已知子集诊断。已知慢样本已足以证明全计划
 p95超标时可FAIL，其他缺测为UNKNOWN/UNRUN。没有完整观测不能凭成功子集放行。
+外层任务PASS不能覆盖所引用程序明确返回的UNKNOWN/FAIL；判据引用本身UNKNOWN
+也不进完成率分子。独立严重错误审查FAIL（包括外层标为missing）作为失败尝试保留。
 
 真实 collector 应记录：
 
 - `first_body_seconds`：同一客户端单调时钟从提交到首个用户可见的有效正文，
   排除工具状态/空占位；`full_answer_seconds`：同次任务完整回答及必要候选可读。
   包含任务内等待/重试，不重置计时。缺值为null；不从 `api_task_seconds` 或
-  `draft_seconds` 推造。原任务类别/集合的独立统计仍保留。
+  `draft_seconds` 推造。同一单调时钟下完整回答早于首字是输入错误，拒绝放行并保留原值。
+  原任务类别/集合的独立统计仍保留。
 - `independent_judgment`：独立程序的实际硬检查。新记录带
   `kind=program, independent=true, ref=eval/judge.py`；旧#497记录按原程序引用
   保留兼容。按冻结场景核对全部适用检查名称与actual/expected一致性；只给一项
@@ -133,13 +136,16 @@ p95超标时可FAIL，其他缺测为UNKNOWN/UNRUN。没有完整观测不能凭
   `receipt_ref`。只有完整账单覆盖才是已知实际总额；估算、预留与缺账单分别展示，
   不当成实付；原`groups[].cost`也仅统计有账单依据的实付，不合计估算与预留为
   “已知费用”。原始components仍完整保留。费用完整性不添加JT未批准的单任务费用门槛。
+  UNKNOWN币种或missing尝试的账单不能成为旧/新字段的已知实付。
 
 `plan.networks` 冻结每个真实网络组及其环境/证据。真实组须有
 `kind=local_real_services/target_network`、`endpoint`、`client_environment`和
 `measurement={kind:program/human,independent:true,outcome:PASS,ref:...}`。空值或
 UNKNOWN标记不能认证测量。本机ASGI不冒充目标网络；完整候选放行还须计划并测量
 `target_network`组，endpoint为`https://api-beta.go2china.space`。该组测量等B在#30
-通知就绪后再执行，缺组/未测不输出候选PASS；本机真实服务范围的四指标可先单独报告。
+通知就绪后再执行；按scope.md分别保留`travel_phase=overseas_pretrip/china_travel`
+两种来源，缺失地域直接列UNRUN，不用单一地域放行整体。缺组/未测不输出候选PASS；
+本机或单一网络真实服务范围的四指标可先单独报告，不冒其他网络已测。
 
 Fake/local/synthetic 报告会显示门槛的诊断PASS/FAIL/UNKNOWN，但
 `evaluation_release_decision=UNRUN`，不算真实结论。只有`evidence_layer=real`

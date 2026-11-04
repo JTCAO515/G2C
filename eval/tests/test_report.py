@@ -18,8 +18,8 @@ class ReportChecks(unittest.TestCase):
         self.row=dict(candidate_id=self.plan['candidates'][0]['id'],scenario_id=self.plan['scenarios'][0]['id'],
             language='en',network_id=self.plan['networks'][0]['id'],attempt=1,purpose='evaluation',status='success',
             attempt_source='synthetic test',observed_at='synthetic',source_as_of='synthetic',raw_evidence_ref='synthetic:raw',
-            model_calls=2,api_task_seconds=1.5,judgment=dict(kind='program',independent=True,outcome='PASS',ref='eval/judge.py'),
-            independent_judgment=dict(hard_outcome='PASS',checks=[dict(name=name,status='PASS',actual=value,expected=value)
+            model_calls=2,api_task_seconds=1.5,judgment=dict(kind='human',independent=True,outcome='PASS',ref='synthetic:task-review'),
+            independent_judgment=dict(kind='program',independent=True,ref='eval/judge.py',hard_outcome='PASS',task_outcome='UNKNOWN',checks=[dict(name=name,status='PASS',actual=value,expected=value)
                 for name,value in (('restricted_role','cj_m1_runtime'),('foreign_read',0),('foreign_write',0),
                                    ('unconfirmed_memory_write_count',0),('formal_write_count',0))]))
 
@@ -38,7 +38,7 @@ class ReportChecks(unittest.TestCase):
         self.assertEqual(result['release_decision'],'UNKNOWN')
 
     def test_model_hard_pass_is_not_program_evidence(self):
-        result=report(self.plan,[self.row|dict(judgment=dict(kind='model',independent=True,outcome='PASS',ref='self'))])
+        result=report(self.plan,[self.row|dict(judgment=dict(kind='model',independent=True,outcome='PASS',ref='self'),independent_judgment=dict(kind='model',independent=True,ref='self',hard_outcome='PASS'))])
         group=self.group(result)
         self.assertEqual(group['outcomes']['PASS'],0)
         self.assertEqual(group['hard_outcomes']['PASS'],0)
