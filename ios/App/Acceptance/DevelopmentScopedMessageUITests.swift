@@ -115,11 +115,11 @@ import UIKit
             if tabBar.exists && tabBar.isHittable { bottom=min(bottom,tabBar.frame.minY) }
             let header=app.otherElements.matching(identifier:"assistant.header").firstMatch
             let composer=app.otherElements.matching(identifier:"assistant.composer").firstMatch
-            if !navigation.exists && !["assistant.draft","assistant.send","assistant.intent"].contains(id) && header.exists && composer.exists {
+            if !navigation.exists && !["assistant.draft","assistant.send"].contains(id) && header.exists && composer.exists {
                 top=max(top,header.frame.maxY+8);bottom=min(bottom,composer.frame.minY)
             }
             let frame=element.exists ? element.frame : .zero
-            if (id.hasPrefix("planning.") || id == "trip.manual.prepare") && attempt % 10 == 0 { print("CONTROL_VIEWPORT",id,frame,top,bottom,element.exists,navigation.exists) }
+            if (id.hasPrefix("planning.") || id == "trip.manual.prepare" || id == "assistant.intent") && attempt % 10 == 0 { print("CONTROL_VIEWPORT",id,frame,top,bottom,element.exists,navigation.exists) }
             if element.exists && element.isHittable && frame.midY>top && frame.midY<bottom { return element }
             let located = !frame.isEmpty && frame.minY.isFinite && frame.maxY.isFinite
             let down=located ? frame.midY<=top : attempt>=35
@@ -683,7 +683,12 @@ import UIKit
             toggle.coordinate(withNormalizedOffset:CGVector(dx:0.95,dy:0.5)).tap()
             #endif
             let changed=XCTNSPredicateExpectation(predicate:NSPredicate(format:"value == %@",enabled ? "1" : "0"),object:toggle)
-            XCTAssertEqual(XCTWaiter.wait(for:[changed],timeout:5),.completed)
+            let outcome=XCTWaiter.wait(for:[changed],timeout:5)
+            if outcome != .completed {
+                capture("planning-switch-not-changed")
+                let tree=XCTAttachment(string:app.debugDescription);tree.name="planning-switch-tree";tree.lifetime = .keepAlways;add(tree)
+            }
+            XCTAssertEqual(outcome,.completed)
         }
         setPlanningIntent(true)
         enter("SYNTHETIC Plan using my explicit saved requirements / 使用已保存需求",language:"en")
