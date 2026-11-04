@@ -25,14 +25,15 @@ from fastapi.testclient import TestClient
 
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'scripts'))
-from cj_agent.provider import DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL
+from cj_agent.provider import DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,ProviderFailed
 from cj_api.real_services import RealServices,RealTools
 from cj_api.local_app import LocalDatabase,app_from_environment,scope_for,ISSUER
 from cj_api.local_run_context import load_run_context
-from cj_usage.authorization_budget import AuthorizationBudget
+from cj_usage.authorization_budget import AuthorizationBudget,canonical
 import dev_auth,local_run_context,migrate,pg_suites,run_worker
 
 STATE=Path.home()/'.local/share/g2c/m4-real-services'
+ROUTE_KEYWORDS=('北海公园','恭王府')
 
 
 def verification_passed(batch,attempts):
@@ -47,6 +48,8 @@ def verification_passed(batch,attempts):
     elif batch.get('verification_profile')=='route-diagnostics-1':
         required={'route-zh':('tool.place',{'https://restapi.amap.com/v3/place/text':2,'https://restapi.amap.com/v3/direction/walking':1})}
     elif batch.get('verification_profile') not in ('base-search-1','native-diagnostics-1'):return False
+    route_profile=batch.get('verification_profile')=='route-diagnostics-1'
+    if route_profile and (batch.get('response_capture_failed') or not route_audit_passed(batch.get('route_audit',[]))):return False
     if batch.get('state')!='COMPLETE' or set(batch.get('cases',{}))!=set(required):return False
     receipts={item['attempt_id']:item for item in attempts}
     for name,(registration,endpoints) in required.items():
@@ -72,7 +75,46 @@ def verification_passed(batch,attempts):
                 if key is None or (r.get('model_id'),r.get('endpoint'),r.get('region'))!=(M4_MODEL,M4_BASE,'cn-beijing') or type(r.get('usage')) is not dict:return False
                 models.append(int(key[1]))
             else:return False
-        if not tools or not models or max(models)<=max(tools) or found!=endpoints:return False
+        if not tools or not models or max(models)<=max(tools) or route_profile and found!=endpoints:return False
+    if route_profile and not route_operations_passed(batch,receipts):return False
+    return True
+
+
+def route_operations_passed(batch,receipts):
+    from cj_place.contract_v1 import decode_query
+    from cj_place.models import Search,RouteQuery
+    case=batch['cases']['route-zh'];events=batch['route_audit'];ordered=[]
+    for operation in case['operations']:
+        if not operation['registration_id'].startswith('tool.'):continue
+        value=operation.get('input')
+        if type(value) is not dict or hashlib.sha256(canonical(value)).hexdigest()!=receipts[operation['attempt_id']].get('input_sha'):return False
+        event=next((e for e in events if e.get('request_ref')==value.get('request_ref')),None)
+        if event is None:return False
+        try:query=decode_query(canonical(value['query']))
+        except (ValueError,KeyError):return False
+        if event['kind']=='search':
+            if type(query) is not Search or query.keyword!=event['keyword'] or query.page!=1 or query.page_size!=1:return False
+        else:
+            if type(query) is not RouteQuery or query.mode!='walking':return False
+            for prefix,endpoint in (('origin',query.origin),('destination',query.destination)):
+                expected=event[prefix]
+                if endpoint.provider_id!=expected['provider_id'] or endpoint.coordinate.raw!=expected['coordinate_raw'] or endpoint.coordinate_role!='poi_center':return False
+        match=re.fullmatch(r'tool\.([0-7])\.([0-9]+)',operation['operation_key'])
+        ordered.append(((int(match[1]),int(match[2])),value['request_ref']))
+    return [ref for _,ref in sorted(ordered)]==[event['request_ref'] for event in events]
+
+
+def route_audit_passed(events):
+    if len(events)!=3 or any(e.get('kind')!='search' for e in events[:2]) or events[-1].get('kind')!='route':return False
+    searches={e.get('keyword'):e for e in events[:2]}
+    if set(searches)!=set(ROUTE_KEYWORDS):return False
+    if searches[ROUTE_KEYWORDS[0]].get('provider_id')==searches[ROUTE_KEYWORDS[1]].get('provider_id'):return False
+    route=events[-1]
+    if route.get('mode')!='walking':return False
+    for prefix,keyword in zip(('origin','destination'),ROUTE_KEYWORDS):
+        source=searches[keyword]
+        if (not source.get('provider_id') or not source.get('coordinate_raw')
+                or route.get(prefix)!=dict(provider_id=source['provider_id'],coordinate_raw=source['coordinate_raw'],coordinate_role='poi_center',search_ref=source['request_ref'])):return False
     return True
 
 
@@ -91,26 +133,61 @@ def save(path,value):
 
 @contextmanager
 def record_place_responses(root,batch,batch_path):
-    """Only the returned real transport response, after its secret-body check.
+    """Fixed R1 guard plus observer of the original secret-checked transport.
 
-    This observer never calls another endpoint, alters parser data, or resends.
-    The synthetic public map bytes stay private/outside Git for original replay
-    through a corrected parser; the product's original RUN status is immutable.
+    Out-of-plan model calls stop before HTTP. Retention IO failure is separately
+    visible and cannot replace an already received original provider response.
     """
     from cj_api import real_services
-    original=real_services.fetch_candidate
-    folder=root/'provider';folder.mkdir(mode=0o700)
+    from cj_place.models import Search,RouteQuery,FieldState
+    from cj_place.gaode import parse_response
+    original=real_services.fetch_candidate;searches={};attempted=set();route_sent=False
+    folder=root/'provider';folder.mkdir(mode=0o700);batch['route_audit']=[]
     async def record(config,request,credentials,**kwargs):
+        nonlocal route_sent
+        query=request.query
+        if type(query) is Search:
+            if (query.keyword not in ROUTE_KEYWORDS or query.keyword in attempted or query.city not in ('北京','Beijing','beijing','110000')
+                    or query.page!=1 or query.page_size!=1):raise ProviderFailed('R1 fixed original search required')
+            attempted.add(query.keyword)
+        elif type(query) is RouteQuery:
+            if route_sent or query.mode!='walking' or set(searches)!=set(ROUTE_KEYWORDS):
+                raise ProviderFailed('R1 search receipts before one walking route required')
+            if searches[ROUTE_KEYWORDS[0]].provider_id==searches[ROUTE_KEYWORDS[1]].provider_id:
+                raise ProviderFailed('R1 distinct actual POIs required')
+            for endpoint,keyword in zip((query.origin,query.destination),ROUTE_KEYWORDS):
+                place=searches[keyword]
+                if (place.coordinate.state is not FieldState.PRESENT or endpoint.coordinate_role!='poi_center'
+                        or endpoint.provider_id!=place.provider_id or endpoint.coordinate.raw!=place.coordinate.value.raw):
+                    raise ProviderFailed('R1 original POI and raw coordinate binding required')
+            route_sent=True
+        else:raise ProviderFailed('R1 fixed search and walking registrations required')
         result=await original(config,request,credentials,**kwargs)
         if result.state=='received' and result.response.http_status==200:
-            response=result.response;name=request.binding_digest+'.json'
-            with (folder/name).open('xb') as output:
-                os.fchmod(output.fileno(),0o600);output.write(response.body);output.flush();os.fsync(output.fileno())
-            batch['provider_responses'].append(dict(path=request.path,binding_digest=request.binding_digest,
-                response_sha256=hashlib.sha256(response.body).hexdigest(),response_bytes=len(response.body),
-                http_status=response.http_status,request_ref=request.request_ref,started_at=request.started_at.isoformat(),
-                received_at=response.received_at.isoformat(),file='provider/'+name))
-            save(batch_path,batch)
+            response=result.response
+            parsed=parse_response(config,request,response,now=response.received_at,basic=True)
+            if type(query) is Search and parsed.outcome.value=='ok':
+                place=parsed.places[0];searches[query.keyword]=place
+                batch['route_audit'].append(dict(kind='search',keyword=query.keyword,provider_id=place.provider_id,
+                    coordinate_raw=place.coordinate.value.raw if place.coordinate.state is FieldState.PRESENT else None,request_ref=request.request_ref))
+            elif type(query) is RouteQuery:
+                search_refs={event['keyword']:event['request_ref'] for event in batch['route_audit']}
+                def point(value,keyword):return dict(provider_id=value.provider_id,coordinate_raw=value.coordinate.raw,
+                    coordinate_role=value.coordinate_role,search_ref=search_refs[keyword])
+                batch['route_audit'].append(dict(kind='route',request_ref=request.request_ref,mode=query.mode,origin=point(query.origin,ROUTE_KEYWORDS[0]),
+                    destination=point(query.destination,ROUTE_KEYWORDS[1])))
+            try:
+                name=request.binding_digest+'.json'
+                with (folder/name).open('xb') as output:
+                    os.fchmod(output.fileno(),0o600);output.write(response.body);output.flush();os.fsync(output.fileno())
+                batch['provider_responses'].append(dict(path=request.path,binding_digest=request.binding_digest,
+                    response_sha256=hashlib.sha256(response.body).hexdigest(),response_bytes=len(response.body),
+                    http_status=response.http_status,request_ref=request.request_ref,started_at=request.started_at.isoformat(),
+                    received_at=response.received_at.isoformat(),file='provider/'+name))
+                save(batch_path,batch)
+            except OSError:
+                batch['response_capture_failed']=True
+                logging.getLogger('cj_provider.audit').error('R1_CAPTURE_IO_FAILED original_response_continues')
         return result
     with patch.object(real_services,'fetch_candidate',record):yield
 
@@ -212,8 +289,9 @@ def run_batch(*,resume_setup=False,verification=False,basic_verification=False,d
                             if len(outcomes)!=1:raise ValueError('original_RUN_outcome_unavailable')
                             value['cases'][case]['state']=outcomes[0].status
                             with db.connect(scope_for(ISSUER,subject)) as conn:
-                                operations=conn.execute('SELECT run_id,operation_key,registration_id,attempt_id FROM cj_run_metered_operation WHERE run_id=%s ORDER BY operation_key',(receipt['run_id'],)).fetchall()
-                            value['cases'][case]['operations']=[dict(run_id=r,operation_key=k,registration_id=i,attempt_id=a) for r,k,i,a in operations]
+                                operations=conn.execute('SELECT run_id,operation_key,registration_id,attempt_id,input_bytes FROM cj_run_metered_operation WHERE run_id=%s ORDER BY operation_key',(receipt['run_id'],)).fetchall()
+                            value['cases'][case]['operations']=[dict(run_id=r,operation_key=k,registration_id=i,attempt_id=a,
+                                **({'input':json.loads(bytes(raw))} if route_diagnostic and i.startswith('tool.') else {})) for r,k,i,a,raw in operations]
                             displayed=client.get('/v1/run-display',params=dict(message_id=cid),headers=headers)
                             if displayed.status_code==200:
                                 snapshot=displayed.json()['snapshot'];text=snapshot['text']
