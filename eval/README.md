@@ -156,13 +156,27 @@ Fake/local/synthetic 报告会显示门槛的诊断PASS/FAIL/UNKNOWN，但
 原`release_decision`保留全项目其他前置的区别。报告程序不认证外部文件的
 真实性；计划、原始观测和审查依据须由可信执行方冻结并供核对，不交给模型改写。
 
-实际执行预算仍遵守 M4 条目3/4：模型与M1合计¥300、¥240停；指定工具合计
-¥100、¥80停及地点600/路线300/天气100/事实页120次上限，至2026-11-30。
+实际执行预算遵守 PR540 后的 M4 条目3/4：模型与M1合计¥500、¥400停；指定工具合计
+¥200、¥160停及地点1200/路线600/天气200/事实页240次上限，至2026-11-30。
 
 ## 已授权真实批次（#530）
 
-B PR524 合并后，用 `CJ_ENV=local CJ_M4_SYNTHETIC_ONLY=1 uv run --locked python -B
-eval/real.py --output .local/eval/real-m4-001` 执行固定33×中英、11留出的一次批次。
+第一轮 B PR524 的固定33×中英、11留出报告保留于 `reports/real-m4-001`；
+旧FAIL不覆盖，JT已将原60个RUN UNKNOWN归因于PR532修复的工具续接，不用原批给产品质量结论。
+当前 PR532/540 后必须先运行 `CJ_ENV=local CJ_M4_SYNTHETIC_ONLY=1 uv run --locked
+python -B eval/smoke.py --output .local/eval/round2-smoke`，中英各3例覆盖place+route/weather/fact。
+任一原RUN未知/空正文或缺指定工具/后续模型回执即停止新出口，其他计划格UNRUN；报告#523并通知B。
+仅六格全PASS且同一候选才运行 `CJ_ENV=local CJ_M4_SYNTHETIC_ONLY=1 uv run --locked
+python -B eval/real.py --batch-id round2-full --smoke .local/eval/round2-smoke --output .local/eval/round2-full`。
+产品33/11样本、输入和judge/gates不变；前置smoke是独立接入门禁，不计入质量完成率。
+开跑前按原137模型/54付费工具占用和6例预估，投影会越新停止线则先在495报告，不发请求。
+`authorization_checkpoint.json` 固定本轮开始前250个原意图的ID/种类/输入哈希；开跑先只读原账本，
+缺库、截短或原意图变化均退出，不自动新建“零占用”。M1的¥13与所有UNKNOWN继续占用。
+冒烟证据必须与该唯一账本逐条一致，原注册模型输入经B实际serializer离线算哈希并与真实出口核对；
+指定工具结果须经匹配的native tool_call_id进入后续模型。离线fixture本身不能认证真实PASS。
+同一adapter的smoke/full阶段在固定用户数据目录各原子认领一次；输出目录或C提交名变化不产生新派发。
+中断/失败只读原结果，完整smoke原证据在独立阶段凭证中锁定哈希。只有B实际adapter修复产生另一候选，
+才会有独立阶段身份；所有旧FAIL仍保留，不以换目录重复收费。
 目录存在时只读返回；不恢复或重发未知原动作。模型、端点、工具、凭据来源及
 唯一累计授权账本沿用 B `RealServices`，没有任意 URL、模型或预算目录选项。
 旧 M1 ¥13 及 B 的并行调用不释放；观测只归属本场景原 Meter attempt，

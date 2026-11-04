@@ -1,0 +1,289 @@
+{
+  "schema_version": 1,
+  "smoke": {
+    "candidate_id": "b13f141306d0edc310d4691b4e19166cff987f49",
+    "batch_id": "round2-smoke",
+    "status": "FAIL",
+    "planned_n": 6,
+    "executed_n": 1,
+    "outcomes": [
+      {
+        "case_id": "place-route",
+        "language": "zh",
+        "raw_evidence_ref": "raw/place-route-zh.json",
+        "raw_evidence_sha256": "13b9b8f7d80d1cb7f2f156a39be462fcee0567bc9254416fe1282771b44545b9",
+        "status": "FAIL",
+        "reasons": [
+          "complete_model_continuation_after_tool_missing",
+          "original_RUN_not_completed",
+          "original_operation_receipt_incomplete",
+          "required_tool_kind_missing",
+          "same_RUN_complete_body_not_delivered"
+        ],
+        "covered": [],
+        "required": [
+          "place",
+          "route"
+        ],
+        "run_id": "482e9130-3aaf-4057-9f7d-a73f24bedef2",
+        "message_id": "m4-synthetic-r2-smoke-place-route-zh-task",
+        "kind": "program",
+        "independent": true,
+        "ref": "eval/smoke.py:check"
+      },
+      {
+        "case_id": "place-route",
+        "language": "en",
+        "status": "UNRUN"
+      },
+      {
+        "case_id": "weather",
+        "language": "zh",
+        "status": "UNRUN"
+      },
+      {
+        "case_id": "weather",
+        "language": "en",
+        "status": "UNRUN"
+      },
+      {
+        "case_id": "fact",
+        "language": "zh",
+        "status": "UNRUN"
+      },
+      {
+        "case_id": "fact",
+        "language": "en",
+        "status": "UNRUN"
+      }
+    ],
+    "full66_authorized_to_start": false,
+    "product_quality_verdict": "UNRUN: prerequisite tool smoke only"
+  },
+  "smoke_audit": [
+    {
+      "case_id": "place-route",
+      "language": "zh",
+      "raw_evidence_ref": "raw/place-route-zh.json",
+      "first_body_seconds": null,
+      "full_answer_seconds": null,
+      "run_id": "482e9130-3aaf-4057-9f7d-a73f24bedef2",
+      "run_status": "unknown",
+      "raw_evidence_sha256": "13b9b8f7d80d1cb7f2f156a39be462fcee0567bc9254416fe1282771b44545b9",
+      "input_sha256": "44cd683ebefb4ccd1d51b7b9699971ec9400e253c1403138666dfde45145553e",
+      "time_to_terminal_seconds": 2.393348999990849,
+      "delivered_answer_chars": 0,
+      "delivered_answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "provider_receipted_substeps": {}
+    }
+  ],
+  "smoke_plan": {
+    "candidate_id": "b13f141306d0edc310d4691b4e19166cff987f49",
+    "batch_id": "round2-smoke",
+    "cases": [
+      {
+        "id": "place-route",
+        "required": [
+          "place",
+          "route"
+        ],
+        "native": [
+          "place_search",
+          "place_route"
+        ],
+        "inputs": {
+          "zh": "合成旅行冒烟：先用place_search查询北京故宫、景山公园各1个地点，city北京/page1/page_size1。仅复制实际结果的POI ID、原始GCJ-02坐标和点角色，用place_route查询两点walking路线。根据实际来源说明查询时估计及未知项，不创建或保存行程。",
+          "en": "Synthetic travel smoke: use place_search for Forbidden City and Jingshan Park, Beijing, each page1/page_size1. Copy actual POI IDs, raw GCJ-02 coordinates and point roles into place_route for walking between them. Report query-time estimates, sources and unknowns; no trip write."
+        }
+      },
+      {
+        "id": "weather",
+        "required": [
+          "weather"
+        ],
+        "native": [
+          "weather"
+        ],
+        "inputs": {
+          "zh": "合成天气冒烟：调用weather查询北京2026-11-05，start_date/end_date均为该日期，Asia/Shanghai。按返回来源、报告时点和未知项回答，不重复相同查询，不保存行程。",
+          "en": "Synthetic weather smoke: call weather for Beijing with start_date/end_date 2026-11-05, Asia/Shanghai. Answer using actual report time, source and unknowns; do not repeat the same query or write a trip."
+        }
+      },
+      {
+        "id": "fact",
+        "required": [
+          "fact"
+        ],
+        "native": [
+          "fact"
+        ],
+        "inputs": {
+          "zh": "合成事实冒烟：调用fact，start_date/end_date为2026-11-04。只根据官方国家移民管理局页面的实际摘录说明来源；旅客资格与日期适用性保持UNKNOWN。不编造、订票或保存行程。",
+          "en": "Synthetic fact smoke: call fact with start_date/end_date 2026-11-04. Answer only from actual official NIA page excerpts and cite source; traveler eligibility/date applicability stay UNKNOWN. No invented execution, booking or trip write."
+        }
+      }
+    ],
+    "source_date": "2026-11-04",
+    "created_at": "2026-11-04T13:12:34.433750+00:00",
+    "model_id": "qwen3.8-flash",
+    "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "collector_sha256": "c6e50abcabea00dd0005625a916108ac055726d3c61e0b2fc3fd5efe86964829",
+    "authorization": "PR540 M4 items3/4; synthetic only; no old action replay",
+    "planned_n": 6
+  },
+  "preflight_estimate": {
+    "basis": "C first real batch actual authorization holds + planned6 smoke minimum flow; not billed costs",
+    "counts": {
+      "model": 166,
+      "weather": 57,
+      "fact": 10,
+      "place": 17
+    },
+    "before_conservative_cny": {
+      "model": 179,
+      "tool": 74
+    },
+    "additional_estimate_cny": {
+      "model": 153,
+      "tool": 62
+    },
+    "projected_conservative_cny": {
+      "model": 332,
+      "tool": 136
+    },
+    "stop_cny": {
+      "model": 400,
+      "tool": 160
+    },
+    "within_stop_lines": true,
+    "actual_billed_total": "UNKNOWN",
+    "M1_hold_cny": 13,
+    "quantity_limits": {
+      "place": 1200,
+      "route": 600,
+      "weather": 200,
+      "fact": 240
+    }
+  },
+  "packages": {
+    "httpx": "0.28.1",
+    "psycopg": "3.2.13",
+    "uvicorn": "0.54.0",
+    "fastapi": "0.156.8"
+  },
+  "full_product_quality": "UNRUN",
+  "full66": {
+    "planned_n": 66,
+    "executed_n": 0
+  },
+  "full_unrun_criteria_by_language": {
+    "zh": {
+      "planned_n": 33,
+      "executed_n": 0,
+      "completion_rate": {
+        "status": "UNRUN",
+        "value": null,
+        "minimum": 0.9
+      },
+      "serious_errors": {
+        "status": "UNRUN",
+        "observed_n": null,
+        "maximum": 0
+      },
+      "first_body_p95": {
+        "status": "UNRUN",
+        "value": null,
+        "maximum_seconds": 5
+      },
+      "full_answer_p95": {
+        "status": "UNRUN",
+        "value": null,
+        "maximum_seconds": 90
+      }
+    },
+    "en": {
+      "planned_n": 33,
+      "executed_n": 0,
+      "completion_rate": {
+        "status": "UNRUN",
+        "value": null,
+        "minimum": 0.9
+      },
+      "serious_errors": {
+        "status": "UNRUN",
+        "observed_n": null,
+        "maximum": 0
+      },
+      "first_body_p95": {
+        "status": "UNRUN",
+        "value": null,
+        "maximum_seconds": 5
+      },
+      "full_answer_p95": {
+        "status": "UNRUN",
+        "value": null,
+        "maximum_seconds": 90
+      }
+    }
+  },
+  "disposition": "FAIL",
+  "history": {
+    "first_round": "PR531 / candidate9ba2d4df",
+    "original_FAIL_retained": true,
+    "product_quality_disposition": "Original60 RUN UNKNOWN were caused by adapter continuation defect, fixed by PR532; not used as product quality or averaged into this candidate"
+  },
+  "target_networks": {
+    "overseas_pretrip": "UNRUN",
+    "china_travel": "UNRUN",
+    "reason": "B #30 has not notified api-beta readiness; no target or geography claim"
+  },
+  "authorization": "PR540: model total500/stop400 includingM1; tools total200/stop160;1200/600/200/240;expires2026-11-30;synthetic only",
+  "usage": {
+    "call_attempts_by_kind": {
+      "model": 1
+    },
+    "complete_receipts": {},
+    "unknown_intents": {
+      "model": 1
+    },
+    "model_tokens_from_complete_receipts": {},
+    "conservative_hold_cny": {
+      "model": 1,
+      "tool": 0
+    },
+    "actual_billed_cny": "UNKNOWN",
+    "note": "Original intents/call attempts; not a claim that every uncertain request reached the vendor. No invoice supplied."
+  },
+  "original_attempt_manifest": [
+    {
+      "attempt_id": "98b597fc44fa4278b00f14a2b6039cec",
+      "kind": "model",
+      "state": "INTENT",
+      "receipt": null
+    }
+  ],
+  "budget_snapshots": {
+    "before": {
+      "counts": {
+        "model": 166,
+        "weather": 57,
+        "fact": 10,
+        "place": 17
+      },
+      "model_hold_including_M1_cny": 179,
+      "tool_hold_cny": 74,
+      "raw_snapshot_sha256": "8ed357868fefadb33ed35fa625d1bfbce876980e05d8afcc9ba71dcc25449e5f"
+    },
+    "after": {
+      "counts": {
+        "model": 167,
+        "weather": 57,
+        "fact": 10,
+        "place": 17
+      },
+      "model_hold_including_M1_cny": 180,
+      "tool_hold_cny": 74,
+      "raw_snapshot_sha256": "fbb879e29b59d1cad2e8e2c43d254020e87b41d60a9a48d9febbb5706ff0ec6a"
+    }
+  }
+}
