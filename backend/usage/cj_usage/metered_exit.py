@@ -44,6 +44,19 @@ class MeteredExitCore:
         try: return checked_clock_value(self.clock(),previous)
         except Blocked: raise BudgetUnknown('budget clock unavailable') from None
 
+    def _stopped_before_reserve(self, meter, command, reason):
+        """A refused reserve wrote nothing; only a proven deadline/period end is exhaustion.
+
+        A cancelled run, an existing attempt or an unreadable ledger stays unknown.
+        """
+        if reason not in ('run_stopped','period_closed'): return False
+        with meter.repo.transaction() as ledger:
+            if command.attempt_id in ledger.attempts: return False
+            run=ledger.runs.get(command.run_id)
+            now=self._now(ledger.last_clock)
+        if not self.config.period_start <= now < self.config.period_end: return run is None or not run.cancelled
+        return run is not None and not run.cancelled and now-run.started >= self.config.max_seconds
+
     def stream(self, call):
         """First next() MUST be under RUN fence. Later reads are an in-flight call.
 
@@ -62,7 +75,8 @@ class MeteredExitCore:
             if call.guard() is not True: raise Denied('original authority unavailable before reserve')
             try: meter.reserve(command)
             except Blocked as error:
-                if error.reason == 'limit_exceeded': raise BudgetExceeded(call.step_key) from None
+                if error.reason == 'limit_exceeded' or self._stopped_before_reserve(meter,command,error.reason):
+                    raise BudgetExceeded(call.step_key) from None
                 raise BudgetUnknown('budget admission unavailable') from None
             meter.claim(command.attempt_id)
             with meter.repo.transaction() as ledger:
