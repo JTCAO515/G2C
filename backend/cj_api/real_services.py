@@ -20,7 +20,7 @@ from cj_fact.policy import FactFailure
 from cj_place.contract_v1 import decode_query,encode_result
 from cj_place.gaode import Config,prepare,parse_response
 from cj_place.https_transport import ProviderCredentials,fetch_candidate
-from cj_place.models import ORIGIN,Search,Detail
+from cj_place.models import ORIGIN,Search,Detail,RouteQuery
 from cj_run.tool_turn import parse_turn
 from cj_usage.authorization_budget import AuthorizationBudget,canonical,DEADLINE
 from cj_usage.core import Receipt
@@ -63,6 +63,7 @@ class ModelInput:
     system:object
     provider:object
     native_reply:dict
+    final_answer:bool=False
 
 
 def canonical_tool(name,raw):
@@ -137,8 +138,9 @@ class RealServices:
 
 
 class RealTools:
-    def __init__(self,services,*,allowed_native=NATIVE_TOOLS):
-        self.services=services
+    def __init__(self,services,*,allowed_native=NATIVE_TOOLS,coordinate_routes=True):
+        if type(coordinate_routes) is not bool:raise ValueError('explicit_coordinate_route_profile_required')
+        self.services=services;self.coordinate_routes=coordinate_routes
         if type(allowed_native) is not frozenset or not allowed_native or not allowed_native<=NATIVE_TOOLS:
             raise ValueError('explicit code-owned native tool subset required')
         self.names=allowed_native
@@ -151,14 +153,16 @@ class RealTools:
         if type(argument) is ModelInput:
             messages,system,provider=argument.messages,argument.system,argument.provider
             native_reply=argument.native_reply
+            final_answer=argument.final_answer
         else:
-            messages,system,provider=argument;native_reply=None
+            messages,system,provider=argument;native_reply=None;final_answer=False
         from cj_agent.worker import _MemoryProvider,_EditMemoryProvider
         wrapped=type(provider) in (_MemoryProvider,_EditMemoryProvider)
         if (provider.original if wrapped else provider) is not self.services.model:
             raise BudgetUnknown('M4 model registration mismatch')
         raw=canonical(dict(messages=messages,system=system,endpoint=M4_BASE,model=M4_MODEL,synthetic_only=True,
-                           native_tools=self.native_tools if system==TOOL_SYSTEM else None))
+                           native_tools=self.native_tools if system==TOOL_SYSTEM else None,
+                           **({'tool_choice':'none'} if final_answer else {})))
         inputs=json.loads(raw);metadata={}
         def bind(operation,guard):
             self.services.require_scope(operation.binding.scope)
@@ -170,7 +174,7 @@ class RealTools:
             def invoke():
                 self.services.require_scope(operation.binding.scope)
                 yield from self.services.model.invoke(inputs['messages'],inputs['system'],operation.command.attempt_id,
-                    tools=inputs['native_tools'],receipt=metadata,guard=admitted,native_reply=native_reply)
+                    tools=inputs['native_tools'],receipt=metadata,guard=admitted,native_reply=native_reply,tool_choice=inputs.get('tool_choice'))
             return invoke
         return InvocationInput(raw,None,bind,_receipt(metadata))
 
@@ -184,8 +188,10 @@ class RealTools:
         elif (name=='fact' and (query.fact_key!='entry_notice' or query.region!='China')
               or name=='weather' and (query.fact_key!='weather' or query.region!='beijing')):
             raise ProviderUnknown('M4 fixed fact source required')
+        coordinate_route=name=='place' and type(query) is RouteQuery and self.coordinate_routes
+        profile='basic-v3-coordinate-route-1' if coordinate_route else 'basic-v3-default-zh'
         original=canonical(dict(name=name,query=json.loads(raw_query),request_ref=request_ref,synthetic_only=True,
-                                place_profile='basic-v3-default-zh' if name=='place' else None))
+                                place_profile=profile if name=='place' else None))
         metadata={};budget=self.services.model.authorization
         kind='place' if name=='place' and type(query) in (Search,Detail) else 'route' if name=='place' else name
         def bind(operation,guard):
@@ -200,11 +206,11 @@ class RealTools:
                 try:
                     if name=='place':
                         config=Config(ORIGIN,8192,65536,20,60)
-                        request=prepare(config,query,request_ref,datetime.now(timezone.utc),basic=True)
+                        request=prepare(config,query,request_ref,datetime.now(timezone.utc),basic=True,coordinate_only=coordinate_route)
                         if admitted() is not True:raise BudgetUnknown('original live tool authority invalid')
-                        result=asyncio.run(fetch_candidate(config,request,ProviderCredentials(self.services.amap_key,DEADLINE),before_send=admitted,basic=True))
+                        result=asyncio.run(fetch_candidate(config,request,ProviderCredentials(self.services.amap_key,DEADLINE),before_send=admitted,basic=True,**({'coordinate_only':True} if coordinate_route else {})))
                         if result.state!='received':raise BudgetUnknown('original live PLACE outcome unknown')
-                        parsed=parse_response(config,request,result.response,now=datetime.now(timezone.utc),basic=True)
+                        parsed=parse_response(config,request,result.response,now=datetime.now(timezone.utc),basic=True,coordinate_only=coordinate_route)
                         raw=encode_result(parsed,evidence_kind='live_provider')
                         endpoint=ORIGIN+request.path;status=parsed.outcome.value
                         metadata['provider_code']=parsed.provider_code
@@ -231,7 +237,7 @@ class RealTools:
             worker._model_history(binding,messages,TOOL_SYSTEM)
             native_reply={}
             raw=''.join(worker._registered_stream(binding,'model.tool_turn.'+str(round_index),'model.tool_turn',
-                ModelInput(messages,TOOL_SYSTEM,worker.provider,native_reply)))
+                ModelInput(messages,TOOL_SYSTEM,worker.provider,native_reply,final_answer=round_index==7)))
             try:turn=parse_turn(raw.encode(),self.names)
             except ValueError:raise ProviderUnknown('live model tool turn unavailable') from None
             if not turn.calls:

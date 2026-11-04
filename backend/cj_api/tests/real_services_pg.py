@@ -24,13 +24,14 @@ from test_m4_real_services import sse,KEY,NOW
 
 
 def exercise(auth,conninfo):
-    subjects=['m4-synthetic-'+v for v in ('ok','limit','unknown','malformed','late','permission','revoke','repeat')]
+    subjects=['m4-synthetic-'+v for v in ('ok','limit','unknown','malformed','late','permission','revoke','repeat','tail','tailbad')]
     harness.dev_auth.init(auth,subjects)
     now=int(time.time());profiles={}
     for subject in subjects:
         value=dict(version='CJ-LOCAL-RUN@2',current=dict(meter=dict(unit='provider_call',budget=20,
             period_start=now-60,period_end=now+3600,max_steps=1 if subject.endswith('limit') else 8,
-            max_tools=4,max_output=30000,max_seconds=1 if subject.endswith('late') else 300),output_limits=dict(model=12000,tool=24000,memory=1000)),history=[])
+            max_tools=8 if subject.endswith(('tail','tailbad')) else 4,max_output=30000,max_seconds=1 if subject.endswith('late') else 300),output_limits=dict(model=12000,tool=24000,memory=1000)),history=[])
+        if subject.endswith(('tail','tailbad')):value['current']['meter'].update(max_steps=16,max_output=65536)
         path=auth.parent/(subject+'.json');path.write_text(json.dumps(value))
         profiles[subject]=(path,load_run_context(path));operator.provision_budget(conninfo,profiles[subject][1],subject)
     headers={s:dict(Authorization='Bearer '+harness.dev_auth.token(auth,s,30)) for s in subjects}
@@ -64,6 +65,15 @@ def exercise(auth,conninfo):
             if subject.endswith('revoke') and not follow:
                 (auth/'invited.json').write_text(json.dumps([s for s in subjects if s!=subject]))
             payload=sse(tool=not follow or subject.endswith('repeat')).replace('chatcmpl-synthetic','chatcmpl-synthetic-'+str(len(model_calls)))
+            if subject.endswith(('tail','tailbad')):
+                final=body.get('tool_choice')=='none'
+                assert final==(sum(m['role']=='tool' for m in body['messages'])==7)
+                payload=sse(tool=not final or subject.endswith('tailbad')).replace('chatcmpl-synthetic','chatcmpl-synthetic-'+str(len(model_calls)))
+                if not final or subject.endswith('tailbad'):
+                    event=json.loads(payload.splitlines()[0][6:]);call=event['choices'][0]['delta']['tool_calls'][0]
+                    call['id']='call_synthetic_'+str(len(model_calls))
+                    call['function']['arguments']=json.dumps(dict(keyword='synthetic-'+str(len(model_calls)),city='北京',page=1,page_size=1))
+                    payload='data: '+json.dumps(event)+'\n\n'+'\n'.join(payload.splitlines()[2:])
             if subject.endswith('ok') and not follow:
                 value=json.loads(payload.splitlines()[0][6:]);value['choices'][0]['delta']['content']='Synthetic preface; checking the location.'
                 payload='data: '+json.dumps(value)+'\n\n'+'\n'.join(payload.splitlines()[2:])
@@ -100,6 +110,14 @@ def exercise(auth,conninfo):
             elif subject.endswith('repeat'):
                 assert outcomes[0].status=='failed' and model.calls==2 and len(tool_calls)==before+1
                 assert [(r['kind'],r['state']) for r in budget.inspect()]==[('model','RECEIVED'),('place','RECEIVED'),('model','RECEIVED')]
+            elif subject.endswith(('tail','tailbad')):
+                assert model.calls==8 and len(tool_calls)==before+7,(subject,outcomes,model.calls,len(tool_calls)-before,[(r['kind'],r['state']) for r in budget.inspect()])
+                assert outcomes[0].status==('unknown' if subject.endswith('tailbad') else 'completed')
+                assert len(budget.inspect())==15
+                assert budget.inspect()[-1]['state']==('INTENT' if subject.endswith('tailbad') else 'RECEIVED')
+                if subject.endswith('tail'):
+                    display=harness.expect(client.get('/v1/run-display',params=dict(message_id=subject),headers=headers[subject]))
+                    assert display['snapshot']['text_state']=='complete' and 'Needs verification.' in display['snapshot']['text']
             elif subject.endswith('limit'):
                 assert outcomes[0].status=='failed' and model.calls==1 and len(tool_calls)==before
             elif subject.endswith(('unknown','malformed')):
