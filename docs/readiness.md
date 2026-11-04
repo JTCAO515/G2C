@@ -1,5 +1,7 @@
 # Readiness 与交付状态
 
+> **历史记录：** 本页记录 2026-10 PR #36 文档基线阶段的准备与开工检查，不再更新。当前状态见 [README](../README.md)、[HANDOFF](../HANDOFF.md) 与 [issue-plan](plan/issue-plan.md)；里程碑 M0–M3 已于 2026-11-04 前关闭。
+
 **状态：JT 已授权正式开发，PR #36 已合并为文档基线。** 唯一 Main/常驻职责及本机唯一 HANDOFF 见[工程说明](engineering.md#角色与写权)；模型 effective 均为 UNKNOWN。授权不代表任务已实际执行、契约已冻结、验收或上线。
 
 ## PR #36 准备记录与授权更新

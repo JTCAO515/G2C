@@ -8,7 +8,7 @@ TRIP source `5fd115fc97e542bc8776a445d8245fd272000e56`; consumed
 Run the synthetic tests from repository root:
 
 ```sh
-PYTHONPATH=backend/manual_edit:backend/trip /opt/homebrew/bin/python3.14 -m unittest discover -s backend/manual_edit/tests -v
+uv run --locked python -B -m pytest -q backend/manual_edit/tests
 ```
 
 The interpreter path records this machine's verified Python 3.14; another supported
@@ -17,5 +17,5 @@ install is required. `tests/test_manual_edit.py` contains executable positive an
 negative examples with the actual CJ015 `Trip`/`Proposal` types.
 
 Consumer surface and safety boundaries: [contract](../../contracts/manual-edit/README.md).
-Author verification: [evidence](evidence/REPORT.md). These are not independent Review
+Author verification: [evidence](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/backend/manual_edit/evidence/REPORT.md). These are not independent Review
 or Testing, nor Issue22 UI/save/transaction/fixed-state-persistence acceptance.

@@ -4,10 +4,10 @@ Internal implementation and executable persistence checks for
 [FEEDBACK](../../contracts/feedback/README.md). Requires repository Python >=3.12,
 verified with cached Python 3.14.7 and psycopg 3.3.4. No root dependency/lock edits.
 
-Run from the repository root (uses only cached packages and a new private PG):
+Run from the repository root (a new private PG cluster; PostgreSQL binaries from `CJ_PG_BINDIR` or `pg_config`):
 
 ```sh
-PYTHONPATH=backend/auth:backend/message:backend/run:backend/feedback uv run --offline --no-project --python 3.14 --with psycopg==3.3.4 python -B backend/feedback/tests/private_pg.py --pg-bin /opt/homebrew/opt/postgresql@16/bin
+uv run --locked python -B scripts/pg_suites.py domain_runners
 ```
 
 The runner creates a new empty cluster under `backend/feedback/.local/`, a private
@@ -24,7 +24,7 @@ production AUTH, production database/RLS, real model, App or independent Testing
 Candidate exports: `Action`, `Receipt`, `Boundary.with_operation`, safe failures.
 Optional `Sources` consumes pinned MESSAGE/RUN public reads. Only the host callback sees typed values and emits final encoded bytes; no endpoint
 is registered. SQL installs exactly one domain table and no cross-domain access.
-See [evidence](evidence/SOURCES-REPORT.md) and [cleanup inventory](../../contracts/feedback/CLEANUP.md).
+See [evidence](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/backend/feedback/evidence/SOURCES-REPORT.md) and [cleanup inventory](../../contracts/feedback/CLEANUP.md).
 # M3 FEEDBACK@1.0 closeout (#15)
 
 The additive stable wire is [FEEDBACK@1.0](../../contracts/feedback/V1.md); rc wire
