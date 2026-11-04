@@ -42,8 +42,9 @@ def judge(scenario, evidence, expected):
         equal('verified_transfer_feasibility', evidence.get('known_transfer_feasible'), False)
     failures = [c for c in checks if c['status'] == 'FAIL']
     hard = 'FAIL' if failures else 'UNKNOWN' if any(c['status'] == 'UNKNOWN' for c in checks) else 'PASS'
-    return dict(hard_outcome=hard, task_outcome='FAIL' if failures else 'UNKNOWN', checks=checks,
-                semantic_review='UNKNOWN: FakeProvider is not evidence of model quality',
+    return dict(kind='program', independent=True, ref='eval/judge.py',
+                hard_outcome=hard, task_outcome='FAIL' if failures else 'UNKNOWN', checks=checks,
+                semantic_review='UNKNOWN: this program checks state/constraints; semantic and factual quality require a separate grounded review',
                 serious_errors=[dict(kind='program', ref='eval/judge.py:'+c['name'],
                                      description=c['name']+' violated an independent state/constraint assertion', resolved=False)
                                 for c in failures])

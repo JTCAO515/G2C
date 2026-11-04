@@ -79,7 +79,7 @@ uv run --locked python -B eval/run.py --output .local/eval/fake-new
 本地模型 stream 调用量和 API 任务耗时。耗时含场景内提交/worker/最终读取，
 首正文与草稿的 **UI 可见延迟** 未测仍 UNKNOWN，不能以 API p95 代替 #32 门槛。
 Fake 无真实货币回执，费用保持 UNKNOWN。中英、网络、集合、任务类别和尝试
-均可分开核对；无已批准质量阈值，报告没有放行权。
+均可分开核对；JT 门槛已确认，评测质量判定见下节，全项目发布仍有其他前置。
 
 真实 host 复跑后，可按相同格式提供实际观测与独立判据：
 
@@ -92,9 +92,55 @@ uv run --locked python -B eval/report.py --plan PLAN.json --observations OBSERVA
 保持 UNKNOWN。CLI 不创建真实观测，也不认证外部提供证据的真实性；计划与
 观测由可信执行方冻结/提供，不能由模型改写。模型裁判不认证事实、归属和写入。
 本机正式配置仍只准 FakeProvider，评测类保持原 Fake-only 检查；不把真实模型
-伪装成 Fake 绕过它。真实调用与正式 host 接入归 B / #32，质量/预算/地域仍等
-#495/#225；C 未调用真实模型、工具、云资源或任何付费服务。
+伪装成 Fake 绕过它。真实调用与正式 host 接入归 B / #32；JT 已在 M4 授权
+3/4 批准北京端点与指定工具的合成复跑，但必须先消费 B 已合并的真实 adapter，
+并沿用其原 attempt/计量/预算证据。#225 法务/文案未定时仍不能发送真实用户内容。
 
 验收分层：新增判定回归单独运行；仓库既有 `scripts/test.py` 和完整
 `scripts/pg_suites.py` 及精确 head CI 仍保留。未修改 CI 或测试入口，不声称
 既有 CI 自动执行了新增 eval 场景。
+
+## JT 2026-11-04 内测门槛
+
+`gates.py` 固定使用 `docs/scope.md`、#495/PR518 的批准值；观测或模型不能
+通过 `approved_thresholds` 改写它们。`quality_acceptance` 按候选、语言、网络
+分别输出 `criteria.*.status`、`passed`、值、样本数和分母：完成率 ≥90%，
+严重错误0，首字 p95 ≤5秒，完整回答 p95 ≤90秒。样本/留出和全部原尝试不变。
+不同候选不能合并或自动挑最好版本；同候选任一语言/网络失败不能由另一格抵消。
+
+完成率沿原口径 P/(P+F+U)，缺测R保留并阻止PASS。延迟使用全计划样本的最近秩
+p95；缺时延不能从分母删除，只给已知子集诊断。已知慢样本已足以证明全计划
+p95超标时可FAIL，其他缺测为UNKNOWN/UNRUN。没有完整观测不能凭成功子集放行。
+
+真实 collector 应记录：
+
+- `first_body_seconds`：同一客户端单调时钟从提交到首个用户可见的有效正文，
+  排除工具状态/空占位；`full_answer_seconds`：同次任务完整回答及必要候选可读。
+  包含任务内等待/重试，不重置计时。缺值为null；不从 `api_task_seconds` 或
+  `draft_seconds` 推造。原任务类别/集合的独立统计仍保留。
+- `independent_judgment`：独立程序的实际硬检查。新记录带
+  `kind=program, independent=true, ref=eval/judge.py`；旧#497记录按原程序引用
+  保留兼容。模型自评或缺少检查不能认证硬项，FAIL标签不能被PASS标签覆盖。
+- `serious_error_review`：`kind=human/program`、`independent=true`、
+  `outcome=PASS/FAIL/UNKNOWN` 和非空`ref`。这是完整严重错误审查的依据，
+  不能由model声明零错误。已观察的严重错误，即使`resolved=true`，也仍使
+  同一候选FAIL；必须以新候选/新尝试重新记录，原失败不删除。
+- `model_calls`、`tool_calls`、`memory_calls`：完整任务的实际调用量，未提供
+  为null/UNKNOWN，不填零。费用沿原`cost.components`，金额为十进制字符串、
+  币种与来源保留；新增`basis=billed/estimated/reserved`，真实账单还需要
+  `receipt_ref`。只有完整账单覆盖才是已知实际总额；估算、预留与缺账单分别展示，
+  不当成实付。费用完整性是报告字段，不添加JT未批准的单任务费用门槛。
+
+`plan.networks` 冻结每个真实网络组及其环境/证据；本机ASGI不冒充目标网络，
+测试后端 `api-beta.go2china.space` 的测量等B在#30通知就绪后再执行。
+
+Fake/local/synthetic 报告会显示门槛的诊断PASS/FAIL/UNKNOWN，但
+`evaluation_release_decision=UNRUN`，不算真实结论。只有`evidence_layer=real`
+且全部候选范围内语言/网络的四项门槛均PASS，才输出该范围的评测质量PASS。
+原`release_decision`保留全项目其他前置的区别。报告程序不认证外部文件的
+真实性；计划、原始观测和审查依据须由可信执行方冻结并供核对，不交给模型改写。
+
+实际执行预算仍遵守 M4 条目3/4：模型与M1合计¥300、¥240停；指定工具合计
+¥100、¥80停及地点600/路线300/天气100/事实页120次上限，至2026-11-30。
+报告计算不发出请求，也不代替B原计量出口/预算账本；不得用模型模拟成Fake
+或未知费用当零来绕过停止点。
