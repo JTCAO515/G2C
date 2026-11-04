@@ -17,6 +17,13 @@ TOOL_BUDGET = 200
 STATE = Path.home()/'.local/share/g2c/m4-real-services'
 
 
+def stop_reached(counts):
+    """Current held usage, including UNKNOWN; no next-case dispatch at a ceiling."""
+    model = 13+counts.get('model',0)
+    tools = sum(counts.get(k,0) for k in ('place','route','weather'))
+    return model>=min(MODEL_STOP,MODEL_BUDGET) or tools>=min(TOOL_STOP,TOOL_BUDGET)
+
+
 def verified_journal():
     """Read only; never create a missing ledger or accept rolled-back history."""
     path=STATE/'m4-outflows.sqlite'

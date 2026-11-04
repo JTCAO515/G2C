@@ -204,6 +204,19 @@ class SmokeChecks(unittest.TestCase):
         self.assertTrue(r['within_budget'])
         self.assertFalse(r['within_authorization'])
 
+    def test_full_between_case_guard_uses_new_stop_and_original_total(self):
+        for tools in (159,160,161,199):
+            with self.subTest(tools=tools):
+                self.assertFalse(real_budget.stop_reached(dict(place=tools)))
+        self.assertTrue(real_budget.stop_reached(dict(place=200)))
+        self.assertFalse(real_budget.stop_reached(dict(model=386)))
+        self.assertTrue(real_budget.stop_reached(dict(model=387)))
+
+    @patch.object(real_budget,'TOOL_STOP',160)
+    def test_full_between_case_guard_retains_historical_stop_policy(self):
+        self.assertFalse(real_budget.stop_reached(dict(weather=159)))
+        self.assertTrue(real_budget.stop_reached(dict(weather=160)))
+
     def test_smoke_over_total_budget_stops_before_credentials_claim_or_exit(self):
         with tempfile.TemporaryDirectory() as folder, \
                 patch.object(sys,'argv',['smoke.py','--output',str(Path(folder)/'new')]), \

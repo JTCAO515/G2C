@@ -316,7 +316,7 @@ def main():
     commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
     from smoke import require_full_ready
     require_full_ready(args.smoke, commit)
-    from real_budget import estimate, verified_journal
+    from real_budget import estimate, verified_journal, stop_reached
     from real_phase import claim
     before = verified_journal()
     forecast = estimate(before, include_smoke=False)
@@ -419,7 +419,7 @@ def main():
                     # Progress is deliberately outside redirect_stdout, no API content or keys.
                     os.write(1, (key+' '+row['status']+' '+row['judgment']['outcome']+'\n').encode())
                     counts = {kind: sum(v['kind']==kind for v in budget.inspect()) for kind in ('model','place','route','weather','fact')}
-                    if counts['model']+13 >= 400 or sum(counts[k] for k in ('place','route','weather')) >= 159:
+                    if stop_reached(counts):
                         save(args.output / 'stop.json', dict(reason='authorization stop threshold', counts=counts))
                         return 2
     return int(any(v['status']=='failure' or v['judgment']['outcome']=='FAIL' for v in observations))
