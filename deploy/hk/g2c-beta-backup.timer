@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily G2C synthetic beta private backup
+
+[Timer]
+OnCalendar=*-*-* 19:00:00 UTC
+Persistent=true
+Unit=g2c-beta-backup.service
+
+[Install]
+WantedBy=timers.target

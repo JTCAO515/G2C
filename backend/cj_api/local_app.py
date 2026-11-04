@@ -324,7 +324,7 @@ def trip_configuration(value):
 
 def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, history_configuration=None,
                      memory_configuration=None, run_context=None, travel_context=False, needs_profile=None, trip_context=False,edit_configuration=None,
-                     cleanup_configuration=None,formal_memory_configuration=None,database=None):
+                     cleanup_configuration=None,formal_memory_configuration=None,database=None,account_admission=False):
     if os.environ.get('CJ_ENV') != 'local':
         raise CompositionUnavailable('CJ_ENV must explicitly be local')
     auth_dir = Path(auth_dir)
@@ -342,6 +342,10 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
     keys = StaticPublicKeys({KEY_ID: VerificationKey('RS256', (auth_dir / 'public.pem').read_bytes())})
     config = JWTConfiguration(ISSUER, AUDIENCE, 'RS256', 0)
     access=base_access=InvitedSubjects(auth_dir/'invited.json')
+    if account_admission:
+        from .local_account_admission_v2 import retired_for
+        from cj_auth.account_revocation import AccountRevocationAccess
+        access=AccountRevocationAccess(base_access,retired_for(database))
     formal_producer=None
     if formal_memory_configuration is not None:
         if memory_configuration is not None:raise CompositionUnavailable('select one explicit Memory producer configuration')

@@ -17,6 +17,8 @@ from .metered_exit import BudgetUnknown
 
 LIMITS={'model':(227,1),'place':(600,1),'route':(300,1),'weather':(100,1),'fact':(120,0)}
 DEADLINE=datetime(2026,12,1,tzinfo=ZoneInfo('Asia/Shanghai'))
+MAC_PRODUCER='codex-mac'
+HK_PRODUCER='hk-beta-47.83.147.176'
 
 
 def canonical(value):
@@ -26,10 +28,14 @@ def canonical(value):
 class AuthorizationBudget:
     def __init__(self,root,*,clock=lambda:datetime.now(ZoneInfo('Asia/Shanghai'))):
         self.root=Path(root);self.clock=clock
+        self.producer=os.environ.get('CJ_M4_BUDGET_PRODUCER',MAC_PRODUCER)
+        if self.producer not in (MAC_PRODUCER,HK_PRODUCER):raise BudgetUnknown('explicit M4 producer required')
         self.root.mkdir(parents=True,exist_ok=True,mode=0o700)
         self.path=self.root/'m4-outflows.sqlite'
         with self.connect() as db:
             db.execute('CREATE TABLE IF NOT EXISTS attempt(id TEXT PRIMARY KEY,kind TEXT NOT NULL,input_sha TEXT NOT NULL,state TEXT NOT NULL,receipt TEXT)')
+            db.execute('CREATE TABLE IF NOT EXISTS producer(singleton INTEGER PRIMARY KEY CHECK(singleton=1),identity TEXT NOT NULL)')
+            db.execute('INSERT OR IGNORE INTO producer VALUES(1,?)',(MAC_PRODUCER,))
         self.path.chmod(0o600)
 
     @contextmanager
@@ -44,12 +50,17 @@ class AuthorizationBudget:
         now=self.clock()
         if now.tzinfo is None or now>=DEADLINE:raise BudgetUnknown('M4 authorization expired')
 
+    def require_producer(self,db):
+        if db.execute('SELECT identity FROM producer WHERE singleton=1').fetchone()!=(self.producer,):
+            raise BudgetUnknown('M4 journal moved; original producer is read only')
+
     def begin(self,attempt,kind,raw):
         self.check_date()
         if kind not in LIMITS or type(attempt) is not str or not 1<=len(attempt)<=128:
             raise BudgetUnknown('M4 original attempt unavailable')
         with self.connect() as db:
             db.execute('BEGIN IMMEDIATE')
+            self.require_producer(db)
             if db.execute('SELECT 1 FROM attempt WHERE id=?',(attempt,)).fetchone():
                 raise BudgetUnknown('M4 original attempt is read only')
             counts=dict(db.execute('SELECT kind,count(*) FROM attempt GROUP BY kind'))
@@ -65,6 +76,7 @@ class AuthorizationBudget:
         # The producer supplies bounded metadata only; keys/body/text never enter.
         with self.connect() as db:
             db.execute('BEGIN IMMEDIATE')
+            self.require_producer(db)
             if 'receipt_sha256' in receipt and db.execute("SELECT 1 FROM attempt WHERE id<>? AND kind='model' AND json_extract(receipt,'$.receipt_sha256')=?",(attempt,receipt['receipt_sha256'])).fetchone():
                 raise BudgetUnknown('M4 supplier receipt identity reused; original outcome unknown')
             if db.execute('UPDATE attempt SET state=\'RECEIVED\',receipt=? WHERE id=? AND state=\'INTENT\'',

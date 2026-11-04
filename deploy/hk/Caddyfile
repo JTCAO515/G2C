@@ -1,0 +1,17 @@
+{
+	admin off
+	servers {
+		protocols h1 h2
+	}
+}
+
+api-beta.go2china.space {
+	tls {
+		issuer acme {
+			dir https://acme-v02.api.letsencrypt.org/directory
+		}
+	}
+	reverse_proxy api:8765 {
+		flush_interval -1
+	}
+}
