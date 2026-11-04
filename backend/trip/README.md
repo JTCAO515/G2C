@@ -61,11 +61,11 @@ Raw initial failure/initdb logs are losslessly gzip-compressed; no evidence line
 Independent Review/Testing found autocommit partial writes, expiry after a slow
 commit guard, and close errors masking primary outcomes. These findings supersede
 any implication that the original 14 positives alone establish the transaction
-boundary. [Repair evidence](evidence/repair-de4e/REPORT.md): minimal repository fix,
+boundary. [Repair evidence](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/backend/trip/evidence/repair-de4e/REPORT.md): minimal repository fix,
 25 distinct real-PG tests plus original fault probes and actual restart PASS;
 new private clusters stopped. Original evidence retained. New independent gates pending.
 
-The follow-up [BaseException repair](evidence/repair-6afa/REPORT.md) extends outcome
+The follow-up [BaseException repair](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/backend/trip/evidence/repair-6afa/REPORT.md) extends outcome
 preservation to cancellation/interruption. 30 targeted real-PG controls PASS;
 known-success cleanup cancellation propagates with commit_possible and original
 receipt recovery, never a fabricated success. New private PG stopped and preserved;
@@ -73,11 +73,11 @@ independent gates pending. Earlier evidence remains unchanged.
 
 Protected pre-acceptance candidate display is available as `Boundary.proposal_detail`.
 [Exact read/pagination seam](../../contracts/trip/PROPOSAL-READ.md) and
-[12-test real-PG evidence](evidence/proposal-read/REPORT.md) are ready for CJ005
+[12-test real-PG evidence](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/backend/trip/evidence/proposal-read/REPORT.md) are ready for CJ005
 consumption confirmation. Reads never authorize acceptance; default confirm still denies.
 
 For CJ005 HTTP composition use [with_operation](../../contracts/trip/OPERATION.md)
 so JSON projection, size checks and encoding finish before the final identity/scope
 guard. Old object-return methods are internal compatibility only. New 20 targeted
 checks plus affected suite (76 total) passed on fresh private PG; see
-[operation evidence](evidence/operation/REPORT.md). Consumer confirmation pending.
+[operation evidence](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/backend/trip/evidence/operation/REPORT.md). Consumer confirmation pending.

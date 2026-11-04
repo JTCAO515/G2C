@@ -20,7 +20,7 @@ unknown 不当缺失/不新建 key；create 仍须确认无旧密文，未知创
 用途或账号的 item。旋转/迁移、默认创建依旧不支持，无新的 Keychain provider。
 
 定向验证 6/6 PASS（新 Trip3 + 原 Memory3），输出
-[evidence/trip-key-purpose-tests.txt](evidence/trip-key-purpose-tests.txt)。
+[evidence/trip-key-purpose-tests.txt](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/contracts/auth/evidence/trip-key-purpose-tests.txt)。
 覆盖旧命名字节、Trip/Memory/Message/另一账号/另一环境五个独立 key、跨 key 解密
 失败、错 expected ID/operation 拒绝、Memory 清理后 Trip 保留、Trip 清理后新 Memory/
 原 Message/其他 scope 保留，以及 unknown 创建只写一次并恢复原 key。

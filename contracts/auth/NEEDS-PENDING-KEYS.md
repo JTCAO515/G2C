@@ -19,7 +19,7 @@ missing，不自动创建/换 key；创建仅在确认无旧密文后显式进�
 已完成，不能用清 key 跳过原 query/revision 的业务确认。轮换/迁移仍未支持。
 
 定向验证 **9/9 PASS**：新 NEEDS3 + 相邻 Trip3/Memory3，日志
-[evidence/needs-key-purpose-tests.txt](evidence/needs-key-purpose-tests.txt)。
+[evidence/needs-key-purpose-tests.txt](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/contracts/auth/evidence/needs-key-purpose-tests.txt)。
 覆盖所有旧命名字节、四用途/另一账号/另一环境六独立 key，错 key 解密/expected ID/
 operation 拒绝，各旧用途清理不影响 NEEDS、NEEDS 清理不影响其他 scope；unknown
 创建与清理只对账原 key，各一次实际注入 add/delete，无自动重做。

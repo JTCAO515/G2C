@@ -1,4 +1,4 @@
-#if DEBUG && targetEnvironment(simulator)
+#if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
 import Foundation
 import CJCleanupClient
 import CJSession

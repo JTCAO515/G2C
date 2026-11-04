@@ -2,7 +2,7 @@
 
 面向外国来中国旅游的游客：记住已授权的事实、经历与偏好，提供有来源的旅行建议，并在持续修改中保护已经确认的安排。App 名为 **G2C**，Web 品牌为 **go2china.space**，后端为 **CJ Agent 系统**。
 
-**当前状态（2026-10-28）：** #149、#150 已审查、返修并合并。当前候选接入 DEBUG 模拟器开发会话：真实 UI 完成中英提案接受、显式确认和正式详情读取；拒绝、结果未知后的离线重启/原动作对账、跨用户隔离及 Release 不组装验证通过。后端是私有本地 PG、强制签名入口和 FakeProvider，不是云或真实模型验收。按 [ADR-0007](docs/adr/0007-issue-closure-workflow.md)，经独立 Codex 审查、精确 head 全部 CI 通过后合并，确认 main CI 全绿后按队列自动续作，直至 M1 完成或遇到仓库级停点；MESSAGE 写入仍未实现。复现见 [App README](ios/App/README.md)，当前状态与唯一下一步见 [HANDOFF.md](HANDOFF.md)（由 [docs/handoff.json](docs/handoff.json) 生成）。
+**当前状态（2026-11-04）：** M0–M3 已关闭：M1 主链路闭环（模拟器 L1）、M2 记忆与行程能力、M3 数据生命周期与反馈。证据止于 L0/L1：后端为私有本地 PG、强制签名入口和 FakeProvider，iOS 为模拟器；真实服务、真机、环境重建与效果/成本（L2/L3）集中在 [M4](docs/plan/issue-plan.md) 的 #28、#29、#30、#32 等验证票，高德地图替换 #398 也在 M4，公开首发准备在 M5。流程按 [ADR-0007](docs/adr/0007-issue-closure-workflow.md)；里程碑与并行线见 [issue-plan](docs/plan/issue-plan.md)，当前状态与唯一下一步见 [HANDOFF.md](HANDOFF.md)（由 [docs/handoff.json](docs/handoff.json) 生成），复现见 [App README](ios/App/README.md)。
 
 ## 已确认的产品边界
 

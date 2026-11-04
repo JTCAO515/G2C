@@ -178,7 +178,7 @@ async def _read_response(reader, body_limit):
 
 
 async def fetch_candidate(config: Config, request: PreparedRequest,
-                          credentials: ProviderCredentials) -> TransportResult:
+                          credentials: ProviderCredentials,*,before_send=None) -> TransportResult:
     """Low-level one-shot candidate, never authorization or a retry/recovery API.
 
     Credentials must come from trusted host configuration. This function performs
@@ -224,6 +224,9 @@ async def fetch_candidate(config: Config, request: PreparedRequest,
                 raise _WireFailure("credentials_expired_unknown")
             payload = ("GET " + target + " HTTP/1.1\r\nHost: " + _HOST +
                        "\r\nAccept: application/json\r\nAccept-Encoding: identity\r\nConnection: close\r\n\r\n").encode("ascii")
+            if before_send is not None and before_send() is not True:
+                raise _WireFailure('original_place_authority_invalid')
+            if loop.time()>=deadline:raise _WireFailure('connect_deadline_exceeded')
             writer.write(payload)
             await writer.drain()
             status, body = await _read_response(reader, config.max_response_bytes)

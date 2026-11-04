@@ -123,7 +123,7 @@ and no cleanup/commit automatic retry occurs. Targeted injected evidence is in
 A new task-private PostgreSQL16.15 cluster has now executed the unchanged candidate
 SQL and six repository transaction/concurrency/paging tests, followed by graceful
 restart recovery. It was safely stopped, with data/logs retained. See
-[evidence/PG-REPORT.md](evidence/PG-REPORT.md) for exact hash, driver/environment,
+[evidence/PG-REPORT.md](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/backend/message/evidence/PG-REPORT.md) for exact hash, driver/environment,
 fault injection attribution and limits. Earlier UNRUN/unapplied statements describe
 prior evidence or production targets; they do not negate this scoped local run.
 Production AUTH/RLS/provider/cleanup/cloud acceptance remains outstanding.

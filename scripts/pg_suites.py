@@ -595,6 +595,27 @@ def group_device_completion():
 GROUPS.update(device_completion=group_device_completion)
 
 
+def group_deploy_recovery():
+    return script('scripts/deploy_recovery_check.py')
+
+
+GROUPS.update(deploy_recovery=group_deploy_recovery)
+
+
+def group_supabase_namespace():
+    return script('scripts/supabase_m4_pg_check.py')
+
+
+GROUPS.update(supabase_namespace=group_supabase_namespace)
+
+
+def group_real_services():
+    return script('backend/cj_api/tests/real_services_pg.py')
+
+
+GROUPS.update(real_services=group_real_services)
+
+
 def main(argv):
     if argv[:1] == ['--shard']:
         index, count = map(int, argv[1].split('/'))

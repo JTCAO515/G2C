@@ -40,9 +40,9 @@ struct MemoryLifecycleButton: View {
     let action: () -> Void
     var body: some View {
         Button(action: action) {
-            Text(title).font(.body).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true)
+            MemoryRowText(text: title, style: .body)
                 .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
-        }.buttonStyle(.plain).disabled(!enabled).accessibilityIdentifier(identifier)
+        }.buttonStyle(.plain).accessibilityLabel(title).disabled(!enabled).accessibilityIdentifier(identifier)
     }
 }
 private struct MemoryManagementControlsContent: View {

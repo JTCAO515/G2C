@@ -124,6 +124,24 @@ private actor ControllerWire: ClientTransport {
         guard case .readable(let renewed) = reopened.state else { Issue.record("New actual GET must renew"); return }
         #expect(renewed.syncedAt == value.deadline && renewed.deadline == value.deadline + 1_209_600)
     }
+    @Test func onlineSyncRestoresReadingAfterWallClockCorrectedBackward() async throws {
+        let h = try KeyHarness(); defer { h.cleanup() }
+        let anchors = AnchorMemory(), sdk = AnchorMemory(), clock = ControllerClock()
+        try sdk.save(SessionMaterial(trustedSDKBytes: Data("verified-sdk-unit-a".utf8)))
+        let (client, binding) = try client(h)
+        let active = try controller(h, anchors, clock, sdk: sdk)
+        try active.synchronize(client: client, source: await source(client, binding), session: h.session, operation: h.operation)
+        clock.wall += 86_400; clock.uptime += 60 // clock set a day ahead by mistake, then read
+        active.readCached()
+        guard case .readable = active.state else { Issue.record("Expected readable before correction"); return }
+        clock.wall -= 86_400 // user corrects the clock: wall is now below the persisted lastWall
+        active.checkDisplayedTime()
+        guard case .untrustedTime = active.state else { Issue.record("Rollback must deny offline reading"); return }
+        try active.synchronize(client: client, source: await source(client, binding), session: h.session, operation: h.operation)
+        active.readCached()
+        guard case .readable(let renewed) = active.state else { Issue.record("Online verification must restore reading"); return }
+        #expect(renewed.syncedAt == clock.wall && renewed.deadline == clock.wall + 1_209_600)
+    }
     @Test func missingPolicyUntrustedBootAndChangedSDKCannotRead() async throws {
         let h = try KeyHarness(); defer { h.cleanup() }
         let anchors = AnchorMemory(), sdk = AnchorMemory(), clock = ControllerClock()

@@ -26,6 +26,8 @@ class _PreparedCall:
     step_key: str
     guard: object
     consumed: bool = False
+    receipt: object = None
+    materialize_with_guard: object = None
 
 
 class MeteredExitCore:
@@ -67,12 +69,19 @@ class MeteredExitCore:
                 run_started=ledger.runs[command.run_id].started
                 previous=ledger.last_clock
             now=self._now(previous)
-            if now-run_started >= self.config.max_seconds: raise BudgetExceeded(call.step_key)
-            invoke=call.materialize()
+            def final_guard():
+                nonlocal now
+                if call.guard() is not True:return False
+                now=self._now(now)
+                if (not self.config.period_start<=now<self.config.period_end
+                        or now-run_started>=self.config.max_seconds):
+                    raise BudgetExceeded(call.step_key)
+                return True
+            if not final_guard():raise Denied('original authority unavailable before materialization')
+            invoke=(call.materialize() if call.materialize_with_guard is None else
+                    call.materialize_with_guard(final_guard))
             # All ledger IO/cleanup and input materialization precede final admission.
-            if call.guard() is not True: raise Denied('original authority unavailable before call')
-            now=self._now(now)
-            if now-run_started >= self.config.max_seconds: raise BudgetExceeded(call.step_key)
+            if final_guard() is not True: raise Denied('original authority unavailable before call')
             stream=invoke()
             output=0
             for chunk in stream:
@@ -88,8 +97,9 @@ class MeteredExitCore:
             if now-run_started>=self.config.max_seconds: raise BudgetExceeded(call.step_key)
             if call.guard() is not True: raise Denied('original authority unavailable at completion')
             # Only a complete local invocation supplies its original receipt.
-            meter.settle(Receipt(command.attempt_id,'local:'+command.attempt_id,
-                                 self.config.unit,1,output))
+            receipt=(Receipt(command.attempt_id,'local:'+command.attempt_id,self.config.unit,1,output)
+                     if call.receipt is None else call.receipt(command.attempt_id,self.config.unit,output))
+            meter.settle(receipt)
         except (CommitUnknown,RepositoryUnavailable,CorruptLedger,DatabaseError,Blocked,UnicodeError,AuditUnavailable):
             raise BudgetUnknown('original budget outcome unavailable') from None
         finally:

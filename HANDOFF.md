@@ -18,16 +18,16 @@
 | --- | --- |
 | Objective | M1 主链路闭环（模拟器 L1）：账号、聊天、流式回答、草稿、确认与正式行程在 iOS 17.5 模拟器上以本地真实组合跑通，并按 ADR-0007 关闭 M1 的子票和父票；保留正式写入、原动作恢复及外部资源授权边界。 |
 | Status | active |
-| Phase | Lane A: JT 2026-11-04 新goal #398，已按实时 main0453fd88/Issue/授权条目1恢复，首道SDK模拟器验证阻塞。官方下载3DMap11.3.100与Foundation NO-IDFA1.9.4均含arm64真机/x86_64模拟器，实际arm64 simulator链接FAIL built for iOS；x86_64实际链接PASS但本机simctl启动FAIL111，Rosetta未安装且宿主x86探针Bad CPU type；同机arm64对照程序PASS。按JT首道停点停止，未接App、未改MapKit、未安装Rosetta或替换SDK，Key未读取，地图加载0/其他高德调用0/0元。PR490已合使用记录；后续Bundle匹配/隐私接线/正式Trip与原ID坐标/签名本地API/受限PG/Fake/中英地图/最大字号/完整AX均UNRUN。#398与M3保持OPEN；官方支持的模拟器包或JT明确处理运行环境后重验，不自行扩大资源。此前M3 App原goal及24/15/23/26/27/450/468/460 CLOSED和全部证据保持，460非阻断P2及历史FAIL保留，真实32/29/30仍UNRUN。 Lane B: 本新goal M3 B收尾已交付：PR481锁2426c81a合e49f99e3，MESSAGE-ERASURE-HEADERS@1同M锁完整五坐标供C原stop/freeze；C484合b23ea45a后472六框由C全勾CLOSED。PR483锁1222f29d合fc10d085，正式DEVICE4/COMPLETION2与M47：原19+擦除/候选两项配对family共21目标，逐项原intent授权自家两根，共享localMemoryPendingV1核四新增根及所有旧Memory根。只登记已合A480/A482范围；旧3/1实际消费者和原恢复保留。58/58、最终四CI日志16+16+16+16唯一64全0、独审APPROVE2bac/18B blobs逐字复用、全10jobs41627348729及最终lint41630265527 PASS；M1–47空全往返73表、非空拒退/跨owner/ACL不变，专用PG已停。27六B原框复用已合证据，真实账号32/真机29/备份30仍UNRUN；registry32内容含external仍blocked，新family原生由A468/460验收，不冒全M3或全设备完成。A/C精确通知已发，无待响应B缺口；f990配对intent P1、09af CI断言FAIL与既有历史FAIL全部保留，README计数P2留后续。仅本B结束交接，不重启M2/329/315。 Lane C: M3新线程记忆线Goal后端交付完成，非M2续线。23后端409/410/411/412/413与26后端472全L0/L1 CLOSED；27 C账户/条目清理hooks已由461/467合并，27由B按当前已实现域L1关闭。最后PR484锁aa2fce98f2616522d4b2c33c3bb01c1a3190cbe2合mainb23ea45a84c33bccc1a9eee303e5c10b7f8754a8：unlinked/manual source使用B481完整无正文headers的M→Memory窗口，逐source补齐原关联、既有pending/prepared/UNKNOWN job/input hash冻结；runtime同commit写永久message/job身份fences与原op/association完成proof，cleanup仅SELECT验proof后清manifest，无新C表/迁移/权限/HTTP版本。两个真实P1 RED（旧chat复活、既存副本遗留）已修且历史FAIL保留。actual ordinary/中英/source2/scoped/DG、新epoch同DG provider0、genuine end→V6/Action1→formal/none/两个真实Travel前台模型、零消息无Trip、ACK/撤权/原恢复/新明确source均PASS。固定head58/58、本机完整64/64 all0 exit0且ownPG/postmaster.pid全停；CI41621461960四完整64/all10+最终lint41624634007、独审APPROVE6601563966 PASS。C476 FormalRuntime1、B478同MSG3/ref1/payload2显式宿主及B481 HEADERS1已main，旧默认guard/旧冻结语义保留。只剩A460/468完整App框时C线完成；23/26父票仍OPEN，由最后App交付线关闭，不关闭M3。A已在460/468收到V6 projection2原review job/attempt、Action1与ERASURE1原/v1版本通知，无待响应C接口。PG受控，无ReMe/Mem0/vector/embedding；历史整理默认off逐会话启用、manual不授权全历史，系统不主动删Memory。真实模型质量/费用/云32、真机29、备份30仍UNRUN。 |
-| Accepted Issue | Lane A: JT 2026-11-04 新goal #398，已按实时 main0453fd88/Issue/授权条目1恢复，首道SDK模拟器验证阻塞。官方下载3DMap11.3.100与Foundation NO-IDFA1.9.4均含arm64真机/x86_64模拟器，实际arm64 simulator链接FAIL built for iOS；x86_64实际链接PASS但本机simctl启动FAIL111，Rosetta未安装且宿主x86探针Bad CPU type；同机arm64对照程序PASS。按JT首道停点停止，未接App、未改MapKit、未安装Rosetta或替换SDK，Key未读取，地图加载0/其他高德调用0/0元。PR490已合使用记录；后续Bundle匹配/隐私接线/正式Trip与原ID坐标/签名本地API/受限PG/Fake/中英地图/最大字号/完整AX均UNRUN。#398与M3保持OPEN；官方支持的模拟器包或JT明确处理运行环境后重验，不自行扩大资源。此前M3 App原goal及24/15/23/26/27/450/468/460 CLOSED和全部证据保持，460非阻断P2及历史FAIL保留，真实32/29/30仍UNRUN。 Lane B: 本新goal完成：472 CLOSED（C484六框真实证据）；27 B六原框均有已合证据；481 HEADERS1、483 DEVICE4/COMPLETION2/M47已main，A/C已获精确字段通知且无待响应B缺口。A460/468原生及23/26父票由A/最后交付线继续，不由B代关。32/29/30 UNRUN不变。 Lane C: M3新线程记忆线Goal后端交付完成，非M2续线。23后端409/410/411/412/413与26后端472全L0/L1 CLOSED；27 C账户/条目清理hooks已由461/467合并，27由B按当前已实现域L1关闭。最后PR484锁aa2fce98f2616522d4b2c33c3bb01c1a3190cbe2合mainb23ea45a84c33bccc1a9eee303e5c10b7f8754a8：unlinked/manual source使用B481完整无正文headers的M→Memory窗口，逐source补齐原关联、既有pending/prepared/UNKNOWN job/input hash冻结；runtime同commit写永久message/job身份fences与原op/association完成proof，cleanup仅SELECT验proof后清manifest，无新C表/迁移/权限/HTTP版本。两个真实P1 RED（旧chat复活、既存副本遗留）已修且历史FAIL保留。actual ordinary/中英/source2/scoped/DG、新epoch同DG provider0、genuine end→V6/Action1→formal/none/两个真实Travel前台模型、零消息无Trip、ACK/撤权/原恢复/新明确source均PASS。固定head58/58、本机完整64/64 all0 exit0且ownPG/postmaster.pid全停；CI41621461960四完整64/all10+最终lint41624634007、独审APPROVE6601563966 PASS。C476 FormalRuntime1、B478同MSG3/ref1/payload2显式宿主及B481 HEADERS1已main，旧默认guard/旧冻结语义保留。只剩A460/468完整App框时C线完成；23/26父票仍OPEN，由最后App交付线关闭，不关闭M3。A已在460/468收到V6 projection2原review job/attempt、Action1与ERASURE1原/v1版本通知，无待响应C接口。PG受控，无ReMe/Mem0/vector/embedding；历史整理默认off逐会话启用、manual不授权全历史，系统不主动删Memory。真实模型质量/费用/云32、真机29、备份30仍UNRUN。 |
+| Phase | Lane A: M4 App goal未完成，整队列设备执行按JT当前指令暂缓，等连接通知；条目1/2已生效，不再记缺Apple账号/指定iPhone授权。#398 Part1 PR525已锁c4cf3ca0117b150f76f795b959f8fa24b234e509合a00c7b0789b4351ef2803ea62a56af286caf2644，独立gpt-6-astra/high新上下文APPROVE，CI41803641084/lint41804234338共11 SUCCESS。官方11.3.100/NO-IDFA1.9.4在本地无Key/无签名arm64 iPhoneOS编译PASS；SDK/Key仅忽略配置，普通模拟器/Release无依赖，MapKit保留。94ce四个选定原生方法通过（PLACE总状态PARTIAL_PASS、三地图方法各含中英/最大字号/失败与全AX）；同步main03bf后的c4cf签名本地API/受限PG/Fake中英地图补验PASS，ios树逐字相同，非旧证据冒新head。设备Debug+iOS+专用标志仅指定私网HTTPS/系统TLS，拒绝设备loopback/明文。此前PR506的20范围/34原生和ID/隔离/签名占位/模板证据保留；非同一账号连续E2E。#398/#498/#4/#29均OPEN，真机签名/TLS/高德底图与语言/全流程/VoiceOver全部UNRUN；#30未通知测试域名就绪，不先接云或新密钥。条款版本已在398登记并向34/225同步SDK处理：服务协议更新2025-12-03，隐私更新2026-09-09/生效09-16；购买许可协议页面未列日期，仍UNKNOWN，不算已购许可。SDK未运行，本轮Key未读、地图0/其他服务0/0元，使用记录仍由授权文档owner更新。保留Rosetta/App目标FAIL70、首次SDK编译FAIL、PLACE可见性FAIL、head变化拒绝、macOS标志关闭性FAIL和lint FAIL；修正后结果分开，不删除历史。P2：PLACE reveal尾断言后续统一视口谓词。真实点位、最低系统其他设备与TestFlight不据本轮证据变PASS。 Lane B: M4 B本轮授权目标完成：2/PR507锁0a832462合751d607a、496/PR510锁04401069合f7404c80均CLOSED；30在M1+JT本轮补充授权内由PR513锁d1132421合ce72958e4571faf3a3a4617bc337e34e58f07397部分交付，父30仍OPEN；32真实Web/事实来源需求与调用量/预算提案已记495，未先调用。Qwen仅合成：北京qwen3.8-flash中英流式/真实模型调用本地echo/JSON与失败/超时取消/进程中断原ID只读通过，新加坡缺key UNRUN；13 intents/12发送尝试、8完整回执1294/129 tokens，完整回执估价0.0013835元，实付/未知窗口UNKNOWN，保守占用13元。deploy本机容器与原签名/受限PG/worker/Fake、peer权限隔离、Ed25519公钥验放行/一次性新检查点/导出恢复live-token轮转及注销/单Memory永久fence重放已验；错误/缺件保持不可用，已有release重启不再管理员重建已注销主体，旧客户端/manifest门禁保留；新M48仅全局非内容metadata与SELECT，1–47/冻结wire未改。云仅G2C/sajkhvjpllldfyfryalx/Singapore：main1–48/74表、客户端schema USAGE拒绝、2个管理员确认的合成Auth登录/JWK/退出/删除通过（17次HTTP），真实邮件/iOS SDK/CJ云host组合未验；session正常关闭reset单次观测通过，transaction SESSION残留FAIL；两模式LOCAL到期、客户端verify-full通过，但内部pooler→PG ssl=false。初始化身份无SET runtime权限42501，未自动GRANT/改密码/换身份；云runtime登录/完整12表/异常断连/产品池激活HOLD。33 search_path及2既有平台事件函数EXECUTE WARN保留，不改平台函数或已应用SQL压警告。507精确CI41757120366全绿；510精确CI41763755305普通59/PG65全绿；513精确CI41772217325普通60/PG66全绿，独审均过。历史解析/恢复/权限/准入/证书/重复清理/CI FAIL及P2完整保留，未知不抹零；全部输入合成，无真实用户内容发模型，不冒M4/生产放行。 Lane C: M4真实评测报告Goal已交付，质量结论FAIL、禁止据此放行。#522/PR526锁2315ff04合df94a46b，Astra/high独立APPROVE，原门槛/判定源码不变；#530/PR531锁46634c19114b413a9e1180582f36f14e29497cbb合b98cb34972087db81bbcdfe7dcb84882a10303a2。实际候选9ba2d4df、原33对中英/11固定留出、66真实案例；zh质量0P/31F/2U、en0P/29F/4U，原RUN完成2/33和4/33。英文4个已知首正文均>5秒，足证全33样本p95 FAIL；中文首字/两种语言完整回答因缺测UNKNOWN。accept-once各保留1个原程序正式写入0/期望1的硬FAIL：RUN UNKNOWN、候选/确认未到达，非越权写入证据。60个误标完整回答的终态时钟已只读纠正为UNKNOWN，原值/哈希/FAIL全部保留，未重跑付费案例或调整留出/judge。实际137模型意图/93完整回执/44未知，107183输入/11537输出tokens；地点8、天气46、事实8意图/0完整、路线0。C保守占用模型137元/工具54元；批次结束共享含M1模型167元/工具64元，实付UNKNOWN，无预算重置/触停点。61/61 eval、scripts/test.py60/60、原签名受限PG10配方和0.6/2.5秒离线对照PASS；精确head全CI含完整67个PG组PASS，非真实质量PASS。B523已承接真实UNKNOWN/空正文原ID证据并修协议续接，根因不由C臆测。#30未通知测试后端就绪，api-beta/海外行前/中国旅行目标网络UNRUN；未调云/生产/其他服务/真实用户内容。原本机#28/#497、132次Fake和历史失败仍保留，与本批真实层分开；本次只更新C交接一次，父32及M4不关闭。 |
+| Accepted Issue | Lane A: M4 App goal未完成，整队列设备执行按JT当前指令暂缓，等连接通知；条目1/2已生效，不再记缺Apple账号/指定iPhone授权。#398 Part1 PR525已锁c4cf3ca0117b150f76f795b959f8fa24b234e509合a00c7b0789b4351ef2803ea62a56af286caf2644，独立gpt-6-astra/high新上下文APPROVE，CI41803641084/lint41804234338共11 SUCCESS。官方11.3.100/NO-IDFA1.9.4在本地无Key/无签名arm64 iPhoneOS编译PASS；SDK/Key仅忽略配置，普通模拟器/Release无依赖，MapKit保留。94ce四个选定原生方法通过（PLACE总状态PARTIAL_PASS、三地图方法各含中英/最大字号/失败与全AX）；同步main03bf后的c4cf签名本地API/受限PG/Fake中英地图补验PASS，ios树逐字相同，非旧证据冒新head。设备Debug+iOS+专用标志仅指定私网HTTPS/系统TLS，拒绝设备loopback/明文。此前PR506的20范围/34原生和ID/隔离/签名占位/模板证据保留；非同一账号连续E2E。#398/#498/#4/#29均OPEN，真机签名/TLS/高德底图与语言/全流程/VoiceOver全部UNRUN；#30未通知测试域名就绪，不先接云或新密钥。条款版本已在398登记并向34/225同步SDK处理：服务协议更新2025-12-03，隐私更新2026-09-09/生效09-16；购买许可协议页面未列日期，仍UNKNOWN，不算已购许可。SDK未运行，本轮Key未读、地图0/其他服务0/0元，使用记录仍由授权文档owner更新。保留Rosetta/App目标FAIL70、首次SDK编译FAIL、PLACE可见性FAIL、head变化拒绝、macOS标志关闭性FAIL和lint FAIL；修正后结果分开，不删除历史。P2：PLACE reveal尾断言后续统一视口谓词。真实点位、最低系统其他设备与TestFlight不据本轮证据变PASS。 Lane B: 本M4 B goal按JT完成定义收口：2/496已闭，30授权部分已交、整票仍OPEN，32资源需求已495。实时Issue/main优先；不得把本轮合成L2测量当真实用户/设备/生产放行。 Lane C: 当前#32真实评测相关框已按JT门槛给出FAIL并附PR531（mergeb98cb34972087db81bbcdfe7dcb84882a10303a2）证据，#522/#530交付完成；产品未放行，#32/#30/#29/#495/#225保持原范围OPEN。历史#28/#497本机关闭有效，本条为本真实评测Goal唯一结束交接。 |
 | Owner | JT 决策与外部资源；Codex 按队列实现、自审、合并（ADR-0007 第 3、7 条）；Claude 负责规划、#162 并按需抽查 |
-| Last updated | 2026-11-04T00:51:37Z |
+| Last updated | 2026-11-04T10:21:20Z |
 
 ## Active Work
 
-- Lane A: JT 2026-11-04 新goal #398，已按实时 main0453fd88/Issue/授权条目1恢复，首道SDK模拟器验证阻塞。官方下载3DMap11.3.100与Foundation NO-IDFA1.9.4均含arm64真机/x86_64模拟器，实际arm64 simulator链接FAIL built for iOS；x86_64实际链接PASS但本机simctl启动FAIL111，Rosetta未安装且宿主x86探针Bad CPU type；同机arm64对照程序PASS。按JT首道停点停止，未接App、未改MapKit、未安装Rosetta或替换SDK，Key未读取，地图加载0/其他高德调用0/0元。PR490已合使用记录；后续Bundle匹配/隐私接线/正式Trip与原ID坐标/签名本地API/受限PG/Fake/中英地图/最大字号/完整AX均UNRUN。#398与M3保持OPEN；官方支持的模拟器包或JT明确处理运行环境后重验，不自行扩大资源。此前M3 App原goal及24/15/23/26/27/450/468/460 CLOSED和全部证据保持，460非阻断P2及历史FAIL保留，真实32/29/30仍UNRUN。
-- Lane B: 本新goal M3 B收尾已交付：PR481锁2426c81a合e49f99e3，MESSAGE-ERASURE-HEADERS@1同M锁完整五坐标供C原stop/freeze；C484合b23ea45a后472六框由C全勾CLOSED。PR483锁1222f29d合fc10d085，正式DEVICE4/COMPLETION2与M47：原19+擦除/候选两项配对family共21目标，逐项原intent授权自家两根，共享localMemoryPendingV1核四新增根及所有旧Memory根。只登记已合A480/A482范围；旧3/1实际消费者和原恢复保留。58/58、最终四CI日志16+16+16+16唯一64全0、独审APPROVE2bac/18B blobs逐字复用、全10jobs41627348729及最终lint41630265527 PASS；M1–47空全往返73表、非空拒退/跨owner/ACL不变，专用PG已停。27六B原框复用已合证据，真实账号32/真机29/备份30仍UNRUN；registry32内容含external仍blocked，新family原生由A468/460验收，不冒全M3或全设备完成。A/C精确通知已发，无待响应B缺口；f990配对intent P1、09af CI断言FAIL与既有历史FAIL全部保留，README计数P2留后续。仅本B结束交接，不重启M2/329/315。
-- Lane C: M3新线程记忆线Goal后端交付完成，非M2续线。23后端409/410/411/412/413与26后端472全L0/L1 CLOSED；27 C账户/条目清理hooks已由461/467合并，27由B按当前已实现域L1关闭。最后PR484锁aa2fce98f2616522d4b2c33c3bb01c1a3190cbe2合mainb23ea45a84c33bccc1a9eee303e5c10b7f8754a8：unlinked/manual source使用B481完整无正文headers的M→Memory窗口，逐source补齐原关联、既有pending/prepared/UNKNOWN job/input hash冻结；runtime同commit写永久message/job身份fences与原op/association完成proof，cleanup仅SELECT验proof后清manifest，无新C表/迁移/权限/HTTP版本。两个真实P1 RED（旧chat复活、既存副本遗留）已修且历史FAIL保留。actual ordinary/中英/source2/scoped/DG、新epoch同DG provider0、genuine end→V6/Action1→formal/none/两个真实Travel前台模型、零消息无Trip、ACK/撤权/原恢复/新明确source均PASS。固定head58/58、本机完整64/64 all0 exit0且ownPG/postmaster.pid全停；CI41621461960四完整64/all10+最终lint41624634007、独审APPROVE6601563966 PASS。C476 FormalRuntime1、B478同MSG3/ref1/payload2显式宿主及B481 HEADERS1已main，旧默认guard/旧冻结语义保留。只剩A460/468完整App框时C线完成；23/26父票仍OPEN，由最后App交付线关闭，不关闭M3。A已在460/468收到V6 projection2原review job/attempt、Action1与ERASURE1原/v1版本通知，无待响应C接口。PG受控，无ReMe/Mem0/vector/embedding；历史整理默认off逐会话启用、manual不授权全历史，系统不主动删Memory。真实模型质量/费用/云32、真机29、备份30仍UNRUN。
+- Lane A: M4 App goal未完成，整队列设备执行按JT当前指令暂缓，等连接通知；条目1/2已生效，不再记缺Apple账号/指定iPhone授权。#398 Part1 PR525已锁c4cf3ca0117b150f76f795b959f8fa24b234e509合a00c7b0789b4351ef2803ea62a56af286caf2644，独立gpt-6-astra/high新上下文APPROVE，CI41803641084/lint41804234338共11 SUCCESS。官方11.3.100/NO-IDFA1.9.4在本地无Key/无签名arm64 iPhoneOS编译PASS；SDK/Key仅忽略配置，普通模拟器/Release无依赖，MapKit保留。94ce四个选定原生方法通过（PLACE总状态PARTIAL_PASS、三地图方法各含中英/最大字号/失败与全AX）；同步main03bf后的c4cf签名本地API/受限PG/Fake中英地图补验PASS，ios树逐字相同，非旧证据冒新head。设备Debug+iOS+专用标志仅指定私网HTTPS/系统TLS，拒绝设备loopback/明文。此前PR506的20范围/34原生和ID/隔离/签名占位/模板证据保留；非同一账号连续E2E。#398/#498/#4/#29均OPEN，真机签名/TLS/高德底图与语言/全流程/VoiceOver全部UNRUN；#30未通知测试域名就绪，不先接云或新密钥。条款版本已在398登记并向34/225同步SDK处理：服务协议更新2025-12-03，隐私更新2026-09-09/生效09-16；购买许可协议页面未列日期，仍UNKNOWN，不算已购许可。SDK未运行，本轮Key未读、地图0/其他服务0/0元，使用记录仍由授权文档owner更新。保留Rosetta/App目标FAIL70、首次SDK编译FAIL、PLACE可见性FAIL、head变化拒绝、macOS标志关闭性FAIL和lint FAIL；修正后结果分开，不删除历史。P2：PLACE reveal尾断言后续统一视口谓词。真实点位、最低系统其他设备与TestFlight不据本轮证据变PASS。
+- Lane B: M4 B本轮授权目标完成：2/PR507锁0a832462合751d607a、496/PR510锁04401069合f7404c80均CLOSED；30在M1+JT本轮补充授权内由PR513锁d1132421合ce72958e4571faf3a3a4617bc337e34e58f07397部分交付，父30仍OPEN；32真实Web/事实来源需求与调用量/预算提案已记495，未先调用。Qwen仅合成：北京qwen3.8-flash中英流式/真实模型调用本地echo/JSON与失败/超时取消/进程中断原ID只读通过，新加坡缺key UNRUN；13 intents/12发送尝试、8完整回执1294/129 tokens，完整回执估价0.0013835元，实付/未知窗口UNKNOWN，保守占用13元。deploy本机容器与原签名/受限PG/worker/Fake、peer权限隔离、Ed25519公钥验放行/一次性新检查点/导出恢复live-token轮转及注销/单Memory永久fence重放已验；错误/缺件保持不可用，已有release重启不再管理员重建已注销主体，旧客户端/manifest门禁保留；新M48仅全局非内容metadata与SELECT，1–47/冻结wire未改。云仅G2C/sajkhvjpllldfyfryalx/Singapore：main1–48/74表、客户端schema USAGE拒绝、2个管理员确认的合成Auth登录/JWK/退出/删除通过（17次HTTP），真实邮件/iOS SDK/CJ云host组合未验；session正常关闭reset单次观测通过，transaction SESSION残留FAIL；两模式LOCAL到期、客户端verify-full通过，但内部pooler→PG ssl=false。初始化身份无SET runtime权限42501，未自动GRANT/改密码/换身份；云runtime登录/完整12表/异常断连/产品池激活HOLD。33 search_path及2既有平台事件函数EXECUTE WARN保留，不改平台函数或已应用SQL压警告。507精确CI41757120366全绿；510精确CI41763755305普通59/PG65全绿；513精确CI41772217325普通60/PG66全绿，独审均过。历史解析/恢复/权限/准入/证书/重复清理/CI FAIL及P2完整保留，未知不抹零；全部输入合成，无真实用户内容发模型，不冒M4/生产放行。
+- Lane C: M4真实评测报告Goal已交付，质量结论FAIL、禁止据此放行。#522/PR526锁2315ff04合df94a46b，Astra/high独立APPROVE，原门槛/判定源码不变；#530/PR531锁46634c19114b413a9e1180582f36f14e29497cbb合b98cb34972087db81bbcdfe7dcb84882a10303a2。实际候选9ba2d4df、原33对中英/11固定留出、66真实案例；zh质量0P/31F/2U、en0P/29F/4U，原RUN完成2/33和4/33。英文4个已知首正文均>5秒，足证全33样本p95 FAIL；中文首字/两种语言完整回答因缺测UNKNOWN。accept-once各保留1个原程序正式写入0/期望1的硬FAIL：RUN UNKNOWN、候选/确认未到达，非越权写入证据。60个误标完整回答的终态时钟已只读纠正为UNKNOWN，原值/哈希/FAIL全部保留，未重跑付费案例或调整留出/judge。实际137模型意图/93完整回执/44未知，107183输入/11537输出tokens；地点8、天气46、事实8意图/0完整、路线0。C保守占用模型137元/工具54元；批次结束共享含M1模型167元/工具64元，实付UNKNOWN，无预算重置/触停点。61/61 eval、scripts/test.py60/60、原签名受限PG10配方和0.6/2.5秒离线对照PASS；精确head全CI含完整67个PG组PASS，非真实质量PASS。B523已承接真实UNKNOWN/空正文原ID证据并修协议续接，根因不由C臆测。#30未通知测试后端就绪，api-beta/海外行前/中国旅行目标网络UNRUN；未调云/生产/其他服务/真实用户内容。原本机#28/#497、132次Fake和历史失败仍保留，与本批真实层分开；本次只更新C交接一次，父32及M4不关闭。
 - #186 four cleanup PRs #187–#190 merged with exact-head review; #186 remains open for its owner (Claude). PR #195 (#194 insertion) and #197 (#186 handoff note) are superseded by this revision.
 
 ## Accepted Assumptions
@@ -89,6 +89,12 @@
 | `backend/message/cj_message/erasure_headers.py; backend/cleanup; backend/cj_api/account_cleanup_routes.py; backend/storage-registry.json; backend/migrations/0047_device_erasure_journals.sql; contracts/message/ERASURE-HEADERS-V1.md; contracts/cleanup/DEVICE-V4.md; contracts/cleanup/DEVICE-COMPLETION-V2.md; scripts/pg_suites.py; docs/handoff.json; HANDOFF.md` | Lane B M3新goal结束一次交接：481完整metadata窗口、483已提供两family设备桥及472协同关闭；只本B八字段，A/C与全部历史验证/FAIL保留。 |
 | `docs/handoff.json, HANDOFF.md` | A-only M3原goal完成的最后一次handoff；仅八个许可字段A段落与新增A证据，保留全部B/C字符串、历史verification/FAIL及其他metadata。无可执行改动，不关闭M3。 |
 | `docs/handoff.json, HANDOFF.md` | A #398首道模拟器整线停点的唯一handoff更新；保留全部B/C字串、元数据及历史证据/FAIL。无App接入，无新授权，无高德调用。 |
+| `ios/** (PR506); docs/plan/issue-plan.md, docs/handoff.json, HANDOFF.md` | M4 A唯一goal级交接：本机20范围/34原生、Production身份与真机模板交付及整队列495停点；只改A，保留所有B/C字串和历史FAIL。未修改授权目录/后端/契约/迁移/CI。 |
+| `eval/**` | M4 C已合质量工具：28项真实本机不变量、33对/11留出、独立判定、完整Fake报告及回归；无产品语义/迁移/权限改动。 |
+| `docs/handoff.json, HANDOFF.md, docs/plan/issue-plan.md` | 本M4 C Goal结束的唯一交接；仅C条目/子票映射与eval归属，保留A/B和全部历史证据。 |
+| `docs/handoff.json, HANDOFF.md` | One B-only M4 goal closeout after507/510/513 and actual authorized partial cloud tests; only permitted fields, preserve every A/C value and historical verification/FAIL. No executable change or foreign parent closure. |
+| `docs/handoff.json, HANDOFF.md, docs/plan/issue-plan.md` | A-only single blocked handoff for the resumed M4 device goal after PR525; authorization already granted, execution held by JT connection notice. Preserve B/C bytes and every prior verification/failure. |
+| `eval/** (PR526/531); docs/handoff.json, HANDOFF.md` | C-only single goal-end real evaluation handoff: keep A/B values and all earlier verification/FAIL, actual report FAIL and target/fee UNKNOWN. No runtime/auth/Meter/CI/authorization-directory changes. |
 
 ## Verification Evidence
 
@@ -237,14 +243,33 @@
 | pass | `Lane A M3 PR488 canonical candidates / fresh current / device family` | 锁af5585a8合8f12a879；Memory177/Shell291/HTTP233+Recovery52、6类原生固定各head/差分，真实producer/Fake2/Meter2/签名PG、NFD、确认/拒绝、Travel1→2、UNKNOWN原receipt POST1、候选文件原注销0/B保留/普通403/31域/COMPLETION2/五槽、最大字号完整AX/扫描/PGstop PASS。独审6610822552、CI41682968106全10/最终lint41686445163 PASS，P2与FAIL保留。 | https://github.com/JTCAO515/G2C/pull/488 |
 | pass | `Lane A M3 original-parent-frame independent audit` | 合并后父26/23仍OPEN先读回，再逐原8框和App框/转29/32独立审计关闭；24/15/27及450/468/460亦CLOSED。真实资源/质量32、真机/网络/VoiceOver29与备份30仍UNRUN；M3未关闭。 | https://github.com/JTCAO515/G2C/issues/23#issuecomment-6611228111 |
 | fail | `A #398 official SDK simulator gate (2026-11-04)` | 官方3DMap11.3.100/NO-IDFA1.9.4 arm64真机切片实际simulator链接FAIL；x86_64链接PASS但启动FAIL111/无Rosetta；同机arm64对照PASS。初探针错误符号及少依赖链接FAIL亦保留，不冒原生地图PASS。0加载/0服务/0元，Key未读；API/PG/Fake/正式Trip/中英/最大字号/AX UNRUN，398/M3 OPEN。 | https://github.com/JTCAO515/G2C/pull/490 |
+| fail | `A M4 #398 Rosetta / official SDK retry` | Rosetta安装、arch x86探针与官方3DMap11.3.100/NO-IDFA1.9.4 x86控制程序17.5运行PASS；Xcode27.2无x86 App destination，显式FAIL70。完整SDK/App未验收未合，地图0/其他业务0/0元，Key仅进忽略配置，MapKit保留。旧arm64链接/启动FAIL完整保留。 | https://github.com/JTCAO515/G2C/issues/398#issuecomment-6619974573 |
+| pass | `A M4 #498 local journey matrix / native summaries` | 20个必跑范围、34个原生测试通过，0失败/0跳过；签名本地API/受限PG/Fake与readonly AX分层，身份分切片。全AX不豁免，UI测试OS_ACTIVITY_MODE=disable；需求/规划/菜单/懒列表测试修复和原生记忆按钮字体对比修复后定向复验；源/执行路径相同证据按精确比对复用，旧FAIL/跨head拒绝保留。 | https://github.com/JTCAO515/G2C/pull/506 |
+| pass | `A M4 PR506 exact-head CI / merge` | head c2b7c750c4ed28cf2f962fbd8f8f784055c85844的CI41762519476与最终lint41764493154共11 checks全SUCCESS；锁head合3203d896e03f79dbee189d6e8c572d7dd3afb776。最新main仅评测/独立provider脚本/授权记录差额，App/本机业务runtime未改；未等或冒称main CI已绿。 | https://github.com/JTCAO515/G2C/pull/506 |
+| pass | `A M4 Production identity / simulator run / #4 iOS18 probe` | Production正式ID space.go2china.app，开发/验收ID隔离，签名仅占位；sim/iPhoneOS编译与17.5模拟器未连接shell四Tab实际启动PASS，无profile/开发root/高德配置。原#4源码锁未变，18原型补混排列表选择原大字运行；首次libswiftCompatibilitySpan DYLD FAIL与本地嵌入/rpath修正保留，不冒新FPS或VO。 | https://github.com/JTCAO515/G2C/pull/506 |
+| unrun | `A M4 remaining #398 #498 #4 #29 / #495` | 398完整地图App等可用官方模拟器/运行环境或真机授权；498直执业务包受ADR-0008§7真实账号L2/JT批准与设备可达服务/签名接线所限；4/29设备VO等495。四票均OPEN，真机/VoiceOver/TestFlight/云/真实账号和目标网络不计PASS。M4授权使用记录由文档owner同步，A本轮禁止改authorizations。 | https://github.com/JTCAO515/G2C/issues/495#issuecomment-6621471008 |
+| PASS | `Lane C M4 #28 implementation invariants` | PR505/508/509/511锁head合并，四子票和父28实际CLOSED；M48 clean904dade8下隔离8/并发回执4/撤回注销10/文本网络6共28PASS，每项保留触发/预期/实际与原输出，真实余项32/30/29已回链UNRUN。 | https://github.com/JTCAO515/G2C/pull/511 |
+| PASS | `Lane C M4 current complete local checks` | M48固定904dade8：scripts/test.py59/59、完整scripts/pg_suites.py65/65全部0且总exit0，own postmaster.pid0。eval新回归13/13独立运行；各代码PR精确head全CI通过，不把旧58/64当新head结果。 | https://github.com/JTCAO515/G2C/issues/28 |
+| PASS | `Lane C M4 #497 Fake evaluation pipeline` | PR514锁245f787e合e3fa7aa2；clean执行81d78abb与整合head的eval/backend/scripts/deploy逐字一致，33对/11固定留出、132实际Fake任务。中英各hard58PASS/8UNKNOWN、task质量66UNKNOWN、100模型stream；API耗时单列，UI延迟/真实费用/网络/语义UNKNOWN。P2新eval回归未自动接共享CI留497。 | https://github.com/JTCAO515/G2C/pull/514 |
+| FAIL | `Lane C M4 historical evaluation and workflow failures` | 历史保留且不平均掉：短片段未达既有发布缓冲、Ledger错误字典观察器、非Fake观察包装器被原门禁拒绝、报告CLI文本/字节适配错误；仅改评测触发/观察/调用，未改弱产品检查。508首次合并因新lint排队被拒，过早回写立即纠正后才实际锁head合并；历史记录保留。当前候选回归/实验均通过。 | https://github.com/JTCAO515/G2C/issues/502 |
+| UNRUN | `Lane C M4 real evaluation prerequisites` | 495已写C真实复跑前置；2/507仅北京合成spike，国际站缺Key、正式RUN/USAGE real adapter未放行。495质量门槛/预算与225地域待定。真实模型/工具/费用/目标网络32、云存储/备份30、真机/VoiceOver29均UNRUN；无真实用户内容或本C外部调用。 | https://github.com/JTCAO515/G2C/issues/495 |
+| pass | `Lane B M4 #2 real provider / exact-head CI41757120366` | PR507真实合成中英/工具/结构输出与UNKNOWN原ID恢复；包版本/1294+129 tokens/实际费用UNKNOWN及保守13元均在Issue2/M1记录。新加坡UNRUN、旧解析FAIL/SDK警告保留；非产品真实出口。 | https://github.com/JTCAO515/G2C/pull/507 |
+| pass | `Lane B M4 #496 full local/CI acceptance` | PR510 exact04401069普通59/完整PG65、同head Linux隔离容器/故障/版本与真实本机注销/单Memory删除后新空库恢复/旧包拒绝通过；全部旧迁移/测试和历史FAIL保留。 | https://github.com/JTCAO515/G2C/pull/510 |
+| pass | `Lane B M4 #30 authorized partial / CI41772217325` | PR513 exactd1132421普通60/完整PG66/14离线与本机namespace回归通过；真实云main1–48/74表及2个合成Auth账号17HTTP/2删除通过。只证明分列部分，非整票30或生产。 | https://github.com/JTCAO515/G2C/pull/513 |
+| fail | `Lane B M4 retained FAIL/HOLD/UNRUN/UNKNOWN` | transaction SESSION残留FAIL、pooler内部TLS=false、runtime SET42501和完整12表/异常断连/云host/真实邮件/iOS SDK/30天备份/真实用户/生产HOLD或UNRUN；33+2 WARN、原代码/审查/CI FAIL保留，实付UNKNOWN，未通过替代身份/弱化门禁绕过。 | https://github.com/JTCAO515/G2C/issues/495 |
+| pass | `Lane A M4 PR525 exact-head independent review and CI` | c4cf3ca0117b150f76f795b959f8fa24b234e509 approved by fresh gpt-6-astra/high; CI41803641084 and lint41804234338 all 11 SUCCESS; match-head merge a00c7b0789b4351ef2803ea62a56af286caf2644. Official arm64 iPhoneOS SDK build without key/signing; 94ce four selected native methods retain actual report status, c4cf signed API/private-PG/Fake bilingual map PASS. No real-device or AMap runtime claim. | https://github.com/JTCAO515/G2C/pull/525 |
+| unrun | `Lane A M4 current execution hold, all remaining queue items` | Lane A: 所有剩余执行均受JT当前真机暂缓约束（已连续三轮核实）：#398高德实际加载/隐私时序/中英标注等iPhone连接通知；#498真机业务包安装/全流程及设备记录等同一通知和获准TLS端点实际连通；#4/#29设备长文/最大字号/VoiceOver等同一通知。M4条目1/2已授权指定iPhone17/iOS27.2与自动开发签名；不再索取已给授权。#30测试域名尚未收到就绪通知，额外密钥/其他设备/TestFlight/费用须另批。最低系统的其他真机不在本轮指定设备范围内，保持UNRUN。没有可替代真机的本机测试；不轮询或接触设备、不重跑已通过矩阵，Goal BLOCKED而非complete。 | https://github.com/JTCAO515/G2C/issues/495#issuecomment-6626405919 |
+| fail | `Lane A M4 retained FAIL and lower-priority review findings` | Retain Rosetta App target FAIL70, first SDK force-unwrap compile FAIL, PLACE centre visibility FAIL, changed-head acceptance rejection, flagged macOS factory-negative FAIL and PR-body lint FAIL; fixes and later PASS do not erase raw reports. PLACE reveal final viewport predicate is P2. Key not read this round; maps0/other AMap services0/cost0. | https://github.com/JTCAO515/G2C/pull/525 |
+| pass | `C M4 #522 approved JT thresholds / PR526` | Astra/high independent APPROVE23d637c5; exact source identity preserved, head2315ff04 all CI41807427853 success, merge df94a46b. Fake132 format-only UNRUN and historical counterexamples/P2 retained. | https://github.com/JTCAO515/G2C/pull/526 |
+| fail | `C M4 #530 real33 paired /11 holdout /66 tasks` | Lane C: M4真实评测报告Goal已交付，质量结论FAIL、禁止据此放行。#522/PR526锁2315ff04合df94a46b，Astra/high独立APPROVE，原门槛/判定源码不变；#530/PR531锁46634c19114b413a9e1180582f36f14e29497cbb合b98cb34972087db81bbcdfe7dcb84882a10303a2。实际候选9ba2d4df、原33对中英/11固定留出、66真实案例；zh质量0P/31F/2U、en0P/29F/4U，原RUN完成2/33和4/33。英文4个已知首正文均>5秒，足证全33样本p95 FAIL；中文首字/两种语言完整回答因缺测UNKNOWN。accept-once各保留1个原程序正式写入0/期望1的硬FAIL：RUN UNKNOWN、候选/确认未到达，非越权写入证据。60个误标完整回答的终态时钟已只读纠正为UNKNOWN，原值/哈希/FAIL全部保留，未重跑付费案例或调整留出/judge。实际137模型意图/93完整回执/44未知，107183输入/11537输出tokens；地点8、天气46、事实8意图/0完整、路线0。C保守占用模型137元/工具54元；批次结束共享含M1模型167元/工具64元，实付UNKNOWN，无预算重置/触停点。61/61 eval、scripts/test.py60/60、原签名受限PG10配方和0.6/2.5秒离线对照PASS；精确head全CI含完整67个PG组PASS，非真实质量PASS。B523已承接真实UNKNOWN/空正文原ID证据并修协议续接，根因不由C臆测。#30未通知测试后端就绪，api-beta/海外行前/中国旅行目标网络UNRUN；未调云/生产/其他服务/真实用户内容。原本机#28/#497、132次Fake和历史失败仍保留，与本批真实层分开；本次只更新C交接一次，父32及M4不关闭。 | https://github.com/JTCAO515/G2C/pull/531 |
+| pass | `C M4 engineering checks and original evidence audit` | eval61/61, scripts/test.py60/60; actual privatePG10 recipe fixture plus0.6/2.5 delay controls exit0; exact-head CI all67 PG groups success. All66 original raw/input hashes and22 holdout attempts verified; no dataset/judge/gate tuning, no weak/deleted test. These do not certify product quality. | https://github.com/JTCAO515/G2C/pull/531 |
 
 ## Blockers
 
 - L2/cloud/OTP/real model/device resources, branch protection and production keys remain JT-owned.
-- Lane C: 无C-owned后端阻塞或待实现项。23/26仅A460/468完整App/native/device日志接线余框保持由A验收；C已发main版本通知。真实资源/模型/费用/云32、真机29、备份30保持UNRUN，非本C Goal未完成或被等待别线阻塞。新问题按实时Issue/main与原owner处理，不重开M2、315/329/398或恢复旧监控。
-- Lane B scope remainder: 本新goal无当前B阻塞或待响应接口缺口；472由C已CLOSED，481/483正式main。A460/468完整Root/native由A推进；真实外部/设备/备份仍32/29/30 UNRUN。新的已合消费者真实B缺陷才按原授权优先响应，等待别线不算blocked，不预登记未来存储。
-- Lane B true resource stops: B未使用真实账号/模型/API/费用/云/Supabase/生产/真实设备；仅本地签名API、专用私有PG和Fake。32/29/30的实际外部/设备/备份保持UNRUN；M3授权文件的A地图SDK条目不自动扩大本B范围。未知回执/账务不抹零，不因等待main CI或别线回执标blocked。
-- Lane A: #398首道SDK模拟器阻塞，官方arm64仅真机切片；x86_64已链接但本机无Rosetta且启动失败。未接入地图/未读取Key/调用0/0元，398与M3保持OPEN。只等可运行官方模拟器包或JT明确运行环境处理；不替换SDK、不自行扩大资源。
+- Lane C: 本次报告交付Goal完成，真实质量FAIL仍阻断产品放行；B523处理原RUN UNKNOWN/无正文，#30就绪通知与海外/中国目标网络、供应商实付账单、完整独立语义复核仍UNKNOWN/UNRUN。未来复跑须绑定新候选并保留9ba2原FAIL，沿用唯一账本/既有M1占用；不得为通过调整留出或判定程序。
+- Lane A: 所有剩余执行均受JT当前真机暂缓约束（已连续三轮核实）：#398高德实际加载/隐私时序/中英标注等iPhone连接通知；#498真机业务包安装/全流程及设备记录等同一通知和获准TLS端点实际连通；#4/#29设备长文/最大字号/VoiceOver等同一通知。M4条目1/2已授权指定iPhone17/iOS27.2与自动开发签名；不再索取已给授权。#30测试域名尚未收到就绪通知，额外密钥/其他设备/TestFlight/费用须另批。最低系统的其他真机不在本轮指定设备范围内，保持UNRUN。没有可替代真机的本机测试；不轮询或接触设备、不重跑已通过矩阵，Goal BLOCKED而非complete。
+- Lane B M4 future resource stops: 本轮授权目标已完成；后续30/32仍需495的受控runtime身份/凭据、完整12表与异常断连门禁、SESSION残留和内部TLS处置、托管/域名/30天备份、质量/预算和225地域法务决定。未开生产或真实用户数据处理，未调用高德Web/事实来源。M1模型累计实际费用UNKNOWN/保守占用13元，原UNKNOWN只读恢复；Supabase本轮JT已允许现有Pro付费及2合成账号，实际费用UNKNOWN，账号live行已清理。
 
 ## Risks
 
@@ -264,30 +289,54 @@
 
 ## Next Smallest Action
 
-- Action: A: #398首道停点已记录，停止App接入；仅在官方模拟器包可用或JT明确处理运行环境后重新验证。不自动安装Rosetta，不改用其他SDK，不读Key或发出地图调用，不关闭398/M3。 以下B/C为历史恢复指令，仅有JT新授权或真实owner接口缺口时适用。 B: 本轮354/360/378及B-only结束交接完结；按实时Issue/Git验359/379/380/382及消费通知。C若报真实B接口缺口，按现授权优先在360/343响应，不以旧handoff限制重复求批准；除此不自开未指派领域。source1 needs-structured.1与source2 needs-current-trip.1分开，publisher2结果没有扩大/接受权限。315继续OPEN、本轮不再投入；不等待main CI/回执，不替A/C宣布M2或App/真实资源完成。  C: M3记忆线后端Goal已完成；仅只读核实时23/26/411/472/main与消费通知。A460/468由A继续，父票由最后交付线关闭。仅有真实C-owner接口/回归缺口时按原授权修复，不用handoff覆盖Issue，不重复开启M2/旧监控，不把外部/设备/备份UNRUN改PASS。
+- Action: C当前（本真实评测Goal已完成、产品FAIL）：先fetch核实时32/530/531/523/30/495/225及main；以PR531的候选9ba2d4df FAIL为已交证据，不自动恢复旧本机/Fake或重发未知原动作。后续按JT新指派或已合消费者真实回归继续；B修复后也须绑定新候选、保留原FAIL和固定11留出、同一累计账本；目标域名仅等B在30通知ready后测。实付/地理来源未知不冒PASS。以下旧C恢复文字由本段替代，A/B原文保留。
+
+A: M4 App goal BLOCKED，等待JT连接iPhone的通知；先只读核main、495/398/498/4/29/30与M4条目1/2，实时Issue优先。收到通知后恢复398真机开发构建/隐私先行/合成高德中英标注，再498和4/29真机/最大字号/VoiceOver，按模板记录，不从simulator PASS继承。连接本机后端须系统可信TLS，测试域名须等B在30通知ready后接入复验；不创建其他密钥，不先云/其他设备/TestFlight。只有真实状态改变才继续，不因本快照重跑旧矩阵、旧M2/M3或监控。 以下B/C均为原文历史/各线指令，未改写。 B: 本轮354/360/378及B-only结束交接完结；按实时Issue/Git验359/379/380/382及消费通知。C若报真实B接口缺口，按现授权优先在360/343响应，不以旧handoff限制重复求批准；除此不自开未指派领域。source1 needs-structured.1与source2 needs-current-trip.1分开，publisher2结果没有扩大/接受权限。315继续OPEN、本轮不再投入；不等待main CI/回执，不替A/C宣布M2或App/真实资源完成。  C: M4本机质量目标已交；只读核#28/#497关闭状态与#495/#225/B真实入口。后续按JT新指派或真实C-owner回归继续，不从旧M2/M3命令恢复旧队列或监控，不绕过Fake-only、确认、计量和撤回边界。真实复跑前必须满足已登记前置。
 
 Lane B M3 goal end: 本新goal已完成，先只读fetch核实时27/472/468/460、main和文件锁；481/483已合、472由C关闭，A/C精确通知已发。无当前B实现项，不从旧handoff恢复M2/329/315或轮询旧队列。仅已合消费者报告真实B缺口时按原授权继续；只追加必要版本并说明旧消费者，不改冻结语义/已应用SQL，不代A/C写钩子或关父票。真实资源停点不变。
-- Expected observation: A #398: 官方11.3.100/NO-IDFA1.9.4 arm64链接FAIL，x86链接PASS/启动FAIL111；arm64对照PASS。加载0/服务0/0元，后续原生组合UNRUN；398与M3 OPEN。 以下保留旧owner观察： C: M3后端409/410/411/412/413/472 CLOSED，27 C hooks已main。PR484 exact58/64/CI/独审PASS、ownPG停；manual P1两RED已修，23/26的A完整App框仍由A按实际证据勾选关闭。历史FAIL/外部32/设备29/备份30 UNRUN完整保留。  B: 354/360/378 CLOSED；359/379/380/382 MERGED，各精确head六类CI SUCCESS。M29、publisher@2/result恢复与source2正式run_once/CLI均可复核；原Trip/proposed_fields、原bytes/receipt/history、当前性/owner/cancel/UNKNOWN及真实计量边界PASS；source2合并树含C M30再次验收PASS。所有业务锁已释放，通知286/373/21/22/336/337/25已发。历史FAIL保留，真实资源/设备不据B证据变PASS。
+
+Lane B M4 goal end: 本轮已完成，仅只读核实时2/496/30/32/495/225与main。后续资源/权限未定不自开新领域，不执行上方历史B恢复队列或旧监控。只有JT追加同对象范围或已合消费者真实B缺口才按实时授权续作；不重发13条旧模型意图，不另建已清理的两个Auth账号，不启用未过门禁的pooler。
+- Expected observation: C本轮：PR526 MERGED df94a46b；PR531 MERGED b98cb34972087db81bbcdfe7dcb84882a10303a2，精确head46634c19114b413a9e1180582f36f14e29497cbb全CI PASS；66真实案例/两种语言FAIL，首字/完整回答缺测、实付和目标网络UNKNOWN/UNRUN；61 eval/60普通/完整67PG均PASS仅为工程检查。以下旧C观察是历史。
+
+A M4: PR525 MERGED a00c7b0789b4351ef2803ea62a56af286caf2644，精确c4cf3ca0的11检查SUCCESS与独立APPROVE；无Key/无签名SDK设备编译及定向模拟器PASS，原四方法/新main组合分head记录。398/498/4/29全部OPEN；真机/SDK运行/VO保持UNRUN，当前等待JT连接通知而非缺授权，30域名未ready；本轮0地图/0其他服务/0元，全部历史FAIL/P2保留。 以下保留旧owner观察： C: #28/#497及四子票CLOSED，五个代码PR已合；M48固定28/59/65与13回归、132次Fake完整报告已交，历史FAIL保留。Fake质量全部UNKNOWN，真实32/30/29 UNRUN，#495/#225及正式real adapter未定。  B: 354/360/378 CLOSED；359/379/380/382 MERGED，各精确head六类CI SUCCESS。M29、publisher@2/result恢复与source2正式run_once/CLI均可复核；原Trip/proposed_fields、原bytes/receipt/history、当前性/owner/cancel/UNKNOWN及真实计量边界PASS；source2合并树含C M30再次验收PASS。所有业务锁已释放，通知286/373/21/22/336/337/25已发。历史FAIL保留，真实资源/设备不据B证据变PASS。
 
 B M3 actual: 472 CLOSED且六框全勾；27 B六原框有已合证据。481/e49与483/fc10已main；HEADERS1无正文完整M窗口，DEVICE4总21（两新增family各含两根）、COMPLETION2原受限字段/API1不变、M47无权限增量。精确1222 CI41627348729全10、四实际日志唯一64全0、58/独审复用/最终lint41630265527 PASS；原FAIL保留。registry32含未提供external仍blocked；新family原生/真实账号/真机/备份分别A468/460、32、29、30 UNRUN。无待响应B接口缺口，不据B状态关A父票。
-- Resume command: `# A #398 blocked at SDK simulator gate; inspect only after a real unblock
+
+B M4 actual: M4 B本轮授权目标完成：2/PR507锁0a832462合751d607a、496/PR510锁04401069合f7404c80均CLOSED；30在M1+JT本轮补充授权内由PR513锁d1132421合ce72958e4571faf3a3a4617bc337e34e58f07397部分交付，父30仍OPEN；32真实Web/事实来源需求与调用量/预算提案已记495，未先调用。Qwen仅合成：北京qwen3.8-flash中英流式/真实模型调用本地echo/JSON与失败/超时取消/进程中断原ID只读通过，新加坡缺key UNRUN；13 intents/12发送尝试、8完整回执1294/129 tokens，完整回执估价0.0013835元，实付/未知窗口UNKNOWN，保守占用13元。deploy本机容器与原签名/受限PG/worker/Fake、peer权限隔离、Ed25519公钥验放行/一次性新检查点/导出恢复live-token轮转及注销/单Memory永久fence重放已验；错误/缺件保持不可用，已有release重启不再管理员重建已注销主体，旧客户端/manifest门禁保留；新M48仅全局非内容metadata与SELECT，1–47/冻结wire未改。云仅G2C/sajkhvjpllldfyfryalx/Singapore：main1–48/74表、客户端schema USAGE拒绝、2个管理员确认的合成Auth登录/JWK/退出/删除通过（17次HTTP），真实邮件/iOS SDK/CJ云host组合未验；session正常关闭reset单次观测通过，transaction SESSION残留FAIL；两模式LOCAL到期、客户端verify-full通过，但内部pooler→PG ssl=false。初始化身份无SET runtime权限42501，未自动GRANT/改密码/换身份；云runtime登录/完整12表/异常断连/产品池激活HOLD。33 search_path及2既有平台事件函数EXECUTE WARN保留，不改平台函数或已应用SQL压警告。507精确CI41757120366全绿；510精确CI41763755305普通59/PG65全绿；513精确CI41772217325普通60/PG66全绿，独审均过。历史解析/恢复/权限/准入/证书/重复清理/CI FAIL及P2完整保留，未知不抹零；全部输入合成，无真实用户内容发模型，不冒M4/生产放行。
+- Resume command: `# C current: read only; do not replay old real/Fake batches
+git fetch origin
+gh issue view 32 --repo JTCAO515/G2C
+gh issue view 530 --repo JTCAO515/G2C
+gh pr view 531 --repo JTCAO515/G2C
+gh issue view 523 --repo JTCAO515/G2C --comments
+gh issue view 30 --repo JTCAO515/G2C --comments
+gh issue view 495 --repo JTCAO515/G2C --comments
+python3 -B scripts/handoff.py check
+
+# A M4 device work deferred by JT; authorization items 1/2 already merged
+# Wait for JT's connection notice. Do not inspect or operate the phone before it.
 git fetch origin
 git status --short --branch
+gh issue view 495 --repo JTCAO515/G2C --comments
 gh issue view 398 --repo JTCAO515/G2C --comments
-gh pr view 490 --repo JTCAO515/G2C
+gh issue view 498 --repo JTCAO515/G2C
+gh issue view 4 --repo JTCAO515/G2C
+gh issue view 29 --repo JTCAO515/G2C
+gh issue view 30 --repo JTCAO515/G2C --comments
+gh pr view 525 --repo JTCAO515/G2C
 python3 -B scripts/handoff.py check
 
 # B/C historical snapshot commands retained below; live Issue + latest ADR prevail
-# C M2后端已交；仅审计真实地图停点/C-owner反馈，不重跑旧实现
+# Lane C M4 current: local quality goal delivered; real rerun remains gated
+# Only inspect live Issue/main; do not rerun historical queues by default
 git fetch origin
 git status --short --branch
-gh issue list --repo JTCAO515/G2C --milestone 'M2 记忆与行程能力' --state open
-gh issue view 21 --repo JTCAO515/G2C --comments
-gh issue view 336 --repo JTCAO515/G2C
-gh issue view 25 --repo JTCAO515/G2C
-gh issue view 374 --repo JTCAO515/G2C
-gh pr view 381 --repo JTCAO515/G2C
-gh run list --repo JTCAO515/G2C --branch main --limit 3
+gh issue view 28 --repo JTCAO515/G2C
+gh issue view 497 --repo JTCAO515/G2C
+gh issue view 495 --repo JTCAO515/G2C --comments
+gh issue view 225 --repo JTCAO515/G2C
+gh pr view 511 --repo JTCAO515/G2C
+gh pr view 514 --repo JTCAO515/G2C
 python3 -B scripts/handoff.py check
 # B343交付及C接口反馈；不把讨论/DTO/ABI当写权限
 gh issue view 343 --repo JTCAO515/G2C --comments
@@ -329,7 +378,8 @@ gh issue view 472 --repo JTCAO515/G2C --comments
 gh issue view 403 --repo JTCAO515/G2C --comments
 gh pr view 478 --repo JTCAO515/G2C
 gh pr list --repo JTCAO515/G2C --state open
-python3 -B scripts/handoff.py check\n# Lane C M3 Goal已结束；仅核实时Issue/main，不执行上方历史恢复队列\ngit fetch origin\ngh issue view 23 --repo JTCAO515/G2C\ngh issue view 26 --repo JTCAO515/G2C\ngh issue view 411 --repo JTCAO515/G2C\ngh issue view 472 --repo JTCAO515/G2C\ngh pr view 484 --repo JTCAO515/G2C\npython3 -B scripts/handoff.py check
+python3 -B scripts/handoff.py check
+# Lane C M3恢复片段已由上方M4当前指令替代。
 
 # Lane B M3新goal已结束；上方旧B恢复命令仅历史，不自动执行
 git fetch origin
@@ -338,6 +388,18 @@ gh issue view 472 --repo JTCAO515/G2C
 gh issue view 468 --repo JTCAO515/G2C
 gh issue view 460 --repo JTCAO515/G2C
 gh pr view 483 --repo JTCAO515/G2C
+python3 -B scripts/handoff.py check
+
+# B M4 goal complete: read live state; do not execute historical B recovery commands
+git fetch origin
+gh issue view 2 --repo JTCAO515/G2C
+gh issue view 496 --repo JTCAO515/G2C
+gh issue view 30 --repo JTCAO515/G2C
+gh issue view 495 --repo JTCAO515/G2C --comments
+gh issue view 225 --repo JTCAO515/G2C
+gh pr view 507 --repo JTCAO515/G2C
+gh pr view 510 --repo JTCAO515/G2C
+gh pr view 513 --repo JTCAO515/G2C
 python3 -B scripts/handoff.py check`
 
 ## Rollback

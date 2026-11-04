@@ -211,11 +211,35 @@ struct DevelopmentSessionConfiguration: CustomStringConvertible, CustomReflectab
 
     static func readEndpoint(_ environment: [String: String], key: String = "G2C_DEV_API_BASE_URL") -> URL? {
         guard let rawURL = environment[key],
-              var url = URLComponents(string: rawURL), url.scheme == "http", url.host == "127.0.0.1",
+              var url = URLComponents(string: rawURL),
               let port = url.port, (1...65535).contains(port), url.user == nil, url.password == nil,
               url.query == nil, url.fragment == nil, ["", "/"].contains(url.path) else { return nil }
+        let approved: Bool
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        approved = isM4LocalHost(url.host, environment: environment)
+        #else
+        approved = false
+        #endif
+        #if os(iOS) && !targetEnvironment(simulator)
+        let loopback = false
+        #else
+        let loopback = url.scheme == "http" && url.host == "127.0.0.1"
+        #endif
+        guard loopback || (url.scheme == "https" && approved) else { return nil }
         url.path = ""
         return url.url
+    }
+
+    // Independent environment-input boundary. The transport separately admits
+    // its immutable endpoint and preserves the per-route/session capabilities.
+    private static func isM4LocalHost(_ host: String?, environment: [String:String]) -> Bool {
+        guard let host, host == environment["G2C_M4_LOCAL_HOST"] else { return false }
+        let fields = host.split(separator: ".", omittingEmptySubsequences: false)
+        let bytes = fields.compactMap { UInt8($0) }
+        guard fields.count == 4, bytes.count == 4,
+              zip(fields, bytes).allSatisfy({ String($0.1) == $0.0 }) else { return false }
+        return bytes[0] == 10 || (bytes[0] == 172 && (16...31).contains(bytes[1]))
+            || (bytes[0] == 192 && bytes[1] == 168) || (bytes[0] == 169 && bytes[1] == 254)
     }
 
     static func placeToolsEnabled(_ environment: [String:String]) throws -> Bool {
