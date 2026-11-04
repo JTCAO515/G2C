@@ -11,6 +11,7 @@ import json
 import os
 from pathlib import Path
 import plistlib
+import secrets as random_secrets
 import socket
 import subprocess
 import sys
@@ -32,10 +33,21 @@ CASES={'testMemoryErasureEnglish':'complete-en','testMemoryErasureChinese':'comp
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     for key in ('backend-source','run-context','output','build-dir'):parser.add_argument('--'+key,type=Path,required=True)
-    parser.add_argument('--backend-head',required=True);parser.add_argument('--simulator',required=True)
+    parser.add_argument('--backend-head',required=True)
+    target=parser.add_mutually_exclusive_group(required=True)
+    target.add_argument('--simulator');target.add_argument('--device')
+    parser.add_argument('--local-tls',type=Path)
     parser.add_argument('--case',choices=CASES)
     parser.add_argument('--prepare-only',action='store_true')
     args=parser.parse_args();backend=args.backend_source.resolve();output=args.output.resolve();build=args.build_dir.resolve()
+    tls=None
+    if args.device:
+        if not args.local_tls:parser.error('--device requires the approved --local-tls profile')
+        from m4_device import LocalTLS,configure_project,scan_app_container
+        from m4_native import DeviceNative,authenticated_control
+        tls=LocalTLS.load(args.local_tls)
+    elif args.local_tls:parser.error('--local-tls requires --device')
+    os.umask(0o077)
     for path in (output,build):
         if path.is_relative_to(ROOT) or path.is_relative_to(backend):raise ValueError('external artifact roots required')
     if subprocess.check_output(['git','status','--porcelain'],cwd=ROOT):raise ValueError('commit candidate first')
@@ -60,13 +72,18 @@ def main():
     cases={args.case:CASES[args.case]} if args.case else CASES
     sources=[Path(__file__),HERE/'MemoryErasureUITests.swift',HERE/'prepare_preserved_history_source.py',HERE/'prepare_provided_cleanup_sources.py',
              HERE/'check_account_cleanup_component.py',*list((ROOT/'ios/App').glob('*.swift'))]
+    if tls:sources += [HERE/name for name in ('m4_device.py','m4_native.py','m4_artifacts.py','M4DeviceControl.swift','M4DeviceTestSession.swift')]
     for module in ('CJShell','CJMemoryClient','CJCleanupClient','CJMessageClient','CJAuth','CJOfflineTrip','CJTripClient'):
         sources+=list((ROOT/'ios/Modules'/module/'Sources').rglob('*.swift'))
     report=dict(status='RUNNING',source_status='UNRUN',native='UNRUN',head=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
         backend_head=args.backend_head,cases={},source_hashes={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sources},
         unrun=['physical device/VoiceOver','real accounts/cloud/providers/fees/backups'])
     def save():(output/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
-    save();secrets=[];server=None;control=None;thread=None;original_size=None;active={'case':None};lock=threading.Lock();observations={}
+    if tls:report.update(layer='signed approved iPhone/local pinned HTTPS/private PG/canonical erasure host',
+        raw_native_bundle_shareable=False,build_inputs_shareable=False,
+        device_font_scope='actual system maximum throughout case; original simulator transition remains separate',
+        unrun=['VoiceOver','actual system font setting record','in-place system-font transition','real accounts/cloud/providers/fees/backups'])
+    save();secrets=[];server=None;control=None;thread=None;native=None;control_token=None;original_size=None;active={'case':None};lock=threading.Lock();observations={}
     try:
         with tempfile.TemporaryDirectory(prefix='cj468-app-',dir='/tmp') as temp:
             folder=Path(temp)
@@ -98,7 +115,7 @@ def main():
                     hosts[case]=dict(human=human,account=account,**parts);proofs[case]=proof
                     observations[case]=dict(saved=[],erased=[],api=[])
                 report.update(source_status='PASS',sources=proofs);save()
-                if args.prepare_only:
+                if args.prepare_only and not tls:
                     report.update(status='UNRUN',native='UNRUN');return
 
                 async def observed(scope,receive,send):
@@ -141,29 +158,39 @@ def main():
                         await send({'type':'http.response.body','body':error});return
                     for message in messages:await send(message)
 
-                listener=socket.socket();listener.bind(('127.0.0.1',0));port=listener.getsockname()[1]
-                endpoint='http://127.0.0.1:'+str(port)
-                server=uvicorn.Server(uvicorn.Config(observed,log_level='error',access_log=False));thread=threading.Thread(target=lambda:server.run(sockets=[listener]),daemon=True);thread.start()
+                if tls:listener=tls.listener()
+                else:listener=socket.socket();listener.bind(('127.0.0.1',0));listener.listen(128)
+                port=listener.getsockname()[1];endpoint=('https://'+tls.host if tls else 'http://127.0.0.1')+':'+str(port)
+                server=uvicorn.Server(uvicorn.Config(observed,log_level='error',access_log=False,**(tls.uvicorn_options() if tls else {})));thread=threading.Thread(target=lambda:server.run(sockets=[listener]),daemon=True);thread.start()
                 deadline=time.monotonic()+10
                 while not server.started:
                     if not thread.is_alive() or time.monotonic()>deadline:raise RuntimeError('actual erasure host unavailable')
                     time.sleep(.02)
                 namespace=lambda value:str(uuid.UUID(bytes=hashlib.sha256(value.encode()).digest()[:16])).upper()
-                def local_proof(case):
+                def with_container(action):
+                    if tls:
+                        with tempfile.TemporaryDirectory(prefix='g2c-erasure-private-scan-') as directory:
+                            destination=Path(directory)/'app-data'
+                            scan_app_container(args.device,BUNDLE,destination,tokens[active['case']].values())
+                            return action(destination)
                     container=Path(subprocess.check_output(['xcrun','simctl','get_app_container',args.simulator,BUNDLE,'data'],env=env,text=True).strip())
-                    account=namespace('G2C.DEBUG.TRIP.account|https://local.g2c.invalid|'+subjects[case]['A'])
-                    base=container/'Library/Application Support/G2CDevelopmentMemory'/namespace('G2C.DEBUG.TRIP.environment|'+endpoint)
-                    with lock:data=observations[case];saved=list(data['saved']);erased=list(data['erased'])
-                    assert len(saved)==2 and len(erased)==1
-                    target=saved[-1]['command'];operation=erased[0]
-                    expected=base/(account+'.typed-v2')/(hashlib.sha256(target['operation_id'].encode()).hexdigest()+'.memory')
-                    files=[p for root in base.glob(account+'*') if root.is_dir() for p in root.rglob('*') if p.is_file()]
-                    originals={str(p.relative_to(base)):hashlib.sha256(p.read_bytes()).hexdigest() for p in files if p.parent.name.startswith(account+'.erasure-v1')}
-                    target_files={str(expected.relative_to(base)):hashlib.sha256(expected.read_bytes()).hexdigest()} if expected.exists() else {}
-                    other={str(p.relative_to(base)):hashlib.sha256(p.read_bytes()).hexdigest() for p in files if p!=expected and str(p.relative_to(base)) not in originals}
-                    assert all(target['text'].encode() not in p.read_bytes() for p in files),'App leaked plain target text'
-                    return dict(item_journals=target_files,other_journals=other,erasure_originals=originals,
-                        erasure_post_count=len(erased),original_action_id=operation['command']['action_id'],operation_id=operation['result']['operation_id'])
+                    return action(container)
+                def local_proof(case):
+                    def inspect(container):
+                        account=namespace('G2C.DEBUG.TRIP.account|https://local.g2c.invalid|'+subjects[case]['A'])
+                        base=container/'Library/Application Support/G2CDevelopmentMemory'/namespace('G2C.DEBUG.TRIP.environment|'+endpoint)
+                        with lock:data=observations[case];saved=list(data['saved']);erased=list(data['erased'])
+                        assert len(saved)==2 and len(erased)==1
+                        target=saved[-1]['command'];operation=erased[0]
+                        expected=base/(account+'.typed-v2')/(hashlib.sha256(target['operation_id'].encode()).hexdigest()+'.memory')
+                        files=[p for root in base.glob(account+'*') if root.is_dir() for p in root.rglob('*') if p.is_file()]
+                        originals={str(p.relative_to(base)):hashlib.sha256(p.read_bytes()).hexdigest() for p in files if p.parent.name.startswith(account+'.erasure-v1')}
+                        target_files={str(expected.relative_to(base)):hashlib.sha256(expected.read_bytes()).hexdigest()} if expected.exists() else {}
+                        other={str(p.relative_to(base)):hashlib.sha256(p.read_bytes()).hexdigest() for p in files if p!=expected and str(p.relative_to(base)) not in originals}
+                        assert all(target['text'].encode() not in p.read_bytes() for p in files),'App leaked plain target text'
+                        return dict(item_journals=target_files,other_journals=other,erasure_originals=originals,
+                            erasure_post_count=len(erased),original_action_id=operation['command']['action_id'],operation_id=operation['result']['operation_id'])
+                    return with_container(inspect)
                 class Control(BaseHTTPRequestHandler):
                     def log_message(self,*_):pass
                     def do_GET(self):
@@ -171,50 +198,82 @@ def main():
                         if path.path=='/fixture':
                             case=query['case'];assert case in hosts;active['case']=case
                             profile=dict(version='app-memory.2',**{k:hosts[case]['policy'][k] for k in ('subjects','slots','extents')})
-                            launch=dict(G2C_DEV_ACCOUNT_MODE='1',G2C_DEV_API_BASE_URL=endpoint,G2C_DEV_ACCOUNTS=json.dumps(tokens[case]),G2C_DEV_OFFLINE_TRIP='last-sync-v1',
+                            launch=dict(G2C_DEV_ACCOUNT_MODE='1',G2C_DEV_API_BASE_URL=endpoint,G2C_DEV_ACCOUNTS='{}' if tls else json.dumps(tokens[case]),G2C_DEV_OFFLINE_TRIP='last-sync-v1',
                                 G2C_DEV_CLEANUP_PROFILE='device-v4',G2C_DEV_TRAVEL_PROFILE=json.dumps(dict(version='app-travel.1',travel_ids=[])),
                                 G2C_DEV_TYPED_MEMORY_PROFILE=json.dumps(profile),G2C_DEV_TYPED_MEMORY_URL=endpoint,G2C_DEV_MEMORY_ERASURE_URL=endpoint)
-                            value=dict(bundle=BUNDLE,launch=launch,subjects=subjects[case],option_label='self · pace · Long term / 长期',other_option_label='self · budget · Long term / 长期',
+                            value=dict(bundle=BUNDLE,case_id=case,launch=launch,subjects=subjects[case],option_label='self · pace · Long term / 长期',other_option_label='self · budget · Long term / 长期',
                                 text='我明确保存少辣的旅行偏好',other_text='这是另一条应当保留的记忆',occurred_at='时间不详')
                         elif path.path=='/size':
                             size='large' if query['value']=='standard' else 'accessibility-extra-extra-extra-large'
                             assert query['value'] in ('standard','max')
-                            subprocess.run(['xcrun','simctl','ui',args.simulator,'content_size',size],env=env,check=True);value={'status':'configured'}
+                            if not tls:subprocess.run(['xcrun','simctl','ui',args.simulator,'content_size',size],env=env,check=True)
+                            value={'status':'actual system maximum throughout case' if tls else 'configured'}
                         elif path.path=='/observed-save':
                             with lock:value={'item_id':observations[active['case']]['saved'][-1]['receipt']['item_id']}
                         elif path.path=='/local-proof':value=local_proof(active['case'])
                         else:self.send_response(404);self.end_headers();return
                         data=json.dumps(value,ensure_ascii=False).encode();self.send_response(200);self.send_header('Content-Type','application/json');self.end_headers();self.wfile.write(data)
-                control=ThreadingHTTPServer(('127.0.0.1',0),Control);threading.Thread(target=control.serve_forever,daemon=True).start()
-                original_size=subprocess.check_output(['xcrun','simctl','ui',args.simulator,'content_size'],env=env,text=True).strip()
+                control_token=random_secrets.token_urlsafe(32) if tls else None
+                def stage_input(request):
+                    query=parse_qs(urlsplit(request).query)
+                    if set(query)!={'case'} or query['case']!=[active['case']]:raise ValueError('Staging requires the active erasure case')
+                    native.stage(tokens[active['case']])
+                control=ThreadingHTTPServer((tls.host if tls else '127.0.0.1',0),
+                    authenticated_control(Control,control_token,stage_input) if tls else Control)
+                if tls:tls.secure_http_server(control)
+                threading.Thread(target=control.serve_forever,daemon=True).start()
+                if not tls:original_size=subprocess.check_output(['xcrun','simctl','ui',args.simulator,'content_size'],env=env,text=True).strip()
                 spec=importlib.util.spec_from_file_location('erasure_builder',ROOT/'scripts/check_ios_trip_confirm.py');module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
                 builder=object.__new__(module.XCTestDriver);builder.directory=output/'project';builder.directory.mkdir();builder.write_project(0)
-                (builder.directory/'G2CControl.swift').write_text((HERE/'MemoryErasureUITests.swift').read_text().replace('__CONTROL_URL__','http://127.0.0.1:'+str(control.server_port)))
+                control_url=('https://'+tls.host if tls else 'http://127.0.0.1')+':'+str(control.server_port)
+                (builder.directory/'G2CControl.swift').write_text((HERE/'MemoryErasureUITests.swift').read_text().replace('__CONTROL_URL__',control_url))
                 project=builder.directory/'G2CAcceptance.xcodeproj';pbx=project/'project.pbxproj';text=pbx.read_text().replace('space.go2china.foundation.local',BUNDLE).replace('space.go2china.foundation.control',BUNDLE+'.control')
                 entitlement=builder.directory/'Erasure.entitlements';entitlement.write_bytes(plistlib.dumps({'application-identifier':BUNDLE,'keychain-access-groups':[BUNDLE]}))
                 pbx.write_text(text.replace(json.dumps(str(ROOT/'ios/App/Development.entitlements')),json.dumps(str(entitlement))))
+                if tls:_,configuration_file,_=configure_project(project,tls,control_url,control_token,bundle=BUNDLE)
                 for test,case in cases.items():
-                    report['cases'][test]='RUNNING';save();result=output/(test+'.xcresult')
-                    command=['xcodebuild','-project',str(project),'-scheme','G2CControl','-configuration','Debug','-destination','platform=iOS Simulator,id='+args.simulator,
-                        '-derivedDataPath',str(build),'-resultBundlePath',str(result),'-skipPackageUpdates','-onlyUsePackageVersionsFromResolvedFile','-parallel-testing-enabled','NO',
-                        '-collect-test-diagnostics','never','ARCHS=arm64','ONLY_ACTIVE_ARCH=YES','CODE_SIGNING_ALLOWED=YES','CODE_SIGN_IDENTITY=-','-only-testing:G2CControl/MemoryErasureUITests/'+test,'test']
-                    run=subprocess.run(command,cwd=ROOT,env=env,capture_output=True,text=True,timeout=1200)
-                    log=run.stdout+run.stderr
-                    for secret in secrets:log=log.replace(secret,'<redacted-local-credential>')
-                    (output/(test+'.log')).write_text(log)
-                    if run.returncode:report['cases'][test]='FAIL';save();run.check_returncode()
-                    summary=json.loads(subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)],env=env,text=True))
-                    value={k:summary[k] for k in ('passedTests','failedTests','skippedTests')};assert value==dict(passedTests=1,failedTests=0,skippedTests=0)
+                    report['cases'][test]='RUNNING';save()
+                    if tls:
+                        active['case']=case
+                        detail=dict(status='RUNNING');report.setdefault('device_native',{})[test]=detail
+                        case_output=output/'device-native'/test;case_output.mkdir(parents=True,mode=0o700)
+                        native=DeviceNative(args.device,BUNDLE,project,configuration_file,build,ROOT,case_output,tokens[case],control_token,detail)
+                        selected=['MemoryErasureUITests/'+test]
+                        native.build_for_testing('Debug',selected,env)
+                        if args.prepare_only:
+                            detail['status']='PREPARED_EXECUTION_UNRUN';report['cases'][test]='UNRUN';save();continue
+                        summary=native.run('Debug',selected,env)
+                        value={k:summary[k] for k in ('passedTests','failedTests','skippedTests')}
+                    else:
+                        result=output/(test+'.xcresult')
+                        command=['xcodebuild','-project',str(project),'-scheme','G2CControl','-configuration','Debug','-destination','platform=iOS Simulator,id='+args.simulator,
+                            '-derivedDataPath',str(build),'-resultBundlePath',str(result),'-skipPackageUpdates','-onlyUsePackageVersionsFromResolvedFile','-parallel-testing-enabled','NO',
+                            '-collect-test-diagnostics','never','ARCHS=arm64','ONLY_ACTIVE_ARCH=YES','CODE_SIGNING_ALLOWED=YES','CODE_SIGN_IDENTITY=-','-only-testing:G2CControl/MemoryErasureUITests/'+test,'test']
+                        run=subprocess.run(command,cwd=ROOT,env=env,capture_output=True,text=True,timeout=1200)
+                        log=run.stdout+run.stderr
+                        for secret in secrets:log=log.replace(secret,'<redacted-local-credential>')
+                        (output/(test+'.log')).write_text(log)
+                        if run.returncode:report['cases'][test]='FAIL';save();run.check_returncode()
+                        summary=json.loads(subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)],env=env,text=True))
+                        value={k:summary[k] for k in ('passedTests','failedTests','skippedTests')};assert value==dict(passedTests=1,failedTests=0,skippedTests=0)
                     proof=local_proof(case);assert not proof['item_journals'] and proof['erasure_post_count']==1
                     if case=='account-en':assert not proof['other_journals'] and not proof['erasure_originals']
                     else:assert proof['other_journals'] and proof['erasure_originals']
                     report.setdefault('results',{})[test]=value;report.setdefault('proofs',{})[test]=proof;report['cases'][test]='PASS';save()
-                container=Path(subprocess.check_output(['xcrun','simctl','get_app_container',args.simulator,BUNDLE,'data'],env=env,text=True).strip())
-                for path in [*container.rglob('*'),*output.rglob('*')]:
-                    if path.is_file() and any(secret.encode() in path.read_bytes() for secret in secrets):raise AssertionError('credential leaked into App artifacts')
-                report.update(status='PASS',native='PASS',credential_scan='PASS')
+                if args.prepare_only:report.update(status='PREPARED_EXECUTION_UNRUN',native='UNRUN')
+                else:
+                    def scan(container):
+                        for path in [*container.rglob('*'),*output.rglob('*')]:
+                            if path.is_file() and any(secret.encode() in path.read_bytes() for secret in secrets):raise AssertionError('credential leaked into App artifacts')
+                    if tls:native.cleanup_input()
+                    with_container(scan)
+                    report.update(status='VERIFYING_CLEANUP',native='PASS',credential_scan='PASS')
             report['pg_stopped']=True
         report['task_credentials_destroyed']=True
+        assert report['head']==subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'App head changed during acceptance'
+        assert args.backend_head==subprocess.check_output(['git','rev-parse','HEAD'],cwd=backend,text=True).strip(),'backend head changed during acceptance'
+        assert all(hashlib.sha256((ROOT/name).read_bytes()).hexdigest()==digest for name,digest in report['source_hashes'].items()),'source changed during acceptance'
+        report['status']='PREPARED_EXECUTION_UNRUN' if args.prepare_only else 'PASS'
     except BaseException as error:
         report.update(status='FAIL',error_type=type(error).__name__);raise
     finally:
@@ -222,6 +281,20 @@ def main():
         if control:control.shutdown();control.server_close()
         if server:server.should_exit=True
         if thread:thread.join(timeout=10)
+        if tls:
+            try:
+                if native is not None:native.cleanup_input()
+            except Exception:
+                report['status']='FAIL';raise
+            finally:
+                (output/'project/M4ControlBootstrap.plist').unlink(missing_ok=True)
+                save()
+            if control_token is not None:
+                for path in output.rglob('*'):
+                    if path.is_file() and not path.is_symlink() and control_token.encode() in path.read_bytes():
+                        report['status']='FAIL';save();raise AssertionError('control credential in evidence export')
+            if thread and thread.is_alive():
+                report['status']='FAIL';save();raise RuntimeError('erasure host did not stop')
         if original_size:subprocess.run(['xcrun','simctl','ui',args.simulator,'content_size',original_size],env=env,check=True)
         if args.prepare_only and report['source_status']=='PASS':report.update(pg_stopped=True,task_credentials_destroyed=True)
         save()
