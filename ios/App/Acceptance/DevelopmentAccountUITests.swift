@@ -61,6 +61,11 @@ import Foundation
         if !button.isHittable { app.swipeUp() }
         XCTAssertTrue(button.isHittable, id)
         button.tap()
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        if id.hasPrefix("account.development.signin.") || id == "account.development.restore" {
+            deviceSession.waitForAppNetworkConsent()
+        }
+        #endif
     }
 
     private func account(_ language: String) {

@@ -36,6 +36,15 @@ import XCTest
         if alert.exists { _ = handle(alert) }
     }
 
+    func waitForAppNetworkConsent() {
+        // A fresh App asks only after its first sign-in/restore request, not
+        // necessarily at launch. Match the tested #398 permission path.
+        for _ in 0..<16 {
+            handleAppConsent()
+            Thread.sleep(forTimeInterval: 0.25)
+        }
+    }
+
     func data(_ path: String) async throws -> (Data, URLResponse) {
         if !prepared {
             test.addUIInterruptionMonitor(withDescription: "G2C local network and Wi-Fi only") {
