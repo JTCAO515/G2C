@@ -1,5 +1,5 @@
 """Real PG/RUN/Meter with native HTTP fixtures; no live key/network/cost."""
-import json,os,time
+import asyncio,json,os,time
 from pathlib import Path
 from datetime import datetime,timezone
 from unittest.mock import patch
@@ -24,13 +24,13 @@ from test_m4_real_services import sse,KEY,NOW
 
 
 def exercise(auth,conninfo):
-    subjects=['m4-synthetic-'+v for v in ('ok','limit','unknown','malformed','revoke')]
+    subjects=['m4-synthetic-'+v for v in ('ok','limit','unknown','malformed','late','revoke')]
     harness.dev_auth.init(auth,subjects)
     now=int(time.time());profiles={}
     for subject in subjects:
         value=dict(version='CJ-LOCAL-RUN@2',current=dict(meter=dict(unit='provider_call',budget=20,
             period_start=now-60,period_end=now+3600,max_steps=1 if subject.endswith('limit') else 8,
-            max_tools=4,max_output=30000,max_seconds=300),output_limits=dict(model=12000,tool=24000,memory=1000)),history=[])
+            max_tools=4,max_output=30000,max_seconds=1 if subject.endswith('late') else 300),output_limits=dict(model=12000,tool=24000,memory=1000)),history=[])
         path=auth.parent/(subject+'.json');path.write_text(json.dumps(value))
         profiles[subject]=(path,load_run_context(path));operator.provision_budget(conninfo,profiles[subject][1],subject)
     headers={s:dict(Authorization='Bearer '+harness.dev_auth.token(auth,s,30)) for s in subjects}
@@ -60,12 +60,25 @@ def exercise(auth,conninfo):
             if subject.endswith('malformed'):payload=payload.replace('PLACE-query.1','PLACE-query.invalid')
             return httpx.Response(200,stream=httpx.ByteStream(payload.encode()))
         model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),budget,transport=httpx.MockTransport(response))
+        writes=[]
+        if subject.endswith('late'):model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),budget)
+        class Writer:
+            def __init__(self):self.transport=self
+            def write(self,raw):writes.append(raw)
+            async def drain(self):pass
+            def abort(self):pass
+        async def handshake(*args,**kwargs):
+            await asyncio.sleep(1.1)
+            return None,Writer()
         services=RealServices(model,KEY,frozenset(subjects));tools=RealTools(services)
         db=LocalDatabase(conninfo,run_context=profiles[subject][1])
         with api(subject) as client,patch('cj_api.real_services.fetch_candidate',place):
             receipt=send(client,subject)
             before=len(tool_calls)
-            outcomes=run_worker.run_once(db,model,auth,tools_configuration=tools,real_services=services)
+            if subject.endswith('late'):
+                with patch('cj_agent.provider.asyncio.open_connection',handshake):
+                    outcomes=run_worker.run_once(db,model,auth,tools_configuration=tools,real_services=services)
+            else:outcomes=run_worker.run_once(db,model,auth,tools_configuration=tools,real_services=services)
             if subject.endswith('ok'):
                 assert outcomes[0].status=='completed',(outcomes,budget.inspect(),model.calls,len(tool_calls))
                 assert model.calls==2 and len(tool_calls)==before+1
@@ -79,6 +92,9 @@ def exercise(auth,conninfo):
             elif subject.endswith(('unknown','malformed')):
                 assert outcomes[0].status=='unknown' and model.calls==1 and len(tool_calls)==before
                 assert budget.inspect()[0]['state']==('INTENT' if subject.endswith('unknown') else 'RECEIVED')
+            elif subject.endswith('late'):
+                assert outcomes[0].status=='failed' and model.calls==1 and len(tool_calls)==before and not writes
+                assert budget.inspect()[0]['state']=='INTENT'
             else:
                 assert outcomes[0].status=='context_invalid' and model.calls==1 and len(tool_calls)==before
                 (auth/'invited.json').write_text(json.dumps(subjects))

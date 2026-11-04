@@ -122,6 +122,16 @@ class Boundaries(unittest.TestCase):
             list(p.invoke([],None,'different-attempt',receipt={},guard=lambda:True))
         self.assertEqual([r['state'] for r in self.budget.inspect()],['RECEIVED','INTENT'])
 
+    def test_structured_draft_decoded_key_is_rejected_before_any_output(self):
+        escaped=''.join('\\u%04x'%ord(c) for c in KEY)
+        draft='{"title":"'+escaped+'","items":["Synthetic Beijing"]}'
+        body=sse().replace(json.dumps('{"zh":"待核实。","en":"Needs verification."}'),json.dumps(draft))
+        output=[];receipt={}
+        with self.assertRaises(ProviderUnknown):
+            for part in self.provider(body).invoke([], 'structured draft JSON','draft-key',receipt=receipt,guard=lambda:True):output.append(part)
+        self.assertEqual(output,[]);self.assertEqual(receipt,{})
+        self.assertEqual(self.budget.inspect()[0]['state'],'INTENT')
+
     def test_raw_newlines_and_unterminated_lines_are_bounded(self):
         for raw in (b'\n'*400000+sse().encode(),b'x'*65537):
             with self.subTest(size=len(raw)),self.assertRaises(ProviderUnknown):
@@ -171,6 +181,20 @@ class Boundaries(unittest.TestCase):
         with patch('cj_agent.provider.asyncio.open_connection',AsyncMock(return_value=(Reader([headers,b'\n'],hang=True),writer))),self.assertRaises(ProviderUnknown):
             list(p.invoke([],None,'trickle-original',tools=TOOLS,receipt={},guard=lambda:True))
         self.assertTrue(writer.closed)
+
+    def test_done_marker_does_not_promote_truncated_http_body(self):
+        body=sse().encode()
+        response=b'HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nContent-Length: '+str(len(body)+500).encode()+b'\r\n\r\n'+body
+        class Reader:
+            def __init__(self):self.parts=iter([response,b''])
+            async def read(self,size):return next(self.parts,b'')
+        writer=SimpleNamespace(write=lambda raw:None,drain=AsyncMock(),transport=SimpleNamespace(abort=lambda:None))
+        provider=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),self.budget)
+        output=[];receipt={}
+        with patch('cj_agent.provider.asyncio.open_connection',AsyncMock(return_value=(Reader(),writer))),self.assertRaises(ProviderUnknown):
+            for part in provider.invoke([],None,'truncated',tools=TOOLS,receipt=receipt,guard=lambda:True):output.append(part)
+        self.assertEqual(output,[]);self.assertEqual(receipt,{})
+        self.assertEqual(self.budget.inspect()[0]['state'],'INTENT')
 
     def test_fact_dns_crossing_deadline_never_dispatches(self):
         services=RealServices(self.provider(sse()),KEY,frozenset({'m4-synthetic-one'}))

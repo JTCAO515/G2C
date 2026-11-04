@@ -314,9 +314,12 @@ class MeteredDashScopeProvider:
             with self._chunks(raw,guard) as chunks:
                 for line in _bounded_sse_lines(chunks,self.config.timeout_seconds):
                     self.authorization.check_date()
+                    if done:
+                        if line.strip() and not line.startswith(':'):raise ProviderUnknown('M4 data after stream terminator')
+                        continue
                     if not line.startswith('data:'):continue
                     data=line[5:].strip()
-                    if data=='[DONE]':done=True;break
+                    if data=='[DONE]':done=True;continue
                     value=json.loads(data,object_pairs_hook=reject_duplicates(ValueError,'duplicate_model_field'))
                     if type(value) is not dict:raise ProviderUnknown('M4 stream object required')
                     if self.config.api_key in json.dumps(value,ensure_ascii=False):
@@ -348,7 +351,7 @@ class MeteredDashScopeProvider:
                             if type(text) is not str:raise ProviderUnknown('M4 stream content invalid')
                             texts.append(text)
                             if self.config.api_key in ''.join(texts):raise ProviderUnknown('M4 model secret echo rejected')
-                            if not native_tools:
+                            if not native_tools and system is None:
                                 pending+=text
                                 keep=len(self.config.api_key)-1
                                 if len(pending)>keep:
@@ -371,6 +374,10 @@ class MeteredDashScopeProvider:
                 if not done or not finished or len(response_ids)!=1 or usage is None:
                     raise ProviderUnknown('M4 complete usage receipt unavailable')
                 result=None
+                if not native_tools and system is not None:
+                    structured=json.loads(''.join(texts),object_pairs_hook=reject_duplicates(ValueError,'duplicate_structured_field'))
+                    if self.config.api_key in json.dumps(structured,ensure_ascii=False):
+                        raise ProviderUnknown('M4 structured model secret echo rejected')
                 if native_tools:
                     if calls:
                         if texts and ''.join(texts).strip():raise ProviderUnknown('M4 mixed tool answer rejected')
@@ -387,6 +394,7 @@ class MeteredDashScopeProvider:
                               receipt_sha256=hashlib.sha256(next(iter(response_ids)).encode()).hexdigest(),actual_cost_cny='UNKNOWN')
                 self.authorization.finish(attempt,metadata);receipt.update(metadata)
                 if native_tools:yield encoded
+                elif system is not None:yield ''.join(texts)
                 elif pending:yield pending
         except (ProviderFailed,ProviderUnknown):raise
         except (httpx.HTTPError,httpx.StreamError,ValueError,TypeError,KeyError,UnicodeError):

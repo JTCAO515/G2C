@@ -96,9 +96,10 @@ class RegisteredExit(MeteredExitCore):
                 registration.kind,prepared_input.original_bytes,self.output_limits[registration.kind])
         except (OriginalStepOnly,RunCommitUnknown,DatabaseError,ValueError):
             raise BudgetUnknown('original operation preparation unavailable') from None
-        materialize=(prepared_input.materialize if prepared_input.bind_operation is None else
-                     lambda:prepared_input.bind_operation(operation,lambda:runs.valid(binding)))
-        return _PreparedCall(operation,materialize,stage,lambda:runs.valid(binding),receipt=prepared_input.receipt)
+        bind=(None if prepared_input.bind_operation is None else
+              lambda guard:prepared_input.bind_operation(operation,guard))
+        return _PreparedCall(operation,prepared_input.materialize,stage,lambda:runs.valid(binding),
+                             receipt=prepared_input.receipt,materialize_with_guard=bind)
 
     def prepare(self,runs,binding,step_key,messages,system,provider):
         registration_id='model.'+step_key

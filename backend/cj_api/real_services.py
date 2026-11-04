@@ -105,9 +105,10 @@ class RealTools:
         def bind(operation,guard):
             self.services.require_scope(operation.binding.scope)
             def admitted():
-                self.services.require_scope(operation.binding.scope)
                 if wrapped:provider._check()
-                return guard()
+                valid=guard()
+                self.services.require_scope(operation.binding.scope)
+                return valid
             def invoke():
                 self.services.require_scope(operation.binding.scope)
                 yield from self.services.model.invoke(inputs['messages'],inputs['system'],operation.command.attempt_id,
@@ -131,8 +132,9 @@ class RealTools:
         def bind(operation,guard):
             self.services.require_scope(operation.binding.scope)
             def admitted():
+                valid=guard()
                 self.services.require_scope(operation.binding.scope)
-                return guard()
+                return valid
             def invoke():
                 self.services.require_scope(operation.binding.scope)
                 budget.begin(operation.command.attempt_id,kind,original);budget.check_date()
