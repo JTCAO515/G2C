@@ -48,10 +48,11 @@ assert 'CJ_DEPLOY_RECOVERY_KEY_FILE' not in os.environ
 try:Path('/control/runtime-must-not-write').write_text('forbidden')
 except OSError:pass
 else:raise AssertionError('runtime can write recovery control')
-try:
- with psycopg.connect(host='/var/run/postgresql',dbname='postgres',user='cj_deploy_admin',connect_timeout=3):pass
-except psycopg.OperationalError:pass
-else:raise AssertionError('runtime can authenticate as administrator')
+for role in ('cj_deploy_admin','cj_local_cleanup'):
+ try:
+  with psycopg.connect(host='/var/run/postgresql',dbname='postgres',user=role,connect_timeout=3):pass
+ except psycopg.OperationalError:pass
+ else:raise AssertionError('runtime can authenticate as privileged role')
 with psycopg.connect(host='/var/run/postgresql',dbname='postgres',user='cj_m1_runtime',connect_timeout=3,autocommit=True) as conn:
  try:conn.execute('UPDATE cj.deployment_identity SET instance=gen_random_uuid()')
  except psycopg.errors.InsufficientPrivilege:pass
