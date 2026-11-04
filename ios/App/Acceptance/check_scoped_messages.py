@@ -607,6 +607,7 @@ try:
     if TLS:
      quarantine=Path(tempfile.mkdtemp(prefix='g2c-m4-private-native-'));quarantine.chmod(0o700)
      result=quarantine/(CASE+'.xcresult');r['private_native_result']=str(result);r['raw_native_bundle_shareable']=False;save()
+     r['native_artifacts']=dict(status='UNRUN: native process has not reached a terminal exit',raw_bundle_shareable=False);save()
     else:result=OUT/(CASE+'.xcresult')
     command=['xcodebuild','-project',str(project),'-scheme','G2CControl','-configuration','Debug','-destination',destination,'-derivedDataPath',str(BUILD),'-resultBundlePath',str(result),'-scmProvider','system','-skipPackageUpdates','-onlyUsePackageVersionsFromResolvedFile','-parallel-testing-enabled','NO','-collect-test-diagnostics','never','ARCHS=arm64','ONLY_ACTIVE_ARCH=YES','CODE_SIGNING_ALLOWED=YES','CODE_SIGN_IDENTITY=-','-only-testing:G2CControl/DevelopmentScopedMessageUITests/'+CASE,'test']
     if TLS:
@@ -624,6 +625,9 @@ try:
      r['device_build_exit']=built.returncode;save()
      if not r['build_native_artifacts']['status'].startswith('PASS'):raise RuntimeError('Device build log failed credential/export gate')
      built.check_returncode()
+     if frozen_sdk_key:
+      packaged=BUILD/'Build/Products/Debug-iphoneos/CJProbeApp.app/AMapLocalKey.plist'
+      if plistlib.loads(packaged.read_bytes()) != {'apiKey':frozen_sdk_key.value}:raise RuntimeError('Packaged SDK key differs from the frozen build input')
      deadline=time.monotonic()+1200;waiting=False
      while True:
       state=json.loads(subprocess.check_output(['xcrun','devicectl','device','info','lockState','--device',ARGS.device,'--json-output','-','--quiet','--timeout','20'],text=True))['result']

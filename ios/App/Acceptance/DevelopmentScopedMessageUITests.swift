@@ -66,14 +66,14 @@ import UIKit
         let alert=XCUIApplication(bundleIdentifier:"com.apple.springboard").alerts.firstMatch
         if alert.waitForExistence(timeout:3) {
             let message=alert.staticTexts.allElementsBoundByIndex.map(\.label).joined(separator:" ").lowercased()
-            if message.contains("本地网络") || message.contains("local network") {
+            if message.contains("g2c") && (message.contains("本地网络") || message.contains("local network")) {
                 let allow=alert.buttons.matching(NSPredicate(format:"label IN %@",["允许","Allow"])).firstMatch
                 XCTAssertTrue(allow.exists && allow.isHittable);allow.tap()
             }
         }
         addUIInterruptionMonitor(withDescription:"M4 local network permission only") { alert in
             let message=alert.staticTexts.allElementsBoundByIndex.map(\.label).joined(separator:" ").lowercased()
-            guard message.contains("本地网络") || message.contains("local network") else { return false }
+            guard message.contains("g2c") && (message.contains("本地网络") || message.contains("local network")) else { return false }
             let allow=alert.buttons.matching(NSPredicate(format:"label IN %@",["允许","Allow"])).firstMatch
             guard allow.exists && allow.isHittable else { return false }
             allow.tap();return true
