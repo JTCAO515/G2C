@@ -11,6 +11,7 @@ from pathlib import Path
 
 from smoke import summarize
 from report import report, markdown
+from gates import POLICY
 
 
 def read(path):return json.loads(path.read_bytes())
@@ -50,6 +51,12 @@ def main():
     result=dict(schema_version=1,smoke=smoke_summary,smoke_audit=smoke_audit,
         smoke_plan=smoke_plan,preflight_estimate=read(args.smoke/'estimate.json'),packages=read(args.smoke/'packages.json'),
         full_product_quality='UNRUN',full66=dict(planned_n=66,executed_n=0),
+        full_unrun_criteria_by_language={language:dict(planned_n=33,executed_n=0,
+            completion_rate=dict(status='UNRUN',value=None,minimum=POLICY['completion_rate_minimum']),
+            serious_errors=dict(status='UNRUN',observed_n=None,maximum=POLICY['serious_errors_maximum']),
+            first_body_p95=dict(status='UNRUN',value=None,maximum_seconds=POLICY['first_body_p95_maximum_seconds']),
+            full_answer_p95=dict(status='UNRUN',value=None,maximum_seconds=POLICY['full_answer_p95_maximum_seconds']))
+            for language in ('zh','en')},
         disposition='FAIL' if smoke_summary['status']=='FAIL' else 'UNKNOWN',
         history=dict(first_round='PR531 / candidate9ba2d4df',original_FAIL_retained=True,
             product_quality_disposition='Original60 RUN UNKNOWN were caused by adapter continuation defect, fixed by PR532; not used as product quality or averaged into this candidate'),
@@ -63,6 +70,7 @@ def main():
         if any(c['id']!=smoke_plan['candidate_id'] for c in plan['candidates']):
             raise ValueError('smoke_and_full_candidate_mismatch')
         full=report(plan,rows);audit,more=audit_batch(args.full,rows);attempts.extend(more)
+        result.pop('full_unrun_criteria_by_language')
         # Formal per-attempt report and constraints, not raw HTTP/process logs.
         result.update(full_product_quality=full['quality_acceptance']['evaluation_release_decision'],
             full66=dict(planned_n=66,executed_n=len(rows)),full_quality_acceptance=full['quality_acceptance'],
@@ -90,6 +98,9 @@ def main():
         '```json',json.dumps(result['budget_snapshots']['after'],ensure_ascii=False,indent=2),'```','',
         'Only development-Mac TCP protected snapshots at200ms polling were measured. api-beta overseas/China target-network phases remain UNRUN until B #30 readiness. Source links are excluded from first-body time; failures are not full answers. No real-user content, extra service, cloud operation, or authorization-file edit by C.',
         '', 'Engineering test/fixture PASS is separate from real smoke and product quality. Original raw HTTP/process files remain outside git; formal audit retains every executed attempt, request hash, receipt state and timing. Unexecuted planned cells are explicit UNRUN.'])
+    if args.full is None:
+        md.extend(['','| Product language | Completion ≥90% | Serious errors 0 | First body p95 ≤5s | Full answer p95 ≤90s |',
+            '|---|---|---|---|---|','| zh | UNRUN | UNRUN | UNRUN | UNRUN |','| en | UNRUN | UNRUN | UNRUN | UNRUN |'])
     args.output.mkdir(parents=True,exist_ok=False)
     (args.output/'report.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n')
     (args.output/'report.md').write_text('\n'.join(md+extra)+'\n')
