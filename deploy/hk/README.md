@@ -84,3 +84,11 @@ CJ_PG_BINDIR=/path/to/pg17/bin CJ_PG17_BINDIR=/path/to/pg17/bin uv run --locked 
 检查物理缺失、其他owner、原费用/UNKNOWN、旧应用/旧包/消费重用拒绝。
 镜像内 `python -B -m deploy.hk.runtime_check` 用全新临时合成签名键核验memfd，无网络或真实key读取。
 本机、真实云数据库、真实模型/高德、实际OSS下载恢复和App目标网络证据分别在PR/#30/#32记录。
+
+恢复operator仅接受32位十六进制 `--rehearsal-id`，目标固定在已核持久bind卷 `/rehearsals/ID`（宿主 `/srv/g2c-beta/rehearsals`，UID10001/0700）；拒绝tmpfs、容器overlay、缺挂载和符号链接逃逸。示例：
+
+```sh
+docker compose --env-file /srv/g2c-beta/compose.env -f /srv/g2c-beta/deploy/hk/compose.yaml run --rm --entrypoint python backup -B -m deploy.hk.recovery --base /backups/BASE_ID --safety /backups/SAFETY_ID --rehearsal-id ORIGINAL_32_HEX_ID
+```
+
+续结在同命令追加 `--resume`，仍用原ID；先由PG17 `pg_controldata`只读核system ID，wrong/unknown集群不得启停。失败不销毁目标。

@@ -81,3 +81,4 @@ services:
       - /srv/g2c-beta/supabase-ca.crt:/run/config/supabase-ca.crt:ro
       - /srv/g2c-beta/control:/control
       - /srv/g2c-beta/backups:/backups
+      - /srv/g2c-beta/rehearsals:/rehearsals

@@ -252,3 +252,44 @@ def test_recovery_preserves_existing_target_gate_before_any_source_failure(tmp_p
     with pytest.raises(ValueError,match='owned_fresh_PG17_cluster'):
         staging.require_isolated(connection,config)
     connection.execute.assert_not_called()
+
+
+def test_resume_wrong_data_system_id_never_starts_or_stops_postgres(tmp_path,monkeypatch):
+    from deploy.hk import staging
+    root=tmp_path/'original';root.mkdir(mode=0o700);data=root/'data';data.mkdir();(data/'PG_VERSION').write_text('17')
+    import pwd
+    role=pwd.getpwuid(os.getuid()).pw_name
+    birth=dict(version='g2c-beta-isolated-cluster.1',data=str(data.resolve()),socket='/private/tmp/g2c-socket-synthetic' if Path('/tmp').resolve()==Path('/private/tmp') else '/tmp/g2c-socket-synthetic',role=role,uid=os.getuid(),system_identifier='111')
+    # A real private socket directory, but a readonly control-file mismatch.
+    import tempfile
+    with tempfile.TemporaryDirectory(prefix='g2c-socket-',dir='/tmp') as socket:
+        birth['socket']=str(Path(socket).resolve())
+        monkeypatch.setattr(checkpoint,'verified',lambda path:birth)
+        calls=[]
+        def process(argv,**kwargs):
+            calls.append(argv)
+            assert Path(argv[0]).name=='pg_controldata'
+            return SimpleNamespace(stdout=b'Database system identifier: 222\n',returncode=0)
+        monkeypatch.setattr(staging.subprocess,'run',process)
+        with pytest.raises(ValueError,match='identity_changed_before_start'):
+            with staging.cluster(root=root,resume=True):raise AssertionError('wrong PG admitted')
+        assert len(calls)==1 and (data/'PG_VERSION').read_text()=='17'
+
+
+def test_hk_cli_requires_explicit_persistent_mount_and_fixed_identity(tmp_path,monkeypatch):
+    from deploy.hk import recovery
+    base=tmp_path/'rehearsals';base.mkdir(mode=0o700)
+    monkeypatch.setattr(recovery,'REHEARSALS',base)
+    original=Path.read_text
+    mount=[f'1 2 0:3 / {base} rw - tmpfs tmpfs rw\n']
+    def read(path,*args,**kwargs):
+        if path==Path('/proc/self/mountinfo'):return mount[0]
+        return original(path,*args,**kwargs)
+    monkeypatch.setattr(Path,'read_text',read)
+    identity='a'*32
+    with pytest.raises(ValueError,match='persistent_rehearsal_bind_mount'):recovery.persistent_target(identity)
+    mount[0]=f'1 2 8:1 /srv/g2c-beta/rehearsals {base} rw - ext4 /dev/vda1 rw\n'
+    assert recovery.persistent_target(identity)==base/identity
+    with pytest.raises(ValueError):recovery.persistent_target('../outside')
+    (base/identity).symlink_to(tmp_path/'other')
+    with pytest.raises(ValueError):recovery.persistent_target(identity)

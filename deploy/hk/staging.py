@@ -9,6 +9,7 @@ import os
 import hashlib
 import fcntl
 import stat
+import re
 from pathlib import Path
 import pwd
 import subprocess
@@ -76,16 +77,23 @@ def cluster(*,root=None,resume=False):
                 # roles for RLS checks on this private socket, never on cloud DB.
                 (data/'pg_hba.conf').write_text('local all all peer map=g2c_owned\nhost all all 0.0.0.0/0 reject\nhost all all ::0/0 reject\n')
                 (data/'pg_ident.conf').write_text(''.join('g2c_owned '+role+' '+database_role+'\n' for database_role in (role,'cj_m1_runtime','cj_local_cleanup')))
+            if (data/'PG_VERSION').read_text().strip()!='17':raise ValueError('original_PG17_directory_required')
+            control=run('pg_controldata',data).stdout.decode('ascii')
+            identifiers=re.findall(r'^Database system identifier:\s+(\d+)\s*$',control,re.M)
+            if len(identifiers)!=1 or birth is not None and identifiers[0]!=birth['system_identifier']:
+                raise ValueError('original_cluster_system_identity_changed_before_start')
+            started=owned=False
             status=run('pg_ctl','-D',data,'status',check=False).returncode
             if status==3:
-                run('pg_ctl','-D',data,'-l',root/'postgres.log','-o',f"-c listen_addresses='' -k {socket} -p 55884 -c unix_socket_permissions=0700",'-w','start')
+                run('pg_ctl','-D',data,'-l',root/'postgres.log','-o',f"-c listen_addresses='' -k {socket} -p 55884 -c unix_socket_permissions=0700",'-w','start');started=True
             elif status!=0:raise ValueError('original_cluster_status_unknown')
             try:
                 with psycopg.connect(**config) as connection:
                     actual=connection.execute("SELECT system_identifier::text,current_setting('data_directory'),current_setting('listen_addresses'),current_setting('server_version_num') FROM pg_catalog.pg_control_system()").fetchone()
-                if actual[1]!=str(data) or actual[2]!='' or actual[3][:2]!='17':
+                if actual[0]!=identifiers[0] or actual[1]!=str(data) or actual[2]!='' or actual[3][:2]!='17':
                     raise ValueError('owned_PG17_Unix_only_cluster_required')
                 if birth is not None and birth['system_identifier']!=actual[0]:raise ValueError('original_cluster_system_identity_changed')
+                owned=True
                 if durable and not resume:
                     checkpoint.atomic(root/'birth.json',dict(version='g2c-beta-isolated-cluster.1',system_identifier=actual[0],
                         data=str(data),socket=str(socket),role=role,uid=os.getuid()))
@@ -95,8 +103,9 @@ def cluster(*,root=None,resume=False):
             finally:
                 # Stop for a bounded operator container lifetime. Durable targets
                 # keep all data and signed birth proof, including on any failure.
-                run('pg_ctl','-D',data,'-m','fast','-w','stop')
-                socket.rmdir()
+                if started or owned:
+                    run('pg_ctl','-D',data,'-m','fast','-w','stop')
+                    socket.rmdir()
 
 
 def require_isolated(connection,config):
