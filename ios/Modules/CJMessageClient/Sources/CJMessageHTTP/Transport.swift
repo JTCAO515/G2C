@@ -5,6 +5,9 @@ import CJAPI
 import OpenAPIRuntime
 import OpenAPIURLSession
 import HTTPTypes
+#if DEBUG && G2C_M4_DEVICE_ACCEPTANCE && canImport(Security)
+import Security
+#endif
 
 public enum MessageHTTPFailure: Error { case invalidConfiguration, credentialsUnavailable, invalidResponse, redirectRejected, exchangeUnknown, productionActivationUnavailable }
 
@@ -455,7 +458,12 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         let config = URLSessionConfiguration.ephemeral
         config.httpCookieStorage = nil; config.urlCache = nil; config.urlCredentialStorage = nil
         config.timeoutIntervalForRequest = requestTimeout; config.timeoutIntervalForResource = resourceTimeout
-        let session = URLSession(configuration: config, delegate: RedirectBlocker(), delegateQueue: nil)
+        #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+        let delegate = try RedirectBlocker.localDeviceConfiguration()
+        #else
+        let delegate = RedirectBlocker()
+        #endif
+        let session = URLSession(configuration: config, delegate: delegate, delegateQueue: nil)
         self.session = session; transport = URLSessionTransport(configuration: .init(session: session)); self.preview=preview; self.messages=messages; self.memory=memory; self.memoryManagement=memoryManagement;self.typedMemory=typedMemory;self.needs=needs;self.tripEditing=tripEditing;self.feedback=feedback;self.memoryHistory=memoryHistory;self.accountCleanup=accountCleanup;self.memoryCandidates=memoryCandidates;self.memoryErasure=memoryErasure;self.memoryProjection=memoryProjection;self.deviceCleanup=deviceCleanup;self.deviceCompletion=deviceCompletion
     }
 
@@ -907,6 +915,38 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
 
 }
 private final class RedirectBlocker: NSObject, URLSessionTaskDelegate, Sendable {
+    #if DEBUG && G2C_M4_DEVICE_ACCEPTANCE && canImport(Security)
+    private let localServer: M4LocalServerTrust?
+    init(localServer: M4LocalServerTrust? = nil) { self.localServer = localServer }
+
+    #if os(iOS) && !targetEnvironment(simulator)
+    static func localDeviceConfiguration() throws -> RedirectBlocker {
+        let environment = ProcessInfo.processInfo.environment
+        guard let host = environment["G2C_M4_LOCAL_HOST"] else { return RedirectBlocker() }
+        guard let rawPort = environment["G2C_M4_LOCAL_PORT"], let port = Int(rawPort),
+              let url = URL(string: "https://" + host + ":" + rawPort),
+              MessageEndpoint.isM4LocalHTTPS(url, approvedHost: host),
+              let certificate = Bundle.main.url(forResource: "G2CM4LocalServer", withExtension: "cer") else {
+            throw MessageHTTPFailure.invalidConfiguration
+        }
+        let policy = try M4LocalServerTrust(host: host, port: port, certificateDER: Data(contentsOf: certificate))
+        return RedirectBlocker(localServer: policy)
+    }
+    #endif
+
+    func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge) async
+        -> (URLSession.AuthChallengeDisposition, URLCredential?) {
+        guard let localServer, challenge.protectionSpace.host == localServer.host else {
+            return (.performDefaultHandling, nil)
+        }
+        guard challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
+              let trust = challenge.protectionSpace.serverTrust,
+              localServer.accepts(trust, host: challenge.protectionSpace.host, port: challenge.protectionSpace.port) else {
+            return (.cancelAuthenticationChallenge, nil)
+        }
+        return (.useCredential, URLCredential(trust: trust))
+    }
+    #endif
     func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest) async -> URLRequest? { nil }
 }
 
