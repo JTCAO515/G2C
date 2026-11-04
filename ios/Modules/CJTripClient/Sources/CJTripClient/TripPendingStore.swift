@@ -2,6 +2,7 @@
 import Foundation
 import CryptoKit
 import Darwin
+import enum CJMessageClient.LocalJournalFile
 import CJMessageKeys
 
 func digest(_ data: Data) -> String { SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined() }
@@ -73,11 +74,7 @@ extension TripPending: TripJournalRecord { var storageID: String { actionID } }
         try validateDirectory()
         try validateBinding()
         try validateDirectory()
-        let fd = openat(directory, try name(pending.storageID), O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, 0o600)
-        guard fd >= 0 else { throw TripFailure.storageUnavailable }
-        defer { close(fd) }
-        let count = bytes.withUnsafeBytes { write(fd, $0.baseAddress, $0.count) }
-        guard count == bytes.count, fsync(fd) == 0, fsync(directory) == 0 else { throw TripFailure.storageUnavailable }
+        guard LocalJournalFile.createExclusive(try name(pending.storageID), in: directory, bytes: bytes) else { throw TripFailure.storageUnavailable }
         try validateDirectory()
     }
     func validateDirectory() throws {
@@ -90,7 +87,7 @@ extension TripPending: TripJournalRecord { var storageID: String { actionID } }
     }
     func validateInventory(_ ids: [String]) throws {
         try validateDirectory()
-        guard try ids.map(name).sorted() == FileManager.default.contentsOfDirectory(atPath: root.path).sorted() else { throw TripFailure.storageUnavailable }
+        guard try ids.map(name).sorted() == LocalJournalFile.recordNames(atPath: root.path).sorted() else { throw TripFailure.storageUnavailable }
     }
     /// Exact local journal only; do not decrypt, create keys or recurse into unknown entries.
     func clearLocalRecords() throws {
@@ -99,8 +96,9 @@ extension TripPending: TripJournalRecord { var storageID: String { actionID } }
         for name in names {
             let stem = name.dropLast(5)
             var entry = stat()
-            guard name.hasSuffix(".trip"), stem.count == 64,
-                  stem.utf8.allSatisfy({ (48...57).contains($0) || (97...102).contains($0) }),
+            let record = name.hasSuffix(".trip") && stem.count == 64 &&
+                stem.utf8.allSatisfy({ (48...57).contains($0) || (97...102).contains($0) })
+            guard record || LocalJournalFile.isTemporary(name),
                   fstatat(directory, name, &entry, AT_SYMLINK_NOFOLLOW) == 0,
                   entry.st_mode & S_IFMT == S_IFREG, entry.st_nlink == 1,
                   entry.st_uid == getuid() else { throw TripFailure.storageUnavailable }
@@ -149,7 +147,7 @@ extension TripPending: TripJournalRecord { var storageID: String { actionID } }
     func requireLegacyWritesAllowed() throws {
         try validateDirectory()
         for url in TripPendingStore.manualNamespaceDirectories(at: root) {
-            try TripPendingStore.requireEmptyDirectoryIfPresent(url, nonempty: .pendingRequiresQuery)
+            try TripPendingStore.requireEmptyDirectoryIfPresent(url, nonempty: .pendingRequiresQuery, ignoringTemporaryWrites: true)
         }
         try validateDirectory()
     }
@@ -194,7 +192,7 @@ extension TripPending: TripJournalRecord { var storageID: String { actionID } }
     }
     func pending() throws -> [Record] {
         try validateDirectory()
-        let names = try FileManager.default.contentsOfDirectory(atPath: root.path)
+        let names = try LocalJournalFile.recordNames(atPath: root.path)
         guard names.count <= maximumRecords else { throw TripFailure.storageUnavailable }
         let result = try names.sorted().map { filename in
             let stem = String(filename.dropLast(5))
@@ -209,7 +207,7 @@ extension TripPending: TripJournalRecord { var storageID: String { actionID } }
             return pending
         }
         try validateDirectory()
-        guard try names.sorted() == FileManager.default.contentsOfDirectory(atPath: root.path).sorted() else { throw TripFailure.storageUnavailable }
+        guard try names.sorted() == LocalJournalFile.recordNames(atPath: root.path).sorted() else { throw TripFailure.storageUnavailable }
         guard Set(result.map { Data($0.storageID.utf8) }).count == result.count else { throw TripFailure.storageUnavailable }
         return result
     }
@@ -263,12 +261,14 @@ extension TripPending: TripJournalRecord { var storageID: String { actionID } }
     static func manualNamespaceDirectories(at root: URL) -> [URL] {
         [root.appendingPathExtension("CJTripManual"), root.appendingPathExtension("CJTripManual.CJTripManualRejections")]
     }
-    static func requireEmptyDirectoryIfPresent(_ url: URL, nonempty: TripFailure) throws {
+    /// Key creation passes no flag: its namespace must be literally empty, temporary writes included.
+    static func requireEmptyDirectoryIfPresent(_ url: URL, nonempty: TripFailure, ignoringTemporaryWrites: Bool = false) throws {
         var st = stat()
         if lstat(url.path, &st) != 0 { guard errno == ENOENT else { throw TripFailure.storageUnavailable }; return }
         guard st.st_mode & S_IFMT == S_IFDIR, st.st_uid == getuid(), st.st_mode & 0o077 == 0,
               url.standardizedFileURL.path == url.resolvingSymlinksInPath().path else { throw TripFailure.storageUnavailable }
-        guard try FileManager.default.contentsOfDirectory(atPath: url.path).isEmpty else { throw nonempty }
+        let names = try FileManager.default.contentsOfDirectory(atPath: url.path)
+        guard names.allSatisfy({ ignoringTemporaryWrites && LocalJournalFile.isTemporary($0) }) else { throw nonempty }
     }
     /// Called before key creation, including when an older App profile is selected.
     public static func requireEmptyNamespace(directory: URL) throws {

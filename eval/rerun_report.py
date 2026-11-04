@@ -12,6 +12,7 @@ from pathlib import Path
 from smoke import summarize
 from report import report, markdown
 from gates import POLICY
+from fees import token_estimate
 
 
 def read(path):return json.loads(path.read_bytes())
@@ -39,6 +40,7 @@ def usage(attempts):
     return dict(call_attempts_by_kind=dict(kinds),complete_receipts=dict(Counter(v['kind'] for v in attempts if v['state']=='RECEIVED')),
         unknown_intents=dict(Counter(v['kind'] for v in attempts if v['state']=='INTENT')),
         model_tokens_from_complete_receipts=dict(tokens),conservative_hold_cny=dict(model=kinds['model'],tool=sum(kinds[k] for k in ('place','route','weather'))),
+        token_price_estimate=token_estimate(attempts),
         actual_billed_cny='UNKNOWN',note='Original intents/call attempts; not a claim that every uncertain request reached the vendor. No invoice supplied.')
 
 
