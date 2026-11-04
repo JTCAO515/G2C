@@ -242,7 +242,7 @@ import Foundation
         _=try await call("/release-display",caseID:f.case_id)
         let sentinel=NSPredicate(format:"label CONTAINS %@ OR value CONTAINS %@","SYNTHETIC_PRIVATE_A_ONLY","SYNTHETIC_PRIVATE_A_ONLY")
         XCTAssertEqual(app.staticTexts.matching(sentinel).count,0);XCTAssertEqual(app.textViews.matching(sentinel).count,0)
-        XCTAssertFalse(app.staticTexts.matching(identifier:"run.display.text").firstMatch.exists)
+        XCTAssertFalse(app.descendants(matching:.any).matching(identifier:"run.display.text").firstMatch.exists)
         XCTAssertFalse(app.textViews.matching(identifier:"assistant.originalText").firstMatch.exists)
         let proof=try JSONDecoder().decode(Proof.self,from:await call("/proof",caseID:f.case_id))
         XCTAssertEqual(proof.posts,1);XCTAssertEqual(proof.messages,1);XCTAssertEqual(proof.model_calls,1);XCTAssertEqual(proof.registered_operations,1)

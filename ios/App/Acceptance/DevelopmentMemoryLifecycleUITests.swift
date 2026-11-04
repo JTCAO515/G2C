@@ -282,9 +282,15 @@ import Foundation
     }
     func waitRun(_ expected: String) { status(expected,id:"run.display.status") }
     func runTextContains(_ expected: String, present: Bool) {
-        let text=app.staticTexts["run.display.text"]
-        if present { XCTAssertTrue(text.waitForExistence(timeout:10));XCTAssertTrue(text.label.contains(expected)) }
-        else { XCTAssertFalse(text.exists && text.label.contains(expected));let stream=app.staticTexts["run.stream.text"];XCTAssertFalse(stream.exists && stream.label.contains(expected)) }
+        let text=app.textViews["run.display.text"]
+        if present { XCTAssertTrue(text.waitForExistence(timeout:10));XCTAssertTrue((text.value as? String)?.contains(expected)==true) }
+        else {
+            for id in ["run.display.text","run.stream.text"] {
+                for element in app.descendants(matching:.any).matching(identifier:id).allElementsBoundByIndex {
+                    XCTAssertFalse(element.label.contains(expected) || (element.value as? String)?.contains(expected)==true)
+                }
+            }
+        }
     }
     func testRuntimeRecall() async throws {
         let f=try await fixture("testRuntimeRecall");defer { app?.terminate() };try await launch(f,language:"en",large:false);list("en")

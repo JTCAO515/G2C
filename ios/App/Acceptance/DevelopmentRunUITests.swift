@@ -108,9 +108,9 @@ import Foundation
         }
         send(fixture.prompt)
         if mode != "failure" && mode != "unknown" {
-            let partial = app.staticTexts["run.stream.text"]
+            let partial = app.textViews["run.stream.text"]
             XCTAssertTrue(partial.waitForExistence(timeout: 25))
-            let prefix = partial.label
+            let prefix = try XCTUnwrap(partial.value as? String)
             XCTAssertFalse(prefix.isEmpty)
             let before = try await proof(fixture)
             XCTAssertEqual(before.status, "running"); XCTAssertTrue(before.text.hasPrefix(prefix))
@@ -119,7 +119,7 @@ import Foundation
             if stopping {
                 tap("run.stop")
                 status(language == "en" ? "Cancelled" : "已取消")
-                XCTAssertEqual(app.staticTexts["run.display.text"].label, prefix)
+                XCTAssertEqual(app.textViews["run.display.text"].value as? String, prefix)
             }
             _ = try await call("/release", ["case": fixture.conversation])
             if !stopping { try await terminal(fixture, expected: "completed", language: language) }
@@ -160,7 +160,7 @@ import Foundation
         if mode == "draft_published" {
             let other = fixture.choice == "A" ? "B" : "A"
             try launch(fixture, language: language, account: other)
-            XCTAssertFalse(app.staticTexts["run.display.text"].exists)
+            XCTAssertFalse(app.descendants(matching:.any).matching(identifier:"run.display.text").firstMatch.exists)
             XCTAssertFalse(app.textViews["assistant.originalText"].exists)
             tap("assistant.serverHistory"); tap("history.loadConversations")
             XCTAssertTrue(app.staticTexts[language == "en" ? "The read returned no records." : "本次读取未返回记录。"].firstMatch.waitForExistence(timeout: 15))
@@ -213,7 +213,7 @@ import Foundation
         if kind != "expired" { _ = try await call("/release-original-read", ["case": fixture.conversation]) }
         tap("Assistant")
         XCTAssertFalse(app.staticTexts["run.budget.status"].exists)
-        XCTAssertFalse(app.staticTexts["run.display.text"].exists)
+        XCTAssertFalse(app.descendants(matching:.any).matching(identifier:"run.display.text").firstMatch.exists)
         XCTAssertFalse(app.textViews["assistant.originalText"].exists)
         capture("registered-original-" + kind)
         let after = try await proof(fixture, settled: true)
@@ -240,8 +240,8 @@ import Foundation
         let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format:"label BEGINSWITH %@ OR label == %@", statusLabel(expected, language), unavailable), object:value)
         XCTAssertEqual(XCTWaiter.wait(for:[ready], timeout:30), .completed)
         if value.label == unavailable {
-            XCTAssertFalse(app.staticTexts["run.display.text"].exists)
-            XCTAssertFalse(app.staticTexts["run.stream.text"].exists)
+            XCTAssertFalse(app.descendants(matching:.any).matching(identifier:"run.display.text").firstMatch.exists)
+            XCTAssertFalse(app.descendants(matching:.any).matching(identifier:"run.stream.text").firstMatch.exists)
             let card = app.descendants(matching:.any).matching(identifier:"run.draft.status").firstMatch
             XCTAssertFalse(card.label.contains("Budget exhausted")); XCTAssertFalse(card.label.contains("预算已耗尽"))
             capture("producer-read-unavailable-" + language)
@@ -344,9 +344,9 @@ import Foundation
         XCTAssertFalse(app.staticTexts.matching(NSPredicate(format:"label CONTAINS[c] 'tool executed' OR label CONTAINS '工具已执行' OR label CONTAINS '已执行工具'")).firstMatch.exists)
         if ["failed", "unknown"].contains(expectedStatus) {
             XCTAssertEqual(result.text, "")
-            XCTAssertFalse(app.staticTexts["run.display.text"].exists)
-            XCTAssertFalse(app.staticTexts["run.stream.text"].exists)
-        } else { XCTAssertEqual(app.staticTexts["run.display.text"].label, result.text) }
+            XCTAssertFalse(app.descendants(matching:.any).matching(identifier:"run.display.text").firstMatch.exists)
+            XCTAssertFalse(app.descendants(matching:.any).matching(identifier:"run.stream.text").firstMatch.exists)
+        } else { XCTAssertEqual(app.textViews["run.display.text"].value as? String, result.text) }
         let scroll = app.scrollViews.firstMatch
         for _ in 0..<8 {
             if scroll.frame.contains(value.frame) && value.isHittable { break }

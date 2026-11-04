@@ -74,12 +74,13 @@ import Foundation
         XCTAssertEqual(Array((field.value as? String ?? "").utf8),Array(text.utf8))
     }
     private func text(_ id: String,contains expected: String) {
-        let label = app.staticTexts.matching(identifier:id).firstMatch
+        let answer = id == "run.display.text" || id == "run.stream.text"
+        let label = answer ? app.textViews.matching(identifier:id).firstMatch : app.staticTexts.matching(identifier:id).firstMatch
         // Form sections are lazy, including the original-result footer. Read
         // actual visible content rather than relying on an offscreen snapshot.
         reveal(label,id:id)
         XCTAssertTrue(label.waitForExistence(timeout:15),id)
-        let value = XCTNSPredicateExpectation(predicate:NSPredicate(format:"label CONTAINS %@",expected),object:label)
+        let value = XCTNSPredicateExpectation(predicate:NSPredicate(format:answer ? "value CONTAINS %@" : "label CONTAINS %@",expected),object:label)
         let result = XCTWaiter.wait(for:[value],timeout:30)
         if result != .completed {
             let image = XCTAttachment(screenshot:app.screenshot());image.name = "failed-" + id;image.lifetime = .keepAlways;add(image)

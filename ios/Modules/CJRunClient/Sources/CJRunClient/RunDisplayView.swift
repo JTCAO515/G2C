@@ -46,12 +46,12 @@ extension RunDisplayState {
             RunReadableText(text:state.label(language)).frame(maxWidth:.infinity,alignment:.leading).accessibilityIdentifier("run.display.status")
             if case .loaded(let value) = state {
                 if showAnswerText && !value.snapshot.text.isEmpty {
-                    Text(verbatim: value.snapshot.text).textSelection(.enabled).accessibilityIdentifier("run.display.text")
+                    RunSelectableText(text: value.snapshot.text).accessibilityIdentifier("run.display.text")
                 }
                 RunReadableText(text:language.text("Snapshot at read time", "读取时的快照"),style:.caption)
             }
             if let progress = model.streamProgress {
-                if showAnswerText { Text(verbatim: progress.text).textSelection(.enabled).accessibilityIdentifier("run.stream.text") }
+                if showAnswerText { RunSelectableText(text: progress.text).accessibilityIdentifier("run.stream.text") }
                 Text(language.text("Received text · final state not yet verified", "已接收正文 · 最终状态尚未核实"))
                     .font(.caption)
             }
