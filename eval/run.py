@@ -12,6 +12,7 @@ from runtime import ROOT, private_database
 from cases import run_case, case_session
 from judge import judge
 from report import report, markdown
+from gates import POLICY
 
 
 def main():
@@ -26,7 +27,7 @@ def main():
     commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
     plan=dict(schema_version=1,sample_set_id='g2c-m4-synthetic-33',sample_set_version='2:'+sha256(raw).hexdigest(),
               provenance='Synthetic only, paired zh/en, eleven fixed holdout; original ten unchanged, no prompt/model tuning.',
-              evidence_layer='local',approved_thresholds=None,attempts=args.attempts,
+              evidence_layer='local',approved_thresholds=dict(POLICY),attempts=args.attempts,
               candidates=[dict(id=commit,commit=commit,config_version='eval-local-signed.1 / existing legacy and typed APIs; no product changes',
                                model_version='FakeProvider@'+commit,source_as_of='synthetic; no current external source')],
               networks=[dict(id='local-asgi',description='Local ASGI signed API/private Unix-socket PG; not overseas/China target network')],scenarios=scenarios)
