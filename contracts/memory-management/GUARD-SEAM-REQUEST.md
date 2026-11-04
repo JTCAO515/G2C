@@ -6,7 +6,7 @@ Historical gap status: reproduced on the original fixed input. Producer candidat
 
 Fixed input `513a2eb…` and current Publish `b33184f…` expose the same MEMORY tree `e959c42d23a3879fdcbbb62dd0dc362de696da01`. The original owner's newer `cf6f9138147780de9cd6cd3df86642b0aec6ec5b` adds `consume_current`, but no lifecycle action/query or trusted extension registration point. Its private guard state is not a consumer API.
 
-Run `python -B backend/memory_management/tests/guard_seam_probe.py` with existing Python3.11+; no PG or external effects. Actual output: [guard-seam-probe.txt](../../backend/memory_management/evidence/guard-seam-probe.txt).
+Run `python -B backend/memory_management/tests/guard_seam_probe.py` with existing Python3.11+; no PG or external effects. Actual output: [guard-seam-probe.txt](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/backend/memory_management/evidence/guard-seam-probe.txt).
 
 The probe uses the existing `TrustedPrincipal` and public `Service.with_operation`, validates an actual five-field CJ019 action through `Action.parse`, then confirms:
 

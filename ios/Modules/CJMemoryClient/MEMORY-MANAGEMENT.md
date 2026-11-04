@@ -6,7 +6,7 @@ not upgrade CJShell or another consumer. New SDK identity:
 `20aa50ed5c8449e6026155a6151f22041dee7fd4`, exact shared input
 `cc9e2c3ba1fb8fe7582e5e4664a924b1c6b93f71`. No shared tracked file was imported or
 edited. Official export/old 26 paths and 93 schemas/unchanged SDK lock/date helper:
-[evidence/management-sdk-input.json](evidence/management-sdk-input.json).
+[evidence/management-sdk-input.json](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/ios/Modules/CJMemoryClient/evidence/management-sdk-input.json).
 
 ## Interface and host restrictions
 
@@ -103,11 +103,11 @@ canonical SDK path](evidence/management-consumer-provenance.json).
 
 - PASS: 41 related module test methods: prior 30 regressions plus new 11 management
   cases, necessary because the two journals share the accepted file engine.
-  [Full related run](evidence/management-module-tests.txt).
+  [Full related run](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/ios/Modules/CJMemoryClient/evidence/management-module-tests.txt).
 - PASS: final 11 management methods after adding recovery UI; prior unchanged
-  business results reused. [Final run](evidence/management-final-tests.txt).
+  business results reused. [Final run](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/ios/Modules/CJMemoryClient/evidence/management-final-tests.txt).
 - PASS: actual single-20aa consumer graph and unsigned iOS Simulator SDK module
-  compile including the new views ([build](evidence/management-ios.txt)).
+  compile including the new views ([build](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/ios/Modules/CJMemoryClient/evidence/management-ios.txt)).
 
 New cases cover exact five-key UTF8/hash/source-version capture (including source
 version7), accepted-read/client/selection fences, durable originals before lost

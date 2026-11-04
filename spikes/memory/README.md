@@ -17,7 +17,7 @@
 在本目录执行，所有缓存、虚拟环境和合成数据都留在本目录：
 
 ```sh
-UV_CACHE_DIR="$PWD/.uv-cache" uv venv --python /opt/homebrew/bin/python3.14 .venv
+UV_CACHE_DIR="$PWD/.uv-cache" uv venv --python 3.14 .venv
 UV_CACHE_DIR="$PWD/.uv-cache" uv pip sync --python .venv/bin/python --require-hashes requirements.lock
 .venv/bin/python probe.py
 .venv/bin/python source_history_probe.py

@@ -15,7 +15,7 @@ key.namespace 与原 expected key ID；pending metadata 只能比较，不可选
 query/receipt hash 核对。Session token 或其他用途 key 均不能作 fallback。
 
 定向6/6 PASS（Feedback新3＋Needs原3），日志
-[evidence/feedback-key-purpose-tests.txt](evidence/feedback-key-purpose-tests.txt)。
+[evidence/feedback-key-purpose-tests.txt](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/contracts/auth/evidence/feedback-key-purpose-tests.txt)。
 覆盖旧字节、五用途/另一账号/另一环境七独立 key、错 key 解密/expected ID/operation
 拒绝、每个旧用途清理不影响 Feedback、Feedback 清理不影响其他 scope，以及
 unknown 创建/清理只读恢复原 key，各一次实际注入 add/delete。
