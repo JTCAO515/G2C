@@ -631,6 +631,14 @@ def group_hk_recovery():
 GROUPS.update(hk_recovery=group_hk_recovery)
 
 
+def group_hk_cloud_rehearsal():
+    pg=Path(os.environ.get('CJ_PG17_BINDIR',bindir()))
+    return script('scripts/hk_cloud_rehearsal_local_check.py',env=dict(clean_env(),CJ_PG_BINDIR=str(pg),PATH=str(pg)+os.pathsep+os.environ['PATH']))
+
+
+GROUPS.update(hk_cloud_rehearsal=group_hk_cloud_rehearsal)
+
+
 def main(argv):
     if argv[:1] == ['--shard']:
         index, count = map(int, argv[1].split('/'))

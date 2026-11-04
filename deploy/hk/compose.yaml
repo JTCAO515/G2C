@@ -82,3 +82,16 @@ services:
       - /srv/g2c-beta/control:/control
       - /srv/g2c-beta/backups:/backups
       - /srv/g2c-beta/rehearsals:/rehearsals
+  rehearsal:
+    <<: *application
+    image: ${CJ_BETA_OPERATOR_IMAGE:?exact reviewed operator image required}
+    entrypoint: [python, -B, -m, deploy.hk.cloud_rehearsal]
+    restart: "no"
+    profiles: [operator]
+    env_file:
+      - /srv/g2c-beta/common.env
+    volumes:
+      - /srv/g2c-beta/operator.env:/run/secrets/operator.env:ro
+      - /srv/g2c-beta/rehearsal.env:/run/secrets/rehearsal.env:ro
+      - /srv/g2c-beta/supabase-ca.crt:/run/config/supabase-ca.crt:ro
+      - /srv/g2c-beta/control:/control
