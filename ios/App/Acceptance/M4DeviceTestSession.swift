@@ -46,6 +46,10 @@ import XCTest
     }
 
     func data(_ path: String) async throws -> (Data, URLResponse) {
+        try await data(from: control.appendingPathComponent(String(path.dropFirst())))
+    }
+
+    func data(from url: URL) async throws -> (Data, URLResponse) {
         if !prepared {
             test.addUIInterruptionMonitor(withDescription: "G2C local network and Wi-Fi only") {
                 [weak self] alert in self?.handle(alert) ?? false
@@ -63,16 +67,25 @@ import XCTest
             }
         }
         defer { permissions.cancel() }
-        let url = control.appendingPathComponent(String(path.dropFirst()))
         let (denied, response) = try await M4DeviceControl.unauthenticatedData(from: url)
         XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 403)
         XCTAssertFalse(String(decoding: denied, as: UTF8.self).contains("accounts"))
         return try await M4DeviceControl.data(from: url)
     }
 
-    func stageAccounts() async throws {
-        let (_, response) = try await data("/m4-stage-accounts")
+    func stageAccounts(caseID: String? = nil) async throws {
+        var components = URLComponents(url: control.appendingPathComponent("m4-stage-accounts"),
+                                       resolvingAgainstBaseURL: false)!
+        if let caseID { components.queryItems = [.init(name: "case", value: caseID)] }
+        let (_, response) = try await data(from: XCTUnwrap(components.url))
         XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
+    }
+
+    static func requireLargestSystemFont() {
+        print("M4_RUNNER_CONTENT_SIZE", UIApplication.shared.preferredContentSizeCategory.rawValue)
+        XCTAssertEqual(UIApplication.shared.preferredContentSizeCategory,
+                       .accessibilityExtraExtraExtraLarge,
+                       "Set the approved device's actual system text size before this case")
     }
 
     func applicationEnvironment(endpoint: String, injecting: Bool) throws -> [String: String] {

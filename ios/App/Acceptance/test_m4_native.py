@@ -20,10 +20,10 @@ class ControlAuthorizationTests(unittest.TestCase):
                 observed.append('fixture')
                 self.send_response(200); self.end_headers(); self.wfile.write(b'fixture')
         server = ThreadingHTTPServer(('127.0.0.1', 0), authenticated_control(
-            Base, 'SYNTHETIC-CONTROL', lambda: observed.append('stage')))
+            Base, 'SYNTHETIC-CONTROL', lambda path: observed.append(path)))
         thread = threading.Thread(target=server.serve_forever); thread.start()
         try:
-            for path in ('/config', '/offline', '/m4-stage-accounts'):
+            for path in ('/config', '/offline', '/m4-stage-accounts', '/m4-stage-accounts?case=SYNTHETIC'):
                 for value in ('', 'SYNTHETIC-WRONG', '\u00e9'):
                     connection = http.client.HTTPConnection('127.0.0.1', server.server_port)
                     connection.request('GET', path, headers={'X-G2C-M4-Control': value})
@@ -31,12 +31,12 @@ class ControlAuthorizationTests(unittest.TestCase):
                     self.assertEqual(response.status, 403)
                     self.assertNotIn(b'accounts', response.read()); connection.close()
             self.assertEqual(observed, [])
-            for path in ('/config', '/m4-stage-accounts'):
+            for path in ('/config', '/m4-stage-accounts?case=SYNTHETIC'):
                 connection = http.client.HTTPConnection('127.0.0.1', server.server_port)
                 connection.request('GET', path, headers={'X-G2C-M4-Control': 'SYNTHETIC-CONTROL'})
                 response = connection.getresponse(); self.assertEqual(response.status, 200)
                 response.read(); connection.close()
-            self.assertEqual(observed, ['fixture', 'stage'])
+            self.assertEqual(observed, ['fixture', '/m4-stage-accounts?case=SYNTHETIC'])
         finally:
             server.shutdown(); server.server_close(); thread.join()
 

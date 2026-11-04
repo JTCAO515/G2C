@@ -162,7 +162,7 @@ def main():
             control_token = secrets.token_urlsafe(32) if tls else None
             native = None
             control = ThreadingHTTPServer((tls.host if tls else '127.0.0.1', 0),
-                authenticated_control(Control, control_token, lambda: native.stage()) if tls else Control)
+                authenticated_control(Control, control_token, lambda _: native.stage()) if tls else Control)
             if tls: tls.secure_http_server(control)
             threading.Thread(target=control.serve_forever, daemon=True).start()
             start()

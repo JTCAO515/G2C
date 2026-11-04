@@ -10,6 +10,7 @@ import plistlib
 import subprocess
 import tempfile
 import time
+from urllib.parse import urlsplit
 
 from m4_artifacts import export_native_logs, redact
 from m4_device import copy_accounts, discard_staged_accounts, scan_app_container
@@ -22,9 +23,9 @@ def authenticated_control(base, token, stage):
             if not hmac.compare_digest(supplied.encode(), token.encode()):
                 self.send_response(403); self.end_headers(); self.wfile.write(b'forbidden')
                 return
-            if self.path == '/m4-stage-accounts':
+            if urlsplit(self.path).path == '/m4-stage-accounts':
                 try:
-                    stage()
+                    stage(self.path)
                 except Exception:
                     self.send_error(500, 'device input staging failed')
                     return
@@ -88,10 +89,11 @@ class DeviceNative:
         if result.returncode:
             raise RuntimeError('Approved device App install failed')
 
-    def stage(self):
+    def stage(self, tokens=None):
         # Set intent first: a failed copy can still leave an input on device.
         self.staging_attempted = True
-        copy_accounts(self.device, self.bundle, self.private, self.tokens)
+        copy_accounts(self.device, self.bundle, self.private,
+                      self.tokens if tokens is None else tokens)
 
     def run(self, configuration, tests, env):
         self.configuration = configuration
@@ -136,8 +138,9 @@ class DeviceNative:
         # During Release the unconfigured product must ignore the staged file.
         # Remove that exact operator input before scanning other App data.
         self.cleanup_input()
-        scan_app_container(self.device, self.bundle,
-                           self.output / (configuration + '-app-data'), self.tokens.values())
+        container = self.output / (configuration + '-app-data')
+        scan_app_container(self.device, self.bundle, container, self.tokens.values())
+        return container
 
     def cleanup_input(self):
         if not self.staging_attempted:

@@ -90,6 +90,27 @@ Debug 包的专用丢弃入口回收这一个输入，再扫描 App 文件，不
 凭据清理、服务/私有 PG 停止及源码/head 核对完成后才写终态。指定设备离线时可先
 构建，设备实际执行、系统最大字号和 VoiceOver 仍须分别记录，不能由构建替代。
 
+### 需求领域的指定真机入口
+
+`check_needs.py` 同样支持 `--device`、`--local-tls` 和 `--prepare-only`，继续要求
+显式 `--run-context`。可按原 `--case` 选择中英、原动作恢复、账号迟到、进程时区或
+Release 关闭用例；不改变原签名 API、受限 PG、正式 NEEDS worker 和后端证明。
+一次性凭据只允许为已 prepare 的当前 case 暂存；不能把其他 case 的输入注入 App。
+
+```sh
+CJ_PG_BINDIR='<PostgreSQL-17-bin>' uv run --locked python -B \
+  ios/App/Acceptance/check_needs.py --device '<approved-iPhone-UDID>' \
+  --local-tls '<approved-external-profile/operator.json>' \
+  --run-context '<explicit-context.json>' --case testEnglish \
+  --output '<new-external-directory>' --build-dir '<external-build-cache>'
+```
+
+设备 `testChineseLarge` 不设置字号启动覆盖，先核对 Runner 的有效字号为最大
+无障碍字号；实际系统设置与 App 显示的记录仍需填 DEVICE-RECORD，单个 Runner
+读数不单独证明产品最大字号已验收。模拟器保留原字号参数与完整 AX 断言。
+`testDeviceTimezones` 仍核对 App 进程 TZ 与中国当地字段，不冒称已切换 iPhone 的
+系统时区；真实系统语言/时区切换和 VoiceOver 继续在 #29 独立记录。
+
 ## #4 的候选矩阵
 
 包版本以当前锁文件为准；Swift OpenAPI Generator 的真实生成与结构化错误/流式
