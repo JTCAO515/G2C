@@ -56,28 +56,41 @@ import UIKit
         XCTAssertEqual((response as? HTTPURLResponse)?.statusCode,200)
         return data
     }
+    #if G2C_M4_DEVICE_ACCEPTANCE
+    private func handleNetworkConsent(_ alert:XCUIElement) -> Bool {
+        let message=alert.staticTexts.allElementsBoundByIndex.map(\.label).joined(separator:" ").lowercased()
+        guard message.contains("g2c") else { return false }
+        let labels:[String]
+        if message.contains("无线数据") || message.contains("wireless data") {
+            labels=["仅限无线局域网","WLAN Only","Wi-Fi Only"]
+        } else if message.contains("本地网络") || message.contains("local network") {
+            labels=["允许","Allow"]
+        } else { return false }
+        let button=alert.buttons.matching(NSPredicate(format:"label IN %@",labels)).firstMatch
+        guard button.exists && button.isHittable else { return false }
+        button.tap();return true
+    }
+    #endif
     private func prepare(_ name:String) async throws -> Fixture {
         continueAfterFailure=false;executionTimeAllowance=900
         #if G2C_M4_DEVICE_ACCEPTANCE
+        addUIInterruptionMonitor(withDescription:"G2C local network and Wi-Fi data only") { [weak self] alert in
+            self?.handleNetworkConsent(alert) ?? false
+        }
         let runner=XCUIApplication(bundleIdentifier:try XCTUnwrap(Bundle.main.bundleIdentifier))
         runner.activate()
         print("M4_RUNNER_APPLICATION_STATE",UIApplication.shared.applicationState.rawValue)
         try M4DeviceControl.triggerLocalNetworkAlert()
         let alert=XCUIApplication(bundleIdentifier:"com.apple.springboard").alerts.firstMatch
-        if alert.waitForExistence(timeout:3) {
-            let message=alert.staticTexts.allElementsBoundByIndex.map(\.label).joined(separator:" ").lowercased()
-            if message.contains("g2c") && (message.contains("本地网络") || message.contains("local network")) {
-                let allow=alert.buttons.matching(NSPredicate(format:"label IN %@",["允许","Allow"])).firstMatch
-                XCTAssertTrue(allow.exists && allow.isHittable);allow.tap()
+        if alert.waitForExistence(timeout:3) { _=handleNetworkConsent(alert) }
+        let permissions=Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                if alert.exists { _=self?.handleNetworkConsent(alert) }
+                do { try await Task.sleep(for:.milliseconds(500)) }
+                catch { return }
             }
         }
-        addUIInterruptionMonitor(withDescription:"M4 local network permission only") { alert in
-            let message=alert.staticTexts.allElementsBoundByIndex.map(\.label).joined(separator:" ").lowercased()
-            guard message.contains("g2c") && (message.contains("本地网络") || message.contains("local network")) else { return false }
-            let allow=alert.buttons.matching(NSPredicate(format:"label IN %@",["允许","Allow"])).firstMatch
-            guard allow.exists && allow.isHittable else { return false }
-            allow.tap();return true
-        }
+        defer { permissions.cancel() }
         var probe=URLComponents(string:control+"/prepare")!
         probe.queryItems=[.init(name:"case",value:name)]
         let (denied,reply)=try await M4DeviceControl.unauthenticatedData(from:XCTUnwrap(probe.url))
@@ -181,6 +194,13 @@ import UIKit
         tap(language=="en" ? "Memory" : "记忆");tap("memory.account")
         if restore { tap("account.development.restore") }
         else { tap("account.development.signout");tap("account.development.signin.A") }
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        let alert=XCUIApplication(bundleIdentifier:"com.apple.springboard").alerts.firstMatch
+        for _ in 0..<16 {
+            if alert.exists { _=handleNetworkConsent(alert) }
+            Thread.sleep(forTimeInterval:0.25)
+        }
+        #endif
         text("account.development.status",contains:try XCTUnwrap(f.subjects["A"]))
         tap(language=="en" ? "Assistant" : "助手")
     }
