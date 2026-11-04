@@ -4,7 +4,7 @@ Existing batch is read-only, even if interrupted. No --root, arbitrary prompts,
 endpoint, model, transport or identity override. Secrets stay in process memory.
 """
 import argparse
-from contextlib import redirect_stdout,contextmanager
+from contextlib import redirect_stdout,contextmanager,nullcontext
 from datetime import datetime,timezone
 import fcntl
 import hashlib
@@ -41,25 +41,28 @@ def verification_passed(batch,attempts):
     A model-only answer, a different tool, an incomplete follow-up or a failed
     anti-redispatch check is not evidence that native continuation worked.
     """
-    required={'place-zh':('tool.place','https://restapi.amap.com/v3/place/text')}
+    required={'place-zh':('tool.place',{'https://restapi.amap.com/v3/place/text':1})}
     if batch.get('verification_profile','native-1')=='native-1':
-        required['weather-en']=('tool.weather','https://restapi.amap.com/v3/weather/weatherInfo')
+        required['weather-en']=('tool.weather',{'https://restapi.amap.com/v3/weather/weatherInfo':1})
+    elif batch.get('verification_profile')=='route-diagnostics-1':
+        required={'route-zh':('tool.place',{'https://restapi.amap.com/v3/place/text':2,'https://restapi.amap.com/v3/direction/walking':1})}
     elif batch.get('verification_profile') not in ('base-search-1','native-diagnostics-1'):return False
     if batch.get('state')!='COMPLETE' or set(batch.get('cases',{}))!=set(required):return False
     receipts={item['attempt_id']:item for item in attempts}
-    for name,(registration,endpoint) in required.items():
+    for name,(registration,endpoints) in required.items():
         case=batch['cases'][name];display=case.get('display',{})
         if (case.get('state')!='completed' or display.get('run_id')!=case.get('run_id')
                 or display.get('message_id')!=case.get('message_id') or display.get('status')!='completed'
                 or display.get('text_state')!='complete' or type(display.get('answer_chars')) is not int or display['answer_chars']<1):return False
-        tools=[];models=[]
+        tools=[];models=[];found={}
         for operation in case.get('operations',[]):
             if operation.get('run_id')!=case['run_id']:return False
             record=receipts.get(operation['attempt_id'],{})
             if record.get('state')!='RECEIVED' or type(record.get('receipt')) is not dict:return False
             if operation['registration_id'].startswith('tool.'):
-                if operation['registration_id']!=registration or record['receipt'].get('endpoint')!=endpoint:return False
-                expected='ok' if name=='place-zh' else 'observed'
+                if operation['registration_id']!=registration or record['receipt'].get('endpoint') not in endpoints:return False
+                endpoint=record['receipt']['endpoint'];found[endpoint]=found.get(endpoint,0)+1
+                expected='ok' if name in ('place-zh','route-zh') else 'observed'
                 if record['receipt'].get('result_status')!=expected:return False
                 key=re.fullmatch(r'tool\.([0-7])\.([0-9]+)',operation['operation_key'])
                 if key is None:return False
@@ -69,7 +72,7 @@ def verification_passed(batch,attempts):
                 if key is None or (r.get('model_id'),r.get('endpoint'),r.get('region'))!=(M4_MODEL,M4_BASE,'cn-beijing') or type(r.get('usage')) is not dict:return False
                 models.append(int(key[1]))
             else:return False
-        if not tools or not models or max(models)<=max(tools):return False
+        if not tools or not models or max(models)<=max(tools) or found!=endpoints:return False
     return True
 
 
@@ -87,6 +90,32 @@ def save(path,value):
 
 
 @contextmanager
+def record_place_responses(root,batch,batch_path):
+    """Only the returned real transport response, after its secret-body check.
+
+    This observer never calls another endpoint, alters parser data, or resends.
+    The synthetic public map bytes stay private/outside Git for original replay
+    through a corrected parser; the product's original RUN status is immutable.
+    """
+    from cj_api import real_services
+    original=real_services.fetch_candidate
+    folder=root/'provider';folder.mkdir(mode=0o700)
+    async def record(config,request,credentials,**kwargs):
+        result=await original(config,request,credentials,**kwargs)
+        if result.state=='received' and result.response.http_status==200:
+            response=result.response;name=request.binding_digest+'.json'
+            with (folder/name).open('xb') as output:
+                os.fchmod(output.fileno(),0o600);output.write(response.body);output.flush();os.fsync(output.fileno())
+            batch['provider_responses'].append(dict(path=request.path,binding_digest=request.binding_digest,
+                response_sha256=hashlib.sha256(response.body).hexdigest(),response_bytes=len(response.body),
+                http_status=response.http_status,request_ref=request.request_ref,started_at=request.started_at.isoformat(),
+                received_at=response.received_at.isoformat(),file='provider/'+name))
+            save(batch_path,batch)
+        return result
+    with patch.object(real_services,'fetch_candidate',record):yield
+
+
+@contextmanager
 def provider_diagnostics():
     messages=[]
     class Sink(logging.Handler):
@@ -96,11 +125,11 @@ def provider_diagnostics():
     finally:logger.removeHandler(sink)
 
 
-def run_batch(*,resume_setup=False,verification=False,basic_verification=False,diagnostic_verification=False):
+def run_batch(*,resume_setup=False,verification=False,basic_verification=False,diagnostic_verification=False,route_diagnostic=False):
     STATE.mkdir(parents=True,exist_ok=True,mode=0o700)
     with (STATE/'acceptance.lock').open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX)
-        tag='verification-native-diagnostics-1' if diagnostic_verification else 'verification-base-search-1' if basic_verification else 'verification-native-1' if verification else 'acceptance'
+        tag='verification-route-diagnostics-1' if route_diagnostic else 'verification-native-diagnostics-1' if diagnostic_verification else 'verification-base-search-1' if basic_verification else 'verification-native-1' if verification else 'acceptance'
         path=STATE/(tag+'.json')
         budget=AuthorizationBudget(STATE);budget.check_date()
         previous=None
@@ -131,9 +160,11 @@ def run_batch(*,resume_setup=False,verification=False,basic_verification=False,d
             }
         if basic_verification:cases={'place-zh':'合成基础地点验证：使用place_search查询北京故宫，city北京，page1/page_size1，只请求基础资料。根据结果说明地点名称、坐标与来源，未知详情明确待核实，不写行程。'}
         if diagnostic_verification:cases={'place-zh':'合成接口诊断D1：使用place_search查询北京天安门，city北京，page1/page_size1；仅需一次基础地点查询，再根据返回的地点、来源与未知项答复，不调用路线，不写行程。'}
+        if route_diagnostic:cases={'route-zh':'合成路线诊断R1：用place_search分别查询北京北海公园与恭王府，city北京，各page1/page_size1；再只用实际返回POI ID、GCJ-02原坐标和poi_center调用一次walking place_route。根据工具结果说明查询时估计、来源和未知项，不重试相同查询，不写行程。'}
         value=dict(state='INTENT',model_id=M4_MODEL,endpoint=M4_BASE,region='cn-beijing',
             packages={k:version(k) for k in ('httpx','psycopg','fastapi','pydantic')},cases={k:dict(state='PLANNED') for k in cases})
-        if diagnostic_verification:value['verification_profile']='native-diagnostics-1'
+        if route_diagnostic:value.update(verification_profile='route-diagnostics-1',provider_responses=[])
+        elif diagnostic_verification:value['verification_profile']='native-diagnostics-1'
         elif basic_verification:value['verification_profile']='base-search-1'
         elif verification:value['verification_profile']='native-1'
         if previous is not None:value['setup_recovery']='explicit_login_keychain_after_proven_zero_dispatch'
@@ -141,7 +172,7 @@ def run_batch(*,resume_setup=False,verification=False,basic_verification=False,d
         root=STATE/(tag+'-pg')
         if root.exists():raise ValueError('original_private_acceptance_cluster_exists')
         model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,keychain('g2c-dashscope')),budget)
-        subject='m4-synthetic-real-services-diagnostic1' if diagnostic_verification else 'm4-synthetic-real-services-base1' if basic_verification else 'm4-synthetic-real-services-verify1' if verification else 'm4-synthetic-real-services'
+        subject='m4-synthetic-real-services-route1' if route_diagnostic else 'm4-synthetic-real-services-diagnostic1' if diagnostic_verification else 'm4-synthetic-real-services-base1' if basic_verification else 'm4-synthetic-real-services-verify1' if verification else 'm4-synthetic-real-services'
         services=RealServices(model,keychain('g2c-amap-web-key'),frozenset({subject}));tools=RealTools(services)
         output=io.StringIO()
         try:
@@ -152,8 +183,8 @@ def run_batch(*,resume_setup=False,verification=False,basic_verification=False,d
                     conninfo=root/'conn.json';conninfo.write_text(json.dumps(config));conninfo.chmod(0o600)
                     now=int(time.time());context_path=root/'run.json'
                     context_path.write_text(json.dumps(dict(version='CJ-LOCAL-RUN@2',current=dict(meter=dict(
-                        unit='provider_call',budget=4 if diagnostic_verification else 80,period_start=now-60,period_end=now+3600,
-                        max_steps=4 if diagnostic_verification else 24,max_tools=1 if diagnostic_verification else 12,
+                        unit='provider_call',budget=10 if route_diagnostic else 4 if diagnostic_verification else 80,period_start=now-60,period_end=now+3600,
+                        max_steps=10 if route_diagnostic else 4 if diagnostic_verification else 24,max_tools=3 if route_diagnostic else 1 if diagnostic_verification else 12,
                         max_output=65536,max_seconds=600),output_limits=dict(model=12000,tool=48000,memory=1000)),history=[])))
                     context=load_run_context(context_path);local_run_context.provision_budget(conninfo,context,subject)
                     db=LocalDatabase(conninfo,run_context=context)
@@ -162,7 +193,7 @@ def run_batch(*,resume_setup=False,verification=False,basic_verification=False,d
                     headers=dict(Authorization='Bearer '+dev_auth.token(auth,subject,30))
                     with TestClient(app) as client:
                         for case,prompt in cases.items():
-                            case_tools=(RealTools(services,allowed_native=frozenset({'place_search','place_route'})) if diagnostic_verification else
+                            case_tools=(RealTools(services,allowed_native=frozenset({'place_search','place_route'})) if diagnostic_verification or route_diagnostic else
                                         RealTools(services,allowed_native=frozenset({'place_search' if case=='place-zh' else 'weather'}))
                                         if verification or basic_verification else tools)
                             cid='m4-'+case
@@ -173,7 +204,9 @@ def run_batch(*,resume_setup=False,verification=False,basic_verification=False,d
                                 expected_generation=opened.json()['generation'],expected_sequence=0)).encode())
                             if sent.status_code!=200:raise ValueError('synthetic_API_message_unavailable')
                             receipt=sent.json()['receipt'];value['cases'][case]=dict(state='ACCEPTED',run_id=receipt['run_id'],message_id=cid);save(path,value)
-                            with provider_diagnostics() as diagnostics:
+                            capture=record_place_responses(STATE/(tag+'-responses'),value,path) if route_diagnostic else nullcontext()
+                            if route_diagnostic:(STATE/(tag+'-responses')).mkdir(mode=0o700)
+                            with provider_diagnostics() as diagnostics,capture:
                                 outcomes=run_worker.run_once(db,model,auth,tools_configuration=case_tools,real_services=services)
                             value['cases'][case]['provider_diagnostics']=diagnostics
                             if len(outcomes)!=1:raise ValueError('original_RUN_outcome_unavailable')
@@ -201,13 +234,13 @@ def run_batch(*,resume_setup=False,verification=False,basic_verification=False,d
 
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('command',choices=('run','inspect','resume-setup','verify-native','verify-base-search','verify-diagnostics'));args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('command',choices=('run','inspect','resume-setup','verify-native','verify-base-search','verify-diagnostics','verify-route'));args=parser.parse_args()
     if args.command=='inspect':
         path=STATE/'acceptance.json'
         result=dict(batch=None if not path.exists() else json.loads(path.read_text()),attempts=AuthorizationBudget(STATE).inspect())
-    else:result=run_batch(resume_setup=args.command=='resume-setup',verification=args.command=='verify-native',basic_verification=args.command=='verify-base-search',diagnostic_verification=args.command=='verify-diagnostics')
+    else:result=run_batch(resume_setup=args.command=='resume-setup',verification=args.command=='verify-native',basic_verification=args.command=='verify-base-search',diagnostic_verification=args.command=='verify-diagnostics',route_diagnostic=args.command=='verify-route')
     print(json.dumps(result,ensure_ascii=False,separators=(',',':')))
-    if args.command in ('verify-native','verify-base-search','verify-diagnostics') and not verification_passed(result['batch'],AuthorizationBudget(STATE).inspect()):
+    if args.command in ('verify-native','verify-base-search','verify-diagnostics','verify-route') and not verification_passed(result['batch'],AuthorizationBudget(STATE).inspect()):
         return 1
     return 0
 
