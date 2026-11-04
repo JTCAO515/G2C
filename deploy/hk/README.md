@@ -16,6 +16,11 @@ operator另收既有数据库初始化凭据和恢复签名私钥；OSS凭据只
 原配置或中断状态只读核验/HOLD，不覆盖或重生成。入口在读取秘密前核指定实例hostname和/srv/g2c-beta持久绑定，拒绝容器层、tmpfs和错误路径。
 common只含正式公钥和两名beta邀请配置。无秘密的compose.env由已审部署版本单独生成，
 只锁源码镜像版本；更新应用版本不重新生成或修改既有秘密集合。
+DashScope key按既有HTTP Bearer边界接收可见ASCII，不推断供应商key格式；换行、空白和非ASCII拒绝。
+纯校验先于初始INTENT。仅经只读核实旧0801版本的精确19字节INTENT、无任何输出文件、
+且同输入被旧model key格式误拒绝时，operator可显式使用 `--resume-rejected-validation` 续结。
+它保留旧INTENT，以O_EXCL追加当前输入hash/nonce/时间及取证来源后才生成第一套密钥；
+该新hash不冒充旧记录的绑定。并发只有一个胜者，任何部分制品、非唯一状态或后续中断仍HOLD。
 worker的旧token供应器通过Linux memfd读取私钥，磁盘上只有指向进程FD的链接。
 公钥、邀请名单、RUN配置只写入容器tmpfs。TLS证书由Caddy管理在独立私有目录。
 

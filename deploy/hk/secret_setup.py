@@ -3,6 +3,7 @@
 Existing or interrupted sets are inspection-only. No vendor key, login account,
 provider request, database row, image or application service is created here.
 """
+import argparse
 import base64
 from datetime import datetime,timezone
 import hashlib
@@ -28,12 +29,12 @@ def encoded(value):return base64.b64encode(value).decode('ascii')
 def sha(value):return hashlib.sha256(value).hexdigest()
 
 
-def plan(value,*,now,nonce):
+def validate(value,*,now,nonce):
     names={'operator_uri','runtime_uri','cleanup_uri','model_key','amap_key','oss_id','oss_secret','trial_expiry','revision'}
     if type(value) is not dict or set(value)!=names:raise ValueError('fixed_deployment_secret_inputs_required')
     if any(type(item) is not str or not item or len(item)>8192 or any(c in item for c in ('\n','\r','\0')) for item in value.values()):raise ValueError('single_line_secret_values_required')
     decode_uri(value['operator_uri'],operator=True);decode_uri(value['runtime_uri']);decode_cleanup_uri(value['cleanup_uri'])
-    if (re.fullmatch(r'[A-Za-z0-9_-]{16,256}',value['model_key']) is None
+    if (re.fullmatch(r'[\x21-\x7e]{1,4096}',value['model_key']) is None
             or re.fullmatch(r'[A-Za-z0-9_-]{16,256}',value['amap_key']) is None
             or re.fullmatch(r'LTAI[A-Za-z0-9]{16,28}',value['oss_id']) is None
             or re.fullmatch(r'[A-Za-z0-9+/=_-]{24,128}',value['oss_secret']) is None
@@ -41,6 +42,14 @@ def plan(value,*,now,nonce):
             or re.fullmatch(r'[0-9a-f]{12}',nonce) is None):raise ValueError('explicit_authorized_secret_shapes_required')
     trial=datetime.fromisoformat(value['trial_expiry'])
     if trial.tzinfo is None or now.tzinfo is None or now>=min(trial,DEADLINE):raise ValueError('trial_or_test_authorization_expired')
+    return trial
+
+
+def plan(value,*,now,nonce):
+    return render(value,now=now,nonce=nonce,trial=validate(value,now=now,nonce=nonce))
+
+
+def render(value,*,now,nonce,trial):
     def signing_pair():
         signing=rsa.generate_private_key(public_exponent=65537,key_size=2048)
         return (signing.private_bytes(serialization.Encoding.PEM,serialization.PrivateFormat.PKCS8,serialization.NoEncryption()),
@@ -98,19 +107,44 @@ def inspect(root):
     return dict(mode='READ_ONLY_ORIGINAL',**metadata)
 
 
-def prepare(value,root=ROOT):
+def prepare(value,root=ROOT,*,resume_rejected_validation=False):
     if os.getuid()!=0:raise ValueError('explicit_host_operator_required')
     info=root.lstat()
     if not stat.S_ISDIR(info.st_mode) or info.st_uid!=0 or stat.S_IMODE(info.st_mode)!=0o700:raise ValueError('owned_private_host_mount_required')
     stage=root/'.secret-setup'
     if stage.is_symlink():raise ValueError('original_setup_directory_required')
-    if stage.exists():
-        if not (stage/'done.json').exists():raise ValueError('HOLD_original_secret_setup_requires_inspection')
-        return inspect(root)
+    if stage.exists() and (stage/'done.json').exists():return inspect(root)
     expected=ENV_FILES
     if any((root/name).exists() or (root/name).is_symlink() for name in expected):raise ValueError('existing_configuration_not_overwritten')
-    stage.mkdir(mode=0o700);store_new(stage/'intent.json',b'{"state":"INTENT"}\n');sync(stage);sync(root)
-    rendered,metadata=plan(value,now=datetime.now(timezone.utc),nonce=secrets.token_hex(6))
+    now=datetime.now(timezone.utc);nonce=secrets.token_hex(6)
+    # Credential validation has no dispatch or key generation side effects.
+    trial=validate(value,now=now,nonce=nonce)
+    intent=dict(version='g2c-beta-secret-setup-intent.1',input_sha256=sha(json.dumps(value,sort_keys=True,separators=(',',':')).encode()),
+        nonce=nonce,at=now.isoformat(),source_revision=value['revision'])
+    if stage.exists():
+        if not resume_rejected_validation:raise ValueError('HOLD_original_secret_setup_requires_inspection')
+        metadata=stage.lstat()
+        if (not stat.S_ISDIR(metadata.st_mode) or metadata.st_uid!=0 or stat.S_IMODE(metadata.st_mode)!=0o700
+                or set(path.name for path in stage.iterdir())!={'intent.json'}
+                or re.fullmatch(r'[A-Za-z0-9_-]{16,256}',value['model_key']) is not None):
+            raise ValueError('HOLD_exact_unpublished_validation_rejection_required')
+        descriptor=os.open(stage/'intent.json',os.O_RDONLY|os.O_NOFOLLOW)
+        with os.fdopen(descriptor,'rb') as source:
+            original=os.fstat(source.fileno());body=source.read(64)
+        if (not stat.S_ISREG(original.st_mode) or original.st_uid!=0 or stat.S_IMODE(original.st_mode)!=0o600
+                or body!=b'{"state":"INTENT"}\n'):
+            raise ValueError('HOLD_exact_legacy_intent_required')
+        # One O_EXCL claimant, before generating any key. The original 19-byte
+        # record is preserved. This new hash binds current reconciliation input;
+        # it is not falsely attributed to the old unbound intent.
+        intent.update(state='RECONCILING_UNPUBLISHED_VALIDATION_REJECTION',legacy_intent_sha256=sha(body),
+            legacy_source_revision='0801e0e791c791c56cb5109b7f968574aff9a563')
+        store_new(stage/'reconciliation.json',json.dumps(intent,sort_keys=True).encode());sync(stage)
+    else:
+        if resume_rejected_validation:raise ValueError('original_validation_rejection_required')
+        stage.mkdir(mode=0o700)
+        store_new(stage/'intent.json',json.dumps(dict(intent,state='VALIDATED_INTENT'),sort_keys=True).encode());sync(stage);sync(root)
+    rendered,metadata=render(value,now=now,nonce=nonce,trial=trial)
     for name,body in rendered.items():store_new(stage/name,body)
     sync(stage)
     for name in expected:
@@ -135,13 +169,16 @@ def require_host():
 
 
 def main():
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--resume-rejected-validation',action='store_true')
+    args=parser.parse_args()
     try:
         # Check before even reading credential stdin. prepare/plan are also used
         # separately by the network-free synthetic filesystem test seam.
         require_host()
         raw=sys.stdin.buffer.read(65537)
         if len(raw)>65536:raise ValueError('bounded_secret_inputs_required')
-        result=prepare(json.loads(raw,object_pairs_hook=reject_duplicates(ValueError,'duplicate_secret_input')))
+        result=prepare(json.loads(raw,object_pairs_hook=reject_duplicates(ValueError,'duplicate_secret_input')),resume_rejected_validation=args.resume_rejected_validation)
         public={name:item for name,item in result.items() if name!='files'}
         public.update(file_count=len(result['files']),permissions='0600',owner_uid=10001)
         print(json.dumps(public,sort_keys=True))

@@ -24,7 +24,7 @@ class Clock(datetime):
 def inputs():
     def uri(role):return 'postgresql://'+role+'.'+boundary.REF+':synthetic-only@'+boundary.HOST+':5432/postgres?sslmode=verify-full'
     return dict(operator_uri=uri('postgres'),runtime_uri=uri('cj_m1_runtime'),cleanup_uri=uri('cj_local_cleanup'),
-        model_key='synthetic-model-key-000000',amap_key='synthetic-amap-key-000000',oss_id='LTAI'+'a'*20,oss_secret='b'*30,
+        model_key='synthetic/model.key+opaque=token',amap_key='synthetic-amap-key-000000',oss_id='LTAI'+'a'*20,oss_secret='b'*30,
         trial_expiry='2027-02-03T00:00:00+08:00',revision='a'*40)
 
 
@@ -74,7 +74,7 @@ def test_real_secret_cli_rejects_wrong_or_ephemeral_mount_before_reading_credent
         if path==Path('/proc/self/mountinfo'):return mount[0]
         return original(path,*args,**kwargs)
     monkeypatch.setattr(Path,'read_text',read)
-    source=MagicMock();monkeypatch.setattr(sys,'stdin',SimpleNamespace(buffer=source))
+    source=MagicMock();monkeypatch.setattr(sys,'stdin',SimpleNamespace(buffer=source));monkeypatch.setattr(sys,'argv',['secret-setup'])
     with pytest.raises(SystemExit):secret_setup.main()
     source.read.assert_not_called()
     mount[0]='1 2 8:1 /srv/wrong /host rw - ext4 /dev/vda1 rw\n'
