@@ -21,7 +21,7 @@ from cj_strict_json import reject_duplicates
 
 ROOT=Path('/host')
 DEADLINE=datetime(2026,11,30,16,tzinfo=timezone.utc)
-ENV_FILES=('api.env','worker.env','operator.env','backup.env','rehearsal.env','common.env','compose.env')
+ENV_FILES=('api.env','worker.env','operator.env','backup.env','rehearsal.env','common.env')
 
 
 def encoded(value):return base64.b64encode(value).decode('ascii')
@@ -65,7 +65,6 @@ def plan(value,*,now,nonce):
         CJ_SUPABASE_CA_FILE='/run/config/supabase-ca.crt',CJ_DEPLOY_CONTROL='/control',CJ_DEPLOY_HEARTBEAT='/heartbeat',
         CJ_BETA_SUBJECTS_JSON=json.dumps(subjects,separators=(',',':')),CJ_BETA_SIGNING_PUBLIC_B64=encoded(public),CJ_BETA_RECOVERY_PUBLIC_B64=encoded(rpublic),
         CJ_BETA_RUN_CONTEXT_JSON=json.dumps(context,separators=(',',':'))),
-      'compose.env':dict(CJ_BETA_IMAGE='g2c-beta:'+value['revision'],CJ_BETA_OPERATOR_IMAGE='g2c-beta-operator:'+value['revision']),
     }
     rendered={name:(''.join(key+'='+item+'\n' for key,item in fields.items())).encode('utf8') for name,fields in files.items()}
     metadata=dict(version='g2c-beta-secret-set.1',revision=value['revision'],recovery_subjects=recovery_subjects,

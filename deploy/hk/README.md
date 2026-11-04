@@ -12,9 +12,10 @@ Compose以普通env_file传非秘密common配置（固定JSON、base64公钥和�
 API仅收到运行角色、确认/history密钥和验签公钥；worker另收模型/高德和对应签名私钥；
 operator另收既有数据库初始化凭据和恢复签名私钥；OSS凭据只进backup容器。应用和operator均UID10001；相应实际环境文件由10001拥有，宿主父目录保持0700。
 `secret_setup` 仅在固定宿主私有目录由显式root operator执行一次，输入经stdin安全交接。
-它生成相互独立的应用签名、恢复签名和确认/history/cleanup随机键，先持久INTENT再写七个0600环境文件；
+它生成相互独立的应用签名、恢复签名和确认/history/cleanup随机键，先持久INTENT再写六个0600环境文件；
 原配置或中断状态只读核验/HOLD，不覆盖或重生成。入口在读取秘密前核指定实例hostname和/srv/g2c-beta持久绑定，拒绝容器层、tmpfs和错误路径。
-common只含正式公钥和两名beta邀请配置，compose只锁源码镜像版本。
+common只含正式公钥和两名beta邀请配置。无秘密的compose.env由已审部署版本单独生成，
+只锁源码镜像版本；更新应用版本不重新生成或修改既有秘密集合。
 worker的旧token供应器通过Linux memfd读取私钥，磁盘上只有指向进程FD的链接。
 公钥、邀请名单、RUN配置只写入容器tmpfs。TLS证书由Caddy管理在独立私有目录。
 

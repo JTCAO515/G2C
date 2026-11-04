@@ -32,7 +32,7 @@ def test_secret_plan_separates_roles_and_keeps_common_public(monkeypatch):
     monkeypatch.setenv('CJ_ENV','local');monkeypatch.setattr(boundary,'datetime',Clock)
     files,meta=secret_setup.plan(inputs(),now=Clock.now(),nonce='abcdef123456')
     parsed={name:dict(line.split('=',1) for line in body.decode().splitlines()) for name,body in files.items()}
-    assert set(files)=={'api.env','worker.env','operator.env','backup.env','rehearsal.env','common.env','compose.env'}
+    assert set(files)=={'api.env','worker.env','operator.env','backup.env','rehearsal.env','common.env'}
     assert set(parsed['api.env'])=={'CJ_SUPABASE_RUNTIME_URI','CJ_BETA_CONFIRMATION_B64','CJ_BETA_HISTORY_B64'}
     assert set(parsed['worker.env'])=={'CJ_SUPABASE_RUNTIME_URI','CJ_BETA_SIGNING_PRIVATE_B64','CJ_MODEL_API_KEY','CJ_AMAP_WEB_KEY'}
     common=parsed['common.env'];private=parsed['worker.env']['CJ_BETA_SIGNING_PRIVATE_B64']
