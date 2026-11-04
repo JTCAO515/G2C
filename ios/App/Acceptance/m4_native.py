@@ -49,6 +49,9 @@ class DeviceNative:
         self.staging_attempted = False
         self.configuration = None
 
+    def save_progress(self):
+        (self.output / 'report.json').write_text(json.dumps(self.report, indent=2))
+
     def command(self, configuration, tests, destination, result, action):
         return ['xcodebuild', '-project', str(self.project), '-scheme', 'G2CControl',
                 '-configuration', configuration, '-xcconfig', str(self.configuration_file),
@@ -61,6 +64,8 @@ class DeviceNative:
                 *['-only-testing:G2CControl/' + case for case in tests], action]
 
     def build_for_testing(self, configuration, tests, env):
+        self.report['native_phase'] = 'build-for-testing ' + configuration
+        self.save_progress()
         result = self.private / (configuration + '-build.xcresult')
         run = subprocess.run(self.command(configuration, tests, 'generic/platform=iOS',
                              result, 'build-for-testing'), cwd=self.root, env=env,
@@ -70,6 +75,7 @@ class DeviceNative:
                                   kinds=('build',))
         self.report.setdefault('device_builds', {})[configuration] = dict(
             exit_code=run.returncode, artifacts=gate, raw_bundle_shareable=False)
+        self.save_progress()
         if not gate['status'].startswith('PASS'):
             raise RuntimeError('Device build log failed credential/export gate')
         run.check_returncode()
@@ -97,6 +103,8 @@ class DeviceNative:
 
     def run(self, configuration, tests, env):
         self.configuration = configuration
+        self.report['native_phase'] = 'waiting for approved device unlock'
+        self.save_progress()
         deadline = time.monotonic() + 1200
         while True:
             state = json.loads(subprocess.check_output(['xcrun', 'devicectl', 'device',
@@ -111,6 +119,8 @@ class DeviceNative:
             time.sleep(5)
         self.install(configuration)
         self.report['status'] = 'RUNNING'
+        self.report['native_phase'] = 'test-without-building ' + configuration
+        self.save_progress()
         result = self.private / (configuration + '-test.xcresult')
         run = subprocess.run(self.command(configuration, tests, 'platform=iOS,id=' + self.device,
                              result, 'test-without-building'), cwd=self.root, env=env,
@@ -120,6 +130,8 @@ class DeviceNative:
                                   kinds=('action',))
         self.report.setdefault('device_tests', {})[configuration] = dict(
             exit_code=run.returncode, artifacts=gate, raw_bundle_shareable=False)
+        self.report['native_phase'] = 'native test process exited'
+        self.save_progress()
         if not gate['status'].startswith('PASS'):
             raise RuntimeError('Device test log failed credential/export gate')
         run.check_returncode()
