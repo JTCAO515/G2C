@@ -6,8 +6,12 @@ import Foundation
 @MainActor final class MemoryCandidateUITests: XCTestCase {
     let control = "__CONTROL_URL__"
     var app: XCUIApplication!
+    #if G2C_M4_DEVICE_ACCEPTANCE
+    private lazy var deviceSession = M4DeviceTestSession(test: self, control: control)
+    #endif
     struct Fixture: Decodable {
         let bundle: String
+        let case_id: String?
         let launch: [String: String]
         let subjects: [String: String]
         let conversation: String
@@ -40,12 +44,29 @@ import Foundation
     func call(_ path: String, _ query: [String: String] = [:]) async throws -> Data {
         var url = try XCTUnwrap(URLComponents(string: control + path))
         if !query.isEmpty { url.queryItems = query.sorted(by: { $0.key < $1.key }).map { .init(name: $0.key, value: $0.value) } }
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        let (data, response) = try await deviceSession.data(from: XCTUnwrap(url.url))
+        #else
         let session = URLSession(configuration: .ephemeral); defer { session.invalidateAndCancel() }
         let (data, response) = try await session.data(from: XCTUnwrap(url.url))
+        #endif
         XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
         return data
     }
     func proof() async throws -> Proof { try JSONDecoder().decode(Proof.self, from: await call("/proof")) }
+    func size(_ value: String) async throws {
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        M4DeviceTestSession.requireLargestSystemFont()
+        #endif
+        _ = try await call("/size", ["value": value])
+    }
+    #if G2C_M4_DEVICE_ACCEPTANCE
+    private func stage(_ fixture: Fixture) async throws {
+        try await deviceSession.stageAccounts(caseID: XCTUnwrap(fixture.case_id))
+        app.launchEnvironment.merge(try deviceSession.applicationEnvironment(
+            endpoint: XCTUnwrap(fixture.launch["G2C_DEV_API_BASE_URL"]), injecting: true)) { _, value in value }
+    }
+    #endif
     func reveal(_ element: XCUIElement, centered: Bool = false, editor: Bool = false) {
         func top() -> CGFloat {
             let titles = editor ? ["Review suggestion", "核对建议"] : ["Memory suggestions", "记忆建议", "Delete account", "注销账号"]
@@ -71,6 +92,11 @@ import Foundation
         let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: button)
         XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 25), .completed, id)
         button.tap()
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        if id.hasPrefix("account.development.signin.") || id == "account.development.restore" {
+            deviceSession.waitForAppNetworkConsent()
+        }
+        #endif
     }
     func text(_ id: String, contains value: String) {
         let element = app.staticTexts.matching(identifier: id).element
@@ -134,9 +160,12 @@ import Foundation
         continueAfterFailure = false
         let name = (account ? "account-" : reopen ? "lost-ack-" : current ? "current-" : operation + "-") + language
         let f = try JSONDecoder().decode(Fixture.self, from: await call("/fixture", ["case": name]))
-        _ = try await call("/size", ["value": "standard"])
+        try await size("standard")
         app = XCUIApplication(bundleIdentifier: f.bundle); app.launchArguments = ["-cj.ui.language.v1", language]
         app.launchEnvironment = f.launch.merging(["OS_ACTIVITY_MODE": "disable"]) { _, required in required }
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        try await stage(f)
+        #endif
         app.launch(); defer { app.terminate() }
         XCTAssertTrue(app.tabBars.element.waitForExistence(timeout: 30)); signIn(f, language)
         selectConversation(f, language); tap("assistant.memoryCandidates.read")
@@ -162,7 +191,7 @@ import Foundation
             let hidden = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.keyboards.element)
             XCTAssertEqual(XCTWaiter.wait(for: [hidden], timeout: 10), .completed)
         }
-        _ = try await call("/size", ["value": "max"])
+        try await size("max")
         text("memoryCandidate.editor.scope", contains: language == "en" ? "other history" : "其他历史")
         if let travelID = f.travel_id, let version = f.travel_version {
             reveal(app.buttons["memoryCandidate.editor.confirm"])
@@ -177,7 +206,11 @@ import Foundation
         XCTAssertFalse(actionID.isEmpty)
         if reopen {
             text("memoryCandidate.status", contains: language == "en" ? "uncertain" : "尚不明确")
-            app.terminate(); app.launch(); XCTAssertTrue(app.tabBars.element.waitForExistence(timeout: 30))
+            app.terminate()
+            #if G2C_M4_DEVICE_ACCEPTANCE
+            try await stage(f)
+            #endif
+            app.launch(); XCTAssertTrue(app.tabBars.element.waitForExistence(timeout: 30))
             signIn(f, language); selectConversation(f, language); reviewPanel(f)
             tap("memoryCandidate.loadOriginals"); tap("memoryCandidate.original." + actionID)
             text("memoryCandidate.originalID", contains: actionID); tap("memoryCandidate.query")
@@ -193,7 +226,11 @@ import Foundation
         XCTAssertEqual(after.input_sha256?.count, 64)
         try audit("candidate-original-" + language + "-max", target: app.staticTexts["memoryCandidate.historicalNotice"])
         if account {
-            app.terminate(); app.launch(); XCTAssertTrue(app.tabBars.element.waitForExistence(timeout: 30)); signIn(f, language)
+            app.terminate()
+            #if G2C_M4_DEVICE_ACCEPTANCE
+            try await stage(f)
+            #endif
+            app.launch(); XCTAssertTrue(app.tabBars.element.waitForExistence(timeout: 30)); signIn(f, language)
             tap("memory.accountDeletion"); tap("account.cleanup.review")
             let consent = app.switches.matching(identifier: "account.cleanup.consent")
             reveal(consent.element, centered: true); XCTAssertEqual(consent.count, 1)
