@@ -45,6 +45,7 @@ class GateChecks(unittest.TestCase):
                     if p['language']==language and (network is None or p['network_id']==network))
 
     def direct(self,counts,rows):
+        rows=[dict(r,_measurement_available=r['status']!='missing') if r is not None else None for r in rows]
         return profile_gate(counts=counts,rows=rows,first_body=latency(rows,'first_body_seconds'),
             full_answer=latency(rows,'full_answer_seconds'),serious_errors=[],real=True,
             scenarios={s['id']:s for s in self.plan['scenarios']},network=self.plan['networks'][0])
@@ -333,6 +334,38 @@ class GateChecks(unittest.TestCase):
         self.rows[0]['first_body_seconds']=5
         self.rows[0]['full_answer_seconds']=1
         with self.assertRaises(InputError):report(self.plan,self.rows)
+
+    def test_missing_measurements_remain_missing_when_known_error_changes_task_to_fail(self):
+        for row in self.rows:
+            row['status']='missing'
+            row['first_body_seconds']=6
+            row['full_answer_seconds']=100
+            row['cost']=dict(complete=True,components=[dict(name='model',amount='3',currency='CNY',source='synthetic:bill',basis='billed',receipt_ref='synthetic:receipt')])
+            row['serious_error_review']['outcome']='FAIL'
+        result=report(self.plan,self.rows);p=self.profile(result)
+        self.assertEqual(p['outcomes']['FAIL'],3)
+        self.assertEqual(p['criteria']['first_body_p95']['known_n'],0)
+        self.assertEqual(p['criteria']['first_body_p95']['status'],'UNKNOWN')
+        self.assertEqual(p['criteria']['full_answer_p95']['known_n'],0)
+        self.assertEqual(p['real_fees']['status'],'UNKNOWN')
+        self.assertEqual(p['call_volume']['model_calls']['known_attempt_n'],0)
+        for group in result['groups']:
+            self.assertFalse(group['cost']['total_cost_known'])
+            self.assertEqual(group['cost']['known_subtotals_by_currency'],{})
+            self.assertEqual(group['first_body_seconds']['known_n'],0)
+
+    def test_human_pass_cannot_override_explicit_program_task_fail(self):
+        for row in self.rows:row['independent_judgment']['task_outcome']='FAIL'
+        result=report(self.plan,self.rows)
+        self.assertTrue(all(p['outcomes']['FAIL']==3 for p in result['quality_acceptance']['profiles']))
+        self.assertEqual(result['quality_acceptance']['evaluation_release_decision'],'FAIL')
+
+    def test_input_cannot_override_missing_measurement_provenance(self):
+        for row in self.rows:
+            row.update(status='missing',_measurement_available=True)
+            row['serious_error_review']['outcome']='FAIL'
+        p=self.profile(report(self.plan,self.rows))
+        self.assertEqual(p['criteria']['full_answer_p95']['known_n'],0)
 
 
 if __name__=='__main__':unittest.main()

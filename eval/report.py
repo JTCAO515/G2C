@@ -9,7 +9,7 @@ from gates import profile_gate, acceptance, hard_status, program_proof, known_re
 
 def effective_observation(row, scenario):
     """Reconcile deserialized program evidence before computing any numerator."""
-    effective = dict(row)
+    effective = dict(row,_measurement_available=row['status']!='missing')
     proof = row.get('independent_judgment') or {}
     errors = list(row.get('serious_errors', []))
     if program_proof(row):
@@ -29,6 +29,11 @@ def effective_observation(row, scenario):
     if errors or hard == 'FAIL':
         effective.update(judgment=dict(kind='program',independent=True,outcome='FAIL',ref='eval/gates.py'),
                          serious_errors=errors,normalization='Known serious/hard failure overrides task PASS, including resolved history')
+        if row['status'] == 'missing':
+            effective['status'] = 'failure'
+    elif program_proof(row) and proof.get('task_outcome') == 'FAIL':
+        effective.update(judgment=dict(kind='program',independent=True,outcome='FAIL',ref='eval/gates.py'),
+                         normalization='An explicit independent program task FAIL cannot be replaced by another reviewer PASS')
         if row['status'] == 'missing':
             effective['status'] = 'failure'
     elif hard == 'UNKNOWN' and outcome(row) == 'PASS':
@@ -114,19 +119,22 @@ def report(plan, observations):
     result['raw_observations'] = observations
     for group in result['groups']:
         rows = [a['observation'] for a in group['attempts']]
-        counts = [r.get('model_calls') for r in rows if r is not None]
+        measured = [r if r is not None and r['_measurement_available'] else None for r in rows]
+        counts = [r.get('model_calls') for r in measured if r is not None]
         group['model_calls'] = dict(known_total=sum(c for c in counts if c is not None),
                                     known_attempt_n=sum(c is not None for c in counts),
                                     unknown_or_unrun_attempt_n=len(rows)-sum(c is not None for c in counts))
-        group['api_task_seconds'] = latency(rows, 'api_task_seconds')
-        group['full_answer_seconds'] = latency([r if r is not None and r['status']!='missing' else None for r in rows], 'full_answer_seconds')
+        group['api_task_seconds'] = latency(measured, 'api_task_seconds')
+        group['first_body_seconds'] = latency(measured, 'first_body_seconds')
+        group['draft_seconds'] = latency(measured, 'draft_seconds')
+        group['full_answer_seconds'] = latency(measured, 'full_answer_seconds')
         group['latency_scope'] = 'signed API submit through original worker and final authoritative read; not UI first-body timing'
         def hard(row):
             if row is None or row['status']=='missing': return 'UNRUN'
             return hard_status(row,scenarios[row['scenario_id']])
         group['hard_outcomes'] = {status:sum(hard(r)==status for r in rows)
                                   for status in ('PASS','FAIL','UNKNOWN','UNRUN')}
-        fees = real_fees(rows)
+        fees = real_fees(measured)
         group['real_fees'] = fees
         # The established cost field must not call estimates or reservations
         # known actual money. Original components stay in raw observations.
@@ -144,18 +152,18 @@ def report(plan, observations):
                 rows = [a['observation'] for g in groups for a in g['attempts']]
                 # Missing observations never contribute timing or money, even if
                 # an externally supplied 'missing' record contains other fields.
-                rows = [r if r is not None and r['status']!='missing' else None for r in rows]
+                measured = [r if r is not None and r['_measurement_available'] else None for r in rows]
                 counts = {s:sum(g['outcomes'][s] for g in groups) for s in ('PASS','FAIL','UNKNOWN','UNRUN')}
                 errors = [e for g in groups for e in g['serious_errors']]
                 profile = dict(candidate_id=candidate['id'],language=language,network_id=network['id'],network=network,
                                outcomes=counts,planned_attempt_n=len(rows),
-                               real_fees=real_fees(rows),
-                               **profile_gate(counts=counts,rows=rows,first_body=latency(rows,'first_body_seconds'),
-                                              full_answer=latency(rows,'full_answer_seconds'),serious_errors=errors,
+                               real_fees=real_fees(measured),
+                               **profile_gate(counts=counts,rows=rows,first_body=latency(measured,'first_body_seconds'),
+                                              full_answer=latency(measured,'full_answer_seconds'),serious_errors=errors,
                                               real=plan['evidence_layer']=='real',scenarios=scenarios,network=network))
                 profile['call_volume'] = {}
                 for field in ('model_calls','tool_calls','memory_calls'):
-                    values = [r.get(field) for r in rows if r is not None]
+                    values = [r.get(field) for r in measured if r is not None]
                     profile['call_volume'][field] = dict(known_total=sum(v for v in values if v is not None),
                         known_attempt_n=sum(v is not None for v in values),
                         unknown_or_missing_attempt_n=len(rows)-sum(v is not None for v in values))

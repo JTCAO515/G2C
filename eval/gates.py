@@ -96,7 +96,7 @@ def _timing(stats, rows, field, limit, started):
     planned = stats['planned_n']
     # Even if every missing observation were fast, enough known slow attempts
     # can already prove the full planned population's p95 fails.
-    slow = sum(r is not None and r.get(field) is not None and r[field] > limit for r in rows)
+    slow = sum(r is not None and r['_measurement_available'] and r.get(field) is not None and r[field] > limit for r in rows)
     if slow > planned - math.ceil(.95 * planned):
         status = 'FAIL'
     elif stats['known_n'] != planned:
