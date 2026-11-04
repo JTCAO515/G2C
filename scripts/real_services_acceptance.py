@@ -137,10 +137,13 @@ def main():
         result=dict(batch=None if not path.exists() else json.loads(path.read_text()),attempts=AuthorizationBudget(STATE).inspect())
     else:result=run_batch(resume_setup=args.command=='resume-setup',verification=args.command=='verify-native')
     print(json.dumps(result,ensure_ascii=False,separators=(',',':')))
+    if args.command=='verify-native' and any(case['state']!='completed' for case in result['batch']['cases'].values()):
+        return 1
+    return 0
 
 
 if __name__=='__main__':
-    try:main()
+    try:raise SystemExit(main())
     except Exception as error:
         print(json.dumps(dict(state='UNKNOWN',error_type=type(error).__name__)),file=sys.stderr)
         raise SystemExit(1) from None
