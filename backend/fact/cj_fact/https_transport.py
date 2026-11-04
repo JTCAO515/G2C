@@ -23,7 +23,7 @@ def _positive(value):
 
 class PinnedHTTPSTransport:
     def __init__(self, policy: SourcePolicy, *, tls_context: ssl.SSLContext,
-                 max_header_bytes: int, max_wire_bytes: int, max_reads: int, allow_html=False):
+                 max_header_bytes: int, max_wire_bytes: int, max_reads: int, allow_html=False,before_send=None):
         if not isinstance(policy, SourcePolicy) or not all(_positive(v) for v in
                 (max_header_bytes, max_wire_bytes, max_reads)):
             raise FactFailure('invalid_https_configuration')
@@ -34,6 +34,7 @@ class PinnedHTTPSTransport:
         self.max_reads = max_reads
         if type(allow_html) is not bool:raise FactFailure('invalid_https_configuration')
         self.allow_html=allow_html
+        self.before_send=before_send
         self._check_tls()
 
     def _check_tls(self):
@@ -100,6 +101,9 @@ class PinnedHTTPSTransport:
                     (b'Host', target.hostname.encode('ascii')),
                     (b'Accept', b'text/html' if self.allow_html else b'application/json, text/plain'),
                     (b'Accept-Encoding', b'identity'), (b'Connection', b'close')])
+                if self.before_send is not None and self.before_send() is not True:
+                    raise FactFailure('original_source_authority_invalid')
+                if loop.time()>=deadline:raise FactFailure('timeout')
                 writer.write(connection.send(request) + connection.send(h11.EndOfMessage()))
                 await writer.drain()
                 session = _Body(self, target, deadline, reader, writer, connection)

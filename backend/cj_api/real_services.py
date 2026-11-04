@@ -41,7 +41,9 @@ TOOLS=[dict(type='function',function=dict(name=name,description=description,para
 def _receipt(metadata):
     def complete(attempt,unit,output):
         if not metadata:raise BudgetUnknown('live producer completion unavailable')
-        return Receipt(attempt,'live:'+hashlib.sha256(canonical(metadata)).hexdigest(),unit,1,output)
+        identity=(metadata['receipt_sha256'] if 'receipt_sha256' in metadata else
+                  hashlib.sha256(canonical((metadata['endpoint'],metadata['response_sha256']))).hexdigest())
+        return Receipt(attempt,'live:'+identity,unit,1,output)
     return complete
 
 
@@ -115,18 +117,22 @@ class RealTools:
 
     def _tool_input(self,name,argument):
         raw_query,request_ref=argument
-        query=decode_query(raw_query) if name=='place' else fact_query(raw_query,evaluated_at=datetime.now(timezone.utc))
+        try:query=decode_query(raw_query) if name=='place' else fact_query(raw_query,evaluated_at=datetime.now(timezone.utc))
+        except (ValueError,FactFailure):raise ProviderUnknown('live model tool arguments unavailable') from None
         if name=='place':
             if type(query) is Search and query.city not in ('北京','beijing','Beijing','110000'):
-                raise ValueError('M4 Beijing query required')
+                raise ProviderUnknown('M4 Beijing query required')
         elif (name=='fact' and (query.fact_key!='entry_notice' or query.region!='China')
               or name=='weather' and (query.fact_key!='weather' or query.region!='beijing')):
-            raise ValueError('M4 fixed fact source required')
+            raise ProviderUnknown('M4 fixed fact source required')
         original=canonical(dict(name=name,query=json.loads(raw_query),request_ref=request_ref,synthetic_only=True))
         metadata={};budget=self.services.model.authorization
         kind='place' if name=='place' and type(query) in (Search,Detail) else 'route' if name=='place' else name
         def bind(operation,guard):
             self.services.require_scope(operation.binding.scope)
+            def admitted():
+                self.services.require_scope(operation.binding.scope)
+                return guard()
             def invoke():
                 self.services.require_scope(operation.binding.scope)
                 budget.begin(operation.command.attempt_id,kind,original);budget.check_date()
@@ -134,16 +140,16 @@ class RealTools:
                     if name=='place':
                         config=Config(ORIGIN,8192,65536,20,60)
                         request=prepare(config,query,request_ref,datetime.now(timezone.utc))
-                        if guard() is not True:raise BudgetUnknown('original live tool authority invalid')
-                        result=asyncio.run(fetch_candidate(config,request,ProviderCredentials(self.services.amap_key,DEADLINE)))
+                        if admitted() is not True:raise BudgetUnknown('original live tool authority invalid')
+                        result=asyncio.run(fetch_candidate(config,request,ProviderCredentials(self.services.amap_key,DEADLINE),before_send=admitted))
                         if result.state!='received':raise BudgetUnknown('original live PLACE outcome unknown')
                         parsed=parse_response(config,request,result.response,now=datetime.now(timezone.utc))
                         raw=encode_result(parsed,evidence_kind='live_provider')
                         endpoint=ORIGIN+request.path
                     elif name=='weather':
-                        raw=canonical(weather(query,self.services.amap_key,guard=guard));endpoint=WEATHER_URL
+                        raw=canonical(weather(query,self.services.amap_key,guard=admitted));endpoint=WEATHER_URL
                     else:
-                        raw=canonical(asyncio.run(public_page(guard=guard)));endpoint=NOTICE_URL
+                        raw=canonical(asyncio.run(public_page(guard=admitted)));endpoint=NOTICE_URL
                     metadata.update(endpoint=endpoint,region='China',response_sha256=hashlib.sha256(raw).hexdigest(),actual_cost_cny='UNKNOWN' if name!='fact' else '0')
                     budget.finish(operation.command.attempt_id,metadata)
                     yield raw.decode('utf8')

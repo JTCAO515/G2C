@@ -9,6 +9,9 @@ Memory fence、原动作只读恢复均继续生效。默认 local/Fake 路径�
 每项只能选一个。Mac operator 可在进程内从已授权 Keychain 取值；不在命令行、响应或日志打印。
 北京固定 `qwen3.8-flash` / `https://dashscope.aliyuncs.com/compatible-mode/v1`，
 无国际站、重试、HTTP 重定向或请求输入指定 URL。
+线上模型请求使用固定端点的 asyncio/h11 窄 HTTP 流，DNS/TLS/写入/读取共用一个可中止的总时限，
+按原始字节（含空行）与单行缓冲限制 SSE；HTTPX 只用于显式离线 fixture。
+天气同样复用窄 wire reader，含 Web Key 的 URL 不经过 HTTPX request logger。
 
 原注册出口先持久 input bytes/attempt，再经原 Meter reserve/claim/最后 guard。
 真实 adapter 补一份授权累计意图账本，固定在用户数据目录 `g2c/m4-real-services`，
@@ -16,6 +19,7 @@ Memory fence、原动作只读恢复均继续生效。默认 local/Fake 路径�
 地点/路线/天气每 intent 保守占用 ¥1，合计达到 ¥80 后停止；免费公开事实页仍记最多120次。
 各分类同时保持 M4 的600/300/100/120次数上限，2026-11-30 到期；UNKNOWN 不释放占用。
 完整 receipt 的 `provider_call=1` 只证明完成一次调用，绝不表示人民币实付已知；实际账单 UNKNOWN。
+模型 receipt 身份只取供应商ID的hash，独立于token用量；授权账本跨attempt拒绝重用ID，第二次保持UNKNOWN。
 更换数据库、RUN period、配置或版本不允许重置此账本。迁往测试主机前须停 Mac 出口并迁移账本，
 不能把 Mac 与云主机各当一份新预算。既有验收 batch 再运行只读，不新建原动作或重发。
 

@@ -64,6 +64,9 @@ class AuthorizationBudget:
     def finish(self,attempt,receipt):
         # The producer supplies bounded metadata only; keys/body/text never enter.
         with self.connect() as db:
+            db.execute('BEGIN IMMEDIATE')
+            if 'receipt_sha256' in receipt and db.execute("SELECT 1 FROM attempt WHERE id<>? AND kind='model' AND json_extract(receipt,'$.receipt_sha256')=?",(attempt,receipt['receipt_sha256'])).fetchone():
+                raise BudgetUnknown('M4 supplier receipt identity reused; original outcome unknown')
             if db.execute('UPDATE attempt SET state=\'RECEIVED\',receipt=? WHERE id=? AND state=\'INTENT\'',
                           (canonical(receipt).decode(),attempt)).rowcount!=1:
                 raise BudgetUnknown('M4 original receipt unavailable')

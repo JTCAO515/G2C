@@ -24,7 +24,7 @@ from test_m4_real_services import sse,KEY,NOW
 
 
 def exercise(auth,conninfo):
-    subjects=['m4-synthetic-'+v for v in ('ok','limit','unknown','revoke')]
+    subjects=['m4-synthetic-'+v for v in ('ok','limit','unknown','malformed','revoke')]
     harness.dev_auth.init(auth,subjects)
     now=int(time.time());profiles={}
     for subject in subjects:
@@ -35,7 +35,7 @@ def exercise(auth,conninfo):
         profiles[subject]=(path,load_run_context(path));operator.provision_budget(conninfo,profiles[subject][1],subject)
     headers={s:dict(Authorization='Bearer '+harness.dev_auth.token(auth,s,30)) for s in subjects}
     tool_calls=[];model_calls=[]
-    async def place(config,request,credentials):
+    async def place(config,request,credentials,*,before_send=None):
         tool_calls.append(request.request_ref)
         raw=json.dumps(dict(status='1',info='OK',infocode='10000',count='1',pois=[dict(id='SYNTH_ONLY',name='合成资料',location='116.1,39.1')])).encode()
         return TransportResult('received','fixture',Response(request.binding_digest,request.origin,request.path,200,raw,datetime.now(timezone.utc)))
@@ -56,7 +56,9 @@ def exercise(auth,conninfo):
             follow=any('UNTRUSTED TOOL DATA' in m['content'] for m in body['messages'])
             if subject.endswith('revoke') and not follow:
                 (auth/'invited.json').write_text(json.dumps([s for s in subjects if s!=subject]))
-            return httpx.Response(200,text=sse(tool=not follow).replace('chatcmpl-synthetic','chatcmpl-synthetic-'+str(len(model_calls))))
+            payload=sse(tool=not follow).replace('chatcmpl-synthetic','chatcmpl-synthetic-'+str(len(model_calls)))
+            if subject.endswith('malformed'):payload=payload.replace('PLACE-query.1','PLACE-query.invalid')
+            return httpx.Response(200,stream=httpx.ByteStream(payload.encode()))
         model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),budget,transport=httpx.MockTransport(response))
         services=RealServices(model,KEY,frozenset(subjects));tools=RealTools(services)
         db=LocalDatabase(conninfo,run_context=profiles[subject][1])
@@ -74,9 +76,9 @@ def exercise(auth,conninfo):
                 harness.expect(client.get('/v1/run-display',params=dict(message_id=subject),headers=headers[subjects[1]]),503)
             elif subject.endswith('limit'):
                 assert outcomes[0].status=='failed' and model.calls==1 and len(tool_calls)==before
-            elif subject.endswith('unknown'):
+            elif subject.endswith(('unknown','malformed')):
                 assert outcomes[0].status=='unknown' and model.calls==1 and len(tool_calls)==before
-                assert budget.inspect()[0]['state']=='INTENT'
+                assert budget.inspect()[0]['state']==('INTENT' if subject.endswith('unknown') else 'RECEIVED')
             else:
                 assert outcomes[0].status=='context_invalid' and model.calls==1 and len(tool_calls)==before
                 (auth/'invited.json').write_text(json.dumps(subjects))

@@ -5,15 +5,19 @@ result are unknown to us, so the caller records `unknown` instead of resending
 (ADR-0003). Keys come from the host only and never appear in errors or logs.
 """
 from dataclasses import dataclass
+from contextlib import contextmanager
+import asyncio
 import json
 import os
 import ssl
 from typing import Generator, Protocol
 import hashlib
 import re
+import time
 
 import certifi
 import httpx
+import h11
 from cj_strict_json import reject_duplicates
 
 
@@ -165,6 +169,70 @@ M4_BASE='https://dashscope.aliyuncs.com/compatible-mode/v1'
 M4_MODEL='qwen3.8-flash'
 
 
+async def _m4_wire(config,raw,guard):
+    """Single fixed POST with one total deadline across DNS/TLS/write/read."""
+    loop=asyncio.get_running_loop();deadline=loop.time()+config.timeout_seconds
+    writer=None
+    try:
+        async with asyncio.timeout_at(deadline):
+            reader,writer=await asyncio.open_connection('dashscope.aliyuncs.com',443,ssl=tls_context(),
+                server_hostname='dashscope.aliyuncs.com',limit=16384)
+            if guard() is not True:raise ProviderUnknown('original M4 authority no longer valid')
+            if loop.time()>=deadline:raise ProviderUnknown('M4 total deadline exceeded')
+            connection=h11.Connection(h11.CLIENT,max_incomplete_event_size=16384)
+            request=h11.Request(method=b'POST',target=b'/compatible-mode/v1/chat/completions',headers=[
+                (b'Host',b'dashscope.aliyuncs.com'),(b'Authorization',('Bearer '+config.api_key).encode('ascii')),
+                (b'Content-Type',b'application/json'),(b'Accept',b'text/event-stream'),
+                (b'Accept-Encoding',b'identity'),(b'Content-Length',str(len(raw)).encode()),(b'Connection',b'close')])
+            writer.write(connection.send(request)+connection.send(h11.Data(data=raw))+connection.send(h11.EndOfMessage()))
+            await writer.drain()
+            headers=False;wire=0
+            while True:
+                event=connection.next_event()
+                if event is h11.NEED_DATA:
+                    chunk=await reader.read(8192);wire+=len(chunk)
+                    if wire>327680:raise ProviderUnknown('M4 raw wire bound exceeded')
+                    connection.receive_data(chunk)
+                elif isinstance(event,h11.Response):
+                    if headers or event.status_code!=200:raise ProviderUnknown('M4 model response rejected; billing unknown')
+                    fields={}
+                    for key,value in event.headers:
+                        if key in (b'content-type',b'content-encoding',b'content-length',b'transfer-encoding'):
+                            if key in fields:raise ProviderUnknown('M4 ambiguous response headers')
+                            fields[key]=value
+                    if (fields.get(b'content-type',b'').split(b';')[0].strip().lower()!=b'text/event-stream'
+                            or fields.get(b'content-encoding',b'identity').lower()!=b'identity'
+                            or b'content-length' in fields and b'transfer-encoding' in fields):
+                        raise ProviderUnknown('M4 unsupported response framing')
+                    headers=True
+                elif isinstance(event,h11.Data):
+                    if not headers:raise ProviderUnknown('M4 response headers unavailable')
+                    yield bytes(event.data)
+                elif isinstance(event,h11.EndOfMessage):
+                    if not headers or event.headers:raise ProviderUnknown('M4 response framing unavailable')
+                    return
+                else:raise ProviderUnknown('M4 response incomplete')
+    except (TimeoutError,OSError,ssl.SSLError,h11.ProtocolError):
+        raise ProviderUnknown('M4 total transport outcome unknown') from None
+    finally:
+        if writer is not None:writer.transport.abort()
+
+
+def _bounded_sse_lines(chunks,seconds):
+    deadline=time.monotonic()+seconds;pending=b'';size=0
+    for chunk in chunks:
+        if time.monotonic()>=deadline:raise ProviderUnknown('M4 total stream deadline exceeded')
+        size+=len(chunk)
+        if size>262144:raise ProviderUnknown('bounded M4 model response exceeded')
+        pending+=chunk
+        while b'\n' in pending:
+            line,pending=pending.split(b'\n',1)
+            if len(line)>65536:raise ProviderUnknown('M4 SSE line bound exceeded')
+            yield line.rstrip(b'\r').decode('utf8',errors='strict')
+        if len(pending)>65536:raise ProviderUnknown('M4 SSE line bound exceeded')
+    if pending:raise ProviderUnknown('M4 incomplete SSE line')
+
+
 class MeteredDashScopeProvider:
     """M4 Beijing only. Dispatch is installed solely by the registered RUN host.
 
@@ -181,6 +249,43 @@ class MeteredDashScopeProvider:
 
     def stream(self,*args,**kwargs):
         raise ProviderFailed('original registered Meter operation required')
+
+    @contextmanager
+    def _chunks(self,raw,guard):
+        if self.transport is not None:
+            # Explicit offline HTTP fixture only; installed environment profiles
+            # cannot select a transport. iter_raw never decompresses before bounds.
+            with httpx.Client(transport=self.transport,timeout=self.config.timeout_seconds,follow_redirects=False,trust_env=False) as client:
+                if guard() is not True:raise ProviderUnknown('original M4 authority no longer valid')
+                with client.stream('POST',M4_BASE+'/chat/completions',content=raw,headers={
+                        'Authorization':'Bearer '+self.config.api_key,'Content-Type':'application/json'}) as response:
+                    if response.status_code!=200:raise ProviderUnknown('M4 model response rejected; billing unknown')
+                    yield response.iter_raw()
+        else:
+            loop=asyncio.new_event_loop();queue=asyncio.Queue(maxsize=1)
+            async def pump():
+                # Keep a single task alive across every yielded chunk. An async
+                # generator entered by separate __anext__ tasks would leave its
+                # timeout bound to the already completed first task.
+                source=_m4_wire(self.config,raw,guard)
+                try:
+                    try:
+                        async for chunk in source:await queue.put(('data',chunk))
+                    except Exception as error:await queue.put(('error',error))
+                    else:await queue.put(('end',None))
+                finally:await source.aclose()
+            task=loop.create_task(pump())
+            def chunks():
+                while True:
+                    kind,value=loop.run_until_complete(queue.get())
+                    if kind=='end':return
+                    if kind=='error':raise value
+                    yield value
+            try:yield chunks()
+            finally:
+                task.cancel()
+                try:loop.run_until_complete(asyncio.gather(task,return_exceptions=True))
+                finally:loop.close()
 
     def invoke(self,messages,system,attempt,*,tools=None,receipt,guard):
         from cj_usage.authorization_budget import canonical
@@ -204,84 +309,85 @@ class MeteredDashScopeProvider:
         # first byte. No implicit retry, alternate region or replacement attempt.
         self.authorization.check_date()
         self.calls+=1
-        options=dict(timeout=self.config.timeout_seconds,follow_redirects=False,trust_env=False)
-        if self.transport is None:options['verify']=tls_context()
-        else:options['transport']=self.transport
-        size=0;finished=False;done=False;response_ids=set();usage=None;calls={};texts=[];pending=''
+        finished=False;done=False;response_ids=set();usage=None;calls={};texts=[];pending=''
         try:
-            with httpx.Client(**options) as client:
-                if guard() is not True:raise ProviderUnknown('original M4 authority no longer valid')
-                with client.stream('POST',M4_BASE+'/chat/completions',content=raw,headers={
-                        'Authorization':'Bearer '+self.config.api_key,'Content-Type':'application/json'}) as response:
-                    if response.status_code!=200:raise ProviderUnknown('M4 model response rejected; billing unknown')
-                    for line in response.iter_lines():
-                        self.authorization.check_date()
-                        size+=len(line.encode('utf8'))
-                        if size>262144:raise ProviderUnknown('bounded M4 model response exceeded')
-                        if not line.startswith('data:'):continue
-                        data=line[5:].strip()
-                        if data=='[DONE]':done=True;break
-                        value=json.loads(data,object_pairs_hook=reject_duplicates(ValueError,'duplicate_model_field'))
-                        if self.config.api_key in json.dumps(value,ensure_ascii=False):
-                            raise ProviderUnknown('M4 model secret echo rejected')
-                        if value.get('model')!=M4_MODEL:raise ProviderUnknown('M4 model identity mismatch')
-                        rid=value.get('id')
-                        if type(rid) is not str or not re.fullmatch(r'[A-Za-z0-9_-]{1,128}',rid):
-                            raise ProviderUnknown('M4 model receipt identity unavailable')
-                        response_ids.add(rid)
-                        if len(response_ids)!=1:raise ProviderUnknown('M4 model response identity changed')
-                        supplied=value.get('usage')
-                        if supplied is not None:
-                            if (type(supplied) is not dict or any(type(supplied.get(k)) is not int or not 0<=supplied[k]<=1000000
-                                    for k in ('prompt_tokens','completion_tokens','total_tokens'))):
-                                raise ProviderUnknown('M4 token usage unavailable')
-                            usage={k:supplied[k] for k in ('prompt_tokens','completion_tokens','total_tokens')}
-                        choices=value.get('choices',[])
-                        if type(choices) is not list or len(choices)>1:raise ProviderUnknown('M4 stream choice invalid')
-                        for choice in choices:
-                            if choice.get('finish_reason') is not None:
-                                if choice['finish_reason'] not in ('stop','tool_calls'):raise ProviderUnknown('M4 model output incomplete')
-                                finished=True
-                            delta=choice.get('delta',{})
-                            text=delta.get('content')
-                            if text:
-                                if type(text) is not str:raise ProviderUnknown('M4 stream content invalid')
-                                texts.append(text)
-                                if self.config.api_key in ''.join(texts):raise ProviderUnknown('M4 model secret echo rejected')
-                                if not native_tools:
-                                    pending+=text
-                                    keep=len(self.config.api_key)-1
-                                    if len(pending)>keep:
-                                        yield pending[:-keep]
-                                        pending=pending[-keep:]
-                            for call in delta.get('tool_calls',[]):
-                                index=call['index']
-                                if type(index) is not int or not 0<=index<4:raise ProviderUnknown('M4 tool bound exceeded')
-                                function=call.get('function',{})
-                                entry=calls.setdefault(index,dict(name='',arguments=''))
-                                for key in ('name','arguments'):
-                                    part=function.get(key,'')
-                                    if type(part) is not str:raise ProviderUnknown('M4 tool stream invalid')
-                                    entry[key]+=part
-                                    if len(entry[key])>32768:raise ProviderUnknown('M4 tool input bound exceeded')
-                    if not done or not finished or len(response_ids)!=1 or usage is None:
-                        raise ProviderUnknown('M4 complete usage receipt unavailable')
-                    result=None
-                    if native_tools:
-                        if calls:
-                            if texts and ''.join(texts).strip():raise ProviderUnknown('M4 mixed tool answer rejected')
-                            result=dict(version='MODEL-tool-turn.1',kind='tool',answer=None,calls=[
-                                dict(name=c['name'],arguments=json.loads(c['arguments'])) for _,c in sorted(calls.items())])
-                        else:result=dict(version='MODEL-tool-turn.1',kind='answer',answer=json.loads(''.join(texts)),calls=[])
-                        # Same strict internal parser used by the formal tool host.
-                        from cj_run.tool_turn import parse_turn
-                        encoded=json.dumps(result,ensure_ascii=False,separators=(',',':'))
-                        parse_turn(encoded.encode(),{t['function']['name'] for t in native_tools})
-                    metadata=dict(model_id=M4_MODEL,endpoint=M4_BASE,region='cn-beijing',usage=usage,
-                                  receipt_sha256=hashlib.sha256(next(iter(response_ids)).encode()).hexdigest(),actual_cost_cny='UNKNOWN')
-                    self.authorization.finish(attempt,metadata);receipt.update(metadata)
-                    if native_tools:yield encoded
-                    elif pending:yield pending
+            with self._chunks(raw,guard) as chunks:
+                for line in _bounded_sse_lines(chunks,self.config.timeout_seconds):
+                    self.authorization.check_date()
+                    if not line.startswith('data:'):continue
+                    data=line[5:].strip()
+                    if data=='[DONE]':done=True;break
+                    value=json.loads(data,object_pairs_hook=reject_duplicates(ValueError,'duplicate_model_field'))
+                    if type(value) is not dict:raise ProviderUnknown('M4 stream object required')
+                    if self.config.api_key in json.dumps(value,ensure_ascii=False):
+                        raise ProviderUnknown('M4 model secret echo rejected')
+                    if value.get('model')!=M4_MODEL:raise ProviderUnknown('M4 model identity mismatch')
+                    rid=value.get('id')
+                    if type(rid) is not str or not re.fullmatch(r'[A-Za-z0-9_-]{1,128}',rid):
+                        raise ProviderUnknown('M4 model receipt identity unavailable')
+                    response_ids.add(rid)
+                    if len(response_ids)!=1:raise ProviderUnknown('M4 model response identity changed')
+                    supplied=value.get('usage')
+                    if supplied is not None:
+                        if (type(supplied) is not dict or any(type(supplied.get(k)) is not int or not 0<=supplied[k]<=1000000
+                                for k in ('prompt_tokens','completion_tokens','total_tokens'))):
+                            raise ProviderUnknown('M4 token usage unavailable')
+                        usage={k:supplied[k] for k in ('prompt_tokens','completion_tokens','total_tokens')}
+                    choices=value.get('choices',[])
+                    if type(choices) is not list or len(choices)>1:raise ProviderUnknown('M4 stream choice invalid')
+                    for choice in choices:
+                        if type(choice) is not dict:raise ProviderUnknown('M4 stream choice invalid')
+                        if choice.get('finish_reason') is not None:
+                            if choice['finish_reason'] not in ('stop','tool_calls'):raise ProviderUnknown('M4 model output incomplete')
+                            finished=True
+                        delta=choice.get('delta',{})
+                        if type(delta) is not dict:raise ProviderUnknown('M4 stream delta invalid')
+                        text=delta.get('content')
+                        if text is not None and type(text) is not str:raise ProviderUnknown('M4 stream content invalid')
+                        if text:
+                            if type(text) is not str:raise ProviderUnknown('M4 stream content invalid')
+                            texts.append(text)
+                            if self.config.api_key in ''.join(texts):raise ProviderUnknown('M4 model secret echo rejected')
+                            if not native_tools:
+                                pending+=text
+                                keep=len(self.config.api_key)-1
+                                if len(pending)>keep:
+                                    yield pending[:-keep]
+                                    pending=pending[-keep:]
+                        tool_calls=delta.get('tool_calls',[])
+                        if type(tool_calls) is not list or len(tool_calls)>4:raise ProviderUnknown('M4 tool stream invalid')
+                        for call in tool_calls:
+                            if type(call) is not dict:raise ProviderUnknown('M4 tool stream invalid')
+                            index=call['index']
+                            if type(index) is not int or not 0<=index<4:raise ProviderUnknown('M4 tool bound exceeded')
+                            function=call.get('function',{})
+                            if type(function) is not dict:raise ProviderUnknown('M4 tool function invalid')
+                            entry=calls.setdefault(index,dict(name='',arguments=''))
+                            for key in ('name','arguments'):
+                                part=function.get(key,'')
+                                if type(part) is not str:raise ProviderUnknown('M4 tool stream invalid')
+                                entry[key]+=part
+                                if len(entry[key])>32768:raise ProviderUnknown('M4 tool input bound exceeded')
+                if not done or not finished or len(response_ids)!=1 or usage is None:
+                    raise ProviderUnknown('M4 complete usage receipt unavailable')
+                result=None
+                if native_tools:
+                    if calls:
+                        if texts and ''.join(texts).strip():raise ProviderUnknown('M4 mixed tool answer rejected')
+                        result=dict(version='MODEL-tool-turn.1',kind='tool',answer=None,calls=[
+                            dict(name=c['name'],arguments=json.loads(c['arguments'])) for _,c in sorted(calls.items())])
+                    else:result=dict(version='MODEL-tool-turn.1',kind='answer',answer=json.loads(''.join(texts)),calls=[])
+                    # Same strict internal parser used by the formal tool host.
+                    from cj_run.tool_turn import parse_turn
+                    encoded=json.dumps(result,ensure_ascii=False,separators=(',',':'))
+                    if self.config.api_key in encoded:
+                        raise ProviderUnknown('M4 model tool secret echo rejected')
+                    parse_turn(encoded.encode(),{t['function']['name'] for t in native_tools})
+                metadata=dict(model_id=M4_MODEL,endpoint=M4_BASE,region='cn-beijing',usage=usage,
+                              receipt_sha256=hashlib.sha256(next(iter(response_ids)).encode()).hexdigest(),actual_cost_cny='UNKNOWN')
+                self.authorization.finish(attempt,metadata);receipt.update(metadata)
+                if native_tools:yield encoded
+                elif pending:yield pending
         except (ProviderFailed,ProviderUnknown):raise
-        except (httpx.HTTPError,ValueError,TypeError,KeyError,UnicodeError):
+        except (httpx.HTTPError,httpx.StreamError,ValueError,TypeError,KeyError,UnicodeError):
             raise ProviderUnknown('M4 original model outcome unknown') from None
