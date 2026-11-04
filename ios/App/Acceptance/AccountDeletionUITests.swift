@@ -6,6 +6,9 @@ import Foundation
     private let fixtureURL = "__FIXTURE_URL__"
     private var app: XCUIApplication!
     private var runID = ""
+    #if G2C_M4_DEVICE_ACCEPTANCE
+    private lazy var deviceSession = M4DeviceTestSession(test: self, control: fixtureURL)
+    #endif
 
     private func launch(language: String, mode: String? = nil) {
         continueAfterFailure = true // Collect all findings; any finding still fails.
@@ -19,6 +22,10 @@ import Foundation
                 "SHELL_FIXTURE_LANGUAGE": language, "SHELL_FIXTURE_URL": fixtureURL,
                 "SHELL_FIXTURE_SIZE": "standard"]) { _, new in new }
         }
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        M4DeviceTestSession.requireLargestSystemFont()
+        app.launchEnvironment.merge(try! deviceSession.applicationEnvironment(endpoint: fixtureURL, injecting: false)) { _, value in value }
+        #endif
         app.launch()
         XCTAssertTrue(app.tabBars.element.waitForExistence(timeout: 10))
         app.tabBars.buttons[language == "en" ? "Memory" : "记忆"].tap()
@@ -89,7 +96,11 @@ import Foundation
 
     private func auditRequests() async throws {
         let url = try XCTUnwrap(URL(string: fixtureURL + "/audit?run=" + runID))
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        let (data, response) = try await deviceSession.data(from: url)
+        #else
         let (data, response) = try await URLSession.shared.data(from: url)
+        #endif
         XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
         let paths = try JSONDecoder().decode([String].self, from: data)
         XCTAssertEqual(paths, ["GET /v1/memory-groups"])

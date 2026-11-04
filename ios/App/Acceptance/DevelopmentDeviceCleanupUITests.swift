@@ -4,6 +4,9 @@ import Foundation
 @MainActor final class DevelopmentDeviceCleanupUITests: XCTestCase {
     let control = "__CONTROL_URL__"
     var app: XCUIApplication!
+    #if G2C_M4_DEVICE_ACCEPTANCE
+    private lazy var deviceSession = M4DeviceTestSession(test: self, control: control)
+    #endif
     struct Fixture: Decodable { let endpoint: String; let accounts: [String: String]; let subjects: [String: String]; let case_id: String; let proposal_id: String?; let trip_id: String?; let provider_calls: Int }
     struct Operation: Decodable { let operation_id: String; let phase: String }
     struct Account: Decodable { let operations: [Operation]; let fences: Int; let feedback: Int }
@@ -11,22 +14,37 @@ import Foundation
     @discardableResult func call(_ path: String, _ name: String, _ values: [String: String] = [:]) async throws -> Data {
         var url = try XCTUnwrap(URLComponents(string: control + path))
         url.queryItems = values.merging(["case": name]) { _, n in n }.map { .init(name: $0.key, value: $0.value) }
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        if path == "/size" { M4DeviceTestSession.requireLargestSystemFont() }
+        let (bytes, response) = try await deviceSession.data(from: XCTUnwrap(url.url))
+        #else
         let config = URLSessionConfiguration.ephemeral; config.urlCache = nil
         config.requestCachePolicy = .reloadIgnoringLocalCacheData
         let session = URLSession(configuration: config); defer { session.invalidateAndCancel() }
         let (bytes, response) = try await session.data(from: XCTUnwrap(url.url))
+        #endif
         XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200, path)
         return bytes
     }
     func fixture(_ name: String) async throws -> Fixture { try JSONDecoder().decode(Fixture.self, from: await call("/fixture", name)) }
     func proof(_ name: String) async throws -> Proof { try JSONDecoder().decode(Proof.self, from: await call("/proof", name)) }
-    func launch(_ f: Fixture, language: String = "en", proposal: Bool = false) throws {
+    func launch(_ f: Fixture, language: String = "en", proposal: Bool = false) async throws {
         continueAfterFailure = false
         app?.terminate(); app = XCUIApplication(bundleIdentifier: "space.go2china.device-v4.acceptance")
         app.launchArguments = ["-cj.ui.language.v1", language]
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        M4DeviceTestSession.requireLargestSystemFont()
+        let accountsJSON = "{}"
+        try await deviceSession.stageAccounts(caseID: f.case_id)
+        #else
+        let accountsJSON = try XCTUnwrap(String(data: JSONEncoder().encode(f.accounts), encoding: .utf8))
+        #endif
         app.launchEnvironment = ["OS_ACTIVITY_MODE": "disable", "G2C_DEV_ACCOUNT_MODE": "1",
             "G2C_DEV_API_BASE_URL": f.endpoint, "G2C_DEV_OFFLINE_TRIP": "last-sync-v1", "G2C_DEV_CLEANUP_PROFILE": "device-v4",
-            "G2C_DEV_ACCOUNTS": try XCTUnwrap(String(data: JSONEncoder().encode(f.accounts), encoding: .utf8))]
+            "G2C_DEV_ACCOUNTS": accountsJSON]
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        app.launchEnvironment.merge(try deviceSession.applicationEnvironment(endpoint: f.endpoint, injecting: true)) { _, value in value }
+        #endif
         if proposal, let id = f.proposal_id { app.launchEnvironment["G2C_DEV_PROPOSAL_ID"] = id }
         app.launch(); XCTAssertTrue(app.tabBars.element.waitForExistence(timeout: 20))
         XCTAssertFalse(app.staticTexts["g2c.dev.error"].exists)
@@ -59,6 +77,11 @@ import Foundation
         let wait = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: button)
         XCTAssertEqual(XCTWaiter.wait(for: [wait], timeout: 25), .completed, id)
         button.tap()
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        if id.hasPrefix("account.development.signin.") || id == "account.development.restore" {
+            deviceSession.waitForAppNetworkConsent()
+        }
+        #endif
     }
     func contains(_ id: String, _ expected: String, towardTop: Bool = true) {
         let target = app.staticTexts[id]
@@ -146,16 +169,16 @@ import Foundation
         contains("offline.sync.status", "Offline snapshot saved from this successful formal-trip read.", towardTop: false)
     }
     func preparePrivateCaches(_ f: Fixture) async throws {
-        try launch(f); account(); tap("account.development.signin.B"); contains("account.development.status", f.subjects["B"]!)
+        try await launch(f); account(); tap("account.development.signin.B"); contains("account.development.status", f.subjects["B"]!)
         seedDraft("另一账号保留的中文草稿。")
-        try launch(f, proposal: true); account(); tap("account.development.signin.A"); contains("account.development.status", f.subjects["A"]!)
+        try await launch(f, proposal: true); account(); tap("account.development.signin.A"); contains("account.development.status", f.subjects["A"]!)
         seedDraft("本机原始中文草稿，未发送。")
         acceptAndCacheFormalTrip(f)
         account(); try await call("/native-files", f.case_id, ["stage": "before"])
     }
     func initial(_ f: Fixture, seedPrivateDraft: Bool = false) async throws -> String {
         if seedPrivateDraft { try await preparePrivateCaches(f) }
-        else { try launch(f); account(); tap("account.development.signin.A"); contains("account.development.status", f.subjects["A"]!) }
+        else { try await launch(f); account(); tap("account.development.signin.A"); contains("account.development.status", f.subjects["A"]!) }
         try await call("/size", f.case_id, ["value": "max"])
         deletion(); tap("account.cleanup.review")
         XCTAssertTrue(app.buttons["account.cleanup.confirm"].waitForExistence(timeout: 25))
@@ -169,19 +192,19 @@ import Foundation
         try await call("/fault", name, ["kind": "confirmation"]); consentAndConfirm()
         contains("account.cleanup.unknown", "unknown")
         let committed = try await proof(name); XCTAssertEqual(committed.accounts["A"]?.fences, 1)
-        try launch(f); deletion(); tap("account.cleanup.read"); contains("account.cleanup.access", "stopped")
+        try await launch(f); deletion(); tap("account.cleanup.read"); contains("account.cleanup.access", "stopped")
         contains("account.cleanup.progress", "Confirmed for the listed online domains")
         try await call("/fault", name, ["kind": "device-receipt"])
         tap("account.cleanup.cleanDevice"); contains("account.cleanup.native", "clear")
         contains("account.cleanup.unknown", "unknown")
         try await call("/native-files", name, ["stage": "after"])
-        try launch(f, language: "zh-Hans"); deletion("zh-Hans"); tap("account.cleanup.readDevice")
+        try await launch(f, language: "zh-Hans"); deletion("zh-Hans"); tap("account.cleanup.readDevice")
         contains("account.cleanup.deviceReceipt", "已确认")
         try audit("delete-account-zh-max-original-device", target: "account.cleanup.readDevice")
         tap("account.cleanup.finalizeControls")
         contains("account.cleanup.controls", "已移除并核验")
         try audit("delete-account-controls-zh-max", target: "account.cleanup.controls", staticTarget: true)
-        try launch(f, language: "zh-Hans"); deletion("zh-Hans")
+        try await launch(f, language: "zh-Hans"); deletion("zh-Hans")
         contains("account.cleanup.controls", "已移除并核验")
         XCTAssertFalse(app.buttons["account.cleanup.readDevice"].exists)
         XCTAssertFalse(app.buttons["account.cleanup.confirm"].exists)
@@ -192,13 +215,13 @@ import Foundation
     }
     func testActualPreparationUnknown() async throws {
         let name = "testActualPreparationUnknown", f = try await fixture(name); defer { app?.terminate() }
-        try launch(f); account(); tap("account.development.signin.A"); contains("account.development.status", f.subjects["A"]!)
+        try await launch(f); account(); tap("account.development.signin.A"); contains("account.development.status", f.subjects["A"]!)
         try await call("/size", name, ["value": "max"])
         deletion(); try await call("/fault", name, ["kind": "preparation"]); tap("account.cleanup.review")
         contains("account.cleanup.unknown", "unknown")
         let prepared = try await proof(name)
         let original = try XCTUnwrap(prepared.accounts["A"]?.operations.first?.operation_id)
-        try launch(f); account(); tap("account.development.restore"); contains("account.development.status", f.subjects["A"]!)
+        try await launch(f); account(); tap("account.development.restore"); contains("account.development.status", f.subjects["A"]!)
         deletion(); tap("account.cleanup.read"); XCTAssertTrue(app.buttons["account.cleanup.confirm"].waitForExistence(timeout: 25))
         let recovered = try await proof(name); XCTAssertEqual(recovered.accounts["A"]?.operations.first?.operation_id, original)
         try audit("delete-account-original-preparation-max", target: "account.cleanup.confirm")
@@ -222,7 +245,7 @@ import Foundation
         try await call("/remote-delete", name)
         try await call("/size", name, ["value": "max"])
         try await call("/offline-checkpoint", name)
-        try launch(f); tap("Trips"); tap("offline.open")
+        try await launch(f); tap("Trips"); tap("offline.open")
         XCTAssertTrue(app.staticTexts["offline.title"].waitForExistence(timeout: 20))
         XCTAssertEqual(app.staticTexts["offline.tripID"].label, f.trip_id)
         try await call("/verify-offline-read", name)
@@ -231,13 +254,13 @@ import Foundation
         account(); tap("account.development.restore")
         contains("account.cleanup.deviceReceipt", "Acknowledged for this device")
         try await call("/native-files", name, ["stage": "after"])
-        try launch(f, language: "zh-Hans"); deletion("zh-Hans"); tap("account.cleanup.readDevice")
+        try await launch(f, language: "zh-Hans"); deletion("zh-Hans"); tap("account.cleanup.readDevice")
         contains("account.cleanup.deviceReceipt", "已确认")
         try audit("remote-original-device-zh-max", target: "account.cleanup.readDevice")
         tap("account.cleanup.finalizeControls")
         contains("account.cleanup.controls", "已移除并核验")
         try audit("remote-controls-zh-max", target: "account.cleanup.controls", staticTarget: true)
-        try launch(f, language: "zh-Hans"); deletion("zh-Hans")
+        try await launch(f, language: "zh-Hans"); deletion("zh-Hans")
         contains("account.cleanup.controls", "已移除并核验")
         XCTAssertFalse(app.buttons["account.cleanup.readDevice"].exists)
         try await call("/validate", name)
@@ -259,13 +282,13 @@ import Foundation
         contains("account.cleanup.progress", "Confirmed for the listed online domains")
         contains("account.cleanup.areas", "31 of 31")
         try await call("/native-files", name, ["stage": "after"])
-        try launch(f, language: "zh-Hans"); deletion("zh-Hans")
+        try await launch(f, language: "zh-Hans"); deletion("zh-Hans")
         tap("account.cleanup.readDevice")
         contains("account.cleanup.deviceReceipt", "已确认")
         tap("account.cleanup.finalizeControls")
         contains("account.cleanup.controls", "已移除并核验")
         try audit("all-provided-controls-zh-max", target: "account.cleanup.controls", staticTarget: true)
-        try launch(f, language: "zh-Hans"); deletion("zh-Hans")
+        try await launch(f, language: "zh-Hans"); deletion("zh-Hans")
         contains("account.cleanup.controls", "已移除并核验")
         XCTAssertFalse(app.buttons["account.cleanup.readDevice"].exists)
         try await call("/validate", name)

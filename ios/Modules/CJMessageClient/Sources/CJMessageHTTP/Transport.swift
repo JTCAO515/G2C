@@ -450,6 +450,14 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         deviceCleanup=EndpointCapability(endpoint:deviceCleanupEndpoint,validate:validateDeviceCleanup)
     }
 
+    #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+    /// Existing development transports keep their route/lease checks and own
+    /// sessions, sharing only the approved local TLS and no-redirect delegate.
+    public static func developmentLocalTLSDelegate() throws -> any URLSessionDelegate {
+        try RedirectBlocker.localDeviceConfiguration()
+    }
+    #endif
+
     private init(requestTimeout: TimeInterval, resourceTimeout: TimeInterval, preview: EndpointCapability?, messages: MessageCapability? = nil, memory: EndpointCapability? = nil, memoryManagement: EndpointCapability? = nil, typedMemory: EndpointCapability? = nil, needs: EndpointCapability? = nil, tripEditing: EndpointCapability? = nil, feedback: EndpointCapability? = nil, memoryHistory: EndpointCapability? = nil, accountCleanup: EndpointCapability? = nil, memoryCandidates: EndpointCapability? = nil, deviceCleanup: EndpointCapability? = nil, deviceCompletion: EndpointCapability? = nil, memoryErasure: EndpointCapability? = nil, memoryProjection: EndpointCapability? = nil, deviceVersion: CleanupDeviceVersion = .v3) throws {
         self.deviceVersion = deviceVersion
         guard requestTimeout > 0, resourceTimeout > 0, requestTimeout.isFinite, resourceTimeout.isFinite else {
@@ -916,30 +924,34 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
 }
 private final class RedirectBlocker: NSObject, URLSessionTaskDelegate, Sendable {
     #if DEBUG && G2C_M4_DEVICE_ACCEPTANCE && canImport(Security)
-    private let localServer: M4LocalServerTrust?
-    init(localServer: M4LocalServerTrust? = nil) { self.localServer = localServer }
+    private let localServers: [M4LocalServerTrust]
+    init(localServers: [M4LocalServerTrust] = []) { self.localServers = localServers }
 
     #if os(iOS) && !targetEnvironment(simulator)
     static func localDeviceConfiguration() throws -> RedirectBlocker {
         let environment = ProcessInfo.processInfo.environment
         guard let host = environment["G2C_M4_LOCAL_HOST"] else { return RedirectBlocker() }
-        guard let rawPort = environment["G2C_M4_LOCAL_PORT"], let port = Int(rawPort),
+        guard let rawPort = environment["G2C_M4_LOCAL_PORT"],
               let url = URL(string: "https://" + host + ":" + rawPort),
               MessageEndpoint.isM4LocalHTTPS(url, approvedHost: host),
               let certificate = Bundle.main.url(forResource: "G2CM4LocalServer", withExtension: "cer") else {
             throw MessageHTTPFailure.invalidConfiguration
         }
-        let policy = try M4LocalServerTrust(host: host, port: port, certificateDER: Data(contentsOf: certificate))
-        return RedirectBlocker(localServer: policy)
+        let ports = try M4LocalServerTrust.approvedPorts(primary: rawPort,
+            additional: environment["G2C_M4_LOCAL_EXTRA_PORTS"])
+        let bytes = try Data(contentsOf: certificate)
+        let policies = try ports.map { try M4LocalServerTrust(host: host, port: $0, certificateDER: bytes) }
+        return RedirectBlocker(localServers: policies)
     }
     #endif
 
     func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge) async
         -> (URLSession.AuthChallengeDisposition, URLCredential?) {
-        guard let localServer, challenge.protectionSpace.host == localServer.host else {
+        guard let first = localServers.first, challenge.protectionSpace.host == first.host else {
             return (.performDefaultHandling, nil)
         }
         guard challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
+              let localServer = localServers.first(where: { $0.port == challenge.protectionSpace.port }),
               let trust = challenge.protectionSpace.serverTrust,
               localServer.accepts(trust, host: challenge.protectionSpace.host, port: challenge.protectionSpace.port) else {
             return (.cancelAuthenticationChallenge, nil)

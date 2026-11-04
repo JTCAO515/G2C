@@ -258,7 +258,10 @@ public struct NeedsDetailsView: View {
     private var display: NeedsDraft { .init(needsID: "display", expectedVersion: 0, fields: fields) }
     public var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            if let version { Text(language.text("读取的版本 ", "Version at read: ") + String(version)).font(.headline).accessibilityIdentifier(prefix + ".version") }
+            if let version {
+                NeedsSelectableFieldText(text: language.text("读取的版本 ", "Version at read: ") + String(version), headline: true)
+                    .accessibilityAddTraits(.isHeader).accessibilityIdentifier(prefix + ".version")
+            }
             NeedsSelectableFieldText(text: unconfirmed
                 ? language.text("来源：合成提取候选，尚未确认或保存。预订和时间未由外部服务核实。", "Source: synthetic extraction candidates, unconfirmed and unsaved. Bookings and times are not externally verified.")
                 : language.text("来源：用户提供；预订和时间未由外部服务核实。", "Source: user provided; bookings and times are not externally verified."))
@@ -267,45 +270,50 @@ public struct NeedsDetailsView: View {
                 row(field.label(language), summary(display.observations[field]!, choice: field == .basis ? "basis" : ""), prefix + "." + field.rawValue)
             }
             ForEach(NeedsEventField.allCases, id: \.self) { field in
-                GroupBox(field.label(language)) {
+                detailGroup(field.label(language)) {
                     if let event = display.events[field] { eventSummary(event, id: prefix + "." + field.rawValue) }
-                    else { Text(NeedsObservationState.absent.label(language)).accessibilityIdentifier(prefix + "." + field.rawValue) }
+                    else { NeedsSelectableFieldText(text: NeedsObservationState.absent.label(language)).accessibilityIdentifier(prefix + "." + field.rawValue) }
                 }
             }
-            GroupBox(language.text("同伴", "Companions")) {
+            detailGroup(language.text("同伴", "Companions")) {
                 if let companions = fields.companions?.additionalProperties {
-                    if companions.isEmpty { Text(language.text("明确为空", "Explicitly empty")) }
+                    if companions.isEmpty { NeedsSelectableFieldText(text: language.text("明确为空", "Explicitly empty")) }
                     ForEach(companions.keys.sorted(), id: \.self) { id in
-                        Text(companions[id]!).fixedSize(horizontal: false, vertical: true).accessibilityIdentifier(prefix + ".companion." + id)
+                        NeedsSelectableFieldText(text: companions[id]!).fixedSize(horizontal: false, vertical: true).accessibilityIdentifier(prefix + ".companion." + id)
                     }
-                } else { Text(NeedsObservationState.absent.label(language)) }
+                } else { NeedsSelectableFieldText(text: NeedsObservationState.absent.label(language)) }
             }
-            GroupBox(language.text("固定事项（非查证订单）", "Fixed items (not verified orders)")) {
+            detailGroup(language.text("固定事项（非查证订单）", "Fixed items (not verified orders)")) {
                 if let items = fields.fixed_items {
-                    if items.isEmpty { Text(language.text("明确为空", "Explicitly empty")) }
+                    if items.isEmpty { NeedsSelectableFieldText(text: language.text("明确为空", "Explicitly empty")) }
                     ForEach(Array(items.enumerated()), id: \.element.item_id) { index, item in
                         VStack(alignment: .leading, spacing: 8) {
-                            Text(item.description).font(.headline).fixedSize(horizontal: false, vertical: true).accessibilityIdentifier(prefix + ".fixed.\(index).description")
-                            Text(kindLabel(item.kind)).accessibilityIdentifier(prefix + ".fixed.\(index).kind")
+                            NeedsSelectableFieldText(text: item.description, headline: true).fixedSize(horizontal: false, vertical: true).accessibilityIdentifier(prefix + ".fixed.\(index).description")
+                            NeedsSelectableFieldText(text: kindLabel(item.kind)).accessibilityIdentifier(prefix + ".fixed.\(index).kind")
                             row(language.text("适用对象", "Applies to"), subjects(item.applies_to), prefix + ".fixed.\(index).subjects")
                             row(language.text("固定意图", "Lock intent"), summary(.init(item.locked), choice: "lock"), prefix + ".fixed.\(index).locked")
                             row(language.text("预订声称（未核实）", "Booking claim (unverified)"), summary(.init(item.booking_status), choice: "booking"), prefix + ".fixed.\(index).booking")
-                            Text(language.text("开始", "Start")); eventSummary(.init(item.start), id: prefix + ".fixed.\(index).start")
-                            Text(language.text("结束", "End")); eventSummary(.init(item.end), id: prefix + ".fixed.\(index).end")
+                            NeedsSelectableFieldText(text: language.text("开始", "Start")); eventSummary(.init(item.start), id: prefix + ".fixed.\(index).start")
+                            NeedsSelectableFieldText(text: language.text("结束", "End")); eventSummary(.init(item.end), id: prefix + ".fixed.\(index).end")
                         }.padding(.vertical, 6)
                     }
-                } else { Text(NeedsObservationState.absent.label(language)) }
+                } else { NeedsSelectableFieldText(text: NeedsObservationState.absent.label(language)) }
             }
-            GroupBox(language.text("仅本次的临时条件", "Temporary conditions for this trip only")) {
+            detailGroup(language.text("仅本次的临时条件", "Temporary conditions for this trip only")) {
                 if let items = fields.temporary_conditions {
-                    if items.isEmpty { Text(language.text("明确为空", "Explicitly empty")) }
+                    if items.isEmpty { NeedsSelectableFieldText(text: language.text("明确为空", "Explicitly empty")) }
                     ForEach(Array(items.enumerated()), id: \.element.condition_id) { index, item in
-                        Text(item.description + " · " + subjects(item.applies_to)).fixedSize(horizontal: false, vertical: true)
+                        NeedsSelectableFieldText(text: item.description + " · " + subjects(item.applies_to)).fixedSize(horizontal: false, vertical: true)
                             .accessibilityIdentifier(prefix + ".temporary.\(index)")
                     }
-                } else { Text(NeedsObservationState.absent.label(language)) }
+                } else { NeedsSelectableFieldText(text: NeedsObservationState.absent.label(language)) }
             }
         }.foregroundStyle(.primary).textSelection(.enabled)
+    }
+    private func detailGroup<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
+        GroupBox(content: content) {
+            NeedsSelectableFieldText(text: title, headline: true).accessibilityAddTraits(.isHeader)
+        }
     }
     private func row(_ title: String, _ value: String, _ id: String) -> some View {
         NeedsSelectableFieldText(text: title + "\n" + value)
@@ -357,6 +365,7 @@ public struct NeedsDetailsView: View {
 import UIKit
 private struct NeedsSelectableFieldText: UIViewRepresentable {
     let text: String
+    var headline = false
     @Environment(\.dynamicTypeSize) private var size
     func makeUIView(context: Context) -> UITextView {
         let view = UITextView()
@@ -369,7 +378,7 @@ private struct NeedsSelectableFieldText: UIViewRepresentable {
     }
     func updateUIView(_ view: UITextView, context: Context) {
         if view.text?.utf8.elementsEqual(text.utf8) != true { view.text = text }
-        view.font = UIFont.preferredFont(forTextStyle: .body,
+        view.font = UIFont.preferredFont(forTextStyle: headline ? .headline : .body,
             compatibleWith: UITraitCollection(preferredContentSizeCategory: category))
         // The spoken text is exactly the visible text; no alternate audit value.
         view.accessibilityLabel = text; view.accessibilityValue = nil
@@ -385,7 +394,8 @@ private struct NeedsSelectableFieldText: UIViewRepresentable {
 #else
 private struct NeedsSelectableFieldText: View {
     let text: String
-    var body: some View { Text(text).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true) }
+    var headline = false
+    var body: some View { Text(text).font(headline ? .headline : nil).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true) }
 }
 #endif
 

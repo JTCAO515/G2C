@@ -5,6 +5,22 @@ import Testing
 @testable import CJMessageHTTP
 
 struct M4LocalServerTrustTests {
+    @Test func onlyExplicitCanonicalPortsCanBeApproved() throws {
+        #expect(try M4LocalServerTrust.approvedPorts(primary: "18443", additional: nil) == [18443])
+        #expect(try M4LocalServerTrust.approvedPorts(primary: "18443", additional: "[]") == [18443])
+        #expect(try M4LocalServerTrust.approvedPorts(primary: "18443", additional: "[18444,18445]") == [18443,18444,18445])
+        for primary in ["0", "65536", "-1", "018443", "18443 ", "host:18443"] {
+            #expect(throws: M4LocalTLSFailure.self) {
+                try M4LocalServerTrust.approvedPorts(primary: primary, additional: nil)
+            }
+        }
+        for value in ["{}", "null", "[true]", "[\"18444\"]", "[0]", "[65536]",
+                      "[18443]", "[18444,18444]", "[1,2,3,4,5,6,7,8]", String(repeating: " ", count: 4097)] {
+            #expect(throws: M4LocalTLSFailure.self) {
+                try M4LocalServerTrust.approvedPorts(primary: "18443", additional: value)
+            }
+        }
+    }
     private func certificate() throws -> Data {
         let path = try #require(ProcessInfo.processInfo.environment["G2C_M4_TLS_TEST_CERT"])
         return try Data(contentsOf: URL(fileURLWithPath: path))

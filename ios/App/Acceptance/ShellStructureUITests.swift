@@ -6,6 +6,9 @@ import Foundation
     private let fixtureURL = "__FIXTURE_URL__"
     private var app: XCUIApplication!
     private var runID = ""
+    #if G2C_M4_DEVICE_ACCEPTANCE
+    private lazy var deviceSession = M4DeviceTestSession(test: self, control: fixtureURL)
+    #endif
 
     private func launch(mode: String? = nil, language: String = "en") {
         continueAfterFailure = false
@@ -17,6 +20,10 @@ import Foundation
             app.launchEnvironment.merge(["SHELL_FIXTURE_RUN": runID, "SHELL_FIXTURE_MEMORY": mode,
                 "SHELL_FIXTURE_LANGUAGE": language, "SHELL_FIXTURE_URL": fixtureURL]) { _, new in new }
         } else { app.launchArguments = ["-cj.ui.language.v1", language] }
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        M4DeviceTestSession.requireLargestSystemFont()
+        app.launchEnvironment.merge(try! deviceSession.applicationEnvironment(endpoint: fixtureURL, injecting: false)) { _, value in value }
+        #endif
         app.launch()
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
     }
@@ -91,7 +98,11 @@ import Foundation
 
     private func requests() async throws -> [String] {
         let url = try XCTUnwrap(URL(string: fixtureURL + "/audit?run=" + runID))
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        let (data, response) = try await deviceSession.data(from: url)
+        #else
         let (data, response) = try await URLSession.shared.data(from: url)
+        #endif
         XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
         return try JSONDecoder().decode([String].self, from: data)
     }

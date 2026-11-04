@@ -5,6 +5,9 @@ import Foundation
     private let bundle = "space.go2china.needs.acceptance"
     private let control = "__FIXTURE_URL__"
     private var app: XCUIApplication!
+    #if G2C_M4_DEVICE_ACCEPTANCE
+    private lazy var deviceSession = M4DeviceTestSession(test: self, control: control)
+    #endif
     private struct Fixture: Decodable {
         let case_id: String; let endpoint: String; let accounts: [String:String]; let subjects: [String:String]
         let conversation: String; let needs_id: String
@@ -24,7 +27,11 @@ import Foundation
         var url = URLComponents(string:control + path)!
         var values = extra; values["case"] = f?.case_id ?? caseID!
         url.queryItems = values.map { .init(name:$0.key,value:$0.value) }
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        let (data,response) = try await deviceSession.data(from: XCTUnwrap(url.url))
+        #else
         let (data,response) = try await URLSession.shared.data(from:XCTUnwrap(url.url))
+        #endif
         XCTAssertEqual((response as? HTTPURLResponse)?.statusCode,200)
         return data
     }
@@ -113,6 +120,11 @@ import Foundation
         let ready = XCTNSPredicateExpectation(predicate:NSPredicate(format:"exists == true AND hittable == true AND enabled == true"),object:element)
         XCTAssertEqual(XCTWaiter.wait(for:[ready],timeout:20),.completed,id)
         element.tap()
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        if id.hasPrefix("account.development.signin.") || id == "account.development.restore" {
+            deviceSession.waitForAppNetworkConsent()
+        }
+        #endif
     }
     @discardableResult private func text(_ id: String, contains: String, timeout: TimeInterval = 30) -> String {
         // Re-evaluate the concrete control type as lazy rows enter the page.
@@ -167,7 +179,13 @@ import Foundation
             if !select.isHittable { capture("native-select-all-not-hittable") }
             XCTAssertTrue(select.isHittable); select.tap()
         }
-        target.typeText(value)
+        // Synchronize each real keyboard event with its visible field value.
+        // A failed prefix stops here; no correction or replacement is retried.
+        var entered = ""
+        for character in value {
+            target.typeText(String(character)); entered.append(character)
+            XCTAssertEqual(Array((target.value as? String ?? "").utf8), Array(entered.utf8))
+        }
         XCTAssertEqual(Array((target.value as? String ?? "").utf8),Array(value.utf8)); dismissKeyboard(language)
     }
     private func appendStatement(_ value: String, language: String) {
@@ -198,14 +216,27 @@ import Foundation
         try app.performAccessibilityAudit(for:.all) { issue in count += 1; print(name,issue.detailedDescription,issue.element?.label ?? "unavailable"); return false }
         continueAfterFailure = false; XCTAssertEqual(count,0)
     }
-    private func launch(_ f: Fixture, language: String = "en", large: Bool = false, restore: Bool = false, timezone: String? = nil) throws {
+    private func launch(_ f: Fixture, language: String = "en", large: Bool = false, restore: Bool = false, timezone: String? = nil) async throws {
         app?.terminate(); app = XCUIApplication(bundleIdentifier:bundle)
         app.launchArguments = ["-cj.ui.language.v1",language]
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        if large { M4DeviceTestSession.requireLargestSystemFont() }
+        let accountsJSON = "{}"
+        #else
         if large { app.launchArguments += ["-UIPreferredContentSizeCategoryName","UICTContentSizeCategoryAccessibilityXXXL"] }
+        let accountsJSON = restore ? "{}" : String(data:try JSONEncoder().encode(f.accounts),encoding:.utf8)!
+        #endif
         app.launchEnvironment = ["OS_ACTIVITY_MODE":"disable","G2C_DEV_ACCOUNT_MODE":"1","G2C_DEV_API_BASE_URL":f.endpoint,
-            "G2C_DEV_ACCOUNTS":restore ? "{}" : String(data:try JSONEncoder().encode(f.accounts),encoding:.utf8)!,
+            "G2C_DEV_ACCOUNTS":accountsJSON,
             "G2C_DEV_NEEDS_PROFILE":"manual-v1","G2C_DEV_NEEDS_ID":f.needs_id,"G2C_DEV_NEEDS_PREVIEW":"synthetic-needs-v1"]
         if let timezone { app.launchEnvironment["TZ"] = timezone }
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        // An explicit one-use input supplies the same two fixture choices.
+        // Restores deliberately inject no accounts, as on the simulator.
+        if !restore { try await deviceSession.stageAccounts(caseID: f.case_id) }
+        app.launchEnvironment.merge(try deviceSession.applicationEnvironment(
+            endpoint: f.endpoint, injecting: !restore)) { _, value in value }
+        #endif
         app.launch(); XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout:15))
         tap(language == "en" ? "Memory" : "记忆"); tap("memory.account")
         if restore { tap("account.development.restore") }
@@ -240,7 +271,7 @@ import Foundation
     }
     private func normal(_ name: String, language: String, large: Bool) async throws {
         let f = try await prepare(name); defer { app?.terminate() }
-        try launch(f,language:language,large:large)
+        try await launch(f,language:language,large:large)
         try await preview(f,source:rich(language),language:language)
         let before = try await proof(f); XCTAssertEqual(before.needs_records,0); XCTAssertEqual(before.manual_posts,0); XCTAssertEqual(before.model_calls,1)
         text("needs.preview.memoryDeferred",contains:language == "en" ? "NOT saved" : "尚未保存")
@@ -283,7 +314,7 @@ import Foundation
     func testChineseLarge() async throws { try await normal("testChineseLarge",language:"zh-Hans",large:true) }
     func testClarifications() async throws {
         let f = try await prepare("testClarifications"); defer { app?.terminate() }
-        try launch(f); try await preview(f,source:"budget USD 1000; paid CNY 50; I do not eat spicy; booked hotel")
+        try await launch(f); try await preview(f,source:"budget USD 1000; paid CNY 50; I do not eat spicy; booked hotel")
         for i in 0..<4 { text("needs.preview.question.\(i)",contains:["total or per person","currency basis","this trip","specific companion"][i]) }
         tap("needs.preview.fields.open"); text("needs.preview.total",contains:"Not recorded"); text("needs.preview.paid",contains:"Uncertain")
         tap("needs.preview.fields.open"); beginAndCopy(); appendStatement("SYNTHETIC explicit correction only",language:"en"); save(); readDetails(1)
@@ -292,7 +323,7 @@ import Foundation
     }
     func testConflictReplay() async throws {
         let f = try await prepare("testConflictReplay"); defer { app?.terminate() }
-        try launch(f); try await preview(f,source:"we are 3; dates undecided"); beginAndCopy(); appendStatement("SYNTHETIC save",language:"en"); save()
+        try await launch(f); try await preview(f,source:"we are 3; dates undecided"); beginAndCopy(); appendStatement("SYNTHETIC save",language:"en"); save()
         tap("needs.read"); tap("needs.useCurrent"); tap("needs.editor.open"); editKnown("partySize",value:"4",language:"en"); appendStatement("SYNTHETIC stale edit",language:"en")
         _ = try await call("/external-correction",f); tap("needs.save"); text("needs.container.state",contains:"conflict")
         text("needs.editor.basis",contains:"version 1"); tap("needs.read"); text("needs.editor.basis",contains:"version 1")
@@ -306,18 +337,18 @@ import Foundation
     }
     func testUnknownReopen() async throws {
         let f = try await prepare("testUnknownReopen"); defer { app?.terminate() }
-        try launch(f); try await preview(f,source:"we are 3; dates undecided"); beginAndCopy(); appendStatement("SYNTHETIC ACK-loss save",language:"en")
+        try await launch(f); try await preview(f,source:"we are 3; dates undecided"); beginAndCopy(); appendStatement("SYNTHETIC ACK-loss save",language:"en")
         tap("needs.save"); text("needs.container.state",contains:"Result unknown")
         let before = try await proof(f); XCTAssertEqual(before.manual_posts,1); XCTAssertEqual(before.snapshot_version,1)
         let original = try XCTUnwrap(before.manual_originals.first)
-        try launch(f,restore:true); tap("assistant.needs"); tap("needs.originals.read"); tap("needs.original.query."+original.action_id)
+        try await launch(f,restore:true); tap("assistant.needs"); tap("needs.originals.read"); tap("needs.original.query."+original.action_id)
         text("needs.container.state",contains:"Original action verified")
         let after = try await proof(f); XCTAssertEqual(after.manual_posts,1); XCTAssertEqual(after.manual_bytes_sha256,before.manual_bytes_sha256)
         XCTAssertEqual(after.model_calls,before.model_calls); XCTAssertEqual(after.ledger_sha256,before.ledger_sha256); try audit("NEEDS_UNKNOWN_REOPEN")
     }
     func testCancelWaiting() async throws {
         let f = try await prepare("testCancelWaiting"); defer { app?.terminate() }
-        try launch(f); try await preview(f,source:"we are 3; dates undecided"); beginAndCopy(); appendStatement("SYNTHETIC stop waiting",language:"en")
+        try await launch(f); try await preview(f,source:"we are 3; dates undecided"); beginAndCopy(); appendStatement("SYNTHETIC stop waiting",language:"en")
         tap("needs.save"); _ = try await call("/wait-manual",f); tap("needs.cancel"); text("needs.container.state",contains:"Result unknown")
         _ = try await call("/release-manual",f)
         let before = try await proof(f); XCTAssertEqual(before.snapshot_version,1); XCTAssertEqual(before.manual_posts,1)
@@ -328,7 +359,7 @@ import Foundation
     }
     func testOwnerLate() async throws {
         let f = try await prepare("testOwnerLate"); defer { app?.terminate() }
-        try launch(f); try await preview(f,source:"we are 3; dates undecided"); beginAndCopy(); appendStatement("SYNTHETIC owner A",language:"en"); save()
+        try await launch(f); try await preview(f,source:"we are 3; dates undecided"); beginAndCopy(); appendStatement("SYNTHETIC owner A",language:"en"); save()
         let before = try await proof(f); _ = try await call("/hold-read",f); tap("needs.read"); _ = try await call("/wait-read",f)
         tap("assistant.panel.done"); tap("Memory"); text("account.development.status",contains:f.subjects["A"]!)
         tap("account.development.signout"); tap("account.development.signin.B"); text("account.development.status",contains:f.subjects["B"]!)
@@ -343,18 +374,28 @@ import Foundation
     }
     func testDeviceTimezones() async throws {
         let f = try await prepare("testDeviceTimezones"); defer { app?.terminate() }
-        try launch(f,timezone:"Pacific/Honolulu"); try await preview(f,source:rich("en")); beginAndCopy(); appendStatement("SYNTHETIC timezone test",language:"en"); save(); readDetails(1)
+        try await launch(f,timezone:"Pacific/Honolulu"); try await preview(f,source:rich("en")); beginAndCopy(); appendStatement("SYNTHETIC timezone test",language:"en"); save(); readDetails(1)
         text("needs.deviceTimezone",contains:"Pacific/Honolulu"); text("needs.detail.arrival.time",contains:"23:30")
         let before = try await proof(f)
-        try launch(f,restore:true,timezone:"Europe/Paris"); tap("assistant.needs"); readDetails(1)
+        try await launch(f,restore:true,timezone:"Europe/Paris"); tap("assistant.needs"); readDetails(1)
         text("needs.deviceTimezone",contains:"Europe/Paris"); text("needs.detail.arrival.date",contains:"2026-11-02"); text("needs.detail.arrival.time",contains:"23:30"); text("needs.detail.arrival.timezone",contains:"Asia/Shanghai")
         let after = try await proof(f); XCTAssertEqual(after.snapshot_fields_json,before.snapshot_fields_json); XCTAssertEqual(after.manual_posts,1); XCTAssertEqual(after.model_calls,1)
     }
     func testReleaseClosed() async throws {
         let f = try await prepare("testReleaseClosed"); defer { app?.terminate() }
         app = XCUIApplication(bundleIdentifier:bundle)
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        let accountsJSON = "{}"
+        #else
+        let accountsJSON = String(data:try JSONEncoder().encode(f.accounts),encoding:.utf8)!
+        #endif
         app.launchEnvironment = ["OS_ACTIVITY_MODE":"disable","G2C_DEV_ACCOUNT_MODE":"1","G2C_DEV_API_BASE_URL":f.endpoint,
-            "G2C_DEV_ACCOUNTS":String(data:try JSONEncoder().encode(f.accounts),encoding:.utf8)!,"G2C_DEV_NEEDS_PROFILE":"manual-v1","G2C_DEV_NEEDS_ID":f.needs_id,"G2C_DEV_NEEDS_PREVIEW":"synthetic-needs-v1"]
+            "G2C_DEV_ACCOUNTS":accountsJSON,"G2C_DEV_NEEDS_PROFILE":"manual-v1","G2C_DEV_NEEDS_ID":f.needs_id,"G2C_DEV_NEEDS_PREVIEW":"synthetic-needs-v1"]
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        try await deviceSession.stageAccounts(caseID: f.case_id)
+        app.launchEnvironment.merge(try deviceSession.applicationEnvironment(
+            endpoint: f.endpoint, injecting: true)) { _, value in value }
+        #endif
         app.launch(); XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout:15))
         let p = try await proof(f); XCTAssertEqual(p.manual_posts,0); XCTAssertEqual(p.model_calls,0); XCTAssertEqual(p.messages,0)
         XCTAssertFalse(app.buttons.matching(identifier:"assistant.send").firstMatch.exists); try audit("NEEDS_RELEASE_CLOSED")

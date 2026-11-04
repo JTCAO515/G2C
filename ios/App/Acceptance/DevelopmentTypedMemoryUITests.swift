@@ -5,6 +5,9 @@ import Foundation
 @MainActor final class DevelopmentTypedMemoryUITests: XCTestCase {
     private let control = "__FIXTURE_URL__"
     private var app: XCUIApplication!
+    #if G2C_M4_DEVICE_ACCEPTANCE
+    private lazy var deviceSession = M4DeviceTestSession(test: self, control: control)
+    #endif
     private var chinese = false
     private func localized(_ english: String,_ zh: String) -> String {chinese ? zh : english}
     private struct Fixture: Decodable {
@@ -51,6 +54,11 @@ import Foundation
         XCTAssertTrue(target.waitForExistence(timeout:10),id);XCTAssertTrue(target.isHittable,id)
         let enabled = XCTNSPredicateExpectation(predicate:NSPredicate(format:"enabled == true"),object:target)
         XCTAssertEqual(XCTWaiter.wait(for:[enabled],timeout:20),.completed,id);target.coordinate(withNormalizedOffset:CGVector(dx:0.5,dy:0.5)).tap()
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        if id.hasPrefix("account.development.signin.") || id == "account.development.restore" {
+            deviceSession.waitForAppNetworkConsent()
+        }
+        #endif
     }
     private func input(_ id: String,_ text: String) {
         // At maximum text size the next Form row can sit below the keyboard.
@@ -101,7 +109,11 @@ import Foundation
         back()
     }
     private func call(_ path: String) async throws -> Data {
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        let (data,response) = try await deviceSession.data(path)
+        #else
         let (data,response) = try await URLSession.shared.data(from:XCTUnwrap(URL(string:control + path)))
+        #endif
         XCTAssertEqual((response as? HTTPURLResponse)?.statusCode,200)
         return data
     }
@@ -122,8 +134,7 @@ import Foundation
         back()
     }
     private func completedMessages(_ count: Int,expected: String = "Travel A quiet room / 本次A安静房间") async throws {
-        let (data,response) = try await URLSession.shared.data(from:XCTUnwrap(URL(string:control + "/wait-completed?count=" + String(count))))
-        XCTAssertEqual((response as? HTTPURLResponse)?.statusCode,200)
+        let data = try await call("/wait-completed?count=" + String(count))
         let value = try XCTUnwrap(JSONSerialization.jsonObject(with:data) as? [String:Any])
         XCTAssertEqual(value["model_calls"] as? Int,count)
         tap("run.snapshot.read")
@@ -141,18 +152,29 @@ import Foundation
         dismissKeyboard()
         tap("assistant.send");try await completedMessages(count,expected:expected)
     }
-    private func launch(_ fixture: Fixture,restore: Bool,release: Bool = false,legacy: Bool = false) throws {
+    private func launch(_ fixture: Fixture,restore: Bool,release: Bool = false,legacy: Bool = false) async throws {
         app?.terminate();app = XCUIApplication(bundleIdentifier:"space.go2china.typed-memory.acceptance")
         app.launchArguments = ["-cj.ui.language.v1",chinese ? "zh-Hans" : "en"]
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        if chinese { M4DeviceTestSession.requireLargestSystemFont() }
+        let accountsJSON = "{}"
+        #else
         if chinese {app.launchArguments += ["-UIPreferredContentSizeCategoryName","UICTContentSizeCategoryAccessibilityXXXL"]}
+        let accountsJSON = restore ? "{}" : String(data:try JSONEncoder().encode(fixture.accounts),encoding:.utf8)!
+        #endif
         app.launchEnvironment = ["OS_ACTIVITY_MODE":"disable","G2C_DEV_ACCOUNT_MODE":"1",
-            "G2C_DEV_API_BASE_URL":fixture.endpoint,"G2C_DEV_ACCOUNTS":restore ? "{}" : String(data:try JSONEncoder().encode(fixture.accounts),encoding:.utf8)!,
+            "G2C_DEV_API_BASE_URL":fixture.endpoint,"G2C_DEV_ACCOUNTS":accountsJSON,
             "G2C_DEV_TRAVEL_PROFILE":fixture.travel_profile,"G2C_DEV_TYPED_MEMORY_PROFILE":fixture.memory_profile,
             "G2C_DEV_TYPED_MEMORY_URL":fixture.memory_endpoint]
         if legacy {
             for key in ["G2C_DEV_TRAVEL_PROFILE","G2C_DEV_TYPED_MEMORY_PROFILE","G2C_DEV_TYPED_MEMORY_URL"] {app.launchEnvironment.removeValue(forKey:key)}
             app.launchEnvironment["G2C_DEV_MEMORY_PROFILE"] = fixture.legacy_profile
         }
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        if !restore { try await deviceSession.stageAccounts() }
+        app.launchEnvironment.merge(try deviceSession.applicationEnvironment(endpoint: fixture.endpoint,
+            injecting: !restore, additionalEndpoints: [fixture.memory_endpoint])) { _, value in value }
+        #endif
         app.launch();tap("Memory")
         if release {return}
         tap("memory.account")
@@ -172,7 +194,7 @@ import Foundation
     }
     func testTypedGroupsPaged() async throws {
         continueAfterFailure=false;executionTimeAllowance=900
-        let f=try await prepare();defer { app?.terminate() };try launch(f,restore:false)
+        let f=try await prepare();defer { app?.terminate() };try await launch(f,restore:false)
         tap("memory2.items.open");tap("memory2.items.read")
         text("memory2.items.coverage",contains:"not account-wide totals")
         text("memory2.group.empty.preference",contains:"pages read so far")
@@ -191,7 +213,7 @@ import Foundation
     }
     func testTypedGroupsLateAccount() async throws {
         continueAfterFailure=false;executionTimeAllowance=900
-        let f=try await prepare();defer { app?.terminate() };try launch(f,restore:false)
+        let f=try await prepare();defer { app?.terminate() };try await launch(f,restore:false)
         tap("memory2.items.open");_ = try await call("/arm-hold");tap("memory2.items.read");_ = try await call("/wait-held")
         back();tap("memory.account");tap("account.development.signin.B")
         text("account.development.status",contains:try XCTUnwrap(f.subjects["B"]))
@@ -209,7 +231,7 @@ import Foundation
     private func questions(large:Bool) async throws {
         continueAfterFailure=false;executionTimeAllowance=900;chinese=large
         let fixture=try await prepare();defer { app?.terminate() }
-        try launch(fixture,restore:false)
+        try await launch(fixture,restore:false)
         let count=try XCTUnwrap(fixture.question_count);XCTAssertTrue((2...3).contains(count))
         tap("memory2.collection.open");text("memory2.collection.progress",contains:"1/"+String(count))
         for step in 1..<count { tap("memory2.collection.next");text("memory2.collection.progress",contains:String(step+1)+"/"+String(count)) }
@@ -247,12 +269,12 @@ import Foundation
     func testUnknownReopenAndLifecycleRecall() async throws {
         continueAfterFailure = false;executionTimeAllowance = 900
         let f = try await prepare();defer {app?.terminate()}
-        try launch(f,restore:false)
+        try await launch(f,restore:false)
         _ = try await call("/arm-loss?kind=save")
         let long = "Unknown original long term / 未知原文 e\u{301}"
         save(long,scope:"Long term / 长期",expected:"Result unknown")
         save("Must not bypass original save",scope:"Long term / 长期",expected:"Query the earlier original operation first")
-        try launch(f,restore:true);try await reconcileAll()
+        try await launch(f,restore:true);try await reconcileAll()
         tap("Assistant");chooseTravel(f.travel_ids[0]);tap("Memory")
         let current = "Recovered travel current / 恢复本次原文"
         save(current,scope:"Selected travel / 所选旅行")
@@ -261,7 +283,7 @@ import Foundation
         management("pause",expected:"Result unknown")
         back();back()
         save("Must not bypass original management",scope:"Long term / 长期",expected:"Query the earlier original operation first")
-        try launch(f,restore:true);try await reconcileAll()
+        try await launch(f,restore:true);try await reconcileAll()
         tap("Assistant");chooseTravel(f.travel_ids[0]);openChat("typed-chat-1")
         try await ask("Recall with the current item paused",count:1,expected:long)
         try await openTravelItem();text("memory2.detail.status",contains:"Disabled")
@@ -276,7 +298,7 @@ import Foundation
     func testSwitchAccountAfterActualCommit() async throws {
         continueAfterFailure = false;executionTimeAllowance = 600
         let f = try await prepare();defer {app?.terminate()}
-        try launch(f,restore:false)
+        try await launch(f,restore:false)
         _ = try await call("/arm-hold")
         reviewSave("Account A delayed original / A迟到原文",scope:"Long term / 长期")
         tap("memory2.manual.confirm");_ = try await call("/wait-held")
@@ -296,7 +318,7 @@ import Foundation
     func testReleaseTypedFlagsRemainClosed() async throws {
         continueAfterFailure = false;executionTimeAllowance = 600
         let f = try await prepare();defer {app?.terminate()}
-        try launch(f,restore:false,release:true)
+        try await launch(f,restore:false,release:true)
         XCTAssertFalse(app.buttons.matching(identifier:"account.development.signin.A").firstMatch.exists)
         XCTAssertFalse(app.buttons.matching(identifier:"memory2.items.open").firstMatch.exists)
         tap("memory.add")
@@ -312,7 +334,7 @@ import Foundation
     func testLegacyUnknownCannotBypassTypedMode() async throws {
         continueAfterFailure = false;executionTimeAllowance = 600
         let f = try await prepare();defer {app?.terminate()}
-        try launch(f,restore:false,legacy:true)
+        try await launch(f,restore:false,legacy:true)
         _ = try await call("/arm-loss?kind=legacy")
         let original = "Legacy unresolved original / 旧版未知原文 e\u{301}"
         tap("memory.add");tap("memory.manual.scope");tap("self · preference · Long term / 长期")
@@ -320,7 +342,7 @@ import Foundation
         tap("memory.manual.save");text("memory.save.status",contains:"Result unknown")
         // Preserve the same signed account, main endpoint, encrypted directory
         // and key. Change only the explicitly configured consumer wire mode.
-        try launch(f,restore:true)
+        try await launch(f,restore:true)
         tap("memory.add");tap("memory2.manual.option");tap("self · preference · Long term / 长期")
         input("memory2.manual.text","Must not bypass legacy unknown");input("memory2.manual.time","unknown");dismissKeyboard()
         tap("memory2.manual.review");text("memory2.manual.error",contains:"earlier originals could not be verified")
@@ -345,7 +367,7 @@ import Foundation
     func testRealConflictKeepsOriginalAndAllowsFreshSave() async throws {
         continueAfterFailure = false;executionTimeAllowance = 600
         let f = try await prepare();defer {app?.terminate()}
-        try launch(f,restore:false)
+        try await launch(f,restore:false)
         save("Conflict source / 并发原条目",scope:"Long term / 长期")
         tap("memory2.items.open");tap("memory2.items.read")
         let ids = try JSONDecoder().decode([String:String].self,from:await call("/items"))
@@ -355,7 +377,7 @@ import Foundation
         tap("memory2.manage.review.edit");text("memory2.manage.review.after",contains:originalText)
         _ = try await call("/concurrent-pause")
         tap("memory2.manage.confirm");text("memory2.manage.status",contains:"original action was rejected")
-        try launch(f,restore:true)
+        try await launch(f,restore:true)
         tap("memory.manage.openOriginals");tap("memory2.originals.read")
         let originals = try JSONDecoder().decode([String:[String]].self,from:await call("/originals"))
         for id in try XCTUnwrap(originals["saves"]) {tap("memory2.original.query." + id);text("memory2.save.status",contains:"Saved.")}
@@ -374,12 +396,12 @@ import Foundation
     func testTypedUnknownCannotReactivateLegacyWriter() async throws {
         continueAfterFailure = false;executionTimeAllowance = 900
         let f = try await prepare();defer {app?.terminate()}
-        try launch(f,restore:false,legacy:true)
+        try await launch(f,restore:false,legacy:true)
         tap("memory.add");tap("memory.manual.scope");tap("self · legacy.read · Long term / 长期")
         input("memory.manual.text","Original legacy read remains available / 保留旧只读回执")
         input("memory.manual.time","time unknown");dismissKeyboard()
         tap("memory.manual.save");text("memory.save.status",contains:"Saved.")
-        try launch(f,restore:true)
+        try await launch(f,restore:true)
         tap("memory.manage.openOriginals");tap("memory2.originals.read")
         let old = try JSONDecoder().decode([String:[String]].self,from:await call("/originals"))
         let legacy = try XCTUnwrap(old["legacy"]);XCTAssertEqual(legacy.count,1)
@@ -387,27 +409,27 @@ import Foundation
         tap("Assistant");chooseTravel(f.travel_ids[0]);tap("Memory")
         _ = try await call("/arm-loss?kind=save")
         save("Typed unknown cannot downgrade / 新版未知不能回退写入",scope:"Selected travel / 所选旅行",expected:"Result unknown")
-        try launch(f,restore:true,legacy:true)
+        try await launch(f,restore:true,legacy:true)
         tap("memory.add")
         let saveButton = app.buttons.matching(identifier:"memory.manual.save").firstMatch
         XCTAssertTrue(saveButton.waitForExistence(timeout:10));XCTAssertFalse(saveButton.isEnabled)
         tap("Read original operations");tap("Query this original operation")
         text("memory.original.status",contains:"Saved.")
-        try launch(f,restore:true)
+        try await launch(f,restore:true)
         tap("memory.manage.openOriginals");tap("memory2.originals.read")
         tap("memory2.legacy.query." + (try XCTUnwrap(legacy.first)));text("memory2.save.status",contains:"Saved.")
         let data = try await call("/originals"),originals = try JSONDecoder().decode([String:[String]].self,from:data)
         let typed = try XCTUnwrap(originals["saves"]);XCTAssertEqual(typed.count,1)
         tap("memory2.original.query." + (try XCTUnwrap(typed.first)));text("memory2.save.status",contains:"Saved.")
         back();save("Fresh compatible typed action / 兼容入口新保存",scope:"Long term / 长期")
-        try launch(f,restore:true,legacy:true);tap("memory.add")
+        try await launch(f,restore:true,legacy:true);tap("memory.add")
         let knownSaveButton = app.buttons.matching(identifier:"memory.manual.save").firstMatch
         XCTAssertTrue(knownSaveButton.waitForExistence(timeout:10));XCTAssertFalse(knownSaveButton.isEnabled)
     }
     func testChineseLargeSaveReadAndRecall() async throws {
         continueAfterFailure = false;executionTimeAllowance = 600;chinese = true
         let fixture = try await prepare();defer {app?.terminate()}
-        try launch(fixture,restore:false)
+        try await launch(fixture,restore:false)
         save("中文长期偏好 / 长期 e\u{301}",scope:"Long term / 长期")
         tap("Assistant");chooseTravel(fixture.travel_ids[0]);tap("Memory")
         let value = "中文本次偏好 / 安静房间 e\u{301}"
@@ -427,7 +449,7 @@ import Foundation
         continueAfterFailure = false;executionTimeAllowance = 600
         let fixture = try await prepare()
         defer {app.terminate()}
-        try launch(fixture,restore:false)
+        try await launch(fixture,restore:false)
         save("Typed long-term tea / 新长期 e\u{301}",scope:"Long term / 长期")
         tap("Assistant");tap("assistant.travelContext");tap("travel.selection." + fixture.travel_ids[0])
         text("travel.selection.status",contains:fixture.travel_ids[0]);tap("assistant.panel.done");tap("Memory")
@@ -457,7 +479,7 @@ import Foundation
         text("memory2.manage.status",contains:"Original receipt verified")
         tap("Assistant");try await ask("Use the current preference in the next turn",count:2,expected:updated)
         openChat("typed-chat-2");try await ask("Use persisted preferences in this new chat",count:3,expected:updated)
-        try launch(fixture,restore:true)
+        try await launch(fixture,restore:true)
         tap("Assistant");chooseTravel(fixture.travel_ids[0]);openChat("typed-chat-3")
         try await ask("Use current memory after restarting the App",count:4,expected:updated)
         chooseTravel(fixture.travel_ids[1])

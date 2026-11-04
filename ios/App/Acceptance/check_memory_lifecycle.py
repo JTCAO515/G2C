@@ -10,6 +10,7 @@ import json
 import os
 from pathlib import Path
 import plistlib
+import secrets
 import socket
 import subprocess
 import sys
@@ -28,10 +29,22 @@ sys.path.insert(0,str(ROOT/'scripts'))
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--simulator',required=True);p.add_argument('--run-context',type=Path,required=True)
+    target=p.add_mutually_exclusive_group(required=True)
+    target.add_argument('--simulator');target.add_argument('--device')
+    p.add_argument('--local-tls',type=Path);p.add_argument('--prepare-only',action='store_true')
+    p.add_argument('--run-context',type=Path,required=True)
     p.add_argument('--output',type=Path,required=True);p.add_argument('--build-dir',type=Path,required=True)
     p.add_argument('--case',choices=CASES);args=p.parse_args()
+    tls=None
+    if args.device:
+        if not args.local_tls:p.error('--device requires the approved --local-tls profile')
+        from m4_device import LocalTLS,configure_project,private_workspace
+        from m4_native import DeviceNative,authenticated_control
+        tls=LocalTLS.load(args.local_tls)
+    elif args.local_tls or args.prepare_only:p.error('Device options require --device')
+    os.umask(0o077)
     output=args.output.resolve();build=args.build_dir.resolve()
+    if tls: device_project_root, build = private_workspace(output, build)
     if output.is_relative_to(ROOT) or build.is_relative_to(ROOT):raise ValueError('external evidence only')
     output.mkdir(parents=True)
     if subprocess.check_output(['git','status','--porcelain'],cwd=ROOT):raise ValueError('commit candidate first')
@@ -39,7 +52,7 @@ def main():
     env={k:v for k,v in os.environ.items() if not k.startswith(('PG','LIBPQ','SIMCTL_CHILD_','G2C_DEV_','CJ_LOCAL_'))}
     for key in tuple(os.environ):
         if key.startswith(('PG','LIBPQ','CJ_LOCAL_')):os.environ.pop(key)
-    env.update(CJ_ENV='local',DEVELOPER_DIR='/Applications/Xcode.app/Contents/Developer');os.environ['CJ_ENV']='local'
+    env.update(CJ_ENV='local',DEVELOPER_DIR='/Applications/Xcode.app/Contents/Developer',OS_ACTIVITY_MODE='disable');os.environ['CJ_ENV']='local'
     import psycopg,uvicorn,dev_auth,migrate
     from pg_suites import cluster
     from fastapi.testclient import TestClient
@@ -53,11 +66,15 @@ def main():
     sources=[*list((ROOT/'ios/App').glob('*.swift')),*list((ROOT/'ios/Modules/CJMemoryClient/Sources').rglob('*.swift')),
         *list((ROOT/'ios/Modules/CJShell/Sources').rglob('*.swift')),*list((ROOT/'ios/Modules/CJMessageClient/Sources').rglob('*.swift')),
         Path(__file__),HERE/'DevelopmentMemoryLifecycleUITests.swift']
+    if tls:sources += [HERE/name for name in ('m4_device.py','m4_native.py','m4_artifacts.py','M4DeviceControl.swift','M4DeviceTestSession.swift')]
     report=dict(status='RUNNING',head=head,cases={},checks={},test_infrastructure=dict(os_activity_mode='disable',ui_queries='typed controls; no descendants(any)',authorization='JT 2026-10-30 XCTest infrastructure repair'),run_context=json.loads(args.run_context.read_text()),
         source_hashes={str(s.relative_to(ROOT)):hashlib.sha256(s.read_bytes()).hexdigest() for s in sources},
         git_trees={s:subprocess.check_output(['git','rev-parse',head+':'+s],cwd=ROOT,text=True).strip() for s in ('ios','backend','contracts','scripts')},
         unrun=['real accounts/models/fees/cloud','physical device/VoiceOver','deployment'])
     if args.case:report['unrun'] += [case for case in CASES if case!=args.case]
+    if tls:report.update(layer='signed approved iPhone/local pinned HTTPS/private PG/formal worker/FakeProvider',
+        raw_native_bundle_shareable=False,build_inputs_shareable=False,
+        unrun=['real accounts/models/fees/cloud','VoiceOver','actual system font setting record','deployment'])
     def save():(output/'report.json').write_text(json.dumps(report,indent=2,ensure_ascii=False))
     save();tokens={};records={};audit=[]
     try:
@@ -139,8 +156,9 @@ def main():
                     return observed
                 for name,app in apps.items():
                     with socket.socket() as sock:sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
-                    endpoints[name]=f'http://127.0.0.1:{port}'
-                    server=uvicorn.Server(uvicorn.Config(observer(name,app),host='127.0.0.1',port=port,log_level='critical',access_log=False))
+                    endpoints[name]=f'https://{tls.host}:{port}' if tls else f'http://127.0.0.1:{port}'
+                    server=uvicorn.Server(uvicorn.Config(observer(name,app),host=tls.host if tls else '127.0.0.1',port=port,log_level='critical',access_log=False,
+                        **(tls.uvicorn_options() if tls else {})))
                     thread=threading.Thread(target=server.run,daemon=True);thread.start();servers.append(server);threads.append(thread)
                     deadline=time.monotonic()+10
                     while not server.started:
@@ -148,7 +166,9 @@ def main():
                         time.sleep(.02)
                 def operator(subject,*arguments):
                     subprocess.run([sys.executable,'-B',str(ROOT/'scripts/local_run_context.py'),'--conninfo-json',str(connection),'--auth-dir',str(auth),'--run-context',str(args.run_context.resolve()),'--subject',subject,*arguments],env=env,stdout=subprocess.DEVNULL,check=True)
+                prepared={}
                 def prepare(case):
+                    if tls and case in prepared:return prepared[case]
                     tokens[case]={x:dev_auth.token(auth,s,120) for x,s in subjects[case].items()}
                     for s in subjects[case].values():operator(s,'init-budget')
                     row=records[case]=dict(posts=[],initial=[],fixture_actions=[],conversations=[uuid.uuid4().hex,uuid.uuid4().hex],audit_start=len(audit),lose_next=case=='testUnknownReopen',hold_next=case=='testSwitchLate',captured=threading.Event(),release=threading.Event(),released=threading.Event())
@@ -165,7 +185,9 @@ def main():
                     scope=scope_for(ISSUER,subjects[case]['A'])
                     with database.connect(scope) as conn:
                         row['original_sources']={s:hashlib.sha256(bytes(raw)).hexdigest() for s,raw in conn.execute('SELECT source_id,approved_input FROM cj_memory_source WHERE scope=%s',(scope,))}
-                    return dict(endpoint=endpoints['read'],management_endpoint=endpoints['management'],accounts=tokens[case],subjects=subjects[case],profile=json.dumps(profile),case_id=case,initial=row['initial'],conversations=row['conversations'])
+                    value=dict(endpoint=endpoints['read'],management_endpoint=endpoints['management'],accounts={} if tls else tokens[case],subjects=subjects[case],profile=json.dumps(profile),case_id=case,initial=row['initial'],conversations=row['conversations'])
+                    if tls:prepared[case]=value
+                    return value
                 def snapshot(case,item_id):
                     with TestClient(apps['read']) as api:
                         response=api.get('/v1/memory-items',params={'item_id':item_id},headers={'Authorization':'Bearer '+tokens[case]['A']});response.raise_for_status();return response.json()['item']
@@ -259,11 +281,20 @@ def main():
                             import traceback
                             report.setdefault('control_errors',[]).append(dict(type=type(error).__name__,frames=[dict(function=f.name,line=f.lineno) for f in traceback.extract_tb(error.__traceback__)]));save()
                             self.send_response(500);self.end_headers();self.wfile.write(type(error).__name__.encode())
-                control=ThreadingHTTPServer(('127.0.0.1',0),Control);threading.Thread(target=control.serve_forever,daemon=True).start()
+                control_token=secrets.token_urlsafe(32) if tls else None;native=None;active_case=None;last_device_container=None
+                def stage_input(request):
+                    query=parse_qs(request.split('?',1)[1])
+                    if set(query)!={'case'} or query['case']!=[active_case]:raise ValueError('Staging requires the active case')
+                    native.stage(case=query['case'][0])
+                control=ThreadingHTTPServer((tls.host if tls else '127.0.0.1',0),
+                    authenticated_control(Control,control_token,stage_input,lambda: active_case) if tls else Control)
+                if tls:tls.secure_http_server(control)
+                threading.Thread(target=control.serve_forever,daemon=True).start()
                 try:
                     spec=importlib.util.spec_from_file_location('trip_builder',ROOT/'scripts/check_ios_trip_confirm.py');module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
-                    builder=object.__new__(module.XCTestDriver);builder.directory=output/'project';builder.directory.mkdir();builder.write_project(0)
-                    (builder.directory/'G2CControl.swift').write_text((HERE/'DevelopmentMemoryLifecycleUITests.swift').read_text().replace('__FIXTURE_URL__',f'http://127.0.0.1:{control.server_port}'))
+                    builder=object.__new__(module.XCTestDriver);builder.directory=(device_project_root if tls else output)/'project';builder.directory.mkdir();builder.write_project(0)
+                    control_url=('https://'+tls.host if tls else 'http://127.0.0.1')+':'+str(control.server_port)
+                    (builder.directory/'G2CControl.swift').write_text((HERE/'DevelopmentMemoryLifecycleUITests.swift').read_text().replace('__FIXTURE_URL__',control_url))
                     project=builder.directory/'G2CAcceptance.xcodeproj';pbx=project/'project.pbxproj';text=pbx.read_text().replace('space.go2china.foundation.local',BUNDLE).replace('space.go2china.foundation.control',BUNDLE+'.control')
                     entitlements=builder.directory/'Lifecycle.entitlements';entitlements.write_bytes(plistlib.dumps({'application-identifier':BUNDLE,'keychain-access-groups':[BUNDLE]}));text=text.replace(json.dumps(str(ROOT/'ios/App/Development.entitlements')),json.dumps(str(entitlements)))
                     # Reuse #228's existing Release runner configuration; the App's
@@ -271,8 +302,22 @@ def main():
                     line=next(l for l in text.splitlines() if l.startswith('A00000000000000000000004 = {isa = XCBuildConfiguration; name = Debug;'))
                     text=text.replace(line,line+'\n'+line.replace('A00000000000000000000004','A0000000000000000000000C',1).replace('name = Debug;','name = Release;',1)).replace('buildConfigurations = (A00000000000000000000004);','buildConfigurations = (A00000000000000000000004, A0000000000000000000000C);')
                     pbx.write_text(text)
+                    if tls:_,configuration_file,_=configure_project(project,tls,control_url,control_token,bundle=BUNDLE,include_release=True)
                     for case in ([args.case] if args.case else CASES):
                         if subprocess.check_output(['git','status','--porcelain'],cwd=ROOT):raise RuntimeError('candidate changed')
+                        if tls:
+                            active_case=case;prepare(case)
+                            detail=dict(status='RUNNING');report.setdefault('device_native',{})[case]=detail;save()
+                            case_output=output/'device-native'/case;case_output.mkdir(parents=True,mode=0o700)
+                            native=DeviceNative(args.device,BUNDLE,project,configuration_file,build,ROOT,case_output,tokens[case],control_token,detail,evidence_root=output,case_id=case)
+                            configuration='Release' if case=='testReleaseClosed' else 'Debug'
+                            selected=['DevelopmentMemoryLifecycleUITests/'+case]
+                            if configuration=='Release':native.build_for_testing('Debug',selected,env)
+                            native.build_for_testing(configuration,selected,env)
+                            if args.prepare_only:
+                                detail['status']='PREPARED_EXECUTION_UNRUN';report['cases'][case]='UNRUN';save();continue
+                            native.run(configuration,selected,env);last_device_container=native.scan(configuration)
+                            detail['status']='PASS';report['cases'][case]='PASS';save();continue
                         result=output/(case+'.xcresult')
                         command=['xcodebuild','-project',str(project),'-scheme','G2CControl','-configuration','Release' if case=='testReleaseClosed' else 'Debug','-destination','platform=iOS Simulator,id='+args.simulator,'-derivedDataPath',str(build),'-resultBundlePath',str(result),'-scmProvider','system','-skipPackageUpdates','-onlyUsePackageVersionsFromResolvedFile','-parallel-testing-enabled','NO','-collect-test-diagnostics','never','ARCHS=arm64','ONLY_ACTIVE_ARCH=YES','CODE_SIGNING_ALLOWED=YES','CODE_SIGN_IDENTITY=-','-only-testing:G2CControl/DevelopmentMemoryLifecycleUITests/'+case,'test']
                         print('Memory lifecycle: '+case,flush=True);run=subprocess.run(command,cwd=ROOT,env=env,capture_output=True,text=True,timeout=1800)
@@ -282,16 +327,18 @@ def main():
                         (output/(case+'.log')).write_text(log)
                         summary=json.loads(subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)],text=True));report.setdefault('results',{})[case]={k:summary[k] for k in ('passedTests','failedTests','skippedTests')};save();run.check_returncode()
                         assert summary['passedTests']==1 and summary['failedTests']==summary['skippedTests']==0;report['cases'][case]='PASS';save()
-                    container=Path(subprocess.check_output(['xcrun','simctl','get_app_container',args.simulator,BUNDLE,'data'],text=True).strip())
-                    private_texts={item['command']['text'] for row in records.values() for item in row['initial']}
-                    private_texts.update(post['original']['text'] for row in records.values() for post in row['posts'] if 'text' in post['original'])
-                    for file in [*container.rglob('*'),*output.rglob('*')]:
-                        if file.is_file():
-                            raw=file.read_bytes();assert not any(token.encode() in raw for pair in tokens.values() for token in pair.values());assert b'-----BEGIN PRIVATE KEY-----' not in raw
-                            if file.is_relative_to(container):
-                                assert not any(text.encode() in raw for text in private_texts)
-                                if file.suffix=='.memory':assert file.stat().st_mode & 0o777==0o600 and file.parent.stat().st_mode & 0o777==0o700
-                    report['token_key_scan']='PASS';report['plaintext_scan']='PASS';report['status']='PARTIAL_PASS' if args.case else 'PASS'
+                    if not args.prepare_only:
+                        container=last_device_container if tls else Path(subprocess.check_output(['xcrun','simctl','get_app_container',args.simulator,BUNDLE,'data'],text=True).strip())
+                        private_texts={item['command']['text'] for row in records.values() for item in row['initial']}
+                        private_texts.update(post['original']['text'] for row in records.values() for post in row['posts'] if 'text' in post['original'])
+                        for file in [*container.rglob('*'),*output.rglob('*')]:
+                            if file.is_file():
+                                raw=file.read_bytes();assert not any(token.encode() in raw for pair in tokens.values() for token in pair.values());assert b'-----BEGIN PRIVATE KEY-----' not in raw
+                                if file.is_relative_to(container):
+                                    assert not any(text.encode() in raw for text in private_texts)
+                                    if file.suffix=='.memory':assert file.stat().st_mode & 0o777==0o600 and file.parent.stat().st_mode & 0o777==0o700
+                        report['token_key_scan']='PASS';report['plaintext_scan']='PASS';report['status']='VERIFYING_CLEANUP'
+                    else:report.update(status='PREPARED_EXECUTION_UNRUN',token_key_scan='UNRUN: device App container',plaintext_scan='UNRUN: device App container');save()
                 finally:
                     model.release.set()
                     for row in records.values():row['release'].set()
@@ -300,6 +347,20 @@ def main():
                     for server in servers:server.should_exit=True
                     for thread in threads:thread.join(10)
                     control.shutdown();control.server_close()
+                    if tls:
+                        try:
+                            if native is not None:native.cleanup_input()
+                        finally:(device_project_root/'project/M4ControlBootstrap.plist').unlink(missing_ok=True)
+                        secrets_to_scan=[token.encode() for pair in tokens.values() for token in pair.values()]+[control_token.encode()]
+                        for file in output.rglob('*'):
+                            if file.is_file() and not file.is_symlink():
+                                assert not any(value in file.read_bytes() for value in secrets_to_scan),'credential in evidence export'
+                        report['artifact_token_scan']='PASS';save()
+            report['private_pg_stopped']=True
+            assert head==subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'head changed during acceptance'
+            assert all(hashlib.sha256((ROOT/name).read_bytes()).hexdigest()==digest for name,digest in report['source_hashes'].items()),'source changed during acceptance'
+            if not args.prepare_only:report['status']='PARTIAL_PASS' if args.case else 'PASS'
+            save()
     except BaseException as error:report['status']='FAIL';report['error']=type(error).__name__;raise
     finally:save()
     print(json.dumps(dict(status=report['status'],head=head,cases=report['cases']),indent=2))

@@ -4,6 +4,9 @@ import Foundation
 @MainActor final class DevelopmentOfflineTripUITests: XCTestCase {
     let control = "__FIXTURE_URL__"
     var app: XCUIApplication!
+    #if G2C_M4_DEVICE_ACCEPTANCE
+    private lazy var deviceSession = M4DeviceTestSession(test: self, control: control)
+    #endif
     struct Fixture: Decodable { let endpoint: String; let accounts: [String: String]; let subjects: [String: String]; let case_id: String }
     struct Record: Decodable { let trip_id: String; let version: Int; let title: String; let sha256: String }
     struct Snapshot { let hash: String; let synced: String; let deadline: String }
@@ -11,14 +14,23 @@ import Foundation
     @discardableResult func call(_ path: String, _ fixture: Fixture, _ values: [String: String] = [:]) async throws -> Data {
         var url = try XCTUnwrap(URLComponents(string: control + path))
         url.queryItems = values.merging(["case": fixture.case_id]) { _, new in new }.map { URLQueryItem(name: $0.key, value: $0.value) }
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        if path == "/size" { M4DeviceTestSession.requireLargestSystemFont() }
+        let (data, response) = try await deviceSession.data(from: XCTUnwrap(url.url))
+        #else
         let (data, response) = try await URLSession.shared.data(from: XCTUnwrap(url.url))
+        #endif
         XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200, path)
         return data
     }
     func prepare(_ name: String) async throws -> (Fixture, Record) {
         var url = try XCTUnwrap(URLComponents(string: control + "/prepare"))
         url.queryItems = [.init(name: "case", value: name)]
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        let (data, response) = try await deviceSession.data(from: XCTUnwrap(url.url))
+        #else
         let (data, response) = try await URLSession.shared.data(from: XCTUnwrap(url.url))
+        #endif
         XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
         let fixture = try JSONDecoder().decode(Fixture.self, from: data)
         let records = try JSONDecoder().decode([Record].self, from: await call("/create", fixture))
@@ -39,15 +51,30 @@ import Foundation
         let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: target)
         XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 20), .completed, id)
         target.tap()
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        if id.hasPrefix("account.development.signin.") || id == "account.development.restore" {
+            deviceSession.waitForAppNetworkConsent()
+        }
+        #endif
     }
-    func launch(_ f: Fixture, language: String = "en", offsets: [String: String] = [:], choices: Bool = true) throws {
+    func launch(_ f: Fixture, language: String = "en", offsets: [String: String] = [:], choices: Bool = true) async throws {
         continueAfterFailure = false
         app?.terminate(); app = XCUIApplication(bundleIdentifier: "space.go2china.offline-trip.acceptance")
         app.launchArguments = ["-cj.ui.language.v1", language]
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        M4DeviceTestSession.requireLargestSystemFont()
+        let accountsJSON = "{}"
+        if choices { try await deviceSession.stageAccounts(caseID: f.case_id) }
+        #else
+        let accountsJSON = choices ? String(data: try JSONEncoder().encode(f.accounts), encoding: .utf8)! : "{}"
+        #endif
         app.launchEnvironment = ["OS_ACTIVITY_MODE": "disable", "G2C_DEV_ACCOUNT_MODE": "1",
             "G2C_DEV_API_BASE_URL": f.endpoint, "G2C_DEV_OFFLINE_TRIP": "last-sync-v1",
-            "G2C_DEV_ACCOUNTS": choices ? String(data: try JSONEncoder().encode(f.accounts), encoding: .utf8)! : "{}"]
+            "G2C_DEV_ACCOUNTS": accountsJSON]
             .merging(offsets) { _, new in new }
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        app.launchEnvironment.merge(try deviceSession.applicationEnvironment(endpoint: f.endpoint, injecting: choices)) { _, value in value }
+        #endif
         app.launch()
         XCTAssertTrue(app.tabBars.element.waitForExistence(timeout: 15))
         XCTAssertFalse(app.staticTexts["g2c.dev.error"].exists)
@@ -124,7 +151,7 @@ import Foundation
     func testReopenLanguageAndReadOnly() async throws {
         let (f, record) = try await prepare("testReopenLanguageAndReadOnly")
         defer { app?.terminate() }
-        try launch(f); initialLogin(f); synchronize(record)
+        try await launch(f); initialLogin(f); synchronize(record)
         let original = openCache(record)
         try await call("/verify", f, ["stage": "checkpoint", "snapshot_hash": original.hash])
         try await call("/checkpoint", f)
@@ -132,7 +159,7 @@ import Foundation
         try audit("offline-en-standard")
         try await call("/verify", f, ["network": "none", "stage": "unchanged", "snapshot_hash": original.hash])
         try await call("/offline", f)
-        try launch(f, choices: false)
+        try await launch(f, choices: false)
         let reopened = openCache(record)
         XCTAssertEqual(reopened.hash, original.hash); XCTAssertEqual(reopened.deadline, original.deadline)
         account(); app.navigationBars.buttons.element(boundBy: 0).tap()
@@ -149,19 +176,19 @@ import Foundation
         let (f, record) = try await prepare("testExpiryRollbackAndUntrustedTime")
         defer { app?.terminate() }
         try await call("/size", f, ["value": "large"])
-        try launch(f); initialLogin(f); synchronize(record)
+        try await launch(f); initialLogin(f); synchronize(record)
         let original = openCache(record)
         try await call("/verify", f, ["stage": "checkpoint", "snapshot_hash": original.hash])
         try await call("/offline", f)
-        try launch(f, offsets: ["G2C_DEV_OFFLINE_WALL_OFFSET": "1209600", "G2C_DEV_OFFLINE_UPTIME_OFFSET": "1209600"], choices: false)
+        try await launch(f, offsets: ["G2C_DEV_OFFLINE_WALL_OFFSET": "1209600", "G2C_DEV_OFFLINE_UPTIME_OFFSET": "1209600"], choices: false)
         expectDenied("has expired"); try audit("offline-expired")
         try await call("/verify", f, ["stage": "unchanged"])
-        try launch(f, offsets: ["G2C_DEV_OFFLINE_WALL_OFFSET": "-3600"], choices: false)
+        try await launch(f, offsets: ["G2C_DEV_OFFLINE_WALL_OFFSET": "-3600"], choices: false)
         expectDenied("cannot be trusted"); try await call("/verify", f, ["stage": "unchanged"])
-        try launch(f, offsets: ["G2C_DEV_OFFLINE_TIME_TRUSTED": "0"], choices: false)
+        try await launch(f, offsets: ["G2C_DEV_OFFLINE_TIME_TRUSTED": "0"], choices: false)
         expectDenied("cannot be trusted"); try await call("/verify", f, ["stage": "unchanged"])
         try await call("/online", f)
-        try launch(f); account(); tap("account.development.restore"); signed(f)
+        try await launch(f); account(); tap("account.development.restore"); signed(f)
         synchronize(record)
         let renewed = openCache(record)
         XCTAssertNotEqual(renewed.synced, original.synced)
@@ -172,7 +199,7 @@ import Foundation
         let (f, record) = try await prepare("testAccountSwitchAndLogout")
         defer { app?.terminate() }
         try await call("/size", f, ["value": "large"])
-        try launch(f); initialLogin(f); synchronize(record); _ = openCache(record)
+        try await launch(f); initialLogin(f); synchronize(record); _ = openCache(record)
         account(); tap("account.development.signin.B"); signed(f, as: "B")
         tap("Trips"); tap("offline.open")
         XCTAssertFalse(app.staticTexts["offline.title"].exists)
@@ -181,7 +208,7 @@ import Foundation
         synchronize(record); _ = openCache(record)
         account(); tap("account.development.signout")
         try await call("/verify", f, ["files": "0"])
-        try launch(f, choices: false); expectDenied("No offline snapshot")
+        try await launch(f, choices: false); expectDenied("No offline snapshot")
         try audit("offline-after-logout")
         try await call("/verify", f, ["files": "0"])
     }
@@ -189,7 +216,7 @@ import Foundation
         let (f, record) = try await prepare("testTemporaryFailuresAndIdentityDenial")
         defer { app?.terminate() }
         try await call("/size", f, ["value": "large"])
-        try launch(f); initialLogin(f); synchronize(record)
+        try await launch(f); initialLogin(f); synchronize(record)
         let original = openCache(record)
         try await call("/verify", f, ["stage": "checkpoint", "snapshot_hash": original.hash])
         for mode in ["503", "unknown", "network"] {
@@ -212,7 +239,7 @@ import Foundation
         if !app.staticTexts["offline.notice"].exists { tap("offline.open") }
         XCTAssertFalse(app.staticTexts["offline.title"].exists)
         try await call("/verify", f, ["stage": "denied", "files": "0"])
-        try launch(f, choices: false); expectDenied("No offline snapshot")
+        try await launch(f, choices: false); expectDenied("No offline snapshot")
         try await call("/verify", f, ["stage": "denied", "files": "0"])
     }
 }
