@@ -126,8 +126,8 @@ def worker():
 def initialize():
     require_configuration()
     path = os.environ['CJ_DEPLOY_MIGRATION_CONNINFO']
-    config=local_conninfo(path)  # Before the first connection or migration write.
-    from .recovery import require_release,bootstrap
+    from .recovery import require_release,bootstrap,deployment_connection
+    config=deployment_connection(local_conninfo(path))  # Before the first connection or migration write.
     existing=(control()/'latest.json').exists()
     if existing:require_release(config,control())
     with psycopg.connect(**config,autocommit=True) as conn:

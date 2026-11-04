@@ -78,6 +78,28 @@ def test_nonlocal_migration_is_rejected_before_connection(tmp_path,monkeypatch):
     with pytest.raises(CompositionUnavailable):entrypoint.initialize()
 
 
+@pytest.mark.parametrize('extra',[{'conninfo':'hostaddr=127.0.0.1'},
+    {'hostaddr':'127.0.0.1'},{'dbname':'hostaddr=127.0.0.1 dbname=warehouse'},
+    {'dbname':'postgresql://synthetic.invalid/warehouse'},{'port':'5432,6543'}])
+def test_local_connection_aliases_and_native_tool_dsn_are_rejected(extra,monkeypatch):
+    monkeypatch.setenv('CJ_ENV','local')
+    from cj_api.local_app import local_connection
+    from cj_api.composition import CompositionUnavailable
+    config=dict(host='/synthetic/socket',dbname='postgres',user='cj_deploy_admin')
+    config.update(extra)
+    with pytest.raises(CompositionUnavailable):local_connection(config)
+
+
+def test_local_connection_preserves_private_harness_options_once(monkeypatch):
+    monkeypatch.setenv('CJ_ENV','local')
+    from cj_api.local_app import local_connection
+    options=dict(host='/synthetic/socket',port=55865,dbname='postgres',user='operator',
+                 passfile='/synthetic/empty.pgpass',connect_timeout=5,options='-c statement_timeout=10000 -c search_path=public')
+    config=local_connection(options)
+    assert dict(config)==options and local_connection(config) is config
+    with pytest.raises(TypeError):config['dbname']='other'
+
+
 def test_build_context_uses_committed_allowed_blobs_only(tmp_path):
     import subprocess
     from deploy.build import source_context

@@ -91,7 +91,14 @@ def control_lock(control):
 def connection(path):
     # Reuse the exact local-only boundary. No cloud, DSN/environment fallback.
     from cj_api.local_app import local_conninfo
-    return local_conninfo(path)
+    return deployment_connection(local_conninfo(path))
+
+
+def deployment_connection(config):
+    from cj_api.local_app import local_connection
+    value=local_connection(config)
+    if 'dbname' not in value:raise ValueError('explicit_deployment_database_name_required')
+    return value
 
 
 def fingerprint(config):
@@ -135,11 +142,12 @@ def checksum(path):
 
 
 def backup(config,destination,control,*,base=None):
+    config=deployment_connection(config)
     with control_lock(control):return _backup(config,destination,control,base=base)
 
 
 def _backup(config, destination, control, *, base=None):
-    require_release(config,control)
+    _require_release(config,control)
     current=verified(control/'latest.json')
     destination.mkdir(mode=0o700)  # Refuse an existing package; no overwrite.
     prior = verified(base / 'manifest.json') if base is not None else None
@@ -189,6 +197,10 @@ def _backup(config, destination, control, *, base=None):
 
 
 def require_release(config, control):
+    return _require_release(deployment_connection(config),control)
+
+
+def _require_release(config,control):
     release = verified(control / 'release.json')
     latest = verified(control / 'latest.json')
     if (release['target'] != fingerprint(config) or release['checkpoint'] != latest['dump_sha256']
@@ -200,6 +212,7 @@ def require_release(config, control):
 
 
 def bootstrap(config,control,*,initialize=lambda:None):
+    config=deployment_connection(config)
     with control_lock(control):return _bootstrap(config,control,initialize)
 
 
@@ -223,6 +236,7 @@ def _bootstrap(config, control, initialize):
 
 
 def restore(config, base, safety, control):
+    config=deployment_connection(config)
     with control_lock(control):return _restore(config,base,safety,control)
 
 

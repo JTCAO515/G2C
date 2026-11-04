@@ -6,8 +6,8 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def source_context(root, destination):
-    entries=subprocess.check_output(['git','ls-tree','-rz','HEAD','--',
+def source_context(root, destination,revision='HEAD'):
+    entries=subprocess.check_output(['git','ls-tree','-rz',revision,'--',
         'pyproject.toml','uv.lock','backend','scripts','deploy'],cwd=root).split(b'\0')
     for entry in entries:
         if not entry:continue
@@ -27,7 +27,7 @@ def main():
     revision=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
     print('BUILD_SOURCE_COMMIT='+revision,flush=True)
     with tempfile.TemporaryDirectory(prefix='g2c-build-') as directory:
-        source_context(ROOT,Path(directory))
+        source_context(ROOT,Path(directory),revision)
         import os
         uid=os.getuid()
         if uid in (0,999):raise ValueError('runtime uid must be separate from database/operator uid')
