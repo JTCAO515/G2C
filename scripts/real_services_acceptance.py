@@ -33,7 +33,7 @@ STATE=Path.home()/'.local/share/g2c/m4-real-services'
 
 
 def keychain(name):
-    r=subprocess.run(['security','find-generic-password','-s',name,'-w'],capture_output=True,text=True)
+    r=subprocess.run(['security','find-generic-password','-s',name,'-w',str(Path.home()/'Library/Keychains/login.keychain-db')],capture_output=True,text=True,timeout=10)
     if r.returncode or not r.stdout.strip():raise ValueError('required_M4_keychain_item_unavailable')
     return r.stdout.strip()
 
@@ -45,13 +45,22 @@ def save(path,value):
     temp.replace(path)
 
 
-def run_batch():
+def run_batch(*,resume_setup=False):
     STATE.mkdir(parents=True,exist_ok=True,mode=0o700)
     with (STATE/'acceptance.lock').open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX)
         path=STATE/'acceptance.json'
-        if path.exists():return dict(mode='READ_ONLY',batch=json.loads(path.read_text()),new_sends=0)
         budget=AuthorizationBudget(STATE);budget.check_date()
+        previous=None
+        if path.exists():
+            previous=json.loads(path.read_text())
+            if not resume_setup:return dict(mode='READ_ONLY',batch=previous,new_sends=0)
+            # Operator-only setup recovery: prove that no Meter attempt, private
+            # cluster or accepted message ever existed. Never resumes a sent or
+            # uncertain external request, nor invents replacement RUN identities.
+            if (budget.inspect() or (STATE/'acceptance-pg').exists()
+                    or any(c!={'state':'PLANNED'} for c in previous['cases'].values())):
+                raise ValueError('original_batch_requires_read_only_reconciliation')
         today=datetime.now(timezone.utc).date().isoformat()
         cases={
             'place-zh':'这是合成旅行查询。请实际调用place查询北京故宫一个地点（Search city北京,page1,page_size1），只报来源资料和未知项，不创建行程。',
@@ -65,6 +74,7 @@ def run_batch():
         }
         value=dict(state='INTENT',model_id=M4_MODEL,endpoint=M4_BASE,region='cn-beijing',
             packages={k:version(k) for k in ('httpx','psycopg','fastapi','pydantic')},cases={k:dict(state='PLANNED') for k in cases})
+        if previous is not None:value['setup_recovery']='explicit_login_keychain_after_proven_zero_dispatch'
         save(path,value)  # Lost setup is conservative: inspect this original batch.
         root=STATE/'acceptance-pg'
         if root.exists():raise ValueError('original_private_acceptance_cluster_exists')
@@ -116,11 +126,11 @@ def run_batch():
 
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('command',choices=('run','inspect'));args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('command',choices=('run','inspect','resume-setup'));args=parser.parse_args()
     if args.command=='inspect':
         path=STATE/'acceptance.json'
         result=dict(batch=None if not path.exists() else json.loads(path.read_text()),attempts=AuthorizationBudget(STATE).inspect())
-    else:result=run_batch()
+    else:result=run_batch(resume_setup=args.command=='resume-setup')
     print(json.dumps(result,ensure_ascii=False,separators=(',',':')))
 
 

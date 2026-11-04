@@ -38,4 +38,6 @@ App 若后续需要真实专用资料卡，须先证明已合消费者缺陷，�
 验证：`scripts/test.py`、完整 `scripts/pg_suites.py`；新增 real_services 组使用真实私有PG与
 原签名API/RUN/Meter，HTTP明确为离线 fixture。`scripts/real_services_acceptance.py run`
 为单次固定中英合成批次，读 Keychain 并实际调用；`inspect` 只读原结果。
+`resume-setup` 仅用于明确的准备阶段失败：原全部案例仍PLANNED、授权账本0意图且私有PG目录不存在，
+三者同时证明没有已接收消息或外部请求时，才允许显式恢复准备。任何accepted/INTENT出口均不适用。
 真实 PR 必须另列包版本、模型/端点、原 attempt、用量、费用与 UNKNOWN/FAIL，不以 fixture 充数。
