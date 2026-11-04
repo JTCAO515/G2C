@@ -51,8 +51,21 @@ OS_ACTIVITY_MODE 始终为 disable；继续复用按 identifier 和控件类型�
 
 [DEVICE-RECORD](DEVICE-RECORD.md) 可直接复制执行两种语言和两种字号的手工路径，
 记录机型、系统、网络、VoiceOver、失败与回归。XCTest 的语义动作/定位符和
-上述业务断言与设备无关。总矩阵 `check_m4_app.py` 仍是模拟器入口，**不能直接把
-`--simulator` 换成设备 ID**；已接通的领域设备入口分别记录如下，不冒称整个矩阵已就绪。
+总矩阵 `check_m4_app.py` 具有相互独立的 `--simulator` / `--device` 入口；设备入口
+必须提供本轮批准的 `--local-tls`，不会把模拟器 ID 当设备使用。各领域的来源与
+实际层级分别记录，支持设备参数或预编译并不表示整套真机已通过。
+
+```sh
+CJ_PG_BINDIR='<PostgreSQL-17-bin>' uv run --locked python -B \
+  ios/App/Acceptance/check_m4_app.py --device '<approved-iPhone-UDID>' \
+  --local-tls '<approved-external-profile/operator.json>' \
+  --run-context '<explicit-context.json>' --output '<new-external-directory>' \
+  --build-dir '<external-build-cache>'
+```
+
+设备最大字号用例须先完成实际系统设置与记录，不能靠参数覆盖。`--prepare-only`
+只证明签名构建准备，所有步骤仍是 UNRUN，另记 preparation PASS；总状态为
+`PREPARED_EXECUTION_UNRUN`。`--step` 实际执行子集仍只能 PARTIAL_PASS。
 
 普通业务宿主继续只在 DEBUG Simulator 编译。M4 条目 1、2 已批准指定 iPhone 的
 开发签名、高德只读展示与合成账号测试；显式本地设备配置可用

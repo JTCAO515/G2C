@@ -45,7 +45,10 @@ STEPS = [
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--simulator', required=True)
+    target = p.add_mutually_exclusive_group(required=True)
+    target.add_argument('--simulator'); target.add_argument('--device')
+    p.add_argument('--local-tls', type=Path)
+    p.add_argument('--prepare-only', action='store_true', help='Device build preparation; all native steps remain UNRUN')
     p.add_argument('--run-context', required=True, type=Path,
                    help='explicit CJ-LOCAL-RUN@2 profile; budget16; no real providers')
     p.add_argument('--output', required=True, type=Path)
@@ -53,6 +56,13 @@ def main():
     p.add_argument('--step', choices=[s[0] for s in STEPS], action='append',
                    help='diagnostic subset; overall result remains PARTIAL_PASS')
     args = p.parse_args()
+    if args.device:
+        if not args.local_tls: p.error('--device requires the approved --local-tls profile')
+        from m4_device import LocalTLS
+        LocalTLS.load(args.local_tls)
+    elif args.local_tls or args.prepare_only:
+        p.error('Device options require --device')
+    os.umask(0o077)
     output, build = args.output.resolve(), args.build_dir.resolve()
     if output.is_relative_to(ROOT) or build.is_relative_to(ROOT):
         raise ValueError('external evidence/build directories required')
@@ -76,6 +86,11 @@ def main():
                   evidence_layer='L0/L1 local signed API + restricted PG + FakeProvider + native Simulator',
                   unrun=['real OTP/accounts/providers/target network', 'physical device/VoiceOver #29', 'TestFlight #33'],
                   os_activity_mode='disable')
+    if args.device:
+        report.update(evidence_layer='signed approved iPhone + pinned local HTTPS + restricted PG + FakeProvider; readonly fixture steps labelled separately',
+            device_font_scope='actual system maximum required by the selected native cases; no system-setting record inferred',
+            unrun=['real OTP/accounts/providers/target network','VoiceOver #29','actual system font setting record',
+                   'physical Wi-Fi/airplane-mode outage','real 14-day elapsed time/locked file protection','TestFlight #33'])
     def save():
         (output / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2))
     save()
@@ -86,8 +101,10 @@ def main():
             report.update(status='FAIL', error='candidate head changed between steps'); save()
             raise SystemExit(1)
         destination = output / name
-        command = [sys.executable, '-B', str(HERE / harness), '--simulator', args.simulator,
+        target_flags = ['--device', args.device, '--local-tls', str(args.local_tls.resolve())] if args.device else ['--simulator', args.simulator]
+        command = [sys.executable, '-B', str(HERE / harness), *target_flags,
                    '--output', str(destination), '--build-dir', str(build / name), *flags]
+        if args.prepare_only: command += ['--prepare-only']
         if budget:
             command += ['--run-context', str(contexts[budget])]
         if harness in ('check_feedback.py', 'check_memory_candidate.py', 'check_memory_erasure.py', 'check_account_cleanup_component.py'):
@@ -102,9 +119,10 @@ def main():
         child = json.loads(path.read_text()) if path.exists() else {}
         # The owning harness checks actual XCTest counts, skips, runtime proofs
         # and its case assertions before reporting these statuses.
-        accepted_statuses = ('PASS_APP_WITH_PINNED_CANDIDATE_BACKEND',) if harness == 'check_manual_trips.py' else ('PASS', 'PARTIAL_PASS')
+        accepted_statuses = ('PREPARED_EXECUTION_UNRUN',) if args.prepare_only else (('PASS_APP_WITH_PINNED_CANDIDATE_BACKEND',) if harness == 'check_manual_trips.py' else ('PASS', 'PARTIAL_PASS'))
         passed = run.returncode == 0 and child.get('status') in accepted_statuses
-        report['steps'][name] = dict(status='PASS' if passed else 'FAIL', exit_code=run.returncode,
+        report['steps'][name] = dict(status=('UNRUN' if args.prepare_only else 'PASS') if passed else 'FAIL',
+            preparation='PASS' if args.prepare_only and passed else None, exit_code=run.returncode,
             owner_status=child.get('status', 'UNKNOWN'), evidence=str(path.relative_to(output)),
             report_sha256=hashlib.sha256(path.read_bytes()).hexdigest() if path.exists() else None)
         save(); print('M4 ' + name + ' ' + report['steps'][name]['status'], flush=True)
@@ -113,7 +131,7 @@ def main():
     elif any(s['status'] == 'FAIL' for s in report['steps'].values()):
         report['status'] = 'FAIL'
     else:
-        report['status'] = 'PARTIAL_PASS' if args.step else 'PASS'
+        report['status'] = 'PREPARED_EXECUTION_UNRUN' if args.prepare_only else ('PARTIAL_PASS' if args.step else 'PASS')
     save()
     print(json.dumps(dict(status=report['status'], steps={k:v['status'] for k,v in report['steps'].items()}), indent=2))
     if report['status'] == 'FAIL':
