@@ -20,6 +20,7 @@ import psycopg
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey,Ed25519PublicKey
 from cj_strict_json import reject_duplicates
+from cj_api.composition import CompositionUnavailable
 import migrate
 
 FENCES = ('cj_account_fence', 'cj_memory_erasure_fence', 'cj_memory_history_fence', 'cj_run_payload_erasure')
@@ -325,6 +326,6 @@ def main():
 if __name__ == '__main__':
     try:
         main()
-    except (OSError, ValueError, KeyError, TypeError, psycopg.Error, subprocess.CalledProcessError):
+    except (OSError, ValueError, KeyError, TypeError, psycopg.Error, subprocess.CalledProcessError,CompositionUnavailable):
         print('{"status":"FAIL","reason":"recovery_unproven_keep_unavailable"}')
         raise SystemExit(1) from None

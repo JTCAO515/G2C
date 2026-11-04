@@ -10,6 +10,7 @@ import psycopg
 from fastapi.responses import JSONResponse
 from cj_agent.provider import FakeProvider, ProviderFailed
 from cj_api.local_app import LocalDatabase, app_from_environment, local_conninfo
+from cj_api.composition import CompositionUnavailable
 from cj_api.local_run_context import load_run_context
 from cj_strict_json import reject_duplicates
 import migrate
@@ -64,7 +65,7 @@ def ready():
         return None
     except psycopg.Error:
         return 'database_unavailable'
-    except (OSError, ValueError, KeyError, TypeError):
+    except (OSError, ValueError, KeyError, TypeError,CompositionUnavailable):
         return 'deployment_gate_unavailable'
 
 
@@ -117,7 +118,7 @@ def worker():
         except psycopg.Error:
             write_state('worker.json', dict(at=time.time(), component='database', status='unavailable'))
             print('ALERT database_unavailable', file=sys.stderr, flush=True)
-        except (OSError, ValueError):
+        except (OSError, ValueError,CompositionUnavailable):
             write_state('worker.json', dict(at=time.time(), component='deployment_gate', status='unavailable'))
             print('ALERT deployment_gate_unavailable', file=sys.stderr, flush=True)
         time.sleep(1)
@@ -150,7 +151,7 @@ def main():
     args = parser.parse_args()
     try:
         {'migrate': initialize, 'api': api, 'worker': worker}[args.command]()
-    except (ValueError, KeyError, OSError, psycopg.Error):
+    except (ValueError, KeyError, OSError, psycopg.Error,CompositionUnavailable):
         print('ALERT startup_configuration_or_database_unavailable', file=sys.stderr)
         raise SystemExit(1) from None
 

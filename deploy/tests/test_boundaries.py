@@ -100,6 +100,18 @@ def test_local_connection_preserves_private_harness_options_once(monkeypatch):
     with pytest.raises(TypeError):config['dbname']='other'
 
 
+def test_invalid_runtime_options_produce_unavailable_before_driver(tmp_path,monkeypatch):
+    import json
+    monkeypatch.setenv('CJ_ENV','local')
+    from deploy import entrypoint
+    path=tmp_path/'runtime.json';path.write_text(json.dumps(dict(host='/synthetic/socket',dbname='postgres',conninfo='hostaddr=127.0.0.1')))
+    monkeypatch.setenv('CJ_LOCAL_CONNINFO',str(path));monkeypatch.setenv('CJ_DEPLOY_CONTROL',str(tmp_path))
+    monkeypatch.setattr(entrypoint,'require_configuration',lambda:None)
+    def forbidden(*args,**kwargs):raise AssertionError('must not connect')
+    monkeypatch.setattr(entrypoint.psycopg,'connect',forbidden)
+    assert entrypoint.ready()=='deployment_gate_unavailable'
+
+
 def test_build_context_uses_committed_allowed_blobs_only(tmp_path):
     import subprocess
     from deploy.build import source_context
