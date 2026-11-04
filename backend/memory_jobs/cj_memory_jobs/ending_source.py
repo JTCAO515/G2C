@@ -45,7 +45,6 @@ def read_ending_segment(boundary,token,segment,policy_for_context):
     and unchanged generation/epoch. The end cannot append; any lifecycle change
     denies the second read. Both C holders close before the next begins.
     """
-    q,e=segment.source,segment.end
     def materialize(context):
         def project(snapshot):
             source=SourceV2(snapshot.cursor,snapshot.source_version,snapshot.withdrawal_epoch)

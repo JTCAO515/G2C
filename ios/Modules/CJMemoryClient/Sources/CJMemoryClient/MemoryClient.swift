@@ -396,7 +396,7 @@ extension MemoryClient {
     }
     /// No raw-item/version constructor: the original accepted reader provides both versions.
     public func managementSelection(itemID: String, binding: MemoryBinding) throws -> MemoryManagementSelection {
-        let token = try begin(binding)
+        _ = try begin(binding)
         guard let accepted = acceptedManagementItems[Data(itemID.utf8)], accepted.binding == binding,
               accepted.item.version > 0, accepted.item.version < Int64.max, accepted.item.command.source_version > 0 else { throw MemoryFailure.staleBinding }
         return MemoryManagementSelection(itemID: accepted.item.command.item_id, expectedVersion: accepted.item.version,

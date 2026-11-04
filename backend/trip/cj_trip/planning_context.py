@@ -1,6 +1,5 @@
 """Actual current Trip selection and reuse of its manual fixed/scope checks."""
 from dataclasses import dataclass
-from copy import deepcopy
 from hashlib import sha256
 import json
 from .domain import Trip,Denied,Conflict,packed

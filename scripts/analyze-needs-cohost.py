@@ -1,5 +1,5 @@
 """Fixed read-only NEEDS source/ABI delta analysis, no runtime alias or mutation."""
-import argparse,ast,hashlib,json,subprocess
+import argparse,ast,json,subprocess
 from pathlib import Path
 p=argparse.ArgumentParser(description=__doc__);p.add_argument('--needs-repository',type=Path,required=True);a=p.parse_args()
 old='c821b34d607016c6dbc1020c203621841f1a60e8';new='4cc9c815293a4e03225b26adfa228fdd0b50b2e7'
