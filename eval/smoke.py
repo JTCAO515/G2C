@@ -26,6 +26,9 @@ from real_budget import estimate
 from real_budget import verified_journal
 from real_phase import claim, claimed, finish_smoke, verify_smoke
 from cj_api.real_services import canonical_tool
+from cj_usage.authorization_budget import canonical
+from cj_place import contract_v1 as place_codec
+from cj_place.models import Result, Source, Outcome
 
 
 class _DigestCaptured(Exception):pass
@@ -51,6 +54,20 @@ def model_input_digest(value):
     except _DigestCaptured:return capture.digest
     finally:source.close()
     raise ValueError('wire_digest_capture_did_not_abort')
+
+
+def tool_result_digest(kind, data):
+    if kind not in ('place','route'):return sha256(canonical(data)).hexdigest()
+    # The frozen PLACE encoder is ordered. Reuse its own decoder/value readers
+    # and encoder rather than comparing a differently sorted JSON encoding.
+    value=place_codec.decode_result(canonical(data));s=value['source']
+    query=place_codec.decode_query(canonical(dict(version='PLACE-query.1',query=value['query'])))
+    source=Source(s['endpoint'],place_codec._read_time(s['query_started_at']),place_codec._read_time(s['received_at']),
+        s['request_ref'],s['binding_digest'],'unverified_bytes')
+    result=Result(Outcome(value['outcome']),query,value['reason'],source,
+        tuple(place_codec._read_place(p) for p in value['places']),
+        tuple(place_codec._read_route(r,query) for r in value['routes']),value['provider_code'],value['provider_count'])
+    return sha256(place_codec.encode_result(result,evidence_kind=s['evidence_kind'],recording_ref=s['recording_ref'])).hexdigest()
 
 
 def cases(today):
@@ -129,6 +146,10 @@ def check(case, evidence):
                 if (not results or not any(v.get('tool')==name for v in results)
                         or op['input'].get('name')!=name or op['input'].get('query')!=json.loads(query)):
                     reasons.append('native_tool_result_not_in_followup_model')
+                else:
+                    try:matched=any(v.get('tool')==name and tool_result_digest(kind,v['result'])==detail.get('response_sha256') for v in results)
+                    except (ValueError,KeyError,TypeError):matched=False
+                    if not matched:reasons.append('actual_tool_response_changed_before_followup_model')
         else:reasons.append('unexpected_original_registration')
     if not set(case['required'])<=covered:reasons.append('required_tool_kind_missing')
     if not model_rounds or not tool_rounds or max(model_rounds)<=max(tool_rounds):

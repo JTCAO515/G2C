@@ -17,6 +17,10 @@ import real_budget
 import real_phase
 from cj_api.real_services import canonical_tool, TOOL_SYSTEM, TOOLS
 from cj_agent.provider import M4_BASE, M4_MODEL
+from cj_place.models import (Result, Source, Outcome, Observed, FieldState, Place, Coordinate, Route)
+from cj_place.contract_v1 import decode_query, encode_result
+from datetime import datetime, timezone
+from cj_usage.authorization_budget import canonical
 
 
 def evidence(case, language='zh'):
@@ -54,6 +58,18 @@ def evidence(case, language='zh'):
         calls.append(dict(id=aid,type='function',function=dict(name=native,arguments=json.dumps(arguments))))
         data=dict(source_url=endpoints[kind],status=result)
         if kind=='fact':data.update(original_bytes=42,original_sha256='a'*64,excerpts=['Synthetic official excerpt'])
+        if kind in ('place','route'):
+            q=decode_query(query);now=datetime(2026,11,4,tzinfo=timezone.utc)
+            source=Source(endpoints[kind],now,now,aid,'b'*64,'unverified_bytes')
+            missing=Observed(FieldState.MISSING)
+            p=Place('p1','Synthetic POI',missing,Observed(FieldState.PRESENT,Coordinate('116.1,39.1')),
+                    missing,missing,missing,missing,missing)
+            value=Result(Outcome.OK,q,'provider_ok',source,places=(p,) if kind=='place' else (),
+                         routes=(Route(q,Observed(FieldState.UNKNOWN),Observed(FieldState.UNKNOWN)),) if kind=='route' else (),
+                         provider_code='10000',provider_count=1)
+            wire=encode_result(value,evidence_kind='live_provider');data=json.loads(wire)
+        else:wire=canonical(data)
+        attempts[-1]['receipt']['response_sha256']=sha256(wire).hexdigest()
         results.append(dict(role='tool',tool_call_id=aid,content=json.dumps(dict(tool=name,result=data))))
     model(1,[dict(role='assistant',content=None,tool_calls=calls),*results])
     snapshot=dict(run_id=run,message_id=mid,status='completed',text_state='complete',text=answer)
@@ -126,6 +142,16 @@ class SmokeChecks(unittest.TestCase):
         c=cases('2026-11-04')[1];e=evidence(c)
         e['operations'][-1]['input']['messages']=[]
         self.assertEqual(check(c,e)['status'],'FAIL')
+
+    def test_tool_result_loss_cannot_pass_with_an_actual_model_hash_of_empty_result(self):
+        for c in cases('2026-11-04')[:2]:
+            e=evidence(c);follow=e['operations'][-1]
+            message=next(v for v in follow['input']['messages'] if v['role']=='tool')
+            value=json.loads(message['content']);value['result']={};message['content']=json.dumps(value)
+            e['authorization_attempts'][-1]['input_sha']=model_input_digest(follow['input'])
+            verdict=check(c,e)
+            self.assertEqual(verdict['status'],'FAIL')
+            self.assertIn('actual_tool_response_changed_before_followup_model',verdict['reasons'])
 
     def test_missing_or_rolled_back_original_history_never_creates_new_budget(self):
         with tempfile.TemporaryDirectory() as folder,patch.object(real_budget,'STATE',Path(folder)):
