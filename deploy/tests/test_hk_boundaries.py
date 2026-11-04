@@ -158,3 +158,40 @@ def test_secret_environment_only_enters_process_after_owned_file_validation(tmp_
         path.chmod(0o600);configuration.load_secret_environment('api',root=tmp_path)
         for name,value in values.items():assert os.environ[name]==value
         with pytest.raises(ValueError,match='persistent_container_secret'):configuration.load_secret_environment('api',root=tmp_path)
+
+
+def test_trial_expiry_at_final_model_and_fact_guard_sends_nothing(tmp_path,monkeypatch):
+    import asyncio
+    import httpx
+    from unittest.mock import AsyncMock
+    from cj_agent.provider import DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,ProviderUnknown
+    from cj_api.real_services import RealServices,RealTools,ModelInput,TOOL_SYSTEM
+    activate(monkeypatch)
+    now=[datetime(2026,11,4,tzinfo=timezone.utc)]
+    class MovingClock(datetime):
+        @classmethod
+        def now(cls,tz=None):return now[0]
+    monkeypatch.setattr(configuration,'datetime',MovingClock)
+    monkeypatch.setenv('CJ_TRIAL_VALID_UNTIL','2026-11-04T00:00:01+00:00')
+    budget=AuthorizationBudget(tmp_path,authorization_guard=configuration.authorization)
+    sent=[]
+    def forbidden(request):sent.append(request);raise AssertionError('expired send')
+    provider=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,'synthetic-model-key-000000'),budget,
+        transport=httpx.MockTransport(forbidden))
+    services=RealServices(provider,'synthetic-amap-key-000000',frozenset({'m4-synthetic-trial'}))
+    tools=RealTools(services)
+    operation=SimpleNamespace(binding=SimpleNamespace(scope='local:https://local.g2c.invalid:m4-synthetic-trial'),
+        command=SimpleNamespace(attempt_id='trial-model'))
+    prepared=tools._model_input(ModelInput([dict(role='user',content='Synthetic trial boundary')],TOOL_SYSTEM,provider,{}))
+    def expired_guard():now[0]=datetime(2026,11,4,0,0,2,tzinfo=timezone.utc);return True
+    with pytest.raises(ProviderUnknown):list(prepared.bind_operation(operation,expired_guard)())
+    assert sent==[] and [(r['kind'],r['state']) for r in budget.inspect()]==[('model','INTENT')]
+    now[0]=datetime(2026,11,4,tzinfo=timezone.utc)
+    raw=json.dumps(dict(version='FACT-query.1',fact_key='entry_notice',region='China',dates=dict(start='2026-11-04',end='2026-11-04'),conditions={})).encode()
+    prepared=tools._tool_input('fact',(raw,'synthetic-trial-ref'))
+    operation.command.attempt_id='trial-fact'
+    async def dns(*args,**kwargs):return [(2,1,6,'',('93.184.216.34',443))]
+    with patch('asyncio.BaseEventLoop.getaddrinfo',dns),patch('cj_fact.live_source.PinnedHTTPSTransport.__call__',new_callable=AsyncMock) as send:
+        with pytest.raises(BudgetUnknown):list(prepared.bind_operation(operation,expired_guard)())
+        send.assert_not_called()
+    assert [(r['kind'],r['state']) for r in budget.inspect()]==[('model','INTENT'),('fact','INTENT')]

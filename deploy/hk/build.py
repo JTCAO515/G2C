@@ -26,6 +26,9 @@ def main():
         tag='g2c-beta:'+revision
         subprocess.run(['docker','build','--platform='+args.platform,'--label','org.opencontainers.image.revision='+revision,
             '-f',str(context/'deploy/Dockerfile'),'-t',tag,str(context)],check=True)
+        operator_tag='g2c-beta-operator:'+revision
+        subprocess.run(['docker','build','--platform='+args.platform,'--label','org.opencontainers.image.revision='+revision,
+            '--build-arg','CJ_BETA_IMAGE='+tag,'-f',str(context/'deploy/hk/operator.Dockerfile'),'-t',operator_tag,str(context)],check=True)
         print('PASS SOURCE='+revision+' IMAGE='+tag+' PLATFORM='+args.platform)
 
 

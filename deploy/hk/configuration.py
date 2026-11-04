@@ -115,7 +115,7 @@ class Runtime:
 
     def database(self):
         authorization()
-        return SupabaseTestDatabase(os.environ['CJ_SUPABASE_RUNTIME_URI'],os.environ['CJ_SUPABASE_CA_FILE'],run_context=self.context)
+        return SupabaseTestDatabase(os.environ['CJ_SUPABASE_RUNTIME_URI'],os.environ['CJ_SUPABASE_CA_FILE'],run_context=self.context,transaction_guard=runtime_transaction)
 
     def app(self):
         import time
@@ -130,3 +130,18 @@ class Runtime:
     def close(self):
         for fd in self.descriptors:os.close(fd)
         self.descriptors.clear()
+
+
+def runtime_transaction(cursor):
+    from . import checkpoint
+    checkpoint.runtime_transaction(cursor,Path(os.environ['CJ_DEPLOY_CONTROL']))
+
+
+def cleanup_transaction(cursor,runtime_database):
+    from . import checkpoint
+    # Cleanup has no schema-metadata grants. Keep its shared transaction barrier
+    # while the separately approved runtime login checks the signed DB identity.
+    # Cleanup writes still use only the independent cleanup login and its RLS.
+    cursor.execute('SELECT pg_advisory_xact_lock_shared(%s)',(checkpoint.RELEASE_LOCK,))
+    with runtime_database._open_runtime_connection() as runtime:
+        checkpoint.require_release(runtime,Path(os.environ['CJ_DEPLOY_CONTROL']))

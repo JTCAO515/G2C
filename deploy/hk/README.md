@@ -8,9 +8,9 @@
 
 `*.env.example` 只有占位符。正式配置在服务器 `/srv/g2c-beta/`，目录0700，所有实际环境文件0600；
 从指定钥匙串私下交接，不复制到 Git/镜像/日志，不把值放在命令参数或聊天。
-Compose要求支持 `env_file.format: raw`，避免连接串或JSON被二次插值。
+Compose仅用 `env_file.format: raw` 传非秘密common配置。秘密文件以只读bind挂载，由各入口按角色校验0600/UID/字段后读入进程；Docker Config.Env不持久保存密钥。
 API仅收到运行角色、确认/history密钥和验签公钥；worker另收模型/高德和对应签名私钥；
-operator另收既有数据库初始化凭据和恢复签名私钥；OSS凭据只进backup容器。
+operator另收既有数据库初始化凭据和恢复签名私钥；OSS凭据只进backup容器。应用和operator均UID10001；相应实际环境文件由10001拥有，宿主父目录保持0700。
 worker的旧token供应器通过Linux memfd读取私钥，磁盘上只有指向进程FD的链接。
 公钥、邀请名单、RUN配置只写入容器tmpfs。TLS证书由Caddy管理在独立私有目录。
 
@@ -25,6 +25,7 @@ CJ_ENV=local PYTHONPATH=.:scripts uv run --locked python -B -m deploy.hk.build -
 不打包工作树日志、私有PG或配置。新的私有PG17只应用原迁移，生成应用专属pre-data/post-data schema，
 包括原ACL/RLS/约束/触发器；不从Supabase复制Auth、vault或供应商函数。
 schema资产绑定原迁移hash并放进镜像；镜像标签和OCI revision均为源commit。
+应用镜像只含PG17 client；另建同commit的operator镜像，加入仅供Unix隔离暂存/恢复的PG17 server，不暴露端口。
 跨架构分别构建，先本机验镜像再传至既有主机，不发布镜像到新的云仓库。
 
 ## 原预算与启动
@@ -48,11 +49,12 @@ Caddy仅发布80/443、自动HTTPS并保留流式响应；应用端口不对主�
 ## 每日备份与隔离恢复
 
 安装本目录service/timer到systemd；每天19:00 UTC（北京时间03:00）停止并排空本测试环境writer，
-调用operator生成同快照应用数据包，确认OSS原对象HEAD后重开服务。失败保持停止并告警。
+调用operator在同一条已验身份、reset及TLS的源连接内锁定并COPY同快照业务行到全新Unix暂存库；
+核逐表UTC完整行集hash相同后，仅对暂存库执行native pg_dump，云凭据不交给pg_dump子连接。确认OSS原对象HEAD后重开服务。失败保持停止并告警。
 包只含CJ业务数据，迁移ledger和可轮转identity由镜像规范schema在恢复时创建。
 `g2c-beta-data-checkpoint.1`是独立的云应用数据包；旧本机归档格式及恢复入口不变。
 
-Ed25519清单覆盖dump、精确schema、同源lineage和全部永久fence。独立control不随数据库恢复，
+Ed25519清单覆盖dump、精确schema、逐表行数/hash、同源lineage和全部永久fence。独立control不随数据库恢复，
 最新完整检查点绑定旧备份hash；缺少最新状态/可信control/密钥则保持不可读写。
 OSS固定香港内部HTTPS端点、私有/AES256、backups/前缀，SDK自动重试关闭；
 每个文件先持久INTENT，回执丢失后只HEAD核原对象。缺失/不一致保持UNKNOWN，不重发PUT。
@@ -64,7 +66,11 @@ OSS固定香港内部HTTPS端点、私有/AES256、backups/前缀，SDK自动重
 恢复按镜像规范pre-data → 最新检查点DATA（fence先行）→ 原post-data执行单事务，
 不禁用trigger/replication-role，不删改原约束或RLS。历史数据不会被误当成新业务动作执行。
 核对签名/hash、原schema、永久fence和物理删除后才签发该目标release；安全检查点在首次写入前消费，
-不能重复恢复抹去后来删除。隔离目标不自动替换现有云库或开放公网。
+不能重复恢复抹去后来删除。恢复前再次锁定当前源完整行集；如备份后发生注销/单条删除或其他写入，旧安全包明确拒绝且不消费、不写目标。
+HK运行时每个业务事务在安装LOCAL scope前获取共享release事务锁并重新验证签名release；
+独立cleanup事务同样先取共享锁，再由已获准runtime独立登录只读核库identity（cleanup未获schema元数据权限，不新增GRANT或用管理员执行删除）；恢复持独占锁，先关闭并轮换源identity，再签发隔离目标release，保持单一可写侧。
+隔离验证结束使用同原目标/控制目录运行recovery的 `--finish-rehearsal`（不传base/safety）：先关闭并轮换隔离目标，核源未变化后恢复源release。中间失败保持原记录待核，不自动重做恢复。
+隔离目标不自动替换现有云库或开放公网。
 
 ## 验证
 

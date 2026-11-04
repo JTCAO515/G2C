@@ -24,6 +24,7 @@ from cj_api.supabase_test_database import decode_uri,pin_ca,prepare_owned_sessio
 from cj_strict_json import reject_duplicates
 from deploy import recovery as local
 from .configuration import authorization,decoded
+from . import staging
 
 
 def canonical(value):return json.dumps(value,sort_keys=True,separators=(',',':'),allow_nan=False).encode()
@@ -82,6 +83,14 @@ def rotate(connection):
     return connection.execute('UPDATE cj.deployment_identity SET instance=gen_random_uuid() WHERE singleton RETURNING instance::text').fetchone()[0]
 
 
+RELEASE_LOCK=0x4732434D34424B
+
+
+def runtime_transaction(cursor,control):
+    cursor.execute('SELECT pg_advisory_xact_lock_shared(%s)',(RELEASE_LOCK,))
+    require_release(cursor.connection,control)
+
+
 def require_release(connection,control):
     authorization();release=verified(Path(control)/'release.json')
     current=identity(connection)
@@ -105,21 +114,16 @@ def bootstrap(control,initialize):
         atomic(release,dict(version='g2c-beta-release.1',instance=instance,lineage=family,checkpoint='fresh'),public=True)
 
 
-def pg_environment(config):
-    # Child only; native pg_dump never receives a password in argv.
-    return dict(os.environ,PGHOST=config['host'],PGPORT=str(config['port']),PGUSER=config['user'],PGDATABASE=config['dbname'],
-        PGPASSWORD=config['password'],PGSSLMODE='verify-full',PGSSLROOTCERT=config['sslrootcert'],PGCONNECT_TIMEOUT='10')
 
-
-def export(destination,control,*,base=None):
+def export(destination,control,*,base=None,schema_root=None):
     destination=Path(destination);control=Path(control)
-    with lock(control),operator() as (connection,config):
+    schema_root=Path(schema_root) if schema_root is not None else Path(__file__).parent/'schema'
+    with lock(control),operator() as (connection,_):
         require_release(connection,control);destination.mkdir(mode=0o700)
         prior=verified(Path(base)/'manifest.json') if base is not None else None
         with connection.transaction():
             connection.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ')
-            if connection.execute("SELECT 1 FROM pg_catalog.pg_stat_activity WHERE datname=current_database() AND usename='cj_m1_runtime' LIMIT 1").fetchone():
-                raise ValueError('stop_and_drain_beta_writers_before_checkpoint')
+            connection.execute('SELECT pg_advisory_xact_lock(%s)',(RELEASE_LOCK,))
             instance,family=identity(connection)
             tables=migrate.inventory(connection)
             if any(not name.startswith(('public.cj_','cj.')) for name in tables):raise ValueError('unexpected_application_inventory')
@@ -129,16 +133,11 @@ def export(destination,control,*,base=None):
             if prior is not None:
                 for table in ('cj_account_fence','cj_memory_erasure_fence','cj_run_payload_erasure'):
                     if not set(prior['fences'][table])<=set(fences[table]):raise ValueError('irreversible_fence_regressed')
-            snapshot=connection.execute('SELECT pg_export_snapshot()').fetchone()[0]
-            command=['pg_dump','--format=custom','--data-only','--no-owner','--no-acl','--snapshot='+snapshot]
-            for table in tables:
-                if table not in ('cj.schema_migrations','cj.deployment_identity'):command.append('--table='+table)
             dump=destination/'database.dump'
-            with dump.open('xb') as output:
-                subprocess.run(command,env=pg_environment(config),stdout=output,stderr=subprocess.PIPE,check=True,timeout=300)
+            row_state=staging.dump(connection,tables,dump,schema_root)
             authorization()
             value=dict(version='g2c-beta-data-checkpoint.1',schema=versions(),lineage=family,archived_instance=instance,
-                dump_sha256=local.checksum(dump),at=time.time(),tables=tables,fences=fences,
+                dump_sha256=local.checksum(dump),at=time.time(),tables=tables,fences=fences,row_state=row_state,
                 base=None if prior is None else prior['dump_sha256'])
             if prior is not None and (prior['lineage']!=family or prior['schema']!=value['schema']):raise ValueError('checkpoint_anchor_mismatch')
             atomic(destination/'manifest.json',value)
@@ -159,7 +158,8 @@ def restore(target,base,safety,source_control,target_control,*,schema_root=None)
     source_control=Path(source_control);target_control=Path(target_control)
     target_control.mkdir(mode=0o700,parents=True,exist_ok=True)
     (target_control/'release.json').unlink(missing_ok=True);local.sync_directory(target_control)
-    with lock(source_control):
+    with lock(source_control),operator() as (source,_),source.transaction():
+        source.execute('SELECT pg_advisory_xact_lock(%s)',(RELEASE_LOCK,))
         old=verified(Path(base)/'manifest.json');latest=verified(Path(safety)/'manifest.json');authority=verified(source_control/'latest.json')
         if (old['version']!='g2c-beta-data-checkpoint.1' or latest['version']!=old['version']
                 or latest['base']!=old['dump_sha256'] or latest['lineage']!=old['lineage']
@@ -173,6 +173,23 @@ def restore(target,base,safety,source_control,target_control,*,schema_root=None)
             if migrate.inventory(connection):raise ValueError('new_empty_isolation_database_required')
             if connection.execute("SELECT 1 FROM pg_catalog.pg_roles WHERE rolname IN ('cj_m1_runtime','cj_local_cleanup') LIMIT 1").fetchone():
                 raise ValueError('new_isolated_cluster_without_application_roles_required')
+        # The source remains behind the exclusive release barrier until the
+        # isolated target is released. A later deletion/write invalidates this
+        # safety archive rather than resurrecting its older content.
+        require_release(source,source_control)
+        source.execute("SET TIME ZONE 'UTC'")
+        for table in latest['tables']:
+            source.execute(sql.SQL('LOCK TABLE {} IN SHARE MODE').format(sql.Identifier(*table.split('.'))))
+        if staging.state(source,latest['tables'])!=latest['row_state'] or local.fence_state(source)!=latest['fences']:
+            raise ValueError('current_source_state_differs_from_safety_checkpoint')
+        if (source_control/'suspended.json').exists():
+            previous=verified(source_control/'suspended.json')
+            if previous.get('state')!='COMPLETE':raise ValueError('original_rehearsal_requires_reconciliation')
+            history=source_control/'rehearsals';history.mkdir(mode=0o700,exist_ok=True)
+            os.link(source_control/'suspended.json',history/(previous['checkpoint']+'.json'))
+            (source_control/'suspended.json').unlink();local.sync_directory(history);local.sync_directory(source_control)
+        local.invalidate_release(source_control)
+        source_instance=rotate(source)
         authority['consumed']=True;atomic(source_control/'latest.json',authority)
         listing=subprocess.check_output(['pg_restore','--list',str(Path(safety)/'database.dump')],text=True)
         lines=listing.splitlines()
@@ -182,10 +199,14 @@ def restore(target,base,safety,source_control,target_control,*,schema_root=None)
             schema.apply_data(target,Path(safety)/'database.dump',order,schema_root)
         with psycopg.connect(**target) as connection:
             connection.execute("SET TIME ZONE 'UTC'")
-            if local.fence_state(connection)!=latest['fences'] or migrate.applied(connection)!=latest['schema']:
+            if (local.fence_state(connection)!=latest['fences'] or migrate.applied(connection)!=latest['schema']
+                    or staging.state(connection,latest['tables'])!=latest['row_state']):
                 raise ValueError('restored_fence_or_schema_mismatch')
             connection.execute('UPDATE cj.deployment_identity SET lineage=%s WHERE singleton',(latest['lineage'],))
             active=rotate(connection)
+        atomic(source_control/'suspended.json',dict(version='g2c-beta-rehearsal.1',state='ISOLATED_RELEASED',
+            source_instance=source_instance,target_instance=active,target=local.fingerprint(target),
+            checkpoint=latest['dump_sha256'],lineage=latest['lineage'],row_state=latest['row_state']))
         atomic(target_control/'release.json',dict(version='g2c-beta-release.1',instance=active,lineage=latest['lineage'],checkpoint=latest['dump_sha256']),public=True)
 
 
@@ -195,3 +216,34 @@ def tempfile_order(root,lines):
     with path.open('x') as output:output.write('\n'.join(lines)+'\n')
     try:yield path
     finally:path.unlink()
+
+
+def finish_rehearsal(target,source_control,target_control):
+    """Revoke the isolated target before resuming the unchanged primary source.
+
+    No row is deleted, no request retried, no archive promoted. Any uncertain
+    intermediate state keeps both gates closed for original-state inspection.
+    """
+    from cj_api.local_app import local_connection
+    target=local_connection(target);source_control=Path(source_control);target_control=Path(target_control)
+    with lock(source_control),lock(target_control),operator() as (source,_),source.transaction():
+        source.execute('SELECT pg_advisory_xact_lock(%s)',(RELEASE_LOCK,))
+        record=verified(source_control/'suspended.json')
+        if (record.get('version')!='g2c-beta-rehearsal.1' or record.get('state')!='ISOLATED_RELEASED'
+                or record['target']!=local.fingerprint(target) or (source_control/'release.json').exists()
+                or identity(source)!=(record['source_instance'],record['lineage'])):
+            raise ValueError('original_isolated_rehearsal_required')
+        source.execute("SET TIME ZONE 'UTC'")
+        if staging.state(source,migrate.inventory(source))!=record['row_state']:
+            raise ValueError('suspended_source_state_changed')
+        with psycopg.connect(**target) as isolated:
+            isolated.execute('SELECT pg_advisory_xact_lock(%s)',(RELEASE_LOCK,))
+            require_release(isolated,target_control)
+            if identity(isolated)!=(record['target_instance'],record['lineage']):
+                raise ValueError('original_isolation_target_required')
+            local.invalidate_release(target_control);rotate(isolated)
+        record['state']='ISOLATION_REVOKED';atomic(source_control/'suspended.json',record)
+        atomic(source_control/'release.json',dict(version='g2c-beta-release.1',instance=record['source_instance'],
+            lineage=record['lineage'],checkpoint=record['checkpoint']),public=True)
+        record['state']='COMPLETE';atomic(source_control/'suspended.json',record)
+    return 'SOURCE_RESUMED_ISOLATION_REVOKED'

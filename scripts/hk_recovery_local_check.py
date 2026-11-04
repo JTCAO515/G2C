@@ -20,11 +20,13 @@ from fastapi.testclient import TestClient
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives import serialization
 from cj_cleanup.coordinator import Coordinator
+from cj_cleanup.core import encode,digest
+from cj_api.local_cleanup import Configuration
 from cj_api.local_app import LocalDatabase,ISSUER,scope_for,create_local_app
 from cj_api.local_run_context import load_run_context
 from account_retention_pg import main as account_exercise
 from manual_history_erasure_pg import exercise as memory_exercise
-from deploy.hk import checkpoint,schema,configuration
+from deploy.hk import checkpoint,schema,configuration,staging
 import migrate
 import pg_suites
 import dev_auth
@@ -52,7 +54,7 @@ def main():
                     connection.execute("SET TIME ZONE 'UTC'")
                     yield connection,config
             # pg_dump's source is explicitly a Unix fixture, not the real URI.
-            with patch.object(checkpoint,'operator',private_operator),patch.object(checkpoint,'pg_environment',checkpoint.local.pg_environment):
+            with patch.object(checkpoint,'operator',private_operator),patch.object(staging,'PG17',pg_suites.bindir()):
                 schema_root=root/'schema';schema.generate(config,schema_root)
                 checkpoint.bootstrap(control,lambda connection:None)
                 account=root/'account';memory=root/'memory';account.mkdir();memory.mkdir()
@@ -63,7 +65,7 @@ def main():
                         with psycopg.connect(**config) as connection:
                             assert connection.execute("SELECT count(*) FROM cj_memory_item WHERE item_id='explicit-item'").fetchone()==(1,)
                             assert connection.execute('SELECT count(*) FROM cj_account_fence').fetchone()==(0,)
-                        checkpoint.export(base,control);captured.append(True)
+                        checkpoint.export(base,control,schema_root=schema_root);captured.append(True)
                     return original_post(client,url,*args,**kwargs)
                 def create(coordinator,operation,*args,**kwargs):
                     if operation=='real-b-domain-erasure':
@@ -71,7 +73,21 @@ def main():
                     return original_create(coordinator,operation,*args,**kwargs)
                 with patch.object(Coordinator,'create',create):account_exercise(account,path)
                 assert captured==[True]
-                latest=checkpoint.export(safety,control,base=base)
+                # This additional retirement comes through the actual signed
+                # HTTP confirmation AFTER the first safety archive exists.
+                late='m4-synthetic-late-retirement'
+                invited=json.loads((account/'auth/invited.json').read_bytes());invited.append(late)
+                (account/'auth/invited.json').write_text(json.dumps(invited))
+                registry=root/'late-registry.json';target_id='business/feedback-private-actions'
+                registry.write_bytes(encode(dict(version='hk-late-retirement-fixture',stores=[dict(id='business',objects=[
+                    dict(id='feedback-private-actions',cleanup_protocol='CLEANUP@1.1')])])))
+                options=Configuration({'hk-test':b'hk-late-only-synthetic-cleanup-key'},'hk-test',3600,(target_id,),registry)
+                late_app=create_local_app(conninfo_path=path,auth_dir=account/'auth',cleanup_configuration=options)
+                late_headers={'Authorization':'Bearer '+dev_auth.token(account/'auth',late,300),'Content-Type':'application/octet-stream'}
+                with TestClient(late_app) as client:
+                    response=client.post('/v1/feedback',headers=late_headers,content=encode(dict(action_id='late-feedback',problem='synthetic late erasure',expectation='',references=[])))
+                    assert response.status_code==200,response.status_code
+                latest=checkpoint.export(safety,control,base=base,schema_root=schema_root)
                 assert latest['fences']['cj_account_fence'] and latest['fences']['cj_memory_erasure_fence']
                 isolated=clusters.enter_context(pg_suites.cluster('hk-restore',port=55882,role='cj_hk_restore_operator',root=root/'target-pg',socket=root/'t'))
                 target=dict(isolated,dbname='isolated_restore')
@@ -80,7 +96,32 @@ def main():
                 except ValueError:pass
                 else:raise AssertionError('old cloud-format backup released without current erasure')
                 assert not (target_control/'release.json').exists()
+                with TestClient(late_app) as client:
+                    def post(url,value):
+                        response=client.post(url,content=encode(value),headers=late_headers)
+                        assert response.status_code==200,response.status_code
+                        return response.json()
+                    device=post('/v1/cleanup-devices',dict(version='CLEANUP-DEVICE@1',action_id='register-late',device_id='late-device',state_ref=digest(b'synthetic-late-device')))
+                    prepared=post('/v1/account-cleanup-operations',dict(version='CLEANUP-API@1',action_id='prepare-late',binding_id=device['binding_id']))
+                    result=post('/v1/account-cleanup-operations/'+prepared['operation_id']+'/confirmation',dict(
+                        version='CLEANUP-API@1',registry_digest=prepared['registry_digest'],confirmation='DELETE_ACCOUNT'))
+                    assert result['business_access']=='revoked' and result['online_status']=='complete'
+                try:checkpoint.restore(target,base,safety,control,target_control,schema_root=schema_root)
+                except ValueError as error:assert str(error)=='current_source_state_differs_from_safety_checkpoint',str(error)
+                else:raise AssertionError('late retirement resurrected from stale safety archive')
+                with psycopg.connect(**target) as connection:assert migrate.inventory(connection)==[]
+                assert (control/'release.json').exists() and not (target_control/'release.json').exists()
+                assert checkpoint.verified(control/'latest.json')['consumed'] is False
+                safety=root/'fresh-safety';latest=checkpoint.export(safety,control,base=base,schema_root=schema_root)
                 checkpoint.restore(target,base,safety,control,target_control,schema_root=schema_root)
+                assert not (control/'release.json').exists(), 'source and restored target were both released'
+                guarded_source=LocalDatabase(path)
+                guarded_source._before_scope=lambda cursor:checkpoint.runtime_transaction(cursor,control)
+                try:
+                    with guarded_source.connect(scope_for(ISSUER,'retention-b')) as connection:connection.execute('SELECT 1')
+                except (OSError,ValueError):pass
+                else:raise AssertionError('suspended source admitted a new business transaction')
+
                 with psycopg.connect(**target) as restored,psycopg.connect(**config) as source:
                     restored.execute("SET TIME ZONE 'UTC'")
                     source.execute("SET TIME ZONE 'UTC'")
@@ -89,6 +130,7 @@ def main():
                     assert restored.execute('SELECT count(*) FROM cj_message_receipt WHERE scope=%s',(scope_for(ISSUER,'retention-a'),)).fetchone()==(0,)
                     assert restored.execute('SELECT count(*) FROM cj_message_receipt WHERE scope=%s',(scope_for(ISSUER,'retention-b'),)).fetchone()==(1,)
                     assert restored.execute("SELECT count(*) FROM cj_memory_item WHERE item_id='explicit-item'").fetchone()==(0,)
+                    assert restored.execute('SELECT count(*) FROM cj_feedback_action WHERE scope=%s',(scope_for(ISSUER,late),)).fetchone()==(0,)
                     assert restored.execute('SELECT scope_id,ledger FROM cj_usage_ledger_candidate ORDER BY scope_id').fetchall()==source.execute('SELECT scope_id,ledger FROM cj_usage_ledger_candidate ORDER BY scope_id').fetchall()
                     chain=migrate.load()
                     with patch.object(migrate,'load',lambda:chain[:-1]):
@@ -113,7 +155,17 @@ def main():
                 except ValueError:pass
                 else:raise AssertionError('consumed checkpoint reused')
                 assert not (root/'second-control'/'release.json').exists()
-    print('PASS L1 private PG canonical account/item erasure → app-only cloud-format checkpoint → new isolated database; physical absence, owner isolation, exact UNKNOWN/usage, fences-first, old/consumed safety refused; real cloud/OSS UNRUN')
+                assert checkpoint.finish_rehearsal(target,control,target_control)=='SOURCE_RESUMED_ISOLATION_REVOKED'
+                assert not (target_control/'release.json').exists()
+                with psycopg.connect(**config) as connection:checkpoint.require_release(connection,control)
+                with guarded_source.connect(scope_for(ISSUER,'retention-b')) as connection:assert connection.execute('SELECT 1').fetchone()==(1,)
+                runtime._before_scope=lambda cursor:checkpoint.runtime_transaction(cursor,target_control)
+                try:
+                    with runtime.connect(scope_for(ISSUER,'retention-b')) as connection:connection.execute('SELECT 1')
+                except (OSError,ValueError):pass
+                else:raise AssertionError('retired isolation target admitted a new transaction')
+
+    print('PASS L1 private PG canonical account/item erasure → app-only cloud-format checkpoint → new isolated database; physical absence, owner isolation, exact UNKNOWN/usage, fences-first, real post-safety HTTP retirement rejects stale archive before target writes, exclusive release/resume, old/consumed safety refused; real cloud/OSS UNRUN')
 
 
 if __name__=='__main__':

@@ -14,7 +14,6 @@ services:
   migrate:
     <<: *application
     command: [migrate]
-    user: "0:0"
     restart: "no"
     env_file:
       - {path: /srv/g2c-beta/common.env, format: raw}
@@ -69,8 +68,8 @@ services:
     depends_on: [api]
   backup:
     <<: *application
+    image: ${CJ_BETA_OPERATOR_IMAGE:?exact reviewed operator image required}
     entrypoint: [python, -B, -m, deploy.hk.backup]
-    user: "0:0"
     restart: "no"
     profiles: [operator]
     env_file:

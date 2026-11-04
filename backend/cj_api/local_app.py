@@ -65,10 +65,11 @@ class _ScopedConnection:
     before reading data. Direct host `with` consumers use the same hook here.
     Plain execute/cursor calls never silently rebind after commit or rollback.
     """
-    def __init__(self, connection, scope, *, needs_scope=None, usage_scope=None,edit_results=False):
+    def __init__(self, connection, scope, *, needs_scope=None, usage_scope=None,edit_results=False,before_scope=None):
         self._connection, self._scope = connection, scope
         self._needs_scope, self._usage_scope = needs_scope, usage_scope
         self._edit_results=edit_results
+        self._before_scope=before_scope
 
     def __getattr__(self, name):
         return getattr(self._connection, name)
@@ -78,6 +79,7 @@ class _ScopedConnection:
             if self._connection.info.transaction_status != TransactionStatus.INTRANS:
                 raise CompositionUnavailable('active transaction required for scope binding')
             _require_unbound(cursor)
+            if self._before_scope is not None:self._before_scope(cursor)
             cursor.execute("SELECT set_config('cj.message_scope',%s,true), set_config('cj.trip_scope',%s,true)",
                            (self._scope, trip_scope_for(self._scope)))
             cursor.execute("SELECT set_config('cj.message_context_abi',%s,true)",(TRAVEL_ABI,))
@@ -181,6 +183,9 @@ class LocalDatabase:
             raise CompositionUnavailable('explicit NEEDS capability required')
         self.needs_context=needs_context
 
+    def _before_scope(self,cursor):
+        pass
+
     def _open_runtime_connection(self):
         return psycopg.connect(**self.conninfo,autocommit=True)
 
@@ -217,12 +222,12 @@ class LocalDatabase:
             conn.autocommit = False
             if self.run_context is None:
                 if usage_profile is not None: raise CompositionUnavailable('run context unavailable')
-                return _ScopedConnection(conn,scope,needs_scope=needs_scope_for(scope) if self.needs_context else None,edit_results=self.edit_results)
+                return _ScopedConnection(conn,scope,needs_scope=needs_scope_for(scope) if self.needs_context else None,edit_results=self.edit_results,before_scope=self._before_scope)
             profile=self.run_context.current if usage_profile is None else usage_profile
             if profile not in self.run_context.profiles:
                 raise CompositionUnavailable('unregistered original period')
             return _ScopedConnection(conn,scope,needs_scope=needs_scope_for(scope),
-                                     usage_scope=ledger_scope_for(scope,profile.meter),edit_results=self.edit_results)
+                                     usage_scope=ledger_scope_for(scope,profile.meter),edit_results=self.edit_results,before_scope=self._before_scope)
         except BaseException:
             conn.close()
             raise
@@ -338,7 +343,9 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
         if type(database) not in (LocalDatabase,SupabaseTestDatabase):
             raise CompositionUnavailable('explicit supported host database required')
         if type(database) is SupabaseTestDatabase and cleanup_configuration is not None:
-            raise CompositionUnavailable('local cleanup identity is not approved for the cloud profile')
+            from .supabase_cleanup import SupabaseCleanupConfiguration
+            if type(cleanup_configuration) is not SupabaseCleanupConfiguration:
+                raise CompositionUnavailable('local cleanup identity is not approved for the cloud profile')
     keys = StaticPublicKeys({KEY_ID: VerificationKey('RS256', (auth_dir / 'public.pem').read_bytes())})
     config = JWTConfiguration(ISSUER, AUDIENCE, 'RS256', 0)
     access=base_access=InvitedSubjects(auth_dir/'invited.json')
@@ -358,8 +365,13 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
     if cleanup_configuration is not None:
         from .local_cleanup import Runtime,Configuration
         from cj_auth.account_revocation import AccountRevocationAccess
-        if type(cleanup_configuration) is not Configuration:raise CompositionUnavailable('explicit local cleanup configuration required')
-        cleanup_runtime=Runtime(database,cleanup_configuration,scope_for)
+        from .supabase_cleanup import SupabaseCleanupConfiguration,SupabaseCleanupRuntime
+        from .supabase_test_database import SupabaseTestDatabase
+        if type(cleanup_configuration) is Configuration and type(database) is LocalDatabase:
+            cleanup_runtime=Runtime(database,cleanup_configuration,scope_for)
+        elif type(cleanup_configuration) is SupabaseCleanupConfiguration and type(database) is SupabaseTestDatabase:
+            cleanup_runtime=SupabaseCleanupRuntime(database,cleanup_configuration,scope_for)
+        else:raise CompositionUnavailable('matching explicit cleanup host configuration required')
         access=AccountRevocationAccess(base_access,cleanup_runtime.retired)
 
     def message_repository(principal):
