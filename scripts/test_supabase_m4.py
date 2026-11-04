@@ -9,7 +9,12 @@ import supabase_m4 as subject
 def journal(tmp_path,monkeypatch):
     from datetime import datetime
     from zoneinfo import ZoneInfo
-    monkeypatch.setattr(subject,'DEADLINE',datetime(2099,1,1,tzinfo=ZoneInfo('Asia/Shanghai')))
+    class SyntheticClock(datetime):
+        @classmethod
+        def now(cls,tz=None):
+            value=datetime(2026,11,4,12,tzinfo=ZoneInfo('Asia/Shanghai'))
+            return value if tz is None else value.astimezone(tz)
+    monkeypatch.setattr(subject,'datetime',SyntheticClock)
     monkeypatch.setattr(subject,'STATE',tmp_path/'auth')
     return subject.AuthJournal()
 
@@ -35,9 +40,6 @@ def test_incomplete_subjects_cannot_claim_completed_record(tmp_path,monkeypatch)
 
 
 def test_auth_errors_never_echo_server_body_or_keys(tmp_path,monkeypatch):
-    from datetime import datetime
-    from zoneinfo import ZoneInfo
-    monkeypatch.setattr(subject,'DEADLINE',datetime(2099,1,1,tzinfo=ZoneInfo('Asia/Shanghai')))
     value=journal(tmp_path,monkeypatch)
     secret='sb_secret_synthetic_not_real'
     api=subject.AuthClient(secret,'sb_publishable_synthetic',value)
@@ -148,6 +150,29 @@ def test_refused_namespace_cannot_be_adopted_on_second_call(tmp_path,monkeypatch
     for _ in range(2):
         with pytest.raises(subject.TestUnavailable,match='fresh_public'):subject.migrate_test(DB(),apply=True)
     assert not entered and not (subject.SCHEMA_STATE/'state.json').exists()
+
+
+def test_admitted_marker_with_empty_ledger_revalidates_namespace(tmp_path,monkeypatch):
+    from contextlib import nullcontext
+    import migrate,hashlib
+    root=subject.Path(subject.__file__).resolve().parents[1];manifest=(root/'backend/migrations/manifest.json').read_bytes()
+    monkeypatch.setattr(subject.subprocess,'check_output',lambda *args,**kwargs:manifest)
+    folder=tmp_path/'schema';folder.mkdir();monkeypatch.setattr(subject,'SCHEMA_STATE',folder)
+    (folder/'state.json').write_text(json.dumps(dict(project_ref=subject.REF,manifest_sha256=hashlib.sha256(manifest).hexdigest(),
+        admission='empty_namespace_quarantine_committed')))
+    monkeypatch.setattr(migrate,'applied',lambda conn:[])
+    checks=[]
+    def refuse(*args):checks.append(True);raise subject.TestUnavailable('fresh_public_namespace_required_before_quarantine')
+    monkeypatch.setattr(subject,'quarantine_empty_public',refuse)
+    def forbidden(*args):raise AssertionError('must not enter migration')
+    monkeypatch.setattr(migrate,'up',forbidden)
+    class Connection:
+        def transaction(self):return nullcontext()
+    class DB:
+        def check(self):pass
+        def connect(self):return nullcontext(Connection())
+    with pytest.raises(subject.TestUnavailable,match='fresh_public'):subject.migrate_test(DB(),apply=True)
+    assert checks==[True]
 
 
 def test_expiry_after_lock_stops_migration_before_connection(tmp_path,monkeypatch):

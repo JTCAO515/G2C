@@ -296,11 +296,11 @@ def pool_test(db):
 def quarantine_empty_public(db,conn):
     # This target's public namespace is dedicated to the private CJ API. Never
     # change an existing unrelated application. Auth's own schema is untouched.
-    functions=db.query(conn,"SELECT p.oid,p.proname,pg_get_function_result(p.oid),pg_get_userbyid(p.proowner),p.prosecdef "
+    functions=db.query(conn,"SELECT p.oid,p.proname,pg_get_function_result(p.oid),pg_get_userbyid(p.proowner),p.prosecdef,p.pronargs "
         "FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public'").fetchall()
     # Supabase's pre-existing automatic RLS event function is not a CJ object.
     # Preserve it byte-for-byte; no platform function/trigger is altered/created.
-    if len(functions)>1 or any(row[1:]!=('rls_auto_enable','event_trigger','postgres',True) for row in functions):
+    if len(functions)>1 or any(row[1:]!=('rls_auto_enable','event_trigger','postgres',True,0) for row in functions):
         raise TestUnavailable('fresh_public_namespace_required_before_quarantine')
     allowed=0 if not functions else functions[0][0]
     # Namespace dependencies cover standalone enum/domain/operator/collation
@@ -368,20 +368,23 @@ def migrate_test(db,*,apply):
                     raise TestUnavailable('original_schema_admission_not_proven')
             else:
                 if completed:raise TestUnavailable('existing_schema_requires_original_provenance')
+            if not completed:
                 with conn.transaction():quarantine_empty_public(db,conn)
                 # Only a committed successful admission is resumable. A refused
                 # first attempt leaves no accepted marker for later adoption.
-                with state.open('x') as out:
-                    os.chmod(state,0o600);json.dump(dict(project_ref=REF,manifest_sha256=digest,
-                        admission='empty_namespace_quarantine_committed'),out);out.flush();os.fsync(out.fileno())
-                directory=os.open(SCHEMA_STATE,os.O_RDONLY|os.O_DIRECTORY)
-                try:os.fsync(directory)
-                finally:os.close(directory)
+                if not state.exists():
+                    with state.open('x') as out:
+                        os.chmod(state,0o600);json.dump(dict(project_ref=REF,manifest_sha256=digest,
+                            admission='empty_namespace_quarantine_committed'),out);out.flush();os.fsync(out.fileno())
+                    directory=os.open(SCHEMA_STATE,os.O_RDONLY|os.O_DIRECTORY)
+                    try:os.fsync(directory)
+                    finally:os.close(directory)
             # A lost preparation ACK is read from namespace permissions, not
             # retried with weaker access or another identity.
-            permitted=db.query(conn,"SELECT count(*) FROM pg_roles WHERE rolname IN ('anon','authenticated','service_role') "
-                "AND has_schema_privilege(rolname,'public','USAGE')").fetchone()[0]
-            if permitted:raise TestUnavailable('namespace_not_private_keep_unavailable')
+            roles=db.query(conn,"SELECT rolname,has_schema_privilege(rolname,'public','USAGE') FROM pg_roles "
+                "WHERE rolname IN ('anon','authenticated','service_role') ORDER BY rolname").fetchall()
+            if [name for name,_ in roles]!=['anon','authenticated','service_role'] or any(value for _,value in roles):
+                raise TestUnavailable('namespace_not_private_keep_unavailable')
             for item in chain:
                 if item['version'] in completed:continue
                 db.check()
