@@ -27,6 +27,9 @@ def test_modified_subject_binding_is_rejected(tmp_path,monkeypatch):
 
 
 def test_auth_errors_never_echo_server_body_or_keys(tmp_path,monkeypatch):
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    monkeypatch.setattr(subject,'DEADLINE',datetime(2099,1,1,tzinfo=ZoneInfo('Asia/Shanghai')))
     value=journal(tmp_path,monkeypatch)
     secret='sb_secret_synthetic_not_real'
     api=subject.AuthClient(secret,'sb_publishable_synthetic',value)
@@ -55,3 +58,15 @@ def test_cleanup_cannot_follow_a_changed_subject_id(tmp_path,monkeypatch):
         def request(self,*args,**kwargs):raise AssertionError('must not call admin for another ID')
     with pytest.raises(subject.TestUnavailable,match='subject_changed'):
         subject.cleanup_auth(value,API(),DB())
+
+
+def test_expired_authorization_refuses_before_http(tmp_path,monkeypatch):
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    value=journal(tmp_path,monkeypatch)
+    monkeypatch.setattr(subject,'DEADLINE',datetime(2000,1,1,tzinfo=ZoneInfo('Asia/Shanghai')))
+    api=subject.AuthClient('sb_secret_synthetic','sb_publishable_synthetic',value)
+    try:
+        with pytest.raises(subject.TestUnavailable,match='expired'):api.request('synthetic','GET','/health')
+        assert value.value['calls']==0
+    finally:api.close()

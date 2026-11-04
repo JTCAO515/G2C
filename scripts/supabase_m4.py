@@ -36,6 +36,7 @@ HOST='aws-0-ap-southeast-1.pooler.supabase.com'
 AUTH='https://'+REF+'.supabase.co/auth/v1'
 CA_SHA='807025ad50d4ed219d2c9c7d299c004f824eb00cf7f65afef607d07b72e6cafa'
 STATE=Path.home()/'.local/share/g2c/m4-supabase-auth'
+SCHEMA_STATE=Path.home()/'.local/share/g2c/m4-supabase-schema'
 DEADLINE=datetime(2026,12,1,tzinfo=ZoneInfo('Asia/Shanghai'))
 
 
@@ -261,14 +262,96 @@ def pool_test(db):
         reports.append(dict(mode=mode,port=port,server_version=row[1],initializer_role=row[0],
             client_tls='verify-full',upstream_tls=row[2],transaction_local_expired=expired,
             disconnect_reset=reset,product_pooler_activation='HOLD_no_runtime_login_or_complete_12_table_gate'))
-    return dict(status='MEASURED',modes=reports)
+    return dict(status='HOLD',measurement='COMPLETE',modes=reports)
+
+
+def quarantine_empty_public(db,conn):
+    # This target's public namespace is dedicated to the private CJ API. Never
+    # change an existing unrelated application. Auth's own schema is untouched.
+    count=db.query(conn,"SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public'").fetchone()[0]
+    functions=db.query(conn,"SELECT p.proname,pg_get_function_result(p.oid),pg_get_userbyid(p.proowner),p.prosecdef "
+        "FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public'").fetchall()
+    # Supabase's pre-existing automatic RLS event function is not a CJ object.
+    # Preserve it byte-for-byte; no platform function/trigger is altered/created.
+    if count or any(row!=('rls_auto_enable','event_trigger','postgres',True) for row in functions):
+        raise TestUnavailable('fresh_public_namespace_required_before_quarantine')
+    db.query(conn,'REVOKE USAGE ON SCHEMA public FROM PUBLIC,anon,authenticated,service_role')
+    rows=db.query(conn,"SELECT rolname,has_schema_privilege(rolname,'public','USAGE') FROM pg_roles "
+        "WHERE rolname IN ('anon','authenticated','service_role') ORDER BY rolname").fetchall()
+    if len(rows)!=3 or any(value for _,value in rows):raise TestUnavailable('private_namespace_quarantine_not_proven')
+
+
+def rls_probe(db):
+    scope='m4-synthetic-sql:'+uuid.uuid4().hex
+    with db.connect() as conn:
+        # This tests the non-bypass role inside an explicit initializer-owned
+        # transaction. It is NOT a runtime-password login or cloud API host.
+        with conn.transaction(force_rollback=True):
+            db.query(conn,'SET LOCAL ROLE cj_m1_runtime')
+            role=db.query(conn,'SELECT current_user,rolbypassrls FROM pg_roles WHERE rolname=current_user').fetchone()
+            if role!=('cj_m1_runtime',False):raise TestUnavailable('non_bypass_role_required')
+            db.query(conn,"SELECT set_config('cj.message_scope',%s,true)",(scope,))
+            db.query(conn,'INSERT INTO cj_message_scope(scope) VALUES(%s)',(scope,))
+            if db.query(conn,'SELECT count(*) FROM cj_message_scope WHERE scope=%s',(scope,)).fetchone()!=(1,):
+                raise TestUnavailable('scoped_positive_not_proven')
+            db.query(conn,"SELECT set_config('cj.message_scope',%s,true)",(scope+':other',))
+            if db.query(conn,'SELECT count(*) FROM cj_message_scope WHERE scope=%s',(scope,)).fetchone()!=(0,):
+                raise TestUnavailable('cross_scope_read_exposed')
+            if db.query(conn,'UPDATE cj_message_scope SET history_epoch=history_epoch+1 WHERE scope=%s',(scope,)).rowcount!=0:
+                raise TestUnavailable('cross_scope_update_exposed')
+            try:
+                with conn.transaction():db.query(conn,'INSERT INTO cj_message_scope(scope) VALUES(%s)',(scope+':forbidden',))
+            except psycopg.errors.InsufficientPrivilege:pass
+            else:raise TestUnavailable('cross_scope_insert_not_denied')
+        if db.query(conn,'SELECT count(*) FROM cj_message_scope WHERE scope=ANY(%s)',([scope,scope+':other',scope+':forbidden'],)).fetchone()!=(0,):
+            raise TestUnavailable('synthetic_probe_not_rolled_back')
+    return dict(status='PASS',scope='one_table_synthetic_SQL_transaction_only',persistent_rows=0,
+        runtime_login='UNRUN',complete_12_table_cloud_gate='UNRUN',product_pooler_activation='HOLD')
+
+
+def migrate_test(db,*,apply):
+    import migrate
+    root=Path(__file__).resolve().parents[1]
+    manifest=(root/'backend/migrations/manifest.json').read_bytes()
+    # Domain migration bytes must already be on the fetched main. The script
+    # adds a target entry fence, it never edits or reinterprets applied SQL.
+    main_manifest=subprocess.check_output(['git','show','origin/main:backend/migrations/manifest.json'],cwd=root)
+    if manifest!=main_manifest:raise TestUnavailable('unmerged_domain_schema_not_allowed')
+    chain=migrate.load();top=chain[-1]['version'];digest=hashlib.sha256(manifest).hexdigest()
+    if not apply:return dict(status='PLAN_ONLY',migration_versions=top,manifest_sha256=digest)
+    SCHEMA_STATE.mkdir(parents=True,exist_ok=True,mode=0o700)
+    with (SCHEMA_STATE/'operator.lock').open('a') as lock:
+        fcntl.flock(lock,fcntl.LOCK_EX)
+        state=SCHEMA_STATE/'state.json'
+        with db.connect() as conn:
+            completed=migrate.applied(conn)
+            if state.exists():
+                recorded=decode(state.read_bytes())
+                if recorded!={'project_ref':REF,'manifest_sha256':digest}:raise TestUnavailable('original_schema_intent_mismatch')
+            else:
+                if completed:raise TestUnavailable('existing_schema_requires_original_provenance')
+                with state.open('x') as out:
+                    os.chmod(state,0o600);json.dump(dict(project_ref=REF,manifest_sha256=digest),out);out.flush();os.fsync(out.fileno())
+                with conn.transaction():quarantine_empty_public(db,conn)
+            # A lost preparation ACK is read from namespace permissions, not
+            # retried with weaker access or another identity.
+            permitted=db.query(conn,"SELECT count(*) FROM pg_roles WHERE rolname IN ('anon','authenticated','service_role') "
+                "AND has_schema_privilege(rolname,'public','USAGE')").fetchone()[0]
+            if permitted:raise TestUnavailable('namespace_not_private_keep_unavailable')
+            migrate.up(conn,chain,top)
+            if migrate.applied(conn)!=list(range(1,top+1)):raise TestUnavailable('migration_chain_incomplete')
+            tables=len(migrate.inventory(conn))
+        return dict(status='PASS',migration_versions=top,application_tables=tables,manifest_sha256=digest,
+            public_api_roles_schema_access='DENIED',schema_acl_change='public USAGE revoked from PUBLIC/anon/authenticated/service_role',
+            platform_functions_changed=0,auth_billing_settings_changed=0,rls=rls_probe(db))
 
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command',choices=('auth','pool','inspect'))
+    parser.add_argument('command',choices=('auth','pool','inspect','migrate'))
     parser.add_argument('--ca-file',type=Path,required=True)
     parser.add_argument('--public-key-file',type=Path)
+    parser.add_argument('--apply',action='store_true')
     args=parser.parse_args()
     with database_config(args.ca_file) as config:
         db=Database(config)
@@ -276,6 +359,7 @@ def main():
             if args.public_key_file is None:parser.error('public client key file required')
             report=auth_test(db,args.public_key_file)
         elif args.command=='pool':report=pool_test(db)
+        elif args.command=='migrate':report=migrate_test(db,apply=args.apply)
         else:
             with db.connect() as conn:
                 row=db.query(conn,"SELECT current_setting('server_version'),to_regclass('cj.schema_migrations') IS NOT NULL").fetchone()
@@ -283,6 +367,8 @@ def main():
         report.update(project_ref=REF,region=REGION,sql_connections=db.connections,sql_statements=db.statements,
             actual_cost='UNKNOWN',versions={name:version(name) for name in ('psycopg','httpx','PyJWT')})
         print(json.dumps(report))
+        if report['status']=='FAIL':raise SystemExit(1)
+        if report['status'] in ('HOLD','CLEANUP_ONLY_NO_RECREATE'):raise SystemExit(2)
 
 
 if __name__=='__main__':
