@@ -114,6 +114,14 @@ def configure_project(project, tls, control_url, control_token, amap=False):
                   'buildConfigurations = (000000000000000000000014)', text)
     # The simulator entitlement is never reused as a device signing identity.
     text = re.sub(r'"CODE_SIGN_ENTITLEMENTS\[sdk=iphonesimulator\*\]"\s*=\s*[^;]+;', '', text)
+    device_entitlements = project.parent/'M4Device.entitlements'
+    device_entitlements.write_bytes(plistlib.dumps({
+        'application-identifier':'$(AppIdentifierPrefix)$(PRODUCT_BUNDLE_IDENTIFIER)',
+        'keychain-access-groups':['$(AppIdentifierPrefix)$(PRODUCT_BUNDLE_IDENTIFIER)']}))
+    target_anchor='PRODUCT_BUNDLE_IDENTIFIER = '+bundle+';'
+    if text.count(target_anchor) not in (2,3):
+        raise ValueError('App identity configurations changed')
+    text=text.replace(target_anchor,target_anchor+' CODE_SIGN_ENTITLEMENTS = '+json.dumps(str(device_entitlements))+';')
     entries = []
     resource_ids = []
     counter = 0
@@ -188,3 +196,17 @@ def scan_app_container(device, bundle, output, tokens):
             data = file.read_bytes()
             if any(token.encode() in data for token in tokens) or b'-----BEGIN PRIVATE KEY-----' in data:
                 raise AssertionError('Credential/private key found in device App data')
+
+
+def stage_accounts(device, bundle, app, private_directory, tokens):
+    """One-use operator input; never put JWTs into XCTest launch/activity metadata."""
+    result=subprocess.run(['xcrun','devicectl','device','install','app','--device',device,str(app),
+        '--timeout','60'],capture_output=True)
+    if result.returncode:raise RuntimeError('Approved device App install failed')
+    source=Path(private_directory)/'G2CM4DeviceAccounts.json'
+    with source.open('x') as output:json.dump(tokens,output)
+    source.chmod(0o600)
+    result=subprocess.run(['xcrun','devicectl','device','copy','to','--device',device,
+        '--domain-type','appDataContainer','--domain-identifier',bundle,'--source',str(source),
+        '--destination','Library/Caches/G2CM4DeviceAccounts.json','--timeout','30'],capture_output=True)
+    if result.returncode:raise RuntimeError('Device one-use credential staging failed')

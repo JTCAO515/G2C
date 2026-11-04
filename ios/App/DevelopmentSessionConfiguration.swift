@@ -1,4 +1,60 @@
 import Foundation
+
+enum DevelopmentKeychainIdentity {
+    enum Failure: Error { case invalidSigningIdentity }
+    static func validated(bundleIdentifier: String?, signedIdentifier: String?) throws -> String {
+        guard let bundleIdentifier, !bundleIdentifier.isEmpty, !bundleIdentifier.contains("*"), let signedIdentifier,
+              signedIdentifier.hasSuffix("." + bundleIdentifier) else { throw Failure.invalidSigningIdentity }
+        let prefix = signedIdentifier.dropLast(bundleIdentifier.count + 1)
+        guard prefix.utf8.count == 10,
+              prefix.utf8.allSatisfy({ (65...90).contains($0) || (48...57).contains($0) }) else {
+            throw Failure.invalidSigningIdentity
+        }
+        return signedIdentifier
+    }
+    static func read() throws -> String {
+        #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+        return try validated(bundleIdentifier:Bundle.main.bundleIdentifier,
+            signedIdentifier:Bundle.main.object(forInfoDictionaryKey:"G2CDevelopmentApplicationIdentifier") as? String)
+        #else
+        guard let identifier=Bundle.main.bundleIdentifier else { throw Failure.invalidSigningIdentity }
+        return identifier
+        #endif
+    }
+}
+
+enum DevelopmentAccountInput {
+    enum Failure: Error { case invalidAccounts }
+    static func decode(_ raw: Data) throws -> [String:String] {
+        guard raw.count <= 131072,
+              let tokens=try JSONSerialization.jsonObject(with:raw) as? [String:String],tokens.count<=8,
+              tokens.keys.allSatisfy({ !$0.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty }) else {
+            throw Failure.invalidAccounts
+        }
+        return tokens
+    }
+    static func read(_ environment:[String:String]) throws -> [String:String] {
+        #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+        if let name=environment["G2C_M4_ACCOUNTS_FILE"] {
+            guard name=="G2CM4DeviceAccounts.json",[nil,"{}"].contains(environment["G2C_DEV_ACCOUNTS"]) else {
+                throw Failure.invalidAccounts
+            }
+            let files=FileManager.default
+            let root=try files.url(for:.cachesDirectory,in:.userDomainMask,appropriateFor:nil,create:false)
+            let file=root.appendingPathComponent(name)
+            let values=try file.resourceValues(forKeys:[.isRegularFileKey,.isSymbolicLinkKey,.fileSizeKey])
+            guard values.isRegularFile==true,values.isSymbolicLink==false,
+                  let size=values.fileSize,size<=131072 else { throw Failure.invalidAccounts }
+            try files.setAttributes([.posixPermissions:0o600,.protectionKey:FileProtectionType.complete],ofItemAtPath:file.path)
+            let data=try Data(contentsOf:file)
+            try files.removeItem(at:file) // One-use operator input, never retained as a journal.
+            return try decode(data)
+        }
+        #endif
+        guard let raw=(environment["G2C_DEV_ACCOUNTS"] ?? "{}").data(using:.utf8) else { throw Failure.invalidAccounts }
+        return try decode(raw)
+    }
+}
 #if DEBUG
 import CryptoKit
 #endif

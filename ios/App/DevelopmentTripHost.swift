@@ -139,7 +139,7 @@ import Observation
         self.lifetime = lifetime
         let namespace = MessageKeyNamespace(environment: lifetime.trip.environment, account: lifetime.trip.account,
                                              purpose: .localTripPendingV1)
-        guard let applicationID = Bundle.main.bundleIdentifier else { throw TripFailure.unconfigured }
+        let applicationID = try DevelopmentKeychainIdentity.read()
         keys = try ScopedMessageKeyProvider(namespace: namespace, applicationIdentifier: applicationID,
                                              protection: .whenUnlockedThisDeviceOnly)
         let files = FileManager.default
@@ -300,7 +300,7 @@ import Observation
                                     generation: UUID(), selection: UUID())
         let generation = shell.generation
         let namespace = MessageKeyNamespace(environment: binding.environment, account: binding.account, purpose: .localMemoryPendingV1)
-        guard let applicationID = Bundle.main.bundleIdentifier else { throw MemoryFailure.unconfigured }
+        let applicationID = try DevelopmentKeychainIdentity.read()
         let keys = try ScopedMessageKeyProvider(namespace: namespace, applicationIdentifier: applicationID,
                                                 protection: .whenUnlockedThisDeviceOnly)
         let files = FileManager.default
@@ -352,7 +352,7 @@ import Observation
          operation: SessionOperation, isCurrent: @escaping @MainActor () -> Bool) throws {
         let namespace = MessageKeyNamespace(environment: configuration.environmentID, account: configuration.accountID,
                                              purpose: .localFeedbackPendingV1)
-        guard let applicationID = Bundle.main.bundleIdentifier else { throw FeedbackFailure.unconfigured }
+        let applicationID = try DevelopmentKeychainIdentity.read()
         let keys = try ScopedMessageKeyProvider(namespace: namespace, applicationIdentifier: applicationID,
                                                 protection: .whenUnlockedThisDeviceOnly)
         let files = FileManager.default
@@ -418,7 +418,7 @@ import Observation
                                    generation: UUID(), selection: UUID())
         let generation = shell.generation
         let namespace = MessageKeyNamespace(environment: binding.environment, account: binding.account, purpose: .localNeedsPendingV1)
-        guard let applicationID = Bundle.main.bundleIdentifier else { throw NeedsFailure.unconfigured }
+        let applicationID = try DevelopmentKeychainIdentity.read()
         keys = try ScopedMessageKeyProvider(namespace: namespace, applicationIdentifier: applicationID,
                                             protection: .whenUnlockedThisDeviceOnly)
         let files = FileManager.default
@@ -469,7 +469,7 @@ import Observation
                                     generation: UUID(), selection: UUID())
         let generation = shell.generation
         let namespace = MessageKeyNamespace(environment: binding.environment, account: binding.account, purpose: .localMemoryPendingV1)
-        guard let applicationID = Bundle.main.bundleIdentifier else { throw MemoryFailure.unconfigured }
+        let applicationID = try DevelopmentKeychainIdentity.read()
         keys = try ScopedMessageKeyProvider(namespace: namespace, applicationIdentifier: applicationID,
                                             protection: .whenUnlockedThisDeviceOnly)
         let files = FileManager.default
@@ -580,7 +580,7 @@ import Observation
         let binding = MemoryBinding(environment:configuration.environmentID,account:configuration.accountID,generation:UUID(),selection:UUID())
         let generation = shell.generation
         let namespace = MessageKeyNamespace(environment:binding.environment,account:binding.account,purpose:.localMemoryPendingV1)
-        guard let applicationID = Bundle.main.bundleIdentifier else { throw MemoryFailure.unconfigured }
+        let applicationID = try DevelopmentKeychainIdentity.read()
         keys = try ScopedMessageKeyProvider(namespace:namespace,applicationIdentifier:applicationID,protection:.whenUnlockedThisDeviceOnly)
         let files = FileManager.default
         let support = try files.url(for:.applicationSupportDirectory,in:.userDomainMask,appropriateFor:nil,create:true)
@@ -789,7 +789,7 @@ import Observation
         let scope = try StorageScope(environment: configuration.environmentID.uuidString, account: configuration.accountID.uuidString)
         let namespace = MessageKeyNamespace(environment: configuration.environmentID, account: configuration.accountID,
                                              purpose: .localMessageStorageV1)
-        guard let applicationID = Bundle.main.bundleIdentifier else { throw MessageHTTPFailure.invalidConfiguration }
+        let applicationID = try DevelopmentKeychainIdentity.read()
         let keys = try ScopedMessageKeyProvider(namespace: namespace, applicationIdentifier: applicationID,
                                                  protection: .whenUnlockedThisDeviceOnly)
         let files = FileManager.default
@@ -933,11 +933,9 @@ import Observation
     init(environment: [String: String], shell: ShellState) throws {
         _ = try DevelopmentTripEditingProfile.read(environment)
         guard environment["G2C_DEV_ACCOUNT_MODE"] == "1",
-              let endpoint = DevelopmentSessionConfiguration.readEndpoint(environment),
-              let raw = (environment["G2C_DEV_ACCOUNTS"] ?? "{}").data(using: .utf8), raw.count <= 131072,
-              let tokens = try JSONSerialization.jsonObject(with: raw) as? [String: String], tokens.count <= 8,
-              tokens.keys.allSatisfy({ !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }),
-              let applicationID = Bundle.main.bundleIdentifier else { throw SessionFailure.invalidConfiguration }
+              let endpoint = DevelopmentSessionConfiguration.readEndpoint(environment) else { throw SessionFailure.invalidConfiguration }
+        let tokens = try DevelopmentAccountInput.read(environment)
+        let applicationID = try DevelopmentKeychainIdentity.read()
         let cleanupProfile = environment["G2C_DEV_CLEANUP_PROFILE"]
         if let cleanupProfile, !["device-v3", "device-v4"].contains(cleanupProfile) { throw SessionFailure.invalidConfiguration }
         cleanupEnabled = cleanupProfile != nil
@@ -1193,7 +1191,7 @@ private struct DevelopmentVerificationTransport: ClientTransport {
     private let keys: [MessageKeyPurpose: ScopedMessageKeyProvider]
     let keyIDs: [MessageKeyPurpose: UUID]
     init(scope: AccountCleanupScope, layout: DevelopmentDeviceNativeLayout, endpoint: URL, originalKeyIDs: [String: UUID]? = nil) throws {
-        guard let applicationID = Bundle.main.bundleIdentifier else { throw CleanupFailure.unavailable }
+        let applicationID = try DevelopmentKeychainIdentity.read()
         self.scope = scope; self.layout = layout; self.applicationID = applicationID
         self.endpoint = try MessageEndpoint(url: endpoint, maximumRequestBytes: 32768, maximumResponseBytes: 4_000_000, allowLoopbackHTTP: true)
         var keys: [MessageKeyPurpose: ScopedMessageKeyProvider] = [:], ids: [MessageKeyPurpose: UUID] = [:]
@@ -1587,7 +1585,7 @@ private func developmentCleanupHash(_ value: Data) -> String {
     }
 
     static func slot(environment: UUID, suffix: String) throws -> KeychainSessionStore {
-        guard let app = Bundle.main.bundleIdentifier else { throw CleanupFailure.unavailable }
+        let app = try DevelopmentKeychainIdentity.read()
         return KeychainSessionStore(scope: try .init(namespace: .init(environment: environment, slot: suffix),
             applicationIdentifier: app), protection: .whenUnlockedThisDeviceOnly)
     }

@@ -170,7 +170,7 @@ import UIKit
         app.launchArguments=["-cj.ui.language.v1",language]
         if large { app.launchArguments += ["-UIPreferredContentSizeCategoryName","UICTContentSizeCategoryAccessibilityXXXL"] }
         app.launchEnvironment=["OS_ACTIVITY_MODE":"disable","G2C_DEV_ACCOUNT_MODE":"1","G2C_DEV_API_BASE_URL":f.endpoint,
-            "G2C_DEV_ACCOUNTS":restore ? "{}" : String(data:try JSONEncoder().encode(f.accounts),encoding:.utf8)!,"G2C_DEV_MESSAGE_PROFILE":"trip-edit-v1",
+            "G2C_DEV_ACCOUNTS":restore || f.device_host != nil ? "{}" : String(data:try JSONEncoder().encode(f.accounts),encoding:.utf8)!,"G2C_DEV_MESSAGE_PROFILE":"trip-edit-v1",
             "G2C_DEV_NEEDS_PROFILE":"manual-v1","G2C_DEV_NEEDS_ID":"visit",
             "G2C_DEV_TRAVEL_PROFILE":String(data:try JSONSerialization.data(withJSONObject:["version":"app-travel.1","travel_ids":[f.namespace]]),encoding:.utf8)!,
             "G2C_DEV_TYPED_MEMORY_PROFILE":"{\"version\":\"app-memory.2\",\"subjects\":[\"self\"],\"slots\":{\"food\":{\"kind\":\"preference\",\"collection_allowed\":true,\"semantic_resolved\":true},\"pace\":{\"kind\":\"preference\",\"collection_allowed\":true,\"semantic_resolved\":true}},\"extents\":[\"long_term\",\"current\"]}",
@@ -178,6 +178,8 @@ import UIKit
         if let host=f.device_host {
             app.launchEnvironment["G2C_M4_LOCAL_HOST"]=host
             app.launchEnvironment["G2C_M4_LOCAL_PORT"]=try XCTUnwrap(f.device_port)
+            app.launchEnvironment["G2C_DEV_ACCOUNTS"]="{}"
+            if !restore { app.launchEnvironment["G2C_M4_ACCOUNTS_FILE"]="G2CM4DeviceAccounts.json" }
         }
         if f.manual_profile == true { app.launchEnvironment["G2C_DEV_TRIP_MANUAL_PROFILE"]="manual-v1" }
         if f.manual_only == true {

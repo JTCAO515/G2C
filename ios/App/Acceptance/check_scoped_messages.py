@@ -23,7 +23,7 @@ if ARGS.device:
  if not ARGS.local_tls:parser.error('--device requires the approved --local-tls profile')
  if CASE.endswith('Largest'):parser.error('Device maximum-font case needs actual system font setup; not a launch-argument substitute')
  if CASE=='testFormalPlaceMapUnavailable':parser.error('Device map outage needs a real device network case; simulator delegate fault is not device evidence')
- from m4_device import LocalTLS,configure_project,scan_app_container
+ from m4_device import LocalTLS,configure_project,scan_app_container,stage_accounts
  from m4_artifacts import export_native_logs,redact
  TLS=LocalTLS.load(ARGS.local_tls)
 elif ARGS.local_tls or ARGS.amap_device:parser.error('Device options require --device')
@@ -636,6 +636,7 @@ try:
        r['status']='WAITING_DEVICE_UNLOCK';save();print('WAITING_DEVICE_UNLOCK: build ready; unlock the approved iPhone to run without rebuilding',flush=True);waiting=True
       if time.monotonic()>deadline:raise TimeoutError('approved device remained locked after build')
       time.sleep(5)
+     stage_accounts(ARGS.device,bundle,BUILD/'Build/Products/Debug-iphoneos/CJProbeApp.app',quarantine,native_tokens)
      r['status']='RUNNING';save();command[-1]='test-without-building'
     print('SCOPED '+CASE,flush=True);run=subprocess.run(command,cwd=ROOT,capture_output=True,text=True,timeout=1800)
     r['native_exit_code']=run.returncode
