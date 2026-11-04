@@ -129,6 +129,26 @@ class Boundaries(unittest.TestCase):
         self.assertNotIn(KEY,'\n'.join(log.output))
         self.assertEqual(self.budget.inspect()[0]['state'],'INTENT')
 
+    def test_model_cannot_redispatch_same_canonical_tool_query(self):
+        services=RealServices(self.provider(sse()),KEY,frozenset({'m4-synthetic-one'}))
+        host=RealTools(services,allowed_native=frozenset({'place_search'}));tool_calls=[]
+        call=dict(name='place_search',arguments=dict(keyword='synthetic',city='北京',page=1,page_size=1))
+        turn=json.dumps(dict(version='MODEL-tool-turn.1',kind='tool',answer=None,calls=[call]))
+        class Worker:
+            provider=services.model
+            def _model_history(self,*args):pass
+            def _registered_stream(self,binding,key,registration,argument):
+                if registration=='model.tool_turn':
+                    argument.native_reply['assistant']=dict(role='assistant',content=None,tool_calls=[dict(id='synthetic-'+key,type='function',function=dict(name='place_search',arguments=json.dumps(call['arguments'])))])
+                    return iter([turn])
+                tool_calls.append(key)
+                return iter([json.dumps(dict(outcome='invalid_response',provider_code=None,source=dict(endpoint='https://restapi.amap.com/v3/place/text')))])
+        binding=SimpleNamespace(scope='local:https://local.g2c.invalid:m4-synthetic-one',run_id='synthetic-repeat-run')
+        with self.assertRaisesRegex(ProviderFailed,'already dispatched'):
+            list(host.answer(Worker(),binding,[dict(role='user',content='Synthetic query')]))
+        self.assertEqual(tool_calls,['tool.0.0'])
+        self.assertEqual(self.budget.inspect(),[])  # fixture host: no real registered exit or HTTP
+
     def test_native_arguments_convert_to_existing_domain_wire(self):
         name,raw=canonical_tool('place_search',json.dumps(dict(keyword='故宫',city='北京',page=1,page_size=1)).encode())
         self.assertEqual(name,'place');self.assertEqual(place_query(raw).keyword,'故宫')
