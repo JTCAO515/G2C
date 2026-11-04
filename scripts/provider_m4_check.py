@@ -19,6 +19,40 @@ def sse():
 
 
 class Checks(unittest.TestCase):
+    def test_secret_in_error_metadata_never_leaves_process(self):
+        with tempfile.TemporaryDirectory() as directory:
+            journal=subject.Journal(Path(directory));key='synthetic-secret-key'
+            payload=sse().replace(subject.MODEL.encode(),key.encode())
+            async def run():
+                with patch.object(subject.httpx,'AsyncHTTPTransport',lambda **kwargs:httpx.MockTransport(lambda request:httpx.Response(200,content=payload))):
+                    return await subject.run(journal,'beijing','en-answer',key)
+            result=asyncio.run(run())
+            self.assertEqual(result['status'],'FAIL')
+            self.assertNotIn(key,json.dumps(result))
+            self.assertNotIn(key,json.dumps(journal.inspect()))
+
+    def test_http_rejection_is_not_timeout_or_cancellation_success(self):
+        for case in ('timeout','cancel'):
+            with self.subTest(case=case),tempfile.TemporaryDirectory() as directory:
+                async def run():
+                    with patch.object(subject.httpx,'AsyncHTTPTransport',lambda **kwargs:httpx.MockTransport(lambda request:httpx.Response(401,json={'error':{'message':'synthetic rejection','type':'invalid_api_key'}}))):
+                        return await subject.run(subject.Journal(Path(directory)),'beijing',case,'synthetic-only-key')
+                self.assertEqual(asyncio.run(run())['status'],'FAIL')
+
+    def test_completed_response_does_not_pass_timeout_case(self):
+        with tempfile.TemporaryDirectory() as directory:
+            async def run():
+                with patch.object(subject.httpx,'AsyncHTTPTransport',lambda **kwargs:httpx.MockTransport(lambda request:httpx.Response(200,content=sse()))):
+                    return await subject.run(subject.Journal(Path(directory)),'beijing','timeout','synthetic-only-key')
+            self.assertEqual(asyncio.run(run())['status'],'FAIL')
+
+    def test_real_cli_rejects_ledger_path_override_before_loading_key(self):
+        import sys
+        for directory in ('ledger-a','ledger-b'):
+            with self.subTest(directory=directory),patch.object(sys,'argv',['provider_m4.py','--root',directory,'--region','beijing','--case','zh-answer']),patch.object(subject.subprocess,'run',side_effect=AssertionError('must not load credential')):
+                with self.assertRaises(SystemExit) as error:subject.main()
+                self.assertEqual(error.exception.code,2)
+
     def test_sdk_typed_chunk_stream_usage_and_original_read_only(self):
         with tempfile.TemporaryDirectory() as directory:
             journal=subject.Journal(Path(directory));seen=[]

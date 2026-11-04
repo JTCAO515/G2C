@@ -23,12 +23,14 @@ from agentscope.credential import OpenAICredential
 from agentscope.message import Msg, UserMsg, TextBlock, ToolCallBlock, ToolResultBlock
 from agentscope.model import OpenAIChatModel, FinishedReason
 from agentscope.tool import ToolChoice
+from openai import APITimeoutError
 
 TARGETS = {
     'beijing': ('cn-beijing', 'https://dashscope.aliyuncs.com/compatible-mode/v1', 'g2c-dashscope'),
     'singapore': ('ap-southeast-1', 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1', 'g2c-dashscope-intl'),
 }
 MODEL = 'qwen3.8-flash'
+JOURNAL_ROOT = Path.home() / '.local' / 'share' / 'g2c' / 'm1-dashscope-acceptance'
 class ClientCancelled(Exception):
     """Cancellation already delivered into and acknowledged by the SDK stream."""
 TOOL = {'type': 'function', 'function': {'name': 'synthetic_echo', 'description': 'Echo synthetic integer 7 locally; no network or business write.',
@@ -170,20 +172,31 @@ async def request(journal, region, case, turn, messages, key, *, tool=False):
             if not chunks or not chunks[-1].is_last or chunks[-1].finished_reason != FinishedReason.COMPLETED:
                 raise ValueError('incomplete_response')
         final = chunks[-1]
+        if transport.models != {MODEL}:
+            raise ValueError('unexpected_provider_model_identity')
+        usage = final.usage
+        actual_usage = ('UNKNOWN' if usage is None or type(usage.input_tokens) is not int
+                        or type(usage.output_tokens) is not int or min(usage.input_tokens,usage.output_tokens)<0
+                        else dict(input_tokens=usage.input_tokens,output_tokens=usage.output_tokens))
         receipt.update(outcome='COMPLETE', chunk_count=len(chunks), first_chunk_seconds=first,
-                       elapsed_seconds=time.monotonic()-started, response_id=final.id,
-                       provider_reported_model_ids=sorted(transport.models), http_status=transport.status,
-                       usage='UNKNOWN' if final.usage is None else dict(input_tokens=final.usage.input_tokens,
-                                                                      output_tokens=final.usage.output_tokens))
+                       elapsed_seconds=time.monotonic()-started,
+                       response_id_sha256=hashlib.sha256(final.id.encode()).hexdigest(),
+                       provider_reported_model_ids=[MODEL], http_status=transport.status, usage=actual_usage)
         if key in canonical(receipt).decode():
             raise ValueError('secret_echo_rejected')
         journal.finish(attempt, 'COMPLETE', receipt)
         return receipt, final
     except (Exception, asyncio.CancelledError) as error:
-        receipt.update(outcome='UNKNOWN' if transport.sent else 'NOT_SENT',
+        # Rebuild from code-owned fields. Never copy arbitrary response IDs,
+        # model metadata or exception text through an error path.
+        receipt = dict(attempt_id=attempt, requested_model_id=MODEL, endpoint_region=locality, endpoint=base,
+                       actual_cost_cny='UNKNOWN', usage='UNKNOWN',
+                       outcome='UNKNOWN' if transport.sent else 'NOT_SENT',
                        reason='CLIENT_CANCELLED' if isinstance(error, (asyncio.CancelledError, ClientCancelled)) else type(error).__name__,
                        elapsed_seconds=time.monotonic()-started, http_status=transport.status,
-                       provider_reported_model_ids=sorted(transport.models))
+                       provider_reported_model_ids=[MODEL] if transport.models=={MODEL} else [],
+                       interruption=('timeout' if isinstance(error,(APITimeoutError,httpx.TimeoutException)) else
+                                     'cancel_acknowledged' if isinstance(error,ClientCancelled) else 'none'))
         if transport.sent:
             journal.finish(attempt, 'UNKNOWN', receipt)
         return receipt, None
@@ -202,7 +215,11 @@ async def run(journal, region, case, key):
     receipt, final = await request(journal, region, case, 0, messages, key, tool=use_tool)
     result = dict(case=case, receipt=receipt, versions={name:version(name) for name in ('agentscope','dbos','openai','httpx','pydantic')})
     if final is None:
-        result['status'] = 'PASS' if case in ('timeout','cancel') and receipt['outcome']=='UNKNOWN' else 'FAIL'
+        expected = {'timeout':'timeout','cancel':'cancel_acknowledged'}.get(case)
+        result['status'] = 'PASS' if expected is not None and receipt.get('interruption')==expected else 'FAIL'
+        return result
+    if case in ('timeout','cancel'):
+        result.update(status='FAIL',reason='expected_interruption_not_observed')
         return result
     text = ''.join(block.text for block in final.content if isinstance(block, TextBlock))
     result.update(text_chars=len(text), output_sha256=hashlib.sha256(text.encode()).hexdigest())
@@ -247,13 +264,14 @@ async def run(journal, region, case, key):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--region', choices=TARGETS, required=True)
     parser.add_argument('--case', choices=('zh-answer','en-answer','zh-tool','en-tool','structured-invalid','tool-failure','timeout','cancel','kill-before-send','kill-after-send'))
     parser.add_argument('--inspect', action='store_true')
     parser.add_argument('--sample', choices=('original', 'parser-fixed'), default='original')
     args = parser.parse_args()
-    journal = Journal(args.root)
+    # One stable ledger per authorization, independent of checkout/cwd/output
+    # directories. The real CLI has no path override or reset operation.
+    journal = Journal(JOURNAL_ROOT)
     if args.inspect:
         print(json.dumps(journal.inspect()))
         return
