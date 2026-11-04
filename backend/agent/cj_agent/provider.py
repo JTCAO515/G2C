@@ -387,8 +387,8 @@ class MeteredDashScopeProvider:
                     if calls:
                         if texts and ''.join(texts).strip():raise ProviderUnknown('M4 mixed tool answer rejected')
                         result=dict(version='MODEL-tool-turn.1',kind='tool',answer=None,calls=[
-                            dict(name=c['name'],arguments=json.loads(c['arguments'])) for _,c in sorted(calls.items())])
-                    else:result=dict(version='MODEL-tool-turn.1',kind='answer',answer=json.loads(''.join(texts)),calls=[])
+                            dict(name=c['name'],arguments=json.loads(c['arguments'],object_pairs_hook=reject_duplicates(ValueError,'duplicate_native_argument_field'))) for _,c in sorted(calls.items())])
+                    else:result=dict(version='MODEL-tool-turn.1',kind='answer',answer=json.loads(''.join(texts),object_pairs_hook=reject_duplicates(ValueError,'duplicate_native_answer_field')),calls=[])
                     # Same strict internal parser used by the formal tool host.
                     from cj_run.tool_turn import parse_turn
                     encoded=json.dumps(result,ensure_ascii=False,separators=(',',':'))
