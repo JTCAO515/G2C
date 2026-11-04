@@ -128,7 +128,7 @@ Legacy UUID-named files remain readable without rewriting; new opaque operation 
 use a byte-exact hash filename, including distinct NFC/NFD or case variants.
 Files are immutable 0600, written in full to an exclusive hidden temporary entry,
 synced and renamed without replacement (`RENAME_EXCL`) before network use. A crash
-leaves only that temporary entry: readers skip it and local cleanup erases it; the private directory is held by descriptor. Canonical directory
+leaves only that temporary entry: readers skip it, and both account cleanup and item erasure erase it; the private directory is held by descriptor. Canonical directory
 identity is checked after key and binding callbacks, after write/fsync, and with
 the original encrypted record at the transport validation boundary. Displacement
 fails without deleting or migrating the original ciphertext. These checks do not

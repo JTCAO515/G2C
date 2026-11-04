@@ -45,10 +45,12 @@ import CJMessageKeys
         #expect(try journal.rejection(for: first, domain: "CJMemoryRejections") == nil)
         try journal.append(second)
         try journal.validateInventory([first, second])
+        #expect(try f.names(f.root).filter { $0.hasPrefix(".write-") }.count == 2, "append never adopts or removes another temporary entry")
         let plan = try journal.prepareRemoval { same($0.itemID, first.itemID) }
         try journal.performRemoval(plan)
         #expect(try journal.pending().map(\.operationID) == [second.operationID])
-        #expect(try f.names(f.root).filter { $0.hasPrefix(".write-") }.count == 2, "append and removal never adopt or remove another temporary entry")
+        #expect(try f.names(f.root).filter { $0.hasPrefix(".write-") }.isEmpty, "item erasure also erases uncommitted temporary entries")
+        #expect(try f.names(f.rejections).count == 1, "only the erased journal's own directory is touched")
 
         try journal.clearLocalFiles()
         #expect(try f.names(f.root).isEmpty)
