@@ -1,5 +1,6 @@
 """Fixed private Hong Kong bucket, one original PUT, HEAD reconciliation only."""
 import json
+import os
 from pathlib import Path
 import re
 
@@ -62,4 +63,46 @@ def upload_package(package,journal_root):
     prefix='backups/'+datetime.fromtimestamp(manifest['at'],timezone.utc).strftime('%Y%m%dT%H%M%SZ')+'-'+manifest['dump_sha256']
     service=client()
     return {name:upload_file(service,package/name,prefix+'/'+name,root/(manifest['dump_sha256']+'-'+name+'.json'))
+        for name in ('database.dump','manifest.json')}
+
+
+def download_file(client,key,path,expected_sha256,*,limit):
+    authorization();path=Path(path);journal=path.with_suffix(path.suffix+'.get.json')
+    if (not re.fullmatch(r'backups/[0-9]{8}T[0-9]{6}Z-[0-9a-f]{64}/(database.dump|manifest.json)',key)
+            or not re.fullmatch('[0-9a-f]{64}',expected_sha256)):
+        raise ValueError('explicit_original_backup_object_required')
+    original=dict(bucket=BUCKET,key=key,sha256=expected_sha256)
+    if journal.exists() and json.loads(journal.read_bytes()).get('object')!=original:raise ValueError('original_download_binding_changed')
+    if path.exists():
+        if path.stat().st_size>limit or checksum(path)!=expected_sha256:raise ValueError('partial_original_download_unknown_no_resend')
+        save(journal,dict(object=original,state='RECEIVED'));return 'READ_ONLY_ORIGINAL'
+    if journal.exists():raise ValueError('original_download_unknown_no_resend')
+    save(journal,dict(object=original,state='INTENT'))
+    result=client.get_object(oss.GetObjectRequest(bucket=BUCKET,key=key))
+    size=0
+    with result.body as body:
+        if (type(result.content_length) is not int or not 0<=result.content_length<=limit
+                or (result.metadata or {}).get('sha256')!=expected_sha256 or result.server_side_encryption!='AES256'):
+            raise ValueError('original_download_headers_rejected')
+        with path.open('xb') as output:
+            os.chmod(path,0o600)
+            while chunk:=body.read(65536):
+                size+=len(chunk)
+                if size>limit:raise ValueError('bounded_backup_download_required')
+                output.write(chunk)
+            output.flush();os.fsync(output.fileno())
+    if size!=result.content_length or checksum(path)!=expected_sha256:raise ValueError('download_integrity_unknown')
+    save(journal,dict(object=original,state='RECEIVED'));return 'GET_VERIFIED'
+
+
+def download_package(original_package,destination):
+    from datetime import datetime,timezone
+    from .checkpoint import verified
+    original_package=Path(original_package);destination=Path(destination);destination.mkdir(mode=0o700,parents=True,exist_ok=True)
+    manifest=verified(original_package/'manifest.json')
+    if manifest['version']!='g2c-beta-data-checkpoint.1':raise ValueError('application_checkpoint_required')
+    prefix='backups/'+datetime.fromtimestamp(manifest['at'],timezone.utc).strftime('%Y%m%dT%H%M%SZ')+'-'+manifest['dump_sha256']
+    service=client()
+    return {name:download_file(service,prefix+'/'+name,destination/name,
+        manifest['dump_sha256'] if name=='database.dump' else checksum(original_package/name),limit=67108864 if name=='database.dump' else 1048576)
         for name in ('database.dump','manifest.json')}

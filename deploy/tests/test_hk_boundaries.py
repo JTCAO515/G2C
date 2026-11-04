@@ -1,6 +1,8 @@
 import base64
 from datetime import datetime,timezone
 import json
+import hashlib
+import io
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -101,3 +103,19 @@ def test_checkpoint_signature_tamper_wrong_key_and_public_release(tmp_path,monke
     checkpoint.atomic(path,{'version':'synthetic'})
     monkeypatch.setenv('CJ_BETA_RECOVERY_PUBLIC_B64',base64.b64encode(bytes(32)).decode())
     with pytest.raises(ValueError):checkpoint.verified(path)
+
+
+def test_backup_download_validates_bytes_and_never_reissues_partial(tmp_path,monkeypatch):
+    activate(monkeypatch);data=b'synthetic archive';sha=hashlib.sha256(data).hexdigest()
+    key='backups/20261104T000000Z-'+sha+'/database.dump'
+    class Download:
+        calls=0
+        def get_object(self,request):
+            self.calls+=1
+            return SimpleNamespace(content_length=len(data),metadata={'sha256':sha},server_side_encryption='AES256',body=io.BytesIO(data))
+    service=Download();path=tmp_path/'database.dump'
+    assert oss_backup.download_file(service,key,path,sha,limit=1024)=='GET_VERIFIED'
+    assert oss_backup.download_file(service,key,path,sha,limit=1024)=='READ_ONLY_ORIGINAL' and service.calls==1
+    path.write_bytes(b'partial')
+    with pytest.raises(ValueError,match='unknown_no_resend'):oss_backup.download_file(service,key,path,sha,limit=1024)
+    assert service.calls==1
