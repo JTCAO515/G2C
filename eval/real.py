@@ -18,6 +18,7 @@ from pathlib import Path
 import socket
 import subprocess
 import sys
+import re
 import threading
 import time
 
@@ -166,7 +167,7 @@ def original_operations(database, subject):
                  input=json.loads(bytes(b))) for r,k,g,a,b in rows]
 
 
-def run_case(client, database, conninfo, auth, context, services, scenario, language, subject, evidence):
+def run_case(client, database, conninfo, auth, context, services, scenario, language, subject, evidence, *, allowed_native=None):
     headers = {'Authorization': 'Bearer ' + dev_auth.token(auth, subject, 30),
                'Content-Type': 'application/octet-stream'}
     recipe = scenario['recipe']
@@ -202,7 +203,7 @@ def run_case(client, database, conninfo, auth, context, services, scenario, lang
             needs_reference=needs)
         return post(client, '/v2/messages', body, headers, evidence, 'message')['receipt']
 
-    tools = RealTools(services)
+    tools = RealTools(services) if allowed_native is None else RealTools(services, allowed_native=allowed_native)
     def work():
         return run_worker.run_once(database, services.model, auth, memory_configuration=configuration,
                                    tools_configuration=tools, real_services=services)
@@ -296,23 +297,41 @@ def run_case(client, database, conninfo, auth, context, services, scenario, lang
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--batch-id', default='round2-full')
+    parser.add_argument('--smoke', type=Path)
     args = parser.parse_args()
     if args.output.exists():
         print('READ_ONLY: existing batch; no dispatch or retry')
         return 0
+    from real_phase import claimed
+    if claimed('full'):
+        print('READ_ONLY: canonical full phase already claimed; no dispatch/retry');return 0
     if os.environ.get('CJ_M4_SYNTHETIC_ONLY') != '1':
         parser.error('explicit CJ_M4_SYNTHETIC_ONLY=1 required')
+    if re.fullmatch('[a-z0-9-]{1,24}', args.batch_id) is None:
+        parser.error('bounded synthetic batch identifier required')
     os.environ['CJ_ENV'] = 'local'
     raw = Path(__file__).with_name('scenarios.json').read_bytes()
     scenarios = json.loads(raw)
     commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
+    from smoke import require_full_ready
+    require_full_ready(args.smoke, commit)
+    from real_budget import estimate, verified_journal
+    from real_phase import claim
+    before = verified_journal()
+    forecast = estimate(before, include_smoke=False)
+    if not forecast['within_stop_lines']:
+        raise ValueError('full_batch_estimate_exceeds_stop_line_report_495_before_dispatch')
+    model_key=keychain('g2c-dashscope');amap_key=keychain('g2c-amap-web-key')
+    if not claim('full',args.output,commit):
+        print('READ_ONLY: canonical full phase already claimed; no request/retry');return 0
     budget = AuthorizationBudget(STATE)
-    budget.check_date()
-    before = budget.inspect()
+    budget.check_date();verified_journal()
     plan = dict(schema_version=1, sample_set_id='g2c-m4-synthetic-33',
         sample_set_version='2:' + sha256(raw).hexdigest(), evidence_layer='real',
         provenance='Original fixed33/11; synthetic only, no tuning of prompts, model, holdout or judges.',
         collector_sha256=sha256(Path(__file__).read_bytes()).hexdigest(), approved_thresholds=dict(POLICY), attempts=[1],
+        batch_id=args.batch_id, smoke_evidence_sha256=sha256((args.smoke/'summary.json').read_bytes()).hexdigest(),
         candidates=[dict(id=commit, commit=commit, config_version='M4 real-m4 / signed MESSAGE-send.2 / registered exit / legacy draft / typed memory',
                          model_version=M4_MODEL, source_as_of=datetime.now(timezone.utc).isoformat())],
         networks=[dict(id=NETWORK, kind='local_real_services', endpoint='loopback signed API → Beijing DashScope/authorized tools',
@@ -326,11 +345,12 @@ def main():
     (args.output / 'raw').mkdir(mode=0o700)
     save(args.output / 'plan.json', plan)
     save(args.output / 'budget-before.json', before)
+    save(args.output / 'preflight-estimate.json', forecast)
     save(args.output / 'packages.json', {v: version(v) for v in ('httpx','psycopg','uvicorn','fastapi')})
-    subjects = frozenset('m4-synthetic-eval-' + str(i) + '-' + lang for i in range(len(scenarios)) for lang in ('zh','en'))
-    model = MeteredDashScopeProvider(DashScopeConfig(M4_BASE, M4_MODEL, keychain('g2c-dashscope'),
+    subjects = frozenset('m4-synthetic-' + args.batch_id + '-' + str(i) + '-' + lang for i in range(len(scenarios)) for lang in ('zh','en'))
+    model = MeteredDashScopeProvider(DashScopeConfig(M4_BASE, M4_MODEL, model_key,
                                                    max_output_tokens=1024), budget)
-    services = RealServices(model, keychain('g2c-amap-web-key'), subjects)
+    services = RealServices(model, amap_key, subjects)
     observations = []
     with redirect_stdout(io.StringIO()), private_database('real-evaluation') as conninfo:
         auth = conninfo.parent / 'auth'
@@ -353,7 +373,7 @@ def main():
             for i, scenario in enumerate(scenarios):
                 for language in ('zh', 'en'):
                     key = scenario['id'] + '-' + language + '-1'
-                    subject = 'm4-synthetic-eval-' + str(i) + '-' + language
+                    subject = 'm4-synthetic-' + args.batch_id + '-' + str(i) + '-' + language
                     row = dict(candidate_id=commit, scenario_id=scenario['id'], language=language,
                         network_id=NETWORK, attempt=1, purpose='holdout' if scenario['split']=='holdout' else 'evaluation',
                         attempt_source='eval/real.py signed TCP API / original B run_once / persistent authorization budget',
@@ -399,7 +419,7 @@ def main():
                     # Progress is deliberately outside redirect_stdout, no API content or keys.
                     os.write(1, (key+' '+row['status']+' '+row['judgment']['outcome']+'\n').encode())
                     counts = {kind: sum(v['kind']==kind for v in budget.inspect()) for kind in ('model','place','route','weather','fact')}
-                    if counts['model']+13 >= 240 or sum(counts[k] for k in ('place','route','weather')) >= 79:
+                    if counts['model']+13 >= 400 or sum(counts[k] for k in ('place','route','weather')) >= 159:
                         save(args.output / 'stop.json', dict(reason='authorization stop threshold', counts=counts))
                         return 2
     return int(any(v['status']=='failure' or v['judgment']['outcome']=='FAIL' for v in observations))
