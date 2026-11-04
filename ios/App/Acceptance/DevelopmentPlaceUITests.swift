@@ -34,33 +34,29 @@ import Foundation
         return value
     }
     private func reveal(_ element: XCUIElement) {
-        // Read actual visible cards, rather than merely querying offscreen labels.
-        // This does not omit any issue from the complete accessibility audit.
-        for _ in 0..<40 {
-            if element.isHittable { return }
-            let menu = app.buttons.matching(identifier:"assistant.history").firstMatch
-            let conversation = app.staticTexts.matching(identifier:"assistant.conversation").firstMatch
-            if menu.exists && menu.isHittable && conversation.exists && conversation.isHittable {
-                // ScrollView reports the whole window, including the fixed composer.
-                // Derive gestures from the actual gap between fixed controls/input.
-                let top = menu.frame.maxY,bottom = conversation.frame.minY
-                XCTAssertGreaterThan(bottom - top,80)
-                let window = app.frame
-                let high = top + (bottom - top) * 0.35,low = top + (bottom - top) * 0.85
-                let highPoint = app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:window.midX,dy:high))
-                let lowPoint = app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:window.midX,dy:low))
-                print("PLACE_VISIBLE_SCROLL",element.identifier,element.frame,top,bottom)
-                if element.frame.midY < (top + bottom) / 2 { highPoint.press(forDuration:0.05,thenDragTo:lowPoint) }
-                else { lowPoint.press(forDuration:0.05,thenDragTo:highPoint) }
-            } else {
-                let scroll = app.scrollViews.firstMatch,list = app.collectionViews.firstMatch
-                let container = scroll.exists ? scroll : list
-                if container.exists {
-                    if element.frame.midY < container.frame.midY { container.swipeDown() }
-                    else { container.swipeUp() }
-                } else { app.swipeUp() }
+        // Match the existing scoped-message viewport search: the floating header
+        // and fixed composer are not part of the scrollable card area.
+        for attempt in 0..<40 {
+            let navigation = app.navigationBars.firstMatch
+            var top = navigation.exists ? navigation.frame.maxY + 4 : app.frame.minY + 60
+            var bottom = app.tabBars.firstMatch.exists ? app.tabBars.firstMatch.frame.minY : app.frame.maxY - 24
+            let header = app.otherElements.matching(identifier:"assistant.header").firstMatch
+            let composer = app.otherElements.matching(identifier:"assistant.composer").firstMatch
+            if !navigation.exists && !["assistant.draft","assistant.send","assistant.intent"].contains(element.identifier) && header.exists && composer.exists {
+                top = max(top,header.frame.maxY + 8);bottom = min(bottom,composer.frame.minY)
             }
+            XCTAssertGreaterThan(bottom - top,80)
+            let frame = element.exists ? element.frame : .zero
+            if element.exists && element.isHittable && frame.midY > top && frame.midY < bottom { return }
+            let located = !frame.isEmpty && frame.minY.isFinite && frame.maxY.isFinite
+            let down = located ? frame.midY <= top : attempt >= 20
+            let middle = (top + bottom) / 2,step = min(150,(bottom - top) * 0.35)
+            let start = app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:app.frame.width * 0.85,dy:middle + (down ? -step : step)))
+            let end = app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:app.frame.width * 0.85,dy:middle + (down ? step : -step)))
+            start.press(forDuration:0.05,thenDragTo:end)
         }
+        capture("not-visible-" + element.identifier)
+        let tree = XCTAttachment(string:app.debugDescription);tree.name = "not-visible-tree-" + element.identifier;tree.lifetime = .keepAlways;add(tree)
         XCTAssertTrue(element.isHittable,"Expected visible element: " + element.identifier)
     }
     private func tap(_ id: String) {

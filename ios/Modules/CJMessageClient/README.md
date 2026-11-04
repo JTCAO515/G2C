@@ -75,7 +75,7 @@ anti-rollback monotonic authority or claim full cleanup. Host must bound inputs/
 `swift test --package-path ios/Modules/CJMessageClient` (9 Swift Testing cases). Some
 sandboxes require the normal tool approval to run SwiftPM manifests; local caches were
 redirected into `.build`, without globally changing configuration. Full command and
-attribution are in [evidence/REPORT.md](evidence/REPORT.md).
+attribution are in [evidence/REPORT.md](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/ios/Modules/CJMessageClient/evidence/REPORT.md).
 
 Test-only executable `CJMessageRecoveryProbe` runs in two distinct processes with an
 externally generated synthetic temporary key: write original action/draft, exit, then
@@ -104,7 +104,7 @@ live POST is explicitly unavailable; only named synthetic interceptor compositio
 exercise submission. Key-ID authentication is not freshness or production activation.
 
 Query consumption update: fixed CJ005 `312a69ca` replaces the d886677 query blocker.
-[evidence/QUERY-CONSUMPTION.md](evidence/QUERY-CONSUMPTION.md) records exact generated
+[evidence/QUERY-CONSUMPTION.md](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/ios/Modules/CJMessageClient/evidence/QUERY-CONSUMPTION.md) records exact generated
 branches and 10+2 checks. Only explicit null is notObserved; live POST remains disabled.
 
 Once-only local authority: [FRESH-AUTHORIZATION.md](FRESH-AUTHORIZATION.md) documents

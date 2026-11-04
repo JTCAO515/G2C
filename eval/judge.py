@@ -2,6 +2,23 @@
 import json
 
 
+def required_checks(scenario):
+    """Frozen scenario determines coverage, not the observation's PASS labels."""
+    recipe = scenario.get('recipe')
+    if not isinstance(recipe, str):
+        return None
+    names = {'restricted_role','foreign_read','foreign_write','formal_write_count',
+             'original_memory_presence' if recipe.startswith('memory-') else 'unconfirmed_memory_write_count'}
+    if recipe == 'accept':
+        names.update(('formal_version','formal_candidate_bytes'))
+    if recipe.startswith('memory-'):
+        names.update(('current_memory_context','persisted_memory_status','persisted_memory_text','persisted_memory_kind'))
+    names.update(k for k in ('max_days','max_daily_items','budget_limit') if k in scenario)
+    if 'transfer_minutes' in scenario:
+        names.add('verified_transfer_feasibility')
+    return names
+
+
 def judge(scenario, evidence, expected):
     checks = []
 
@@ -42,8 +59,9 @@ def judge(scenario, evidence, expected):
         equal('verified_transfer_feasibility', evidence.get('known_transfer_feasible'), False)
     failures = [c for c in checks if c['status'] == 'FAIL']
     hard = 'FAIL' if failures else 'UNKNOWN' if any(c['status'] == 'UNKNOWN' for c in checks) else 'PASS'
-    return dict(hard_outcome=hard, task_outcome='FAIL' if failures else 'UNKNOWN', checks=checks,
-                semantic_review='UNKNOWN: FakeProvider is not evidence of model quality',
+    return dict(kind='program', independent=True, ref='eval/judge.py',
+                hard_outcome=hard, task_outcome='FAIL' if failures else 'UNKNOWN', checks=checks,
+                semantic_review='UNKNOWN: this program checks state/constraints; semantic and factual quality require a separate grounded review',
                 serious_errors=[dict(kind='program', ref='eval/judge.py:'+c['name'],
                                      description=c['name']+' violated an independent state/constraint assertion', resolved=False)
                                 for c in failures])

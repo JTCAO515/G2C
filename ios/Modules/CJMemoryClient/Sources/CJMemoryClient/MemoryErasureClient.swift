@@ -94,10 +94,9 @@ public struct MemoryErasureOriginal: Sendable {
     public init(development endpoint: MemoryEndpoint, credentials: @escaping MemoryCredentialCallback,
                 currentBinding: @escaping @MainActor () -> MemoryBinding?, session: SessionLifecycle, sessionOperation: SessionOperation,
                 pendingStore: MemoryErasurePendingStore, requestTimeout: TimeInterval, resourceTimeout: TimeInterval) throws {
-        #if DEBUG && targetEnvironment(simulator)
+        #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
         guard session.isCurrent(sessionOperation), currentBinding() != nil, session.isCurrent(sessionOperation) else { throw MemoryFailure.staleBinding }
-        guard endpoint.url.scheme == "http", endpoint.url.host == "127.0.0.1", let port = endpoint.url.port,
-              (1...65535).contains(port), endpoint.maximumRequestBytes <= 32768, endpoint.maximumResponseBytes <= 524288,
+        guard endpoint.allowsDevelopmentActivation, endpoint.maximumRequestBytes <= 32768, endpoint.maximumResponseBytes <= 524288,
               requestTimeout > 0, resourceTimeout > 0, requestTimeout.isFinite, resourceTimeout.isFinite else { throw MemoryFailure.unconfigured }
         self.endpoint = endpoint; self.credentials = credentials; self.currentBinding = currentBinding
         self.session = session; operation = sessionOperation; store = pendingStore

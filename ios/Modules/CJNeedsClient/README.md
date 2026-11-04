@@ -110,7 +110,7 @@ Tests use only synthetic bindings/key persistence and intercepted HTTP. The publ
 no-write test constructs the existing URLSession transport but proves rejection
 before credentials, persistence or dispatch. No product network request is sent.
 
-See [evidence/REPORT.md](evidence/REPORT.md) for exact checks and limitations.
+See [evidence/REPORT.md](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/ios/Modules/CJNeedsClient/evidence/REPORT.md) for exact checks and limitations.
 
 
 ## M3 local account-cleanup primitive (#439)

@@ -10,6 +10,7 @@ struct TripPlaceMapView: View {
     var allowsMap: Bool = true
     @State private var expanded = false
     @State private var failed = false
+    @State private var amapConsent = false
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             switch projection {
@@ -37,16 +38,36 @@ struct TripPlaceMapView: View {
                     }
                     if allowsMap && places.contains(where: { $0.markerCoordinate != nil }) {
                         Button { expanded.toggle() } label: {
-                            RunReadableText(text: expanded ? language.text("Hide map", "收起地图") : language.text("Show Apple map", "显示 Apple 地图"))
+                            RunReadableText(text: expanded ? language.text("Hide map", "收起地图") : (usesAMap ? language.text("Show AMap", "显示高德地图") : language.text("Show Apple map", "显示 Apple 地图")))
                                 .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
                         }.buttonStyle(ShellReadableButtonStyle()).accessibilityIdentifier("trip.map.show")
-                        RunReadableText(text: language.text("Viewing the map sends its region to Apple. Your location is not requested. Text remains available if map tiles fail.", "查看地图会向 Apple 发送查看区域，不申请你的位置。地图瓦片失败时仍可阅读文字。"), style: .caption)
+                        RunReadableText(text: usesAMap ? language.text("AMap receives the viewed region and device/network information to display and secure its map. Your location is not requested. Read the SDK privacy policy before agreeing. Text remains available without a map.", "高德会处理查看区域及设备、网络信息，用于地图展示与安全保障；不申请你的位置。请先阅读 SDK 隐私政策，再决定是否同意。不看地图也可完整阅读文字行程。") : language.text("Viewing the map sends its region to Apple. Your location is not requested. Text remains available if map tiles fail.", "查看地图会向 Apple 发送查看区域，不申请你的位置。地图瓦片失败时仍可阅读文字。"), style: .caption)
                         if expanded {
-                            RecordedPlaceMap(places: places, language: language, failed: { failed = true })
-                                .frame(height: 320).accessibilityIdentifier("trip.map.canvas")
-                            Link(destination: URL(string:"https://www.apple.com/legal/internet-services/maps/")!) {
-                                RunReadableText(text:language.text("Apple Maps legal information","Apple 地图法律信息")).frame(maxWidth:.infinity,minHeight:44,alignment:.leading).contentShape(Rectangle())
-                            }.buttonStyle(ShellReadableButtonStyle()).accessibilityIdentifier("trip.map.legal")
+                            #if DEBUG && G2C_AMAP_LOCAL && canImport(MAMapKit) && !targetEnvironment(simulator)
+                            if usesAMap {
+                                Link(destination: URL(string: "https://lbs.amap.com/pages/privacy/")!) {
+                                    RunReadableText(text: language.text("AMap SDK privacy policy", "高德 SDK 隐私政策"))
+                                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
+                                }.buttonStyle(ShellReadableButtonStyle()).accessibilityIdentifier("trip.map.privacy")
+                                if amapConsent {
+                                    AMapRecordedPlaceMap(places: places, language: language, failed: { failed = true }, loaded: { failed = false })
+                                        .id(language)
+                                        .frame(height: 320).accessibilityIdentifier("trip.map.canvas")
+                                } else {
+                                    Button { amapConsent = true } label: {
+                                        RunReadableText(text: language.text("Agree and load AMap", "同意并加载高德地图"))
+                                            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
+                                    }
+                                        .buttonStyle(ShellReadableButtonStyle()).accessibilityIdentifier("trip.map.consent")
+                                }
+                            } else {
+                                RunReadableText(text: language.text("AMap is not configured for this build. Apple Maps is used below.", "此构建未配置高德，下方使用 Apple 地图。"), style: .caption)
+                                    .accessibilityIdentifier("trip.map.amap.unconfigured")
+                                appleMap(places)
+                            }
+                            #else
+                            appleMap(places)
+                            #endif
                         }
                         if failed {
                             RunReadableText(text: language.text("Map unavailable. Use the recorded names and addresses above.", "地图暂不可用，请使用上方来源名称和地址。"))
@@ -56,6 +77,22 @@ struct TripPlaceMapView: View {
                 }
             }
         }.accessibilityElement(children: .contain).accessibilityIdentifier("trip.map.sources")
+    }
+    private var usesAMap: Bool {
+        #if DEBUG && G2C_AMAP_LOCAL && canImport(MAMapKit) && !targetEnvironment(simulator)
+        AMapRecordedPlaceMap.isConfigured
+        #else
+        false
+        #endif
+    }
+    private func appleMap(_ places: [TripPlaceProjection]) -> some View {
+        Group {
+            RecordedPlaceMap(places: places, language: language, failed: { failed = true })
+                .frame(height: 320).accessibilityIdentifier("trip.map.canvas")
+            Link(destination: URL(string:"https://www.apple.com/legal/internet-services/maps/")!) {
+                RunReadableText(text:language.text("Apple Maps legal information","Apple 地图法律信息")).frame(maxWidth:.infinity,minHeight:44,alignment:.leading).contentShape(Rectangle())
+            }.buttonStyle(ShellReadableButtonStyle()).accessibilityIdentifier("trip.map.legal")
+        }
     }
     private var projection: Result<[TripPlaceProjection], any Error> {
         Result { try TripPlaceProjection.read(from: document) }

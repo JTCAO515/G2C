@@ -1,7 +1,7 @@
 # CJ-005 C2 当前收口入口
 
 2026-10-23（北京时间）。当前基线 `dc29bb3634e63d8f065c38d39a7a0059f76cfa53`。
-先读 [最短 C2 收口方案](C2-CLOSURE-PLAN.md)、[具体授权提案](c2-approval-packet.json) 和 [本轮只读事实](evidence/2026-10-23-readonly-state.json)。
+先读 [最短 C2 收口方案](C2-CLOSURE-PLAN.md)、[具体授权提案](c2-approval-packet.json) 和 [本轮只读事实](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/backend/c2-preparation/evidence/2026-10-23-readonly-state.json)。
 
 当前推荐：**全新 Go2China-org Supabase/Singapore + Cloud Run/Singapore 平台HTTPS + Resend Free + C2原生配置**。未获准创建/费用/公网入口/SMTP/DNS/签名设备权限，C2及PR62 apply仍BLOCKED。当前两个可见连接只列旧VP项目，未发现新CJ目标；其他账户UNKNOWN，不据此断言无资源。
 

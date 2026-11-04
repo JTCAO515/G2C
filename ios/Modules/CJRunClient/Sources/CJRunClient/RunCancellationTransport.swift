@@ -42,9 +42,8 @@ public final class RunCancellationTransport: ClientTransport, Sendable {
     }
     private static func local(endpoint: MessageEndpoint,mode: WireMode,
         validate: @escaping @MainActor @Sendable () throws -> Void) throws -> RunCancellationTransport {
-        #if DEBUG && targetEnvironment(simulator)
-        guard endpoint.url.scheme == "http",endpoint.url.host == "127.0.0.1",
-              let port = endpoint.url.port,(1...65535).contains(port) else { throw RunDisplayFailure.invalidConfiguration }
+        #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
+        guard endpoint.allowsDevelopmentActivation else { throw RunDisplayFailure.invalidConfiguration }
         return RunCancellationTransport(endpoint:endpoint,mode:mode,validate:validate)
         #else
         throw RunDisplayFailure.invalidConfiguration

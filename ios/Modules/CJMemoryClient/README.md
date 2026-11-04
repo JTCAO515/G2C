@@ -151,9 +151,9 @@ No new wire field or local eligibility inference is introduced.
 
 ## Evidence and remaining gates
 
-Latest row identity repair: [validation](evidence/ROW-IDENTITY.md).
-Prior four-finding repair: [repair validation](evidence/REPAIR-623.md).
-Historical 623 author checks: [validation](evidence/VALIDATION.md), [tests](evidence/tests.txt).
+Latest row identity repair: [validation](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/ios/Modules/CJMemoryClient/evidence/ROW-IDENTITY.md).
+Prior four-finding repair: [repair validation](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/ios/Modules/CJMemoryClient/evidence/REPAIR-623.md).
+Historical 623 author checks: [validation](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/ios/Modules/CJMemoryClient/evidence/VALIDATION.md), [tests](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/ios/Modules/CJMemoryClient/evidence/tests.txt).
 The old 20 PASS did not override the independent four failing cases.
 The package's SwiftUI views compile on macOS and the generic iOS Simulator SDK.
 Tests use only in-process interceptors, synthetic values and isolated temporary
