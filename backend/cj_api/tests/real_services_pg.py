@@ -60,9 +60,13 @@ def exercise(auth,conninfo):
                 result=body['messages'][-1]
                 assert result['role']=='tool' and result['tool_call_id']==assistant['tool_calls'][0]['id']
                 assert assistant['tool_calls'][0]['function']['name']=='place_search'
+                if subject.endswith('ok'):assert assistant['content']=='Synthetic preface; checking the location.'
             if subject.endswith('revoke') and not follow:
                 (auth/'invited.json').write_text(json.dumps([s for s in subjects if s!=subject]))
             payload=sse(tool=not follow).replace('chatcmpl-synthetic','chatcmpl-synthetic-'+str(len(model_calls)))
+            if subject.endswith('ok') and not follow:
+                value=json.loads(payload.splitlines()[0][6:]);value['choices'][0]['delta']['content']='Synthetic preface; checking the location.'
+                payload='data: '+json.dumps(value)+'\n\n'+'\n'.join(payload.splitlines()[2:])
             if subject.endswith('malformed'):payload=payload.replace('\\"page\\": 1','\\"page\\": \\"bad\\"')
             return httpx.Response(200,stream=httpx.ByteStream(payload.encode()))
         model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),budget,transport=httpx.MockTransport(response))

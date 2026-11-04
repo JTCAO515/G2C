@@ -42,6 +42,7 @@ Memory fence、原动作只读恢复均继续生效。默认 local/Fake 路径�
 原生参数现在用完整类型定义的 place_search/place_detail/place_route/weather/fact，
 host 转为原 PLACE-query.1 / FACT-query.1 再经已有严格 codec。模型不必猜封装版本或坐标Decimal字段。
 续接保留实际 `assistant.tool_calls` 和逐一匹配的 `role=tool/tool_call_id`，
+同时保留工具调用响应中合法的说明文字；它只随原assistant消息续接，不作为最终回答或工具权限。
 不会把已执行的结果改成新的 user 请求。该标识仅关联数据，执行仍逐步经过原Meter/final guard。
 这是对已合PR524真实失败的实现修复，旧wire语义不变；协议依据
 [DashScope Function Calling](https://help.aliyun.com/en/model-studio/qwen-function-calling)。
@@ -58,3 +59,9 @@ App 若后续需要真实专用资料卡，须先证明已合消费者缺陷，�
 其重跑只读本批次；原八例UNKNOWN与全部费用意图仍保留，不覆盖或重派。
 `verify-base-search` 只验证新的基础字段地点样例，使用独立固定batch；不会重新调用已完成的天气例。
 真实 PR 必须另列包版本、模型/端点、原 attempt、用量、费用与 UNKNOWN/FAIL，不以 fixture 充数。
+
+`verify-diagnostics` 是固定D1合成地点样例，白名单为place_search/place_route，仅请求一次天安门基础查询；
+RUN总计最多4个provider_call、最多1次工具调用，仍使用原共享账本，原批次存在即只读。
+它用来区分传输、响应身份、工具解码和完整回执阶段的失败；不代表C的路线冒烟或66例质量已通过。
+模型失败诊断只记录原attempt的SHA256、固定阶段、HTTP状态、完成标记和数量；
+不记录异常文本、请求/响应正文、供应商原ID或密钥。HTTP拒绝仍保持INTENT与费用UNKNOWN，绝不自动重试。
