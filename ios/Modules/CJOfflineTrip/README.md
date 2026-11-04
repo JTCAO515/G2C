@@ -28,7 +28,10 @@ The factory allows no policy longer than 14 days.
 A network-free explicit read validates this persisted pair and updates only its
 local security clock anchor. It never restores business access or dispatches a
 message/Trip write. The same kernel boot and nondecreasing trusted wall anchor
-are required; a new boot without online synchronization fails closed. Monotonic
+are required; a new boot without online synchronization fails closed. A successful online
+synchronization re-anchors the clock even when wall time is now below the old
+anchor (for example after the user corrects a clock set ahead), so reading resumes
+after online verification; an older server snapshot is still rejected. Monotonic
 elapsed time expires the snapshot even if wall time stalls. Timers only deny or
 expire an already displayed snapshot and cannot renew it.
 
