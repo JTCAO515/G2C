@@ -134,6 +134,26 @@ CJ_PG_BINDIR='<PostgreSQL-17-bin>' uv run --locked python -B \
 精确路由、身份/lease 与禁止重定向检查保留。其他领域的多端口设备接线仍待补齐，
 不把本节的预编译结果当作全流程设备 PASS。
 
+### Typed 记忆领域的指定真机入口
+
+`check_typed_memory.py` 支持相同的设备、TLS profile 与预编译参数，保留显式
+`--run-context`、原用例和真实签名生产者/受限 PG/正式 worker 证明。
+主 API 与 typed 记忆 API 使用同一批准开发 Mac 的两个明确端口；App 只信任
+配置列出的端口与同一叶证书，不扩大主机或系统根信任。配置缺失、重复、超范围
+或未列端口不接受。设备 XCTest 环境不含账号 token，恢复不再注入输入。
+
+```sh
+CJ_PG_BINDIR='<PostgreSQL-17-bin>' uv run --locked python -B \
+  ios/App/Acceptance/check_typed_memory.py --device '<approved-iPhone-UDID>' \
+  --local-tls '<approved-external-profile/operator.json>' \
+  --run-context '<explicit-context.json>' --case testEnglishSaveReadAndOwnedTravel \
+  --output '<new-external-directory>' --build-dir '<external-build-cache>'
+```
+
+设备的并发暂停夹具使用同一 observed ASGI 签名生产者和真实 PG，App 请求仍走
+实际 HTTPS；原回执/版本/跨账号检查不变。预编译不执行这些业务证明，实际真机、
+系统设置记录和 VoiceOver 必须分别验收。
+
 ## #4 的候选矩阵
 
 包版本以当前锁文件为准；Swift OpenAPI Generator 的真实生成与结构化错误/流式

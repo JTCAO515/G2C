@@ -46,7 +46,7 @@ import XCTest
     }
 
     func data(_ path: String) async throws -> (Data, URLResponse) {
-        try await data(from: control.appendingPathComponent(String(path.dropFirst())))
+        try await data(from: XCTUnwrap(URL(string: control.absoluteString + path)))
     }
 
     func data(from url: URL) async throws -> (Data, URLResponse) {
@@ -88,15 +88,28 @@ import XCTest
                        "Set the approved device's actual system text size before this case")
     }
 
-    func applicationEnvironment(endpoint: String, injecting: Bool) throws -> [String: String] {
+    func applicationEnvironment(endpoint: String, injecting: Bool,
+                                additionalEndpoints: [String] = []) throws -> [String: String] {
         let url = try XCTUnwrap(URL(string: endpoint))
         // Host approval comes from the operator-generated control endpoint,
         // not from an arbitrary API URL supplied by a fixture response.
-        guard url.scheme == "https", url.host == control.host else {
+        guard url.scheme == "https", url.host == control.host,
+              url.user == nil, url.password == nil, url.query == nil, url.fragment == nil,
+              url.path.isEmpty || url.path == "/", let primary = url.port, (1...65535).contains(primary) else {
             throw M4LocalTLSFailure.invalidCertificate
         }
+        var extras = Set<Int>()
+        for endpoint in additionalEndpoints {
+            guard let value = URL(string: endpoint), value.scheme == "https", value.host == control.host,
+                  value.user == nil, value.password == nil, value.query == nil, value.fragment == nil,
+                  value.path.isEmpty || value.path == "/", let port = value.port, (1...65535).contains(port) else {
+                throw M4LocalTLSFailure.invalidConfiguration
+            }
+            if port != primary { extras.insert(port) }
+        }
         var result = ["G2C_M4_LOCAL_HOST": try XCTUnwrap(control.host),
-                      "G2C_M4_LOCAL_PORT": String(try XCTUnwrap(url.port))]
+                      "G2C_M4_LOCAL_PORT": String(primary),
+                      "G2C_M4_LOCAL_EXTRA_PORTS": String(decoding: try JSONEncoder().encode(extras.sorted()), as: UTF8.self)]
         if injecting { result["G2C_M4_ACCOUNTS_FILE"] = "G2CM4DeviceAccounts.json" }
         return result
     }

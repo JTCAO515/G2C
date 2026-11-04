@@ -185,6 +185,7 @@ import UIKit
         if let host=f.device_host {
             app.launchEnvironment["G2C_M4_LOCAL_HOST"]=host
             app.launchEnvironment["G2C_M4_LOCAL_PORT"]=try XCTUnwrap(f.device_port)
+            app.launchEnvironment["G2C_M4_LOCAL_EXTRA_PORTS"]="[]"
             app.launchEnvironment["G2C_DEV_ACCOUNTS"]="{}"
             if !restore { app.launchEnvironment["G2C_M4_ACCOUNTS_FILE"]="G2CM4DeviceAccounts.json" }
         }

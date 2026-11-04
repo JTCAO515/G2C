@@ -179,7 +179,13 @@ import Foundation
             if !select.isHittable { capture("native-select-all-not-hittable") }
             XCTAssertTrue(select.isHittable); select.tap()
         }
-        target.typeText(value)
+        // Synchronize each real keyboard event with its visible field value.
+        // A failed prefix stops here; no correction or replacement is retried.
+        var entered = ""
+        for character in value {
+            target.typeText(String(character)); entered.append(character)
+            XCTAssertEqual(Array((target.value as? String ?? "").utf8), Array(entered.utf8))
+        }
         XCTAssertEqual(Array((target.value as? String ?? "").utf8),Array(value.utf8)); dismissKeyboard(language)
     }
     private func appendStatement(_ value: String, language: String) {
