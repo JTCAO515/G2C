@@ -70,3 +70,32 @@ private let digest = String(repeating: "a1", count: 32)
         #expect(try d.names() == ["not-a-uuid.rec"])
     }
 }
+
+@MainActor @Suite struct LocalJournalCleanupTemporaryTests {
+    @Test func clearsLeftoverTemporaryWritesWithRecords() throws {
+        let d = try JournalDirectory()
+        try d.write(digest + ".rec"); try d.write(".write-" + UUID().uuidString); try d.write(".write-" + UUID().uuidString)
+        try LocalJournalCleanup<HashOnly>(root: d.root, suffixes: []).clear()
+        #expect(try d.names().isEmpty)
+    }
+
+    @Test(arguments: ["directory", "symlink", "hardlink"])
+    func temporaryNameThatIsNotAPlainFileStopsTheWholeClear(kind: String) throws {
+        let d = try JournalDirectory()
+        try d.write(digest + ".rec")
+        let original = d.root.appendingPathComponent(digest + ".rec")
+        let temporary = d.root.appendingPathComponent(".write-" + UUID().uuidString)
+        switch kind {
+        case "directory": try FileManager.default.createDirectory(at: temporary, withIntermediateDirectories: false)
+        case "symlink": try FileManager.default.createSymbolicLink(at: temporary, withDestinationURL: original)
+        default: try FileManager.default.linkItem(at: original, to: temporary)
+        }
+        let before = try d.names()
+        let cleanup = try LocalJournalCleanup<HashOnly>(root: d.root, suffixes: [])
+        #expect(throws: Refused.unavailable) { try cleanup.clear() }
+        #expect(try d.names() == before, "nothing may be erased once preflight refuses")
+        try FileManager.default.removeItem(at: temporary)
+        try cleanup.clear()
+        #expect(try d.names().isEmpty)
+    }
+}

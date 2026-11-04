@@ -225,7 +225,7 @@ class RealTools:
 
     def answer(self,worker,binding,messages):
         self.services.require_scope(binding.scope)
-        messages=list(messages)
+        messages=list(messages);seen=set()
         chinese=any('一'<=c<='鿿' for c in messages[-1]['content'])
         for round_index in range(8):
             worker._model_history(binding,messages,TOOL_SYSTEM)
@@ -243,6 +243,9 @@ class RealTools:
                 key='tool.'+str(round_index)+'.'+str(index)
                 ref='op-'+hashlib.sha256((binding.run_id+'\0'+key).encode()).hexdigest()
                 name,arguments=canonical_tool(call.name,call.arguments)
+                original_query=(name,arguments)
+                if original_query in seen:raise ProviderFailed('M4 original tool query already dispatched; no repeat')
+                seen.add(original_query)
                 result=''.join(worker._registered_stream(binding,key,'tool.'+name,(arguments,ref)))
                 data=json.loads(result)
                 if name=='place' and data.get('provider_code')=='10012':

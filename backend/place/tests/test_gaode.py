@@ -160,6 +160,23 @@ class PlaceTests(unittest.TestCase):
 
 
 class RequestAndRouteTests(unittest.TestCase):
+    def test_m4_basic_walking_accepts_exact_lowercase_vendor_success_only(self):
+        body=route_body();body['info']='ok';query=route_query()
+        self.assertEqual(parse(body,query).outcome,Outcome.INVALID_RESPONSE)
+        request=prepare(CONFIG,query,'synthetic-m4',AT,basic=True)
+        result=parse_response(CONFIG,request,response(request,body),now=AT+timedelta(seconds=2),basic=True)
+        self.assertEqual(result.outcome,Outcome.OK)
+        self.assertEqual(result.provider_code,'10000')
+        self.assertEqual(result.routes[0].distance.value.raw,'123.5')
+        for change in ({'status':'0'},{'infocode':'10012'},{'info':'oK'},{'info':'OK '}):
+            changed=body|change
+            self.assertEqual(parse_response(CONFIG,request,response(request,changed),now=AT+timedelta(seconds=2),basic=True).outcome,Outcome.INVALID_RESPONSE)
+        driving=prepare(CONFIG,route_query('driving'),'synthetic-m4-driving',AT,basic=True)
+        self.assertEqual(parse_response(CONFIG,driving,response(driving,body),now=AT+timedelta(seconds=2),basic=True).outcome,Outcome.INVALID_RESPONSE)
+        search=prepare(CONFIG,SEARCH,'synthetic-m4-search',AT,basic=True)
+        lower_pois=pois(poi());lower_pois['info']='ok'
+        self.assertEqual(parse_response(CONFIG,search,response(search,lower_pois),now=AT+timedelta(seconds=2),basic=True).outcome,Outcome.INVALID_RESPONSE)
+
     def test_documented_paths_and_parameters(self):
         request = prepare(CONFIG, SEARCH, "synthetic-request", AT)
         self.assertEqual(request.path, "/v3/place/text")

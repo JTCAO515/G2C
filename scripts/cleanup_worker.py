@@ -40,14 +40,22 @@ def main():
     runtime=Runtime(LocalDatabase(args.conninfo_json,run_context=context),load_configuration(args.cleanup_config),scope_for)
     checker=checker_for(args.auth_dir)
     while True:
+        failure=None
         for subject in sorted(invited_subjects(args.auth_dir)):
-            # Actual local signed principal; invitation/current identity remain
-            # required for this operator-owned synthetic local host worker.
-            decision=checker.check(dev_auth.token(args.auth_dir,subject,5))
-            if decision.status is not AdmissionStatus.ALLOWED:raise SystemExit('local maintenance identity unavailable')
-            result=step(runtime,checker,decision.principal)
+            # One subject's failure must not stop recovery or maintenance for the
+            # others; the first failure is still raised after this pass.
+            try:
+                # Actual local signed principal; invitation/current identity remain
+                # required for this operator-owned synthetic local host worker.
+                decision=checker.check(dev_auth.token(args.auth_dir,subject,5))
+                if decision.status is not AdmissionStatus.ALLOWED:raise SystemExit('local maintenance identity unavailable')
+                result=step(runtime,checker,decision.principal)
+            except (Exception,SystemExit) as error:
+                if failure is None:failure=error
+                continue
             # No tokens, plaintext scope or user content in operational output.
             print(json.dumps({k:result[k] for k in ('operation_id','status','reason') if k in result}),flush=True)
+        if failure is not None:raise failure
         if args.once:return
         time.sleep(args.interval)
 

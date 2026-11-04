@@ -85,6 +85,9 @@ limits, expected key ID and the official `MessageEncryptionKeyProvider` with the
 exact Trip namespace. It only looks up the existing key. Missing/unknown keys,
 changed directory, namespace mismatch or malformed ciphertext fail visibly;
 there is no plaintext fallback, new-key retry, automatic cleanup or deletion.
+Appends go through a synced hidden temporary entry and a no-replace rename, so a
+crash leaves only that entry; readers skip it and `clearLocalFiles` erases it. Key
+creation still requires a literally empty namespace.
 The host remains responsible for accepted private-storage registry/retention and
 cleanup integration before activation. Never provide a shared/old account directory.
 

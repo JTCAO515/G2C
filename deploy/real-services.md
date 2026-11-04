@@ -65,3 +65,12 @@ RUN总计最多4个provider_call、最多1次工具调用，仍使用原共享�
 它用来区分传输、响应身份、工具解码和完整回执阶段的失败；不代表C的路线冒烟或66例质量已通过。
 模型失败诊断只记录原attempt的SHA256、固定阶段、HTTP状态、完成标记和数量；
 不记录异常文本、请求/响应正文、供应商原ID或密钥。HTTP拒绝仍保持INTENT与费用UNKNOWN，绝不自动重试。
+
+M4基础live步行解析仅在 `basic=True`、RouteQuery/walking、status=1及infocode=10000时接受供应商实际的 `info="ok"`；
+默认旧profile、POI和driving仍保持原大小写规则，所有坐标绑定、数量/时效、密钥与JSON检查不变。
+同一RUN中已派发的完全相同canonical工具查询不再次注册/调用供应商；模型重复调用会明确失败，费用/原回执不改写。
+
+`verify-route` 为固定R1诊断：北海公园/恭王府各一次基础Search，再仅用本次两条真实回执的POI ID/GCJ-02原坐标/poi_center调用walking一次。
+原RUN/Meter与共享账本保持，最多10 provider_call/3tools；错点、错顺序、重复、driving或其他查询在原HTTP前拒绝。
+secret-body检查后的原HTTP200公共地图响应留在固定批次私有目录，文件0600；存储失败单独使诊断失败，原收到响应继续解析/计量。
+旧批次重跑只读；历史原RUN的FAIL/UNKNOWN不被离线重解析结果覆盖，实际新端到端结果仍需C的新阶段验证。

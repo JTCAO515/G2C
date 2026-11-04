@@ -119,7 +119,8 @@ is unavailable. AUTH environment/account/purpose/key ID must match. AUTH's origi
 creation/clear reconciliation remains the host's existing responsibility.
 
 AES-GCM authenticates environment/account/purpose/key ID. Original records use
-exclusive 0600 creation, fsync(file/directory), no-follow reads and single-link files.
+exclusive 0600 creation via a synced temporary entry and no-replace rename (a crash
+leaves only that entry, skipped by readers and erased by cleanup), fsync(file/directory), no-follow reads and single-link files.
 A retained directory descriptor is checked against the canonical path. After the
 last key/binding resource callback, callback-free checks compare canonical directory
 and exact original ciphertext before outflow or settlement. Full pending inventories

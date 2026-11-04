@@ -2,6 +2,7 @@
 import Foundation
 import CryptoKit
 import Darwin
+import enum CJMessageClient.LocalJournalFile
 import CJMessageKeys
 import CJTripClient
 
@@ -68,11 +69,7 @@ protocol ScopedJournalRecord: Codable {
         try validateDirectory()
         try validateBinding()
         try validateDirectory()
-        let fd = openat(directory, try name(pending.actionID), O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, 0o600)
-        guard fd >= 0 else { throw TripFailure.storageUnavailable }
-        defer { close(fd) }
-        let count = bytes.withUnsafeBytes { write(fd, $0.baseAddress, $0.count) }
-        guard count == bytes.count, fsync(fd) == 0, fsync(directory) == 0 else { throw TripFailure.storageUnavailable }
+        guard LocalJournalFile.createExclusive(try name(pending.actionID), in: directory, bytes: bytes) else { throw TripFailure.storageUnavailable }
         try validateDirectory()
     }
     func validateDirectory() throws {
@@ -102,8 +99,9 @@ protocol ScopedJournalRecord: Codable {
         return try names.map { name in
             let stem = name.dropLast(7)
             var entry = stat()
-            guard name.hasSuffix(".scoped"), stem.count == 64,
-                  stem.utf8.allSatisfy({ (48...57).contains($0) || (97...102).contains($0) }),
+            let record = name.hasSuffix(".scoped") && stem.count == 64 &&
+                stem.utf8.allSatisfy({ (48...57).contains($0) || (97...102).contains($0) })
+            guard record || LocalJournalFile.isTemporary(name),
                   fstatat(directory, name, &entry, AT_SYMLINK_NOFOLLOW) == 0,
                   entry.st_mode & S_IFMT == S_IFREG, entry.st_nlink == 1,
                   entry.st_uid == getuid() else { throw TripFailure.storageUnavailable }
@@ -165,7 +163,7 @@ protocol ScopedJournalRecord: Codable {
     }
     func pending() throws -> [Record] {
         try validateDirectory()
-        let names = try FileManager.default.contentsOfDirectory(atPath: root.path)
+        let names = try LocalJournalFile.recordNames(atPath: root.path)
         guard names.count <= maximumRecords else { throw TripFailure.storageUnavailable }
         let result = try names.sorted().map { filename in
             let stem = String(filename.dropLast(7))
@@ -180,7 +178,7 @@ protocol ScopedJournalRecord: Codable {
             return pending
         }
         try validateDirectory()
-        guard try names.sorted() == FileManager.default.contentsOfDirectory(atPath: root.path).sorted() else { throw TripFailure.storageUnavailable }
+        guard try names.sorted() == LocalJournalFile.recordNames(atPath: root.path).sorted() else { throw TripFailure.storageUnavailable }
         guard Set(result.map { Data($0.actionID.utf8) }).count == result.count else { throw TripFailure.storageUnavailable }
         return result
     }

@@ -234,10 +234,17 @@ def run_once(database, model, auth_dir, *, memory_configuration=None,tools_confi
         from cj_api.local_account_admission_v2 import account_checker_for
         checker=account_checker_for(Path(auth_dir),database)
     results = []
+    failure = None
     for scope in pending_scopes:
-        results += _worker_for_scope(database,model,auth_dir,scope,checker,
-                                     memory_configuration=memory_configuration,tools_configuration=tools_configuration,draft_profile=draft_profile,place_draft_configuration=place_draft_configuration,formal_memory_configuration=formal_memory_configuration).process()
+        # One scope's unreconciled run (for example an unresolved original quota
+        # period) must not starve every later scope; it is still raised below.
+        try:
+            results += _worker_for_scope(database,model,auth_dir,scope,checker,
+                                         memory_configuration=memory_configuration,tools_configuration=tools_configuration,draft_profile=draft_profile,place_draft_configuration=place_draft_configuration,formal_memory_configuration=formal_memory_configuration).process()
+        except Exception as error:
+            if failure is None: failure = error
     if background_jobs is not None:results+=background_jobs.run_once(model)
+    if failure is not None: raise failure
     return results
 
 
