@@ -13,7 +13,7 @@ let package = Package(name: "CJTripClient", platforms: [.iOS(.v17), .macOS(.v14)
     targets: [
         .target(name: "CJTripClient", dependencies: [.product(name: "CJStrictJSON", package: "CJStrictJSON"),
             .product(name: "CJAPI", package: "ios"),
-            .product(name: "CJMessageHTTP", package: "CJMessageClient"),
+            .product(name: "CJMessageHTTP", package: "CJMessageClient"), .product(name: "CJMessageClient", package: "CJMessageClient"),
             .product(name: "CJSession", package: "CJAuth"),
             .product(name: "CJMessageKeys", package: "CJAuth"),
             .product(name: "OpenAPIRuntime", package: "swift-openapi-runtime"),
