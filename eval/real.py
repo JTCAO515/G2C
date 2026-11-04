@@ -303,6 +303,9 @@ def main():
     if args.output.exists():
         print('READ_ONLY: existing batch; no dispatch or retry')
         return 0
+    from real_phase import claimed
+    if claimed('full'):
+        print('READ_ONLY: canonical full phase already claimed; no dispatch/retry');return 0
     if os.environ.get('CJ_M4_SYNTHETIC_ONLY') != '1':
         parser.error('explicit CJ_M4_SYNTHETIC_ONLY=1 required')
     if re.fullmatch('[a-z0-9-]{1,24}', args.batch_id) is None:
@@ -313,13 +316,17 @@ def main():
     commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
     from smoke import require_full_ready
     require_full_ready(args.smoke, commit)
-    budget = AuthorizationBudget(STATE)
-    budget.check_date()
-    before = budget.inspect()
-    from real_budget import estimate
+    from real_budget import estimate, verified_journal
+    from real_phase import claim
+    before = verified_journal()
     forecast = estimate(before, include_smoke=False)
     if not forecast['within_stop_lines']:
         raise ValueError('full_batch_estimate_exceeds_stop_line_report_495_before_dispatch')
+    model_key=keychain('g2c-dashscope');amap_key=keychain('g2c-amap-web-key')
+    if not claim('full',args.output,commit):
+        print('READ_ONLY: canonical full phase already claimed; no request/retry');return 0
+    budget = AuthorizationBudget(STATE)
+    budget.check_date();verified_journal()
     plan = dict(schema_version=1, sample_set_id='g2c-m4-synthetic-33',
         sample_set_version='2:' + sha256(raw).hexdigest(), evidence_layer='real',
         provenance='Original fixed33/11; synthetic only, no tuning of prompts, model, holdout or judges.',
@@ -341,9 +348,9 @@ def main():
     save(args.output / 'preflight-estimate.json', forecast)
     save(args.output / 'packages.json', {v: version(v) for v in ('httpx','psycopg','uvicorn','fastapi')})
     subjects = frozenset('m4-synthetic-' + args.batch_id + '-' + str(i) + '-' + lang for i in range(len(scenarios)) for lang in ('zh','en'))
-    model = MeteredDashScopeProvider(DashScopeConfig(M4_BASE, M4_MODEL, keychain('g2c-dashscope'),
+    model = MeteredDashScopeProvider(DashScopeConfig(M4_BASE, M4_MODEL, model_key,
                                                    max_output_tokens=1024), budget)
-    services = RealServices(model, keychain('g2c-amap-web-key'), subjects)
+    services = RealServices(model, amap_key, subjects)
     observations = []
     with redirect_stdout(io.StringIO()), private_database('real-evaluation') as conninfo:
         auth = conninfo.parent / 'auth'

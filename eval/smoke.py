@@ -23,6 +23,34 @@ from real import (ROOT, STATE, save, keychain, private_database, tcp_app, run_ca
                   DashScopeConfig, M4_BASE, M4_MODEL, AuthorizationBudget, ABI,
                   dev_auth, local_run_context)
 from real_budget import estimate
+from real_budget import verified_journal
+from real_phase import claim, claimed, finish_smoke, verify_smoke
+from cj_api.real_services import canonical_tool
+
+
+class _DigestCaptured(Exception):pass
+
+
+class _RequestDigest:
+    def begin(self, attempt, kind, raw):
+        self.digest=sha256(raw).hexdigest()
+        raise _DigestCaptured()
+
+
+def model_input_digest(value):
+    """Reuse B's actual wire serializer, aborting at begin before any dispatch.
+
+    No key/journal/network is used; this digest must match the real original
+    authorization record, so a fabricated fixture cannot certify a real call.
+    """
+    capture=_RequestDigest()
+    provider=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,'offline-capture-only',max_output_tokens=1024),capture)
+    source=provider.invoke(value['messages'],value['system'],'offline-digest-only',
+        tools=value['native_tools'],receipt={},guard=lambda:False)
+    try:next(source)
+    except _DigestCaptured:return capture.digest
+    finally:source.close()
+    raise ValueError('wire_digest_capture_did_not_abort')
 
 
 def cases(today):
@@ -60,6 +88,8 @@ def check(case, evidence):
         if observed.get(field)!=expected:reasons.append(field+'_not_proven')
     records = {v['attempt_id']:v for v in evidence.get('authorization_attempts',[])}
     covered=set();tool_rounds=[];model_rounds=[]
+    models={int(op['operation_key'].rsplit('.',1)[1]):op for op in evidence.get('operations',[])
+            if re.fullmatch(r'model\.tool_turn\.[0-7]',op['operation_key'])}
     for op in evidence.get('operations',[]):
         record=records.get(op['attempt_id'],{})
         detail=record.get('receipt') or {}
@@ -84,7 +114,21 @@ def check(case, evidence):
             if (kind not in case['required'] or op['registration_id']!=registration or detail.get('result_status')!=expected or match is None
                     or detail.get('endpoint')!=endpoints.get(kind)):
                 reasons.append('required_tool_success_not_proven')
-            else:covered.add(kind);tool_rounds.append(int(match[1]))
+            else:
+                covered.add(kind);tool_rounds.append(int(match[1]))
+                following=models.get(int(match[1])+1)
+                messages=[] if following is None else following['input']['messages']
+                assistants=[m for m in messages if m['role']=='assistant' and m.get('tool_calls')]
+                calls=[] if not assistants else assistants[-1]['tool_calls']
+                index=int(match[2]);native={'place':'place_search','route':'place_route','weather':'weather','fact':'fact'}[kind]
+                if index>=len(calls) or calls[index]['function']['name']!=native:
+                    reasons.append('native_tool_result_not_in_followup_model');continue
+                call=calls[index]
+                name,query=canonical_tool(native,call['function']['arguments'].encode())
+                results=[json.loads(m['content']) for m in messages if m['role']=='tool' and m.get('tool_call_id')==call['id']]
+                if (not results or not any(v.get('tool')==name for v in results)
+                        or op['input'].get('name')!=name or op['input'].get('query')!=json.loads(query)):
+                    reasons.append('native_tool_result_not_in_followup_model')
         else:reasons.append('unexpected_original_registration')
     if not set(case['required'])<=covered:reasons.append('required_tool_kind_missing')
     if not model_rounds or not tool_rounds or max(model_rounds)<=max(tool_rounds):
@@ -113,6 +157,7 @@ def summarize(plan, rows, directory):
         raise ValueError('fixed_three_paired_four_tool_smoke_cases_required')
     outcomes=[]
     seen_runs=set();seen_attempts=set()
+    journal={v['attempt_id']:v for v in verified_journal()}
     for case in plan['cases']:
         for language in ('zh','en'):
             row=next((v for v in rows if v['case_id']==case['id'] and v['language']==language),None)
@@ -129,6 +174,16 @@ def summarize(plan, rows, directory):
                         or not any(m['role']=='user' and m['content']==prompt for values in first_inputs for m in values)):
                     proof['reasons'].append('frozen_language_input_not_proven')
                 actual_ids=[a['attempt_id'] for a in evidence.get('authorization_attempts',[])]
+                for original in evidence.get('authorization_attempts',[]):
+                    if journal.get(original['attempt_id'])!=original:
+                        proof['reasons'].append('original_attempt_not_in_canonical_authorization_journal')
+                actual_records={v['attempt_id']:v for v in evidence.get('authorization_attempts',[])}
+                for op in evidence.get('operations',[]):
+                    actual=actual_records.get(op['attempt_id'])
+                    if actual is not None:
+                        digest=(model_input_digest(op['input']) if op['registration_id']=='model.tool_turn' else
+                                sha256(json.dumps(op['input'],sort_keys=True,ensure_ascii=False,separators=(',',':')).encode()).hexdigest())
+                        if actual.get('input_sha')!=digest:proof['reasons'].append('registered_input_not_bound_to_actual_outflow')
                 if proof['run_id'] in seen_runs or len(actual_ids)!=len(set(actual_ids)) or seen_attempts.intersection(actual_ids):
                     proof['reasons'].append('original_RUN_or_attempt_reused_across_smoke_cases')
                 seen_runs.add(proof['run_id']);seen_attempts.update(actual_ids)
@@ -143,6 +198,7 @@ def summarize(plan, rows, directory):
 
 def require_full_ready(path, candidate):
     if path is None:raise ValueError('six_case_smoke_evidence_required_before_full_dispatch')
+    verify_smoke(path,candidate)
     plan=json.loads((path/'plan.json').read_bytes());rows=json.loads((path/'observations.json').read_bytes())
     if (plan['cases']!=cases(plan['source_date']) or plan['planned_n']!=6
             or {(v['case_id'],v['language']) for v in rows}!={(c['id'],l) for c in plan['cases'] for l in ('zh','en')}):
@@ -158,11 +214,17 @@ def main():
     args=parser.parse_args()
     if args.output.exists():
         print('READ_ONLY: original smoke retained; no request/retry');return 0
+    if claimed('smoke'):
+        print('READ_ONLY: canonical smoke phase already claimed; no request/retry');return 0
     if os.environ.get('CJ_M4_SYNTHETIC_ONLY')!='1':parser.error('explicit M4 synthetic-only activation required')
     candidate=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
-    budget=AuthorizationBudget(STATE);budget.check_date();before=budget.inspect()
+    before=verified_journal()
     forecast=estimate(before,include_smoke=True)
     if not forecast['within_stop_lines']:raise ValueError('smoke_plus_full_estimate_exceeds_stop_line_report_495')
+    model_key=keychain('g2c-dashscope');amap_key=keychain('g2c-amap-web-key')
+    if not claim('smoke',args.output,candidate):
+        print('READ_ONLY: canonical smoke phase already claimed; no request/retry');return 0
+    budget=AuthorizationBudget(STATE);budget.check_date();verified_journal()
     today=datetime.now(ZoneInfo('Asia/Shanghai')).date().isoformat()
     plan=dict(candidate_id=candidate,batch_id='round2-smoke',cases=cases(today),source_date=today,created_at=datetime.now(timezone.utc).isoformat(),
               model_id=M4_MODEL,endpoint=M4_BASE,collector_sha256=sha256(Path(__file__).read_bytes()).hexdigest(),
@@ -171,9 +233,9 @@ def main():
     save(args.output/'plan.json',plan);save(args.output/'budget-before.json',before)
     save(args.output/'estimate.json',forecast)
     save(args.output/'packages.json',{k:version(k) for k in ('httpx','psycopg','uvicorn','fastapi')})
-    model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,keychain('g2c-dashscope'),max_output_tokens=1024),budget)
+    model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,model_key,max_output_tokens=1024),budget)
     subjects=frozenset('m4-synthetic-r2-smoke-'+c['id']+'-'+l for c in plan['cases'] for l in ('zh','en'))
-    services=RealServices(model,keychain('g2c-amap-web-key'),subjects);rows=[]
+    services=RealServices(model,amap_key,subjects);rows=[]
     with redirect_stdout(io.StringIO()),private_database('real-r2-smoke') as conninfo:
         auth=conninfo.parent/'auth';dev_auth.init(auth,sorted(subjects));now=int(time.time())
         profile=conninfo.parent/'run.json'
@@ -208,7 +270,9 @@ def main():
                     summary=summarize(plan,rows,args.output);save(args.output/'summary.json',summary)
                     verdict=summary['outcomes'][len(rows)-1]['status']
                     os.write(1,(case['id']+' '+language+' '+verdict+'\n').encode())
-                    if verdict!='PASS':return 1
+                    if verdict!='PASS':
+                        finish_smoke(args.output,candidate,'FAIL');return 1
+    finish_smoke(args.output,candidate,'PASS')
     return 0
 
 

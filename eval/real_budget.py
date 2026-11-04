@@ -5,9 +5,28 @@ cases expect16 model rounds and8 paid tool calls (fact intents cost no hold).
 This is an estimate, never an invoice or permission to reset UNKNOWN amounts.
 """
 from collections import Counter
+import json
+from pathlib import Path
+import sqlite3
 
 MODEL_STOP = 400
 TOOL_STOP = 160
+STATE = Path.home()/'.local/share/g2c/m4-real-services'
+
+
+def verified_journal():
+    """Read only; never create a missing ledger or accept rolled-back history."""
+    path=STATE/'m4-outflows.sqlite'
+    with sqlite3.connect('file:'+str(path)+'?mode=ro',uri=True) as db:
+        rows=db.execute('SELECT id,kind,input_sha,state,receipt FROM attempt').fetchall()
+    records=[dict(attempt_id=a,kind=k,input_sha=h,state=s,receipt=None if r is None else json.loads(r)) for a,k,h,s,r in rows]
+    actual={r['attempt_id']:r for r in records}
+    baseline=json.loads(Path(__file__).with_name('authorization_checkpoint.json').read_bytes())
+    for original in baseline['baseline']:
+        row=actual.get(original['attempt_id'])
+        if row is None or any(row[k]!=original[k] for k in ('kind','input_sha')):
+            raise ValueError('original_authorization_history_missing_or_changed_no_dispatch')
+    return records
 
 
 def estimate(attempts, *, include_smoke):

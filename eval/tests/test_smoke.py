@@ -6,11 +6,16 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
+import sqlite3
 
 os.environ.setdefault('CJ_ENV','local')
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from smoke import cases, check, require_full_ready
-from real_budget import estimate
+from smoke import cases, check, require_full_ready, model_input_digest
+from real_budget import estimate, verified_journal
+import real_budget
+import real_phase
+from cj_api.real_services import canonical_tool, TOOL_SYSTEM, TOOLS
 from cj_agent.provider import M4_BASE, M4_MODEL
 
 
@@ -19,25 +24,38 @@ def evidence(case, language='zh'):
     ops=[];attempts=[]
     def model(n,messages):
         aid=run+'-model-'+str(n)
+        inputs=dict(messages=deepcopy(messages),system=TOOL_SYSTEM,
+                    native_tools=[t for t in TOOLS if t['function']['name'] in case['native']])
         ops.append(dict(run_id=run,operation_key='model.tool_turn.'+str(n),registration_id='model.tool_turn',
-                        attempt_id=aid,input=dict(messages=messages)))
-        attempts.append(dict(attempt_id=aid,kind='model',state='RECEIVED',receipt=dict(
+                        attempt_id=aid,input=inputs))
+        attempts.append(dict(attempt_id=aid,kind='model',input_sha=model_input_digest(inputs),state='RECEIVED',receipt=dict(
             model_id=M4_MODEL,endpoint=M4_BASE,region='cn-beijing',receipt_sha256=sha256(aid.encode()).hexdigest(),
             usage=dict(prompt_tokens=1,completion_tokens=1,total_tokens=2))))
     model(0,[dict(role='user',content=case['inputs'][language])])
-    messages=[]
+    calls=[];results=[]
     endpoints=dict(place='https://restapi.amap.com/v3/place/text',route='https://restapi.amap.com/v3/direction/walking',
                    weather='https://restapi.amap.com/v3/weather/weatherInfo',fact='https://en.nia.gov.cn/')
     for n,kind in enumerate(case['required']):
         aid=run+'-tool-'+str(n)
+        native={'place':'place_search','route':'place_route','weather':'weather','fact':'fact'}[kind]
+        arguments=(dict(keyword='FixturePOI',city='Beijing',page=1,page_size=1) if kind=='place' else
+            dict(origin_provider_id='p1',origin_coordinate='116.1,39.1',origin_coordinate_role='poi_center',
+                 destination_provider_id='p2',destination_coordinate='116.2,39.2',destination_coordinate_role='poi_center',mode='walking') if kind=='route'
+            else dict(start_date='2026-11-05',end_date='2026-11-05'))
+        name,query=canonical_tool(native,json.dumps(arguments).encode())
+        tool_input=dict(name=name,query=json.loads(query),request_ref=aid,synthetic_only=True,
+                        place_profile='basic-v3-default-zh' if name=='place' else None)
         ops.append(dict(run_id=run,operation_key='tool.0.'+str(n),registration_id='tool.'+('place' if kind=='route' else kind),
-                        attempt_id=aid,input={}))
+                        attempt_id=aid,input=tool_input))
         result='ok' if kind in ('place','route') else 'unknown' if kind=='fact' else 'observed'
-        attempts.append(dict(attempt_id=aid,kind=kind,state='RECEIVED',receipt=dict(endpoint=endpoints[kind],result_status=result)))
-        if kind=='fact':
-            messages.append(dict(role='tool',content=json.dumps(dict(tool='fact',result=dict(source_url=endpoints[kind],
-                original_bytes=42,original_sha256='a'*64,excerpts=['Synthetic official excerpt'],status='unknown')))))
-    model(1,messages)
+        attempts.append(dict(attempt_id=aid,kind=kind,state='RECEIVED',
+            input_sha=sha256(json.dumps(tool_input,sort_keys=True,ensure_ascii=False,separators=(',',':')).encode()).hexdigest(),
+            receipt=dict(endpoint=endpoints[kind],result_status=result)))
+        calls.append(dict(id=aid,type='function',function=dict(name=native,arguments=json.dumps(arguments))))
+        data=dict(source_url=endpoints[kind],status=result)
+        if kind=='fact':data.update(original_bytes=42,original_sha256='a'*64,excerpts=['Synthetic official excerpt'])
+        results.append(dict(role='tool',tool_call_id=aid,content=json.dumps(dict(tool=name,result=data))))
+    model(1,[dict(role='assistant',content=None,tool_calls=calls),*results])
     snapshot=dict(run_id=run,message_id=mid,status='completed',text_state='complete',text=answer)
     return dict(input_sha256=sha256(case['inputs'][language].encode()).hexdigest(),observed=dict(message_receipt=dict(run_id=run,message_id=mid),runtime_role='cj_m1_runtime',
         foreign_message_rows=0,foreign_mutations=0,formal_trip_count=0,memory_item_count=0),
@@ -78,8 +96,8 @@ class SmokeChecks(unittest.TestCase):
         self.assertEqual(check(c,e)['status'],'FAIL')
 
     def test_full_start_recomputes_all_six_instead_of_trusting_summary_PASS(self):
-        with tempfile.TemporaryDirectory() as folder:
-            p=Path(folder);(p/'raw').mkdir();fixed=cases('2026-11-04')
+        with tempfile.TemporaryDirectory() as folder,patch.object(real_phase,'PHASES',Path(folder)/'canonical'):
+            p=Path(folder)/'out';p.mkdir();(p/'raw').mkdir();fixed=cases('2026-11-04')
             plan=dict(candidate_id='candidate',source_date='2026-11-04',planned_n=6,cases=fixed,batch_id='round2-smoke')
             rows=[]
             for c in fixed:
@@ -88,7 +106,11 @@ class SmokeChecks(unittest.TestCase):
                     rows.append(dict(case_id=c['id'],language=lang,raw_evidence_ref=ref))
             (p/'plan.json').write_text(json.dumps(plan));(p/'observations.json').write_text(json.dumps(rows))
             (p/'summary.json').write_text('{"status":"PASS"}')
-            require_full_ready(p,'candidate')
+            real_phase.claim('smoke',p,'candidate');real_phase.finish_smoke(p,'candidate','PASS')
+            actual=[a for c in fixed for l in ('zh','en') for a in evidence(c,l)['authorization_attempts']]
+            with patch('smoke.verified_journal',return_value=[]):
+                with self.assertRaises(ValueError):require_full_ready(p,'candidate')
+            with patch('smoke.verified_journal',return_value=actual):require_full_ready(p,'candidate')
             with self.assertRaises(ValueError):require_full_ready(p,'other-candidate')
             (p/'observations.json').write_text(json.dumps(rows[:-1]))
             with self.assertRaises(ValueError):require_full_ready(p,'candidate')
@@ -99,6 +121,29 @@ class SmokeChecks(unittest.TestCase):
             e=evidence(fixed[0]);e['outcomes'][0]['status']='unknown'
             (p/rows[0]['raw_evidence_ref']).write_text(json.dumps(e))
             with self.assertRaises(ValueError):require_full_ready(p,'candidate')
+
+    def test_tool_receipts_without_tool_messages_do_not_pass(self):
+        c=cases('2026-11-04')[1];e=evidence(c)
+        e['operations'][-1]['input']['messages']=[]
+        self.assertEqual(check(c,e)['status'],'FAIL')
+
+    def test_missing_or_rolled_back_original_history_never_creates_new_budget(self):
+        with tempfile.TemporaryDirectory() as folder,patch.object(real_budget,'STATE',Path(folder)):
+            p=Path(folder)/'m4-outflows.sqlite'
+            with self.assertRaises(sqlite3.OperationalError):verified_journal()
+            self.assertFalse(p.exists())
+            with sqlite3.connect(p) as db:
+                db.execute('CREATE TABLE attempt(id TEXT PRIMARY KEY,kind TEXT,input_sha TEXT,state TEXT,receipt TEXT)')
+            with self.assertRaises(ValueError):verified_journal()
+
+    def test_different_output_or_cosmetic_candidate_cannot_reclaim_same_adapter(self):
+        with tempfile.TemporaryDirectory() as folder,patch.object(real_phase,'PHASES',Path(folder)/'canonical'):
+            p=Path(folder)
+            self.assertTrue(real_phase.claim('smoke',p/'a','candidate1'))
+            self.assertFalse(real_phase.claim('smoke',p/'b','candidate1'))
+            self.assertFalse(real_phase.claim('smoke',p/'c','cosmetic2'))
+            self.assertTrue(real_phase.claim('full',p/'full-a','candidate1'))
+            self.assertFalse(real_phase.claim('full',p/'full-b','candidate1'))
 
     def test_first_round_based_estimate_and_equality_stop(self):
         previous=[dict(kind='model')]*166+[dict(kind='place')]*17+[dict(kind='weather')]*57+[dict(kind='fact')]*10

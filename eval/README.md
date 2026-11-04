@@ -170,6 +170,13 @@ python -B eval/smoke.py --output .local/eval/round2-smoke`，中英各3例覆盖
 python -B eval/real.py --batch-id round2-full --smoke .local/eval/round2-smoke --output .local/eval/round2-full`。
 产品33/11样本、输入和judge/gates不变；前置smoke是独立接入门禁，不计入质量完成率。
 开跑前按原137模型/54付费工具占用和6例预估，投影会越新停止线则先在495报告，不发请求。
+`authorization_checkpoint.json` 固定本轮开始前250个原意图的ID/种类/输入哈希；开跑先只读原账本，
+缺库、截短或原意图变化均退出，不自动新建“零占用”。M1的¥13与所有UNKNOWN继续占用。
+冒烟证据必须与该唯一账本逐条一致，原注册模型输入经B实际serializer离线算哈希并与真实出口核对；
+指定工具结果须经匹配的native tool_call_id进入后续模型。离线fixture本身不能认证真实PASS。
+同一adapter的smoke/full阶段在固定用户数据目录各原子认领一次；输出目录或C提交名变化不产生新派发。
+中断/失败只读原结果，完整smoke原证据在独立阶段凭证中锁定哈希。只有B实际adapter修复产生另一候选，
+才会有独立阶段身份；所有旧FAIL仍保留，不以换目录重复收费。
 目录存在时只读返回；不恢复或重发未知原动作。模型、端点、工具、凭据来源及
 唯一累计授权账本沿用 B `RealServices`，没有任意 URL、模型或预算目录选项。
 旧 M1 ¥13 及 B 的并行调用不释放；观测只归属本场景原 Meter attempt，
