@@ -704,7 +704,9 @@ import UIKit
         tap("Memory")
         for _ in 0..<3 {
             if app.buttons.matching(identifier:"memory.language").firstMatch.exists { break }
-            let back=app.navigationBars.buttons.firstMatch;XCTAssertTrue(back.exists);back.tap()
+            let back=app.navigationBars.buttons.firstMatch
+            if !back.exists { break } // Already at the scrollable Memory root.
+            back.tap()
         }
         tap("memory.language");tap("简体中文");tap("助手")
         text("run.display.status",contains:"已完成");text("run.draft.status",contains:"已记录草稿候选，尚非正式行程")
