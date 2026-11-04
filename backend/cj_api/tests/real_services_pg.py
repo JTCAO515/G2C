@@ -55,6 +55,9 @@ def exercise(auth,conninfo):
             model_calls.append(subject)
             if subject.endswith('unknown'):raise httpx.ReadTimeout('synthetic unknown')
             body=json.loads(request.content)
+            assert body['response_format']['type']=='json_schema'
+            assert body['response_format']['json_schema']['strict'] is True
+            assert set(body['response_format']['json_schema']['schema']['required'])=={'zh','en'}
             follow=any(m['role']=='tool' and 'tool_call_id' in m for m in body['messages'])
             if follow:
                 assistant=next(m for m in reversed(body['messages']) if m['role']=='assistant')

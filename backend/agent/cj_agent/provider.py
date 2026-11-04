@@ -168,6 +168,13 @@ class DashScopeProvider:
 
 M4_BASE='https://dashscope.aliyuncs.com/compatible-mode/v1'
 M4_MODEL='qwen3.8-flash'
+M4_NATIVE_ANSWER_PROFILE='bilingual-json-schema.1'
+
+
+def _m4_native_answer_format():
+    return dict(type='json_schema',json_schema=dict(name='cj_m4_bilingual_answer',strict=True,schema=dict(
+        type='object',properties={language:dict(type='string',minLength=1) for language in ('zh','en')},
+        required=['zh','en'],additionalProperties=False)))
 
 
 async def _m4_wire(config,raw,guard,observation=None):
@@ -307,7 +314,8 @@ class MeteredDashScopeProvider:
                   stream_options={'include_usage':True},enable_thinking=False,max_tokens=self.config.max_output_tokens)
         if native_tools:body.update(tools=native_tools,parallel_tool_calls=False)
         if tool_choice is not None:body['tool_choice']=tool_choice
-        if system is not None:body['response_format']={'type':'json_object'}
+        if native_tools:body['response_format']=_m4_native_answer_format()
+        elif system is not None:body['response_format']={'type':'json_object'}
         raw=canonical(body)
         if len(raw)>32768:raise ProviderFailed('bounded M4 model input required')
         self.authorization.begin(attempt,'model',raw)
@@ -407,7 +415,11 @@ class MeteredDashScopeProvider:
                     if calls:
                         result=dict(version='MODEL-tool-turn.1',kind='tool',answer=None,calls=[
                             dict(name=c['name'],arguments=json.loads(c['arguments'],object_pairs_hook=reject_duplicates(ValueError,'duplicate_native_argument_field'))) for _,c in sorted(calls.items())])
-                    else:result=dict(version='MODEL-tool-turn.1',kind='answer',answer=json.loads(''.join(texts),object_pairs_hook=reject_duplicates(ValueError,'duplicate_native_answer_field')),calls=[])
+                    else:
+                        phase='native_answer_json'
+                        answer=json.loads(''.join(texts),object_pairs_hook=reject_duplicates(ValueError,'duplicate_native_answer_field'))
+                        phase='native_answer_contract'
+                        result=dict(version='MODEL-tool-turn.1',kind='answer',answer=answer,calls=[])
                     # Same strict internal parser used by the formal tool host.
                     from cj_run.tool_turn import parse_turn
                     encoded=json.dumps(result,ensure_ascii=False,separators=(',',':'))
