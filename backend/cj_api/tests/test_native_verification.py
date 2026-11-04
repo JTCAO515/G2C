@@ -13,7 +13,7 @@ import sys
 import unittest
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[3]/'scripts'))
-from real_services_acceptance import verification_passed,record_place_responses,M4_BASE,M4_MODEL
+from real_services_acceptance import verification_passed,record_place_responses,route_audit_passed,M4_BASE,M4_MODEL
 from cj_usage.authorization_budget import canonical
 from cj_api.real_services import canonical_tool
 from cj_place.gaode import Config,prepare,Response
@@ -52,6 +52,32 @@ def search_exchange(keyword,identity,coordinate):
 
 
 class Verification(unittest.TestCase):
+    def test_geometry_capture_is_fixed_and_retains_original_bytes_without_quality_claim(self):
+        first=search_exchange('故宫','SYNTH_GA','116.397029,39.917839')
+        second=search_exchange('景山公园','SYNTH_GB','116.396551,39.925875')
+        _,raw=canonical_tool('place_route',canonical(dict(mode='walking',origin_provider_id='SYNTH_GA',origin_coordinate='116.397029,39.917839',origin_coordinate_role='poi_center',
+            destination_provider_id='SYNTH_GB',destination_coordinate='116.396551,39.925875',destination_coordinate_role='poi_center')))
+        query=decode_query(raw);request=prepare(first[0],query,'geometry-walk',NOW,basic=True)
+        body=canonical(dict(status='1',info='ok',infocode='10000',count='1',route=dict(origin=query.origin.coordinate.raw,destination=query.destination.coordinate.raw,
+            paths=[dict(distance='119',duration='95')])))
+        result=SimpleNamespace(state='received',response=Response(request.binding_digest,ORIGIN,request.path,200,body,NOW))
+        async def exercise(root,batch):
+            original=AsyncMock(side_effect=[first[2],second[2],result])
+            with patch('cj_api.real_services.fetch_candidate',original),record_place_responses(root,batch,root/'batch.json',geometry=True):
+                from cj_api import real_services
+                for config,prepared in ((first[0],first[1]),(second[0],second[1]),(first[0],request)):
+                    await real_services.fetch_candidate(config,prepared,None,basic=True)
+            self.assertEqual(original.await_count,3)
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);batch=dict(verification_profile='route-geometry-capture-1',geometry_acceptance='UNASSESSED',provider_responses=[])
+            asyncio.run(exercise(root,batch))
+            self.assertTrue(route_audit_passed(batch['route_audit'],geometry=True));self.assertFalse(route_audit_passed(batch['route_audit']))
+            self.assertEqual(batch['geometry_acceptance'],'UNASSESSED')
+            for record,expected in zip(batch['provider_responses'],(first[3],second[3],body)):
+                saved=root/record['file'];self.assertEqual(saved.read_bytes(),expected)
+                self.assertEqual(saved.stat().st_mode&0o777,0o600)
+                self.assertEqual(record['response_sha256'],hashlib.sha256(expected).hexdigest())
+
     def test_diagnostic_still_requires_actual_tool_and_complete_continuation(self):
         batch,attempts=proof();batch['verification_profile']='native-diagnostics-1'
         del batch['cases']['weather-en']

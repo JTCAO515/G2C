@@ -74,3 +74,14 @@ M4基础live步行解析仅在 `basic=True`、RouteQuery/walking、status=1及in
 原RUN/Meter与共享账本保持，最多10 provider_call/3tools；错点、错顺序、重复、driving或其他查询在原HTTP前拒绝。
 secret-body检查后的原HTTP200公共地图响应留在固定批次私有目录，文件0600；存储失败单独使诊断失败，原收到响应继续解析/计量。
 旧批次重跑只读；历史原RUN的FAIL/UNKNOWN不被离线重解析结果覆盖，实际新端到端结果仍需C的新阶段验证。
+
+八轮native上限内，第八个原model.tool_turn.7保留为终答：显式设置供应商`tool_choice=none`，仍保留完整原assistant/tool消息及工具声明。
+不增加第九次模型请求、不扩大RUN预算。供应商违背禁用策略返回工具调用时，在回执发布与工具注册前拒绝；原模型费用保持UNKNOWN，不自动重试。
+前七轮与非native入口的默认请求字节不变，未修改MODEL-tool-turn.1或PLACE冻结wire。
+依据：[DashScope Function Calling](https://help.aliyun.com/en/model-studio/qwen-function-calling)及[兼容接口参数](https://help.aliyun.com/en/model-studio/qwen-api-via-openai-chat-completions)。
+
+`capture-route-geometry` 为固定G1取证：故宫/景山公园各一次Search，绑定本次真实POI回执后，以故宫到景山的同原坐标/poi_center只查一次walking。
+它使用新固定batch/scope、原共享账本及相同10 provider_call/3tools上限，复用原secret-checked响应留存；重跑仅只读。
+退出成功仅表示三份原HTTP响应已留存并匹配固定查询，不计路线几何或产品质量PASS；`geometry_acceptance=UNASSESSED`。
+原C两语言119米投影和英文八轮UNKNOWN保留，不把新取证冒充旧请求的原body或重派旧RUN。
+[高德原生参数](https://lbs.amap.com/api/webservice/guide/api/direction)允许坐标外同时提供可选POI ID；端点实际语义须依据原响应核查，不凭两个echo坐标假定入口。

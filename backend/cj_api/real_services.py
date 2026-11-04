@@ -63,6 +63,7 @@ class ModelInput:
     system:object
     provider:object
     native_reply:dict
+    final_answer:bool=False
 
 
 def canonical_tool(name,raw):
@@ -151,14 +152,16 @@ class RealTools:
         if type(argument) is ModelInput:
             messages,system,provider=argument.messages,argument.system,argument.provider
             native_reply=argument.native_reply
+            final_answer=argument.final_answer
         else:
-            messages,system,provider=argument;native_reply=None
+            messages,system,provider=argument;native_reply=None;final_answer=False
         from cj_agent.worker import _MemoryProvider,_EditMemoryProvider
         wrapped=type(provider) in (_MemoryProvider,_EditMemoryProvider)
         if (provider.original if wrapped else provider) is not self.services.model:
             raise BudgetUnknown('M4 model registration mismatch')
         raw=canonical(dict(messages=messages,system=system,endpoint=M4_BASE,model=M4_MODEL,synthetic_only=True,
-                           native_tools=self.native_tools if system==TOOL_SYSTEM else None))
+                           native_tools=self.native_tools if system==TOOL_SYSTEM else None,
+                           **({'tool_choice':'none'} if final_answer else {})))
         inputs=json.loads(raw);metadata={}
         def bind(operation,guard):
             self.services.require_scope(operation.binding.scope)
@@ -170,7 +173,7 @@ class RealTools:
             def invoke():
                 self.services.require_scope(operation.binding.scope)
                 yield from self.services.model.invoke(inputs['messages'],inputs['system'],operation.command.attempt_id,
-                    tools=inputs['native_tools'],receipt=metadata,guard=admitted,native_reply=native_reply)
+                    tools=inputs['native_tools'],receipt=metadata,guard=admitted,native_reply=native_reply,tool_choice=inputs.get('tool_choice'))
             return invoke
         return InvocationInput(raw,None,bind,_receipt(metadata))
 
@@ -231,7 +234,7 @@ class RealTools:
             worker._model_history(binding,messages,TOOL_SYSTEM)
             native_reply={}
             raw=''.join(worker._registered_stream(binding,'model.tool_turn.'+str(round_index),'model.tool_turn',
-                ModelInput(messages,TOOL_SYSTEM,worker.provider,native_reply)))
+                ModelInput(messages,TOOL_SYSTEM,worker.provider,native_reply,final_answer=round_index==7)))
             try:turn=parse_turn(raw.encode(),self.names)
             except ValueError:raise ProviderUnknown('live model tool turn unavailable') from None
             if not turn.calls:
