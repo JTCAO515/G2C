@@ -35,6 +35,12 @@ Memory fence、原动作只读恢复均继续生效。默认 local/Fake 路径�
 
 模型原生 function calls 转为既有内部 MODEL-tool-turn.1 数据，再由代码注册表选择工具。
 网页/工具输出以不可信数据传给模型，不能提供 owner、密钥、预算或写入权限。
+原生参数现在用完整类型定义的 place_search/place_detail/place_route/weather/fact，
+host 转为原 PLACE-query.1 / FACT-query.1 再经已有严格 codec。模型不必猜封装版本或坐标Decimal字段。
+续接保留实际 `assistant.tool_calls` 和逐一匹配的 `role=tool/tool_call_id`，
+不会把已执行的结果改成新的 user 请求。该标识仅关联数据，执行仍逐步经过原Meter/final guard。
+这是对已合PR524真实失败的实现修复，旧wire语义不变；协议依据
+[DashScope Function Calling](https://help.aliyun.com/en/model-studio/qwen-function-calling)。
 RUN 对外使用已有普通文本读回：来源链接与双语选定语言的回答。
 不扩大冻结 synthetic TOOL-output.1 / FACT-output.1、FACT-result.1，现有资料卡模式仍仅 synthetic；
 App 若后续需要真实专用资料卡，须先证明已合消费者缺陷，再独立追加所需版本。
@@ -44,4 +50,6 @@ App 若后续需要真实专用资料卡，须先证明已合消费者缺陷，�
 为单次固定中英合成批次，读 Keychain 并实际调用；`inspect` 只读原结果。
 `resume-setup` 仅用于明确的准备阶段失败：原全部案例仍PLANNED、授权账本0意图且私有PG目录不存在，
 三者同时证明没有已接收消息或外部请求时，才允许显式恢复准备。任何accepted/INTENT出口均不适用。
+`verify-native` 是修复后独立的两例中英合成验证，使用新scope、原共享授权账本与固定新batch。
+其重跑只读本批次；原八例UNKNOWN与全部费用意图仍保留，不覆盖或重派。
 真实 PR 必须另列包版本、模型/端点、原 attempt、用量、费用与 UNKNOWN/FAIL，不以 fixture 充数。

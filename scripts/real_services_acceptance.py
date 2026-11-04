@@ -45,11 +45,11 @@ def save(path,value):
     temp.replace(path)
 
 
-def run_batch(*,resume_setup=False):
+def run_batch(*,resume_setup=False,verification=False):
     STATE.mkdir(parents=True,exist_ok=True,mode=0o700)
     with (STATE/'acceptance.lock').open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX)
-        path=STATE/'acceptance.json'
+        path=STATE/('verification-native-1.json' if verification else 'acceptance.json')
         budget=AuthorizationBudget(STATE);budget.check_date()
         previous=None
         if path.exists():
@@ -72,14 +72,19 @@ def run_batch(*,resume_setup=False):
             'fact-zh':f'合成查询：调用fact，FACT-query.1，fact_key entry_notice，region China，dates start/end {today}，conditions空对象。只引述官方国家移民管理局页面，不推断任何旅客资格或适用日期，不创建行程。',
             'fact-en':f'Synthetic query: call fact using FACT-query.1, fact_key entry_notice, region China, dates start/end {today}, conditions empty object. Quote official NIA page only; eligibility and date applicability UNKNOWN. No itinerary write.',
         }
+        if verification:
+            cases={
+                'place-zh':'合成旅行验证：使用place_search实际查询北京故宫，city北京，page1/page_size1。根据工具结果说明来源和待核实项，不写行程。',
+                'weather-en':f'Synthetic verification: use weather for Beijing, start_date and end_date {today}. Then answer using the returned report time, source and unknowns. Do not repeat an identical weather request. No itinerary write.',
+            }
         value=dict(state='INTENT',model_id=M4_MODEL,endpoint=M4_BASE,region='cn-beijing',
             packages={k:version(k) for k in ('httpx','psycopg','fastapi','pydantic')},cases={k:dict(state='PLANNED') for k in cases})
         if previous is not None:value['setup_recovery']='explicit_login_keychain_after_proven_zero_dispatch'
         save(path,value)  # Lost setup is conservative: inspect this original batch.
-        root=STATE/'acceptance-pg'
+        root=STATE/('verification-native-1-pg' if verification else 'acceptance-pg')
         if root.exists():raise ValueError('original_private_acceptance_cluster_exists')
         model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,keychain('g2c-dashscope')),budget)
-        subject='m4-synthetic-real-services'
+        subject='m4-synthetic-real-services-verify1' if verification else 'm4-synthetic-real-services'
         services=RealServices(model,keychain('g2c-amap-web-key'),frozenset({subject}));tools=RealTools(services)
         output=io.StringIO()
         try:
@@ -126,11 +131,11 @@ def run_batch(*,resume_setup=False):
 
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('command',choices=('run','inspect','resume-setup'));args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('command',choices=('run','inspect','resume-setup','verify-native'));args=parser.parse_args()
     if args.command=='inspect':
         path=STATE/'acceptance.json'
         result=dict(batch=None if not path.exists() else json.loads(path.read_text()),attempts=AuthorizationBudget(STATE).inspect())
-    else:result=run_batch(resume_setup=args.command=='resume-setup')
+    else:result=run_batch(resume_setup=args.command=='resume-setup',verification=args.command=='verify-native')
     print(json.dumps(result,ensure_ascii=False,separators=(',',':')))
 
 

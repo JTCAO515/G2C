@@ -53,11 +53,16 @@ def exercise(auth,conninfo):
             model_calls.append(subject)
             if subject.endswith('unknown'):raise httpx.ReadTimeout('synthetic unknown')
             body=json.loads(request.content)
-            follow=any('UNTRUSTED TOOL DATA' in m['content'] for m in body['messages'])
+            follow=any(m['role']=='tool' and 'tool_call_id' in m for m in body['messages'])
+            if follow:
+                assistant=next(m for m in reversed(body['messages']) if m['role']=='assistant')
+                result=body['messages'][-1]
+                assert result['role']=='tool' and result['tool_call_id']==assistant['tool_calls'][0]['id']
+                assert assistant['tool_calls'][0]['function']['name']=='place_search'
             if subject.endswith('revoke') and not follow:
                 (auth/'invited.json').write_text(json.dumps([s for s in subjects if s!=subject]))
             payload=sse(tool=not follow).replace('chatcmpl-synthetic','chatcmpl-synthetic-'+str(len(model_calls)))
-            if subject.endswith('malformed'):payload=payload.replace('PLACE-query.1','PLACE-query.invalid')
+            if subject.endswith('malformed'):payload=payload.replace('\\"page\\": 1','\\"page\\": \\"bad\\"')
             return httpx.Response(200,stream=httpx.ByteStream(payload.encode()))
         model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),budget,transport=httpx.MockTransport(response))
         writes=[]
