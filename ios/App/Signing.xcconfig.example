@@ -1,0 +1,8 @@
+// Template only. Copy into an ignored .local-* directory after #495 approval.
+// No account, certificate, profile, entitlement or signing operation is supplied.
+// PRODUCT_BUNDLE_IDENTIFIER is selected by the project configuration.
+// DEVELOPMENT_TEAM = <JT-approved Apple Developer team ID>
+// CODE_SIGN_STYLE = Manual
+// CODE_SIGN_IDENTITY = <JT-approved signing identity>
+// PROVISIONING_PROFILE_SPECIFIER = <JT-approved profile for the selected ID>
+// CODE_SIGNING_ALLOWED = YES

@@ -595,6 +595,13 @@ def group_device_completion():
 GROUPS.update(device_completion=group_device_completion)
 
 
+def group_deploy_recovery():
+    return script('scripts/deploy_recovery_check.py')
+
+
+GROUPS.update(deploy_recovery=group_deploy_recovery)
+
+
 def main(argv):
     if argv[:1] == ['--shard']:
         index, count = map(int, argv[1].split('/'))

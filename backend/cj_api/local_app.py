@@ -6,8 +6,11 @@ issuer/subject; the internal scope is derived on the server and provisioned here
 Real email OTP (Supabase) replaces the local key in P2c.
 """
 from datetime import datetime, timedelta, timezone
+from dataclasses import dataclass
+from collections.abc import Mapping
 import json
 import os
+import re
 from pathlib import Path
 import tempfile
 import stat
@@ -30,6 +33,7 @@ from cj_message.needs_binding import needs_scope_for
 from cj_message.travel import ABI as TRAVEL_ABI, PROFILE as TRAVEL_PROFILE
 from cj_run.step_usage import ledger_scope_for
 from cj_usage.codec import decode as decode_ledger
+from cj_strict_json import reject_duplicates
 from .run_display_composition import RunDisplayWireConfiguration
 from .run_events_routes import RunEventsConfiguration
 from .trip_composition import TripWireConfiguration
@@ -109,14 +113,44 @@ class _ScopedConnection:
         return self._connection.__exit__(exc_type, exc, traceback)
 
 
+@dataclass(frozen=True,eq=False)
+class LocalConnection(Mapping):
+    """Validated immutable local connection options; not a libpq DSN."""
+    entries:tuple
+
+    def __post_init__(self):
+        config=dict(self.entries)
+        allowed={'host','port','user','dbname','passfile','password','connect_timeout','options','application_name'}
+        if (os.environ.get('CJ_ENV')!='local' or len(config)!=len(self.entries) or set(config)-allowed
+                or type(config.get('host')) is not str or not config['host'].startswith('/')
+                or ',' in config['host'] or any(k.startswith(('PG','LIBPQ')) for k in os.environ)
+                or any(type(v) not in (str,int) or type(v) is str and '\0' in v for v in config.values())
+                or 'dbname' in config and (type(config['dbname']) is not str
+                    or re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]{0,62}',config['dbname']) is None)):
+            raise CompositionUnavailable('explicit local Unix-socket database and plain database name required')
+        port=config.get('port',5432)
+        if type(port) not in (str,int) or not str(port).isascii() or not str(port).isdigit() or not 1<=int(port)<=65535:
+            raise CompositionUnavailable('one explicit local database port required')
+
+    def __getitem__(self,key):
+        for name,value in self.entries:
+            if name==key:return value
+        raise KeyError(key)
+
+    def __iter__(self):return (name for name,_ in self.entries)
+    def __len__(self):return len(self.entries)
+
+
+def local_connection(config):
+    if type(config) is LocalConnection:return config
+    if type(config) is not dict:raise CompositionUnavailable('explicit local connection object required')
+    return LocalConnection(tuple(config.items()))
+
+
 def local_conninfo(conninfo_path):
-    config = json.loads(Path(conninfo_path).read_text())
-    if (os.environ.get('CJ_ENV') != 'local' or type(config) is not dict
-            or type(config.get('host')) is not str or not config['host'].startswith('/')
-            or ',' in config['host'] or config.get('hostaddr') or 'service' in config
-            or any(k.startswith(('PG', 'LIBPQ')) for k in os.environ)):
-        raise CompositionUnavailable('explicit local Unix-socket database required')
-    return config
+    config=json.loads(Path(conninfo_path).read_text(),object_pairs_hook=reject_duplicates(
+        CompositionUnavailable,'duplicate local connection option'))
+    return local_connection(config)
 
 
 class LocalDatabase:
