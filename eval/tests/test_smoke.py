@@ -15,6 +15,7 @@ from smoke import cases, check, require_full_ready, model_input_digest
 from real_budget import estimate, verified_journal
 import real_budget
 import real_phase
+import smoke
 from cj_api.real_services import canonical_tool, TOOL_SYSTEM, TOOLS
 from cj_agent.provider import M4_BASE, M4_MODEL
 from cj_place.models import (Result, Source, Outcome, Observed, FieldState, Place, Coordinate, Route)
@@ -171,6 +172,7 @@ class SmokeChecks(unittest.TestCase):
             self.assertTrue(real_phase.claim('full',p/'full-a','candidate1'))
             self.assertFalse(real_phase.claim('full',p/'full-b','candidate1'))
 
+    @patch.object(real_budget,'TOOL_STOP',160)
     def test_first_round_based_estimate_and_equality_stop(self):
         previous=[dict(kind='model')]*166+[dict(kind='place')]*17+[dict(kind='weather')]*57+[dict(kind='fact')]*10
         r=estimate(previous,include_smoke=True)
@@ -178,6 +180,42 @@ class SmokeChecks(unittest.TestCase):
         self.assertTrue(r['within_stop_lines'])
         self.assertFalse(estimate(previous+[dict(kind='model')]*68,include_smoke=True)['within_stop_lines'])
         self.assertFalse(estimate(previous+[dict(kind='weather')]*24,include_smoke=True)['within_stop_lines'])
+
+    def test_JT_tool_stop_change_allows_161_projection_within_original_200_budget(self):
+        previous=[dict(kind='model')]*200+[dict(kind='place')]*99
+        r=estimate(previous,include_smoke=True)
+        self.assertEqual(r['projected_conservative_cny'],dict(model=366,tool=161))
+        self.assertEqual(r['stop_cny'],dict(model=400,tool=10000))
+        self.assertEqual(r['budget_cny'],dict(model=500,tool=200))
+        self.assertTrue(r['within_authorization'])
+        self.assertEqual(r['actual_billed_total'],'UNKNOWN')
+
+    def test_raised_stop_does_not_authorize_more_than_original_tool_total(self):
+        for before,allowed in ((138,True),(139,False)):
+            with self.subTest(before=before):
+                r=estimate([dict(kind='route')]*before,include_smoke=True)
+                self.assertTrue(r['within_stop_lines'])
+                self.assertEqual(r['within_budget'],allowed)
+                self.assertEqual(r['within_authorization'],allowed)
+
+    def test_model_equality_stop_still_blocks_after_tool_stop_change(self):
+        r=estimate([dict(kind='model')]*234,include_smoke=True)
+        self.assertEqual(r['projected_conservative_cny']['model'],400)
+        self.assertTrue(r['within_budget'])
+        self.assertFalse(r['within_authorization'])
+
+    def test_smoke_over_total_budget_stops_before_credentials_claim_or_exit(self):
+        with tempfile.TemporaryDirectory() as folder, \
+                patch.object(sys,'argv',['smoke.py','--output',str(Path(folder)/'new')]), \
+                patch.dict(os.environ,{'CJ_M4_SYNTHETIC_ONLY':'1'}), \
+                patch.object(smoke,'claimed',return_value=False), \
+                patch.object(smoke.subprocess,'check_output',return_value='candidate'), \
+                patch.object(smoke,'verified_journal',return_value=[dict(kind='route')]*139), \
+                patch.object(smoke,'keychain',side_effect=AssertionError('no key read')), \
+                patch.object(smoke,'claim',side_effect=AssertionError('no phase claim')), \
+                patch.object(smoke,'AuthorizationBudget',side_effect=AssertionError('no budget mutation')):
+            with self.assertRaisesRegex(ValueError,'exceeds_authorization'):
+                smoke.main()
 
 
 if __name__=='__main__':unittest.main()

@@ -10,10 +10,27 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 os.environ.setdefault('CJ_ENV', 'local')
 import real
+import real_budget
+import real_phase
+import smoke
 from real_report import reconcile
 
 
 class RealCollectorChecks(unittest.TestCase):
+    def test_full_over_total_budget_stops_before_credentials_claim_or_exit(self):
+        with tempfile.TemporaryDirectory() as folder, \
+                patch.object(sys,'argv',['real.py','--output',str(Path(folder)/'new')]), \
+                patch.dict(os.environ,{'CJ_M4_SYNTHETIC_ONLY':'1'}), \
+                patch.object(real_phase,'claimed',return_value=False), \
+                patch.object(real.subprocess,'check_output',return_value='candidate'), \
+                patch.object(smoke,'require_full_ready'), \
+                patch.object(real_budget,'verified_journal',return_value=[dict(kind='route')]*147), \
+                patch.object(real,'keychain',side_effect=AssertionError('no key read')), \
+                patch.object(real_phase,'claim',side_effect=AssertionError('no phase claim')), \
+                patch.object(real,'AuthorizationBudget',side_effect=AssertionError('no budget mutation')):
+            with self.assertRaisesRegex(ValueError,'exceeds_authorization'):
+                real.main()
+
     def test_existing_batch_never_reads_credentials_or_creates_authorization_intent(self):
         with tempfile.TemporaryDirectory() as folder:
             with patch.object(sys, 'argv', ['real.py', '--output', folder]), \

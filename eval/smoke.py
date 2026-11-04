@@ -241,7 +241,7 @@ def main():
     candidate=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
     before=verified_journal()
     forecast=estimate(before,include_smoke=True)
-    if not forecast['within_stop_lines']:raise ValueError('smoke_plus_full_estimate_exceeds_stop_line_report_495')
+    if not forecast['within_authorization']:raise ValueError('smoke_plus_full_estimate_exceeds_authorization_report_495')
     model_key=keychain('g2c-dashscope');amap_key=keychain('g2c-amap-web-key')
     if not claim('smoke',args.output,candidate):
         print('READ_ONLY: canonical smoke phase already claimed; no request/retry');return 0
