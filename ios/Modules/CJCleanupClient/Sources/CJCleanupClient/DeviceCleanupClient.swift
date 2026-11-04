@@ -67,7 +67,7 @@ fileprivate enum DeviceCleanupWorkKind: Equatable { case registration, registrat
     public init(development endpoint: MessageEndpoint, lifetime: AccountCleanupLifetime, securePersistence: any SessionPersistence,
         session: SessionLifecycle, sessionOperation: SessionOperation, credentials: @escaping @MainActor () async throws -> String?,
         requestTimeout: TimeInterval, resourceTimeout: TimeInterval, version: CleanupDeviceVersion = .v3) throws {
-        #if DEBUG && (targetEnvironment(simulator) || G2C_M4_DEVICE_ACCEPTANCE)
+        #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
         try Self.configuration(endpoint, requestTimeout, resourceTimeout)
         self.endpoint = endpoint; self.lifetime = lifetime
         journal = try DeviceCleanupJournal(persistence: securePersistence, scope: lifetime.scope, newVersion: version)
@@ -84,7 +84,7 @@ fileprivate enum DeviceCleanupWorkKind: Equatable { case registration, registrat
     }
     public init(developmentOriginalDevice endpoint: MessageEndpoint, lifetime: AccountCleanupLifetime, securePersistence: any SessionPersistence,
         requestTimeout: TimeInterval, resourceTimeout: TimeInterval) throws {
-        #if DEBUG && (targetEnvironment(simulator) || G2C_M4_DEVICE_ACCEPTANCE)
+        #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
         try Self.configuration(endpoint, requestTimeout, resourceTimeout)
         self.endpoint = endpoint; self.lifetime = lifetime; ordinary = nil
         journal = try DeviceCleanupJournal(persistence: securePersistence, scope: lifetime.scope)

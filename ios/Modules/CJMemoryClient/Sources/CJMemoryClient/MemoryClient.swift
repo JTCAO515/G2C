@@ -128,7 +128,7 @@ public enum MemorySaveResult: Sendable {
         store = pendingStore; transport = interceptedTransport; managementTransport = interceptedTransport; writeEnabled = true; managementEnabled = true; manualWritesAvailable = false; managementStore = managementPendingStore
         managementReadEnabled = true
     }
-    #if DEBUG && (targetEnvironment(simulator) || G2C_M4_DEVICE_ACCEPTANCE)
+    #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
     /// Only the explicit signed local MEMORY host (#226). Ordinary/Release
     /// clients remain read-only; this does not enable lifecycle management.
     public init(localEndpoint endpoint: MemoryEndpoint, credentials: @escaping MemoryCredentialCallback,

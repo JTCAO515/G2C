@@ -61,7 +61,7 @@ public enum AccountCleanupReadResult: Sendable { case notObserved, prepared(Acco
         credentials: @escaping @MainActor () async throws -> String?,
         beforeConfirmation: @escaping @MainActor (String) throws -> Void,
         requestTimeout: TimeInterval, resourceTimeout: TimeInterval) throws {
-        #if DEBUG && (targetEnvironment(simulator) || G2C_M4_DEVICE_ACCEPTANCE)
+        #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
         try Self.validateDevelopmentConfiguration(endpoint, requestTimeout: requestTimeout, resourceTimeout: resourceTimeout)
         self.endpoint = endpoint; self.lifetime = lifetime
         journal = try AccountCleanupJournal(persistence: securePersistence, scope: lifetime.scope)
@@ -77,7 +77,7 @@ public enum AccountCleanupReadResult: Sendable { case notObserved, prepared(Acco
     /// It never acquires ordinary SDK credentials or permits a write.
     public init(developmentRestrictedProgress endpoint: MessageEndpoint, lifetime: AccountCleanupLifetime,
         securePersistence: any SessionPersistence, requestTimeout: TimeInterval, resourceTimeout: TimeInterval) throws {
-        #if DEBUG && (targetEnvironment(simulator) || G2C_M4_DEVICE_ACCEPTANCE)
+        #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
         try Self.validateDevelopmentConfiguration(endpoint, requestTimeout: requestTimeout, resourceTimeout: resourceTimeout)
         self.endpoint = endpoint; self.lifetime = lifetime; ordinary = nil
         journal = try AccountCleanupJournal(persistence: securePersistence, scope: lifetime.scope)

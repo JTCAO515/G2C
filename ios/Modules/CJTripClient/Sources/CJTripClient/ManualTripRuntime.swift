@@ -256,7 +256,7 @@ extension TripClient {
         currentBinding: @escaping @MainActor () -> TripBinding?, session: SessionLifecycle, sessionOperation: SessionOperation,
         pendingStore: TripPendingStore, requestTimeout: TimeInterval, resourceTimeout: TimeInterval,
         maximumJournalBytes: Int, maximumJournalRecords: Int) throws {
-        #if DEBUG && (targetEnvironment(simulator) || G2C_M4_DEVICE_ACCEPTANCE)
+        #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
         guard endpoint.allowsDevelopmentActivation,
               endpoint.maximumRequestBytes<=1_000_000,endpoint.maximumResponseBytes<=1_000_000 else { throw TripFailure.invalidInput }
         let reads=try NoRedirectTransport(requestTimeout:requestTimeout,resourceTimeout:resourceTimeout)

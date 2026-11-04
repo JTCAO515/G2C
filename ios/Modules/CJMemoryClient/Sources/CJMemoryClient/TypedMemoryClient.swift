@@ -19,7 +19,7 @@ import OpenAPIRuntime
     private var usedManagementReads: Set<UUID> = []
     // Historical exact-action completion only, retained across presentation retirement.
     private var managementConfirmed: Set<Data> = []
-    #if DEBUG && (targetEnvironment(simulator) || G2C_M4_DEVICE_ACCEPTANCE)
+    #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
     public convenience init(localEndpoint: MemoryEndpoint,credentials: @escaping MemoryCredentialCallback,
         currentBinding: @escaping @MainActor () -> MemoryBinding?,pendingStore: TypedMemoryPendingStore,
         localTransport: NoRedirectTransport,validatePriorOriginals: @escaping @MainActor () throws -> Void) throws {

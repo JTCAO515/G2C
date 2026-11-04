@@ -14,7 +14,7 @@ final class ScopedTransport: ClientTransport, Sendable {
     private let validate: @MainActor @Sendable () throws -> Void
     private let profile:TripCandidateTransportProfile
     init(endpoint: MessageEndpoint,profile:TripCandidateTransportProfile = .scoped, validate: @escaping @MainActor @Sendable () throws -> Void) throws {
-        #if DEBUG && (targetEnvironment(simulator) || G2C_M4_DEVICE_ACCEPTANCE)
+        #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
         guard endpoint.allowsDevelopmentActivation else { throw PreviewFailure.unavailable }
         self.endpoint = endpoint.url; self.validate = validate;self.profile=profile
         let configuration = URLSessionConfiguration.ephemeral
