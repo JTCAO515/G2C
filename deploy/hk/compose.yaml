@@ -18,8 +18,8 @@ services:
     restart: "no"
     env_file:
       - {path: /srv/g2c-beta/common.env, format: raw}
-      - {path: /srv/g2c-beta/operator.env, format: raw}
     volumes:
+      - /srv/g2c-beta/operator.env:/run/secrets/operator.env:ro
       - /srv/g2c-beta/supabase-ca.crt:/run/config/supabase-ca.crt:ro
       - /srv/g2c-beta/control:/control
   api:
@@ -27,8 +27,8 @@ services:
     command: [api]
     env_file:
       - {path: /srv/g2c-beta/common.env, format: raw}
-      - {path: /srv/g2c-beta/api.env, format: raw}
     volumes:
+      - /srv/g2c-beta/api.env:/run/secrets/api.env:ro
       - /srv/g2c-beta/supabase-ca.crt:/run/config/supabase-ca.crt:ro
       - /srv/g2c-beta/control:/control:ro
       - /srv/g2c-beta/heartbeat:/heartbeat:ro
@@ -43,8 +43,10 @@ services:
     command: [worker]
     env_file:
       - {path: /srv/g2c-beta/common.env, format: raw}
-      - {path: /srv/g2c-beta/worker.env, format: raw}
+    environment:
+      CJ_M4_BUDGET_PRODUCER: hk-beta-47.83.147.176
     volumes:
+      - /srv/g2c-beta/worker.env:/run/secrets/worker.env:ro
       - /srv/g2c-beta/supabase-ca.crt:/run/config/supabase-ca.crt:ro
       - /srv/g2c-beta/control:/control:ro
       - /srv/g2c-beta/heartbeat:/heartbeat
@@ -73,9 +75,9 @@ services:
     profiles: [operator]
     env_file:
       - {path: /srv/g2c-beta/common.env, format: raw}
-      - {path: /srv/g2c-beta/operator.env, format: raw}
-      - {path: /srv/g2c-beta/backup.env, format: raw}
     volumes:
+      - /srv/g2c-beta/operator.env:/run/secrets/operator.env:ro
+      - /srv/g2c-beta/backup.env:/run/secrets/backup.env:ro
       - /srv/g2c-beta/supabase-ca.crt:/run/config/supabase-ca.crt:ro
       - /srv/g2c-beta/control:/control
       - /srv/g2c-beta/backups:/backups

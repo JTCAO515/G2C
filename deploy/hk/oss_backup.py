@@ -32,20 +32,28 @@ def upload_file(client,path,key,journal):
     authorization();path=Path(path);journal=Path(journal)
     if not re.fullmatch(r'backups/[0-9]{8}T[0-9]{6}Z-[0-9a-f]{64}/(database.dump|manifest.json)',key):
         raise ValueError('fixed_backup_prefix_and_file_required')
+    limit=67108864 if key.endswith('/database.dump') else 1048576
+    if path.stat().st_size>limit:raise ValueError('recoverable_backup_size_limit_required')
     expected=dict(bucket=BUCKET,key=key,size=path.stat().st_size,sha256=checksum(path))
     previous=json.loads(journal.read_bytes()) if journal.exists() else None
     if previous is not None and previous.get('object')!=expected:raise ValueError('original_upload_binding_changed')
     try:head=client.head_object(oss.HeadObjectRequest(bucket=BUCKET,key=key))
-    except oss.exceptions.ServiceError as error:
-        if error.code!='NoSuchKey':raise
+    except oss.exceptions.OperationError as error:
+        detail=error.unwrap()
+        if not isinstance(detail,oss.exceptions.ServiceError) or not (detail.code=='NoSuchKey' or detail.status_code==404 and detail.code=='BadErrorResponse'):raise
         head=None
     if head is not None:
+        if previous is None:raise ValueError('unregistered_existing_backup_object_refused')
         if head.content_length!=expected['size'] or (head.metadata or {}).get('sha256')!=expected['sha256'] or head.server_side_encryption!='AES256':
             raise ValueError('original_backup_object_differs')
+        authorization()
+        if client.get_object_acl(oss.GetObjectAclRequest(bucket=BUCKET,key=key)).acl!='private':
+            raise ValueError('original_backup_object_not_private')
         save(journal,dict(object=expected,state='RECEIVED'));return 'HEAD_CONFIRMED'
     if previous is not None:
         raise ValueError('original_upload_unknown_no_resend')
     save(journal,dict(object=expected,state='INTENT'))
+    authorization()
     with path.open('rb') as body:
         client.put_object(oss.PutObjectRequest(bucket=BUCKET,key=key,body=body,content_length=expected['size'],
             metadata={'sha256':expected['sha256']},server_side_encryption='AES256',acl='private',forbid_overwrite=True))
@@ -78,6 +86,10 @@ def download_file(client,key,path,expected_sha256,*,limit):
         save(journal,dict(object=original,state='RECEIVED'));return 'READ_ONLY_ORIGINAL'
     if journal.exists():raise ValueError('original_download_unknown_no_resend')
     save(journal,dict(object=original,state='INTENT'))
+    authorization()
+    if client.get_object_acl(oss.GetObjectAclRequest(bucket=BUCKET,key=key)).acl!='private':
+        raise ValueError('original_backup_object_not_private')
+    authorization()
     result=client.get_object(oss.GetObjectRequest(bucket=BUCKET,key=key))
     size=0
     with result.body as body:
@@ -86,7 +98,7 @@ def download_file(client,key,path,expected_sha256,*,limit):
             raise ValueError('original_download_headers_rejected')
         with path.open('xb') as output:
             os.chmod(path,0o600)
-            while chunk:=body.read(65536):
+            for chunk in body.iter_bytes(block_size=65536):
                 size+=len(chunk)
                 if size>limit:raise ValueError('bounded_backup_download_required')
                 output.write(chunk)

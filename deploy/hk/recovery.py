@@ -8,7 +8,7 @@ import sys
 import psycopg
 from cj_api.local_app import local_conninfo
 from . import checkpoint
-from .configuration import authorization
+from .configuration import authorization,load_secret_environment
 
 
 def main():
@@ -16,7 +16,7 @@ def main():
     parser.add_argument('--target-json',type=Path,required=True)
     parser.add_argument('--base',type=Path,required=True);parser.add_argument('--safety',type=Path,required=True)
     parser.add_argument('--source-control',type=Path,required=True);parser.add_argument('--target-control',type=Path,required=True)
-    args=parser.parse_args();authorization()
+    args=parser.parse_args();load_secret_environment('recovery');authorization()
     checkpoint.restore(local_conninfo(args.target_json),args.base,args.safety,args.source_control,args.target_control)
     print('PASS restored latest complete checkpoint into isolated Unix cluster; cloud target unchanged')
 

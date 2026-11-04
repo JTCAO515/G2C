@@ -7,7 +7,7 @@ import sys
 
 import psycopg
 
-from .configuration import authorization
+from .configuration import authorization,load_secret_environment
 from . import checkpoint,oss_backup
 
 
@@ -44,7 +44,7 @@ def run():
 
 
 if __name__=='__main__':
-    try:run()
+    try:load_secret_environment('backup');run()
     except (oss_backup.oss.exceptions.BaseError,OSError,ValueError,KeyError,psycopg.Error):
         print('ALERT beta_backup_unavailable_original_journal_retained',file=sys.stderr)
         raise SystemExit(1) from None

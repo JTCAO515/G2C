@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import re
+import stat
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -17,6 +18,39 @@ from cj_api.local_run_context import load_run_context
 from cj_api.supabase_test_database import SupabaseTestDatabase
 from cj_strict_json import reject_duplicates
 from cj_trip.confirmation import ConfirmationSigner
+
+
+SECRET_FILES={
+    'api':{'api':{'CJ_SUPABASE_RUNTIME_URI','CJ_BETA_CONFIRMATION_B64','CJ_BETA_HISTORY_B64'}},
+    'worker':{'worker':{'CJ_SUPABASE_RUNTIME_URI','CJ_BETA_SIGNING_PRIVATE_B64','CJ_MODEL_API_KEY','CJ_AMAP_WEB_KEY'}},
+    'migrate':{'operator':{'CJ_SUPABASE_OPERATOR_URI','CJ_BETA_RECOVERY_PRIVATE_B64'}},
+    'recovery':{'operator':{'CJ_SUPABASE_OPERATOR_URI','CJ_BETA_RECOVERY_PRIVATE_B64'}},
+    'backup':{'operator':{'CJ_SUPABASE_OPERATOR_URI','CJ_BETA_RECOVERY_PRIVATE_B64'},
+              'backup':{'CJ_BETA_BACKUP_ROOT','OSS_ACCESS_KEY_ID','OSS_ACCESS_KEY_SECRET'}},
+}
+
+
+def load_secret_environment(role,*,root=Path('/run/secrets')):
+    """Docker receives only paths; secret bytes enter this process, not Config.Env."""
+    expected=SECRET_FILES[role];values={}
+    for file,names in expected.items():
+        if any(name in os.environ for name in names):raise ValueError('persistent_container_secret_environment_refused')
+        descriptor=os.open(Path(root)/(file+'.env'),os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK)
+        with os.fdopen(descriptor,'rb') as source:
+            metadata=os.fstat(source.fileno())
+            if not stat.S_ISREG(metadata.st_mode) or stat.S_IMODE(metadata.st_mode)!=0o600 or metadata.st_uid!=os.getuid():
+                raise ValueError('owned_0600_secret_environment_file_required')
+            raw=source.read(65537)
+        if len(raw)>65536:raise ValueError('bounded_secret_environment_required')
+        parsed={}
+        for line in raw.decode('utf8').splitlines():
+            name,separator,value=line.partition('=')
+            if not separator or name not in names or name in parsed or not value or '\0' in value:
+                raise ValueError('explicit_secret_environment_fields_required')
+            parsed[name]=value
+        if set(parsed)!=names:raise ValueError('complete_secret_environment_required')
+        values.update(parsed)
+    os.environ.update(values)
 
 
 def decoded(name,*,length=None):

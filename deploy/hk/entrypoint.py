@@ -15,7 +15,7 @@ import run_worker
 from cj_api.composition import CompositionUnavailable
 from cj_api.real_services import RealServices,RealTools
 from local_run_context import provision_budget_connection
-from .configuration import Runtime,authorization
+from .configuration import Runtime,authorization,load_secret_environment
 from . import checkpoint
 
 
@@ -52,7 +52,7 @@ def worker(runtime):
     # Missing transferred journal is a configuration failure, never a new quota.
     if not (Path.home()/'.local/share/g2c/m4-real-services/m4-outflows.sqlite').is_file():
         raise ValueError('original_shared_authorization_journal_required')
-    services=RealServices.from_environment(runtime.auth)
+    services=RealServices.from_environment(runtime.auth,authorization_guard=authorization)
     with services.model.authorization.connect() as journal:services.model.authorization.require_producer(journal)
     tools=RealTools(services);database=runtime.database()
     while True:
@@ -87,6 +87,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('command',choices=['migrate','api','worker'])
     args=parser.parse_args();runtime=None
     try:
+        load_secret_environment(args.command)
         audit=logging.getLogger('cj_usage.audit');audit.setLevel(logging.INFO)
         audit.addHandler(logging.StreamHandler(sys.stderr));audit.propagate=False
         runtime=Runtime.load('/tmp/g2c-beta',worker=args.command=='worker')

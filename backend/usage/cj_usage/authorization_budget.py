@@ -11,6 +11,7 @@ import json
 import os
 from pathlib import Path
 import sqlite3
+import uuid
 from zoneinfo import ZoneInfo
 
 from .metered_exit import BudgetUnknown
@@ -19,6 +20,8 @@ LIMITS={'model':(227,1),'place':(600,1),'route':(300,1),'weather':(100,1),'fact'
 DEADLINE=datetime(2026,12,1,tzinfo=ZoneInfo('Asia/Shanghai'))
 MAC_PRODUCER='codex-mac'
 HK_PRODUCER='hk-beta-47.83.147.176'
+HK_JOURNAL_ROOT=Path('/home/cj/.local/share/g2c/m4-real-services')
+HK_ANCHOR=Path('/control/budget/adoption.json')
 
 
 def canonical(value):
@@ -26,21 +29,26 @@ def canonical(value):
 
 
 class AuthorizationBudget:
-    def __init__(self,root,*,clock=lambda:datetime.now(ZoneInfo('Asia/Shanghai'))):
-        self.root=Path(root);self.clock=clock
+    def __init__(self,root,*,clock=lambda:datetime.now(ZoneInfo('Asia/Shanghai')),authorization_guard=None):
+        self.root=Path(root);self.clock=clock;self.authorization_guard=authorization_guard
         self.producer=os.environ.get('CJ_M4_BUDGET_PRODUCER',MAC_PRODUCER)
         if self.producer not in (MAC_PRODUCER,HK_PRODUCER):raise BudgetUnknown('explicit M4 producer required')
+        if self.producer==HK_PRODUCER and (self.root!=HK_JOURNAL_ROOT or not (self.root/'m4-outflows.sqlite').is_file() or not HK_ANCHOR.is_file()):
+            raise BudgetUnknown('existing_unique_HK_journal_and_control_required')
         self.root.mkdir(parents=True,exist_ok=True,mode=0o700)
         self.path=self.root/'m4-outflows.sqlite'
         with self.connect() as db:
-            db.execute('CREATE TABLE IF NOT EXISTS attempt(id TEXT PRIMARY KEY,kind TEXT NOT NULL,input_sha TEXT NOT NULL,state TEXT NOT NULL,receipt TEXT)')
-            db.execute('CREATE TABLE IF NOT EXISTS producer(singleton INTEGER PRIMARY KEY CHECK(singleton=1),identity TEXT NOT NULL)')
-            db.execute('INSERT OR IGNORE INTO producer VALUES(1,?)',(MAC_PRODUCER,))
+            if self.producer==MAC_PRODUCER:
+                db.execute('CREATE TABLE IF NOT EXISTS attempt(id TEXT PRIMARY KEY,kind TEXT NOT NULL,input_sha TEXT NOT NULL,state TEXT NOT NULL,receipt TEXT)')
+                db.execute('CREATE TABLE IF NOT EXISTS producer(singleton INTEGER PRIMARY KEY CHECK(singleton=1),identity TEXT NOT NULL,ledger_id TEXT NOT NULL)')
+                db.execute('INSERT OR IGNORE INTO producer VALUES(1,?,?)',(MAC_PRODUCER,uuid.uuid4().hex))
+            self.ledger_id=db.execute('SELECT ledger_id FROM producer WHERE singleton=1').fetchone()[0]
+            if self.producer==HK_PRODUCER:self.require_producer(db)
         self.path.chmod(0o600)
 
     @contextmanager
     def connect(self):
-        connection=sqlite3.connect(self.path,timeout=10)
+        connection=sqlite3.connect(self.path.resolve().as_uri()+('?mode=rw' if self.producer==HK_PRODUCER else '?mode=rwc'),uri=True,timeout=10)
         connection.execute('PRAGMA synchronous=FULL')
         try:
             with connection:yield connection
@@ -49,10 +57,18 @@ class AuthorizationBudget:
     def check_date(self):
         now=self.clock()
         if now.tzinfo is None or now>=DEADLINE:raise BudgetUnknown('M4 authorization expired')
+        if self.authorization_guard is not None:self.authorization_guard()
 
     def require_producer(self,db):
-        if db.execute('SELECT identity FROM producer WHERE singleton=1').fetchone()!=(self.producer,):
+        if db.execute('SELECT identity,ledger_id FROM producer WHERE singleton=1').fetchone()!=(self.producer,self.ledger_id):
             raise BudgetUnknown('M4 journal moved; original producer is read only')
+        if self.producer==MAC_PRODUCER and (self.root/'transfer.json').exists():
+            raise BudgetUnknown('M4 original Mac transfer is read only')
+        if self.producer==HK_PRODUCER:
+            anchor=json.loads(HK_ANCHOR.read_bytes())
+            if (anchor['state']!='ADOPTED' or anchor['ledger_id']!=self.ledger_id
+                    or db.execute('SELECT count(*) FROM attempt').fetchone()[0]<anchor['attempt_count']):
+                raise BudgetUnknown('M4 non-restored adoption control differs')
 
     def begin(self,attempt,kind,raw):
         self.check_date()
