@@ -4,6 +4,9 @@ import Foundation
 @MainActor final class DevelopmentFeedbackUITests: XCTestCase {
     let control = "__FIXTURE_URL__"
     var app: XCUIApplication!
+    #if G2C_M4_DEVICE_ACCEPTANCE
+    private lazy var deviceSession = M4DeviceTestSession(test: self, control: control)
+    #endif
     struct Fixture: Decodable { let endpoint: String; let accounts: [String: String]; let subjects: [String: String]; let case_id: String; let conversation: String; let prompt: String }
     struct Feedback: Decodable { let action_id: String; let sha256: String; let problem: String; let expectation: String; let references: [Reference] }
     struct Reference: Decodable { let kind: String; let id: String }
@@ -12,7 +15,12 @@ import Foundation
     @discardableResult func call(_ path: String, _ caseID: String, _ values: [String: String] = [:]) async throws -> Data {
         var url = try XCTUnwrap(URLComponents(string: control + path))
         url.queryItems = values.merging(["case": caseID]) { _, new in new }.map { .init(name: $0.key, value: $0.value) }
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        if path == "/size" { M4DeviceTestSession.requireLargestSystemFont() }
+        let (data, response) = try await deviceSession.data(from: XCTUnwrap(url.url))
+        #else
         let (data, response) = try await URLSession.shared.data(from: XCTUnwrap(url.url))
+        #endif
         XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200, path)
         return data
     }
@@ -59,6 +67,11 @@ import Foundation
         // XCTest selected a cell-edge activation point for a partially exposed
         // multiline button. Use the resolved, fully visible control's center.
         target.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        if id.hasPrefix("account.development.signin.") || id == "account.development.restore" {
+            deviceSession.waitForAppNetworkConsent()
+        }
+        #endif
     }
     func revealEditor(_ id: String) -> XCUIElement {
         let field = app.textViews[id]
@@ -75,11 +88,21 @@ import Foundation
         XCTAssertTrue(field.exists && field.isHittable, id)
         return field
     }
-    func launch(_ f: Fixture, language: String = "en") throws {
+    func launch(_ f: Fixture, language: String = "en") async throws {
         app?.terminate(); app = XCUIApplication(bundleIdentifier: "space.go2china.feedback.acceptance")
         app.launchArguments = ["-cj.ui.language.v1", language]
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        M4DeviceTestSession.requireLargestSystemFont()
+        let accountsJSON = "{}"
+        try await deviceSession.stageAccounts(caseID: f.case_id)
+        #else
+        let accountsJSON = String(data: try JSONEncoder().encode(f.accounts), encoding: .utf8)!
+        #endif
         app.launchEnvironment = ["OS_ACTIVITY_MODE": "disable", "G2C_DEV_ACCOUNT_MODE": "1", "G2C_DEV_API_BASE_URL": f.endpoint,
-            "G2C_DEV_FEEDBACK_PROFILE": "feedback-v1", "G2C_DEV_ACCOUNTS": String(data: try JSONEncoder().encode(f.accounts), encoding: .utf8)!]
+            "G2C_DEV_FEEDBACK_PROFILE": "feedback-v1", "G2C_DEV_ACCOUNTS": accountsJSON]
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        app.launchEnvironment.merge(try deviceSession.applicationEnvironment(endpoint: f.endpoint, injecting: true)) { _, value in value }
+        #endif
         app.launch(); XCTAssertTrue(app.tabBars.element.waitForExistence(timeout: 15))
         XCTAssertFalse(app.staticTexts["g2c.dev.error"].exists)
     }
@@ -182,7 +205,7 @@ import Foundation
     }
     func basic(_ name: String, language: String) async throws {
         let f = try await prepare(name); defer { app?.terminate() }
-        try launch(f, language: language); login(f, language: language)
+        try await launch(f, language: language); login(f, language: language)
         try await answer(f, language: language)
         let first = try await proof(f)
         XCTAssertEqual(first.accounts["A"]?.role, "cj_m1_runtime")
@@ -219,7 +242,7 @@ import Foundation
     func testAnswerAndGeneralChinese() async throws { try await basic("testAnswerAndGeneralChinese", language: "zh-Hans") }
     func testUnknownReopenAndOriginalLookup() async throws {
         let f = try await prepare("testUnknownReopenAndOriginalLookup"); defer { app?.terminate() }
-        try launch(f); login(f); general(backFromAccount: true)
+        try await launch(f); login(f); general(backFromAccount: true)
         fill("回执丢失后保留原反馈", expectation: "只查询原动作")
         _ = try await call("/fault", f.case_id, ["kind": "drop"])
         tap("feedback.submit"); status("Submission is not confirmed")
@@ -227,7 +250,7 @@ import Foundation
         XCTAssertEqual(before.accounts["A"]?.feedback.count, 1)
         XCTAssertFalse(app.buttons["feedback.submit"].isEnabled)
         try audit("unknown-original-retained")
-        try launch(f, language: "zh-Hans"); restore(f, language: "zh-Hans")
+        try await launch(f, language: "zh-Hans"); restore(f, language: "zh-Hans")
         general("zh-Hans", backFromAccount: true)
         tap("feedback.loadPending"); tap("feedback.pending." + original.action_id)
         XCTAssertEqual(revealEditor("feedback.problem").value as? String, "回执丢失后保留原反馈")
@@ -243,7 +266,7 @@ import Foundation
     }
     func testLateACKAccountSwitch() async throws {
         let f = try await prepare("testLateACKAccountSwitch"); defer { app?.terminate() }
-        try launch(f); login(f); general(backFromAccount: true)
+        try await launch(f); login(f); general(backFromAccount: true)
         fill("旧账号的迟到反馈", expectation: "不能进入新账号")
         _ = try await call("/fault", f.case_id, ["kind": "hold"])
         tap("feedback.submit")
