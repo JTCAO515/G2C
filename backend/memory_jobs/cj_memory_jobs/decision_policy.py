@@ -1,7 +1,6 @@
 """Genuine Trip before canonical Memory, never a provider wait in either holder."""
 from contextlib import contextmanager
 from dataclasses import replace
-from hashlib import sha256
 
 from .codec import SourceV2,Conflict
 from .source_policy import SourcePolicy

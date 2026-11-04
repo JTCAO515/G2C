@@ -1,5 +1,4 @@
 """Actual source leases plus the original act implementation; no second writer."""
-from contextlib import nullcontext
 from hashlib import sha256
 import json
 from .domain import Conflict,Denied,ProposalDetail

@@ -1,7 +1,6 @@
 """Capture association for C scoped publisher; data only until original hold()."""
 from contextvars import ContextVar
 from dataclasses import dataclass,field
-from hashlib import sha256
 import base64
 from cj_message.edit_protocol import MEMORY_ABI
 from .runtime import RuntimeDenied
