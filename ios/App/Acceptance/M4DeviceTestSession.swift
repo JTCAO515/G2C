@@ -54,9 +54,14 @@ import XCTest
             test.addUIInterruptionMonitor(withDescription: "G2C local network and Wi-Fi only") {
                 [weak self] alert in self?.handle(alert) ?? false
             }
-            let runner = XCUIApplication(bundleIdentifier: try XCTUnwrap(Bundle.main.bundleIdentifier))
-            runner.activate()
+            print("M4_CONTROL_APPLICATION_STATE", UIApplication.shared.applicationState.rawValue)
+            if UIApplication.shared.applicationState != .active {
+                let runner = XCUIApplication(bundleIdentifier: try XCTUnwrap(Bundle.main.bundleIdentifier))
+                runner.activate()
+            }
             try M4DeviceControl.triggerLocalNetworkAlert()
+            let alert = XCUIApplication(bundleIdentifier: "com.apple.springboard").alerts.firstMatch
+            if alert.waitForExistence(timeout: 3) { _ = handle(alert) }
             prepared = true
         }
         let permissions = Task { @MainActor [weak self] in
