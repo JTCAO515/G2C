@@ -109,14 +109,14 @@ def configure_project(project, tls, control_url, control_token, amap=False):
         output.write(plistlib.dumps(dict(endpoint=control_url, token=control_token)))
     bootstrap.chmod(0o600)
     control_resources = [resource(tls.public_certificate), resource(bootstrap)]
-    control_anchor = 'A000000000000000000000009 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = ('
+    control_anchor = f'A{9:023X} = {{isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = ('
     if text.count(control_anchor) != 1:
         raise ValueError('Control resource phase changed')
     text = text.replace(control_anchor, control_anchor + ', '.join(control_resources))
     sources = []
     for source in [HERE / 'M4DeviceControl.swift', ROOT / 'ios/Modules/CJMessageClient/Sources/CJMessageHTTP/M4LocalServerTrust.swift']:
         sources.append(resource(source))
-    source_anchor = 'A000000000000000000000007 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = ('
+    source_anchor = f'A{7:023X} = {{isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = ('
     if text.count(source_anchor) != 1:
         raise ValueError('Control source phase changed')
     text = text.replace(source_anchor, source_anchor + ', '.join(sources) + ', ')
