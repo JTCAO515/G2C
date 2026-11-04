@@ -161,7 +161,7 @@ Fake/local/synthetic 报告会显示门槛的诊断PASS/FAIL/UNKNOWN，但
 
 ## 已授权真实批次（#530）
 
-B PR524 合并后，用 `CJ_M4_SYNTHETIC_ONLY=1 uv run --locked python -B
+B PR524 合并后，用 `CJ_ENV=local CJ_M4_SYNTHETIC_ONLY=1 uv run --locked python -B
 eval/real.py --output .local/eval/real-m4-001` 执行固定33×中英、11留出的一次批次。
 目录存在时只读返回；不恢复或重发未知原动作。模型、端点、工具、凭据来源及
 唯一累计授权账本沿用 B `RealServices`，没有任意 URL、模型或预算目录选项。

@@ -1,5 +1,6 @@
 """Collector boundaries: safe replay and observed user-body timing."""
 import json
+import os
 from pathlib import Path
 import sys
 import tempfile
@@ -7,6 +8,7 @@ import unittest
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+os.environ.setdefault('CJ_ENV', 'local')
 import real
 
 
