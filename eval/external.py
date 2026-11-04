@@ -91,9 +91,45 @@ def memory_authority():
         cls.tearDownClass()
 
 
+def pinned_dns():
+    import ssl
+    from cj_fact.acquisition import PinnedTarget
+    from cj_fact.https_transport import PinnedHTTPSTransport
+    from cj_fact.policy import SourcePolicy, FactFailure
+
+    async def exercise():
+        policy = SourcePolicy(('https://example.org',), 4096, 20, 0, 2, 20, 1000)
+        # No ambient SSLKEYLOGFILE or certificate/network lookup.
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        transport = PinnedHTTPSTransport(policy, tls_context=context,
+                                        max_header_bytes=4096, max_wire_bytes=8192, max_reads=20)
+        rows = []
+        for address in ('127.0.0.1', '::1', '10.0.0.1', '192.168.1.1',
+                        '169.254.169.254', 'fd00::1', '::ffff:127.0.0.1', '64:ff9b::a00:1'):
+            # A mixed DNS answer must also fail; selecting the public first IP
+            # must not hide a later private/metadata answer.
+            target = PinnedTarget('https://example.org/', 'example.org',
+                                  ('8.8.8.8', address), 4096, asyncio.get_running_loop().time() + 2)
+            exchange = AsyncMock(side_effect=AssertionError('forbidden socket exchange'))
+            with patch.object(transport, '_exchange', exchange):
+                try:
+                    await transport(target)
+                except FactFailure as error:
+                    reason = str(error)
+                else:
+                    raise AssertionError('non-public DNS accepted')
+            assert reason == 'non_public_dns_answer' and exchange.await_count == 0
+            rows.append(dict(address=address, reason=reason, exchanges=exchange.await_count))
+        return {'mixed_dns_answers': rows, 'network_requests': 0}
+
+    return asyncio.run(exercise())
+
+
 EXPERIMENTS = [
     ('forbidden-network', forbidden_targets, 'Forge seven internal/loopback/metadata origins at actual fetch_candidate entry.',
      'Each rejected before dial; no internal or external connection.'),
+    ('pinned-dns-boundary', pinned_dns, 'Actual FACT public transport receives mixed public+private/metadata/IPv6 translation DNS answers.',
+     'Every mixed answer rejected before socket exchange, including public-first answers.'),
     ('tls-redirect-boundary', lambda: implementation_probe('backend/place/tests/https_transport_checks.py'),
      'Real local TLS: redirect, malformed/oversize receipt, timeout, cancellation, hostname mismatch and descriptor tamper.',
      'No redirect/retry; fixed host and TLS checks; failures/UNKNOWN retained. Local TLS substitutes only dial, no real Gaode.'),
