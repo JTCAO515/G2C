@@ -178,7 +178,7 @@ async def _read_response(reader, body_limit):
 
 
 async def fetch_candidate(config: Config, request: PreparedRequest,
-                          credentials: ProviderCredentials,*,before_send=None) -> TransportResult:
+                          credentials: ProviderCredentials,*,before_send=None,basic=False) -> TransportResult:
     """Low-level one-shot candidate, never authorization or a retry/recovery API.
 
     Credentials must come from trusted host configuration. This function performs
@@ -193,7 +193,7 @@ async def fetch_candidate(config: Config, request: PreparedRequest,
     try:
         if type(config) is not Config or type(request) is not PreparedRequest or type(credentials) is not ProviderCredentials:
             return TransportResult("rejected", "transport_configuration_invalid")
-        if prepare(config, request.query, request.request_ref, request.started_at) != request or request.origin != ORIGIN or request.path not in _PATHS:
+        if prepare(config, request.query, request.request_ref, request.started_at,basic=basic) != request or request.origin != ORIGIN or request.path not in _PATHS:
             return TransportResult("rejected", "request_binding_invalid")
         credentials.__post_init__()
         expires = credentials.expires_at.astimezone(timezone.utc)

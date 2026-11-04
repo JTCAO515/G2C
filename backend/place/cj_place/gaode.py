@@ -77,9 +77,10 @@ def _binding_json(value):
     raise TypeError("binding_type")
 
 
-def prepare(config: Config, query: Query, request_ref: str, started_at: datetime) -> PreparedRequest:
+def prepare(config: Config, query: Query, request_ref: str, started_at: datetime,*,basic=False) -> PreparedRequest:
     if type(config) is not Config:
         raise PreparationError("configuration_required")
+    if type(basic) is not bool:raise PreparationError('explicit_basic_profile_required')
     aware(started_at)
     identifier(request_ref)
     if type(query) not in (Search, Detail, RouteQuery):
@@ -92,9 +93,13 @@ def prepare(config: Config, query: Query, request_ref: str, started_at: datetime
         params.update(keywords=query.keyword, city=query.city, citylimit="true",
                       children="0", extensions="all", langCode="zh",
                       page=str(query.page), offset=str(query.page_size))
+        if basic:
+            params['extensions']='base'
+            params.pop('langCode')  # Default Chinese; do not request the advanced multilingual service.
     elif type(query) is Detail:
         path = "/v3/place/detail"
         params.update(id=query.provider_id, langCode="zh")
+        if basic:params.pop('langCode')
     else:
         if query.departure.condition != "at_query_time":
             raise PreparationError("departure_not_supported")
@@ -193,7 +198,7 @@ _RATE_CODES = frozenset({"10003", "10004", "10010", "10014", "10015", "10019", "
 
 
 def parse_response(config: Config, request: PreparedRequest, response: Response,
-                   *, now: datetime, evidence="unverified_bytes") -> Result:
+                   *, now: datetime, evidence="unverified_bytes",basic=False) -> Result:
     """Pure parsing. Binding checks are correlation checks, NOT authentication.
 
     The host associates exact original request with response; Gaode does not echo
@@ -201,7 +206,7 @@ def parse_response(config: Config, request: PreparedRequest, response: Response,
     """
     if type(request) is not PreparedRequest:
         raise ValueError("prepared_request_required")
-    expected = prepare(config, request.query, request.request_ref, request.started_at)
+    expected = prepare(config, request.query, request.request_ref, request.started_at,basic=basic)
     if expected != request:
         return Result(Outcome.BINDING_MISMATCH, request.query, "request_changed")
     if evidence not in ("synthetic", "unverified_bytes"):
