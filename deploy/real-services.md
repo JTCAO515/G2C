@@ -43,6 +43,11 @@ Memory fence、原动作只读恢复均继续生效。默认 local/Fake 路径�
 host 转为原 PLACE-query.1 / FACT-query.1 再经已有严格 codec。模型不必猜封装版本或坐标Decimal字段。
 续接保留实际 `assistant.tool_calls` 和逐一匹配的 `role=tool/tool_call_id`，
 同时保留工具调用响应中合法的说明文字；它只随原assistant消息续接，不作为最终回答或工具权限。
+真实native模型调用使用 `bilingual-json-schema.1`，以供应商严格JSON Schema约束现有 `zh/en` 答复字段；
+注册的原input bytes同时绑定该profile，供应商调用仍保留完整native工具目录和原tool_call_id续接。
+依据[官方结构化输出说明](https://help.aliyun.com/en/model-studio/qwen-structured-output)，当前qwen3.8-flash支持该模式。
+这是请求端约束；收到无效JSON/缺字段/空答复仍保留UNKNOWN，不添加修复调用、自动重试或降级。
+非native的既有结构化调用继续使用原JSON Object模式；1024输出token上限与八轮/原Meter限额不变，截断仍拒绝。
 不会把已执行的结果改成新的 user 请求。该标识仅关联数据，执行仍逐步经过原Meter/final guard。
 这是对已合PR524真实失败的实现修复，旧wire语义不变；协议依据
 [DashScope Function Calling](https://help.aliyun.com/en/model-studio/qwen-function-calling)。

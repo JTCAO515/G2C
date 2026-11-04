@@ -11,7 +11,7 @@ from types import SimpleNamespace
 
 import httpx
 
-from cj_agent.provider import DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,ProviderFailed,ProviderUnknown,_m4_wire,_bounded_sse_lines
+from cj_agent.provider import DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,M4_NATIVE_ANSWER_PROFILE,ProviderFailed,ProviderUnknown,_m4_wire,_bounded_sse_lines
 from cj_api.real_services import RealServices,RealTools,TOOLS
 from cj_api.real_services import canonical_tool
 from cj_api.real_services import ModelInput,TOOL_SYSTEM
@@ -71,6 +71,74 @@ class Boundaries(unittest.TestCase):
         self.assertEqual(json.loads(self.sent[0].content)['tool_choice'],'none')
         self.assertEqual(parse_turn(''.join(result).encode(),{'place_search'}).answer_en,'Needs verification.')
         self.assertEqual(self.budget.inspect()[0]['state'],'RECEIVED')
+
+    def test_bilingual_schema_constrains_a_plain_marker_request_at_the_supplier(self):
+        marker='SYNTHETIC_FORMAT_CHECK'
+        def response(request):
+            self.sent.append(request);value=json.loads(request.content)
+            self.assertEqual(value['messages'][-1]['content'],'Only reply '+marker)
+            self.assertEqual(value['tools'],TOOLS)
+            self.assertEqual(value['max_tokens'],1024)
+            shape=value['response_format']
+            self.assertEqual(shape['type'],'json_schema')
+            self.assertIs(shape['json_schema']['strict'],True)
+            schema=shape['json_schema']['schema']
+            self.assertEqual(set(schema['required']),{'zh','en'})
+            self.assertIs(schema['additionalProperties'],False)
+            self.assertEqual(set(schema['properties']),{'zh','en'})
+            delta=json.loads(sse().splitlines()[0][6:])
+            delta['choices'][0]['delta']['content']=json.dumps(dict(zh=marker,en=marker))
+            body='data: '+json.dumps(delta)+'\n\n'+'\n'.join(sse().splitlines()[2:])
+            return httpx.Response(200,stream=httpx.ByteStream(body.encode()))
+        provider=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),self.budget,transport=httpx.MockTransport(response))
+        reply={};receipt={}
+        result=list(provider.invoke([dict(role='user',content='Only reply '+marker)],TOOL_SYSTEM,'schema-marker',
+            tools=TOOLS,receipt=receipt,guard=lambda:True,native_reply=reply))
+        turn=parse_turn(''.join(result).encode(),{'place_search','place_detail','place_route','weather','fact'})
+        self.assertEqual((turn.answer_zh,turn.answer_en),(marker,marker))
+        self.assertEqual(receipt['usage']['total_tokens'],50)
+        self.assertEqual([(r['kind'],r['state']) for r in self.budget.inspect()],[('model','RECEIVED')])
+        self.assertEqual(len(self.sent),1)
+
+    def test_schema_does_not_turn_malformed_supplier_answers_into_receipts_or_retries(self):
+        for i,answer in enumerate(('SYNTHETIC_MARKER','"SYNTHETIC_MARKER"','{"zh":"only"}',
+                '{"zh":"x","en":"y","extra":true}','{"zh":" ","en":"y"}',
+                '{"zh":"x","zh":"again","en":"y"}')):
+            with self.subTest(answer=answer):
+                delta=json.loads(sse().splitlines()[0][6:]);delta['choices'][0]['delta']['content']=answer
+                body='data: '+json.dumps(delta)+'\n\n'+'\n'.join(sse().splitlines()[2:])
+                provider=self.provider(body);attempt='bad-schema-'+str(i);receipt={};before=len(self.sent)
+                def invoke():return list(provider.invoke([dict(role='user',content='Synthetic boundary')],TOOL_SYSTEM,attempt,
+                    tools=TOOLS,receipt=receipt,guard=lambda:True))
+                with self.assertLogs('cj_provider.audit',level='WARNING') as logs,self.assertRaises(ProviderUnknown):invoke()
+                self.assertEqual(receipt,{})
+                self.assertNotIn(answer,'\n'.join(logs.output))
+                self.assertEqual(self.budget.inspect()[-1]['state'],'INTENT')
+                with self.assertRaises(BudgetUnknown):invoke()
+                self.assertEqual(len(self.sent)-before,1)
+
+    def test_native_schema_does_not_change_ordinary_structured_json_mode(self):
+        self.invoke(self.provider(sse()),tools=None)
+        body=json.loads(self.sent[0].content)
+        self.assertEqual(body['response_format'],dict(type='json_object'))
+        self.assertNotIn('tools',body)
+        self.assertNotIn('tool_choice',body)
+
+    def test_old_json_object_intent_cannot_be_redispatched_as_a_schema_request(self):
+        raw=b'{"response_format":{"type":"json_object"},"synthetic_prior_request":true}'
+        self.budget.begin('original','model',raw);before=self.budget.inspect()
+        with self.assertRaises(BudgetUnknown):self.invoke(self.provider(sse()),tools=TOOLS)
+        self.assertEqual(self.sent,[]);self.assertEqual(self.budget.inspect(),before)
+
+    def test_registered_native_input_identifies_the_new_answer_format(self):
+        provider=self.provider(sse());services=RealServices(provider,KEY,frozenset({'m4-synthetic-one'}))
+        tools=RealTools(services)
+        prepared=tools._model_input(ModelInput([dict(role='user',content='Synthetic marker')],TOOL_SYSTEM,provider,{}))
+        declared=json.loads(prepared.original_bytes)
+        self.assertEqual(declared['answer_format_profile'],M4_NATIVE_ANSWER_PROFILE)
+        self.assertEqual(declared['native_tools'],tools.native_tools)
+        ordinary=tools._model_input(([dict(role='user',content='Synthetic draft')],'existing structured system',provider))
+        self.assertNotIn('answer_format_profile',json.loads(ordinary.original_bytes))
 
     def test_supplier_cannot_dispatch_a_disabled_final_tool_or_rearm_it(self):
         provider=self.provider(sse(tool=True));receipt={}
