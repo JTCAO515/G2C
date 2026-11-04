@@ -170,6 +170,12 @@ import Foundation
                     }
                     let back = app.navigationBars.buttons.element(boundBy: 0)
                     XCTAssertTrue(back.isHittable); back.tap()
+                    // Returning preserves the list's scroll position. Revisit
+                    // its state row before checking the unchanged value.
+                    for _ in 0..<12 {
+                        if app.staticTexts[expected].exists { break }
+                        app.swipeDown()
+                    }
                     text(expected)
                 }
                 capture("memory-\(mode)-\(language)")
