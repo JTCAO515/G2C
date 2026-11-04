@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from contextlib import contextmanager
 import asyncio
 import json
+import logging
 import os
 import ssl
 from typing import Generator, Protocol
@@ -169,7 +170,7 @@ M4_BASE='https://dashscope.aliyuncs.com/compatible-mode/v1'
 M4_MODEL='qwen3.8-flash'
 
 
-async def _m4_wire(config,raw,guard):
+async def _m4_wire(config,raw,guard,observation=None):
     """Single fixed POST with one total deadline across DNS/TLS/write/read."""
     loop=asyncio.get_running_loop();deadline=loop.time()+config.timeout_seconds
     writer=None
@@ -194,6 +195,7 @@ async def _m4_wire(config,raw,guard):
                     if wire>327680:raise ProviderUnknown('M4 raw wire bound exceeded')
                     connection.receive_data(chunk)
                 elif isinstance(event,h11.Response):
+                    if observation is not None:observation['http_status']=event.status_code
                     if headers or event.status_code!=200:raise ProviderUnknown('M4 model response rejected; billing unknown')
                     fields={}
                     for key,value in event.headers:
@@ -251,7 +253,7 @@ class MeteredDashScopeProvider:
         raise ProviderFailed('original registered Meter operation required')
 
     @contextmanager
-    def _chunks(self,raw,guard):
+    def _chunks(self,raw,guard,observation):
         if self.transport is not None:
             # Explicit offline HTTP fixture only; installed environment profiles
             # cannot select a transport. iter_raw never decompresses before bounds.
@@ -259,6 +261,7 @@ class MeteredDashScopeProvider:
                 if guard() is not True:raise ProviderUnknown('original M4 authority no longer valid')
                 with client.stream('POST',M4_BASE+'/chat/completions',content=raw,headers={
                         'Authorization':'Bearer '+self.config.api_key,'Content-Type':'application/json'}) as response:
+                    observation['http_status']=response.status_code
                     if response.status_code!=200:raise ProviderUnknown('M4 model response rejected; billing unknown')
                     yield response.iter_raw()
         else:
@@ -267,7 +270,7 @@ class MeteredDashScopeProvider:
                 # Keep a single task alive across every yielded chunk. An async
                 # generator entered by separate __anext__ tasks would leave its
                 # timeout bound to the already completed first task.
-                source=_m4_wire(self.config,raw,guard)
+                source=_m4_wire(self.config,raw,guard,observation)
                 try:
                     try:
                         async for chunk in source:await queue.put(('data',chunk))
@@ -310,8 +313,10 @@ class MeteredDashScopeProvider:
         self.authorization.check_date()
         self.calls+=1
         finished=False;done=False;response_ids=set();usage=None;calls={};texts=[];pending=''
+        observation=dict(http_status=None)
+        phase='transport';committed=False
         try:
-            with self._chunks(raw,guard) as chunks:
+            with self._chunks(raw,guard,observation) as chunks:
                 for line in _bounded_sse_lines(chunks,self.config.timeout_seconds):
                     self.authorization.check_date()
                     if done:
@@ -320,22 +325,26 @@ class MeteredDashScopeProvider:
                     if not line.startswith('data:'):continue
                     data=line[5:].strip()
                     if data=='[DONE]':done=True;continue
+                    phase='chunk_json'
                     value=json.loads(data,object_pairs_hook=reject_duplicates(ValueError,'duplicate_model_field'))
                     if type(value) is not dict:raise ProviderUnknown('M4 stream object required')
                     if self.config.api_key in json.dumps(value,ensure_ascii=False):
                         raise ProviderUnknown('M4 model secret echo rejected')
+                    phase='model_identity'
                     if value.get('model')!=M4_MODEL:raise ProviderUnknown('M4 model identity mismatch')
                     rid=value.get('id')
                     if type(rid) is not str or not re.fullmatch(r'[A-Za-z0-9_-]{1,128}',rid):
                         raise ProviderUnknown('M4 model receipt identity unavailable')
                     response_ids.add(rid)
                     if len(response_ids)!=1:raise ProviderUnknown('M4 model response identity changed')
+                    phase='usage'
                     supplied=value.get('usage')
                     if supplied is not None:
                         if (type(supplied) is not dict or any(type(supplied.get(k)) is not int or not 0<=supplied[k]<=1000000
                                 for k in ('prompt_tokens','completion_tokens','total_tokens'))):
                             raise ProviderUnknown('M4 token usage unavailable')
                         usage={k:supplied[k] for k in ('prompt_tokens','completion_tokens','total_tokens')}
+                    phase='choice'
                     choices=value.get('choices',[])
                     if type(choices) is not list or len(choices)>1:raise ProviderUnknown('M4 stream choice invalid')
                     for choice in choices:
@@ -345,6 +354,7 @@ class MeteredDashScopeProvider:
                             finished=True
                         delta=choice.get('delta',{})
                         if type(delta) is not dict:raise ProviderUnknown('M4 stream delta invalid')
+                        phase='content'
                         text=delta.get('content')
                         if text is not None and type(text) is not str:raise ProviderUnknown('M4 stream content invalid')
                         if text:
@@ -357,6 +367,7 @@ class MeteredDashScopeProvider:
                                 if len(pending)>keep:
                                     yield pending[:-keep]
                                     pending=pending[-keep:]
+                        phase='tool_delta'
                         tool_calls=delta.get('tool_calls',[])
                         if type(tool_calls) is not list or len(tool_calls)>4:raise ProviderUnknown('M4 tool stream invalid')
                         for call in tool_calls:
@@ -376,16 +387,18 @@ class MeteredDashScopeProvider:
                                 if type(part) is not str:raise ProviderUnknown('M4 tool stream invalid')
                                 entry[key]+=part
                                 if len(entry[key])>32768:raise ProviderUnknown('M4 tool input bound exceeded')
+                phase='complete_receipt'
                 if not done or not finished or len(response_ids)!=1 or usage is None:
                     raise ProviderUnknown('M4 complete usage receipt unavailable')
                 result=None
+                phase='structured_output'
                 if not native_tools and system is not None:
                     structured=json.loads(''.join(texts),object_pairs_hook=reject_duplicates(ValueError,'duplicate_structured_field'))
                     if self.config.api_key in json.dumps(structured,ensure_ascii=False):
                         raise ProviderUnknown('M4 structured model secret echo rejected')
                 if native_tools:
+                    phase='native_turn'
                     if calls:
-                        if texts and ''.join(texts).strip():raise ProviderUnknown('M4 mixed tool answer rejected')
                         result=dict(version='MODEL-tool-turn.1',kind='tool',answer=None,calls=[
                             dict(name=c['name'],arguments=json.loads(c['arguments'],object_pairs_hook=reject_duplicates(ValueError,'duplicate_native_argument_field'))) for _,c in sorted(calls.items())])
                     else:result=dict(version='MODEL-tool-turn.1',kind='answer',answer=json.loads(''.join(texts),object_pairs_hook=reject_duplicates(ValueError,'duplicate_native_answer_field')),calls=[])
@@ -395,20 +408,31 @@ class MeteredDashScopeProvider:
                     if self.config.api_key in encoded:
                         raise ProviderUnknown('M4 model tool secret echo rejected')
                     parse_turn(encoded.encode(),{t['function']['name'] for t in native_tools})
+                    phase='native_identity'
                     native_calls=[]
                     for _,call in sorted(calls.items()):
                         if not re.fullmatch(r'[A-Za-z0-9_-]{1,128}',call['id']):raise ProviderUnknown('native tool identity unavailable')
                         native_calls.append(dict(id=call['id'],type='function',function=dict(name=call['name'],arguments=call['arguments'])))
                     if len({c['id'] for c in native_calls})!=len(native_calls):raise ProviderUnknown('native tool identity duplicated')
-                    assistant=dict(role='assistant',content=None,tool_calls=native_calls)
+                    assistant=dict(role='assistant',content=''.join(texts) or None,tool_calls=native_calls)
                     if self.config.api_key in json.dumps(assistant,ensure_ascii=False):raise ProviderUnknown('native tool identity secret echo rejected')
                 metadata=dict(model_id=M4_MODEL,endpoint=M4_BASE,region='cn-beijing',usage=usage,
                               receipt_sha256=hashlib.sha256(next(iter(response_ids)).encode()).hexdigest(),actual_cost_cny='UNKNOWN')
-                self.authorization.finish(attempt,metadata);receipt.update(metadata)
+                phase='receipt_commit'
+                self.authorization.finish(attempt,metadata);receipt.update(metadata);committed=True
                 if native_reply is not None and native_tools:native_reply['assistant']=assistant
                 if native_tools:yield encoded
                 elif system is not None:yield ''.join(texts)
                 elif pending:yield pending
+                phase='complete'
         except (ProviderFailed,ProviderUnknown):raise
         except (httpx.HTTPError,httpx.StreamError,ValueError,TypeError,KeyError,UnicodeError):
             raise ProviderUnknown('M4 original model outcome unknown') from None
+        finally:
+            if not committed:
+                # Fixed field names/enumerated phases and numeric metadata only.
+                # Never log exception text, provider IDs, prompts, deltas or keys.
+                logging.getLogger('cj_provider.audit').warning(
+                    'M4_MODEL_UNKNOWN attempt_sha256=%s phase=%s http_status=%s done=%s finished=%s usage=%s content_chars=%d tool_count=%d',
+                    hashlib.sha256(attempt.encode()).hexdigest(),phase,observation['http_status'],done,finished,
+                    usage is not None,sum(map(len,texts)),len(calls))
