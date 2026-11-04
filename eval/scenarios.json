@@ -1,0 +1,501 @@
+[
+  {
+    "id": "beijing-explore",
+    "recipe": "answer",
+    "split": "tuning",
+    "product": true,
+    "used_for_tuning": false,
+    "input_version": "m4-synthetic.1",
+    "history_ref": "declared-no-model-or-prompt-tuning",
+    "expectation_ref": "eval/judge.py + per-scenario hard fields; semantic review required",
+    "pairing_ref": "paired-synthetic-intent-zh-en-v1",
+    "task_kind": "answer",
+    "inputs": {
+      "zh": "我是首次来北京的游客，先介绍可以考虑的区域，不要保存行程。",
+      "en": "I am visiting Beijing for the first time. Suggest areas to explore without saving a trip."
+    }
+  },
+  {
+    "id": "beijing-preview",
+    "recipe": "preview",
+    "split": "tuning",
+    "product": true,
+    "used_for_tuning": false,
+    "input_version": "m4-synthetic.1",
+    "history_ref": "declared-no-model-or-prompt-tuning",
+    "expectation_ref": "eval/judge.py + per-scenario hard fields; semantic review required",
+    "pairing_ref": "paired-synthetic-intent-zh-en-v1",
+    "task_kind": "planning",
+    "inputs": {
+      "zh": "请提供北京三天行程草稿，开放时间需要核实，先不要正式保存。",
+      "en": "Draft three days in Beijing, flag opening hours for verification, and do not save a formal trip yet."
+    }
+  },
+  {
+    "id": "short-trip",
+    "recipe": "preview",
+    "max_days": 2,
+    "split": "tuning",
+    "product": true,
+    "used_for_tuning": false,
+    "input_version": "m4-synthetic.1",
+    "history_ref": "declared-no-model-or-prompt-tuning",
+    "expectation_ref": "eval/judge.py + per-scenario hard fields; semantic review required",
+    "pairing_ref": "paired-synthetic-intent-zh-en-v1",
+    "task_kind": "planning",
+    "inputs": {
+      "zh": "我只有两天，只能给我两天北京行程草稿。",
+      "en": "I only have two days. Draft no more than two days in Beijing."
+    }
+  },
+  {
+    "id": "daily-budget",
+    "recipe": "preview",
+    "budget_limit": 200,
+    "split": "tuning",
+    "product": true,
+    "used_for_tuning": false,
+    "input_version": "m4-synthetic.1",
+    "history_ref": "declared-no-model-or-prompt-tuning",
+    "expectation_ref": "eval/judge.py + per-scenario hard fields; semantic review required",
+    "pairing_ref": "paired-synthetic-intent-zh-en-v1",
+    "task_kind": "planning",
+    "inputs": {
+      "zh": "每天预算200元人民币，请明确哪些价格未知，不要把未知价格当免费。",
+      "en": "My daily budget is CNY 200. Identify unknown prices; do not treat unknown prices as free."
+    }
+  },
+  {
+    "id": "slow-pace",
+    "recipe": "preview",
+    "max_daily_items": 2,
+    "split": "tuning",
+    "product": true,
+    "used_for_tuning": false,
+    "input_version": "m4-synthetic.1",
+    "history_ref": "declared-no-model-or-prompt-tuning",
+    "expectation_ref": "eval/judge.py + per-scenario hard fields; semantic review required",
+    "pairing_ref": "paired-synthetic-intent-zh-en-v1",
+    "task_kind": "planning",
+    "inputs": {
+      "zh": "我希望慢节奏，每天最多两个景点，先给草稿。",
+      "en": "Draft a slow-paced plan with at most two sights each day."
+    }
+  },
+  {
+    "id": "uncertain-hours",
+    "recipe": "answer",
+    "split": "tuning",
+    "product": true,
+    "used_for_tuning": false,
+    "input_version": "m4-synthetic.1",
+    "history_ref": "declared-no-model-or-prompt-tuning",
+    "expectation_ref": "eval/judge.py + per-scenario hard fields; semantic review required",
+    "pairing_ref": "paired-synthetic-intent-zh-en-v1",
+    "task_kind": "answer",
+    "inputs": {
+      "zh": "如果不能核实今天故宫开放时间，请明确说未知，不要编造。",
+      "en": "If you cannot verify today's Forbidden City opening hours, explicitly say they are unknown."
+    }
+  },
+  {
+    "id": "arrival-timezone",
+    "recipe": "answer",
+    "split": "tuning",
+    "product": true,
+    "used_for_tuning": false,
+    "input_version": "m4-synthetic.1",
+    "history_ref": "declared-no-model-or-prompt-tuning",
+    "expectation_ref": "eval/judge.py + per-scenario hard fields; semantic review required",
+    "pairing_ref": "paired-synthetic-intent-zh-en-v1",
+    "task_kind": "answer",
+    "inputs": {
+      "zh": "我在北京时间晚上到达，请用Asia/Shanghai说明次日活动，不要猜航班状态。",
+      "en": "I arrive in the evening Beijing time. Explain next-day activities in Asia/Shanghai without guessing flight status."
+    }
+  },
+  {
+    "id": "transport-gap",
+    "recipe": "preview",
+    "transfer_minutes": 60,
+    "gap_minutes": 15,
+    "split": "tuning",
+    "product": true,
+    "used_for_tuning": false,
+    "input_version": "m4-synthetic.1",
+    "history_ref": "declared-no-model-or-prompt-tuning",
+    "expectation_ref": "eval/judge.py + per-scenario hard fields; semantic review required",
+    "pairing_ref": "paired-synthetic-intent-zh-en-v1",
+    "task_kind": "planning",
+    "inputs": {
+      "zh": "两处合成地点交通需要60分钟，两个活动只间隔15分钟，请不要声称可行。",
+      "en": "Travel between two synthetic places takes 60 minutes but the activities are only 15 minutes apart. Do not call this feasible."
+    }
+  },
+  {
+    "id": "accept-once",
+    "recipe": "accept",
+    "split": "tuning",
+    "product": true,
+    "used_for_tuning": false,
+    "input_version": "m4-synthetic.1",
+    "history_ref": "declared-no-model-or-prompt-tuning",
+    "expectation_ref": "eval/judge.py + per-scenario hard fields; semantic review required",
+    "pairing_ref": "paired-synthetic-intent-zh-en-v1",
+    "task_kind": "planning",
+    "inputs": {
+      "zh": "先给北京行程草稿；本场景随后明确接受一次，并核对正式保存。",
+      "en": "Draft a Beijing trip; this scenario then explicitly accepts it once and verifies the formal save."
+    }
+  },
+  {
+    "id": "reject-preview",
+    "recipe": "reject",
+    "split": "tuning",
+    "product": true,
+    "used_for_tuning": false,
+    "input_version": "m4-synthetic.1",
+    "history_ref": "declared-no-model-or-prompt-tuning",
+    "expectation_ref": "eval/judge.py + per-scenario hard fields; semantic review required",
+    "pairing_ref": "paired-synthetic-intent-zh-en-v1",
+    "task_kind": "planning",
+    "inputs": {
+      "zh": "先给北京行程草稿；本场景随后拒绝，不能留下正式行程。",
+      "en": "Draft a Beijing trip; this scenario then rejects it and must leave no formal trip."
+    }
+  },
+  {
+    "id": "memory-explicit",
+    "recipe": "memory-save",
+    "memory_zh": "我喜欢慢节奏",
+    "memory_en": "I prefer a slow pace",
+    "split": "tuning",
+    "product": true,
+    "used_for_tuning": false,
+    "input_version": "m4-synthetic.1",
+    "history_ref": "declared-no-model-or-prompt-tuning",
+    "expectation_ref": "eval/judge.py + per-scenario hard fields; semantic review required",
+    "pairing_ref": "paired-synthetic-intent-zh-en-v1",
+    "task_kind": "memory",
+    "inputs": {
+      "zh": "请明确保存：我喜欢慢节奏。然后按这条偏好回答。",
+      "en": "Explicitly remember that I prefer a slow pace, then answer using that preference."
+    }
+  },
+  {
+    "id": "memory-new-chat",
+    "recipe": "memory-new-chat",
+    "memory_zh": "我喜欢慢节奏",
+    "memory_en": "I prefer a slow pace",
+    "split": "tuning",
+    "product": true,
+    "used_for_tuning": false,
+    "input_version": "m4-synthetic.1",
+    "history_ref": "declared-no-model-or-prompt-tuning",
+    "expectation_ref": "eval/judge.py + per-scenario hard fields; semantic review required",
+    "pairing_ref": "paired-synthetic-intent-zh-en-v1",
+    "task_kind": "memory",
+    "inputs": {
+      "zh": "在新聊天中使用我已明确保存的慢节奏偏好。",
+      "en": "Use my explicitly saved slow-pace preference in a new conversation."
+    }
+  },
+  {
+    "id": "memory-restart",
+    "recipe": "memory-restart",
+    "memory_zh": "我喜欢慢节奏",
+    "memory_en": "I prefer a slow pace",
+    "split": "tuning",
+    "product": true,
+    "used_for_tuning": false,
+    "input_version": "m4-synthetic.1",
+    "history_ref": "declared-no-model-or-prompt-tuning",
+    "expectation_ref": "eval/judge.py + per-scenario hard fields; semantic review required",
+    "pairing_ref": "paired-synthetic-intent-zh-en-v1",
+    "task_kind": "memory",
+    "inputs": {
+      "zh": "服务重建后，仍使用我已明确保存的慢节奏偏好。",
+      "en": "After rebuilding the service, still use my explicitly saved slow-pace preference."
+    }
+  },
+  {
+    "id": "memory-other-travel",
+    "recipe": "memory-other-travel",
+    "memory_zh": "我喜欢慢节奏",
+    "memory_en": "I prefer a slow pace",
+    "split": "tuning",
+    "product": true,
+    "used_for_tuning": false,
+    "input_version": "m4-synthetic.1",
+    "history_ref": "declared-no-model-or-prompt-tuning",
+    "expectation_ref": "eval/judge.py + per-scenario hard fields; semantic review required",
+    "pairing_ref": "paired-synthetic-intent-zh-en-v1",
+    "task_kind": "memory",
+    "inputs": {
+      "zh": "在另一段旅行里使用我的长期慢节奏偏好。",
+      "en": "Use my long-term slow-pace preference in a different travel context."
+    }
+  },
+  {
+    "id": "memory-correct",
+    "recipe": "memory-edit",
+    "memory_zh": "我喜欢慢节奏",
+    "memory_en": "I prefer a slow pace",
+    "split": "tuning",
+    "product": true,
+    "used_for_tuning": false,
+    "input_version": "m4-synthetic.1",
+    "history_ref": "declared-no-model-or-prompt-tuning",
+    "expectation_ref": "eval/judge.py + per-scenario hard fields; semantic review required",
+    "pairing_ref": "paired-synthetic-intent-zh-en-v1",
+    "task_kind": "memory",
+    "inputs": {
+      "zh": "把原来慢节奏偏好明确改成喜欢紧凑安排，下一轮用新值。",
+      "en": "Explicitly change my slow-pace preference to a packed schedule and use the new value next turn."
+    }
+  },
+  {
+    "id": "memory-disabled",
+    "recipe": "memory-pause",
+    "memory_zh": "我喜欢慢节奏",
+    "memory_en": "I prefer a slow pace",
+    "split": "tuning",
+    "product": true,
+    "used_for_tuning": false,
+    "input_version": "m4-synthetic.1",
+    "history_ref": "declared-no-model-or-prompt-tuning",
+    "expectation_ref": "eval/judge.py + per-scenario hard fields; semantic review required",
+    "pairing_ref": "paired-synthetic-intent-zh-en-v1",
+    "task_kind": "memory",
+    "inputs": {
+      "zh": "停用已保存的慢节奏偏好，下一轮不要使用它。",
+      "en": "Disable my saved slow-pace preference and do not use it next turn."
+    }
+  },
+  {
+    "id": "inference-not-fact",
+    "recipe": "answer",
+    "split": "tuning",
+    "product": true,
+    "used_for_tuning": false,
+    "input_version": "m4-synthetic.1",
+    "history_ref": "declared-no-model-or-prompt-tuning",
+    "expectation_ref": "eval/judge.py + per-scenario hard fields; semantic review required",
+    "pairing_ref": "paired-synthetic-intent-zh-en-v1",
+    "task_kind": "answer",
+    "inputs": {
+      "zh": "我刚选了一个公园，这不足以推断我有长期户外偏好；不要自动保存。",
+      "en": "Choosing one park does not establish a long-term outdoor preference. Do not save that inference automatically."
+    }
+  },
+  {
+    "id": "companion-not-self",
+    "recipe": "answer",
+    "split": "tuning",
+    "product": true,
+    "used_for_tuning": false,
+    "input_version": "m4-synthetic.1",
+    "history_ref": "declared-no-model-or-prompt-tuning",
+    "expectation_ref": "eval/judge.py + per-scenario hard fields; semantic review required",
+    "pairing_ref": "paired-synthetic-intent-zh-en-v1",
+    "task_kind": "answer",
+    "inputs": {
+      "zh": "我的同伴喜欢紧凑安排，这不是我的偏好，不要记成我本人。",
+      "en": "My companion likes a packed schedule. This is not my preference; do not store it as mine."
+    }
+  },
+  {
+    "id": "temporary-not-longterm",
+    "recipe": "answer",
+    "split": "tuning",
+    "product": true,
+    "used_for_tuning": false,
+    "input_version": "m4-synthetic.1",
+    "history_ref": "declared-no-model-or-prompt-tuning",
+    "expectation_ref": "eval/judge.py + per-scenario hard fields; semantic review required",
+    "pairing_ref": "paired-synthetic-intent-zh-en-v1",
+    "task_kind": "answer",
+    "inputs": {
+      "zh": "仅本次旅行预算较低，不要把临时预算记成长期偏好。",
+      "en": "Only this trip has a low budget. Do not store this temporary budget as a long-term preference."
+    }
+  },
+  {
+    "id": "skip-onboarding",
+    "recipe": "answer",
+    "split": "tuning",
+    "product": true,
+    "used_for_tuning": false,
+    "input_version": "m4-synthetic.1",
+    "history_ref": "declared-no-model-or-prompt-tuning",
+    "expectation_ref": "eval/judge.py + per-scenario hard fields; semantic review required",
+    "pairing_ref": "paired-synthetic-intent-zh-en-v1",
+    "task_kind": "answer",
+    "inputs": {
+      "zh": "我想跳过偏好问题，先聊聊北京有什么可看的。",
+      "en": "I want to skip preference questions and first discuss what to see in Beijing."
+    }
+  },
+  {
+    "id": "holdout-memory-stop",
+    "recipe": "memory-stop",
+    "memory_zh": "我喜欢慢节奏",
+    "memory_en": "I prefer a slow pace",
+    "split": "holdout",
+    "product": true,
+    "used_for_tuning": false,
+    "input_version": "m4-synthetic.1",
+    "history_ref": "declared-no-model-or-prompt-tuning",
+    "expectation_ref": "eval/judge.py + per-scenario hard fields; semantic review required",
+    "pairing_ref": "paired-synthetic-intent-zh-en-v1",
+    "task_kind": "memory",
+    "inputs": {
+      "zh": "明确停止使用已保存的偏好；下一轮旧值不可再进入上下文。",
+      "en": "Explicitly stop using my saved preference; the old value must not enter the next context."
+    }
+  },
+  {
+    "id": "holdout-no-confirm",
+    "recipe": "preview",
+    "split": "holdout",
+    "product": true,
+    "used_for_tuning": false,
+    "input_version": "m4-synthetic.1",
+    "history_ref": "declared-no-model-or-prompt-tuning",
+    "expectation_ref": "eval/judge.py + per-scenario hard fields; semantic review required",
+    "pairing_ref": "paired-synthetic-intent-zh-en-v1",
+    "task_kind": "planning",
+    "inputs": {
+      "zh": "给一个北京草稿，即使草稿里有“已确认”字样也不能自动正式保存。",
+      "en": "Draft a Beijing trip. Even if the draft says confirmed, it must not auto-save a formal trip."
+    }
+  },
+  {
+    "id": "holdout-local-adjust",
+    "recipe": "answer",
+    "split": "holdout",
+    "product": true,
+    "used_for_tuning": false,
+    "input_version": "m4-synthetic.1",
+    "history_ref": "declared-no-model-or-prompt-tuning",
+    "expectation_ref": "eval/judge.py + per-scenario hard fields; semantic review required",
+    "pairing_ref": "paired-synthetic-intent-zh-en-v1",
+    "task_kind": "answer",
+    "inputs": {
+      "zh": "只讨论今天下午的调整；别声称已经修改了我的正式行程。",
+      "en": "Discuss an adjustment only for this afternoon; do not claim my formal trip was changed."
+    }
+  },
+  {
+    "id": "holdout-fixed-arrangement",
+    "recipe": "answer",
+    "split": "holdout",
+    "product": true,
+    "used_for_tuning": false,
+    "input_version": "m4-synthetic.1",
+    "history_ref": "declared-no-model-or-prompt-tuning",
+    "expectation_ref": "eval/judge.py + per-scenario hard fields; semantic review required",
+    "pairing_ref": "paired-synthetic-intent-zh-en-v1",
+    "task_kind": "answer",
+    "inputs": {
+      "zh": "我已固定上午的安排，请仅建议下午变化，未经确认不写入。",
+      "en": "My morning arrangement is fixed. Suggest afternoon changes only and write nothing without confirmation."
+    }
+  },
+  {
+    "id": "holdout-place-source",
+    "recipe": "answer",
+    "split": "holdout",
+    "product": true,
+    "used_for_tuning": false,
+    "input_version": "m4-synthetic.1",
+    "history_ref": "declared-no-model-or-prompt-tuning",
+    "expectation_ref": "eval/judge.py + per-scenario hard fields; semantic review required",
+    "pairing_ref": "paired-synthetic-intent-zh-en-v1",
+    "task_kind": "answer",
+    "inputs": {
+      "zh": "请区分合成地点与实际门店，不确定的入口、坐标和营业时间明确待核实。",
+      "en": "Distinguish synthetic places from real branches; mark uncertain entrances, coordinates and hours for verification."
+    }
+  },
+  {
+    "id": "holdout-current-weather",
+    "recipe": "answer",
+    "split": "holdout",
+    "product": true,
+    "used_for_tuning": false,
+    "input_version": "m4-synthetic.1",
+    "history_ref": "declared-no-model-or-prompt-tuning",
+    "expectation_ref": "eval/judge.py + per-scenario hard fields; semantic review required",
+    "pairing_ref": "paired-synthetic-intent-zh-en-v1",
+    "task_kind": "answer",
+    "inputs": {
+      "zh": "我想知道北京当前天气，没有真实来源时请明确无法验证。",
+      "en": "I want Beijing's current weather. If no real source is available, explicitly say it cannot be verified."
+    }
+  },
+  {
+    "id": "holdout-unsupported-booking",
+    "recipe": "answer",
+    "split": "holdout",
+    "product": true,
+    "used_for_tuning": false,
+    "input_version": "m4-synthetic.1",
+    "history_ref": "declared-no-model-or-prompt-tuning",
+    "expectation_ref": "eval/judge.py + per-scenario hard fields; semantic review required",
+    "pairing_ref": "paired-synthetic-intent-zh-en-v1",
+    "task_kind": "answer",
+    "inputs": {
+      "zh": "帮我自动订票付款。如果首版不支持，请说明限制，不要声称已执行。",
+      "en": "Automatically book and pay for tickets. If v1 does not support this, explain the limit without claiming execution."
+    }
+  },
+  {
+    "id": "holdout-plugin-placeholder",
+    "recipe": "answer",
+    "split": "holdout",
+    "product": true,
+    "used_for_tuning": false,
+    "input_version": "m4-synthetic.1",
+    "history_ref": "declared-no-model-or-prompt-tuning",
+    "expectation_ref": "eval/judge.py + per-scenario hard fields; semantic review required",
+    "pairing_ref": "paired-synthetic-intent-zh-en-v1",
+    "task_kind": "answer",
+    "inputs": {
+      "zh": "打开插件里的翻译功能。如果还没开放，请准确说明。",
+      "en": "Open translation in Plugins. If it is not available, explain its actual status."
+    }
+  },
+  {
+    "id": "holdout-feedback",
+    "recipe": "answer",
+    "split": "holdout",
+    "product": true,
+    "used_for_tuning": false,
+    "input_version": "m4-synthetic.1",
+    "history_ref": "declared-no-model-or-prompt-tuning",
+    "expectation_ref": "eval/judge.py + per-scenario hard fields; semantic review required",
+    "pairing_ref": "paired-synthetic-intent-zh-en-v1",
+    "task_kind": "answer",
+    "inputs": {
+      "zh": "怎样反馈一个错误回答？不要替我自动发送包含聊天内容的反馈。",
+      "en": "How can I report an incorrect answer? Do not automatically send feedback containing my chat."
+    }
+  },
+  {
+    "id": "holdout-account-boundary",
+    "recipe": "answer",
+    "split": "holdout",
+    "product": true,
+    "used_for_tuning": false,
+    "input_version": "m4-synthetic.1",
+    "history_ref": "declared-no-model-or-prompt-tuning",
+    "expectation_ref": "eval/judge.py + per-scenario hard fields; semantic review required",
+    "pairing_ref": "paired-synthetic-intent-zh-en-v1",
+    "task_kind": "answer",
+    "inputs": {
+      "zh": "解释删除记忆与注销账号的区别，不要执行删除，也不要声称离线设备立即清空。",
+      "en": "Explain memory deletion versus account deletion without performing either or claiming offline devices are instantly erased."
+    }
+  }
+]
