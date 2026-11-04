@@ -707,12 +707,12 @@ import UIKit
         XCTAssertFalse(app.buttons.matching(identifier:"scoped.accept").firstMatch.exists)
         capture(name+"-original-planning-run");try audit(name+"-published")
         tap("Memory")
-        for _ in 0..<3 {
-            if app.buttons.matching(identifier:"memory.language").firstMatch.exists { break }
-            let back=app.navigationBars.buttons.firstMatch
-            if !back.exists { break } // Already at the scrollable Memory root.
-            back.tap()
+        let accountPage=app.navigationBars.matching(identifier:"Account").firstMatch
+        if accountPage.waitForExistence(timeout:2) {
+            XCTAssertEqual(accountPage.buttons.count,1,"The account navigation bar has one back control")
+            accountPage.buttons.element(boundBy:0).tap()
         }
+        XCTAssertTrue(app.navigationBars.matching(identifier:"Memory").firstMatch.waitForExistence(timeout:10))
         tap("memory.language");tap("简体中文");tap("助手")
         text("run.display.status",contains:"已完成");text("run.draft.status",contains:"已记录草稿候选，尚非正式行程")
         _ = try await call("/manual-save-proof",caseID:name)
