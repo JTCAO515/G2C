@@ -210,7 +210,7 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
                      LocalBudgetRouter(database,registrations=tools_configuration.registrations)))
 
 
-def run_once(database, model, auth_dir, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,background_jobs=None,formal_memory_configuration=None):
+def run_once(database, model, auth_dir, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,background_jobs=None,formal_memory_configuration=None,real_services=None):
     if formal_memory_configuration is not None:
         from cj_api.local_formal_memory import configuration
         formal_memory_configuration=configuration(formal_memory_configuration)
@@ -220,8 +220,15 @@ def run_once(database, model, auth_dir, *, memory_configuration=None,tools_confi
     if not pending_scopes and background_jobs is None: return []
     if database.run_context is None:
         raise CompositionUnavailable('explicit run context required before execution')
-    if not isinstance(model,FakeProvider):
-        raise ProviderFailed('configured local context permits only FakeProvider')
+    if real_services is None:
+        if not isinstance(model,FakeProvider):raise ProviderFailed('configured local context permits only FakeProvider')
+    else:
+        from cj_api.real_services import RealServices,RealTools
+        if (type(real_services) is not RealServices or model is not real_services.model
+                or type(tools_configuration) is not RealTools or tools_configuration.services is not real_services
+                or database.run_context.version!='CJ-LOCAL-RUN@2' or background_jobs is not None):
+            raise ProviderFailed('explicit registered M4 real composition required')
+        for scope in pending_scopes:real_services.require_scope(scope)
     if formal_memory_configuration is None:checker=checker_for(Path(auth_dir))
     else:
         from cj_api.local_account_admission_v2 import account_checker_for
@@ -243,7 +250,7 @@ def main():
     parser.add_argument('--formal-memory-run-policy',type=Path,default=os.environ.get('CJ_LOCAL_FORMAL_MEMORY_RUN_POLICY'))
     parser.add_argument('--travel-context',choices=['message-travel.1'],default=os.environ.get('CJ_LOCAL_TRAVEL_CONTEXT'))
     parser.add_argument('--trip-context',choices=['message-trip.1'],default=os.environ.get('CJ_LOCAL_TRIP_CONTEXT'))
-    parser.add_argument('--tools-profile',choices=['synthetic-v1','synthetic-fact-v1','synthetic-needs-v1'],default=os.environ.get('CJ_LOCAL_TOOLS_PROFILE'))
+    parser.add_argument('--tools-profile',choices=['synthetic-v1','synthetic-fact-v1','synthetic-needs-v1','real-m4'],default=os.environ.get('CJ_LOCAL_TOOLS_PROFILE'))
     parser.add_argument('--draft-profile',choices=['needs-structured.1','needs-current-trip.1'])
     parser.add_argument('--once', action='store_true')
     parser.add_argument('--real', action='store_true')
@@ -251,8 +258,8 @@ def main():
     args = parser.parse_args()
     if args.auth_dir is None:
         parser.error('--auth-dir or CJ_LOCAL_AUTH_DIR is required for local invitations')
-    if args.real:
-        parser.error('local run context permits FakeProvider only; --real is unavailable')
+    if args.real != (args.tools_profile=='real-m4'):
+        parser.error('--real and --tools-profile real-m4 must be explicitly paired')
     if args.run_context is None: parser.error('--run-context or CJ_LOCAL_RUN_CONTEXT is required')
     context=load_run_context(args.run_context)
     audit=logging.getLogger('cj_usage.audit')
@@ -277,8 +284,12 @@ def main():
             parser.error('formal Memory requires an activated formal Trip host')
     if args.draft_profile is not None and args.tools_profile is not None:
         parser.error('explicit NEEDS draft and tool profiles cannot be combined')
-    tools=None
-    if args.tools_profile=='synthetic-v1':
+    tools=None;real_services=None
+    if args.tools_profile=='real-m4':
+        from cj_api.real_services import RealServices,RealTools
+        real_services=RealServices.from_environment(args.auth_dir)
+        tools=RealTools(real_services);model=real_services.model
+    elif args.tools_profile=='synthetic-v1':
         from cj_api.local_tools import LocalTools,SyntheticToolModel
         tools=LocalTools();model=SyntheticToolModel()
     elif args.tools_profile=='synthetic-fact-v1':
@@ -297,7 +308,7 @@ def main():
         else:model=provider(args.real)
     else:raise CompositionUnavailable('unknown tools profile')
     while True:
-        for outcome in run_once(database, model, args.auth_dir, memory_configuration=memory,tools_configuration=tools,draft_profile=args.draft_profile,formal_memory_configuration=formal_memory):
+        for outcome in run_once(database, model, args.auth_dir, memory_configuration=memory,tools_configuration=tools,draft_profile=args.draft_profile,formal_memory_configuration=formal_memory,real_services=real_services):
             print(f'{outcome.status} run={outcome.run_id}'
                   + (f' proposal={outcome.proposal_id}' if outcome.proposal_id else ''), flush=True)
         if args.once:

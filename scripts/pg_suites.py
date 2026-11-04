@@ -609,6 +609,13 @@ def group_supabase_namespace():
 GROUPS.update(supabase_namespace=group_supabase_namespace)
 
 
+def group_real_services():
+    return script('backend/cj_api/tests/real_services_pg.py')
+
+
+GROUPS.update(real_services=group_real_services)
+
+
 def main(argv):
     if argv[:1] == ['--shard']:
         index, count = map(int, argv[1].split('/'))
