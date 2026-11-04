@@ -20,8 +20,12 @@ def control():
     return Path(os.environ['CJ_DEPLOY_CONTROL'])
 
 
+def heartbeat():
+    return Path(os.environ['CJ_DEPLOY_HEARTBEAT'])
+
+
 def write_state(name, value):
-    path = control() / name
+    path = heartbeat() / name
     temporary = path.with_suffix('.tmp')
     temporary.write_text(json.dumps(value, separators=(',', ':')))
     temporary.replace(path)
@@ -35,7 +39,7 @@ def schema(connection):
 def require_configuration():
     if os.environ.get('CJ_ENV') != 'local' or os.environ.get('CJ_DEPLOY_PROVIDER') not in ('fake', 'fake-unavailable'):
         raise ValueError('explicit_local_fake_provider_required')
-    for name in ('CJ_LOCAL_CONNINFO', 'CJ_LOCAL_AUTH_DIR', 'CJ_LOCAL_RUN_CONTEXT', 'CJ_DEPLOY_CONTROL'):
+    for name in ('CJ_LOCAL_CONNINFO', 'CJ_LOCAL_AUTH_DIR', 'CJ_LOCAL_RUN_CONTEXT', 'CJ_DEPLOY_CONTROL','CJ_DEPLOY_HEARTBEAT'):
         if not os.environ.get(name):
             raise ValueError('missing_' + name)
     load_run_context(os.environ['CJ_LOCAL_RUN_CONTEXT'])
@@ -49,13 +53,13 @@ def ready():
         require_release(local_conninfo(os.environ['CJ_LOCAL_CONNINFO']), control())
         with psycopg.connect(**local_conninfo(os.environ['CJ_LOCAL_CONNINFO']), autocommit=True) as conn:
             schema(conn)
-        state = json.loads((control() / 'worker.json').read_text(),
+        state = json.loads((heartbeat() / 'worker.json').read_text(),
                            object_pairs_hook=reject_duplicates(ValueError, 'duplicate heartbeat field'))
         if set(state) != {'at', 'component', 'status'} or not 0 <= time.time() - state['at'] < 15:
             return 'worker_heartbeat_stale'
         if state['status'] != 'ready':
             return state['component'] + '_unavailable'
-        if json.loads((control() / 'model.json').read_text())['status'] != 'ready':
+        if json.loads((heartbeat() / 'model.json').read_text())['status'] != 'ready':
             return 'model_unavailable'
         return None
     except psycopg.Error:
@@ -122,19 +126,22 @@ def worker():
 def initialize():
     require_configuration()
     path = os.environ['CJ_DEPLOY_MIGRATION_CONNINFO']
-    with migrate.connect(path) as conn:
+    config=local_conninfo(path)  # Before the first connection or migration write.
+    from .recovery import require_release,bootstrap
+    existing=(control()/'latest.json').exists()
+    if existing:require_release(config,control())
+    with psycopg.connect(**config,autocommit=True) as conn:
         migrations = migrate.load()
         old = migrate.applied(conn)
         if any(version > migrations[-1]['version'] for version in old):
             raise ValueError('application_schema_mismatch')
         migrate.up(conn, migrations, migrations[-1]['version'])
-    if not (control() / 'latest.json').exists():
-        from .recovery import bootstrap
-        bootstrap(local_conninfo(path), control())
     from local_run_context import provision_budget
     context = load_run_context(os.environ['CJ_LOCAL_RUN_CONTEXT'])
-    for subject in run_worker.invited_subjects(os.environ['CJ_LOCAL_AUTH_DIR']):
-        provision_budget(path, context, subject)
+    def seed_fresh():
+        for subject in run_worker.invited_subjects(os.environ['CJ_LOCAL_AUTH_DIR']):
+            provision_budget(path, context, subject)
+    if not existing:bootstrap(config,control(),initialize=seed_fresh)
 
 
 def main():

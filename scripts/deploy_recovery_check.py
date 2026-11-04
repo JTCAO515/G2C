@@ -32,6 +32,12 @@ def main():
         secret.write_bytes(os.urandom(32))
         secret.chmod(0o600)
         os.environ['CJ_DEPLOY_RECOVERY_KEY_FILE'] = str(secret)
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+        from cryptography.hazmat.primitives import serialization
+        public=root/'recovery.pub'
+        public.write_bytes(Ed25519PrivateKey.from_private_bytes(secret.read_bytes()).public_key().public_bytes(
+            serialization.Encoding.Raw,serialization.PublicFormat.Raw))
+        os.environ['CJ_DEPLOY_RECOVERY_PUBLIC_KEY_FILE']=str(public)
         os.environ['PATH'] = str(pg_suites.bindir()) + os.pathsep + os.environ['PATH']
         with pg_suites.cluster('deploy-recovery', port=55865, role='cj_recovery_operator',
                               root=root / 'pg', socket=root / 's') as config:
@@ -40,6 +46,7 @@ def main():
             with psycopg.connect(**config, autocommit=True) as conn:
                 chain = migrate.load()
                 migrate.up(conn, chain, chain[-1]['version'])
+            recovery.bootstrap(config,control)
             account_root, memory_root = root / 'account', root / 'memory'
             account_root.mkdir()
             memory_root.mkdir()
@@ -120,6 +127,16 @@ def main():
                     conn.rollback()
                 else:
                     raise AssertionError('retired account namespace recreated after recovery')
+            # Normal restart validates the original release and never reruns
+            # first-boot invitation provisioning through the administrator.
+            from deploy.entrypoint import initialize
+            env=dict(CJ_DEPLOY_PROVIDER='fake',CJ_DEPLOY_CONTROL=str(control),CJ_DEPLOY_HEARTBEAT=str(root/'heartbeat'),
+                CJ_DEPLOY_MIGRATION_CONNINFO=str(target_path),CJ_LOCAL_CONNINFO=str(target_path),
+                CJ_LOCAL_AUTH_DIR=str(account_root/'auth'),CJ_LOCAL_RUN_CONTEXT=str(account_root/'run.json'))
+            with patch.dict(os.environ,env):initialize()
+            with psycopg.connect(**target) as conn:
+                assert conn.execute('SELECT count(*) FROM cj_message_scope WHERE scope=%s',(owner,)).fetchone()==(0,)
+                assert conn.execute('SELECT count(*) FROM cj_local_run_protection WHERE scope=%s',(owner,)).fetchone()==(0,)
             with psycopg.connect(**target, autocommit=True) as conn:
                 try:
                     migrate.down(conn, chain, 47)
@@ -127,6 +144,30 @@ def main():
                     pass
                 else:
                     raise AssertionError('populated rollback accepted')
+            # A later deletion makes reusing the already consumed safety
+            # checkpoint unsafe. A second new empty target cannot be released.
+            with psycopg.connect(**target) as conn:
+                conn.execute("INSERT INTO cj_memory_erasure_fence(scope_digest,kind,reference_sha256) VALUES(%s,'item',%s)",('a'*64,'b'*64))
+            second=dict(config,dbname='second_restore')
+            with psycopg.connect(**config,autocommit=True) as conn:
+                conn.execute('CREATE DATABASE second_restore TEMPLATE template0')
+            # Preserve the signed release as an operator would during an
+            # unintended direct restore. The archive's token is never live.
+            original_release=(control/'release.json').read_bytes()
+            import subprocess
+            with psycopg.connect(**config,autocommit=True) as conn:
+                conn.execute('DROP DATABASE restored')
+                conn.execute('CREATE DATABASE restored TEMPLATE template0')
+            subprocess.run(['pg_restore','--exit-on-error','--single-transaction','--no-owner','--dbname=restored',str(base/'database.dump')],
+                env=recovery.pg_environment(config),check=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+            assert (control/'release.json').read_bytes()==original_release
+            try:recovery.require_release(target,control)
+            except ValueError:pass
+            else:raise AssertionError('older same-lineage backup passed current release')
+            try:recovery.restore(second,base,safety,control)
+            except ValueError:pass
+            else:raise AssertionError('used safety checkpoint erased a later permanent fence')
+            assert not (control/'release.json').exists()
             # A mutated safety artifact fails authentication/hash before any write.
             with (safety / 'database.dump').open('ab') as stream:
                 stream.write(b'corrupt')

@@ -36,7 +36,7 @@ def main():
             time.sleep(0.5)
         raise AssertionError('deployment did not recover readiness')
 
-    headers = {'Authorization': 'Bearer ' + dev_auth.token(args.root / 'config/auth', 'synthetic-alice', 30),
+    headers = {'Authorization': 'Bearer ' + dev_auth.token(args.root / 'config/runtime/auth', 'synthetic-alice', 30),
                'Content-Type': 'application/octet-stream'}
     with httpx.Client(base_url=base, trust_env=False, timeout=5) as client:
         wait_ready(client)

@@ -1,6 +1,7 @@
 -- local runtime only: immutable instance identity and readiness metadata, no business data.
 CREATE TABLE cj.deployment_identity (
  singleton boolean PRIMARY KEY CHECK(singleton),
+ lineage uuid NOT NULL DEFAULT gen_random_uuid(),
  instance uuid NOT NULL DEFAULT gen_random_uuid()
 );
 INSERT INTO cj.deployment_identity(singleton) VALUES(true);

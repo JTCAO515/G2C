@@ -384,7 +384,7 @@
       "name": "deployment_schema_read",
       "file": "backend/migrations/0048_deployment_schema_read.sql",
       "down": "backend/migrations/down/0048_deployment_schema_read.down.sql",
-      "sha256": "5666236f4deea8b8d84aa2138d9c56cb2e9f2f1b5a0fc7bf6a3f48ef0e049c8d",
+      "sha256": "3bf76317811eab5c23760ccf1ea510a0e6efc6e6e9b3d96e91d6ffc19a90b33a",
       "down_sha256": "03d3541b913fbbf7c3a05af46f6d24f7554174676f217ea487c1bbb617f42a32"
     }
   ]

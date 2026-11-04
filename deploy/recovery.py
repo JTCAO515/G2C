@@ -6,7 +6,8 @@ all historical copies were physically erased by their canonical domain owners.
 """
 import argparse
 import hashlib
-import hmac
+from contextlib import contextmanager
+import fcntl
 import json
 import os
 from pathlib import Path
@@ -16,6 +17,8 @@ import tempfile
 import time
 
 import psycopg
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey,Ed25519PublicKey
 from cj_strict_json import reject_duplicates
 import migrate
 
@@ -30,12 +33,13 @@ def read_json(path):
     return json.loads(Path(path).read_bytes(), object_pairs_hook=reject_duplicates(ValueError, 'duplicate field'))
 
 
-def key():
-    path = Path(os.environ['CJ_DEPLOY_RECOVERY_KEY_FILE'])
+def key(*,public=False):
+    path = Path(os.environ['CJ_DEPLOY_RECOVERY_PUBLIC_KEY_FILE' if public else 'CJ_DEPLOY_RECOVERY_KEY_FILE'])
     descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
     with os.fdopen(descriptor, 'rb') as stream:
         metadata = os.fstat(stream.fileno())
-        if not stat.S_ISREG(metadata.st_mode) or stat.S_IMODE(metadata.st_mode) != 0o600:
+        mode=stat.S_IMODE(metadata.st_mode)
+        if not stat.S_ISREG(metadata.st_mode) or (mode&0o022 if public else mode!=0o600):
             raise ValueError('private_recovery_key_required')
         value = stream.read(33)
     if len(value) != 32:
@@ -44,21 +48,21 @@ def key():
 
 
 def signed(value):
-    return dict(value=value, signature=hmac.digest(key(), canonical(value), 'sha256').hex())
+    return dict(value=value, signature=Ed25519PrivateKey.from_private_bytes(key()).sign(canonical(value)).hex())
 
 
 def verified(path):
     envelope = read_json(path)
-    if set(envelope) != {'value', 'signature'} or not hmac.compare_digest(
-            envelope['signature'], signed(envelope['value'])['signature']):
-        raise ValueError('recovery_signature_invalid')
+    if set(envelope) != {'value','signature'}:raise ValueError('recovery_signature_invalid')
+    try:Ed25519PublicKey.from_public_bytes(key(public=True)).verify(bytes.fromhex(envelope['signature']),canonical(envelope['value']))
+    except InvalidSignature:raise ValueError('recovery_signature_invalid') from None
     return envelope['value']
 
 
-def atomic(path, value):
+def atomic(path, value, *, public=False):
     temporary = path.with_suffix('.tmp')
     with temporary.open('x') as stream:
-        os.chmod(temporary, 0o600)
+        os.chmod(temporary, 0o644 if public else 0o600)
         json.dump(signed(value), stream)
         stream.flush()
         os.fsync(stream.fileno())
@@ -77,6 +81,13 @@ def invalidate_release(control):
     sync_directory(control)
 
 
+@contextmanager
+def control_lock(control):
+    with (control/'operator.lock').open('a') as lock:
+        fcntl.flock(lock,fcntl.LOCK_EX)
+        yield
+
+
 def connection(path):
     # Reuse the exact local-only boundary. No cloud, DSN/environment fallback.
     from cj_api.local_app import local_conninfo
@@ -91,6 +102,14 @@ def identity(conn):
     row=conn.execute('SELECT instance::text FROM cj.deployment_identity WHERE singleton').fetchone()
     if row is None:raise ValueError('database_instance_identity_missing')
     return row[0]
+
+
+def lineage(conn):
+    return conn.execute('SELECT lineage::text FROM cj.deployment_identity WHERE singleton').fetchone()[0]
+
+
+def rotate(conn):
+    return conn.execute('UPDATE cj.deployment_identity SET instance=gen_random_uuid() WHERE singleton RETURNING instance::text').fetchone()[0]
 
 
 def fence_state(conn):
@@ -115,26 +134,30 @@ def checksum(path):
         return hashlib.file_digest(stream, 'sha256').hexdigest()
 
 
-def backup(config, destination, control, *, base=None):
+def backup(config,destination,control,*,base=None):
+    with control_lock(control):return _backup(config,destination,control,base=base)
+
+
+def _backup(config, destination, control, *, base=None):
+    require_release(config,control)
+    current=verified(control/'latest.json')
     destination.mkdir(mode=0o700)  # Refuse an existing package; no overwrite.
     prior = verified(base / 'manifest.json') if base is not None else None
-    if base is not None:
-        invalidate_release(control)
+    invalidate_release(control)
     with psycopg.connect(**config) as conn:
         conn.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ')
-        if base is not None:
-            if conn.execute("SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND usename IN "
+        if conn.execute("SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND usename IN "
                             "('cj_m1_runtime','cj_local_cleanup') LIMIT 1").fetchone():
-                raise ValueError('stop_and_drain_writers_before_safety_checkpoint')
-            for table in migrate.inventory(conn):
-                conn.execute('LOCK TABLE ' + table + ' IN SHARE MODE')
+            raise ValueError('stop_and_drain_writers_before_checkpoint')
+        for table in migrate.inventory(conn):conn.execute('LOCK TABLE ' + table + ' IN SHARE MODE')
         versions = migrate.applied(conn)
         if versions != [m['version'] for m in migrate.load()]:
             raise ValueError('application_schema_mismatch')
         fences = fence_state(conn)
         instance=identity(conn)
+        family=lineage(conn)
         if prior is not None:
-            if prior['source'] != fingerprint(config) or prior['instance'] != instance or prior['schema'] != versions:
+            if prior['source'] != fingerprint(config) or prior['lineage'] != family or prior['schema'] != versions:
                 raise ValueError('safety_source_or_schema_differs')
             # Account and item/run fences are immutable; history fence erased
             # may change false->true and is checked through the complete snapshot.
@@ -148,27 +171,39 @@ def backup(config, destination, control, *, base=None):
             subprocess.run(['pg_dump', '--format=custom', '--no-owner', '--snapshot=' + snapshot],
                            env=pg_environment(config), stdout=output, stderr=subprocess.PIPE, check=True)
         value = dict(version='g2c-local-full-checkpoint.1', source=fingerprint(config),
-                     instance=instance,schema=versions, fences=fences, dump_sha256=checksum(dump), at=time.time(),
+                     instance=instance,lineage=family,schema=versions, fences=fences, dump_sha256=checksum(dump), at=time.time(),
                      base=None if prior is None else prior['dump_sha256'])
         atomic(destination / 'manifest.json', value)
+        active=rotate(conn)
+    # No exported archive retains the currently released live-instance token.
+    # A normal backup resumes only its exact source with a new signed token.
+    if base is None:
+        current.update(active_instance=active,lineage=family)
+        atomic(control/'latest.json',current,public=True)
+        atomic(control/'release.json',dict(target=fingerprint(config),database_identity=active,
+            lineage=family,checkpoint=current['dump_sha256']),public=True)
     if base is not None:
-        atomic(control / 'latest.json', dict(dump_sha256=value['dump_sha256'], at=value['at']))
-        # Any earlier release must be invalidated before a restore can start.
-        invalidate_release(control)
+        atomic(control / 'latest.json', dict(dump_sha256=value['dump_sha256'],at=value['at'],
+            consumed=False,active_instance=active,lineage=family),public=True)
     return value
 
 
 def require_release(config, control):
     release = verified(control / 'release.json')
     latest = verified(control / 'latest.json')
-    if release['target'] != fingerprint(config) or release['checkpoint'] != latest['dump_sha256']:
+    if (release['target'] != fingerprint(config) or release['checkpoint'] != latest['dump_sha256']
+            or release['database_identity']!=latest['active_instance'] or release['lineage']!=latest['lineage']):
         raise ValueError('restore_not_released')
     with psycopg.connect(**config, autocommit=True) as conn:
         if identity(conn) != release['database_identity']:
             raise ValueError('restore_target_changed')
 
 
-def bootstrap(config, control):
+def bootstrap(config,control,*,initialize=lambda:None):
+    with control_lock(control):return _bootstrap(config,control,initialize)
+
+
+def _bootstrap(config, control, initialize):
     # Only a database with no business data may acquire an initial release.
     with psycopg.connect(**config) as conn:
         for table in migrate.inventory(conn):
@@ -177,24 +212,33 @@ def bootstrap(config, control):
             if conn.execute('SELECT 1 FROM ' + table + ' LIMIT 1').fetchone() is not None:
                 raise ValueError('bootstrap_requires_empty_business_state')
         oid = identity(conn)
+        family=lineage(conn)
     if (control / 'latest.json').exists() or (control / 'release.json').exists():
         raise ValueError('existing_control_must_not_be_reset')
-    atomic(control / 'latest.json', dict(dump_sha256='fresh', at=time.time()))
-    atomic(control / 'release.json', dict(target=fingerprint(config), database_identity=oid, checkpoint='fresh'))
+    initialize()  # Only after empty-business proof; never on an existing release.
+    atomic(control / 'latest.json', dict(dump_sha256='fresh',at=time.time(),consumed=True,
+        active_instance=oid,lineage=family),public=True)
+    atomic(control / 'release.json', dict(target=fingerprint(config), database_identity=oid,
+        lineage=family,checkpoint='fresh'),public=True)
 
 
 def restore(config, base, safety, control):
+    with control_lock(control):return _restore(config,base,safety,control)
+
+
+def _restore(config,base,safety,control):
     # Invalidate availability even when a subsequent check fails.
     invalidate_release(control)
     original, checkpoint = verified(base / 'manifest.json'), verified(safety / 'manifest.json')
     latest = verified(control / 'latest.json')
     if (checkpoint['base'] != original['dump_sha256'] or checkpoint['source'] != original['source']
             or checkpoint['at'] < original['at'] or checkpoint['schema'] != original['schema']
-            or checkpoint['instance'] != original['instance']
+            or checkpoint['lineage'] != original['lineage'] or checkpoint['lineage']!=latest['lineage']
             or checkpoint['dump_sha256'] != latest['dump_sha256']
             or checksum(base / 'database.dump') != original['dump_sha256']
             or checksum(safety / 'database.dump') != checkpoint['dump_sha256']):
         raise ValueError('latest_complete_checkpoint_required')
+    if latest['consumed']:raise ValueError('checkpoint_already_consumed_obtain_fresh_safety_state')
     with psycopg.connect(**config, autocommit=True) as conn:
         if migrate.inventory(conn):
             raise ValueError('restore_requires_new_empty_database')
@@ -205,6 +249,10 @@ def restore(config, base, safety, control):
                 conn.execute(f'CREATE ROLE {name} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS')
             elif role != (False, False, False, False, False, False):
                 raise ValueError('unsafe_existing_local_role')
+    # Reserve once before the first restore write. Unknown/failed restores do
+    # not silently retry the same checkpoint or authorize another target.
+    latest['consumed']=True
+    atomic(control/'latest.json',latest,public=True)
     # Full current state is the replay unit. This preserves domain-owned
     # physical erasure/proofs, epochs, canonical jobs, original costs/UNKNOWN.
     # No --clean, --disable-triggers, session_replication_role, or old writers.
@@ -230,9 +278,11 @@ def restore(config, base, safety, control):
         if (migrate.applied(conn) != checkpoint['schema'] or fence_state(conn) != checkpoint['fences']
                 or identity(conn)!=checkpoint['instance']):
             raise ValueError('restored_fences_or_schema_differ')
-        oid = identity(conn)
+        oid = rotate(conn)
+    latest.update(active_instance=oid,lineage=checkpoint['lineage'])
+    atomic(control/'latest.json',latest,public=True)
     atomic(control / 'release.json', dict(target=fingerprint(config), database_identity=oid,
-                                          checkpoint=checkpoint['dump_sha256']))
+        lineage=checkpoint['lineage'],checkpoint=checkpoint['dump_sha256']),public=True)
 
 
 def main():

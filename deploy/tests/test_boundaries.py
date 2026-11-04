@@ -4,6 +4,8 @@ from pathlib import Path
 import pytest
 
 from deploy import recovery
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from cryptography.hazmat.primitives import serialization
 
 
 def configure(tmp_path, monkeypatch):
@@ -11,6 +13,10 @@ def configure(tmp_path, monkeypatch):
     path.write_bytes(b'k'*32)  # Explicit synthetic fixture, never a runtime key.
     path.chmod(0o600)
     monkeypatch.setenv('CJ_DEPLOY_RECOVERY_KEY_FILE',str(path))
+    public=tmp_path/'recovery.pub'
+    public.write_bytes(Ed25519PrivateKey.from_private_bytes(path.read_bytes()).public_key().public_bytes(
+        serialization.Encoding.Raw,serialization.PublicFormat.Raw))
+    monkeypatch.setenv('CJ_DEPLOY_RECOVERY_PUBLIC_KEY_FILE',str(public))
     return path
 
 
@@ -50,3 +56,40 @@ def test_wrong_database_target_cannot_use_release(tmp_path,monkeypatch):
     recovery.atomic(tmp_path/'release.json',{'checkpoint':'checkpoint','target':'different','database_oid':1})
     with pytest.raises(ValueError,match='not_released'):
         recovery.require_release({'host':'/synthetic/socket','dbname':'target'},tmp_path)
+
+
+def test_wrong_public_key_cannot_verify_release(tmp_path,monkeypatch):
+    configure(tmp_path,monkeypatch)
+    recovery.atomic(tmp_path/'manifest.json',{'checkpoint':'synthetic'})
+    (tmp_path/'recovery.pub').write_bytes(b'0'*32)
+    with pytest.raises(ValueError,match='signature'):recovery.verified(tmp_path/'manifest.json')
+
+
+def test_nonlocal_migration_is_rejected_before_connection(tmp_path,monkeypatch):
+    import json
+    monkeypatch.setenv('CJ_ENV','local')
+    from deploy import entrypoint
+    from cj_api.composition import CompositionUnavailable
+    path=tmp_path/'migration.json';path.write_text(json.dumps({'host':'nonlocal.invalid','dbname':'synthetic','user':'synthetic'}))
+    monkeypatch.setenv('CJ_DEPLOY_MIGRATION_CONNINFO',str(path))
+    monkeypatch.setattr(entrypoint,'require_configuration',lambda:None)
+    def forbidden(*args,**kwargs):raise AssertionError('must not reach connection driver')
+    monkeypatch.setattr(entrypoint.psycopg,'connect',forbidden)
+    with pytest.raises(CompositionUnavailable):entrypoint.initialize()
+
+
+def test_build_context_uses_committed_allowed_blobs_only(tmp_path):
+    import subprocess
+    from deploy.build import source_context
+    repo=tmp_path/'repo';repo.mkdir();(repo/'scripts').mkdir()
+    subprocess.run(['git','init','-q',str(repo)],check=True)
+    (repo/'scripts/module.py').write_text('COMMITTED=True\n')
+    (repo/'scripts/approved-name.pem').write_text('synthetic-secret')
+    subprocess.run(['git','add','.'],cwd=repo,check=True)
+    subprocess.run(['git','-c','user.name=Synthetic','-c','user.email=synthetic@example.invalid','commit','-qm','fixture'],cwd=repo,check=True)
+    (repo/'scripts/module.py').write_text('DIRTY=True\n')
+    (repo/'scripts/operator-key.pem').write_text('synthetic-untracked-secret')
+    (repo/'scripts/untracked-note.log').write_text('synthetic-log')
+    destination=tmp_path/'context';destination.mkdir();source_context(repo,destination)
+    assert (destination/'scripts/module.py').read_text()=='COMMITTED=True\n'
+    assert sorted(p.name for p in (destination/'scripts').iterdir())==['module.py']
