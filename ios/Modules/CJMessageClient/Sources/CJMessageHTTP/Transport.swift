@@ -20,7 +20,7 @@ public struct MessageEndpoint: Sendable {
         let loopback = url.scheme == "http" && url.host == "127.0.0.1" && url.port != nil
         let deviceLocal: Bool
         #if DEBUG && G2C_M4_DEVICE_ACCEPTANCE
-        deviceLocal = Self.isM4LocalHTTP(url, approvedHost: ProcessInfo.processInfo.environment["G2C_M4_LOCAL_HOST"])
+        deviceLocal = Self.isM4LocalHTTPS(url, approvedHost: ProcessInfo.processInfo.environment["G2C_M4_LOCAL_HOST"])
         #else
         deviceLocal = false
         #endif
@@ -35,8 +35,8 @@ public struct MessageEndpoint: Sendable {
 
     /// M4 local test traffic is limited to one explicitly supplied private IPv4
     /// host. No DNS, public address, implicit port or production opt-in.
-    static func isM4LocalHTTP(_ url: URL, approvedHost: String?) -> Bool {
-        guard let host = approvedHost, url.scheme == "http", url.host == host,
+    static func isM4LocalHTTPS(_ url: URL, approvedHost: String?) -> Bool {
+        guard let host = approvedHost, url.scheme == "https", url.host == host,
               let port = url.port, (1...65535).contains(port) else { return false }
         let fields = host.split(separator: ".", omittingEmptySubsequences: false)
         let bytes = fields.compactMap { UInt8($0) }

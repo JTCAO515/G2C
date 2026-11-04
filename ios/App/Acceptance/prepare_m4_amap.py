@@ -26,10 +26,8 @@ def main():
     os.umask(0o077)
     local = ROOT/'ios/.local-amap-device'
     subprocess.run(['git','check-ignore','-q',str(local)+'/'],cwd=ROOT,check=True)
-    local.mkdir(mode=0o700,exist_ok=True)
+    local.mkdir(mode=0o700)
     sdk = local/'sdk'
-    if sdk.exists():
-        raise ValueError('Preserve prior local build; move the ignored directory before preparing again')
     for name,digest in PINS.items():
         archive=args.sdk_cache/name
         if hashlib.sha256(archive.read_bytes()).hexdigest()!=digest:
@@ -57,7 +55,8 @@ def main():
         except UnicodeError:
             raise ValueError('Invalid local AMap key encoding') from None
         if not key or any(ord(c)<32 for c in key):raise ValueError('Invalid local AMap key configuration')
-        key_file.write_bytes(plistlib.dumps({'apiKey':key}));key_file.chmod(0o600)
+        with key_file.open('xb') as output:
+            output.write(plistlib.dumps({'apiKey':key}))
     elif key_file.exists():
         raise ValueError('Refuse to reuse a previous key without explicit --inject-key')
 

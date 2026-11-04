@@ -211,7 +211,7 @@ struct DevelopmentSessionConfiguration: CustomStringConvertible, CustomReflectab
 
     static func readEndpoint(_ environment: [String: String], key: String = "G2C_DEV_API_BASE_URL") -> URL? {
         guard let rawURL = environment[key],
-              var url = URLComponents(string: rawURL), url.scheme == "http",
+              var url = URLComponents(string: rawURL),
               let port = url.port, (1...65535).contains(port), url.user == nil, url.password == nil,
               url.query == nil, url.fragment == nil, ["", "/"].contains(url.path) else { return nil }
         let approved: Bool
@@ -220,7 +220,7 @@ struct DevelopmentSessionConfiguration: CustomStringConvertible, CustomReflectab
         #else
         approved = false
         #endif
-        guard url.host == "127.0.0.1" || approved else { return nil }
+        guard (url.scheme == "http" && url.host == "127.0.0.1") || (url.scheme == "https" && approved) else { return nil }
         url.path = ""
         return url.url
     }
