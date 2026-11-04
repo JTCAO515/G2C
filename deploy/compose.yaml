@@ -1,0 +1,62 @@
+name: ${COMPOSE_PROJECT_NAME:?explicit local project name required}
+services:
+  database:
+    image: postgres:17-bookworm@sha256:839fbb5a4942a7758dd93e18b42ea5649807491a0545b5eeeb8f0b8bb11857a5
+    environment:
+      POSTGRES_USER: cj_deploy_admin
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD_FILE: /run/secrets/database-password
+    command: [postgres, -c, "listen_addresses=", -c, "unix_socket_permissions=0777"]
+    volumes:
+      - database:/var/lib/postgresql/data
+      - socket:/var/run/postgresql
+      - ${CJ_DEPLOY_CONFIG:?explicit config directory required}:/run/secrets:ro
+    healthcheck:
+      test: [CMD, pg_isready, -h, /var/run/postgresql, -U, cj_deploy_admin, -d, postgres]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+  migrate:
+    image: g2c-m4-local:current
+    user: &user "${CJ_DEPLOY_UID:?explicit uid required}:${CJ_DEPLOY_GID:?explicit gid required}"
+    command: [migrate]
+    environment: &environment
+      CJ_ENV: local
+      CJ_LOCAL_CONNINFO: /run/secrets/runtime.json
+      CJ_DEPLOY_MIGRATION_CONNINFO: /run/secrets/migration.json
+      CJ_LOCAL_AUTH_DIR: /run/secrets/auth
+      CJ_LOCAL_RUN_CONTEXT: /run/secrets/run.json
+      CJ_DEPLOY_CONTROL: /control
+      CJ_DEPLOY_PROVIDER: fake
+      CJ_DEPLOY_RECOVERY_KEY_FILE: /run/secrets/recovery.key
+    volumes: &volumes
+      - socket:/var/run/postgresql
+      - ${CJ_DEPLOY_CONFIG:?explicit config directory required}:/run/secrets:ro
+      - ${CJ_DEPLOY_CONTROL_DIR:?explicit control directory required}:/control
+    depends_on:
+      database: {condition: service_healthy}
+  api:
+    image: g2c-m4-local:current
+    user: *user
+    command: [api]
+    environment: *environment
+    volumes: *volumes
+    ports: ["127.0.0.1:${CJ_DEPLOY_PORT:?explicit loopback port required}:8765"]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    healthcheck:
+      test: [CMD, python, -m, deploy.healthcheck]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+  worker:
+    image: g2c-m4-local:current
+    user: *user
+    command: [worker]
+    environment: *environment
+    volumes: *volumes
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+volumes:
+  database:
+  socket:
