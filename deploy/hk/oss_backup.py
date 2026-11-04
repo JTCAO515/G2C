@@ -14,9 +14,17 @@ BUCKET='g2c-beta-backup'
 
 def client():
     authorization()
-    return oss.Client(oss.Config(region='cn-hongkong',endpoint='https://oss-cn-hongkong-internal.aliyuncs.com',
+    from .oss_quota import Client,require_persistent_control
+    require_persistent_control()
+    return Client(oss.Client(oss.Config(region='cn-hongkong',endpoint='https://oss-cn-hongkong-internal.aliyuncs.com',
         signature_version='v4',credentials_provider=oss.credentials.EnvironmentVariableCredentialsProvider(),
-        retry_max_attempts=1,connect_timeout=10,readwrite_timeout=30,enabled_redirect=False))
+        retry_max_attempts=1,connect_timeout=10,readwrite_timeout=30,enabled_redirect=False)))
+
+
+def object_limit(key):
+    if not re.fullmatch(r'backups/[0-9]{8}T[0-9]{6}Z-[0-9a-f]{64}/(database.dump|manifest.json)',key):
+        raise ValueError('fixed_backup_prefix_and_file_required')
+    return 67108864 if key.endswith('/database.dump') else 1048576
 
 
 def save(path,value):
@@ -30,9 +38,7 @@ def save(path,value):
 
 def upload_file(client,path,key,journal):
     authorization();path=Path(path);journal=Path(journal)
-    if not re.fullmatch(r'backups/[0-9]{8}T[0-9]{6}Z-[0-9a-f]{64}/(database.dump|manifest.json)',key):
-        raise ValueError('fixed_backup_prefix_and_file_required')
-    limit=67108864 if key.endswith('/database.dump') else 1048576
+    limit=object_limit(key)
     if path.stat().st_size>limit:raise ValueError('recoverable_backup_size_limit_required')
     expected=dict(bucket=BUCKET,key=key,size=path.stat().st_size,sha256=checksum(path))
     previous=json.loads(journal.read_bytes()) if journal.exists() else None
@@ -76,8 +82,8 @@ def upload_package(package,journal_root):
 
 def download_file(client,key,path,expected_sha256,*,limit):
     authorization();path=Path(path);journal=path.with_suffix(path.suffix+'.get.json')
-    if (not re.fullmatch(r'backups/[0-9]{8}T[0-9]{6}Z-[0-9a-f]{64}/(database.dump|manifest.json)',key)
-            or not re.fullmatch('[0-9a-f]{64}',expected_sha256)):
+    maximum=object_limit(key)
+    if not re.fullmatch('[0-9a-f]{64}',expected_sha256) or type(limit) is not int or not 1<=limit<=maximum:
         raise ValueError('explicit_original_backup_object_required')
     original=dict(bucket=BUCKET,key=key,sha256=expected_sha256)
     if journal.exists() and json.loads(journal.read_bytes()).get('object')!=original:raise ValueError('original_download_binding_changed')
