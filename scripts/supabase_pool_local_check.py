@@ -12,6 +12,8 @@ sys.path.insert(0,str(ROOT/'scripts'))
 import migrate,pg_suites
 import supabase_pool_gate as gate
 from cj_api.local_app import ISSUER,scope_for
+from cj_api.supabase_test_database import require_identity
+from cj_api.composition import CompositionUnavailable
 
 
 def local_identity(conn):
@@ -51,8 +53,18 @@ def main():
             # local JSON alone never proves a cloud commit or cleanup outcome.
             state=dict(state='SEEDED',scopes=scopes,expected_sha256=gate.digest(data))
             with psycopg.connect(**config,autocommit=True) as conn:
+                # Retained pg_temp relations must never hide persistent contents
+                # or claim TLS. Only this private Unix fixture creates them.
+                from psycopg import sql
+                for table in gate.TABLES:
+                    conn.execute(sql.SQL('CREATE TEMP TABLE {} (LIKE {})').format(sql.Identifier(table),sql.Identifier('public',table)))
+                conn.execute('CREATE TEMP TABLE pg_stat_ssl AS SELECT pg_catalog.pg_backend_pid() AS pid,true AS ssl')
+                assert conn.execute('SELECT count(*) FROM cj_message_scope').fetchone()==(0,)
+                try:require_identity(conn,'cj_pool_target_init')
+                except CompositionUnavailable:pass
+                else:raise AssertionError('temporary pg_stat_ssl masqueraded as encrypted transport')
                 assert gate.original_observation(conn,state,query)['status']=='OWNED_SEED_MATCH'
-                conn.execute('DELETE FROM cj_message_draft WHERE scope=%s',(scopes[0],))
+                conn.execute('DELETE FROM public.cj_message_draft WHERE scope=%s',(scopes[0],))
                 assert gate.original_observation(conn,state,query)['status']=='HOLD_CHANGED_OR_PARTIAL'
                 try:gate.cleanup_owned(conn,state,root/'changed-state.json',query)
                 except gate.GateFailure as error:assert error.args[0]=='owned_seed_changed_cleanup_withheld'

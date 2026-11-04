@@ -54,11 +54,11 @@ class CredentialBoundaries(unittest.TestCase):
     def test_credential_readback_requires_database_TLS(self):
         uri='postgresql://cj_m1_runtime.'+REF+':synthetic-runtime@'+HOST+':5432/postgres'
         state={'credential_sha256':hashlib.sha256(uri.encode()).hexdigest()}
-        conn=MagicMock();conn.execute.return_value.fetchone.return_value=('cj_m1_runtime','cj_m1_runtime',False)+(False,)*8
+        conn=MagicMock();conn.execute.return_value.fetchone.return_value=('cj_m1_runtime','cj_m1_runtime',False)
         pinned=MagicMock();pinned.__enter__.return_value=SimpleNamespace(name='synthetic-pinned-ca')
         with patch.dict(os.environ,{'CJ_ENV':'local'},clear=True),patch.object(operator,'pin_ca',return_value=pinned),patch.object(operator,'keychain',return_value=uri),patch.object(operator.psycopg,'connect') as connect:
             connect.return_value.__enter__.return_value=conn
-            with self.assertRaisesRegex(ValueError,'restricted_runtime_identity'):operator.inspect(Path('synthetic-ca'),state)
+            with self.assertRaises(CompositionUnavailable):operator.inspect(Path('synthetic-ca'),state)
 
 
 if __name__=='__main__':unittest.main()

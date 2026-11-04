@@ -49,18 +49,25 @@ def decode_uri(uri,*,operator=False):
             or not config.get('password') or config.get('sslmode','verify-full') not in ('require','verify-full')):
         raise CompositionUnavailable('fixed project/session/role connection required')
     return dict(config,port=5432,sslmode='verify-full',connect_timeout=10,
-                options='-c statement_timeout=10000 -c lock_timeout=5000 -c search_path=public')
+                options='-c statement_timeout=10000 -c lock_timeout=5000 -c search_path=pg_catalog,public,pg_temp')
 
 
 def discard_session(connection):
     connection.execute('DISCARD ALL')
+    connection.execute('SET search_path TO pg_catalog, public, pg_temp')
     with connection.cursor() as cursor:_require_unbound(cursor)
 
 
 def require_identity(connection,role):
     current_authorization();require_environment()
-    if connection.execute("SELECT current_user,session_user,(SELECT ssl FROM pg_stat_ssl WHERE pid=pg_backend_pid())").fetchone()!=(role,role,True):
+    if connection.execute("SELECT current_user,session_user,(SELECT ssl FROM pg_catalog.pg_stat_ssl WHERE pid=pg_catalog.pg_backend_pid())").fetchone()!=(role,role,True):
         raise CompositionUnavailable('independent login and database-side TLS required')
+
+
+def prepare_owned_session(connection,role):
+    require_identity(connection,role)
+    discard_session(connection)
+    require_identity(connection,role)
 
 
 def pin_ca(ca_file):
@@ -88,11 +95,9 @@ class SupabaseTestDatabase(LocalDatabase):
         current_authorization();require_environment()
         conn=psycopg.connect(**self.conninfo,autocommit=True,prepare_threshold=None)
         try:
-            require_identity(conn,'cj_m1_runtime')
-            # Owned session-mode physical backend: this is an explicit reset,
-            # never overwriting a retained scope with a new tenant's value.
-            discard_session(conn)
-            require_identity(conn,'cj_m1_runtime')
+            # Reset only our owned session, with actual login/TLS checked before
+            # and after. Persistent targets never resolve through pg_temp.
+            prepare_owned_session(conn,'cj_m1_runtime')
             current_authorization();require_environment()
             return conn
         except BaseException:

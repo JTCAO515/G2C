@@ -29,7 +29,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'scripts'))
 sys.path.insert(0,str(ROOT/'backend/agent/tests'))
 from cj_api.local_app import LocalDatabase,create_local_app,scope_for,ISSUER,_require_unbound
-from cj_api.supabase_test_database import decode_uri,pin_ca,current_authorization,discard_session,require_environment,require_identity
+from cj_api.supabase_test_database import decode_uri,pin_ca,current_authorization,discard_session,require_environment,require_identity,prepare_owned_session
 from cj_agent.draft import trip_scope_for
 from cj_message.domain import Service as MessageService
 from cj_trip.confirmation import ConfirmationSigner
@@ -102,7 +102,7 @@ class Query:
         current_authorization();require_environment();self.connections+=1
         connection=psycopg.connect(**config,autocommit=True,prepare_threshold=None)
         try:
-            require_identity(connection,'postgres' if operator else 'cj_m1_runtime')
+            prepare_owned_session(connection,'postgres' if operator else 'cj_m1_runtime')
             return connection
         except BaseException:
             connection.close()
@@ -110,7 +110,7 @@ class Query:
 
 
 def rows(conn,table,scopes,query,*,lock=False):
-    statement=sql.SQL('SELECT * FROM {} WHERE scope=ANY(%s) ORDER BY scope').format(sql.Identifier(table))
+    statement=sql.SQL('SELECT * FROM {} WHERE scope=ANY(%s) ORDER BY scope').format(sql.Identifier('public',table))
     if lock:statement+=sql.SQL(' FOR UPDATE')
     cursor=query.execute(conn,statement,(scopes,))
     columns=[c.name for c in cursor.description]
@@ -132,14 +132,14 @@ def adapt(value):return Jsonb(value) if isinstance(value,(dict,list)) else value
 
 def insert(conn,table,row,query):
     fields=list(row)
-    query.execute(conn,sql.SQL('INSERT INTO {} ({}) VALUES ({})').format(sql.Identifier(table),
+    query.execute(conn,sql.SQL('INSERT INTO {} ({}) VALUES ({})').format(sql.Identifier('public',table),
         sql.SQL(',').join(map(sql.Identifier,fields)),sql.SQL(',').join(sql.Placeholder() for _ in fields)),tuple(adapt(row[k]) for k in fields))
 
 
 def unbound_negatives(conn,templates,query):
     with conn.cursor() as cursor:_require_unbound(cursor)
     for table in TABLES:
-        relation=sql.Identifier(table)
+        relation=sql.Identifier('public',table)
         if query.execute(conn,sql.SQL('SELECT count(*) FROM {}').format(relation)).fetchone()!=(0,):raise GateFailure('unbound_read_not_denied')
         with conn.transaction(force_rollback=True):
             if query.execute(conn,sql.SQL('UPDATE {} SET scope=scope RETURNING scope').format(relation)).fetchall():raise GateFailure('unbound_update_not_denied')
@@ -151,10 +151,10 @@ def unbound_negatives(conn,templates,query):
 
 def bound_negatives(conn,own,other,data,query):
     for table in TABLES:
-        relation=sql.Identifier(table)
+        relation=sql.Identifier('public',table)
         own_scope=trip_scope_for(own) if table.startswith('cj_trip_') else own
         other_scope=trip_scope_for(other) if table.startswith('cj_trip_') else other
-        privileges=query.execute(conn,"SELECT has_table_privilege(current_user,%s,'SELECT'),has_table_privilege(current_user,%s,'UPDATE'),has_table_privilege(current_user,%s,'INSERT')",(table,table,table)).fetchone()
+        privileges=query.execute(conn,"SELECT has_table_privilege(current_user,%s,'SELECT'),has_table_privilege(current_user,%s,'UPDATE'),has_table_privilege(current_user,%s,'INSERT')",('public.'+table,)*3).fetchone()
         if privileges!=(True,True,True):raise GateFailure('positive_table_privileges_required_for_negative_probe')
         if query.execute(conn,sql.SQL('SELECT count(*) FROM {} WHERE scope<>%s').format(relation),(own_scope,)).fetchone()!=(0,):
             raise GateFailure('bound_foreign_read_not_denied')
@@ -240,7 +240,7 @@ def disconnects(config,scopes,data,query):
     result=[];templates={t:items[0] for t,items in data.items()}
     for abrupt in (False,True):
         with query.connect(config) as conn:
-            first=query.execute(conn,"SELECT current_user,(SELECT ssl FROM pg_stat_ssl WHERE pid=pg_backend_pid()),pg_backend_pid()").fetchone()
+            first=query.execute(conn,"SELECT current_user,(SELECT ssl FROM pg_catalog.pg_stat_ssl WHERE pid=pg_backend_pid()),pg_backend_pid()").fetchone()
             if first[:2]!=('cj_m1_runtime',True):raise GateFailure('actual_runtime_TLS_required')
             discard_session(conn)
             require_identity(conn,'cj_m1_runtime')
@@ -253,7 +253,7 @@ def disconnects(config,scopes,data,query):
                 finally:own.close()
                 conn.close()
         with query.connect(config) as conn:
-            next_=query.execute(conn,"SELECT current_user,(SELECT ssl FROM pg_stat_ssl WHERE pid=pg_backend_pid()),pg_backend_pid(),current_setting('cj.message_scope',true),current_setting('cj.trip_scope',true)").fetchone()
+            next_=query.execute(conn,"SELECT current_user,(SELECT ssl FROM pg_catalog.pg_stat_ssl WHERE pid=pg_backend_pid()),pg_backend_pid(),current_setting('cj.message_scope',true),current_setting('cj.trip_scope',true)").fetchone()
             if next_[:2]!=('cj_m1_runtime',True):raise GateFailure('actual_runtime_TLS_required')
             before=('UNKNOWN_different_backend' if next_[2]!=first[2] else
                     'OBSERVED_RETAINED' if any(x not in ('',None) for x in next_[3:]) else 'OBSERVED_CLEAN')
@@ -285,7 +285,7 @@ def cleanup_owned(conn,state,path,query):
         if all(not values for values in actual.values()):return 'ALREADY_EMPTY_CONFIRMED'
         if digest(actual)!=state['expected_sha256']:raise GateFailure('owned_seed_changed_cleanup_withheld')
         state['state']='CLEANUP_INTENT';save(path,state)
-        for table in reversed(TABLES):query.execute(conn,sql.SQL('DELETE FROM {} WHERE scope=ANY(%s)').format(sql.Identifier(table)),(scopes,))
+        for table in reversed(TABLES):query.execute(conn,sql.SQL('DELETE FROM {} WHERE scope=ANY(%s)').format(sql.Identifier('public',table)),(scopes,))
     if original_observation(conn,state,query)['status']!='EMPTY_CONFIRMED':raise GateFailure('owned_gate_cleanup_unconfirmed')
     return 'CONFIRMED_empty_owned_scopes'
 
@@ -307,6 +307,10 @@ def reconcile(ca,state,*,cleanup=False,path=None):
                 instrumented_execute_calls=query.count,total_SQL='UNKNOWN',actual_cost='UNKNOWN')
 
 
+def repeated_run_passed(result):
+    return result['result']['state']=='COMPLETE' and result.get('cloud_observation',{}).get('status')=='EMPTY_CONFIRMED'
+
+
 def run(ca):
     current_authorization();STATE.mkdir(parents=True,exist_ok=True,mode=0o700)
     with (STATE/'lock').open('a') as lock:
@@ -323,7 +327,7 @@ def run(ca):
             runtime=dict(decode_uri(keychain('g2c-supabase-runtime-db')),sslrootcert=pinned.name)
             with query.connect(operator,operator=True) as conn:
                 if migrate.applied(conn)!=[m['version'] for m in migrate.load()]:raise GateFailure('exact_application_schema_required')
-                if query.execute(conn,'SELECT ssl FROM pg_stat_ssl WHERE pid=pg_backend_pid()').fetchone()!=(True,):raise GateFailure('database_side_TLS_required')
+                if query.execute(conn,'SELECT ssl FROM pg_catalog.pg_stat_ssl WHERE pid=pg_backend_pid()').fetchone()!=(True,):raise GateFailure('database_side_TLS_required')
                 if any(rows(conn,t,all_scopes,query) for t in TABLES):raise GateFailure('owned_random_scopes_already_exist')
                 state['state']='SEED_INTENT';save(path,state)
                 with conn.transaction():
@@ -356,11 +360,16 @@ def main():
         with (STATE/'lock').open('a') as lock:
             fcntl.flock(lock,fcntl.LOCK_EX)
             path=STATE/'state.json';result=reconcile(args.ca_file,load_state(path),cleanup=args.command=='cleanup',path=path)
+    if args.command=='run' and result['mode']=='READ_ONLY_ORIGINAL' and not repeated_run_passed(result):
+        result['gate_status']='INCOMPLETE_OR_DRIFT_HOLD'
+        print(json.dumps(result,separators=(',',':')))
+        return 1
     print(json.dumps(result,separators=(',',':')))
+    return 0
 
 
 if __name__=='__main__':
-    try:main()
+    try:raise SystemExit(main())
     except GateFailure as error:
         print(json.dumps(dict(state='FAIL',reason=error.args[0])))
         raise SystemExit(1) from None

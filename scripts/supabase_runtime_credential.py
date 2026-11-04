@@ -19,7 +19,7 @@ from urllib.parse import quote
 import psycopg
 from psycopg import sql
 
-from cj_api.supabase_test_database import decode_uri,pin_ca,current_authorization,require_environment,require_identity,HOST,REF
+from cj_api.supabase_test_database import decode_uri,pin_ca,current_authorization,require_environment,require_identity,prepare_owned_session,HOST,REF
 from cj_strict_json import reject_duplicates
 
 ROOT=Path.home()/'.local/share/g2c/m4-supabase-runtime'
@@ -111,10 +111,11 @@ def inspect(ca,state):
     with pin_ca(ca) as pinned:
         config=dict(decode_uri(uri),sslrootcert=pinned.name)
         with psycopg.connect(**config,autocommit=True,prepare_threshold=None) as conn:
-            row=conn.execute("SELECT current_user,session_user,(SELECT ssl FROM pg_stat_ssl WHERE pid=pg_backend_pid()),"
+            prepare_owned_session(conn,'cj_m1_runtime')
+            row=conn.execute("SELECT current_user,session_user,(SELECT ssl FROM pg_catalog.pg_stat_ssl WHERE pid=pg_backend_pid()),"
                              "rolsuper,rolbypassrls,rolcreatedb,rolcreaterole,rolreplication,rolinherit,"
-                             "EXISTS(SELECT 1 FROM pg_auth_members WHERE member=r.oid),"
-                             "EXISTS(SELECT 1 FROM pg_class WHERE relowner=r.oid) FROM pg_roles r WHERE rolname=current_user").fetchone()
+                             "EXISTS(SELECT 1 FROM pg_catalog.pg_auth_members WHERE member=r.oid),"
+                             "EXISTS(SELECT 1 FROM pg_catalog.pg_class WHERE relowner=r.oid) FROM pg_catalog.pg_roles r WHERE rolname=current_user").fetchone()
     if row is None or row[:3]!=('cj_m1_runtime','cj_m1_runtime',True) or row[3:]!=(False,)*8:
         raise ValueError('restricted_runtime_identity_required')
     return dict(identity=row[0],session_identity=row[1],pooler_to_database_tls=row[2],
@@ -123,8 +124,8 @@ def inspect(ca,state):
 
 def role_safety(conn):
     before=conn.execute("SELECT rolcanlogin,rolsuper,rolbypassrls,rolcreatedb,rolcreaterole,rolreplication,rolinherit,"
-        "EXISTS(SELECT 1 FROM pg_auth_members WHERE member=r.oid),EXISTS(SELECT 1 FROM pg_class WHERE relowner=r.oid),"
-        "(SELECT count(*) FROM pg_stat_activity WHERE usename='cj_m1_runtime') FROM pg_roles r WHERE rolname='cj_m1_runtime'").fetchone()
+        "EXISTS(SELECT 1 FROM pg_catalog.pg_auth_members WHERE member=r.oid),EXISTS(SELECT 1 FROM pg_catalog.pg_class WHERE relowner=r.oid),"
+        "(SELECT count(*) FROM pg_catalog.pg_stat_activity WHERE usename='cj_m1_runtime') FROM pg_catalog.pg_roles r WHERE rolname='cj_m1_runtime'").fetchone()
     if before!=(True,False,False,False,False,False,False,False,False,0):
         raise ValueError('existing_idle_restricted_runtime_role_required')
 
@@ -143,7 +144,7 @@ def apply(ca):
         with pin_ca(ca) as pinned:
             config=dict(decode_uri(operator,operator=True),sslrootcert=pinned.name)
             with psycopg.connect(**config,autocommit=True,prepare_threshold=None) as conn:
-                require_identity(conn,'postgres')
+                prepare_owned_session(conn,'postgres')
                 role_safety(conn)
                 password=secrets.token_urlsafe(48)
                 uri='postgresql://cj_m1_runtime.'+REF+':'+quote(password,safe='')+'@'+HOST+':5432/postgres?sslmode=verify-full'
