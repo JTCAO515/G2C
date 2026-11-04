@@ -1,11 +1,12 @@
 # M4 高德本地开发配置（#398）
 
 此配置仅供 M4 授权条目 1、2 的指定 iPhone 开发测试。普通工程、CI、
-模拟器及 Release/Production 不依赖高德库或 Key；MapKit 保留。JT 当前要求
-先跳过真机，待连接通知后才签名、安装和执行下述真机步骤。
+模拟器及 Release/Production 不依赖高德库或 Key；MapKit 保留。JT 已于
+2026-11-04 通知指定 iPhone 已连接并恢复 Goal，可按条目 1、2 执行开发测试。
 
-SDK 许可与隐私条款版本/生效日期目前 UNKNOWN；Part 2 首次载入前须从官方材料
-核实并记录版本和日期，再同步 #34/#225。本地编译不表示已完成许可或隐私验收。
+条款只读登记见 #398：服务协议更新 2025-12-03；隐私政策更新 2026-09-09、
+生效 2026-09-16；技术服务使用许可协议页面未列日期，保留 UNKNOWN。
+首次载入前复核并同步 #34/#225。登记日期或编译不表示已购买许可或完成隐私验收。
 
 ## SDK 与无秘密编译
 
@@ -53,8 +54,12 @@ Bundle ID；加载资源时再次核对该 ID。主工程 Debug 的
 `G2C_DEV_*_URL` 使用完全相同 host 的 `https://<host>:<port>`。配置必须提供端口，
 不得含凭据、路径、查询或片段；DNS、公网与其他 host 均拒绝。设备配置也拒绝
 手机自己的 loopback；原 loopback HTTP 只供 Mac/模拟器。跨主机 HTTP 拒绝；
-本地 API 必须提供设备系统信任、地址匹配且有效的 TLS 证书，沿用 URLSession
-默认校验，不接受自签名旁路或信任回调。当前 TLS 启动与设备信任尚未验收。未定义设备编译
+本地 API 必须提供地址匹配且有效的 TLS 证书。JT 已在本轮会话另批一套有效期
+24 小时的临时本机 TLS 证书/私钥，登记在 #495：私钥仅开发 Mac 的 0600 文件，
+公钥只进忽略的 Debug 包，不装全局根证书。设备 Debug 的专用回调须同时匹配
+host、端口与完整叶证书 DER，再以 SSL 主机名策略及 SecTrustEvaluateWithError
+检查有效期和信任；仅该叶作为锚点，拒绝其他叶、错误地址/端口和过期证书。
+其他主机沿用系统默认验证，原路由与重定向门禁保留。未定义设备编译
 标志时仍只接受原 loopback。仅 Debug 含本地网络 ATS 与用途说明，其他配置删除
 两者；不申请定位权限。真实签名 API/受限 PG/FakeProvider 的启动配置沿用已有
 验收驱动，设备可达监听与访问控制需在实际执行时核实，不能冒称已跑通。
@@ -62,6 +67,25 @@ Bundle ID；加载资源时再次核对该 ID。主工程 Debug 的
 保留签名 token、当前 session/owner、每条路由/版本/原动作校验、请求/响应上限和
 禁止重定向。此配置不新增 HTTPS 测试域名业务写权限；等 B 在 #30 通知测试域名
 就绪，再接 `https://api-beta.go2china.space` 并单独复验。
+
+设备驱动仍复用原签名 API/受限 PG/FakeProvider 的正式来源链。先在仓库外准备
+`operator.json`（版本 `G2C-M4-LOCAL-TLS.1`、明确私网 `host`、获准 `team`），同目录
+保留 `server.pem`、0600 的 `server.key` 和 `G2CM4LocalServer.cer`。驱动默认不发现
+或创建密钥，只消费这份明确配置；控制接口另有每轮临时令牌，未授权请求拒绝。
+
+```sh
+CJ_PG_BINDIR='<PostgreSQL-17-bin>' uv run --locked python -B \
+  ios/App/Acceptance/check_scoped_messages.py --device '<approved-iPhone-UDID>' \
+  --local-tls '<external-directory>/operator.json' --amap-device \
+  --case testFormalPlaceMapEnglish --run-context '<explicit-context.json>' \
+  --output '<new-external-evidence>' --build-dir '<external-build-cache>'
+```
+
+`--device` 与 `--simulator` 互斥，不把旧模拟器 PASS 移算真机。普通模拟器路径不变。
+设备最大字号必须实际设置系统字号；模拟器故障开关也不当作真机断网证明。
+TLS 单测使用外部公钥路径、SAN 主机和固定有效时刻（`G2C_M4_TLS_TEST_CERT`、
+`G2C_M4_TLS_TEST_HOST`、`G2C_M4_TLS_TEST_TIME`），不读取私钥，不固定某台 Mac 的地址。
+验收结束移除临时私钥、本地注入资源及本轮设备包，证书到期不得自动重建续期。
 
 ## 地图与验收记录
 

@@ -18,6 +18,9 @@ import Foundation
         let largest_recovery:Bool?
         let map_points:[MapPoint]?
         let map_loading_failure:Bool?
+        let device_host:String?
+        let device_port:String?
+        let amap:Bool?
     }
     private struct MapPoint:Decodable {
         let id,provider_id,name_zh,state,snapshot_sha256:String
@@ -42,7 +45,11 @@ import Foundation
     private func call(_ path:String,caseID:String) async throws -> Data {
         var url=URLComponents(string:control+path)!
         url.queryItems=[.init(name:"case",value:caseID)]
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        let (data,response)=try await M4DeviceControl.data(from:XCTUnwrap(url.url))
+        #else
         let (data,response)=try await URLSession.shared.data(from:XCTUnwrap(url.url))
+        #endif
         XCTAssertEqual((response as? HTTPURLResponse)?.statusCode,200)
         return data
     }
@@ -126,6 +133,10 @@ import Foundation
             "G2C_DEV_TRAVEL_PROFILE":String(data:try JSONSerialization.data(withJSONObject:["version":"app-travel.1","travel_ids":[f.namespace]]),encoding:.utf8)!,
             "G2C_DEV_TYPED_MEMORY_PROFILE":"{\"version\":\"app-memory.2\",\"subjects\":[\"self\"],\"slots\":{\"food\":{\"kind\":\"preference\",\"collection_allowed\":true,\"semantic_resolved\":true},\"pace\":{\"kind\":\"preference\",\"collection_allowed\":true,\"semantic_resolved\":true}},\"extents\":[\"long_term\",\"current\"]}",
             "G2C_DEV_TYPED_MEMORY_URL":f.endpoint]
+        if let host=f.device_host {
+            app.launchEnvironment["G2C_M4_LOCAL_HOST"]=host
+            app.launchEnvironment["G2C_M4_LOCAL_PORT"]=try XCTUnwrap(f.device_port)
+        }
         if f.manual_profile == true { app.launchEnvironment["G2C_DEV_TRIP_MANUAL_PROFILE"]="manual-v1" }
         if f.manual_only == true {
             for key in ["G2C_DEV_MESSAGE_PROFILE","G2C_DEV_TRAVEL_PROFILE","G2C_DEV_TYPED_MEMORY_PROFILE","G2C_DEV_TYPED_MEMORY_URL"] { app.launchEnvironment.removeValue(forKey:key) }
@@ -210,6 +221,17 @@ import Foundation
                 for point in points { text("trip.map.status."+point.id,contains:language=="en" ? "no marker" : "不画点") }
             } else {
                 tap("trip.map.show")
+                if f.amap == true {
+                    // The test must observe the gate, not infer consent from an
+                    // already-created native SDK view or reuse a prior launch.
+                    XCTAssertFalse(app.descendants(matching:.any).matching(identifier:"trip.map.canvas").firstMatch.exists)
+                    XCTAssertTrue(app.buttons.matching(identifier:"trip.map.consent").firstMatch.exists)
+                    tap("trip.map.consent")
+                    let canvas=app.descendants(matching:.any).matching(identifier:"trip.map.canvas").firstMatch
+                    XCTAssertTrue(canvas.waitForExistence(timeout:15))
+                    let loaded=XCTNSPredicateExpectation(predicate:NSPredicate(format:"value BEGINSWITH %@","loaded|map-creations:"),object:canvas)
+                    XCTAssertEqual(XCTWaiter.wait(for:[loaded],timeout:60),.completed,"AMap SDK did not report a successful map load")
+                }
                 if f.map_loading_failure == true {
                     text("trip.map.unavailable",contains:language=="en" ? "Map unavailable" : "地图暂不可用")
                     XCTAssertEqual(app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.map.marker.")).count,0)

@@ -28,10 +28,16 @@ import Foundation
         for pair in zip(buttons, buttons.dropFirst()) { XCTAssertLessThan(pair.0.frame.midX, pair.1.frame.midX) }
     }
 
-    private func tap(_ label: String) {
+    private func visibleControl(_ label: String) -> XCUIElement {
         let tab = ["Assistant","Trips","Plugins","Memory","助手","行程","插件","记忆"].contains(label)
         let identifier = ["Privacy notice (beta)","隐私说明（内测版）"].contains(label) ? "memory.privacy" : label
-        let element = tab ? app.tabBars.buttons.matching(identifier:identifier).firstMatch : app.buttons.matching(identifier:identifier).firstMatch
+        let element: XCUIElement
+        if tab { element = app.tabBars.buttons.matching(identifier:identifier).firstMatch }
+        else if identifier == "support.email" {
+            // SwiftUI Link has different AX element types across supported OSes.
+            // Its exact product identifier is stable; no mail composition is sent.
+            element = app.descendants(matching:.any).matching(identifier:identifier).firstMatch
+        } else { element = app.buttons.matching(identifier:identifier).firstMatch }
         if !tab {
             for attempt in 0..<30 {
                 let navigation = app.navigationBars.firstMatch
@@ -41,13 +47,19 @@ import Foundation
                 let frame = element.exists ? element.frame : .zero
                 if element.exists && element.isHittable && frame.midY>top && frame.midY<bottom { break }
                 let located = !frame.isEmpty && frame.midY.isFinite
-                if located ? frame.midY<=top : attempt>=15 { app.swipeDown() }
-                else { app.swipeUp() }
+                let down = located ? frame.midY<=top : attempt>=15
+                let middle = (top+bottom)/2, step = min(150,(bottom-top)*0.35)
+                let start = app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:app.frame.width*0.85,dy:middle+(down ? -step : step)))
+                let end = app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:app.frame.width*0.85,dy:middle+(down ? step : -step)))
+                start.press(forDuration:0.05,thenDragTo:end)
             }
         }
         XCTAssertTrue(element.waitForExistence(timeout: 5), label)
         XCTAssertTrue(element.isHittable, label)
-        element.tap()
+        return element
+    }
+    private func tap(_ label: String) {
+        visibleControl(label).tap()
     }
 
     private func text(_ label: String) {
@@ -107,7 +119,7 @@ import Foundation
             XCTAssertTrue(support.isHittable); support.tap()
             XCTAssertTrue(app.navigationBars[chinese ? "支持" : "Support"].exists)
             text("hello@go2china.space")
-            let mail = app.buttons["support.email"]
+            let mail = visibleControl("support.email")
             XCTAssertTrue(mail.exists && mail.isHittable)
             XCTAssertTrue(mail.label.contains("hello@go2china.space"))
             XCTAssertFalse(app.staticTexts["support@go2china.space"].exists)
