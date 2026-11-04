@@ -24,7 +24,7 @@ from test_m4_real_services import sse,KEY,NOW
 
 
 def exercise(auth,conninfo):
-    subjects=['m4-synthetic-'+v for v in ('ok','limit','unknown','malformed','late','revoke')]
+    subjects=['m4-synthetic-'+v for v in ('ok','limit','unknown','malformed','late','permission','revoke')]
     harness.dev_auth.init(auth,subjects)
     now=int(time.time());profiles={}
     for subject in subjects:
@@ -35,9 +35,10 @@ def exercise(auth,conninfo):
         profiles[subject]=(path,load_run_context(path));operator.provision_budget(conninfo,profiles[subject][1],subject)
     headers={s:dict(Authorization='Bearer '+harness.dev_auth.token(auth,s,30)) for s in subjects}
     tool_calls=[];model_calls=[]
-    async def place(config,request,credentials,*,before_send=None):
+    async def place(config,request,credentials,*,before_send=None,basic=False):
         tool_calls.append(request.request_ref)
         raw=json.dumps(dict(status='1',info='OK',infocode='10000',count='1',pois=[dict(id='SYNTH_ONLY',name='合成资料',location='116.1,39.1')])).encode()
+        if subject.endswith('permission'):raw=b'{"status":"0","info":"INSUFFICIENT_PRIVILEGES","infocode":"10012"}'
         return TransportResult('received','fixture',Response(request.binding_digest,request.origin,request.path,200,raw,datetime.now(timezone.utc)))
     def api(s):
         with patch.dict(os.environ,dict(CJ_LOCAL_AUTH_DIR=str(auth),CJ_LOCAL_CONNINFO=str(conninfo),CJ_LOCAL_RUN_CONTEXT=str(profiles[s][0]))):
@@ -100,6 +101,9 @@ def exercise(auth,conninfo):
             elif subject.endswith('late'):
                 assert outcomes[0].status=='failed' and model.calls==1 and len(tool_calls)==before and not writes
                 assert budget.inspect()[0]['state']=='INTENT'
+            elif subject.endswith('permission'):
+                assert outcomes[0].status=='failed' and model.calls==1 and len(tool_calls)==before+1
+                assert budget.inspect()[-1]['receipt']['provider_code']=='10012'
             else:
                 assert outcomes[0].status=='context_invalid' and model.calls==1 and len(tool_calls)==before
                 (auth/'invited.json').write_text(json.dumps(subjects))

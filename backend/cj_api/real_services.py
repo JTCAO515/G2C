@@ -13,7 +13,7 @@ from pathlib import Path
 import re
 from types import MappingProxyType
 
-from cj_agent.provider import DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,ProviderUnknown
+from cj_agent.provider import DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,ProviderUnknown,ProviderFailed
 from cj_fact.contract_v1 import decode_query as fact_query
 from cj_fact.live_source import NOTICE_URL,WEATHER_URL,public_page,weather
 from cj_fact.policy import FactFailure
@@ -180,7 +180,8 @@ class RealTools:
         elif (name=='fact' and (query.fact_key!='entry_notice' or query.region!='China')
               or name=='weather' and (query.fact_key!='weather' or query.region!='beijing')):
             raise ProviderUnknown('M4 fixed fact source required')
-        original=canonical(dict(name=name,query=json.loads(raw_query),request_ref=request_ref,synthetic_only=True))
+        original=canonical(dict(name=name,query=json.loads(raw_query),request_ref=request_ref,synthetic_only=True,
+                                place_profile='basic-v3-default-zh' if name=='place' else None))
         metadata={};budget=self.services.model.authorization
         kind='place' if name=='place' and type(query) in (Search,Detail) else 'route' if name=='place' else name
         def bind(operation,guard):
@@ -195,13 +196,14 @@ class RealTools:
                 try:
                     if name=='place':
                         config=Config(ORIGIN,8192,65536,20,60)
-                        request=prepare(config,query,request_ref,datetime.now(timezone.utc))
+                        request=prepare(config,query,request_ref,datetime.now(timezone.utc),basic=True)
                         if admitted() is not True:raise BudgetUnknown('original live tool authority invalid')
-                        result=asyncio.run(fetch_candidate(config,request,ProviderCredentials(self.services.amap_key,DEADLINE),before_send=admitted))
+                        result=asyncio.run(fetch_candidate(config,request,ProviderCredentials(self.services.amap_key,DEADLINE),before_send=admitted,basic=True))
                         if result.state!='received':raise BudgetUnknown('original live PLACE outcome unknown')
-                        parsed=parse_response(config,request,result.response,now=datetime.now(timezone.utc))
+                        parsed=parse_response(config,request,result.response,now=datetime.now(timezone.utc),basic=True)
                         raw=encode_result(parsed,evidence_kind='live_provider')
                         endpoint=ORIGIN+request.path;status=parsed.outcome.value
+                        metadata['provider_code']=parsed.provider_code
                     elif name=='weather':
                         outcome=weather(query,self.services.amap_key,guard=admitted)
                         raw=canonical(outcome);endpoint=WEATHER_URL;status=outcome['status']
@@ -239,6 +241,8 @@ class RealTools:
                 name,arguments=canonical_tool(call.name,call.arguments)
                 result=''.join(worker._registered_stream(binding,key,'tool.'+name,(arguments,ref)))
                 data=json.loads(result)
+                if name=='place' and data.get('provider_code')=='10012':
+                    raise ProviderFailed('place service permission denied; operator action required')
                 source=data.get('source',{}).get('endpoint') if name=='place' else data['source_url']
                 if source:yield ('来源：' if chinese else 'Source: ')+source+'\n'
                 messages.append(dict(role='tool',tool_call_id=assistant['tool_calls'][index]['id'],

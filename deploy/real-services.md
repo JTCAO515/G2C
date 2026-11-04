@@ -27,6 +27,9 @@ Memory fence、原动作只读恢复均继续生效。默认 local/Fake 路径�
 
 - place：复用原 Gaode prepare、窄 HTTPS transport 和 parser；固定 restapi.amap.com 的四条地点/路线路径。
   `PLACE-result.1` 已支持 live_provider，保留原查询时估计、GCJ-02、入口/中心、缺失字段和来源。
+  真实profile显式使用基础v3：extensions=base、不传高级多语言langCode；默认中文，未取到入口/导航等字段保持missing/UNKNOWN。
+  既有prepare/transport/parser默认仍保留旧all/langCode模式，其绑定不改变；实际基础请求以相同basic配置校验绑定。
+  这是预先选择已授权基础资料，沿用同一Key/endpoint，不是收到拒绝后改路径自动重试；10012完成回执后立即停止该RUN新出口。
 - weather：北京110000的高德 forecast，检查原区域和返回日期范围；不把预测或未返回日期说成保证。
 - fact：固定国家移民管理局英文官方首页，公开 DNS 全部地址必须通过 public-address 检查，
   使用原数字 socket/SNI/证书绑定 HTTPS primitive，单次、无重定向、有限字节与时间。
@@ -52,4 +55,5 @@ App 若后续需要真实专用资料卡，须先证明已合消费者缺陷，�
 三者同时证明没有已接收消息或外部请求时，才允许显式恢复准备。任何accepted/INTENT出口均不适用。
 `verify-native` 是修复后独立的两例中英合成验证，使用新scope、原共享授权账本与固定新batch。
 其重跑只读本批次；原八例UNKNOWN与全部费用意图仍保留，不覆盖或重派。
+`verify-base-search` 只验证新的基础字段地点样例，使用独立固定batch；不会重新调用已完成的天气例。
 真实 PR 必须另列包版本、模型/端点、原 attempt、用量、费用与 UNKNOWN/FAIL，不以 fixture 充数。

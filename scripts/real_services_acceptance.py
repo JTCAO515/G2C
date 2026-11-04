@@ -40,8 +40,10 @@ def verification_passed(batch,attempts):
     A model-only answer, a different tool, an incomplete follow-up or a failed
     anti-redispatch check is not evidence that native continuation worked.
     """
-    required={'place-zh':('tool.place','https://restapi.amap.com/v3/place/text'),
-              'weather-en':('tool.weather','https://restapi.amap.com/v3/weather/weatherInfo')}
+    required={'place-zh':('tool.place','https://restapi.amap.com/v3/place/text')}
+    if batch.get('verification_profile','native-1')=='native-1':
+        required['weather-en']=('tool.weather','https://restapi.amap.com/v3/weather/weatherInfo')
+    elif batch.get('verification_profile')!='base-search-1':return False
     if batch.get('state')!='COMPLETE' or set(batch.get('cases',{}))!=set(required):return False
     receipts={item['attempt_id']:item for item in attempts}
     for name,(registration,endpoint) in required.items():
@@ -83,11 +85,12 @@ def save(path,value):
     temp.replace(path)
 
 
-def run_batch(*,resume_setup=False,verification=False):
+def run_batch(*,resume_setup=False,verification=False,basic_verification=False):
     STATE.mkdir(parents=True,exist_ok=True,mode=0o700)
     with (STATE/'acceptance.lock').open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX)
-        path=STATE/('verification-native-1.json' if verification else 'acceptance.json')
+        tag='verification-base-search-1' if basic_verification else 'verification-native-1' if verification else 'acceptance'
+        path=STATE/(tag+'.json')
         budget=AuthorizationBudget(STATE);budget.check_date()
         previous=None
         if path.exists():
@@ -115,14 +118,17 @@ def run_batch(*,resume_setup=False,verification=False):
                 'place-zh':'合成旅行验证：使用place_search实际查询北京故宫，city北京，page1/page_size1。根据工具结果说明来源和待核实项，不写行程。',
                 'weather-en':f'Synthetic verification: use weather for Beijing, start_date and end_date {today}. Then answer using the returned report time, source and unknowns. Do not repeat an identical weather request. No itinerary write.',
             }
+        if basic_verification:cases={'place-zh':'合成基础地点验证：使用place_search查询北京故宫，city北京，page1/page_size1，只请求基础资料。根据结果说明地点名称、坐标与来源，未知详情明确待核实，不写行程。'}
         value=dict(state='INTENT',model_id=M4_MODEL,endpoint=M4_BASE,region='cn-beijing',
             packages={k:version(k) for k in ('httpx','psycopg','fastapi','pydantic')},cases={k:dict(state='PLANNED') for k in cases})
+        if basic_verification:value['verification_profile']='base-search-1'
+        elif verification:value['verification_profile']='native-1'
         if previous is not None:value['setup_recovery']='explicit_login_keychain_after_proven_zero_dispatch'
         save(path,value)  # Lost setup is conservative: inspect this original batch.
-        root=STATE/('verification-native-1-pg' if verification else 'acceptance-pg')
+        root=STATE/(tag+'-pg')
         if root.exists():raise ValueError('original_private_acceptance_cluster_exists')
         model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,keychain('g2c-dashscope')),budget)
-        subject='m4-synthetic-real-services-verify1' if verification else 'm4-synthetic-real-services'
+        subject='m4-synthetic-real-services-base1' if basic_verification else 'm4-synthetic-real-services-verify1' if verification else 'm4-synthetic-real-services'
         services=RealServices(model,keychain('g2c-amap-web-key'),frozenset({subject}));tools=RealTools(services)
         output=io.StringIO()
         try:
@@ -176,13 +182,13 @@ def run_batch(*,resume_setup=False,verification=False):
 
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('command',choices=('run','inspect','resume-setup','verify-native'));args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('command',choices=('run','inspect','resume-setup','verify-native','verify-base-search'));args=parser.parse_args()
     if args.command=='inspect':
         path=STATE/'acceptance.json'
         result=dict(batch=None if not path.exists() else json.loads(path.read_text()),attempts=AuthorizationBudget(STATE).inspect())
-    else:result=run_batch(resume_setup=args.command=='resume-setup',verification=args.command=='verify-native')
+    else:result=run_batch(resume_setup=args.command=='resume-setup',verification=args.command=='verify-native',basic_verification=args.command=='verify-base-search')
     print(json.dumps(result,ensure_ascii=False,separators=(',',':')))
-    if args.command=='verify-native' and not verification_passed(result['batch'],AuthorizationBudget(STATE).inspect()):
+    if args.command in ('verify-native','verify-base-search') and not verification_passed(result['batch'],AuthorizationBudget(STATE).inspect()):
         return 1
     return 0
 
