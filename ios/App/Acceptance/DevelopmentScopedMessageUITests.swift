@@ -1,5 +1,8 @@
 import XCTest
 import Foundation
+#if G2C_M4_DEVICE_ACCEPTANCE
+import UIKit
+#endif
 
 @MainActor final class DevelopmentScopedMessageUITests:XCTestCase {
     private let bundle="space.go2china.scoped.acceptance"
@@ -56,6 +59,25 @@ import Foundation
     private func prepare(_ name:String) async throws -> Fixture {
         continueAfterFailure=false;executionTimeAllowance=900
         #if G2C_M4_DEVICE_ACCEPTANCE
+        let runner=XCUIApplication(bundleIdentifier:try XCTUnwrap(Bundle.main.bundleIdentifier))
+        runner.activate()
+        print("M4_RUNNER_APPLICATION_STATE",UIApplication.shared.applicationState.rawValue)
+        try M4DeviceControl.triggerLocalNetworkAlert()
+        let alert=XCUIApplication(bundleIdentifier:"com.apple.springboard").alerts.firstMatch
+        if alert.waitForExistence(timeout:3) {
+            let message=alert.staticTexts.allElementsBoundByIndex.map(\.label).joined(separator:" ").lowercased()
+            if message.contains("本地网络") || message.contains("local network") {
+                let allow=alert.buttons.matching(NSPredicate(format:"label IN %@",["允许","Allow"])).firstMatch
+                XCTAssertTrue(allow.exists && allow.isHittable);allow.tap()
+            }
+        }
+        addUIInterruptionMonitor(withDescription:"M4 local network permission only") { alert in
+            let message=alert.staticTexts.allElementsBoundByIndex.map(\.label).joined(separator:" ").lowercased()
+            guard message.contains("本地网络") || message.contains("local network") else { return false }
+            let allow=alert.buttons.matching(NSPredicate(format:"label IN %@",["允许","Allow"])).firstMatch
+            guard allow.exists && allow.isHittable else { return false }
+            allow.tap();return true
+        }
         var probe=URLComponents(string:control+"/prepare")!
         probe.queryItems=[.init(name:"case",value:name)]
         let (denied,reply)=try await M4DeviceControl.unauthenticatedData(from:XCTUnwrap(probe.url))

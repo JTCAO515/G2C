@@ -1,5 +1,5 @@
 """Explicit M4 iPhone-only build/TLS helpers. No automatic device/key discovery."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import ipaddress
 import json
 import os
@@ -9,10 +9,39 @@ import re
 import socket
 import ssl
 import subprocess
+import tempfile
 from m4_artifacts import verified_public_certificate
 
 ROOT = Path(__file__).resolve().parents[3]
 HERE = Path(__file__).resolve().parent
+
+
+@dataclass(frozen=True)
+class FrozenAMapKey:
+    path: Path
+    value: str = field(repr=False)
+
+
+def freeze_amap_key(source, private_directory):
+    source = Path(source)
+    if source.is_symlink() or not source.is_file():
+        raise ValueError('Regular authorized SDK key configuration required')
+    try:
+        fields = plistlib.loads(source.read_bytes())
+    except Exception:
+        raise ValueError('Invalid local SDK key resource') from None
+    if not isinstance(fields, dict) or set(fields) != {'apiKey'}:
+        raise ValueError('Invalid local SDK key fields')
+    key = fields['apiKey']
+    if not isinstance(key, str) or not key or any(ord(c)<32 or ord(c)>126 for c in key):
+        raise ValueError('Invalid local SDK key value')
+    directory = Path(tempfile.mkdtemp(prefix='m4-build-key-',dir=private_directory))
+    directory.chmod(0o700)
+    path = directory/'AMapLocalKey.plist'
+    with path.open('xb') as output:
+        output.write(plistlib.dumps({'apiKey':key},fmt=plistlib.FMT_BINARY))
+    path.chmod(0o600)
+    return FrozenAMapKey(path,key)
 
 
 @dataclass(frozen=True)
@@ -103,10 +132,12 @@ def configure_project(project, tls, control_url, control_token, amap=False):
     pin_file.chmod(0o600)
     resource_ids.append(resource(pin_file))
     local = ROOT / 'ios/.local-amap-device'
+    frozen_key = None
     if amap:
         if not (local / 'AMapLocalKey.plist').is_file():
             raise ValueError('Prepare the authorized ignored AMap build first')
-        resource_ids += [resource(next((local / 'sdk').rglob('AMap.bundle'))), resource(local / 'AMapLocalKey.plist')]
+        frozen_key = freeze_amap_key(local/'AMapLocalKey.plist',local)
+        resource_ids += [resource(next((local / 'sdk').rglob('AMap.bundle'))), resource(frozen_key.path)]
     app_anchor = '000000000000000000000120 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = ('
     if text.count(app_anchor) != 1:
         raise ValueError('App resource phase changed')
@@ -142,7 +173,7 @@ def configure_project(project, tls, control_url, control_token, amap=False):
         lines += ['M4_AMAP_LDFLAGS_CJProbeApp = '+sdk_flags,
                   'OTHER_LDFLAGS = $(inherited) $(M4_AMAP_LDFLAGS_$(TARGET_NAME))']
     configuration.write_text('\n'.join(lines) + '\n')
-    return bundle, configuration
+    return bundle, configuration, frozen_key
 
 
 def scan_app_container(device, bundle, output, tokens):

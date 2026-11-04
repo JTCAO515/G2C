@@ -2,6 +2,7 @@
 from datetime import datetime, timezone
 from pathlib import Path
 import tempfile
+import plistlib
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
@@ -10,6 +11,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
 from m4_artifacts import export_native_logs, verified_public_certificate
+from m4_device import freeze_amap_key
 
 
 class CertificatePackagingTests(unittest.TestCase):
@@ -69,6 +71,21 @@ class NativeArtifactTests(unittest.TestCase):
                 result=export_native_logs(raw,root,[],'compile failed')
             self.assertEqual(result['status'],'FAIL')
             self.assertEqual(set(result['missing_logs']),{'build','action','console'})
+
+
+class SDKKeySnapshotTests(unittest.TestCase):
+    def test_rotation_cannot_change_packaged_bytes_or_scan_values(self):
+        from m4_artifacts import redact
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);source=root/'operator.plist'
+            source.write_bytes(plistlib.dumps({'apiKey':'SYNTHETIC-BUILD-A'}))
+            snapshot=freeze_amap_key(source,root)
+            source.write_bytes(plistlib.dumps({'apiKey':'SYNTHETIC-ROTATED-B'}))
+            self.assertEqual(plistlib.loads(snapshot.path.read_bytes()),{'apiKey':'SYNTHETIC-BUILD-A'})
+            self.assertEqual(snapshot.path.stat().st_mode&0o777,0o600)
+            cleaned,hits=redact('native SDK SYNTHETIC-BUILD-A',[snapshot.value])
+            self.assertEqual(hits,1);self.assertNotIn('SYNTHETIC-BUILD-A',cleaned)
+            self.assertNotIn('SYNTHETIC-BUILD-A',repr(snapshot))
 
 
 if __name__=='__main__':unittest.main()

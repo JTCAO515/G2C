@@ -594,7 +594,7 @@ try:
     test_source=(HERE/'DevelopmentScopedMessageUITests.swift').read_text().replace('__FIXTURE_URL__',control_url)
     project=builder.directory/'G2CAcceptance.xcodeproj';pbx=project/'project.pbxproj';bundle='space.go2china.scoped.acceptance'
     if TLS:
-     bundle,device_configuration=configure_project(project,TLS,control_url,control_token,amap=ARGS.amap_device)
+     bundle,device_configuration,frozen_sdk_key=configure_project(project,TLS,control_url,control_token,amap=ARGS.amap_device)
      test_source=test_source.replace('space.go2china.scoped.acceptance',bundle)
     else:
      text=pbx.read_text().replace('space.go2china.foundation.local',bundle).replace('space.go2china.foundation.control',bundle+'.control')
@@ -614,7 +614,7 @@ try:
      command[1:1]=['-xcconfig',str(device_configuration),'-allowProvisioningUpdates','-allowProvisioningDeviceRegistration']
     if TLS:
      private_values=list(native_tokens.values())+[control_token]
-     if ARGS.amap_device:private_values.append(plistlib.loads((ROOT/'ios/.local-amap-device/AMapLocalKey.plist').read_bytes())['apiKey'])
+     if frozen_sdk_key:private_values.append(frozen_sdk_key.value)
      build_command=command[:-1]+['build-for-testing']
      build_command[build_command.index('-resultBundlePath')+1]=str(quarantine/'build.xcresult')
      print('DEVICE_BUILD '+CASE,flush=True)
@@ -636,13 +636,12 @@ try:
     print('SCOPED '+CASE,flush=True);run=subprocess.run(command,cwd=ROOT,capture_output=True,text=True,timeout=1800)
     r['native_exit_code']=run.returncode
     log=run.stdout+run.stderr
-    private_values=list(native_tokens.values())+([control_token] if TLS else [])
-    if ARGS.amap_device:
-     sdk_key=plistlib.loads((ROOT/'ios/.local-amap-device/AMapLocalKey.plist').read_bytes())['apiKey']
-     private_values.append(sdk_key)
-     r['sdk_console_key_redactions']=log.count(sdk_key)
+    if not TLS:private_values=list(native_tokens.values())
+    if TLS and frozen_sdk_key:r['sdk_console_key_redactions']=log.count(frozen_sdk_key.value)
     if TLS:
-     r['native_artifacts']=export_native_logs(result,OUT,private_values,log)
+     # Test-without-building has an action log (including native stdout); build
+     # logs were checked separately, and there is no independent console ref.
+     r['native_artifacts']=export_native_logs(result,OUT,private_values,log,kinds=('action',))
      log=redact(log,private_values)[0]
     for temporary_token in native_tokens.values():log=log.replace(temporary_token,'<redacted-local-token>')
     assert all(temporary_token not in log for temporary_token in native_tokens.values())
@@ -681,7 +680,7 @@ try:
        data=file.read_bytes();assert all(temporary_token.encode() not in data for temporary_token in native_tokens.values()) and b'-----BEGIN PRIVATE KEY-----' not in data
     assert r['head']==subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'head changed during acceptance'
     assert all(hashlib.sha256((ROOT/name).read_bytes()).hexdigest()==digest for name,digest in r['source_hashes'].items()),'source changed during acceptance'
-    r['token_key_scan']='PASS';r['token_key_scan_scope']='App data and exported native text; opaque raw bundle not shareable' if TLS else 'existing simulator App-data/log scope';r['cases'][CASE]='PASS';r['status']='PASS';save()
+    r['token_key_scan']='PASS';r['token_key_scan_scope']='App data and exported build/action/process text; opaque raw bundle not shareable' if TLS else 'existing simulator App-data/log scope';r['cases'][CASE]='PASS';r['status']='PASS';save()
    finally:
     r['observed_requests']=list(audit);r['worker_errors']=list(worker_errors);save()
     if original_size is not None:subprocess.run(['xcrun','simctl','ui',ARGS.simulator,'content_size',original_size],check=True,capture_output=True)

@@ -1,6 +1,7 @@
 #if DEBUG && G2C_M4_DEVICE_ACCEPTANCE
 import Foundation
 import Security
+import Darwin
 
 private final class M4ControlBundle: NSObject {}
 
@@ -28,8 +29,30 @@ private final class M4ControlBundle: NSObject {}
         configuration.httpCookieStorage = nil
         configuration.urlCredentialStorage = nil
         configuration.urlCache = nil
+        configuration.waitsForConnectivity = true
+        configuration.timeoutIntervalForResource = 60
         return Connection(endpoint:url,token:value.token,
             session:URLSession(configuration:configuration,delegate:M4ControlDelegate(pin:pin),delegateQueue:nil))
+    }
+    static func triggerLocalNetworkAlert() throws {
+        let value = try connection.get()
+        let descriptor = socket(AF_INET,SOCK_DGRAM,0)
+        guard descriptor >= 0 else { throw M4LocalTLSFailure.invalidCertificate }
+        defer { close(descriptor) }
+        var address = sockaddr_in()
+        address.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
+        address.sin_family = sa_family_t(AF_INET)
+        address.sin_port = in_port_t(9).bigEndian
+        guard inet_pton(AF_INET,value.endpoint.host!,&address.sin_addr) == 1 else {
+            throw M4LocalTLSFailure.invalidCertificate
+        }
+        // Apple TN3179: connecting a local UDP socket requests permission
+        // without sending traffic. The real TLS request still proves access.
+        _ = withUnsafePointer(to:&address) { pointer in
+            pointer.withMemoryRebound(to:sockaddr.self,capacity:1) {
+                Darwin.connect(descriptor,$0,socklen_t(MemoryLayout<sockaddr_in>.size))
+            }
+        }
     }
     static func data(from url: URL) async throws -> (Data, URLResponse) {
         let connection = try connection.get()
