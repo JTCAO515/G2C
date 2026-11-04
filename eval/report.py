@@ -33,6 +33,28 @@ def report(plan, observations):
     return result
 
 
+def markdown(result):
+    lines = ['# G2C M4 evaluation', '',
+             f"Dataset: {result['plan']['sample_set_version']}",
+             f"Product scenarios: {result['independent_product_scenario_n']}; fixed holdout: {result['holdout_product_scenario_n']}",
+             f"Release: {result['release_decision']} (thresholds, real services and target networks remain separate)", '',
+             '| Language | Network | Split | Task | N | PASS | FAIL | UNKNOWN | UNRUN | PASS / started | API p50 / p95 (s) | Model calls known / unknown attempts |',
+             '|---|---|---|---|---:|---:|---:|---:|---:|---|---|---|']
+    for group in result['groups']:
+        counts = group['outcomes']; elapsed = group['api_task_seconds']; calls = group['model_calls']
+        lines.append(f"| {group['language']} | {group['network_id']} | {group['split']} | {group['task_kind']} | "
+                     f"{group['planned_attempt_n']} | {counts['PASS']} | {counts['FAIL']} | {counts['UNKNOWN']} | {counts['UNRUN']} | "
+                     f"{group['pass_rate']['numerator']} / {group['pass_rate']['denominator']} | "
+                     f"{elapsed['p50']} / {elapsed['p95']} | {calls['known_total']} / {calls['unknown_or_unrun_attempt_n']} |")
+    lines += ['', 'API latency includes the scenario\'s signed operations, original worker and final authoritative read; it is not UI first-body latency.',
+              'Unavailable first-body/draft visibility and missing networks stay UNKNOWN/UNRUN. Repeated attempts are separate rows in report.json.',
+              'Cost details retain known currency subtotals and incomplete-attempt counts in report.json; absent monetary receipts are UNKNOWN.', '',
+              f"Serious errors: {len(result['serious_errors'])}. An unresolved serious error cannot be cancelled by a mean or another language.", '']
+    for error in result['serious_errors']:
+        lines.append(f"- {error['attempt_key']}: {error['description']} (resolved={error['resolved']})")
+    return '\n'.join(lines) + '\n'
+
+
 def main():
     import argparse,json
     from evaluate import read_json,InputError
@@ -40,6 +62,7 @@ def main():
     parser.add_argument('--plan',type=Path,required=True)
     parser.add_argument('--observations',type=Path,required=True)
     parser.add_argument('--output',type=Path,required=True)
+    parser.add_argument('--markdown',type=Path)
     args=parser.parse_args()
     plan=read_json(args.plan.read_text());observations=read_json(args.observations.read_text())
     try:
@@ -49,6 +72,8 @@ def main():
         result=dict(validation='FAIL',error=str(error),release_decision='UNKNOWN',plan=plan,raw_observations=observations)
         code=2
     with args.output.open('x') as output:output.write(json.dumps(result,ensure_ascii=False,indent=2)+'\n')
+    if args.markdown and code==0:
+        with args.markdown.open('x') as output:output.write(markdown(result))
     return code
 
 

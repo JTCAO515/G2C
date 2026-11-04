@@ -10,7 +10,7 @@ import traceback
 from runtime import ROOT, private_database
 from cases import run_case, case_session
 from judge import judge
-from report import report
+from report import report, markdown
 
 
 def main():
@@ -63,7 +63,9 @@ def main():
                     (args.output/row['raw_evidence_ref']).write_text(json.dumps(evidence,ensure_ascii=False,indent=2)+'\n')
                     observations.append(row)
                     (args.output/'observations.json').write_text(json.dumps(observations,ensure_ascii=False,indent=2)+'\n')
-                    (args.output/'report.json').write_text(json.dumps(report(plan,observations),ensure_ascii=False,indent=2)+'\n')
+                    summary=report(plan,observations)
+                    (args.output/'report.json').write_text(json.dumps(summary,ensure_ascii=False,indent=2)+'\n')
+                    (args.output/'report.md').write_text(markdown(summary))
                     print(key,row['status'],row['judgment']['outcome'],flush=True)
     return int(any(row['status']=='failure' or row['judgment']['outcome']=='FAIL' for row in observations))
 
