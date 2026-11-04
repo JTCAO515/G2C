@@ -220,7 +220,12 @@ struct DevelopmentSessionConfiguration: CustomStringConvertible, CustomReflectab
         #else
         approved = false
         #endif
-        guard (url.scheme == "http" && url.host == "127.0.0.1") || (url.scheme == "https" && approved) else { return nil }
+        #if os(iOS) && !targetEnvironment(simulator)
+        let loopback = false
+        #else
+        let loopback = url.scheme == "http" && url.host == "127.0.0.1"
+        #endif
+        guard loopback || (url.scheme == "https" && approved) else { return nil }
         url.path = ""
         return url.url
     }

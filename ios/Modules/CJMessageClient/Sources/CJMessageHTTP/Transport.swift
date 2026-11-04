@@ -17,7 +17,11 @@ public struct MessageEndpoint: Sendable {
     public let allowsDevelopmentActivation: Bool
     public init(url: URL, maximumRequestBytes: Int, maximumResponseBytes: Int, allowLoopbackHTTP: Bool = false) throws {
         if let port = url.port, !(1...65535).contains(port) { throw MessageHTTPFailure.invalidConfiguration }
+        #if os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+        let loopback = false
+        #else
         let loopback = url.scheme == "http" && url.host == "127.0.0.1" && url.port != nil
+        #endif
         let deviceLocal: Bool
         #if DEBUG && G2C_M4_DEVICE_ACCEPTANCE
         deviceLocal = Self.isM4LocalHTTPS(url, approvedHost: ProcessInfo.processInfo.environment["G2C_M4_LOCAL_HOST"])

@@ -3,6 +3,17 @@ import Testing
 @testable import CJMessageHTTP
 
 struct M4LocalEndpointTests {
+    @Test func deviceConfigurationCannotActivatePhoneLoopback() throws {
+        let url = URL(string:"http://127.0.0.1:18080")!
+        #if os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+        #expect(throws:MessageHTTPFailure.self) {
+            try MessageEndpoint(url:url,maximumRequestBytes:128,maximumResponseBytes:128,allowLoopbackHTTP:true)
+        }
+        #else
+        let endpoint = try MessageEndpoint(url:url,maximumRequestBytes:128,maximumResponseBytes:128,allowLoopbackHTTP:true)
+        #expect(endpoint.allowsDevelopmentActivation)
+        #endif
+    }
     @Test func onlyCanonicalApprovedPrivateHostsAreEligible() throws {
         for host in ["10.0.0.2", "172.16.0.2", "172.31.255.254", "192.168.1.2", "169.254.1.2"] {
             let url = try #require(URL(string: "https://" + host + ":18080"))

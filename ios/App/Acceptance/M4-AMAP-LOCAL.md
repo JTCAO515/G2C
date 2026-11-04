@@ -51,7 +51,8 @@ Bundle ID；加载资源时再次核对该 ID。主工程 Debug 的
 本地 xcconfig 显式定义 `G2C_M4_DEVICE_ACCEPTANCE` 与 `G2C_AMAP_LOCAL`。
 运行时设置 `G2C_M4_LOCAL_HOST` 为开发机的规范点分十进制私网 IPv4；已有
 `G2C_DEV_*_URL` 使用完全相同 host 的 `https://<host>:<port>`。配置必须提供端口，
-不得含凭据、路径、查询或片段；DNS、公网与其他 host 均拒绝。跨主机 HTTP 拒绝；
+不得含凭据、路径、查询或片段；DNS、公网与其他 host 均拒绝。设备配置也拒绝
+手机自己的 loopback；原 loopback HTTP 只供 Mac/模拟器。跨主机 HTTP 拒绝；
 本地 API 必须提供设备系统信任、地址匹配且有效的 TLS 证书，沿用 URLSession
 默认校验，不接受自签名旁路或信任回调。当前 TLS 启动与设备信任尚未验收。未定义设备编译
 标志时仍只接受原 loopback。仅 Debug 含本地网络 ATS 与用途说明，其他配置删除
