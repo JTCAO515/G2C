@@ -1,6 +1,6 @@
 # CJ-005 最短 C2 收口方案（2026-10-23，仍 BLOCKED）
 
-核对基线 `dc29bb3634e63d8f065c38d39a7a0059f76cfa53`。本轮只做资源/源码只读核对与具体准备；没有创建资源、试发邮件、修改数据库/权限/证书、启动服务或安装 App。机器可读提案见 [c2-approval-packet.json](c2-approval-packet.json)，当前事实见 [只读记录](evidence/2026-10-23-readonly-state.json)。这些文件不是运行配置或执行许可。
+核对基线 `dc29bb3634e63d8f065c38d39a7a0059f76cfa53`。本轮只做资源/源码只读核对与具体准备；没有创建资源、试发邮件、修改数据库/权限/证书、启动服务或安装 App。机器可读提案见 [c2-approval-packet.json](c2-approval-packet.json)，当前事实见 [只读记录](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/backend/c2-preparation/evidence/2026-10-23-readonly-state.json)。这些文件不是运行配置或执行许可。
 
 ## 1. 原门槛和实际授权
 

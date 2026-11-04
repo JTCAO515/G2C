@@ -37,14 +37,14 @@ Only this directory and `contracts/memory-withdrawal/` are written.
 
 Standard-library candidate; imports existing pinned MEMORY/CLEANUP/AUTH modules.
 Requires Python >=3.11; no dependency installation, global environment change or DB.
-Example command using the verified installed interpreter:
+From repository root:
 
 ```sh
-PYTHONPATH=backend/memory_withdrawal:backend/memory:backend/cleanup:backend/auth /opt/homebrew/bin/python3.14 -m unittest discover -s backend/memory_withdrawal/tests -v
+uv run --locked python -B -m pytest -q backend/memory_withdrawal/tests
 ```
 
 Read the [internal contract](../../contracts/memory-withdrawal/README.md),
 [exact owner seams](../../contracts/memory-withdrawal/SEAM-REQUEST.md) and
-[author evidence](evidence/REPORT.md). This is codec/observation code; persistent
+[author evidence](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/backend/memory_withdrawal/evidence/REPORT.md). This is codec/observation code; persistent
 withdrawal, physical cleanup and public activation remain blocked. No cleanup
 algorithm or second official memory authority is implemented.

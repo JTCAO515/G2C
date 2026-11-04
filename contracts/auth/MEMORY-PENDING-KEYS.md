@@ -28,7 +28,7 @@ public enum 增加 case，旧 exhaustive switch 消费方须检查；协议方�
 本候选未改变原 SessionBridge/SDK/后端、签名、权限或 access group。
 
 验证：原 MessageKeyTests12 + 新3 = **15/15 PASS**，证据
-[evidence/memory-key-purpose-tests.txt](evidence/memory-key-purpose-tests.txt)。
+[evidence/memory-key-purpose-tests.txt](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/contracts/auth/evidence/memory-key-purpose-tests.txt)。
 新例通过同一注入 Keychain 字典及真实 CryptoKit 合成加密验证：四个 scope 独立 key、
 错用途/账号/环境不能解密 Memory 密文，错 expected ID/operation 不能查取或删除，
 清 Memory key 不影响原 Message key；unknown 创建读回原 key 且只有一次 add。

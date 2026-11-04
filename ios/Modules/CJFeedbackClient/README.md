@@ -1,6 +1,6 @@
 # CJFeedbackClient
 
-P2 follow-up to69d: [draft-reentry repair](evidence/draft-reentry/REPORT.md).
+P2 follow-up to69d: [draft-reentry repair](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/ios/Modules/CJFeedbackClient/evidence/draft-reentry/REPORT.md).
 Accepted callback edits now retire frozen preparation before any dispatch. Original
 69d evidence and its independent FAIL remain historical; independent re-review is pending.
 
@@ -137,7 +137,7 @@ before UI publication.
 
 ## Verification
 
-See [evidence/REPORT.md](evidence/REPORT.md) for fixed sources, commands, failed runs,
+See [evidence/REPORT.md](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/ios/Modules/CJFeedbackClient/evidence/REPORT.md) for fixed sources, commands, failed runs,
 passed targeted scenarios and explicit UNRUN gates. Do not treat local tests or
 unsigned compilation as App/real-account/service/device acceptance.
 
