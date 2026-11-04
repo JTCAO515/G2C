@@ -26,6 +26,7 @@ class _PreparedCall:
     step_key: str
     guard: object
     consumed: bool = False
+    receipt: object = None
 
 
 class MeteredExitCore:
@@ -88,8 +89,9 @@ class MeteredExitCore:
             if now-run_started>=self.config.max_seconds: raise BudgetExceeded(call.step_key)
             if call.guard() is not True: raise Denied('original authority unavailable at completion')
             # Only a complete local invocation supplies its original receipt.
-            meter.settle(Receipt(command.attempt_id,'local:'+command.attempt_id,
-                                 self.config.unit,1,output))
+            receipt=(Receipt(command.attempt_id,'local:'+command.attempt_id,self.config.unit,1,output)
+                     if call.receipt is None else call.receipt(command.attempt_id,self.config.unit,output))
+            meter.settle(receipt)
         except (CommitUnknown,RepositoryUnavailable,CorruptLedger,DatabaseError,Blocked,UnicodeError,AuditUnavailable):
             raise BudgetUnknown('original budget outcome unavailable') from None
         finally:

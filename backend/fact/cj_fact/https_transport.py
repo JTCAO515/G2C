@@ -23,7 +23,7 @@ def _positive(value):
 
 class PinnedHTTPSTransport:
     def __init__(self, policy: SourcePolicy, *, tls_context: ssl.SSLContext,
-                 max_header_bytes: int, max_wire_bytes: int, max_reads: int):
+                 max_header_bytes: int, max_wire_bytes: int, max_reads: int, allow_html=False):
         if not isinstance(policy, SourcePolicy) or not all(_positive(v) for v in
                 (max_header_bytes, max_wire_bytes, max_reads)):
             raise FactFailure('invalid_https_configuration')
@@ -32,6 +32,8 @@ class PinnedHTTPSTransport:
         self.max_header_bytes = max_header_bytes
         self.max_wire_bytes = max_wire_bytes
         self.max_reads = max_reads
+        if type(allow_html) is not bool:raise FactFailure('invalid_https_configuration')
+        self.allow_html=allow_html
         self._check_tls()
 
     def _check_tls(self):
@@ -96,7 +98,7 @@ class PinnedHTTPSTransport:
                     path += '?' + parsed.query
                 request = h11.Request(method=b'GET', target=path.encode('ascii'), headers=[
                     (b'Host', target.hostname.encode('ascii')),
-                    (b'Accept', b'application/json, text/plain'),
+                    (b'Accept', b'text/html' if self.allow_html else b'application/json, text/plain'),
                     (b'Accept-Encoding', b'identity'), (b'Connection', b'close')])
                 writer.write(connection.send(request) + connection.send(h11.EndOfMessage()))
                 await writer.drain()
@@ -188,7 +190,11 @@ class _Body:
         if transfer is not None and length is not None:
             raise FactFailure('ambiguous_body_framing')
         if event.status_code == 200:
-            _mime(self.header(event, b'content-type', ''))
+            content_type=self.header(event,b'content-type','')
+            if self.transport.allow_html:
+                if content_type.lower().replace(' ','') not in ('text/html','text/html;charset=utf-8'):
+                    raise FactFailure('unsupported_content_type')
+            else:_mime(content_type)
             if self.header(event, b'content-encoding', 'identity').lower() != 'identity':
                 raise FactFailure('encoded_body_rejected')
             if length is not None and (len(length) > 20 or not length.isascii()
