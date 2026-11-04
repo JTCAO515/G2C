@@ -11,7 +11,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
 from m4_artifacts import export_native_logs, verified_public_certificate
-from m4_device import freeze_amap_key
+from m4_device import freeze_amap_key, stage_accounts
 
 
 class CertificatePackagingTests(unittest.TestCase):
@@ -86,6 +86,27 @@ class SDKKeySnapshotTests(unittest.TestCase):
             cleaned,hits=redact('native SDK SYNTHETIC-BUILD-A',[snapshot.value])
             self.assertEqual(hits,1);self.assertNotIn('SYNTHETIC-BUILD-A',cleaned)
             self.assertNotIn('SYNTHETIC-BUILD-A',repr(snapshot))
+
+
+class OneUseInputTests(unittest.TestCase):
+    def test_mac_input_is_removed_after_copy_success_failure_and_exception(self):
+        for outcome in [0,1,'exception']:
+            with self.subTest(outcome=outcome),tempfile.TemporaryDirectory() as directory:
+                source_paths=[]
+                def invoke(arguments,**kwargs):
+                    if 'copy' in arguments:
+                        source=Path(arguments[arguments.index('--source')+1]);source_paths.append(source)
+                        self.assertTrue(source.exists());self.assertEqual(source.stat().st_mode&0o777,0o600)
+                        if outcome=='exception':raise OSError('synthetic copy interruption')
+                        return SimpleNamespace(returncode=outcome)
+                    return SimpleNamespace(returncode=0)
+                with patch('m4_device.subprocess.run',side_effect=invoke):
+                    if outcome==0:stage_accounts('synthetic-device','synthetic.bundle',Path('synthetic.app'),Path(directory),{'A':'SYNTHETIC'})
+                    else:
+                        with self.assertRaises((RuntimeError,OSError)):
+                            stage_accounts('synthetic-device','synthetic.bundle',Path('synthetic.app'),Path(directory),{'A':'SYNTHETIC'})
+                self.assertTrue(source_paths)
+                self.assertTrue(all(not source.exists() for source in source_paths))
 
 
 if __name__=='__main__':unittest.main()

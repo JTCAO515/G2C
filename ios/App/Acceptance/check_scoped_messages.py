@@ -23,7 +23,7 @@ if ARGS.device:
  if not ARGS.local_tls:parser.error('--device requires the approved --local-tls profile')
  if CASE.endswith('Largest'):parser.error('Device maximum-font case needs actual system font setup; not a launch-argument substitute')
  if CASE=='testFormalPlaceMapUnavailable':parser.error('Device map outage needs a real device network case; simulator delegate fault is not device evidence')
- from m4_device import LocalTLS,configure_project,scan_app_container,stage_accounts
+ from m4_device import LocalTLS,configure_project,scan_app_container,stage_accounts,discard_staged_accounts
  from m4_artifacts import export_native_logs,redact
  TLS=LocalTLS.load(ARGS.local_tls)
 elif ARGS.local_tls or ARGS.amap_device:parser.error('Device options require --device')
@@ -586,7 +586,7 @@ try:
    control=ThreadingHTTPServer((TLS.host if TLS else '127.0.0.1',0),Control)
    if TLS:TLS.secure_http_server(control)
    threading.Thread(target=control.serve_forever,daemon=True).start()
-   original_size=None
+   original_size=None;staging_attempted=False
    try:
     module_spec=importlib.util.spec_from_file_location('scoped_builder',ROOT/'scripts/check_ios_trip_confirm.py');module=importlib.util.module_from_spec(module_spec);module_spec.loader.exec_module(module)
     builder=object.__new__(module.XCTestDriver);builder.directory=OUT/'project';builder.directory.mkdir();builder.write_project(0)
@@ -636,6 +636,7 @@ try:
        r['status']='WAITING_DEVICE_UNLOCK';save();print('WAITING_DEVICE_UNLOCK: build ready; unlock the approved iPhone to run without rebuilding',flush=True);waiting=True
       if time.monotonic()>deadline:raise TimeoutError('approved device remained locked after build')
       time.sleep(5)
+     staging_attempted=True
      stage_accounts(ARGS.device,bundle,BUILD/'Build/Products/Debug-iphoneos/CJProbeApp.app',quarantine,native_tokens)
      r['status']='RUNNING';save();command[-1]='test-without-building'
     print('SCOPED '+CASE,flush=True);run=subprocess.run(command,cwd=ROOT,capture_output=True,text=True,timeout=1800)
@@ -687,9 +688,16 @@ try:
     assert all(hashlib.sha256((ROOT/name).read_bytes()).hexdigest()==digest for name,digest in r['source_hashes'].items()),'source changed during acceptance'
     r['token_key_scan']='PASS';r['token_key_scan_scope']='App data and exported build/action/process text; opaque raw bundle not shareable' if TLS else 'existing simulator App-data/log scope';r['cases'][CASE]='PASS';r['status']='PASS';save()
    finally:
+    input_cleanup_error=None
+    if TLS and staging_attempted:
+     try:
+      discard_staged_accounts(ARGS.device,bundle);r['staged_credential_cleanup']='PASS: exact one-use input absent'
+     except Exception as error:
+      r['staged_credential_cleanup']='FAIL: device cleanup pending, do not reuse input';save();input_cleanup_error=error
     r['observed_requests']=list(audit);r['worker_errors']=list(worker_errors);save()
     if original_size is not None:subprocess.run(['xcrun','simctl','ui',ARGS.simulator,'content_size',original_size],check=True,capture_output=True)
     late_release.set();stop.set();worker_thread.join(10);server.should_exit=True;api_thread.join(10);sock.close();control.shutdown();control.server_close()
+    if input_cleanup_error is not None:raise input_cleanup_error
   r['private_pg_stopped']=True
 except BaseException as error:
  r['status']='FAIL';r['error']=type(error).__name__;raise

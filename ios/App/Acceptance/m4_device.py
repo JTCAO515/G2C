@@ -10,6 +10,7 @@ import socket
 import ssl
 import subprocess
 import tempfile
+import time
 from m4_artifacts import verified_public_certificate
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -203,10 +204,32 @@ def stage_accounts(device, bundle, app, private_directory, tokens):
     result=subprocess.run(['xcrun','devicectl','device','install','app','--device',device,str(app),
         '--timeout','60'],capture_output=True)
     if result.returncode:raise RuntimeError('Approved device App install failed')
-    source=Path(private_directory)/'G2CM4DeviceAccounts.json'
-    with source.open('x') as output:json.dump(tokens,output)
-    source.chmod(0o600)
-    result=subprocess.run(['xcrun','devicectl','device','copy','to','--device',device,
-        '--domain-type','appDataContainer','--domain-identifier',bundle,'--source',str(source),
-        '--destination','Library/Caches/G2CM4DeviceAccounts.json','--timeout','30'],capture_output=True)
-    if result.returncode:raise RuntimeError('Device one-use credential staging failed')
+    with tempfile.TemporaryDirectory(prefix='operator-input-',dir=private_directory) as temporary:
+        source=Path(temporary)/'G2CM4DeviceAccounts.json'
+        with source.open('x') as output:json.dump(tokens,output)
+        source.chmod(0o600)
+        result=subprocess.run(['xcrun','devicectl','device','copy','to','--device',device,
+            '--domain-type','appDataContainer','--domain-identifier',bundle,'--source',str(source),
+            '--destination','Library/Caches/G2CM4DeviceAccounts.json','--timeout','30'],capture_output=True)
+        if result.returncode:raise RuntimeError('Device one-use credential staging failed')
+
+
+def discard_staged_accounts(device,bundle):
+    def present():
+        result=subprocess.run(['xcrun','devicectl','device','info','files','--device',device,
+            '--domain-type','appDataContainer','--domain-identifier',bundle,'--subdirectory','Library/Caches',
+            '--no-recurse','--json-output','-','--quiet','--timeout','20'],capture_output=True)
+        if result.returncode:raise RuntimeError('Device staged-input cleanup state UNKNOWN')
+        data=json.loads(result.stdout)['result']['files']
+        return any(item['name']=='G2CM4DeviceAccounts.json' for item in data)
+    if not present():return
+    # This App-owned one-use input is the only cleanup target, never a business
+    # journal or Keychain item. The App rejects symlinks and verifies removal.
+    result=subprocess.run(['xcrun','devicectl','device','process','launch','--device',device,
+        '--terminate-existing','--environment-variables',json.dumps({
+            'OS_ACTIVITY_MODE':'disable','G2C_M4_DISCARD_ACCOUNTS_FILE':'1'}),'--timeout','20',bundle],capture_output=True)
+    if result.returncode:raise RuntimeError('Staged device credential cleanup pending; device unlock required')
+    deadline=time.monotonic()+5
+    while present():
+        if time.monotonic()>deadline:raise RuntimeError('Device staged credential remains; do not record PASS')
+        time.sleep(0.2)

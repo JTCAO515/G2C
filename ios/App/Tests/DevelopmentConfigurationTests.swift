@@ -9,6 +9,19 @@ private func token(subject: String = "fixture", signature: String = "synthetic")
 }
 
 struct DevelopmentConfigurationTests {
+    @Test func restoredMaterialRetainsOnlyTheOriginallyApprovedLocalHost() throws {
+        #if DEBUG
+        let endpoint=URL(string:"https://192.168.1.2:18443")!,jwt=try token()
+        let restored=DevelopmentSessionConfiguration.restoring(endpoint:endpoint,token:jwt,proposalID:nil,approvedLocalHost:"192.168.1.2")
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        #expect(restored?.endpoint==endpoint)
+        #else
+        #expect(restored==nil)
+        #endif
+        #expect(DevelopmentSessionConfiguration.restoring(endpoint:endpoint,token:jwt,proposalID:nil,approvedLocalHost:nil)==nil)
+        #expect(DevelopmentSessionConfiguration.restoring(endpoint:endpoint,token:jwt,proposalID:nil,approvedLocalHost:"192.168.1.3")==nil)
+        #endif
+    }
     @Test func m4LocalDeviceEndpointRequiresExplicitPrivateHost() throws {
         let host = "192.168.1.2"
         let base = ["G2C_DEV_API_BASE_URL":"https://"+host+":18080", "G2C_M4_LOCAL_HOST":host]

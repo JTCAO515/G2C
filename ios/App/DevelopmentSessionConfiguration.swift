@@ -25,6 +25,17 @@ enum DevelopmentKeychainIdentity {
 
 enum DevelopmentAccountInput {
     enum Failure: Error { case invalidAccounts }
+    #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+    static func discardStaged() throws {
+        let files=FileManager.default
+        let root=try files.url(for:.cachesDirectory,in:.userDomainMask,appropriateFor:nil,create:false)
+        let file=root.appendingPathComponent("G2CM4DeviceAccounts.json")
+        guard files.fileExists(atPath:file.path) else { return }
+        let values=try file.resourceValues(forKeys:[.isRegularFileKey,.isSymbolicLinkKey])
+        guard values.isRegularFile==true,values.isSymbolicLink==false else { throw Failure.invalidAccounts }
+        try files.removeItem(at:file)
+    }
+    #endif
     static func decode(_ raw: Data) throws -> [String:String] {
         guard raw.count <= 131072,
               let tokens=try JSONSerialization.jsonObject(with:raw) as? [String:String],tokens.count<=8,
@@ -257,6 +268,12 @@ struct DevelopmentSessionConfiguration: CustomStringConvertible, CustomReflectab
     var customMirror: Mirror { Mirror(self, children: [:]) }
 
     #if DEBUG
+    static func restoring(endpoint: URL, token: String, proposalID: String?, approvedLocalHost: String?) -> Self? {
+        var environment=["G2C_DEV_API_BASE_URL":endpoint.absoluteString,"G2C_DEV_TOKEN":token]
+        if let proposalID { environment["G2C_DEV_PROPOSAL_ID"]=proposalID }
+        if let approvedLocalHost { environment["G2C_M4_LOCAL_HOST"]=approvedLocalHost }
+        return read(environment)
+    }
     let endpoint: URL
     let token: String
     let proposalID: String?
