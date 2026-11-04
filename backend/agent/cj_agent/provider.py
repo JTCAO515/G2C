@@ -354,6 +354,8 @@ class MeteredDashScopeProvider:
                         if type(choice) is not dict:raise ProviderUnknown('M4 stream choice invalid')
                         if choice.get('finish_reason') is not None:
                             if choice['finish_reason'] not in ('stop','tool_calls'):raise ProviderUnknown('M4 model output incomplete')
+                            if tool_choice=='none' and choice['finish_reason']!='stop':
+                                raise ProviderUnknown('M4 final answer stop unavailable')
                             finished=True
                         delta=choice.get('delta',{})
                         if type(delta) is not dict:raise ProviderUnknown('M4 stream delta invalid')

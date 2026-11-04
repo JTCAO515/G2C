@@ -84,6 +84,20 @@ class Boundaries(unittest.TestCase):
         with self.assertRaises(ProviderFailed):self.invoke(self.provider(sse()),tools=TOOLS,tool_choice='required')
         self.assertEqual(self.sent,[]);self.assertEqual(self.budget.inspect(),[])
 
+    def test_final_tool_finish_without_call_fragments_is_not_a_completed_answer(self):
+        body=sse().replace('"finish_reason": "stop"','"finish_reason": "tool_calls"')
+        receipt={}
+        with self.assertRaises(ProviderUnknown):self.invoke(self.provider(body),tools=TOOLS,tool_choice='none',receipt=receipt)
+        self.assertEqual(receipt,{})
+        self.assertEqual(self.budget.inspect()[0]['state'],'INTENT')
+
+    def test_final_stop_with_call_payload_still_cannot_dispatch(self):
+        body=sse(tool=True).replace('"finish_reason": "tool_calls"','"finish_reason": "stop"')
+        receipt={}
+        with self.assertRaises(ProviderUnknown):self.invoke(self.provider(body),tools=TOOLS,tool_choice='none',receipt=receipt)
+        self.assertEqual(receipt,{})
+        self.assertEqual(self.budget.inspect()[0]['state'],'INTENT')
+
     def test_native_assistant_and_tool_identity_are_preserved_for_continuation(self):
         reply={};self.invoke(self.provider(sse(tool=True)),tools=TOOLS,native_reply=reply)
         assistant=reply['assistant']
