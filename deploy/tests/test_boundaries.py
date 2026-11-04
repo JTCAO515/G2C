@@ -94,7 +94,8 @@ def test_local_connection_preserves_private_harness_options_once(monkeypatch):
     monkeypatch.setenv('CJ_ENV','local')
     from cj_api.local_app import local_connection
     options=dict(host='/synthetic/socket',port=55865,dbname='postgres',user='operator',
-                 passfile='/synthetic/empty.pgpass',connect_timeout=5,options='-c statement_timeout=10000 -c search_path=public')
+                 passfile='/synthetic/empty.pgpass',connect_timeout=5,options='-c statement_timeout=10000 -c search_path=public',
+                 application_name='synthetic-controlled-worker')
     config=local_connection(options)
     assert dict(config)==options and local_connection(config) is config
     with pytest.raises(TypeError):config['dbname']='other'

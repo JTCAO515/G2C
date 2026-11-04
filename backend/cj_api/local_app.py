@@ -120,7 +120,7 @@ class LocalConnection(Mapping):
 
     def __post_init__(self):
         config=dict(self.entries)
-        allowed={'host','port','user','dbname','passfile','password','connect_timeout','options'}
+        allowed={'host','port','user','dbname','passfile','password','connect_timeout','options','application_name'}
         if (os.environ.get('CJ_ENV')!='local' or len(config)!=len(self.entries) or set(config)-allowed
                 or type(config.get('host')) is not str or not config['host'].startswith('/')
                 or ',' in config['host'] or any(k.startswith(('PG','LIBPQ')) for k in os.environ)
