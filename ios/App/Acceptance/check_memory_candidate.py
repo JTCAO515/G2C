@@ -258,7 +258,7 @@ def main():
                 def stage_input(request):
                     query=parse_qs(urlsplit(request).query)
                     if set(query)!={'case'} or query['case']!=[executing_case]:raise ValueError('Staging requires the active candidate case')
-                    native.stage(tokens[active['case']])
+                    native.stage(case=query['case'][0])
                 control=ThreadingHTTPServer((tls.host if tls else '127.0.0.1',0),
                     authenticated_control(Control,control_token,stage_input,lambda: executing_case) if tls else Control)
                 if tls:tls.secure_http_server(control)
@@ -279,7 +279,7 @@ def main():
                         active['case']=case
                         detail=dict(status='RUNNING');report.setdefault('device_native',{})[test]=detail
                         case_output=output/'device-native'/test;case_output.mkdir(parents=True,mode=0o700)
-                        native=DeviceNative(args.device,BUNDLE,project,configuration_file,build,ROOT,case_output,tokens[case],control_token,detail)
+                        native=DeviceNative(args.device,BUNDLE,project,configuration_file,build,ROOT,case_output,tokens[case],control_token,detail,evidence_root=output,case_id=case)
                         selected=['MemoryCandidateUITests/'+test]
                         native.build_for_testing('Debug',selected,env)
                         if args.prepare_only:
@@ -307,7 +307,7 @@ def main():
                     def scan(container):
                         for path in [*container.rglob('*'),*output.rglob('*')]:
                             if path.is_file() and any(secret in path.read_bytes() for secret in secrets):raise AssertionError('credential leaked into candidate artifacts')
-                    if tls:native.cleanup_input()
+                    if tls:native.scan('Debug')
                     with_container(scan)
                     report.update(status='VERIFYING_CLEANUP',native='PASS',credential_scan='PASS')
             report['pg_stopped']=True

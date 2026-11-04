@@ -99,6 +99,17 @@ class LocalTLS:
                     ssl_version=ssl.PROTOCOL_TLS_SERVER, ssl_ciphers='ECDHE+AESGCM:ECDHE+CHACHA20')
 
 
+def private_directory(output, prefix):
+    """Validate the actual tempfile destination before it can receive inputs."""
+    output = Path(output).resolve()
+    private = Path(tempfile.mkdtemp(prefix=prefix)).resolve()
+    if private.is_relative_to(output) or output.is_relative_to(private) or private.is_relative_to(ROOT):
+        private.rmdir()  # Still empty: no certificate, token or raw data was written.
+        raise ValueError('Private temporary directory overlaps repository or evidence exports')
+    private.chmod(0o700)
+    return private
+
+
 def private_workspace(output, build=None):
     """Keep device inputs and derived products outside the export boundary."""
     output = Path(output).resolve()
@@ -106,8 +117,7 @@ def private_workspace(output, build=None):
         build = Path(build).resolve()
         if build.is_relative_to(output) or output.is_relative_to(build) or build.is_relative_to(ROOT):
             raise ValueError('Device build cache must be separate from repository and evidence exports')
-    private = Path(tempfile.mkdtemp(prefix='g2c-m4-private-project-'))
-    private.chmod(0o700)
+    private = private_directory(output, 'g2c-m4-private-project-')
     return private, build if build is not None else private / 'build'
 
 

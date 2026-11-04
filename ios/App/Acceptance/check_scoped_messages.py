@@ -23,7 +23,7 @@ if ARGS.device:
  if not ARGS.local_tls:parser.error('--device requires the approved --local-tls profile')
  if CASE.endswith('Largest'):parser.error('Device maximum-font case needs actual system font setup; not a launch-argument substitute')
  if CASE=='testFormalPlaceMapUnavailable':parser.error('Device map outage needs a real device network case; simulator delegate fault is not device evidence')
- from m4_device import LocalTLS,configure_project,private_workspace,scan_app_container,stage_accounts,discard_staged_accounts
+ from m4_device import LocalTLS,configure_project,private_workspace,private_directory,scan_app_container,stage_accounts,discard_staged_accounts
  from m4_artifacts import export_native_logs,redact
  TLS=LocalTLS.load(ARGS.local_tls)
  device_project_root,BUILD=private_workspace(OUT,BUILD)
@@ -606,7 +606,7 @@ try:
     (builder.directory/'G2CControl.swift').write_text(test_source)
     destination='platform=iOS,id='+ARGS.device if TLS else 'platform=iOS Simulator,id='+ARGS.simulator
     if TLS:
-     quarantine=Path(tempfile.mkdtemp(prefix='g2c-m4-private-native-'));quarantine.chmod(0o700)
+     quarantine=private_directory(OUT,'g2c-m4-private-native-')
      result=quarantine/(CASE+'.xcresult');r['private_native_result']=str(result);r['raw_native_bundle_shareable']=False;save()
      r['native_artifacts']=dict(status='UNRUN: native process has not reached a terminal exit',raw_bundle_shareable=False);save()
     else:result=OUT/(CASE+'.xcresult')

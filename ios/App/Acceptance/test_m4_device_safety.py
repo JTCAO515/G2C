@@ -4,6 +4,7 @@ from pathlib import Path
 import tempfile
 import importlib.util
 import shutil
+import sys
 import plistlib
 from types import SimpleNamespace
 import unittest
@@ -13,7 +14,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
 from m4_artifacts import export_native_logs, verified_public_certificate
-from m4_device import ROOT, configure_project, freeze_amap_key, private_workspace, stage_accounts
+from m4_device import ROOT, configure_project, freeze_amap_key, private_directory, private_workspace, stage_accounts
 
 
 class CertificatePackagingTests(unittest.TestCase):
@@ -130,6 +131,30 @@ class DeviceWorkspaceTests(unittest.TestCase):
             for build in (output,output/'dd',root,alias/'dd'):
                 with self.subTest(build=build):
                     with self.assertRaises(ValueError):private_workspace(output,build)
+
+    def test_actual_temp_destination_under_export_is_rejected_before_inputs(self):
+        from m4_native import DeviceNative
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);output=root/'exports';temporary=output/'native-temp';temporary.mkdir(parents=True)
+            with patch('tempfile.tempdir',str(temporary)):
+                with self.assertRaises(ValueError):private_workspace(output,root/'build')
+                with self.assertRaises(ValueError):private_directory(output,'raw-native-')
+                with self.assertRaises(ValueError):DeviceNative('SYNTHETIC','synthetic.bundle',root/'project',
+                    root/'config',root/'build',root,output/'case',{},'SYNTHETIC-CONTROL',{},evidence_root=output)
+            self.assertEqual(list(temporary.iterdir()),[])
+
+    def test_matrix_rejects_build_under_aggregate_exports_before_any_child(self):
+        spec=importlib.util.spec_from_file_location('m4_matrix',ROOT/'ios/App/Acceptance/check_m4_app.py')
+        module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+        with tempfile.TemporaryDirectory() as directory:
+            output=Path(directory)/'exports'
+            arguments=['matrix','--device','SYNTHETIC','--local-tls','SYNTHETIC',
+                '--run-context','SYNTHETIC','--output',str(output),'--build-dir',str(output/'derived'),
+                '--prepare-only','--step','accounts']
+            with patch.object(sys,'argv',arguments),patch('m4_device.LocalTLS.load'),patch.object(module.subprocess,'run') as child:
+                with self.assertRaisesRegex(ValueError,'separate'):module.main()
+                child.assert_not_called()
+            self.assertFalse(output.exists())
 
     def test_actual_generator_removes_production_in_both_device_modes(self):
         spec=importlib.util.spec_from_file_location('m4_fixture_generator',ROOT/'scripts/check_ios_trip_confirm.py')

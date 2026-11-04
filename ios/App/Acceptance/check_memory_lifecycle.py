@@ -285,7 +285,7 @@ def main():
                 def stage_input(request):
                     query=parse_qs(request.split('?',1)[1])
                     if set(query)!={'case'} or query['case']!=[active_case]:raise ValueError('Staging requires the active case')
-                    native.stage(tokens[active_case])
+                    native.stage(case=query['case'][0])
                 control=ThreadingHTTPServer((tls.host if tls else '127.0.0.1',0),
                     authenticated_control(Control,control_token,stage_input,lambda: active_case) if tls else Control)
                 if tls:tls.secure_http_server(control)
@@ -309,7 +309,7 @@ def main():
                             active_case=case;prepare(case)
                             detail=dict(status='RUNNING');report.setdefault('device_native',{})[case]=detail;save()
                             case_output=output/'device-native'/case;case_output.mkdir(parents=True,mode=0o700)
-                            native=DeviceNative(args.device,BUNDLE,project,configuration_file,build,ROOT,case_output,tokens[case],control_token,detail)
+                            native=DeviceNative(args.device,BUNDLE,project,configuration_file,build,ROOT,case_output,tokens[case],control_token,detail,evidence_root=output,case_id=case)
                             configuration='Release' if case=='testReleaseClosed' else 'Debug'
                             selected=['DevelopmentMemoryLifecycleUITests/'+case]
                             if configuration=='Release':native.build_for_testing('Debug',selected,env)

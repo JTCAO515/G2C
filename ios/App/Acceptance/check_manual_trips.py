@@ -487,7 +487,7 @@ try:
     entitlements=builder.directory/'Manual.entitlements';entitlements.write_bytes(plistlib.dumps({'application-identifier':bundle,'keychain-access-groups':[bundle]}));pbx.write_text(text.replace(json.dumps(str(APP/'ios/App/Development.entitlements')),json.dumps(str(entitlements))))
     if TLS:
      _,configuration_file,_=configure_project(project,TLS,control_url,control_token,bundle=bundle)
-     native=DeviceNative(a.device,bundle,project,configuration_file,BUILD,APP,OUT,tokens,control_token,r)
+     native=DeviceNative(a.device,bundle,project,configuration_file,BUILD,APP,OUT,tokens,control_token,r,evidence_root=OUT)
      selected=['DevelopmentScopedMessageUITests/'+CASE]
      native.build_for_testing('Debug',selected,dict(os.environ))
      if not a.prepare_only:r['test_summary']=native.run('Debug',selected,dict(os.environ))

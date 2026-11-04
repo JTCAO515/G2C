@@ -153,7 +153,7 @@ def main():
                 detail = dict(status="RUNNING"); report.setdefault("device_native", {})[variant] = detail
                 variant_output = output / (variant + "-device"); variant_output.mkdir(mode=0o700)
                 native = DeviceNative(args.device, BUNDLE, project, configuration_file, build_directory, ROOT,
-                    variant_output, {}, control_token, detail)
+                    variant_output, {}, control_token, detail, evidence_root=output)
                 selected = [test_class + "/" + test for test in tests]
                 native.build_for_testing("Debug", selected, env)
                 if args.prepare_only:

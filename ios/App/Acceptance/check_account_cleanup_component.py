@@ -465,7 +465,7 @@ def main():
                 def stage_input(request):
                     query=parse_qs(urlsplit(request).query)
                     if set(query)!={'case'} or query['case']!=[current['case']]:raise ValueError('Staging requires the active cleanup case')
-                    native.stage(tokens[current['case']])
+                    native.stage(case=query['case'][0])
                 def app_container():
                     if tls:
                         path=Path(tempfile.mkdtemp(prefix='device-cleanup-snapshot-',dir=root))/'app-data'
@@ -493,7 +493,7 @@ def main():
                     if tls:
                         detail=dict(status='RUNNING');report.setdefault('device_native',{})[case]=detail
                         case_output=output/'device-native'/case;case_output.mkdir(parents=True,mode=0o700)
-                        native=DeviceNative(args.device,BUNDLE,project,configuration_file,build,ROOT,case_output,tokens[case],control_token,detail)
+                        native=DeviceNative(args.device,BUNDLE,project,configuration_file,build,ROOT,case_output,tokens[case],control_token,detail,evidence_root=output,case_id=case)
                         selected=['DevelopmentDeviceCleanupUITests/'+case]
                         native.build_for_testing('Debug',selected,env)
                         if args.prepare_only:

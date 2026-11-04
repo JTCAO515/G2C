@@ -52,6 +52,7 @@ class DeviceCleanupTests(unittest.TestCase):
             root/'config', root/'build', root, root/'exports', {'A': 'SYNTHETIC-JWT'},
             'SYNTHETIC-CONTROL', {})
         native.output.mkdir()
+        native._staging_closed.clear()  # Fixture represents an executing native phase.
         self.addCleanup(lambda: shutil.rmtree(native.private))
         return native
 
@@ -109,6 +110,43 @@ class DeviceCleanupTests(unittest.TestCase):
                 with self.assertRaises(AssertionError): native.scan('Debug')
             self.assertTrue(native.report['app_staged_input_consumption'].startswith('FAIL'))
             self.assertTrue(native.report['staged_credential_cleanup'].startswith('PASS'))
+
+    def test_late_case_cannot_stage_into_next_native_execution(self):
+        with tempfile.TemporaryDirectory() as directory:
+            native=self.make(directory);native.case_id='testChineseLarge'
+            with patch('m4_native.copy_accounts') as copy:
+                with self.assertRaises(ValueError):native.stage(case='testEnglish')
+                copy.assert_not_called()
+                native.stage(case='testChineseLarge')
+                self.assertEqual(copy.call_args.args[-1],{'A':'SYNTHETIC-JWT'})
+
+    def test_cleanup_revokes_new_stages_and_waits_for_inflight_copy(self):
+        with tempfile.TemporaryDirectory() as directory:
+            native=self.make(directory);entered=threading.Event();release=threading.Event()
+            finished=threading.Event();file_present=[False];errors=[]
+            def copy(*args):
+                entered.set()
+                if not release.wait(3):raise TimeoutError('test copy release missing')
+                file_present[0]=True
+            def discard(*args):file_present[0]=False
+            def run(action):
+                try:action()
+                except BaseException as error:errors.append(error)
+            def cleanup():native.cleanup_input();finished.set()
+            with patch('m4_native.copy_accounts',side_effect=copy), patch('m4_native.discard_staged_accounts',side_effect=discard):
+                worker=threading.Thread(target=lambda:run(native.stage));worker.start()
+                self.assertTrue(entered.wait(1))
+                closer=threading.Thread(target=lambda:run(cleanup));closer.start()
+                self.assertTrue(native._staging_closed.wait(1))
+                self.assertFalse(finished.is_set())
+                release.set();worker.join(3);closer.join(3)
+                self.assertFalse(worker.is_alive());self.assertFalse(closer.is_alive());self.assertEqual(errors,[])
+                self.assertFalse(file_present[0]);self.assertFalse(native.staging_attempted)
+                self.assertTrue(native.report['staged_credential_cleanup'].startswith('PASS'))
+                with self.assertRaises(RuntimeError):native.stage()
+                # The next native run explicitly reopens the gate (Debug→Release).
+                native._staging_closed.clear();native.stage();self.assertTrue(file_present[0])
+                native.cleanup_input();self.assertFalse(file_present[0])
 
 
 class OperatorCaseTests(unittest.TestCase):

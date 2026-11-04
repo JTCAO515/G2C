@@ -64,6 +64,9 @@ def main():
         p.error('Device options require --device')
     os.umask(0o077)
     output, build = args.output.resolve(), args.build_dir.resolve()
+    if args.device:
+        from m4_device import private_workspace
+        _, build = private_workspace(output, build)
     if output.is_relative_to(ROOT) or build.is_relative_to(ROOT):
         raise ValueError('external evidence/build directories required')
     if subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT):

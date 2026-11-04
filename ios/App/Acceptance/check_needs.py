@@ -240,7 +240,7 @@ def main():
                     query=parse_qs(urlparse(request).query)
                     if set(query)!={'case'} or len(query['case'])!=1 or query['case'][0]!=executing_case:
                         raise ValueError('Staging requires the prepared active case')
-                    native.stage(tokens[query['case'][0]])
+                    native.stage(case=query['case'][0])
                 control=ThreadingHTTPServer((tls.host if tls else '127.0.0.1',0),
                     authenticated_control(Control,control_token,stage_input,lambda: executing_case) if tls else Control)
                 if tls:tls.secure_http_server(control)
@@ -258,7 +258,6 @@ def main():
                     text=text.replace(line,line+'\n'+line.replace('A00000000000000000000004','A0000000000000000000000C',1).replace('name = Debug;','name = Release;',1)).replace('buildConfigurations = (A00000000000000000000004);','buildConfigurations = (A00000000000000000000004, A0000000000000000000000C);');pbx.write_text(text)
                     if tls:
                         _,configuration_file,_=configure_project(project,tls,control_url,control_token,bundle=BUNDLE,include_release=True)
-                        private_tokens={case+'.'+key:token for case,pair in tokens.items() for key,token in pair.items()}
                     for case in ([args.case] if args.case else CASES):
                         executing_case=case
                         if tls:
@@ -266,7 +265,7 @@ def main():
                             report.setdefault('device_native',{})[case]=case_report;save()
                             case_output=output/'device-native'/case;case_output.mkdir(parents=True,mode=0o700)
                             native=DeviceNative(args.device,BUNDLE,project,configuration_file,build,ROOT,
-                                case_output,private_tokens,control_token,case_report)
+                                case_output,tokens[case],control_token,case_report,evidence_root=output,case_id=case)
                             configuration='Release' if case=='testReleaseClosed' else 'Debug'
                             selected=['DevelopmentNeedsUITests/'+case]
                             if configuration=='Release':native.build_for_testing('Debug',selected,env)

@@ -9,12 +9,12 @@ import json
 from pathlib import Path
 import plistlib
 import subprocess
-import tempfile
+import threading
 import time
 from urllib.parse import parse_qs, urlsplit
 
 from m4_artifacts import export_native_logs, redact
-from m4_device import copy_accounts, discard_staged_accounts, scan_app_container, staged_accounts_present
+from m4_device import copy_accounts, discard_staged_accounts, scan_app_container, staged_accounts_present, private_directory
 
 
 def authenticated_control(base, token, stage, current_case=None):
@@ -44,18 +44,21 @@ def authenticated_control(base, token, stage, current_case=None):
 
 class DeviceNative:
     def __init__(self, device, bundle, project, configuration_file, build, root, output,
-                 tokens, control_token, report):
+                 tokens, control_token, report, evidence_root=None, case_id=None):
         self.device, self.bundle = device, bundle
         self.project, self.configuration_file = Path(project), Path(configuration_file)
         self.build, self.root, self.output = Path(build), Path(root), Path(output)
         for path in (self.build, self.project):
             if path.resolve().is_relative_to(self.output.resolve()):
                 raise ValueError('Device inputs and build products must be outside evidence exports')
-        self.tokens = tokens
+        self.tokens = dict(tokens)
+        self.case_id = case_id
         self.secrets = [*tokens.values(), control_token]
         self.report = report
-        self.private = Path(tempfile.mkdtemp(prefix='g2c-m4-private-native-'))
-        self.private.chmod(0o700)
+        self.private = private_directory(evidence_root or output, 'g2c-m4-private-native-')
+        self._staging_lock = threading.RLock()
+        self._staging_closed = threading.Event()
+        self._staging_closed.set()
         self.staging_attempted = False
         self.configuration = None
 
@@ -105,11 +108,16 @@ class DeviceNative:
         if result.returncode:
             raise RuntimeError('Approved device App install failed')
 
-    def stage(self, tokens=None):
-        # Set intent first: a failed copy can still leave an input on device.
-        self.staging_attempted = True
-        copy_accounts(self.device, self.bundle, self.private,
-                      self.tokens if tokens is None else tokens)
+    def stage(self, case=None):
+        with self._staging_lock:
+            if self.case_id is not None and case != self.case_id:
+                raise ValueError('Staging case differs from this native execution')
+            if self._staging_closed.is_set():
+                raise RuntimeError('Device input staging is closed outside native execution')
+            # Intent is recorded before copy; cleanup waits for this lock even
+            # when a daemon HTTP request outlives the native test process.
+            self.staging_attempted = True
+            copy_accounts(self.device, self.bundle, self.private, self.tokens)
 
     def run(self, configuration, tests, env):
         self.configuration = configuration
@@ -128,6 +136,8 @@ class DeviceNative:
                 raise TimeoutError('Approved device remained locked after build')
             time.sleep(5)
         self.install(configuration)
+        with self._staging_lock:
+            self._staging_closed.clear()
         self.report['status'] = 'RUNNING'
         self.report['native_phase'] = 'test-without-building ' + configuration
         self.save_progress()
@@ -157,38 +167,43 @@ class DeviceNative:
         return summary
 
     def scan(self, configuration):
-        if self.staging_attempted:
-            present = staged_accounts_present(self.device, self.bundle)
-            self.report['app_staged_input_consumption'] = (
-                'UNRUN: Release must ignore operator input' if configuration == 'Release'
-                else ('FAIL: App left one-use input' if present else 'PASS: App consumed one-use input'))
-        self.cleanup_input()
-        # Even an interrupted copy or rejected credential scan stays private.
-        container = self.private / (configuration + '-app-data')
-        scan_app_container(self.device, self.bundle, container, self.secrets)
-        digest = hashlib.sha256(); count = 0
-        for path in sorted(container.rglob('*')):
-            if path.is_file() and not path.is_symlink():
-                data = path.read_bytes(); count += 1
-                digest.update(hashlib.sha256(data).digest())
-        self.report['container_scan'] = dict(status='PASS', files=count,
-            content_hash=digest.hexdigest(), raw_container_shareable=False)
-        if self.report.get('app_staged_input_consumption', '').startswith('FAIL'):
-            raise AssertionError('App failed to consume its one-use input; operator cleanup is separate')
-        return container
+        self._staging_closed.set()
+        with self._staging_lock:
+            if self.staging_attempted:
+                present = staged_accounts_present(self.device, self.bundle)
+                self.report['app_staged_input_consumption'] = (
+                    'UNRUN: Release must ignore operator input' if configuration == 'Release'
+                    else ('FAIL: App left one-use input' if present else 'PASS: App consumed one-use input'))
+            self.cleanup_input()
+            # Even an interrupted copy or rejected credential scan stays private.
+            container = self.private / (configuration + '-app-data')
+            scan_app_container(self.device, self.bundle, container, self.secrets)
+            digest = hashlib.sha256(); count = 0
+            for path in sorted(container.rglob('*')):
+                if path.is_file() and not path.is_symlink():
+                    data = path.read_bytes(); count += 1
+                    digest.update(hashlib.sha256(data).digest())
+            self.report['container_scan'] = dict(status='PASS', files=count,
+                content_hash=digest.hexdigest(), raw_container_shareable=False)
+            if self.report.get('app_staged_input_consumption', '').startswith('FAIL'):
+                raise AssertionError('App failed to consume its one-use input; operator cleanup is separate')
+            return container
 
     def cleanup_input(self):
-        if not self.staging_attempted:
-            return
-        try:
-            if self.configuration == 'Release':
-                # Same run's signed Debug package exposes only the existing
-                # exact one-use-file discard action. No business data is erased.
-                self.install('Debug')
-                self.configuration = 'Debug'
-            discard_staged_accounts(self.device, self.bundle)
-        except Exception:
-            self.report['staged_credential_cleanup'] = 'FAIL: device cleanup pending'
-            raise
-        self.report['staged_credential_cleanup'] = 'PASS: exact one-use input absent'
-        self.staging_attempted = False
+        # Revoke new requests before waiting for any copy already in flight.
+        self._staging_closed.set()
+        with self._staging_lock:
+            if not self.staging_attempted:
+                return
+            try:
+                if self.configuration == 'Release':
+                    # Same run's signed Debug package exposes only the existing
+                    # exact one-use-file discard action. No business data is erased.
+                    self.install('Debug')
+                    self.configuration = 'Debug'
+                discard_staged_accounts(self.device, self.bundle)
+            except Exception:
+                self.report['staged_credential_cleanup'] = 'FAIL: device cleanup pending'
+                raise
+            self.report['staged_credential_cleanup'] = 'PASS: exact one-use input absent'
+            self.staging_attempted = False
