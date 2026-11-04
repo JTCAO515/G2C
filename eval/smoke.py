@@ -22,6 +22,9 @@ from real import (ROOT, STATE, save, keychain, private_database, tcp_app, run_ca
                   load_run_context, ConfirmationSigner, RealServices, MeteredDashScopeProvider,
                   DashScopeConfig, M4_BASE, M4_MODEL, AuthorizationBudget, ABI,
                   dev_auth, local_run_context)
+from real import create_real_services
+from hk import source_candidate, require_output
+from hk import source_info
 from real_budget import estimate
 from real_budget import verified_journal
 from real_phase import claim, claimed, finish_smoke, verify_smoke
@@ -238,25 +241,26 @@ def main():
     if claimed('smoke'):
         print('READ_ONLY: canonical smoke phase already claimed; no request/retry');return 0
     if os.environ.get('CJ_M4_SYNTHETIC_ONLY')!='1':parser.error('explicit M4 synthetic-only activation required')
-    candidate=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
+    require_output(args.output)
+    candidate=source_candidate()
     before=verified_journal()
     forecast=estimate(before,include_smoke=True)
     if not forecast['within_authorization']:raise ValueError('smoke_plus_full_estimate_exceeds_authorization_report_495')
-    model_key=keychain('g2c-dashscope');amap_key=keychain('g2c-amap-web-key')
+    today=datetime.now(ZoneInfo('Asia/Shanghai')).date().isoformat()
+    subjects=frozenset('m4-synthetic-r2-smoke-'+c['id']+'-'+l for c in cases(today) for l in ('zh','en'))
+    services=create_real_services(subjects);budget=services.model.authorization
     if not claim('smoke',args.output,candidate):
         print('READ_ONLY: canonical smoke phase already claimed; no request/retry');return 0
-    budget=AuthorizationBudget(STATE);budget.check_date();verified_journal()
-    today=datetime.now(ZoneInfo('Asia/Shanghai')).date().isoformat()
+    budget.check_date();verified_journal()
     plan=dict(candidate_id=candidate,batch_id='round2-smoke',cases=cases(today),source_date=today,created_at=datetime.now(timezone.utc).isoformat(),
               model_id=M4_MODEL,endpoint=M4_BASE,collector_sha256=sha256(Path(__file__).read_bytes()).hexdigest(),
-              authorization='PR540 M4 items3/4; synthetic only; no old action replay',planned_n=6)
+              authorization='PR540 M4 items3/4 and JT current495 decisions; synthetic only; no old action replay',
+              execution_source=source_info(),planned_n=6)
     args.output.mkdir(parents=True,mode=0o700);(args.output/'raw').mkdir(mode=0o700)
     save(args.output/'plan.json',plan);save(args.output/'budget-before.json',before)
     save(args.output/'estimate.json',forecast)
     save(args.output/'packages.json',{k:version(k) for k in ('httpx','psycopg','uvicorn','fastapi')})
-    model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,model_key,max_output_tokens=1024),budget)
-    subjects=frozenset('m4-synthetic-r2-smoke-'+c['id']+'-'+l for c in plan['cases'] for l in ('zh','en'))
-    services=RealServices(model,amap_key,subjects);rows=[]
+    rows=[]
     with redirect_stdout(io.StringIO()),private_database('real-r2-smoke') as conninfo:
         auth=conninfo.parent/'auth';dev_auth.init(auth,sorted(subjects));now=int(time.time())
         profile=conninfo.parent/'run.json'
