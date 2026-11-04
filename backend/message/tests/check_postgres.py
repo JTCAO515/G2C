@@ -83,6 +83,15 @@ class PostgresTests(unittest.TestCase):
         self.assertEqual(self.make().pending(), [r])
         self.assertEqual(self.make().query('m1').raw, wire())
 
+    def test_pending_rotates_conversations_so_a_backlog_cannot_starve_others(self):
+        with connect() as c:
+            c.execute('INSERT INTO cj_message_chat(scope,conversation_id,generation,epoch) VALUES (%s,%s,%s,0)', (self.scope,'zzz','g1'))
+        backlog = [self.service.receive(wire(f'm{i}', cid='chat', sequence=i)) for i in range(3)]
+        later = self.service.receive(wire('z0', cid='zzz', sequence=0))
+        # Earliest of each conversation first, then later positions; order within a conversation is kept.
+        self.assertEqual(self.service.pending(2), [backlog[0], later])
+        self.assertEqual(self.service.pending(), [backlog[0], later, backlog[1], backlog[2]])
+
     def test_real_transaction_rollback_after_both_inserts(self):
         broken = self.make(lambda:Proxy(connect(), delivery=True))
         with self.assertRaises(RuntimeError): broken.receive(wire())
