@@ -89,7 +89,7 @@ def main():
                     assert response.status_code==200,response.status_code
                 latest=checkpoint.export(safety,control,base=base,schema_root=schema_root)
                 assert latest['fences']['cj_account_fence'] and latest['fences']['cj_memory_erasure_fence']
-                isolated=clusters.enter_context(pg_suites.cluster('hk-restore',port=55882,role='cj_hk_restore_operator',root=root/'target-pg',socket=root/'t'))
+                isolated=clusters.enter_context(staging.cluster())
                 target=dict(isolated,dbname='isolated_restore')
                 with psycopg.connect(**isolated,autocommit=True) as connection:connection.execute('CREATE DATABASE isolated_restore TEMPLATE template0')
                 try:checkpoint.restore(target,base,base,control,target_control,schema_root=schema_root)
@@ -126,6 +126,7 @@ def main():
                     restored.execute("SET TIME ZONE 'UTC'")
                     source.execute("SET TIME ZONE 'UTC'")
                     checkpoint.require_release(restored,target_control)
+                    assert staging.sequence_state(restored,list(latest['sequences']))==latest['sequences']
                     assert checkpoint.local.fence_state(restored)==checkpoint.local.fence_state(source)
                     assert restored.execute('SELECT count(*) FROM cj_message_receipt WHERE scope=%s',(scope_for(ISSUER,'retention-a'),)).fetchone()==(0,)
                     assert restored.execute('SELECT count(*) FROM cj_message_receipt WHERE scope=%s',(scope_for(ISSUER,'retention-b'),)).fetchone()==(1,)
@@ -149,8 +150,12 @@ def main():
                     with runtime.connect(scope_for(ISSUER,'retention-a')) as connection:connection.execute('INSERT INTO cj_message_scope VALUES(%s)',(scope_for(ISSUER,'retention-a'),))
                 except psycopg.Error:pass
                 else:raise AssertionError('retired namespace recreated')
-                second=dict(isolated,dbname='second_restore')
-                with psycopg.connect(**isolated,autocommit=True) as connection:connection.execute('CREATE DATABASE second_restore TEMPLATE template0')
+                original_release=(target_control/'release.json').read_bytes()
+                try:checkpoint.restore(target,base,safety,control,target_control,schema_root=schema_root)
+                except ValueError:pass
+                else:raise AssertionError('original successful target restore command repeated')
+                assert (target_control/'release.json').read_bytes()==original_release
+                second=clusters.enter_context(staging.cluster())
                 try:checkpoint.restore(second,base,safety,control,root/'second-control',schema_root=schema_root)
                 except ValueError:pass
                 else:raise AssertionError('consumed checkpoint reused')
@@ -164,6 +169,43 @@ def main():
                     with runtime.connect(scope_for(ISSUER,'retention-b')) as connection:connection.execute('SELECT 1')
                 except (OSError,ValueError):pass
                 else:raise AssertionError('retired isolation target admitted a new transaction')
+                # New rehearsal, with its own checkpoints/target: prove that
+                # a write accepted on the active isolated side cannot be lost
+                # by switching back to the older source state.
+                next_base=root/'next-base';next_safety=root/'next-safety'
+                checkpoint.export(next_base,control,schema_root=schema_root)
+                checkpoint.export(next_safety,control,base=next_base,schema_root=schema_root)
+                changing=clusters.enter_context(staging.cluster());changing_control=root/'changing-control'
+                checkpoint.restore(changing,next_base,next_safety,control,changing_control,schema_root=schema_root)
+                changing_path=root/'changing.json';changing_path.write_text(json.dumps(changing))
+                targets=('checkpoints/run','business/message','business/needs-current-planning','business/usage')
+                changing_registry=root/'changing-registry.json'
+                changing_registry.write_bytes(encode(dict(version='hk-target-retirement-fixture',stores=[
+                    dict(id='checkpoints',objects=[dict(id='run',cleanup_protocol='CLEANUP@1.1')]),
+                    dict(id='business',objects=[dict(id=name.split('/')[1],cleanup_protocol='CLEANUP@1.1') for name in targets[1:]])])))
+                changing_options=Configuration({'target-test':b'hk-target-only-synthetic-key-0000'},'target-test',3600,targets,changing_registry)
+                changing_app=create_local_app(conninfo_path=changing_path,auth_dir=account/'auth',run_context=load_run_context(account/'run.json'),cleanup_configuration=changing_options)
+                target_headers={'Authorization':'Bearer '+dev_auth.token(account/'auth','retention-b',300),'Content-Type':'application/octet-stream'}
+                with TestClient(changing_app) as client:
+                    def retire_post(url,value):
+                        response=client.post(url,content=encode(value),headers=target_headers)
+                        assert response.status_code==200,response.status_code
+                        return response.json()
+                    device=retire_post('/v1/cleanup-devices',dict(version='CLEANUP-DEVICE@1',action_id='register-target',device_id='target-device',state_ref=digest(b'synthetic-target-device')))
+                    prepared=retire_post('/v1/account-cleanup-operations',dict(version='CLEANUP-API@1',action_id='prepare-target',binding_id=device['binding_id']))
+                    result=retire_post('/v1/account-cleanup-operations/'+prepared['operation_id']+'/confirmation',dict(version='CLEANUP-API@1',registry_digest=prepared['registry_digest'],confirmation='DELETE_ACCOUNT'))
+                    assert result['business_access']=='revoked' and result['online_status']=='complete'
+                with psycopg.connect(**changing) as connection,psycopg.connect(**config) as source:
+                    assert connection.execute('SELECT count(*) FROM cj_message_receipt WHERE scope=%s',(scope_for(ISSUER,'retention-b'),)).fetchone()==(0,)
+                    assert source.execute('SELECT count(*) FROM cj_message_receipt WHERE scope=%s',(scope_for(ISSUER,'retention-b'),)).fetchone()==(1,)
+                    for name,(last,called) in latest['sequences'].items():
+                        actual=connection.execute('SELECT pg_catalog.nextval(%s::regclass)',(name,)).fetchone()[0]
+                        assert actual==(last+1 if called else last),(name,last,called,actual)
+                try:checkpoint.finish_rehearsal(changing,control,changing_control)
+                except ValueError as error:assert str(error)=='isolated_target_state_changed_keep_source_closed'
+                else:raise AssertionError('isolation write was lost on source resume')
+                assert not (control/'release.json').exists() and (changing_control/'release.json').exists()
+
 
     print('PASS L1 private PG canonical account/item erasure → app-only cloud-format checkpoint → new isolated database; physical absence, owner isolation, exact UNKNOWN/usage, fences-first, real post-safety HTTP retirement rejects stale archive before target writes, exclusive release/resume, old/consumed safety refused; real cloud/OSS UNRUN')
 

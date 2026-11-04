@@ -32,7 +32,8 @@ schema资产绑定原迁移hash并放进镜像；镜像标签和OCI revision均�
 
 迁移预算前停止并确认所有Mac旧producer已结束；先核原请求结果，未决原动作保持UNKNOWN。
 `scripts/m4_budget_transfer.py seal`在原共享SQLite事务锁内封存，再导出同一账本。
-只有指定主机激活和精确文件hash才可adopt。旧实例每次写入都会查producer标识；
+只有指定主机激活和精确文件hash才可adopt。旧实例每次写入都会查producer标识；HK每次SQLite变更先在不随库恢复的control写WRITE_INTENT，再提交、推进精确全行hash锚点；
+账本回退或跨存储未知阶段明确HOLD，不因行数仍大于初始收养值而重开原attempt。
 不能重设原attempt、释放UNKNOWN或另起新预算。运行中的旧二进制不支持此迁移，必须先停止。
 
 建立既有主机内的control(0755)、heartbeat/budget(10001)、backups(0700)与私有TLS目录。
@@ -50,7 +51,7 @@ Caddy仅发布80/443、自动HTTPS并保留流式响应；应用端口不对主�
 
 安装本目录service/timer到systemd；每天19:00 UTC（北京时间03:00）停止并排空本测试环境writer，
 调用operator在同一条已验身份、reset及TLS的源连接内锁定并COPY同快照业务行到全新Unix暂存库；
-核逐表UTC完整行集hash相同后，仅对暂存库执行native pg_dump，云凭据不交给pg_dump子连接。确认OSS原对象HEAD后重开服务。失败保持停止并告警。
+核逐表UTC完整行集hash及identity sequence的last_value/is_called相同后，仅对暂存库执行native pg_dump，云凭据不交给pg_dump子连接。确认OSS原对象HEAD后重开服务。失败保持停止并告警。
 包只含CJ业务数据，迁移ledger和可轮转identity由镜像规范schema在恢复时创建。
 `g2c-beta-data-checkpoint.1`是独立的云应用数据包；旧本机归档格式及恢复入口不变。
 
@@ -61,7 +62,7 @@ OSS固定香港内部HTTPS端点、私有/AES256、backups/前缀，SDK自动重
 每日阶段持久化，未完成的原检查点先查原制品和数据库identity，不再导出第二份冒充恢复成功。
 桶30天生命周期需按已授权能力核实，实际到期删除需经过30天，不以配置截图冒充实际删除。
 
-恢复目标是**同一主机内全新、仅Unix socket的独立PG17容器/集群**，不创建新云项目。
+恢复目标是**同一主机内全新、仅Unix socket的独立PG17集群**，由本次operator进程亲自initdb/启动并绑定system_identifier/data_directory；核服务端listen_addresses为空和仅演练数据库，不接受任意目标URI/旧共享集群，不创建新云项目。
 原集群中新空库仍有全局应用角色，会被明确拒绝；不重用角色、不给云角色扩权。
 恢复按镜像规范pre-data → 最新检查点DATA（fence先行）→ 原post-data执行单事务，
 不禁用trigger/replication-role，不删改原约束或RLS。历史数据不会被误当成新业务动作执行。
@@ -69,7 +70,7 @@ OSS固定香港内部HTTPS端点、私有/AES256、backups/前缀，SDK自动重
 不能重复恢复抹去后来删除。恢复前再次锁定当前源完整行集；如备份后发生注销/单条删除或其他写入，旧安全包明确拒绝且不消费、不写目标。
 HK运行时每个业务事务在安装LOCAL scope前获取共享release事务锁并重新验证签名release；
 独立cleanup事务同样先取共享锁，再由已获准runtime独立登录只读核库identity（cleanup未获schema元数据权限，不新增GRANT或用管理员执行删除）；恢复持独占锁，先关闭并轮换源identity，再签发隔离目标release，保持单一可写侧。
-隔离验证结束使用同原目标/控制目录运行recovery的 `--finish-rehearsal`（不传base/safety）：先关闭并轮换隔离目标，核源未变化后恢复源release。中间失败保持原记录待核，不自动重做恢复。
+recovery命令在同一进程内创建目标、恢复并验证，结束时先核目标完整行集/sequence均未变化，再关闭并轮换隔离目标，核源未变化后恢复源release。若活跃隔离侧接受了写入、注销或删除，拒绝切回旧源，保持源关闭；中间失败保留原记录待核，不自动重做恢复。
 隔离目标不自动替换现有云库或开放公网。
 
 ## 验证

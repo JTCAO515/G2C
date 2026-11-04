@@ -6,6 +6,8 @@ import os
 from pathlib import Path
 import sys
 import time
+import threading
+from contextlib import contextmanager
 
 import psycopg
 from fastapi.responses import JSONResponse
@@ -48,6 +50,19 @@ def api(runtime):
     uvicorn.run(app,host='0.0.0.0',port=8765,access_log=False)
 
 
+@contextmanager
+def worker_pulse():
+    stop=threading.Event()
+    def pulse():
+        while not stop.is_set():
+            path=heartbeat();temporary=path.with_suffix('.tmp')
+            temporary.write_text(json.dumps(dict(at=time.time(),component='worker',status='ready')));temporary.replace(path)
+            stop.wait(3)
+    thread=threading.Thread(target=pulse,name='g2c-worker-pulse',daemon=True);thread.start()
+    try:yield
+    finally:stop.set();thread.join()
+
+
 def worker(runtime):
     # Missing transferred journal is a configuration failure, never a new quota.
     if not (Path.home()/'.local/share/g2c/m4-real-services/m4-outflows.sqlite').is_file():
@@ -60,7 +75,8 @@ def worker(runtime):
         try:
             authorization()
             with database._open_runtime_connection() as connection:checkpoint.require_release(connection,control())
-            outcomes=run_worker.run_once(database,services.model,runtime.auth,tools_configuration=tools,real_services=services,account_admission=True)
+            with worker_pulse():
+                outcomes=run_worker.run_once(database,services.model,runtime.auth,tools_configuration=tools,real_services=services,account_admission=True)
             for outcome in outcomes:
                 if outcome.status in ('unknown','failed'):
                     print('ALERT run_'+outcome.status+' run_id='+outcome.run_id,file=sys.stderr,flush=True)

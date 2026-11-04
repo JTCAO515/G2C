@@ -4,9 +4,10 @@ One durable intent per original Meter attempt; no retry or financial settlement.
 All attempts retain a conservative CNY hold when actual billing is unavailable.
 The operator keeps this journal across releases/restores, outside database dumps.
 """
-from contextlib import contextmanager
+from contextlib import contextmanager,nullcontext
 from datetime import datetime
 import hashlib
+import fcntl
 import json
 import os
 from pathlib import Path
@@ -26,6 +27,21 @@ HK_ANCHOR=Path('/control/budget/adoption.json')
 
 def canonical(value):
     return json.dumps(value,ensure_ascii=False,sort_keys=True,separators=(',',':'),allow_nan=False).encode('utf8')
+
+
+def journal_state(db):
+    rows=db.execute('SELECT id,kind,input_sha,state,receipt FROM attempt ORDER BY id').fetchall()
+    return len(rows),hashlib.sha256(canonical(rows)).hexdigest()
+
+
+def save_anchor(value):
+    temporary=HK_ANCHOR.with_suffix('.tmp')
+    with temporary.open('x') as output:
+        os.chmod(temporary,0o600);json.dump(value,output);output.flush();os.fsync(output.fileno())
+    temporary.replace(HK_ANCHOR)
+    descriptor=os.open(HK_ANCHOR.parent,os.O_RDONLY|os.O_DIRECTORY)
+    try:os.fsync(descriptor)
+    finally:os.close(descriptor)
 
 
 class AuthorizationBudget:
@@ -67,16 +83,33 @@ class AuthorizationBudget:
         if self.producer==HK_PRODUCER:
             anchor=json.loads(HK_ANCHOR.read_bytes())
             if (anchor['state']!='ADOPTED' or anchor['ledger_id']!=self.ledger_id
-                    or db.execute('SELECT count(*) FROM attempt').fetchone()[0]<anchor['attempt_count']):
+                    or journal_state(db)!=(anchor['attempt_count'],anchor['attempts_sha256'])):
                 raise BudgetUnknown('M4 non-restored adoption control differs')
+            return anchor
+
+    @contextmanager
+    def mutation(self):
+        # Commit a non-restored write intent before SQLite can commit. A crash
+        # between stores is HOLD, never permission to replay an original send.
+        lock=(HK_ANCHOR.parent/'adoption.lock').open('a') if self.producer==HK_PRODUCER else nullcontext()
+        with lock as handle:
+            if self.producer==HK_PRODUCER:fcntl.flock(handle,fcntl.LOCK_EX)
+            intent=None
+            with self.connect() as db:
+                db.execute('BEGIN IMMEDIATE')
+                anchor=self.require_producer(db)
+                yield db
+                if self.producer==HK_PRODUCER:
+                    count,digest=journal_state(db)
+                    intent=dict(anchor,state='WRITE_INTENT',attempt_count=count,attempts_sha256=digest)
+                    save_anchor(intent)
+            if intent is not None:save_anchor(dict(intent,state='ADOPTED'))
 
     def begin(self,attempt,kind,raw):
         self.check_date()
         if kind not in LIMITS or type(attempt) is not str or not 1<=len(attempt)<=128:
             raise BudgetUnknown('M4 original attempt unavailable')
-        with self.connect() as db:
-            db.execute('BEGIN IMMEDIATE')
-            self.require_producer(db)
+        with self.mutation() as db:
             if db.execute('SELECT 1 FROM attempt WHERE id=?',(attempt,)).fetchone():
                 raise BudgetUnknown('M4 original attempt is read only')
             counts=dict(db.execute('SELECT kind,count(*) FROM attempt GROUP BY kind'))
@@ -90,9 +123,7 @@ class AuthorizationBudget:
 
     def finish(self,attempt,receipt):
         # The producer supplies bounded metadata only; keys/body/text never enter.
-        with self.connect() as db:
-            db.execute('BEGIN IMMEDIATE')
-            self.require_producer(db)
+        with self.mutation() as db:
             if 'receipt_sha256' in receipt and db.execute("SELECT 1 FROM attempt WHERE id<>? AND kind='model' AND json_extract(receipt,'$.receipt_sha256')=?",(attempt,receipt['receipt_sha256'])).fetchone():
                 raise BudgetUnknown('M4 supplier receipt identity reused; original outcome unknown')
             if db.execute('UPDATE attempt SET state=\'RECEIVED\',receipt=? WHERE id=? AND state=\'INTENT\'',

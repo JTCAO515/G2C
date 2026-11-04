@@ -27,6 +27,8 @@ def generate(config,root):
         for table in tables:
             if table not in ('cj.schema_migrations','cj.deployment_identity') and connection.execute('SELECT 1 FROM '+table+' LIMIT 1').fetchone():
                 raise ValueError('schema_blueprint_must_have_no_business_data')
+    from .staging import sequence_names
+    with psycopg.connect(**config) as connection:sequences=sequence_names(connection)
     roles=[]
     for migration in migrate.load():
         roles+=re.findall(r'^CREATE ROLE cj_(?:m1_runtime|local_cleanup)\b[^\n]*;', (migrate.ROOT/migration['file']).read_text(),re.M)
@@ -36,9 +38,12 @@ def generate(config,root):
         with (root/(section+'.sql')).open('xb') as output:
             subprocess.run(['pg_dump','--schema-only','--no-owner','--section='+section],
                 env=pg_environment(config),stdout=output,stderr=subprocess.PIPE,check=True,timeout=120)
-    profile=dict(version='g2c-beta-image-schema.1',migrations=migration_identity(),tables=tables,
+    profile=dict(version='g2c-beta-image-schema.1',migrations=migration_identity(),tables=tables,sequences=sequences,
         files={name:checksum(root/name) for name in ('roles.sql','pre-data.sql','post-data.sql')})
     (root/'profile.json').write_text(json.dumps(profile,sort_keys=True))
+    # Schema contains only public DDL/hashes. Non-root images must traverse it.
+    root.chmod(0o755)
+    for name in (*profile['files'],'profile.json'):(root/name).chmod(0o644)
 
 
 def load(root):

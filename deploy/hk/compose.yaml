@@ -50,6 +50,7 @@ services:
       - /srv/g2c-beta/control:/control:ro
       - /srv/g2c-beta/heartbeat:/heartbeat
       - /srv/g2c-beta/budget:/home/cj/.local/share/g2c/m4-real-services
+      - /srv/g2c-beta/control/budget:/control/budget
     depends_on: {migrate: {condition: service_completed_successfully}}
   caddy:
     image: caddy:2.11.7-alpine@sha256:e70b164da81ef698b3ad19af799ea6086ce6d9e48ed4079eb9fe26f6fbf14ee5

@@ -59,6 +59,7 @@ def test_shared_budget_transfer_keeps_unknown_and_fences_stale_instances(tmp_pat
     root=tmp_path/'hk'
     moved=AuthorizationBudget(root,clock=clock);assert moved.inspect()==before
     with pytest.raises(BudgetUnknown):moved.begin('unknown-original','model',b'synthetic')
+    original_live=(root/'m4-outflows.sqlite').read_bytes()
     moved.begin('new-hk','model',b'synthetic')
     assert len(moved.inspect())==3 and original.inspect()==before
     with pytest.raises(ValueError,match='no_replay'):adopt(destination,sha)
@@ -67,6 +68,18 @@ def test_shared_budget_transfer_keeps_unknown_and_fences_stale_instances(tmp_pat
     with pytest.raises(BudgetUnknown):AuthorizationBudget(root,clock=clock)
     with pytest.raises(ValueError,match='no_replay'):adopt(destination,sha)
     saved.rename(live)
+    current=live.read_bytes();live.write_bytes(original_live)
+    with pytest.raises(BudgetUnknown):AuthorizationBudget(root,clock=clock)
+    live.write_bytes(current)
+    updates=[0];write=budget_module.save_anchor
+    def interrupted(value):
+        updates[0]+=1
+        if updates[0]==2:raise OSError('synthetic anchor completion ACK lost')
+        return write(value)
+    with patch.object(budget_module,'save_anchor',interrupted),pytest.raises(OSError):moved.begin('unknown-cross-store','model',b'synthetic')
+    assert json.loads(budget_module.HK_ANCHOR.read_bytes())['state']=='WRITE_INTENT'
+    with pytest.raises(BudgetUnknown):AuthorizationBudget(root,clock=clock)
+    with pytest.raises(BudgetUnknown):moved.begin('unknown-cross-store','model',b'synthetic')
 
 
 def test_budget_transfer_refuses_empty_and_wrong_original_paths(tmp_path,monkeypatch):
@@ -195,3 +208,47 @@ def test_trial_expiry_at_final_model_and_fact_guard_sends_nothing(tmp_path,monke
         with pytest.raises(BudgetUnknown):list(prepared.bind_operation(operation,expired_guard)())
         send.assert_not_called()
     assert [(r['kind'],r['state']) for r in budget.inspect()]==[('model','INTENT'),('fact','INTENT')]
+
+
+def test_worker_pulse_keeps_queries_and_stop_gate_available_during_dispatch(tmp_path,monkeypatch):
+    import time
+    from deploy.hk import entrypoint
+    activate(monkeypatch);monkeypatch.setenv('CJ_DEPLOY_HEARTBEAT',str(tmp_path))
+    monkeypatch.setenv('CJ_DEPLOY_CONTROL',str(tmp_path/'control'))
+    now=[100.0];monkeypatch.setattr(entrypoint.time,'time',lambda:now[0])
+    database=SimpleNamespace(_open_runtime_connection=lambda:nullcontext(None))
+    from contextlib import nullcontext
+    with patch.object(entrypoint.checkpoint,'require_release',return_value=None),entrypoint.worker_pulse():
+        deadline=time.monotonic()+6
+        while not (tmp_path/'worker.json').exists() and time.monotonic()<deadline:time.sleep(.01)
+        assert entrypoint.ready(database) is None
+        now[0]=120.0
+        # This is the same worker pulse while its dispatch body is still blocked.
+        assert entrypoint.ready(database)=='worker_heartbeat_stale'
+        while json.loads((tmp_path/'worker.json').read_bytes())['at']<120 and time.monotonic()<deadline:time.sleep(.01)
+        assert entrypoint.ready(database) is None
+
+
+def test_recovery_preserves_existing_target_gate_before_any_source_failure(tmp_path,monkeypatch):
+    from contextlib import contextmanager
+    from deploy.hk import schema,staging
+    source=tmp_path/'source';target=tmp_path/'target';source.mkdir();target.mkdir()
+    release=target/'release.json';release.write_bytes(b'original untouched release')
+    @contextmanager
+    def failed_operator():
+        raise ValueError('synthetic source unavailable')
+        yield
+    monkeypatch.setattr(checkpoint,'operator',failed_operator)
+    monkeypatch.setattr(schema,'load',lambda root:{})
+    config=dict(host='/tmp/synthetic-unconnected-only',dbname='postgres',user='synthetic')
+    with pytest.raises(ValueError,match='source unavailable'):
+        checkpoint.restore(config,tmp_path/'base',tmp_path/'safety',source,target,schema_root=tmp_path)
+    assert release.read_bytes()==b'original untouched release'
+    with pytest.raises(ValueError,match='distinct_isolated_control'):
+        checkpoint.restore(config,tmp_path/'base',tmp_path/'safety',target,target,schema_root=tmp_path)
+    assert release.read_bytes()==b'original untouched release'
+    from unittest.mock import MagicMock
+    connection=MagicMock()
+    with pytest.raises(ValueError,match='owned_fresh_PG17_cluster'):
+        staging.require_isolated(connection,config)
+    connection.execute.assert_not_called()

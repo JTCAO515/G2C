@@ -134,10 +134,10 @@ def export(destination,control,*,base=None,schema_root=None):
                 for table in ('cj_account_fence','cj_memory_erasure_fence','cj_run_payload_erasure'):
                     if not set(prior['fences'][table])<=set(fences[table]):raise ValueError('irreversible_fence_regressed')
             dump=destination/'database.dump'
-            row_state=staging.dump(connection,tables,dump,schema_root)
+            row_state,sequences=staging.dump(connection,tables,dump,schema_root)
             authorization()
             value=dict(version='g2c-beta-data-checkpoint.1',schema=versions(),lineage=family,archived_instance=instance,
-                dump_sha256=local.checksum(dump),at=time.time(),tables=tables,fences=fences,row_state=row_state,
+                dump_sha256=local.checksum(dump),at=time.time(),tables=tables,fences=fences,row_state=row_state,sequences=sequences,
                 base=None if prior is None else prior['dump_sha256'])
             if prior is not None and (prior['lineage']!=family or prior['schema']!=value['schema']):raise ValueError('checkpoint_anchor_mismatch')
             atomic(destination/'manifest.json',value)
@@ -157,8 +157,9 @@ def restore(target,base,safety,source_control,target_control,*,schema_root=None)
     profile=schema.load(schema_root)
     source_control=Path(source_control);target_control=Path(target_control)
     target_control.mkdir(mode=0o700,parents=True,exist_ok=True)
-    (target_control/'release.json').unlink(missing_ok=True);local.sync_directory(target_control)
-    with lock(source_control),operator() as (source,_),source.transaction():
+    if target_control.resolve()==source_control.resolve():raise ValueError('distinct_isolated_control_required')
+    with lock(source_control),lock(target_control),operator() as (source,_),source.transaction():
+        if (target_control/'release.json').exists():raise ValueError('original_isolated_release_must_be_preserved')
         source.execute('SELECT pg_advisory_xact_lock(%s)',(RELEASE_LOCK,))
         old=verified(Path(base)/'manifest.json');latest=verified(Path(safety)/'manifest.json');authority=verified(source_control/'latest.json')
         if (old['version']!='g2c-beta-data-checkpoint.1' or latest['version']!=old['version']
@@ -170,6 +171,7 @@ def restore(target,base,safety,source_control,target_control,*,schema_root=None)
                 or local.checksum(Path(safety)/'database.dump')!=latest['dump_sha256']):
             raise ValueError('fresh_complete_cloud_checkpoint_required')
         with psycopg.connect(**target,autocommit=True) as connection:
+            staging.require_isolated(connection,target)
             if migrate.inventory(connection):raise ValueError('new_empty_isolation_database_required')
             if connection.execute("SELECT 1 FROM pg_catalog.pg_roles WHERE rolname IN ('cj_m1_runtime','cj_local_cleanup') LIMIT 1").fetchone():
                 raise ValueError('new_isolated_cluster_without_application_roles_required')
@@ -180,7 +182,8 @@ def restore(target,base,safety,source_control,target_control,*,schema_root=None)
         source.execute("SET TIME ZONE 'UTC'")
         for table in latest['tables']:
             source.execute(sql.SQL('LOCK TABLE {} IN SHARE MODE').format(sql.Identifier(*table.split('.'))))
-        if staging.state(source,latest['tables'])!=latest['row_state'] or local.fence_state(source)!=latest['fences']:
+        if (staging.state(source,latest['tables'])!=latest['row_state'] or local.fence_state(source)!=latest['fences']
+                or staging.sequence_state(source,list(latest['sequences']))!=latest['sequences']):
             raise ValueError('current_source_state_differs_from_safety_checkpoint')
         if (source_control/'suspended.json').exists():
             previous=verified(source_control/'suspended.json')
@@ -200,13 +203,14 @@ def restore(target,base,safety,source_control,target_control,*,schema_root=None)
         with psycopg.connect(**target) as connection:
             connection.execute("SET TIME ZONE 'UTC'")
             if (local.fence_state(connection)!=latest['fences'] or migrate.applied(connection)!=latest['schema']
-                    or staging.state(connection,latest['tables'])!=latest['row_state']):
+                    or staging.state(connection,latest['tables'])!=latest['row_state']
+                    or staging.sequence_state(connection,list(latest['sequences']))!=latest['sequences']):
                 raise ValueError('restored_fence_or_schema_mismatch')
             connection.execute('UPDATE cj.deployment_identity SET lineage=%s WHERE singleton',(latest['lineage'],))
             active=rotate(connection)
         atomic(source_control/'suspended.json',dict(version='g2c-beta-rehearsal.1',state='ISOLATED_RELEASED',
             source_instance=source_instance,target_instance=active,target=local.fingerprint(target),
-            checkpoint=latest['dump_sha256'],lineage=latest['lineage'],row_state=latest['row_state']))
+            checkpoint=latest['dump_sha256'],lineage=latest['lineage'],row_state=latest['row_state'],sequences=latest['sequences']))
         atomic(target_control/'release.json',dict(version='g2c-beta-release.1',instance=active,lineage=latest['lineage'],checkpoint=latest['dump_sha256']),public=True)
 
 
@@ -234,13 +238,21 @@ def finish_rehearsal(target,source_control,target_control):
                 or identity(source)!=(record['source_instance'],record['lineage'])):
             raise ValueError('original_isolated_rehearsal_required')
         source.execute("SET TIME ZONE 'UTC'")
-        if staging.state(source,migrate.inventory(source))!=record['row_state']:
+        if (staging.state(source,migrate.inventory(source))!=record['row_state']
+                or staging.sequence_state(source,list(record['sequences']))!=record['sequences']):
             raise ValueError('suspended_source_state_changed')
         with psycopg.connect(**target) as isolated:
+            staging.require_isolated(isolated,target)
             isolated.execute('SELECT pg_advisory_xact_lock(%s)',(RELEASE_LOCK,))
             require_release(isolated,target_control)
             if identity(isolated)!=(record['target_instance'],record['lineage']):
                 raise ValueError('original_isolation_target_required')
+            isolated.execute("SET TIME ZONE 'UTC'")
+            for table in migrate.inventory(isolated):
+                isolated.execute(sql.SQL('LOCK TABLE {} IN SHARE MODE').format(sql.Identifier(*table.split('.'))))
+            if (staging.state(isolated,migrate.inventory(isolated))!=record['row_state']
+                    or staging.sequence_state(isolated,list(record['sequences']))!=record['sequences']):
+                raise ValueError('isolated_target_state_changed_keep_source_closed')
             local.invalidate_release(target_control);rotate(isolated)
         record['state']='ISOLATION_REVOKED';atomic(source_control/'suspended.json',record)
         atomic(source_control/'release.json',dict(version='g2c-beta-release.1',instance=record['source_instance'],

@@ -32,6 +32,19 @@ class CloudCleanupBoundaries(unittest.TestCase):
             sql=connection.execute.call_args.args[0]
             self.assertNotIn('set_config',sql);self.assertNotIn('SET ROLE',sql)
 
+    def test_permission_drift_is_rejected_at_each_cleanup_checkout(self):
+        with patch.dict(os.environ,{'CJ_ENV':'local'},clear=True):
+            config=self.configuration(lambda cursor:None)
+            with patch('cj_api.supabase_cleanup.Runtime.__init__',return_value=None):runtime=SupabaseCleanupRuntime(None,config,None)
+        for index in range(8):
+            properties=[False]*8;properties[index]=True
+            connection=MagicMock();connection.execute.return_value.fetchone.return_value=tuple(properties)
+            with self.subTest(index=index),patch('cj_api.supabase_cleanup.pin_ca',return_value=nullcontext(SimpleNamespace(name='synthetic-ca'))),patch('cj_api.supabase_cleanup.psycopg.connect',return_value=connection),patch('cj_api.supabase_cleanup.prepare_owned_session') as prepare:
+                with self.assertRaisesRegex(ValueError,'restricted_cleanup_login_required'):runtime.connect()
+                prepare.assert_called_once_with(connection,'cj_local_cleanup')
+                connection.close.assert_called_once()
+                self.assertNotIn('set_config',connection.execute.call_args.args[0])
+
     def test_original_store_checks_release_before_installing_cleanup_scope(self):
         events=[]
         def guard(cursor):events.append('barrier');raise ValueError('synthetic source not released')

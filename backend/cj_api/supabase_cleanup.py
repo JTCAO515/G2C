@@ -38,6 +38,11 @@ class SupabaseCleanupRuntime(Runtime):
             connection=psycopg.connect(**dict(self.connection_options,sslrootcert=ca.name),autocommit=True,prepare_threshold=None)
             try:
                 prepare_owned_session(connection,'cj_local_cleanup')
+                properties=connection.execute("SELECT rolsuper,rolbypassrls,rolcreatedb,rolcreaterole,rolreplication,rolinherit,"
+                    "EXISTS(SELECT 1 FROM pg_catalog.pg_auth_members WHERE member=r.oid),"
+                    "EXISTS(SELECT 1 FROM pg_catalog.pg_class WHERE relowner=r.oid) FROM pg_catalog.pg_roles r WHERE rolname=current_user").fetchone()
+                if properties!=(False,)*8:
+                    raise ValueError('restricted_cleanup_login_required')
                 connection.autocommit=False
                 return connection
             except BaseException:
