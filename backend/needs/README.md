@@ -22,12 +22,11 @@ Contract and consumer gaps: [../../contracts/needs/README.md](../../contracts/ne
 ## Reproduce in this checkout
 
 ```sh
-uv sync --frozen --offline --project backend/needs
-uv run --frozen --offline --project backend/needs pytest -q -s backend/needs/tests
+uv run --locked python -B scripts/pg_suites.py needs
 ```
 
-Requires existing `/opt/homebrew/opt/postgresql@17/bin` and cached locked test
-packages. Test harness creates a fresh random private directory under
+Requires PostgreSQL 17 binaries in `CJ_PG17_BINDIR` (`scripts/pg_suites.py needs`
+sets it from `CJ_PG_BINDIR` or `pg_config`). Test harness creates a fresh random private directory under
 `backend/needs/.local/`, initializes a new synthetic-only role/database, binds only
 a private Unix socket (`listen_addresses=''`, port 56413), and explicitly passes
 user/database/socket/port/empty password/empty passfile. Inherited `PG*` choices are

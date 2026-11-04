@@ -75,7 +75,7 @@ actual App sources/packages; it does not add a test target to the repository pro
 
 ```sh
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
-CJ_PG_BINDIR=/opt/homebrew/opt/postgresql@17/bin \
+CJ_PG_BINDIR='<PostgreSQL-17-bin-directory>' \
 uv run --locked python -B scripts/check_ios_trip_confirm.py \
   --simulator '<iOS-17.5-UDID>' --output '<external-output-directory>'
 ```

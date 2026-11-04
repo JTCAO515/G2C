@@ -31,11 +31,10 @@ iOS 17/macOS 14 只是本地编译目标，不定产品最低版本。
 ## 复现与证据
 
 ```sh
-env CLANG_MODULE_CACHE_PATH=/private/tmp/cj007-clang-cache \
-  SWIFTPM_MODULECACHE_OVERRIDE=/private/tmp/cj007-swift-cache \
-  swift test --package-path ios/Modules/CJAuth \
-  --scratch-path /private/tmp/cj007-auth-swift-build --disable-sandbox
+swift test --package-path ios/Modules/CJAuth --scratch-path '<scratch-directory-outside-the-repo>'
 ```
+
+CI runs every package through `.github/scripts/swift_packages.py --run`.
 
 2026-10-21，本机 macOS/arm64，Swift 6.4：build PASS，Swift Testing 8/8 PASS。
 输出见 evidence/swift-test.txt；XCTest 的 0 tests 是另一 runner，实际 Swift Testing

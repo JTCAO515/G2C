@@ -12,7 +12,7 @@ Fixed inputs:
   canonical `.generated/dc29bb3634e63d8f065c38d39a7a0059f76cfa53/CJFoundation`.
 - Canonical CJSession and Auth package fixed at this product base; canonical
   CJMessageHTTP transport94 bytes from shared9b485. Exact SHA manifest:
-  [inputs.json](evidence/inputs.json). No new auth, credential store or HTTP stack.
+  [inputs.json](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/ios/Modules/CJFeasibilityClient/evidence/inputs.json). No new auth, credential store or HTTP stack.
 - Existing NEEDS Presentation selection/snapshot is read-only design reference;
   this module neither imports that consumer nor changes its existing20aa graph.
 
@@ -83,13 +83,13 @@ pin/compatibility and one unified App dependency graph must pass, then explicit
 host enablement with real current-source/session wiring must be implemented and
 reviewed. Source gate pending does not block local candidate work or enable live use.
 
-See [evidence report](evidence/REPORT.md) for exact tested inputs and limitations.
+See [evidence report](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/ios/Modules/CJFeasibilityClient/evidence/REPORT.md) for exact tested inputs and limitations.
 Real route/HTTP, account/PG/C2, Keychain, provider, VoiceOver, device, whole App,
 CI, merge/deployment/release and full Issue18 acceptance are UNRUN here.
 
 Observation reentry P2 follow-up: the c607 candidate had a confirmed synchronous
 notification race. State publication now keeps Observation notifications, validates
 ownership before and inside/after notification, and stores a generation/binding
-stamp. See [repair evidence](evidence/observation-reentry/REPORT.md). Original47
+stamp. See [repair evidence](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/ios/Modules/CJFeasibilityClient/evidence/observation-reentry/REPORT.md). Original47
 checks are preserved. Client/Shell combination remains HOLD until independent
 Review and Testing approve the new fixed candidate. The public factory is closed.

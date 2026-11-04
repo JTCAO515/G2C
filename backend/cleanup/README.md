@@ -65,14 +65,15 @@ feedback rows and a clearly labelled deletion probe, not that future domain hook
 可运行纯状态机、CAS 内存 repository 与 metadata journal。后置新增 PostgreSQL 事务 repository 候选见下节；真实 hook、生产接入与公开查询仍未实现。原纯序列化切片不承诺进程崩溃自动落盘。
 
 ```sh
-PYTHONPATH=backend/auth:backend/cleanup /opt/homebrew/bin/python3.14 -m unittest discover -s backend/cleanup/tests -v
+uv run --locked python -B -m pytest -q backend/cleanup/tests
+uv run --locked python -B scripts/pg_suites.py domain_runners   # 私有 PG 部分
 ```
 
-需要 Python >=3.10（当前实际验证3.14）；系统 `/usr/bin/python3` 3.9 无法导入原 AUTH 的 union 注解，最初命令在导入前失败，未改 AUTH。14测试合成 PASS；首次测试样例参数重名失败保留 [tests-before.txt](evidence/tests-before.txt)，修正后 [tests.txt](evidence/tests.txt)。
+需要 Python >=3.10（当前实际验证3.14）；系统 `/usr/bin/python3` 3.9 无法导入原 AUTH 的 union 注解，最初命令在导入前失败，未改 AUTH。14测试合成 PASS；首次测试样例参数重名失败保留 [tests-before.txt](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/backend/cleanup/evidence/tests-before.txt)，修正后 [tests.txt](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/backend/cleanup/evidence/tests.txt)。
 
 接口与原域接入缺口见 [内部候选](../../contracts/cleanup/README.md)。默认 registry1.6.0+无能力为 blocked，真实执行和公开进度查询始终关闭。测试完整确认只证明合成状态转移，不证明真实删除、生产持久化或权限隔离。其他用户不受影响仅是本 repository 同 scope 键隔离测试；业务数据/设备隔离仍 UNRUN。
 
-P2 receipt 解码返修：原两条独立 probe 逐字重放2PASS，新增3项 parser/journal控制PASS；原14PASS复用，不重跑无关状态机。见 [返修证据](evidence/P2-REPAIR.md)。旧e16仍HOLD，不追认为通过。
+P2 receipt 解码返修：原两条独立 probe 逐字重放2PASS，新增3项 parser/journal控制PASS；原14PASS复用，不重跑无关状态机。见 [返修证据](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/backend/cleanup/evidence/P2-REPAIR.md)。旧e16仍HOLD，不追认为通过。
 
 ## PostgreSQL 元数据持久化候选（964 后独立差额）
 

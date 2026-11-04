@@ -59,11 +59,11 @@ hash；实际安装 cryptography 50.0.2、cffi 2.1.1、pycparser 3.11。不改�
 核对 [官方 changelog](https://pyjwt.readthedocs.io/en/stable/changelog.html)后使用
 2.15.1，包含此前算法/key 混淆与输入解析修复，不调用 PyJWKClient 的远端获取。
 
-在本目录执行：
+在仓库根目录执行（统一使用根 `pyproject.toml` 与 `uv.lock`，本模块没有独立环境）：
 
 ```sh
-UV_CACHE_DIR=/private/tmp/cj007-uv-cache uv sync --locked --python /opt/homebrew/bin/python3.14
-.venv/bin/python -B -m unittest discover -s tests -v
+uv sync --locked
+uv run --locked python -B -m pytest -q backend/auth/tests
 ```
 
 Python 要求 >=3.12,<3.15，本次 macOS arm64 / Python 3.14.7。其他机器可选满足范围

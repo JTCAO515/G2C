@@ -163,7 +163,7 @@ swift test --skip-update
 xcodebuild -scheme CJRunClient -destination 'generic/platform=iOS Simulator' -derivedDataPath .build/ios CODE_SIGNING_ALLOWED=NO build
 ```
 
-See [evidence/REPORT.md](evidence/REPORT.md). Synthetic interceptor/session evidence,
+See [evidence/REPORT.md](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/ios/Modules/CJRunClient/evidence/REPORT.md). Synthetic interceptor/session evidence,
 unsigned module compilation, real service, App and physical device claims are separate.
 
 ## #212 original-message draft result

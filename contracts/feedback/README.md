@@ -136,7 +136,7 @@ Root OpenAPI, migrations, registry, locks, Swift/UI and other domain code are no
 modified by FEEDBACK product commits. [Cleanup inventory](CLEANUP.md) identifies
 the single private store; production RLS/privileges/retention remain unconfigured.
 
-[Current evidence](../../backend/feedback/evidence/SOURCES-REPORT.md): real local
+[Current evidence](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/backend/feedback/evidence/SOURCES-REPORT.md): real local
 PostgreSQL persistence using canonical MESSAGE/RUN implementations with synthetic
 AUTH facts. Independent Review/Testing are PENDING. Original Issue I prerequisites,
 both actual App entry points, real accounts/model diagnosis, devices and deployment

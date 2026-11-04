@@ -41,11 +41,10 @@ missing scope, corruption and synthetic-role RLS isolation. No real cost receipt
 Opt-in reproduction (creates a NEW private cluster; never accepts an external DSN):
 
 ```sh
-uv sync --frozen --extra postgres-test
-PYTHONPATH=. uv run --offline --frozen --extra postgres-test python tests/pg_probe.py
+uv run --locked python -B scripts/pg_suites.py domain_runners
 ```
 
-Harness requires `/opt/homebrew/opt/postgresql@17/bin`. It creates a fresh
+Harness requires PostgreSQL 17 binaries in `CJ_PG17_BINDIR` (`scripts/pg_suites.py domain_runners` sets it). It creates a fresh
 `/tmp/cj008-pg-*` directory with mode 0700, private socket, empty 0600 pgpass,
 explicit socket port 55438, admin `cj008_admin`, database `postgres`; inherited PG
 variables are removed. `listen_addresses=''`, host authentication rejects, socket

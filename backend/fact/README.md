@@ -18,10 +18,8 @@ shared lockfile change is needed.
 From repository root:
 
 ```sh
-uv sync --offline --frozen --project backend/fact --python /opt/homebrew/bin/python3.14
-PYTHONPATH=backend/fact:backend/fact/tests backend/fact/.venv/bin/python -B -m unittest test_https_transport -v
-PYTHONPATH=backend/fact:backend/fact/tests backend/fact/.venv/bin/python -B -m unittest discover -s backend/fact/tests -v
-PYTHONPATH=backend/fact backend/fact/.venv/bin/python -B backend/fact/tests/check_examples.py
+uv run --locked python -B -m pytest -q backend/fact/tests
+uv run --locked python -B scripts/test.py   # also runs check_examples.py and the independent overflow/time checks
 ```
 
 All test DNS answers and bodies are synthetic. The HTTPS test alone starts
@@ -80,13 +78,13 @@ place or eligibility from missing metadata or search summaries.
 
 ## Evidence
 
-See [evidence/REPORT.md](evidence/REPORT.md) for fixed-source hashes, author checks,
+See [evidence/REPORT.md](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/backend/fact/evidence/REPORT.md) for fixed-source hashes, author checks,
 known limitations and UNRUN layers. Independent Review/Testing remain pending.
 
 
 ## Low-level TLS candidate evidence
 
-[HTTPS report](evidence/https/REPORT.md) records actual loopback socket, SNI,
+[HTTPS report](https://github.com/JTCAO515/G2C/blob/evidence-archive-2026-10-27/backend/fact/evidence/https/REPORT.md) records actual loopback socket, SNI,
 certificate/hostname rejection, peer association, framed streaming and bounded
 close/cancel tests. The original policy still rejects loopback at the public
 transport boundary; tests invoke only its private numeric-socket primitive.
