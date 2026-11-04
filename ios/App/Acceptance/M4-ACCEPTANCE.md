@@ -68,3 +68,18 @@ OS_ACTIVITY_MODE 始终为 disable；继续复用按 identifier 和控件类型�
 最大字号和无脚本执行分别由 structure/accessibility 与领域实际页面验证。
 最低 iOS17 和当前安装 runtime 分开记录；iOS17.5 不冒称 iOS17.0 或真机已验证。
 远程图像/未许可链接遵守现有呈现与显式 Link 行为，不新增自动抓取/预览服务。
+
+2026-11-04 本机补验原 CJ004 Textual0.5.0 原型：Xcode27.2/iOS18.0 首次启动
+FAIL，dyld 缺少 `libswiftCompatibilitySpan.dylib`。使用以下本地构建参数后实际
+启动、中英混排/列表、长按中文选择菜单和原 `--large-type` 样例可见：
+
+```sh
+xcodebuild -project spikes/ios/CJIOSSpike.xcodeproj -scheme CJIOSSpike \
+  -destination 'platform=iOS Simulator,id=<iOS18-UDID>' \
+  -derivedDataPath '<external-directory>' CODE_SIGNING_ALLOWED=NO \
+  ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES=YES \
+  'LD_RUNPATH_SEARCH_PATHS=$(inherited) @executable_path/Frameworks' build
+```
+
+这是本地工具链接线，未修改 `spikes/**` 或换依赖；原崩溃记录保留。该观察不含
+新 FPS/性能结论、全交互或 VoiceOver 证明，产品仍采用原生文本组件。

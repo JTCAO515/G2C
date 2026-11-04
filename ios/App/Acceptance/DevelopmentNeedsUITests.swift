@@ -52,8 +52,6 @@ import Foundation
             let composer = app.otherElements.matching(identifier:"assistant.composer").firstMatch
             if !navigation.exists && !["assistant.draft","assistant.send","assistant.intent"].contains(id) && header.exists && composer.exists {
                 top = max(top,header.frame.maxY + 8); bottom = min(bottom,composer.frame.minY)
-                let conversation = app.staticTexts.matching(identifier:"assistant.conversation").firstMatch
-                if conversation.exists { bottom = min(bottom,conversation.frame.minY) }
             }
             let keyboard = app.keyboards.firstMatch
             if keyboard.exists {
