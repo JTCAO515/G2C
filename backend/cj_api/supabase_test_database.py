@@ -36,13 +36,20 @@ def require_environment():
 
 
 def decode_uri(uri,*,operator=False):
+    return _decode_uri(uri,'postgres' if operator else 'cj_m1_runtime')
+
+
+def decode_cleanup_uri(uri):
+    return _decode_uri(uri,'cj_local_cleanup')
+
+
+def _decode_uri(uri,role):
     current_authorization()
     require_environment()
     if type(uri) is not str or not uri.startswith(('postgres://','postgresql://')):
         raise CompositionUnavailable('explicit authorized Supabase test connection required')
     try:config=conninfo_to_dict(uri)
     except psycopg.Error:raise CompositionUnavailable('invalid Supabase test URI') from None
-    role='postgres' if operator else 'cj_m1_runtime'
     if (set(config)-{'host','port','user','password','dbname','sslmode','connect_timeout'}
             or config.get('host')!=HOST or config.get('user')!=role+'.'+REF
             or config.get('port','5432')!='5432' or config.get('dbname')!='postgres'
@@ -80,8 +87,8 @@ def pin_ca(ca_file):
 
 
 class SupabaseTestDatabase(LocalDatabase):
-    def __init__(self,uri,ca_file,*,run_context=None,travel_context=False,needs_context=False,trip_context=False,edit_configuration=None):
-        self._ca=None;self._empty_passfile=None
+    def __init__(self,uri,ca_file,*,run_context=None,travel_context=False,needs_context=False,trip_context=False,edit_configuration=None,transaction_guard=None):
+        self._ca=None;self._empty_passfile=None;self._transaction_guard=transaction_guard
         config=decode_uri(uri)
         self._ca=pin_ca(ca_file)
         self._configure(run_context=run_context,travel_context=travel_context,needs_context=needs_context,
@@ -90,6 +97,9 @@ class SupabaseTestDatabase(LocalDatabase):
 
     def __del__(self):
         if self._ca is not None:self._ca.close()
+
+    def _before_scope(self,cursor):
+        if self._transaction_guard is not None:self._transaction_guard(cursor)
 
     def _open_runtime_connection(self):
         current_authorization();require_environment()

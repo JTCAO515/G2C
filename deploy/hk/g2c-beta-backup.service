@@ -1,0 +1,14 @@
+[Unit]
+Description=G2C synthetic beta checkpoint to private Hong Kong OSS
+Requires=docker.service
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/srv/g2c-beta
+UMask=0077
+ExecStart=/bin/sh /srv/g2c-beta/deploy/hk/daily-backup.sh
+TimeoutStartSec=900
+StandardOutput=journal
+StandardError=journal

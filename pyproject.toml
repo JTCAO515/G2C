@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "G2C / CJ Agent backend: API composition and domain modules (single distribution, ADR-0004)"
 requires-python = ">=3.12,<3.15"
 dependencies = [
+    "alibabacloud-oss-v2==1.4.1",
     "cryptography==50.0.2",
     "fastapi>=0.156.8",
     "h11==0.16.0",

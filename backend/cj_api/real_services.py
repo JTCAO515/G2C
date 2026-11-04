@@ -118,7 +118,7 @@ class RealServices:
         self.model.authorization.check_date()
 
     @classmethod
-    def from_environment(cls,auth_dir):
+    def from_environment(cls,auth_dir,*,authorization_guard=None):
         # Keys enter via explicit files or environment; never run security from a
         # request/worker. The Mac operator exports Keychain values privately.
         def secret(name):
@@ -132,7 +132,7 @@ class RealServices:
         if os.environ.get('CJ_M4_SYNTHETIC_ONLY')!='1':raise ValueError('M4 synthetic-only activation required')
         subjects=frozenset(json.loads((Path(auth_dir)/'invited.json').read_text()))
         root=Path.home()/'.local/share/g2c/m4-real-services'
-        budget=AuthorizationBudget(root)
+        budget=AuthorizationBudget(root,authorization_guard=authorization_guard)
         model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,secret('CJ_MODEL_API_KEY'),max_output_tokens=1024),budget)
         return cls(model,secret('CJ_AMAP_WEB_KEY'),subjects)
 

@@ -72,14 +72,16 @@ class Repository:
                 if conn.autocommit: raise WorkerOwnershipLost('autocommit lease unavailable')
                 cur = conn.cursor()
                 cur.execute('SET TRANSACTION ISOLATION LEVEL READ COMMITTED')
+                # Audit the initial physical session before the trusted scope
+                # binder installs its transaction-scoped release barrier.
+                cur.execute("SELECT count(*) FROM pg_locks WHERE pid=pg_backend_pid() AND locktype='advisory' AND granted")
+                if cur.fetchone()[0] != 0: raise WorkerOwnershipLost('dirty worker session')
                 bind_scope = getattr(conn, 'bind_scope', None)  # existing scoped DB-API extension
                 if bind_scope is not None: bind_scope(cur)
                 budget()
                 cur.execute('SELECT active FROM cj_run_scope WHERE scope=%s', (self.scope,))
                 row = cur.fetchone()
                 if row is None or row[0] is not True: raise Denied('scope unavailable')
-                cur.execute("SELECT count(*) FROM pg_locks WHERE pid=pg_backend_pid() AND locktype='advisory' AND granted")
-                if cur.fetchone()[0] != 0: raise WorkerOwnershipLost('dirty worker session')
                 cur.execute('SELECT pg_backend_pid(), pg_try_advisory_lock(%s)', (key,))
                 pid, acquired = cur.fetchone()
                 conn.commit()
