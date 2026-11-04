@@ -1,5 +1,5 @@
 """Read-only fixed producer delta; no runtime import, schema apply or Git mutation."""
-import argparse,ast,hashlib,json,subprocess
+import argparse,ast,json,subprocess
 from pathlib import Path
 p=argparse.ArgumentParser(description=__doc__);p.add_argument('--memory-repository',type=Path,required=True);a=p.parse_args()
 old='426d337b0647d7770f1716fad83f2e5e724d28e4';new='0045e423f004f873e2786aa98b2600b70772a921';cf6='cf6f9138147780de9cd6cd3df86642b0aec6ec5b'

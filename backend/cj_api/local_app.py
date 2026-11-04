@@ -156,6 +156,14 @@ def local_conninfo(conninfo_path):
 class LocalDatabase:
     def __init__(self, conninfo_path, *, run_context=None, travel_context=False, needs_context=False, trip_context=False,edit_configuration=None):
         config = local_conninfo(conninfo_path)
+        self._configure(run_context=run_context,travel_context=travel_context,needs_context=needs_context,
+                        trip_context=trip_context,edit_configuration=edit_configuration)
+        # The initialization identity is never used for application/worker SQL.
+        self._empty_passfile = tempfile.NamedTemporaryFile(prefix='cj-m1-runtime-', suffix='.pgpass')
+        self.conninfo = dict(config, user='cj_m1_runtime', passfile=self._empty_passfile.name)
+        self.conninfo.pop('password', None)
+
+    def _configure(self,*,run_context,travel_context,needs_context,trip_context,edit_configuration):
         self.edit_configuration=edit_configuration
         if edit_configuration is not None:
             from cj_message.edit_reference import configured
@@ -172,10 +180,9 @@ class LocalDatabase:
         if type(needs_context) is not bool:
             raise CompositionUnavailable('explicit NEEDS capability required')
         self.needs_context=needs_context
-        # The initialization identity is never used for application/worker SQL.
-        self._empty_passfile = tempfile.NamedTemporaryFile(prefix='cj-m1-runtime-', suffix='.pgpass')
-        self.conninfo = dict(config, user='cj_m1_runtime', passfile=self._empty_passfile.name)
-        self.conninfo.pop('password', None)
+
+    def _open_runtime_connection(self):
+        return psycopg.connect(**self.conninfo,autocommit=True)
 
     @property
     def edit_results(self):
@@ -192,7 +199,7 @@ class LocalDatabase:
     def connect(self, scope, *, usage_profile=None):
         if type(scope) is not str or not scope.startswith('local:' + ISSUER + ':') or not scope.removeprefix('local:' + ISSUER + ':'):
             raise CompositionUnavailable('verified local scope required')
-        conn = psycopg.connect(**self.conninfo, autocommit=True)
+        conn = self._open_runtime_connection()
         try:
             if conn.closed or conn.info.transaction_status != TransactionStatus.IDLE or conn.autocommit is not True:
                 raise CompositionUnavailable('fresh idle runtime connection required')
@@ -317,14 +324,21 @@ def trip_configuration(value):
 
 def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, history_configuration=None,
                      memory_configuration=None, run_context=None, travel_context=False, needs_profile=None, trip_context=False,edit_configuration=None,
-                     cleanup_configuration=None,formal_memory_configuration=None):
+                     cleanup_configuration=None,formal_memory_configuration=None,database=None):
     if os.environ.get('CJ_ENV') != 'local':
         raise CompositionUnavailable('CJ_ENV must explicitly be local')
     auth_dir = Path(auth_dir)
     if needs_profile not in (None,'manual-v1'):
         raise CompositionUnavailable('unknown local NEEDS profile')
-    database = LocalDatabase(conninfo_path,run_context=run_context,travel_context=travel_context,
-                             needs_context=needs_profile is not None,trip_context=trip_context,edit_configuration=edit_configuration)
+    if database is None:
+        database = LocalDatabase(conninfo_path,run_context=run_context,travel_context=travel_context,
+                                 needs_context=needs_profile is not None,trip_context=trip_context,edit_configuration=edit_configuration)
+    else:
+        from .supabase_test_database import SupabaseTestDatabase
+        if type(database) not in (LocalDatabase,SupabaseTestDatabase):
+            raise CompositionUnavailable('explicit supported host database required')
+        if type(database) is SupabaseTestDatabase and cleanup_configuration is not None:
+            raise CompositionUnavailable('local cleanup identity is not approved for the cloud profile')
     keys = StaticPublicKeys({KEY_ID: VerificationKey('RS256', (auth_dir / 'public.pem').read_bytes())})
     config = JWTConfiguration(ISSUER, AUDIENCE, 'RS256', 0)
     access=base_access=InvitedSubjects(auth_dir/'invited.json')

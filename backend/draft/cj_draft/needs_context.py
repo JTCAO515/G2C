@@ -1,6 +1,5 @@
 """Source2 planning consumes the actual explicitly accepted current Trip context."""
 from copy import deepcopy
-from hashlib import sha256
 import json
 from cj_trip.domain import packed,Denied,Conflict
 from cj_needs.revision_lease import LeaseUnavailable

@@ -209,10 +209,10 @@ struct OfflineAnchor: Codable, Equatable, Sendable {
         }
         try check(token)
         guard materialHash(material) == identity.materialHash else { throw OfflineFailure.unavailable }
+        // A wall clock below the old lastWall does not block this sync: the fresh
+        // authenticated GET re-anchors syncedAt/deadline/boot/lastWall, and the
+        // version check below still rejects an older server snapshot.
         let previous = try loadAnchor(); try check(token)
-        if let previous, previous.namespace == namespace {
-            guard wall >= previous.lastWall else { throw OfflineFailure.unavailable }
-        }
         let store = try store(namespace.account, create: true), provider = try keys(namespace)
         try check(token); try store.requireNoPendingWrite()
         let key: MessageEncryptionKey

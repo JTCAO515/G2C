@@ -616,6 +616,13 @@ def group_real_services():
 GROUPS.update(real_services=group_real_services)
 
 
+def group_supabase_pool_reset():
+    return script('scripts/supabase_pool_local_check.py')
+
+
+GROUPS.update(supabase_pool_reset=group_supabase_pool_reset)
+
+
 def main(argv):
     if argv[:1] == ['--shard']:
         index, count = map(int, argv[1].split('/'))
