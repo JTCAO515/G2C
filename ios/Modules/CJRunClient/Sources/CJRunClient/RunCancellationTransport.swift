@@ -44,18 +44,23 @@ public final class RunCancellationTransport: ClientTransport, Sendable {
         validate: @escaping @MainActor @Sendable () throws -> Void) throws -> RunCancellationTransport {
         #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
         guard endpoint.allowsDevelopmentActivation else { throw RunDisplayFailure.invalidConfiguration }
-        return RunCancellationTransport(endpoint:endpoint,mode:mode,validate:validate)
+        return try RunCancellationTransport(endpoint:endpoint,mode:mode,validate:validate)
         #else
         throw RunDisplayFailure.invalidConfiguration
         #endif
     }
 
-    private init(endpoint: MessageEndpoint, mode: WireMode, validate: @escaping @MainActor @Sendable () throws -> Void) {
+    private init(endpoint: MessageEndpoint, mode: WireMode, validate: @escaping @MainActor @Sendable () throws -> Void) throws {
         self.endpoint = endpoint; self.mode = mode; self.validate = validate; intercepted = nil
         let configuration = URLSessionConfiguration.ephemeral
         configuration.httpCookieStorage = nil; configuration.urlCredentialStorage = nil; configuration.urlCache = nil
         configuration.timeoutIntervalForRequest = 10; configuration.timeoutIntervalForResource = 20
-        session = URLSession(configuration: configuration, delegate: CancellationRedirectBlocker(), delegateQueue: nil)
+        #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+        let delegate = try NoRedirectTransport.developmentLocalTLSDelegate()
+        #else
+        let delegate = CancellationRedirectBlocker()
+        #endif
+        session = URLSession(configuration: configuration, delegate: delegate, delegateQueue: nil)
     }
     /// Non-network module-test seam, never a product composition entry.
     init(interceptedTransport: any ClientTransport, endpoint: MessageEndpoint, travel: Bool = false,compatible: Bool = false,tripCompatible: Bool = false,editCompatible: Bool = false,

@@ -450,6 +450,14 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         deviceCleanup=EndpointCapability(endpoint:deviceCleanupEndpoint,validate:validateDeviceCleanup)
     }
 
+    #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+    /// Existing development transports keep their route/lease checks and own
+    /// sessions, sharing only the approved local TLS and no-redirect delegate.
+    public static func developmentLocalTLSDelegate() throws -> any URLSessionDelegate {
+        try RedirectBlocker.localDeviceConfiguration()
+    }
+    #endif
+
     private init(requestTimeout: TimeInterval, resourceTimeout: TimeInterval, preview: EndpointCapability?, messages: MessageCapability? = nil, memory: EndpointCapability? = nil, memoryManagement: EndpointCapability? = nil, typedMemory: EndpointCapability? = nil, needs: EndpointCapability? = nil, tripEditing: EndpointCapability? = nil, feedback: EndpointCapability? = nil, memoryHistory: EndpointCapability? = nil, accountCleanup: EndpointCapability? = nil, memoryCandidates: EndpointCapability? = nil, deviceCleanup: EndpointCapability? = nil, deviceCompletion: EndpointCapability? = nil, memoryErasure: EndpointCapability? = nil, memoryProjection: EndpointCapability? = nil, deviceVersion: CleanupDeviceVersion = .v3) throws {
         self.deviceVersion = deviceVersion
         guard requestTimeout > 0, resourceTimeout > 0, requestTimeout.isFinite, resourceTimeout.isFinite else {

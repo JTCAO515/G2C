@@ -130,6 +130,9 @@ CJ_PG_BINDIR='<PostgreSQL-17-bin>' uv run --locked python -B \
 设备的大字号分支核对 Runner 的最大有效字号，App 不再用启动参数覆盖字号；
 实际系统设置/App 显示仍需 DEVICE-RECORD，VoiceOver 不由 AX 或预编译代替。
 `--prepare-only` 不取得业务运行证明，结果仍为 `PREPARED_EXECUTION_UNRUN`。
+规划和停止客户端沿已有 CJMessageHTTP 依赖复用同一调试 TLS 委托；各自原有的
+精确路由、身份/lease 与禁止重定向检查保留。其他领域的多端口设备接线仍待补齐，
+不把本节的预编译结果当作全流程设备 PASS。
 
 ## #4 的候选矩阵
 

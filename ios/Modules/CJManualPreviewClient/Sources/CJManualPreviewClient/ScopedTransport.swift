@@ -20,7 +20,12 @@ final class ScopedTransport: ClientTransport, Sendable {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.httpCookieStorage = nil; configuration.urlCache = nil; configuration.urlCredentialStorage = nil
         configuration.timeoutIntervalForRequest = 15; configuration.timeoutIntervalForResource = 30
-        session = URLSession(configuration: configuration, delegate: ScopedRedirectBlocker(), delegateQueue: nil)
+        #if os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+        let delegate = try NoRedirectTransport.developmentLocalTLSDelegate()
+        #else
+        let delegate = ScopedRedirectBlocker()
+        #endif
+        session = URLSession(configuration: configuration, delegate: delegate, delegateQueue: nil)
         transport = URLSessionTransport(configuration: .init(session: session))
         #else
         throw PreviewFailure.unavailable
