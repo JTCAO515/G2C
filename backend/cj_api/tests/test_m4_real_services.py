@@ -77,6 +77,58 @@ class Boundaries(unittest.TestCase):
         self.assertEqual(sent[-2:],messages[-2:])
         self.assertEqual(sent[-1]['role'],'tool')
 
+    def test_native_preface_is_preserved_without_becoming_final_answer(self):
+        value=json.loads(sse(tool=True).splitlines()[0][6:])
+        value['choices'][0]['delta']['content']='Synthetic preface; checking the location.'
+        body='data: '+json.dumps(value)+'\n\n'+'\n'.join(sse(tool=True).splitlines()[2:])
+        reply={};receipt={}
+        result=self.invoke(self.provider(body),tools=TOOLS,native_reply=reply,receipt=receipt)
+        turn=parse_turn(''.join(result).encode(),{'place_search'})
+        self.assertIsNone(turn.answer_zh)
+        self.assertEqual(turn.calls[0].name,'place_search')
+        self.assertEqual(reply['assistant']['content'],'Synthetic preface; checking the location.')
+        self.assertEqual(reply['assistant']['tool_calls'][0]['id'],'call_synthetic')
+        self.assertEqual(self.budget.inspect()[0]['state'],'RECEIVED')
+        provider=self.provider(sse().replace('chatcmpl-synthetic','chatcmpl-preface-followup'))
+        messages=[dict(role='user',content='Synthetic question'),reply['assistant'],
+                  dict(role='tool',tool_call_id='call_synthetic',content='{"status":"observed"}')]
+        list(provider.invoke(messages,TOOL_SYSTEM,'preface-followup',tools=TOOLS,receipt={},guard=lambda:True))
+        self.assertEqual(json.loads(self.sent[-1].content)['messages'][-2:],messages[-2:])
+
+    def test_native_preface_secret_still_rejected_before_receipt(self):
+        value=json.loads(sse(tool=True).splitlines()[0][6:])
+        value['choices'][0]['delta']['content']=KEY
+        body='data: '+json.dumps(value)+'\n\n'+'\n'.join(sse(tool=True).splitlines()[2:])
+        receipt={};reply={}
+        with self.assertLogs('cj_provider.audit',level='WARNING') as log,self.assertRaises(ProviderUnknown):
+            self.invoke(self.provider(body),tools=TOOLS,native_reply=reply,receipt=receipt)
+        self.assertEqual(receipt,{});self.assertEqual(reply,{})
+        self.assertEqual(self.budget.inspect()[0]['state'],'INTENT')
+        self.assertNotIn(KEY,'\n'.join(log.output))
+
+    def test_provider_diagnostics_are_metadata_only_and_original_stays_unknown(self):
+        def response(request):
+            self.sent.append(request)
+            return httpx.Response(400,stream=httpx.ByteStream(('SYNTHETIC_PROMPT '+KEY).encode()))
+        provider=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),self.budget,
+            transport=httpx.MockTransport(response))
+        with self.assertLogs('cj_provider.audit',level='WARNING') as log,self.assertRaises(ProviderUnknown):
+            self.invoke(provider,tools=TOOLS)
+        message='\n'.join(log.output)
+        self.assertIn('phase=transport http_status=400',message)
+        self.assertIn('attempt_sha256=',message)
+        self.assertNotIn(KEY,message);self.assertNotIn('SYNTHETIC_PROMPT',message)
+        self.assertEqual(self.budget.inspect()[0]['state'],'INTENT')
+        with self.assertRaises(BudgetUnknown):self.invoke(provider,tools=TOOLS)
+        self.assertEqual(len(self.sent),1)
+
+    def test_malformed_chunk_diagnostics_exclude_exception_data(self):
+        with self.assertLogs('cj_provider.audit',level='WARNING') as log,self.assertRaises(ProviderUnknown):
+            self.invoke(self.provider('data: '+KEY+'\n\n'),tools=TOOLS)
+        self.assertIn('phase=chunk_json http_status=200','\n'.join(log.output))
+        self.assertNotIn(KEY,'\n'.join(log.output))
+        self.assertEqual(self.budget.inspect()[0]['state'],'INTENT')
+
     def test_native_arguments_convert_to_existing_domain_wire(self):
         name,raw=canonical_tool('place_search',json.dumps(dict(keyword='故宫',city='北京',page=1,page_size=1)).encode())
         self.assertEqual(name,'place');self.assertEqual(place_query(raw).keyword,'故宫')
