@@ -72,11 +72,13 @@ OSS固定香港内部HTTPS端点、私有/AES256、backups/前缀，SDK自动重
 每日阶段持久化，未完成的原检查点先查原制品和数据库identity，不再导出第二份冒充恢复成功。
 桶30天生命周期需按已授权能力核实，实际到期删除需经过30天，不以配置截图冒充实际删除。
 
-首次OSS调用前，operator必须在不随数据库恢复的 `/control/oss-quota` 安装JT明确确认的签名授权与零使用记录。
+首次OSS调用前，宿主root仅在JT明确答复后一次性安装非秘密授权文件 `/srv/g2c-beta/authorizations/oss.json`（root:0644、目录root:0755），只读绑定到 `/run/authorizations`。
+运行时只读验证该root授权，恢复签名私钥不能签发/覆盖它；不随数据库恢复的 `/control/oss-quota` 另存签名零使用记录及空intents目录。
 授权选择已确认免费覆盖或仅既有桶的限额付费；没有授权/计数缺失、签名损坏或期限到均保持关闭，不能初始化新额度。
-SDK每次HEAD/ACL/PUT/GET先独占持久消耗意图，最多300请求、2GiB预留字节；GET按该对象64MiB/1MiB上限预留，PUT按原长度预留，未知不返还。
+SDK每次HEAD/ACL/PUT/GET先独占持久消耗意图（O_EXCL/0400逐次链和计数必须一致，旧签名计数回退也HOLD），最多300请求、2GiB预留字节；GET按该对象64MiB/1MiB上限预留，PUT按原长度预留，未知不返还。
 付费模式另按每请求2分、每GiB2元作保守预留，上限10元；这是运行预留，不是供应商报价或账单，实际费用保持UNKNOWN。
-counter与授权必须来自宿主持久control绑定，不接受容器tmpfs/overlay；备份/恢复不复制或重置该计数。该机制不授权任何调用，本线须先取得#495对应JT答复，不能把提问当授权。
+counter必须来自宿主持久control绑定，授权来自独立root只读绑定，不接受容器tmpfs/overlay/子挂载；备份/恢复不复制或重置该计数。
+抢锁后、写意图/计数后、最终SDK调用前重查试用与授权期限；失效保留占用，不派发。该机制不授权任何调用，本线须先取得#495对应JT答复，不能把提问当授权。
 
 恢复目标是**同一主机内全新、仅Unix socket的独立PG17集群**，由本次operator进程亲自initdb/启动并签名绑定system_identifier/data_directory；其PG数据在持久target-control/pg内，失败也保留。核服务端listen_addresses为空和仅演练数据库，不接受任意目标URI/旧共享集群，不创建新云项目。
 原集群中新空库仍有全局应用角色，会被明确拒绝；不重用角色、不给云角色扩权。

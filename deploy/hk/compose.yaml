@@ -78,6 +78,7 @@ services:
     volumes:
       - /srv/g2c-beta/operator.env:/run/secrets/operator.env:ro
       - /srv/g2c-beta/backup.env:/run/secrets/backup.env:ro
+      - /srv/g2c-beta/authorizations:/run/authorizations:ro
       - /srv/g2c-beta/supabase-ca.crt:/run/config/supabase-ca.crt:ro
       - /srv/g2c-beta/control:/control
       - /srv/g2c-beta/backups:/backups
