@@ -26,6 +26,11 @@ def test_modified_subject_binding_is_rejected(tmp_path,monkeypatch):
     with pytest.raises(subject.TestUnavailable,match='binding'):subject.AuthJournal()
 
 
+def test_incomplete_subjects_cannot_claim_completed_record(tmp_path,monkeypatch):
+    value=journal(tmp_path,monkeypatch);value.value['complete']=True;value.save()
+    with pytest.raises(subject.TestUnavailable,match='inconsistent'):subject.AuthJournal()
+
+
 def test_auth_errors_never_echo_server_body_or_keys(tmp_path,monkeypatch):
     from datetime import datetime
     from zoneinfo import ZoneInfo

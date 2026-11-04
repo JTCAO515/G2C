@@ -119,6 +119,8 @@ class AuthJournal:
                     or item['state'] not in ('planned','intent','created','deleted')
                     or item['id'] is not None and str(uuid.UUID(item['id']))!=item['id']):
                 raise TestUnavailable('auth_subject_binding_invalid')
+        if self.value['complete'] and any(item['state']!='deleted' or item['id'] is None for item in self.value['subjects']):
+            raise TestUnavailable('auth_complete_record_inconsistent')
     def save(self):
         temporary=self.path.with_suffix('.tmp')
         with temporary.open('w') as out:

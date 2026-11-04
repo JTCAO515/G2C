@@ -23,7 +23,7 @@ supabase_m4.py migrate --ca-file CA --apply     # 仅已获准目标
 
 迁移只消费已 fetch 的 main 中同字节 manifest 与 SQL，不改已应用文件。
 首次 target 准入要求 public 无关系对象、无自有函数；允许原样保留 Supabase 已有的
-`postgres.rls_auto_enable() RETURNS event_trigger` 平台函数，不创建、禁用或修改任何平台 SECURITY DEFINER/事件触发器。
+`public.rls_auto_enable() RETURNS event_trigger`（owner postgres）平台函数，不创建、禁用或修改任何平台 SECURITY DEFINER/事件触发器。
 在导入任何 CJ public 对象前，撤去 PUBLIC/anon/authenticated/service_role 的 public schema USAGE，
 避免托管项目默认表/函数授权直接暴露内部 CJ 存储。自家运行角色按原迁移获得显式最小权限。
 Auth 自有 schema、Auth/计费设置和平台函数保持；此操作本身是明确的数据库 schema ACL 收紧，不能描述成“没有权限变更”。
@@ -46,3 +46,7 @@ Auth 自有 schema、Auth/计费设置和平台函数保持；此操作本身是
 
 本机回归 `scripts/test_supabase_m4.py` 与 `scripts/supabase_m4_pg_check.py` 已登记到原 test/PG Harness，
 不会读取真实钥匙串、连接云或产生账户。真实操作独立执行，报告不进入源码仓库。
+
+2026-11-04 安全 advisor 保留：33 项函数 search_path WARN，以及既有平台事件函数的 anon/authenticated EXECUTE 两项 WARN。
+namespace USAGE 已实际拒绝；没有据此把 advisor 标成清零，也不改已应用 SQL 或平台函数凑绿。
+生产前的受控运行身份、完整12表门禁、搜索路径/平台 advisory 处理需另按 #30/#495 收口。
