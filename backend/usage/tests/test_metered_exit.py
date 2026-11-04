@@ -49,6 +49,23 @@ class MeteredExitStopTests(unittest.TestCase):
             list(self.core.stream(self.call('b')))
         self.assertNotIn('b', self.repo.ledger.attempts)
 
+    def test_period_closed_without_run_is_budget_exhausted(self):
+        # A background job's first and only step: a fresh run_id, period already over.
+        self.time = 1000
+        with self.assertRaises(BudgetExceeded) as caught:
+            list(self.core.stream(self.call('a')))
+        self.assertEqual(caught.exception.step_key, 'step-a')
+        self.assertNotIn('a', self.repo.ledger.attempts)
+        self.assertNotIn('run', self.repo.ledger.runs)
+
+    def test_clock_before_period_start_stays_unknown(self):
+        # Only a proven period end is exhaustion; an early clock proves nothing.
+        self.time = -1
+        with self.assertRaises(BudgetUnknown):
+            list(self.core.stream(self.call('a')))
+        self.assertNotIn('a', self.repo.ledger.attempts)
+        self.assertNotIn('run', self.repo.ledger.runs)
+
     def test_cancelled_run_stays_unknown(self):
         list(self.core.stream(self.call('a')))
         with self.repo.transaction() as ledger:

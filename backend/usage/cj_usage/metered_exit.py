@@ -47,14 +47,16 @@ class MeteredExitCore:
     def _stopped_before_reserve(self, meter, command, reason):
         """A refused reserve wrote nothing; only a proven deadline/period end is exhaustion.
 
-        A cancelled run, an existing attempt or an unreadable ledger stays unknown.
+        A cancelled run, an existing attempt, a clock before the period start or
+        an unreadable ledger stays unknown.
         """
         if reason not in ('run_stopped','period_closed'): return False
         with meter.repo.transaction() as ledger:
             if command.attempt_id in ledger.attempts: return False
             run=ledger.runs.get(command.run_id)
             now=self._now(ledger.last_clock)
-        if not self.config.period_start <= now < self.config.period_end: return run is None or not run.cancelled
+        if now >= self.config.period_end: return run is None or not run.cancelled
+        if now < self.config.period_start: return False
         return run is not None and not run.cancelled and now-run.started >= self.config.max_seconds
 
     def stream(self, call):
