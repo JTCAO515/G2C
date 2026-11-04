@@ -34,6 +34,7 @@ import dev_auth,local_run_context,migrate,pg_suites,run_worker
 
 STATE=Path.home()/'.local/share/g2c/m4-real-services'
 ROUTE_KEYWORDS=('北海公园','恭王府')
+GEOMETRY_KEYWORDS=('故宫','景山公园')
 
 
 def verification_passed(batch,attempts):
@@ -106,14 +107,15 @@ def route_operations_passed(batch,receipts):
     return [ref for _,ref in sorted(ordered)]==[event['request_ref'] for event in events]
 
 
-def route_audit_passed(events):
+def route_audit_passed(events,*,geometry=False):
+    keywords=GEOMETRY_KEYWORDS if geometry else ROUTE_KEYWORDS
     if len(events)!=3 or any(e.get('kind')!='search' for e in events[:2]) or events[-1].get('kind')!='route':return False
     searches={e.get('keyword'):e for e in events[:2]}
-    if set(searches)!=set(ROUTE_KEYWORDS):return False
-    if searches[ROUTE_KEYWORDS[0]].get('provider_id')==searches[ROUTE_KEYWORDS[1]].get('provider_id'):return False
+    if set(searches)!=set(keywords):return False
+    if searches[keywords[0]].get('provider_id')==searches[keywords[1]].get('provider_id'):return False
     route=events[-1]
     if route.get('mode')!='walking':return False
-    for prefix,keyword in zip(('origin','destination'),ROUTE_KEYWORDS):
+    for prefix,keyword in zip(('origin','destination'),keywords):
         source=searches[keyword]
         if (not source.get('provider_id') or not source.get('coordinate_raw')
                 or route.get(prefix)!=dict(provider_id=source['provider_id'],coordinate_raw=source['coordinate_raw'],coordinate_role='poi_center',search_ref=source['request_ref'])):return False
@@ -134,7 +136,7 @@ def save(path,value):
 
 
 @contextmanager
-def record_place_responses(root,batch,batch_path):
+def record_place_responses(root,batch,batch_path,*,geometry=False):
     """Fixed R1 guard plus observer of the original secret-checked transport.
 
     Out-of-plan model calls stop before HTTP. Retention IO failure is separately
@@ -143,21 +145,22 @@ def record_place_responses(root,batch,batch_path):
     from cj_api import real_services
     from cj_place.models import Search,RouteQuery,FieldState
     from cj_place.gaode import parse_response
+    keywords=GEOMETRY_KEYWORDS if geometry else ROUTE_KEYWORDS
     original=real_services.fetch_candidate;searches={};attempted=set();route_sent=False
     folder=root/'provider';folder.mkdir(mode=0o700);batch['route_audit']=[]
     async def record(config,request,credentials,**kwargs):
         nonlocal route_sent
         query=request.query
         if type(query) is Search:
-            if (query.keyword not in ROUTE_KEYWORDS or query.keyword in attempted or query.city not in ('北京','Beijing','beijing','110000')
+            if (query.keyword not in keywords or query.keyword in attempted or query.city not in ('北京','Beijing','beijing','110000')
                     or query.page!=1 or query.page_size!=1):raise ProviderFailed('R1 fixed original search required')
             attempted.add(query.keyword)
         elif type(query) is RouteQuery:
-            if route_sent or query.mode!='walking' or set(searches)!=set(ROUTE_KEYWORDS):
+            if route_sent or query.mode!='walking' or set(searches)!=set(keywords):
                 raise ProviderFailed('R1 search receipts before one walking route required')
-            if searches[ROUTE_KEYWORDS[0]].provider_id==searches[ROUTE_KEYWORDS[1]].provider_id:
+            if searches[keywords[0]].provider_id==searches[keywords[1]].provider_id:
                 raise ProviderFailed('R1 distinct actual POIs required')
-            for endpoint,keyword in zip((query.origin,query.destination),ROUTE_KEYWORDS):
+            for endpoint,keyword in zip((query.origin,query.destination),keywords):
                 place=searches[keyword]
                 if (place.coordinate.state is not FieldState.PRESENT or endpoint.coordinate_role!='poi_center'
                         or endpoint.provider_id!=place.provider_id or endpoint.coordinate.raw!=place.coordinate.value.raw):
@@ -167,7 +170,7 @@ def record_place_responses(root,batch,batch_path):
         result=await original(config,request,credentials,**kwargs)
         if result.state=='received' and result.response.http_status==200:
             response=result.response
-            parsed=parse_response(config,request,response,now=response.received_at,basic=True)
+            parsed=parse_response(config,request,response,now=response.received_at,basic=True,coordinate_only=kwargs.get('coordinate_only',False))
             if type(query) is Search and parsed.outcome.value=='ok':
                 place=parsed.places[0];searches[query.keyword]=place
                 batch['route_audit'].append(dict(kind='search',keyword=query.keyword,provider_id=place.provider_id,
@@ -176,13 +179,14 @@ def record_place_responses(root,batch,batch_path):
                 search_refs={event['keyword']:event['request_ref'] for event in batch['route_audit']}
                 def point(value,keyword):return dict(provider_id=value.provider_id,coordinate_raw=value.coordinate.raw,
                     coordinate_role=value.coordinate_role,search_ref=search_refs[keyword])
-                batch['route_audit'].append(dict(kind='route',request_ref=request.request_ref,mode=query.mode,origin=point(query.origin,ROUTE_KEYWORDS[0]),
-                    destination=point(query.destination,ROUTE_KEYWORDS[1])))
+                batch['route_audit'].append(dict(kind='route',request_ref=request.request_ref,mode=query.mode,origin=point(query.origin,keywords[0]),
+                    destination=point(query.destination,keywords[1])))
             try:
                 name=request.binding_digest+'.json'
                 with (folder/name).open('xb') as output:
                     os.fchmod(output.fileno(),0o600);output.write(response.body);output.flush();os.fsync(output.fileno())
                 batch['provider_responses'].append(dict(path=request.path,binding_digest=request.binding_digest,
+                    request_params=[list(pair) for pair in request.params],
                     response_sha256=hashlib.sha256(response.body).hexdigest(),response_bytes=len(response.body),
                     http_status=response.http_status,request_ref=request.request_ref,started_at=request.started_at.isoformat(),
                     received_at=response.received_at.isoformat(),file='provider/'+name))
@@ -204,11 +208,13 @@ def provider_diagnostics():
     finally:logger.removeHandler(sink)
 
 
-def run_batch(*,resume_setup=False,verification=False,basic_verification=False,diagnostic_verification=False,route_diagnostic=False):
+def run_batch(*,resume_setup=False,verification=False,basic_verification=False,diagnostic_verification=False,route_diagnostic=False,geometry_diagnostic=False,coordinate_diagnostic=False):
     STATE.mkdir(parents=True,exist_ok=True,mode=0o700)
     with (STATE/'acceptance.lock').open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX)
-        tag='verification-route-diagnostics-1' if route_diagnostic else 'verification-native-diagnostics-1' if diagnostic_verification else 'verification-base-search-1' if basic_verification else 'verification-native-1' if verification else 'acceptance'
+        geometry_diagnostic=geometry_diagnostic or coordinate_diagnostic
+        route_capture=route_diagnostic or geometry_diagnostic
+        tag='verification-route-coordinate-1' if coordinate_diagnostic else 'verification-route-geometry-1' if geometry_diagnostic else 'verification-route-diagnostics-1' if route_diagnostic else 'verification-native-diagnostics-1' if diagnostic_verification else 'verification-base-search-1' if basic_verification else 'verification-native-1' if verification else 'acceptance'
         path=STATE/(tag+'.json')
         budget=AuthorizationBudget(STATE);budget.check_date()
         previous=None
@@ -240,9 +246,11 @@ def run_batch(*,resume_setup=False,verification=False,basic_verification=False,d
         if basic_verification:cases={'place-zh':'合成基础地点验证：使用place_search查询北京故宫，city北京，page1/page_size1，只请求基础资料。根据结果说明地点名称、坐标与来源，未知详情明确待核实，不写行程。'}
         if diagnostic_verification:cases={'place-zh':'合成接口诊断D1：使用place_search查询北京天安门，city北京，page1/page_size1；仅需一次基础地点查询，再根据返回的地点、来源与未知项答复，不调用路线，不写行程。'}
         if route_diagnostic:cases={'route-zh':'合成路线诊断R1：用place_search分别查询北京北海公园与恭王府，city北京，各page1/page_size1；再只用实际返回POI ID、GCJ-02原坐标和poi_center调用一次walking place_route。根据工具结果说明查询时估计、来源和未知项，不重试相同查询，不写行程。'}
+        if geometry_diagnostic:cases={'route-zh':('合成路线几何取证C1：' if coordinate_diagnostic else '合成路线几何取证G1：')+'用place_search查询北京故宫、景山公园各一次，city北京/page1/page_size1。复制本次实际返回的POI ID、原始GCJ-02坐标和poi_center，以故宫为起点、景山公园为终点，只查询一次walking place_route。不换模式、反向或更换地点。不重试相同查询，不写行程。根据实际工具说明估计和未知项。'}
         value=dict(state='INTENT',model_id=M4_MODEL,endpoint=M4_BASE,region='cn-beijing',
             packages={k:version(k) for k in ('httpx','psycopg','fastapi','pydantic')},cases={k:dict(state='PLANNED') for k in cases})
-        if route_diagnostic:value.update(verification_profile='route-diagnostics-1',provider_responses=[])
+        if geometry_diagnostic:value.update(verification_profile='route-coordinate-capture-1' if coordinate_diagnostic else 'route-geometry-capture-1',provider_responses=[],geometry_acceptance='UNASSESSED')
+        elif route_diagnostic:value.update(verification_profile='route-diagnostics-1',provider_responses=[])
         elif diagnostic_verification:value['verification_profile']='native-diagnostics-1'
         elif basic_verification:value['verification_profile']='base-search-1'
         elif verification:value['verification_profile']='native-1'
@@ -251,7 +259,7 @@ def run_batch(*,resume_setup=False,verification=False,basic_verification=False,d
         root=STATE/(tag+'-pg')
         if root.exists():raise ValueError('original_private_acceptance_cluster_exists')
         model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,keychain('g2c-dashscope')),budget)
-        subject='m4-synthetic-real-services-route1' if route_diagnostic else 'm4-synthetic-real-services-diagnostic1' if diagnostic_verification else 'm4-synthetic-real-services-base1' if basic_verification else 'm4-synthetic-real-services-verify1' if verification else 'm4-synthetic-real-services'
+        subject='m4-synthetic-real-services-coordinate1' if coordinate_diagnostic else 'm4-synthetic-real-services-geometry1' if geometry_diagnostic else 'm4-synthetic-real-services-route1' if route_diagnostic else 'm4-synthetic-real-services-diagnostic1' if diagnostic_verification else 'm4-synthetic-real-services-base1' if basic_verification else 'm4-synthetic-real-services-verify1' if verification else 'm4-synthetic-real-services'
         services=RealServices(model,keychain('g2c-amap-web-key'),frozenset({subject}));tools=RealTools(services)
         output=io.StringIO()
         try:
@@ -262,8 +270,8 @@ def run_batch(*,resume_setup=False,verification=False,basic_verification=False,d
                     conninfo=root/'conn.json';conninfo.write_text(json.dumps(config));conninfo.chmod(0o600)
                     now=int(time.time());context_path=root/'run.json'
                     context_path.write_text(json.dumps(dict(version='CJ-LOCAL-RUN@2',current=dict(meter=dict(
-                        unit='provider_call',budget=10 if route_diagnostic else 4 if diagnostic_verification else 80,period_start=now-60,period_end=now+3600,
-                        max_steps=10 if route_diagnostic else 4 if diagnostic_verification else 24,max_tools=3 if route_diagnostic else 1 if diagnostic_verification else 12,
+                        unit='provider_call',budget=10 if route_capture else 4 if diagnostic_verification else 80,period_start=now-60,period_end=now+3600,
+                        max_steps=10 if route_capture else 4 if diagnostic_verification else 24,max_tools=3 if route_capture else 1 if diagnostic_verification else 12,
                         max_output=65536,max_seconds=600),output_limits=dict(model=12000,tool=48000,memory=1000)),history=[])))
                     context=load_run_context(context_path);local_run_context.provision_budget(conninfo,context,subject)
                     db=LocalDatabase(conninfo,run_context=context)
@@ -272,7 +280,7 @@ def run_batch(*,resume_setup=False,verification=False,basic_verification=False,d
                     headers=dict(Authorization='Bearer '+dev_auth.token(auth,subject,30))
                     with TestClient(app) as client:
                         for case,prompt in cases.items():
-                            case_tools=(RealTools(services,allowed_native=frozenset({'place_search','place_route'})) if diagnostic_verification or route_diagnostic else
+                            case_tools=(RealTools(services,allowed_native=frozenset({'place_search','place_route'}),coordinate_routes=coordinate_diagnostic) if diagnostic_verification or route_capture else
                                         RealTools(services,allowed_native=frozenset({'place_search' if case=='place-zh' else 'weather'}))
                                         if verification or basic_verification else tools)
                             cid='m4-'+case
@@ -283,8 +291,8 @@ def run_batch(*,resume_setup=False,verification=False,basic_verification=False,d
                                 expected_generation=opened.json()['generation'],expected_sequence=0)).encode())
                             if sent.status_code!=200:raise ValueError('synthetic_API_message_unavailable')
                             receipt=sent.json()['receipt'];value['cases'][case]=dict(state='ACCEPTED',run_id=receipt['run_id'],message_id=cid);save(path,value)
-                            capture=record_place_responses(STATE/(tag+'-responses'),value,path) if route_diagnostic else nullcontext()
-                            if route_diagnostic:(STATE/(tag+'-responses')).mkdir(mode=0o700)
+                            capture=record_place_responses(STATE/(tag+'-responses'),value,path,geometry=geometry_diagnostic) if route_capture else nullcontext()
+                            if route_capture:(STATE/(tag+'-responses')).mkdir(mode=0o700)
                             with provider_diagnostics() as diagnostics,capture:
                                 outcomes=run_worker.run_once(db,model,auth,tools_configuration=case_tools,real_services=services)
                             value['cases'][case]['provider_diagnostics']=diagnostics
@@ -293,7 +301,7 @@ def run_batch(*,resume_setup=False,verification=False,basic_verification=False,d
                             with db.connect(scope_for(ISSUER,subject)) as conn:
                                 operations=conn.execute('SELECT run_id,operation_key,registration_id,attempt_id,input_bytes FROM cj_run_metered_operation WHERE run_id=%s ORDER BY operation_key',(receipt['run_id'],)).fetchall()
                             value['cases'][case]['operations']=[dict(run_id=r,operation_key=k,registration_id=i,attempt_id=a,
-                                **({'input':json.loads(bytes(raw))} if route_diagnostic and i.startswith('tool.') else {})) for r,k,i,a,raw in operations]
+                                **({'input':json.loads(bytes(raw))} if route_capture and i.startswith('tool.') else {})) for r,k,i,a,raw in operations]
                             displayed=client.get('/v1/run-display',params=dict(message_id=cid),headers=headers)
                             if displayed.status_code==200:
                                 snapshot=displayed.json()['snapshot'];text=snapshot['text']
@@ -313,13 +321,29 @@ def run_batch(*,resume_setup=False,verification=False,basic_verification=False,d
         return dict(mode='EXECUTED',batch=value,attempts=budget.inspect(),actual_total_cost_cny='UNKNOWN')
 
 
+def capture_passed(batch,*,coordinate=False):
+    expected='route-coordinate-capture-1' if coordinate else 'route-geometry-capture-1'
+    if (batch.get('verification_profile')!=expected or batch.get('response_capture_failed')
+            or len(batch.get('provider_responses',[]))!=3 or not route_audit_passed(batch.get('route_audit',[]),geometry=True)):
+        return False
+    if coordinate:
+        walking=[r for r in batch['provider_responses'] if r.get('path')=='/v3/direction/walking']
+        event=batch['route_audit'][-1]
+        parameters=[['destination',event['destination']['coordinate_raw']],['origin',event['origin']['coordinate_raw']],['output','JSON']]
+        if len(walking)!=1 or walking[0].get('request_ref')!=event['request_ref'] or walking[0].get('request_params')!=parameters:return False
+    return True
+
+
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('command',choices=('run','inspect','resume-setup','verify-native','verify-base-search','verify-diagnostics','verify-route'));args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('command',choices=('run','inspect','resume-setup','verify-native','verify-base-search','verify-diagnostics','verify-route','capture-route-geometry','capture-route-coordinate'));args=parser.parse_args()
     if args.command=='inspect':
         path=STATE/'acceptance.json'
         result=dict(batch=None if not path.exists() else json.loads(path.read_text()),attempts=AuthorizationBudget(STATE).inspect())
-    else:result=run_batch(resume_setup=args.command=='resume-setup',verification=args.command=='verify-native',basic_verification=args.command=='verify-base-search',diagnostic_verification=args.command=='verify-diagnostics',route_diagnostic=args.command=='verify-route')
+    else:result=run_batch(resume_setup=args.command=='resume-setup',verification=args.command=='verify-native',basic_verification=args.command=='verify-base-search',diagnostic_verification=args.command=='verify-diagnostics',route_diagnostic=args.command=='verify-route',geometry_diagnostic=args.command=='capture-route-geometry',coordinate_diagnostic=args.command=='capture-route-coordinate')
     print(json.dumps(result,ensure_ascii=False,separators=(',',':')))
+    if args.command in ('capture-route-geometry','capture-route-coordinate'):
+        batch=result['batch']
+        return 0 if capture_passed(batch,coordinate=args.command=='capture-route-coordinate') else 1
     if args.command in ('verify-native','verify-base-search','verify-diagnostics','verify-route') and not verification_passed(result['batch'],AuthorizationBudget(STATE).inspect()):
         return 1
     return 0
