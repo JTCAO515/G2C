@@ -1,5 +1,8 @@
 import XCTest
 import Foundation
+#if G2C_M4_DEVICE_ACCEPTANCE
+import UIKit
+#endif
 
 @MainActor final class DevelopmentScopedMessageUITests:XCTestCase {
     private let bundle="space.go2china.scoped.acceptance"
@@ -18,6 +21,9 @@ import Foundation
         let largest_recovery:Bool?
         let map_points:[MapPoint]?
         let map_loading_failure:Bool?
+        let device_host:String?
+        let device_port:String?
+        let amap:Bool?
     }
     private struct MapPoint:Decodable {
         let id,provider_id,name_zh,state,snapshot_sha256:String
@@ -42,12 +48,55 @@ import Foundation
     private func call(_ path:String,caseID:String) async throws -> Data {
         var url=URLComponents(string:control+path)!
         url.queryItems=[.init(name:"case",value:caseID)]
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        let (data,response)=try await M4DeviceControl.data(from:XCTUnwrap(url.url))
+        #else
         let (data,response)=try await URLSession.shared.data(from:XCTUnwrap(url.url))
+        #endif
         XCTAssertEqual((response as? HTTPURLResponse)?.statusCode,200)
         return data
     }
+    #if G2C_M4_DEVICE_ACCEPTANCE
+    private func handleNetworkConsent(_ alert:XCUIElement) -> Bool {
+        let message=alert.staticTexts.allElementsBoundByIndex.map(\.label).joined(separator:" ").lowercased()
+        guard message.contains("g2c") else { return false }
+        let labels:[String]
+        if message.contains("无线数据") || message.contains("wireless data") {
+            labels=["仅限无线局域网","WLAN Only","Wi-Fi Only"]
+        } else if message.contains("本地网络") || message.contains("local network") {
+            labels=["允许","Allow"]
+        } else { return false }
+        let button=alert.buttons.matching(NSPredicate(format:"label IN %@",labels)).firstMatch
+        guard button.exists && button.isHittable else { return false }
+        button.tap();return true
+    }
+    #endif
     private func prepare(_ name:String) async throws -> Fixture {
         continueAfterFailure=false;executionTimeAllowance=900
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        addUIInterruptionMonitor(withDescription:"G2C local network and Wi-Fi data only") { [weak self] alert in
+            self?.handleNetworkConsent(alert) ?? false
+        }
+        let runner=XCUIApplication(bundleIdentifier:try XCTUnwrap(Bundle.main.bundleIdentifier))
+        runner.activate()
+        print("M4_RUNNER_APPLICATION_STATE",UIApplication.shared.applicationState.rawValue)
+        try M4DeviceControl.triggerLocalNetworkAlert()
+        let alert=XCUIApplication(bundleIdentifier:"com.apple.springboard").alerts.firstMatch
+        if alert.waitForExistence(timeout:3) { _=handleNetworkConsent(alert) }
+        let permissions=Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                if alert.exists { _=self?.handleNetworkConsent(alert) }
+                do { try await Task.sleep(for:.milliseconds(500)) }
+                catch { return }
+            }
+        }
+        defer { permissions.cancel() }
+        var probe=URLComponents(string:control+"/prepare")!
+        probe.queryItems=[.init(name:"case",value:name)]
+        let (denied,reply)=try await M4DeviceControl.unauthenticatedData(from:XCTUnwrap(probe.url))
+        XCTAssertEqual((reply as? HTTPURLResponse)?.statusCode,403)
+        XCTAssertFalse(String(decoding:denied,as:UTF8.self).contains("accounts"))
+        #endif
         return try JSONDecoder().decode(Fixture.self,from:await call("/prepare",caseID:name))
     }
     private func textElement(_ id:String) -> XCUIElement {
@@ -121,11 +170,17 @@ import Foundation
         app.launchArguments=["-cj.ui.language.v1",language]
         if large { app.launchArguments += ["-UIPreferredContentSizeCategoryName","UICTContentSizeCategoryAccessibilityXXXL"] }
         app.launchEnvironment=["OS_ACTIVITY_MODE":"disable","G2C_DEV_ACCOUNT_MODE":"1","G2C_DEV_API_BASE_URL":f.endpoint,
-            "G2C_DEV_ACCOUNTS":restore ? "{}" : String(data:try JSONEncoder().encode(f.accounts),encoding:.utf8)!,"G2C_DEV_MESSAGE_PROFILE":"trip-edit-v1",
+            "G2C_DEV_ACCOUNTS":restore || f.device_host != nil ? "{}" : String(data:try JSONEncoder().encode(f.accounts),encoding:.utf8)!,"G2C_DEV_MESSAGE_PROFILE":"trip-edit-v1",
             "G2C_DEV_NEEDS_PROFILE":"manual-v1","G2C_DEV_NEEDS_ID":"visit",
             "G2C_DEV_TRAVEL_PROFILE":String(data:try JSONSerialization.data(withJSONObject:["version":"app-travel.1","travel_ids":[f.namespace]]),encoding:.utf8)!,
             "G2C_DEV_TYPED_MEMORY_PROFILE":"{\"version\":\"app-memory.2\",\"subjects\":[\"self\"],\"slots\":{\"food\":{\"kind\":\"preference\",\"collection_allowed\":true,\"semantic_resolved\":true},\"pace\":{\"kind\":\"preference\",\"collection_allowed\":true,\"semantic_resolved\":true}},\"extents\":[\"long_term\",\"current\"]}",
             "G2C_DEV_TYPED_MEMORY_URL":f.endpoint]
+        if let host=f.device_host {
+            app.launchEnvironment["G2C_M4_LOCAL_HOST"]=host
+            app.launchEnvironment["G2C_M4_LOCAL_PORT"]=try XCTUnwrap(f.device_port)
+            app.launchEnvironment["G2C_DEV_ACCOUNTS"]="{}"
+            if !restore { app.launchEnvironment["G2C_M4_ACCOUNTS_FILE"]="G2CM4DeviceAccounts.json" }
+        }
         if f.manual_profile == true { app.launchEnvironment["G2C_DEV_TRIP_MANUAL_PROFILE"]="manual-v1" }
         if f.manual_only == true {
             for key in ["G2C_DEV_MESSAGE_PROFILE","G2C_DEV_TRAVEL_PROFILE","G2C_DEV_TYPED_MEMORY_PROFILE","G2C_DEV_TYPED_MEMORY_URL"] { app.launchEnvironment.removeValue(forKey:key) }
@@ -141,6 +196,13 @@ import Foundation
         tap(language=="en" ? "Memory" : "记忆");tap("memory.account")
         if restore { tap("account.development.restore") }
         else { tap("account.development.signout");tap("account.development.signin.A") }
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        let alert=XCUIApplication(bundleIdentifier:"com.apple.springboard").alerts.firstMatch
+        for _ in 0..<16 {
+            if alert.exists { _=handleNetworkConsent(alert) }
+            Thread.sleep(forTimeInterval:0.25)
+        }
+        #endif
         text("account.development.status",contains:try XCTUnwrap(f.subjects["A"]))
         tap(language=="en" ? "Assistant" : "助手")
     }
@@ -210,6 +272,17 @@ import Foundation
                 for point in points { text("trip.map.status."+point.id,contains:language=="en" ? "no marker" : "不画点") }
             } else {
                 tap("trip.map.show")
+                if f.amap == true {
+                    // The test must observe the gate, not infer consent from an
+                    // already-created native SDK view or reuse a prior launch.
+                    XCTAssertFalse(app.descendants(matching:.any).matching(identifier:"trip.map.canvas").firstMatch.exists)
+                    XCTAssertTrue(app.buttons.matching(identifier:"trip.map.consent").firstMatch.exists)
+                    tap("trip.map.consent")
+                    let canvas=app.descendants(matching:.any).matching(identifier:"trip.map.canvas").firstMatch
+                    XCTAssertTrue(canvas.waitForExistence(timeout:15))
+                    let loaded=XCTNSPredicateExpectation(predicate:NSPredicate(format:"value BEGINSWITH %@","loaded|map-creations:"),object:canvas)
+                    XCTAssertEqual(XCTWaiter.wait(for:[loaded],timeout:60),.completed,"AMap SDK did not report a successful map load")
+                }
                 if f.map_loading_failure == true {
                     text("trip.map.unavailable",contains:language=="en" ? "Map unavailable" : "地图暂不可用")
                     XCTAssertEqual(app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.map.marker.")).count,0)
@@ -228,6 +301,10 @@ import Foundation
             }
             if f.map_loading_failure == true { text("trip.map.unavailable",contains:language=="en" ? "Map unavailable" : "地图暂不可用");for point in points { text("trip.map.name."+point.id,contains:point.name_zh);text("trip.map.coordinate."+point.id,contains:point.coordinate?.raw ?? "UNKNOWN") } }
             _ = try await call("/map-source-proof",caseID:name)
+            if f.amap == true && !located.isEmpty {
+                let canvas=app.descendants(matching:.any).matching(identifier:"trip.map.canvas").firstMatch
+                print("M4_AMAP_LOADED",language,try XCTUnwrap(canvas.value as? String))
+            }
             capture(name+"-"+language);try audit(name+"-"+language)
         }
     }

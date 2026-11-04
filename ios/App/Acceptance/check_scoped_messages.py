@@ -4,16 +4,30 @@ Frozen send.4/RUN and TRIP-scoped-discovery.1. Worker outcomes remain backend
 oracles only; no candidate ID is supplied to the App. All Trip sources are created
 by the signed MESSAGE/worker/confirmation/source-initialize chain.
 """
-import os,sys,json,time,tempfile,subprocess,uuid,base64,hashlib,argparse,threading,importlib.util,plistlib
+import os,sys,json,time,tempfile,subprocess,uuid,base64,hashlib,argparse,threading,importlib.util,plistlib,hmac,secrets,ssl
 from pathlib import Path
 from datetime import datetime,timezone
 ROOT=Path(__file__).resolve().parents[3];HERE=Path(__file__).resolve().parent
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--manual-trip-profile',action='store_true')
-parser.add_argument('--simulator',required=True);parser.add_argument('--output',type=Path,required=True)
+target=parser.add_mutually_exclusive_group(required=True)
+target.add_argument('--simulator');target.add_argument('--device')
+parser.add_argument('--local-tls',type=Path)
+parser.add_argument('--amap-device',action='store_true')
+parser.add_argument('--output',type=Path,required=True)
 parser.add_argument('--build-dir',type=Path,required=True);parser.add_argument('--run-context',type=Path,required=True)
 parser.add_argument('--case',choices=['testScopedItemAndLanguageSwitch','testScopedDayChineseLargest','testScopedUndeterminedDayWithoutModel','testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateLateAccount','testScopedCandidateStaleAcceptance','testScopedCandidateDiscoveryUnavailable','testScopedFixedReorderChineseLargest','testManualProtectedPrepareUnknownRestart','testScopedResultClarification','testScopedResultExpansionKeep','testScopedResultExpansionReselection','testScopedResultWithdrawal','testScopedResultLateAccount','testFormalMapNoPlaceSources','testFormalPlaceMapEnglish','testFormalPlaceMapChineseLargest','testFormalPlaceMapMissing','testFormalPlaceMapUnavailable','testFormalPlaceMapLateAccount'],required=True)
 ARGS=parser.parse_args();PLACE_MAP=ARGS.case.startswith('testFormalPlaceMap');RESULT_PROFILE=ARGS.case.startswith('testScopedResult');OUT=ARGS.output.resolve();BUILD=ARGS.build_dir.resolve();CASE=ARGS.case
+TLS=None
+if ARGS.device:
+ if not ARGS.local_tls:parser.error('--device requires the approved --local-tls profile')
+ if CASE.endswith('Largest'):parser.error('Device maximum-font case needs actual system font setup; not a launch-argument substitute')
+ if CASE=='testFormalPlaceMapUnavailable':parser.error('Device map outage needs a real device network case; simulator delegate fault is not device evidence')
+ from m4_device import LocalTLS,configure_project,scan_app_container,stage_accounts,discard_staged_accounts
+ from m4_artifacts import export_native_logs,redact
+ TLS=LocalTLS.load(ARGS.local_tls)
+elif ARGS.local_tls or ARGS.amap_device:parser.error('Device options require --device')
+if ARGS.amap_device and not PLACE_MAP:parser.error('AMap device configuration is restricted to the formal PLACE map cases')
 if OUT.is_relative_to(ROOT) or BUILD.is_relative_to(ROOT):raise ValueError('external evidence required')
 if subprocess.check_output(['git','status','--porcelain'],cwd=ROOT):raise ValueError('commit candidate first')
 os.umask(0o077);OUT.mkdir(parents=True,mode=0o700)
@@ -22,6 +36,7 @@ sys.path.insert(0,str(ROOT/'scripts'))
 for key in tuple(os.environ):
  if key.startswith(('PG','LIBPQ','CJ_LOCAL_','G2C_DEV_')):os.environ.pop(key)
 os.environ['CJ_ENV']='local'
+os.environ['OS_ACTIVITY_MODE']='disable'
 import psycopg,dev_auth,migrate
 from pg_suites import cluster
 from fastapi.testclient import TestClient
@@ -38,7 +53,9 @@ from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from urllib.parse import urlparse,parse_qs
 from cj_api.local_app import load_history_configuration
 r={'app_manual_trip_profile':ARGS.manual_trip_profile,'head':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'status':'RUNNING','layer':'actual simulator/signed API/private PG/formal run_once/Fake synthetic','cases':{},'unrun':(['real accounts/models/services/fees/cloud','physical device/VoiceOver','maps deferred'] if RESULT_PROFILE else ['expansion/clarification pending B360/C336','real accounts/models/services/fees/cloud','physical device/VoiceOver'])}
+if TLS:r['layer']='actual signed iPhone/signed local HTTPS API/private PG/formal run_once/Fake synthetic';r['unrun']=['real accounts/models/PLACE API/cloud/fees','VoiceOver','actual system maximum font']
 if PLACE_MAP or CASE=='testFormalMapNoPlaceSources':r['unrun']=['positive formal PLACE production chain pending C notification','real point alignment L2/L3','real model/PLACE API/fees/cloud/production/device']
+if TLS:r['unrun']=['real point alignment','real accounts/models/PLACE API/cloud/fees','VoiceOver','actual system maximum font']
 def save():(OUT/'report.json').write_text(json.dumps(r,ensure_ascii=False,indent=2))
 def expect(response,phase):
  r.setdefault('setup_responses',[]).append(dict(phase=phase,status=response.status_code,error=response.json().get('error')));save();assert response.status_code==200,(phase,response.status_code,response.text)
@@ -46,6 +63,7 @@ def expect(response,phase):
 def known(x):return dict(state='known',value=x)
 def event(date,clock):return dict(date=known(date),time=known(clock),timezone=known('Asia/Shanghai'),utc_offset=known('+08:00'))
 sources=[*list((ROOT/'ios/App').glob('*.swift')),HERE/'DevelopmentScopedMessageUITests.swift',Path(__file__)]
+if TLS:sources += [HERE/'m4_device.py',HERE/'m4_artifacts.py',HERE/'M4DeviceControl.swift']
 for name in ('CJManualPreviewClient','CJShell','CJMessageClient','CJRunClient','CJTripClient','CJNeedsClient','CJMemoryClient'):
  sources+=list((ROOT/'ios/Modules'/name/'Sources').rglob('*.swift'))
 r['source_hashes']={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sources};save()
@@ -265,9 +283,13 @@ try:
      raw=b''.join(chunks);entry['input_sha256']=hashlib.sha256(raw).hexdigest()
      if path=='/v1/trip-scoped-actions':entry['original_action_id']=json.loads(raw)['action_id']
      if path=='/v1/trip-manual-preparations':entry['original_request_id']=json.loads(raw)['request_id']
-   server=uvicorn.Server(uvicorn.Config(observed,host='127.0.0.1',port=0,log_level='error',access_log=False))
+   server=uvicorn.Server(uvicorn.Config(observed,host=TLS.host if TLS else '127.0.0.1',port=0,log_level='error',access_log=False,**(TLS.uvicorn_options() if TLS else {})))
    import socket
-   sock=socket.socket();sock.bind(('127.0.0.1',0));sock.listen();endpoint='http://127.0.0.1:'+str(sock.getsockname()[1])
+   if TLS:
+    server.config.load();server.config.ssl.minimum_version=ssl.TLSVersion.TLSv1_2
+    sock=TLS.listener();endpoint='https://'+TLS.host+':'+str(sock.getsockname()[1])
+   else:
+    sock=socket.socket();sock.bind(('127.0.0.1',0));sock.listen();endpoint='http://127.0.0.1:'+str(sock.getsockname()[1])
    api_thread=threading.Thread(target=lambda:server.run(sockets=[sock]),daemon=True);api_thread.start()
    def worker():
     while not stop.wait(.05):
@@ -506,12 +528,15 @@ try:
     if CASE=='testScopedCandidateACKLoss':assert writes[0].get('committed_response_suppressed') and writes[0]['status']==200 and writes[0]['delivered_status']==503
     value=dict(formal_version=trips[0][1],formal_count=len(trips),actions=len(actions),app_committed_actions=0 if negative else 1,model_calls=fake.calls,registered_operations=operations,kind=kind,original_action_id=app_id,original_action_sha256=writes[0]['input_sha256'],receipt_queries=len(queries))
     r['decision_proof']=value;save();return value
+   control_token=secrets.token_urlsafe(32) if TLS else None
    class Control(BaseHTTPRequestHandler):
     def log_message(self,*args):pass
     def do_GET(self):
+     if TLS and not hmac.compare_digest(self.headers.get('X-G2C-M4-Control','').encode(),control_token.encode()):
+      self.send_response(403);self.end_headers();self.wfile.write(b'control authorization required');return
      try:
       path=urlparse(self.path);assert parse_qs(path.query).get('case')==[CASE]
-      if path.path=='/prepare':value=dict(case_id=CASE,endpoint=endpoint,conversation=cid,namespace=selected_namespace['id'],accounts=native_tokens,subjects=dict(A=subject,**({'B':other_subject} if CASE in ('testScopedCandidateLateAccount','testScopedResultLateAccount','testFormalPlaceMapLateAccount') else {})),formal_trips=[spec],map_points=map_points if PLACE_MAP else None,map_loading_failure=CASE=='testFormalPlaceMapUnavailable',manual_profile=ARGS.manual_trip_profile,scoped_results=RESULT_PROFILE)
+      if path.path=='/prepare':value=dict(case_id=CASE,endpoint=endpoint,conversation=cid,namespace=selected_namespace['id'],accounts=native_tokens,subjects=dict(A=subject,**({'B':other_subject} if CASE in ('testScopedCandidateLateAccount','testScopedResultLateAccount','testFormalPlaceMapLateAccount') else {})),formal_trips=[spec],map_points=map_points if PLACE_MAP else None,map_loading_failure=CASE=='testFormalPlaceMapUnavailable',manual_profile=ARGS.manual_trip_profile,scoped_results=RESULT_PROFILE,device_host=TLS.host if TLS else None,device_port=str(sock.getsockname()[1]) if TLS else None,amap=ARGS.amap_device)
       elif path.path=='/wait-discovery':
        assert CASE in ('testScopedCandidateLateAccount','testScopedResultLateAccount','testFormalPlaceMapLateAccount') and late_captured.wait(20);value=dict(status='original protected 200 held')
       elif path.path=='/release-discovery':
@@ -558,26 +583,84 @@ try:
       raw=json.dumps(value).encode();self.send_response(200);self.end_headers();self.wfile.write(raw)
      except Exception as error:
       r.setdefault('control_errors',[]).append(dict(type=type(error).__name__));save();self.send_response(500);self.end_headers();self.wfile.write(type(error).__name__.encode())
-   control=ThreadingHTTPServer(('127.0.0.1',0),Control);threading.Thread(target=control.serve_forever,daemon=True).start()
-   original_size=None
+   control=ThreadingHTTPServer((TLS.host if TLS else '127.0.0.1',0),Control)
+   if TLS:TLS.secure_http_server(control)
+   threading.Thread(target=control.serve_forever,daemon=True).start()
+   original_size=None;staging_attempted=False
    try:
     module_spec=importlib.util.spec_from_file_location('scoped_builder',ROOT/'scripts/check_ios_trip_confirm.py');module=importlib.util.module_from_spec(module_spec);module_spec.loader.exec_module(module)
     builder=object.__new__(module.XCTestDriver);builder.directory=OUT/'project';builder.directory.mkdir();builder.write_project(0)
-    (builder.directory/'G2CControl.swift').write_text((HERE/'DevelopmentScopedMessageUITests.swift').read_text().replace('__FIXTURE_URL__',f'http://127.0.0.1:{control.server_port}'))
+    control_url=('https://'+TLS.host if TLS else 'http://127.0.0.1')+':'+str(control.server_port)
+    test_source=(HERE/'DevelopmentScopedMessageUITests.swift').read_text().replace('__FIXTURE_URL__',control_url)
     project=builder.directory/'G2CAcceptance.xcodeproj';pbx=project/'project.pbxproj';bundle='space.go2china.scoped.acceptance'
-    text=pbx.read_text().replace('space.go2china.foundation.local',bundle).replace('space.go2china.foundation.control',bundle+'.control')
-    entitlements=builder.directory/'Scoped.entitlements';entitlements.write_bytes(plistlib.dumps({'application-identifier':bundle,'keychain-access-groups':[bundle]}));pbx.write_text(text.replace(json.dumps(str(ROOT/'ios/App/Development.entitlements')),json.dumps(str(entitlements))))
-    original_size=subprocess.check_output(['xcrun','simctl','ui',ARGS.simulator,'content_size'],text=True).strip()
-    desired='accessibility-extra-extra-extra-large' if CASE.endswith('Largest') else 'large'
-    subprocess.run(['xcrun','simctl','ui',ARGS.simulator,'content_size',desired],check=True,capture_output=True);r['simulator_content_size']=subprocess.check_output(['xcrun','simctl','ui',ARGS.simulator,'content_size'],text=True).strip();assert r['simulator_content_size']==desired;save()
-    result=OUT/(CASE+'.xcresult');command=['xcodebuild','-project',str(project),'-scheme','G2CControl','-configuration','Debug','-destination','platform=iOS Simulator,id='+ARGS.simulator,'-derivedDataPath',str(BUILD),'-resultBundlePath',str(result),'-scmProvider','system','-skipPackageUpdates','-onlyUsePackageVersionsFromResolvedFile','-parallel-testing-enabled','NO','-collect-test-diagnostics','never','ARCHS=arm64','ONLY_ACTIVE_ARCH=YES','CODE_SIGNING_ALLOWED=YES','CODE_SIGN_IDENTITY=-','-only-testing:G2CControl/DevelopmentScopedMessageUITests/'+CASE,'test']
+    if TLS:
+     bundle,device_configuration,frozen_sdk_key=configure_project(project,TLS,control_url,control_token,amap=ARGS.amap_device)
+     test_source=test_source.replace('space.go2china.scoped.acceptance',bundle)
+    else:
+     text=pbx.read_text().replace('space.go2china.foundation.local',bundle).replace('space.go2china.foundation.control',bundle+'.control')
+     entitlements=builder.directory/'Scoped.entitlements';entitlements.write_bytes(plistlib.dumps({'application-identifier':bundle,'keychain-access-groups':[bundle]}));pbx.write_text(text.replace(json.dumps(str(ROOT/'ios/App/Development.entitlements')),json.dumps(str(entitlements))))
+     original_size=subprocess.check_output(['xcrun','simctl','ui',ARGS.simulator,'content_size'],text=True).strip()
+     desired='accessibility-extra-extra-extra-large' if CASE.endswith('Largest') else 'large'
+     subprocess.run(['xcrun','simctl','ui',ARGS.simulator,'content_size',desired],check=True,capture_output=True);r['simulator_content_size']=subprocess.check_output(['xcrun','simctl','ui',ARGS.simulator,'content_size'],text=True).strip();assert r['simulator_content_size']==desired;save()
+    (builder.directory/'G2CControl.swift').write_text(test_source)
+    destination='platform=iOS,id='+ARGS.device if TLS else 'platform=iOS Simulator,id='+ARGS.simulator
+    if TLS:
+     quarantine=Path(tempfile.mkdtemp(prefix='g2c-m4-private-native-'));quarantine.chmod(0o700)
+     result=quarantine/(CASE+'.xcresult');r['private_native_result']=str(result);r['raw_native_bundle_shareable']=False;save()
+     r['native_artifacts']=dict(status='UNRUN: native process has not reached a terminal exit',raw_bundle_shareable=False);save()
+    else:result=OUT/(CASE+'.xcresult')
+    command=['xcodebuild','-project',str(project),'-scheme','G2CControl','-configuration','Debug','-destination',destination,'-derivedDataPath',str(BUILD),'-resultBundlePath',str(result),'-scmProvider','system','-skipPackageUpdates','-onlyUsePackageVersionsFromResolvedFile','-parallel-testing-enabled','NO','-collect-test-diagnostics','never','ARCHS=arm64','ONLY_ACTIVE_ARCH=YES','CODE_SIGNING_ALLOWED=YES','CODE_SIGN_IDENTITY=-','-only-testing:G2CControl/DevelopmentScopedMessageUITests/'+CASE,'test']
+    if TLS:
+     command.remove('CODE_SIGN_IDENTITY=-')
+     command[1:1]=['-xcconfig',str(device_configuration),'-allowProvisioningUpdates','-allowProvisioningDeviceRegistration']
+    if TLS:
+     private_values=list(native_tokens.values())+[control_token]
+     if frozen_sdk_key:private_values.append(frozen_sdk_key.value)
+     build_command=command[:-1]+['build-for-testing']
+     build_command[build_command.index('-resultBundlePath')+1]=str(quarantine/'build.xcresult')
+     print('DEVICE_BUILD '+CASE,flush=True)
+     built=subprocess.run(build_command,cwd=ROOT,capture_output=True,text=True,timeout=1800)
+     build_exports=OUT/'build-artifact-exports';build_exports.mkdir(mode=0o700)
+     r['build_native_artifacts']=export_native_logs(quarantine/'build.xcresult',build_exports,private_values,built.stdout+built.stderr,kinds=('build',))
+     r['device_build_exit']=built.returncode;save()
+     if not r['build_native_artifacts']['status'].startswith('PASS'):raise RuntimeError('Device build log failed credential/export gate')
+     built.check_returncode()
+     if frozen_sdk_key:
+      packaged=BUILD/'Build/Products/Debug-iphoneos/CJProbeApp.app/AMapLocalKey.plist'
+      if plistlib.loads(packaged.read_bytes()) != {'apiKey':frozen_sdk_key.value}:raise RuntimeError('Packaged SDK key differs from the frozen build input')
+     deadline=time.monotonic()+1200;waiting=False
+     while True:
+      state=json.loads(subprocess.check_output(['xcrun','devicectl','device','info','lockState','--device',ARGS.device,'--json-output','-','--quiet','--timeout','20'],text=True))['result']
+      if not state['passcodeRequired']:break
+      if not waiting:
+       r['status']='WAITING_DEVICE_UNLOCK';save();print('WAITING_DEVICE_UNLOCK: build ready; unlock the approved iPhone to run without rebuilding',flush=True);waiting=True
+      if time.monotonic()>deadline:raise TimeoutError('approved device remained locked after build')
+      time.sleep(5)
+     staging_attempted=True
+     stage_accounts(ARGS.device,bundle,BUILD/'Build/Products/Debug-iphoneos/CJProbeApp.app',quarantine,native_tokens)
+     r['status']='RUNNING';save();command[-1]='test-without-building'
     print('SCOPED '+CASE,flush=True);run=subprocess.run(command,cwd=ROOT,capture_output=True,text=True,timeout=1800)
+    r['native_exit_code']=run.returncode
     log=run.stdout+run.stderr
+    if not TLS:private_values=list(native_tokens.values())
+    if TLS and frozen_sdk_key:r['sdk_console_key_redactions']=log.count(frozen_sdk_key.value)
+    if TLS:
+     # Test-without-building has an action log (including native stdout); build
+     # logs were checked separately, and there is no independent console ref.
+     r['native_artifacts']=export_native_logs(result,OUT,private_values,log,kinds=('action',))
+     log=redact(log,private_values)[0]
     for temporary_token in native_tokens.values():log=log.replace(temporary_token,'<redacted-local-token>')
     assert all(temporary_token not in log for temporary_token in native_tokens.values())
     r['redacted_log_accounts']=sorted(native_tokens);r['token_scan_accounts']=sorted(native_tokens)
-    (OUT/(CASE+'.log')).write_text(log);r['cases'][CASE]='FAIL' if run.returncode else 'VERIFYING';save();run.check_returncode()
-    summary=json.loads(subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)]));(OUT/'test-summary.json').write_text(json.dumps(summary,indent=2));assert summary['passedTests']==1 and summary['failedTests']==summary['skippedTests']==0
+    (OUT/(CASE+'.log')).write_text(log);r['cases'][CASE]='FAIL' if run.returncode else 'VERIFYING';save()
+    if TLS and not r['native_artifacts']['status'].startswith('PASS'):raise RuntimeError('Native logs failed credential/export gate; raw bundle quarantined')
+    run.check_returncode()
+    summary_text=subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)],text=True)
+    if TLS:
+     summary_text,summary_hits=redact(summary_text,private_values)
+     if summary_hits:
+      (OUT/'test-summary-redacted.json').write_text(summary_text);raise RuntimeError('Native summary contained credential; raw bundle quarantined')
+    summary=json.loads(summary_text);(OUT/'test-summary.json').write_text(json.dumps(summary,indent=2));assert summary['passedTests']==1 and summary['failedTests']==summary['skippedTests']==0
     if PLACE_MAP:map_source_proof()
     elif CASE=='testFormalMapNoPlaceSources':map_no_place_proof()
     elif CASE=='testScopedResultExpansionReselection':
@@ -595,17 +678,26 @@ try:
      assert verified['messages']==verified['posts']==1 and verified['forbidden_writes']==0 and not worker_errors
      if CASE=='testScopedUndeterminedDayWithoutModel':assert verified['model_calls']==verified['registered_operations']==verified['pending_proposals']==0 and verified['draft_outcome']=='validation_failed'
      else:assert verified['model_calls']==verified['registered_operations']==verified['pending_proposals']==1 and verified['draft_outcome']=='published'
-    container=Path(subprocess.check_output(['xcrun','simctl','get_app_container',ARGS.simulator,bundle,'data'],text=True).strip())
-    for file in container.rglob('*'):
-     if file.is_file() and not file.is_symlink():
-      data=file.read_bytes();assert all(temporary_token.encode() not in data for temporary_token in native_tokens.values()) and b'-----BEGIN PRIVATE KEY-----' not in data
+    if TLS:scan_app_container(ARGS.device,bundle,OUT/'device-app-data',native_tokens.values())
+    else:
+     container=Path(subprocess.check_output(['xcrun','simctl','get_app_container',ARGS.simulator,bundle,'data'],text=True).strip())
+     for file in container.rglob('*'):
+      if file.is_file() and not file.is_symlink():
+       data=file.read_bytes();assert all(temporary_token.encode() not in data for temporary_token in native_tokens.values()) and b'-----BEGIN PRIVATE KEY-----' not in data
     assert r['head']==subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'head changed during acceptance'
     assert all(hashlib.sha256((ROOT/name).read_bytes()).hexdigest()==digest for name,digest in r['source_hashes'].items()),'source changed during acceptance'
-    r['token_key_scan']='PASS';r['cases'][CASE]='PASS';r['status']='PASS';save()
+    r['token_key_scan']='PASS';r['token_key_scan_scope']='App data and exported build/action/process text; opaque raw bundle not shareable' if TLS else 'existing simulator App-data/log scope';r['cases'][CASE]='PASS';r['status']='PASS';save()
    finally:
+    input_cleanup_error=None
+    if TLS and staging_attempted:
+     try:
+      discard_staged_accounts(ARGS.device,bundle);r['staged_credential_cleanup']='PASS: exact one-use input absent'
+     except Exception as error:
+      r['staged_credential_cleanup']='FAIL: device cleanup pending, do not reuse input';save();input_cleanup_error=error
     r['observed_requests']=list(audit);r['worker_errors']=list(worker_errors);save()
     if original_size is not None:subprocess.run(['xcrun','simctl','ui',ARGS.simulator,'content_size',original_size],check=True,capture_output=True)
     late_release.set();stop.set();worker_thread.join(10);server.should_exit=True;api_thread.join(10);sock.close();control.shutdown();control.server_close()
+    if input_cleanup_error is not None:raise input_cleanup_error
   r['private_pg_stopped']=True
 except BaseException as error:
  r['status']='FAIL';r['error']=type(error).__name__;raise
