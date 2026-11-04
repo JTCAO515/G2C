@@ -3,6 +3,8 @@ import base64
 from contextlib import contextmanager
 from datetime import datetime,timezone
 import json
+import hashlib
+import uuid
 import os
 from pathlib import Path
 import sys
@@ -80,13 +82,34 @@ def exercise(*,interrupted=False):
                         except WorkerOwnershipLost:pass
                         else:raise AssertionError('missing simulated original interruption')
                     with operator() as (connection,_):
-                        original=connection.execute('SELECT run_id FROM cj_message_receipt WHERE scope=%s',(host.scope(subjects[0]),)).fetchone()[0]
+                        original_record=connection.execute('SELECT run_id,input_sha256,raw_input FROM cj_message_receipt WHERE scope=%s',(host.scope(subjects[0]),)).fetchone();original,original_sha,original_bytes=original_record
                         assert connection.execute('SELECT count(*) FROM cj_run_record').fetchone()==(0,)
+                    legacy=host.load();del legacy['account_original_run_id'];del legacy['account_original_input_sha256'];host.save(legacy)
+                    for run_id,message_sha in ((str(uuid.uuid4()),original_sha),(original,'0'*64)):
+                        with patch.object(host,'finish_seed',side_effect=AssertionError('wrong original dispatched')):
+                            try:host.resume_seed(expected_run_id=run_id,expected_message_sha256=message_sha)
+                            except ValueError:pass
+                            else:raise AssertionError('wrong original evidence accepted')
+                        assert host.load()['stage']=='SEED_INTENT'
+                    # Private fixture operator fault injection only; runtime has
+                    # no UPDATE grant. A different valid body/hash cannot pass.
+                    wrong=bytes(original_bytes).replace(b'SYNTHETIC recovery',b'SYNTHETIC altered')
+                    with operator() as (connection,_):connection.execute('UPDATE cj_message_receipt SET raw_input=%s,input_sha256=%s WHERE scope=%s',
+                        (wrong,hashlib.sha256(wrong).hexdigest(),host.scope(subjects[0])))
+                    try:
+                        with patch.object(host,'finish_seed',side_effect=AssertionError('wrong bytes dispatched')):
+                            try:host.resume_seed(expected_run_id=original,expected_message_sha256=hashlib.sha256(wrong).hexdigest())
+                            except ValueError:pass
+                            else:raise AssertionError('different message bytes accepted')
+                        assert host.load()['stage']=='SEED_INTENT'
+                    finally:
+                        with operator() as (connection,_):connection.execute('UPDATE cj_message_receipt SET raw_input=%s,input_sha256=%s WHERE scope=%s',
+                            (original_bytes,original_sha,host.scope(subjects[0])))
                     send=host.send
                     def without_resend(client,subject):
                         if subject==subjects[0]:raise AssertionError('original account message resent')
                         return send(client,subject)
-                    with patch.object(host,'send',without_resend):seeded=host.resume_seed()
+                    with patch.object(host,'send',without_resend):seeded=host.resume_seed(expected_run_id=original,expected_message_sha256=original_sha)
                     assert host.load()['account_original_run_id']==original
                     with operator() as (connection,_):
                         assert connection.execute('SELECT run_id FROM cj_message_receipt WHERE scope=%s',(host.scope(subjects[0]),)).fetchall()==[(original,)]
