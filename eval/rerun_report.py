@@ -24,6 +24,7 @@ def audit_batch(directory, rows):
         observed=e.get('observed') or {};receipt=observed.get('message_receipt') or {}
         audit.append(dict(row,run_id=receipt.get('run_id'),run_status=observed.get('run_status'),
             raw_evidence_sha256=sha256(raw).hexdigest(),input_sha256=e['input_sha256'],
+            time_to_terminal_seconds=e.get('time_to_terminal_seconds'),
             delivered_answer_chars=len(e.get('answer','')),delivered_answer_sha256=sha256(e.get('answer','').encode()).hexdigest(),
             provider_receipted_substeps=dict(Counter(v['kind'] for v in e['authorization_attempts'] if v['state']=='RECEIVED'))))
         attempts.extend(e['authorization_attempts'])
