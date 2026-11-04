@@ -50,3 +50,35 @@ Auth 自有 schema、Auth/计费设置和平台函数保持；此操作本身是
 2026-11-04 安全 advisor 保留：33 项函数 search_path WARN，以及既有平台事件函数的 anon/authenticated EXECUTE 两项 WARN。
 namespace USAGE 已实际拒绝；没有据此把 advisor 标成清零，也不改已应用 SQL 或平台函数凑绿。
 生产前的受控运行身份、完整12表门禁、搜索路径/平台 advisory 处理需另按 #30/#495 收口。
+
+## 后续 #30 修复 profile（代码与实际云结果分开）
+
+新 `SupabaseTestDatabase` 只接受指定 G2C 项目、5432 session 模式与独立
+`cj_m1_runtime` 连接。旧本机 Unix-socket 校验、scope/owner 与交易 LOCAL binder 保留。
+6543 transaction 模式不允许作为应用连接：对某一物理后端做 RESET，不能清空将来借用的其他后端。
+应用每次 checkout 验真实登录角色与 `pg_stat_ssl.ssl=true`，然后在其独占 session 后端执行
+`DISCARD ALL`，复核所有既有权限 GUC 为空，才进入原 LOCAL scope 绑定。
+未加密、错角色、未重置或无法证明，均拒绝业务查询；不以客户端 TLS 代称内部加密。
+
+云端 SSL 强制设置应在指定项目 Database Settings 的 SSL configuration 中启用，随后实测两段。
+该设置可能短暂重启数据库，按官方说明执行；不改计费、网络安全组或购买 IPv4/其他资源。
+当前授权的目的只含测试修复，没有生产放行。
+
+JT 在本轮已批准仅为既有运行角色设置随机密码，记录在 #495。
+`scripts/supabase_runtime_credential.py apply --ca-file CA`：固定项目与角色、要求空闲且最小权限，
+确认数据库侧 TLS 后，将原凭据存 Keychain `g2c-supabase-runtime-db`；使用 libpq
+`encrypt_password(..., scram-sha-256)` 构造密码变更，不在 SQL 里传明文密码、不 GRANT 或新建角色。
+变更意图先持久；再次执行只验证原凭据，不重置密码，不把未知提交当没执行。
+服务器只消费后续600环境文件，脚本与报告不输出连接串、密码、SCRAM verifier。
+
+`scripts/supabase_pool_gate.py run --ca-file CA` 先在私有PG用原签名 API/Fake/确认生成两个
+随机合成 scope 的完整12表正例，再复制到固定云项目。真实运行角色须逐表验证双方非空正例，
+同物理后端 commit/rollback 后的无scope SELECT/UPDATE/INSERT 拒绝，再由下一主体读取自家数据；
+还覆盖正常/异常断开，再借用时应用强制重置与完整12表负例。异常只切断本脚本自己的客户端，
+不对任意服务器PID执行 terminate。供应商是否复用了同一后端按实测列出，不能把换PID称reset证明。
+负向写入均置于强制回滚交易；只清理由本批次签名源生成且完整hash未变的自有合成数据。
+原 run 已存在时只读，不另开新scope、重发SQL或清空未知数据。
+
+本地 `supabase_pool_reset` 组只验证真实 Unix PG 的12表/重置机制，明确没有云或TLS证明；
+实际云测试、运行角色、双段TLS与费用必须另在 #30/PR 记录 PASS/FAIL/UNRUN/UNKNOWN。
+计数为被仪表化的 execute 调用，内部交易/重置等总SQL数无法完整计数时保持 UNKNOWN。
