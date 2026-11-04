@@ -102,7 +102,8 @@ def main():
         child = json.loads(path.read_text()) if path.exists() else {}
         # The owning harness checks actual XCTest counts, skips, runtime proofs
         # and its case assertions before reporting these statuses.
-        passed = run.returncode == 0 and child.get('status') in ('PASS', 'PARTIAL_PASS')
+        accepted_statuses = ('PASS_APP_WITH_PINNED_CANDIDATE_BACKEND',) if harness == 'check_manual_trips.py' else ('PASS', 'PARTIAL_PASS')
+        passed = run.returncode == 0 and child.get('status') in accepted_statuses
         report['steps'][name] = dict(status='PASS' if passed else 'FAIL', exit_code=run.returncode,
             owner_status=child.get('status', 'UNKNOWN'), evidence=str(path.relative_to(output)),
             report_sha256=hashlib.sha256(path.read_bytes()).hexdigest() if path.exists() else None)
