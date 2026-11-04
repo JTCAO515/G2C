@@ -259,7 +259,8 @@ def parse_response(config: Config, request: PreparedRequest, response: Response,
                 raise ValueError("contradictory_status")
             return result(Outcome.RATE_LIMITED if code in _RATE_CODES else Outcome.PROVIDER_ERROR,
                           "provider_rejected", provider_code=code)
-        if code != "10000" or data.get("info") != "OK":
+        success_info=("OK","ok") if basic and type(request.query) is RouteQuery and request.query.mode=="walking" else ("OK",)
+        if code != "10000" or data.get("info") not in success_info:
             raise ValueError("contradictory_status")
         count = _count(data.get("count"))
         if type(request.query) in (Search, Detail):
