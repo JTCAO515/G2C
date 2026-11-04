@@ -612,6 +612,27 @@ try:
     if TLS:
      command.remove('CODE_SIGN_IDENTITY=-')
      command[1:1]=['-xcconfig',str(device_configuration),'-allowProvisioningUpdates','-allowProvisioningDeviceRegistration']
+    if TLS:
+     private_values=list(native_tokens.values())+[control_token]
+     if ARGS.amap_device:private_values.append(plistlib.loads((ROOT/'ios/.local-amap-device/AMapLocalKey.plist').read_bytes())['apiKey'])
+     build_command=command[:-1]+['build-for-testing']
+     build_command[build_command.index('-resultBundlePath')+1]=str(quarantine/'build.xcresult')
+     print('DEVICE_BUILD '+CASE,flush=True)
+     built=subprocess.run(build_command,cwd=ROOT,capture_output=True,text=True,timeout=1800)
+     build_exports=OUT/'build-artifact-exports';build_exports.mkdir(mode=0o700)
+     r['build_native_artifacts']=export_native_logs(quarantine/'build.xcresult',build_exports,private_values,built.stdout+built.stderr,kinds=('build',))
+     r['device_build_exit']=built.returncode;save()
+     if not r['build_native_artifacts']['status'].startswith('PASS'):raise RuntimeError('Device build log failed credential/export gate')
+     built.check_returncode()
+     deadline=time.monotonic()+1200;waiting=False
+     while True:
+      state=json.loads(subprocess.check_output(['xcrun','devicectl','device','info','lockState','--device',ARGS.device,'--json-output','-','--quiet','--timeout','20'],text=True))['result']
+      if not state['passcodeRequired']:break
+      if not waiting:
+       r['status']='WAITING_DEVICE_UNLOCK';save();print('WAITING_DEVICE_UNLOCK: build ready; unlock the approved iPhone to run without rebuilding',flush=True);waiting=True
+      if time.monotonic()>deadline:raise TimeoutError('approved device remained locked after build')
+      time.sleep(5)
+     r['status']='RUNNING';save();command[-1]='test-without-building'
     print('SCOPED '+CASE,flush=True);run=subprocess.run(command,cwd=ROOT,capture_output=True,text=True,timeout=1800)
     r['native_exit_code']=run.returncode
     log=run.stdout+run.stderr

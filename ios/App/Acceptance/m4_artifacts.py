@@ -28,7 +28,7 @@ def redact(text, secrets):
     return text, hits + private_blocks
 
 
-def export_native_logs(raw_result, output, secrets, run_log):
+def export_native_logs(raw_result, output, secrets, run_log, kinds=('build','action','console')):
     """Export only redacted text; opaque raw bundles remain private/quarantined.
 
     Called before checking xcodebuild's exit code so failed/cancelled runs receive
@@ -38,7 +38,7 @@ def export_native_logs(raw_result, output, secrets, run_log):
     texts = {'xcodebuild': run_log}
     missing = []
     if raw_result.exists():
-        for kind in ('build', 'action', 'console'):
+        for kind in kinds:
             result = subprocess.run(['xcrun', 'xcresulttool', 'get', 'log', '--path', str(raw_result),
                                      '--type', kind, '--compact'], capture_output=True, text=True, timeout=30)
             if result.returncode:
@@ -46,7 +46,7 @@ def export_native_logs(raw_result, output, secrets, run_log):
             else:
                 texts[kind] = result.stdout
     else:
-        missing = ['build', 'action', 'console']
+        missing = list(kinds)
     hits = 0
     for kind, text in texts.items():
         cleaned, count = redact(text, secrets)
