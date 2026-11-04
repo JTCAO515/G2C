@@ -46,6 +46,14 @@ def test_missing_or_lost_counter_and_wrong_bucket_cannot_dispatch(tmp_path,monke
     assert session.calls==[] and not (root/'usage.json').exists()
 
 
+def test_quota_cannot_follow_a_replaced_record_symlink(tmp_path,monkeypatch):
+    root=tmp_path/'control';allowance(root,monkeypatch);session=Session();client=Client(service(session),root=root)
+    original=root/'authorization.json';saved=root/'original-authorization.json';original.rename(saved);original.symlink_to(saved)
+    with pytest.raises(ValueError,match='private_original'):
+        client.head_object(oss.HeadObjectRequest(bucket=oss_backup.BUCKET,key='backups/20261104T000000Z-'+'a'*64+'/database.dump'))
+    assert session.calls==[] and checkpoint.verified(root/'usage.json')['requests']==0
+
+
 def test_last_request_is_exclusive_and_unknown_calls_are_not_refunded(tmp_path,monkeypatch):
     root=tmp_path/'control';allowance(root,monkeypatch,requests=299);session=Session();client=Client(service(session),root=root)
     request=oss.HeadObjectRequest(bucket=oss_backup.BUCKET,key='backups/20261104T000000Z-'+'a'*64+'/database.dump')

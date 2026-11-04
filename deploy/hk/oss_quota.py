@@ -21,11 +21,14 @@ def require_persistent_control():
     control=Path('/control');info=control.lstat()
     if (os.getuid()!=10001 or not stat.S_ISDIR(info.st_mode) or info.st_uid!=10001
             or stat.S_IMODE(info.st_mode)!=0o755):raise ValueError('owned_OSS_control_required')
+    mounted=False
     for line in Path('/proc/self/mountinfo').read_text().splitlines():
         fields,_,filesystem=line.partition(' - ');parts=fields.split()
+        if parts[4]=='/control/oss-quota' or parts[4].startswith('/control/oss-quota/'):
+            raise ValueError('OSS_quota_submount_refused')
         if (parts[4]=='/control' and parts[3]=='/srv/g2c-beta/control' and 'rw' in parts[5].split(',')
-                and filesystem.split()[0] in ('ext4','xfs','btrfs')):return
-    raise ValueError('persistent_nonrestored_OSS_control_required')
+                and filesystem.split()[0] in ('ext4','xfs','btrfs')):mounted=True
+    if not mounted:raise ValueError('persistent_nonrestored_OSS_control_required')
 
 
 class Client:
@@ -37,7 +40,15 @@ class Client:
         if request.bucket!=BUCKET:raise ValueError('fixed_backup_bucket_required')
         maximum=object_limit(request.key)
         if type(byte_count) is not int or not 0<=byte_count<=maximum:raise ValueError('bounded_original_object_required')
+        if self.root.is_symlink():raise ValueError('original_OSS_quota_directory_required')
         with checkpoint.lock(self.root):
+            directory=self.root.lstat()
+            if directory.st_uid!=os.getuid() or stat.S_IMODE(directory.st_mode)!=0o700:
+                raise ValueError('private_original_OSS_quota_required')
+            for name in ('authorization.json','usage.json'):
+                info=(self.root/name).lstat()
+                if (not stat.S_ISREG(info.st_mode) or info.st_uid!=os.getuid() or stat.S_IMODE(info.st_mode)!=0o600):
+                    raise ValueError('private_original_OSS_budget_record_required')
             policy=checkpoint.verified(self.root/'authorization.json')
             state=checkpoint.verified(self.root/'usage.json')
             if (set(policy)!={'version','mode','source','request_limit','byte_limit','hold_limit_fen','expires_at'}
