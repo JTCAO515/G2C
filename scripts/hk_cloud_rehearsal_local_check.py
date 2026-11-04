@@ -19,13 +19,14 @@ from cj_api.local_account_admission_v2 import account_checker_for
 from cj_api.local_cleanup import Runtime as LocalCleanup
 from cj_api.local_run_context import load_run_context
 from cj_auth.interfaces import AdmissionStatus
+from cj_run.core import WorkerOwnershipLost
 from deploy.hk.cloud_rehearsal import Host
 from deploy.hk.configuration import Runtime
 from deploy.hk import checkpoint,schema,staging
 import migrate,pg_suites,dev_auth,local_run_context
 
 
-def main():
+def exercise(*,interrupted=False):
     with tempfile.TemporaryDirectory(prefix='g2c-c-rehearsal-') as directory:
         root=Path(directory);key=Ed25519PrivateKey.generate()
         env=dict(CJ_ENV='local',CJ_DEPLOY_TARGET='hk-beta',CJ_M4_SYNTHETIC_ONLY='1',CJ_TRIAL_VALID_UNTIL='2027-02-03T00:00:00+08:00',
@@ -43,6 +44,9 @@ def main():
             run_path.write_text(json.dumps(dict(version='CJ-LOCAL-RUN@2',current=dict(meter=dict(unit='provider_call',budget=80,period_start=now-60,period_end=now+3600,
                 max_steps=24,max_tools=12,max_output=65536,max_seconds=600),output_limits=dict(model=12000,tool=48000,memory=1000)),history=[])))
             context=load_run_context(run_path);database=LocalDatabase(conninfo,run_context=context,travel_context=True,trip_context=True)
+            # Real local fixture with the same trusted release-binding seam;
+            # never substitute Supabase identity/TLS or widen the app allowlist.
+            database._before_scope=lambda cursor:checkpoint.runtime_transaction(cursor,root/'control')
             runtime=Runtime(auth,context,run_path,[])
             @contextmanager
             def operator():
@@ -70,7 +74,24 @@ def main():
                 # Different keys and invite sets: neither can act in the other host.
                 assert account_checker_for(beta,database).check(dev_auth.token(auth,beta_subjects[0],15)).status is AdmissionStatus.DENIED
                 assert host.checker.check(dev_auth.token(beta,subjects[0],15)).status is AdmissionStatus.DENIED
-                seeded=host.seed();assert seeded['stage']=='SEEDED',seeded
+                if interrupted:
+                    with patch('run_worker.run_once',side_effect=WorkerOwnershipLost('synthetic failure before RUN acceptance')):
+                        try:host.seed()
+                        except WorkerOwnershipLost:pass
+                        else:raise AssertionError('missing simulated original interruption')
+                    with operator() as (connection,_):
+                        original=connection.execute('SELECT run_id FROM cj_message_receipt WHERE scope=%s',(host.scope(subjects[0]),)).fetchone()[0]
+                        assert connection.execute('SELECT count(*) FROM cj_run_record').fetchone()==(0,)
+                    send=host.send
+                    def without_resend(client,subject):
+                        if subject==subjects[0]:raise AssertionError('original account message resent')
+                        return send(client,subject)
+                    with patch.object(host,'send',without_resend):seeded=host.resume_seed()
+                    assert host.load()['account_original_run_id']==original
+                    with operator() as (connection,_):
+                        assert connection.execute('SELECT run_id FROM cj_message_receipt WHERE scope=%s',(host.scope(subjects[0]),)).fetchall()==[(original,)]
+                else:seeded=host.seed()
+                assert seeded['stage']=='SEEDED',seeded
                 assert seeded['rows']==dict(account_messages=1,retained_messages=1,selected_memory=1),seeded
                 assert host.seed()['rows']==seeded['rows']
                 # A signed hash alone is deliberately insufficient for deletion.
@@ -104,6 +125,10 @@ def main():
                 assert reconciled['fence_counts']==deleted['fence_counts']
             host.close()
     print('PASS L1 actual private PG: separate signatures/invites in both directions, signed producer/Meter FakeProvider/UNKNOWN, real native base dump before canonical retirement/item erasure, target-specific physical/fence proof, retained owner, original stage only-read; cloud UNRUN')
+
+
+def main():
+    exercise();exercise(interrupted=True)
 
 
 if __name__=='__main__':main()

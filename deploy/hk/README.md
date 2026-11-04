@@ -102,6 +102,10 @@ seed后实际导出原base并核制品/hash、同源lineage、当前完整行与
 erase经原账号注销API和单条MEMORY-ERASURE服务、独立已批准cleanup角色执行。
 验证注销账号消息与指定记忆物理消失、另一个账号保留、指定原operation和item的专属fence存在后才写DELETED；重复seed/erase只检查原阶段。
 任意中断INTENT保持原主体/原动作待核，不新建身份重试。该工具不开放公网、不操作真实账号、不改权限。
+`resume-seed` 仅适用于已只读核实A的唯一原未确认消息、RUN/注册出口均零、B尚无消息/记忆的SEED_INTENT。
+它在release守卫下固定原run ID及原message hash，写SEED_RESUME_INTENT后由原worker接续该delivery；
+不再次send A、不初始化账号或预算、不重开出口。任何可能已派发或再次中断的状态保持HOLD/只读。
+worker脏会话审计在受信scope binder之前执行，保留零初始advisory锁检查；binder安装的事务级release共享锁不再误报脏会话。
 `hk_cloud_rehearsal` PG组验证这套生产者组合，实际生成native checkpoint；另以签名hash-only假包验证删除前拒绝，不冒充真实云备份。
 
 恢复operator仅接受32位十六进制 `--rehearsal-id`，目标固定在已核持久bind卷 `/rehearsals/ID`（宿主 `/srv/g2c-beta/rehearsals`，UID10001/0700）；拒绝tmpfs、容器overlay、缺挂载和符号链接逃逸。示例：

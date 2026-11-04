@@ -119,9 +119,14 @@ class Host:
             checkpoint.require_release(connection,self.control)
             self.save(state)
             for subject in self.subjects:provision_budget_connection(connection,self.runtime.context,subject)
-        with TestClient(self.app) as client:self.send(client,a)
+        with TestClient(self.app) as client:receipt=self.send(client,a)
+        state['account_original_run_id']=receipt['run_id'];self.save(state)
+        return self.finish_seed(state)
+
+    def finish_seed(self,state):
+        a,b=self.subjects
         model=FakeProvider();outcomes=run_worker.run_once(self.database,model,self.auth,account_admission=True)
-        if len(outcomes)!=1 or outcomes[0].status!='completed':raise ValueError('original_account_fixture_run_incomplete')
+        if (len(outcomes)!=1 or outcomes[0].status!='completed' or outcomes[0].run_id!=state['account_original_run_id']):raise ValueError('original_account_fixture_run_incomplete')
         token=self.token(b);decision=self.checker.check(token)
         if decision.status is not AdmissionStatus.ALLOWED:raise ValueError('original_memory_owner_not_admitted')
         principal=decision.principal;scope=self.scope(b);repository=self.repository(principal,scope)
@@ -142,6 +147,30 @@ class Host:
         proof=self.inspect();self.require_seeded(proof)
         state.update(stage='SEEDED');self.save(state)
         return self.inspect()
+
+    def resume_seed(self):
+        state=self.load()
+        if state['stage']!='SEED_INTENT':return self.inspect()
+        proof=self.inspect();a,b=self.subjects
+        if (proof['rows']!=dict(account_messages=1,retained_messages=0,selected_memory=0)
+                or proof['account_access']!='allowed' or proof['memory_owner_access']!='allowed'):
+            raise ValueError('HOLD_original_pre_run_seed_required')
+        with self.operator() as (connection,_),connection.transaction():
+            connection.execute('SELECT pg_advisory_xact_lock_shared(%s)',(checkpoint.RELEASE_LOCK,))
+            checkpoint.require_release(connection,self.control)
+            original=connection.execute('SELECT r.message_id,r.conversation_id,r.generation,r.sequence,r.run_id,r.input_sha256,d.acknowledged '
+                'FROM cj_message_receipt r JOIN cj_message_delivery d USING(scope,message_id,run_id) WHERE r.scope=%s',(self.scope(a),)).fetchall()
+            if (len(original)!=1 or original[0][:2]!=('recovery-chat-a','recovery-chat-a') or original[0][3]!=1 or original[0][6] is not False
+                    or state.get('account_original_run_id') not in (None,original[0][4])
+                    or connection.execute('SELECT count(*) FROM cj_run_record WHERE scope IN (%s,%s)',tuple(self.scope(s) for s in self.subjects)).fetchone()!=(0,)
+                    or connection.execute('SELECT count(*) FROM cj_run_metered_operation WHERE scope IN (%s,%s)',tuple(self.scope(s) for s in self.subjects)).fetchone()!=(0,)
+                    or connection.execute('SELECT count(*) FROM cj_memory_scope WHERE scope=%s',(self.scope(b),)).fetchone()!=(0,)):
+                raise ValueError('HOLD_original_seed_may_have_dispatched')
+            state.update(stage='SEED_RESUME_INTENT',account_original_run_id=original[0][4],original_message_sha256=original[0][5])
+            self.save(state)
+        # The canonical worker consumes this exact unacknowledged delivery.
+        # No MESSAGE send, account/budget provisioning, new ID or rearmed exit.
+        return self.finish_seed(state)
 
     def erase(self):
         state=self.load()
@@ -263,11 +292,11 @@ def from_environment():
 
 
 def main():
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('command',choices=('seed','erase','inspect'));args=parser.parse_args()
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('command',choices=('seed','resume-seed','erase','inspect'));args=parser.parse_args()
     configuration.load_secret_environment('rehearsal');host=None
     try:
         host=from_environment()
-        with checkpoint.lock(host.control):result={'seed':host.seed,'erase':host.erase,'inspect':host.inspect}[args.command]()
+        with checkpoint.lock(host.control):result={'seed':host.seed,'resume-seed':host.resume_seed,'erase':host.erase,'inspect':host.inspect}[args.command]()
         print(json.dumps(result))
     except Exception as error:
         print(json.dumps(dict(state='UNAVAILABLE_OR_HOLD',error_type=type(error).__name__,real_model_calls=0)),file=sys.stderr)
