@@ -7,11 +7,13 @@ import argparse
 from contextlib import redirect_stdout
 from datetime import datetime,timezone
 import fcntl
+import hashlib
 from importlib.metadata import version
 import io
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 import time
@@ -30,6 +32,42 @@ from cj_usage.authorization_budget import AuthorizationBudget
 import dev_auth,local_run_context,migrate,pg_suites,run_worker
 
 STATE=Path.home()/'.local/share/g2c/m4-real-services'
+
+
+def verification_passed(batch,attempts):
+    """Transport receipts + original operations + readable product result.
+
+    A model-only answer, a different tool, an incomplete follow-up or a failed
+    anti-redispatch check is not evidence that native continuation worked.
+    """
+    required={'place-zh':('tool.place','https://restapi.amap.com/v3/place/text'),
+              'weather-en':('tool.weather','https://restapi.amap.com/v3/weather/weatherInfo')}
+    if batch.get('state')!='COMPLETE' or set(batch.get('cases',{}))!=set(required):return False
+    receipts={item['attempt_id']:item for item in attempts}
+    for name,(registration,endpoint) in required.items():
+        case=batch['cases'][name];display=case.get('display',{})
+        if (case.get('state')!='completed' or display.get('run_id')!=case.get('run_id')
+                or display.get('message_id')!=case.get('message_id') or display.get('status')!='completed'
+                or display.get('text_state')!='complete' or type(display.get('answer_chars')) is not int or display['answer_chars']<1):return False
+        tools=[];models=[]
+        for operation in case.get('operations',[]):
+            if operation.get('run_id')!=case['run_id']:return False
+            record=receipts.get(operation['attempt_id'],{})
+            if record.get('state')!='RECEIVED' or type(record.get('receipt')) is not dict:return False
+            if operation['registration_id'].startswith('tool.'):
+                if operation['registration_id']!=registration or record['receipt'].get('endpoint')!=endpoint:return False
+                expected='ok' if name=='place-zh' else 'observed'
+                if record['receipt'].get('result_status')!=expected:return False
+                key=re.fullmatch(r'tool\.([0-7])\.([0-9]+)',operation['operation_key'])
+                if key is None:return False
+                tools.append(int(key[1]))
+            elif operation['registration_id']=='model.tool_turn':
+                r=record['receipt'];key=re.fullmatch(r'model\.tool_turn\.([0-7])',operation['operation_key'])
+                if key is None or (r.get('model_id'),r.get('endpoint'),r.get('region'))!=(M4_MODEL,M4_BASE,'cn-beijing') or type(r.get('usage')) is not dict:return False
+                models.append(int(key[1]))
+            else:return False
+        if not tools or not models or max(models)<=max(tools):return False
+    return True
 
 
 def keychain(name):
@@ -116,8 +154,15 @@ def run_batch(*,resume_setup=False,verification=False):
                             if len(outcomes)!=1:raise ValueError('original_RUN_outcome_unavailable')
                             value['cases'][case]['state']=outcomes[0].status
                             with db.connect(scope_for(ISSUER,subject)) as conn:
-                                operations=conn.execute('SELECT registration_id,attempt_id FROM cj_run_metered_operation WHERE run_id=%s ORDER BY operation_key',(receipt['run_id'],)).fetchall()
-                            value['cases'][case]['operations']=[dict(registration_id=k,attempt_id=a) for k,a in operations]
+                                operations=conn.execute('SELECT run_id,operation_key,registration_id,attempt_id FROM cj_run_metered_operation WHERE run_id=%s ORDER BY operation_key',(receipt['run_id'],)).fetchall()
+                            value['cases'][case]['operations']=[dict(run_id=r,operation_key=k,registration_id=i,attempt_id=a) for r,k,i,a in operations]
+                            displayed=client.get('/v1/run-display',params=dict(message_id=cid),headers=headers)
+                            if displayed.status_code==200:
+                                snapshot=displayed.json()['snapshot'];text=snapshot['text']
+                                answer='\n'.join(line for line in text.splitlines() if not line.startswith(('Source:','来源：'))).strip()
+                                value['cases'][case]['display']=dict(run_id=snapshot['run_id'],message_id=snapshot['message_id'],
+                                    status=snapshot['status'],text_state=snapshot['text_state'],answer_chars=len(answer),
+                                    text_sha256=hashlib.sha256(text.encode()).hexdigest())
                             before=model.calls
                             if run_worker.run_once(db,model,auth,tools_configuration=tools,real_services=services) or model.calls!=before:
                                 raise ValueError('original_RUN_redispatched')
@@ -137,7 +182,7 @@ def main():
         result=dict(batch=None if not path.exists() else json.loads(path.read_text()),attempts=AuthorizationBudget(STATE).inspect())
     else:result=run_batch(resume_setup=args.command=='resume-setup',verification=args.command=='verify-native')
     print(json.dumps(result,ensure_ascii=False,separators=(',',':')))
-    if args.command=='verify-native' and any(case['state']!='completed' for case in result['batch']['cases'].values()):
+    if args.command=='verify-native' and not verification_passed(result['batch'],AuthorizationBudget(STATE).inspect()):
         return 1
     return 0
 

@@ -201,12 +201,15 @@ class RealTools:
                         if result.state!='received':raise BudgetUnknown('original live PLACE outcome unknown')
                         parsed=parse_response(config,request,result.response,now=datetime.now(timezone.utc))
                         raw=encode_result(parsed,evidence_kind='live_provider')
-                        endpoint=ORIGIN+request.path
+                        endpoint=ORIGIN+request.path;status=parsed.outcome.value
                     elif name=='weather':
-                        raw=canonical(weather(query,self.services.amap_key,guard=admitted));endpoint=WEATHER_URL
+                        outcome=weather(query,self.services.amap_key,guard=admitted)
+                        raw=canonical(outcome);endpoint=WEATHER_URL;status=outcome['status']
                     else:
-                        raw=canonical(asyncio.run(public_page(guard=admitted)));endpoint=NOTICE_URL
-                    metadata.update(endpoint=endpoint,region='China',response_sha256=hashlib.sha256(raw).hexdigest(),actual_cost_cny='UNKNOWN' if name!='fact' else '0')
+                        outcome=asyncio.run(public_page(guard=admitted))
+                        raw=canonical(outcome);endpoint=NOTICE_URL;status=outcome['status']
+                    metadata.update(endpoint=endpoint,region='China',response_sha256=hashlib.sha256(raw).hexdigest(),
+                                    result_status=status,actual_cost_cny='UNKNOWN' if name!='fact' else '0')
                     budget.finish(operation.command.attempt_id,metadata)
                     yield raw.decode('utf8')
                 except (FactFailure,TimeoutError,OSError,UnicodeError,ValueError):
