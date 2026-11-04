@@ -2,6 +2,8 @@ import json
 from pathlib import Path
 import sys
 import unittest
+import subprocess
+import tempfile
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from report import report
 from evaluate import InputError
@@ -46,6 +48,18 @@ class ReportChecks(unittest.TestCase):
     def test_nonfinite_api_latency_is_rejected(self):
         for elapsed in (-1,float('nan'),float('inf'),True):
             with self.subTest(elapsed=elapsed),self.assertRaises(InputError):report(self.plan,[self.row|dict(api_task_seconds=elapsed)])
+
+    def test_cli_reads_real_files_and_emits_json_and_markdown(self):
+        root=Path(__file__).resolve().parents[2]
+        with tempfile.TemporaryDirectory() as folder:
+            work=Path(folder);plan=work/'plan.json';rows=work/'observations.json'
+            plan.write_text(json.dumps(self.plan));rows.write_text(json.dumps([self.row]))
+            output=work/'report.json';markdown=work/'report.md'
+            completed=subprocess.run([sys.executable,'-B',str(root/'eval/report.py'),'--plan',str(plan),
+                '--observations',str(rows),'--output',str(output),'--markdown',str(markdown)],capture_output=True,text=True)
+            self.assertEqual(completed.returncode,0,completed.stderr)
+            self.assertEqual(json.loads(output.read_text())['raw_observations'],[self.row])
+            self.assertIn('UNKNOWN',markdown.read_text())
 
 
 if __name__=='__main__':unittest.main()

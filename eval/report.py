@@ -64,7 +64,7 @@ def main():
     parser.add_argument('--output',type=Path,required=True)
     parser.add_argument('--markdown',type=Path)
     args=parser.parse_args()
-    plan=read_json(args.plan.read_text());observations=read_json(args.observations.read_text())
+    plan=read_json(args.plan.read_bytes());observations=read_json(args.observations.read_bytes())
     try:
         result=report(plan,observations)
         code=0
