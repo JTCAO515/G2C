@@ -234,9 +234,16 @@ import UIKit
             return multiline.exists ? multiline : app.textFields.matching(identifier:id).firstMatch
         }
         let field=visible({input()},id:id)
-        XCTAssertTrue(field.isEnabled && field.isHittable);field.tap();field.press(forDuration:1.1)
+        XCTAssertTrue(field.isEnabled && field.isHittable);field.tap()
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        field.coordinate(withNormalizedOffset:CGVector(dx:0.95,dy:0.95)).tap()
+        M4DeviceTestSession.clearFocusedTextWithKeyboard(field)
+        #else
+        field.press(forDuration:1.1)
         let selection=app.descendants(matching:.any).matching(NSPredicate(format:"label IN %@",["Select All","全选"])).firstMatch
-        XCTAssertTrue(selection.waitForExistence(timeout:5));selection.tap();field.typeText(value)
+        XCTAssertTrue(selection.waitForExistence(timeout:5));selection.tap()
+        #endif
+        field.typeText(value)
         XCTAssertEqual(input().value as? String,value);tap("trip.manual.keyboard.done")
     }
     func testFormalPlaceMapEnglish() async throws { try await formalPlaceMap("testFormalPlaceMapEnglish",large:false) }

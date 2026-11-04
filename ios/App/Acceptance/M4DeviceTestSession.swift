@@ -15,6 +15,17 @@ import XCTest
         self.control = URL(string: control)!
     }
 
+    /// Caller focuses the exact field and places its caret at the visible end.
+    /// Each keyboard event must remove exactly one old character before typing.
+    static func clearFocusedTextWithKeyboard(_ field: XCUIElement) {
+        var retained = field.value as? String ?? ""
+        while !retained.isEmpty {
+            field.typeText(XCUIKeyboardKey.delete.rawValue); retained.removeLast()
+            XCTAssertEqual(Array((field.value as? String ?? "").utf8),Array(retained.utf8),"Each delete must remove exactly the last old character")
+        }
+        XCTAssertEqual(Array((field.value as? String ?? "").utf8),[],"The old value must be empty before replacement")
+    }
+
     private func handle(_ alert: XCUIElement) -> Bool {
         let message = alert.staticTexts.allElementsBoundByIndex.map(\.label)
             .joined(separator: " ").lowercased()
