@@ -27,6 +27,14 @@ def proof():
 
 
 class Verification(unittest.TestCase):
+    def test_diagnostic_still_requires_actual_tool_and_complete_continuation(self):
+        batch,attempts=proof();batch['verification_profile']='native-diagnostics-1'
+        del batch['cases']['weather-en']
+        self.assertTrue(verification_passed(batch,attempts))
+        batch['cases']['place-zh']['provider_diagnostics']=['metadata only']
+        batch['cases']['place-zh']['display']['answer_chars']=0
+        self.assertFalse(verification_passed(batch,attempts))
+
     def test_matching_tool_followup_receipts_and_product_body_required(self):
         batch,attempts=proof();self.assertTrue(verification_passed(batch,attempts))
         for mutate in (
