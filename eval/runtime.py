@@ -52,12 +52,12 @@ def harness(kind='Harness'):
         cls.tearDownClass()
 
 
-def implementation_probe(relative_path):
+def implementation_probe(relative_path, *args):
     """Run an existing real fault program, retaining its full assertion output."""
     import pg_suites
 
     path = ROOT / relative_path
-    result = subprocess.run([sys.executable, '-B', str(path)], cwd=path.parent,
+    result = subprocess.run([sys.executable, '-B', str(path), *args], cwd=path.parent,
                             env=dict(pg_suites.clean_env(),
                                      PYTHONPATH=pg_suites.pythonpath(path.parent)),
                             text=True, capture_output=True, timeout=180)
