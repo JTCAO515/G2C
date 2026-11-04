@@ -62,7 +62,7 @@ OSS固定香港内部HTTPS端点、私有/AES256、backups/前缀，SDK自动重
 每日阶段持久化，未完成的原检查点先查原制品和数据库identity，不再导出第二份冒充恢复成功。
 桶30天生命周期需按已授权能力核实，实际到期删除需经过30天，不以配置截图冒充实际删除。
 
-恢复目标是**同一主机内全新、仅Unix socket的独立PG17集群**，由本次operator进程亲自initdb/启动并绑定system_identifier/data_directory；核服务端listen_addresses为空和仅演练数据库，不接受任意目标URI/旧共享集群，不创建新云项目。
+恢复目标是**同一主机内全新、仅Unix socket的独立PG17集群**，由本次operator进程亲自initdb/启动并签名绑定system_identifier/data_directory；其PG数据在持久target-control/pg内，失败也保留。核服务端listen_addresses为空和仅演练数据库，不接受任意目标URI/旧共享集群，不创建新云项目。
 原集群中新空库仍有全局应用角色，会被明确拒绝；不重用角色、不给云角色扩权。
 恢复按镜像规范pre-data → 最新检查点DATA（fence先行）→ 原post-data执行单事务，
 不禁用trigger/replication-role，不删改原约束或RLS。历史数据不会被误当成新业务动作执行。
@@ -70,7 +70,7 @@ OSS固定香港内部HTTPS端点、私有/AES256、backups/前缀，SDK自动重
 不能重复恢复抹去后来删除。恢复前再次锁定当前源完整行集；如备份后发生注销/单条删除或其他写入，旧安全包明确拒绝且不消费、不写目标。
 HK运行时每个业务事务在安装LOCAL scope前获取共享release事务锁并重新验证签名release；
 独立cleanup事务同样先取共享锁，再由已获准runtime独立登录只读核库identity（cleanup未获schema元数据权限，不新增GRANT或用管理员执行删除）；恢复持独占锁，先关闭并轮换源identity，再签发隔离目标release，保持单一可写侧。
-recovery命令在同一进程内创建目标、恢复并验证，结束时先核目标完整行集/sequence均未变化，再关闭并轮换隔离目标，核源未变化后恢复源release。若活跃隔离侧接受了写入、注销或删除，拒绝切回旧源，保持源关闭；中间失败保留原记录待核，不自动重做恢复。
+recovery命令在同一进程内创建目标、恢复并验证，结束时先核目标完整行集/sequence均未变化，再关闭并轮换隔离目标，核源未变化后恢复源release。若活跃隔离侧接受了写入、注销或删除，拒绝切回旧源，保持源关闭；中间失败保留原PG数据、birth签名、release和控制记录；`--resume`只启动/核对该同一system ID并续结原演练，不重新initdb、COPY或恢复。临时COPY暂存库仍只供生成备份，从未获得release。
 隔离目标不自动替换现有云库或开放公网。
 
 ## 验证

@@ -89,7 +89,7 @@ def main():
                     assert response.status_code==200,response.status_code
                 latest=checkpoint.export(safety,control,base=base,schema_root=schema_root)
                 assert latest['fences']['cj_account_fence'] and latest['fences']['cj_memory_erasure_fence']
-                isolated=clusters.enter_context(staging.cluster())
+                isolated=clusters.enter_context(staging.cluster(root=root/'target-pg'))
                 target=dict(isolated,dbname='isolated_restore')
                 with psycopg.connect(**isolated,autocommit=True) as connection:connection.execute('CREATE DATABASE isolated_restore TEMPLATE template0')
                 try:checkpoint.restore(target,base,base,control,target_control,schema_root=schema_root)
@@ -155,7 +155,7 @@ def main():
                 except ValueError:pass
                 else:raise AssertionError('original successful target restore command repeated')
                 assert (target_control/'release.json').read_bytes()==original_release
-                second=clusters.enter_context(staging.cluster())
+                second=clusters.enter_context(staging.cluster(root=root/'second-target-pg'))
                 try:checkpoint.restore(second,base,safety,control,root/'second-control',schema_root=schema_root)
                 except ValueError:pass
                 else:raise AssertionError('consumed checkpoint reused')
@@ -175,7 +175,7 @@ def main():
                 next_base=root/'next-base';next_safety=root/'next-safety'
                 checkpoint.export(next_base,control,schema_root=schema_root)
                 checkpoint.export(next_safety,control,base=next_base,schema_root=schema_root)
-                changing=clusters.enter_context(staging.cluster());changing_control=root/'changing-control'
+                changing_root=root/'changing-target-pg';changing_stack=clusters.enter_context(ExitStack());changing=changing_stack.enter_context(staging.cluster(root=changing_root));changing_control=root/'changing-control'
                 checkpoint.restore(changing,next_base,next_safety,control,changing_control,schema_root=schema_root)
                 changing_path=root/'changing.json';changing_path.write_text(json.dumps(changing))
                 targets=('checkpoints/run','business/message','business/needs-current-planning','business/usage')
@@ -205,6 +205,17 @@ def main():
                 except ValueError as error:assert str(error)=='isolated_target_state_changed_keep_source_closed'
                 else:raise AssertionError('isolation write was lost on source resume')
                 assert not (control/'release.json').exists() and (changing_control/'release.json').exists()
+                # Close only the changed target; its original data remains.
+                changing_stack.close()
+                assert (changing_root/'data/PG_VERSION').exists() and (changing_root/'birth.json').exists()
+                with staging.cluster(root=changing_root,resume=True) as original_target:
+                    with psycopg.connect(**original_target) as connection:
+                        assert connection.execute('SELECT count(*) FROM cj_message_receipt WHERE scope=%s',(scope_for(ISSUER,'retention-b'),)).fetchone()==(0,)
+                        checkpoint.require_release(connection,changing_control)
+                    try:checkpoint.finish_rehearsal(original_target,control,changing_control)
+                    except ValueError as error:assert str(error)=='isolated_target_state_changed_keep_source_closed'
+                    else:raise AssertionError('resumed original target lost accepted retirement')
+
 
 
     print('PASS L1 private PG canonical account/item erasure → app-only cloud-format checkpoint → new isolated database; physical absence, owner isolation, exact UNKNOWN/usage, fences-first, real post-safety HTTP retirement rejects stale archive before target writes, exclusive release/resume, old/consumed safety refused; real cloud/OSS UNRUN')

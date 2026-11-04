@@ -17,9 +17,11 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--base',type=Path,required=True);parser.add_argument('--safety',type=Path,required=True)
     parser.add_argument('--source-control',type=Path,required=True);parser.add_argument('--target-control',type=Path,required=True)
+    parser.add_argument('--resume',action='store_true',help='finish only the same signed original target; never restore again')
     args=parser.parse_args();load_secret_environment('recovery');authorization()
-    with staging.cluster() as target:
-        checkpoint.restore(target,args.base,args.safety,args.source_control,args.target_control)
+    args.target_control.mkdir(mode=0o700,parents=True,exist_ok=True)
+    with staging.cluster(root=args.target_control/'pg',resume=args.resume) as target:
+        if not args.resume:checkpoint.restore(target,args.base,args.safety,args.source_control,args.target_control)
         result=checkpoint.finish_rehearsal(target,args.source_control,args.target_control)
     print('PASS fresh Unix PG17 restored exact rows/sequences/fences; '+result)
 

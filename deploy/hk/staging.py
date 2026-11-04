@@ -4,9 +4,11 @@ Only the already authenticated/reset/TLS-checked source session reads cloud
 rows. Binary COPY feeds this Unix-only scratch cluster, never an application
 endpoint. Native pg_dump then reads the verified local representation.
 """
-from contextlib import contextmanager
+from contextlib import contextmanager,nullcontext
 import os
 import hashlib
+import fcntl
+import stat
 from pathlib import Path
 import pwd
 import subprocess
@@ -32,41 +34,76 @@ def environment(config=None):
 
 
 @contextmanager
-def cluster():
+def cluster(*,root=None,resume=False):
     if os.getuid()==0:raise ValueError('private_staging_requires_unprivileged_operator')
-    with tempfile.TemporaryDirectory(prefix='g2c-stage-') as directory:
-        root=Path(directory);data=root/'data';socket=root/'s';socket.mkdir(mode=0o700)
-        pg=PG17;child_environment=environment()
-        role=pwd.getpwuid(os.getuid()).pw_name
-        passfile=root/'empty.pgpass';passfile.touch(mode=0o600)
-        def run(*args):
-            subprocess.run([str(pg/args[0]),*map(str,args[1:])],env=child_environment,check=True,
-                           stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=60)
-        run('initdb','-D',data,'--username='+role,'--auth-local=peer','--auth-host=reject','--encoding=UTF8','--locale=C')
-        # The owning Unix user is the sole local operator. Fixed peer mappings
-        # let the restored application's two restricted roles exercise RLS;
-        # no other OS user can reach this 0700 socket and no TCP is enabled.
-        (data/'pg_hba.conf').write_text('local all all peer map=g2c_owned\nhost all all 0.0.0.0/0 reject\nhost all all ::0/0 reject\n')
-        (data/'pg_ident.conf').write_text(''.join('g2c_owned '+role+' '+database_role+'\n' for database_role in (role,'cj_m1_runtime','cj_local_cleanup')))
-        run('pg_ctl','-D',data,'-l',root/'postgres.log','-o',f"-c listen_addresses='' -k {socket} -p 55884 -c unix_socket_permissions=0700",'-w','start')
-        config=dict(host=str(socket),port=55884,user=role,dbname='postgres',passfile=str(passfile),connect_timeout=5)
-        try:
-            with psycopg.connect(**config) as connection:
-                if connection.execute('SHOW server_version_num').fetchone()[0][:2]!='17':
-                    raise ValueError('private_PG17_staging_required')
-            with psycopg.connect(**config) as connection:
-                system=connection.execute('SELECT system_identifier::text FROM pg_catalog.pg_control_system()').fetchone()[0]
-            ACTIVE_CLUSTERS[str(socket)]=(system,str(data))
-            try:yield config
-            finally:del ACTIVE_CLUSTERS[str(socket)]
-        finally:run('pg_ctl','-D',data,'-m','immediate','-w','stop')
+    durable=root is not None
+    directory=nullcontext(str(Path(root).resolve())) if durable else tempfile.TemporaryDirectory(prefix='g2c-stage-')
+    with directory as directory_name:
+        root=Path(directory_name)
+        if durable and not resume:root.mkdir(mode=0o700)
+        metadata=root.stat()
+        if metadata.st_uid!=os.getuid() or stat.S_IMODE(metadata.st_mode)!=0o700:
+            raise ValueError('owned_private_cluster_directory_required')
+        with (root/'cluster.lock').open('a') as lock:
+            fcntl.flock(lock,fcntl.LOCK_EX)
+            data=root/'data';pg=PG17;child_environment=environment()
+            role=pwd.getpwuid(os.getuid()).pw_name
+            passfile=root/'empty.pgpass'
+            from . import checkpoint
+            birth=None
+            if resume:
+                if not durable:raise ValueError('original_durable_cluster_required')
+                birth=checkpoint.verified(root/'birth.json')
+                if (birth.get('version')!='g2c-beta-isolated-cluster.1' or birth['data']!=str(data)
+                        or birth['role']!=role or birth['uid']!=os.getuid()):
+                    raise ValueError('original_owned_cluster_identity_required')
+                socket=Path(birth['socket'])
+                if socket.parent!=Path('/tmp').resolve() or not socket.name.startswith('g2c-socket-'):
+                    raise ValueError('original_private_socket_path_required')
+                socket.mkdir(mode=0o700,exist_ok=True)
+            else:socket=Path(tempfile.mkdtemp(prefix='g2c-socket-',dir='/tmp')).resolve()
+            socket_metadata=socket.lstat()
+            if (not stat.S_ISDIR(socket_metadata.st_mode) or socket_metadata.st_uid!=os.getuid()
+                    or stat.S_IMODE(socket_metadata.st_mode)!=0o700):raise ValueError('owned_private_socket_required')
+            config=dict(host=str(socket),port=55884,user=role,dbname='postgres',passfile=str(passfile),connect_timeout=5)
+            def run(*args,check=True):
+                return subprocess.run([str(pg/args[0]),*map(str,args[1:])],env=child_environment,check=check,
+                    stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=60)
+            if not resume:
+                passfile.touch(mode=0o600)
+                run('initdb','-D',data,'--username='+role,'--auth-local=peer','--auth-host=reject','--encoding=UTF8','--locale=C')
+                # Only the owning Unix user can select the two fixed restricted
+                # roles for RLS checks on this private socket, never on cloud DB.
+                (data/'pg_hba.conf').write_text('local all all peer map=g2c_owned\nhost all all 0.0.0.0/0 reject\nhost all all ::0/0 reject\n')
+                (data/'pg_ident.conf').write_text(''.join('g2c_owned '+role+' '+database_role+'\n' for database_role in (role,'cj_m1_runtime','cj_local_cleanup')))
+            status=run('pg_ctl','-D',data,'status',check=False).returncode
+            if status==3:
+                run('pg_ctl','-D',data,'-l',root/'postgres.log','-o',f"-c listen_addresses='' -k {socket} -p 55884 -c unix_socket_permissions=0700",'-w','start')
+            elif status!=0:raise ValueError('original_cluster_status_unknown')
+            try:
+                with psycopg.connect(**config) as connection:
+                    actual=connection.execute("SELECT system_identifier::text,current_setting('data_directory'),current_setting('listen_addresses'),current_setting('server_version_num') FROM pg_catalog.pg_control_system()").fetchone()
+                if actual[1]!=str(data) or actual[2]!='' or actual[3][:2]!='17':
+                    raise ValueError('owned_PG17_Unix_only_cluster_required')
+                if birth is not None and birth['system_identifier']!=actual[0]:raise ValueError('original_cluster_system_identity_changed')
+                if durable and not resume:
+                    checkpoint.atomic(root/'birth.json',dict(version='g2c-beta-isolated-cluster.1',system_identifier=actual[0],
+                        data=str(data),socket=str(socket),role=role,uid=os.getuid()))
+                ACTIVE_CLUSTERS[str(socket)]=(actual[0],str(data),durable)
+                try:yield config
+                finally:del ACTIVE_CLUSTERS[str(socket)]
+            finally:
+                # Stop for a bounded operator container lifetime. Durable targets
+                # keep all data and signed birth proof, including on any failure.
+                run('pg_ctl','-D',data,'-m','fast','-w','stop')
+                socket.rmdir()
 
 
 def require_isolated(connection,config):
     registered=ACTIVE_CLUSTERS.get(config['host'])
-    if registered is None:raise ValueError('current_process_owned_fresh_PG17_cluster_required')
+    if registered is None or not registered[2]:raise ValueError('current_process_owned_fresh_PG17_cluster_required')
     actual=connection.execute("SELECT system_identifier::text,current_setting('data_directory'),current_setting('listen_addresses'),current_setting('server_version_num') FROM pg_catalog.pg_control_system()").fetchone()
-    if actual[:2]!=registered or actual[2]!='' or actual[3][:2]!='17':
+    if actual[:2]!=registered[:2] or actual[2]!='' or actual[3][:2]!='17':
         raise ValueError('owned_PG17_Unix_only_cluster_required')
     databases=[row[0] for row in connection.execute('SELECT datname FROM pg_catalog.pg_database WHERE NOT datistemplate ORDER BY 1')]
     if databases!=sorted(set(('postgres',config['dbname']))):raise ValueError('isolated_rehearsal_cluster_only_required')
