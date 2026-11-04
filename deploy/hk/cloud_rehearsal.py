@@ -13,6 +13,7 @@ import os
 from pathlib import Path
 import re
 import sys
+import time
 import uuid
 
 from fastapi.testclient import TestClient
@@ -20,10 +21,13 @@ import psycopg
 
 import dev_auth
 import run_worker
+from local_run_context import provision_budget_connection
+from deploy.hk import staging
+import migrate
 from cj_agent.provider import FakeProvider,ProviderUnknown
 from cj_api.local_app import create_local_app,scope_for,ISSUER
 from cj_api.local_cleanup import Configuration
-from cj_api.local_account_admission_v2 import account_checker_for
+from cj_api.local_account_admission_v2 import account_checker_for,subject_digest
 from cj_api.supabase_cleanup import SupabaseCleanupConfiguration,SupabaseCleanupRuntime
 from cj_api.supabase_test_database import SupabaseTestDatabase
 from cj_auth.interfaces import AdmissionStatus
@@ -41,12 +45,13 @@ from . import checkpoint,configuration
 
 
 class Host:
-    def __init__(self,runtime,database,cleanup_factory,operator,control):
+    def __init__(self,runtime,database,cleanup_factory,operator,control,backup_root):
         self.control=Path(control);self.state_path=self.control/'cloud-rehearsal.json'
+        self.base=Path(backup_root)/'base'
         self.runtime=runtime;self.database=database;self.operator=operator
         all_subjects=json.loads((self.runtime.auth/'invited.json').read_bytes())
         selected=sorted(s for s in all_subjects if re.fullmatch(r'm4-synthetic-recovery-[0-9a-f]{12}-[ab]',s))
-        if (len(selected)!=2 or selected[0][:-1]!=selected[1][:-1]):raise ValueError('exact_original_two_rehearsal_subjects_required')
+        if (len(selected)!=2 or all_subjects!=selected or selected[0][:-1]!=selected[1][:-1]):raise ValueError('exact_original_two_rehearsal_subjects_required')
         self.subjects=selected;self.nonce=selected[0].rsplit('-',2)[1]
         # A separate narrowed invite file cannot make FakeProvider consume a
         # pending message belonging to an active beta/device tester.
@@ -110,6 +115,8 @@ class Host:
         state=dict(version='g2c-beta-cloud-rehearsal.1',subjects=self.subjects,item=self.item,stage='SEED_INTENT',real_model_calls=0)
         self.save(state)
         a,b=self.subjects
+        with self.operator() as (connection,_),connection.transaction():
+            for subject in self.subjects:provision_budget_connection(connection,self.runtime.context,subject)
         with TestClient(self.app) as client:self.send(client,a)
         model=FakeProvider();outcomes=run_worker.run_once(self.database,model,self.auth,account_admission=True)
         if len(outcomes)!=1 or outcomes[0].status!='completed':raise ValueError('original_account_fixture_run_incomplete')
@@ -129,6 +136,8 @@ class Host:
             def stream(self,*args,**kwargs):self.calls+=1;raise ProviderUnknown('synthetic original unknown')
         uncertain=Unknown();outcomes=run_worker.run_once(self.database,uncertain,self.auth,memory_configuration=self.memory,account_admission=True)
         if len(outcomes)!=1 or outcomes[0].status!='unknown' or uncertain.calls!=1:raise ValueError('original_uncertain_fixture_run_unavailable')
+        state.update(seeded_at=time.time(),unknown_run_id=outcomes[0].run_id);self.save(state)
+        proof=self.inspect();self.require_seeded(proof)
         state.update(stage='SEEDED');self.save(state)
         return self.inspect()
 
@@ -136,9 +145,12 @@ class Host:
         state=self.load()
         if state['stage']!='SEEDED':return self.inspect()
         # A real signed base must have been exported before any deletion.
-        latest=checkpoint.verified(self.control/'latest.json')
-        state.update(stage='ERASURE_INTENT',base_dump_sha256=latest['dump_sha256']);self.save(state)
-        a,b=self.subjects;headers={'Authorization':'Bearer '+self.token(a),'Content-Type':'application/octet-stream'}
+        base=self.require_base(state)
+        state.update(stage='ERASURE_INTENT',base_dump_sha256=base['dump_sha256']);self.save(state)
+        a,b=self.subjects;token=self.token(a);admission=self.checker.check(token)
+        if admission.status is not AdmissionStatus.ALLOWED:raise ValueError('original_account_not_admitted')
+        state['account_subject_digest']=subject_digest(admission.principal);self.save(state)
+        headers={'Authorization':'Bearer '+token,'Content-Type':'application/octet-stream'}
         with TestClient(self.app) as client:
             def post(url,value):
                 response=client.post(url,content=encode(value),headers=headers)
@@ -152,23 +164,72 @@ class Host:
         raw=encode(dict(version='MEMORY-ERASURE@1',action_id='recovery-delete-'+self.nonce,item_id=self.item,expected_version=1,derived_range='owned_trip_derived_scope'))
         result=json.loads(self.erasure.delete(self.token(b),raw))
         if result['online_status']!='complete':raise ValueError('original_item_cleanup_incomplete')
-        state.update(stage='DELETED',memory_action_id='recovery-delete-'+self.nonce);self.save(state)
+        state.update(memory_action_id='recovery-delete-'+self.nonce,memory_operation_id=result['operation_id']);self.save(state)
+        proof=self.inspect();self.require_deleted(proof)
+        state.update(stage='DELETED');self.save(state)
         return self.inspect()
 
+    @staticmethod
+    def require_seeded(proof):
+        if (proof['rows']!=dict(account_messages=1,retained_messages=1,selected_memory=1)
+                or proof['account_access']!='allowed' or proof['memory_owner_access']!='allowed'):
+            raise ValueError('original_seed_physical_state_unavailable')
+
+    @staticmethod
+    def require_deleted(proof):
+        if (proof['rows']!=dict(account_messages=0,retained_messages=1,selected_memory=0)
+                or proof['account_access']!='denied' or proof['memory_owner_access']!='allowed'
+                or any(proof['fence_counts'][name]!=1 for name in ('cj_account_fence','item','action'))):
+            raise ValueError('original_erasure_physical_or_fence_proof_unavailable')
+
+    def require_base(self,state):
+        # This artifact must contain the completed original seed, not merely a
+        # signed pointer or an earlier backup. No target mutation precedes this.
+        base=checkpoint.verified(self.base/'manifest.json');latest=checkpoint.verified(self.control/'latest.json')
+        if (base.get('version')!='g2c-beta-data-checkpoint.1' or base.get('base') is not None
+                or base['schema']!=checkpoint.versions() or base['at']<state['seeded_at']
+                or latest.get('version')!='g2c-beta-latest.1' or latest['consumed']
+                or latest['dump_sha256']!=base['dump_sha256'] or latest['lineage']!=base['lineage']
+                or checkpoint.local.checksum(self.base/'database.dump')!=base['dump_sha256']):
+            raise ValueError('original_seeded_base_checkpoint_required')
+        self.require_seeded(self.inspect())
+        with self.operator() as (connection,_),connection.transaction():
+            connection.execute('SELECT pg_advisory_xact_lock_shared(%s)',(checkpoint.RELEASE_LOCK,))
+            checkpoint.require_release(connection,self.control)
+            connection.execute("SET TIME ZONE 'UTC'")
+            if (checkpoint.identity(connection)[1]!=base['lineage'] or migrate.inventory(connection)!=base['tables']
+                    or staging.state(connection,base['tables'])!=base['row_state']
+                    or staging.sequence_state(connection,list(base['sequences']))!=base['sequences']
+                    or checkpoint.local.fence_state(connection)!=base['fences']):
+                raise ValueError('original_seeded_base_does_not_match_current_source')
+        return base
+
     def inspect(self):
-        state=self.load();a,b=self.subjects
+        state=self.load();a,b=self.subjects;owner_a=digest(self.scope(a).encode());owner_b=digest(self.scope(b).encode())
         with self.operator() as (connection,_):
             rows=dict(account_messages=connection.execute('SELECT count(*) FROM cj_message_receipt WHERE scope=%s',(self.scope(a),)).fetchone()[0],
                 retained_messages=connection.execute('SELECT count(*) FROM cj_message_receipt WHERE scope=%s',(self.scope(b),)).fetchone()[0],
                 selected_memory=connection.execute('SELECT count(*) FROM cj_memory_item WHERE scope=%s AND item_id=%s',(self.scope(b),self.item)).fetchone()[0])
-            fences=checkpoint.local.fence_state(connection)
-        return dict(mode='READ_ONLY',stage=state['stage'],subjects=self.subjects,item=self.item,rows=rows,
+            account=connection.execute('SELECT count(*) FROM cj_account_fence WHERE owner_digest=%s AND subject_digest=%s AND operation_id=%s',
+                (owner_a,state.get('account_subject_digest'),state.get('account_operation_id'))).fetchone()[0]
+            item=connection.execute("SELECT count(*) FROM cj_memory_erasure_fence WHERE scope_digest=%s AND kind='item' AND reference_sha256=%s",
+                (owner_b,digest(self.item.encode()))).fetchone()[0]
+            action=connection.execute("SELECT count(*) FROM cj_memory_erasure_fence WHERE scope_digest=%s AND kind='action' AND reference_sha256=%s AND operation_id=%s",
+                (owner_b,digest(('recovery-delete-'+self.nonce).encode()),state.get('memory_operation_id'))).fetchone()[0]
+        proof=dict(mode='READ_ONLY',stage=state['stage'],subjects=self.subjects,item=self.item,rows=rows,
             account_access=self.checker.check(self.token(a)).status.value,memory_owner_access=self.checker.check(self.token(b)).status.value,
-            fence_counts={name:len(values) for name,values in fences.items()},real_model_calls=0,actual_cost='UNKNOWN')
+            fence_counts=dict(cj_account_fence=account,item=item,action=action),
+            account_operation_id=state.get('account_operation_id'),memory_operation_id=state.get('memory_operation_id'),
+            original_unknown_run_id=state.get('unknown_run_id'),real_model_calls=0,actual_cost='UNKNOWN')
+        if state['stage']=='SEEDED':self.require_seeded(proof)
+        if state['stage']=='DELETED':self.require_deleted(proof)
+        return proof
 
 
 def from_environment():
     configuration.authorization()
+    for name in ('SUBJECTS_JSON','SIGNING_PUBLIC_B64','SIGNING_PRIVATE_B64'):
+        os.environ['CJ_BETA_'+name]=os.environ['CJ_REHEARSAL_'+name]
     runtime=configuration.Runtime.load('/tmp/g2c-cloud-rehearsal',worker=True)
     database=SupabaseTestDatabase(os.environ['CJ_SUPABASE_RUNTIME_URI'],os.environ['CJ_SUPABASE_CA_FILE'],
         run_context=runtime.context,travel_context=True,trip_context=True,transaction_guard=configuration.runtime_transaction)
@@ -176,7 +237,7 @@ def from_environment():
         value=SupabaseCleanupConfiguration(options,os.environ['CJ_SUPABASE_CLEANUP_URI'],Path(os.environ['CJ_SUPABASE_CA_FILE']),
             lambda cursor:configuration.cleanup_transaction(cursor,database))
         return value,SupabaseCleanupRuntime(database,value,scope_for)
-    return Host(runtime,database,cleanup_factory,checkpoint.operator,Path('/control'))
+    return Host(runtime,database,cleanup_factory,checkpoint.operator,Path('/control'),Path('/backups/cloud-rehearsal'))
 
 
 def main():

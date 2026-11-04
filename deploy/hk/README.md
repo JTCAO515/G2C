@@ -13,7 +13,8 @@ API仅收到运行角色、确认/history密钥和验签公钥；worker另收模
 operator另收既有数据库初始化凭据和恢复签名私钥；OSS凭据只进backup容器。应用和operator均UID10001；相应实际环境文件由10001拥有，宿主父目录保持0700。
 `secret_setup` 仅在固定宿主私有目录由显式root operator执行一次，输入经stdin安全交接。
 它生成相互独立的应用签名、恢复签名和确认/history/cleanup随机键，先持久INTENT再写七个0600环境文件；
-原配置或中断状态只读核验/HOLD，不覆盖或重生成。common只含公钥和合成邀请配置，compose只锁源码镜像版本。
+原配置或中断状态只读核验/HOLD，不覆盖或重生成。入口在读取秘密前核指定实例hostname和/srv/g2c-beta持久绑定，拒绝容器层、tmpfs和错误路径。
+common只含正式公钥和两名beta邀请配置，compose只锁源码镜像版本。
 worker的旧token供应器通过Linux memfd读取私钥，磁盘上只有指向进程FD的链接。
 公钥、邀请名单、RUN配置只写入容器tmpfs。TLS证书由Caddy管理在独立私有目录。
 
@@ -89,11 +90,13 @@ CJ_PG_BINDIR=/path/to/pg17/bin CJ_PG17_BINDIR=/path/to/pg17/bin uv run --locked 
 本机、真实云数据库、真实模型/高德、实际OSS下载恢复和App目标网络证据分别在PR/#30/#32记录。
 
 `rehearsal` operator只接纳本次密钥设置生成的两名随机合成恢复主体；另两名beta邀请不进入其worker。
+演练名单和RSA签名对单独保存在rehearsal.env，不分发给正式worker；cleanup凭据也只给该入口。
 seed经原签名MESSAGE/RUN/Meter写入、显式FakeProvider产生一条已完成和一条原UNKNOWN；不计真实模型验证。
-导出原base后，erase经原账号注销API和单条MEMORY-ERASURE服务、独立已批准cleanup角色执行，
-验证注销账号消息与指定记忆物理消失、另一个账号保留、永久fence存在；重复seed/erase只检查原阶段。
+seed后实际导出原base并核制品/hash、同源lineage、当前完整行与sequence和两主体数据后，
+erase经原账号注销API和单条MEMORY-ERASURE服务、独立已批准cleanup角色执行。
+验证注销账号消息与指定记忆物理消失、另一个账号保留、指定原operation和item的专属fence存在后才写DELETED；重复seed/erase只检查原阶段。
 任意中断INTENT保持原主体/原动作待核，不新建身份重试。该工具不开放公网、不操作真实账号、不改权限。
-`hk_cloud_rehearsal` PG组验证这套生产者组合；只读检查点元数据fixture不冒充实际云备份。
+`hk_cloud_rehearsal` PG组验证这套生产者组合，实际生成native checkpoint；另以签名hash-only假包验证删除前拒绝，不冒充真实云备份。
 
 恢复operator仅接受32位十六进制 `--rehearsal-id`，目标固定在已核持久bind卷 `/rehearsals/ID`（宿主 `/srv/g2c-beta/rehearsals`，UID10001/0700）；拒绝tmpfs、容器overlay、缺挂载和符号链接逃逸。示例：
 

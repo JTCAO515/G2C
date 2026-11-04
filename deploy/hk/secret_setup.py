@@ -41,24 +41,26 @@ def plan(value,*,now,nonce):
             or re.fullmatch(r'[0-9a-f]{12}',nonce) is None):raise ValueError('explicit_authorized_secret_shapes_required')
     trial=datetime.fromisoformat(value['trial_expiry'])
     if trial.tzinfo is None or now.tzinfo is None or now>=min(trial,DEADLINE):raise ValueError('trial_or_test_authorization_expired')
-    signing=rsa.generate_private_key(public_exponent=65537,key_size=2048)
-    private=signing.private_bytes(serialization.Encoding.PEM,serialization.PrivateFormat.PKCS8,serialization.NoEncryption())
-    public=signing.public_key().public_bytes(serialization.Encoding.PEM,serialization.PublicFormat.SubjectPublicKeyInfo)
+    def signing_pair():
+        signing=rsa.generate_private_key(public_exponent=65537,key_size=2048)
+        return (signing.private_bytes(serialization.Encoding.PEM,serialization.PrivateFormat.PKCS8,serialization.NoEncryption()),
+            signing.public_key().public_bytes(serialization.Encoding.PEM,serialization.PublicFormat.SubjectPublicKeyInfo))
+    private,public=signing_pair();rehearsal_private,rehearsal_public=signing_pair()
     recovery=ed25519.Ed25519PrivateKey.generate()
     rprivate=recovery.private_bytes(serialization.Encoding.Raw,serialization.PrivateFormat.Raw,serialization.NoEncryption())
     rpublic=recovery.public_key().public_bytes(serialization.Encoding.Raw,serialization.PublicFormat.Raw)
     confirmation,history,cleanup=(secrets.token_bytes(32) for _ in range(3))
     recovery_subjects=['m4-synthetic-recovery-'+nonce+'-'+suffix for suffix in ('a','b')]
-    subjects=['m4-synthetic-beta-a','m4-synthetic-beta-b',*recovery_subjects]
+    subjects=['m4-synthetic-beta-a','m4-synthetic-beta-b']
     context=dict(version='CJ-LOCAL-RUN@2',current=dict(meter=dict(unit='provider_call',budget=80,
         period_start=int(now.timestamp())-60,period_end=int(min(trial,DEADLINE).timestamp()),
         max_steps=24,max_tools=12,max_output=65536,max_seconds=600),output_limits=dict(model=12000,tool=48000,memory=1000)),history=[])
     files={
       'api.env':dict(CJ_SUPABASE_RUNTIME_URI=value['runtime_uri'],CJ_BETA_CONFIRMATION_B64=encoded(confirmation),CJ_BETA_HISTORY_B64=encoded(history)),
       'worker.env':dict(CJ_SUPABASE_RUNTIME_URI=value['runtime_uri'],CJ_BETA_SIGNING_PRIVATE_B64=encoded(private),CJ_MODEL_API_KEY=value['model_key'],CJ_AMAP_WEB_KEY=value['amap_key']),
-      'operator.env':dict(CJ_SUPABASE_OPERATOR_URI=value['operator_uri'],CJ_SUPABASE_CLEANUP_URI=value['cleanup_uri'],CJ_BETA_RECOVERY_PRIVATE_B64=encoded(rprivate)),
+      'operator.env':dict(CJ_SUPABASE_OPERATOR_URI=value['operator_uri'],CJ_BETA_RECOVERY_PRIVATE_B64=encoded(rprivate)),
       'backup.env':dict(CJ_BETA_BACKUP_ROOT='/backups',OSS_ACCESS_KEY_ID=value['oss_id'],OSS_ACCESS_KEY_SECRET=value['oss_secret']),
-      'rehearsal.env':dict(CJ_SUPABASE_RUNTIME_URI=value['runtime_uri'],CJ_BETA_SIGNING_PRIVATE_B64=encoded(private),CJ_BETA_CLEANUP_B64=encoded(cleanup)),
+      'rehearsal.env':dict(CJ_SUPABASE_RUNTIME_URI=value['runtime_uri'],CJ_SUPABASE_CLEANUP_URI=value['cleanup_uri'],CJ_REHEARSAL_SUBJECTS_JSON=json.dumps(recovery_subjects,separators=(',',':')),CJ_REHEARSAL_SIGNING_PRIVATE_B64=encoded(rehearsal_private),CJ_REHEARSAL_SIGNING_PUBLIC_B64=encoded(rehearsal_public),CJ_BETA_CLEANUP_B64=encoded(cleanup)),
       'common.env':dict(CJ_ENV='local',CJ_DEPLOY_TARGET='hk-beta',CJ_M4_SYNTHETIC_ONLY='1',CJ_TRIAL_VALID_UNTIL=value['trial_expiry'],
         CJ_SUPABASE_CA_FILE='/run/config/supabase-ca.crt',CJ_DEPLOY_CONTROL='/control',CJ_DEPLOY_HEARTBEAT='/heartbeat',
         CJ_BETA_SUBJECTS_JSON=json.dumps(subjects,separators=(',',':')),CJ_BETA_SIGNING_PUBLIC_B64=encoded(public),CJ_BETA_RECOVERY_PUBLIC_B64=encoded(rpublic),
@@ -119,8 +121,22 @@ def prepare(value,root=ROOT):
     return dict(mode='CREATED',**metadata)
 
 
+def require_host():
+    if os.getuid()!=0 or Path('/run/config/host-name').read_text().strip()!='iZj6c3ldt64bg18flzpr7hZ':
+        raise ValueError('specified_trial_host_required')
+    mounted=False
+    for line in Path('/proc/self/mountinfo').read_text().splitlines():
+        fields,_,filesystem=line.partition(' - ');parts=fields.split()
+        if (parts[4]=='/host' and parts[3]=='/srv/g2c-beta' and 'rw' in parts[5].split(',')
+                and filesystem.split()[0] in ('ext4','xfs','btrfs')):mounted=True
+    if not mounted:raise ValueError('specified_persistent_host_bind_required')
+
+
 def main():
     try:
+        # Check before even reading credential stdin. prepare/plan are also used
+        # separately by the network-free synthetic filesystem test seam.
+        require_host()
         raw=sys.stdin.buffer.read(65537)
         if len(raw)>65536:raise ValueError('bounded_secret_inputs_required')
         result=prepare(json.loads(raw,object_pairs_hook=reject_duplicates(ValueError,'duplicate_secret_input')))

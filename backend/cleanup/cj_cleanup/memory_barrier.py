@@ -47,6 +47,7 @@ def hold_payloads(store,scope,association_raw,prototype):
         if connection.autocommit or connection.info.transaction_status!=TransactionStatus.IDLE:
             raise Denied('fresh payload barrier connection required')
         with connection.cursor() as cursor:
+            if store.before_transaction is not None:store.before_transaction(cursor)
             cursor.execute('SELECT current_user')
             if cursor.fetchone()!=('cj_local_cleanup',):raise Denied('dedicated payload barrier role required')
             cursor.execute("SELECT set_config('cj.cleanup_subject',%s,true),set_config('cj.cleanup_operation',%s,true),"
