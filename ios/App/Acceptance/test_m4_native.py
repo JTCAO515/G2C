@@ -24,7 +24,7 @@ class ControlAuthorizationTests(unittest.TestCase):
         thread = threading.Thread(target=server.serve_forever); thread.start()
         try:
             for path in ('/config', '/offline', '/m4-stage-accounts'):
-                for value in ('', 'SYNTHETIC-WRONG'):
+                for value in ('', 'SYNTHETIC-WRONG', '\u00e9'):
                     connection = http.client.HTTPConnection('127.0.0.1', server.server_port)
                     connection.request('GET', path, headers={'X-G2C-M4-Control': value})
                     response = connection.getresponse()

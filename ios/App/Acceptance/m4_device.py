@@ -190,7 +190,9 @@ def configure_project(project, tls, control_url, control_token, amap=False,
         lines[:2] = [
             'M4_DEVICE_FLAGS_Debug = -D DEBUG -D G2C_M4_DEVICE_ACCEPTANCE',
             'M4_CONTROL_FLAGS_G2CControl = -D DEBUG -D G2C_M4_DEVICE_ACCEPTANCE',
-            'OTHER_SWIFT_FLAGS = $(inherited) $(M4_DEVICE_FLAGS_$(CONFIGURATION)) $(M4_CONTROL_FLAGS_$(TARGET_NAME))']
+            'OTHER_SWIFT_FLAGS = $(inherited) $(M4_DEVICE_FLAGS_$(CONFIGURATION)) $(M4_CONTROL_FLAGS_$(TARGET_NAME))',
+            'M4_LOCAL_CERT_EXCLUDE_Release_CJProbeApp = G2CM4LocalServer.cer',
+            'EXCLUDED_SOURCE_FILE_NAMES = $(inherited) $(M4_LOCAL_CERT_EXCLUDE_$(CONFIGURATION)_$(TARGET_NAME))']
     if amap:
         # This include supplies only local SDK paths/flags; no key value.
         lines = ['#include ' + json.dumps(str(local / 'AMap.xcconfig'))] + lines

@@ -51,8 +51,8 @@ OS_ACTIVITY_MODE 始终为 disable；继续复用按 identifier 和控件类型�
 
 [DEVICE-RECORD](DEVICE-RECORD.md) 可直接复制执行两种语言和两种字号的手工路径，
 记录机型、系统、网络、VoiceOver、失败与回归。XCTest 的语义动作/定位符和
-上述业务断言与设备无关；当前 Python fixture 驱动仍是模拟器驱动，**不能直接把
-`--simulator` 换成设备 ID**。
+上述业务断言与设备无关。总矩阵 `check_m4_app.py` 仍是模拟器入口，**不能直接把
+`--simulator` 换成设备 ID**；已接通的领域设备入口分别记录如下，不冒称整个矩阵已就绪。
 
 普通业务宿主继续只在 DEBUG Simulator 编译。M4 条目 1、2 已批准指定 iPhone 的
 开发签名、高德只读展示与合成账号测试；显式本地设备配置可用
@@ -62,6 +62,33 @@ RFC1918/link-local IPv4 开发机地址及显式端口。现有签名 API、身�
 具体 SDK、Bundle ID、Key 与网络步骤见 [M4-AMAP-LOCAL](M4-AMAP-LOCAL.md)。
 JT 通知连接设备后才执行签名、安装和验收；编译、手工步骤和模拟器 PASS 均不计
 真机 PASS。真机自动化及 VoiceOver 保持 #29 UNRUN，TestFlight 保持 #33 UNRUN。
+
+### 登录领域的指定真机入口
+
+`check_development_accounts.py` 支持指定设备及本轮获准的本机 TLS profile：
+
+```sh
+CJ_PG_BINDIR='<PostgreSQL-17-bin>' uv run --locked python -B \
+  ios/App/Acceptance/check_development_accounts.py --device '<approved-iPhone-UDID>' \
+  --local-tls '<approved-external-profile/operator.json>' \
+  --output '<new-external-directory>' --build-dir '<external-build-cache>'
+```
+
+`--prepare-only` 只做 Debug/Release 的 `build-for-testing`，不安装或启动设备；结果为
+`PREPARED_EXECUTION_UNRUN`，全部原生用例仍为 UNRUN，总矩阵不得接受它为 PASS。
+实际执行保留中英登录、拒绝/过期/离线、退出、显式恢复和迟到账号隔离的六个
+Debug 用例，以及原 Release 不接业务后端的独立用例，不删除或放宽断言。
+
+设备测试控制进程使用固定叶证书的 HTTPS 和每轮控制令牌；未认证请求先拒绝，
+包括每次 App 重启前的一次性输入暂存。测试账号不放入设备 XCTest 启动环境；
+Mac 临时源用后删除，App 读自身 Caches 固定文件后立即删除，失败仍核对并清理
+精确输入。Release 产品不含本地公钥或 ATS 放行，也不编译业务接线；独立测试
+控制进程仍使用自己的本地调试连接。Release 忽略输入的检查结束后，用同轮已签名
+Debug 包的专用丢弃入口回收这一个输入，再扫描 App 文件，不清业务日志或其他数据。
+
+构建与测试原包在私有隔离目录，不可直接分享；只导出通过凭据扫描的限定文本。
+凭据清理、服务/私有 PG 停止及源码/head 核对完成后才写终态。指定设备离线时可先
+构建，设备实际执行、系统最大字号和 VoiceOver 仍须分别记录，不能由构建替代。
 
 ## #4 的候选矩阵
 

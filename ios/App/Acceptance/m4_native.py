@@ -6,6 +6,7 @@ private; only gated, redacted text is exported. No SDK or Keychain discovery.
 import hmac
 import json
 from pathlib import Path
+import plistlib
 import subprocess
 import tempfile
 import time
@@ -71,6 +72,13 @@ class DeviceNative:
         if not gate['status'].startswith('PASS'):
             raise RuntimeError('Device build log failed credential/export gate')
         run.check_returncode()
+        if configuration == 'Release':
+            app = self.build / 'Build/Products/Release-iphoneos/CJProbeApp.app'
+            info = plistlib.loads((app / 'Info.plist').read_bytes())
+            if info.get('NSAppTransportSecurity') or (app / 'G2CM4LocalServer.cer').exists():
+                self.report['device_builds'][configuration]['product_local_network_boundary'] = 'FAIL'
+                raise RuntimeError('Release product contains local network test configuration')
+            self.report['device_builds'][configuration]['product_local_network_boundary'] = 'PASS'
 
     def install(self, configuration):
         app = self.build / 'Build/Products' / (configuration + '-iphoneos') / 'CJProbeApp.app'
