@@ -88,4 +88,8 @@ secret-body检查后的原HTTP200公共地图响应留在固定批次私有目�
 
 `capture-route-coordinate` 是独立C1对照：同一固定两地点，但显式选择坐标路线profile，原POI ID仍绑定在原query/注册输入中；HTTP仅送原始坐标，不送可选POI覆盖参数。
 该profile的prepare、transport复核和parser必须同时选择`coordinate_only=True`；交叉混用在拨号前或解析前拒绝。
-默认profile与G1/R1仍保留原参数/绑定，不覆盖旧batch。C1沿用10/3上限、secret检查和只读恢复，只作原响应取证，几何仍UNASSESSED，不是生产默认或新wire。
+旧profile与G1/R1仍保留原参数/绑定，不覆盖旧batch。C1沿用10/3上限、secret检查和只读恢复，只作原响应取证，几何仍UNASSESSED，不是新wire。
+M4真实入口默认使用坐标路线profile；生产HTTP不送POI覆盖参数，POI ID仍保留作来源关联。
+新profile核steps首尾与原坐标各相距最多25米，并拒绝低于保守两点跨度的距离；缺少path点则UNKNOWN、明显错点或不可能短距离则binding_mismatch，不输出原估计。
+25米是本profile的近邻匹配门限，跨度检查另留1%球面/坐标差异及两端门限余量；均不是供应商精度、入口、道路通行或未来可用保证，不修改供应商数值/原坐标或推断出入口。
+默认旧adapter解析、冻结PLACE/Geo数据codec、legacy显式`coordinate_routes=False`取证路径不变。退出判定分别核G1/C1 profile，C1逐笔核唯一walking原参数不含POI覆盖。

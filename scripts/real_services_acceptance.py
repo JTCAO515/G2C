@@ -321,6 +321,19 @@ def run_batch(*,resume_setup=False,verification=False,basic_verification=False,d
         return dict(mode='EXECUTED',batch=value,attempts=budget.inspect(),actual_total_cost_cny='UNKNOWN')
 
 
+def capture_passed(batch,*,coordinate=False):
+    expected='route-coordinate-capture-1' if coordinate else 'route-geometry-capture-1'
+    if (batch.get('verification_profile')!=expected or batch.get('response_capture_failed')
+            or len(batch.get('provider_responses',[]))!=3 or not route_audit_passed(batch.get('route_audit',[]),geometry=True)):
+        return False
+    if coordinate:
+        walking=[r for r in batch['provider_responses'] if r.get('path')=='/v3/direction/walking']
+        event=batch['route_audit'][-1]
+        parameters=[['destination',event['destination']['coordinate_raw']],['origin',event['origin']['coordinate_raw']],['output','JSON']]
+        if len(walking)!=1 or walking[0].get('request_ref')!=event['request_ref'] or walking[0].get('request_params')!=parameters:return False
+    return True
+
+
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('command',choices=('run','inspect','resume-setup','verify-native','verify-base-search','verify-diagnostics','verify-route','capture-route-geometry','capture-route-coordinate'));args=parser.parse_args()
     if args.command=='inspect':
@@ -330,7 +343,7 @@ def main():
     print(json.dumps(result,ensure_ascii=False,separators=(',',':')))
     if args.command in ('capture-route-geometry','capture-route-coordinate'):
         batch=result['batch']
-        return 0 if not batch.get('response_capture_failed') and len(batch.get('provider_responses',[]))==3 and route_audit_passed(batch.get('route_audit',[]),geometry=True) else 1
+        return 0 if capture_passed(batch,coordinate=args.command=='capture-route-coordinate') else 1
     if args.command in ('verify-native','verify-base-search','verify-diagnostics','verify-route') and not verification_passed(result['batch'],AuthorizationBudget(STATE).inspect()):
         return 1
     return 0

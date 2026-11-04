@@ -51,6 +51,27 @@ def parse(body, query=SEARCH, *, config=CONFIG, **kwargs):
 
 
 class PlaceTests(unittest.TestCase):
+    def test_coordinate_route_uses_path_points_not_only_echoed_coordinates(self):
+        query=RouteQuery(Endpoint('SYNTH_A',Coordinate('116.397029,39.917839'),'poi_center'),
+            Endpoint('SYNTH_B',Coordinate('116.396551,39.925875'),'poi_center'),'walking',Departure('at_query_time',None))
+        body=dict(status='1',info='ok',infocode='10000',count='1',route=dict(origin=query.origin.coordinate.raw,destination=query.destination.coordinate.raw,
+            paths=[dict(distance='1445',duration='1156',steps=[dict(polyline='116.396862,39.917830;116.396567,39.925833')])]))
+        request=prepare(CONFIG,query,'synthetic-coordinate-route',AT,basic=True,coordinate_only=True)
+        def checked():return parse_response(CONFIG,request,response(request,body),now=AT+timedelta(seconds=2),basic=True,coordinate_only=True)
+        accepted=checked();self.assertEqual(accepted.outcome,Outcome.OK)
+        self.assertEqual((accepted.routes[0].distance.value.raw,accepted.routes[0].duration.value.raw),('1445','1156'))
+        path=body['route']['paths'][0]
+        path['distance']='119';path['duration']='95'
+        self.assertEqual(checked().reason,'route_distance_below_point_span')
+        path['steps']=[dict(polyline='116.396914,39.923129;116.396576,39.923390')]
+        rejected=checked();self.assertEqual((rejected.outcome,rejected.reason),(Outcome.BINDING_MISMATCH,'route_path_coordinates'))
+        self.assertEqual(rejected.routes,())
+        legacy=prepare(CONFIG,query,'synthetic-legacy-route',AT,basic=True)
+        self.assertEqual(parse_response(CONFIG,legacy,response(legacy,body),now=AT+timedelta(seconds=2),basic=True).outcome,Outcome.OK)
+        del path['steps']
+        unknown=checked();self.assertEqual((unknown.outcome,unknown.reason),(Outcome.UNKNOWN,'route_path_points_unknown'))
+        self.assertEqual(unknown.routes,())
+
     def test_coordinate_only_profile_preserves_legacy_and_cannot_cross_bind(self):
         for mode in ('walking','driving'):
             query=route_query(mode)

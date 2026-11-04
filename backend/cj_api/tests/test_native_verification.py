@@ -13,7 +13,7 @@ import sys
 import unittest
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[3]/'scripts'))
-from real_services_acceptance import verification_passed,record_place_responses,route_audit_passed,M4_BASE,M4_MODEL
+from real_services_acceptance import verification_passed,record_place_responses,route_audit_passed,capture_passed,M4_BASE,M4_MODEL
 from cj_usage.authorization_budget import canonical
 from cj_api.real_services import canonical_tool
 from cj_place.gaode import Config,prepare,Response
@@ -73,6 +73,14 @@ class Verification(unittest.TestCase):
             asyncio.run(exercise(root,batch))
             self.assertTrue(route_audit_passed(batch['route_audit'],geometry=True));self.assertFalse(route_audit_passed(batch['route_audit']))
             self.assertEqual(batch['geometry_acceptance'],'UNASSESSED')
+            self.assertTrue(capture_passed(batch));self.assertFalse(capture_passed(batch,coordinate=True))
+            changed=copy.deepcopy(batch);changed['verification_profile']='route-coordinate-capture-1'
+            self.assertFalse(capture_passed(changed,coordinate=True))
+            walking=next(r for r in changed['provider_responses'] if r['path']=='/v3/direction/walking')
+            walking['request_params']=[['destination','116.396551,39.925875'],['origin','116.397029,39.917839'],['output','JSON']]
+            self.assertTrue(capture_passed(changed,coordinate=True))
+            walking['request_params'].append(['origin_id','SYNTH_GA'])
+            self.assertFalse(capture_passed(changed,coordinate=True))
             for record,expected in zip(batch['provider_responses'],(first[3],second[3],body)):
                 saved=root/record['file'];self.assertEqual(saved.read_bytes(),expected)
                 self.assertEqual(saved.stat().st_mode&0o777,0o600)

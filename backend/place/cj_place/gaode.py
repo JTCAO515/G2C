@@ -154,6 +154,25 @@ def _decode(body):
     return value
 
 
+ROUTE_POINT_TOLERANCE_M = 25.0
+
+
+def _separation_m(first: Coordinate, second: Coordinate) -> float:
+    lat1,lat2=math.radians(float(first.latitude)),math.radians(float(second.latitude))
+    dlat=lat2-lat1;dlon=math.radians(float(second.longitude-first.longitude))
+    h=math.sin(dlat/2)**2+math.cos(lat1)*math.cos(lat2)*math.sin(dlon/2)**2
+    return 2*6371008.8*math.asin(min(1.0,math.sqrt(h)))
+
+
+def _path_points(path):
+    steps=path.get('steps')
+    if type(steps) is not list or not steps:return None
+    if type(steps[0]) is not dict or type(steps[-1]) is not dict:raise ValueError('route_steps')
+    first,last=steps[0].get('polyline'),steps[-1].get('polyline')
+    if type(first) is not str or not first or type(last) is not str or not last:return None
+    return Coordinate(first.split(';')[0]),Coordinate(last.split(';')[-1])
+
+
 def _observed(item, key, parser):
     if key not in item:
         return Observed(FieldState.MISSING)
@@ -297,8 +316,19 @@ def parse_response(config: Config, request: PreparedRequest, response: Response,
         for path in paths:
             if type(path) is not dict:
                 raise ValueError("route_path")
-            routes.append(Route(request.query, _observed(path, "distance", lambda v: _quantity(v, "m")),
-                                _observed(path, "duration", lambda v: _quantity(v, "s"))))
+            distance=_observed(path, "distance", lambda v: _quantity(v, "m"))
+            if coordinate_only:
+                points=_path_points(path)
+                if points is None:return result(Outcome.UNKNOWN,'route_path_points_unknown',provider_code=code,provider_count=count)
+                if (_separation_m(request.query.origin.coordinate,points[0])>ROUTE_POINT_TOLERANCE_M
+                        or _separation_m(request.query.destination.coordinate,points[1])>ROUTE_POINT_TOLERANCE_M):
+                    return result(Outcome.BINDING_MISMATCH,'route_path_coordinates',provider_code=code,provider_count=count)
+                # Conservative anomaly bound, including both allowed endpoint
+                # snaps and 1% spherical/datum allowance; never alter a value.
+                minimum=max(0.,.99*_separation_m(request.query.origin.coordinate,request.query.destination.coordinate)-2*ROUTE_POINT_TOLERANCE_M)
+                if distance.state is FieldState.PRESENT and float(distance.value.value)<minimum:
+                    return result(Outcome.BINDING_MISMATCH,'route_distance_below_point_span',provider_code=code,provider_count=count)
+            routes.append(Route(request.query,distance,_observed(path, "duration", lambda v: _quantity(v, "s"))))
         return result(Outcome.OK if routes else Outcome.NO_RESULTS,
                       "route_estimates" if routes else "no_routes", routes=tuple(routes),
                       provider_code=code, provider_count=count)

@@ -138,7 +138,7 @@ class RealServices:
 
 
 class RealTools:
-    def __init__(self,services,*,allowed_native=NATIVE_TOOLS,coordinate_routes=False):
+    def __init__(self,services,*,allowed_native=NATIVE_TOOLS,coordinate_routes=True):
         if type(coordinate_routes) is not bool:raise ValueError('explicit_coordinate_route_profile_required')
         self.services=services;self.coordinate_routes=coordinate_routes
         if type(allowed_native) is not frozenset or not allowed_native or not allowed_native<=NATIVE_TOOLS:
