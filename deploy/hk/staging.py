@@ -38,6 +38,7 @@ def environment(config=None):
 def cluster(*,root=None,resume=False):
     if os.getuid()==0:raise ValueError('private_staging_requires_unprivileged_operator')
     durable=root is not None
+    if durable and Path(root).is_symlink():raise ValueError('original_cluster_directory_symlink_refused')
     directory=nullcontext(str(Path(root).resolve())) if durable else tempfile.TemporaryDirectory(prefix='g2c-stage-')
     with directory as directory_name:
         root=Path(directory_name)
@@ -54,6 +55,9 @@ def cluster(*,root=None,resume=False):
             birth=None
             if resume:
                 if not durable:raise ValueError('original_durable_cluster_required')
+                data_metadata=data.lstat()
+                if (not stat.S_ISDIR(data_metadata.st_mode) or data_metadata.st_uid!=os.getuid()
+                        or stat.S_IMODE(data_metadata.st_mode)!=0o700):raise ValueError('owned_original_PG_directory_required')
                 birth=checkpoint.verified(root/'birth.json')
                 if (birth.get('version')!='g2c-beta-isolated-cluster.1' or birth['data']!=str(data)
                         or birth['role']!=role or birth['uid']!=os.getuid()):

@@ -32,7 +32,7 @@ def persistent_target(identity):
                 and kind in ('ext4','xfs','btrfs') and 'rw' in parts[5].split(',')):mounted=True
     if not mounted:raise ValueError('explicit_persistent_rehearsal_bind_mount_required')
     target=REHEARSALS/identity
-    if target.is_symlink() or target.exists() and target.resolve()!=target:raise ValueError('original_rehearsal_path_required')
+    if target.is_symlink() or (target/'pg').is_symlink() or target.exists() and target.resolve()!=target:raise ValueError('original_rehearsal_path_required')
     return target
 
 

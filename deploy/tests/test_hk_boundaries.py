@@ -256,7 +256,7 @@ def test_recovery_preserves_existing_target_gate_before_any_source_failure(tmp_p
 
 def test_resume_wrong_data_system_id_never_starts_or_stops_postgres(tmp_path,monkeypatch):
     from deploy.hk import staging
-    root=tmp_path/'original';root.mkdir(mode=0o700);data=root/'data';data.mkdir();(data/'PG_VERSION').write_text('17')
+    root=tmp_path/'original';root.mkdir(mode=0o700);data=root/'data';data.mkdir(mode=0o700);(data/'PG_VERSION').write_text('17')
     import pwd
     role=pwd.getpwuid(os.getuid()).pw_name
     birth=dict(version='g2c-beta-isolated-cluster.1',data=str(data.resolve()),socket='/private/tmp/g2c-socket-synthetic' if Path('/tmp').resolve()==Path('/private/tmp') else '/tmp/g2c-socket-synthetic',role=role,uid=os.getuid(),system_identifier='111')
