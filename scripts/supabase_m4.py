@@ -341,9 +341,14 @@ def migrate_test(db,*,apply):
             migrate.up(conn,chain,top)
             if migrate.applied(conn)!=list(range(1,top+1)):raise TestUnavailable('migration_chain_incomplete')
             tables=len(migrate.inventory(conn))
-        return dict(status='PASS',migration_versions=top,application_tables=tables,manifest_sha256=digest,
+            can_set=db.query(conn,"SELECT pg_has_role(current_user,'cj_m1_runtime','SET')").fetchone()[0]
+        probe=(rls_probe(db) if can_set else dict(status='HOLD',reason='initializer_not_permitted_to_SET_runtime_role',
+            runtime_login='UNRUN_no_approved_runtime_credential',cloud_rls_result='UNRUN',product_pooler_activation='HOLD'))
+        return dict(status='PASS' if can_set else 'PARTIAL',schema_migration='PASS',migration_versions=top,
+            application_tables=tables,manifest_sha256=digest,
             public_api_roles_schema_access='DENIED',schema_acl_change='public USAGE revoked from PUBLIC/anon/authenticated/service_role',
-            platform_functions_changed=0,auth_billing_settings_changed=0,rls=rls_probe(db))
+            platform_functions_changed=0,auth_billing_settings_changed=0,rls=probe,
+            migration_sql_statement_count='UNKNOWN_multi_statement_registered_files')
 
 
 def main():
@@ -364,11 +369,11 @@ def main():
             with db.connect() as conn:
                 row=db.query(conn,"SELECT current_setting('server_version'),to_regclass('cj.schema_migrations') IS NOT NULL").fetchone()
             report=dict(status='PASS',server_version=row[0],migration_ledger_present=row[1])
-        report.update(project_ref=REF,region=REGION,sql_connections=db.connections,sql_statements=db.statements,
+        report.update(project_ref=REF,region=REGION,sql_connections=db.connections,instrumented_sql_statements=db.statements,
             actual_cost='UNKNOWN',versions={name:version(name) for name in ('psycopg','httpx','PyJWT')})
         print(json.dumps(report))
         if report['status']=='FAIL':raise SystemExit(1)
-        if report['status'] in ('HOLD','CLEANUP_ONLY_NO_RECREATE'):raise SystemExit(2)
+        if report['status'] in ('HOLD','PARTIAL','CLEANUP_ONLY_NO_RECREATE'):raise SystemExit(2)
 
 
 if __name__=='__main__':

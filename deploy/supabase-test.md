@@ -39,6 +39,7 @@ Auth 自有 schema、Auth/计费设置和平台函数保持；此操作本身是
 - Pooler：两模式的事务 LOCAL 过期、相同物理会话正常断连后的 SESSION 状态观测；单次观测不证明全部 reset 行为。
   测试使用初始化身份，不是 runtime 密码登录；异常断连及全部12表的真实云负例门禁尚未完成，产品激活 HOLD。
 - RLS：真实非 BYPASS 运行角色的一张 MESSAGE scope 表正例/跨 scope SELECT、UPDATE、INSERT 负例；外层事务完全回滚，无持久测试行。
+  只有既有已批准执行身份可合法进入该角色时才执行；权限拒绝记 HOLD，不自动 GRANT、改角色密码或换身份绕过。
   不能据此宣称完整 Auth→CJ API→云 RLS 或整套 pooler 已通过。
 - `pg_stat_ssl=false` 是已观测的 pooler→PG 边界；客户端→pooler verify-full 通过不能代称内部也有 TLS。
 - 实际账单无法读取时为 UNKNOWN；任何新资源、平台/地域选择、域名、备份方案或生产仍等 #495。
