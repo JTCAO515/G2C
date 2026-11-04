@@ -81,6 +81,7 @@ Mac仅对这个新批准条目使用系统Keychain API，密码不进入进程ar
 不能用WHERE own掩盖跨主体可见性；同物理后端 commit/rollback 后的无scope负例也继续核对。
 还覆盖正常/异常断开，再借用时应用强制重置与完整12表负例。异常只切断本脚本自己的客户端，
 不对任意服务器PID执行 terminate。供应商是否复用了同一后端按实测列出，不能把换PID称reset证明。
+本探针的下一次借用已经由应用清理，因此供应商reset结果始终记UNKNOWN；同PID空值不能倒推供应商已清理。
 负向写入均置于强制回滚交易；只清理由本批次签名源生成且完整hash未变的自有合成数据。
 原 run 已存在时只读查询云端原两组scope，区分EMPTY_CONFIRMED、OWNED_SEED_MATCH、
 HOLD_CHANGED_OR_PARTIAL，不凭本机JSON证明COMMIT；不另开新scope或重发写入。

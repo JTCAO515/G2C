@@ -76,7 +76,7 @@ def load_state(path):
         if type(value['disconnects']) is not list or len(value['disconnects'])!=2:raise GateFailure('original_disconnect_evidence_invalid')
         for item in value['disconnects']:
             if (type(item) is not dict or set(item)!={'abrupt','supplier_reset_observation','application_reset_and_12_table_gate'}
-                    or type(item['abrupt']) is not bool or item['supplier_reset_observation'] not in ('OBSERVED_RETAINED','OBSERVED_CLEAN','UNKNOWN_different_backend')
+                    or type(item['abrupt']) is not bool or item['supplier_reset_observation'] not in ('OBSERVED_RETAINED','OBSERVED_CLEAN','UNKNOWN_different_backend','UNKNOWN_application_reset_preceded_observation')
                     or item['application_reset_and_12_table_gate']!='PASS'):
                 raise GateFailure('original_disconnect_evidence_invalid')
     if value['state']=='COMPLETE' and (len(value.get('matrix',[]))!=4 or len(value.get('disconnects',[]))!=2 or 'cleanup' not in value):
@@ -236,6 +236,10 @@ def matrix(config,scopes,data,query):
     return outcomes
 
 
+def reset_observation(first_pid,next_pid):
+    return 'UNKNOWN_different_backend' if next_pid!=first_pid else 'UNKNOWN_application_reset_preceded_observation'
+
+
 def disconnects(config,scopes,data,query):
     result=[];templates={t:items[0] for t,items in data.items()}
     for abrupt in (False,True):
@@ -255,8 +259,9 @@ def disconnects(config,scopes,data,query):
         with query.connect(config) as conn:
             next_=query.execute(conn,"SELECT current_user,(SELECT ssl FROM pg_catalog.pg_stat_ssl WHERE pid=pg_backend_pid()),pg_backend_pid(),current_setting('cj.message_scope',true),current_setting('cj.trip_scope',true)").fetchone()
             if next_[:2]!=('cj_m1_runtime',True):raise GateFailure('actual_runtime_TLS_required')
-            before=('UNKNOWN_different_backend' if next_[2]!=first[2] else
-                    'OBSERVED_RETAINED' if any(x not in ('',None) for x in next_[3:]) else 'OBSERVED_CLEAN')
+            # Query.connect already reset this owned session. These values can
+            # prove the application boundary, not supplier reset behavior.
+            before=reset_observation(first[2],next_[2])
             discard_session(conn);require_identity(conn,'cj_m1_runtime')
             unbound_negatives(conn,templates,query)
             with conn.transaction():
