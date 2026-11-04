@@ -658,10 +658,22 @@ import UIKit
         try launch(f,language:"en");conversation(f)
         tap("assistant.travelContext");tap("travel.selection."+f.namespace);tap("assistant.panel.done")
         func setPlanningIntent(_ enabled:Bool) {
-            let toggle=visible({app.switches.matching(identifier:"assistant.intent").firstMatch},id:"assistant.intent")
+            let named=visible({app.switches.matching(identifier:"assistant.intent").firstMatch},id:"assistant.intent")
+            #if G2C_M4_DEVICE_ACCEPTANCE
+            let controls=named.switches
+            print("M4_PLANNING_SWITCH",named.frame,named.value as Any,"children",controls.count)
+            XCTAssertEqual(controls.count,1,"The named intent row must contain its actual switch")
+            let toggle=controls.element(boundBy:0)
+            #else
+            let toggle=named
+            #endif
             XCTAssertTrue(toggle.isEnabled && toggle.isHittable)
             XCTAssertEqual(toggle.value as? String,enabled ? "0" : "1")
+            #if G2C_M4_DEVICE_ACCEPTANCE
+            toggle.tap()
+            #else
             toggle.coordinate(withNormalizedOffset:CGVector(dx:0.95,dy:0.5)).tap()
+            #endif
             let changed=XCTNSPredicateExpectation(predicate:NSPredicate(format:"value == %@",enabled ? "1" : "0"),object:toggle)
             XCTAssertEqual(XCTWaiter.wait(for:[changed],timeout:5),.completed)
         }
