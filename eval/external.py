@@ -82,7 +82,7 @@ def memory_authority():
                 kinds = [row[0] for row in conn.execute('SELECT DISTINCT kind FROM cj_run_metered_operation').fetchall()]
             assert trips == 0 and owners == [h.scope] and kinds == ['model'], (trips, owners, kinds)
             assert Meter.exposure(ledger) == 1
-            assert ledger['policy']['budget'] == 100, ledger['policy']
+            assert ledger.config.budget == 100, ledger.config
             return dict(injected_text_reached_actual_provider=True, formal_trip_count=trips,
                         visible_owners=owners, operation_kinds=kinds, original_budget=100,
                         actual_exposure=Meter.exposure(ledger), provider_calls=model.calls,
