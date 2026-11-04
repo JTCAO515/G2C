@@ -210,7 +210,7 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
                      LocalBudgetRouter(database,registrations=tools_configuration.registrations)))
 
 
-def run_once(database, model, auth_dir, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,background_jobs=None,formal_memory_configuration=None,real_services=None):
+def run_once(database, model, auth_dir, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,background_jobs=None,formal_memory_configuration=None,real_services=None,account_admission=False):
     if formal_memory_configuration is not None:
         from cj_api.local_formal_memory import configuration
         formal_memory_configuration=configuration(formal_memory_configuration)
@@ -229,7 +229,7 @@ def run_once(database, model, auth_dir, *, memory_configuration=None,tools_confi
                 or database.run_context.version!='CJ-LOCAL-RUN@2' or background_jobs is not None):
             raise ProviderFailed('explicit registered M4 real composition required')
         for scope in pending_scopes:real_services.require_scope(scope)
-    if formal_memory_configuration is None:checker=checker_for(Path(auth_dir))
+    if formal_memory_configuration is None and not account_admission:checker=checker_for(Path(auth_dir))
     else:
         from cj_api.local_account_admission_v2 import account_checker_for
         checker=account_checker_for(Path(auth_dir),database)

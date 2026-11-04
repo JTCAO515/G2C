@@ -73,6 +73,8 @@ class Runtime:
         options=dict(self.database.conninfo,user='cj_local_cleanup')
         return psycopg.connect(**options)
 
+    def store(self,subject):return Store(self.connect,subject,lambda stage:None)
+
     def subject(self,principal):return subject_digest(principal)
 
     def retired(self,principal):
@@ -90,12 +92,12 @@ class Runtime:
 
     def by_subject(self,subject):
         # Restricted progress needs no plaintext identity after metadata erasure.
-        store=Store(self.connect,subject,lambda stage:None)
+        store=self.store(subject)
         return Binding(store,'',(),{}, {},lambda operation:False)
 
     def original(self,subject,operation_id):
         from .local_app import ISSUER,AUDIENCE
-        metadata=GatewayStore(Store(self.connect,subject,lambda stage:None))
+        metadata=GatewayStore(self.store(subject))
         prepared=metadata.query(operation_id)
         if prepared.plan_bytes is None:return self.by_subject(subject)
         plan=json.loads(prepared.plan_bytes)
@@ -114,7 +116,7 @@ class Runtime:
     def _binding(self,subject,owner):
         # Authority came from the caller's canonical verified principal. The
         # dedicated store's guard covers only this captured cleanup context.
-        store=Store(self.connect,subject,lambda stage:None)
+        store=self.store(subject)
         needs=needs_scope_for(owner);trip=trip_scope_for(owner)
         profiles=() if self.database.run_context is None else self.database.run_context.profiles
         ledgers=tuple(ledger_scope_for(owner,p.meter) for p in profiles)

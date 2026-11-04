@@ -61,4 +61,34 @@ class CredentialBoundaries(unittest.TestCase):
             with self.assertRaises(CompositionUnavailable):operator.inspect(Path('synthetic-ca'),state)
 
 
+class CleanupCredentialBoundaries(unittest.TestCase):
+    setUp=CredentialBoundaries.setUp
+    def test_cleanup_unknown_change_is_read_only_and_does_not_touch_runtime_state(self):
+        with tempfile.TemporaryDirectory() as directory,patch.object(operator,'CLEANUP_ROOT',Path(directory)):
+            state=dict(state='PASSWORD_CHANGE_UNKNOWN',project_ref=REF,role='cj_local_cleanup',credential_sha256='a'*64,sql_change_attempts=1)
+            (Path(directory)/'state.json').write_text(json.dumps(state))
+            with patch.object(operator,'inspect',return_value={'verified_original':True}) as inspect,patch.object(operator.subprocess,'run') as keychain,patch.object(operator.psycopg,'connect') as connect:
+                result=operator.apply(Path('synthetic-ca'),role='cj_local_cleanup')
+                self.assertEqual(result['mode'],'READ_ONLY_ORIGINAL')
+                inspect.assert_called_once_with(Path('synthetic-ca'),state,role='cj_local_cleanup')
+                keychain.assert_not_called();connect.assert_not_called()
+            with self.assertRaises(ValueError):operator.load_state(Path(directory)/'state.json')
+
+    def test_fixed_cleanup_role_uri_does_not_enable_runtime_or_admin_substitution(self):
+        uri='postgresql://cj_local_cleanup.'+REF+':synthetic-cleanup@'+HOST+':5432/postgres'
+        with patch.dict(os.environ,{'CJ_ENV':'local'},clear=True):
+            self.assertEqual(boundary.decode_cleanup_uri(uri)['user'],'cj_local_cleanup.'+REF)
+            for raw in (uri.replace(':5432/',':6543/'),uri.replace('cj_local_cleanup.','cj_m1_runtime.'),uri.replace('cj_local_cleanup.','postgres.')):
+                with self.assertRaises(CompositionUnavailable):boundary.decode_cleanup_uri(raw)
+            with self.assertRaises(CompositionUnavailable):boundary.decode_uri(uri)
+        with self.assertRaises(ValueError):operator.target('postgres')
+
+    def test_cleanup_role_safety_has_fixed_parameters_and_never_grants(self):
+        conn=MagicMock();conn.execute.return_value.fetchone.return_value=(True,False,False,False,False,False,False,False,False,0)
+        operator.role_safety(conn,role='cj_local_cleanup')
+        sql,params=conn.execute.call_args.args
+        self.assertEqual(params,('cj_local_cleanup','cj_local_cleanup'))
+        self.assertNotIn('GRANT',sql);self.assertNotIn('ALTER',sql)
+
+
 if __name__=='__main__':unittest.main()
