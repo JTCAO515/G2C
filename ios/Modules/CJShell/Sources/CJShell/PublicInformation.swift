@@ -78,7 +78,19 @@ struct PrivacyNoticeView: View {
     var body: some View {
         List {
             Section {
-                Text(language.text("This beta notice describes the planned service. External service connections and the data controls described below are not yet available in this version.", "本内测说明介绍计划提供的服务。此版本尚未接入外部服务，以下数据控制功能也尚未开放。"))
+                if localAMapConfigured {
+                    Text(language.text("This build can load AMap after you explicitly agree. The other service connections and data controls below describe the planned beta service.", "此构建可在你明确同意后加载高德地图。下方其他服务连接与数据控制说明属于内测服务计划。"))
+                } else {
+                    Text(language.text("This beta notice describes the planned service. External service connections and the data controls described below are not yet available in this version.", "本内测说明介绍计划提供的服务。此版本尚未接入外部服务，以下数据控制功能也尚未开放。"))
+                }
+            }
+            if localAMapConfigured {
+                Section(language.text("AMap in this build", "此构建中的高德地图")) {
+                    Text(language.text("AMap (北京高德图强科技有限公司) independently processes the viewed map region and device/network information for map display and security. Optional analytics are disabled. Your location is not requested. Loading requires separate explicit consent; the text itinerary remains available without a map.", "高德（北京高德图强科技有限公司）独立处理查看区域及设备、网络信息，用于地图展示与安全保障。可选统计分析已关闭，不申请你的位置。加载地图需要另行明确同意；不加载也可完整阅读文字行程。"))
+                        .fixedSize(horizontal:false,vertical:true)
+                    Link(language.text("AMap SDK privacy policy", "高德 SDK 隐私政策"),destination:URL(string:"https://lbs.amap.com/pages/privacy/")!)
+                        .accessibilityIdentifier("privacy.amap.policy")
+                }
             }
             Section(language.text("Provider", "服务方")) {
                 Text(language.text("Go2China is provided by Context Jump LLC, with local support from its affiliate Guangzhou Chuangjing Technology. Questions: hello@go2china.space.", "Go2China 由 Context Jump LLC 提供，关联公司广州创竞科技提供本地支持。如有疑问请联系 hello@go2china.space。"))
@@ -111,6 +123,13 @@ struct PrivacyNoticeView: View {
         }
         .textSelection(.enabled)
         .navigationTitle(language.text("Privacy notice (beta)", "隐私说明（内测版）"))
+    }
+    private var localAMapConfigured: Bool {
+        #if DEBUG && G2C_AMAP_LOCAL && canImport(MAMapKit) && !targetEnvironment(simulator)
+        AMapRecordedPlaceMap.isConfigured
+        #else
+        false
+        #endif
     }
 }
 #endif
