@@ -165,10 +165,17 @@ import UIKit
         XCTAssertEqual(issues,0)
     }
     private func launch(_ f:Fixture,language:String,large:Bool=false,restore:Bool=false,timezone:String?=nil) throws {
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        largestFont=UIApplication.shared.preferredContentSizeCategory.isAccessibilityCategory
+        if large { M4DeviceTestSession.requireLargestSystemFont() }
+        #else
         largestFont=large
+        #endif
         app?.terminate();app=XCUIApplication(bundleIdentifier:bundle)
         app.launchArguments=["-cj.ui.language.v1",language]
+        #if !G2C_M4_DEVICE_ACCEPTANCE
         if large { app.launchArguments += ["-UIPreferredContentSizeCategoryName","UICTContentSizeCategoryAccessibilityXXXL"] }
+        #endif
         app.launchEnvironment=["OS_ACTIVITY_MODE":"disable","G2C_DEV_ACCOUNT_MODE":"1","G2C_DEV_API_BASE_URL":f.endpoint,
             "G2C_DEV_ACCOUNTS":restore || f.device_host != nil ? "{}" : String(data:try JSONEncoder().encode(f.accounts),encoding:.utf8)!,"G2C_DEV_MESSAGE_PROFILE":"trip-edit-v1",
             "G2C_DEV_NEEDS_PROFILE":"manual-v1","G2C_DEV_NEEDS_ID":"visit",

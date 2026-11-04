@@ -111,6 +111,26 @@ CJ_PG_BINDIR='<PostgreSQL-17-bin>' uv run --locked python -B \
 `testDeviceTimezones` 仍核对 App 进程 TZ 与中国当地字段，不冒称已切换 iPhone 的
 系统时区；真实系统语言/时区切换和 VoiceOver 继续在 #29 独立记录。
 
+### 规划采用与手动修改的指定真机入口
+
+`check_manual_trips.py` 支持同一显式设备/TLS 与 `--prepare-only`，继续要求
+`--backend-root`、精确 `--backend-head` 和 `--run-context`。原始来源创建、
+正式规划/采用、diff/save、原动作恢复及原后端证明保持不变，不直接写入 Trip。
+设备控制的 prepare 只向本轮已安装的 App 暂存当前用例的合成账号；恢复不再次注入。
+
+```sh
+CJ_PG_BINDIR='<PostgreSQL-17-bin>' uv run --locked python -B \
+  ios/App/Acceptance/check_manual_trips.py --device '<approved-iPhone-UDID>' \
+  --local-tls '<approved-external-profile/operator.json>' \
+  --backend-root '<pinned-checkout>' --backend-head '<full-SHA>' \
+  --run-context '<explicit-context.json>' --case testNeedsPlanningAccept \
+  --largest-recovery --output '<new-external-directory>' --build-dir '<external-build-cache>'
+```
+
+设备的大字号分支核对 Runner 的最大有效字号，App 不再用启动参数覆盖字号；
+实际系统设置/App 显示仍需 DEVICE-RECORD，VoiceOver 不由 AX 或预编译代替。
+`--prepare-only` 不取得业务运行证明，结果仍为 `PREPARED_EXECUTION_UNRUN`。
+
 ## #4 的候选矩阵
 
 包版本以当前锁文件为准；Swift OpenAPI Generator 的真实生成与结构化错误/流式

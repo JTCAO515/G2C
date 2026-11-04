@@ -168,9 +168,8 @@ def configure_project(project, tls, control_url, control_token, amap=False,
         raise ValueError('Control resource phase changed')
     text = text.replace(control_anchor, control_anchor + ', '.join(control_resources))
     sources = []
-    control_sources = [HERE / 'M4DeviceControl.swift', ROOT / 'ios/Modules/CJMessageClient/Sources/CJMessageHTTP/M4LocalServerTrust.swift']
-    if include_release:
-        control_sources.append(HERE / 'M4DeviceTestSession.swift')
+    control_sources = [HERE / 'M4DeviceControl.swift', HERE / 'M4DeviceTestSession.swift',
+                       ROOT / 'ios/Modules/CJMessageClient/Sources/CJMessageHTTP/M4LocalServerTrust.swift']
     for source in control_sources:
         sources.append(resource(source))
     source_anchor = f'A{7:023X} = {{isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = ('

@@ -258,7 +258,10 @@ public struct NeedsDetailsView: View {
     private var display: NeedsDraft { .init(needsID: "display", expectedVersion: 0, fields: fields) }
     public var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            if let version { Text(language.text("读取的版本 ", "Version at read: ") + String(version)).font(.headline).accessibilityIdentifier(prefix + ".version") }
+            if let version {
+                NeedsSelectableFieldText(text: language.text("读取的版本 ", "Version at read: ") + String(version), headline: true)
+                    .accessibilityAddTraits(.isHeader).accessibilityIdentifier(prefix + ".version")
+            }
             NeedsSelectableFieldText(text: unconfirmed
                 ? language.text("来源：合成提取候选，尚未确认或保存。预订和时间未由外部服务核实。", "Source: synthetic extraction candidates, unconfirmed and unsaved. Bookings and times are not externally verified.")
                 : language.text("来源：用户提供；预订和时间未由外部服务核实。", "Source: user provided; bookings and times are not externally verified."))
@@ -357,6 +360,7 @@ public struct NeedsDetailsView: View {
 import UIKit
 private struct NeedsSelectableFieldText: UIViewRepresentable {
     let text: String
+    var headline = false
     @Environment(\.dynamicTypeSize) private var size
     func makeUIView(context: Context) -> UITextView {
         let view = UITextView()
@@ -369,7 +373,7 @@ private struct NeedsSelectableFieldText: UIViewRepresentable {
     }
     func updateUIView(_ view: UITextView, context: Context) {
         if view.text?.utf8.elementsEqual(text.utf8) != true { view.text = text }
-        view.font = UIFont.preferredFont(forTextStyle: .body,
+        view.font = UIFont.preferredFont(forTextStyle: headline ? .headline : .body,
             compatibleWith: UITraitCollection(preferredContentSizeCategory: category))
         // The spoken text is exactly the visible text; no alternate audit value.
         view.accessibilityLabel = text; view.accessibilityValue = nil
@@ -385,7 +389,8 @@ private struct NeedsSelectableFieldText: UIViewRepresentable {
 #else
 private struct NeedsSelectableFieldText: View {
     let text: String
-    var body: some View { Text(text).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true) }
+    var headline = false
+    var body: some View { Text(text).font(headline ? .headline : nil).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true) }
 }
 #endif
 
