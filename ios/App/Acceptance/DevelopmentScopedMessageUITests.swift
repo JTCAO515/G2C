@@ -119,13 +119,21 @@ import UIKit
                 top=max(top,header.frame.maxY+8);bottom=min(bottom,composer.frame.minY)
             }
             let frame=element.exists ? element.frame : .zero
-            if id.hasPrefix("planning.") && attempt % 10 == 0 { print("PLANNING_VIEWPORT",id,frame,top,bottom,element.exists,navigation.exists) }
+            if (id.hasPrefix("planning.") || id == "trip.manual.prepare") && attempt % 10 == 0 { print("CONTROL_VIEWPORT",id,frame,top,bottom,element.exists,navigation.exists) }
             if element.exists && element.isHittable && frame.midY>top && frame.midY<bottom { return element }
             let located = !frame.isEmpty && frame.minY.isFinite && frame.maxY.isFinite
             let down=located ? frame.midY<=top : attempt>=35
             let middle=(top+bottom)/2,step=min(150,(bottom-top)*0.35)
-            let start=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:largestFont && !mapViewport ? app.frame.width*0.85 : app.frame.width-6,dy:middle+(down ? -step : step)))
-            let end=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:largestFont && !mapViewport ? app.frame.width*0.85 : app.frame.width-6,dy:middle+(down ? step : -step)))
+            #if G2C_M4_DEVICE_ACCEPTANCE
+            // Native multiline fields consume drags inside their content.
+            // Use the form's empty gutter to scroll the enclosing page.
+            let editableForm=id.hasPrefix("trip.manual.")
+            #else
+            let editableForm=false
+            #endif
+            let x=largestFont && !mapViewport && !editableForm ? app.frame.width*0.85 : app.frame.width-6
+            let start=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:x,dy:middle+(down ? -step : step)))
+            let end=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:x,dy:middle+(down ? step : -step)))
             start.press(forDuration:0.05,thenDragTo:end)
         }
         capture("not-visible-"+id)
