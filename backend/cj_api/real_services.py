@@ -54,6 +54,7 @@ TOOLS=[
         start_date=dict(type='string',format='date'),end_date=dict(type='string',format='date'))),
 ]
 NATIVE_TOOLS=frozenset(t['function']['name'] for t in TOOLS)
+NATIVE_REGISTRATION={'place_search':'place','place_detail':'place','place_route':'place','weather':'weather','fact':'fact'}
 
 
 @dataclass(frozen=True,repr=False)
@@ -136,12 +137,15 @@ class RealServices:
 
 
 class RealTools:
-    def __init__(self,services):
+    def __init__(self,services,*,allowed_native=NATIVE_TOOLS):
         self.services=services
+        if type(allowed_native) is not frozenset or not allowed_native or not allowed_native<=NATIVE_TOOLS:
+            raise ValueError('explicit code-owned native tool subset required')
+        self.names=allowed_native
+        self.native_tools=[t for t in TOOLS if t['function']['name'] in allowed_native]
         model=Registration('model',self._model_input)
         self.registrations=MappingProxyType({'model.answer':model,'model.draft':model,'model.tool_turn':model,
-            **{'tool.'+name:Registration('tool',lambda argument,name=name:self._tool_input(name,argument)) for name in ('place','weather','fact')}})
-        self.names=NATIVE_TOOLS
+            **{'tool.'+name:Registration('tool',lambda argument,name=name:self._tool_input(name,argument)) for name in {NATIVE_REGISTRATION[n] for n in allowed_native}}})
 
     def _model_input(self,argument):
         if type(argument) is ModelInput:
@@ -154,7 +158,7 @@ class RealTools:
         if (provider.original if wrapped else provider) is not self.services.model:
             raise BudgetUnknown('M4 model registration mismatch')
         raw=canonical(dict(messages=messages,system=system,endpoint=M4_BASE,model=M4_MODEL,synthetic_only=True,
-                           native_tools=TOOLS if system==TOOL_SYSTEM else None))
+                           native_tools=self.native_tools if system==TOOL_SYSTEM else None))
         inputs=json.loads(raw);metadata={}
         def bind(operation,guard):
             self.services.require_scope(operation.binding.scope)

@@ -148,6 +148,8 @@ def run_batch(*,resume_setup=False,verification=False,basic_verification=False):
                     headers=dict(Authorization='Bearer '+dev_auth.token(auth,subject,30))
                     with TestClient(app) as client:
                         for case,prompt in cases.items():
+                            case_tools=(RealTools(services,allowed_native=frozenset({'place_search' if case=='place-zh' else 'weather'}))
+                                        if verification or basic_verification else tools)
                             cid='m4-'+case
                             opened=client.put('/v1/conversations',params=dict(conversation_id=cid),headers=headers)
                             if opened.status_code!=200:raise ValueError('synthetic_API_conversation_unavailable')
@@ -156,7 +158,7 @@ def run_batch(*,resume_setup=False,verification=False,basic_verification=False):
                                 expected_generation=opened.json()['generation'],expected_sequence=0)).encode())
                             if sent.status_code!=200:raise ValueError('synthetic_API_message_unavailable')
                             receipt=sent.json()['receipt'];value['cases'][case]=dict(state='ACCEPTED',run_id=receipt['run_id'],message_id=cid);save(path,value)
-                            outcomes=run_worker.run_once(db,model,auth,tools_configuration=tools,real_services=services)
+                            outcomes=run_worker.run_once(db,model,auth,tools_configuration=case_tools,real_services=services)
                             if len(outcomes)!=1:raise ValueError('original_RUN_outcome_unavailable')
                             value['cases'][case]['state']=outcomes[0].status
                             with db.connect(scope_for(ISSUER,subject)) as conn:
@@ -170,7 +172,7 @@ def run_batch(*,resume_setup=False,verification=False,basic_verification=False):
                                     status=snapshot['status'],text_state=snapshot['text_state'],answer_chars=len(answer),
                                     text_sha256=hashlib.sha256(text.encode()).hexdigest())
                             before=model.calls
-                            if run_worker.run_once(db,model,auth,tools_configuration=tools,real_services=services) or model.calls!=before:
+                            if run_worker.run_once(db,model,auth,tools_configuration=case_tools,real_services=services) or model.calls!=before:
                                 raise ValueError('original_RUN_redispatched')
                             save(path,value)
             value['state']='COMPLETE'
