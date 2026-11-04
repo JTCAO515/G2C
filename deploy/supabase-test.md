@@ -86,6 +86,10 @@ Mac仅对这个新批准条目使用系统Keychain API，密码不进入进程ar
 原 run 已存在时只读查询云端原两组scope，区分EMPTY_CONFIRMED、OWNED_SEED_MATCH、
 HOLD_CHANGED_OR_PARTIAL，不凭本机JSON证明COMMIT；不另开新scope或重发写入。
 显式 `cleanup` 仅在原完整hash仍吻合时清理，内容改变则保持不可用；所有管理员清理连接也先验身份/TLS。
+SQL timestamptz比较按UTC瞬间规范化，避免Mac的+08显示与云UTC显示造成假差异；普通date/naive timestamp不改语义。
+原旧hash只能用显式 `upgrade-hash` 升级：完整原行数及按已知源时区Asia/Shanghai的旧整体hash必须精确吻合，
+备份原state/保留旧hash后才更新本机比较格式，云数据写入0；不能仅凭数量或时区猜测采纳变化。
+`resume` 只在云端原完整seed已读回吻合后复验原scope的矩阵/断线并按原hash清理，不生成新scope或重发seed。
 
 本地 `supabase_pool_reset` 组只验证真实 Unix PG 的12表/重置机制，明确没有云或TLS证明；
 实际云测试、运行角色、双段TLS与费用必须另在 #30/PR 记录 PASS/FAIL/UNRUN/UNKNOWN。

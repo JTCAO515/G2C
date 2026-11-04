@@ -7,7 +7,7 @@ This gate does not create Auth users, change roles, or activate a public backend
 import argparse
 import base64
 from contextlib import contextmanager
-from datetime import date,datetime
+from datetime import date,datetime,timezone
 import fcntl
 import hashlib
 import json
@@ -19,6 +19,7 @@ import socket
 import sys
 import tempfile
 from unittest.mock import patch
+from zoneinfo import ZoneInfo
 
 import psycopg
 from psycopg import sql
@@ -50,7 +51,7 @@ def load_state(path):
     if len(raw)>65536:raise GateFailure('bounded_original_gate_state_required')
     value=json.loads(raw,object_pairs_hook=reject_duplicates(GateFailure,'duplicate_gate_state_field'))
     required={'state','project_ref','batch','scopes','expected_sha256','counts'}
-    optional={'matrix','disconnects','cleanup','instrumented_execute_calls','total_SQL','connections','actual_cost'}
+    optional={'matrix','disconnects','cleanup','instrumented_execute_calls','total_SQL','connections','actual_cost','hash_profile','legacy_expected_sha256'}
     if (type(value) is not dict or not required<=set(value) or set(value)-required-optional
             or value['project_ref']!='sajkhvjpllldfyfryalx' or type(value['batch']) is not str
             or re.fullmatch('[0-9a-f]{24}',value['batch']) is None
@@ -61,6 +62,8 @@ def load_state(path):
         raise GateFailure('original_gate_state_invalid')
     expected=[scope_for(ISSUER,'m4-synthetic-cloud-gate-'+value['batch']+'-'+label) for label in ('a','b')]
     if value['scopes']!=expected:raise GateFailure('original_gate_scope_mismatch')
+    if 'hash_profile' in value and value['hash_profile']!='utc-instants.1':raise GateFailure('original_hash_profile_invalid')
+    if 'legacy_expected_sha256' in value and (type(value['legacy_expected_sha256']) is not str or re.fullmatch('[0-9a-f]{64}',value['legacy_expected_sha256']) is None):raise GateFailure('legacy_hash_reference_invalid')
     for key in ('instrumented_execute_calls','connections'):
         if key in value and (type(value[key]) is not int or not 0<=value[key]<=100000):raise GateFailure('original_gate_counter_invalid')
     for key,allowed in (('cleanup','CONFIRMED_empty_owned_scopes'),('total_SQL','UNKNOWN'),('actual_cost','UNKNOWN')):
@@ -84,11 +87,14 @@ def load_state(path):
     return value
 
 
-def canonical(value):
-    if isinstance(value,dict):return {k:canonical(v) for k,v in value.items()}
-    if isinstance(value,(tuple,list)):return [canonical(v) for v in value]
+def canonical(value,*,legacy=False):
+    if isinstance(value,dict):return {k:canonical(v,legacy=legacy) for k,v in value.items()}
+    if isinstance(value,(tuple,list)):return [canonical(v,legacy=legacy) for v in value]
     if isinstance(value,(bytes,bytearray,memoryview)):return {'bytes':base64.b64encode(bytes(value)).decode()}
-    if isinstance(value,(date,datetime)):return {'timestamp':value.isoformat()}
+    if isinstance(value,datetime):
+        if value.tzinfo is not None:value=value.astimezone(ZoneInfo('Asia/Shanghai') if legacy else timezone.utc)
+        return {'timestamp':value.isoformat()}
+    if isinstance(value,date):return {'timestamp':value.isoformat()}
     if value is None or type(value) in (str,int,bool,float):return value
     return str(value)
 
@@ -120,10 +126,10 @@ def rows(conn,table,scopes,query,*,lock=False):
     return result
 
 
-def digest(data):
+def digest(data,*,legacy=False):
     # No row/order changes during cloud copy: generated list sequences alone are
     # allocated by the target. Compare every retained source column for cleanup.
-    normalized={table:sorted((json.dumps(canonical(row),sort_keys=True,separators=(',',':')) for row in items)) for table,items in data.items()}
+    normalized={table:sorted((json.dumps(canonical(row,legacy=legacy),sort_keys=True,separators=(',',':')) for row in items)) for table,items in data.items()}
     return hashlib.sha256(json.dumps(normalized,sort_keys=True).encode()).hexdigest()
 
 
@@ -312,36 +318,75 @@ def reconcile(ca,state,*,cleanup=False,path=None):
                 instrumented_execute_calls=query.count,total_SQL='UNKNOWN',actual_cost='UNKNOWN')
 
 
+def upgrade_hash(ca,state,path):
+    """Only explicit legacy-state upgrade after exact full source-zone match.
+
+    No business writes, no changed-data adoption, no counts-only shortcut.
+    Retain the old state and old digest before selecting instant comparison.
+    """
+    if state.get('hash_profile')=='utc-instants.1':return reconcile(ca,state)
+    query=Query()
+    with pin_ca(ca) as pinned:
+        config=dict(decode_uri(keychain('g2c-supabase-db'),operator=True),sslrootcert=pinned.name)
+        with query.connect(config,operator=True) as conn:
+            scopes=state['scopes']+[trip_scope_for(s) for s in state['scopes']]
+            actual={t:rows(conn,t,scopes,query) for t in TABLES}
+            if {t:len(v) for t,v in actual.items()}!=state['counts'] or digest(actual,legacy=True)!=state['expected_sha256']:
+                raise GateFailure('legacy_complete_contents_not_proven_hash_upgrade_withheld')
+    original=json.dumps(state,sort_keys=True,separators=(',',':')).encode()
+    backup=path.with_name('state-before-utc-hash-upgrade.json')
+    if backup.exists():
+        if backup.read_bytes()!=original:raise GateFailure('original_hash_upgrade_backup_conflict')
+    else:
+        with backup.open('xb') as output:os.chmod(backup,0o600);output.write(original);output.flush();os.fsync(output.fileno())
+    state.update(legacy_expected_sha256=state['expected_sha256'],expected_sha256=digest(actual),hash_profile='utc-instants.1')
+    save(path,state)
+    return dict(mode='LOCAL_HASH_UPGRADE_AFTER_EXACT_READBACK',state=state,cloud_data_writes=0,legacy_source_timezone='Asia/Shanghai')
+
+
 def repeated_run_passed(result):
     return result['result']['state']=='COMPLETE' and result.get('cloud_observation',{}).get('status')=='EMPTY_CONFIRMED'
 
 
-def run(ca):
+def run(ca,*,resume=False):
     current_authorization();STATE.mkdir(parents=True,exist_ok=True,mode=0o700)
     with (STATE/'lock').open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX);path=STATE/'state.json'
-        if path.exists():return reconcile(ca,load_state(path))
-        batch=secrets.token_hex(12);subjects=['m4-synthetic-cloud-gate-'+batch+'-'+label for label in ('a','b')]
-        scopes=[scope_for(ISSUER,s) for s in subjects];all_scopes=scopes+[trip_scope_for(s) for s in scopes]
-        with tempfile.TemporaryDirectory(prefix='cj-cloud-gate-source-') as directory:
-            data=fixture(Path(directory),subjects)
-        state=dict(state='PLANNED',project_ref='sajkhvjpllldfyfryalx',batch=batch,scopes=scopes,expected_sha256=digest(data),counts={k:len(v) for k,v in data.items()})
-        save(path,state);query=Query()
+        if path.exists():
+            state=load_state(path)
+            if not resume or state['state']=='COMPLETE':return reconcile(ca,state)
+            if state.get('hash_profile')!='utc-instants.1' or state['state'] not in ('SEED_INTENT','SEEDED','CLEANUP_INTENT'):
+                raise GateFailure('original_seed_requires_read_only_reconciliation')
+            scopes=state['scopes'];data=None
+        else:
+            if resume:raise GateFailure('original_seed_state_required')
+            batch=secrets.token_hex(12);subjects=['m4-synthetic-cloud-gate-'+batch+'-'+label for label in ('a','b')]
+            scopes=[scope_for(ISSUER,s) for s in subjects]
+            with tempfile.TemporaryDirectory(prefix='cj-cloud-gate-source-') as directory:
+                data=fixture(Path(directory),subjects)
+            state=dict(state='PLANNED',project_ref='sajkhvjpllldfyfryalx',batch=batch,scopes=scopes,expected_sha256=digest(data),counts={k:len(v) for k,v in data.items()},hash_profile='utc-instants.1')
+            save(path,state)
+        all_scopes=scopes+[trip_scope_for(s) for s in scopes];query=Query()
         with pin_ca(ca) as pinned:
             operator=dict(decode_uri(keychain('g2c-supabase-db'),operator=True),sslrootcert=pinned.name)
             runtime=dict(decode_uri(keychain('g2c-supabase-runtime-db')),sslrootcert=pinned.name)
             with query.connect(operator,operator=True) as conn:
                 if migrate.applied(conn)!=[m['version'] for m in migrate.load()]:raise GateFailure('exact_application_schema_required')
                 if query.execute(conn,'SELECT ssl FROM pg_catalog.pg_stat_ssl WHERE pid=pg_backend_pid()').fetchone()!=(True,):raise GateFailure('database_side_TLS_required')
-                if any(rows(conn,t,all_scopes,query) for t in TABLES):raise GateFailure('owned_random_scopes_already_exist')
-                state['state']='SEED_INTENT';save(path,state)
-                with conn.transaction():
-                    for table in TABLES:
-                        for row in data[table]:insert(conn,table,row,query)
-                state['state']='SEEDED';save(path,state)
+                if resume:
+                    data={t:rows(conn,t,all_scopes,query) for t in TABLES}
+                    if digest(data)!=state['expected_sha256'] or any(not values for values in data.values()):
+                        raise GateFailure('original_complete_seed_not_present_resume_withheld')
+                else:
+                    if any(rows(conn,t,all_scopes,query) for t in TABLES):raise GateFailure('owned_random_scopes_already_exist')
+                    state['state']='SEED_INTENT';save(path,state)
+                    with conn.transaction():
+                        for table in TABLES:
+                            for row in data[table]:insert(conn,table,row,query)
+                    state['state']='SEEDED';save(path,state)
             try:
-                state['matrix']=matrix(runtime,scopes,data,query)
-                state['disconnects']=disconnects(runtime,scopes,data,query)
+                state['matrix']=matrix(runtime,scopes,data,query);save(path,state)
+                state['disconnects']=disconnects(runtime,scopes,data,query);save(path,state)
             finally:
                 # Re-read the original state before cleanup, including after any
                 # uncertain test operation. Refuse mixed/changed owned contents.
@@ -355,17 +400,18 @@ def run(ca):
                     primary.add_note('owned cleanup unconfirmed; inspect original cloud state before further action')
                     print(json.dumps(dict(event='OWNED_CLEANUP_UNCONFIRMED',error_type=type(cleanup_error).__name__)),file=sys.stderr)
         state.update(state='COMPLETE',instrumented_execute_calls=query.count,total_SQL='UNKNOWN',connections=query.connections,actual_cost='UNKNOWN');save(path,state)
-        return dict(mode='EXECUTED',result=state)
+        return dict(mode='RESUMED_ORIGINAL' if resume else 'EXECUTED',result=state)
 
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('command',choices=('run','inspect','cleanup'));parser.add_argument('--ca-file',type=Path,required=True);args=parser.parse_args()
-    if args.command=='run':result=run(args.ca_file)
+    parser=argparse.ArgumentParser();parser.add_argument('command',choices=('run','inspect','cleanup','upgrade-hash','resume'));parser.add_argument('--ca-file',type=Path,required=True);args=parser.parse_args()
+    if args.command in ('run','resume'):result=run(args.ca_file,resume=args.command=='resume')
     else:
         with (STATE/'lock').open('a') as lock:
             fcntl.flock(lock,fcntl.LOCK_EX)
-            path=STATE/'state.json';result=reconcile(args.ca_file,load_state(path),cleanup=args.command=='cleanup',path=path)
-    if args.command=='run' and result['mode']=='READ_ONLY_ORIGINAL' and not repeated_run_passed(result):
+            path=STATE/'state.json';state=load_state(path)
+            result=upgrade_hash(args.ca_file,state,path) if args.command=='upgrade-hash' else reconcile(args.ca_file,state,cleanup=args.command=='cleanup',path=path)
+    if args.command in ('run','resume') and result['mode']=='READ_ONLY_ORIGINAL' and not repeated_run_passed(result):
         result['gate_status']='INCOMPLETE_OR_DRIFT_HOLD'
         print(json.dumps(result,separators=(',',':')))
         return 1
