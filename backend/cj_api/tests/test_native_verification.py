@@ -61,12 +61,14 @@ class Verification(unittest.TestCase):
         body=canonical(dict(status='1',info='ok',infocode='10000',count='1',route=dict(origin=query.origin.coordinate.raw,destination=query.destination.coordinate.raw,
             paths=[dict(distance='119',duration='95')])))
         result=SimpleNamespace(state='received',response=Response(request.binding_digest,ORIGIN,request.path,200,body,NOW))
-        async def exercise(root,batch):
-            original=AsyncMock(side_effect=[first[2],second[2],result])
+        async def exercise(root,batch,coordinate=False):
+            selected=prepare(first[0],query,'geometry-walk',NOW,basic=True,coordinate_only=coordinate)
+            received=SimpleNamespace(state='received',response=replace(result.response,binding_digest=selected.binding_digest))
+            original=AsyncMock(side_effect=[first[2],second[2],received])
             with patch('cj_api.real_services.fetch_candidate',original),record_place_responses(root,batch,root/'batch.json',geometry=True):
                 from cj_api import real_services
-                for config,prepared in ((first[0],first[1]),(second[0],second[1]),(first[0],request)):
-                    await real_services.fetch_candidate(config,prepared,None,basic=True)
+                for config,prepared in ((first[0],first[1]),(second[0],second[1]),(first[0],selected)):
+                    await real_services.fetch_candidate(config,prepared,None,basic=True,**({'coordinate_only':True} if coordinate and prepared is selected else {}))
             self.assertEqual(original.await_count,3)
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory);batch=dict(verification_profile='route-geometry-capture-1',geometry_acceptance='UNASSESSED',provider_responses=[])
@@ -86,6 +88,11 @@ class Verification(unittest.TestCase):
                 self.assertEqual(saved.stat().st_mode&0o777,0o600)
                 self.assertEqual(record['response_sha256'],hashlib.sha256(expected).hexdigest())
                 self.assertNotIn('key',dict(record['request_params']))
+            directory=root/'coordinate';directory.mkdir(mode=0o700)
+            coordinate=dict(verification_profile='route-coordinate-capture-1',geometry_acceptance='UNASSESSED',provider_responses=[])
+            asyncio.run(exercise(directory,coordinate,True))
+            self.assertTrue(capture_passed(coordinate,coordinate=True))
+            self.assertEqual(coordinate,json.loads(json.dumps(coordinate)))
 
     def test_diagnostic_still_requires_actual_tool_and_complete_continuation(self):
         batch,attempts=proof();batch['verification_profile']='native-diagnostics-1'

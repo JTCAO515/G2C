@@ -186,7 +186,7 @@ def record_place_responses(root,batch,batch_path,*,geometry=False):
                 with (folder/name).open('xb') as output:
                     os.fchmod(output.fileno(),0o600);output.write(response.body);output.flush();os.fsync(output.fileno())
                 batch['provider_responses'].append(dict(path=request.path,binding_digest=request.binding_digest,
-                    request_params=list(request.params),
+                    request_params=[list(pair) for pair in request.params],
                     response_sha256=hashlib.sha256(response.body).hexdigest(),response_bytes=len(response.body),
                     http_status=response.http_status,request_ref=request.request_ref,started_at=request.started_at.isoformat(),
                     received_at=response.received_at.isoformat(),file='provider/'+name))
