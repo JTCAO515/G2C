@@ -106,6 +106,10 @@ class AuthJournal:
                 email=f'm4-{run}-{label}@example.invalid',id=None,state='planned') for label in ('a','b')])
             self.save()
         else:self.value=decode(self.path.read_bytes())
+        if (type(self.value) is not dict or set(self.value)!={'run_id','complete','calls','subjects'}
+                or type(self.value['complete']) is not bool or type(self.value['calls']) is not int
+                or not 0<=self.value['calls']<=32 or type(self.value['run_id']) is not str
+                or type(self.value['subjects']) is not list):raise TestUnavailable('auth_journal_invalid')
         run=self.value['run_id']
         if (len(run)!=32 or uuid.UUID(hex=run).hex!=run or len(self.value['subjects'])!=2
                 or [x['label'] for x in self.value['subjects']]!=['a','b']):raise TestUnavailable('auth_journal_invalid')
