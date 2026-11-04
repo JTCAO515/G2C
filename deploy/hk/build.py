@@ -1,5 +1,6 @@
 """Build a source-only image with an application-only PG17 schema artifact."""
 import argparse
+import os
 from pathlib import Path
 import subprocess
 import tempfile
@@ -16,6 +17,7 @@ def main():
     parser.add_argument('--platform',choices=['linux/amd64','linux/arm64'],required=True)
     args=parser.parse_args()
     if subprocess.check_output(['git','status','--porcelain'],cwd=ROOT):raise ValueError('clean_committed_build_source_required')
+    proxy_args=[argument for name in ('HTTP_PROXY','HTTPS_PROXY','NO_PROXY') if os.environ.get(name) for argument in ('--build-arg',name)]
     revision=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
     with tempfile.TemporaryDirectory(prefix='g2c-hk-build-') as directory:
         root=Path(directory);context=root/'context';context.mkdir()
@@ -25,10 +27,10 @@ def main():
             schema.generate(config,context/'deploy/hk/schema')
         tag='g2c-beta:'+revision
         subprocess.run(['docker','build','--platform='+args.platform,'--label','org.opencontainers.image.revision='+revision,
-            '-f',str(context/'deploy/Dockerfile'),'-t',tag,str(context)],check=True)
+            *proxy_args,'-f',str(context/'deploy/Dockerfile'),'-t',tag,str(context)],check=True)
         operator_tag='g2c-beta-operator:'+revision
         subprocess.run(['docker','build','--platform='+args.platform,'--label','org.opencontainers.image.revision='+revision,
-            '--build-arg','CJ_BETA_IMAGE='+tag,'-f',str(context/'deploy/hk/operator.Dockerfile'),'-t',operator_tag,str(context)],check=True)
+            '--build-arg','CJ_BETA_IMAGE='+tag,*proxy_args,'-f',str(context/'deploy/hk/operator.Dockerfile'),'-t',operator_tag,str(context)],check=True)
         print('PASS SOURCE='+revision+' IMAGE='+tag+' PLATFORM='+args.platform)
 
 
