@@ -213,6 +213,20 @@ CJ_PG_BINDIR='<PostgreSQL-17-bin>' uv run --locked python -B \
 不当作锁屏文件保护。实际物理断网、系统锁态、真实期限和 VoiceOver 继续在#29
 记录；字体全程要求实际系统最大字号，模拟器原字号变化保留。
 
+### 注销与结构/AX 的指定真机入口
+
+`check_account_cleanup_component.py --device` 限定为 `--native-device --all-provided`
+的 CJProbeApp 31个已提供域路径，仍要求预算4及精确后端 pin。原组件/完整阻塞
+清单用例保留模拟器入口，外部处理不计完成。设备前后文件证明使用每次新的
+私有容器副本，保持另一账号哈希、21个设备目标和原调用/回执检查。
+
+`check_shell_structure.py --device` 支持 structure/accessibility/account-deletion：
+普通 App 与标明合成、只读的 ShellFixtureApp 分开记录；只读夹具不冒签名业务。
+夹具与控制使用批准的本机 HTTPS，控制 audit/release 要求本轮令牌；原只读接口
+仍只接受标明SYNTHETIC的读取身份。设备全程要求系统最大字号，不使用夹具字号
+覆盖；模拟器原路径保留。所有用例、完整.all AX及原失败断言均保留。
+这些入口的 `--prepare-only` 仍全部记为 `PREPARED_EXECUTION_UNRUN`。
+
 ## #4 的候选矩阵
 
 包版本以当前锁文件为准；Swift OpenAPI Generator 的真实生成与结构化错误/流式

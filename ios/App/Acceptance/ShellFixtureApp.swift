@@ -60,7 +60,11 @@ struct ShellFixtureApp: App {
         let host = MemoryContainerHost(shell: shell)
         func endpoint() -> MessageEndpoint {
             let url = URL(string: env["SHELL_FIXTURE_URL"]!)!
+            #if G2C_M4_DEVICE_ACCEPTANCE
+            precondition(url.scheme == "https" && url.host == env["G2C_M4_LOCAL_HOST"] && url.port != nil)
+            #else
             precondition(url.scheme == "http" && url.host == "127.0.0.1" && url.port != nil)
+            #endif
             return try! MessageEndpoint(url: url, maximumRequestBytes: 100_000,
                 maximumResponseBytes: 100_000, allowLoopbackHTTP: true)
         }
@@ -102,8 +106,10 @@ struct ShellFixtureApp: App {
                         .accessibilityValue(observation)
                 }
                 .transformEnvironment(\.dynamicTypeSize) { size in
+                    #if !G2C_M4_DEVICE_ACCEPTANCE
                     if textSize == "maximum" { size = .accessibility5 }
                     else if textSize == "large" { size = .accessibility3 }
+                    #endif
                 }
                 .task {
                     if mode != "unconfigured" { await memory.loadGroups(context: memory.captureAction()) }

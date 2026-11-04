@@ -4,6 +4,13 @@ import Foundation
 @MainActor final class ShellAccessibilityUITests: XCTestCase {
     private let bundle = "space.go2china.shell.acceptance"
     private var app: XCUIApplication!
+    #if G2C_M4_DEVICE_ACCEPTANCE
+    private lazy var deviceSession = M4DeviceTestSession(test: self, control: fixtureURL)
+    private func deviceEnvironment() {
+        M4DeviceTestSession.requireLargestSystemFont()
+        app.launchEnvironment.merge(try! deviceSession.applicationEnvironment(endpoint: fixtureURL, injecting: false)) { _, value in value }
+    }
+    #endif
 
     private func capture(_ name: String) {
         let image = XCTAttachment(screenshot: app.screenshot())
@@ -18,6 +25,9 @@ import Foundation
             app = XCUIApplication(bundleIdentifier: bundle)
             app.launchEnvironment = ["OS_ACTIVITY_MODE":"disable", "G2C_DEV_API_BASE_URL": "", "G2C_DEV_TOKEN": ""]
             app.launchArguments = ["-cj.ui.language.v1", language]
+            #if G2C_M4_DEVICE_ACCEPTANCE
+            deviceEnvironment()
+            #endif
             app.launch()
             XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
             let labels = language == "en" ? ["Assistant", "Trips", "Plugins", "Memory"] : ["助手", "行程", "插件", "记忆"]
@@ -49,6 +59,9 @@ import Foundation
         app.launchEnvironment = ["OS_ACTIVITY_MODE":"disable", "G2C_DEV_API_BASE_URL": "", "G2C_DEV_TOKEN": "",
             "SHELL_FIXTURE_RUN": UUID().uuidString, "SHELL_FIXTURE_MEMORY": "unconfigured",
             "SHELL_FIXTURE_LANGUAGE": "zh-Hans", "SHELL_FIXTURE_SIZE": "maximum"]
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        deviceEnvironment()
+        #endif
         app.launch()
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
         capture("maximum-text-assistant-top")
@@ -89,6 +102,9 @@ import Foundation
             "SHELL_FIXTURE_ASSISTANT": assistant, "SHELL_FIXTURE_LANGUAGE": language,
             "SHELL_FIXTURE_SIZE": size, "SHELL_FIXTURE_LONG_TEXT": longText ? "1" : "0",
             "SHELL_FIXTURE_URL": fixtureURL]
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        deviceEnvironment()
+        #endif
         app.launch()
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
     }
@@ -101,7 +117,11 @@ import Foundation
 
     private func control(_ path: String) async throws -> [String] {
         let url = try XCTUnwrap(URL(string: fixtureURL + path + "?run=" + runID))
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        let (data, response) = try await deviceSession.data(from: url)
+        #else
         let (data, response) = try await URLSession.shared.data(from: url)
+        #endif
         XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
         return try JSONDecoder().decode([String].self, from: data)
     }
