@@ -13,6 +13,7 @@ import json
 import os
 from pathlib import Path
 import plistlib
+import secrets
 import socket
 import subprocess
 import sys
@@ -33,13 +34,24 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--simulator', required=True)
+    target = parser.add_mutually_exclusive_group(required=True)
+    target.add_argument('--simulator'); target.add_argument('--device')
+    parser.add_argument('--local-tls', type=Path); parser.add_argument('--prepare-only', action='store_true')
     parser.add_argument('--run-context', required=True, type=Path)
     parser.add_argument('--output', required=True, type=Path)
     parser.add_argument('--build-dir', required=True, type=Path)
     parser.add_argument('--case', choices=CASES)
     parser.add_argument('--seed-only', action='store_true', help='Diagnose real formal-source preparation; every native case remains UNRUN')
     args = parser.parse_args()
+    tls = None
+    if args.device:
+        if not args.local_tls: parser.error('--device requires the approved --local-tls profile')
+        from m4_device import LocalTLS, configure_project, scan_app_container
+        from m4_native import DeviceNative, authenticated_control
+        tls = LocalTLS.load(args.local_tls)
+    elif args.local_tls or args.prepare_only: parser.error('Device options require --device')
+    if args.seed_only and args.prepare_only: parser.error('Choose source diagnostic or device build preparation')
+    os.umask(0o077)
     output, build = args.output.resolve(), args.build_dir.resolve()
     if output.is_relative_to(ROOT) or build.is_relative_to(ROOT):
         raise ValueError('Evidence and build output must stay outside the repository')
@@ -71,6 +83,7 @@ def main():
                *list((ROOT / 'ios/Modules/CJShell/Sources').rglob('*.swift')),
                *list((ROOT / 'ios/Modules/CJAuth/Sources/CJSession').glob('*.swift')),
                Path(__file__), HERE / 'DevelopmentOfflineTripUITests.swift']
+    if tls: sources += [HERE / name for name in ('m4_device.py','m4_native.py','m4_artifacts.py','M4DeviceControl.swift','M4DeviceTestSession.swift')]
     report = dict(status='RUNNING', head=head, cases={}, checks={}, faults=[], unrun_cases=list(CASES),
                   source_hashes={str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sources},
                   run_context=json.loads(args.run_context.read_text()),
@@ -78,11 +91,16 @@ def main():
                          'real accounts/providers/cloud/fees', 'physical offline device/VoiceOver (#29)', 'deployment'])
     if args.case:
         report['unrun'] += [case for case in CASES if case != args.case]
+    if tls: report.update(layer='signed approved iPhone/local pinned HTTPS/private PG/formal worker/FakeProvider',
+        raw_native_bundle_shareable=False, build_inputs_shareable=False,
+        device_font_scope='actual system maximum throughout case',
+        unrun=['physical Wi-Fi/airplane-mode outage','real 14-day elapsed time','physical locked file protection',
+               'VoiceOver','actual system font setting record','real accounts/providers/cloud/fees'])
     def save():
         (output / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2))
     save()
     tokens, records, models, audit = {}, {}, {}, []
-    original_size = subprocess.check_output(['xcrun', 'simctl', 'ui', args.simulator, 'content_size'], env=env, text=True).strip()
+    original_size = None if tls else subprocess.check_output(['xcrun', 'simctl', 'ui', args.simulator, 'content_size'], env=env, text=True).strip()
     if original_size in {'unknown', 'unsupported'}:
         raise ValueError('Boot the simulator before native acceptance')
     try:
@@ -134,11 +152,11 @@ def main():
 
                 with socket.socket() as sock:
                     sock.bind(('127.0.0.1', 0)); port = sock.getsockname()[1]
-                endpoint = f'http://127.0.0.1:{port}'
+                endpoint = f'https://{tls.host}:{port}' if tls else f'http://127.0.0.1:{port}'
                 runtime = {'server': None, 'thread': None}
                 def start():
-                    server = uvicorn.Server(uvicorn.Config(observed, host='127.0.0.1', port=port,
-                        log_level='critical', access_log=False, lifespan='off'))
+                    server = uvicorn.Server(uvicorn.Config(observed, host=tls.host if tls else '127.0.0.1', port=port,
+                        log_level='critical', access_log=False, lifespan='off', **(tls.uvicorn_options() if tls else {})))
                     thread = threading.Thread(target=server.run, daemon=True)
                     runtime.update(server=server, thread=thread); thread.start()
                     deadline = time.monotonic() + 10
@@ -208,7 +226,11 @@ def main():
                     return
 
                 def app_files():
-                    container = Path(subprocess.check_output(['xcrun', 'simctl', 'get_app_container', args.simulator, BUNDLE, 'data'], env=env, text=True).strip())
+                    if tls:
+                        container = Path(tempfile.mkdtemp(prefix='device-offline-snapshot-', dir=root)) / 'app-data'
+                        scan_app_container(args.device, BUNDLE, container, tokens[active_case].values())
+                    else:
+                        container = Path(subprocess.check_output(['xcrun', 'simctl', 'get_app_container', args.simulator, BUNDLE, 'data'], env=env, text=True).strip())
                     environment_id = str(uuid.UUID(bytes=hashlib.sha256(('G2C.DEBUG.TRIP.environment|' + endpoint).encode()).digest()[:16])).upper()
                     files = sorted((container / 'Library/Application Support/G2COfflineTrip' / environment_id).glob('*/snapshot.aesgcm'))
                     return container, files
@@ -248,6 +270,17 @@ def main():
                         provider_calls=models[case].calls, runtime_role='cj_m1_runtime', app_requests=requests)
                     report['checks'].setdefault(case, []).append(proof); save(); return proof
 
+                prepared = {}
+                def prepare_case(case):
+                    if tls and case in prepared: return prepared[case]
+                    mode['verification'] = 'normal'
+                    tokens[case] = {x: dev_auth.token(auth, s, 120) for x, s in subjects[case].items()}
+                    for s in subjects[case].values(): operator(s, 'init-budget')
+                    models[case] = FakeProvider(chunks_per_reply=2)
+                    records[case] = dict(audit_start=len(audit))
+                    value = dict(endpoint=endpoint, accounts={} if tls else tokens[case], subjects=subjects[case], case_id=case)
+                    if tls: prepared[case] = value
+                    return value
                 class Control(BaseHTTPRequestHandler):
                     def log_message(self, *args): pass
                     def do_GET(self):
@@ -255,12 +288,7 @@ def main():
                             query = parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
                             path, case = self.path.split('?', 1)[0], query['case'][0]
                             if path == '/prepare':
-                                mode['verification'] = 'normal'
-                                tokens[case] = {x: dev_auth.token(auth, s, 120) for x, s in subjects[case].items()}
-                                for s in subjects[case].values(): operator(s, 'init-budget')
-                                models[case] = FakeProvider(chunks_per_reply=2)
-                                records[case] = dict(audit_start=len(audit))
-                                value = dict(endpoint=endpoint, accounts=tokens[case], subjects=subjects[case], case_id=case)
+                                value = prepare_case(case)
                             elif path == '/create': value = create(case)
                             elif path == '/verify': value = verify(case, query)
                             elif path == '/checkpoint': records[case]['network_checkpoint'] = len(audit); value = {}
@@ -278,7 +306,7 @@ def main():
                             elif path == '/size':
                                 size = query['value'][0]
                                 assert size in {'large', 'accessibility-extra-extra-extra-large'}
-                                subprocess.run(['xcrun', 'simctl', 'ui', args.simulator, 'content_size', size], env=env, check=True)
+                                if not tls: subprocess.run(['xcrun', 'simctl', 'ui', args.simulator, 'content_size', size], env=env, check=True)
                                 value = {}
                             else: raise ValueError('Unknown control route')
                             raw = json.dumps(value).encode(); self.send_response(200); self.end_headers(); self.wfile.write(raw)
@@ -287,24 +315,45 @@ def main():
                             report.setdefault('control_errors', []).append(dict(type=type(error).__name__,
                                 frames=[dict(function=f.name, line=f.lineno) for f in traceback.extract_tb(error.__traceback__)]))
                             save(); self.send_response(500); self.end_headers(); self.wfile.write(type(error).__name__.encode())
-                control = ThreadingHTTPServer(('127.0.0.1', 0), Control)
+                control_token = secrets.token_urlsafe(32) if tls else None; native = None; active_case = None
+                def stage_input(request):
+                    query = parse_qs(request.split('?', 1)[1])
+                    if set(query) != {'case'} or query['case'] != [active_case]: raise ValueError('Staging requires the active offline case')
+                    native.stage(tokens[active_case])
+                control = ThreadingHTTPServer((tls.host if tls else '127.0.0.1', 0),
+                    authenticated_control(Control, control_token, stage_input) if tls else Control)
+                if tls: tls.secure_http_server(control)
                 threading.Thread(target=control.serve_forever, daemon=True).start()
                 try:
                     spec = importlib.util.spec_from_file_location('trip_builder', ROOT / 'scripts/check_ios_trip_confirm.py')
                     module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
                     builder = object.__new__(module.XCTestDriver); builder.directory = output / 'project'
                     builder.directory.mkdir(); builder.write_project(0)
+                    control_url = ('https://' + tls.host if tls else 'http://127.0.0.1') + ':' + str(control.server_port)
                     (builder.directory / 'G2CControl.swift').write_text((HERE / 'DevelopmentOfflineTripUITests.swift').read_text()
-                        .replace('__FIXTURE_URL__', f'http://127.0.0.1:{control.server_port}'))
+                        .replace('__FIXTURE_URL__', control_url))
                     project = builder.directory / 'G2CAcceptance.xcodeproj'; pbx = project / 'project.pbxproj'
                     text = pbx.read_text().replace('space.go2china.foundation.local', BUNDLE).replace('space.go2china.foundation.control', BUNDLE + '.control')
                     entitlement = builder.directory / 'Offline.entitlements'
                     entitlement.write_bytes(plistlib.dumps({'application-identifier': BUNDLE, 'keychain-access-groups': [BUNDLE]}))
                     text = text.replace(json.dumps(str(ROOT / 'ios/App/Development.entitlements')), json.dumps(str(entitlement)))
                     pbx.write_text(text)
+                    if tls: _, configuration_file, _ = configure_project(project, tls, control_url, control_token, bundle=BUNDLE)
                     for case in ([args.case] if args.case else CASES):
                         assert subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip() == head
                         assert not subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT)
+                        if tls:
+                            active_case = case; prepare_case(case)
+                            detail = dict(status='RUNNING'); report.setdefault('device_native', {})[case] = detail
+                            case_output = output / 'device-native' / case; case_output.mkdir(parents=True, mode=0o700)
+                            native = DeviceNative(args.device, BUNDLE, project, configuration_file, build, ROOT,
+                                case_output, tokens[case], control_token, detail)
+                            selected = ['DevelopmentOfflineTripUITests/' + case]
+                            native.build_for_testing('Debug', selected, env)
+                            if args.prepare_only:
+                                detail['status'] = 'PREPARED_EXECUTION_UNRUN'; report['cases'][case] = 'UNRUN'; save(); continue
+                            native.run('Debug', selected, env); native.scan('Debug')
+                            detail['status'] = 'PASS'; report['cases'][case] = 'PASS'; report['unrun_cases'].remove(case); save(); continue
                         result = output / (case + '.xcresult')
                         command = ['xcodebuild', '-project', str(project), '-scheme', 'G2CControl', '-configuration', 'Debug',
                             '-destination', 'platform=iOS Simulator,id=' + args.simulator, '-derivedDataPath', str(build),
@@ -325,21 +374,35 @@ def main():
                         save(); run.check_returncode()
                         assert summary['passedTests'] == 1 and summary['failedTests'] == summary['skippedTests'] == 0
                         report['cases'][case] = 'PASS'; save()
-                    container, _ = app_files()
-                    for path in [*container.rglob('*'), *output.rglob('*')]:
-                        if path.is_file():
-                            raw = path.read_bytes()
-                            assert not any(token.encode() in raw for pair in tokens.values() for token in pair.values())
-                            assert b'-----BEGIN PRIVATE KEY-----' not in raw
-                    report['token_key_scan'] = 'PASS'
-                    report['status'] = 'PARTIAL_PASS' if args.case else 'PASS'
+                    if not args.prepare_only:
+                        container, _ = app_files()
+                        for path in [*container.rglob('*'), *output.rglob('*')]:
+                            if path.is_file():
+                                raw = path.read_bytes()
+                                assert not any(token.encode() in raw for pair in tokens.values() for token in pair.values())
+                                assert b'-----BEGIN PRIVATE KEY-----' not in raw
+                        report['token_key_scan'] = 'PASS'
+                        report['status'] = 'VERIFYING_CLEANUP'
+                    else: report.update(status='PREPARED_EXECUTION_UNRUN'); save()
                 finally:
                     stop(); control.shutdown(); control.server_close()
+                    if tls:
+                        try:
+                            if native is not None: native.cleanup_input()
+                        finally: (output / 'project/M4ControlBootstrap.plist').unlink(missing_ok=True)
+                        for path in output.rglob('*'):
+                            if path.is_file() and not path.is_symlink():
+                                assert not any(value.encode() in path.read_bytes() for value in [*[t for pair in tokens.values() for t in pair.values()], control_token]), 'credential in evidence export'
+                        report['artifact_token_scan'] = 'PASS'; save()
+            report['private_pg_stopped'] = True
+            assert subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip() == head, 'head changed during execution'
+            assert all(hashlib.sha256((ROOT / p).read_bytes()).hexdigest() == digest for p, digest in report['source_hashes'].items()), 'source changed during execution'
+            report['status'] = 'PREPARED_EXECUTION_UNRUN' if args.prepare_only else ('PARTIAL_PASS' if args.case else 'PASS')
     except BaseException as error:
         report['status'] = 'FAIL'; report['error'] = type(error).__name__; raise
     finally:
         save()
-        subprocess.run(['xcrun', 'simctl', 'ui', args.simulator, 'content_size', original_size], env=env, check=True)
+        if original_size: subprocess.run(['xcrun', 'simctl', 'ui', args.simulator, 'content_size', original_size], env=env, check=True)
     print(json.dumps(dict(status=report['status'], head=head, cases=report['cases']), indent=2))
 
 
