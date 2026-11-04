@@ -71,7 +71,8 @@ def main():
         value['current']['meter']['budget'] = budget
         path = output / f'run-context-{budget}.json'
         path.write_text(json.dumps(value, indent=2)); contexts[budget] = path
-    report = dict(status='RUNNING', head=head, required_steps=[s[0] for s in STEPS], steps={},
+    report = dict(status='RUNNING', head=head, required_steps=[s[0] for s in STEPS],
+                  steps={s[0]:dict(status='UNRUN') for s in STEPS},
                   evidence_layer='L0/L1 local signed API + restricted PG + FakeProvider + native Simulator',
                   unrun=['real OTP/accounts/providers/target network', 'physical device/VoiceOver #29', 'TestFlight #33'],
                   os_activity_mode='disable')
@@ -81,6 +82,9 @@ def main():
     env = dict(os.environ, OS_ACTIVITY_MODE='disable')
     selected = [s for s in STEPS if not args.step or s[0] in args.step]
     for name, harness, flags, budget in selected:
+        if subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip() != head:
+            report.update(status='FAIL', error='candidate head changed between steps'); save()
+            raise SystemExit(1)
         destination = output / name
         command = [sys.executable, '-B', str(HERE / harness), '--simulator', args.simulator,
                    '--output', str(destination), '--build-dir', str(build / name), *flags]
@@ -91,6 +95,7 @@ def main():
         elif harness == 'check_manual_trips.py':
             command += ['--backend-root', str(ROOT), '--backend-head', head]
         print('M4 START ' + name, flush=True)
+        report['steps'][name] = dict(status='RUNNING'); save()
         run = subprocess.run(command, cwd=ROOT, env=env, capture_output=True, timeout=5400)
         (output / (name + '.log')).write_bytes(run.stdout + run.stderr)
         path = destination / 'report.json'
@@ -102,7 +107,9 @@ def main():
             owner_status=child.get('status', 'UNKNOWN'), evidence=str(path.relative_to(output)),
             report_sha256=hashlib.sha256(path.read_bytes()).hexdigest() if path.exists() else None)
         save(); print('M4 ' + name + ' ' + report['steps'][name]['status'], flush=True)
-    if any(s['status'] == 'FAIL' for s in report['steps'].values()):
+    if subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip() != head:
+        report.update(status='FAIL', error='candidate head changed during final step')
+    elif any(s['status'] == 'FAIL' for s in report['steps'].values()):
         report['status'] = 'FAIL'
     else:
         report['status'] = 'PARTIAL_PASS' if args.step else 'PASS'
