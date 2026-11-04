@@ -15,7 +15,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--only', nargs='+')
-    parser.add_argument('--suite', choices=('isolation', 'commit'), default='isolation')
+    parser.add_argument('--suite', choices=('isolation', 'commit', 'memory'), default='isolation')
     args = parser.parse_args()
     # Refuse overwriting prior FAIL/UNKNOWN evidence.
     args.output.mkdir(parents=True, exist_ok=False)
