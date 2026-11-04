@@ -171,14 +171,18 @@ class OwnershipChecks(Harness):
             first, r1 = self.send(client, self.own, 'first-message', conversation=chat)
             second, r2 = self.send(client, self.own, 'second-message', conversation=chat)
             unrelated, r3 = self.send(client, self.own, 'unrelated-chat', conversation='z-' + uuid.uuid4().hex)
-            original = pool.submit(self.worker(provider).process, 2)
+            # Pending deliveries rotate across conversations: first, unrelated, second.
+            original = pool.submit(self.worker(provider).process, 3)
             try:
                 self.assertTrue(paused.wait(15))
                 outcomes = {value.message_id: value.status for value in self.worker(other).process()}
                 self.assertEqual(outcomes, {first: 'waiting', second: 'waiting', unrelated: 'completed'})
                 self.assertEqual(self.services()[1].snapshot(self.binding(r1.json()['receipt'])).status, 'running')
             finally: release.set()
-            self.assertEqual([value.status for value in original.result(timeout=15)], ['completed', 'completed'])
+            # The unrelated run was already completed by the other worker; the original
+            # worker only acknowledges it and never calls its provider for it.
+            self.assertEqual({value.message_id: value.status for value in original.result(timeout=15)},
+                             {first: 'completed', unrelated: 'completed', second: 'completed'})
             self.assertEqual(provider.calls, ['first-message', 'second-message'])
             self.assertEqual(other.calls, 1)
             runs = self.services()[1]
