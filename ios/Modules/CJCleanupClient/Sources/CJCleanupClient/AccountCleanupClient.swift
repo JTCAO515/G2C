@@ -61,7 +61,7 @@ public enum AccountCleanupReadResult: Sendable { case notObserved, prepared(Acco
         credentials: @escaping @MainActor () async throws -> String?,
         beforeConfirmation: @escaping @MainActor (String) throws -> Void,
         requestTimeout: TimeInterval, resourceTimeout: TimeInterval) throws {
-        #if DEBUG && targetEnvironment(simulator)
+        #if DEBUG && (targetEnvironment(simulator) || G2C_M4_DEVICE_ACCEPTANCE)
         try Self.validateDevelopmentConfiguration(endpoint, requestTimeout: requestTimeout, resourceTimeout: resourceTimeout)
         self.endpoint = endpoint; self.lifetime = lifetime
         journal = try AccountCleanupJournal(persistence: securePersistence, scope: lifetime.scope)
@@ -77,7 +77,7 @@ public enum AccountCleanupReadResult: Sendable { case notObserved, prepared(Acco
     /// It never acquires ordinary SDK credentials or permits a write.
     public init(developmentRestrictedProgress endpoint: MessageEndpoint, lifetime: AccountCleanupLifetime,
         securePersistence: any SessionPersistence, requestTimeout: TimeInterval, resourceTimeout: TimeInterval) throws {
-        #if DEBUG && targetEnvironment(simulator)
+        #if DEBUG && (targetEnvironment(simulator) || G2C_M4_DEVICE_ACCEPTANCE)
         try Self.validateDevelopmentConfiguration(endpoint, requestTimeout: requestTimeout, resourceTimeout: resourceTimeout)
         self.endpoint = endpoint; self.lifetime = lifetime; ordinary = nil
         journal = try AccountCleanupJournal(persistence: securePersistence, scope: lifetime.scope)
@@ -108,8 +108,7 @@ public enum AccountCleanupReadResult: Sendable { case notObserved, prepared(Acco
         try checkLifetime(ordinary: ordinary != nil)
     }
     private static func validateDevelopmentConfiguration(_ endpoint: MessageEndpoint, requestTimeout: TimeInterval, resourceTimeout: TimeInterval) throws {
-        guard endpoint.url.scheme == "http", endpoint.url.host == "127.0.0.1", let port = endpoint.url.port,
-              (1...65535).contains(port), endpoint.maximumRequestBytes <= 16384, endpoint.maximumResponseBytes <= 65536,
+        guard endpoint.allowsDevelopmentActivation, endpoint.maximumRequestBytes <= 16384, endpoint.maximumResponseBytes <= 65536,
               requestTimeout > 0, requestTimeout.isFinite, resourceTimeout > 0, resourceTimeout.isFinite else { throw CleanupFailure.unavailable }
     }
     public func invalidate() { active = false }

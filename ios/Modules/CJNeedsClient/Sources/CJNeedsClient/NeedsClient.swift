@@ -41,15 +41,14 @@ public typealias NeedsCredentialCallback = @MainActor (NeedsBinding) async throw
         session = nil; sessionOperation = nil; store = pendingStore
         transport = interceptedTransport; testWrites = true; acceptsUserActions = manualWritesAvailable; localTimeouts = nil
     }
-    #if DEBUG && targetEnvironment(simulator)
+    #if DEBUG && (targetEnvironment(simulator) || G2C_M4_DEVICE_ACCEPTANCE)
     /// Explicit CJ-LOCAL-NEEDS@1 manual-v1 capability. Ordinary and Release
     /// construction retains its read-only path and original session fences.
     public init(localEndpoint endpoint: NeedsEndpoint, credentials: @escaping NeedsCredentialCallback,
                 currentBinding: @escaping @MainActor () -> NeedsBinding?, session: SessionLifecycle,
                 sessionOperation: SessionOperation, pendingStore: NeedsPendingStore,
                 requestTimeout: TimeInterval, resourceTimeout: TimeInterval) throws {
-        guard endpoint.url.scheme == "http", endpoint.url.host == "127.0.0.1",
-              let port = endpoint.url.port, (1...65535).contains(port),
+        guard endpoint.allowsDevelopmentActivation,
               endpoint.maximumRequestBytes <= 131072, endpoint.maximumResponseBytes <= 1048576 else {
             throw NeedsFailure.unconfigured
         }

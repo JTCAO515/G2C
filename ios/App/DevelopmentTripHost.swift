@@ -1,4 +1,4 @@
-#if DEBUG && targetEnvironment(simulator)
+#if DEBUG && (targetEnvironment(simulator) || G2C_M4_DEVICE_ACCEPTANCE)
 import Foundation
 import Darwin
 import CryptoKit

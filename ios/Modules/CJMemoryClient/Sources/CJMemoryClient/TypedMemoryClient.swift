@@ -19,12 +19,11 @@ import OpenAPIRuntime
     private var usedManagementReads: Set<UUID> = []
     // Historical exact-action completion only, retained across presentation retirement.
     private var managementConfirmed: Set<Data> = []
-    #if DEBUG && targetEnvironment(simulator)
+    #if DEBUG && (targetEnvironment(simulator) || G2C_M4_DEVICE_ACCEPTANCE)
     public convenience init(localEndpoint: MemoryEndpoint,credentials: @escaping MemoryCredentialCallback,
         currentBinding: @escaping @MainActor () -> MemoryBinding?,pendingStore: TypedMemoryPendingStore,
         localTransport: NoRedirectTransport,validatePriorOriginals: @escaping @MainActor () throws -> Void) throws {
-        guard localEndpoint.url.scheme == "http",localEndpoint.url.host == "127.0.0.1",
-              let port = localEndpoint.url.port,(1...65535).contains(port),localEndpoint.maximumRequestBytes <= 32768,
+        guard localEndpoint.allowsDevelopmentActivation,localEndpoint.maximumRequestBytes <= 32768,
               localEndpoint.maximumResponseBytes <= 1_000_000 else { throw MemoryFailure.unconfigured }
         self.init(endpoint:localEndpoint,credentials:credentials,currentBinding:currentBinding,pendingStore:pendingStore,
             interceptedTransport:localTransport,validatePriorOriginals:validatePriorOriginals)

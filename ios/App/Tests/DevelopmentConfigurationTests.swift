@@ -9,6 +9,26 @@ private func token(subject: String = "fixture", signature: String = "synthetic")
 }
 
 struct DevelopmentConfigurationTests {
+    @Test func m4LocalDeviceEndpointRequiresExplicitPrivateHost() throws {
+        let host = "192.168.1.2"
+        let base = ["G2C_DEV_API_BASE_URL":"http://"+host+":18080", "G2C_M4_LOCAL_HOST":host]
+        #if DEBUG
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        #expect(DevelopmentSessionConfiguration.readEndpoint(base)?.host == host)
+        #else
+        #expect(DevelopmentSessionConfiguration.readEndpoint(base) == nil)
+        #endif
+        for change in [["G2C_M4_LOCAL_HOST":"192.168.1.3"], ["G2C_DEV_API_BASE_URL":"http://8.8.8.8:18080","G2C_M4_LOCAL_HOST":"8.8.8.8"],
+            ["G2C_DEV_API_BASE_URL":"http://192.168.1.2"], ["G2C_DEV_API_BASE_URL":"http://192.168.1.2:0"],
+            ["G2C_DEV_API_BASE_URL":"http://user:password@192.168.1.2:18080"], ["G2C_DEV_API_BASE_URL":"http://192.168.1.2:18080/v1"],
+            ["G2C_DEV_API_BASE_URL":"http://192.168.1.2:18080?key=value"], ["G2C_DEV_API_BASE_URL":"http://192.168.1.2:18080#fragment"]] {
+            #expect(DevelopmentSessionConfiguration.readEndpoint(base.merging(change){_,new in new}) == nil)
+        }
+        #else
+        #expect(DevelopmentSessionConfiguration.read(base) == nil)
+        #endif
+    }
+
     @Test func historyProfileRequiresVerifiedAccountRootAndReleaseStaysClosed() throws {
         let base = ["G2C_DEV_MEMORY_HISTORY_PROFILE": "history-v1", "G2C_DEV_ACCOUNT_MODE": "1"]
         #if DEBUG

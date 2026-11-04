@@ -6,7 +6,7 @@ import CJShell
 @main
 struct CJProbeApp: App {
     @State private var shell: ShellState
-    #if DEBUG && targetEnvironment(simulator)
+    #if DEBUG && (targetEnvironment(simulator) || G2C_M4_DEVICE_ACCEPTANCE)
     @State private var development: DevelopmentTripHost?
     @State private var developmentAccounts: DevelopmentAccountRoot?
     @State private var developmentFailed = false
@@ -16,7 +16,7 @@ struct CJProbeApp: App {
     init() {
         let shell = ShellState()
         _shell = State(initialValue: shell)
-        #if DEBUG && targetEnvironment(simulator)
+        #if DEBUG && (targetEnvironment(simulator) || G2C_M4_DEVICE_ACCEPTANCE)
         do {
             let environment = ProcessInfo.processInfo.environment
             if environment["G2C_DEV_ACCOUNT_MODE"] != nil {
@@ -38,7 +38,7 @@ struct CJProbeApp: App {
 
     var body: some Scene {
         WindowGroup {
-            #if DEBUG && targetEnvironment(simulator)
+            #if DEBUG && (targetEnvironment(simulator) || G2C_M4_DEVICE_ACCEPTANCE)
             ShellView(state: shell, messageHost: developmentAccounts?.trip?.messages.messages ?? development?.messages.messages,
                       serverHistoryHost: developmentAccounts?.trip?.messages.history ?? development?.messages.history,
                       memoryContainerHost: developmentAccounts?.trip?.memory?.host ?? development?.memory?.host,
