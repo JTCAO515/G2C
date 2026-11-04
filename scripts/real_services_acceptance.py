@@ -90,6 +90,8 @@ def route_operations_passed(batch,receipts):
         if type(value) is not dict or hashlib.sha256(canonical(value)).hexdigest()!=receipts[operation['attempt_id']].get('input_sha'):return False
         event=next((e for e in events if e.get('request_ref')==value.get('request_ref')),None)
         if event is None:return False
+        expected_endpoint='https://restapi.amap.com/v3/place/text' if event['kind']=='search' else 'https://restapi.amap.com/v3/direction/walking'
+        if receipts[operation['attempt_id']]['receipt']['endpoint']!=expected_endpoint:return False
         try:query=decode_query(canonical(value['query']))
         except (ValueError,KeyError):return False
         if event['kind']=='search':

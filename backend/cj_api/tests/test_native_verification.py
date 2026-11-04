@@ -83,6 +83,9 @@ class Verification(unittest.TestCase):
         records={a['attempt_id']:a for a in attempts}
         for op in operations:records[op['attempt_id']]['input_sha']=hashlib.sha256(canonical(op['input'])).hexdigest()
         self.assertTrue(verification_passed(batch,attempts))
+        swapped,records=copy.deepcopy((batch,attempts))
+        records[1]['receipt']['endpoint'],records[-1]['receipt']['endpoint']=records[-1]['receipt']['endpoint'],records[1]['receipt']['endpoint']
+        self.assertFalse(verification_passed(swapped,records))
         for mutate in (
             lambda b,a:b.update(response_capture_failed=True),
             lambda b,a:b['route_audit'][-1].update(mode='driving'),
