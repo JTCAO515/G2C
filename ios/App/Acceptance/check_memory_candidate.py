@@ -285,6 +285,7 @@ def main():
                         if args.prepare_only:
                             detail['status']='PREPARED_EXECUTION_UNRUN';report['cases'][test]='UNRUN';save();continue
                         summary=native.run('Debug',selected,env)
+                        native.scan('Debug');detail['status']='PASS'
                         value={k:summary[k] for k in ('passedTests','failedTests','skippedTests')}
                     else:
                         result=output/(test+'.xcresult')
@@ -307,7 +308,6 @@ def main():
                     def scan(container):
                         for path in [*container.rglob('*'),*output.rglob('*')]:
                             if path.is_file() and any(secret in path.read_bytes() for secret in secrets):raise AssertionError('credential leaked into candidate artifacts')
-                    if tls:native.scan('Debug')
                     with_container(scan)
                     report.update(status='VERIFYING_CLEANUP',native='PASS',credential_scan='PASS')
             report['pg_stopped']=True

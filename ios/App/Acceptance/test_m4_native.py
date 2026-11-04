@@ -148,6 +148,58 @@ class DeviceCleanupTests(unittest.TestCase):
                 native._staging_closed.clear();native.stage();self.assertTrue(file_present[0])
                 native.cleanup_input();self.assertFalse(file_present[0])
 
+    def test_each_owning_candidate_and_erasure_case_closes_before_replacement(self):
+        for name in ('memory_candidate','memory_erasure'):
+            with self.subTest(driver=name),tempfile.TemporaryDirectory() as directory:
+                root=Path(directory);output=root/'exports';output.mkdir()
+                tree=ast.parse(Path(__file__).with_name('check_'+name+'.py').read_text())
+                loop=copy.deepcopy(next(n for n in ast.walk(tree) if isinstance(n,ast.For)
+                    and ast.unparse(n.target)=='(test, case)' and ast.unparse(n.iter)=='cases.items()'))
+                instances=[];workers=[];releasers=[];release=threading.Event();entered=threading.Event();files={};errors=[]
+                def stage_copy(device,bundle,destination,tokens):
+                    if tokens['A']=='SYNTHETIC.OLD':
+                        entered.set()
+                        if not release.wait(3):raise TimeoutError('copy release missing')
+                    files['input']=tokens['A']
+                def fake_run(native,configuration,tests,env):
+                    native.configuration=configuration;native._staging_closed.clear();instances.append(native)
+                    if len(instances)==1:
+                        def stage():
+                            try:native.stage(case=native.case_id)
+                            except BaseException as error:errors.append(error)
+                        worker=threading.Thread(target=stage);workers.append(worker);worker.start()
+                        if not entered.wait(1):raise TimeoutError('copy never started')
+                        def unblock():
+                            if native._staging_closed.wait(2):release.set()
+                        releaser=threading.Thread(target=unblock);releasers.append(releaser);releaser.start()
+                    return dict(passedTests=1,failedTests=0,skippedTests=0)
+                scope=dict(cases={'method1':'first','method2':'second'},report=dict(cases={}),save=lambda:None,
+                    tls=True,active={'case':None},args=SimpleNamespace(device='SYNTHETIC',prepare_only=False),
+                    output=output,BUNDLE='synthetic.bundle',project=root/'project',configuration_file=root/'config',
+                    build=root/'build',ROOT=root,tokens={'first':{'A':'SYNTHETIC.OLD'},'second':{'A':'SYNTHETIC.NEW'}},
+                    control_token='SYNTHETIC-CONTROL',DeviceNative=DeviceNative,env={},
+                    proof_for=lambda _:dict(action_count=1,other_item_unchanged=True,candidate_files=['synthetic'],item_http_status=200),
+                    local_proof=lambda _:dict(item_journals=[],erasure_post_count=1,other_journals=['synthetic'],erasure_originals=['synthetic']))
+                try:
+                    with patch.object(DeviceNative,'build_for_testing'),patch.object(DeviceNative,'run',fake_run), \
+                         patch('m4_native.copy_accounts',side_effect=stage_copy), \
+                         patch('m4_native.staged_accounts_present',return_value=False), \
+                         patch('m4_native.discard_staged_accounts',side_effect=lambda *args:files.pop('input',None)), \
+                         patch('m4_native.scan_app_container'):
+                        module=ast.fix_missing_locations(ast.Module(body=[loop],type_ignores=[]))
+                        exec(compile(module,'<owning multi-case loop>','exec'),scope)
+                        self.assertEqual(scope['report']['cases'],{'method1':'PASS','method2':'PASS'})
+                        self.assertEqual(len(instances),2)
+                        self.assertTrue(all(n._staging_closed.is_set() for n in instances))
+                        self.assertTrue(all(not n.staging_attempted for n in instances))
+                        self.assertNotIn('input',files)
+                        self.assertTrue(all(row['status']=='PASS' for row in scope['report']['device_native'].values()))
+                finally:
+                    release.set()
+                    for worker in workers+releasers:worker.join(3)
+                    for native in instances:shutil.rmtree(native.private)
+                self.assertEqual(errors,[])
+
 
 class OperatorCaseTests(unittest.TestCase):
     def test_authenticated_client_cannot_select_another_case(self):
