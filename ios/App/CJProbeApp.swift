@@ -19,6 +19,11 @@ struct CJProbeApp: App {
         #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
         do {
             let environment = ProcessInfo.processInfo.environment
+            #if os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+            if environment["G2C_M4_DISCARD_ACCOUNTS_FILE"] == "1" {
+                try DevelopmentAccountInput.discardStaged()
+            }
+            #endif
             if environment["G2C_DEV_ACCOUNT_MODE"] != nil {
                 _developmentAccounts = State(initialValue: try DevelopmentAccountRoot(environment: environment, shell: shell))
                 _development = State(initialValue: nil)

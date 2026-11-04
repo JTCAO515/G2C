@@ -16,6 +16,7 @@
 </dict></dict>
 <key>UILaunchScreen</key><dict/>
 #if G2C_DEBUG_LOCAL_NETWORK
+<key>G2CDevelopmentApplicationIdentifier</key><string>$(AppIdentifierPrefix)$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 <key>NSAppTransportSecurity</key><dict><key>NSAllowsLocalNetworking</key><true/></dict>
 <key>NSLocalNetworkUsageDescription</key><string>Connect to the development Mac for synthetic-data testing. / 连接开发机执行合成数据测试。</string>
 #endif

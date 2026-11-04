@@ -24,7 +24,7 @@ from test_m4_real_services import sse,KEY,NOW
 
 
 def exercise(auth,conninfo):
-    subjects=['m4-synthetic-'+v for v in ('ok','limit','unknown','malformed','late','permission','revoke')]
+    subjects=['m4-synthetic-'+v for v in ('ok','limit','unknown','malformed','late','permission','revoke','repeat')]
     harness.dev_auth.init(auth,subjects)
     now=int(time.time());profiles={}
     for subject in subjects:
@@ -63,7 +63,7 @@ def exercise(auth,conninfo):
                 if subject.endswith('ok'):assert assistant['content']=='Synthetic preface; checking the location.'
             if subject.endswith('revoke') and not follow:
                 (auth/'invited.json').write_text(json.dumps([s for s in subjects if s!=subject]))
-            payload=sse(tool=not follow).replace('chatcmpl-synthetic','chatcmpl-synthetic-'+str(len(model_calls)))
+            payload=sse(tool=not follow or subject.endswith('repeat')).replace('chatcmpl-synthetic','chatcmpl-synthetic-'+str(len(model_calls)))
             if subject.endswith('ok') and not follow:
                 value=json.loads(payload.splitlines()[0][6:]);value['choices'][0]['delta']['content']='Synthetic preface; checking the location.'
                 payload='data: '+json.dumps(value)+'\n\n'+'\n'.join(payload.splitlines()[2:])
@@ -97,6 +97,9 @@ def exercise(auth,conninfo):
                 assert 'Needs verification.' in display['snapshot']['text']
                 assert 'TOOL-output.1' not in display['snapshot']['text']
                 harness.expect(client.get('/v1/run-display',params=dict(message_id=subject),headers=headers[subjects[1]]),503)
+            elif subject.endswith('repeat'):
+                assert outcomes[0].status=='failed' and model.calls==2 and len(tool_calls)==before+1
+                assert [(r['kind'],r['state']) for r in budget.inspect()]==[('model','RECEIVED'),('place','RECEIVED'),('model','RECEIVED')]
             elif subject.endswith('limit'):
                 assert outcomes[0].status=='failed' and model.calls==1 and len(tool_calls)==before
             elif subject.endswith(('unknown','malformed')):
