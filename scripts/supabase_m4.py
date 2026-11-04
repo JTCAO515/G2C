@@ -24,6 +24,7 @@ import uuid
 import certifi
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import serialization
 import httpx
 import jwt
 import psycopg
@@ -72,29 +73,45 @@ def database_config(ca):
     data=ca.read_bytes();certificate=x509.load_pem_x509_certificate(data)
     if certificate.fingerprint(hashes.SHA256()).hex()!=CA_SHA:raise TestUnavailable('supabase_ca_mismatch')
     with tempfile.NamedTemporaryFile(prefix='g2c-m4-ca-') as pinned:
-        pinned.write(data);pinned.flush()
+        pinned.write(certificate.public_bytes(serialization.Encoding.PEM));pinned.flush()
         config.update(sslmode='verify-full',sslrootcert=pinned.name,connect_timeout=10)
         yield config
 
 
 class Database:
-    def __init__(self,config):self.config=config;self.connections=0;self.statements=0
+    def __init__(self,config,*,check=expiry):self.config=config;self.connections=0;self.statements=0;self.check=check
     def connect(self,*,port=None):
+        self.check()
         self.connections+=1
         options=dict(self.config)
         if port is not None:options['port']=port
-        return psycopg.connect(**options,autocommit=True,prepare_threshold=None)
+        return CheckedConnection(psycopg.connect(**options,autocommit=True,prepare_threshold=None),self)
     def query(self,conn,sql,parameters=None):
-        self.statements+=1
         return conn.execute(sql,parameters)
     def user_id(self,email):
         with self.connect() as conn:
             rows=self.query(conn,'SELECT id::text FROM auth.users WHERE email=%s',(email,)).fetchall()
         if len(rows)>1:raise TestUnavailable('synthetic_subject_not_unique')
-        return None if not rows else rows[0][0]
+        return None if not rows else str(uuid.UUID(rows[0][0]))
     def sessions(self,user):
         with self.connect() as conn:
             return self.query(conn,'SELECT count(*) FROM auth.sessions WHERE user_id=%s',(user,)).fetchone()[0]
+
+
+class CheckedConnection:
+    """Known DB-API subset used by registered migrations; guard each send."""
+    def __init__(self,connection,database):self.connection,self.database=connection,database
+    def __enter__(self):self.connection.__enter__();return self
+    def __exit__(self,*args):return self.connection.__exit__(*args)
+    def execute(self,*args,**kwargs):
+        self.database.check();self.database.statements+=1
+        return self.connection.execute(*args,**kwargs)
+    @contextmanager
+    def transaction(self,*args,**kwargs):
+        self.database.check()
+        with self.connection.transaction(*args,**kwargs):
+            yield
+            self.database.check()  # Commit is a new send; rollback remains allowed on expiry.
 
 
 class AuthJournal:
@@ -116,7 +133,8 @@ class AuthJournal:
                 or [x['label'] for x in self.value['subjects']]!=['a','b']):raise TestUnavailable('auth_journal_invalid')
         for item in self.value['subjects']:
             if (set(item)!={'label','email','id','state'} or item['email']!=f"m4-{run}-{item['label']}@example.invalid"
-                    or item['state'] not in ('planned','intent','created','deleted')
+                    or item['state'] not in ('planned','intent','created','deleting','deleted')
+                    or item['state'] in ('created','deleting','deleted') and item['id'] is None
                     or item['id'] is not None and str(uuid.UUID(item['id']))!=item['id']):
                 raise TestUnavailable('auth_subject_binding_invalid')
         if self.value['complete'] and any(item['state']!='deleted' or item['id'] is None for item in self.value['subjects']):
@@ -163,11 +181,15 @@ def cleanup_auth(journal,api,db):
         if subject['state']=='planned':continue
         current=db.user_id(subject['email'])
         if current is None:
+            if subject['state']=='intent':
+                outcomes.append('UNKNOWN_create_may_be_pending');continue
             subject['state']='deleted';journal.save();outcomes.append('absent');continue
         if subject['id'] is not None and subject['id']!=current:raise TestUnavailable('original_auth_subject_changed')
+        if subject['state']=='deleting':
+            outcomes.append('UNKNOWN_delete_may_be_pending');continue
         # A lost create response is resolved by the exact preallocated synthetic
         # email, never by listing users or inventing another subject/identity.
-        subject['id']=current;journal.save()
+        subject['id']=current;subject['state']='deleting';journal.save()
         api.request('delete_own_synthetic','DELETE','/admin/users/'+current,admin=True)
         if db.user_id(subject['email']) is not None:raise TestUnavailable('auth_delete_unconfirmed')
         subject['state']='deleted';journal.save();outcomes.append('deleted')
@@ -178,13 +200,13 @@ def auth_test(db,public_file):
     STATE.mkdir(parents=True,exist_ok=True,mode=0o700)
     with (STATE/'operator.lock').open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX)
+        expiry()
         journal=AuthJournal()
         if journal.value['complete']:return dict(status='READ_ONLY_COMPLETE',created_total=2,additional_calls=0)
         api=AuthClient(keychain('g2c-supabase-auth-test'),public_file.read_text().strip(),journal)
         report=dict(status='FAIL',synthetic_only=True,email_delivery='UNRUN',iOS_SDK='UNRUN',CJ_cloud_host='UNRUN')
         try:
             if not journal.fresh:
-                report['cleanup']=cleanup_auth(journal,api,db)
                 report['status']='CLEANUP_ONLY_NO_RECREATE'
                 return report
             tokens=[]
@@ -196,8 +218,9 @@ def auth_test(db,public_file):
                     body=dict(email=subject['email'],password=password,email_confirm=True))
                 if type(user) is not dict or user.get('email')!=subject['email']:
                     raise TestUnavailable('created_auth_subject_binding_unknown')
-                subject['id']=str(uuid.UUID(user['id']));subject['state']='created';journal.save()
+                subject['id']=str(uuid.UUID(user['id']));journal.save()
                 if db.user_id(subject['email'])!=subject['id']:raise TestUnavailable('created_auth_subject_not_confirmed')
+                subject['state']='created';journal.save()
                 logged=api.request('public_password_login','POST','/token?grant_type=password',
                     body=dict(email=subject['email'],password=password))
                 token=logged['access_token'];refresh=logged['refresh_token']
@@ -237,7 +260,10 @@ def auth_test(db,public_file):
         except (TestUnavailable,httpx.HTTPError,psycopg.Error,ValueError,KeyError,TypeError) as error:
             report.update(status='FAIL',error=type(error).__name__,reason=str(error) if type(error) is TestUnavailable else 'operation_unproven')
         finally:
-            try:report['cleanup']=cleanup_auth(journal,api,db)
+            try:
+                report['cleanup']=cleanup_auth(journal,api,db)
+                if any(value.startswith('UNKNOWN') for value in report['cleanup']):
+                    report.update(cleanup_status='UNKNOWN',status='FAIL')
             except (TestUnavailable,httpx.HTTPError,psycopg.Error,ValueError,KeyError,TypeError) as error:
                 report.update(cleanup_status='UNKNOWN',cleanup_error=type(error).__name__,status='FAIL')
             report['events']=api.events;report['http_calls']=journal.value['calls'];api.close()
@@ -270,12 +296,20 @@ def pool_test(db):
 def quarantine_empty_public(db,conn):
     # This target's public namespace is dedicated to the private CJ API. Never
     # change an existing unrelated application. Auth's own schema is untouched.
-    count=db.query(conn,"SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public'").fetchone()[0]
-    functions=db.query(conn,"SELECT p.proname,pg_get_function_result(p.oid),pg_get_userbyid(p.proowner),p.prosecdef "
+    functions=db.query(conn,"SELECT p.oid,p.proname,pg_get_function_result(p.oid),pg_get_userbyid(p.proowner),p.prosecdef "
         "FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public'").fetchall()
     # Supabase's pre-existing automatic RLS event function is not a CJ object.
     # Preserve it byte-for-byte; no platform function/trigger is altered/created.
-    if count or any(row!=('rls_auto_enable','event_trigger','postgres',True) for row in functions):
+    if len(functions)>1 or any(row[1:]!=('rls_auto_enable','event_trigger','postgres',True) for row in functions):
+        raise TestUnavailable('fresh_public_namespace_required_before_quarantine')
+    allowed=0 if not functions else functions[0][0]
+    # Namespace dependencies cover standalone enum/domain/operator/collation
+    # and text-search objects too, not only relations and functions.
+    count=db.query(conn,"SELECT count(*) FROM pg_depend d WHERE d.refclassid='pg_namespace'::regclass "
+        "AND d.refobjid=(SELECT oid FROM pg_namespace WHERE nspname='public') "
+        "AND d.classid<>'pg_default_acl'::regclass "
+        "AND NOT(d.classid='pg_proc'::regclass AND d.objid=%s)",(allowed,)).fetchone()[0]
+    if count:
         raise TestUnavailable('fresh_public_namespace_required_before_quarantine')
     db.query(conn,'REVOKE USAGE ON SCHEMA public FROM PUBLIC,anon,authenticated,service_role')
     rows=db.query(conn,"SELECT rolname,has_schema_privilege(rolname,'public','USAGE') FROM pg_roles "
@@ -324,23 +358,34 @@ def migrate_test(db,*,apply):
     SCHEMA_STATE.mkdir(parents=True,exist_ok=True,mode=0o700)
     with (SCHEMA_STATE/'operator.lock').open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX)
+        db.check()
         state=SCHEMA_STATE/'state.json'
         with db.connect() as conn:
             completed=migrate.applied(conn)
             if state.exists():
                 recorded=decode(state.read_bytes())
-                if recorded!={'project_ref':REF,'manifest_sha256':digest}:raise TestUnavailable('original_schema_intent_mismatch')
+                if recorded!={'project_ref':REF,'manifest_sha256':digest,'admission':'empty_namespace_quarantine_committed'}:
+                    raise TestUnavailable('original_schema_admission_not_proven')
             else:
                 if completed:raise TestUnavailable('existing_schema_requires_original_provenance')
-                with state.open('x') as out:
-                    os.chmod(state,0o600);json.dump(dict(project_ref=REF,manifest_sha256=digest),out);out.flush();os.fsync(out.fileno())
                 with conn.transaction():quarantine_empty_public(db,conn)
+                # Only a committed successful admission is resumable. A refused
+                # first attempt leaves no accepted marker for later adoption.
+                with state.open('x') as out:
+                    os.chmod(state,0o600);json.dump(dict(project_ref=REF,manifest_sha256=digest,
+                        admission='empty_namespace_quarantine_committed'),out);out.flush();os.fsync(out.fileno())
+                directory=os.open(SCHEMA_STATE,os.O_RDONLY|os.O_DIRECTORY)
+                try:os.fsync(directory)
+                finally:os.close(directory)
             # A lost preparation ACK is read from namespace permissions, not
             # retried with weaker access or another identity.
             permitted=db.query(conn,"SELECT count(*) FROM pg_roles WHERE rolname IN ('anon','authenticated','service_role') "
                 "AND has_schema_privilege(rolname,'public','USAGE')").fetchone()[0]
             if permitted:raise TestUnavailable('namespace_not_private_keep_unavailable')
-            migrate.up(conn,chain,top)
+            for item in chain:
+                if item['version'] in completed:continue
+                db.check()
+                migrate.up(conn,chain,item['version'])
             if migrate.applied(conn)!=list(range(1,top+1)):raise TestUnavailable('migration_chain_incomplete')
             tables=len(migrate.inventory(conn))
             can_set=db.query(conn,"SELECT pg_has_role(current_user,'cj_m1_runtime','SET')").fetchone()[0]
@@ -371,7 +416,7 @@ def main():
             with db.connect() as conn:
                 row=db.query(conn,"SELECT current_setting('server_version'),to_regclass('cj.schema_migrations') IS NOT NULL").fetchone()
             report=dict(status='PASS',server_version=row[0],migration_ledger_present=row[1])
-        report.update(project_ref=REF,region=REGION,sql_connections=db.connections,instrumented_sql_statements=db.statements,
+        report.update(project_ref=REF,region=REGION,sql_connections=db.connections,client_execute_calls=db.statements,
             actual_cost='UNKNOWN',versions={name:version(name) for name in ('psycopg','httpx','PyJWT')})
         print(json.dumps(report))
         if report['status']=='FAIL':raise SystemExit(1)
