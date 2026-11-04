@@ -128,14 +128,13 @@ public enum MemorySaveResult: Sendable {
         store = pendingStore; transport = interceptedTransport; managementTransport = interceptedTransport; writeEnabled = true; managementEnabled = true; manualWritesAvailable = false; managementStore = managementPendingStore
         managementReadEnabled = true
     }
-    #if DEBUG && targetEnvironment(simulator)
+    #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
     /// Only the explicit signed local MEMORY host (#226). Ordinary/Release
     /// clients remain read-only; this does not enable lifecycle management.
     public init(localEndpoint endpoint: MemoryEndpoint, credentials: @escaping MemoryCredentialCallback,
                 currentBinding: @escaping @MainActor () -> MemoryBinding?, pendingStore: MemoryPendingStore,
                 localTransport: NoRedirectTransport) throws {
-        guard endpoint.url.scheme == "http", endpoint.url.host == "127.0.0.1",
-              let port = endpoint.url.port, (1...65535).contains(port),
+        guard endpoint.allowsDevelopmentActivation,
               endpoint.maximumRequestBytes <= 32768, endpoint.maximumResponseBytes <= 1_000_000 else {
             throw MemoryFailure.unconfigured
         }
@@ -150,8 +149,7 @@ public enum MemorySaveResult: Sendable {
                 localTransport: NoRedirectTransport, managementEndpoint: MemoryEndpoint,
                 managementTransport: NoRedirectTransport, managementPendingStore: MemoryManagementPendingStore) throws {
         for candidate in [endpoint, managementEndpoint] {
-            guard candidate.url.scheme == "http", candidate.url.host == "127.0.0.1",
-                  let port = candidate.url.port, (1...65535).contains(port), candidate.maximumRequestBytes <= 32768 else { throw MemoryFailure.unconfigured }
+            guard candidate.allowsDevelopmentActivation, candidate.maximumRequestBytes <= 32768 else { throw MemoryFailure.unconfigured }
         }
         guard endpoint.maximumResponseBytes <= 1_000_000, managementEndpoint.maximumResponseBytes <= 65536 else { throw MemoryFailure.unconfigured }
         self.endpoint = endpoint; self.managementEndpoint = managementEndpoint

@@ -1,7 +1,8 @@
 # Shell structure acceptance (#157)
 
 M4 的完整本机矩阵、正式构建身份与真机记录入口见
-[M4-ACCEPTANCE](M4-ACCEPTANCE.md)。真机实际执行仍等 #495，不能用模拟器 AX 代替 VoiceOver。
+[M4-ACCEPTANCE](M4-ACCEPTANCE.md)。指定真机的开发测试已获 M4 条目 1、2 授权，
+当前等 JT 连接通知；不能用模拟器 AX 代替 VoiceOver。
 
 Run on an available iOS 17.5 simulator with Xcode's native XCTest input:
 

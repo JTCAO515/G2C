@@ -54,11 +54,14 @@ OS_ACTIVITY_MODE 始终为 disable；继续复用按 identifier 和控件类型�
 上述业务断言与设备无关；当前 Python fixture 驱动仍是模拟器驱动，**不能直接把
 `--simulator` 换成设备 ID**。
 
-当前业务宿主依仓库既定边界只在 DEBUG Simulator 编译，且仅接受显式 IPv4 loopback。
-#495 的 Apple Developer/设备/分发授权之外，实际全流程真机还需批准设备可达的
-测试服务与 App 身份/鉴权接线；在该授权和接线完成前，正式配置只显示未配置 shell，
-不能把编译、手工步骤或模拟器 PASS 当作可用真机业务包。此处不放宽这些边界。
-真机自动化执行和 VoiceOver 保持 #29 UNRUN，TestFlight 保持 #33 UNRUN。
+普通业务宿主继续只在 DEBUG Simulator 编译。M4 条目 1、2 已批准指定 iPhone 的
+开发签名、高德只读展示与合成账号测试；显式本地设备配置可用
+`G2C_M4_DEVICE_ACCEPTANCE` 编译业务宿主，再以 `G2C_M4_LOCAL_HOST` 指定一个
+RFC1918/link-local IPv4 开发机地址及显式端口。现有签名 API、身份隔离、原动作和
+路由限制不变。Release/Production 不编译该接线，也不含本地网络 ATS 放行。
+具体 SDK、Bundle ID、Key 与网络步骤见 [M4-AMAP-LOCAL](M4-AMAP-LOCAL.md)。
+JT 通知连接设备后才执行签名、安装和验收；编译、手工步骤和模拟器 PASS 均不计
+真机 PASS。真机自动化及 VoiceOver 保持 #29 UNRUN，TestFlight 保持 #33 UNRUN。
 
 ## #4 的候选矩阵
 
