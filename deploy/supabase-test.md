@@ -56,8 +56,9 @@ namespace USAGE 已实际拒绝；没有据此把 advisor 标成清零，也不�
 新 `SupabaseTestDatabase` 只接受指定 G2C 项目、5432 session 模式与独立
 `cj_m1_runtime` 连接。旧本机 Unix-socket 校验、scope/owner 与交易 LOCAL binder 保留。
 6543 transaction 模式不允许作为应用连接：对某一物理后端做 RESET，不能清空将来借用的其他后端。
-应用每次 checkout 验真实登录角色与 `pg_stat_ssl.ssl=true`，然后在其独占 session 后端执行
-`DISCARD ALL`，复核所有既有权限 GUC 为空，才进入原 LOCAL scope 绑定。
+应用每次 checkout 验 `current_user=session_user=cj_m1_runtime` 与 `pg_stat_ssl.ssl=true`，
+然后在其独占 session 后端执行 `DISCARD ALL`，复核重置后实际身份、TLS及既有权限 GUC 为空，
+才进入原 LOCAL scope 绑定；构造后新出现的PG/LIBPQ/SSLKEYLOGFILE环境污染同样拒绝。
 未加密、错角色、未重置或无法证明，均拒绝业务查询；不以客户端 TLS 代称内部加密。
 
 云端 SSL 强制设置应在指定项目 Database Settings 的 SSL configuration 中启用，随后实测两段。
@@ -69,15 +70,21 @@ JT 在本轮已批准仅为既有运行角色设置随机密码，记录在 #495
 确认数据库侧 TLS 后，将原凭据存 Keychain `g2c-supabase-runtime-db`；使用 libpq
 `encrypt_password(..., scram-sha-256)` 构造密码变更，不在 SQL 里传明文密码、不 GRANT 或新建角色。
 变更意图先持久；再次执行只验证原凭据，不重置密码，不把未知提交当没执行。
+创建/变更前验证成员资格、对象所有权与完整限制，读回仍要求独立登录和数据库侧TLS；
+Mac仅对这个新批准条目使用系统Keychain API，密码不进入进程argv，不解锁/修改ACL或自动批准系统弹窗。
+如系统要求用户交互，拒绝并保留原意图；旧模型Key的系统交接不由此绕过。
 服务器只消费后续600环境文件，脚本与报告不输出连接串、密码、SCRAM verifier。
 
 `scripts/supabase_pool_gate.py run --ca-file CA` 先在私有PG用原签名 API/Fake/确认生成两个
 随机合成 scope 的完整12表正例，再复制到固定云项目。真实运行角色须逐表验证双方非空正例，
-同物理后端 commit/rollback 后的无scope SELECT/UPDATE/INSERT 拒绝，再由下一主体读取自家数据；
+绑定A/B时逐表直接检验对方SELECT/UPDATE/INSERT被拒绝，并核原表写权限存在，
+不能用WHERE own掩盖跨主体可见性；同物理后端 commit/rollback 后的无scope负例也继续核对。
 还覆盖正常/异常断开，再借用时应用强制重置与完整12表负例。异常只切断本脚本自己的客户端，
 不对任意服务器PID执行 terminate。供应商是否复用了同一后端按实测列出，不能把换PID称reset证明。
 负向写入均置于强制回滚交易；只清理由本批次签名源生成且完整hash未变的自有合成数据。
-原 run 已存在时只读，不另开新scope、重发SQL或清空未知数据。
+原 run 已存在时只读查询云端原两组scope，区分EMPTY_CONFIRMED、OWNED_SEED_MATCH、
+HOLD_CHANGED_OR_PARTIAL，不凭本机JSON证明COMMIT；不另开新scope或重发写入。
+显式 `cleanup` 仅在原完整hash仍吻合时清理，内容改变则保持不可用；所有管理员清理连接也先验身份/TLS。
 
 本地 `supabase_pool_reset` 组只验证真实 Unix PG 的12表/重置机制，明确没有云或TLS证明；
 实际云测试、运行角色、双段TLS与费用必须另在 #30/PR 记录 PASS/FAIL/UNRUN/UNKNOWN。

@@ -29,7 +29,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'scripts'))
 sys.path.insert(0,str(ROOT/'backend/agent/tests'))
 from cj_api.local_app import LocalDatabase,create_local_app,scope_for,ISSUER,_require_unbound
-from cj_api.supabase_test_database import decode_uri,pin_ca,current_authorization,discard_session
+from cj_api.supabase_test_database import decode_uri,pin_ca,current_authorization,discard_session,require_environment,require_identity
 from cj_agent.draft import trip_scope_for
 from cj_message.domain import Service as MessageService
 from cj_trip.confirmation import ConfirmationSigner
@@ -96,11 +96,17 @@ def canonical(value):
 class Query:
     def __init__(self):self.count=0;self.connections=0
     def execute(self,conn,statement,parameters=None):
-        current_authorization();self.count+=1
+        current_authorization();require_environment();self.count+=1
         return conn.execute(statement,parameters)
-    def connect(self,config):
-        current_authorization();self.connections+=1
-        return psycopg.connect(**config,autocommit=True,prepare_threshold=None)
+    def connect(self,config,*,operator=False):
+        current_authorization();require_environment();self.connections+=1
+        connection=psycopg.connect(**config,autocommit=True,prepare_threshold=None)
+        try:
+            require_identity(connection,'postgres' if operator else 'cj_m1_runtime')
+            return connection
+        except BaseException:
+            connection.close()
+            raise
 
 
 def rows(conn,table,scopes,query,*,lock=False):
@@ -143,10 +149,32 @@ def unbound_negatives(conn,templates,query):
         else:raise GateFailure('RLS_specific_insert_refusal_required')
 
 
+def bound_negatives(conn,own,other,data,query):
+    for table in TABLES:
+        relation=sql.Identifier(table)
+        own_scope=trip_scope_for(own) if table.startswith('cj_trip_') else own
+        other_scope=trip_scope_for(other) if table.startswith('cj_trip_') else other
+        privileges=query.execute(conn,"SELECT has_table_privilege(current_user,%s,'SELECT'),has_table_privilege(current_user,%s,'UPDATE'),has_table_privilege(current_user,%s,'INSERT')",(table,table,table)).fetchone()
+        if privileges!=(True,True,True):raise GateFailure('positive_table_privileges_required_for_negative_probe')
+        if query.execute(conn,sql.SQL('SELECT count(*) FROM {} WHERE scope<>%s').format(relation),(own_scope,)).fetchone()!=(0,):
+            raise GateFailure('bound_foreign_read_not_denied')
+        with conn.transaction(force_rollback=True):
+            if query.execute(conn,sql.SQL('UPDATE {} SET scope=scope WHERE scope=%s RETURNING scope').format(relation),(other_scope,)).fetchall():
+                raise GateFailure('bound_foreign_update_not_denied')
+        foreign=[row for row in data[table] if row['scope']==other_scope]
+        if not foreign:raise GateFailure('foreign_positive_fixture_required')
+        try:
+            with conn.transaction(force_rollback=True):insert(conn,table,foreign[0],query)
+        except psycopg.errors.InsufficientPrivilege:pass
+        except psycopg.Error:raise GateFailure('bound_foreign_insert_did_not_produce_permission_refusal') from None
+        else:raise GateFailure('bound_foreign_insert_not_denied')
+
+
 def fixture(root,subjects):
     """Original signed Trip flow; no callback or handcrafted private records."""
     with pg_suites.cluster('pool_gate_source',port=55883,role='cj_pool_gate_source',root=root/'pg',socket=root/'s') as config:
-        with psycopg.connect(**config,autocommit=True) as conn:migrate.up(conn,migrate.load(),48)
+        with psycopg.connect(**config,autocommit=True) as conn:
+            chain=migrate.load();migrate.up(conn,chain,chain[-1]['version'])
         conninfo=root/'conn.json';conninfo.write_text(json.dumps(config))
         auth=root/'auth';dev_auth.init(auth,list(subjects))
         with patch.dict(os.environ,{'CJ_E2E_CONNINFO':str(conninfo)}):
@@ -174,8 +202,9 @@ def fixture(root,subjects):
         return data
 
 
-def scoped_sequence(conn,first,second,rollback,pid,query):
+def scoped_sequence(conn,first,second,rollback,pid,query,data,identity_check):
     discard_session(conn)
+    identity_check(conn)
     templates={}
     with conn.transaction(force_rollback=rollback):
         query.execute(conn,"SELECT set_config('cj.message_scope',%s,true),set_config('cj.trip_scope',%s,true)",(first,trip_scope_for(first)))
@@ -183,6 +212,7 @@ def scoped_sequence(conn,first,second,rollback,pid,query):
             values=rows(conn,table,[first,trip_scope_for(first)],query)
             if not values:raise GateFailure('positive_RLS_seed_not_visible')
             templates[table]=values[0]
+        bound_negatives(conn,first,second,data,query)
     with conn.cursor() as cursor:_require_unbound(cursor)
     if query.execute(conn,'SELECT pg_backend_pid()').fetchone()[0]!=pid:raise GateFailure('physical_session_changed')
     unbound_negatives(conn,templates,query)
@@ -192,16 +222,16 @@ def scoped_sequence(conn,first,second,rollback,pid,query):
             values=rows(conn,table,[second,trip_scope_for(second)],query)
             expected=trip_scope_for(second) if table.startswith('cj_trip_') else second
             if not values or {v['scope'] for v in values}!={expected}:raise GateFailure('next_owner_scope_mismatch')
+        bound_negatives(conn,second,first,data,query)
 
 
-def matrix(config,scopes,query):
+def matrix(config,scopes,data,query):
     outcomes=[]
     for rollback in (False,True):
         for first,second in (scopes,scopes[::-1]):
             with query.connect(config) as conn:
-                identity=query.execute(conn,"SELECT current_user,(SELECT ssl FROM pg_stat_ssl WHERE pid=pg_backend_pid()),pg_backend_pid()").fetchone()
-                if identity[:2]!=('cj_m1_runtime',True):raise GateFailure('actual_runtime_TLS_required')
-                scoped_sequence(conn,first,second,rollback,identity[2],query)
+                pid=query.execute(conn,'SELECT pg_backend_pid()').fetchone()[0]
+                scoped_sequence(conn,first,second,rollback,pid,query,data,lambda c:require_identity(c,'cj_m1_runtime'))
                 outcomes.append(dict(rollback=rollback,tables=12,same_physical_backend=True,positive_and_unbound_SELECT_UPDATE_INSERT='PASS'))
     return outcomes
 
@@ -213,6 +243,7 @@ def disconnects(config,scopes,data,query):
             first=query.execute(conn,"SELECT current_user,(SELECT ssl FROM pg_stat_ssl WHERE pid=pg_backend_pid()),pg_backend_pid()").fetchone()
             if first[:2]!=('cj_m1_runtime',True):raise GateFailure('actual_runtime_TLS_required')
             discard_session(conn)
+            require_identity(conn,'cj_m1_runtime')
             query.execute(conn,"SELECT set_config('cj.message_scope',%s,false),set_config('cj.trip_scope',%s,false)",(scopes[0],trip_scope_for(scopes[0])))
             if abrupt:
                 # Drop only our client's connection; no server-side terminate,
@@ -226,20 +257,61 @@ def disconnects(config,scopes,data,query):
             if next_[:2]!=('cj_m1_runtime',True):raise GateFailure('actual_runtime_TLS_required')
             before=('UNKNOWN_different_backend' if next_[2]!=first[2] else
                     'OBSERVED_RETAINED' if any(x not in ('',None) for x in next_[3:]) else 'OBSERVED_CLEAN')
-            discard_session(conn);unbound_negatives(conn,templates,query)
+            discard_session(conn);require_identity(conn,'cj_m1_runtime')
+            unbound_negatives(conn,templates,query)
             with conn.transaction():
                 query.execute(conn,"SELECT set_config('cj.message_scope',%s,true),set_config('cj.trip_scope',%s,true)",(scopes[1],trip_scope_for(scopes[1])))
                 for table in TABLES:
                     if not rows(conn,table,[scopes[1],trip_scope_for(scopes[1])],query):raise GateFailure('post_disconnect_positive_seed_missing')
+                bound_negatives(conn,scopes[1],scopes[0],data,query)
             result.append(dict(abrupt=abrupt,supplier_reset_observation=before,application_reset_and_12_table_gate='PASS'))
     return result
+
+
+def original_observation(conn,state,query):
+    scopes=state['scopes']+[trip_scope_for(s) for s in state['scopes']]
+    actual={t:rows(conn,t,scopes,query) for t in TABLES}
+    empty=all(not values for values in actual.values())
+    matched=not empty and digest(actual)==state['expected_sha256']
+    return dict(status='EMPTY_CONFIRMED' if empty else 'OWNED_SEED_MATCH' if matched else 'HOLD_CHANGED_OR_PARTIAL',
+                counts={t:len(v) for t,v in actual.items()},actual_sha256=digest(actual))
+
+
+def cleanup_owned(conn,state,path,query):
+    scopes=state['scopes']+[trip_scope_for(s) for s in state['scopes']]
+    with conn.transaction():
+        query.execute(conn,'SET TRANSACTION ISOLATION LEVEL SERIALIZABLE')
+        actual={t:rows(conn,t,scopes,query,lock=True) for t in TABLES}
+        if all(not values for values in actual.values()):return 'ALREADY_EMPTY_CONFIRMED'
+        if digest(actual)!=state['expected_sha256']:raise GateFailure('owned_seed_changed_cleanup_withheld')
+        state['state']='CLEANUP_INTENT';save(path,state)
+        for table in reversed(TABLES):query.execute(conn,sql.SQL('DELETE FROM {} WHERE scope=ANY(%s)').format(sql.Identifier(table)),(scopes,))
+    if original_observation(conn,state,query)['status']!='EMPTY_CONFIRMED':raise GateFailure('owned_gate_cleanup_unconfirmed')
+    return 'CONFIRMED_empty_owned_scopes'
+
+
+def reconcile(ca,state,*,cleanup=False,path=None):
+    current_authorization();query=Query()
+    with pin_ca(ca) as pinned:
+        config=dict(decode_uri(keychain('g2c-supabase-db'),operator=True),sslrootcert=pinned.name)
+        with query.connect(config,operator=True) as conn:
+            observation=original_observation(conn,state,query)
+            cleared=None
+            if cleanup:
+                if observation['status']=='HOLD_CHANGED_OR_PARTIAL':raise GateFailure('owned_seed_changed_cleanup_withheld')
+                cleared=cleanup_owned(conn,state,path,query)
+                state['cleanup']='CONFIRMED_empty_owned_scopes';save(path,state)
+                observation=original_observation(conn,state,query)
+    return dict(mode='RECONCILED_CLEANUP' if cleanup else 'READ_ONLY_ORIGINAL',result=state,
+                cloud_observation=observation,cleanup=cleared,new_data_writes=0 if not cleanup else 'original_owned_cleanup_only',
+                instrumented_execute_calls=query.count,total_SQL='UNKNOWN',actual_cost='UNKNOWN')
 
 
 def run(ca):
     current_authorization();STATE.mkdir(parents=True,exist_ok=True,mode=0o700)
     with (STATE/'lock').open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX);path=STATE/'state.json'
-        if path.exists():return dict(mode='READ_ONLY_ORIGINAL',result=load_state(path),new_SQL=0)
+        if path.exists():return reconcile(ca,load_state(path))
         batch=secrets.token_hex(12);subjects=['m4-synthetic-cloud-gate-'+batch+'-'+label for label in ('a','b')]
         scopes=[scope_for(ISSUER,s) for s in subjects];all_scopes=scopes+[trip_scope_for(s) for s in scopes]
         with tempfile.TemporaryDirectory(prefix='cj-cloud-gate-source-') as directory:
@@ -249,7 +321,8 @@ def run(ca):
         with pin_ca(ca) as pinned:
             operator=dict(decode_uri(keychain('g2c-supabase-db'),operator=True),sslrootcert=pinned.name)
             runtime=dict(decode_uri(keychain('g2c-supabase-runtime-db')),sslrootcert=pinned.name)
-            with query.connect(operator) as conn:
+            with query.connect(operator,operator=True) as conn:
+                if migrate.applied(conn)!=[m['version'] for m in migrate.load()]:raise GateFailure('exact_application_schema_required')
                 if query.execute(conn,'SELECT ssl FROM pg_stat_ssl WHERE pid=pg_backend_pid()').fetchone()!=(True,):raise GateFailure('database_side_TLS_required')
                 if any(rows(conn,t,all_scopes,query) for t in TABLES):raise GateFailure('owned_random_scopes_already_exist')
                 state['state']='SEED_INTENT';save(path,state)
@@ -258,27 +331,31 @@ def run(ca):
                         for row in data[table]:insert(conn,table,row,query)
                 state['state']='SEEDED';save(path,state)
             try:
-                state['matrix']=matrix(runtime,scopes,query)
+                state['matrix']=matrix(runtime,scopes,data,query)
                 state['disconnects']=disconnects(runtime,scopes,data,query)
             finally:
                 # Re-read the original state before cleanup, including after any
                 # uncertain test operation. Refuse mixed/changed owned contents.
-                with query.connect(operator) as conn:
-                    with conn.transaction():
-                        query.execute(conn,'SET TRANSACTION ISOLATION LEVEL SERIALIZABLE')
-                        actual={t:rows(conn,t,all_scopes,query,lock=True) for t in TABLES}
-                        if digest(actual)!=state['expected_sha256']:raise GateFailure('owned_seed_changed_cleanup_withheld')
-                        state['state']='CLEANUP_INTENT';save(path,state)
-                        for table in reversed(TABLES):query.execute(conn,sql.SQL('DELETE FROM {} WHERE scope=ANY(%s)').format(sql.Identifier(table)),(all_scopes,))
-                    if any(rows(conn,t,all_scopes,query) for t in TABLES):raise GateFailure('owned_gate_cleanup_unconfirmed')
-                state['cleanup']='CONFIRMED_empty_owned_scopes';save(path,state)
+                primary=sys.exception()
+                try:
+                    with query.connect(operator,operator=True) as conn:
+                        cleanup_owned(conn,state,path,query)
+                    state['cleanup']='CONFIRMED_empty_owned_scopes';save(path,state)
+                except Exception as cleanup_error:
+                    if primary is None:raise
+                    primary.add_note('owned cleanup unconfirmed; inspect original cloud state before further action')
+                    print(json.dumps(dict(event='OWNED_CLEANUP_UNCONFIRMED',error_type=type(cleanup_error).__name__)),file=sys.stderr)
         state.update(state='COMPLETE',instrumented_execute_calls=query.count,total_SQL='UNKNOWN',connections=query.connections,actual_cost='UNKNOWN');save(path,state)
         return dict(mode='EXECUTED',result=state)
 
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('command',choices=('run','inspect'));parser.add_argument('--ca-file',type=Path,required=True);args=parser.parse_args()
-    result=run(args.ca_file) if args.command=='run' else dict(mode='READ_ONLY',result=load_state(STATE/'state.json'))
+    parser=argparse.ArgumentParser();parser.add_argument('command',choices=('run','inspect','cleanup'));parser.add_argument('--ca-file',type=Path,required=True);args=parser.parse_args()
+    if args.command=='run':result=run(args.ca_file)
+    else:
+        with (STATE/'lock').open('a') as lock:
+            fcntl.flock(lock,fcntl.LOCK_EX)
+            path=STATE/'state.json';result=reconcile(args.ca_file,load_state(path),cleanup=args.command=='cleanup',path=path)
     print(json.dumps(result,separators=(',',':')))
 
 

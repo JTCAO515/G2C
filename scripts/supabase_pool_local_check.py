@@ -1,5 +1,5 @@
 """Private Unix PG only: actual twelve-table/reset mechanics, no cloud/TLS claim."""
-import os
+import json,os
 from pathlib import Path
 import sys
 import tempfile
@@ -12,6 +12,10 @@ sys.path.insert(0,str(ROOT/'scripts'))
 import migrate,pg_suites
 import supabase_pool_gate as gate
 from cj_api.local_app import ISSUER,scope_for
+
+
+def local_identity(conn):
+    assert conn.execute("SELECT current_user,session_user,(SELECT ssl FROM pg_stat_ssl WHERE pid=pg_backend_pid())").fetchone()==('cj_m1_runtime','cj_m1_runtime',False)
 
 
 def main():
@@ -31,7 +35,34 @@ def main():
                 for rollback in (False,True):
                     for first,second in (scopes,scopes[::-1]):
                         conn.execute("SELECT set_config('cj.message_scope',%s,false),set_config('cj.trip_scope',%s,false)",('retained-prior-session','retained-prior-session'))
-                        gate.scoped_sequence(conn,first,second,rollback,identity[2],query)
+                        gate.scoped_sequence(conn,first,second,rollback,identity[2],query,data,local_identity)
+            # A broken policy accepting every nonempty scope used to pass the
+            # gate. Inject it only into this private fixture, never a cloud DB.
+            with psycopg.connect(**config,autocommit=True) as conn:
+                from psycopg import sql
+                for (policy,) in conn.execute("SELECT policyname FROM pg_policies WHERE tablename='cj_message_scope' AND permissive='RESTRICTIVE'"):
+                    conn.execute(sql.SQL('DROP POLICY {} ON cj_message_scope').format(sql.Identifier(policy)))
+                conn.execute("CREATE POLICY review_fault ON cj_message_scope TO cj_m1_runtime USING (nullif(current_setting('cj.message_scope',true),'') IS NOT NULL) WITH CHECK (nullif(current_setting('cj.message_scope',true),'') IS NOT NULL)")
+            with psycopg.connect(**dict(config,user='cj_m1_runtime'),autocommit=True) as conn:
+                try:gate.scoped_sequence(conn,scopes[0],scopes[1],False,conn.info.backend_pid,query,data,local_identity)
+                except gate.GateFailure as error:assert error.args[0]=='bound_foreign_read_not_denied'
+                else:raise AssertionError('cross-owner permissive policy incorrectly passed gate')
+            # Commit-ack-loss reconciliation reads the original owned contents;
+            # local JSON alone never proves a cloud commit or cleanup outcome.
+            state=dict(state='SEEDED',scopes=scopes,expected_sha256=gate.digest(data))
+            with psycopg.connect(**config,autocommit=True) as conn:
+                assert gate.original_observation(conn,state,query)['status']=='OWNED_SEED_MATCH'
+                conn.execute('DELETE FROM cj_message_draft WHERE scope=%s',(scopes[0],))
+                assert gate.original_observation(conn,state,query)['status']=='HOLD_CHANGED_OR_PARTIAL'
+                try:gate.cleanup_owned(conn,state,root/'changed-state.json',query)
+                except gate.GateFailure as error:assert error.args[0]=='owned_seed_changed_cleanup_withheld'
+                else:raise AssertionError('changed original data was cleared')
+                for row in data['cj_message_draft']:
+                    if row['scope']==scopes[0]:gate.insert(conn,'cj_message_draft',row,query)
+                assert gate.original_observation(conn,state,query)['status']=='OWNED_SEED_MATCH'
+                gate.cleanup_owned(conn,state,root/'unknown-cleanup.json',query)
+                assert gate.original_observation(conn,state,query)['status']=='EMPTY_CONFIRMED'
+                assert json.loads((root/'unknown-cleanup.json').read_text())['state']=='CLEANUP_INTENT'
     print('PASS actual local Unix PG: signed seed, same-session DISCARD ALL, commit/rollback two-owner positive and all12 unbound SELECT/UPDATE/INSERT negatives; cloud/TLS/real keys UNRUN')
 
 

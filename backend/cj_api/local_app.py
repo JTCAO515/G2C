@@ -333,6 +333,12 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
     if database is None:
         database = LocalDatabase(conninfo_path,run_context=run_context,travel_context=travel_context,
                                  needs_context=needs_profile is not None,trip_context=trip_context,edit_configuration=edit_configuration)
+    else:
+        from .supabase_test_database import SupabaseTestDatabase
+        if type(database) not in (LocalDatabase,SupabaseTestDatabase):
+            raise CompositionUnavailable('explicit supported host database required')
+        if type(database) is SupabaseTestDatabase and cleanup_configuration is not None:
+            raise CompositionUnavailable('local cleanup identity is not approved for the cloud profile')
     keys = StaticPublicKeys({KEY_ID: VerificationKey('RS256', (auth_dir / 'public.pem').read_bytes())})
     config = JWTConfiguration(ISSUER, AUDIENCE, 'RS256', 0)
     access=base_access=InvitedSubjects(auth_dir/'invited.json')

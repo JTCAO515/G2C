@@ -29,10 +29,16 @@ def current_authorization():
         raise CompositionUnavailable('Supabase synthetic test authorization expired')
 
 
+def require_environment():
+    if (os.environ.get('CJ_ENV')!='local' or any(k.startswith(('PG','LIBPQ')) for k in os.environ)
+            or 'SSLKEYLOGFILE' in os.environ):
+        raise CompositionUnavailable('explicit unpolluted Supabase test environment required')
+
+
 def decode_uri(uri,*,operator=False):
     current_authorization()
-    if (os.environ.get('CJ_ENV')!='local' or any(k.startswith(('PG','LIBPQ')) for k in os.environ)
-            or 'SSLKEYLOGFILE' in os.environ or type(uri) is not str or not uri.startswith(('postgres://','postgresql://'))):
+    require_environment()
+    if type(uri) is not str or not uri.startswith(('postgres://','postgresql://')):
         raise CompositionUnavailable('explicit authorized Supabase test connection required')
     try:config=conninfo_to_dict(uri)
     except psycopg.Error:raise CompositionUnavailable('invalid Supabase test URI') from None
@@ -49,6 +55,12 @@ def decode_uri(uri,*,operator=False):
 def discard_session(connection):
     connection.execute('DISCARD ALL')
     with connection.cursor() as cursor:_require_unbound(cursor)
+
+
+def require_identity(connection,role):
+    current_authorization();require_environment()
+    if connection.execute("SELECT current_user,session_user,(SELECT ssl FROM pg_stat_ssl WHERE pid=pg_backend_pid())").fetchone()!=(role,role,True):
+        raise CompositionUnavailable('independent login and database-side TLS required')
 
 
 def pin_ca(ca_file):
@@ -73,16 +85,15 @@ class SupabaseTestDatabase(LocalDatabase):
         if self._ca is not None:self._ca.close()
 
     def _open_runtime_connection(self):
-        current_authorization()
+        current_authorization();require_environment()
         conn=psycopg.connect(**self.conninfo,autocommit=True,prepare_threshold=None)
         try:
-            row=conn.execute("SELECT current_user,(SELECT ssl FROM pg_stat_ssl WHERE pid=pg_backend_pid())").fetchone()
-            if row!=('cj_m1_runtime',True):
-                raise CompositionUnavailable('runtime login and pooler-to-database TLS required')
+            require_identity(conn,'cj_m1_runtime')
             # Owned session-mode physical backend: this is an explicit reset,
             # never overwriting a retained scope with a new tenant's value.
             discard_session(conn)
-            current_authorization()
+            require_identity(conn,'cj_m1_runtime')
+            current_authorization();require_environment()
             return conn
         except BaseException:
             conn.close()
