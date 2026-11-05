@@ -180,9 +180,19 @@ import Foundation
         let content=app.staticTexts["memory.detail.text"]
         let ready=XCTNSPredicateExpectation(predicate:NSPredicate(format:"label == %@",current.command.text),object:content)
         XCTAssertEqual(XCTWaiter.wait(for:[ready],timeout:15),.completed)
-        XCTAssertTrue(app.staticTexts[(language=="en" ? "Version, ":"版本, ")+String(current.version)].exists)
-        XCTAssertTrue(app.staticTexts[(language=="en" ? "Source version, ":"来源版本, ")+String(current.command.source_version)].exists)
-        XCTAssertTrue(app.staticTexts[(language=="en" ? "Source, ":"来源, ")+current.command.source_id].exists)
+        let metadata=[(language=="en" ? "Version":"版本",String(current.version)),
+                      (language=="en" ? "Source version":"来源版本",String(current.command.source_version)),
+                      (language=="en" ? "Source":"来源",current.command.source_id)]
+        for (name,value) in metadata {
+            #if G2C_M4_DEVICE_ACCEPTANCE
+            // iOS27 localizes LabeledContent's AX separator; values remain exact.
+            let row=app.staticTexts.matching(NSPredicate(format:"label IN %@",[name+", "+value,name+"、"+value]))
+            deviceSession.revealControl(row.element,in:app)
+            XCTAssertEqual(row.count,1);XCTAssertTrue(row.element.exists)
+            #else
+            XCTAssertTrue(app.staticTexts[name+", "+value].exists)
+            #endif
+        }
         return current
     }
     func success(language: String, large: Bool) async throws {
