@@ -13,7 +13,7 @@ from pathlib import Path
 import re
 from types import MappingProxyType
 
-from cj_agent.provider import DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,M4_NATIVE_ANSWER_PROFILE,ProviderUnknown,ProviderFailed
+from cj_agent.provider import DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,M4_NATIVE_TURN_PROFILE,ProviderUnknown,ProviderFailed
 from cj_fact.contract_v1 import decode_query as fact_query
 from cj_fact.live_source import NOTICE_URL,WEATHER_URL,public_page,weather
 from cj_fact.policy import FactFailure
@@ -162,8 +162,7 @@ class RealTools:
             raise BudgetUnknown('M4 model registration mismatch')
         raw=canonical(dict(messages=messages,system=system,endpoint=M4_BASE,model=M4_MODEL,synthetic_only=True,
                            native_tools=self.native_tools if system==TOOL_SYSTEM else None,
-                           **({'answer_format_profile':M4_NATIVE_ANSWER_PROFILE} if system==TOOL_SYSTEM else {}),
-                           **({'tool_choice':'none'} if final_answer else {})))
+                           **({'native_turn_profile':M4_NATIVE_TURN_PROFILE,'external_tools_disabled':final_answer} if system==TOOL_SYSTEM else {})))
         inputs=json.loads(raw);metadata={}
         def bind(operation,guard):
             self.services.require_scope(operation.binding.scope)
@@ -175,7 +174,8 @@ class RealTools:
             def invoke():
                 self.services.require_scope(operation.binding.scope)
                 yield from self.services.model.invoke(inputs['messages'],inputs['system'],operation.command.attempt_id,
-                    tools=inputs['native_tools'],receipt=metadata,guard=admitted,native_reply=native_reply,tool_choice=inputs.get('tool_choice'))
+                    tools=inputs['native_tools'],receipt=metadata,guard=admitted,native_reply=native_reply,
+                    native_turn_profile=inputs.get('native_turn_profile'),final_answer=inputs.get('external_tools_disabled',False))
             return invoke
         return InvocationInput(raw,None,bind,_receipt(metadata))
 
@@ -246,6 +246,7 @@ class RealTools:
                 return
             assistant=native_reply['assistant']
             messages.append(assistant)
+            results=[]
             for index,call in enumerate(turn.calls):
                 key='tool.'+str(round_index)+'.'+str(index)
                 ref='op-'+hashlib.sha256((binding.run_id+'\0'+key).encode()).hexdigest()
@@ -259,6 +260,7 @@ class RealTools:
                     raise ProviderFailed('place service permission denied; operator action required')
                 source=data.get('source',{}).get('endpoint') if name=='place' else data['source_url']
                 if source:yield ('来源：' if chinese else 'Source: ')+source+'\n'
-                messages.append(dict(role='tool',tool_call_id=assistant['tool_calls'][index]['id'],
-                    content=canonical(dict(tool=name,result=data)).decode()))
+                results.append(dict(index=index,name=call.name,tool=name,result=data))
+            messages.append(dict(role='tool',tool_call_id=assistant['tool_calls'][0]['id'],
+                content=canonical(dict(results=results)).decode()))
         raise BudgetUnknown('M4 tool round limit reached')

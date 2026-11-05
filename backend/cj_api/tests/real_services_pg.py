@@ -20,11 +20,11 @@ from cj_run.step_usage import ledger_scope_for
 import local_history_pg as harness
 import local_run_context as operator
 import run_worker
-from test_m4_real_services import sse,KEY,NOW
+from test_m4_real_services import turn_sse,KEY,NOW
 
 
 def exercise(auth,conninfo):
-    subjects=['m4-synthetic-'+v for v in ('ok','limit','unknown','malformed','late','permission','revoke','repeat','tail','tailbad')]
+    subjects=['m4-synthetic-'+v for v in ('ok','limit','unknown','malformed','late','permission','revoke','repeat','tail','tailbad','batch','batchfail')]
     harness.dev_auth.init(auth,subjects)
     now=int(time.time());profiles={}
     for subject in subjects:
@@ -38,6 +38,7 @@ def exercise(auth,conninfo):
     tool_calls=[];model_calls=[]
     async def place(config,request,credentials,*,before_send=None,basic=False):
         tool_calls.append(request.request_ref)
+        if subject.endswith('batchfail') and request.query.keyword=='synthetic-B':raise OSError('synthetic second source failed after admission')
         raw=json.dumps(dict(status='1',info='OK',infocode='10000',count='1',pois=[dict(id='SYNTH_ONLY',name='合成资料',location='116.1,39.1')])).encode()
         if subject.endswith('permission'):raw=b'{"status":"0","info":"INSUFFICIENT_PRIVILEGES","infocode":"10012"}'
         return TransportResult('received','fixture',Response(request.binding_digest,request.origin,request.path,200,raw,datetime.now(timezone.utc)))
@@ -55,27 +56,40 @@ def exercise(auth,conninfo):
             model_calls.append(subject)
             if subject.endswith('unknown'):raise httpx.ReadTimeout('synthetic unknown')
             body=json.loads(request.content)
-            assert body['response_format']['type']=='json_schema'
-            assert body['response_format']['json_schema']['strict'] is True
-            assert set(body['response_format']['json_schema']['schema']['required'])=={'zh','en'}
+            assert body['tool_choice']=={'type':'function','function':{'name':'m4_tool_turn'}}
+            assert 'response_format' not in body
             follow=any(m['role']=='tool' and 'tool_call_id' in m for m in body['messages'])
             if follow:
                 assistant=next(m for m in reversed(body['messages']) if m['role']=='assistant')
                 result=body['messages'][-1]
                 assert result['role']=='tool' and result['tool_call_id']==assistant['tool_calls'][0]['id']
-                assert assistant['tool_calls'][0]['function']['name']=='place_search'
+                assert assistant['tool_calls'][0]['function']['name']=='m4_tool_turn'
+                prior=json.loads(assistant['tool_calls'][0]['function']['arguments'])
+                assert prior['calls'][0]['name']=='place_search'
+                assert json.loads(result['content'])['results'][0]['name']=='place_search'
+                if subject.endswith('batch'):
+                    results=json.loads(result['content'])['results']
+                    assert [(r['index'],r['name']) for r in results]==[(0,'place_search'),(1,'place_search')]
                 if subject.endswith('ok'):assert assistant['content']=='Synthetic preface; checking the location.'
             if subject.endswith('revoke') and not follow:
                 (auth/'invited.json').write_text(json.dumps([s for s in subjects if s!=subject]))
-            payload=sse(tool=not follow or subject.endswith('repeat')).replace('chatcmpl-synthetic','chatcmpl-synthetic-'+str(len(model_calls)))
+            payload=turn_sse(tool=not follow or subject.endswith('repeat')).replace('chatcmpl-synthetic','chatcmpl-synthetic-'+str(len(model_calls)))
+            if subject.endswith(('batch','batchfail')) and not follow:
+                event=json.loads(payload.splitlines()[0][6:]);call=event['choices'][0]['delta']['tool_calls'][0]
+                turn=json.loads(call['function']['arguments']);first=turn['calls'][0]
+                turn['calls']=[dict(name=first['name'],arguments={**first['arguments'],'keyword':word}) for word in ('synthetic-A','synthetic-B')]
+                call['function']['arguments']=json.dumps(turn)
+                payload='data: '+json.dumps(event)+'\n\n'+'\n'.join(payload.splitlines()[2:])
             if subject.endswith(('tail','tailbad')):
-                final=body.get('tool_choice')=='none'
+                final=body['tools'][0]['function']['parameters']['properties']['kind']['enum']==['answer']
                 assert final==(sum(m['role']=='tool' for m in body['messages'])==7)
-                payload=sse(tool=not final or subject.endswith('tailbad')).replace('chatcmpl-synthetic','chatcmpl-synthetic-'+str(len(model_calls)))
+                payload=turn_sse(tool=not final or subject.endswith('tailbad')).replace('chatcmpl-synthetic','chatcmpl-synthetic-'+str(len(model_calls)))
                 if not final or subject.endswith('tailbad'):
                     event=json.loads(payload.splitlines()[0][6:]);call=event['choices'][0]['delta']['tool_calls'][0]
                     call['id']='call_synthetic_'+str(len(model_calls))
-                    call['function']['arguments']=json.dumps(dict(keyword='synthetic-'+str(len(model_calls)),city='北京',page=1,page_size=1))
+                    turn=json.loads(call['function']['arguments'])
+                    turn['calls'][0]['arguments']['keyword']='synthetic-'+str(len(model_calls))
+                    call['function']['arguments']=json.dumps(turn)
                     payload='data: '+json.dumps(event)+'\n\n'+'\n'.join(payload.splitlines()[2:])
             if subject.endswith('ok') and not follow:
                 value=json.loads(payload.splitlines()[0][6:]);value['choices'][0]['delta']['content']='Synthetic preface; checking the location.'
@@ -113,6 +127,13 @@ def exercise(auth,conninfo):
             elif subject.endswith('repeat'):
                 assert outcomes[0].status=='failed' and model.calls==2 and len(tool_calls)==before+1
                 assert [(r['kind'],r['state']) for r in budget.inspect()]==[('model','RECEIVED'),('place','RECEIVED'),('model','RECEIVED')]
+            elif subject.endswith(('batch','batchfail')):
+                failed=subject.endswith('batchfail')
+                assert outcomes[0].status==('unknown' if failed else 'completed') and model.calls==(1 if failed else 2)
+                assert len(tool_calls)==before+2
+                expected=[('model','RECEIVED'),('place','RECEIVED'),('place','INTENT' if failed else 'RECEIVED')]
+                if not failed:expected.append(('model','RECEIVED'))
+                assert [(r['kind'],r['state']) for r in budget.inspect()]==expected
             elif subject.endswith(('tail','tailbad')):
                 assert model.calls==8 and len(tool_calls)==before+7,(subject,outcomes,model.calls,len(tool_calls)-before,[(r['kind'],r['state']) for r in budget.inspect()])
                 assert outcomes[0].status==('unknown' if subject.endswith('tailbad') else 'completed')

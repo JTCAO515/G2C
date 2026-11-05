@@ -11,7 +11,7 @@ from types import SimpleNamespace
 
 import httpx
 
-from cj_agent.provider import DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,M4_NATIVE_ANSWER_PROFILE,ProviderFailed,ProviderUnknown,_m4_wire,_bounded_sse_lines
+from cj_agent.provider import DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,M4_NATIVE_ANSWER_PROFILE,M4_NATIVE_TURN_PROFILE,M4_TURN_FUNCTION,ProviderFailed,ProviderUnknown,_m4_wire,_bounded_sse_lines
 from cj_api.real_services import RealServices,RealTools,TOOLS
 from cj_api.real_services import canonical_tool
 from cj_api.real_services import ModelInput,TOOL_SYSTEM
@@ -39,6 +39,17 @@ def sse(*,tool=False,usage=True,model=M4_MODEL,done=True):
         dict(id='chatcmpl-synthetic',model=model,choices=[dict(index=0,delta={},finish_reason='tool_calls' if tool else 'stop')])]
     if usage:values.append(dict(id='chatcmpl-synthetic',model=model,choices=[],usage=dict(prompt_tokens=40,completion_tokens=10,total_tokens=50)))
     return ''.join('data: '+json.dumps(v)+'\n\n' for v in values)+('data: [DONE]\n\n' if done else '')
+
+
+def turn_sse(*,tool=False,usage=True,model=M4_MODEL,done=True,turn=None):
+    if turn is None:
+        turn=dict(version='MODEL-tool-turn.1',kind='tool' if tool else 'answer',
+            answer=None if tool else dict(zh='待核实。',en='Needs verification.'),
+            calls=[dict(name='place_search',arguments=dict(keyword='synthetic',city='北京',page=1,page_size=1))] if tool else [])
+    body=sse(tool=True,usage=usage,model=model,done=done)
+    first=json.loads(body.splitlines()[0][6:]);call=first['choices'][0]['delta']['tool_calls'][0]
+    call['function']=dict(name=M4_TURN_FUNCTION,arguments=json.dumps(turn))
+    return 'data: '+json.dumps(first)+'\n\n'+'\n'.join(body.splitlines()[2:])+'\n'
 
 
 class Boundaries(unittest.TestCase):
@@ -135,10 +146,49 @@ class Boundaries(unittest.TestCase):
         tools=RealTools(services)
         prepared=tools._model_input(ModelInput([dict(role='user',content='Synthetic marker')],TOOL_SYSTEM,provider,{}))
         declared=json.loads(prepared.original_bytes)
-        self.assertEqual(declared['answer_format_profile'],M4_NATIVE_ANSWER_PROFILE)
+        self.assertEqual(declared['native_turn_profile'],M4_NATIVE_TURN_PROFILE)
+        self.assertNotIn('answer_format_profile',declared)
         self.assertEqual(declared['native_tools'],tools.native_tools)
         ordinary=tools._model_input(([dict(role='user',content='Synthetic draft')],'existing structured system',provider))
         self.assertNotIn('answer_format_profile',json.loads(ordinary.original_bytes))
+
+    def test_named_turn_answer_uses_the_existing_envelope_without_an_extra_call(self):
+        reply={};receipt={}
+        result=self.invoke(self.provider(turn_sse()),tools=TOOLS,receipt=receipt,native_reply=reply,
+            native_turn_profile=M4_NATIVE_TURN_PROFILE,final_answer=True)
+        body=json.loads(self.sent[0].content)
+        self.assertEqual(body['tool_choice'],dict(type='function',function=dict(name=M4_TURN_FUNCTION)))
+        self.assertNotIn('response_format',body)
+        self.assertEqual(body['tools'][0]['function']['parameters']['properties']['kind']['enum'],['answer'])
+        self.assertEqual(parse_turn(''.join(result).encode(),{'place_search'}).answer_en,'Needs verification.')
+        self.assertEqual(reply['assistant']['tool_calls'][0]['id'],'call_synthetic')
+        self.assertEqual(receipt['usage']['total_tokens'],50)
+        self.assertEqual(len(self.sent),1)
+
+    def test_named_turn_bad_or_disabled_outputs_never_settle_or_rearm(self):
+        bad_turn=dict(version='MODEL-tool-turn.1',kind='tool',answer=None,calls=[dict(name='place_search',arguments=dict(keyword='x',city='北京',page=1,page_size=1))])
+        duplicated=json.loads(turn_sse().splitlines()[0][6:])
+        duplicate=json.loads(json.dumps(duplicated['choices'][0]['delta']['tool_calls'][0]))
+        duplicate.update(index=1,id='other-wrapper-id')
+        duplicated['choices'][0]['delta']['tool_calls'].append(duplicate)
+        duplicated='data: '+json.dumps(duplicated)+'\n\n'+'\n'.join(turn_sse().splitlines()[2:])
+        malformed=json.loads(turn_sse().splitlines()[0][6:]);malformed['choices'][0]['delta']['tool_calls'][0]['function']['arguments']='not-json'
+        malformed='data: '+json.dumps(malformed)+'\n\n'+'\n'.join(turn_sse().splitlines()[2:])
+        cases=[(sse(),False),(duplicated,False),(malformed,False),(turn_sse().replace('m4_tool_turn','unknown_function'),False),
+            (turn_sse().replace('"finish_reason": "tool_calls"','"finish_reason": "stop"'),False),
+            (turn_sse(turn=bad_turn),True),
+            (turn_sse(turn=dict(version='MODEL-tool-turn.1',kind='answer',answer=dict(zh='x'),calls=[])),False),
+            (turn_sse(turn={**bad_turn,'calls':bad_turn['calls']*5}),False)]
+        for i,(body,final) in enumerate(cases):
+            with self.subTest(i=i):
+                provider=self.provider(body);receipt={};attempt='named-invalid-'+str(i);before=len(self.sent)
+                def invoke():return list(provider.invoke([dict(role='user',content='Synthetic')],TOOL_SYSTEM,attempt,
+                    tools=TOOLS,native_turn_profile=M4_NATIVE_TURN_PROFILE,final_answer=final,receipt=receipt,guard=lambda:True))
+                with self.assertRaises(ProviderUnknown):invoke()
+                self.assertEqual(receipt,{})
+                self.assertEqual(self.budget.inspect()[-1]['state'],'INTENT')
+                with self.assertRaises(BudgetUnknown):invoke()
+                self.assertEqual(len(self.sent)-before,1)
 
     def test_supplier_cannot_dispatch_a_disabled_final_tool_or_rearm_it(self):
         provider=self.provider(sse(tool=True));receipt={}
@@ -240,7 +290,7 @@ class Boundaries(unittest.TestCase):
             def _model_history(self,*args):pass
             def _registered_stream(self,binding,key,registration,argument):
                 if registration=='model.tool_turn':
-                    argument.native_reply['assistant']=dict(role='assistant',content=None,tool_calls=[dict(id='synthetic-'+key,type='function',function=dict(name='place_search',arguments=json.dumps(call['arguments'])))])
+                    argument.native_reply['assistant']=dict(role='assistant',content=None,tool_calls=[dict(id='synthetic-'+key,type='function',function=dict(name=M4_TURN_FUNCTION,arguments=turn))])
                     return iter([turn])
                 tool_calls.append(key)
                 return iter([json.dumps(dict(outcome='invalid_response',provider_code=None,source=dict(endpoint='https://restapi.amap.com/v3/place/text')))])
@@ -249,6 +299,42 @@ class Boundaries(unittest.TestCase):
             list(host.answer(Worker(),binding,[dict(role='user',content='Synthetic query')]))
         self.assertEqual(tool_calls,['tool.0.0'])
         self.assertEqual(self.budget.inspect(),[])  # fixture host: no real registered exit or HTTP
+
+    def test_grouped_source_calls_keep_one_supplier_id_and_separate_execution_keys(self):
+        for fail_second in (False,True):
+            with self.subTest(fail_second=fail_second):
+                services=RealServices(self.provider(sse()),KEY,frozenset({'m4-synthetic-one'}))
+                host=RealTools(services,allowed_native=frozenset({'place_search'}));executed=[];histories=[]
+                calls=[dict(name='place_search',arguments=dict(keyword=k,city='北京',page=1,page_size=1)) for k in ('synthetic-A','synthetic-B')]
+                initial=json.dumps(dict(version='MODEL-tool-turn.1',kind='tool',answer=None,calls=calls))
+                final=json.dumps(dict(version='MODEL-tool-turn.1',kind='answer',answer=dict(zh='完成',en='Done'),calls=[]))
+                assistant=dict(role='assistant',content='Untrusted supplier preface',tool_calls=[dict(id='actual-wrapper-id',type='function',function=dict(name=M4_TURN_FUNCTION,arguments=initial))])
+                class Worker:
+                    provider=services.model
+                    def _model_history(self,*args):pass
+                    def _registered_stream(self,binding,key,registration,argument):
+                        if registration=='model.tool_turn':
+                            histories.append(json.loads(json.dumps(argument.messages)))
+                            argument.native_reply['assistant']=assistant
+                            return iter([initial if len(histories)==1 else final])
+                        executed.append((key,registration,argument[1]))
+                        if fail_second and len(executed)==2:raise BudgetUnknown('synthetic second source outcome unknown')
+                        return iter([json.dumps(dict(outcome='ok',provider_code=None,source=dict(endpoint='https://restapi.amap.com/v3/place/text'),value=key))])
+                binding=SimpleNamespace(scope='local:https://local.g2c.invalid:m4-synthetic-one',run_id='original-group-run')
+                if fail_second:
+                    with self.assertRaises(BudgetUnknown):list(host.answer(Worker(),binding,[dict(role='user',content='Synthetic sources')]))
+                    self.assertEqual(len(histories),1)  # The completed first result is never replayed or fabricated into a follow-up.
+                else:
+                    output=list(host.answer(Worker(),binding,[dict(role='user',content='Synthetic sources')]))
+                    self.assertEqual(output[-1],'Done')
+                    self.assertEqual(histories[-1][-2],assistant)
+                    result=histories[-1][-1]
+                    self.assertEqual((result['role'],result['tool_call_id']),('tool','actual-wrapper-id'))
+                    items=json.loads(result['content'])['results']
+                    self.assertEqual([(v['index'],v['name'],v['result']['value']) for v in items],[(0,'place_search','tool.0.0'),(1,'place_search','tool.0.1')])
+                self.assertEqual([(k,r) for k,r,_ in executed],[('tool.0.0','tool.place'),('tool.0.1','tool.place')])
+                self.assertNotEqual(executed[0][2],executed[1][2])
+                self.assertEqual(self.budget.inspect(),[])  # Dispatch fixture; no supplier or ledger success is simulated.
 
     def test_native_arguments_convert_to_existing_domain_wire(self):
         name,raw=canonical_tool('place_search',json.dumps(dict(keyword='故宫',city='北京',page=1,page_size=1)).encode())
@@ -277,7 +363,7 @@ class Boundaries(unittest.TestCase):
         self.assertEqual(result.places[0].entrance_coordinate.state.value,'missing')
 
     def test_place_only_verification_rejects_weather_before_tool_intent(self):
-        provider=self.provider(sse(tool=True).replace('place_search','weather'))
+        provider=self.provider(turn_sse(tool=True).replace('place_search','weather'))
         services=RealServices(provider,KEY,frozenset({'m4-synthetic-one'}))
         tools=RealTools(services,allowed_native=frozenset({'place_search'}))
         self.assertNotIn('tool.weather',tools.registrations)
@@ -285,7 +371,8 @@ class Boundaries(unittest.TestCase):
         operation=SimpleNamespace(binding=SimpleNamespace(scope='local:https://local.g2c.invalid:m4-synthetic-one'),command=SimpleNamespace(attempt_id='place-only'))
         with self.assertRaises(ProviderUnknown):list(prepared.bind_operation(operation,lambda:True)())
         body=json.loads(self.sent[0].content)
-        self.assertEqual([t['function']['name'] for t in body['tools']],['place_search'])
+        variants=body['tools'][0]['function']['parameters']['properties']['calls']['items']['anyOf']
+        self.assertEqual([v['properties']['name']['enum'][0] for v in variants],['place_search'])
         self.assertEqual([(r['kind'],r['state']) for r in self.budget.inspect()],[('model','INTENT')])
     def test_answer_tool_result_is_untrusted_user_data(self):
         p=self.provider(sse())
