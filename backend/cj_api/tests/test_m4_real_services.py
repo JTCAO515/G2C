@@ -6,7 +6,7 @@ import logging
 from pathlib import Path
 import tempfile
 import unittest
-from unittest.mock import patch,AsyncMock
+from unittest.mock import patch,AsyncMock,Mock
 from types import SimpleNamespace
 
 import httpx
@@ -165,6 +165,19 @@ class Boundaries(unittest.TestCase):
         self.assertEqual(receipt['usage']['total_tokens'],50)
         self.assertEqual(len(self.sent),1)
 
+    def test_complete_named_function_with_stop_keeps_the_original_receipt(self):
+        marker='G2C_SYNTHETIC_D1_OK'
+        turn=dict(version='MODEL-tool-turn.1',kind='answer',answer=dict(zh=marker,en=marker),calls=[])
+        body=turn_sse(turn=turn).replace('"finish_reason": "tool_calls"','"finish_reason": "stop"')
+        provider=self.provider(body);receipt={};reply={}
+        result=self.invoke(provider,tools=TOOLS,native_turn_profile=M4_NATIVE_TURN_PROFILE,receipt=receipt,native_reply=reply)
+        self.assertEqual(parse_turn(''.join(result).encode(),{'place_search'}).answer_en,marker)
+        self.assertEqual(reply['assistant']['tool_calls'][0]['id'],'call_synthetic')
+        self.assertEqual(receipt['usage']['total_tokens'],50)
+        self.assertEqual(self.budget.inspect()[0]['state'],'RECEIVED')
+        with self.assertRaises(BudgetUnknown):self.invoke(provider,tools=TOOLS,native_turn_profile=M4_NATIVE_TURN_PROFILE)
+        self.assertEqual(len(self.sent),1)
+
     def test_named_turn_bad_or_disabled_outputs_never_settle_or_rearm(self):
         bad_turn=dict(version='MODEL-tool-turn.1',kind='tool',answer=None,calls=[dict(name='place_search',arguments=dict(keyword='x',city='北京',page=1,page_size=1))])
         duplicated=json.loads(turn_sse().splitlines()[0][6:])
@@ -175,7 +188,7 @@ class Boundaries(unittest.TestCase):
         malformed=json.loads(turn_sse().splitlines()[0][6:]);malformed['choices'][0]['delta']['tool_calls'][0]['function']['arguments']='not-json'
         malformed='data: '+json.dumps(malformed)+'\n\n'+'\n'.join(turn_sse().splitlines()[2:])
         cases=[(sse(),False),(duplicated,False),(malformed,False),(turn_sse().replace('m4_tool_turn','unknown_function'),False),
-            (turn_sse().replace('"finish_reason": "tool_calls"','"finish_reason": "stop"'),False),
+            (turn_sse(done=False).replace('"finish_reason": "tool_calls"','"finish_reason": "stop"'),False),
             (turn_sse(turn=bad_turn),True),
             (turn_sse(turn=dict(version='MODEL-tool-turn.1',kind='answer',answer=dict(zh='x'),calls=[])),False),
             (turn_sse(turn={**bad_turn,'calls':bad_turn['calls']*5}),False)]
@@ -189,6 +202,74 @@ class Boundaries(unittest.TestCase):
                 self.assertEqual(self.budget.inspect()[-1]['state'],'INTENT')
                 with self.assertRaises(BudgetUnknown):invoke()
                 self.assertEqual(len(self.sent)-before,1)
+
+    def test_choice_audit_records_only_enumerated_finish_and_rejection(self):
+        private='supplier-private-finish-not-for-logs'
+        for i,finish in enumerate(('length','content_filter',private,7)):
+            with self.subTest(finish=finish):
+                body=turn_sse().replace('"finish_reason": "tool_calls"','"finish_reason": '+json.dumps(finish))
+                provider=self.provider(body);receipt={};attempt='choice-audit-'+str(i);before=len(self.sent)
+                def invoke():return list(provider.invoke([dict(role='user',content='Synthetic')],TOOL_SYSTEM,attempt,
+                    tools=TOOLS,native_turn_profile=M4_NATIVE_TURN_PROFILE,receipt=receipt,guard=lambda:True))
+                with self.assertLogs('cj_provider.audit',level='WARNING') as logs,self.assertRaises(ProviderUnknown):invoke()
+                audit='\n'.join(logs.output)
+                self.assertIn('phase=choice',audit);self.assertIn('reason=choice_rejected',audit)
+                self.assertIn('choice_rejection=incomplete_finish',audit)
+                self.assertIn('finish_reason='+(str(finish) if i<2 else 'other' if type(finish) is str else 'invalid_type'),audit)
+                self.assertRegex(audit,r'argument_chars_before_rejection=[1-9][0-9]*')
+                self.assertNotIn(private,audit);self.assertNotIn('Needs verification.',audit);self.assertNotIn(KEY,audit)
+                self.assertEqual(receipt,{})
+                with self.assertRaises(BudgetUnknown):invoke()
+                self.assertEqual(len(self.sent)-before,1)
+
+    def test_named_stop_still_requires_complete_usage_done_and_exact_function(self):
+        for i,body in enumerate((turn_sse(usage=False),turn_sse(done=False),
+                turn_sse().replace('m4_tool_turn','unknown_function'),
+                turn_sse().replace('call_synthetic','invalid tool identity'))):
+            with self.subTest(i=i):
+                body=body.replace('"finish_reason": "tool_calls"','"finish_reason": "stop"')
+                provider=self.provider(body);receipt={};attempt='incomplete-stop-'+str(i);before=len(self.sent)
+                def invoke():return list(provider.invoke([dict(role='user',content='Synthetic')],TOOL_SYSTEM,attempt,
+                    tools=TOOLS,native_turn_profile=M4_NATIVE_TURN_PROFILE,receipt=receipt,guard=lambda:True))
+                with self.assertRaises(ProviderUnknown):invoke()
+                self.assertEqual(receipt,{})
+                with self.assertRaises(BudgetUnknown):invoke()
+                self.assertEqual(len(self.sent)-before,1)
+
+    def test_empty_choice_then_reader_error_is_not_a_choice_rejection(self):
+        first=turn_sse().splitlines()[0]
+        empty=json.dumps(dict(id='chatcmpl-synthetic',model=M4_MODEL,choices=[]))
+        prefix=(first+'\n\ndata: '+empty+'\n\n').encode()
+        class Interrupted(httpx.SyncByteStream):
+            def __iter__(self):
+                yield prefix
+                raise httpx.ReadError('private-reader-error-'+KEY)
+        def response(request):self.sent.append(request);return httpx.Response(200,stream=Interrupted())
+        provider=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),self.budget,transport=httpx.MockTransport(response))
+        receipt={}
+        with self.assertLogs('cj_provider.audit',level='WARNING') as logs,self.assertRaises(ProviderUnknown):
+            self.invoke(provider,tools=TOOLS,native_turn_profile=M4_NATIVE_TURN_PROFILE,receipt=receipt)
+        audit='\n'.join(logs.output)
+        for field in ('phase=choice','tool_count=1','reason=httpx_error','choice_rejection=none','finish_reason=unseen'):
+            self.assertIn(field,audit)
+        self.assertNotIn(KEY,audit);self.assertNotIn('private-reader-error',audit);self.assertEqual(receipt,{})
+        with self.assertRaises(BudgetUnknown):self.invoke(provider,tools=TOOLS,native_turn_profile=M4_NATIVE_TURN_PROFILE)
+        self.assertEqual(len(self.sent),1)
+
+    def test_real_wire_timeout_after_tool_and_empty_choice_has_distinct_audit(self):
+        first=turn_sse().splitlines()[0]
+        empty=json.dumps(dict(id='chatcmpl-synthetic',model=M4_MODEL,choices=[]))
+        raw=('HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nConnection: close\r\n\r\n'+first+'\n\ndata: '+empty+'\n\n').encode()
+        reader=SimpleNamespace(read=AsyncMock(side_effect=[raw,TimeoutError('private-timeout-'+KEY)]))
+        writer=SimpleNamespace(write=Mock(),drain=AsyncMock(),transport=SimpleNamespace(abort=Mock()))
+        provider=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),self.budget);receipt={}
+        with patch('cj_agent.provider.asyncio.open_connection',AsyncMock(return_value=(reader,writer))),self.assertLogs('cj_provider.audit',level='WARNING') as logs,self.assertRaises(ProviderUnknown):
+            self.invoke(provider,tools=TOOLS,native_turn_profile=M4_NATIVE_TURN_PROFILE,receipt=receipt)
+        audit='\n'.join(logs.output)
+        for field in ('phase=choice','tool_count=1','reason=wire_timeout','choice_rejection=none','finish_reason=unseen'):
+            self.assertIn(field,audit)
+        self.assertNotIn(KEY,audit);self.assertNotIn('private-timeout',audit);self.assertEqual(receipt,{})
+        self.assertEqual(self.budget.inspect()[0]['state'],'INTENT');writer.transport.abort.assert_called_once()
 
     def test_supplier_cannot_dispatch_a_disabled_final_tool_or_rearm_it(self):
         provider=self.provider(sse(tool=True));receipt={}

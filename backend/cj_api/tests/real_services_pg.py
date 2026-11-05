@@ -24,7 +24,7 @@ from test_m4_real_services import turn_sse,KEY,NOW
 
 
 def exercise(auth,conninfo):
-    subjects=['m4-synthetic-'+v for v in ('ok','limit','unknown','malformed','late','permission','revoke','repeat','tail','tailbad','batch','batchfail')]
+    subjects=['m4-synthetic-'+v for v in ('ok','limit','unknown','malformed','late','permission','revoke','repeat','tail','tailbad','batch','batchfail','stop')]
     harness.dev_auth.init(auth,subjects)
     now=int(time.time());profiles={}
     for subject in subjects:
@@ -95,6 +95,7 @@ def exercise(auth,conninfo):
                 value=json.loads(payload.splitlines()[0][6:]);value['choices'][0]['delta']['content']='Synthetic preface; checking the location.'
                 payload='data: '+json.dumps(value)+'\n\n'+'\n'.join(payload.splitlines()[2:])
             if subject.endswith('malformed'):payload=payload.replace('\\"page\\": 1','\\"page\\": \\"bad\\"')
+            if subject.endswith('stop'):payload=payload.replace('"finish_reason": "tool_calls"','"finish_reason": "stop"')
             return httpx.Response(200,stream=httpx.ByteStream(payload.encode()))
         model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),budget,transport=httpx.MockTransport(response))
         writes=[]
@@ -116,7 +117,7 @@ def exercise(auth,conninfo):
                 with patch('cj_agent.provider.asyncio.open_connection',handshake):
                     outcomes=run_worker.run_once(db,model,auth,tools_configuration=tools,real_services=services)
             else:outcomes=run_worker.run_once(db,model,auth,tools_configuration=tools,real_services=services)
-            if subject.endswith('ok'):
+            if subject.endswith(('ok','stop')):
                 assert outcomes[0].status=='completed',(outcomes,budget.inspect(),model.calls,len(tool_calls))
                 assert model.calls==2 and len(tool_calls)==before+1
                 display=harness.expect(client.get('/v1/run-display',params=dict(message_id=subject),headers=headers[subject]))
