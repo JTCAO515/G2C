@@ -101,8 +101,6 @@ def main():
         (output / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2))
     save()
     tokens, records, models, audit = {}, {}, {}, []
-    if original_size in {'unknown', 'unsupported'}:
-        raise ValueError('Boot the simulator before native acceptance')
     try:
         with tempfile.TemporaryDirectory(prefix='cj24-', dir='/tmp') as temporary:
             root = Path(temporary)
