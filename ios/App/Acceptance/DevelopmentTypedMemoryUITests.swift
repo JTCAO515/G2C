@@ -92,9 +92,7 @@ import Foundation
         XCTAssertTrue(target.waitForExistence(timeout:10));XCTAssertTrue(target.isHittable);target.tap()
     }
     private func prepare() async throws -> Fixture {
-        let (data,response) = try await URLSession.shared.data(from:XCTUnwrap(URL(string:control + "/prepare")))
-        XCTAssertEqual((response as? HTTPURLResponse)?.statusCode,200)
-        return try JSONDecoder().decode(Fixture.self,from:data)
+        return try JSONDecoder().decode(Fixture.self,from:await call("/prepare"))
     }
     private func reviewSave(_ value: String,scope: String) {
         tap("memory.add");tap("memory2.manual.option")
@@ -436,8 +434,7 @@ import Foundation
         let value = "中文本次偏好 / 安静房间 e\u{301}"
         save(value,scope:"Selected travel / 所选旅行")
         tap("memory2.items.open");tap("memory2.items.read")
-        let (data,response) = try await URLSession.shared.data(from:XCTUnwrap(URL(string:control + "/items")))
-        XCTAssertEqual((response as? HTTPURLResponse)?.statusCode,200)
+        let data = try await call("/items")
         let ids = try JSONDecoder().decode([String:String].self,from:data)
         tap("memory2.item." + (try XCTUnwrap(ids["travel"])));tap("memory2.detail.read")
         text("memory2.detail.text",contains:value);text("memory2.detail.scope",contains:fixture.travel_ids[0])
@@ -456,8 +453,7 @@ import Foundation
         text("travel.selection.status",contains:fixture.travel_ids[0]);tap("assistant.panel.done");tap("Memory")
         save("Travel A quiet room / 本次A安静房间",scope:"Selected travel / 所选旅行")
         tap("memory2.items.open");tap("memory2.items.read")
-        let (data,response) = try await URLSession.shared.data(from:XCTUnwrap(URL(string:control + "/items")))
-        XCTAssertEqual((response as? HTTPURLResponse)?.statusCode,200)
+        let data = try await call("/items")
         let ids = try JSONDecoder().decode([String:String].self,from:data)
         let id = try XCTUnwrap(ids["travel"])
         tap("memory2.item." + id);tap("memory2.detail.read")
@@ -488,8 +484,7 @@ import Foundation
         // The reopened client must query original save/lifecycle receipts before
         // a fresh save; navigating away does not erase verified completions.
         tap("Memory");tap("memory.manage.openOriginals");tap("memory2.originals.read")
-        let (originalData,originalResponse) = try await URLSession.shared.data(from:XCTUnwrap(URL(string:control + "/originals")))
-        XCTAssertEqual((originalResponse as? HTTPURLResponse)?.statusCode,200)
+        let originalData = try await call("/originals")
         let originals = try JSONDecoder().decode([String:[String]].self,from:originalData)
         for original in try XCTUnwrap(originals["saves"]) {tap("memory2.original.query." + original);text("memory2.save.status",contains:"Saved.")}
         for original in try XCTUnwrap(originals["management"]) {tap("memory2.action.query." + original);text("memory2.manage.status",contains:"Original receipt verified")}
