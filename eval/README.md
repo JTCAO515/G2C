@@ -204,3 +204,59 @@ worker 进程消费同一 PG/原消息/授权账本。使用 B 已交 legacy dra
 与可核对证据链接随 PR 提交，历史失败保留。
 报告计算不发出请求，也不代替B原计量出口/预算账本；不得用模型模拟成Fake
 或未知费用当零来绕过停止点。
+
+## 香港唯一 producer 的 C 执行准备
+
+Mac账本完成seal/adopt后，旧Mac仅只读；新阶段只能在B正式交付的HK环境执行。
+当前准备代码不表示 #30 ready，也不授权提前调用目标域名。B负责部署接线，C仅交
+已提交源码与参数；不修改B/deploy/授权文件、不另建或恢复一份可写费用账本。
+
+`hk.py package`只读取干净Git提交，生成可重现的C overlay及来源manifest，不构建镜像，
+不读凭据、不请求任何服务。必须给B已审的后端commit，并逐字核对C提交所含业务源码
+与该B提交一致；镜像中的既有B文件逐个核hash，不能用任意标签伪造候选或安装假git。
+
+```sh
+uv run --locked python -B eval/hk.py package --backend-commit B_FULL_SHA --output .local/c-hk-source
+```
+
+B在既有已审operator镜像上使用输出中的`eval/hk.Dockerfile`，固定镜像身份与manifest
+SHA，分别记录B后端pin和C runner pin。该overlay只加入已提交的eval运行源码、固定
+样本/原250行见证和既有报告计算器；不打包工作区秘密、历史raw、测试或报告日志。
+所有原测试仍保留并独立执行；overlay并不是测试验收证据。
+
+最小执行布局：
+
+| 输入/挂载 | 边界 |
+|---|---|
+| `CJ_C_EVAL_SOURCE_SHA256` | B从C已交制品核对的manifest SHA；不能从未核文件自行填一个值 |
+| `/app/c-eval-source.json` | 来源manifest只读，实际B/C文件hash必须匹配；报告记录两个commit |
+| `/run/secrets/c-eval.env` | 当前uid所有、0600、常规文件；恰好`CJ_MODEL_API_KEY`和`CJ_AMAP_WEB_KEY`两项，来自现有安全凭据，不入镜像/Config.Env/日志 |
+| `/evidence` | 仅C本阶段raw/计划/报告持久写卷；完整阶段仍须原六格全部PASS及canonical凭证 |
+| 原HK预算目录及`/control/budget` | B同一个ADOPTED账本和非恢复控制锚/锁，不复制重置；producer仍`hk-beta-47.83.147.176` |
+
+只提供`CJ_ENV=local`、`CJ_DEPLOY_TARGET=hk-beta`、`CJ_M4_SYNTHETIC_ONLY=1`、
+原producer、已核试用期限及上述非秘密来源pin。不得提供Supabase/operator/cleanup/
+签名私钥/OSS身份或Docker socket。C只用全新私有Unix PG、`search_path=public`、
+镜像中显式`CJ_PG_BINDIR=/usr/lib/postgresql/17/bin`（不依赖宿主pg_config）、
+原受限业务角色与原worker；B的授权期限守卫传入原`RealServices.from_environment`。
+服务凭据只在构造原服务时暂入进程，随即移除；PG子进程不继承，重启worker从同一
+0600子集重新构造服务，不沿用旧Mac SDK。缺件/错误权限/源码不符均停下，不走备用出口。
+
+以下仅为B正式ready、费用出口与C精确head门禁全部满足后的命令布局；本节不执行它们：
+
+```sh
+python -B /app/eval/hk.py run smoke --output /evidence/new-smoke-stage
+python -B /app/eval/hk.py run full --smoke /evidence/new-smoke-stage --output /evidence/new-full-stage
+```
+
+仍固定中英各三例四类工具，任一UNKNOWN/FAILED/空正文立即停；同候选六格全PASS才66。
+HK私有PG的loopback采样单独标`hk-private-real-exits`，不能冒充海外/中国目标网络；
+目标网络仍等B #30正式ready后另测。所有旧FAIL/UNKNOWN/INTENT保持原样。
+
+B563的命名函数输送仍传原`MODEL-tool-turn.1`。冒烟取证按实际注册的
+`native_turn_profile`/`external_tools_disabled`（以及旧`tool_choice`）重用B真实序列化器
+核对出口输入SHA；新回执解包父wrapper ID、每个inner的index/name/query及原响应SHA，
+缺段、换ID/查询/结果、重复字段或丢失回执均FAIL。FACT摘录只取已与原回执匹配的结果，
+不接受无关消息补出的摘录。旧直接native回执结构仍保留支持；历史出口SHA须按原候选的
+序列化器核验，不用当前源码重写旧结论。这里仅适配输送编码，
+不修改语料、留出、judge、质量门槛或既有通过条件；合成单元样例不能开启真实全量。

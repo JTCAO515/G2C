@@ -30,6 +30,8 @@ from cases import state
 from gates import POLICY
 from judge import judge
 from report import report, markdown
+from hk import active as hk_active, source_candidate, require_output
+import hk
 from cj_agent.provider import DashScopeConfig, MeteredDashScopeProvider, M4_BASE, M4_MODEL
 from cj_agent.worker import Outcome
 from cj_api.local_app import LocalDatabase, create_local_app, ISSUER, scope_for
@@ -46,7 +48,7 @@ import local_run_context
 import run_worker
 
 STATE = Path.home() / '.local/share/g2c/m4-real-services'
-NETWORK = 'development-mac-real-exits'
+NETWORK = 'hk-private-real-exits' if hk_active() else 'development-mac-real-exits'
 
 
 def save(path, value):
@@ -63,6 +65,17 @@ def keychain(name):
     if result.returncode or not result.stdout.strip():
         raise ValueError('required_authorized_keychain_item_unavailable')
     return result.stdout.strip()
+
+
+def create_real_services(subjects):
+    if hk_active():
+        return hk.services(subjects)
+    if (STATE/'transfer.json').exists():
+        raise ValueError('sealed_Mac_producer_is_read_only')
+    model_key=keychain('g2c-dashscope');amap_key=keychain('g2c-amap-web-key')
+    model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,model_key,
+        max_output_tokens=1024),AuthorizationBudget(STATE))
+    return RealServices(model,amap_key,subjects)
 
 
 @contextmanager
@@ -313,7 +326,8 @@ def main():
     os.environ['CJ_ENV'] = 'local'
     raw = Path(__file__).with_name('scenarios.json').read_bytes()
     scenarios = json.loads(raw)
-    commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
+    require_output(args.output)
+    commit = source_candidate()
     from smoke import require_full_ready
     require_full_ready(args.smoke, commit)
     from real_budget import estimate, verified_journal, stop_reached
@@ -322,20 +336,23 @@ def main():
     forecast = estimate(before, include_smoke=False)
     if not forecast['within_authorization']:
         raise ValueError('full_batch_estimate_exceeds_authorization_report_495_before_dispatch')
-    model_key=keychain('g2c-dashscope');amap_key=keychain('g2c-amap-web-key')
+    subjects = frozenset('m4-synthetic-' + args.batch_id + '-' + str(i) + '-' + lang for i in range(len(scenarios)) for lang in ('zh','en'))
+    services=create_real_services(subjects)
+    budget=services.model.authorization
     if not claim('full',args.output,commit):
         print('READ_ONLY: canonical full phase already claimed; no request/retry');return 0
-    budget = AuthorizationBudget(STATE)
     budget.check_date();verified_journal()
     plan = dict(schema_version=1, sample_set_id='g2c-m4-synthetic-33',
         sample_set_version='2:' + sha256(raw).hexdigest(), evidence_layer='real',
         provenance='Original fixed33/11; synthetic only, no tuning of prompts, model, holdout or judges.',
         collector_sha256=sha256(Path(__file__).read_bytes()).hexdigest(), approved_thresholds=dict(POLICY), attempts=[1],
         batch_id=args.batch_id, smoke_evidence_sha256=sha256((args.smoke/'summary.json').read_bytes()).hexdigest(),
+        execution_source=hk.source_info(),
         candidates=[dict(id=commit, commit=commit, config_version='M4 real-m4 / signed MESSAGE-send.2 / registered exit / legacy draft / typed memory',
                          model_version=M4_MODEL, source_as_of=datetime.now(timezone.utc).isoformat())],
         networks=[dict(id=NETWORK, kind='local_real_services', endpoint='loopback signed API → Beijing DashScope/authorized tools',
-            client_environment='Codex development Mac; current egress, geographic target classification UNKNOWN',
+            client_environment=('HK private Unix PG/original worker; not a target-network observation' if hk_active() else
+                                'Codex development Mac; current egress, geographic target classification UNKNOWN'),
             measurement=dict(kind='program', independent=True, outcome='PASS',
                              ref='eval/real.py:tcp_app + per-row raw client monotonic timestamps'),
             description='Actual local TCP protected v2 snapshot polls (200ms), real external exits. Not an overseas or China target-network measurement.')],
@@ -347,10 +364,6 @@ def main():
     save(args.output / 'budget-before.json', before)
     save(args.output / 'preflight-estimate.json', forecast)
     save(args.output / 'packages.json', {v: version(v) for v in ('httpx','psycopg','uvicorn','fastapi')})
-    subjects = frozenset('m4-synthetic-' + args.batch_id + '-' + str(i) + '-' + lang for i in range(len(scenarios)) for lang in ('zh','en'))
-    model = MeteredDashScopeProvider(DashScopeConfig(M4_BASE, M4_MODEL, model_key,
-                                                   max_output_tokens=1024), budget)
-    services = RealServices(model, amap_key, subjects)
     observations = []
     with redirect_stdout(io.StringIO()), private_database('real-evaluation') as conninfo:
         auth = conninfo.parent / 'auth'

@@ -22,10 +22,16 @@ from real import (ROOT, STATE, save, keychain, private_database, tcp_app, run_ca
                   load_run_context, ConfirmationSigner, RealServices, MeteredDashScopeProvider,
                   DashScopeConfig, M4_BASE, M4_MODEL, AuthorizationBudget, ABI,
                   dev_auth, local_run_context)
+from real import create_real_services
+from hk import source_candidate, require_output
+from hk import source_info
 from real_budget import estimate
 from real_budget import verified_journal
 from real_phase import claim, claimed, finish_smoke, verify_smoke
 from cj_api.real_services import canonical_tool
+from cj_agent.provider import M4_NATIVE_TURN_PROFILE, M4_TURN_FUNCTION
+from cj_run.tool_turn import parse_turn
+from cj_strict_json import reject_duplicates
 from cj_usage.authorization_budget import canonical
 from cj_place import contract_v1 as place_codec
 from cj_place.models import Result, Source, Outcome
@@ -49,7 +55,9 @@ def model_input_digest(value):
     capture=_RequestDigest()
     provider=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,'offline-capture-only',max_output_tokens=1024),capture)
     source=provider.invoke(value['messages'],value['system'],'offline-digest-only',
-        tools=value['native_tools'],receipt={},guard=lambda:False)
+        tools=value['native_tools'],receipt={},guard=lambda:False,
+        tool_choice=value.get('tool_choice'),native_turn_profile=value.get('native_turn_profile'),
+        final_answer=value.get('external_tools_disabled',False))
     try:next(source)
     except _DigestCaptured:return capture.digest
     finally:source.close()
@@ -68,6 +76,46 @@ def tool_result_digest(kind, data):
         tuple(place_codec._read_place(p) for p in value['places']),
         tuple(place_codec._read_route(r,query) for r in value['routes']),value['provider_code'],value['provider_count'])
     return sha256(place_codec.encode_result(result,evidence_kind=s['evidence_kind'],recording_ref=s['recording_ref'])).hexdigest()
+
+
+def tool_exchange(value,index,native):
+    """Decode the actual next-model input; bind wrapper and each original result."""
+    messages=value['messages']
+    position=max(i for i,m in enumerate(messages) if m['role']=='assistant' and m.get('tool_calls'))
+    calls=messages[position]['tool_calls']
+    profile=value.get('native_turn_profile')
+    if profile is not None:
+        if profile!=M4_NATIVE_TURN_PROFILE or len(calls)!=1:
+            raise ValueError('one_known_native_wrapper_required')
+        wrapper=calls[0]
+        if wrapper['function']['name']!=M4_TURN_FUNCTION:
+            raise ValueError('original_native_wrapper_required')
+        turn=parse_turn(wrapper['function']['arguments'].encode(),
+                        {t['function']['name'] for t in value['native_tools']})
+        if not 1<=len(turn.calls)<=4 or index>=len(turn.calls) or turn.calls[index].name!=native:
+            raise ValueError('original_inner_tool_required')
+        replies=[m for m in messages[position+1:] if m['role']=='tool' and m.get('tool_call_id')==wrapper['id']]
+        if len(replies)!=1:raise ValueError('one_original_wrapper_result_required')
+        bundle=json.loads(replies[0]['content'],object_pairs_hook=reject_duplicates(ValueError,'duplicate_tool_result_field'))
+        if type(bundle) is not dict or set(bundle)!={'results'} or type(bundle['results']) is not list:
+            raise ValueError('original_aggregate_results_required')
+        rows=bundle['results']
+        if len(rows)!=len(turn.calls) or any(type(row) is not dict or
+                set(row)!={'index','name','tool','result'} or type(row['index']) is not int or
+                row['index']!=i or row['name']!=turn.calls[i].name for i,row in enumerate(rows)):
+            raise ValueError('all_original_inner_results_required')
+        name,query=canonical_tool(native,turn.calls[index].arguments)
+        return name,query,[dict(tool=rows[index]['tool'],result=rows[index]['result'])]
+    if index>=len(calls) or calls[index]['function']['name']!=native:
+        raise ValueError('original_native_tool_required')
+    call=calls[index]
+    name,query=canonical_tool(native,call['function']['arguments'].encode())
+    replies=[m for m in messages[position+1:] if m['role']=='tool' and m.get('tool_call_id')==call['id']]
+    if len(replies)!=1:raise ValueError('one_original_native_result_required')
+    result=json.loads(replies[0]['content'],object_pairs_hook=reject_duplicates(ValueError,'duplicate_tool_result_field'))
+    if type(result) is not dict or set(result)!={'tool','result'}:
+        raise ValueError('original_native_result_required')
+    return name,query,[result]
 
 
 def cases(today):
@@ -104,7 +152,7 @@ def check(case, evidence):
                                foreign_mutations=0,formal_trip_count=0,memory_item_count=0).items():
         if observed.get(field)!=expected:reasons.append(field+'_not_proven')
     records = {v['attempt_id']:v for v in evidence.get('authorization_attempts',[])}
-    covered=set();tool_rounds=[];model_rounds=[]
+    covered=set();tool_rounds=[];model_rounds=[];proven_facts=[]
     models={int(op['operation_key'].rsplit('.',1)[1]):op for op in evidence.get('operations',[])
             if re.fullmatch(r'model\.tool_turn\.[0-7]',op['operation_key'])}
     for op in evidence.get('operations',[]):
@@ -134,15 +182,12 @@ def check(case, evidence):
             else:
                 covered.add(kind);tool_rounds.append(int(match[1]))
                 following=models.get(int(match[1])+1)
-                messages=[] if following is None else following['input']['messages']
-                assistants=[m for m in messages if m['role']=='assistant' and m.get('tool_calls')]
-                calls=[] if not assistants else assistants[-1]['tool_calls']
                 index=int(match[2]);native={'place':'place_search','route':'place_route','weather':'weather','fact':'fact'}[kind]
-                if index>=len(calls) or calls[index]['function']['name']!=native:
+                try:
+                    if following is None:raise ValueError('next_model_missing')
+                    name,query,results=tool_exchange(following['input'],index,native)
+                except (ValueError,KeyError,TypeError,IndexError):
                     reasons.append('native_tool_result_not_in_followup_model');continue
-                call=calls[index]
-                name,query=canonical_tool(native,call['function']['arguments'].encode())
-                results=[json.loads(m['content']) for m in messages if m['role']=='tool' and m.get('tool_call_id')==call['id']]
                 if (not results or not any(v.get('tool')==name for v in results)
                         or op['input'].get('name')!=name or op['input'].get('query')!=json.loads(query)):
                     reasons.append('native_tool_result_not_in_followup_model')
@@ -150,21 +195,15 @@ def check(case, evidence):
                     try:matched=any(v.get('tool')==name and tool_result_digest(kind,v['result'])==detail.get('response_sha256') for v in results)
                     except (ValueError,KeyError,TypeError):matched=False
                     if not matched:reasons.append('actual_tool_response_changed_before_followup_model')
+                    elif kind=='fact':proven_facts.extend(v['result'] for v in results if v.get('tool')==name)
         else:reasons.append('unexpected_original_registration')
     if not set(case['required'])<=covered:reasons.append('required_tool_kind_missing')
     if not model_rounds or not tool_rounds or max(model_rounds)<=max(tool_rounds):
         reasons.append('complete_model_continuation_after_tool_missing')
     if 'fact' in case['required']:
-        excerpts=[]
-        for op in evidence.get('operations',[]):
-            if op['registration_id']=='model.tool_turn':
-                for message in op['input']['messages']:
-                    if message['role']=='tool':
-                        value=json.loads(message['content'])
-                        if value.get('tool')=='fact':excerpts.append(value['result'])
-        if not any(v.get('source_url')=='https://en.nia.gov.cn/' and v.get('excerpts')
+        if not any(isinstance(v,dict) and v.get('source_url')=='https://en.nia.gov.cn/' and v.get('excerpts')
                    and v.get('original_bytes',0)>0 and re.fullmatch('[0-9a-f]{64}',v.get('original_sha256',''))
-                   for v in excerpts):reasons.append('official_page_excerpt_not_proven')
+                   for v in proven_facts):reasons.append('official_page_excerpt_not_proven')
     return dict(status='FAIL' if reasons else 'PASS',reasons=sorted(set(reasons)),
                 covered=sorted(covered),required=case['required'],run_id=run,message_id=mid,
                 kind='program',independent=True,ref='eval/smoke.py:check')
@@ -238,25 +277,26 @@ def main():
     if claimed('smoke'):
         print('READ_ONLY: canonical smoke phase already claimed; no request/retry');return 0
     if os.environ.get('CJ_M4_SYNTHETIC_ONLY')!='1':parser.error('explicit M4 synthetic-only activation required')
-    candidate=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
+    require_output(args.output)
+    candidate=source_candidate()
     before=verified_journal()
     forecast=estimate(before,include_smoke=True)
     if not forecast['within_authorization']:raise ValueError('smoke_plus_full_estimate_exceeds_authorization_report_495')
-    model_key=keychain('g2c-dashscope');amap_key=keychain('g2c-amap-web-key')
+    today=datetime.now(ZoneInfo('Asia/Shanghai')).date().isoformat()
+    subjects=frozenset('m4-synthetic-r2-smoke-'+c['id']+'-'+l for c in cases(today) for l in ('zh','en'))
+    services=create_real_services(subjects);budget=services.model.authorization
     if not claim('smoke',args.output,candidate):
         print('READ_ONLY: canonical smoke phase already claimed; no request/retry');return 0
-    budget=AuthorizationBudget(STATE);budget.check_date();verified_journal()
-    today=datetime.now(ZoneInfo('Asia/Shanghai')).date().isoformat()
+    budget.check_date();verified_journal()
     plan=dict(candidate_id=candidate,batch_id='round2-smoke',cases=cases(today),source_date=today,created_at=datetime.now(timezone.utc).isoformat(),
               model_id=M4_MODEL,endpoint=M4_BASE,collector_sha256=sha256(Path(__file__).read_bytes()).hexdigest(),
-              authorization='PR540 M4 items3/4; synthetic only; no old action replay',planned_n=6)
+              authorization='PR540 M4 items3/4 and JT current495 decisions; synthetic only; no old action replay',
+              execution_source=source_info(),planned_n=6)
     args.output.mkdir(parents=True,mode=0o700);(args.output/'raw').mkdir(mode=0o700)
     save(args.output/'plan.json',plan);save(args.output/'budget-before.json',before)
     save(args.output/'estimate.json',forecast)
     save(args.output/'packages.json',{k:version(k) for k in ('httpx','psycopg','uvicorn','fastapi')})
-    model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,model_key,max_output_tokens=1024),budget)
-    subjects=frozenset('m4-synthetic-r2-smoke-'+c['id']+'-'+l for c in plan['cases'] for l in ('zh','en'))
-    services=RealServices(model,amap_key,subjects);rows=[]
+    rows=[]
     with redirect_stdout(io.StringIO()),private_database('real-r2-smoke') as conninfo:
         auth=conninfo.parent/'auth';dev_auth.init(auth,sorted(subjects));now=int(time.time())
         profile=conninfo.parent/'run.json'
