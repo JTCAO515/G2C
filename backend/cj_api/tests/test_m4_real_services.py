@@ -405,6 +405,7 @@ class Boundaries(unittest.TestCase):
         with self.assertRaises(BudgetUnknown):self.budget.begin('next','model',b'synthetic')
         self.budget.clock=lambda:datetime(2026,12,1,tzinfo=timezone.utc)
         with self.assertRaises(BudgetUnknown):self.budget.begin('late','fact',b'synthetic')
+    @patch('cj_usage.authorization_budget.TOOL_STOP_CNY',160)
     def test_tool_holds_shared_across_categories(self):
         for i in range(80):self.budget.begin(str(i),'route' if i%2 else 'place',b'synthetic')
         previous=self.budget.inspect()
@@ -415,6 +416,27 @@ class Boundaries(unittest.TestCase):
         with self.assertRaises(BudgetUnknown):self.budget.begin('next','weather',b'synthetic')
         for i in range(240):self.budget.begin('free-page-'+str(i),'fact',b'synthetic')
         with self.assertRaises(BudgetUnknown):self.budget.begin('next-free-page','fact',b'synthetic')
+
+    def test_jt_tool_stop_10000_does_not_raise_the_200_total_or_release_old_unknowns(self):
+        from cj_usage.authorization_budget import TOOL_STOP_CNY,TOOL_TOTAL_CNY
+        self.assertEqual((TOOL_STOP_CNY,TOOL_TOTAL_CNY),(10000,200))
+        with patch('cj_usage.authorization_budget.TOOL_STOP_CNY',160):
+            for i in range(160):self.budget.begin(str(i),('place','route','weather')[i%3],b'synthetic prior intent')
+            previous=self.budget.inspect()
+            with self.assertRaises(BudgetUnknown):self.budget.begin('old-stop','place',b'synthetic')
+        self.budget=AuthorizationBudget(Path(self.temp.name),clock=lambda:NOW)
+        self.assertEqual(self.budget.inspect(),previous)
+        for i in range(160,200):self.budget.begin(str(i),('place','route','weather')[i%3],b'synthetic new intent')
+        self.assertEqual(self.budget.inspect()[:160],previous)
+        at_total=self.budget.inspect()
+        for kind in ('place','route','weather'):
+            with self.subTest(kind=kind),self.assertRaises(BudgetUnknown):self.budget.begin('over-total-'+kind,kind,b'synthetic')
+        self.assertEqual(self.budget.inspect(),at_total)
+        with self.assertRaises(BudgetUnknown):self.budget.begin('0','place',b'new bytes cannot rearm old intent')
+        self.assertEqual(self.budget.inspect(),at_total)
+        self.budget.begin('free-at-total','fact',b'synthetic public page')
+        self.budget.begin('model-independent','model',b'synthetic model')
+        self.assertEqual(self.sent,[])  # Admission-only fixture, not provider evidence.
     def test_subject_and_region_closed(self):
         p=self.provider(sse())
         with self.assertRaises(ValueError):RealServices(p,KEY,frozenset({'alice'}))
