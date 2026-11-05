@@ -124,7 +124,7 @@ import UIKit
             let inViewport=fits ? frame.minY>=top && frame.maxY<=bottom : frame.midY>top && frame.midY<bottom
             if element.exists && element.isHittable && inViewport { return element }
             let located = !frame.isEmpty && frame.minY.isFinite && frame.maxY.isFinite
-            let down=located ? frame.midY<=top : attempt>=35
+            let down=located ? (fits ? frame.minY<top : frame.midY<=top) : attempt>=35
             let middle=(top+bottom)/2,step=min(150,(bottom-top)*0.35)
             #if G2C_M4_DEVICE_ACCEPTANCE
             // Native multiline fields consume drags inside their content.
