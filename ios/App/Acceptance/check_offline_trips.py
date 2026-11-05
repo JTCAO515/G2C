@@ -129,6 +129,12 @@ def main():
                                   if raw_bearer == ('Bearer ' + value).encode()), None)
                     row = dict(method=scope['method'], path=path, query=query, status=status, actor=actor,
                                response_sha256=hashlib.sha256(body).hexdigest())
+                    if path == '/v1/trip-details' and status == 200:
+                        payload = json.loads(body)
+                        trip = payload.get('trip')
+                        row['response_fields'] = sorted(payload)
+                        row['trip_fields'] = sorted(trip) if isinstance(trip, dict) else None
+                        row['content_version'] = trip.get('content', {}).get('version') if isinstance(trip, dict) else None
                     audit.append(row)
                     if path == '/v1/message-receipts' and status == 200 and mode['verification'] != 'normal':
                         # The real signature/admission/repository read already ran above.
@@ -398,6 +404,7 @@ def main():
     except BaseException as error:
         report['status'] = 'FAIL'; report['error'] = type(error).__name__; raise
     finally:
+        report['observed_requests'] = list(audit)
         save()
     print(json.dumps(dict(status=report['status'], head=head, cases=report['cases']), indent=2))
 
