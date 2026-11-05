@@ -120,7 +120,9 @@ import UIKit
             }
             let frame=element.exists ? element.frame : .zero
             if (id.hasPrefix("planning.") || id == "trip.manual.prepare" || id == "assistant.intent") && attempt % 10 == 0 { print("CONTROL_VIEWPORT",id,frame,top,bottom,element.exists,navigation.exists) }
-            if element.exists && element.isHittable && frame.midY>top && frame.midY<bottom { return element }
+            let fits=frame.height<=bottom-top
+            let inViewport=fits ? frame.minY>=top && frame.maxY<=bottom : frame.midY>top && frame.midY<bottom
+            if element.exists && element.isHittable && inViewport { return element }
             let located = !frame.isEmpty && frame.minY.isFinite && frame.maxY.isFinite
             let down=located ? frame.midY<=top : attempt>=35
             let middle=(top+bottom)/2,step=min(150,(bottom-top)*0.35)
@@ -776,6 +778,7 @@ import UIKit
             tap("planning.originals")
             let query=visible({app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@","planning.query.")).firstMatch},id:"planning.original.query")
             XCTAssertTrue(query.isEnabled && query.isHittable);query.tap()
+            capture(name+"-original-query-dispatched")
             if let invalidation {
                 text("planning.activity",contains:invalidation=="compete" ? "Conflict" : "UNKNOWN")
                 XCTAssertFalse(textElement("planning.receipt").exists)
