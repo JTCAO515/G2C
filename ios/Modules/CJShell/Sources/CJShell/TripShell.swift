@@ -183,7 +183,8 @@ private struct TripContainerDetail: View {
                             Task { await host.performOfflineSync(work) }
                         } label: {
                             RunReadableText(text: language.text("Synchronize for offline reading", "同步用于离线读取"))
-                                .frame(minHeight: 44)
+                                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                                .contentShape(Rectangle())
                         }.buttonStyle(ShellReadableButtonStyle()).disabled(action == nil)
                             .accessibilityIdentifier("offline.sync")
                         OfflineSyncLabel(controller: cache, language: language)
