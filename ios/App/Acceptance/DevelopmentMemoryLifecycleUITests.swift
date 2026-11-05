@@ -138,6 +138,9 @@ import Foundation
         #if G2C_M4_DEVICE_ACCEPTANCE
         field.coordinate(withNormalizedOffset:CGVector(dx:0.95,dy:0.95)).tap()
         M4DeviceTestSession.clearFocusedTextWithKeyboard(field)
+        // iOS 27.2 reports this emptied SwiftUI TextField's native value as nil.
+        // Keep an exact empty-state assertion for each tested platform.
+        XCTAssertNil(field.value)
         #else
         // Use the native editing menu verified on the 17.5 acceptance target.
         field.press(forDuration:1)
@@ -146,8 +149,8 @@ import Foundation
         let selectAll=menu.waitForExistence(timeout:2) ? menu : app.buttons.matching(names).firstMatch
         XCTAssertTrue(selectAll.waitForExistence(timeout:5));XCTAssertTrue(selectAll.isEnabled);selectAll.tap()
         field.typeText(XCUIKeyboardKey.delete.rawValue)
-        #endif
         XCTAssertEqual(field.value as? String,"")
+        #endif
         field.typeText(text);XCTAssertEqual(Array((field.value as? String ?? "").utf8),Array(text.utf8))
         tap("memory.manage.keyboard.done")
     }
