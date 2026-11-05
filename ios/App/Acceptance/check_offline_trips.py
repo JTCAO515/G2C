@@ -134,7 +134,8 @@ def main():
                         trip = payload.get('trip')
                         row['response_fields'] = sorted(payload)
                         row['trip_fields'] = sorted(trip) if isinstance(trip, dict) else None
-                        row['content_version'] = trip.get('content', {}).get('version') if isinstance(trip, dict) else None
+                        content = trip.get('content') if isinstance(trip, dict) else None
+                        row['content_version'] = content.get('version') if isinstance(content, dict) else None
                     audit.append(row)
                     if path == '/v1/message-receipts' and status == 200 and mode['verification'] != 'normal':
                         # The real signature/admission/repository read already ran above.
@@ -212,6 +213,17 @@ def main():
                             assert accepted.json()['receipt']['committed_version']==1
                         page=client.get('/v1/trips',params={'limit':50},headers=headers);page.raise_for_status();trips=page.json()['trips']
                         assert len(trips)==count and model.calls==count*2
+                        diagnostics=[]
+                        for record in trips:
+                            for source_header in (False,True):
+                                read_headers=headers if source_header else {key:value for key,value in headers.items() if key!='X-CJ-Trip-Content'}
+                                detail=client.get('/v1/trip-details',params={'trip_id':record['trip_id']},headers=read_headers)
+                                payload=detail.json();item=payload.get('trip');document=item.get('document') if isinstance(item,dict) else None
+                                diagnostics.append(dict(source_header=source_header,status=detail.status_code,
+                                    response_fields=sorted(payload),trip_fields=sorted(item) if isinstance(item,dict) else None,
+                                    document_fields=sorted(document) if isinstance(document,dict) else None,
+                                    document_version=document.get('version') if isinstance(document,dict) else None))
+                        report.setdefault('source_read_diagnostics',{})[case]=diagnostics;save()
                     row['formal']=[dict(trip_id=t['trip_id'],version=t['version'],title=t['document']['title'],sha256=hashlib.sha256(base64.b64decode(t['content_utf8_base64'])).hexdigest()) for t in trips]
                     row['calls']=model.calls;return row['formal']
 
