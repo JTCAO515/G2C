@@ -134,7 +134,10 @@ import Foundation
         for _ in 0..<30 { if field.isHittable { break };app.swipeUp() }
         XCTAssertTrue(field.isHittable);field.tap();XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout:5))
         #if G2C_M4_DEVICE_ACCEPTANCE
-        field.coordinate(withNormalizedOffset:CGVector(dx:0.95,dy:0.95)).tap()
+        // Use the text line, above the short field's bottom scroll indicator.
+        field.coordinate(withNormalizedOffset:CGVector(dx:0.95,dy:0.5)).tap()
+        XCTAssertTrue(app.keyboards.firstMatch.exists)
+        print("M4_MEMORY_EDIT_GEOMETRY",field.frame,"keyboard",app.keyboards.firstMatch.frame)
         M4DeviceTestSession.clearFocusedTextWithKeyboard(field)
         // iOS 27.2 reports this emptied SwiftUI TextField's native value as nil.
         // Keep an exact empty-state assertion for each tested platform.

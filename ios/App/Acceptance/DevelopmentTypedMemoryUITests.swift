@@ -58,6 +58,17 @@ import Foundation
         if id.hasPrefix("account.development.signin.") || id == "account.development.restore" {
             deviceSession.waitForAppNetworkConsent()
         }
+        if ["Memory","记忆"].contains(id) {
+            // Tab selection can restore the Account page retained by this tab.
+            // Return through its exact back control before using Memory-root actions.
+            let account=app.navigationBars.matching(identifier:localized("Account","账号")).firstMatch
+            if account.waitForExistence(timeout:2) {
+                XCTAssertEqual(account.buttons.count,1)
+                let back=account.buttons.element(boundBy:0)
+                XCTAssertTrue(back.isEnabled && back.isHittable);back.tap()
+                XCTAssertTrue(app.navigationBars.matching(identifier:localized("Memory","记忆")).firstMatch.waitForExistence(timeout:10))
+            }
+        }
         #endif
     }
     private func input(_ id: String,_ text: String) {
