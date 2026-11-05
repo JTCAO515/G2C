@@ -18,6 +18,9 @@ from zoneinfo import ZoneInfo
 from .metered_exit import BudgetUnknown
 
 LIMITS={'model':(387,1),'place':(1200,1),'route':(600,1),'weather':(200,1),'fact':(240,0)}
+# JT changed the tool stop line on 2026-11-05; the original total stays binding.
+TOOL_STOP_CNY=10000
+TOOL_TOTAL_CNY=200
 DEADLINE=datetime(2026,12,1,tzinfo=ZoneInfo('Asia/Shanghai'))
 MAC_PRODUCER='codex-mac'
 HK_PRODUCER='hk-beta-47.83.147.176'
@@ -116,8 +119,8 @@ class AuthorizationBudget:
             # M1 #2 retains thirteen CNY holds. Never release UNKNOWN or assume a
             # fresh quota when the current operation/period/database changes.
             if counts.get(kind,0)>=LIMITS[kind][0]:raise BudgetUnknown('M4 call allowance exhausted')
-            if kind!='model' and sum(counts.get(k,0)*LIMITS[k][1] for k in LIMITS if k!='model')+LIMITS[kind][1]>160:
-                raise BudgetUnknown('M4 tool authorization stop threshold')
+            if kind!='model' and sum(counts.get(k,0)*LIMITS[k][1] for k in LIMITS if k!='model')+LIMITS[kind][1]>min(TOOL_STOP_CNY,TOOL_TOTAL_CNY):
+                raise BudgetUnknown('M4 tool authorization ceiling')
             db.execute('INSERT INTO attempt VALUES(?,?,?,\'INTENT\',NULL)',
                        (attempt,kind,hashlib.sha256(raw).hexdigest()))
 
