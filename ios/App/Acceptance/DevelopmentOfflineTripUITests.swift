@@ -55,7 +55,15 @@ import Foundation
         XCTAssertTrue(target.isHittable, id)
         let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: target)
         XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 20), .completed, id)
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        if id == "offline.sync" {
+            print("M4_OFFLINE_SYNC_TARGET",target.frame)
+            let shot=XCTAttachment(screenshot:app.screenshot());shot.name="offline-sync-before-touch";shot.lifetime = .keepAlways;add(shot)
+        }
+        target.coordinate(withNormalizedOffset:CGVector(dx:0.5,dy:0.5)).tap()
+        #else
         target.tap()
+        #endif
         #if G2C_M4_DEVICE_ACCEPTANCE
         if fixed {
             let selected=XCTNSPredicateExpectation(predicate:NSPredicate(format:"selected == true"),object:target)
@@ -110,7 +118,12 @@ import Foundation
         let status = app.staticTexts["offline.sync.status"]
         let saved = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@",
             "Offline snapshot saved from this successful formal-trip read."), object: status)
-        XCTAssertEqual(XCTWaiter.wait(for: [saved], timeout: 25), .completed, status.label)
+        let result=XCTWaiter.wait(for:[saved],timeout:25)
+        if result != .completed {
+            let shot=XCTAttachment(screenshot:app.screenshot());shot.name="offline-sync-unconfirmed";shot.lifetime = .keepAlways;add(shot)
+            let tree=XCTAttachment(string:app.debugDescription);tree.name="offline-sync-unconfirmed-tree";tree.lifetime = .keepAlways;add(tree)
+        }
+        XCTAssertEqual(result,.completed,status.label)
         app.navigationBars.buttons.element(boundBy: 0).tap()
     }
     @discardableResult func openCache(_ record: Record, language: String = "en") -> Snapshot {
