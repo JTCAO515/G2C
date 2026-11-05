@@ -98,12 +98,26 @@ import Foundation
     func tap(_ id: String) {
         let label = ["Memory", "记忆", "Assistant", "助手", "Preference", "偏好"].contains(id)
         let query = app.buttons.matching(NSPredicate(format: label ? "label == %@" : "identifier == %@", id)), button = query.element
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        let tab = ["Memory", "记忆", "Assistant", "助手"].contains(id)
+        if tab {
+            XCTAssertTrue(button.waitForExistence(timeout:10),id)
+            XCTAssertTrue(button.isHittable,id)
+        } else {
+            reveal(button, centered: id.hasPrefix("memoryCandidate.") || id.hasPrefix("account.cleanup."), editor: id.hasPrefix("memoryCandidate.editor."))
+        }
+        #else
         reveal(button, centered: id.hasPrefix("memoryCandidate.") || id.hasPrefix("account.cleanup."), editor: id.hasPrefix("memoryCandidate.editor."))
+        #endif
         XCTAssertEqual(query.count, 1, id)
         let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: button)
         XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 25), .completed, id)
         button.tap()
         #if G2C_M4_DEVICE_ACCEPTANCE
+        if tab {
+            let selected=XCTNSPredicateExpectation(predicate:NSPredicate(format:"selected == true"),object:button)
+            XCTAssertEqual(XCTWaiter.wait(for:[selected],timeout:10),.completed,id)
+        }
         if id.hasPrefix("account.development.signin.") || id == "account.development.restore" {
             deviceSession.waitForAppNetworkConsent()
         }
