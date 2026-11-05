@@ -134,6 +134,16 @@ import Foundation
         for _ in 0..<30 { if field.isHittable { break };app.swipeUp() }
         XCTAssertTrue(field.isHittable);field.tap();XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout:5))
         #if G2C_M4_DEVICE_ACCEPTANCE
+        let keyboard=app.keyboards.firstMatch
+        let done=app.toolbars.buttons.matching(identifier:"memory.manage.keyboard.done").firstMatch
+        let geometry=XCTAttachment(string:app.debugDescription);geometry.name="memory-editor-before-caret";geometry.lifetime = .keepAlways;add(geometry)
+        let image=XCTAttachment(screenshot:app.screenshot());image.name="memory-editor-before-caret";image.lifetime = .keepAlways;add(image)
+        print("M4_MEMORY_BEFORE_CARET",field.frame,"keyboard",keyboard.frame,"done",done.exists ? done.frame:.zero)
+        let exposed=XCTNSPredicateExpectation(predicate:NSPredicate {_,_ in
+            let bottom=done.exists ? min(done.frame.minY,keyboard.frame.minY):keyboard.frame.minY
+            return keyboard.frame.height>0 && field.frame.maxY<=bottom && field.isHittable
+        },object:nil)
+        XCTAssertEqual(XCTWaiter.wait(for:[exposed],timeout:5),.completed,"The editable text must be above the keyboard accessory")
         // Use the text line, above the short field's bottom scroll indicator.
         field.coordinate(withNormalizedOffset:CGVector(dx:0.95,dy:0.5)).tap()
         XCTAssertTrue(app.keyboards.firstMatch.exists)

@@ -71,10 +71,9 @@ client is also readonly. Loading responses wait for an explicit test release;
 all observed business requests must remain GETs. Assistant state and long-text
 samples are presentation data, not evidence of a real model or backend outcome.
 
-VoiceOver acceptance was removed by JT on 2026-11-05; prior listening/focus/activation
-records are retained and cancellation is not PASS. Apple states that VoiceOver is not
-available in Simulator; system accessibility audits do not replace it:
-[Apple accessibility testing](https://developer.apple.com/documentation/accessibility/performing-accessibility-testing-for-your-app).
+VoiceOver acceptance was removed by JT on 2026-11-05. Prior listening/focus/activation
+records are retained; cancellation is not PASS. The ordinary touch/keyboard paths
+and complete `.all` accessibility audits remain required.
 
 ## Message sending and recovery (#164)
 
