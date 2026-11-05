@@ -139,6 +139,8 @@ import Foundation
         let geometry=XCTAttachment(string:app.debugDescription);geometry.name="memory-editor-before-caret";geometry.lifetime = .keepAlways;add(geometry)
         let image=XCTAttachment(screenshot:app.screenshot());image.name="memory-editor-before-caret";image.lifetime = .keepAlways;add(image)
         print("M4_MEMORY_BEFORE_CARET",field.frame,"keyboard",keyboard.frame,"done",done.exists ? done.frame:.zero)
+        XCTAssertTrue(done.waitForExistence(timeout:5))
+        deviceSession.revealControl(field,in:app,keyboardDone:done)
         let exposed=XCTNSPredicateExpectation(predicate:NSPredicate {_,_ in
             let bottom=done.exists ? min(done.frame.minY,keyboard.frame.minY):keyboard.frame.minY
             return keyboard.frame.height>0 && field.frame.maxY<=bottom && field.isHittable

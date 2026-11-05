@@ -26,6 +26,35 @@ import XCTest
         XCTAssertEqual(Array((field.value as? String ?? "").utf8),[],"The old value must be empty before replacement")
     }
 
+    /// Use actual visible content bounds; keyboard accessories are outside Keyboard.frame.
+    /// This follows the existing Needs driver gutter drag, away from editable rows.
+    func revealControl(_ element: XCUIElement, in app: XCUIApplication, keyboardDone: XCUIElement? = nil) {
+        XCTAssertTrue(element.waitForExistence(timeout:10))
+        for attempt in 0..<20 {
+            let keyboard=app.keyboards.firstMatch
+            if keyboardDone != nil && !keyboard.exists {
+                element.tap();XCTAssertTrue(keyboard.waitForExistence(timeout:5))
+            }
+            let bar=app.navigationBars.firstMatch,tabs=app.tabBars.firstMatch
+            let top=bar.exists ? bar.frame.maxY : app.frame.minY+60
+            var bottom=tabs.exists ? tabs.frame.minY : app.frame.maxY-20
+            if keyboard.exists {bottom=min(bottom,keyboard.frame.minY)}
+            if let keyboardDone,keyboardDone.exists {bottom=min(bottom,keyboardDone.frame.minY)}
+            let frame=element.frame
+            let located = !frame.isEmpty && frame.minY.isFinite && frame.maxY.isFinite
+            let fits=located && frame.height<=bottom-top-8
+            let within=located && (fits ? frame.minY>=top+4 && frame.maxY<=bottom-4 : frame.midY>top+4 && frame.midY<bottom-4)
+            if within && element.isHittable {return}
+            let down=located ? frame.minY<top+4 : attempt>=10
+            let middle=(top+bottom)/2,step=min(125,(bottom-top)*0.3)
+            let start=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:app.frame.width-6,dy:middle+(down ? -step:step)))
+            let end=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:app.frame.width-6,dy:middle+(down ? step:-step)))
+            start.press(forDuration:0.05,thenDragTo:end)
+        }
+        let shot=XCTAttachment(screenshot:app.screenshot());shot.name="unexposed-control-"+element.identifier;shot.lifetime = .keepAlways;test.add(shot)
+        XCTFail("Exact control must be exposed above the keyboard/accessory and within page content")
+    }
+
     private func handle(_ alert: XCUIElement) -> Bool {
         let message = alert.staticTexts.allElementsBoundByIndex.map(\.label)
             .joined(separator: " ").lowercased()

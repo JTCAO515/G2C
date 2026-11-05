@@ -40,17 +40,27 @@ import Foundation
     func tap(_ id: String) {
         let query = app.buttons.matching(identifier: id)
         let target = query.element
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        let fixed=["Memory","记忆","Trips","行程","Assistant","助手"].contains(id)
+        if fixed {XCTAssertTrue(target.waitForExistence(timeout:10),id)}
+        else {deviceSession.revealControl(target,in:app)}
+        #else
         for _ in 0..<35 {
             if target.exists && target.isHittable { break }
             if target.exists && target.frame.midY < app.navigationBars.element.frame.maxY { app.swipeDown() }
             else { app.swipeUp() }
         }
+        #endif
         XCTAssertEqual(query.count, 1, id)
         XCTAssertTrue(target.isHittable, id)
         let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: target)
         XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 20), .completed, id)
         target.tap()
         #if G2C_M4_DEVICE_ACCEPTANCE
+        if fixed {
+            let selected=XCTNSPredicateExpectation(predicate:NSPredicate(format:"selected == true"),object:target)
+            XCTAssertEqual(XCTWaiter.wait(for:[selected],timeout:10),.completed,id)
+        }
         if id.hasPrefix("account.development.signin.") || id == "account.development.restore" {
             deviceSession.waitForAppNetworkConsent()
         }
