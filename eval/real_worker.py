@@ -5,7 +5,8 @@ from pathlib import Path
 import sys
 
 from runtime import ROOT
-from real import keychain, STATE
+from real import create_real_services
+from hk import source_candidate
 from cj_agent.provider import DashScopeConfig, MeteredDashScopeProvider, M4_BASE, M4_MODEL
 from cj_api.local_app import LocalDatabase
 from cj_api.local_run_context import load_run_context
@@ -20,10 +21,9 @@ def main():
         raise ValueError('explicit authorized synthetic profile required')
     conninfo, auth, context_path, memory_path = map(Path, sys.argv[1:])
     context = load_run_context(context_path)
-    model = MeteredDashScopeProvider(DashScopeConfig(M4_BASE, M4_MODEL,
-        keychain('g2c-dashscope'), max_output_tokens=1024), AuthorizationBudget(STATE))
-    services = RealServices(model, keychain('g2c-amap-web-key'),
-        frozenset(json.loads((auth / 'invited.json').read_text())))
+    source_candidate()
+    services=create_real_services(frozenset(json.loads((auth/'invited.json').read_text())))
+    model=services.model
     memory = TypedRuntimeConfiguration.from_bytes(memory_path.read_bytes())
     database = LocalDatabase(conninfo, run_context=context, travel_context=True, needs_context=True)
     outcomes = run_worker.run_once(database, model, auth, memory_configuration=memory,

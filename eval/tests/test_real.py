@@ -25,6 +25,7 @@ class RealCollectorChecks(unittest.TestCase):
                 patch.object(real.subprocess,'check_output',return_value='candidate'), \
                 patch.object(smoke,'require_full_ready'), \
                 patch.object(real_budget,'verified_journal',return_value=[dict(kind='route')]*147), \
+                patch.object(real,'create_real_services',side_effect=AssertionError('no service credentials or exit')) , \
                 patch.object(real,'keychain',side_effect=AssertionError('no key read')), \
                 patch.object(real_phase,'claim',side_effect=AssertionError('no phase claim')), \
                 patch.object(real,'AuthorizationBudget',side_effect=AssertionError('no budget mutation')):

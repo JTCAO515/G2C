@@ -17,20 +17,21 @@ import real_budget
 import real_phase
 import smoke
 from cj_api.real_services import canonical_tool, TOOL_SYSTEM, TOOLS
-from cj_agent.provider import M4_BASE, M4_MODEL
+from cj_agent.provider import M4_BASE, M4_MODEL, M4_NATIVE_TURN_PROFILE, M4_TURN_FUNCTION
 from cj_place.models import (Result, Source, Outcome, Observed, FieldState, Place, Coordinate, Route)
 from cj_place.contract_v1 import decode_query, encode_result
 from datetime import datetime, timezone
 from cj_usage.authorization_budget import canonical
 
 
-def evidence(case, language='zh'):
+def evidence(case, language='zh', *, proxy=False):
     run='original-'+case['id']+'-'+language;mid='message-'+run;answer='Actual fixture body'
     ops=[];attempts=[]
     def model(n,messages):
         aid=run+'-model-'+str(n)
         inputs=dict(messages=deepcopy(messages),system=TOOL_SYSTEM,
                     native_tools=[t for t in TOOLS if t['function']['name'] in case['native']])
+        if proxy:inputs.update(native_turn_profile=M4_NATIVE_TURN_PROFILE,external_tools_disabled=False)
         ops.append(dict(run_id=run,operation_key='model.tool_turn.'+str(n),registration_id='model.tool_turn',
                         attempt_id=aid,input=inputs))
         attempts.append(dict(attempt_id=aid,kind='model',input_sha=model_input_digest(inputs),state='RECEIVED',receipt=dict(
@@ -72,7 +73,17 @@ def evidence(case, language='zh'):
         else:wire=canonical(data)
         attempts[-1]['receipt']['response_sha256']=sha256(wire).hexdigest()
         results.append(dict(role='tool',tool_call_id=aid,content=json.dumps(dict(tool=name,result=data))))
-    model(1,[dict(role='assistant',content=None,tool_calls=calls),*results])
+    if proxy:
+        turn=dict(version='MODEL-tool-turn.1',kind='tool',answer=None,calls=[
+            dict(name=c['function']['name'],arguments=json.loads(c['function']['arguments'])) for c in calls])
+        wrapper=run+'-wrapper'
+        aggregate=[dict(index=i,name=call['function']['name'],**json.loads(result['content']))
+                   for i,(call,result) in enumerate(zip(calls,results))]
+        messages=[dict(role='assistant',content=None,tool_calls=[dict(id=wrapper,type='function',
+            function=dict(name=M4_TURN_FUNCTION,arguments=json.dumps(turn)))]),
+            dict(role='tool',tool_call_id=wrapper,content=json.dumps(dict(results=aggregate)))]
+    else:messages=[dict(role='assistant',content=None,tool_calls=calls),*results]
+    model(1,messages)
     snapshot=dict(run_id=run,message_id=mid,status='completed',text_state='complete',text=answer)
     return dict(input_sha256=sha256(case['inputs'][language].encode()).hexdigest(),observed=dict(message_receipt=dict(run_id=run,message_id=mid),runtime_role='cj_m1_runtime',
         foreign_message_rows=0,foreign_mutations=0,formal_trip_count=0,memory_item_count=0),
@@ -81,6 +92,90 @@ def evidence(case, language='zh'):
 
 
 class SmokeChecks(unittest.TestCase):
+    def test_proxy_four_tool_flows_preserve_all_original_receipt_requirements(self):
+        for case in cases('2026-11-04'):
+            for language in ('zh','en'):
+                with self.subTest(case=case['id'],language=language):
+                    self.assertEqual(check(case,evidence(case,language,proxy=True))['status'],'PASS')
+
+    def test_proxy_wrapper_inner_query_index_and_results_cannot_be_changed(self):
+        case=cases('2026-11-04')[0]
+        for mutation in ('id','wrapper','arguments','index','name','missing','result'):
+            with self.subTest(mutation=mutation):
+                e=evidence(case,proxy=True);model=e['operations'][-1];messages=model['input']['messages']
+                wrapper=messages[0]['tool_calls'][0];turn=json.loads(wrapper['function']['arguments'])
+                bundle=json.loads(messages[1]['content'])
+                if mutation=='id':messages[1]['tool_call_id']='foreign-wrapper'
+                elif mutation=='wrapper':wrapper['function']['name']='foreign-function'
+                elif mutation=='arguments':turn['calls'][0]['arguments']['keyword']='different-query'
+                elif mutation=='index':bundle['results'][1]['index']=0
+                elif mutation=='name':bundle['results'][0]['name']='weather'
+                elif mutation=='missing':bundle['results'].pop()
+                elif mutation=='result':bundle['results'][0]['result']={}
+                wrapper['function']['arguments']=json.dumps(turn)
+                messages[1]['content']=json.dumps(bundle)
+                # Even a real wire hash of damaged input cannot replace the original tool receipt.
+                next(a for a in e['authorization_attempts'] if a['attempt_id']==model['attempt_id'])['input_sha']=model_input_digest(model['input'])
+                self.assertEqual(check(case,e)['status'],'FAIL')
+
+    def test_proxy_missing_data_and_unknown_receipts_never_pass_completed_text(self):
+        case=cases('2026-11-04')[1]
+        for mutation in ('data','tool_receipt','model_receipt','body','run'):
+            with self.subTest(mutation=mutation):
+                e=evidence(case,proxy=True)
+                if mutation=='data':e['operations'][-1]['input']['messages'].pop()
+                elif mutation in ('tool_receipt','model_receipt'):
+                    suffix='tool-0' if mutation=='tool_receipt' else 'model-1'
+                    next(a for a in e['authorization_attempts'] if a['attempt_id'].endswith(suffix)).update(state='INTENT',receipt=None)
+                elif mutation=='body':e['answer']='Source: https://example.com\n'
+                elif mutation=='run':e['outcomes'][0]['status']='unknown'
+                self.assertEqual(check(case,e)['status'],'FAIL')
+
+    def test_duplicate_result_fields_are_not_accepted_in_either_transport(self):
+        case=cases('2026-11-04')[1]
+        for proxy in (False,True):
+            with self.subTest(proxy=proxy):
+                e=evidence(case,proxy=proxy);message=e['operations'][-1]['input']['messages'][-1]
+                key='results' if proxy else 'result';value=json.loads(message['content'])
+                message['content']='{"'+key+'":null,'+message['content'][1:]
+                self.assertEqual(check(case,e)['status'],'FAIL')
+
+    def test_proxy_fact_excerpts_must_come_from_the_verified_original_result(self):
+        case=cases('2026-11-04')[2];e=evidence(case,proxy=True);model=e['operations'][-1]
+        bundle=json.loads(model['input']['messages'][-1]['content']);original=deepcopy(bundle['results'][0]['result'])
+        bundle['results'][0]['result']['excerpts']=[]
+        receipt=next(a['receipt'] for a in e['authorization_attempts'] if a['kind']=='fact')
+        receipt['response_sha256']=sha256(canonical(bundle['results'][0]['result'])).hexdigest()
+        model['input']['messages'][-1]['content']=json.dumps(bundle)
+        model['input']['messages'].append(dict(role='tool',tool_call_id='unbound-fake',content=json.dumps(dict(tool='fact',result=original))))
+        proof=check(case,e)
+        self.assertEqual(proof['status'],'FAIL');self.assertIn('official_page_excerpt_not_proven',proof['reasons'])
+
+    def test_wire_digest_uses_actual_proxy_and_legacy_final_strategy(self):
+        from real import MeteredDashScopeProvider,DashScopeConfig
+        class Captured(Exception):pass
+        class Capture:
+            def begin(self,attempt,kind,raw):self.raw=raw;raise Captured()
+        case=cases('2026-11-04')[1]
+        for proxy,final in ((False,False),(False,True),(True,False),(True,True)):
+            with self.subTest(proxy=proxy,final=final):
+                value=evidence(case,proxy=proxy)['operations'][-1]['input']
+                kwargs=dict(native_turn_profile=M4_NATIVE_TURN_PROFILE,final_answer=final) if proxy else dict(tool_choice='none' if final else None)
+                if proxy:value['external_tools_disabled']=final
+                elif final:value['tool_choice']='none'
+                capture=Capture();provider=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,'offline-only',max_output_tokens=1024),capture)
+                source=provider.invoke(value['messages'],value['system'],'no-dispatch',tools=value['native_tools'],receipt={},guard=lambda:False,**kwargs)
+                try:
+                    with self.assertRaises(Captured):next(source)
+                finally:source.close()
+                wire=json.loads(capture.raw)
+                self.assertEqual(model_input_digest(value),sha256(capture.raw).hexdigest())
+                self.assertEqual(wire['messages'][1:],value['messages'])
+                if proxy:
+                    self.assertEqual(wire['tool_choice']['function']['name'],M4_TURN_FUNCTION)
+                    self.assertEqual(wire['tools'][0]['function']['parameters']['properties']['calls']['maxItems'],0 if final else 4)
+                elif final:self.assertEqual(wire['tool_choice'],'none')
+
     def test_all_four_tool_flows_need_real_receipt_and_continuation(self):
         for c in cases('2026-11-04'):
             self.assertEqual(check(c,evidence(c))['status'],'PASS')
@@ -224,6 +319,7 @@ class SmokeChecks(unittest.TestCase):
                 patch.object(smoke,'claimed',return_value=False), \
                 patch.object(smoke.subprocess,'check_output',return_value='candidate'), \
                 patch.object(smoke,'verified_journal',return_value=[dict(kind='route')]*139), \
+                patch.object(smoke,'create_real_services',side_effect=AssertionError('no service credentials or exit')), \
                 patch.object(smoke,'keychain',side_effect=AssertionError('no key read')), \
                 patch.object(smoke,'claim',side_effect=AssertionError('no phase claim')), \
                 patch.object(smoke,'AuthorizationBudget',side_effect=AssertionError('no budget mutation')):
