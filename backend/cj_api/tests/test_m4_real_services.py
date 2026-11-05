@@ -6,7 +6,7 @@ import logging
 from pathlib import Path
 import tempfile
 import unittest
-from unittest.mock import patch,AsyncMock
+from unittest.mock import patch,AsyncMock,Mock
 from types import SimpleNamespace
 
 import httpx
@@ -189,6 +189,60 @@ class Boundaries(unittest.TestCase):
                 self.assertEqual(self.budget.inspect()[-1]['state'],'INTENT')
                 with self.assertRaises(BudgetUnknown):invoke()
                 self.assertEqual(len(self.sent)-before,1)
+
+    def test_choice_audit_records_only_enumerated_finish_and_rejection(self):
+        private='supplier-private-finish-not-for-logs'
+        for i,finish in enumerate(('stop','length','content_filter',private,7)):
+            with self.subTest(finish=finish):
+                body=turn_sse().replace('"finish_reason": "tool_calls"','"finish_reason": '+json.dumps(finish))
+                provider=self.provider(body);receipt={};attempt='choice-audit-'+str(i);before=len(self.sent)
+                def invoke():return list(provider.invoke([dict(role='user',content='Synthetic')],TOOL_SYSTEM,attempt,
+                    tools=TOOLS,native_turn_profile=M4_NATIVE_TURN_PROFILE,receipt=receipt,guard=lambda:True))
+                with self.assertLogs('cj_provider.audit',level='WARNING') as logs,self.assertRaises(ProviderUnknown):invoke()
+                audit='\n'.join(logs.output)
+                self.assertIn('phase=choice',audit);self.assertIn('reason=choice_rejected',audit)
+                self.assertIn('choice_rejection='+('named_finish' if finish=='stop' else 'incomplete_finish'),audit)
+                self.assertIn('finish_reason='+(str(finish) if i<3 else 'other' if type(finish) is str else 'invalid_type'),audit)
+                self.assertRegex(audit,r'argument_chars_before_rejection=[1-9][0-9]*')
+                self.assertNotIn(private,audit);self.assertNotIn('Needs verification.',audit);self.assertNotIn(KEY,audit)
+                self.assertEqual(receipt,{})
+                with self.assertRaises(BudgetUnknown):invoke()
+                self.assertEqual(len(self.sent)-before,1)
+
+    def test_empty_choice_then_reader_error_is_not_a_choice_rejection(self):
+        first=turn_sse().splitlines()[0]
+        empty=json.dumps(dict(id='chatcmpl-synthetic',model=M4_MODEL,choices=[]))
+        prefix=(first+'\n\ndata: '+empty+'\n\n').encode()
+        class Interrupted(httpx.SyncByteStream):
+            def __iter__(self):
+                yield prefix
+                raise httpx.ReadError('private-reader-error-'+KEY)
+        def response(request):self.sent.append(request);return httpx.Response(200,stream=Interrupted())
+        provider=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),self.budget,transport=httpx.MockTransport(response))
+        receipt={}
+        with self.assertLogs('cj_provider.audit',level='WARNING') as logs,self.assertRaises(ProviderUnknown):
+            self.invoke(provider,tools=TOOLS,native_turn_profile=M4_NATIVE_TURN_PROFILE,receipt=receipt)
+        audit='\n'.join(logs.output)
+        for field in ('phase=choice','tool_count=1','reason=httpx_error','choice_rejection=none','finish_reason=unseen'):
+            self.assertIn(field,audit)
+        self.assertNotIn(KEY,audit);self.assertNotIn('private-reader-error',audit);self.assertEqual(receipt,{})
+        with self.assertRaises(BudgetUnknown):self.invoke(provider,tools=TOOLS,native_turn_profile=M4_NATIVE_TURN_PROFILE)
+        self.assertEqual(len(self.sent),1)
+
+    def test_real_wire_timeout_after_tool_and_empty_choice_has_distinct_audit(self):
+        first=turn_sse().splitlines()[0]
+        empty=json.dumps(dict(id='chatcmpl-synthetic',model=M4_MODEL,choices=[]))
+        raw=('HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nConnection: close\r\n\r\n'+first+'\n\ndata: '+empty+'\n\n').encode()
+        reader=SimpleNamespace(read=AsyncMock(side_effect=[raw,TimeoutError('private-timeout-'+KEY)]))
+        writer=SimpleNamespace(write=Mock(),drain=AsyncMock(),transport=SimpleNamespace(abort=Mock()))
+        provider=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),self.budget);receipt={}
+        with patch('cj_agent.provider.asyncio.open_connection',AsyncMock(return_value=(reader,writer))),self.assertLogs('cj_provider.audit',level='WARNING') as logs,self.assertRaises(ProviderUnknown):
+            self.invoke(provider,tools=TOOLS,native_turn_profile=M4_NATIVE_TURN_PROFILE,receipt=receipt)
+        audit='\n'.join(logs.output)
+        for field in ('phase=choice','tool_count=1','reason=wire_timeout','choice_rejection=none','finish_reason=unseen'):
+            self.assertIn(field,audit)
+        self.assertNotIn(KEY,audit);self.assertNotIn('private-timeout',audit);self.assertEqual(receipt,{})
+        self.assertEqual(self.budget.inspect()[0]['state'],'INTENT');writer.transport.abort.assert_called_once()
 
     def test_supplier_cannot_dispatch_a_disabled_final_tool_or_rearm_it(self):
         provider=self.provider(sse(tool=True));receipt={}
