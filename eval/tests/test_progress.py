@@ -104,11 +104,13 @@ class ProgressChecks(unittest.TestCase):
         with self.assertRaises(ValueError):self.value()
 
     def test_raw_reference_cannot_escape_batch_or_follow_a_symlink(self):
-        self.add();self.rows[0]['raw_evidence_ref']='../outside.json'
-        with self.assertRaisesRegex(ValueError,'original_batch_raw_path'):self.value()
+        self.add();formal=self.formal();self.rows[0]['raw_evidence_ref']='../outside.json'
+        with self.assertRaisesRegex(ValueError,'original_batch_raw_path'):
+            snapshot('smoke',self.plan,self.rows,self.root,formal,self.starts)
         link=self.root/'raw/link.json';link.symlink_to(self.root/'raw/zh.json')
         self.rows[0]['raw_evidence_ref']='raw/link.json'
-        with self.assertRaisesRegex(ValueError,'original_batch_raw_path'):self.value()
+        with self.assertRaisesRegex(ValueError,'original_batch_raw_path'):
+            snapshot('smoke',self.plan,self.rows,self.root,formal,self.starts)
 
     def test_full_repeated_attempts_and_original_serious_gate_are_preserved(self):
         fixture=test_report.ReportChecks();fixture.setUp();plan=fixture.plan
