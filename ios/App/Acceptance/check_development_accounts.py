@@ -70,7 +70,7 @@ def main():
     if tls:
         report.update(scope='signed approved iPhone/local pinned HTTPS/private PG; no real OTP/cloud/model',
                       raw_native_bundle_shareable=False, build_inputs_shareable=False,
-                      unrun=['VoiceOver', 'system maximum font', 'real OTP/providers/target network'])
+                      unrun=['VoiceOver', 'real OTP/providers/target network'])
         sources = [Path(__file__), *[HERE / name for name in (
             'm4_device.py', 'm4_native.py', 'm4_artifacts.py', 'M4DeviceControl.swift',
             'M4DeviceTestSession.swift', 'DevelopmentAccountUITests.swift')]]

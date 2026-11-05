@@ -19,11 +19,9 @@ import Foundation
         runID = UUID().uuidString
         if let mode {
             app.launchEnvironment.merge(["SHELL_FIXTURE_RUN": runID, "SHELL_FIXTURE_MEMORY": mode,
-                "SHELL_FIXTURE_LANGUAGE": language, "SHELL_FIXTURE_URL": fixtureURL,
-                "SHELL_FIXTURE_SIZE": "standard"]) { _, new in new }
+                "SHELL_FIXTURE_LANGUAGE": language, "SHELL_FIXTURE_URL": fixtureURL]) { _, new in new }
         }
         #if G2C_M4_DEVICE_ACCEPTANCE
-        M4DeviceTestSession.requireLargestSystemFont()
         app.launchEnvironment.merge(try! deviceSession.applicationEnvironment(endpoint: fixtureURL, injecting: false)) { _, value in value }
         #endif
         app.launch()

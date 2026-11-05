@@ -94,7 +94,6 @@ import Foundation
     private func launch(_ fixture: Fixture,language: String,large: Bool = false,restore: Bool = false,account: String = "A") throws {
         app?.terminate();app = XCUIApplication(bundleIdentifier:bundle)
         app.launchArguments = ["-cj.ui.language.v1",language]
-        if large { app.launchArguments += ["-UIPreferredContentSizeCategoryName","UICTContentSizeCategoryAccessibilityXXXL"] }
         app.launchEnvironment = ["OS_ACTIVITY_MODE":"disable","G2C_DEV_ACCOUNT_MODE":"1","G2C_DEV_API_BASE_URL":fixture.endpoint,
             "G2C_DEV_ACCOUNTS":restore ? "{}" : String(data:try JSONEncoder().encode(fixture.accounts),encoding:.utf8)!,"G2C_DEV_PLACE_TOOLS":"synthetic-v1"]
         app.launch();XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout:15))

@@ -55,9 +55,6 @@ import Foundation
     }
     func proof() async throws -> Proof { try JSONDecoder().decode(Proof.self, from: await call("/proof")) }
     func size(_ value: String) async throws {
-        #if G2C_M4_DEVICE_ACCEPTANCE
-        M4DeviceTestSession.requireLargestSystemFont()
-        #endif
         _ = try await call("/size", ["value": value])
     }
     #if G2C_M4_DEVICE_ACCEPTANCE

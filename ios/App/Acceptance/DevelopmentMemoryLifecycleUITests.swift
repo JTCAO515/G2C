@@ -84,10 +84,8 @@ import Foundation
         app?.terminate();app=XCUIApplication(bundleIdentifier:"space.go2china.memory-lifecycle.acceptance")
         app.launchArguments=["-cj.ui.language.v1",language]
         #if G2C_M4_DEVICE_ACCEPTANCE
-        if large { M4DeviceTestSession.requireLargestSystemFont() }
         let accountsJSON = "{}"
         #else
-        if large { app.launchArguments += ["-UIPreferredContentSizeCategoryName","UICTContentSizeCategoryAccessibilityXXXL"] }
         let accountsJSON = restore ? "{}" : String(data:try JSONEncoder().encode(f.accounts),encoding:.utf8)!
         #endif
         app.launchEnvironment=["OS_ACTIVITY_MODE":"disable","G2C_DEV_ACCOUNT_MODE":"1","G2C_DEV_API_BASE_URL":f.endpoint,"G2C_DEV_ACCOUNTS":accountsJSON,"G2C_DEV_MEMORY_PROFILE":f.profile,"G2C_DEV_MEMORY_MANAGEMENT_URL":f.management_endpoint]

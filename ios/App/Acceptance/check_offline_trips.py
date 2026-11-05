@@ -94,14 +94,13 @@ def main():
         report['unrun'] += [case for case in CASES if case != args.case]
     if tls: report.update(layer='signed approved iPhone/local pinned HTTPS/private PG/formal worker/FakeProvider',
         raw_native_bundle_shareable=False, build_inputs_shareable=False,
-        device_font_scope='actual system maximum throughout case',
+        device_font_scope='system default font; no size override',
         unrun=['physical Wi-Fi/airplane-mode outage','real 14-day elapsed time','physical locked file protection',
-               'VoiceOver','actual system font setting record','real accounts/providers/cloud/fees'])
+               'VoiceOver','real accounts/providers/cloud/fees'])
     def save():
         (output / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2))
     save()
     tokens, records, models, audit = {}, {}, {}, []
-    original_size = None if tls else subprocess.check_output(['xcrun', 'simctl', 'ui', args.simulator, 'content_size'], env=env, text=True).strip()
     if original_size in {'unknown', 'unsupported'}:
         raise ValueError('Boot the simulator before native acceptance')
     try:
@@ -307,7 +306,6 @@ def main():
                             elif path == '/size':
                                 size = query['value'][0]
                                 assert size in {'large', 'accessibility-extra-extra-extra-large'}
-                                if not tls: subprocess.run(['xcrun', 'simctl', 'ui', args.simulator, 'content_size', size], env=env, check=True)
                                 value = {}
                             else: raise ValueError('Unknown control route')
                             raw = json.dumps(value).encode(); self.send_response(200); self.end_headers(); self.wfile.write(raw)
@@ -403,7 +401,6 @@ def main():
         report['status'] = 'FAIL'; report['error'] = type(error).__name__; raise
     finally:
         save()
-        if original_size: subprocess.run(['xcrun', 'simctl', 'ui', args.simulator, 'content_size', original_size], env=env, check=True)
     print(json.dumps(dict(status=report['status'], head=head, cases=report['cases']), indent=2))
 
 

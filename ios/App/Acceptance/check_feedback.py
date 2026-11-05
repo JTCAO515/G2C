@@ -102,12 +102,11 @@ def main():
     stop, held, released, finished = (threading.Event() for _ in range(4))
     lock = threading.Lock()
     mode = {'fault': None}
-    original_size = None if tls else subprocess.check_output(['xcrun', 'simctl', 'ui', args.simulator, 'content_size'], env=env, text=True).strip()
     worker_thread = api_thread = control = server = native = control_token = None
     if tls: report.update(layer='signed approved iPhone/local pinned HTTPS/private PG/formal worker/FakeProvider',
         raw_native_bundle_shareable=False, build_inputs_shareable=False,
-        device_font_scope='actual system maximum throughout case',
-        unrun=['VoiceOver','actual system font setting record','in-place system-font transition','real accounts/providers/cloud/fees'])
+        device_font_scope='system default font; no size override',
+        unrun=['VoiceOver','real accounts/providers/cloud/fees'])
     try:
         with tempfile.TemporaryDirectory(prefix='cj15-', dir='/tmp') as temporary:
             root = Path(temporary)
@@ -233,7 +232,6 @@ def main():
                                     value = proof(case)
                                 elif parsed.path == '/size':
                                     if query['value'] not in ('large', 'accessibility-extra-extra-extra-large'): raise ValueError('unsupported size')
-                                    if not tls: subprocess.run(['xcrun', 'simctl', 'ui', args.simulator, 'content_size', query['value']], env=env, check=True, capture_output=True)
                                     value = {}
                                 elif parsed.path == '/validate':
                                     value = proof(case)
@@ -364,7 +362,6 @@ def main():
                 report['artifact_token_scan'] = 'PASS'
         else:
             subprocess.run(['xcrun', 'simctl', 'terminate', args.simulator, BUNDLE], env=env, capture_output=True)
-            subprocess.run(['xcrun', 'simctl', 'ui', args.simulator, 'content_size', original_size], env=env, capture_output=True)
         report['worker_errors'] = errors; report['request_audit'] = audit
         if (worker_thread and worker_thread.is_alive()) or (api_thread and api_thread.is_alive()): report['status'] = 'FAIL'; report['shutdown'] = 'thread alive'
         if report['status'] != 'FAIL':

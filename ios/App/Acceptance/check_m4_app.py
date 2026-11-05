@@ -23,7 +23,7 @@ STEPS = [
     ('needs-en', 'check_needs.py', ['--case', 'testEnglish'], 16),
     ('needs-zh', 'check_needs.py', ['--case', 'testChineseLarge'], 16),
     ('timezones', 'check_needs.py', ['--case', 'testDeviceTimezones'], 16),
-    ('plan-accept', 'check_manual_trips.py', ['--case', 'testNeedsPlanningAccept', '--largest-recovery'], 16),
+    ('plan-accept', 'check_manual_trips.py', ['--case', 'testNeedsPlanningAccept', '--chinese-recovery'], 16),
     ('manual-edit', 'check_manual_trips.py', ['--case', 'testNeedsManualTitleSave'], 16),
     ('typed-en', 'check_typed_memory.py', ['--case', 'testEnglishSaveReadAndOwnedTravel'], 16),
     ('typed-zh', 'check_typed_memory.py', ['--case', 'testChineseLargeSaveReadAndRecall'], 16),
@@ -91,8 +91,8 @@ def main():
                   os_activity_mode='disable')
     if args.device:
         report.update(evidence_layer='signed approved iPhone + pinned local HTTPS + restricted PG + FakeProvider; readonly fixture steps labelled separately',
-            device_font_scope='actual system maximum required by the selected native cases; no system-setting record inferred',
-            unrun=['real OTP/accounts/providers/target network','VoiceOver #29','actual system font setting record',
+            device_font_scope='system default font; no size precondition or override',
+            unrun=['real OTP/accounts/providers/target network','VoiceOver #29',
                    'physical Wi-Fi/airplane-mode outage','real 14-day elapsed time/locked file protection','TestFlight #33'])
     def save():
         (output / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2))

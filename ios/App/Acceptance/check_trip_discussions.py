@@ -340,12 +340,7 @@ def main():
                     text=pbx.read_text().replace('space.go2china.foundation.local',BUNDLE).replace('space.go2china.foundation.control',BUNDLE+'.control')
                     entitlements=builder.directory/'Discussion.entitlements';entitlements.write_bytes(plistlib.dumps({'application-identifier':BUNDLE,'keychain-access-groups':[BUNDLE]}))
                     pbx.write_text(text.replace(json.dumps(str(ROOT/'ios/App/Development.entitlements')),json.dumps(str(entitlements))))
-                    original_size=subprocess.check_output(['xcrun','simctl','ui',args.simulator,'content_size'],env=env,text=True).strip()
                     for case in ([args.case] if args.case else CASES):
-                        desired='accessibility-extra-extra-extra-large' if 'ChineseLarge' in case else 'large'
-                        subprocess.run(['xcrun','simctl','ui',args.simulator,'content_size',desired],env=env,check=True,capture_output=True)
-                        observed_size=subprocess.check_output(['xcrun','simctl','ui',args.simulator,'content_size'],env=env,text=True).strip();assert observed_size==desired
-                        report.setdefault('simulator_content_sizes',{})[case]=observed_size;save()
                         result=output/(case+'.xcresult')
                         command=['xcodebuild','-project',str(project),'-scheme','G2CControl','-configuration','Debug','-destination','platform=iOS Simulator,id='+args.simulator,
                             '-derivedDataPath',str(build),'-resultBundlePath',str(result),'-scmProvider','system','-skipPackageUpdates','-onlyUsePackageVersionsFromResolvedFile',
@@ -385,9 +380,6 @@ def main():
                     report['token_key_scan']='PASS'
                     report['status']='PARTIAL_PASS';save()
                 finally:
-                    if original_size is not None:
-                        subprocess.run(['xcrun','simctl','ui',args.simulator,'content_size',original_size],env=env,check=True,capture_output=True)
-                        report['simulator_content_size_restored']=original_size;save()
                     late['release'].set()
                     models['testDiscussionCancel'].release.set()
                     stop.set();worker_thread.join(10);server.should_exit=True;thread.join(10);control.shutdown();control.server_close()

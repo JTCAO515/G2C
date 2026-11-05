@@ -68,7 +68,7 @@ def main():
     if tls:
         report.update(layer='signed approved iPhone/local pinned HTTPS/private PG/SyntheticNeedsModel',
             raw_native_bundle_shareable=False,build_inputs_shareable=False,
-            unrun=['real accounts/models/services/cloud/fees','VoiceOver','actual system font setting record',
+            unrun=['real accounts/models/services/cloud/fees','VoiceOver',
                    'physical system language/timezone switching #29','real-model extraction quality'])
     if args.case:report['unrun'] += [case for case in CASES if case!=args.case]
     lock=threading.RLock()

@@ -112,8 +112,8 @@ def main():
         sources += [HERE/name for name in ('m4_device.py','m4_native.py','m4_artifacts.py','M4DeviceControl.swift','M4DeviceTestSession.swift')]
         report.update(layer='signed approved iPhone/local pinned HTTPS/private PG/actual provided-domain workflow',
             raw_native_bundle_shareable=False,build_inputs_shareable=False,
-            device_font_scope='actual system maximum throughout case',
-            unrun=['external-processing full32 positive','VoiceOver','actual system font setting record','real accounts/cloud/providers/fees/deployment'])
+            device_font_scope='system default font; no size override',
+            unrun=['external-processing full32 positive','VoiceOver','real accounts/cloud/providers/fees/deployment'])
     report['source_hashes']={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sources}
     report['backend_trees']={name:subprocess.check_output(['git','rev-parse','HEAD:'+name],cwd=backend,text=True).strip() for name in ('backend','contracts','scripts')}
     def save(): (output/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
@@ -222,8 +222,6 @@ def main():
                 if args.prepare_only and not tls:
                     report.update(status='UNRUN',source_status='PASS',native='UNRUN',cases={PROVIDED_CASE:'UNRUN'})
                     save();return
-                original_size = None if tls else subprocess.check_output(['xcrun','simctl','ui',args.simulator,'content_size'],env=env,text=True).strip()
-                if args.native_device and not tls: subprocess.run(['xcrun','simctl','ui',args.simulator,'content_size','large'],env=env,check=True)
                 endpoints={}
                 for mode,app in apps.items():
                     async def observed(scope,receive,send,app=app,mode=mode):
@@ -392,7 +390,6 @@ def main():
                                 value={}
                             elif parsed.path=='/size' and args.native_device:
                                 size={'max':'accessibility-extra-extra-extra-large','standard':'large'}[query['value']]
-                                if not tls:subprocess.run(['xcrun','simctl','ui',args.simulator,'content_size',size],env=env,check=True)
                                 value={}
                             elif parsed.path=='/native-files' and args.native_device:
                                 container=app_container()
@@ -531,8 +528,6 @@ def main():
         report['status']='FAIL';report['error_type']=type(error).__name__;report['last_api']=audits;save();raise
     finally:
         try:
-            if args.native_device and not tls and 'original_size' in locals():
-                subprocess.run(['xcrun','simctl','ui',args.simulator,'content_size',original_size],env=env,check=True)
             if control:control.shutdown();control.server_close()
             for server in servers:server.should_exit=True
             for thread in threads:thread.join(timeout=10)

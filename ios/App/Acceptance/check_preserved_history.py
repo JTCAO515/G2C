@@ -1,7 +1,7 @@
 """#468 actual retained formal history: signed API/private PG/worker/Fake/App.
 
 Preparation-only reports source PASS and native UNRUN. Native PASS requires
-the real App, actual system maximum type and unfiltered accessibility audits.
+the real App, system default type and unfiltered accessibility audits.
 """
 import argparse
 import hashlib
@@ -87,7 +87,6 @@ def main():
                 while not server.started:
                     if not thread.is_alive() or time.monotonic()>deadline:raise RuntimeError('formal history host unavailable')
                     time.sleep(.02)
-                original_size=subprocess.check_output(['xcrun','simctl','ui',args.simulator,'content_size'],env=env,text=True).strip()
                 class Control(BaseHTTPRequestHandler):
                     def log_message(self,*_):pass
                     def do_GET(self):
@@ -95,8 +94,7 @@ def main():
                         if path.path=='/fixture':value=dict(endpoint='http://127.0.0.1:'+str(port),accounts=tokens,subjects=subjects,**source)
                         elif path.path=='/size':
                             assert query['value']=='max'
-                            subprocess.run(['xcrun','simctl','ui',args.simulator,'content_size','accessibility-extra-extra-extra-large'],env=env,check=True)
-                            value={'status':'configured'}
+                            value={'status':'system default font; no size mutation'}
                         else:self.send_response(404);self.end_headers();return
                         raw=json.dumps(value).encode();self.send_response(200);self.send_header('Content-Type','application/json');self.end_headers();self.wfile.write(raw)
                 control=ThreadingHTTPServer(('127.0.0.1',0),Control);threading.Thread(target=control.serve_forever,daemon=True).start()
@@ -133,7 +131,6 @@ def main():
         if control:control.shutdown();control.server_close()
         if server:server.should_exit=True
         if thread:thread.join(timeout=10)
-        if 'original_size' in locals():subprocess.run(['xcrun','simctl','ui',args.simulator,'content_size',original_size],env=env,check=True)
         if args.prepare_only and report.get('source_status')=='PASS':report.update(pg_stopped=True,task_credentials_destroyed=True)
         save()
 

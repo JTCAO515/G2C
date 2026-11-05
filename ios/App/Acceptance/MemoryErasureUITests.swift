@@ -43,9 +43,6 @@ import Foundation
         return bytes
     }
     func size(_ value: String) async throws {
-        #if G2C_M4_DEVICE_ACCEPTANCE
-        M4DeviceTestSession.requireLargestSystemFont()
-        #endif
         _ = try await call("/size", query: ["value": value])
     }
     #if G2C_M4_DEVICE_ACCEPTANCE

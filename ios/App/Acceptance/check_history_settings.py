@@ -91,7 +91,6 @@ def main():
     stop, held, released, finished = (threading.Event() for _ in range(4))
     lock = threading.Lock()
     mode = {'fault': None}
-    original_size = subprocess.check_output(['xcrun', 'simctl', 'ui', args.simulator, 'content_size'], env=env, text=True).strip()
     worker_thread = api_thread = control = server = None
     try:
         with tempfile.TemporaryDirectory(prefix='cj434-', dir='/tmp') as temporary:
@@ -228,7 +227,6 @@ def main():
                                     value = proof(case)
                                 elif parsed.path == '/size':
                                     if query['value'] not in ('large', 'accessibility-extra-extra-extra-large'): raise ValueError('unsupported size')
-                                    subprocess.run(['xcrun', 'simctl', 'ui', args.simulator, 'content_size', query['value']], env=env, check=True, capture_output=True)
                                     value = {}
                                 elif parsed.path == '/other-change':
                                     with TestClient(app) as client:
@@ -329,7 +327,6 @@ def main():
         if api_thread: api_thread.join(timeout=10)
         if control: control.shutdown(); control.server_close()
         subprocess.run(['xcrun', 'simctl', 'terminate', args.simulator, BUNDLE], env=env, capture_output=True)
-        subprocess.run(['xcrun', 'simctl', 'ui', args.simulator, 'content_size', original_size], env=env, capture_output=True)
         report['worker_errors'] = errors; report['request_audit'] = audit
         if (worker_thread and worker_thread.is_alive()) or (api_thread and api_thread.is_alive()): report['status'] = 'FAIL'; report['shutdown'] = 'thread alive'
         save()

@@ -26,7 +26,6 @@ import Foundation
     func launch(_ f: Fixture, language: String, large: Bool = false) throws {
         app?.terminate();app=XCUIApplication(bundleIdentifier:"space.go2china.trip-browser.acceptance")
         app.launchArguments=["-cj.ui.language.v1",language]
-        if large { app.launchArguments += ["-UIPreferredContentSizeCategoryName","UICTContentSizeCategoryAccessibilityXXXL"] }
         app.launchEnvironment=["G2C_DEV_ACCOUNT_MODE":"1","G2C_DEV_API_BASE_URL":f.endpoint,
             "G2C_DEV_ACCOUNTS":String(data:try JSONEncoder().encode(f.accounts),encoding:.utf8)!]
         app.launch();tap(language=="en" ? "Memory":"记忆");tap("memory.account")

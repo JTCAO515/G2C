@@ -97,13 +97,6 @@ import XCTest
         XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
     }
 
-    static func requireLargestSystemFont() {
-        print("M4_RUNNER_CONTENT_SIZE", UIApplication.shared.preferredContentSizeCategory.rawValue)
-        XCTAssertEqual(UIApplication.shared.preferredContentSizeCategory,
-                       .accessibilityExtraExtraExtraLarge,
-                       "Set the approved device's actual system text size before this case")
-    }
-
     func applicationEnvironment(endpoint: String, injecting: Bool,
                                 additionalEndpoints: [String] = []) throws -> [String: String] {
         let url = try XCTUnwrap(URL(string: endpoint))

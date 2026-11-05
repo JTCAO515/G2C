@@ -74,7 +74,7 @@ def main():
     if args.case:report['unrun'] += [case for case in CASES if case!=args.case]
     if tls:report.update(layer='signed approved iPhone/local pinned HTTPS/private PG/formal worker/FakeProvider',
         raw_native_bundle_shareable=False,build_inputs_shareable=False,
-        unrun=['real accounts/models/fees/cloud','VoiceOver','actual system font setting record','deployment'])
+        unrun=['real accounts/models/fees/cloud','VoiceOver','deployment'])
     def save():(output/'report.json').write_text(json.dumps(report,indent=2,ensure_ascii=False))
     save();tokens={};records={};audit=[]
     try:

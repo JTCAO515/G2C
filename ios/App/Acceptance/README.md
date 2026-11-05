@@ -47,7 +47,7 @@ the separate accessibility/state suite below or real VoiceOver/device acceptance
 ## Accessibility and state samples (#158)
 
 Use `--suite accessibility` for the ordinary App's complete system accessibility
-checks on the four roots and language selection in both languages, plus the labelled fixture's maximum text, assistant
+checks on the four roots and language selection in both languages, plus the labelled fixture's default text, assistant
 states, readonly Trip/memory states, long content and keyboard scenarios. Five
 XCTest methods must pass with no skips; keyboard cases type and retain mixed
 Chinese/English text in the Chinese UI and English text in the English UI:
@@ -188,8 +188,8 @@ Boot an iOS 17.5 simulator, then run `check_shell_structure.py --suite account-d
 with its existing `--simulator`, `--output` and `--build-dir` arguments. The ordinary
 App checks both root/account entries and full AX in both languages. The labelled
 read-only fixture checks empty/failed memory and explanation content, then full
-`.all` AX at the actual system maximum content-size category. The harness restores
-the previous category afterward; it does not pin SwiftUI's size during the audit.
+`.all` AX at the system default content-size category. The harness does not override
+the system or SwiftUI font size (JT scope revision 2026-11-05).
 Fixtures prove layout only and issue no business writes.
 
 `check_development_accounts.py --suite account-deletion` uses the actual signed
@@ -206,7 +206,7 @@ acceptance is implied by these entry tests; those remain in #27/#32/#29.
 `CJ-LOCAL-RUN@2` context, external output/build directories and a committed head.
 It creates formal records through signed MESSAGE → unmodified worker/FakeProvider
 → signed Trip confirmation/act, then lets the actual App synchronize them.
-Four cases cover reopen/bilingual/system-maximum-font/full AX, expiry/rollback/
+Four cases cover reopen/bilingual/default-font/full AX, expiry/rollback/
 untrusted clocks and fresh renewal, local switch/logout, and temporary failures
 versus actual server invitation denial. App requests after setup must stay GET/HEAD;
 provider calls, original response hashes, unchanged/removed ciphertext and runtime
@@ -233,7 +233,7 @@ This supports B's notified candidate before merge without editing backend files.
 It uses actual account admission, App MESSAGE submission, unmodified worker with
 FakeProvider, signed feedback POST/original GET, and restricted runtime PG.
 Native cases cover opt-in message/run refs and independent Memory general refs,
-bilingual Chinese content, full `.all` AX and system maximum type size, post-commit
+bilingual Chinese content, full `.all` AX and system default type size, post-commit
 ACK loss/reopen/query without another POST, and a held original ACK across account
 switch. The response delivery faults are labelled; no successful receipt is
 manufactured. Own/foreign receipt/locator checks and source/content/token scans
@@ -254,7 +254,7 @@ No accepted message, permission, receipt or background job is injected into App.
 The six methods cover bilingual per-conversation default-off/manual-save isolation,
 explicit enable/disable, original UNKNOWN/reopen versus another device's current
 state, CAS conflict/fresh review, late ACK account switch, and read503 not becoming
-default off. Actual system maximum and unfiltered .all AX cover the policy and
+default off. System default font and unfiltered .all AX cover the policy and
 stopping/confirmation explanations. Worker job POST routes remain closed to App.
 
 Response delivery faults are labelled. Missing/uninitialized foreign history scopes

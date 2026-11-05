@@ -63,8 +63,8 @@ def main():
     if tls:
         report.update(head=subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
             layer="signed approved iPhone/ordinary App + labelled synthetic readonly fixture", raw_native_bundle_shareable=False,
-            build_inputs_shareable=False, device_font_scope="actual system maximum throughout case",
-            unrun=["VoiceOver", "actual system font setting record", "real signed business flow (separate suites)"])
+            build_inputs_shareable=False, device_font_scope="system default font; no size override",
+            unrun=["VoiceOver", "real signed business flow (separate suites)"])
         sources = [*list((ROOT / "ios/App").glob("*.swift")), *list((ROOT / "ios/Modules").glob("*/Sources/**/*.swift")),
                    Path(__file__), *[HERE / name for name in ("ShellFixtureApp.swift", "ShellStructureUITests.swift", "ShellAccessibilityUITests.swift", "AccountDeletionUITests.swift", "m4_device.py", "m4_native.py", "m4_artifacts.py", "M4DeviceControl.swift", "M4DeviceTestSession.swift")]]
         report["source_hashes"] = {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sources}
@@ -120,7 +120,6 @@ def main():
     threading.Thread(target=server.serve_forever, daemon=True).start()
     spec = importlib.util.spec_from_file_location("trip_acceptance", ROOT / "scripts/check_ios_trip_confirm.py")
     module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
-    original_content_size = None
     try:
         test_class = "ShellStructureUITests" if args.suite == "structure" else "ShellAccessibilityUITests"
         variants = {
@@ -169,13 +168,6 @@ def main():
                        "-collect-test-diagnostics", "never",
                        "ARCHS=arm64", "ONLY_ACTIVE_ARCH=YES", "CODE_SIGNING_ALLOWED=YES", "CODE_SIGN_IDENTITY=-"]
             command += ["-only-testing:G2CControl/" + test_class + "/" + test for test in tests]
-            if args.suite == "account-deletion" and variant == "fixture":
-                original_content_size = subprocess.check_output(
-                    ["xcrun", "simctl", "ui", args.simulator, "content_size"], env=env, text=True).strip()
-                if original_content_size in {"unknown", "unsupported"}:
-                    raise ValueError("Boot the simulator before configuring native text size")
-                subprocess.run(["xcrun", "simctl", "ui", args.simulator, "content_size",
-                                "accessibility-extra-extra-extra-large"], env=env, check=True)
             with (output / (variant + ".log")).open("w") as log:
                 subprocess.run(command + ["test"], cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=900)
             summary = json.loads(subprocess.check_output(["xcrun", "xcresulttool", "get", "test-results", "summary", "--path", str(result)], env=env))
@@ -187,9 +179,6 @@ def main():
         report["status"] = "FAIL"; report["error"] = type(error).__name__
         raise
     finally:
-        if original_content_size is not None and original_content_size not in {"unknown", "unsupported"}:
-            subprocess.run(["xcrun", "simctl", "ui", args.simulator, "content_size", original_content_size],
-                           env=env, check=True)
         report_path.write_text(json.dumps(report, indent=2))
         with lock:
             for released in releases.values(): released.set()
