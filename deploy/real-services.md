@@ -16,7 +16,9 @@ Memory fence、原动作只读恢复均继续生效。默认 local/Fake 路径�
 原注册出口先持久 input bytes/attempt，再经原 Meter reserve/claim/最后 guard。
 真实 adapter 补一份授权累计意图账本，固定在用户数据目录 `g2c/m4-real-services`，
 不取代产品 Meter。按已合PR540的M4授权，北京每 intent 保守占用 ¥1、保留 M1 的 ¥13，
-累计387个M4模型intent（合计¥400）后停止；地点/路线/天气每 intent保守占用¥1，合计¥160后停止。
+累计387个M4模型intent（合计¥400）后停止；地点/路线/天气每 intent保守占用¥1。
+JT于2026-11-05在C会话把工具停止线改为¥10000（[#495记录](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6644812116)），
+原工具总预算¥200未提高，实际出口按停止线与总预算的较小值拒绝新付费意图，因此当前最多保守占用¥200。
 各分类同时保持M4的1200/600/200/240次数上限，事实页保守占用0，2026-11-30到期；UNKNOWN不释放占用。
 提高额度只改变未来新intent门禁；原SQLite路径、全部历史intent/receipt和既有验收批次保持原样，不迁移或清零。
 完整 receipt 的 `provider_call=1` 只证明完成一次调用，绝不表示人民币实付已知；实际账单 UNKNOWN。
@@ -43,6 +45,11 @@ Memory fence、原动作只读恢复均继续生效。默认 local/Fake 路径�
 host 转为原 PLACE-query.1 / FACT-query.1 再经已有严格 codec。模型不必猜封装版本或坐标Decimal字段。
 续接保留实际 `assistant.tool_calls` 和逐一匹配的 `role=tool/tool_call_id`，
 同时保留工具调用响应中合法的说明文字；它只随原assistant消息续接，不作为最终回答或工具权限。
+真实native模型调用使用 `bilingual-json-schema.1`，以供应商严格JSON Schema约束现有 `zh/en` 答复字段；
+注册的原input bytes同时绑定该profile，供应商调用仍保留完整native工具目录和原tool_call_id续接。
+依据[官方结构化输出说明](https://help.aliyun.com/en/model-studio/qwen-structured-output)，当前qwen3.8-flash支持该模式。
+这是请求端约束；收到无效JSON/缺字段/空答复仍保留UNKNOWN，不添加修复调用、自动重试或降级。
+非native的既有结构化调用继续使用原JSON Object模式；1024输出token上限与八轮/原Meter限额不变，截断仍拒绝。
 不会把已执行的结果改成新的 user 请求。该标识仅关联数据，执行仍逐步经过原Meter/final guard。
 这是对已合PR524真实失败的实现修复，旧wire语义不变；协议依据
 [DashScope Function Calling](https://help.aliyun.com/en/model-studio/qwen-function-calling)。
