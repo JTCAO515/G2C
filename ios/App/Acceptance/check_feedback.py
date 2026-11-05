@@ -86,7 +86,7 @@ def main():
     context = load_run_context(args.run_context)
     report = dict(status='RUNNING', head=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
                   backend_head=backend_head, cases={}, database_proofs={}, checks={}, faults=[],
-                  unrun=['real providers/cloud/accounts', 'physical device/VoiceOver (#29)', 'release/deployment'],
+                  unrun=['real providers/cloud/accounts', 'physical device (#29)', 'release/deployment'],
                   run_context=json.loads(args.run_context.read_text()))
     sources = [*list((ROOT / 'ios/App').glob('*.swift')), Path(__file__), HERE / 'DevelopmentFeedbackUITests.swift']
     if tls: sources += [HERE / name for name in ('m4_device.py','m4_native.py','m4_artifacts.py','M4DeviceControl.swift','M4DeviceTestSession.swift')]
@@ -106,7 +106,7 @@ def main():
     if tls: report.update(layer='signed approved iPhone/local pinned HTTPS/private PG/formal worker/FakeProvider',
         raw_native_bundle_shareable=False, build_inputs_shareable=False,
         device_font_scope='system default font; no size override',
-        unrun=['VoiceOver','real accounts/providers/cloud/fees'])
+        unrun=['real accounts/providers/cloud/fees'])
     try:
         with tempfile.TemporaryDirectory(prefix='cj15-', dir='/tmp') as temporary:
             root = Path(temporary)

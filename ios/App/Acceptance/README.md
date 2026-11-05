@@ -2,7 +2,7 @@
 
 M4 的完整本机矩阵、正式构建身份与真机记录入口见
 [M4-ACCEPTANCE](M4-ACCEPTANCE.md)。指定真机的开发测试已获 M4 条目 1、2 授权，
-当前等 JT 连接通知；不能用模拟器 AX 代替 VoiceOver。
+指定设备按实时 #498/#29 执行；JT已取消最大字号与VoiceOver验收，保留默认字号、中英业务与完整.all AX。
 
 Run on an available iOS 17.5 simulator with Xcode's native XCTest input:
 
@@ -42,7 +42,7 @@ Release behavior, CJAuth and production write gates are unchanged.
 
 This verifies UI structure and local fixture behavior. It does not approve help,
 privacy or support wording (#159), prove real authentication/storage, or replace
-the separate accessibility/state suite below or real VoiceOver/device acceptance (L3 #29).
+the separate accessibility/state suite below or real device acceptance (L3 #29).
 
 ## Accessibility and state samples (#158)
 
@@ -71,8 +71,8 @@ client is also readonly. Loading responses wait for an explicit test release;
 all observed business requests must remain GETs. Assistant state and long-text
 samples are presentation data, not evidence of a real model or backend outcome.
 
-The physical VoiceOver listening, focus and activation checks remain UNRUN under
-L3 #29, linked from #7/#158 per ADR-0007. Apple states that VoiceOver is not
+VoiceOver acceptance was removed by JT on 2026-11-05; prior listening/focus/activation
+records are retained and cancellation is not PASS. Apple states that VoiceOver is not
 available in Simulator; system accessibility audits do not replace it:
 [Apple accessibility testing](https://developer.apple.com/documentation/accessibility/performing-accessibility-testing-for-your-app).
 
@@ -133,7 +133,7 @@ CJ_PG_BINDIR='<PostgreSQL-17-bin>' uv run --locked python -B ios/App/Acceptance/
 
 Each named case remains PARTIAL_PASS until the complete required matrix is
 independently aggregated. Preserve every historical FAIL and xcresult. Real tools,
-real models/fees, cloud, physical VoiceOver/device and release remain separate.
+real models/fees, cloud, physical device and release remain separate.
 
 Complete matrix (23 named cases; each gets a fresh private DB and new subjects):
 
@@ -220,7 +220,7 @@ The opt-in is `G2C_DEV_OFFLINE_TRIP=last-sync-v1` with account mode. Test-only
 `G2C_DEV_OFFLINE_TIME_TRUSTED=0` inject clocks without a network clock source.
 They do not activate Release/real-device roots. The original account-cleanup
 operation/device receipt in box 4 stays UNRUN pending B; real device offline and
-VoiceOver remain #29. No handoff update is performed for this follow-up.
+device checks remain #29. No handoff update is performed for this follow-up.
 
 ## Feedback App acceptance (#15 / #430)
 
@@ -263,4 +263,4 @@ receipt or grant, and are not rewritten to null. The verifier also attempts sign
 foreign settings and action access. Every run checks original byte hashes, runtime
 role, zero organizer dispatch, source/head/clean equality and credentials/plaintext
 scans. OS_ACTIVITY_MODE=disable and exact native IDs/viewport-bounded drags remain.
-Real model quality, cloud, actual users and physical device/VoiceOver stay #32/#29.
+Real model quality, cloud, actual users and physical device stay #32/#29.

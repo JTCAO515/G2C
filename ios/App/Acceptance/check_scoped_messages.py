@@ -52,10 +52,10 @@ import uvicorn
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from urllib.parse import urlparse,parse_qs
 from cj_api.local_app import load_history_configuration
-r={'app_manual_trip_profile':ARGS.manual_trip_profile,'head':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'status':'RUNNING','layer':'actual simulator/signed API/private PG/formal run_once/Fake synthetic','cases':{},'unrun':(['real accounts/models/services/fees/cloud','physical device/VoiceOver','maps deferred'] if RESULT_PROFILE else ['expansion/clarification pending B360/C336','real accounts/models/services/fees/cloud','physical device/VoiceOver'])}
-if TLS:r['layer']='actual signed iPhone/signed local HTTPS API/private PG/formal run_once/Fake synthetic';r['unrun']=['real accounts/models/PLACE API/cloud/fees','VoiceOver']
+r={'app_manual_trip_profile':ARGS.manual_trip_profile,'head':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'status':'RUNNING','layer':'actual simulator/signed API/private PG/formal run_once/Fake synthetic','cases':{},'unrun':(['real accounts/models/services/fees/cloud','physical device','maps deferred'] if RESULT_PROFILE else ['expansion/clarification pending B360/C336','real accounts/models/services/fees/cloud','physical device'])}
+if TLS:r['layer']='actual signed iPhone/signed local HTTPS API/private PG/formal run_once/Fake synthetic';r['unrun']=['real accounts/models/PLACE API/cloud/fees']
 if PLACE_MAP or CASE=='testFormalMapNoPlaceSources':r['unrun']=['positive formal PLACE production chain pending C notification','real point alignment L2/L3','real model/PLACE API/fees/cloud/production/device']
-if TLS:r['unrun']=['real point alignment','real accounts/models/PLACE API/cloud/fees','VoiceOver']
+if TLS:r['unrun']=['real point alignment','real accounts/models/PLACE API/cloud/fees']
 def save():(OUT/'report.json').write_text(json.dumps(r,ensure_ascii=False,indent=2))
 def expect(response,phase):
  r.setdefault('setup_responses',[]).append(dict(phase=phase,status=response.status_code,error=response.json().get('error')));save();assert response.status_code==200,(phase,response.status_code,response.text)

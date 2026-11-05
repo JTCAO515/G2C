@@ -35,7 +35,7 @@ def main():
     cases = CASES + DRAFT_CASES + BUDGET_CASES + ['testReleaseClosed']
     assert len(cases) == len(set(cases)) == 23
     report = dict(status='RUNNING', head=head, cases={}, required_cases=cases,
-        unrun=['real tools', 'real model/fees', 'cloud', 'physical device/VoiceOver', 'release deployment'],
+        unrun=['real tools', 'real model/fees', 'cloud', 'physical device', 'release deployment'],
         scope='Formal protected local host, operator CLI, runtime PG, FakeProvider subclass, native App; no quota/response injection')
     def save(): (output / 'report.json').write_text(json.dumps(report, indent=2))
     save()

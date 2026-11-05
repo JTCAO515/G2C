@@ -76,7 +76,7 @@ def main():
     context = load_run_context(args.run_context)
     report = dict(status='RUNNING', head=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
                   backend_head=backend_head, cases={}, database_proofs={}, checks={}, faults=[],
-                  unrun=['real providers/cloud/accounts', 'physical device/VoiceOver (#29)', 'release/deployment'],
+                  unrun=['real providers/cloud/accounts', 'physical device (#29)', 'release/deployment'],
                   run_context=json.loads(args.run_context.read_text()))
     sources = [*list((ROOT / 'ios/App').glob('*.swift')), Path(__file__), HERE / 'DevelopmentHistoryUITests.swift']
     for package in ('CJMemoryClient', 'CJShell', 'CJMessageClient'):

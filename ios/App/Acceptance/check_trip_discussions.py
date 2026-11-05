@@ -52,7 +52,7 @@ def main():
     sources=[*list((ROOT/'ios/App').glob('*.swift')),HERE/'DevelopmentTripDiscussionUITests.swift',Path(__file__)]
     for name in ('CJShell','CJMessageClient','CJRunClient','CJTripClient'):
         sources+=list((ROOT/'ios/Modules'/name/'Sources').rglob('*.swift'))
-    report=dict(status='RUNNING',head=head,cases={},unrun=['formal scenarios not selected in this run','maps/provider point alignment','real accounts/models/services/fees/cloud','physical device/VoiceOver'],
+    report=dict(status='RUNNING',head=head,cases={},unrun=['formal scenarios not selected in this run','maps/provider point alignment','real accounts/models/services/fees/cloud','physical device'],
         source_hashes={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sources},run_context=json.loads(args.run_context.read_text()))
     lock=threading.RLock()
     def save():(output/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))

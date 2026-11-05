@@ -57,7 +57,7 @@ def main():
     report=dict(status='RUNNING',head=head,cases={},checks={},run_context=json.loads(args.run_context.read_text()),
         source_hashes={str(s.relative_to(ROOT)):hashlib.sha256(s.read_bytes()).hexdigest() for s in sources},
         git_trees={s:subprocess.check_output(['git','rev-parse',head+':'+s],cwd=ROOT,text=True).strip() for s in ('ios','backend','contracts','scripts')},
-        unrun=['destination-local timeline fields','assistant Trip/day/item binding','PLACE/map service chain','real accounts/models/fees/cloud','physical device/VoiceOver','deployment'])
+        unrun=['destination-local timeline fields','assistant Trip/day/item binding','PLACE/map service chain','real accounts/models/fees/cloud','physical device','deployment'])
     if args.case:report['unrun'] += [c for c in CASES if c!=args.case]
     def save():(output/'report.json').write_text(json.dumps(report,indent=2,ensure_ascii=False))
     save();tokens={};audit=[];records={};models={}

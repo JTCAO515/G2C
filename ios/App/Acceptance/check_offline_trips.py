@@ -89,14 +89,14 @@ def main():
                   source_hashes={str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sources},
                   run_context=json.loads(args.run_context.read_text()),
                   unrun=['#24 box4 original account-cleanup operation/device receipt bridge',
-                         'real accounts/providers/cloud/fees', 'physical offline device/VoiceOver (#29)', 'deployment'])
+                         'real accounts/providers/cloud/fees', 'physical offline device (#29)', 'deployment'])
     if args.case:
         report['unrun'] += [case for case in CASES if case != args.case]
     if tls: report.update(layer='signed approved iPhone/local pinned HTTPS/private PG/formal worker/FakeProvider',
         raw_native_bundle_shareable=False, build_inputs_shareable=False,
         device_font_scope='system default font; no size override',
         unrun=['physical Wi-Fi/airplane-mode outage','real 14-day elapsed time','physical locked file protection',
-               'VoiceOver','real accounts/providers/cloud/fees'])
+               'real accounts/providers/cloud/fees'])
     def save():
         (output / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2))
     save()

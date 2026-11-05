@@ -64,7 +64,7 @@ def main():
         report.update(head=subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
             layer="signed approved iPhone/ordinary App + labelled synthetic readonly fixture", raw_native_bundle_shareable=False,
             build_inputs_shareable=False, device_font_scope="system default font; no size override",
-            unrun=["VoiceOver", "real signed business flow (separate suites)"])
+            unrun=["real signed business flow (separate suites)"])
         sources = [*list((ROOT / "ios/App").glob("*.swift")), *list((ROOT / "ios/Modules").glob("*/Sources/**/*.swift")),
                    Path(__file__), *[HERE / name for name in ("ShellFixtureApp.swift", "ShellStructureUITests.swift", "ShellAccessibilityUITests.swift", "AccountDeletionUITests.swift", "m4_device.py", "m4_native.py", "m4_artifacts.py", "M4DeviceControl.swift", "M4DeviceTestSession.swift")]]
         report["source_hashes"] = {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sources}

@@ -57,7 +57,7 @@ def main():
         sources+=list((ROOT/'ios/Modules'/module/'Sources').rglob('*.swift'))
     report=dict(status='RUNNING',source_status='UNRUN',native='UNRUN',head=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
         backend_head=args.backend_head,cases={},source_hashes={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sources},
-        unrun=['full App erasure action/local per-item cleanup','physical device/VoiceOver/real provider/cloud/fees/backups'])
+        unrun=['full App erasure action/local per-item cleanup','physical device/real provider/cloud/fees/backups'])
     def save():(output/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
     save();server=None;control=None;thread=None;secrets=[];audits=[];lock=threading.Lock()
     try:

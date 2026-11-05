@@ -50,7 +50,7 @@ OS_ACTIVITY_MODE 始终为 disable；继续复用按 identifier 和控件类型�
 ## 真机执行准备与明确的剩余依赖
 
 [DEVICE-RECORD](DEVICE-RECORD.md) 可直接复制执行两种语言、系统默认字号的手工路径，
-记录机型、系统、网络、VoiceOver、失败与回归。XCTest 的语义动作/定位符和
+记录机型、系统、网络、普通交互、完整 AX、失败与回归。XCTest 的语义动作/定位符和
 总矩阵 `check_m4_app.py` 具有相互独立的 `--simulator` / `--device` 入口；设备入口
 必须提供本轮批准的 `--local-tls`，不会把模拟器 ID 当设备使用。各领域的来源与
 实际层级分别记录，支持设备参数或预编译并不表示整套真机已通过。
@@ -75,7 +75,7 @@ RFC1918/link-local IPv4 开发机地址及显式端口。现有签名 API、身�
 路由限制不变。Release/Production 不编译该接线，也不含本地网络 ATS 放行。
 具体 SDK、Bundle ID、Key 与网络步骤见 [M4-AMAP-LOCAL](M4-AMAP-LOCAL.md)。
 JT 通知连接设备后才执行签名、安装和验收；编译、手工步骤和模拟器 PASS 均不计
-真机 PASS。真机自动化及 VoiceOver 保持 #29 UNRUN，TestFlight 保持 #33 UNRUN。
+真机 PASS。真机业务按 #29 的实际范围记录，TestFlight 保持 #33 UNRUN。
 
 ### 登录领域的指定真机入口
 
@@ -112,7 +112,7 @@ App 自己消费一次性输入与驱动事后清理分别记录，Release 忽�
 下一个原生阶段由驱动显式重开入口。多用例执行对象固定自己的 case 与账号快照，
 不能把上一用例的迟到请求注入下一用例。
 凭据清理、服务/私有 PG 停止及源码/head 核对完成后才写终态。指定设备离线时可先
-构建；默认字号下的设备实际执行和 VoiceOver 仍须分别记录，不能由构建替代。
+构建；默认字号下的设备实际执行和完整 AX 仍须分别记录，不能由构建替代。
 
 ### 需求领域的指定真机入口
 
@@ -132,9 +132,9 @@ CJ_PG_BINDIR='<PostgreSQL-17-bin>' uv run --locked python -B \
 
 保留 `testChineseLarge` 等历史 case ID 以对应原报告，其中文业务路径改用系统
 默认字号；名字中的 Large/Largest 不再表示字号覆盖或验收门槛。所有业务、字节、
-隔离、安全及完整 `.all` AX 断言保留，实际 VoiceOver 仍须独立验证。
+隔离、安全及完整 `.all` AX 断言保留。
 `testDeviceTimezones` 仍核对 App 进程 TZ 与中国当地字段，不冒称已切换 iPhone 的
-系统时区；真实系统语言/时区切换和 VoiceOver 继续在 #29 独立记录。
+系统时区；真实系统语言/时区切换继续在 #29 独立记录。
 
 ### 规划采用与手动修改的指定真机入口
 
@@ -154,7 +154,7 @@ CJ_PG_BINDIR='<PostgreSQL-17-bin>' uv run --locked python -B \
 
 `--chinese-recovery` 保留中文重启与原回执查询路径；旧 `--largest-recovery` 只作
 同一业务路径的兼容别名，均不改变字号。实际系统设置/App 显示仍记 DEVICE-RECORD，
-VoiceOver 不由 AX 或预编译代替。
+普通触控、键盘与完整 AX 不由预编译代替。
 `--prepare-only` 不取得业务运行证明，结果仍为 `PREPARED_EXECUTION_UNRUN`。
 规划和停止客户端沿已有 CJMessageHTTP 依赖复用同一调试 TLS 委托；各自原有的
 精确路由、身份/lease 与禁止重定向检查保留。其他领域的多端口设备接线仍待补齐，
@@ -178,7 +178,7 @@ CJ_PG_BINDIR='<PostgreSQL-17-bin>' uv run --locked python -B \
 
 设备的并发暂停夹具使用同一 observed ASGI 签名生产者和真实 PG，App 请求仍走
 实际 HTTPS；原回执/版本/跨账号检查不变。预编译不执行这些业务证明，实际真机、
-系统设置记录和 VoiceOver 必须分别验收。
+系统设置记录、普通触控/键盘和完整 AX 必须分别验收。
 
 ### 记忆管理领域的指定真机入口
 
@@ -197,7 +197,7 @@ CJ_PG_BINDIR='<PostgreSQL-17-bin>' uv run --locked python -B \
 
 一次性账号输入与当前已 prepare 的 case 绑定；预编译可预备合成数据和签名包，
 设备交互/文件扫描仍为 UNRUN。实际测试结束后才核 App 文件、导出凭据和服务/PG
-收尾，再写终态，不能用预编译或 AX 代替完整领域、系统设置或 VoiceOver 验收。
+收尾，再写终态，不能用预编译或 AX 代替完整领域、系统设置或普通交互验收。
 
 ### 候选确认领域的指定真机入口
 
@@ -235,7 +235,7 @@ CJ_PG_BINDIR='<PostgreSQL-17-bin>' uv run --locked python -B \
 
 原 `/offline` 停止的是本机 API，设备版明确只证明服务不可达时的缓存路径，
 不当作 Wi-Fi/飞行模式物理断网。受控时钟不当作真实经过14天，容器副本权限
-不当作锁屏文件保护。实际物理断网、系统锁态、真实期限和 VoiceOver 继续在#29
+不当作锁屏文件保护。实际物理断网、系统锁态和真实期限继续在#29
 记录；本轮均使用系统默认字号。
 
 ### 注销与结构/AX 的指定真机入口
@@ -278,8 +278,16 @@ xcodebuild -project spikes/ios/CJIOSSpike.xcodeproj -scheme CJIOSSpike \
 
 ## 2026-11-05 字号范围修订与证据复用
 
-JT 已取消最大／大字号完成门槛，保留中英流程、完整 `.all` AX 和真实 VoiceOver。
+JT 已取消最大／大字号完成门槛，保留中英流程、普通触控/键盘与完整 `.all` AX。
 历史最大字号 PASS／FAIL／UNKNOWN 与原 head 原样保留，不改成新默认字号 PASS。
 有效业务/安全证据按源码实际影响复用，不因本次范围调整重跑无关通过项；
 尚未完成的中文路径继续执行，不删方法或跳过失败。指定手机先恢复原默认设置
 L／滑块50%／更大无障碍字体关闭，实际读回记录在仓库外。
+
+## 最新范围：取消 VoiceOver 验收（JT，2026-11-05）
+
+#498、#29、#4 本轮不再执行 VoiceOver，也不把听读、屏幕阅读器焦点/返回/激活
+作为完成或关闭门槛。仍须完成默认字号下的中英业务、普通触控/键盘、完整 `.all` AX
+与原离线、语言、时区、身份隔离要求。历史最大字号及 VoiceOver 的
+PASS/FAIL/UNKNOWN/UNRUN 原样保留，取消不计 PASS，不再为其单独复验。
+本机已核实默认字号恢复记录；如启用过 VoiceOver，切换批次前须恢复原状态。

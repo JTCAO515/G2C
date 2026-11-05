@@ -66,7 +66,7 @@ if TLS:
   cases={CASE:'UNRUN'},
   raw_native_bundle_shareable=False,build_inputs_shareable=False,
   unrun=['main backend delivery if pin unmerged','real services/models/fees/cloud',
-         'VoiceOver','physical system language/timezone switching #29'])
+         'physical system language/timezone switching #29'])
 if PLANNING_PREFIX:
  r['unrun']+=['source-input.2 main delivery until B378 merges' if CURRENT_REPLAN else 'source-input.2 formal replanning']
  if PLANNING_DECISION:r['verified_scope']='original NEEDS planning discovery/decision/recovery'

@@ -78,12 +78,12 @@ def main():
         sources+=list((ROOT/'ios/Modules'/module/'Sources').rglob('*.swift'))
     report=dict(status='RUNNING',source_status='UNRUN',native='UNRUN',head=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
         backend_head=args.backend_head,cases={},source_hashes={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sources},
-        unrun=['physical device/VoiceOver','real accounts/cloud/providers/fees/backups'])
+        unrun=['physical device','real accounts/cloud/providers/fees/backups'])
     def save():(output/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
     if tls:report.update(layer='signed approved iPhone/local pinned HTTPS/private PG/canonical erasure host',
         raw_native_bundle_shareable=False,build_inputs_shareable=False,
         device_font_scope='system default font; no size override',
-        unrun=['VoiceOver','real accounts/cloud/providers/fees/backups'])
+        unrun=['real accounts/cloud/providers/fees/backups'])
     save();secrets=[];server=None;control=None;thread=None;native=None;control_token=None;original_size=None;executing_case=None;active={'case':None};lock=threading.Lock();observations={}
     suite_complete=False
     try:

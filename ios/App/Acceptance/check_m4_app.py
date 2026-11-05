@@ -3,7 +3,7 @@
 This driver runs local signed API/private PG/FakeProvider/Simulator evidence.
 Each slice retains its own identities and source proofs. It is a journey matrix,
 not a claim that different fixture accounts are one continuous user session.
-Physical-device and VoiceOver execution are separately recorded under #29.
+Physical-device execution is recorded under #29; VoiceOver acceptance was removed by JT on 2026-11-05.
 """
 import argparse
 import hashlib
@@ -87,13 +87,14 @@ def main():
     report = dict(status='RUNNING', head=head, required_steps=[s[0] for s in STEPS],
                   steps={s[0]:dict(status='UNRUN') for s in STEPS},
                   evidence_layer='L0/L1 local signed API + restricted PG + FakeProvider + native Simulator',
-                  unrun=['real OTP/accounts/providers/target network', 'physical device/VoiceOver #29', 'TestFlight #33'],
-                  os_activity_mode='disable')
+                  unrun=['real OTP/accounts/providers/target network', 'physical device #29', 'TestFlight #33'],
+                  os_activity_mode='disable',
+                  excluded_requirements={'maximum_or_large_font':'removed by JT 2026-11-05; not PASS',
+                                         'VoiceOver':'removed by JT 2026-11-05; not PASS'})
     if args.device:
         report.update(evidence_layer='signed approved iPhone + pinned local HTTPS + restricted PG + FakeProvider; readonly fixture steps labelled separately',
             device_font_scope='system default font; no size precondition or override',
-            unrun=['real OTP/accounts/providers/target network','VoiceOver #29',
-                   'physical Wi-Fi/airplane-mode outage','real 14-day elapsed time/locked file protection','TestFlight #33'])
+            unrun=['real OTP/accounts/providers/target network','physical Wi-Fi/airplane-mode outage','real 14-day elapsed time/locked file protection','TestFlight #33'])
     def save():
         (output / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2))
     save()

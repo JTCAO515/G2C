@@ -96,7 +96,7 @@ def main():
     report=dict(status='RUNNING',head=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(), backend_head=head,
         app_mode='CJProbeApp_device_v4' if args.native_device else 'native_component_harness_not_CJProbeApp',positive_inventory=list(positive_inventory),full_registry=str(Path('backend/storage-registry.json')),
         cases={},proofs={},faults=[],run_context=json.loads(args.run_context.read_text()),
-        unrun=['CJProbeApp account UI/full AX/localizations', 'complete device hook/key erasure/current-device receipt', 'C/all-domain full-account completion', 'physical device/VoiceOver', 'real accounts/cloud/providers/fees/deployment'])
+        unrun=['CJProbeApp account UI/full AX/localizations', 'complete device hook/key erasure/current-device receipt', 'C/all-domain full-account completion', 'physical device', 'real accounts/cloud/providers/fees/deployment'])
     sources=[Path(__file__),HERE/'AccountCleanupComponentApp.swift',HERE/'AccountCleanupComponentUITests.swift',ROOT/'ios/App/DevelopmentSessionConfiguration.swift']
     for module in ('CJCleanupClient','CJMessageClient'):
         sources+=list((ROOT/'ios/Modules'/module/'Sources').rglob('*.swift'))
@@ -106,14 +106,14 @@ def main():
         sources += [ROOT/'ios/App/CJProbeApp.swift', ROOT/'ios/App/DevelopmentTripHost.swift', ROOT/'ios/App/DevelopmentControlRecordStore.swift', HERE/'DevelopmentDeviceCleanupUITests.swift']
         for module in ('CJShell','CJOfflineTrip','CJAuth','CJTripClient','CJManualPreviewClient','CJMemoryClient','CJNeedsClient','CJFeedbackClient'):
             sources += list((ROOT/'ios/Modules'/module/'Sources').rglob('*.swift'))
-        report['unrun']=['external-processing full32 positive','physical device/VoiceOver','real accounts/cloud/providers/fees/deployment'] if args.all_provided else ['all C online cleanup domains', 'physical device/VoiceOver', 'real accounts/cloud/providers/fees/deployment']
+        report['unrun']=['external-processing full32 positive','physical device','real accounts/cloud/providers/fees/deployment'] if args.all_provided else ['all C online cleanup domains', 'physical device', 'real accounts/cloud/providers/fees/deployment']
     if tls:
         sources += list((ROOT/'ios/App').glob('*.swift'))
         sources += [HERE/name for name in ('m4_device.py','m4_native.py','m4_artifacts.py','M4DeviceControl.swift','M4DeviceTestSession.swift')]
         report.update(layer='signed approved iPhone/local pinned HTTPS/private PG/actual provided-domain workflow',
             raw_native_bundle_shareable=False,build_inputs_shareable=False,
             device_font_scope='system default font; no size override',
-            unrun=['external-processing full32 positive','VoiceOver','real accounts/cloud/providers/fees/deployment'])
+            unrun=['external-processing full32 positive','real accounts/cloud/providers/fees/deployment'])
     report['source_hashes']={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sources}
     report['backend_trees']={name:subprocess.check_output(['git','rev-parse','HEAD:'+name],cwd=backend,text=True).strip() for name in ('backend','contracts','scripts')}
     def save(): (output/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
