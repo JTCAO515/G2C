@@ -75,7 +75,21 @@ import Foundation
             return bars.element.frame.maxY
         }
         for index in 0..<100 {
+            #if G2C_M4_DEVICE_ACCEPTANCE
+            if element.exists && element.frame.height > 0 {
+                let frame=element.frame, bar=app.navigationBars.firstMatch, tabs=app.tabBars.firstMatch
+                let upper=centered ? top() : (bar.exists ? bar.frame.maxY : app.frame.minY)
+                let lower=tabs.exists ? tabs.frame.minY : app.frame.maxY-44
+                let fits=frame.height <= lower-upper
+                let within=fits ? frame.minY >= upper && frame.maxY <= lower : frame.midY > upper && frame.midY < lower
+                // Offscreen lazy rows can throw when asked for hittability on iOS27.2.
+                if within && element.isHittable { return }
+                if frame.minY < upper { app.swipeDown() } else { app.swipeUp() }
+                continue
+            }
+            #else
             if element.exists && element.isHittable && (!centered || (element.frame.midY > top() && element.frame.midY < app.frame.maxY - 44)) { return }
+            #endif
             if centered && element.exists {
                 if element.frame.midY <= top() { app.swipeDown() } else { app.swipeUp() }
             } else if index < 40 { app.swipeUp() } else { app.swipeDown() }
