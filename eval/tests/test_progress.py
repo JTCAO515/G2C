@@ -66,6 +66,13 @@ class ProgressChecks(unittest.TestCase):
         self.assertEqual(len(value['attempts'][0]['original_attempts']),len(raw['operations']))
         self.assertEqual(value['usage']['actual_billed_cny'],'UNKNOWN')
 
+    def test_known_smoke_owner_violation_is_reported_without_certifying_zero_errors(self):
+        raw,row=self.add();self.assertEqual(self.value()['by_language']['zh']['serious_errors']['status'],'UNRUN')
+        raw['observed']['foreign_message_rows']=1;(self.root/row['raw_evidence_ref']).write_text(json.dumps(raw))
+        value=self.value();serious=value['by_language']['zh']['serious_errors']
+        self.assertEqual(serious['status'],'FAIL');self.assertEqual(serious['known_errors'][0]['actual'],1)
+        self.assertEqual(value['by_language']['zh']['outcomes']['FAIL'],1)
+
     def test_registered_attempt_without_intent_is_retained_as_unknown(self):
         raw,row=self.add();raw['authorization_attempts'].pop()
         (self.root/row['raw_evidence_ref']).write_text(json.dumps(raw));value=self.value()

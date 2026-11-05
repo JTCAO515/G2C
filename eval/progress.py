@@ -65,8 +65,17 @@ def snapshot(stage,plan,rows,directory,formal,starts):
             raise ValueError('measured_clock_must_be_finite_nonnegative')
         if first is not None and full is not None and full<first:raise ValueError('same_task_clock_order_required')
         if observed.get('run_status')!='completed' or raw.get('requested_candidate_missing'):full=None
+        smoke_errors=[]
+        if stage=='smoke':
+            for field in ('foreign_message_rows','foreign_mutations','formal_trip_count','memory_item_count'):
+                actual=observed.get(field)
+                if type(actual) is int and actual>0:
+                    smoke_errors.append(dict(ref='eval/smoke.py:check',check=field,actual=actual,expected=0))
+            if observed.get('runtime_role') is not None and observed['runtime_role']!='cj_m1_runtime':
+                smoke_errors.append(dict(ref='eval/smoke.py:check',check='runtime_role',actual=observed['runtime_role'],expected='cj_m1_runtime'))
         audits.append(dict(case_id=_key(row)[0],language=row['language'],attempt=_key(row)[2],
             verdict=verdict,run_id=message.get('run_id'),message_id=message.get('message_id'),
+            known_smoke_hard_errors=smoke_errors,
             run_status=observed.get('run_status','UNKNOWN'),failure=classify(raw,verdict),
             original_attempts=manifest,raw_evidence_ref=row['raw_evidence_ref'],raw_evidence_sha256=sha256(data).hexdigest(),
             input_sha256=raw.get('input_sha256'),
@@ -90,7 +99,10 @@ def snapshot(stage,plan,rows,directory,formal,starts):
             full_answer_seconds=latency(observed+[None]*(len(cells)-len(observed)),'full_answer_seconds'),
             timing_scope='known-subset diagnostic; original formal gate retains full denominator',
             original_product_profiles=original_profile,
-            serious_errors='UNRUN: prerequisite, not product review' if stage=='smoke' else [p['criteria']['serious_errors'] for p in original_profile],
+            serious_errors=(dict(status='FAIL' if any(a['known_smoke_hard_errors'] for a in observed) else 'UNRUN',
+                known_errors=[dict(run_id=a['run_id'],**error) for a in observed for error in a['known_smoke_hard_errors']],
+                scope='Known prerequisite state violations only; complete semantic/product review UNRUN') if stage=='smoke' else
+                [p['criteria']['serious_errors'] for p in original_profile]),
             usage=usage([r for row in rows if row['language']==language for r in json.loads((directory/row['raw_evidence_ref']).read_bytes()).get('authorization_attempts',[])]))
         by_language[language]['usage_complete']=not bool(inflight)
         by_language[language]['unknown_inflight_usage']='UNKNOWN' if inflight else None
