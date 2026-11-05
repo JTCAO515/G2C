@@ -96,6 +96,9 @@ import Foundation
         #endif
         app.launch();tap(language=="en" ? "Memory":"记忆");tap("memory.account")
         if restore { tap("account.development.restore") } else { tap("account.development.signout");tap("account.development.signin.A") }
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        deviceSession.requireAccount(f.subjects["A"]!,in:app)
+        #endif
         let signed=XCTNSPredicateExpectation(predicate:NSPredicate(format:"label CONTAINS %@",f.subjects["A"]!),object:app.staticTexts["account.development.status"])
         XCTAssertEqual(XCTWaiter.wait(for:[signed],timeout:20),.completed)
         // The verified root finishes assembling after the account label changes

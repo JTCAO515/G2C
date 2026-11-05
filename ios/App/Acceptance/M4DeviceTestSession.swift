@@ -54,6 +54,29 @@ import XCTest
         XCTFail("Exact control must be exposed above the keyboard/accessory and within page content")
     }
 
+    /// Verification can rebuild the root and select Trips. Reopen the account
+    /// surface to read the same result; never repeat sign-in or another request.
+    func requireAccount(_ subject: String, in app: XCUIApplication) {
+        let status=app.staticTexts.matching(identifier:"account.development.status").firstMatch
+        let deadline=Date().addingTimeInterval(20)
+        while Date()<deadline {
+            if status.exists && status.label.contains(subject) {return}
+            if !status.exists {
+                let memory=app.tabBars.buttons.matching(NSPredicate(format:"label IN %@",["Memory","记忆"]))
+                XCTAssertEqual(memory.count,1);XCTAssertTrue(memory.element.isHittable);memory.element.tap()
+                if !status.waitForExistence(timeout:1) {
+                    let entry=app.buttons.matching(identifier:"memory.account").firstMatch
+                    revealControl(entry,in:app);XCTAssertTrue(entry.isEnabled);entry.tap()
+                }
+            }
+            let matched=XCTNSPredicateExpectation(predicate:NSPredicate(format:"label CONTAINS %@",subject),object:status)
+            if XCTWaiter.wait(for:[matched],timeout:1) == .completed {return}
+        }
+        let shot=XCTAttachment(screenshot:app.screenshot());shot.name="account-result-not-readable";shot.lifetime = .keepAlways;test.add(shot)
+        XCTAssertTrue(status.exists,"Original account result must be readable")
+        XCTAssertTrue(status.label.contains(subject),status.exists ? status.label:"account result missing")
+    }
+
     private func handle(_ alert: XCUIElement) -> Bool {
         let message = alert.staticTexts.allElementsBoundByIndex.map(\.label)
             .joined(separator: " ").lowercased()

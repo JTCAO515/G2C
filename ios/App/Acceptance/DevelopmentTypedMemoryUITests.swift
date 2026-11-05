@@ -188,6 +188,9 @@ import Foundation
         tap("memory.account")
         if restore {tap("account.development.restore")}
         else {tap("account.development.signout");tap("account.development.signin.A")}
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        deviceSession.requireAccount(fixture.subjects["A"]!,in:app)
+        #endif
         text("account.development.status",contains:fixture.subjects["A"]!)
         let ready = app.buttons.matching(identifier:legacy ? "Load groups" : "memory2.items.open").firstMatch
         for _ in 0..<12 {
