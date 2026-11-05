@@ -252,3 +252,10 @@ python -B /app/eval/hk.py run full --smoke /evidence/new-smoke-stage --output /e
 仍固定中英各三例四类工具，任一UNKNOWN/FAILED/空正文立即停；同候选六格全PASS才66。
 HK私有PG的loopback采样单独标`hk-private-real-exits`，不能冒充海外/中国目标网络；
 目标网络仍等B #30正式ready后另测。所有旧FAIL/UNKNOWN/INTENT保持原样。
+
+B563的命名函数输送仍传原`MODEL-tool-turn.1`。冒烟取证按实际注册的
+`native_turn_profile`/`external_tools_disabled`（以及旧`tool_choice`）重用B真实序列化器
+核对出口输入SHA；新回执解包父wrapper ID、每个inner的index/name/query及原响应SHA，
+缺段、换ID/查询/结果、重复字段或丢失回执均FAIL。FACT摘录只取已与原回执匹配的结果，
+不接受无关消息补出的摘录。旧直接native记录仍可只读核验。这里仅适配输送编码，
+不修改语料、留出、judge、质量门槛或既有通过条件；合成单元样例不能开启真实全量。
