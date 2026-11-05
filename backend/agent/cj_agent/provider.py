@@ -410,8 +410,9 @@ class MeteredDashScopeProvider:
                                 else 'other' if type(finish) is str else 'invalid_type')
                             if finish not in ('stop','tool_calls'):
                                 choice_rejection='incomplete_finish';raise _M4Rejection('choice_rejected','M4 model output incomplete')
-                            if proxy and choice['finish_reason']!='tool_calls':
-                                choice_rejection='named_finish';raise _M4Rejection('choice_rejected','named model turn finish unavailable')
+                            # A forced named function can end with stop. Its
+                            # complete call, identity, envelope, usage and DONE
+                            # are checked below before settling or dispatching.
                             if tool_choice=='none' and choice['finish_reason']!='stop':
                                 choice_rejection='final_finish';raise _M4Rejection('choice_rejected','M4 final answer stop unavailable')
                             finished=True
