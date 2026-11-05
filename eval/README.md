@@ -260,3 +260,30 @@ B563的命名函数输送仍传原`MODEL-tool-turn.1`。冒烟取证按实际注
 不接受无关消息补出的摘录。旧直接native回执结构仍保留支持；历史出口SHA须按原候选的
 序列化器核验，不用当前源码重写旧结论。这里仅适配输送编码，
 不修改语料、留出、judge、质量门槛或既有通过条件；合成单元样例不能开启真实全量。
+
+## 持续报告与失败归类
+
+runner在每格提交前写`case-starts.json`，在原始证据/原判定完成后写`progress.json/md`；
+开始但未留完整结果的格为UNKNOWN，尚未开始为UNRUN。中英分别保留计划数、原判定
+PASS/FAIL/UNKNOWN/UNRUN、原RUN状态、严重错误/时延原口径与全部原注册attempt、
+预算意图/回执/输入SHA；缺意图或孤立意图不丢弃、不计成已知零费用。重复身份拒绝，
+不选最好结果。模型tokens只合计有效完整回执，保守占用/公开价估算/实付UNKNOWN分列。
+
+该报告只读归档，**不是派发、重试、计量账本或全量准入权威**；不能改变原summary/report
+与canonical phase。每格原FAIL保留，未观察时延不补值；门槛分母仍由原判定计算。
+冻结的非秘密runtime配置也另存hash。判定程序异常前已完成的RUN/时钟/原回执仍保留。
+
+失败分类为接入/协议、来源/工具、模型质量、判定程序、环境或UNKNOWN。分类只定位已证
+组件/效果，根因默认UNKNOWN，不把未知RUN归咎模型。原provider审计只采固定无内容字段
+（attempt SHA、phase、HTTP状态、结束/usage标记与数量），并绑定原attempt；不保存异常
+文本或API key，也不根据缺finishReason猜stop/length。报告含版本、场景、run/attempt、
+失败阶段、原证据hash与预期，便于最小复现；分类绝不提升原判定。
+
+已留齐文件的batch可只读重生成派生报告，输出目录必须是新的，不访问服务或共享账本：
+
+```sh
+python -B eval/progress.py --stage smoke --batch BATCH --output NEW_AUDIT_DIRECTORY
+```
+
+这不是恢复执行入口，不能重派已开始/UNKNOWN的格。旧批次没有start记录时不自动补造；
+历史只读分析须注明原冻结候选与来源适用性，不继承为当前候选的真实通过。

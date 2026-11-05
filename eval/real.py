@@ -30,6 +30,8 @@ from cases import state
 from gates import POLICY
 from judge import judge
 from report import report, markdown
+from progress import write as write_progress
+from failure import capture as capture_failure, parse_audit
 from hk import active as hk_active, source_candidate, require_output
 import hk
 from cj_agent.provider import DashScopeConfig, MeteredDashScopeProvider, M4_BASE, M4_MODEL
@@ -262,9 +264,14 @@ def run_case(client, database, conninfo, auth, context, services, scenario, lang
         save(policy_path, document)
         evidence['restart_scope'] = 'new original real worker process; same persistent PG/API/journal'
         def work():
-            result = subprocess.run([sys.executable, '-B', str(ROOT / 'eval/real_worker.py'),
-                str(conninfo), str(auth), str(conninfo.parent / 'run.json'), str(policy_path)],
-                capture_output=True, text=True, timeout=660, check=True)
+            try:
+                result = subprocess.run([sys.executable, '-B', str(ROOT / 'eval/real_worker.py'),
+                    str(conninfo), str(auth), str(conninfo.parent / 'run.json'), str(policy_path)],
+                    capture_output=True, text=True, timeout=660, check=True)
+            except subprocess.CalledProcessError as error:
+                evidence['provider_failure_diagnostics']=parse_audit(error.stderr or '')
+                raise
+            evidence['provider_failure_diagnostics']=parse_audit(result.stderr)
             return [Outcome(**value) for value in json.loads(result.stdout)]
     mid = subject + '-task'
     started = time.monotonic()
@@ -357,14 +364,16 @@ def main():
                              ref='eval/real.py:tcp_app + per-row raw client monotonic timestamps'),
             description='Actual local TCP protected v2 snapshot polls (200ms), real external exits. Not an overseas or China target-network measurement.')],
         scenarios=scenarios)
-    report(plan, [])
+    summary=report(plan, [])
     args.output.mkdir(parents=True, mode=0o700)
     (args.output / 'raw').mkdir(mode=0o700)
     save(args.output / 'plan.json', plan)
     save(args.output / 'budget-before.json', before)
     save(args.output / 'preflight-estimate.json', forecast)
     save(args.output / 'packages.json', {v: version(v) for v in ('httpx','psycopg','uvicorn','fastapi')})
-    observations = []
+    observations=[];starts=[]
+    save(args.output/'observations.json',observations);save(args.output/'case-starts.json',starts)
+    save(args.output/'report.json',summary);write_progress('full',plan,observations,args.output,summary,starts)
     with redirect_stdout(io.StringIO()), private_database('real-evaluation') as conninfo:
         auth = conninfo.parent / 'auth'
         dev_auth.init(auth, sorted(subjects))
@@ -374,6 +383,7 @@ def main():
             unit='provider_call', budget=100, period_start=now-60, period_end=now+21600,
             max_steps=24, max_tools=12, max_output=65536, max_seconds=600),
             output_limits=dict(model=12000, tool=48000, memory=2000))))
+        save(args.output/'runtime-config.json',json.loads(profile.read_bytes()))
         context = load_run_context(profile)
         for subject in subjects:
             local_run_context.provision_budget(conninfo, context, subject)
@@ -393,21 +403,29 @@ def main():
                         observed_at=datetime.now(timezone.utc).isoformat(), source_as_of=datetime.now(timezone.utc).isoformat(),
                         raw_evidence_ref='raw/' + key + '.json', first_body_seconds=None, full_answer_seconds=None,
                         draft_seconds=None)
-                    evidence = dict(input_sha256=sha256(scenario['inputs'][language].encode()).hexdigest())
+                    starts.append(dict(scenario_id=scenario['id'],language=language,attempt=1,
+                        started_at=datetime.now(timezone.utc).isoformat()))
+                    save(args.output/'case-starts.json',starts)
+                    write_progress('full',plan,observations,args.output,summary,starts)
+                    evidence = dict(input_sha256=sha256(scenario['inputs'][language].encode()).hexdigest(),execution_stage='run_case')
                     started = time.monotonic()
                     try:
-                        observed, expected, first, terminal = run_case(client, database, conninfo, auth, context,
-                            services, scenario, language, subject, evidence)
-                        judgment = judge(scenario, observed, expected)
-                        evidence.update(observed=observed, expected=expected, judgment=judgment)
+                        with capture_failure(evidence):
+                            observed, expected, first, terminal = run_case(client, database, conninfo, auth, context,
+                                services, scenario, language, subject, evidence)
                         artifact_missing = scenario['recipe'] in ('preview','accept','reject') and 'candidate_document' not in observed
-                        evidence['requested_candidate_missing'] = artifact_missing
+                        evidence.update(observed=observed,expected=expected,requested_candidate_missing=artifact_missing)
+                        row.update(first_body_seconds=first,full_answer_seconds=None if artifact_missing else terminal)
+                        evidence['execution_stage']='independent_judge'
+                        judgment = judge(scenario, observed, expected)
+                        evidence['judgment']=judgment
                         row.update(status='success' if observed['run_status']=='completed' and not artifact_missing else 'failure',
-                            first_body_seconds=first, full_answer_seconds=terminal,
+                            first_body_seconds=first, full_answer_seconds=None if artifact_missing else terminal,
                             independent_judgment=judgment, serious_errors=judgment['serious_errors'],
                             judgment=dict(kind='program', independent=True, outcome=judgment['task_outcome'], ref='eval/judge.py'))
+                        evidence['execution_stage']='observation_complete'
                     except Exception as error:
-                        evidence.update(error_kind=type(error).__name__, execution_stage='inspect original HTTP/attempt evidence; never redispatch')
+                        evidence.update(error_kind=type(error).__name__, recovery='inspect original HTTP/attempt evidence; never redispatch')
                         row.update(status='failure', serious_errors=[], judgment=dict(kind='program', independent=True,
                             outcome='FAIL', ref='eval/real.py:execution_failure'))
                     evidence['operations'] = original_operations(database, subject)
@@ -429,6 +447,7 @@ def main():
                     summary = report(plan, observations)
                     save(args.output / 'report.json', summary)
                     (args.output / 'report.md').write_text(markdown(summary))
+                    write_progress('full',plan,observations,args.output,summary,starts)
                     # Progress is deliberately outside redirect_stdout, no API content or keys.
                     os.write(1, (key+' '+row['status']+' '+row['judgment']['outcome']+'\n').encode())
                     counts = {kind: sum(v['kind']==kind for v in budget.inspect()) for kind in ('model','place','route','weather','fact')}

@@ -22,9 +22,12 @@ from real import (ROOT, STATE, save, keychain, private_database, tcp_app, run_ca
                   load_run_context, ConfirmationSigner, RealServices, MeteredDashScopeProvider,
                   DashScopeConfig, M4_BASE, M4_MODEL, AuthorizationBudget, ABI,
                   dev_auth, local_run_context)
-from real import create_real_services
+from real import create_real_services, NETWORK
+from hk import active as hk_active
 from hk import source_candidate, require_output
 from hk import source_info
+from progress import write as write_progress
+from failure import capture as capture_failure
 from real_budget import estimate
 from real_budget import verified_journal
 from real_phase import claim, claimed, finish_smoke, verify_smoke
@@ -288,21 +291,28 @@ def main():
     if not claim('smoke',args.output,candidate):
         print('READ_ONLY: canonical smoke phase already claimed; no request/retry');return 0
     budget.check_date();verified_journal()
-    plan=dict(candidate_id=candidate,batch_id='round2-smoke',cases=cases(today),source_date=today,created_at=datetime.now(timezone.utc).isoformat(),
+    plan=dict(candidate_id=candidate,batch_id='round2-smoke',evidence_layer='real',cases=cases(today),source_date=today,created_at=datetime.now(timezone.utc).isoformat(),
               model_id=M4_MODEL,endpoint=M4_BASE,collector_sha256=sha256(Path(__file__).read_bytes()).hexdigest(),
               authorization='PR540 M4 items3/4 and JT current495 decisions; synthetic only; no old action replay',
-              execution_source=source_info(),planned_n=6)
+              execution_source=source_info(),planned_n=6,
+              network=dict(id=NETWORK,kind='local_real_services',
+                  client_environment='HK private Unix PG/original worker' if hk_active() else 'Codex development Mac',
+                  measurement_scope='protected loopback snapshot polls at200ms; not a target-network observation'))
     args.output.mkdir(parents=True,mode=0o700);(args.output/'raw').mkdir(mode=0o700)
     save(args.output/'plan.json',plan);save(args.output/'budget-before.json',before)
     save(args.output/'estimate.json',forecast)
     save(args.output/'packages.json',{k:version(k) for k in ('httpx','psycopg','uvicorn','fastapi')})
-    rows=[]
+    rows=[];starts=[]
+    save(args.output/'observations.json',rows);save(args.output/'case-starts.json',starts)
+    summary=summarize(plan,rows,args.output);save(args.output/'summary.json',summary)
+    write_progress('smoke',plan,rows,args.output,summary,starts)
     with redirect_stdout(io.StringIO()),private_database('real-r2-smoke') as conninfo:
         auth=conninfo.parent/'auth';dev_auth.init(auth,sorted(subjects));now=int(time.time())
         profile=conninfo.parent/'run.json'
         save(profile,dict(version='CJ-LOCAL-RUN@2',history=[],current=dict(meter=dict(unit='provider_call',budget=100,
             period_start=now-60,period_end=now+7200,max_steps=24,max_tools=12,max_output=65536,max_seconds=600),
             output_limits=dict(model=12000,tool=48000,memory=2000))))
+        save(args.output/'runtime-config.json',json.loads(profile.read_bytes()))
         context=load_run_context(profile)
         for subject in subjects:
             local_run_context.provision_budget(conninfo,context,subject);dev_auth.activate_travel(conninfo,subject,context,ABI)
@@ -314,12 +324,17 @@ def main():
                 for language in ('zh','en'):
                     subject='m4-synthetic-r2-smoke-'+case['id']+'-'+language
                     scenario=dict(case,id='smoke-'+case['id'],recipe='answer')
-                    evidence=dict(input_sha256=sha256(case['inputs'][language].encode()).hexdigest())
+                    starts.append(dict(case_id=case['id'],language=language,attempt=1,
+                        started_at=datetime.now(timezone.utc).isoformat()))
+                    save(args.output/'case-starts.json',starts)
+                    write_progress('smoke',plan,rows,args.output,summary,starts)
+                    evidence=dict(input_sha256=sha256(case['inputs'][language].encode()).hexdigest(),execution_stage='run_case')
                     row=dict(case_id=case['id'],language=language,raw_evidence_ref='raw/'+case['id']+'-'+language+'.json',
                              first_body_seconds=None,full_answer_seconds=None)
                     try:
-                        observed,expected,first,full=run_case(client,database,conninfo,auth,context,services,scenario,language,
-                            subject,evidence,allowed_native=frozenset(case['native']))
+                        with capture_failure(evidence):
+                            observed,expected,first,full=run_case(client,database,conninfo,auth,context,services,scenario,language,
+                                subject,evidence,allowed_native=frozenset(case['native']))
                         evidence.update(observed=observed,expected=expected)
                         row.update(first_body_seconds=first,full_answer_seconds=full)
                     except Exception as error:evidence['error_kind']=type(error).__name__
@@ -329,6 +344,7 @@ def main():
                     save(args.output/row['raw_evidence_ref'],evidence);rows.append(row)
                     save(args.output/'observations.json',rows);save(args.output/'budget-after.json',budget.inspect())
                     summary=summarize(plan,rows,args.output);save(args.output/'summary.json',summary)
+                    write_progress('smoke',plan,rows,args.output,summary,starts)
                     verdict=summary['outcomes'][len(rows)-1]['status']
                     os.write(1,(case['id']+' '+language+' '+verdict+'\n').encode())
                     if verdict!='PASS':
