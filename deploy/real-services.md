@@ -50,6 +50,9 @@ host 转为原 PLACE-query.1 / FACT-query.1 再经已有严格 codec。模型不
 非思考模式显式选择该函数；不使用Qwen不保证支持的required策略。原input bytes绑定新profile。
 wrapper仅是本次模型输出，收费仍为一次原model调用；内层每条真实查询仍逐一通过原tool.round.index、RequestRef、Registry和Meter。
 供应商唯一真实wrapper ID对应一条按原顺序含index/name/result的聚合tool回复，不生成供应商子ID，不重放已完成的内层调用。
+已观测北京命名函数流使用自然结束`stop`；与`tool_calls`一样，仅表示待核的结束候选。
+必须同时收到DONE、完整usage、同一模型/响应身份，以及唯一合法wrapper和原envelope后，才结算或执行内层工具；
+缺件、截断、length、过滤和未知结束原因仍拒绝，不把停止标记本身当成功或重试依据。
 末轮限制kind=answer，在提交回执前拒绝外部工具；上限仍八个模型回合、每回合最多四查询和原RUN工具总限额，不增加第九次或修复调用。
 旧 `bilingual-json-schema.1` 已在真实工具流中未获有效JSON，其FAIL/INTENT保留；只为既有直接invoke消费者保留显式兼容路径，
 待这些调用方完成迁移后再移除。正式RealTools始终选新profile，没有运行时自动fallback。
@@ -75,6 +78,7 @@ App 若后续需要真实专用资料卡，须先证明已合消费者缺陷，�
 RUN总计最多4个provider_call、最多1次工具调用，仍使用原共享账本，原批次存在即只读。
 它用来区分传输、响应身份、工具解码和完整回执阶段的失败；不代表C的路线冒烟或66例质量已通过。
 模型失败诊断只记录原attempt的SHA256、固定阶段、HTTP状态、完成标记和数量；
+另记固定拒绝原因、归一化finish枚举和拒绝前已累计arguments字符数，区分最后解析阶段与后续wire/SSE读取失败。
 不记录异常文本、请求/响应正文、供应商原ID或密钥。HTTP拒绝仍保持INTENT与费用UNKNOWN，绝不自动重试。
 
 M4基础live步行解析仅在 `basic=True`、RouteQuery/walking、status=1及infocode=10000时接受供应商实际的 `info="ok"`；

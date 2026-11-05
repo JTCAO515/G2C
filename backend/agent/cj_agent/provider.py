@@ -173,6 +173,13 @@ M4_NATIVE_TURN_PROFILE='model-tool-turn-function.1'
 M4_TURN_FUNCTION='m4_tool_turn'
 
 
+class _M4Rejection(ProviderUnknown):
+    """Internal diagnostic code; provider text is never used as this code."""
+    def __init__(self,reason,message):
+        super().__init__(message)
+        self.reason=reason
+
+
 def _m4_native_answer_format():
     return dict(type='json_schema',json_schema=dict(name='cj_m4_bilingual_answer',strict=True,schema=dict(
         type='object',properties={language:dict(type='string',minLength=1) for language in ('zh','en')},
@@ -203,8 +210,8 @@ async def _m4_wire(config,raw,guard,observation=None):
         async with asyncio.timeout_at(deadline):
             reader,writer=await asyncio.open_connection('dashscope.aliyuncs.com',443,ssl=tls_context(),
                 server_hostname='dashscope.aliyuncs.com',limit=16384)
-            if guard() is not True:raise ProviderUnknown('original M4 authority no longer valid')
-            if loop.time()>=deadline:raise ProviderUnknown('M4 total deadline exceeded')
+            if guard() is not True:raise _M4Rejection('wire_authority','original M4 authority no longer valid')
+            if loop.time()>=deadline:raise _M4Rejection('wire_deadline','M4 total deadline exceeded')
             connection=h11.Connection(h11.CLIENT,max_incomplete_event_size=16384)
             request=h11.Request(method=b'POST',target=b'/compatible-mode/v1/chat/completions',headers=[
                 (b'Host',b'dashscope.aliyuncs.com'),(b'Authorization',('Bearer '+config.api_key).encode('ascii')),
@@ -217,30 +224,36 @@ async def _m4_wire(config,raw,guard,observation=None):
                 event=connection.next_event()
                 if event is h11.NEED_DATA:
                     chunk=await reader.read(8192);wire+=len(chunk)
-                    if wire>327680:raise ProviderUnknown('M4 raw wire bound exceeded')
+                    if wire>327680:raise _M4Rejection('wire_bound','M4 raw wire bound exceeded')
                     connection.receive_data(chunk)
                 elif isinstance(event,h11.Response):
                     if observation is not None:observation['http_status']=event.status_code
-                    if headers or event.status_code!=200:raise ProviderUnknown('M4 model response rejected; billing unknown')
+                    if headers or event.status_code!=200:raise _M4Rejection('wire_status','M4 model response rejected; billing unknown')
                     fields={}
                     for key,value in event.headers:
                         if key in (b'content-type',b'content-encoding',b'content-length',b'transfer-encoding'):
-                            if key in fields:raise ProviderUnknown('M4 ambiguous response headers')
+                            if key in fields:raise _M4Rejection('wire_headers','M4 ambiguous response headers')
                             fields[key]=value
                     if (fields.get(b'content-type',b'').split(b';')[0].strip().lower()!=b'text/event-stream'
                             or fields.get(b'content-encoding',b'identity').lower()!=b'identity'
                             or b'content-length' in fields and b'transfer-encoding' in fields):
-                        raise ProviderUnknown('M4 unsupported response framing')
+                        raise _M4Rejection('wire_framing','M4 unsupported response framing')
                     headers=True
                 elif isinstance(event,h11.Data):
-                    if not headers:raise ProviderUnknown('M4 response headers unavailable')
+                    if not headers:raise _M4Rejection('wire_missing_headers','M4 response headers unavailable')
                     yield bytes(event.data)
                 elif isinstance(event,h11.EndOfMessage):
-                    if not headers or event.headers:raise ProviderUnknown('M4 response framing unavailable')
+                    if not headers or event.headers:raise _M4Rejection('wire_end','M4 response framing unavailable')
                     return
-                else:raise ProviderUnknown('M4 response incomplete')
-    except (TimeoutError,OSError,ssl.SSLError,h11.ProtocolError):
-        raise ProviderUnknown('M4 total transport outcome unknown') from None
+                else:raise _M4Rejection('wire_incomplete','M4 response incomplete')
+    except TimeoutError:
+        raise _M4Rejection('wire_timeout','M4 total transport outcome unknown') from None
+    except ssl.SSLError:
+        raise _M4Rejection('wire_tls','M4 total transport outcome unknown') from None
+    except OSError:
+        raise _M4Rejection('wire_io','M4 total transport outcome unknown') from None
+    except h11.ProtocolError:
+        raise _M4Rejection('wire_protocol','M4 total transport outcome unknown') from None
     finally:
         if writer is not None:writer.transport.abort()
 
@@ -248,16 +261,16 @@ async def _m4_wire(config,raw,guard,observation=None):
 def _bounded_sse_lines(chunks,seconds):
     deadline=time.monotonic()+seconds;pending=b'';size=0
     for chunk in chunks:
-        if time.monotonic()>=deadline:raise ProviderUnknown('M4 total stream deadline exceeded')
+        if time.monotonic()>=deadline:raise _M4Rejection('sse_deadline','M4 total stream deadline exceeded')
         size+=len(chunk)
-        if size>262144:raise ProviderUnknown('bounded M4 model response exceeded')
+        if size>262144:raise _M4Rejection('sse_response_bound','bounded M4 model response exceeded')
         pending+=chunk
         while b'\n' in pending:
             line,pending=pending.split(b'\n',1)
-            if len(line)>65536:raise ProviderUnknown('M4 SSE line bound exceeded')
+            if len(line)>65536:raise _M4Rejection('sse_line_bound','M4 SSE line bound exceeded')
             yield line.rstrip(b'\r').decode('utf8',errors='strict')
-        if len(pending)>65536:raise ProviderUnknown('M4 SSE line bound exceeded')
-    if pending:raise ProviderUnknown('M4 incomplete SSE line')
+        if len(pending)>65536:raise _M4Rejection('sse_line_bound','M4 SSE line bound exceeded')
+    if pending:raise _M4Rejection('sse_incomplete_line','M4 incomplete SSE line')
 
 
 class MeteredDashScopeProvider:
@@ -354,7 +367,7 @@ class MeteredDashScopeProvider:
         self.calls+=1
         finished=False;done=False;response_ids=set();usage=None;calls={};texts=[];pending=''
         observation=dict(http_status=None)
-        phase='transport';committed=False
+        phase='transport';committed=False;failure_reason='none';observed_finish='unseen';choice_rejection='none'
         try:
             with self._chunks(raw,guard,observation) as chunks:
                 for line in _bounded_sse_lines(chunks,self.config.timeout_seconds):
@@ -386,18 +399,26 @@ class MeteredDashScopeProvider:
                         usage={k:supplied[k] for k in ('prompt_tokens','completion_tokens','total_tokens')}
                     phase='choice'
                     choices=value.get('choices',[])
-                    if type(choices) is not list or len(choices)>1:raise ProviderUnknown('M4 stream choice invalid')
+                    if type(choices) is not list or len(choices)>1:
+                        choice_rejection='choices_shape';raise _M4Rejection('choice_rejected','M4 stream choice invalid')
                     for choice in choices:
-                        if type(choice) is not dict:raise ProviderUnknown('M4 stream choice invalid')
+                        if type(choice) is not dict:
+                            choice_rejection='choice_shape';raise _M4Rejection('choice_rejected','M4 stream choice invalid')
                         if choice.get('finish_reason') is not None:
-                            if choice['finish_reason'] not in ('stop','tool_calls'):raise ProviderUnknown('M4 model output incomplete')
-                            if proxy and choice['finish_reason']!='tool_calls':
-                                raise ProviderUnknown('named model turn finish unavailable')
+                            finish=choice['finish_reason']
+                            observed_finish=(finish if type(finish) is str and finish in ('stop','tool_calls','length','content_filter','function_call','null')
+                                else 'other' if type(finish) is str else 'invalid_type')
+                            if finish not in ('stop','tool_calls'):
+                                choice_rejection='incomplete_finish';raise _M4Rejection('choice_rejected','M4 model output incomplete')
+                            # A forced named function can end with stop. Its
+                            # complete call, identity, envelope, usage and DONE
+                            # are checked below before settling or dispatching.
                             if tool_choice=='none' and choice['finish_reason']!='stop':
-                                raise ProviderUnknown('M4 final answer stop unavailable')
+                                choice_rejection='final_finish';raise _M4Rejection('choice_rejected','M4 final answer stop unavailable')
                             finished=True
                         delta=choice.get('delta',{})
-                        if type(delta) is not dict:raise ProviderUnknown('M4 stream delta invalid')
+                        if type(delta) is not dict:
+                            choice_rejection='delta_shape';raise _M4Rejection('choice_rejected','M4 stream delta invalid')
                         phase='content'
                         text=delta.get('content')
                         if text is not None and type(text) is not str:raise ProviderUnknown('M4 stream content invalid')
@@ -481,14 +502,22 @@ class MeteredDashScopeProvider:
                 elif system is not None:yield ''.join(texts)
                 elif pending:yield pending
                 phase='complete'
-        except (ProviderFailed,ProviderUnknown):raise
-        except (httpx.HTTPError,httpx.StreamError,ValueError,TypeError,KeyError,UnicodeError):
+        except _M4Rejection as error:
+            failure_reason=error.reason;raise
+        except (ProviderFailed,ProviderUnknown):
+            failure_reason='provider_rejected';raise
+        except (httpx.HTTPError,httpx.StreamError):
+            failure_reason='httpx_error'
+            raise ProviderUnknown('M4 original model outcome unknown') from None
+        except (ValueError,TypeError,KeyError,UnicodeError):
+            failure_reason='parse_error'
             raise ProviderUnknown('M4 original model outcome unknown') from None
         finally:
             if not committed:
                 # Fixed field names/enumerated phases and numeric metadata only.
                 # Never log exception text, provider IDs, prompts, deltas or keys.
                 logging.getLogger('cj_provider.audit').warning(
-                    'M4_MODEL_UNKNOWN attempt_sha256=%s phase=%s http_status=%s done=%s finished=%s usage=%s content_chars=%d tool_count=%d',
+                    'M4_MODEL_UNKNOWN attempt_sha256=%s phase=%s http_status=%s done=%s finished=%s usage=%s content_chars=%d tool_count=%d reason=%s choice_rejection=%s finish_reason=%s argument_chars_before_rejection=%d',
                     hashlib.sha256(attempt.encode()).hexdigest(),phase,observation['http_status'],done,finished,
-                    usage is not None,sum(map(len,texts)),len(calls))
+                    usage is not None,sum(map(len,texts)),len(calls),failure_reason,choice_rejection,observed_finish,
+                    sum(len(call['arguments']) for call in calls.values()))
