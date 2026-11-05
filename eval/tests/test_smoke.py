@@ -224,6 +224,7 @@ class SmokeChecks(unittest.TestCase):
                 patch.object(smoke,'claimed',return_value=False), \
                 patch.object(smoke.subprocess,'check_output',return_value='candidate'), \
                 patch.object(smoke,'verified_journal',return_value=[dict(kind='route')]*139), \
+                patch.object(smoke,'create_real_services',side_effect=AssertionError('no service credentials or exit')), \
                 patch.object(smoke,'keychain',side_effect=AssertionError('no key read')), \
                 patch.object(smoke,'claim',side_effect=AssertionError('no phase claim')), \
                 patch.object(smoke,'AuthorizationBudget',side_effect=AssertionError('no budget mutation')):
