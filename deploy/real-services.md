@@ -43,11 +43,15 @@ Memory fence、原动作只读恢复均继续生效。默认 local/Fake 路径�
 host 转为原 PLACE-query.1 / FACT-query.1 再经已有严格 codec。模型不必猜封装版本或坐标Decimal字段。
 续接保留实际 `assistant.tool_calls` 和逐一匹配的 `role=tool/tool_call_id`，
 同时保留工具调用响应中合法的说明文字；它只随原assistant消息续接，不作为最终回答或工具权限。
-真实native模型调用使用 `bilingual-json-schema.1`，以供应商严格JSON Schema约束现有 `zh/en` 答复字段；
-注册的原input bytes同时绑定该profile，供应商调用仍保留完整native工具目录和原tool_call_id续接。
-依据[官方结构化输出说明](https://help.aliyun.com/en/model-studio/qwen-structured-output)，当前qwen3.8-flash支持该模式。
-这是请求端约束；收到无效JSON/缺字段/空答复仍保留UNKNOWN，不添加修复调用、自动重试或降级。
-非native的既有结构化调用继续使用原JSON Object模式；1024输出token上限与八轮/原Meter限额不变，截断仍拒绝。
+正式M4使用 `model-tool-turn-function.1`，将原 `MODEL-tool-turn.1` envelope作为唯一
+`m4_tool_turn` 命名函数的参数传输。依据[官方强制函数说明](https://help.aliyun.com/en/model-studio/qwen-function-calling)，
+非思考模式显式选择该函数；不使用Qwen不保证支持的required策略。原input bytes绑定新profile。
+wrapper仅是本次模型输出，收费仍为一次原model调用；内层每条真实查询仍逐一通过原tool.round.index、RequestRef、Registry和Meter。
+供应商唯一真实wrapper ID对应一条按原顺序含index/name/result的聚合tool回复，不生成供应商子ID，不重放已完成的内层调用。
+末轮限制kind=answer，在提交回执前拒绝外部工具；上限仍八个模型回合、每回合最多四查询和原RUN工具总限额，不增加第九次或修复调用。
+旧 `bilingual-json-schema.1` 已在真实工具流中未获有效JSON，其FAIL/INTENT保留；只为既有直接invoke消费者保留显式兼容路径，
+待这些调用方完成迁移后再移除。正式RealTools始终选新profile，没有运行时自动fallback。
+非native的既有结构化调用继续原JSON Object模式；1024输出token与原Meter限额不变，无效/缺字段/截断仍UNKNOWN。
 不会把已执行的结果改成新的 user 请求。该标识仅关联数据，执行仍逐步经过原Meter/final guard。
 这是对已合PR524真实失败的实现修复，旧wire语义不变；协议依据
 [DashScope Function Calling](https://help.aliyun.com/en/model-studio/qwen-function-calling)。
