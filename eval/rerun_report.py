@@ -12,7 +12,7 @@ from pathlib import Path
 from smoke import summarize
 from report import report, markdown
 from gates import POLICY
-from fees import token_estimate
+from fees import usage
 
 
 def read(path):return json.loads(path.read_bytes())
@@ -32,18 +32,6 @@ def audit_batch(directory, rows):
     return audit,attempts
 
 
-def usage(attempts):
-    kinds=Counter(v['kind'] for v in attempts)
-    tokens=Counter()
-    for v in attempts:
-        if v['kind']=='model' and v['state']=='RECEIVED':tokens.update(v['receipt']['usage'])
-    return dict(call_attempts_by_kind=dict(kinds),complete_receipts=dict(Counter(v['kind'] for v in attempts if v['state']=='RECEIVED')),
-        unknown_intents=dict(Counter(v['kind'] for v in attempts if v['state']=='INTENT')),
-        model_tokens_from_complete_receipts=dict(tokens),conservative_hold_cny=dict(model=kinds['model'],tool=sum(kinds[k] for k in ('place','route','weather'))),
-        token_price_estimate=token_estimate(attempts),
-        actual_billed_cny='UNKNOWN',note='Original intents/call attempts; not a claim that every uncertain request reached the vendor. No invoice supplied.')
-
-
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--smoke',type=Path,required=True)
     parser.add_argument('--full',type=Path);parser.add_argument('--output',type=Path,required=True)
@@ -51,8 +39,9 @@ def main():
     smoke_plan=read(args.smoke/'plan.json');smoke_rows=read(args.smoke/'observations.json')
     smoke_summary=summarize(smoke_plan,smoke_rows,args.smoke)
     smoke_audit,attempts=audit_batch(args.smoke,smoke_rows)
+    preflight=read(args.smoke/'estimate.json')
     result=dict(schema_version=1,smoke=smoke_summary,smoke_audit=smoke_audit,
-        smoke_plan=smoke_plan,preflight_estimate=read(args.smoke/'estimate.json'),packages=read(args.smoke/'packages.json'),
+        smoke_plan=smoke_plan,preflight_estimate=preflight,packages=read(args.smoke/'packages.json'),
         full_product_quality='UNRUN',full66=dict(planned_n=66,executed_n=0),
         full_unrun_criteria_by_language={language:dict(planned_n=33,executed_n=0,
             completion_rate=dict(status='UNRUN',value=None,minimum=POLICY['completion_rate_minimum']),
@@ -63,8 +52,12 @@ def main():
         disposition='FAIL' if smoke_summary['status']=='FAIL' else 'UNKNOWN',
         history=dict(first_round='PR531 / candidate9ba2d4df',original_FAIL_retained=True,
             product_quality_disposition='Original60 RUN UNKNOWN were caused by adapter continuation defect, fixed by PR532; not used as product quality or averaged into this candidate'),
-        target_networks=dict(overseas_pretrip='UNRUN',china_travel='UNRUN',reason='B #30 has not notified api-beta readiness; no target or geography claim'),
-        authorization='PR540: model total500/stop400 includingM1; tools total200/stop160;1200/600/200/240;expires2026-11-30;synthetic only')
+        target_networks=dict(overseas_pretrip='UNRUN',china_travel='UNRUN',reason='No target-network observations in this report; consult authoritative B #30 delivery'),
+        authorization=dict(source='frozen estimate.json; not inferred from current machine or policy',
+            stop_cny=preflight.get('stop_cny'),
+            budget_cny=preflight.get('budget_cny'),
+            quantity_limits=preflight.get('quantity_limits'),
+            expiry='2026-11-30',synthetic_only=True))
     extra=[]
     last=args.smoke
     if args.full is not None:
@@ -99,7 +92,7 @@ def main():
         '', '```json',json.dumps(result['usage'],ensure_ascii=False,indent=2),'```','',
         'Shared budget end snapshot (includes earlier M1/B/C, not all attributed to this rerun):','',
         '```json',json.dumps(result['budget_snapshots']['after'],ensure_ascii=False,indent=2),'```','',
-        'Only development-Mac TCP protected snapshots at200ms polling were measured. api-beta overseas/China target-network phases remain UNRUN until B #30 readiness. Source links are excluded from first-body time; failures are not full answers. No real-user content, extra service, cloud operation, or authorization-file edit by C.',
+        'Recorded measurement environment: '+json.dumps(smoke_plan.get('network',dict(kind='UNKNOWN',reason='not recorded by original producer')),ensure_ascii=False)+'. No target geography is inferred. Source links are excluded from first-body time; failures are not full answers. Real-user content and authorization-file edits remain prohibited.',
         '', 'Engineering test/fixture PASS is separate from real smoke and product quality. Original raw HTTP/process files remain outside git; formal audit retains every executed attempt, request hash, receipt state and timing. Unexecuted planned cells are explicit UNRUN.'])
     if args.full is None:
         md.extend(['','| Product language | Completion ≥90% | Serious errors 0 | First body p95 ≤5s | Full answer p95 ≤90s |',
