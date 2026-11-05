@@ -7,7 +7,15 @@ import re
 CATEGORIES=('integration_protocol','source_tool','model_quality','judge','environment','UNKNOWN')
 PATTERN=re.compile(r'M4_MODEL_UNKNOWN attempt_sha256=([0-9a-f]{64}) phase=([a-z_]{1,64}) '
     r'http_status=(None|[1-5][0-9]{2}) done=(True|False) finished=(True|False) usage=(True|False) '
-    r'content_chars=([0-9]{1,9}) tool_count=([0-9]{1,4})$')
+    r'content_chars=([0-9]{1,9}) tool_count=([0-9]{1,4})(?= |$)')
+TRAILER=re.compile(r' reason=([a-z_]{1,64}) choice_rejection=([a-z_]{1,64}) '
+    r'finish_reason=([a-z_]{1,32}) argument_chars_before_rejection=([0-9]{1,9})$')
+REASONS=frozenset(('none','provider_rejected','httpx_error','parse_error','choice_rejected',
+    'wire_authority','wire_deadline','wire_bound','wire_status','wire_headers','wire_framing',
+    'wire_missing_headers','wire_end','wire_incomplete','wire_timeout','wire_tls','wire_io','wire_protocol',
+    'sse_deadline','sse_response_bound','sse_line_bound','sse_incomplete_line'))
+CHOICES=frozenset(('none','choices_shape','choice_shape','incomplete_finish','final_finish','delta_shape'))
+FINISHES=frozenset(('unseen','stop','tool_calls','length','content_filter','function_call','null','other','invalid_type'))
 
 
 def parse_audit(text):
@@ -15,11 +23,18 @@ def parse_audit(text):
     for line in text.splitlines():
         start=line.find('M4_MODEL_UNKNOWN ')
         if start<0:continue
-        match=PATTERN.fullmatch(line[start:])
+        bounded=line[start:];match=PATTERN.match(bounded)
         if match is None:continue  # Never retain arbitrary logger text/content.
         digest,phase,status,done,finished,usage,chars,tools=match.groups()
-        result.append(dict(attempt_sha256=digest,phase=phase,http_status=None if status=='None' else int(status),
-            done=done=='True',finished=finished=='True',usage=usage=='True',content_chars=int(chars),tool_count=int(tools)))
+        event=dict(attempt_sha256=digest,phase=phase,http_status=None if status=='None' else int(status),
+            done=done=='True',finished=finished=='True',usage=usage=='True',content_chars=int(chars),tool_count=int(tools))
+        tail=TRAILER.fullmatch(bounded[match.end():])
+        if tail is not None:
+            reason,rejection,finish,count=tail.groups()
+            event.update(reason_code=reason if reason in REASONS else 'UNKNOWN',
+                choice_rejection=rejection if rejection in CHOICES else 'UNKNOWN',
+                finish_reason=finish if finish in FINISHES else 'UNKNOWN',argument_chars_before_rejection=int(count))
+        result.append(event)
     return result
 
 

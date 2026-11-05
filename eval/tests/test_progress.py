@@ -145,6 +145,14 @@ class FailureChecks(unittest.TestCase):
                 raise ValueError('synthetic')
         self.assertEqual(logger.handlers,original);self.assertEqual(raw['provider_failure_diagnostics'],[])
 
+    def test_optional_diagnostic_enums_are_observed_not_guessed_or_content(self):
+        prefix='M4_MODEL_UNKNOWN attempt_sha256='+'a'*64+' phase=choice http_status=200 done=False finished=False usage=False content_chars=0 tool_count=1'
+        event=parse_audit(prefix+' reason=choice_rejected choice_rejection=incomplete_finish finish_reason=length argument_chars_before_rejection=3')[0]
+        self.assertEqual(event['finish_reason'],'length');self.assertFalse(event['finished'])
+        self.assertNotIn('synthetic_private',json.dumps(parse_audit(prefix+' synthetic_private_do_not_keep')))
+        event=parse_audit(prefix+' reason=synthetic_private choice_rejection=synthetic_private finish_reason=synthetic_private argument_chars_before_rejection=3')[0]
+        self.assertEqual(event['reason_code'],'UNKNOWN');self.assertNotIn('synthetic_private',json.dumps(event))
+
     def test_components_are_separate_from_model_quality_and_model_claims(self):
         for raw,expected in ((dict(error_kind='PermissionError'),'environment'),
                 (dict(error_kind='ValueError',execution_stage='independent_judge'),'judge'),
