@@ -76,7 +76,9 @@ import Foundation
             if element.exists && element.frame.height > 0 {
                 let frame=element.frame, bar=app.navigationBars.firstMatch, tabs=app.tabBars.firstMatch
                 let upper=centered ? top() : (bar.exists ? bar.frame.maxY : app.frame.minY)
-                let lower=tabs.exists ? tabs.frame.minY : app.frame.maxY-44
+                // The presenting App's hidden Tab bar is not the sheet's
+                // viewport. Match the existing device-cleanup reveal bounds.
+                let lower=tabs.exists && tabs.isHittable ? tabs.frame.minY : app.frame.maxY-44
                 let fits=frame.height <= lower-upper
                 let within=fits ? frame.minY >= upper && frame.maxY <= lower : frame.midY > upper && frame.midY < lower
                 // Offscreen lazy rows can throw when asked for hittability on iOS27.2.
