@@ -46,10 +46,14 @@ import XCTest
                     "tabs",tabs.exists ? tabs.frame:.zero,"limits",top,bottom)
             }
             let located = !frame.isEmpty && frame.minY.isFinite && frame.maxY.isFinite
-            let fits=located && frame.height<=bottom-top-8
-            let within=located && (fits ? frame.minY>=top+4 && frame.maxY<=bottom-4 : frame.midY>top+4 && frame.midY<bottom-4)
+            // A fully visible cell may meet the navigation boundary exactly.
+            // Allow only half a physical pixel for AX floating-point rounding,
+            // rather than requiring an extra four-point gutter that cannot scroll.
+            let tolerance=0.5/UIScreen.main.scale
+            let fits=located && frame.height<=bottom-top+tolerance
+            let within=located && (fits ? frame.minY>=top-tolerance && frame.maxY<=bottom+tolerance : frame.midY>top && frame.midY<bottom)
             if within && element.isHittable {return}
-            let down=located ? frame.minY<top+4 : attempt>=10
+            let down=located ? frame.minY<top-tolerance : attempt>=10
             let middle=(top+bottom)/2,step=min(125,(bottom-top)*0.3)
             let start=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:app.frame.width-6,dy:middle+(down ? -step:step)))
             let end=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:app.frame.width-6,dy:middle+(down ? step:-step)))
