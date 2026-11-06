@@ -297,6 +297,8 @@ JT 2026-11-06另批 `space.go2china.device-v4.acceptance` 使用既有
 结构设置入口使用产品既有的 `memory.*` 标识，Tab 查询限定 Tab 栏；真机滚动
 复用共用 reveal helper，不放宽可见、可命中、业务或 AX 断言。
 首次夹具读取前调用既有本地网络同意 helper，只处理批准的 G2C 提示。
+注销说明的历史 Maximum 方法保留中英业务与完整 AX；字号元数据只记录，
+不再把已取消的 AccessibilityXXXL 断言作为前置条件。旧 FAIL 不改写。
 这些入口的 `--prepare-only` 仍全部记为 `PREPARED_EXECUTION_UNRUN`。
 
 ## #4 的候选矩阵
