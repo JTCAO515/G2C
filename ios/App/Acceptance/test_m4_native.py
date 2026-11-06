@@ -206,7 +206,9 @@ class OperatorCaseTests(unittest.TestCase):
         import check_beta_device as beta
         import contextlib
         import io
-        for method in ['testBilingualManualNeedsAndOriginalRecovery','testBilingualGeneralFeedbackAndOriginalRecovery']:
+        for method in ['testBilingualManualNeedsAndOriginalRecovery','testBilingualGeneralFeedbackAndOriginalRecovery',
+                       'testBetaBTypedLongTermEnglish','testBetaBTypedTravelEnglish',
+                       'testBetaBTypedLongTermChinese','testBetaBTypedTravelChinese']:
             with self.subTest(method=method),tempfile.TemporaryDirectory() as directory:
                 root=Path(directory);meta=root/'prepared.json'
                 meta.write_text(json.dumps(dict(head='SYNTHETIC-HEAD',device='SYNTHETIC-DEVICE',
@@ -222,6 +224,21 @@ class OperatorCaseTests(unittest.TestCase):
                 self.assertEqual(raised.exception.code,2)
                 accounts.assert_not_called();native.assert_not_called()
                 self.assertEqual(json.loads((root/'exports/report.json').read_text())['status'],'FAIL')
+
+    def test_typed_prepared_selector_without_frozen_inputs_cannot_read_credentials(self):
+        import check_beta_device as beta
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);meta=root/'prepared.json'
+            meta.write_text(json.dumps(dict(head='SYNTHETIC-HEAD',device='SYNTHETIC-DEVICE',
+                test=beta.SCENARIOS['typed-long-en'][1],work=str(root/'private'),build=str(root/'build'))))
+            argv=['check_beta_device.py','--device','SYNTHETIC-DEVICE','--output',str(root/'exports'),
+                '--prepared',str(meta),'--accounts-file',str(root/'never-read.json'),'--case','typed-long-en']
+            def git(arguments,**kwargs):return b'' if arguments[1]=='status' else 'SYNTHETIC-HEAD'
+            with patch('sys.argv',argv),patch.object(beta.subprocess,'check_output',side_effect=git), \
+                 patch.object(beta,'operator_accounts') as accounts,patch.object(beta,'DeviceNative') as native:
+                with self.assertRaisesRegex(ValueError,'typed input provenance'):beta.main()
+            accounts.assert_not_called();native.assert_not_called()
+            self.assertEqual(json.loads((root/'exports/report.json').read_text())['status'],'FAIL')
 
     def test_authenticated_client_cannot_select_another_case(self):
         selected = ['testEnglish']; observed = []

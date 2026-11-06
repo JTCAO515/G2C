@@ -6,6 +6,7 @@ Tokens are requested from B after preparation and enter the App via one-use
 Caches input, never XCTest environment or generated source.
 """
 import argparse
+import base64
 import hashlib
 import importlib.util
 import json
@@ -32,6 +33,10 @@ SCENARIOS={
     'chinese-recovery':(CASE,CHINESE_RECOVERY),
     'manual-needs':('beta-manual-needs','DevelopmentBetaUITests/testBilingualManualNeedsAndOriginalRecovery'),
     'general-feedback':('beta-general-feedback','DevelopmentBetaUITests/testBilingualGeneralFeedbackAndOriginalRecovery'),
+    'typed-long-en':('beta-typed-long-en','DevelopmentBetaUITests/testBetaBTypedLongTermEnglish'),
+    'typed-travel-en':('beta-typed-travel-en','DevelopmentBetaUITests/testBetaBTypedTravelEnglish'),
+    'typed-long-zh':('beta-typed-long-zh','DevelopmentBetaUITests/testBetaBTypedLongTermChinese'),
+    'typed-travel-zh':('beta-typed-travel-zh','DevelopmentBetaUITests/testBetaBTypedTravelChinese'),
 }
 
 
@@ -65,6 +70,8 @@ def main():
     modes.add_argument('--prepare-only',action='store_true');modes.add_argument('--prepared',type=Path)
     p.add_argument('--local-tls',type=Path);p.add_argument('--build-dir',type=Path);p.add_argument('--work-dir',type=Path)
     p.add_argument('--accounts-file',type=Path)
+    p.add_argument('--typed-config',type=Path,help='Non-secret B-owned UI profile; preparation only')
+    p.add_argument('--typed-records',type=Path,help='Non-secret existing seed capture; preparation only')
     p.add_argument('--case',choices=SCENARIOS)
     a=p.parse_args();os.umask(0o077)
     if subprocess.check_output(['git','status','--porcelain'],cwd=ROOT):raise ValueError('Commit candidate before preparing or executing')
@@ -75,12 +82,19 @@ def main():
     case_id,selected=SCENARIOS[a.case or 'full']
     report=dict(status='RUNNING',head=head,layer='authorized physical iPhone / actual beta service; synthetic records',
         cases={selected:'UNRUN'},raw_native_bundle_shareable=False,build_inputs_shareable=False,
-        unrun=['new messages/providers','model-based Needs extraction/Trip/typed Memory/cleanup cloud profiles','target-network quality','TestFlight'])
+        unrun=['new messages/providers','model-based Needs extraction/Trip/typed model recall/cleanup cloud profiles',
+               'typed edit/withdraw/stop-use/permanent cleanup','target-network quality','TestFlight'])
     def save():(output/'report.json').write_text(json.dumps(report,indent=2))
     save();native=None;server=None;thread=None;accounts={};native_run_incomplete=False
     try:
         if a.prepare_only:
             if not all([a.local_tls,a.build_dir,a.work_dir]) or a.accounts_file:p.error('Preparation needs local TLS/build/work paths, with no account input')
+            typed_fixture={};typed_provenance=None
+            if case_id.startswith('beta-typed-'):
+                if not a.typed_config or not a.typed_records:p.error('Typed preparation requires both non-secret B profile and records')
+                from beta_typed_fixture import operator_typed_fixture
+                typed_fixture,typed_provenance=operator_typed_fixture(a.typed_config,a.typed_records)
+            elif a.typed_config or a.typed_records:p.error('Typed inputs require an explicit typed case')
             tls=LocalTLS.load(a.local_tls)
             work=a.work_dir.resolve();build=a.build_dir.resolve()
             for path in (work,build):
@@ -93,13 +107,16 @@ def main():
             control_token=secrets.token_urlsafe(32)
             server=ThreadingHTTPServer((tls.host,0),BaseHTTPRequestHandler)
             endpoint='https://'+tls.host+':'+str(server.server_port)
-            (work/'G2CControl.swift').write_text(source.replace('__FIXTURE_URL__',endpoint))
+            payload=base64.b64encode(json.dumps(typed_fixture,ensure_ascii=False).encode()).decode()
+            (work/'G2CControl.swift').write_text(source.replace('__FIXTURE_URL__',endpoint)
+                .replace('"__BETA_TYPED_CONFIG__"',json.dumps(payload)))
             project=work/'G2CAcceptance.xcodeproj'
             _,config,_=configure_project(project,tls,endpoint,control_token,bundle=BUNDLE,app_local_tls=False)
             meta=dict(head=head,device=a.device,test=selected,work=str(work),build=str(build),tls=str(a.local_tls.resolve()),
                 endpoint=endpoint,certificate_sha256=hashlib.sha256(tls.public_der).hexdigest())
+            if typed_provenance:meta['typed_fixture']=typed_provenance
         else:
-            if not a.accounts_file or a.local_tls or a.build_dir or a.work_dir:p.error('Execution needs --prepared private metadata and --accounts-file only')
+            if not a.accounts_file or a.local_tls or a.build_dir or a.work_dir or a.typed_config or a.typed_records:p.error('Execution needs frozen --prepared metadata and --accounts-file only')
             meta=json.loads(a.prepared.read_text());work=Path(meta['work']);build=Path(meta['build'])
             if meta['head']!=head or meta['device']!=a.device:raise ValueError('Prepared head/device differs')
             if a.case is not None and meta['test']!=selected:raise ValueError('Prepared selected method differs')
@@ -108,6 +125,7 @@ def main():
             if selected not in allowed:raise ValueError('Unknown prepared beta scenario')
             case_id=allowed[selected]
             if case_id!=CASE and a.case is None:p.error('Business execution requires the explicit prepared --case')
+            if case_id.startswith('beta-typed-') and 'typed_fixture' not in meta:raise ValueError('Prepared typed input provenance missing')
             if product_hashes(build)!=meta['products']:raise ValueError('Prepared signed products changed')
             if project_hashes(work)!=meta['project_inputs']:raise ValueError('Prepared project/control inputs changed')
             tls=LocalTLS.load(Path(meta['tls']))
@@ -119,6 +137,12 @@ def main():
         report['scenario']=case_id
         report['app_write_scope']={'beta-manual-needs':'new synthetic manual Needs only',
             'beta-general-feedback':'new synthetic general Feedback only'}.get(case_id,'none: existing-record reads only')
+        if case_id.startswith('beta-typed-'):
+            report['typed_fixture']=meta['typed_fixture']
+            report['app_write_scope']=meta['typed_fixture']['write_scope']
+            report['planned_maximum_posts']=12 if 'travel' in case_id else 6
+            report['seed_state']='Must read current state; successful path restores seed active with version+2; own item retained disabled'
+            report['failure_recovery']='No blind restoration after UNKNOWN/failure; preserve original actions and request read-only reconciliation'
         native=DeviceNative(a.device,BUNDLE,project,config,build,ROOT,output,accounts,control_token,report,case_id=case_id)
         env={k:v for k,v in os.environ.items() if not k.startswith(('G2C_DEV_','G2C_M4_','SIMCTL_CHILD_','PG','LIBPQ','CJ_LOCAL_'))}
         env['OS_ACTIVITY_MODE']='disable'

@@ -2,12 +2,13 @@ import XCTest
 import CryptoKit
 
 /// Authorized synthetic beta scenarios. Read-only methods preserve the original
-/// records; business methods create only their own Needs/Feedback actions.
+/// records; business methods use only the explicit synthetic acceptance scopes.
 /// No message, model, cancellation or account-deletion request is dispatched.
 @MainActor final class DevelopmentBetaUITests: XCTestCase {
     private let bundle="space.go2china.beta.acceptance"
     private let original="hk-api-smoke-20261105-05"
     private let answerSHA="4c995378812add4fda098d0fe076e19413f0827cefec9b4aaa14c3a8b3299a8b"
+    private let typedFixtureBase64="__BETA_TYPED_CONFIG__"
     private var app:XCUIApplication!
     private lazy var device=M4DeviceTestSession(test:self,control:"__FIXTURE_URL__")
 
@@ -109,7 +110,9 @@ import CryptoKit
             XCTAssertEqual(query.count,1,id);XCTAssertTrue(query.element.isHittable && query.element.isEnabled,id)
             query.element.tap()
         } else {
-            let element=businessElement(id);XCTAssertTrue(element.isEnabled,id);element.tap()
+            let element=query.count==1 ? query.element:businessElement(id)
+            if query.count==1 {device.revealControl(element,in:app)}
+            XCTAssertTrue(element.isEnabled,id);element.tap()
         }
         device.handleAppConsent()
     }
@@ -121,19 +124,24 @@ import CryptoKit
         XCTAssertEqual(Array(actual.utf8),Array(expected.utf8),id)
         return actual
     }
-    private func enterFresh(_ id:String,_ value:String,done:String) {
+    private func enterFresh(_ id:String,_ value:String,done:String?=nil) {
         let element=businessElement(id)
         XCTAssertTrue(element.elementType == .textView || element.elementType == .textField,id)
         XCTAssertTrue(element.isEnabled,id);element.tap()
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout:10))
-        device.revealControl(element,in:app,keyboardDone:app.buttons.matching(identifier:done).element)
+        let doneButtons=done.map {app.buttons.matching(identifier:$0)}
+            ?? app.toolbars.buttons.matching(NSPredicate(format:"label IN %@",["Done","完成"]))
+        device.revealControl(element,in:app,keyboardDone:doneButtons.element)
         var entered=""
         for character in value {
             element.typeText(String(character));entered.append(character)
             XCTAssertEqual(Array((element.value as? String ?? "").utf8),Array(entered.utf8),id)
         }
         XCTAssertEqual(Array((element.value as? String ?? "").utf8),Array(value.utf8),id)
-        businessTap(done);XCTAssertFalse(app.keyboards.firstMatch.exists)
+        XCTAssertEqual(doneButtons.count,1);XCTAssertTrue(doneButtons.element.isHittable && doneButtons.element.isEnabled)
+        doneButtons.element.tap();device.handleAppConsent()
+        let hidden=XCTNSPredicateExpectation(predicate:NSPredicate(format:"exists == false"),object:app.keyboards.firstMatch)
+        XCTAssertEqual(XCTWaiter.wait(for:[hidden],timeout:5),.completed)
     }
     private func openNeeds() {tab(["Assistant","助手"]);businessTap("assistant.needs")}
     private func readNeeds(_ language:String,version:Int) {
@@ -248,4 +256,179 @@ import CryptoKit
             try app.performAccessibilityAudit(for:.all)
         }
     }
+
+    private struct TypedContext:Decodable {let kind:String;let id:String;let expected_version:Int}
+    private struct TypedSeed:Decodable {
+        let item_id:String;let text:String;let occurred_at:String;let source_id:String
+        let source_version:Int;let version:Int;let extent:String;let context:TypedContext?
+    }
+    private struct TypedFixture:Decodable {
+        let owner:String;let environment:[String:String];let travels:[String]
+        let travel_versions:[String:Int];let seeds:[TypedSeed]
+    }
+    private func memoryRoot() {
+        tab(["Memory","记忆"])
+        if app.staticTexts.matching(identifier:"account.development.status").element.exists {memoryBack()}
+    }
+    private func memoryBack() {
+        let back=app.navigationBars.firstMatch.buttons
+        XCTAssertEqual(back.count,1);XCTAssertTrue(back.element.isHittable);back.element.tap()
+    }
+    private func typedScope(_ context:TypedContext?,language:String) -> String {
+        guard let context else {return language=="en" ? "Long-term memory":"长期记忆"}
+        return (language=="en" ? "Travel: ":"旅行：")+context.id+" · "+(language=="en" ? "version ":"版本 ")+String(context.expected_version)
+    }
+    private func typedText(_ id:String) -> String {
+        let element=businessElement(id)
+        return element.value as? String ?? element.label
+    }
+    private func typedReadVersion(language:String) throws -> Int {
+        let prefix=language=="en" ? "Item version: ":"条目版本："
+        let value=typedText("memory2.detail.version");XCTAssertTrue(value.hasPrefix(prefix))
+        let version=try XCTUnwrap(Int(value.dropFirst(prefix.count)));XCTAssertGreaterThan(version,0)
+        exactText("memory2.detail.version",prefix+String(version));return version
+    }
+    private func typedAssertDetail(text:String,time:String,scope:String,source:String,version:Int,status:String,language:String) {
+        // Version first waits for the fresh response, before reading its fields.
+        exactText("memory2.detail.version",(language=="en" ? "Item version: ":"条目版本：")+String(version))
+        exactText("memory2.detail.text",text);exactText("memory2.detail.time",time)
+        exactText("memory2.detail.subject","self · preference · "+(language=="en" ? "Preferences":"偏好"))
+        exactText("memory2.detail.scope",scope);exactText("memory2.detail.source",source)
+        exactText("memory2.detail.status",status=="active" ? (language=="en" ? "Active":"已启用"):(language=="en" ? "Disabled":"已停用"))
+    }
+    private func typedOpenItem(_ id:String,root:Bool) {
+        if root {memoryRoot();businessTap("memory2.items.open")}
+        businessTap("memory2.items.read")
+        businessTap("memory2.item."+id);businessTap("memory2.detail.read")
+    }
+    private func typedChooseTravel(_ id:String,version:Int,language:String) {
+        tab(["Assistant","助手"]);businessTap("assistant.travelContext");businessTap("travel.selection."+id)
+        exactText("travel.selection.status",(language=="en" ? "Selected travel: ":"已选旅行：")+id+" · "+(language=="en" ? "version ":"版本 ")+String(version))
+        businessTap("assistant.panel.done");memoryRoot()
+    }
+    private func typedManagement(_ operation:String,text:String,scope:String,version:Int,sourceVersion:Int,status:String,language:String) throws {
+        businessTap("memory2.manage.review."+operation)
+        exactText("memory2.manage.review.before",text);exactText("memory2.manage.review.scope",scope)
+        exactText("memory2.manage.review.versions",(language=="en" ? "Item/source versions: ":"条目/来源版本：")+String(version)+"/"+String(sourceVersion))
+        try app.performAccessibilityAudit(for:.all)
+        // Exactly one explicit confirmation. UNKNOWN never permits another POST.
+        businessTap("memory2.manage.confirm")
+        let value=businessElement("memory2.manage.status")
+        let prefix=language=="en" ? "Original receipt verified: ":"原回执已核实："
+        let condition=XCTNSPredicateExpectation(predicate:NSPredicate(format:"label BEGINSWITH %@ OR value BEGINSWITH %@",prefix,prefix),object:value)
+        XCTAssertEqual(XCTWaiter.wait(for:[condition],timeout:30),.completed)
+        let raw=value.value as? String ?? value.label
+        let label=status=="active" ? (language=="en" ? "Active":"已启用"):(language=="en" ? "Disabled":"已停用")
+        let suffix=" · "+String(version+1)+" · "+label+(language=="en" ? ". Read current detail to verify current use.":"。当前是否使用请重新读取详情。")
+        XCTAssertTrue(raw.hasPrefix(prefix) && raw.hasSuffix(suffix))
+        let action=String(raw.dropFirst(prefix.count).dropLast(suffix.count));XCTAssertNotNil(UUID(uuidString:action))
+        print("M4_BETA_TYPED_ACTION",operation,action,"version",version+1,"status",status)
+        businessTap("memory2.detail.read")
+    }
+    private func typedReconcileOriginals(language:String) {
+        businessTap("memory.manage.openOriginals");businessTap("memory2.originals.read")
+        for id in actionButtons(prefix:"memory2.original.query.").sorted() {
+            businessTap(id);exactText("memory2.save.status",language=="en" ? "Saved.":"已保存。")
+        }
+        for id in actionButtons(prefix:"memory2.action.query.").sorted() {
+            businessTap(id)
+            let value=businessElement("memory2.manage.status")
+            let action=String(id.dropFirst("memory2.action.query.".count))
+            let prefix=(language=="en" ? "Original receipt verified: ":"原回执已核实：")+action+" · "
+            let expected=XCTNSPredicateExpectation(predicate:NSPredicate(format:"label BEGINSWITH %@ OR value BEGINSWITH %@",prefix,prefix),object:value)
+            XCTAssertEqual(XCTWaiter.wait(for:[expected],timeout:30),.completed)
+        }
+        memoryBack()
+    }
+    private func typedReviewDraft(text:String,time:String,current:Bool,scope:String,language:String) throws {
+        businessTap("memory.add");businessTap("memory2.manual.option")
+        let label="self · preference · "+(current ? "Selected travel / 所选旅行":"Long term / 长期")
+        let menu=app.menuItems.matching(identifier:label)
+        let option=menu.element.waitForExistence(timeout:1) ? menu:app.buttons.matching(identifier:label)
+        XCTAssertEqual(option.count,1);XCTAssertTrue(option.element.isHittable);option.element.tap()
+        enterFresh("memory2.manual.text",text);enterFresh("memory2.manual.time",time)
+        businessTap("memory2.manual.review")
+        exactText("memory2.review.text",text);exactText("memory2.review.time",time)
+        exactText("memory2.review.subject","self · preference · "+(language=="en" ? "Preferences":"偏好"))
+        exactText("memory2.review.scope",scope);try app.performAccessibilityAudit(for:.all)
+    }
+    private func typedAPIOnly(language:String,current:Bool,caseID:String) async throws {
+        continueAfterFailure=false;executionTimeAllowance=840;defer {app?.terminate()}
+        let fixture=try JSONDecoder().decode(TypedFixture.self,from:XCTUnwrap(Data(base64Encoded:typedFixtureBase64)))
+        try await device.stageAccounts(caseID:caseID)
+        launch(language:language,injecting:true,profile:fixture.environment);signIn("B");memoryRoot()
+        typedReconcileOriginals(language:language)
+        let seeds=fixture.seeds.filter {($0.extent=="current")==current}
+        XCTAssertEqual(seeds.count,current ? 2:1)
+        var createdIDs:[String]=[]
+        let first=try XCTUnwrap(seeds.first)
+        if let context=first.context {
+            typedChooseTravel(context.id,version:try XCTUnwrap(fixture.travel_versions[context.id]),language:language)
+        }
+        // Diagnose permissions/input/navigation/AX before any seed mutation.
+        // The preview creates no durable original and is never confirmed.
+        try typedReviewDraft(text:"SYNTHETIC unsubmitted preflight "+UUID().uuidString+" e\u{301} 🌏",
+            time:"time unknown / 时间不详",current:current,scope:typedScope(first.context,language:language),language:language)
+        memoryBack()
+        for seed in seeds {
+            if let context=seed.context {
+                typedChooseTravel(context.id,version:try XCTUnwrap(fixture.travel_versions[context.id]),language:language)
+            }
+            typedOpenItem(seed.item_id,root:true)
+            let before=try typedReadVersion(language:language);XCTAssertGreaterThanOrEqual(before,seed.version)
+            XCTAssertLessThan(before,Int.max-8)
+            let source=(language=="en" ? "Source: ":"来源：")+seed.source_id+" · "+String(seed.source_version)
+            let scope=typedScope(seed.context,language:language)
+            typedAssertDetail(text:seed.text,time:seed.occurred_at,scope:scope,source:source,version:before,status:"active",language:language)
+            try app.performAccessibilityAudit(for:.all)
+            print("M4_BETA_TYPED_WINDOW_BEGIN",seed.item_id,"version",before)
+            try typedManagement("pause",text:seed.text,scope:scope,version:before,sourceVersion:seed.source_version,status:"disabled",language:language)
+            typedAssertDetail(text:seed.text,time:seed.occurred_at,scope:scope,source:source,version:before+1,status:"disabled",language:language)
+            memoryBack();memoryBack()
+            let nonce=UUID().uuidString
+            let ownText="SYNTHETIC App API-only "+language+" "+seed.extent+" "+nonce+" e\u{301} 🌏"
+            let time="time unknown / 时间不详"
+            print("M4_BETA_TYPED_NEW_MARKER",nonce,seed.extent,seed.context?.id ?? "long_term")
+            try typedReviewDraft(text:ownText,time:time,current:current,scope:scope,language:language)
+            businessTap("memory2.manual.confirm");exactText("memory2.save.status",language=="en" ? "Saved.":"已保存。")
+            memoryBack();businessTap("memory2.items.open");businessTap("memory2.items.read")
+            // Discover the App-generated ID by exact original text inside the
+            // documented text-ID namespace, then activate only the exact ID.
+            let row=app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@ AND (label == %@ OR value == %@)","memory2.item.text.",ownText,ownText))
+            device.revealControl(row.element,in:app);XCTAssertEqual(row.count,1)
+            let ownID=String(row.element.identifier.dropFirst("memory2.item.text.".count));XCTAssertNotNil(UUID(uuidString:ownID))
+            createdIDs.append(ownID)
+            businessTap("memory2.item."+ownID);businessTap("memory2.detail.read")
+            exactText("memory2.detail.version",language=="en" ? "Item version: 1":"条目版本：1")
+            let ownSource=typedText("memory2.detail.source")
+            XCTAssertTrue(ownSource.hasPrefix(language=="en" ? "Source: ":"来源：") && ownSource.hasSuffix(" · 1"))
+            XCTAssertGreaterThan(ownSource.count,(language=="en" ? "Source: ":"来源：").count+" · 1".count)
+            typedAssertDetail(text:ownText,time:time,scope:scope,source:ownSource,version:1,status:"active",language:language)
+            for (operation,version,status) in [("pause",1,"disabled"),("resume",2,"active"),("pause",3,"disabled")] {
+                try typedManagement(operation,text:ownText,scope:scope,version:version,sourceVersion:1,status:status,language:language)
+                typedAssertDetail(text:ownText,time:time,scope:scope,source:ownSource,version:version+1,status:status,language:language)
+            }
+            try app.performAccessibilityAudit(for:.all)
+            memoryBack();typedOpenItem(seed.item_id,root:false)
+            typedAssertDetail(text:seed.text,time:seed.occurred_at,scope:scope,source:source,version:before+1,status:"disabled",language:language)
+            try typedManagement("resume",text:seed.text,scope:scope,version:before+1,sourceVersion:seed.source_version,status:"active",language:language)
+            typedAssertDetail(text:seed.text,time:seed.occurred_at,scope:scope,source:source,version:before+2,status:"active",language:language)
+            try app.performAccessibilityAudit(for:.all)
+            print("M4_BETA_TYPED_WINDOW_RESTORED",seed.item_id,"version",before+2,"retained_disabled_item",ownID)
+            memoryBack();memoryBack()
+        }
+        // Account A deliberately has no B typed policy. This asserts the
+        // observed error/no-private-data UI, not a cause inferred from HTTP503.
+        app.terminate();try await device.stageAccounts(caseID:caseID)
+        launch(language:language,injecting:true,profile:fixture.environment);signIn("A");memoryRoot()
+        businessTap("memory2.items.open");businessTap("memory2.items.read")
+        exactText("memory2.items.status",language=="en" ? "Memories could not be read. No empty or successful result is assumed.":"无法读取记忆，不能据此视为空列表或读取成功。")
+        for id in fixture.seeds.map(\.item_id)+createdIDs {XCTAssertFalse(app.buttons.matching(identifier:"memory2.item."+id).element.exists)}
+        XCTAssertFalse(app.descendants(matching:.any).matching(identifier:"memory2.detail.text").element.exists)
+        try app.performAccessibilityAudit(for:.all)
+    }
+    func testBetaBTypedLongTermEnglish() async throws {try await typedAPIOnly(language:"en",current:false,caseID:"beta-typed-long-en")}
+    func testBetaBTypedTravelEnglish() async throws {try await typedAPIOnly(language:"en",current:true,caseID:"beta-typed-travel-en")}
+    func testBetaBTypedLongTermChinese() async throws {try await typedAPIOnly(language:"zh-Hans",current:false,caseID:"beta-typed-long-zh")}
+    func testBetaBTypedTravelChinese() async throws {try await typedAPIOnly(language:"zh-Hans",current:true,caseID:"beta-typed-travel-zh")}
 }

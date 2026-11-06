@@ -119,6 +119,32 @@ App 生成的原 action ID 以非秘密定位符导出，供 B 对照原 DB 字�
 设备方法与服务端证明分别记录，UI 通过不能补写未知的服务端计量或正式规划/Memory/注销。
 这些是新增公域覆盖，未替换原本机业务用例；构建准备仍不计设备 PASS。
 
+### B 账号 typed API-only 子范围
+
+B 在 #30 正式发布 PR589 的限定范围后，可用 `typed-long-en`、`typed-travel-en`、
+`typed-long-zh`、`typed-travel-zh` 分别准备既有 `beta-b` 的中英长期／两旅行手动路径。
+准备时额外给 `--typed-config '<non-secret-B-profile.json>'` 与
+`--typed-records '<non-secret-B-existing-seeds.json>'`；两文件要求当前用户的普通0600文件。
+配置只生成 UI 选项；owner、捕获版本或 `PREPARED_NOT_DEPLOYED` 历史字段均不授服务端权限。
+执行只用该方法冻结的 `--prepared`、同一显式 `--case` 与安全账号文件，不能临时替换配置。
+先跑英文长期单例稳定驱动，再补其余缺口；原三个3cd准备包位于独立工作树和构建目录，继续保留。
+
+原三个 seed 已占据 `self/preference` 的 active canonical slot，不能用新item绕过冲突。
+已协调的成功路径为：先读 seed 当前完整文本、时间、范围、来源和版本并确认active，
+先不提交地预检新编辑器/输入/导航/完整AX，确认驱动可用后再明确暂停 seed，
+新建自己的 item，核对新项暂停／恢复，再暂停新项并恢复原seed active。
+原seed只增加两次状态版本，来源/原文/历史回执保留；自有新项保留disabled历史。
+长期单例最多6个POST，两旅行单例最多12个；每个动作仅一次明确确认，先前原操作只query。
+任何失败或UNKNOWN立即停止，不在finally/defer里提交盲目恢复动作；先核对同一原action，
+确认收尾状态后再换批。B不并发写seed；指定设备仍须等JT明确通知恢复。
+
+所有版本、来源、完整UTF8、真实SDK账号与完整 `.all` AX 断言保持；A账号的失败呈现
+不从503推断具体拒绝原因。Memory列表本来展示该账号全部范围，这些case只核实原范围保持，
+不能把它记成模型跨Travel排除。B MESSAGE关闭时当前／跨Travel模型召回仍UNRUN；
+原 `DevelopmentTypedMemoryUITests` 的完整本机模型/编辑/停止使用断言不删、不改成API-only。
+edit、withdraw、stop-use、永久清理不在这个子范围内，仍按#495/JT与原票独立验收。
+正式Trip、完整云Typed与M4通过不能由这些子case或构建准备继承。
+
 ### 登录领域的指定真机入口
 
 `check_development_accounts.py` 支持指定设备及本轮获准的本机 TLS profile：
