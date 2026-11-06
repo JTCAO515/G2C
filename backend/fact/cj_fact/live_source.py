@@ -8,6 +8,7 @@ from datetime import datetime,timezone
 from hashlib import sha256
 from html.parser import HTMLParser
 import json
+import logging
 import socket
 import ssl
 from urllib.parse import urlsplit
@@ -24,6 +25,14 @@ from cj_place.https_transport import _read_response,_WireFailure
 NOTICE_URL='https://en.nia.gov.cn/'
 WEATHER_URL='https://restapi.amap.com/v3/weather/weatherInfo'
 PAGE_POLICY=SourcePolicy(('https://en.nia.gov.cn',),262144,1024,0,20,24,16384)
+PAGE_FAILURE_CODES=frozenset(('invalid_dns_answer','non_public_dns_answer',
+    'original_page_authority_invalid','original_source_authority_invalid','timeout',
+    'tls_certificate_invalid','https_exchange_failed','peer_not_pinned',
+    'unsupported_tls_protocol','unsupported_http_response','header_limit',
+    'duplicate_response_header','ambiguous_body_framing','unsupported_content_type',
+    'encoded_body_rejected','body_limit','response_closed','wire_read_limit',
+    'wire_byte_limit','chunk_limit','http_trailers_rejected','malformed_http_body',
+    'https_body_failed','public_page_status_unavailable','public_page_excerpt_unavailable'))
 
 
 def tls():
@@ -52,21 +61,37 @@ class _Excerpts(HTMLParser):
 async def public_page(*,guard):
     loop=asyncio.get_running_loop();deadline=loop.time()+PAGE_POLICY.timeout_seconds
     host=urlsplit(NOTICE_URL).hostname
-    async with asyncio.timeout_at(deadline):
-        records=await loop.getaddrinfo(host,443,type=socket.SOCK_STREAM)
-        addresses=public_addresses(tuple(dict.fromkeys(row[4][0] for row in records)))
-        transport=PinnedHTTPSTransport(PAGE_POLICY,tls_context=tls(),max_header_bytes=16384,
-            max_wire_bytes=524288,max_reads=512,allow_html=True,before_send=guard)
-        if guard() is not True:raise FactFailure('original_page_authority_invalid')
-        response=await transport(PinnedTarget(NOTICE_URL,host,addresses,PAGE_POLICY.max_bytes,deadline))
-        try:
-            if response.status!=200:raise FactFailure('public_page_status_unavailable')
-            body=bytearray()
-            async for chunk in response.body:body.extend(chunk)
-        finally:await response.close()
-    raw=bytes(body);text=raw.decode('utf8',errors='strict')
-    parser=_Excerpts(text);parser.feed(text)
-    if not parser.parts:raise FactFailure('public_page_excerpt_unavailable')
+    phase='dns';status='UNKNOWN';body=bytearray()
+    try:
+        async with asyncio.timeout_at(deadline):
+            records=await loop.getaddrinfo(host,443,type=socket.SOCK_STREAM)
+            addresses=public_addresses(tuple(dict.fromkeys(row[4][0] for row in records)))
+            phase='https_exchange'
+            transport=PinnedHTTPSTransport(PAGE_POLICY,tls_context=tls(),max_header_bytes=16384,
+                max_wire_bytes=524288,max_reads=512,allow_html=True,before_send=guard)
+            if guard() is not True:raise FactFailure('original_page_authority_invalid')
+            response=await transport(PinnedTarget(NOTICE_URL,host,addresses,PAGE_POLICY.max_bytes,deadline))
+            try:
+                phase='http_status';status=response.status
+                if status!=200:raise FactFailure('public_page_status_unavailable')
+                phase='body'
+                async for chunk in response.body:body.extend(chunk)
+            finally:await response.close()
+        phase='utf8';raw=bytes(body);text=raw.decode('utf8',errors='strict')
+        phase='excerpt';parser=_Excerpts(text);parser.feed(text)
+        if not parser.parts:raise FactFailure('public_page_excerpt_unavailable')
+    except (FactFailure,TimeoutError,OSError,UnicodeError,ValueError) as error:
+        # Only fixed internal codes and counts. Never stringify an arbitrary
+        # transport exception, URL, response header/body, address, or credential.
+        reason=('timeout' if isinstance(error,TimeoutError) else
+                'utf8_invalid' if isinstance(error,UnicodeError) else
+                'transport_error' if isinstance(error,OSError) else 'other')
+        if isinstance(error,FactFailure) and error.args and type(error.args[0]) is str:
+            reason=error.args[0] if error.args[0] in PAGE_FAILURE_CODES else 'other'
+        logging.getLogger('cj_provider.audit').warning(
+            'M4_FACT_PAGE_UNKNOWN phase=%s reason=%s http_status=%s observed_body_bytes=%s',
+            phase,reason,status,len(body))
+        raise
     return dict(source_url=NOTICE_URL,retrieved_at=datetime.now(timezone.utc).isoformat(),
         original_sha256=sha256(raw).hexdigest(),original_bytes=len(raw),excerpts=parser.parts,
         status='unknown',reason='source_excerpts_only_dates_region_and_eligibility_not_verified')

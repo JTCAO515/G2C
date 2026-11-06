@@ -39,6 +39,11 @@ JT于2026-11-05在C会话把工具停止线改为¥10000（[#495记录](https://
   只提供原文片段和 hash/抓取时间；旅客资格、地域/日期适用性保持 UNKNOWN。
   Mac 的代理 Fake-IP 不能冒充公开目标 IP；如遇该边界，保留 UNKNOWN，待获准主机网络验证。
 
+事实页失败日志 `M4_FACT_PAGE_UNKNOWN` 仅记录 DNS/HTTPS/状态/正文读取/UTF-8/片段提取阶段、
+白名单原因码、已取得的HTTP状态（未取得为UNKNOWN）和已观察正文的字节数；不记录正文、
+响应头、地址、异常文本或凭据。该诊断不增加抓取、不改变成功结果或失败分类，不补造回执，
+不释放原INTENT；历史未保留的HTTP状态与失败阶段仍UNKNOWN。取消继续向外传播。
+
 模型原生 function calls 转为既有内部 MODEL-tool-turn.1 数据，再由代码注册表选择工具。
 网页/工具输出以不可信数据传给模型，不能提供 owner、密钥、预算或写入权限。
 原生参数现在用完整类型定义的 place_search/place_detail/place_route/weather/fact，
