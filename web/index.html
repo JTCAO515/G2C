@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>go2china.space — Your personal agent for China</title>
+  <meta name="description" content="G2C is a personal travel agent for visitors to China. CJ Agent answers, plans and gets things done; JT Agent brings in a real person when it matters; your personal details are redacted before any model sees them.">
+  <meta name="theme-color" content="#FBF6EE">
+  <link rel="canonical" href="https://go2china.space/">
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="go2china.space — Your personal agent for China">
+  <meta property="og:description" content="Answers, plans and gets things done — with a real person behind it when it matters, and your details redacted by default.">
+  <meta property="og:url" content="https://go2china.space/">
+  <meta property="og:image" content="https://go2china.space/assets/og.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="nav" id="top">
+    <a class="brand" href="#top" aria-label="go2china.space home">
+      <img src="assets/logo.webp" width="44" height="44" alt="G2C logo">
+      <span>go2china<em>.space</em></span>
+    </a>
+    <div class="nav-actions">
+      <button class="lang" type="button" id="lang-toggle" aria-label="Switch language">中文</button>
+      <a class="btn btn-small" href="#waitlist" data-open-waitlist data-i18n="cta">Join Waitlist</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-copy">
+        <h1 data-i18n-html="heroTitle">A personal agent for <i>every day</i> in China.</h1>
+        <p class="lede" data-i18n="heroLede">CJ Agent answers, plans and gets things done. JT Agent quietly brings in a real person when it matters. And your personal details are redacted before any model sees them.</p>
+        <div class="hero-cta">
+          <a class="btn" href="#waitlist" data-open-waitlist data-i18n="cta">Join Waitlist</a>
+          <span class="soon"><span class="dot"></span><span data-i18n="soon">Coming soon on iPhone · English &amp; 中文</span></span>
+        </div>
+      </div>
+
+      <div class="hero-visual">
+        <div class="halo" aria-hidden="true"></div>
+        <div class="phone" role="img" aria-label="Animated preview of a conversation with CJ Agent">
+          <div class="phone-notch"></div>
+          <div class="chat-head">
+            <img src="assets/logo.webp" width="34" height="34" alt="">
+            <div>
+              <strong>CJ Agent</strong>
+              <span><i class="live"></i><span data-i18n="online">Your personal agent</span></span>
+            </div>
+          </div>
+          <div class="chat" id="chat" aria-hidden="true"></div>
+          <div class="suggest" id="suggest" aria-hidden="true"></div>
+          <div class="chat-input" aria-hidden="true">
+            <span class="field"><span id="typed"></span><i class="caret"></i><span class="hint" id="hint" data-i18n="inputHint">Ask anything about your trip…</span></span>
+            <b id="send">↑</b>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="agents">
+      <h2 class="section-title" data-i18n-html="agentsTitle">Two agents, <i>one trip</i> that just works.</h2>
+
+      <div class="agent-grid">
+        <article class="agent agent-cj">
+          <div class="agent-top">
+            <span class="badge badge-red">CJ Agent</span>
+            <p class="agent-tag" data-i18n="cjTag">Talks with you. Thinks ahead. Takes action.</p>
+          </div>
+          <ul class="verbs">
+            <li>
+              <h3 data-i18n="cjA">Answers</h3>
+              <p data-i18n="cjAText">Payments, transit, tickets, food — clear answers in plain English, with sources you can check.</p>
+            </li>
+            <li>
+              <h3 data-i18n="cjP">Plans</h3>
+              <p data-i18n="cjPText">Day-by-day itineraries shaped by what it remembers about you, and kept safe once you confirm them.</p>
+            </li>
+            <li>
+              <h3 data-i18n="cjE">Acts</h3>
+              <p data-i18n="cjEText">Turns the plan into done — and anything that spends money or changes your trip waits for your OK.</p>
+            </li>
+          </ul>
+        </article>
+
+        <article class="agent agent-jt">
+          <div class="agent-top">
+            <span class="badge badge-gold">JT Agent</span>
+            <p class="agent-tag" data-i18n="jtTag">Watches your back, and brings in a real person when AI isn't enough.</p>
+          </div>
+          <ol class="flow">
+            <li><span class="pulse"></span><p data-i18n="jt1">Spots what needs attention — a changed flight, a hotel that can't find you, a question going in circles.</p></li>
+            <li><span class="pulse"></span><p data-i18n="jt2">Opens a private case with only the details that step needs.</p></li>
+            <li><span class="pulse"></span><p data-i18n="jt3">A teammate verifies, calls, confirms — no queue, no “please hold”.</p></li>
+            <li><span class="pulse"></span><p data-i18n="jt4">You simply get the result, back in your chat.</p></li>
+          </ol>
+        </article>
+      </div>
+    </section>
+
+    <section class="sights" aria-label="Places in China">
+      <h2 class="section-title" data-i18n-html="sightsTitle">From the Great Wall to the Bund, <i>it knows the way.</i></h2>
+      <div class="marquee" id="marquee"></div>
+    </section>
+
+    <section class="privacy">
+      <div class="privacy-copy">
+        <h2 class="section-title light" data-i18n-html="privTitle">Your details <i>stay yours.</i></h2>
+        <p data-i18n="privLede">Names, passport numbers, phone numbers, emails and exact locations are swapped for placeholders on our side before any model reads them.</p>
+        <ul class="ticks">
+          <li data-i18n="priv1">Teammates see masked cases under a random case ID, never your account.</li>
+          <li data-i18n="priv2">Revealing a field is limited to what the task needs, time-boxed and logged.</li>
+          <li data-i18n="priv3">Your memory is yours: see it, correct it, delete it whenever you like.</li>
+        </ul>
+      </div>
+      <div class="redact-card" aria-label="Example of personal data being redacted">
+        <div class="redact-row">
+          <span class="who" data-i18n="you">You</span>
+          <p id="redact-text"></p>
+        </div>
+        <div class="redact-arrow" aria-hidden="true"><span></span></div>
+        <div class="redact-row model">
+          <span class="who" data-i18n="modelSees">What the model sees</span>
+          <p id="redact-out"></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="strip" aria-label="Highlights">
+      <div><strong data-i18n="s1">Remembers you</strong><span data-i18n="s1t">Preferences carry over across chats and trips.</span></div>
+      <div><strong data-i18n="s2">Shows its sources</strong><span data-i18n="s2t">Advice you can verify, not guesswork.</span></div>
+      <div><strong data-i18n="s3">Protects your plans</strong><span data-i18n="s3t">Confirmed days don't shift without you.</span></div>
+      <div><strong data-i18n="s4">English &amp; 中文</strong><span data-i18n="s4t">Switch any time, in the same conversation.</span></div>
+    </section>
+
+    <section class="app" id="waitlist">
+      <div class="app-visual">
+        <img src="assets/mascot.webp" width="1000" height="955" alt="The G2C lion-dance mascot bursting out of a phone" loading="lazy">
+      </div>
+      <div class="app-copy">
+        <h2 class="section-title" data-i18n-html="appTitle">G2C for iPhone, <i>landing soon.</i></h2>
+        <p data-i18n="appLede">We're opening the first spots to invited travelers. Leave your email and we'll let you know when it's your turn.</p>
+        <a class="btn btn-big" href="#waitlist" data-open-waitlist data-i18n="cta">Join Waitlist</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="foot-brand">
+      <img src="assets/logo.webp" width="56" height="56" alt="G2C logo" loading="lazy">
+      <div>
+        <strong>go2china.space</strong>
+        <span data-i18n="footTag">Your personal agent for China.</span>
+      </div>
+    </div>
+    <address class="foot-info">
+      <span>广州创竞科技有限公司</span>
+      <span class="en-name">Guangzhou Chuangjing Technology Co., Ltd</span>
+      <span>广州市天河区黄埔大道100号富力盈泰广场A座410室</span>
+      <span class="en-name">Room 410, Tower A, R&amp;F Yingtai Plaza, No. 100 Huangpu Avenue, Tianhe District, Guangzhou, China</span>
+      <a href="mailto:hello@go2china.space">hello@go2china.space</a>
+    </address>
+    <p class="copy">© <span id="year">2026</span> Guangzhou Chuangjing Technology Co., Ltd · 广州创竞科技有限公司</p>
+  </footer>
+
+  <dialog class="modal" id="waitlist-modal" aria-labelledby="wl-title">
+    <form class="wl" id="waitlist-form" novalidate>
+      <button class="close" type="button" id="wl-close" aria-label="Close">×</button>
+      <div class="wl-head">
+        <img src="assets/logo.webp" width="56" height="56" alt="">
+        <div>
+          <h2 id="wl-title" data-i18n="wlTitle">Join the waitlist</h2>
+          <p data-i18n="wlLede">A few quick questions so we can shape G2C around your trip.</p>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <label class="f"><span data-i18n="fName">Name</span>
+          <input name="name" type="text" autocomplete="name" required maxlength="80" data-i18n-ph="fNamePh" placeholder="Your name"></label>
+        <label class="f"><span data-i18n="fEmail">Email</span>
+          <input name="email" type="email" autocomplete="email" required maxlength="120" placeholder="you@example.com"></label>
+      </div>
+      <div class="grid2">
+        <label class="f"><span data-i18n="fCountry">Where are you from?</span>
+          <input name="country" type="text" autocomplete="country-name" maxlength="60" data-i18n-ph="fCountryPh" placeholder="Country or region"></label>
+        <label class="f"><span data-i18n="fSource">How did you hear about us?</span>
+          <select name="source" required id="f-source"></select></label>
+      </div>
+
+      <fieldset class="f"><legend data-i18n="fWhen">When are you planning to visit China?</legend>
+        <div class="opts" data-name="travel_time" data-type="radio" data-key="optWhen"></div></fieldset>
+      <fieldset class="f"><legend data-i18n="fWho">Who are you traveling with?</legend>
+        <div class="opts" data-name="travel_party" data-type="radio" data-key="optWho"></div></fieldset>
+      <fieldset class="f"><legend data-i18n="fCities">Where would you like to go?</legend>
+        <div class="opts" data-name="destinations" data-type="checkbox" data-key="optCities"></div></fieldset>
+      <fieldset class="f"><legend data-i18n="fHelp">What would help you most?</legend>
+        <div class="opts" data-name="needs" data-type="checkbox" data-key="optHelp"></div></fieldset>
+
+      <label class="f"><span data-i18n="fNote">Anything else we should know? (optional)</span>
+        <textarea name="note" rows="2" maxlength="600"></textarea></label>
+
+      <input class="hp" type="text" name="_honey" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <div class="wl-foot">
+        <button class="btn" type="submit" id="wl-submit" data-i18n="cta">Join Waitlist</button>
+        <p class="form-note" id="form-note" role="status" aria-live="polite"></p>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
