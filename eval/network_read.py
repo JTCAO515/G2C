@@ -4,6 +4,7 @@ No message submission, model SDK, financial journal or canonical phase access.
 The original submit clock is unavailable: GET timings cannot fill answer latency.
 """
 import argparse
+import base64
 from datetime import datetime,timezone
 from hashlib import sha256
 import json
@@ -28,6 +29,10 @@ SAMPLES=6
 BOUND=1048576
 
 
+class DisplayMismatch(ValueError):
+    def __init__(self,code):self.code=code
+
+
 def save(path,value):
     temporary=path.with_suffix('.tmp')
     temporary.write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n')
@@ -45,6 +50,13 @@ def bearer(path):
     token=raw.decode('ascii').strip()
     if re.fullmatch(r'[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+',token) is None:
         raise ValueError('short_JWT_file_required')
+    # Audience preflight prevents sending an unrelated credential. The server,
+    # not this client, verifies the signature and grants access.
+    claims=json.loads(base64.urlsafe_b64decode(token.split('.')[1]+'===').decode('utf8'),object_pairs_hook=_pairs)
+    if (type(claims) is not dict or (claims.get('iss'),claims.get('aud'),claims.get('sub'))!=
+            ('https://local.g2c.invalid','g2c-local','m4-synthetic-beta-a')
+            or type(claims.get('exp')) is not int or claims['exp']<=time.time()):
+        raise ValueError('unexpired_approved_synthetic_bearer_required')
     return token
 
 
@@ -77,7 +89,8 @@ def collect(client,output,network,*,clock=time.perf_counter):
     plan=dict(kind='target_network_read_diagnostic',endpoint=BASE,method='GET',
         message_id=MESSAGE,run_id=RUN,generation=GENERATION,planned_n=SAMPLES,
         source_origin='B public06; not a C smoke/full observation',network=network,
-        serving_backend_expected='5348e7b0077b6c50323325f09d064aeac8bdbcd7',
+        serving_backend='UNKNOWN: independently recorded in before/after operator provenance',
+        wire_contract='RUN-DISPLAY-WIRE@0.1.0-rc.1 /v1 envelope has request_id and snapshot, no version',
         created_at=datetime.now(timezone.utc).isoformat(),collector_sha256=sha256(Path(__file__).read_bytes()).hexdigest(),
         provider_dispatch_permitted=False,financial_ledger_access=False,canonical_phase_access=False,
         clock_scope='original GET to decoded response; original user POST clock unavailable',
@@ -101,21 +114,33 @@ def collect(client,output,network,*,clock=time.perf_counter):
                     row.update(status='FAIL',error_kind='non_200_response')
                 else:
                     data=json.loads(raw.decode('utf8'),object_pairs_hook=_pairs)
-                    if type(data) is not dict or data.get('version')!='RUN-display.6' or type(data.get('snapshot')) is not dict:
-                        raise ValueError('protected_display_version_required')
+                    if (type(data) is not dict or set(data)!={'request_id','snapshot'}
+                            or type(data['request_id']) is not str or not data['request_id']
+                            or data['request_id']!=response.headers.get('X-Request-ID')
+                            or type(data['snapshot']) is not dict):
+                        raise DisplayMismatch('v1_envelope_required')
+                    if 'no-store' not in {v.strip().lower() for v in response.headers.get('Cache-Control','').split(',')}:
+                        raise DisplayMismatch('protected_read_no_store_required')
                     snap=data['snapshot']
-                    if ((snap.get('run_id'),snap.get('message_id'),snap.get('generation'))!=(RUN,MESSAGE,GENERATION)
+                    if set(snap)!={'conversation_id','generation','message_id','run_id','message_sequence',
+                                  'status','event_highwater','text','text_state'}:
+                        raise DisplayMismatch('v1_snapshot_fields_required')
+                    if ((snap.get('conversation_id'),snap.get('run_id'),snap.get('message_id'),snap.get('generation'))!=(MESSAGE,RUN,MESSAGE,GENERATION)
+                            or type(snap.get('message_sequence')) is not int or snap['message_sequence']!=1
+                            or type(snap.get('event_highwater')) is not int or snap['event_highwater']<1
                             or snap.get('status')!='completed' or snap.get('text_state')!='complete'
                             or type(snap.get('text')) is not str or not snap['text'].strip()):
-                        raise ValueError('same_original_complete_snapshot_required')
+                        raise DisplayMismatch('same_original_complete_snapshot_required')
                     text=snap['text'].encode('utf8')
-                    save(output/'raw'/f'{index+1:02d}.json',dict(version=data['version'],snapshot={
-                        k:snap[k] for k in ('run_id','message_id','generation','status','text_state','text')}))
+                    save(output/'raw'/f'{index+1:02d}.json',dict(request_id=data['request_id'],snapshot=snap))
                     row.update(status='PASS',protected_read_seconds=row['http_response_seconds'],
                         text_bytes=len(text),text_sha256=sha256(text).hexdigest())
         except httpx.HTTPError as error:
             row['error_kind']=type(error).__name__  # Never persist headers, tokens or exception text.
             row['http_response_seconds']=clock()-started
+        except DisplayMismatch as error:
+            row.update(status='FAIL',error_kind='DisplayMismatch',validation_code=error.code,
+                       http_response_seconds=clock()-started)
         except (ValueError,UnicodeError,RecursionError) as error:
             row.update(status='FAIL',error_kind=type(error).__name__,http_response_seconds=clock()-started)
         rows.append(row);save(output/'observations.json',rows)
