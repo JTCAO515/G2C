@@ -263,7 +263,7 @@
     $("#lang-select").value = lang;
     const formLanguage = lang === "zh" ? "zh-CN" : lang;
     document.querySelectorAll("a.btn").forEach((a) => {
-      a.href = "https://form.jotform.com/263093841129055?language=" + formLanguage;
+      a.href = "https://form.jotform.com/263094082842055?language=" + formLanguage;
     });
     startChat();
     startRedact();
