@@ -37,9 +37,23 @@ public final class AtomicSnapshotStore {
     deinit { close(directory) }
 
     private static func walk(_ path: String) throws -> Int32 {
-        var fd = Darwin.open("/", O_RDONLY | O_DIRECTORY | O_CLOEXEC)
+        #if os(iOS)
+        // The sandbox permits our App container, not directory reads of every
+        // system ancestor. Resolve only the OS-supplied home; all App-owned
+        // descendants still pass the same component-by-component NOFOLLOW walk.
+        guard let home = realpath(NSHomeDirectory(), nil) else { throw OfflineFailure.invalidPath }
+        defer { free(home) }
+        return try walkOwned(path, from: String(cString: home))
+        #else
+        return try walkOwned(path, from: "/")
+        #endif
+    }
+    static func walkOwned(_ path: String, from anchor: String) throws -> Int32 {
+        guard anchor == "/" || path == anchor || path.hasPrefix(anchor + "/") else { throw OfflineFailure.invalidPath }
+        var fd = Darwin.open(anchor, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
         guard fd >= 0 else { throw OfflineFailure.invalidPath }
-        for part in path.split(separator: "/") {
+        let relative = anchor == "/" ? path : String(path.dropFirst(anchor.count))
+        for part in relative.split(separator: "/") {
             guard part != ".", part != ".." else { close(fd); throw OfflineFailure.invalidPath }
             let next = openat(fd, String(part), O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
             close(fd)

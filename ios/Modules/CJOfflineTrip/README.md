@@ -45,6 +45,12 @@ kernel denial, failed exclusive creation and uncertain marker writes never grant
 a cached read. The semaphore name is never recreated from a missing old marker.
 No business content or credentials enter the group container.
 
+On iOS the directory walk starts at the physical OS-supplied App home, where
+the sandbox grants access. It does not request directory reads of `/` or other
+system ancestors. Every App-owned path component still uses `openat` with
+`O_NOFOLLOW`; outside-home paths, symlink descendants, owner/mode mismatches and
+changed directory identities remain rejected.
+
 JT approved `group.g2c.offline` on 2026-11-06 for the two specified development
 identities only. The local device generator adds its entitlement/Info choice to
 Debug; Release and CI receive neither. Consumers without that explicit choice
