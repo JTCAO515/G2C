@@ -113,6 +113,22 @@ class OneUseInputTests(unittest.TestCase):
 
 
 class DeviceWorkspaceTests(unittest.TestCase):
+    def test_offline_group_is_exact_and_debug_only(self):
+        spec=importlib.util.spec_from_file_location('m4_fixture_generator',ROOT/'scripts/check_ios_trip_confirm.py')
+        module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+        with tempfile.TemporaryDirectory() as directory:
+            builder=object.__new__(module.XCTestDriver);builder.directory=Path(directory);builder.write_project(0)
+            project=builder.directory/'G2CAcceptance.xcodeproj'
+            tls=SimpleNamespace(public_der=b'SYNTHETIC-PUBLIC-CERTIFICATE',team='SYNTHETIC1')
+            configure_project(project,tls,'https://192.168.1.1:1234','SYNTHETIC-CONTROL',bundle='space.go2china.offline.acceptance',include_release=True,offline_group='group.g2c.offline')
+            pbx=(project/'project.pbxproj').read_text()
+            debug=next(line for line in pbx.splitlines() if line.startswith('000000000000000000000014 ='))
+            release=next(line for line in pbx.splitlines() if line.startswith('000000000000000000000015 ='))
+            self.assertIn('M4OfflineDevice.entitlements',debug);self.assertIn('G2C_OFFLINE_CLOCK=1',debug)
+            self.assertNotIn('M4OfflineDevice.entitlements',release);self.assertNotIn('G2C_OFFLINE_CLOCK',release)
+            self.assertNotIn('com.apple.security.application-groups',plistlib.loads((builder.directory/'M4Device.entitlements').read_bytes()))
+            self.assertEqual(plistlib.loads((builder.directory/'M4OfflineDevice.entitlements').read_bytes())['com.apple.security.application-groups'],['group.g2c.offline'])
+
     def test_public_beta_app_does_not_bundle_the_control_server_pin(self):
         spec=importlib.util.spec_from_file_location('m4_fixture_generator',ROOT/'scripts/check_ios_trip_confirm.py')
         module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)

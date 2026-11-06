@@ -22,4 +22,7 @@
 <key>NSAppTransportSecurity</key><dict><key>NSAllowsLocalNetworking</key><true/></dict>
 <key>NSLocalNetworkUsageDescription</key><string>Connect to the development Mac for synthetic-data testing. / 连接开发机执行合成数据测试。</string>
 #endif
+#if G2C_OFFLINE_CLOCK
+<key>G2COfflineClockGroup</key><string>group.g2c.offline</string>
+#endif
 </dict></plist>

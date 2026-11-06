@@ -122,7 +122,7 @@ def private_workspace(output, build=None):
 
 
 def configure_project(project, tls, control_url, control_token, amap=False,
-                      bundle=None, include_release=False, app_local_tls=True):
+                      bundle=None, include_release=False, app_local_tls=True, offline_group=None):
     """Adapt the existing generated native project; real keys stay local-only."""
     project = Path(project)
     pbx = project / 'project.pbxproj'
@@ -135,6 +135,8 @@ def configure_project(project, tls, control_url, control_token, amap=False,
         raise ValueError('Local AMap device configuration is Debug only')
     if amap and not app_local_tls:
         raise ValueError('The local AMap project requires its local test profile')
+    if offline_group is not None and (offline_group!='group.g2c.offline' or bundle not in ('space.go2china.app','space.go2china.offline.acceptance')):
+        raise ValueError('Only the dedicated JT-approved offline group and identities are allowed')
     if not app_local_tls:
         text=text.replace('G2C_DEBUG_LOCAL_NETWORK=1','G2C_DEBUG_SIGNING_IDENTITY=1')
     text = text.replace('space.go2china.foundation.local', bundle).replace(
@@ -162,6 +164,18 @@ def configure_project(project, tls, control_url, control_token, amap=False,
     if text.count(target_anchor) not in (2,3):
         raise ValueError('App identity configurations changed')
     text=text.replace(target_anchor,target_anchor+' CODE_SIGN_ENTITLEMENTS = '+json.dumps(str(device_entitlements))+';')
+    if offline_group:
+        offline_entitlements=project.parent/'M4OfflineDevice.entitlements'
+        value=plistlib.loads(device_entitlements.read_bytes())
+        value['com.apple.security.application-groups']=[offline_group]
+        offline_entitlements.write_bytes(plistlib.dumps(value))
+        debug_prefix='000000000000000000000014 ='
+        debug=next(line for line in text.splitlines() if line.startswith(debug_prefix))
+        updated=debug.replace(json.dumps(str(device_entitlements)),json.dumps(str(offline_entitlements)))
+        updated,count=re.subn(r'(INFOPLIST_PREPROCESSOR_DEFINITIONS = ")([^"]*)(";)',
+            lambda match:match[1]+match[2]+' G2C_OFFLINE_CLOCK=1'+match[3],updated)
+        if count!=1:raise ValueError('Offline Debug Info preprocessing configuration changed')
+        text=text.replace(debug,updated)
     entries = []
     resource_ids = []
     counter = 0

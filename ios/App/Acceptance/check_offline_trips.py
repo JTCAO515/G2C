@@ -353,7 +353,7 @@ def main():
                     entitlement.write_bytes(plistlib.dumps({'application-identifier': BUNDLE, 'keychain-access-groups': [BUNDLE]}))
                     text = text.replace(json.dumps(str(ROOT / 'ios/App/Development.entitlements')), json.dumps(str(entitlement)))
                     pbx.write_text(text)
-                    if tls: _, configuration_file, _ = configure_project(project, tls, control_url, control_token, bundle=BUNDLE)
+                    if tls: _, configuration_file, _ = configure_project(project, tls, control_url, control_token, bundle=BUNDLE, offline_group='group.g2c.offline')
                     for case in ([args.case] if args.case else CASES):
                         assert subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip() == head
                         assert not subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT)

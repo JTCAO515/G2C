@@ -954,13 +954,18 @@ import Observation
         if let profile = try DevelopmentOfflineProfile.read(environment) {
             let files = FileManager.default
             let support = try files.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-            let directory = support.appendingPathComponent("G2COfflineTrip", isDirectory: true)
+            // Resolve the OS-supplied container alias before adding App-owned
+            // descendants. Their no-symlink walk remains unchanged.
+            guard let physical = realpath(support.path, nil) else { throw OfflineFailure.invalidPath }
+            defer { free(physical) }
+            let directory = URL(fileURLWithPath: String(cString: physical)).appendingPathComponent("G2COfflineTrip", isDirectory: true)
                 .appendingPathComponent(DevelopmentSessionConfiguration.environmentNamespace(endpoint).uuidString, isDirectory: true)
             try files.createDirectory(at: directory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+            let deviceClock = try OfflineDeviceClock.makeReader(directory: directory.resolvingSymlinksInPath())
             offline = try OfflineTripController(environment: DevelopmentSessionConfiguration.environmentNamespace(endpoint),
                 applicationIdentifier: applicationID, directory: directory.resolvingSymlinksInPath(),
                 sdkMaterial: sdkStore.load, policy: .acceptedTrip, clock: {
-                    guard let value = OfflineDeviceClock.read(), let wall = value.trustedWallSeconds else { return nil }
+                    guard let value = deviceClock(), let wall = value.trustedWallSeconds else { return nil }
                     let (shifted, overflow) = wall.addingReportingOverflow(profile.wallOffset)
                     guard !overflow else { return nil }
                     return .init(trustedWallSeconds: profile.trusted ? shifted : nil,

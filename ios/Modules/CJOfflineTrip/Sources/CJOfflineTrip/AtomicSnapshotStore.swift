@@ -8,7 +8,7 @@ public final class AtomicSnapshotStore {
     private let root: String
     private let directory: Int32
     private let identity: stat
-    private let name = "snapshot.aesgcm"
+    private let name: String
     #if os(iOS)
     // Darwin's public F_*PROTECTIONCLASS commands use XNU class A=1 (Complete).
     // https://github.com/apple-oss-distributions/xnu/blob/main/bsd/sys/content_protection.h
@@ -18,7 +18,13 @@ public final class AtomicSnapshotStore {
     // Fault injection for isolated tests only. Called after rename, before directory fsync.
     var afterRename: (() throws -> Void)?
 
-    public init(existingPrivateDirectory url: URL) throws {
+    public convenience init(existingPrivateDirectory url: URL) throws {
+        try self.init(existingPrivateDirectory: url, name: "snapshot.aesgcm")
+    }
+    /// Module-owned filenames only: ciphertext and non-secret clock metadata
+    /// use separate files/directories with the same atomic/protection boundary.
+    init(existingPrivateDirectory url: URL, name: String) throws {
+        self.name = name
         guard url.isFileURL, url.path.hasPrefix("/"), !url.path.contains("/../") else { throw OfflineFailure.invalidPath }
         root = url.path
         directory = try Self.walk(root)
