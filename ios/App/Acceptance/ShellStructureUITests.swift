@@ -91,8 +91,18 @@ import Foundation
         let field = app.descendants(matching: .any).matching(identifier: "assistant.draft").firstMatch
         XCTAssertTrue(field.waitForExistence(timeout: 5))
         field.tap(); field.typeText("Beijing draft 157")
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        // The keyboard accessory is outside the scrollable content bounds.
+        // Use the same exact toolbar query as the signed feedback driver.
+        let done = app.toolbars.buttons.matching(NSPredicate(format: "label IN %@", ["Done", "完成"]))
+        XCTAssertTrue(done.element.waitForExistence(timeout: 8)); XCTAssertEqual(done.count, 1)
+        XCTAssertTrue(done.element.isEnabled && done.element.isHittable); done.element.tap()
+        let hidden = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.keyboards.firstMatch)
+        XCTAssertEqual(XCTWaiter.wait(for: [hidden], timeout: 10), .completed)
+        #else
         if app.buttons["Done"].exists { tap("Done") }
         else if app.buttons["完成"].exists { tap("完成") }
+        #endif
     }
 
     private func draftRetained() {
