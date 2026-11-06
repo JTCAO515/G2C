@@ -16,6 +16,8 @@ import network_read as probe
 from failure import parse_audit
 from cj_api.run_display_projection import encode_response
 
+TRACE='11111111-1111-4111-8111-111111111111'
+
 
 def snapshot():
     return dict(conversation_id=probe.MESSAGE,generation=probe.GENERATION,message_id=probe.MESSAGE,
@@ -30,8 +32,8 @@ class NetworkReadChecks(unittest.TestCase):
             calls.append(request)
             self.assertEqual((request.method,request.url.host,request.url.path),('GET','api-beta.go2china.space','/v1/run-display'))
             self.assertEqual(request.url.params['message_id'],probe.MESSAGE)
-            body=encode_response(json.dumps(snapshot()).encode(),'r')
-            return httpx.Response(200,headers={'X-Request-ID':'r','Cache-Control':'no-store'},content=body)
+            body=encode_response(json.dumps(snapshot()).encode(),TRACE)
+            return httpx.Response(200,headers={'X-Request-ID':TRACE,'Cache-Control':'no-store'},content=body)
         with tempfile.TemporaryDirectory() as folder,httpx.Client(transport=httpx.MockTransport(handle)) as client:
             result=probe.collect(client,Path(folder)/'out',dict(kind='synthetic_unit'))
             self.assertEqual(len(calls),6);self.assertEqual(result['outcomes'],dict(PASS=6,FAIL=0,UNKNOWN=0))
@@ -46,10 +48,10 @@ class NetworkReadChecks(unittest.TestCase):
                 calls.append(request)
                 if kind=='timeout':raise httpx.ReadTimeout('private-exception-sentinel',request=request)
                 if kind=='http503':return httpx.Response(503,json={})
-                data=dict(request_id='r',snapshot=snapshot())
+                data=dict(request_id=TRACE,snapshot=snapshot())
                 if kind=='v6_on_v1':data['version']='RUN-display.6'
                 if kind=='foreign':data['snapshot']['run_id']='foreign'
-                return httpx.Response(200,headers={'X-Request-ID':'other' if kind=='trace' else 'r',
+                return httpx.Response(200,headers={'X-Request-ID':'other' if kind=='trace' else TRACE,
                     'Cache-Control':'public' if kind=='cached' else 'no-store'},json=data)
             with self.subTest(kind=kind),tempfile.TemporaryDirectory() as folder,httpx.Client(transport=httpx.MockTransport(handle)) as client:
                 result=probe.collect(client,Path(folder)/'out',dict(kind='synthetic_unit'))

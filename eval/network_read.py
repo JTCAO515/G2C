@@ -20,6 +20,7 @@ import time
 
 import certifi
 import httpx
+from cj_api.generated import RunDisplayResponse
 
 BASE='https://api-beta.go2china.space'
 MESSAGE='hk-api-smoke-20261106-06'
@@ -113,18 +114,13 @@ def collect(client,output,network,*,clock=time.perf_counter):
                 if response.status_code!=200:
                     row.update(status='FAIL',error_kind='non_200_response')
                 else:
-                    data=json.loads(raw.decode('utf8'),object_pairs_hook=_pairs)
-                    if (type(data) is not dict or set(data)!={'request_id','snapshot'}
-                            or type(data['request_id']) is not str or not data['request_id']
-                            or data['request_id']!=response.headers.get('X-Request-ID')
-                            or type(data['snapshot']) is not dict):
-                        raise DisplayMismatch('v1_envelope_required')
+                    json.loads(raw.decode('utf8'),object_pairs_hook=_pairs)
+                    data=RunDisplayResponse.model_validate_json(raw,strict=True).model_dump(mode='json')
+                    if data['request_id']!=response.headers.get('X-Request-ID'):
+                        raise DisplayMismatch('v1_trace_identity_required')
                     if 'no-store' not in {v.strip().lower() for v in response.headers.get('Cache-Control','').split(',')}:
                         raise DisplayMismatch('protected_read_no_store_required')
                     snap=data['snapshot']
-                    if set(snap)!={'conversation_id','generation','message_id','run_id','message_sequence',
-                                  'status','event_highwater','text','text_state'}:
-                        raise DisplayMismatch('v1_snapshot_fields_required')
                     if ((snap.get('conversation_id'),snap.get('run_id'),snap.get('message_id'),snap.get('generation'))!=(MESSAGE,RUN,MESSAGE,GENERATION)
                             or type(snap.get('message_sequence')) is not int or snap['message_sequence']!=1
                             or type(snap.get('event_highwater')) is not int or snap['event_highwater']<1
