@@ -169,6 +169,91 @@ class TypedStorageChecks(Harness):
             self.assertEqual(read.status_code,200,read.text);self.assertEqual(read.json()['receipt'],receipt)
 
 
+    def injected_typed_app(self,database,configuration=None):
+        from cj_api.local_app import create_local_app
+        from cj_memory.typed_api import register_typed_routes
+        app=create_local_app(conninfo_path=None,auth_dir=self.auth,database=database,
+                             run_context=self.run_context,travel_context=True)
+        register_typed_routes(app,database=database,auth_dir=self.auth,
+                              configuration=configuration or self.typed_configuration())
+        return app
+
+    def test_injected_typed_cohost_original_receipts_owner_and_withdrawal(self):
+        raw=self.raw(self.travel[0],text='Injected 本次旅行')
+        command=json.loads(raw)
+        with TestClient(self.injected_typed_app(self.database)) as client:
+            headers={**self.headers('alice'),'Content-Type':'application/octet-stream'}
+            self.assertEqual(client.post('/v2/memories',content=raw,
+                headers={'Content-Type':'application/octet-stream'}).status_code,401)
+            import dev_auth as local_auth
+            for token in ('invalid-signature',local_auth.token(self.auth,'alice',-1)):
+                denied=client.post('/v2/memories',content=raw,
+                    headers={'Authorization':'Bearer '+token,'Content-Type':'application/octet-stream'})
+                self.assertEqual(denied.status_code,401,denied.text)
+            opened=client.put('/v1/conversations',params={'conversation_id':'injected-'+self.tag},headers=headers)
+            self.assertEqual(opened.status_code,200,opened.text)
+            saved=client.post('/v2/memories',content=raw,headers=headers)
+            self.assertEqual(saved.status_code,200,saved.text);receipt=saved.json()['receipt']
+            self.assertEqual(receipt['input_sha256'],hashlib.sha256(raw).hexdigest())
+            self.assertEqual(client.post('/v2/memories',content=raw,headers=headers).json()['receipt'],receipt)
+            self.assertIsNone(client.get('/v2/memory-items',params={'item_id':command['item_id']},
+                headers=self.headers('bob')).json()['item'])
+            action=dict(version='MEMORY-management.2',action_id='pause-'+self.tag,operation='pause',
+                item_id=command['item_id'],expected_version=1,expected_source_version=1)
+            foreign=client.post('/v2/memory-management-actions',content=json.dumps(action).encode(),
+                headers={**self.headers('bob'),'Content-Type':'application/octet-stream'})
+            self.assertNotEqual(foreign.status_code,200)
+            paused=client.post('/v2/memory-management-actions',content=json.dumps(action).encode(),headers=headers)
+            self.assertEqual(paused.status_code,200,paused.text)
+            query=client.get('/v2/memory-management-receipts',params={'action_id':action['action_id']},headers=headers)
+            self.assertEqual(query.json()['receipt'],paused.json()['receipt'])
+            item=client.get('/v2/memory-items',params={'item_id':command['item_id']},headers=headers).json()['item']
+            self.assertEqual((item['version'],item['status']),(2,'disabled'))
+            stop=dict(version='MEMORY-STOP-USE@2',action_id='withdraw-'+self.tag,operation='withdraw',
+                item_id=command['item_id'],expected_version=2,source_id=item['command']['source_id'],expected_source_version=1)
+            withdrawn=client.post('/v2/memory-withdrawal-actions',content=json.dumps(stop).encode(),headers=headers)
+            self.assertEqual(withdrawn.status_code,200,withdrawn.text)
+            self.assertEqual(withdrawn.json()['receipt']['status'],'withdrawn')
+            self.assertNotIn(command['item_id'],[i.command.item_id for i in self.selected(self.travel[0]).items])
+            listing=client.get('/v2/memories',params={'limit':'100'},headers=headers)
+            self.assertEqual(listing.status_code,200,listing.text)
+            self.assertEqual([i['status'] for i in listing.json()['items'] if i['command']['item_id']==command['item_id']],['withdrawn'])
+        with TestClient(self.injected_typed_app(self.database)) as client:
+            original=client.get('/v2/memory-receipts',params={'operation_id':command['operation_id']},headers=self.headers('alice'))
+            self.assertEqual(original.status_code,200,original.text)
+            self.assertEqual(original.json()['receipt'],receipt)
+
+    def test_injected_database_transaction_guard_blocks_real_storage(self):
+        from cj_api.composition import CompositionUnavailable
+        from unittest.mock import patch
+        database=LocalDatabase(CONNINFO,run_context=self.run_context,travel_context=True)
+        state=dict(denied=False,checks=0)
+        def guard(cursor):
+            self.assertEqual(cursor.execute('SELECT current_user').fetchone()[0],'cj_m1_runtime')
+            state['checks']+=1
+            if state['denied']:raise CompositionUnavailable('test release guard closed')
+        raw=self.raw(self.travel[0]);command=json.loads(raw)
+        with patch.object(database,'_before_scope',guard),TestClient(self.injected_typed_app(database)) as client:
+            headers={**self.headers('alice'),'Content-Type':'application/octet-stream'}
+            state['denied']=True
+            denied=client.post('/v2/memories',content=raw,headers=headers)
+            self.assertEqual(denied.status_code,503,denied.text)
+            self.assertGreater(state['checks'],0)
+            with self.database.connect(self.scope) as conn:
+                self.assertEqual(conn.execute('SELECT count(*) FROM cj_memory_operation WHERE operation_id=%s',
+                    (command['operation_id'],)).fetchone()[0],0)
+            state['denied']=False
+            saved=client.post('/v2/memories',content=raw,headers=headers)
+            self.assertEqual(saved.status_code,200,saved.text)
+            before=state['checks'];state['denied']=True
+            denied=client.get('/v2/memory-items',params={'item_id':command['item_id']},headers=headers)
+            self.assertEqual(denied.status_code,503,denied.text)
+            self.assertGreater(state['checks'],before)
+        with self.database.connect(self.scope) as conn:
+            self.assertEqual(conn.execute('SELECT count(*) FROM cj_memory_operation WHERE operation_id=%s',
+                (command['operation_id'],)).fetchone()[0],1)
+
+
     def test_typed_edit_pause_resume_stop_and_new_context_version(self):
         with TestClient(self.typed_app()) as client,TestClient(self.app) as identity:
             headers={**self.headers('alice'),'Content-Type':'application/octet-stream'}
