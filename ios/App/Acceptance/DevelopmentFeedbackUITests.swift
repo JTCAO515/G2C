@@ -249,9 +249,9 @@ import Foundation
         general(language)
         XCTAssertEqual(revealEditor("feedback.problem").value as? String, language == "en" ? "Problem" : "问题")
         fill("记忆页面建议", expectation: "说明更清楚")
-        try audit("general-max-editor-" + language)
+        try audit("general-default-editor-" + language)
         tap("feedback.submit"); status(language == "en" ? "Feedback submitted." : "反馈已提交。")
-        try audit("general-max-receipt-" + language, receipt: true)
+        try audit("general-default-receipt-" + language, receipt: true)
         let second = try await proof(f)
         XCTAssertEqual(second.accounts["A"]?.feedback.count, 2)
         XCTAssertEqual(second.accounts["A"]?.feedback.last?.references.count, 0)
@@ -260,7 +260,7 @@ import Foundation
         _ = try await call("/validate", f.case_id)
         tap("feedback.another")
         // Reset removes the receipt section; the new status row can be virtualized
-        // below the long English introduction at system maximum type size.
+        // below the long English introduction; reveal it at the default size.
         for _ in 0..<10 {
             if app.staticTexts["feedback.status"].exists { break }
             app.swipeUp()
