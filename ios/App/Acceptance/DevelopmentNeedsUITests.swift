@@ -273,11 +273,11 @@ import Foundation
         tap("needs.read"); tap("needs.detail.open")
         #if G2C_M4_DEVICE_ACCEPTANCE
         let account=app.navigationBars.matching(NSPredicate(format:"identifier IN %@",["Account","账号"]))
-        if !textElement("needs.detail.version").exists && account.firstMatch.exists {
-            // An observed resume replaced the verified root while this saved
-            // read was displayed. Reopen the same owner's read surface only;
+        if account.firstMatch.waitForExistence(timeout:2) && !textElement("needs.detail.version").exists {
+            // The saved-read failure returned to Account. Reopen the verified
+            // same owner's read surface only;
             // no sign-in, save, model or unknown original write is repeated.
-            print("M4_NEEDS_VERIFIED_ROOT_REPLACEMENT")
+            print("M4_NEEDS_RETURNED_ACCOUNT_SURFACE")
             deviceSession.requireAccount(expectedAccount,in:app)
             let assistant=app.tabBars.buttons.matching(NSPredicate(format:"label IN %@",["Assistant","助手"]))
             XCTAssertEqual(assistant.count,1);XCTAssertTrue(assistant.element.isHittable)
