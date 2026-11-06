@@ -184,8 +184,16 @@ import Foundation
         tap(language == "en" ? "Assistant" : "助手")
         tap("assistant.serverHistory"); tap("history.loadConversations")
         tap("history.conversation." + f.conversation); tap("assistant.panel.done")
-        let draft = app.textViews["assistant.draft"]
-        XCTAssertTrue(draft.waitForExistence(timeout: 8)); draft.tap(); draft.typeText(f.prompt)
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        let inputs = deviceSession.textInputQuery("assistant.draft", in: app)
+        #else
+        let inputs = app.textViews.matching(identifier: "assistant.draft")
+        #endif
+        let draft = inputs.element
+        XCTAssertTrue(draft.waitForExistence(timeout: 8)); XCTAssertEqual(inputs.count, 1)
+        XCTAssertTrue(draft.isEnabled && draft.isHittable)
+        draft.tap(); draft.typeText(f.prompt)
+        XCTAssertEqual(Array((draft.value as? String ?? "").utf8), Array(f.prompt.utf8))
         tap("assistant.send")
         let value = app.staticTexts["run.display.status"]
         let condition = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", language == "en" ? "Completed" : "已完成"), object: value)

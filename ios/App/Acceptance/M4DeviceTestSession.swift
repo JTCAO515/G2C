@@ -15,6 +15,14 @@ import XCTest
         self.control = URL(string: control)!
     }
 
+    /// SwiftUI's vertical TextField may expose either editable UIKit role.
+    /// Keep the exact identifier and let the caller assert a single input.
+    func textInputQuery(_ identifier: String, in app: XCUIApplication) -> XCUIElementQuery {
+        let roles = [XCUIElement.ElementType.textField.rawValue, XCUIElement.ElementType.textView.rawValue]
+        return app.descendants(matching: .any).matching(identifier: identifier)
+            .matching(NSPredicate(format: "elementType IN %@", roles))
+    }
+
     /// Caller focuses the exact field and places its caret at the visible end.
     /// Each keyboard event must remove exactly one old character before typing.
     static func clearFocusedTextWithKeyboard(_ field: XCUIElement) {
