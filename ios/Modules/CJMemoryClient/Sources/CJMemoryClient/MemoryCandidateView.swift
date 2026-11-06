@@ -222,7 +222,7 @@ private struct MemoryCandidateEditor: View {
                                 .accessibilityIdentifier("memoryCandidate.editor.travelUnavailable")
                         }
                     }
-                    MemoryLifecycleButton(title: language.text("Confirm this memory", "确认这条记忆"), identifier: "memoryCandidate.editor.confirm", enabled: canSubmit && !draft.kind.isEmpty && (entry.candidate.travel == nil || reviewTravel != nil)) {
+                    MemoryLifecycleButton(title: language.text("Confirm this memory", "确认这条记忆"), identifier: "memoryCandidate.editor.confirm", enabled: canConfirm) {
                         guard let selected = Components.Schemas.MemoryManualSaveCommand.kindPayload(rawValue: draft.kind) else { return }
                         submit(.confirm(kind: selected, text: draft.text, occurredAt: draft.occurredAt, travel: reviewTravel))
                     }
@@ -259,12 +259,17 @@ private struct MemoryCandidateEditor: View {
     }
     private var canSubmit: Bool {
         let current = model.canReview(entry: entry)
-        #if DEBUG && os(iOS) && G2C_M4_DEVICE_ACCEPTANCE
-        if !active || readingTravel || !current {
-            print("M4_CANDIDATE_REVIEW_AVAILABILITY", "active", active, "reading", readingTravel, "current", current)
-        }
-        #endif
         return active && !readingTravel && current
+    }
+    private var canConfirm: Bool {
+        let current = model.canReview(entry: entry)
+        let chosen = !draft.kind.isEmpty
+        let verified = entry.candidate.travel == nil || reviewTravel != nil
+        #if DEBUG && os(iOS)
+        print("M4_CANDIDATE_CONFIRM_CONDITIONS", "active", active, "reading", readingTravel,
+            "current", current, "chosen", chosen, "travelRequired", entry.candidate.travel != nil, "travelValid", verified)
+        #endif
+        return active && !readingTravel && current && chosen && verified
     }
     private var reviewTravel: MemoryTravelSelection? {
         guard let original = entry.candidate.travel, let travel, let capturedTravel else { return nil }
