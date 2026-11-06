@@ -484,7 +484,8 @@ def main():
                 text=text.replace('space.go2china.foundation.local',BUNDLE).replace('space.go2china.foundation.control',BUNDLE+'.control')
                 entitlement=builder.directory/'Component.entitlements';entitlement.write_bytes(plistlib.dumps({'application-identifier':BUNDLE,'keychain-access-groups':[BUNDLE]}))
                 pbx.write_text(text.replace(json.dumps(str(ROOT/'ios/App/Development.entitlements')),json.dumps(str(entitlement))))
-                if tls:_,configuration_file,_=configure_project(project,tls,control_url,control_token,bundle=BUNDLE)
+                if tls:_,configuration_file,_=configure_project(project,tls,control_url,control_token,bundle=BUNDLE,
+                    offline_group='group.g2c.offline' if args.all_provided else None)
                 for case in ([args.case] if args.case else CASES):
                     current['case']=case;report['cases'][case]='RUNNING';save()
                     if tls:

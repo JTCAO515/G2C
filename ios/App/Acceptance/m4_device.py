@@ -135,7 +135,8 @@ def configure_project(project, tls, control_url, control_token, amap=False,
         raise ValueError('Local AMap device configuration is Debug only')
     if amap and not app_local_tls:
         raise ValueError('The local AMap project requires its local test profile')
-    if offline_group is not None and (offline_group!='group.g2c.offline' or bundle not in ('space.go2china.app','space.go2china.offline.acceptance')):
+    if offline_group is not None and (offline_group!='group.g2c.offline' or bundle not in (
+            'space.go2china.app','space.go2china.offline.acceptance','space.go2china.device-v4.acceptance')):
         raise ValueError('Only the dedicated JT-approved offline group and identities are allowed')
     if not app_local_tls:
         text=text.replace('G2C_DEBUG_LOCAL_NETWORK=1','G2C_DEBUG_SIGNING_IDENTITY=1')
