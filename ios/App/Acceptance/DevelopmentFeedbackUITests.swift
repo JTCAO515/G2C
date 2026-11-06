@@ -134,12 +134,15 @@ import Foundation
         account(language); tap("account.development.restore"); signed(f)
     }
     func back() {
-        let buttons = app.navigationBars.buttons
-        XCTAssertEqual(buttons.count, 1); buttons.element.tap()
+        let buttons = app.navigationBars.buttons.matching(NSPredicate(format: "label IN %@", ["Memory", "记忆"]))
+        XCTAssertTrue(buttons.element.waitForExistence(timeout: 10)); XCTAssertEqual(buttons.count, 1)
+        XCTAssertTrue(buttons.element.isEnabled && buttons.element.isHittable); buttons.element.tap()
     }
     func general(_ language: String = "en", backFromAccount: Bool = false) {
+        if backFromAccount { XCTAssertTrue(app.staticTexts["account.development.status"].exists) }
         tap(language == "en" ? "Memory" : "记忆")
-        if backFromAccount || app.staticTexts["account.development.status"].exists { back() }
+        // Reselecting Memory may already pop its navigation stack to the root.
+        if app.staticTexts["account.development.status"].exists { back() }
         tap("memory.feedback")
         XCTAssertTrue(app.staticTexts["feedback.status"].waitForExistence(timeout: 15))
         XCTAssertFalse(app.switches["feedback.associate"].exists)
