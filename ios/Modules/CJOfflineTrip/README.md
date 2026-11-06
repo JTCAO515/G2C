@@ -105,13 +105,16 @@ a whole-account cleanup result or a receipt for another offline device.
 Use the canonical sibling graph: `swift test --package-path ios/Modules/CJOfflineTrip`.
 `ios/App/Acceptance/check_offline_trips.py` uses signed local identities, private PG,
 unmodified worker/FakeProvider and the real App. No formal Trip is injected into
-the database or App. Its test-only clock offsets are explicit DEBUG inputs;
-maximum-font audits use the simulator's actual system category with all AX checks.
+the database or App. Its test-only clock offsets are explicit DEBUG inputs.
+M4 acceptance uses the system default font and all AX categories. JT removed
+maximum-font and VoiceOver acceptance on 2026-11-05; historical results remain
+unchanged and removal of those requirements is not a PASS.
 Prior closed-factory assertions are revised to the newly authorized factory;
 all source, identity, encryption, time, unknown-write and file checks remain.
 Historical compile/assertion/Observation failures stay in external evidence.
 Native acceptance and exact-head CI remain pending until their actual reports.
-Physical device/VoiceOver and actual lock-state behavior remain L3 #29 UNRUN.
+Complete physical-device flows and actual lock-state behavior remain L3 #29
+UNRUN until their own reports pass; a clock-bootstrap diagnostic is not that proof.
 
 
 ## Known temporary-write erasure (#447)
