@@ -961,9 +961,9 @@ import Observation
             let directory = URL(fileURLWithPath: String(cString: physical)).appendingPathComponent("G2COfflineTrip", isDirectory: true)
                 .appendingPathComponent(DevelopmentSessionConfiguration.environmentNamespace(endpoint).uuidString, isDirectory: true)
             try files.createDirectory(at: directory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
-            let deviceClock = try OfflineDeviceClock.makeReader(directory: directory.resolvingSymlinksInPath())
+            let deviceClock = try OfflineDeviceClock.makeReader(directory: directory)
             offline = try OfflineTripController(environment: DevelopmentSessionConfiguration.environmentNamespace(endpoint),
-                applicationIdentifier: applicationID, directory: directory.resolvingSymlinksInPath(),
+                applicationIdentifier: applicationID, directory: directory,
                 sdkMaterial: sdkStore.load, policy: .acceptedTrip, clock: {
                     guard let value = deviceClock(), let wall = value.trustedWallSeconds else { return nil }
                     let (shifted, overflow) = wall.addingReportingOverflow(profile.wallOffset)

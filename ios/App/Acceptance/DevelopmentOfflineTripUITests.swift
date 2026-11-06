@@ -172,6 +172,16 @@ import Foundation
         }
     }
 
+    #if G2C_M4_DEVICE_ACCEPTANCE
+    func testClockBootstrapDiagnostic() async throws {
+        let (f, _) = try await prepare("testReopenLanguageAndReadOnly")
+        defer {app?.terminate()}
+        try await launch(f);initialLogin(f)
+        // The real App constructor has opened the protected marker and the
+        // entitled kernel object. No synchronization/read acceptance is claimed.
+        XCTAssertFalse(app.staticTexts["g2c.dev.error"].exists)
+    }
+    #endif
     func testReopenLanguageAndReadOnly() async throws {
         let (f, record) = try await prepare("testReopenLanguageAndReadOnly")
         defer { app?.terminate() }

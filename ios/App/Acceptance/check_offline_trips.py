@@ -42,6 +42,7 @@ def main():
     parser.add_argument('--build-dir', required=True, type=Path)
     parser.add_argument('--case', choices=CASES)
     parser.add_argument('--seed-only', action='store_true', help='Diagnose real formal-source preparation; every native case remains UNRUN')
+    parser.add_argument('--bootstrap-only', action='store_true', help='Device clock/bootstrap diagnostic only; original offline acceptance stays UNRUN')
     args = parser.parse_args()
     # JT's dedicated group is approved for this exact device identity. Preserve
     # the historical Simulator identity and all old device evidence as recorded.
@@ -54,6 +55,8 @@ def main():
         tls = LocalTLS.load(args.local_tls)
     elif args.local_tls or args.prepare_only: parser.error('Device options require --device')
     if args.seed_only and args.prepare_only: parser.error('Choose source diagnostic or device build preparation')
+    if args.bootstrap_only and (not args.device or args.case!='testReopenLanguageAndReadOnly' or args.seed_only):
+        parser.error('--bootstrap-only requires the selected device reopen case and is not a source diagnostic')
     os.umask(0o077)
     output, build = args.output.resolve(), args.build_dir.resolve()
     if tls: device_project_root, build = private_workspace(output, build)
@@ -366,11 +369,16 @@ def main():
                             case_output = output / 'device-native' / case; case_output.mkdir(parents=True, mode=0o700)
                             native = DeviceNative(args.device, bundle, project, configuration_file, build, ROOT,
                                 case_output, tokens[case], control_token, detail, evidence_root=output,case_id=case)
-                            selected = ['DevelopmentOfflineTripUITests/' + case]
+                            selected = ['DevelopmentOfflineTripUITests/' + ('testClockBootstrapDiagnostic' if args.bootstrap_only else case)]
+                            detail['selected_tests']=selected
                             native.build_for_testing('Debug', selected, env)
                             if args.prepare_only:
                                 detail['status'] = 'PREPARED_EXECUTION_UNRUN'; report['cases'][case] = 'UNRUN'; save(); continue
                             native.run('Debug', selected, env); native.scan('Debug')
+                            if args.bootstrap_only:
+                                detail['status']='DIAGNOSTIC_PASS'
+                                report['clock_bootstrap_diagnostic']='PASS'
+                                report['cases'][case]='UNRUN';save();continue
                             detail['status'] = 'PASS'; report['cases'][case] = 'PASS'; report['unrun_cases'].remove(case); save(); continue
                         result = output / (case + '.xcresult')
                         command = ['xcodebuild', '-project', str(project), '-scheme', 'G2CControl', '-configuration', 'Debug',
@@ -415,7 +423,7 @@ def main():
             report['private_pg_stopped'] = True
             assert subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip() == head, 'head changed during execution'
             assert all(hashlib.sha256((ROOT / p).read_bytes()).hexdigest() == digest for p, digest in report['source_hashes'].items()), 'source changed during execution'
-            report['status'] = 'PREPARED_EXECUTION_UNRUN' if args.prepare_only else ('PARTIAL_PASS' if args.case else 'PASS')
+            report['status'] = 'PREPARED_EXECUTION_UNRUN' if args.prepare_only else ('DIAGNOSTIC_PASS' if args.bootstrap_only else ('PARTIAL_PASS' if args.case else 'PASS'))
     except BaseException as error:
         report['status'] = 'FAIL'; report['error'] = type(error).__name__; raise
     finally:
