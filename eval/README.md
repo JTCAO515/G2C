@@ -213,6 +213,28 @@ worker 进程消费同一 PG/原消息/授权账本。使用 B 已交 legacy dra
 报告计算不发出请求，也不代替B原计量出口/预算账本；不得用模型模拟成Fake
 或未知费用当零来绕过停止点。
 
+### 获准 Mac 的只读公网基线
+
+`network_read.py` 只对既有合成06执行六次固定`GET /v1/run-display`，首失败即停，
+不POST、不创建消息、访问财务账本或canonical phase，也不导入模型SDK。
+由B在准备采集时交接既有beta-a的短期Bearer纯文本0600文件；不传provider/数据库/
+签名私钥。凭据仅在内存形成Authorization头，记录不含头或异常文本，完成后删除
+该确切一次性文件。TLS/主机名验证开启，忽略代理环境变量、不改OS的VPN/代理、不跟重定向。
+
+该端点严格复用已有`RunDisplayResponse`生成契约（顶层request_id/snapshot，无version），
+核X-Request-ID/no-store和原message/run/generation，输出目录存在时只读退出。
+另行保存operator前后实际镜像和原账本只读快照；实际出口地域不能从VPN或服务器位置推断。
+这只是“境内Mac+VPN”的端到端受保护GET耗时，含TLS、网络和服务端处理，不能当纯网络RTT，
+更不能替代用户POST起的首字/完整回答、六格/66、双语语义或质量放行；这些字段保持UNRUN。
+全部尝试、失败、重复采集及剩余UNRUN分别保留，不择优合并。
+
+```sh
+uv run --locked python -B eval/network_read.py --bearer-file .local/one-time-bearer.jwt --output .local/public-read-001
+```
+
+B572新增17个固定native拒绝reason仅在`failure.py`白名单消费，未知值仍为UNKNOWN，
+不保留原模型文本，不倒填旧stage，也不改变原判定/预算/准入或重派权限。
+
 ## 香港唯一 producer 的 C 执行准备
 
 Mac账本完成seal/adopt后，旧Mac仅只读；新阶段只能在B正式交付的HK环境执行。

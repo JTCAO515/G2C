@@ -13,7 +13,11 @@ TRAILER=re.compile(r' reason=([a-z_]{1,64}) choice_rejection=([a-z_]{1,64}) '
 REASONS=frozenset(('none','provider_rejected','httpx_error','parse_error','choice_rejected',
     'wire_authority','wire_deadline','wire_bound','wire_status','wire_headers','wire_framing',
     'wire_missing_headers','wire_end','wire_incomplete','wire_timeout','wire_tls','wire_io','wire_protocol',
-    'sse_deadline','sse_response_bound','sse_line_bound','sse_incomplete_line'))
+    'sse_deadline','sse_response_bound','sse_line_bound','sse_incomplete_line',
+    'native_json_invalid','native_json_duplicate','native_envelope_type','native_envelope_fields',
+    'native_version_literal','native_answer_fields','native_answer_calls','native_answer_text',
+    'native_kind_literal','native_tool_answer','native_calls_type','native_calls_bound',
+    'native_call_fields','native_call_name','native_call_arguments','native_contract_bound','native_contract_invalid'))
 CHOICES=frozenset(('none','choices_shape','choice_shape','incomplete_finish','final_finish','delta_shape'))
 FINISHES=frozenset(('unseen','stop','tool_calls','length','content_filter','function_call','null','other','invalid_type'))
 
