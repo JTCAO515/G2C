@@ -206,7 +206,7 @@ import Foundation
         tap("assistant.send")
         let value = app.staticTexts["run.display.status"]
         let condition = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", language == "en" ? "Completed" : "已完成"), object: value)
-        let completed = XCTWaiter.wait(for: [condition], timeout: 40)
+        let completed = await XCTWaiter.fulfillment(of: [condition], timeout: 40)
         if completed != .completed {
             capture("feedback-answer-not-completed")
             let tree = XCTAttachment(string: app.debugDescription)
