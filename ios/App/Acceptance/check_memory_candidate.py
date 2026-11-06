@@ -282,7 +282,16 @@ def main():
                         native.build_for_testing('Debug',selected,env)
                         if args.prepare_only:
                             detail['status']='PREPARED_EXECUTION_UNRUN';report['cases'][test]='UNRUN';save();continue
-                        summary=native.run('Debug',selected,env)
+                        try:
+                            summary=native.run('Debug',selected,env)
+                        except BaseException:
+                            detail['status']='FAIL';report['cases'][test]='FAIL';report['native']='FAIL'
+                            try:
+                                native.scan('Debug');detail['failure_container_scan']={'status':'PASS'}
+                            except Exception as scan_error:
+                                detail['failure_container_scan']={'status':'FAIL' if isinstance(scan_error,AssertionError) else 'UNRUN',
+                                    'error_type':type(scan_error).__name__}
+                            raise
                         native.scan('Debug');detail['status']='PASS'
                         value={k:summary[k] for k in ('passedTests','failedTests','skippedTests')}
                     else:
