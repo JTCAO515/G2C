@@ -1,4 +1,5 @@
 import Foundation
+import Observation
 import SwiftUI
 import CJAPI
 import CJMessageHTTP
@@ -9,7 +10,7 @@ public struct MemoryCandidateView: View {
     public let model: MemoryCandidatePresentation
     public let language: MemoryLanguage
     private let makeReviewTravel: @MainActor () throws -> TravelSelectionModel?
-    @State private var editor: MemoryCandidateEditorEntry?
+    @State private var editor: MemoryCandidateEditorDraft?
     public init(model: MemoryCandidatePresentation, language: MemoryLanguage,
         makeReviewTravel: @escaping @MainActor () throws -> TravelSelectionModel? = { nil }) {
         self.model = model; self.language = language; self.makeReviewTravel = makeReviewTravel
@@ -67,7 +68,7 @@ public struct MemoryCandidateView: View {
                                     .accessibilityIdentifier("memoryCandidate.reviewUnavailable")
                             }
                             MemoryLifecycleButton(title: language.text("Review this suggestion", "核对这条建议"), identifier: "memoryCandidate.review." + candidate.utf8Identity.base64EncodedString(), enabled: model.canReview(candidateID: candidate.id)) {
-                                editor = model.captureReview(candidateID: candidate.id)
+                                editor = model.captureReview(candidateID: candidate.id).map(MemoryCandidateEditorDraft.init)
                             }
                         }
                         .padding(12)
@@ -109,8 +110,8 @@ public struct MemoryCandidateView: View {
           }.frame(maxWidth: .infinity, alignment: .leading).padding()
         }
         .navigationTitle(language.text("Memory suggestions", "记忆建议"))
-        .sheet(item: $editor) { entry in
-            MemoryCandidateEditor(model: model, entry: entry, language: language, makeReviewTravel: makeReviewTravel)
+        .sheet(item: $editor) { draft in
+            MemoryCandidateEditor(model: model, draft: draft, language: language, makeReviewTravel: makeReviewTravel)
         }
     }
     private func perform(_ work: MemoryCandidatePresentationWork?) {
@@ -145,15 +146,30 @@ public struct MemoryCandidateView: View {
     }
 }
 
+/// One unsent draft belongs to the captured review entry, rather than a
+/// particular reconstruction of its sheet content. Closing drops this object;
+/// another candidate/account/conversation must capture its own entry.
+@MainActor @Observable private final class MemoryCandidateEditorDraft: Identifiable {
+    let entry: MemoryCandidateEditorEntry
+    nonisolated let id: UUID
+    var kind: String
+    var text: String
+    var occurredAt: String
+    init(entry: MemoryCandidateEditorEntry) {
+        self.entry = entry
+        id = entry.id
+        kind = entry.candidate.kind == .inference ? "" : entry.candidate.kind.rawValue
+        text = entry.candidate.text; occurredAt = entry.candidate.occurredAt
+    }
+}
+
 private struct MemoryCandidateEditor: View {
     let model: MemoryCandidatePresentation
-    let entry: MemoryCandidateEditorEntry
+    @Bindable private var draft: MemoryCandidateEditorDraft
+    private var entry: MemoryCandidateEditorEntry { draft.entry }
     let language: MemoryLanguage
     let makeReviewTravel: @MainActor () throws -> TravelSelectionModel?
     @Environment(\.dismiss) private var dismiss
-    @State private var kind: String
-    @State private var text: String
-    @State private var occurredAt: String
     @State private var refused = false
     private enum Field: Hashable { case text, time }
     @FocusState private var field: Field?
@@ -162,11 +178,9 @@ private struct MemoryCandidateEditor: View {
     @State private var travelTask: Task<Void, Never>?
     @State private var readingTravel = false
     @State private var active = true
-    init(model: MemoryCandidatePresentation, entry: MemoryCandidateEditorEntry, language: MemoryLanguage,
+    init(model: MemoryCandidatePresentation, draft: MemoryCandidateEditorDraft, language: MemoryLanguage,
         makeReviewTravel: @escaping @MainActor () throws -> TravelSelectionModel?) {
-        self.model = model; self.entry = entry; self.language = language; self.makeReviewTravel = makeReviewTravel
-        _kind = State(initialValue: entry.candidate.kind == .inference ? "" : entry.candidate.kind.rawValue)
-        _text = State(initialValue: entry.candidate.text); _occurredAt = State(initialValue: entry.candidate.occurredAt)
+        self.model = model; self.draft = draft; self.language = language; self.makeReviewTravel = makeReviewTravel
     }
     var body: some View {
         NavigationStack {
@@ -175,20 +189,20 @@ private struct MemoryCandidateEditor: View {
                 Section {
                     MemoryRowText(text: language.text("Review this one suggestion. Confirming does not authorize organization of other history or change this suggestion's trip scope.", "请核对这一条建议。确认不等于授权整理其他历史，也不会改变这条建议的行程范围。"), style: .body)
                         .accessibilityIdentifier("memoryCandidate.editor.scope")
-                    Picker(selection: $kind) {
+                    Picker(selection: $draft.kind) {
                         Text(language.text("Choose a type", "请选择类型")).tag("")
                         Text(language.text("Fact", "事实")).tag("fact")
                         Text(language.text("Experience", "经历")).tag("experience")
                         Text(language.text("Preference", "偏好")).tag("preference")
                     } label: { MemoryRowText(text: language.text("Memory type", "记忆类型"), style: .body) }
                     .accessibilityIdentifier("memoryCandidate.editor.kind")
-                    TextField(language.text("Memory text", "记忆内容"), text: $text, axis: .vertical)
+                    TextField(language.text("Memory text", "记忆内容"), text: $draft.text, axis: .vertical)
                         .focused($field, equals: .text)
                         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                         .contentShape(Rectangle())
                         .simultaneousGesture(TapGesture().onEnded { field = .text })
                         .accessibilityIdentifier("memoryCandidate.editor.text")
-                    TextField(language.text("Time or original uncertainty", "时间或原有不确定说明"), text: $occurredAt, axis: .vertical)
+                    TextField(language.text("Time or original uncertainty", "时间或原有不确定说明"), text: $draft.occurredAt, axis: .vertical)
                         .focused($field, equals: .time)
                         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                         .contentShape(Rectangle())
@@ -208,9 +222,9 @@ private struct MemoryCandidateEditor: View {
                                 .accessibilityIdentifier("memoryCandidate.editor.travelUnavailable")
                         }
                     }
-                    MemoryLifecycleButton(title: language.text("Confirm this memory", "确认这条记忆"), identifier: "memoryCandidate.editor.confirm", enabled: canSubmit && !kind.isEmpty && (entry.candidate.travel == nil || reviewTravel != nil)) {
-                        guard let selected = Components.Schemas.MemoryManualSaveCommand.kindPayload(rawValue: kind) else { return }
-                        submit(.confirm(kind: selected, text: text, occurredAt: occurredAt, travel: reviewTravel))
+                    MemoryLifecycleButton(title: language.text("Confirm this memory", "确认这条记忆"), identifier: "memoryCandidate.editor.confirm", enabled: canSubmit && !draft.kind.isEmpty && (entry.candidate.travel == nil || reviewTravel != nil)) {
+                        guard let selected = Components.Schemas.MemoryManualSaveCommand.kindPayload(rawValue: draft.kind) else { return }
+                        submit(.confirm(kind: selected, text: draft.text, occurredAt: draft.occurredAt, travel: reviewTravel))
                     }
                     MemoryLifecycleButton(title: language.text("Reject this suggestion", "拒绝这条建议"), identifier: "memoryCandidate.editor.reject", enabled: canSubmit) { submit(.reject) }
                     if refused || !canSubmit {
