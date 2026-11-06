@@ -55,6 +55,8 @@ import Foundation
             let navigation = app.navigationBars.firstMatch
             var top = navigation.exists ? navigation.frame.maxY + 4 : app.frame.minY + 60
             var bottom = navigation.exists ? app.frame.maxY - 24 : app.tabBars.firstMatch.frame.minY
+            let tabs=app.tabBars.firstMatch
+            if tabs.exists && tabs.isHittable {bottom=min(bottom,tabs.frame.minY)}
             let header = app.otherElements.matching(identifier:"assistant.header").firstMatch
             let composer = app.otherElements.matching(identifier:"assistant.composer").firstMatch
             if !navigation.exists && !["assistant.draft","assistant.send","assistant.intent"].contains(id) && header.exists && composer.exists {
