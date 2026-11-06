@@ -1,4 +1,5 @@
 import Foundation
+import Observation
 import SwiftUI
 import CJAPI
 import CJMessageHTTP
@@ -9,7 +10,7 @@ public struct MemoryCandidateView: View {
     public let model: MemoryCandidatePresentation
     public let language: MemoryLanguage
     private let makeReviewTravel: @MainActor () throws -> TravelSelectionModel?
-    @State private var editor: MemoryCandidateEditorEntry?
+    @State private var editor: MemoryCandidateEditorDraft?
     public init(model: MemoryCandidatePresentation, language: MemoryLanguage,
         makeReviewTravel: @escaping @MainActor () throws -> TravelSelectionModel? = { nil }) {
         self.model = model; self.language = language; self.makeReviewTravel = makeReviewTravel
@@ -67,7 +68,7 @@ public struct MemoryCandidateView: View {
                                     .accessibilityIdentifier("memoryCandidate.reviewUnavailable")
                             }
                             MemoryLifecycleButton(title: language.text("Review this suggestion", "核对这条建议"), identifier: "memoryCandidate.review." + candidate.utf8Identity.base64EncodedString(), enabled: model.canReview(candidateID: candidate.id)) {
-                                editor = model.captureReview(candidateID: candidate.id)
+                                replaceEditor(model.captureReview(candidateID: candidate.id).map(MemoryCandidateEditorDraft.init))
                             }
                         }
                         .padding(12)
@@ -109,9 +110,13 @@ public struct MemoryCandidateView: View {
           }.frame(maxWidth: .infinity, alignment: .leading).padding()
         }
         .navigationTitle(language.text("Memory suggestions", "记忆建议"))
-        .sheet(item: $editor) { entry in
-            MemoryCandidateEditor(model: model, entry: entry, language: language, makeReviewTravel: makeReviewTravel)
+        .sheet(item: Binding(get: { editor }, set: { next in replaceEditor(next) })) { draft in
+            MemoryCandidateEditor(model: model, draft: draft, language: language, makeReviewTravel: makeReviewTravel)
         }
+    }
+    private func replaceEditor(_ next: MemoryCandidateEditorDraft?) {
+        if editor !== next { editor?.invalidate() }
+        editor = next
     }
     private func perform(_ work: MemoryCandidatePresentationWork?) {
         guard let work else { return }; Task { await model.perform(work) }
@@ -145,28 +150,47 @@ public struct MemoryCandidateView: View {
     }
 }
 
+/// One unsent draft belongs to the captured review entry, rather than a
+/// particular reconstruction of its sheet content, including its explicit
+/// travel read. Dismissing or replacing the entry retires that read and its task;
+/// another candidate/account/conversation must capture its own entry.
+@MainActor @Observable private final class MemoryCandidateEditorDraft: Identifiable {
+    let entry: MemoryCandidateEditorEntry
+    nonisolated let id: UUID
+    var kind: String
+    var text: String
+    var occurredAt: String
+    var refused = false
+    var travel: TravelSelectionModel?
+    var capturedTravel: CapturedTravelSelection?
+    var travelTask: Task<Void, Never>?
+    var readingTravel = false
+    private(set) var active = true
+    init(entry: MemoryCandidateEditorEntry) {
+        self.entry = entry
+        id = entry.id
+        kind = entry.candidate.kind == .inference ? "" : entry.candidate.kind.rawValue
+        text = entry.candidate.text; occurredAt = entry.candidate.occurredAt
+    }
+    func invalidate() {
+        active = false
+        travelTask?.cancel(); travelTask = nil
+        travel?.invalidate(); capturedTravel = nil
+    }
+}
+
 private struct MemoryCandidateEditor: View {
     let model: MemoryCandidatePresentation
-    let entry: MemoryCandidateEditorEntry
+    @Bindable private var draft: MemoryCandidateEditorDraft
+    private var entry: MemoryCandidateEditorEntry { draft.entry }
     let language: MemoryLanguage
     let makeReviewTravel: @MainActor () throws -> TravelSelectionModel?
     @Environment(\.dismiss) private var dismiss
-    @State private var kind: String
-    @State private var text: String
-    @State private var occurredAt: String
-    @State private var refused = false
     private enum Field: Hashable { case text, time }
     @FocusState private var field: Field?
-    @State private var travel: TravelSelectionModel?
-    @State private var capturedTravel: CapturedTravelSelection?
-    @State private var travelTask: Task<Void, Never>?
-    @State private var readingTravel = false
-    @State private var active = true
-    init(model: MemoryCandidatePresentation, entry: MemoryCandidateEditorEntry, language: MemoryLanguage,
+    init(model: MemoryCandidatePresentation, draft: MemoryCandidateEditorDraft, language: MemoryLanguage,
         makeReviewTravel: @escaping @MainActor () throws -> TravelSelectionModel?) {
-        self.model = model; self.entry = entry; self.language = language; self.makeReviewTravel = makeReviewTravel
-        _kind = State(initialValue: entry.candidate.kind == .inference ? "" : entry.candidate.kind.rawValue)
-        _text = State(initialValue: entry.candidate.text); _occurredAt = State(initialValue: entry.candidate.occurredAt)
+        self.model = model; self.draft = draft; self.language = language; self.makeReviewTravel = makeReviewTravel
     }
     var body: some View {
         NavigationStack {
@@ -175,20 +199,20 @@ private struct MemoryCandidateEditor: View {
                 Section {
                     MemoryRowText(text: language.text("Review this one suggestion. Confirming does not authorize organization of other history or change this suggestion's trip scope.", "请核对这一条建议。确认不等于授权整理其他历史，也不会改变这条建议的行程范围。"), style: .body)
                         .accessibilityIdentifier("memoryCandidate.editor.scope")
-                    Picker(selection: $kind) {
+                    Picker(selection: $draft.kind) {
                         Text(language.text("Choose a type", "请选择类型")).tag("")
                         Text(language.text("Fact", "事实")).tag("fact")
                         Text(language.text("Experience", "经历")).tag("experience")
                         Text(language.text("Preference", "偏好")).tag("preference")
                     } label: { MemoryRowText(text: language.text("Memory type", "记忆类型"), style: .body) }
                     .accessibilityIdentifier("memoryCandidate.editor.kind")
-                    TextField(language.text("Memory text", "记忆内容"), text: $text, axis: .vertical)
+                    TextField(language.text("Memory text", "记忆内容"), text: $draft.text, axis: .vertical)
                         .focused($field, equals: .text)
                         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                         .contentShape(Rectangle())
                         .simultaneousGesture(TapGesture().onEnded { field = .text })
                         .accessibilityIdentifier("memoryCandidate.editor.text")
-                    TextField(language.text("Time or original uncertainty", "时间或原有不确定说明"), text: $occurredAt, axis: .vertical)
+                    TextField(language.text("Time or original uncertainty", "时间或原有不确定说明"), text: $draft.occurredAt, axis: .vertical)
                         .focused($field, equals: .time)
                         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                         .contentShape(Rectangle())
@@ -208,12 +232,12 @@ private struct MemoryCandidateEditor: View {
                                 .accessibilityIdentifier("memoryCandidate.editor.travelUnavailable")
                         }
                     }
-                    MemoryLifecycleButton(title: language.text("Confirm this memory", "确认这条记忆"), identifier: "memoryCandidate.editor.confirm", enabled: canSubmit && !kind.isEmpty && (entry.candidate.travel == nil || reviewTravel != nil)) {
-                        guard let selected = Components.Schemas.MemoryManualSaveCommand.kindPayload(rawValue: kind) else { return }
-                        submit(.confirm(kind: selected, text: text, occurredAt: occurredAt, travel: reviewTravel))
+                    MemoryLifecycleButton(title: language.text("Confirm this memory", "确认这条记忆"), identifier: "memoryCandidate.editor.confirm", enabled: canConfirm) {
+                        guard let selected = Components.Schemas.MemoryManualSaveCommand.kindPayload(rawValue: draft.kind) else { return }
+                        submit(.confirm(kind: selected, text: draft.text, occurredAt: draft.occurredAt, travel: reviewTravel))
                     }
                     MemoryLifecycleButton(title: language.text("Reject this suggestion", "拒绝这条建议"), identifier: "memoryCandidate.editor.reject", enabled: canSubmit) { submit(.reject) }
-                    if refused || !canSubmit {
+                    if draft.refused || !canSubmit {
                         MemoryRowText(text: language.text("This review could not be prepared. Check the text and time, or close and read the current suggestion again. No replacement was sent.", "暂时无法准备此操作。请核对内容与时间，或关闭后重新读取当前建议；未发送替代操作。"), style: .body)
                             .accessibilityIdentifier("memoryCandidate.editor.refused")
                     }
@@ -222,7 +246,7 @@ private struct MemoryCandidateEditor: View {
             }.scrollDismissesKeyboard(.interactively)
             .navigationTitle(language.text("Review suggestion", "核对建议"))
             .toolbar { ToolbarItem(placement: .cancellationAction) {
-                Button { dismiss() } label: {
+                Button { draft.invalidate(); dismiss() } label: {
                     Image(systemName: "xmark").font(.body).frame(minWidth: 44, minHeight: 44)
                 }.accessibilityLabel(language.text("Close", "关闭"))
                     .accessibilityIdentifier("memoryCandidate.editor.close")
@@ -232,15 +256,24 @@ private struct MemoryCandidateEditor: View {
                 Button(language.text("Done", "完成")) { field = nil }
                     .accessibilityIdentifier("memoryCandidate.editor.done")
             } }
-            .onDisappear {
-                active = false; travelTask?.cancel(); travelTask = nil
-                travel?.invalidate(); capturedTravel = nil
+            .onChange(of: model.canReview(entry: entry)) { _, current in
+                if !current { draft.invalidate() }
             }
         }
     }
-    private var canSubmit: Bool { active && !readingTravel && model.canReview(entry: entry) }
+    private var canSubmit: Bool {
+        let current = model.canReview(entry: entry)
+        return draft.active && !draft.readingTravel && current
+    }
+    private var canConfirm: Bool {
+        let current = model.canReview(entry: entry)
+        let chosen = !draft.kind.isEmpty
+        let verified = entry.candidate.travel == nil || reviewTravel != nil
+        return draft.active && !draft.readingTravel && current && chosen && verified
+    }
     private var reviewTravel: MemoryTravelSelection? {
-        guard let original = entry.candidate.travel, let travel, let capturedTravel else { return nil }
+        guard let original = entry.candidate.travel, let travel = draft.travel,
+              let capturedTravel = draft.capturedTravel else { return nil }
         do {
             try travel.validate(capturedTravel)
             guard let context = capturedTravel.context, Data(context.value.id.utf8) == Data(original.id.utf8) else { return nil }
@@ -250,20 +283,21 @@ private struct MemoryCandidateEditor: View {
     private func readTravel(_ id: String) {
         guard canSubmit else { return }
         do {
-            guard let reader = try makeReviewTravel(), canSubmit else { refused = true; return }
-            travel?.invalidate(); travel = reader; capturedTravel = nil; readingTravel = true
-            travelTask = Task {
-                guard active, !Task.isCancelled, model.canReview(entry: entry) else { return }
+            guard let reader = try makeReviewTravel(), canSubmit else { draft.refused = true; return }
+            draft.travel?.invalidate(); draft.travel = reader; draft.capturedTravel = nil; draft.readingTravel = true
+            draft.travelTask = Task {
+                guard draft.active, !Task.isCancelled, model.canReview(entry: entry) else { return }
                 await reader.selectTravel(id)
-                guard active, !Task.isCancelled, model.canReview(entry: entry), travel === reader else { return }
-                do { capturedTravel = try reader.capture(); refused = false }
-                catch { capturedTravel = nil; refused = true }
-                readingTravel = false; travelTask = nil
+                guard draft.active, !Task.isCancelled, model.canReview(entry: entry), draft.travel === reader else { return }
+                do { draft.capturedTravel = try reader.capture(); draft.refused = false }
+                catch { draft.capturedTravel = nil; draft.refused = true }
+                draft.readingTravel = false; draft.travelTask = nil
             }
-        } catch { capturedTravel = nil; refused = true }
+        } catch { draft.capturedTravel = nil; draft.refused = true }
     }
     private func submit(_ review: MemoryCandidateReview) {
-        guard let work = model.prepareReview(entry: entry, review: review) else { refused = true; return }
+        guard let work = model.prepareReview(entry: entry, review: review) else { draft.refused = true; return }
+        draft.invalidate()
         Task { await model.perform(work) }; dismiss()
     }
 }

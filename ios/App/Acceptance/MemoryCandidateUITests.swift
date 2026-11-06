@@ -76,7 +76,9 @@ import Foundation
             if element.exists && element.frame.height > 0 {
                 let frame=element.frame, bar=app.navigationBars.firstMatch, tabs=app.tabBars.firstMatch
                 let upper=centered ? top() : (bar.exists ? bar.frame.maxY : app.frame.minY)
-                let lower=tabs.exists ? tabs.frame.minY : app.frame.maxY-44
+                // The presenting App's hidden Tab bar is not the sheet's
+                // viewport. Match the existing device-cleanup reveal bounds.
+                let lower=tabs.exists && tabs.isHittable ? tabs.frame.minY : app.frame.maxY-44
                 let fits=frame.height <= lower-upper
                 let within=fits ? frame.minY >= upper && frame.maxY <= lower : frame.midY > upper && frame.midY < lower
                 // Offscreen lazy rows can throw when asked for hittability on iOS27.2.
@@ -121,7 +123,9 @@ import Foundation
         #endif
         XCTAssertEqual(query.count, 1, id)
         let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: button)
-        XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 25), .completed, id)
+        let result = XCTWaiter.wait(for: [enabled], timeout: 25)
+        if result != .completed { print("CANDIDATE_DISABLED_CONDITIONS", id, button.value as Any) }
+        XCTAssertEqual(result, .completed, id)
         button.tap()
         #if G2C_M4_DEVICE_ACCEPTANCE
         if tab {
@@ -280,6 +284,9 @@ import Foundation
         try audit("candidate-editor-" + language + "-max", target: app.buttons[actionButton])
         #if G2C_M4_DEVICE_ACCEPTANCE
         if operation == "confirm" { requireEditedValues(f, language: language, stage: "after-full-AX") }
+        if let travelID = f.travel_id, let version = f.travel_version {
+            text("memoryCandidate.editor.travel", contains: travelID + " · " + String(version))
+        }
         #endif
         tap(actionButton)
         let original = app.staticTexts["memoryCandidate.originalID"]; reveal(original); let actionID = original.label
