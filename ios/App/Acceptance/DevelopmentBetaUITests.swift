@@ -328,7 +328,7 @@ import CryptoKit
     private func typedReconcileOriginals(language:String) {
         businessTap("memory.manage.openOriginals");businessTap("memory2.originals.read")
         for id in actionButtons(prefix:"memory2.original.query.").sorted() {
-            businessTap(id);exactText("memory2.save.status",language=="en" ? "Saved.":"已保存。")
+            businessTap(id);exactText("memory2.save.status",typedSavedMessage(language))
         }
         for id in actionButtons(prefix:"memory2.action.query.").sorted() {
             businessTap(id)
@@ -339,6 +339,9 @@ import CryptoKit
             XCTAssertEqual(XCTWaiter.wait(for:[expected],timeout:30),.completed)
         }
         memoryBack()
+    }
+    private func typedSavedMessage(_ language:String) -> String {
+        language=="en" ? "Saved. Current use depends on its current status.":"已保存；当前是否使用取决于条目当前状态。"
     }
     private func typedReviewDraft(text:String,time:String,current:Bool,scope:String,language:String) throws {
         businessTap("memory.add");businessTap("memory2.manual.option")
@@ -390,7 +393,7 @@ import CryptoKit
             let time="time unknown / 时间不详"
             print("M4_BETA_TYPED_NEW_MARKER",nonce,seed.extent,seed.context?.id ?? "long_term")
             try typedReviewDraft(text:ownText,time:time,current:current,scope:scope,language:language)
-            businessTap("memory2.manual.confirm");exactText("memory2.save.status",language=="en" ? "Saved.":"已保存。")
+            businessTap("memory2.manual.confirm");exactText("memory2.save.status",typedSavedMessage(language))
             memoryBack();businessTap("memory2.items.open");businessTap("memory2.items.read")
             // Discover the App-generated ID by exact original text inside the
             // documented text-ID namespace, then activate only the exact ID.
