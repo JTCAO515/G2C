@@ -19,7 +19,7 @@ from types import SimpleNamespace
 from cj_place.contract_v1 import decode_query as place_query
 from cj_place.gaode import Config,prepare,parse_response,Response
 from cj_place.models import Search,ORIGIN
-from cj_fact.live_source import _Excerpts,_weather_exchange,weather
+from cj_fact.live_source import _Excerpts,_weather_exchange,weather,public_page
 from cj_fact.contract_v1 import decode_query as fact_query
 from cj_fact.policy import FactFailure
 from cj_run.tool_turn import parse_turn
@@ -639,6 +639,63 @@ class Boundaries(unittest.TestCase):
         with patch('asyncio.BaseEventLoop.getaddrinfo',dns),patch('cj_fact.live_source.PinnedHTTPSTransport.__call__',new_callable=AsyncMock) as send:
             with self.assertRaises(BudgetUnknown):list(prepared.bind_operation(operation,lambda:True)())
             send.assert_not_called()
+
+    def test_fact_failure_audit_distinguishes_stage_without_private_exception_text(self):
+        private='private-source-body-header-key-do-not-log'
+        dns=AsyncMock(return_value=[(2,1,6,'',('93.184.216.34',443))])
+        scenarios=(
+            ('dns',TimeoutError(private),'timeout','UNKNOWN',False),
+            ('https_exchange',FactFailure('unsupported_content_type'),'unsupported_content_type','UNKNOWN',False),
+            ('https_exchange',FactFailure(private),'other','UNKNOWN',False),
+            ('http_status',None,'public_page_status_unavailable',503,True),
+            ('body',FactFailure('wire_byte_limit'),'wire_byte_limit',200,True),
+            ('utf8',None,'utf8_invalid',200,True),
+            ('excerpt',None,'public_page_excerpt_unavailable',200,True))
+        for phase,error,reason,status,returned in scenarios:
+            with self.subTest(phase=phase,reason=reason):
+                async def chunks():
+                    yield b'\xff' if phase=='utf8' else b'<p>short</p>'
+                    if phase=='body':raise error
+                close=AsyncMock()
+                response=SimpleNamespace(status=status,body=chunks(),close=close)
+                send=AsyncMock(return_value=response)
+                lookup=dns if phase!='dns' else AsyncMock(side_effect=error)
+                if not returned and phase!='dns':send.side_effect=error
+                with patch('asyncio.BaseEventLoop.getaddrinfo',lookup),patch('cj_fact.live_source.PinnedHTTPSTransport.__call__',send),self.assertLogs('cj_provider.audit',level='WARNING') as captured,self.assertRaises((FactFailure,TimeoutError,UnicodeError)):
+                    asyncio.run(public_page(guard=lambda:True))
+                audit='\n'.join(captured.output)
+                for field in ('phase='+phase,'reason='+reason,'http_status='+str(status),'observed_body_bytes='):
+                    self.assertIn(field,audit)
+                for value in (private,KEY,'en.nia.gov.cn','93.184.216.34','<p>short</p>'):
+                    self.assertNotIn(value,audit)
+                if phase=='dns':send.assert_not_called()
+                if returned:close.assert_awaited_once()
+
+    def test_fact_success_and_cancellation_keep_existing_semantics(self):
+        dns=AsyncMock(return_value=[(2,1,6,'',('93.184.216.34',443))])
+        raw=b'<p>Independent synthetic excerpt for source transport testing.</p>'
+        async def chunks():yield raw
+        close=AsyncMock();response=SimpleNamespace(status=200,body=chunks(),close=close)
+        send=AsyncMock(return_value=response)
+        with patch('asyncio.BaseEventLoop.getaddrinfo',dns),patch('cj_fact.live_source.PinnedHTTPSTransport.__call__',send),self.assertNoLogs('cj_provider.audit',level='WARNING'):
+            value=asyncio.run(public_page(guard=lambda:True))
+        self.assertEqual(value['status'],'unknown');self.assertEqual(value['original_bytes'],len(raw))
+        self.assertEqual(value['excerpts'][0]['text'],'Independent synthetic excerpt for source transport testing.')
+        close.assert_awaited_once();send.assert_awaited_once()
+        with patch('asyncio.BaseEventLoop.getaddrinfo',AsyncMock(side_effect=asyncio.CancelledError())),self.assertNoLogs('cj_provider.audit',level='WARNING'),self.assertRaises(asyncio.CancelledError):
+            asyncio.run(public_page(guard=lambda:True))
+
+    def test_unknown_fact_audit_does_not_rearm_original_attempt(self):
+        services=RealServices(self.provider(sse()),KEY,frozenset({'m4-synthetic-one'}))
+        raw=json.dumps(dict(version='FACT-query.1',fact_key='entry_notice',region='China',dates=dict(start='2026-11-04',end='2026-11-04'),conditions={})).encode()
+        prepared=RealTools(services)._tool_input('fact',(raw,'synthetic-ref'))
+        operation=SimpleNamespace(binding=SimpleNamespace(scope='local:https://local.g2c.invalid:m4-synthetic-one'),command=SimpleNamespace(attempt_id='fact-unknown-audit'))
+        with patch('cj_api.real_services.public_page',AsyncMock(side_effect=FactFailure('unsupported_content_type'))) as send:
+            for _ in range(2):
+                with self.assertRaises(BudgetUnknown):list(prepared.bind_operation(operation,lambda:True)())
+            send.assert_awaited_once()
+        self.assertEqual([(r['attempt_id'],r['state'],r['receipt']) for r in self.budget.inspect()],
+                         [('fact-unknown-audit','INTENT',None)])
 
     def test_weather_key_does_not_enter_standard_http_logs(self):
         class Writer:
