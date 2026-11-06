@@ -207,6 +207,23 @@ import Foundation
         tap("assistant.memoryCandidates.review")
         text("memoryCandidate.conversation", contains: fixture.conversation)
     }
+    #if G2C_M4_DEVICE_ACCEPTANCE
+    func requireSelectedKind(_ language: String) {
+        let picker = app.descendants(matching: .any).matching(identifier: "memoryCandidate.editor.kind")
+        XCTAssertEqual(picker.count, 1)
+        let selected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label ENDSWITH %@", language == "en" ? "Preference" : "偏好"), object: picker.element)
+        XCTAssertEqual(XCTWaiter.wait(for: [selected], timeout: 5), .completed, "Explicit kind choice must be visible before editing")
+    }
+    func requireEditedValues(_ fixture: Fixture, language: String, stage: String) {
+        requireSelectedKind(language)
+        for (id, expected) in [("memoryCandidate.editor.text", fixture.edited_text), ("memoryCandidate.editor.time", fixture.occurred_at)] {
+            let fields = deviceSession.textInputQuery(id, in: app)
+            XCTAssertEqual(fields.count, 1, stage)
+            XCTAssertEqual(Array((fields.element.value as? String ?? "").utf8), Array(expected.utf8), stage + ": " + id)
+        }
+        print("CANDIDATE_EDITED_STATE_VERIFIED", stage)
+    }
+    #endif
     func verify(_ language: String, operation: String = "confirm", reopen: Bool = false, account: Bool = false, current: Bool = false) async throws {
         continueAfterFailure = false
         let name = (account ? "account-" : reopen ? "lost-ack-" : current ? "current-" : operation + "-") + language
@@ -235,12 +252,21 @@ import Foundation
             let kind = app.descendants(matching: .any).matching(identifier: "memoryCandidate.editor.kind")
             reveal(kind.element); XCTAssertEqual(kind.count, 1); kind.element.tap()
             tap(language == "en" ? "Preference" : "偏好")
+            #if G2C_M4_DEVICE_ACCEPTANCE
+            requireSelectedKind(language)
+            #endif
             enter("memoryCandidate.editor.text", value: f.edited_text, placeholder: language == "en" ? "Memory text" : "记忆内容")
             enter("memoryCandidate.editor.time", value: f.occurred_at, placeholder: language == "en" ? "Time or original uncertainty" : "时间或原有不确定说明")
+            #if G2C_M4_DEVICE_ACCEPTANCE
+            requireEditedValues(f, language: language, stage: "before-keyboard-dismiss")
+            #endif
             let done = app.toolbars.buttons.matching(identifier: "memoryCandidate.editor.done")
             XCTAssertEqual(done.count, 1); done.element.tap()
             let hidden = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.keyboards.element)
             XCTAssertEqual(XCTWaiter.wait(for: [hidden], timeout: 10), .completed)
+            #if G2C_M4_DEVICE_ACCEPTANCE
+            requireEditedValues(f, language: language, stage: "after-keyboard-dismiss")
+            #endif
         }
         try await size("max")
         text("memoryCandidate.editor.scope", contains: language == "en" ? "other history" : "其他历史")
@@ -252,6 +278,9 @@ import Foundation
         }
         let actionButton = operation == "confirm" ? "memoryCandidate.editor.confirm" : "memoryCandidate.editor.reject"
         try audit("candidate-editor-" + language + "-max", target: app.buttons[actionButton])
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        if operation == "confirm" { requireEditedValues(f, language: language, stage: "after-full-AX") }
+        #endif
         tap(actionButton)
         let original = app.staticTexts["memoryCandidate.originalID"]; reveal(original); let actionID = original.label
         XCTAssertFalse(actionID.isEmpty)
