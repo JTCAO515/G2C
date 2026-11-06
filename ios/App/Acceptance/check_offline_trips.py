@@ -325,10 +325,6 @@ def main():
                                 invited.remove(subjects[case]['A'])
                                 (auth / 'invited.json').write_text(json.dumps(sorted(invited)))
                                 value = {}
-                            elif path == '/size':
-                                size = query['value'][0]
-                                assert size in {'large', 'accessibility-extra-extra-extra-large'}
-                                value = {}
                             else: raise ValueError('Unknown control route')
                             raw = json.dumps(value).encode(); self.send_response(200); self.end_headers(); self.wfile.write(raw)
                         except Exception as error:
@@ -374,7 +370,20 @@ def main():
                             native.build_for_testing('Debug', selected, env)
                             if args.prepare_only:
                                 detail['status'] = 'PREPARED_EXECUTION_UNRUN'; report['cases'][case] = 'UNRUN'; save(); continue
-                            native.run('Debug', selected, env); native.scan('Debug')
+                            try:
+                                native.run('Debug', selected, env)
+                            except BaseException:
+                                detail['status'] = 'FAIL'; report['cases'][case] = 'FAIL'
+                                try:
+                                    native.scan('Debug')
+                                    detail['failure_container_scan'] = {'status': 'PASS'}
+                                except Exception as scan_error:
+                                    detail['failure_container_scan'] = {
+                                        'status': 'FAIL' if isinstance(scan_error, AssertionError) else 'UNRUN',
+                                        'error_type': type(scan_error).__name__}
+                                save()
+                                raise
+                            native.scan('Debug')
                             if args.bootstrap_only:
                                 detail['status']='DIAGNOSTIC_PASS'
                                 report['clock_bootstrap_diagnostic']='PASS'

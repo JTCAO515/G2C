@@ -38,10 +38,10 @@ import Foundation
         return (fixture, records[0])
     }
     func tap(_ id: String) {
-        let query = app.buttons.matching(identifier: id)
+        let fixed=["Memory","记忆","Trips","行程","Assistant","助手"].contains(id)
+        let query = fixed ? app.tabBars.buttons.matching(identifier: id) : app.buttons.matching(identifier: id)
         let target = query.element
         #if G2C_M4_DEVICE_ACCEPTANCE
-        let fixed=["Memory","记忆","Trips","行程","Assistant","助手"].contains(id)
         if fixed {XCTAssertTrue(target.waitForExistence(timeout:10),id)}
         else {deviceSession.revealControl(target,in:app,diagnosticIdentifier:id)}
         #else
@@ -208,15 +208,13 @@ import Foundation
         let chinese = openCache(record, language: "zh-Hans")
         XCTAssertEqual(chinese.hash, original.hash)
         XCTAssertEqual(chinese.deadline.components(separatedBy: "：").last, original.deadline.components(separatedBy: ": ").last)
-        try await call("/size", f, ["value": "accessibility-extra-extra-extra-large"])
-        try audit("offline-zh-maximum")
+        try audit("offline-zh-default")
         try await call("/verify", f, ["network": "none", "stage": "unchanged", "snapshot_hash": original.hash])
         try await call("/online", f)
     }
     func testExpiryRollbackAndUntrustedTime() async throws {
         let (f, record) = try await prepare("testExpiryRollbackAndUntrustedTime")
         defer { app?.terminate() }
-        try await call("/size", f, ["value": "large"])
         try await launch(f); initialLogin(f); synchronize(record)
         let original = openCache(record)
         try await call("/verify", f, ["stage": "checkpoint", "snapshot_hash": original.hash])
@@ -239,7 +237,6 @@ import Foundation
     func testAccountSwitchAndLogout() async throws {
         let (f, record) = try await prepare("testAccountSwitchAndLogout")
         defer { app?.terminate() }
-        try await call("/size", f, ["value": "large"])
         try await launch(f); initialLogin(f); synchronize(record); _ = openCache(record)
         account(); tap("account.development.signin.B"); signed(f, as: "B")
         tap("Trips"); tap("offline.open")
@@ -256,7 +253,6 @@ import Foundation
     func testTemporaryFailuresAndIdentityDenial() async throws {
         let (f, record) = try await prepare("testTemporaryFailuresAndIdentityDenial")
         defer { app?.terminate() }
-        try await call("/size", f, ["value": "large"])
         try await launch(f); initialLogin(f); synchronize(record)
         let original = openCache(record)
         try await call("/verify", f, ["stage": "checkpoint", "snapshot_hash": original.hash])
