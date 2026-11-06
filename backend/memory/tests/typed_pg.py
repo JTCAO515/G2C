@@ -90,6 +90,109 @@ class TypedStorageChecks(Harness):
         with self.authority.hold_current(Selection(context['id'],context['version'])) as lease:
             return self.service.effective('self',ContextRef('travel',lease.context.id))
 
+    @contextmanager
+    def readonly_connections(self,database):
+        from unittest.mock import patch
+        original=database._open_runtime_connection;opened=[]
+        def connect():
+            conn=original();conn.read_only=True;opened.append(True);return conn
+        with patch.object(database,'_open_runtime_connection',connect):yield opened
+
+    def memory_snapshot(self,scope):
+        tables=('cj_memory_scope','cj_memory_item','cj_memory_source','cj_memory_operation',
+                'cj_memory_management_action','cj_run_metered_operation','cj_message_context_profile')
+        with self.database.connect(scope) as conn:
+            return {table:conn.execute('SELECT row_to_json(t)::text FROM '+table+' t ORDER BY 1').fetchall()
+                    for table in tables}
+
+    def test_readonly_binding_existing_typed_memory_uses_no_DML(self):
+        from psycopg.errors import ReadOnlySqlTransaction
+        raw=self.raw(self.travel[0]);saved=self.save(raw)
+        configuration,_=self.runtime_configuration()
+        database=LocalDatabase(CONNINFO,run_context=self.run_context,travel_context=True)
+        authority=MessageContextAuthority(database.message_repository(self.scope),self.admit)
+        before=self.memory_snapshot(self.scope)
+        with self.readonly_connections(database) as opened:
+            bound=configuration.bind_readonly(database,self.scope,'alice',self.admit,message_context=authority)
+            self.assertEqual(bound.guard('readonly_probe'),(self.admit(),self.scope))
+            self.assertEqual(bound.payload_version,'MEMORY-RUN-CONSUME@2')
+            self.assertEqual(len(opened),1)
+            # Control: the unchanged provisioning bind really attempts its old
+            # INSERT, even for an existing namespace, and PostgreSQL rejects it.
+            with self.assertRaises(ReadOnlySqlTransaction):
+                configuration.bind(database,self.scope,'alice',self.admit,message_context=authority)
+        self.assertEqual(bound.service.detail(saved['item_id']).command.raw,
+                         self.service.detail(saved['item_id']).command.raw)
+        self.assertEqual(self.memory_snapshot(self.scope),before)
+
+    def test_readonly_binding_missing_namespace_refuses_without_creating_it(self):
+        from copy import deepcopy
+        from e2e_local import dev_auth
+        from cj_memory.typed_runtime import TypedRuntimeConfiguration
+        from cj_memory.runtime import RuntimeDenied
+        identity='readonly-'+self.tag;scope=scope_for(ISSUER,identity)
+        auth=Path(self.tmp.name)/identity;dev_auth('init',str(auth),'--invite',identity)
+        token=dev_auth('token',str(auth),'--subject',identity);checker=checker_for(auth)
+        def admit():
+            decision=checker.check(token);self.assertIs(decision.status,AdmissionStatus.ALLOWED)
+            return decision.principal
+        _,document=self.runtime_configuration();profile=deepcopy(document['collection']['collection']['profiles']['alice'])
+        document['collection']['collection']['profiles']={identity:profile}
+        document['collection']['travel_contexts']={identity:[]}
+        document['selections']={identity:document['selections']['alice']}
+        configuration=TypedRuntimeConfiguration.from_bytes(json.dumps(document).encode())
+        import local_run_context as operator
+        import dev_auth as local_auth
+        from cj_message.travel import ABI
+        operator.provision_budget(CONNINFO,self.run_context,identity)
+        local_auth.activate_travel(CONNINFO,identity,self.run_context,ABI)
+        database=LocalDatabase(CONNINFO,run_context=self.run_context,travel_context=True)
+        database.provision(scope)
+        authority=MessageContextAuthority(database.message_repository(scope),admit)
+        before=self.memory_snapshot(scope);self.assertEqual(before['cj_memory_scope'],[])
+        with self.readonly_connections(database):
+            with self.assertRaisesRegex(RuntimeDenied,'original memory scope unavailable'):
+                configuration.bind_readonly(database,scope,identity,admit,message_context=authority)
+        self.assertEqual(self.memory_snapshot(scope),before)
+        # Compatibility: the existing bind still provisions its own namespace.
+        configuration.bind(database,scope,identity,admit,message_context=authority)
+        after=self.memory_snapshot(scope);self.assertEqual(len(after['cj_memory_scope']),1)
+        self.assertEqual(after['cj_run_metered_operation'],before['cj_run_metered_operation'])
+
+    def test_readonly_binding_wrong_owner_authority_and_fresh_admission_refused(self):
+        from cj_memory.runtime import RuntimeDenied
+        configuration,_=self.runtime_configuration();database=LocalDatabase(CONNINFO,run_context=self.run_context,travel_context=True)
+        bob=scope_for(ISSUER,'bob');token=self.headers('bob')['Authorization'].removeprefix('Bearer ')
+        def other():
+            decision=self.checker.check(token);self.assertIs(decision.status,AdmissionStatus.ALLOWED)
+            return decision.principal
+        alice_authority=MessageContextAuthority(database.message_repository(self.scope),self.admit)
+        bob_authority=MessageContextAuthority(database.message_repository(bob),other)
+        before=self.memory_snapshot(self.scope)
+        with self.readonly_connections(database) as opened:
+            with self.assertRaisesRegex(RuntimeDenied,'principal/owner mismatch'):
+                configuration.bind_readonly(database,self.scope,'bob',other,message_context=alice_authority)
+            for wrong in (bob_authority,object()):
+                with self.assertRaisesRegex(RuntimeDenied,'canonical original context authority'):
+                    configuration.bind_readonly(database,self.scope,'alice',self.admit,message_context=wrong)
+            self.assertEqual(opened,[])
+            import dev_auth as local_auth
+            expired=local_auth.token(self.auth,'alice',-1)
+            def denied():
+                self.assertIs(self.checker.check(expired).status,AdmissionStatus.DENIED)
+                raise RuntimeDenied('actual admission denied')
+            with self.assertRaisesRegex(RuntimeDenied,'actual admission denied'):
+                configuration.bind_readonly(database,self.scope,'alice',denied,message_context=alice_authority)
+            self.assertEqual(opened,[])
+            state=[self.token]
+            def current():
+                decision=self.checker.check(state[0]);self.assertIs(decision.status,AdmissionStatus.ALLOWED)
+                return decision.principal
+            bound=configuration.bind_readonly(database,self.scope,'alice',current,message_context=alice_authority)
+            state[0]=token
+            with self.assertRaisesRegex(RuntimeDenied,'principal/owner mismatch'):bound.guard('late_check')
+        self.assertEqual(self.memory_snapshot(self.scope),before)
+
     def test_actual_owned_lease_type_isolation_longterm_and_original_bytes(self):
         long=self.raw();saved=self.save(long)
         first=self.raw(self.travel[0],text='仅A / A only');a=self.save(first)

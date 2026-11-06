@@ -32,3 +32,12 @@ local consumers.
 
 Local restricted-PG tests prove composition and guards only. B must separately
 verify its approved cloud host; actual model recall and quality remain #32.
+
+`TypedRuntimeConfiguration.bind_readonly(database, scope, identity, admit,
+message_context=...)` supports trusted activation preflight against an existing
+Memory namespace. It uses the original typed runtime with `provision=False`;
+missing storage fails instead of creating it. The canonical Message authority
+and fresh principal must belong to the requested owner scope. This bind issues
+no Message/Travel lease and does not activate a profile, grant permissions or
+call a model. Actual consumption still requires the original reference/lease
+and current admission checks. The existing provisioning `bind` is unchanged.
