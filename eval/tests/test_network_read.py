@@ -6,12 +6,15 @@ import sys
 import tempfile
 import time
 import unittest
+import os
 
 import httpx
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
+os.environ.setdefault('CJ_ENV','local')
 import network_read as probe
 from failure import parse_audit
+from cj_api.run_display_projection import encode_response
 
 
 def snapshot():
@@ -27,7 +30,8 @@ class NetworkReadChecks(unittest.TestCase):
             calls.append(request)
             self.assertEqual((request.method,request.url.host,request.url.path),('GET','api-beta.go2china.space','/v1/run-display'))
             self.assertEqual(request.url.params['message_id'],probe.MESSAGE)
-            return httpx.Response(200,headers={'X-Request-ID':'r','Cache-Control':'no-store'},json=dict(request_id='r',snapshot=snapshot()))
+            body=encode_response(json.dumps(snapshot()).encode(),'r')
+            return httpx.Response(200,headers={'X-Request-ID':'r','Cache-Control':'no-store'},content=body)
         with tempfile.TemporaryDirectory() as folder,httpx.Client(transport=httpx.MockTransport(handle)) as client:
             result=probe.collect(client,Path(folder)/'out',dict(kind='synthetic_unit'))
             self.assertEqual(len(calls),6);self.assertEqual(result['outcomes'],dict(PASS=6,FAIL=0,UNKNOWN=0))
