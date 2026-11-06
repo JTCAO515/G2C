@@ -1,0 +1,155 @@
+"""One original worker, legacy and typed scopes; private PG/Fake, no cloud calls."""
+import json
+import sys
+from datetime import datetime,timezone
+from unittest.mock import patch
+import httpx
+from fastapi.testclient import TestClient
+from cj_agent.provider import FakeProvider
+from cj_api.local_app import LocalDatabase,create_local_app,scope_for,ISSUER
+from cj_memory.typed_local import TypedConfiguration
+from cj_memory.typed_runtime import TypedRuntimeConfiguration
+from cj_memory.typed_api import register_typed_routes
+from cj_memory.runtime import RuntimeDenied
+import local_history_pg as harness
+from registered_host_support import RegisteredHost
+sys.path.insert(0,str(harness.ROOT))
+from deploy.hk.configuration import Runtime
+import run_worker
+
+A='m4-synthetic-worker-a';B='m4-synthetic-worker-b'
+
+
+def exercise(auth,conninfo):
+    host=RegisteredHost(auth,conninfo,{s:(8,2,50000) for s in (A,B)})
+    path,context=host.profiles[A]
+    # Activation is private-harness-only; this test never changes cloud metadata.
+    harness.dev_auth.activate_travel(conninfo,B,context,'MESSAGE-TRAVEL-CONSUMER@1')
+    database=LocalDatabase(conninfo,run_context=context,travel_context=True)
+    app=create_local_app(conninfo_path=None,auth_dir=auth,database=database,run_context=context)
+    def headers(s):return {**host.headers[s],'Content-Type':'application/octet-stream'}
+    def expect(r):return harness.expect(r)
+    with TestClient(app) as api:
+        travels=[]
+        for i in range(2):
+            r=api.post('/v1/travel-context-actions',headers=headers(B),content=json.dumps(dict(
+                version='TRAVEL-context-action.1',action_id='worker-travel-'+str(i),operation='create',travel_context=None)).encode())
+            travels.append(expect(r)['receipt']['travel_context'])
+    profile=dict(subjects=['self'],slots={'preference':dict(kind='preference',collection_allowed=True,semantic_resolved=True)},
+                 extents=['long_term','current'],context_ids=[])
+    policy=dict(version='local-memory-typed.1',collection=dict(version='local-memory-policy.1',expires_at='2099-11-30T23:59:59+08:00',
+        profiles={B:profile}),travel_contexts={B:[t['id'] for t in travels]})
+    config=TypedRuntimeConfiguration.from_bytes(json.dumps(dict(version='local-memory-run.2',collection=policy,
+        selections={B:dict(subject='self',slots=['preference'],max_bytes=1000)})).encode())
+    runtime=Runtime(auth,context,path,[],subjects=frozenset((A,B)),memory_runtime=config)
+    assert runtime.memory_configuration_for_scope(scope_for(ISSUER,A)) is None
+    assert runtime.memory_configuration_for_scope(scope_for(ISSUER,B)) is config
+    assert runtime.memory_configuration_for_scope(scope_for(ISSUER,'uninvited')) is None
+    register_typed_routes(app,database=database,auth_dir=auth,configuration=TypedConfiguration.from_bytes(json.dumps(policy).encode()))
+    class Recorded(FakeProvider):
+        def __init__(self):super().__init__();self.inputs=[]
+        def stream(self,messages,system=None):
+            self.inputs.append(json.loads(json.dumps(messages)))
+            yield from super().stream(messages,system)
+    def send(api,tag,travel):
+        head=expect(api.put('/v1/conversations',params={'conversation_id':tag},headers=host.headers[B]))
+        raw=json.dumps(dict(version='MESSAGE-send.2',conversation_id=tag,message_id=tag,text='Synthetic original request '+tag,
+            trip_id=None,creation_intent='none',expected_generation=head['generation'],expected_sequence=0,
+            travel_context=None if travel is None else dict(id=travel['id'],expected_version=travel['version']),needs_reference=None)).encode()
+        original=expect(api.post('/v2/messages',content=raw,headers=headers(B)))
+        found=expect(api.get('/v2/message-send-status',params={'conversation_id':tag,'message_id':tag},headers=host.headers[B]))
+        assert found['receipt']==original['receipt'] and found['reference']==original['reference']
+        return original
+    with TestClient(app) as api:
+        for i,travel in enumerate((None,*travels)):
+            raw=json.dumps(dict(version='MEMORY-manual.2',operation_id='worker-save-'+str(i),item_id='worker-item-'+str(i),
+                subject='self',slot='preference',kind='preference',text=('LONG_ONLY','CURRENT_ONE_ONLY','CURRENT_TWO_ONLY')[i],
+                extent='long_term' if travel is None else 'current',occurred_at='date unknown',
+                context=None if travel is None else dict(kind='travel',id=travel['id'],expected_version=travel['version']))).encode()
+            expect(api.post('/v2/memories',content=raw,headers=headers(B)))
+        old=host.send(api,A,'worker-legacy','Synthetic old scope without Memory')
+        current=send(api,'worker-current-one',travels[0])
+        model=Recorded()
+        results=run_worker.run_once(database,model,auth,memory_configuration_for_scope=runtime.memory_configuration_for_scope)
+        assert {r.message_id:r.status for r in results}=={'worker-legacy':'completed','worker-current-one':'completed'},results
+        assert model.calls==2
+        plain,typed=['\n'.join(m['content'] for m in rows) for rows in model.inputs]
+        assert all(text not in plain for text in ('LONG_ONLY','CURRENT_ONE_ONLY','CURRENT_TWO_ONLY'))
+        assert 'CURRENT_ONE_ONLY' in typed and 'CURRENT_TWO_ONLY' not in typed and 'LONG_ONLY' not in typed
+        payload=json.loads(model.inputs[1][0]['content'].split('\n',1)[1])
+        assert payload['version']=='MEMORY-RUN-CONSUME@2'
+        assert payload['items'][0]['context']==dict(kind='travel',id=travels[0]['id'])
+        second=send(api,'worker-current-two',travels[1]);model=Recorded()
+        assert [r.status for r in run_worker.run_once(database,model,auth,memory_configuration_for_scope=runtime.memory_configuration_for_scope)]==['completed']
+        content='\n'.join(m['content'] for m in model.inputs[0])
+        assert 'CURRENT_TWO_ONLY' in content and 'CURRENT_ONE_ONLY' not in content and 'LONG_ONLY' not in content
+        none=send(api,'worker-no-travel',None);model=Recorded()
+        assert [r.status for r in run_worker.run_once(database,model,auth,memory_configuration_for_scope=runtime.memory_configuration_for_scope)]==['completed']
+        assert 'LONG_ONLY' in model.inputs[0][0]['content'] and 'CURRENT_ONE_ONLY' not in str(model.inputs)
+        # Existing Memory without its explicit resolver cannot fall back to plain.
+        pending=send(api,'worker-held',travels[0]);blocked=Recorded();before=host.ledger(B)
+        try:run_worker.run_once(database,blocked,auth)
+        except RuntimeDenied:pass
+        else:raise AssertionError('missing Memory configuration dispatched a plain model')
+        assert blocked.calls==0 and host.ledger(B)==before
+        try:run_worker.run_once(database,blocked,auth,memory_configuration=config,
+            memory_configuration_for_scope=runtime.memory_configuration_for_scope)
+        except ValueError:pass
+        else:raise AssertionError('mixed global and scope Memory configurations accepted')
+        assert blocked.calls==0 and host.ledger(B)==before
+        # The same original pending action executes once when explicitly configured.
+        assert [r.status for r in run_worker.run_once(database,blocked,auth,
+            memory_configuration_for_scope=runtime.memory_configuration_for_scope)]==['completed']
+        assert blocked.calls==1
+        assert run_worker.run_once(database,blocked,auth,memory_configuration_for_scope=runtime.memory_configuration_for_scope)==[]
+        assert blocked.calls==1
+        for original in (current,second,none,pending):
+            receipt=original['receipt']
+            display=expect(api.get('/v2/run-display',params={'message_id':receipt['message_id']},headers=host.headers[B]))['snapshot']
+            assert display['run_id']==receipt['run_id'] and display['text']
+        with database.connect(scope_for(ISSUER,A)) as c:
+            assert c.execute('SELECT count(*) FROM cj_memory_item').fetchone()==(0,)
+        with database.connect(scope_for(ISSUER,B)) as c:
+            assert c.execute('SELECT count(*) FROM cj_message_delivery WHERE NOT acknowledged').fetchone()==(0,)
+        assert old['run_id']==host.display(api,A,'worker-legacy')['run_id']
+        # The accepted real adapter stays on its original wrapper/registrations.
+        # HTTP fixtures prove the composition, not a live model/tool result.
+        from cj_agent.provider import DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL
+        from cj_api.real_services import RealServices,RealTools
+        from cj_usage.authorization_budget import AuthorizationBudget
+        from cj_place.gaode import Response
+        from cj_place.https_transport import TransportResult
+        from test_m4_real_services import turn_sse,KEY,NOW
+        budget=AuthorizationBudget(auth.parent/'fixture-only-authorization',clock=lambda:NOW)
+        calls=[];tools=[]
+        def response(request):
+            body=json.loads(request.content);calls.append(body)
+            content=json.dumps(body['messages'])
+            assert 'CURRENT_ONE_ONLY' in content and 'CURRENT_TWO_ONLY' not in content and 'LONG_ONLY' not in content
+            follow=any(m['role']=='tool' for m in body['messages'])
+            return httpx.Response(200,stream=httpx.ByteStream(turn_sse(tool=not follow).replace(
+                'chatcmpl-synthetic','chatcmpl-worker-'+str(len(calls))).encode()))
+        async def place(config,request,credentials,*,before_send=None,basic=False):
+            tools.append(request.request_ref)
+            raw=json.dumps(dict(status='1',info='OK',infocode='10000',count='1',pois=[dict(
+                id='SYNTH_ONLY',name='Synthetic fixture only',location='116.1,39.1')])).encode()
+            return TransportResult('received','fixture',Response(request.binding_digest,request.origin,request.path,200,raw,datetime.now(timezone.utc)))
+        native=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),budget,transport=httpx.MockTransport(response))
+        services=RealServices(native,KEY,frozenset((A,B)));registered=RealTools(services)
+        original=send(api,'worker-native-fixture',travels[0])
+        with patch('cj_api.real_services.fetch_candidate',place):
+            outcomes=run_worker.run_once(database,native,auth,tools_configuration=registered,real_services=services,
+                memory_configuration_for_scope=runtime.memory_configuration_for_scope)
+        assert [o.status for o in outcomes]==['completed'],outcomes
+        assert len(calls)==2 and len(tools)==1
+        assert [(r['kind'],r['state']) for r in budget.inspect()]==[('model','RECEIVED'),('place','RECEIVED'),('model','RECEIVED')]
+        display=expect(api.get('/v2/run-display',params={'message_id':'worker-native-fixture'},headers=host.headers[B]))['snapshot']
+        assert display['run_id']==original['receipt']['run_id'] and 'Needs verification.' in display['text']
+        assert run_worker.run_once(database,native,auth,tools_configuration=registered,real_services=services,
+            memory_configuration_for_scope=runtime.memory_configuration_for_scope)==[]
+        assert len(calls)==2 and len(tools)==1
+    print('PASS HK single worker/legacy and typed scopes/original signed MESSAGE2/owned travel lease/selected Memory/isolated input/held original resume/no duplicate calls; real providers UNRUN')
+
+
+if __name__=='__main__':
+    harness.exercise=exercise;harness.main()

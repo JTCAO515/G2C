@@ -198,6 +198,86 @@ def test_typed_policy_is_optional_and_api_file_only(tmp_path):
         with pytest.raises(ValueError):configuration.load_secret_environment('worker',root=tmp_path)
 
 
+def test_typed_run_policy_requires_original_worker_file_and_mandatory_keys(tmp_path):
+    name=configuration.MEMORY_RUN_POLICY
+    required={k:'synthetic-value' for k in configuration.SECRET_FILES['worker']['worker']}
+    path=tmp_path/'worker.env'
+    for values,accepted in ((required,True),({**required,name:'synthetic-policy'},True),
+                            ({name:'synthetic-policy'},False),({**required,configuration.TYPED_POLICY:'wrong-role'},False)):
+        path.write_text('\n'.join(k+'='+v for k,v in values.items())+'\n');path.chmod(0o600)
+        with patch.dict(os.environ):
+            for key in {*required,name,configuration.TYPED_POLICY}:os.environ.pop(key,None)
+            if accepted:
+                configuration.load_secret_environment('worker',root=tmp_path)
+                assert all(os.environ[k]==v for k,v in values.items())
+                with pytest.raises(ValueError,match='persistent_container_secret'):
+                    configuration.load_secret_environment('worker',root=tmp_path)
+            else:
+                with pytest.raises(ValueError):configuration.load_secret_environment('worker',root=tmp_path)
+                assert all(key not in os.environ for key in values)
+    api={k:'synthetic-value' for k in configuration.SECRET_FILES['api']['api']}
+    (tmp_path/'api.env').write_text('\n'.join(k+'='+v for k,v in {**api,name:'wrong-role'}.items())+'\n')
+    (tmp_path/'api.env').chmod(0o600)
+    with patch.dict(os.environ):
+        for key in {*api,name}:os.environ.pop(key,None)
+        with pytest.raises(ValueError):configuration.load_secret_environment('api',root=tmp_path)
+
+
+def test_worker_typed_runtime_invites_role_and_database_capability(tmp_path,monkeypatch):
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    from cj_api.local_app import scope_for,ISSUER
+    activate(monkeypatch)
+    who='m4-synthetic-worker-policy'
+    key=rsa.generate_private_key(public_exponent=65537,key_size=2048)
+    private=key.private_bytes(serialization.Encoding.PEM,serialization.PrivateFormat.PKCS8,serialization.NoEncryption())
+    public=key.public_key().public_bytes(serialization.Encoding.PEM,serialization.PublicFormat.SubjectPublicKeyInfo)
+    context=dict(version='CJ-LOCAL-RUN@2',history=[],current=dict(meter=dict(unit='provider_call',budget=20,
+        period_start=1,period_end=2000000000,max_steps=8,max_tools=1,max_output=5000,max_seconds=120),
+        output_limits=dict(model=2000,tool=2000,memory=1000)))
+    for k,v in dict(CJ_BETA_SUBJECTS_JSON=json.dumps([who]),CJ_BETA_RUN_CONTEXT_JSON=json.dumps(context),
+        CJ_BETA_SIGNING_PRIVATE_B64=base64.b64encode(private).decode(),CJ_BETA_SIGNING_PUBLIC_B64=base64.b64encode(public).decode(),
+        CJ_SUPABASE_RUNTIME_URI='synthetic-not-connected',CJ_SUPABASE_CA_FILE='synthetic-not-opened').items():monkeypatch.setenv(k,v)
+    monkeypatch.delenv(configuration.TYPED_POLICY,raising=False)
+    profile=dict(subjects=['self'],slots={'preference':dict(kind='preference',collection_allowed=True,semantic_resolved=True)},
+                 extents=['long_term','current'],context_ids=[])
+    collection=dict(version='local-memory-typed.1',collection=dict(version='local-memory-policy.1',
+        expires_at='2099-11-30T23:59:59+08:00',profiles={who:profile}),travel_contexts={who:[]})
+    policy=dict(version='local-memory-run.2',collection=collection,selections={who:dict(subject='self',slots=['preference'],max_bytes=1000)})
+    def choose(value):monkeypatch.setenv(configuration.MEMORY_RUN_POLICY,base64.b64encode(json.dumps(value).encode()).decode())
+    # A private, immediately unlinked descriptor keeps this test portable to Mac.
+    # The Linux runtime_check separately verifies native memfd -> signing token.
+    def descriptor(*args):
+        p=tmp_path/'unlinked-signing';fd=os.open(p,os.O_RDWR|os.O_CREAT|os.O_EXCL,0o600);p.unlink();return fd
+    monkeypatch.setattr(configuration.os,'memfd_create',descriptor,raising=False)
+    choose(policy)
+    with pytest.raises(ValueError,match='worker_only'):configuration.Runtime.load(tmp_path/'wrong-api')
+    runtime=configuration.Runtime.load(tmp_path/'valid',worker=True)
+    try:
+        assert runtime.typed_memory is None
+        assert runtime.memory_configuration_for_scope(scope_for(ISSUER,who)) is runtime.memory_runtime
+        assert runtime.memory_configuration_for_scope(scope_for(ISSUER,'m4-synthetic-other')) is None
+        with patch.object(configuration,'SupabaseTestDatabase') as database:
+            runtime.database();assert database.call_args.kwargs['travel_context'] is True
+    finally:runtime.close()
+    bad=json.loads(json.dumps(policy));bad['collection']['collection']['profiles']['m4-synthetic-unselected']=profile
+    bad['collection']['travel_contexts']['m4-synthetic-unselected']=[];choose(bad)
+    with pytest.raises(ValueError,match='explicit_memory_run_selection'):configuration.Runtime.load(tmp_path/'unselected',worker=True)
+    bad=json.loads(json.dumps(policy));bad['selections']['m4-synthetic-foreign']=bad['selections'].pop(who)
+    bad['collection']['collection']['profiles']={'m4-synthetic-foreign':profile};bad['collection']['travel_contexts']={'m4-synthetic-foreign':[]};choose(bad)
+    with pytest.raises(ValueError,match='explicit_memory_run_selection'):configuration.Runtime.load(tmp_path/'foreign',worker=True)
+    choose(dict(policy,version='UNKNOWN'))
+    with pytest.raises(ValueError):configuration.Runtime.load(tmp_path/'unknown',worker=True)
+    choose(policy);monkeypatch.setenv(configuration.TYPED_POLICY,base64.b64encode(json.dumps(collection).encode()).decode())
+    with pytest.raises(ValueError,match='API_only'):configuration.Runtime.load(tmp_path/'mixed',worker=True)
+    monkeypatch.delenv(configuration.MEMORY_RUN_POLICY);monkeypatch.delenv(configuration.TYPED_POLICY)
+    runtime=configuration.Runtime.load(tmp_path/'default',worker=True)
+    try:
+        assert runtime.memory_runtime is None and runtime.memory_configuration_for_scope(scope_for(ISSUER,who)) is None
+        with patch.object(configuration,'SupabaseTestDatabase') as database:
+            runtime.database();assert database.call_args.kwargs['travel_context'] is False
+    finally:runtime.close()
+
+
 def test_trial_expiry_at_final_model_and_fact_guard_sends_nothing(tmp_path,monkeypatch):
     import asyncio
     import httpx

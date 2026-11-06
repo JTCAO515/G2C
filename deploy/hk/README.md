@@ -132,6 +132,23 @@ policy 覆盖的主体在 canonical MESSAGE resolver 建行/入队前保持不�
 真实 withdraw/stop-use/物理清理如超出旧授权演练范围，仍先按 #495 取得具体授权。
 实际已验范围与尚未运行的 worker/正式 Trip/真实用户部分记录在 #586/#30，不能据配置或私有 PG 提升。
 
+## 可选的 typed Memory worker 准备
+
+worker 的原 `worker.env`（UID10001、0600）可单独配置
+`CJ_BETA_MEMORY_RUN_POLICY_B64`，内容是 C 既有 `local-memory-run.2` JSON 的 Base64。
+其中 `collection` 是上述 `local-memory-typed.1`，`selections` 对每个明确配置的邀请主体
+指定 `subject`、`slots`、`max_bytes`；collection 与 selection 主体集合必须相等。
+该字段只进 worker 文件，API 私有 policy 字段只进 API 文件；错误角色、未知格式或超出邀请名单均拒绝启动。
+
+同一个 worker 按原邀请 scope 选择配置，经原 `TypedRuntimeMemory`、MESSAGE reference/lease、
+RUN、Meter 与真实出口执行。未选择的主体仍用原路径；已有 Memory 却无配置仍拒绝，
+不能用缺省配置绕过。全局、按 scope 及正式 Memory 配置不得混用。
+内存选择的 `max_bytes` 也须满足原 RUN context 的 memory/output 限额，配置不会扩大额度。
+
+这只准备 worker 配置入口，不改变云端 MESSAGE/travel profile，也不解除 API-only 主体的消息门禁。
+实际激活前须核对原主体、原 Travel/版本和执行身份，按 #495 处理授权范围外的操作；
+真实模型续答、回执与质量仍分别在 #30/#32 验证。移除 worker 配置不能恢复已有 Memory 主体的旧派发。
+
 ## 验证
 
 ```sh
