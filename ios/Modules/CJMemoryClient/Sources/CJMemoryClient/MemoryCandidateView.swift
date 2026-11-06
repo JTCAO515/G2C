@@ -246,13 +246,26 @@ private struct MemoryCandidateEditor: View {
                 Button(language.text("Done", "完成")) { field = nil }
                     .accessibilityIdentifier("memoryCandidate.editor.done")
             } }
+            .onAppear {
+                // A visible reconstruction may resume only this still-current
+                // captured entry. The model's authority check remains decisive.
+                active = model.canReview(entry: entry)
+            }
             .onDisappear {
                 active = false; travelTask?.cancel(); travelTask = nil
                 travel?.invalidate(); capturedTravel = nil
             }
         }
     }
-    private var canSubmit: Bool { active && !readingTravel && model.canReview(entry: entry) }
+    private var canSubmit: Bool {
+        let current = model.canReview(entry: entry)
+        #if DEBUG && os(iOS) && G2C_M4_DEVICE_ACCEPTANCE
+        if !active || readingTravel || !current {
+            print("M4_CANDIDATE_REVIEW_AVAILABILITY", "active", active, "reading", readingTravel, "current", current)
+        }
+        #endif
+        return active && !readingTravel && current
+    }
     private var reviewTravel: MemoryTravelSelection? {
         guard let original = entry.candidate.travel, let travel, let capturedTravel else { return nil }
         do {
