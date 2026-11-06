@@ -26,12 +26,15 @@ public struct MessageEndpoint: Sendable {
         let loopback = url.scheme == "http" && url.host == "127.0.0.1" && url.port != nil
         #endif
         let deviceLocal: Bool
+        let beta: Bool
         #if DEBUG && G2C_M4_DEVICE_ACCEPTANCE
         deviceLocal = Self.isM4LocalHTTPS(url, approvedHost: ProcessInfo.processInfo.environment["G2C_M4_LOCAL_HOST"])
+        beta = Self.isM4BetaHTTPS(url, environment: ProcessInfo.processInfo.environment)
         #else
         deviceLocal = false
+        beta = false
         #endif
-        let local = allowLoopbackHTTP && (loopback || deviceLocal)
+        let local = allowLoopbackHTTP && (loopback || deviceLocal || beta)
         guard url.scheme == "https" || local, url.host != nil, url.user == nil, url.password == nil,
               url.query == nil, url.fragment == nil, ["", "/"].contains(url.path), maximumRequestBytes > 0, maximumResponseBytes > 0 else {
             throw MessageHTTPFailure.invalidConfiguration
@@ -51,6 +54,16 @@ public struct MessageEndpoint: Sendable {
               zip(fields, bytes).allSatisfy({ String($0.1) == $0.0 }) else { return false }
         return bytes[0] == 10 || (bytes[0] == 172 && (16...31).contains(bytes[1]))
             || (bytes[0] == 192 && bytes[1] == 168) || (bytes[0] == 169 && bytes[1] == 254)
+    }
+
+    /// The one M4 test service published READY in #30. Uses system TLS trust;
+    /// this classification never grants a route, session or Production access.
+    static func isM4BetaHTTPS(_ url: URL, environment: [String: String]) -> Bool {
+        environment["G2C_M4_BETA_API"] == "1" && environment["G2C_M4_LOCAL_HOST"] == nil
+            && url.scheme == "https" && url.host == "api-beta.go2china.space"
+            && (url.port == nil || url.port == 443)
+            && url.user == nil && url.password == nil && url.query == nil && url.fragment == nil
+            && ["", "/"].contains(url.path)
     }
 }
 

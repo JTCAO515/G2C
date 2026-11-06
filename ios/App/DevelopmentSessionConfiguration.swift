@@ -268,10 +268,11 @@ struct DevelopmentSessionConfiguration: CustomStringConvertible, CustomReflectab
     var customMirror: Mirror { Mirror(self, children: [:]) }
 
     #if DEBUG
-    static func restoring(endpoint: URL, token: String, proposalID: String?, approvedLocalHost: String?) -> Self? {
+    static func restoring(endpoint: URL, token: String, proposalID: String?, approvedLocalHost: String?, approvedBetaAPI: Bool = false) -> Self? {
         var environment=["G2C_DEV_API_BASE_URL":endpoint.absoluteString,"G2C_DEV_TOKEN":token]
         if let proposalID { environment["G2C_DEV_PROPOSAL_ID"]=proposalID }
         if let approvedLocalHost { environment["G2C_M4_LOCAL_HOST"]=approvedLocalHost }
+        if approvedBetaAPI { environment["G2C_M4_BETA_API"]="1" }
         return read(environment)
     }
     let endpoint: URL
@@ -285,8 +286,19 @@ struct DevelopmentSessionConfiguration: CustomStringConvertible, CustomReflectab
     static func readEndpoint(_ environment: [String: String], key: String = "G2C_DEV_API_BASE_URL") -> URL? {
         guard let rawURL = environment[key],
               var url = URLComponents(string: rawURL),
-              let port = url.port, (1...65535).contains(port), url.user == nil, url.password == nil,
+              url.user == nil, url.password == nil,
               url.query == nil, url.fragment == nil, ["", "/"].contains(url.path) else { return nil }
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        if environment["G2C_M4_BETA_API"] != nil {
+            guard environment["G2C_M4_BETA_API"] == "1",
+                  environment["G2C_M4_LOCAL_HOST"] == nil,
+                  url.scheme == "https", url.host == "api-beta.go2china.space",
+                  url.port == nil || url.port == 443 else { return nil }
+            url.path = ""; url.port = nil
+            return url.url
+        }
+        #endif
+        guard let port = url.port, (1...65535).contains(port) else { return nil }
         let approved: Bool
         #if G2C_M4_DEVICE_ACCEPTANCE
         approved = isM4LocalHost(url.host, environment: environment)

@@ -892,6 +892,7 @@ import Observation
     private let shell: ShellState
     private let endpoint: URL
     private let approvedLocalHost: String?
+    private let approvedBetaAPI: Bool
     private let proposalID: String?
     private let tokens: [String: String]
     private let persistence: KeychainSessionStore
@@ -943,6 +944,7 @@ import Observation
         cleanupVersion = cleanupProfile == "device-v4" ? .v4 : .v3
         self.shell = shell; self.endpoint = endpoint; self.tokens = tokens
         approvedLocalHost = environment["G2C_M4_LOCAL_HOST"] // Already matched by readEndpoint above.
+        approvedBetaAPI = environment["G2C_M4_BETA_API"] == "1" // Same immutable, validated endpoint choice.
         proposalID = environment["G2C_DEV_PROPOSAL_ID"]
         let scope = try KeychainSessionScope(namespace: SessionNamespace(
             environment: DevelopmentSessionConfiguration.environmentNamespace(endpoint), slot: "M1.Development.Active"),
@@ -1059,7 +1061,7 @@ import Observation
         material.withBytes { bytes in
             guard let token = String(data: bytes, encoding: .utf8) else { return nil }
             return DevelopmentSessionConfiguration.restoring(endpoint:endpoint,token:token,
-                proposalID:proposalID,approvedLocalHost:approvedLocalHost)
+                proposalID:proposalID,approvedLocalHost:approvedLocalHost,approvedBetaAPI:approvedBetaAPI)
         }
     }
 

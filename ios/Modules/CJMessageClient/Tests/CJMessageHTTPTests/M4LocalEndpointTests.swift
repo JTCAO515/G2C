@@ -3,6 +3,32 @@ import Testing
 @testable import CJMessageHTTP
 
 struct M4LocalEndpointTests {
+    @Test func betaOriginIsExactAndNeverBorrowsLocalTrust() throws {
+        let enabled=["G2C_M4_BETA_API":"1"]
+        for raw in ["https://api-beta.go2china.space", "https://api-beta.go2china.space:443/"] {
+            let url=try #require(URL(string:raw))
+            #expect(MessageEndpoint.isM4BetaHTTPS(url,environment:enabled))
+            #expect(!MessageEndpoint.isM4BetaHTTPS(url,environment:[:]))
+            #expect(!MessageEndpoint.isM4BetaHTTPS(url,environment:["G2C_M4_BETA_API":"true"]))
+            #expect(!MessageEndpoint.isM4BetaHTTPS(url,environment:enabled.merging(["G2C_M4_LOCAL_HOST":"192.168.1.2"]){_,new in new}))
+            #expect(!MessageEndpoint.isM4LocalHTTPS(url,approvedHost:"api-beta.go2china.space"))
+        }
+        for raw in ["http://api-beta.go2china.space", "https://api-beta.go2china.space:444", "https://api-beta.go2china.space.evil.invalid", "https://go2china.space", "https://47.83.147.176", "https://api-beta.go2china.space/v1", "https://user@api-beta.go2china.space", "https://api-beta.go2china.space?x=1", "https://api-beta.go2china.space#x"] {
+            #expect(!MessageEndpoint.isM4BetaHTTPS(try #require(URL(string:raw)),environment:enabled))
+        }
+    }
+
+    @Test func betaActivationStillRequiresTheBuildFlagAndCallerCapability() throws {
+        let url=URL(string:"https://api-beta.go2china.space")!
+        let endpoint=try MessageEndpoint(url:url,maximumRequestBytes:128,maximumResponseBytes:128,allowLoopbackHTTP:true)
+        #if DEBUG && G2C_M4_DEVICE_ACCEPTANCE
+        let enabled=ProcessInfo.processInfo.environment["G2C_M4_BETA_API"] == "1" && ProcessInfo.processInfo.environment["G2C_M4_LOCAL_HOST"] == nil
+        #expect(endpoint.allowsDevelopmentActivation==enabled)
+        #else
+        #expect(!endpoint.allowsDevelopmentActivation)
+        #endif
+        #expect(try !MessageEndpoint(url:url,maximumRequestBytes:128,maximumResponseBytes:128).allowsDevelopmentActivation)
+    }
     @Test func deviceConfigurationCannotActivatePhoneLoopback() throws {
         let url = URL(string:"http://127.0.0.1:18080")!
         #if os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
