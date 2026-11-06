@@ -7,8 +7,8 @@
   <meta name="description" content="G2C is a personal travel agent for visitors to China. CJ Agent answers, plans and gets things done; JT Agent brings in a real person when it matters; your personal details are redacted before any model sees them.">
   <meta name="theme-color" content="#FBF6EE">
   <link rel="canonical" href="https://go2china.space/">
-  <link rel="icon" type="image/png" href="assets/favicon.png">
-  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="assets/g2c-logo.png">
+  <link rel="apple-touch-icon" href="assets/g2c-logo.png">
   <meta property="og:type" content="website">
   <meta property="og:title" content="go2china.space — Your personal agent for China">
   <meta property="og:description" content="Answers, plans and gets things done — with a real person behind it when it matters, and your details redacted by default.">
@@ -23,12 +23,16 @@
 <body>
   <header class="nav" id="top">
     <a class="brand" href="#top" aria-label="go2china.space home">
-      <img src="assets/logo.webp" width="44" height="44" alt="G2C logo">
+      <img src="assets/g2c-logo.png" width="44" height="44" alt="G2C logo">
       <span>go2china<em>.space</em></span>
     </a>
     <div class="nav-actions">
-      <button class="lang" type="button" id="lang-toggle" aria-label="Switch language">中文</button>
-      <a class="btn btn-small" href="#waitlist" data-open-waitlist data-i18n="cta">Join Waitlist</a>
+      <select class="lang" id="lang-select" aria-label="Language / 语言">
+        <option value="en">English</option><option value="zh">简体中文</option>
+        <option value="ru">Русский</option><option value="es">Español</option>
+        <option value="ar">العربية</option><option value="fr">Français</option>
+      </select>
+      <a class="btn btn-small" href="https://form.jotform.com/263094082842055" data-i18n="cta">Apply Early Access</a>
     </div>
   </header>
 
@@ -36,9 +40,9 @@
     <section class="hero">
       <div class="hero-copy">
         <h1 data-i18n-html="heroTitle">A personal agent for <i>every day</i> in China.</h1>
-        <p class="lede" data-i18n="heroLede">CJ Agent answers, plans and gets things done. JT Agent quietly brings in a real person when it matters. And your personal details are redacted before any model sees them.</p>
+        <p class="lede" data-i18n="heroLede">CJ Agent helps with travel questions, daily plans and bookings. JT Agent brings in a person for problems that need a call or a local check. Your personal details are redacted before any model sees them.</p>
         <div class="hero-cta">
-          <a class="btn" href="#waitlist" data-open-waitlist data-i18n="cta">Join Waitlist</a>
+          <a class="btn" href="https://form.jotform.com/263094082842055" data-i18n="cta">Apply Early Access</a>
           <span class="soon"><span class="dot"></span><span data-i18n="soon">Coming soon on iPhone · English &amp; 中文</span></span>
         </div>
       </div>
@@ -48,7 +52,7 @@
         <div class="phone" role="img" aria-label="Animated preview of a conversation with CJ Agent">
           <div class="phone-notch"></div>
           <div class="chat-head">
-            <img src="assets/logo.webp" width="34" height="34" alt="">
+            <img src="assets/g2c-logo.png" width="34" height="34" alt="">
             <div>
               <strong>CJ Agent</strong>
               <span><i class="live"></i><span data-i18n="online">Your personal agent</span></span>
@@ -71,20 +75,20 @@
         <article class="agent agent-cj">
           <div class="agent-top">
             <span class="badge badge-red">CJ Agent</span>
-            <p class="agent-tag" data-i18n="cjTag">Talks with you. Thinks ahead. Takes action.</p>
+            <p class="agent-tag" data-i18n="cjTag">Answers questions. Plans your days. Helps you act.</p>
           </div>
           <ul class="verbs">
             <li>
               <h3 data-i18n="cjA">Answers</h3>
-              <p data-i18n="cjAText">Payments, transit, tickets, food — clear answers in plain English, with sources you can check.</p>
+              <p data-i18n="cjAText">How to pay, catch a train or book a ticket — practical answers with sources you can check.</p>
             </li>
             <li>
               <h3 data-i18n="cjP">Plans</h3>
-              <p data-i18n="cjPText">Day-by-day itineraries shaped by what it remembers about you, and kept safe once you confirm them.</p>
+              <p data-i18n="cjPText">Build a daily plan around your interests, budget and pace. Keep confirmed arrangements safe as the trip changes.</p>
             </li>
             <li>
               <h3 data-i18n="cjE">Acts</h3>
-              <p data-i18n="cjEText">Turns the plan into done — and anything that spends money or changes your trip waits for your OK.</p>
+              <p data-i18n="cjEText">Help with bookings and follow-up. Anything that spends money or changes your itinerary waits for your OK.</p>
             </li>
           </ul>
         </article>
@@ -92,13 +96,13 @@
         <article class="agent agent-jt">
           <div class="agent-top">
             <span class="badge badge-gold">JT Agent</span>
-            <p class="agent-tag" data-i18n="jtTag">Watches your back, and brings in a real person when AI isn't enough.</p>
+            <p class="agent-tag" data-i18n="jtTag">A person steps in when the trip needs more than an answer.</p>
           </div>
           <ol class="flow">
-            <li><span class="pulse"></span><p data-i18n="jt1">Spots what needs attention — a changed flight, a hotel that can't find you, a question going in circles.</p></li>
-            <li><span class="pulse"></span><p data-i18n="jt2">Opens a private case with only the details that step needs.</p></li>
-            <li><span class="pulse"></span><p data-i18n="jt3">A teammate verifies, calls, confirms — no queue, no “please hold”.</p></li>
-            <li><span class="pulse"></span><p data-i18n="jt4">You simply get the result, back in your chat.</p></li>
+            <li><span class="pulse"></span><p data-i18n="jt1">Flags a changed flight, a missing hotel booking or an unresolved question.</p></li>
+            <li><span class="pulse"></span><p data-i18n="jt2">Creates a private case with only the information needed to resolve it.</p></li>
+            <li><span class="pulse"></span><p data-i18n="jt3">A teammate checks the details and contacts the hotel, venue or other provider.</p></li>
+            <li><span class="pulse"></span><p data-i18n="jt4">The outcome and next step come back to your chat.</p></li>
           </ol>
         </article>
       </div>
@@ -146,72 +150,26 @@
       <div class="app-copy">
         <h2 class="section-title" data-i18n-html="appTitle">G2C for iPhone, <i>landing soon.</i></h2>
         <p data-i18n="appLede">We're opening the first spots to invited travelers. Leave your email and we'll let you know when it's your turn.</p>
-        <a class="btn btn-big" href="#waitlist" data-open-waitlist data-i18n="cta">Join Waitlist</a>
+        <a class="btn btn-big" href="https://form.jotform.com/263094082842055" data-i18n="cta">Apply Early Access</a>
       </div>
     </section>
   </main>
 
   <footer class="footer">
     <div class="foot-brand">
-      <img src="assets/logo.webp" width="56" height="56" alt="G2C logo" loading="lazy">
+      <img src="assets/g2c-logo.png" width="56" height="56" alt="G2C logo" loading="lazy">
       <div>
         <strong>go2china.space</strong>
         <span data-i18n="footTag">Your personal agent for China.</span>
       </div>
     </div>
     <address class="foot-info">
-      <span>广州创竞科技有限公司</span>
-      <span class="en-name">Guangzhou Chuangjing Technology Co., Ltd</span>
-      <span>广州市天河区黄埔大道100号富力盈泰广场A座410室</span>
-      <span class="en-name">Room 410, Tower A, R&amp;F Yingtai Plaza, No. 100 Huangpu Avenue, Tianhe District, Guangzhou, China</span>
+      <span data-i18n="companyName">Guangzhou Chuangjing Technology Co., Ltd</span>
+      <span data-i18n="companyAddress">Room 410, Tower A, R&amp;F Yingtai Plaza, No. 100 Huangpu Avenue, Tianhe District, Guangzhou, China</span>
       <a href="mailto:hello@go2china.space">hello@go2china.space</a>
     </address>
-    <p class="copy">© <span id="year">2026</span> Guangzhou Chuangjing Technology Co., Ltd · 广州创竞科技有限公司</p>
+    <p class="copy">© <span id="year">2026</span> <span data-i18n="companyName">Guangzhou Chuangjing Technology Co., Ltd</span></p>
   </footer>
-
-  <dialog class="modal" id="waitlist-modal" aria-labelledby="wl-title">
-    <form class="wl" id="waitlist-form" novalidate>
-      <button class="close" type="button" id="wl-close" aria-label="Close">×</button>
-      <div class="wl-head">
-        <img src="assets/logo.webp" width="56" height="56" alt="">
-        <div>
-          <h2 id="wl-title" data-i18n="wlTitle">Join the waitlist</h2>
-          <p data-i18n="wlLede">A few quick questions so we can shape G2C around your trip.</p>
-        </div>
-      </div>
-
-      <div class="grid2">
-        <label class="f"><span data-i18n="fName">Name</span>
-          <input name="name" type="text" autocomplete="name" required maxlength="80" data-i18n-ph="fNamePh" placeholder="Your name"></label>
-        <label class="f"><span data-i18n="fEmail">Email</span>
-          <input name="email" type="email" autocomplete="email" required maxlength="120" placeholder="you@example.com"></label>
-      </div>
-      <div class="grid2">
-        <label class="f"><span data-i18n="fCountry">Where are you from?</span>
-          <input name="country" type="text" autocomplete="country-name" maxlength="60" data-i18n-ph="fCountryPh" placeholder="Country or region"></label>
-        <label class="f"><span data-i18n="fSource">How did you hear about us?</span>
-          <select name="source" required id="f-source"></select></label>
-      </div>
-
-      <fieldset class="f"><legend data-i18n="fWhen">When are you planning to visit China?</legend>
-        <div class="opts" data-name="travel_time" data-type="radio" data-key="optWhen"></div></fieldset>
-      <fieldset class="f"><legend data-i18n="fWho">Who are you traveling with?</legend>
-        <div class="opts" data-name="travel_party" data-type="radio" data-key="optWho"></div></fieldset>
-      <fieldset class="f"><legend data-i18n="fCities">Where would you like to go?</legend>
-        <div class="opts" data-name="destinations" data-type="checkbox" data-key="optCities"></div></fieldset>
-      <fieldset class="f"><legend data-i18n="fHelp">What would help you most?</legend>
-        <div class="opts" data-name="needs" data-type="checkbox" data-key="optHelp"></div></fieldset>
-
-      <label class="f"><span data-i18n="fNote">Anything else we should know? (optional)</span>
-        <textarea name="note" rows="2" maxlength="600"></textarea></label>
-
-      <input class="hp" type="text" name="_honey" tabindex="-1" autocomplete="off" aria-hidden="true">
-      <div class="wl-foot">
-        <button class="btn" type="submit" id="wl-submit" data-i18n="cta">Join Waitlist</button>
-        <p class="form-note" id="form-note" role="status" aria-live="polite"></p>
-      </div>
-    </form>
-  </dialog>
 
   <script src="app.js" defer></script>
 </body>
