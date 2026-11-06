@@ -59,6 +59,9 @@ import CryptoKit
         continueAfterFailure=false;defer {app?.terminate()}
         try await device.stageAccounts(caseID:"beta-readonly-05")
         launch(language:"en",injecting:true);signIn("A");try originalAnswer()
+        try await restoreChineseAndCheckOwner()
+    }
+    private func restoreChineseAndCheckOwner() async throws {
         launch(language:"zh-Hans",injecting:false);tap("account.development.restore")
         device.waitForAppNetworkConsent();device.requireAccount("m4-synthetic-beta-a",in:app)
         try originalAnswer()
@@ -73,6 +76,14 @@ import CryptoKit
         try app.performAccessibilityAudit(for:.all)
         tap("assistant.panel.done");tab(["Memory","记忆"]);tap("memory.account");tap("account.development.signout")
         XCTAssertFalse(app.staticTexts["account.development.status"].label.contains("m4-synthetic-beta-"))
+    }
+    func testChineseRecoveryAndOwnerIsolation() async throws {
+        continueAfterFailure=false;defer {app?.terminate()}
+        try await device.stageAccounts(caseID:"beta-readonly-05")
+        launch(language:"en",injecting:true);signIn("A")
+        // English answer/AX evidence is already valid; establish fresh material
+        // then execute only the missing Chinese restore and owner-isolation path.
+        try await restoreChineseAndCheckOwner()
     }
     func testOriginalEnglishDiagnostic() async throws {
         continueAfterFailure=false;defer {app?.terminate()}

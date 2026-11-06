@@ -25,6 +25,7 @@ BUNDLE='space.go2china.beta.acceptance'
 CASE='beta-readonly-05'
 TEST='DevelopmentBetaUITests/testExistingAnswerRestoreAndOwnerIsolation'
 ENGLISH_DIAGNOSTIC='DevelopmentBetaUITests/testOriginalEnglishDiagnostic'
+CHINESE_RECOVERY='DevelopmentBetaUITests/testChineseRecoveryAndOwnerIsolation'
 
 
 def product_hashes(build):
@@ -57,14 +58,14 @@ def main():
     modes.add_argument('--prepare-only',action='store_true');modes.add_argument('--prepared',type=Path)
     p.add_argument('--local-tls',type=Path);p.add_argument('--build-dir',type=Path);p.add_argument('--work-dir',type=Path)
     p.add_argument('--accounts-file',type=Path)
-    p.add_argument('--case',choices=['full','english-diagnostic'])
+    p.add_argument('--case',choices=['full','english-diagnostic','chinese-recovery'])
     a=p.parse_args();os.umask(0o077)
     if subprocess.check_output(['git','status','--porcelain'],cwd=ROOT):raise ValueError('Commit candidate before preparing or executing')
     head=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
     output=a.output.resolve()
     if output.is_relative_to(ROOT):raise ValueError('External evidence output required')
     output.mkdir(mode=0o700)
-    selected=ENGLISH_DIAGNOSTIC if a.case=='english-diagnostic' else TEST
+    selected={'full':TEST,'english-diagnostic':ENGLISH_DIAGNOSTIC,'chinese-recovery':CHINESE_RECOVERY}[a.case or 'full']
     report=dict(status='RUNNING',head=head,layer='authorized physical iPhone / actual beta service; synthetic existing records',
         cases={selected:'UNRUN'},raw_native_bundle_shareable=False,build_inputs_shareable=False,
         unrun=['new messages/providers','Needs/Trip/typed Memory/cleanup cloud profiles','target-network quality','TestFlight'])
