@@ -24,6 +24,7 @@ from m4_native import DeviceNative, authenticated_control
 BUNDLE='space.go2china.beta.acceptance'
 CASE='beta-readonly-05'
 TEST='DevelopmentBetaUITests/testExistingAnswerRestoreAndOwnerIsolation'
+ENGLISH_DIAGNOSTIC='DevelopmentBetaUITests/testOriginalEnglishDiagnostic'
 
 
 def product_hashes(build):
@@ -56,14 +57,16 @@ def main():
     modes.add_argument('--prepare-only',action='store_true');modes.add_argument('--prepared',type=Path)
     p.add_argument('--local-tls',type=Path);p.add_argument('--build-dir',type=Path);p.add_argument('--work-dir',type=Path)
     p.add_argument('--accounts-file',type=Path)
+    p.add_argument('--case',choices=['full','english-diagnostic'])
     a=p.parse_args();os.umask(0o077)
     if subprocess.check_output(['git','status','--porcelain'],cwd=ROOT):raise ValueError('Commit candidate before preparing or executing')
     head=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
     output=a.output.resolve()
     if output.is_relative_to(ROOT):raise ValueError('External evidence output required')
     output.mkdir(mode=0o700)
+    selected=ENGLISH_DIAGNOSTIC if a.case=='english-diagnostic' else TEST
     report=dict(status='RUNNING',head=head,layer='authorized physical iPhone / actual beta service; synthetic existing records',
-        cases={TEST:'UNRUN'},raw_native_bundle_shareable=False,build_inputs_shareable=False,
+        cases={selected:'UNRUN'},raw_native_bundle_shareable=False,build_inputs_shareable=False,
         unrun=['new messages/providers','Needs/Trip/typed Memory/cleanup cloud profiles','target-network quality','TestFlight'])
     def save():(output/'report.json').write_text(json.dumps(report,indent=2))
     save();native=None;server=None;thread=None;accounts={}
@@ -85,12 +88,14 @@ def main():
             (work/'G2CControl.swift').write_text(source.replace('__FIXTURE_URL__',endpoint))
             project=work/'G2CAcceptance.xcodeproj'
             _,config,_=configure_project(project,tls,endpoint,control_token,bundle=BUNDLE,app_local_tls=False)
-            meta=dict(head=head,device=a.device,work=str(work),build=str(build),tls=str(a.local_tls.resolve()),
+            meta=dict(head=head,device=a.device,test=selected,work=str(work),build=str(build),tls=str(a.local_tls.resolve()),
                 endpoint=endpoint,certificate_sha256=hashlib.sha256(tls.public_der).hexdigest())
         else:
             if not a.accounts_file or a.local_tls or a.build_dir or a.work_dir:p.error('Execution needs --prepared private metadata and --accounts-file only')
             meta=json.loads(a.prepared.read_text());work=Path(meta['work']);build=Path(meta['build'])
             if meta['head']!=head or meta['device']!=a.device:raise ValueError('Prepared head/device differs')
+            if a.case is not None and meta['test']!=selected:raise ValueError('Prepared selected method differs')
+            selected=meta['test'];report['cases']={selected:'UNRUN'}
             if product_hashes(build)!=meta['products']:raise ValueError('Prepared signed products changed')
             if project_hashes(work)!=meta['project_inputs']:raise ValueError('Prepared project/control inputs changed')
             tls=LocalTLS.load(Path(meta['tls']))
@@ -103,7 +108,7 @@ def main():
         env={k:v for k,v in os.environ.items() if not k.startswith(('G2C_DEV_','G2C_M4_','SIMCTL_CHILD_','PG','LIBPQ','CJ_LOCAL_'))}
         env['OS_ACTIVITY_MODE']='disable'
         if a.prepare_only:
-            native.build_for_testing('Debug',[TEST],env)
+            native.build_for_testing('Debug',[selected],env)
             app=build/'Build/Products/Debug-iphoneos/CJProbeApp.app'
             if (app/'G2CM4LocalServer.cer').exists() or plistlib.loads((app/'Info.plist').read_bytes()).get('NSAppTransportSecurity'):
                 raise ValueError('Public beta App must not contain local TLS/ATS configuration')
@@ -119,8 +124,8 @@ def main():
             if origin.scheme!='https' or origin.hostname!=tls.host or not origin.port:raise ValueError('Invalid prepared control origin')
             server=ThreadingHTTPServer((tls.host,origin.port),handler);tls.secure_http_server(server)
             thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
-            native.run('Debug',[TEST],env);native.scan('Debug')
-            report.update(status='PARTIAL_PASS',cases={TEST:'PASS'},token_key_scan='PASS',
+            native.run('Debug',[selected],env);native.scan('Debug')
+            report.update(status='PARTIAL_PASS',cases={selected:'PASS'},token_key_scan='PASS',
                 provider_accounting='UNKNOWN: read-only UI scenario; server accounting requires separate evidence',
                 operator_account_file_cleanup='Mac handoff source remains owner-managed; App one-use input checked separately')
         if subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()!=head:raise ValueError('Candidate changed during acceptance')

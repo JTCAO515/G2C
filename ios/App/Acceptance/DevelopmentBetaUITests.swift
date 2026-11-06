@@ -26,6 +26,9 @@ import CryptoKit
         app.launchArguments=["-cj.ui.language.v1",language]
         app.launchEnvironment=["OS_ACTIVITY_MODE":"disable","G2C_DEV_ACCOUNT_MODE":"1",
             "G2C_DEV_API_BASE_URL":"https://api-beta.go2china.space","G2C_M4_BETA_API":"1","G2C_DEV_ACCOUNTS":"{}"]
+        let diagnostic=UUID().uuidString
+        app.launchEnvironment["G2C_M4_BETA_DIAGNOSTIC_ID"]=diagnostic
+        print("M4_BETA_DIAGNOSTIC_ID",diagnostic)
         if injecting {app.launchEnvironment["G2C_M4_ACCOUNTS_FILE"]="G2CM4DeviceAccounts.json"}
         app.launch();XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout:20))
         tab(["Memory","记忆"]);tap("memory.account")
@@ -70,5 +73,10 @@ import CryptoKit
         try app.performAccessibilityAudit(for:.all)
         tap("assistant.panel.done");tab(["Memory","记忆"]);tap("memory.account");tap("account.development.signout")
         XCTAssertFalse(app.staticTexts["account.development.status"].label.contains("m4-synthetic-beta-"))
+    }
+    func testOriginalEnglishDiagnostic() async throws {
+        continueAfterFailure=false;defer {app?.terminate()}
+        try await device.stageAccounts(caseID:"beta-readonly-05")
+        launch(language:"en",injecting:true);signIn("A");try originalAnswer()
     }
 }

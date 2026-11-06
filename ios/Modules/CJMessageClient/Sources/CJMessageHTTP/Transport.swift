@@ -938,6 +938,26 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
 
 }
 private final class RedirectBlocker: NSObject, URLSessionTaskDelegate, Sendable {
+    #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+    /// Bounded local diagnostic only: no URL query, headers, body or credentials.
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: (any Error)?) {
+        let environment=ProcessInfo.processInfo.environment
+        guard environment["G2C_M4_BETA_API"] == "1",
+              let id=environment["G2C_M4_BETA_DIAGNOSTIC_ID"],UUID(uuidString:id)?.uuidString==id,
+              let url=task.originalRequest?.url,url.host=="api-beta.go2china.space",
+              ["/v5/message-history","/v6/run-display"].contains(url.path) else {return}
+        let failure=error as NSError?
+        let value:[String:Any]=["diagnostic_id":id,"path":url.path,
+            "status":(task.response as? HTTPURLResponse)?.statusCode as Any? ?? NSNull(),
+            "error_domain":failure.map {$0.domain==NSURLErrorDomain ? NSURLErrorDomain:"other"} ?? "none",
+            "error_code":failure?.code as Any? ?? NSNull()]
+        do {
+            let root=try FileManager.default.url(for:.cachesDirectory,in:.userDomainMask,appropriateFor:nil,create:true)
+            let name=url.path=="/v6/run-display" ? "G2CM4BetaRead-v6.json":"G2CM4BetaRead-v5.json"
+            try JSONSerialization.data(withJSONObject:value).write(to:root.appendingPathComponent(name),options:.atomic)
+        } catch {print("M4_BETA_READ_DIAGNOSTIC_UNAVAILABLE")}
+    }
+    #endif
     #if DEBUG && G2C_M4_DEVICE_ACCEPTANCE && canImport(Security)
     private let localServers: [M4LocalServerTrust]
     init(localServers: [M4LocalServerTrust] = []) { self.localServers = localServers }
