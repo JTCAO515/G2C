@@ -34,20 +34,20 @@ SUITES = {
 }
 
 
-def selected_variants(suite, case):
+def selected_variants(suite, cases):
     test_class, variants = SUITES[suite]
     required = [test for tests in variants.values() for test in tests]
-    if case is not None and case not in required:
-        raise ValueError("Selected original method is not in this suite")
-    selected = {variant: [test for test in tests if case is None or test == case]
+    if cases is not None and (not set(cases).issubset(required) or len(cases) != len(set(cases))):
+        raise ValueError("Selected original methods must be unique and in this suite")
+    selected = {variant: [test for test in tests if cases is None or test in cases]
                 for variant, tests in variants.items()}
-    return test_class, {variant: tests for variant, tests in selected.items() if tests}, [test for test in required if case is not None and test != case]
+    return test_class, {variant: tests for variant, tests in selected.items() if tests}, [test for test in required if cases is not None and test not in cases]
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--suite", choices=["structure", "accessibility", "account-deletion"], default="structure")
-    parser.add_argument("--case", help="One original method; all other methods remain UNRUN and overall status stays PARTIAL_PASS")
+    parser.add_argument("--case", action="append", help="Repeat to select original methods; other methods remain UNRUN and overall status stays PARTIAL_PASS")
     target = parser.add_mutually_exclusive_group(required=True)
     target.add_argument("--simulator"); target.add_argument("--device")
     parser.add_argument("--local-tls", type=Path); parser.add_argument("--prepare-only", action="store_true")

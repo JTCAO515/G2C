@@ -291,11 +291,12 @@ JT 2026-11-06另批 `space.go2china.device-v4.acceptance` 使用既有
 夹具与控制使用批准的本机 HTTPS，控制 audit/release 要求本轮令牌；原只读接口
 仍只接受标明SYNTHETIC的读取身份。设备与模拟器不使用夹具字号覆盖。
 所有中英业务用例、完整.all AX及其他原失败断言均保留。
-可用 `--case` 选择当前 suite 内的一个原方法做定向诊断；其他方法明确列为
+可用 `--case` 选择当前 suite 内的原方法做定向诊断，重复参数可批量补齐缺口；其他方法明确列为
 `unrun_cases`，成功终态仅为 `PARTIAL_PASS`。不传 `--case` 仍执行该 suite
-全部原方法。未知方法或跨 suite 方法在读取 TLS、创建输出和接触设备前拒绝。
+全部原方法。未知、重复或跨 suite 方法在读取 TLS、创建输出和接触设备前拒绝。
 结构设置入口使用产品既有的 `memory.*` 标识，Tab 查询限定 Tab 栏；真机滚动
 复用共用 reveal helper，不放宽可见、可命中、业务或 AX 断言。
+首次夹具读取前调用既有本地网络同意 helper，只处理批准的 G2C 提示。
 这些入口的 `--prepare-only` 仍全部记为 `PREPARED_EXECUTION_UNRUN`。
 
 ## #4 的候选矩阵
