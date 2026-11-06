@@ -70,7 +70,7 @@ def main():
         cases={selected:'UNRUN'},raw_native_bundle_shareable=False,build_inputs_shareable=False,
         unrun=['new messages/providers','Needs/Trip/typed Memory/cleanup cloud profiles','target-network quality','TestFlight'])
     def save():(output/'report.json').write_text(json.dumps(report,indent=2))
-    save();native=None;server=None;thread=None;accounts={}
+    save();native=None;server=None;thread=None;accounts={};native_run_incomplete=False
     try:
         if a.prepare_only:
             if not all([a.local_tls,a.build_dir,a.work_dir]) or a.accounts_file:p.error('Preparation needs local TLS/build/work paths, with no account input')
@@ -125,7 +125,10 @@ def main():
             if origin.scheme!='https' or origin.hostname!=tls.host or not origin.port:raise ValueError('Invalid prepared control origin')
             server=ThreadingHTTPServer((tls.host,origin.port),handler);tls.secure_http_server(server)
             thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
-            native.run('Debug',[selected],env);native.scan('Debug')
+            native_run_incomplete=True
+            native.run('Debug',[selected],env)
+            native_run_incomplete=False
+            native.scan('Debug')
             report.update(status='PARTIAL_PASS',cases={selected:'PASS'},token_key_scan='PASS',
                 provider_accounting='UNKNOWN: read-only UI scenario; server accounting requires separate evidence',
                 operator_account_file_cleanup='Mac handoff source remains owner-managed; App one-use input checked separately')
@@ -137,8 +140,19 @@ def main():
             if thread:server.shutdown();thread.join()
             server.server_close()
         if native:
+            if native_run_incomplete and report['status']=='FAIL':
+                report['failure_container_scan']={'status':'UNRUN','reason':'pending exact input cleanup and device access'}
             try:native.cleanup_input()
             except BaseException:report.update(status='FAIL',cleanup='FAIL: exact input cleanup pending');save();raise
+            if native_run_incomplete and report['status']=='FAIL':
+                try:
+                    native.scan('Debug')
+                    report['failure_container_scan']={'status':'PASS'}
+                except Exception as scan_error:
+                    # Preserve the original native failure. A scan rejection is
+                    # separate from an unavailable/uncompleted device scan.
+                    report['failure_container_scan']={'status':'FAIL' if isinstance(scan_error,AssertionError) else 'UNRUN',
+                        'error_type':type(scan_error).__name__}
         save()
 
 
