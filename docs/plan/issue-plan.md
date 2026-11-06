@@ -64,7 +64,7 @@
 
 | 线 | 队列 | 本线拥有的文件 | 跨线依赖 |
 |---|---|---|---|
-| A App | M2全部L0/L1已收口，#21/PR387、#332/PR392 CLOSED；milestone3 CLOSED（47 closed/0 open）；#194/#159跳过 | 整个 `ios/**`、`docs/ui.md`；唯一A，不恢复OldA | 本轮最终一次handoff；MapKit无Key/费用/第三方依赖，实际物理点位→#32/#29 UNRUN、不计PASS；#398高德替换/企业许可/iOS平台Key及SDK隐私停点属M3，JT另开新线程。B/C本轮交付从#21通知6567906580取，不依旧快照重开队列。 |
+| A App | #398 CLOSED（PR545）；#498为当前parent，PR555/558/573/576/580已合；#4/#29真机余项待验，整线BLOCKED | 无新增 | 指定iPhone依JT暂停至重连；默认字号/完整.all AX，取消VO/大字号不计PASS；第三注销ID group等#495，手动Needs/Feedback已READY，完整云组等#30，其他设备/TestFlight另批 |
 | B 后端消息与运行 | 本轮[#354](https://github.com/JTCAO515/G2C/issues/354)/[#360](https://github.com/JTCAO515/G2C/issues/360)/[#378](https://github.com/JTCAO515/G2C/issues/378)均CLOSED（PR359/379/380/382）；goal结束仅B交接，C实际B接口缺口优先响应360/343；315按JT保持OPEN不投入 | `backend/run/**`、`backend/message/**`、`backend/needs/**`、`backend/usage/**`、`backend/cj_api/**`、`backend/place/**`、`backend/fact/**`、`scripts/dev_auth.py`；下列 B 线协调文件 | source1 needs-structured.1与source2 needs-current-trip.1独立正式入口；publisher@2/M29同cursor结果与新读版本供C336/A337。C381/M30生产交付由C负责，A App/真实资源按各owner验，不由B probe/后端验收代称全M2完成；业务锁已释放 |
 | C M2后端记忆、草稿与可行性 | M2本线已派后端均交：366/374/336及25后端完成；保持原M2 goal，继续处理真实C-owner联调缺口，当前唯一剩余21地图按JT暂缓UNRUN | backend/trip/**、backend/draft/**、backend/feasibility/**、backend/agent/cj_agent/draft.py、backend/memory/**、backend/memory_management/**、backend/memory_jobs/**、backend/memory_withdrawal/**、backend/manual_edit/**；只做后端 | B354/360/378及A337/373/286/22/25均已交闭；C381同RUN cursor结果/受保护读取与M30已合并。实时M2仅21地图综合余项，JT决定授权调整、A实施；无独立C项时保留实际停点，不重复测试/handoff或求同一地图授权，不将M2标complete。 |
 
@@ -200,6 +200,8 @@
 - #32 目标网络（JT 2026-11-06）：以现有 Codex 开发 Mac（境内网络 + VPN）访问 `https://api-beta.go2china.space` 的实测为准，由 C 执行；不再要求境内、海外各一台独立客户端，证据记为“境内 Mac + VPN”，不写成海外客户端。A 在指定 iPhone 上接 api-beta 的结果只算 #498/#4/#29 真机证据，如实记录网络条件，不补 #32 网络格；A 现有队列与授权不变。
 - M1 授权条目 1（DashScope）、2（Supabase 测试项目）有效至 2026-11-30，只用合成数据。
 - 高德 SDK 只进本机构建配置，CI 的 arm64 模拟器构建不能因此失败。
+
+- A（2026-11-06，当前唯一blocked交接）：PR573/576/580已锁head合并，适用独审与exact CI全成功；#398 CLOSED，#498/#4/#29仍OPEN。默认字号下的本机/真机选定PASS按实时#498表和原head复用，整套不继承；离线完整08/entry09及公域中文06旧FAIL保留。3cd77fa9业务分支已保存，三个独立签名准备包（原05中文恢复优先、手动Needs、一般Feedback）均核head/方法/设备/工程/产物，执行UNRUN。所有剩余实际App验收均受JT当前手机暂缓约束，已连续三轮核实；注销device-v4的group关联还等#495/6679809178，最低系统设备资源另批，正式云Trip/Memory/cleanup等B。#30当前bb/28f5仅已交手动Needs/Feedback及既有读取；不拿本机/Fake代云端或C的#32网络格。保持默认L/50%/关闭及VO关闭；取消要求不计PASS。不得触碰手机/mint/新调用或重复旧矩阵；收到JT重连/授权/服务变化后才续作。本次仅A handoff，不更新B/C快照，不关闭父票或M4。以下2026-11-04的A条目保留为历史，实时Issue优先。
 
 - A（本轮恢复Goal唯一blocked交接，2026-11-04）：PR525锁c4cf3ca0合a00c7b07，独立APPROVE与精确head11检查SUCCESS；无Key/无签名SDK设备编译、四个选定原生方法及同步B最新main的API/受限PG/Fake中英地图补验通过，原PLACE驱动PARTIAL_PASS不提升。M4条目1/2已生效；真机、SDK运行、中英标注和VoiceOver按JT指令等连接通知，#398/#498/#4/#29保持OPEN；不是缺Apple账号/指定设备授权。#30未通知测试域名就绪；使用记录由文档owner更新，本轮Key未读/0地图/0其他服务/0元。历史FAIL/P2和PR506原矩阵保留，暂缓期间不接触设备或重复跑矩阵。
 
