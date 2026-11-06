@@ -1,0 +1,212 @@
+{
+  "ledger": {
+    "row_count": 336,
+    "sha256": "af0414040679516697f94b06c4d11a54024a6687ec3d507be3fd5efec3d3fc0d",
+    "counts": {
+      "fact": 12,
+      "model": 216,
+      "place": 36,
+      "route": 13,
+      "weather": 59
+    },
+    "states": {
+      "INTENT": 64,
+      "RECEIVED": 272
+    },
+    "ledger_id": "32d95019ea16443b81e648960c4baba0",
+    "anchor_state": "ADOPTED"
+  },
+  "original_316_rows_unchanged": true,
+  "canonical_smoke": {
+    "adapter_pin": "ad3ace1d79f0bfd1f93b3cae643055d257c963c5145720edb0ebdfe0566ed691",
+    "candidate_id": "375f47aa2521fab5964ebb8e9d5c1858fda1332c",
+    "output": "/evidence/hk-936-smoke-001",
+    "phase": "smoke"
+  },
+  "canonical_result": {
+    "candidate_id": "375f47aa2521fab5964ebb8e9d5c1858fda1332c",
+    "hashes": {
+      "observations.json": "a3d2ce242f5a5c672c1e7cb8e9d20538f0d8893a1cfde5da1349ee75c247e3e4",
+      "plan.json": "85d618875bca9275cca68520e508cb6606e44fafebf97d131e94aadf72eebcab",
+      "raw/fact-zh.json": "e676ff344df7c1075d618c8c1b67ae84b902a385f6ceab96ecbde9b76f7616f9",
+      "raw/place-route-en.json": "e06cca15453cbbd47fad187916cf558eb2b5710afc0ff9df3130ac7aaac3b025",
+      "raw/place-route-zh.json": "319d69f6c6f48a2a05e299a0de2706d43617bc94684009f5acf3ba83710a652d",
+      "raw/weather-en.json": "3e0c9fda815f0ca0233a94b70b6390deab3ec3db888fd7e8822a2973ed9cc871",
+      "raw/weather-zh.json": "b23984ee85c0f6fe88c59d63d837794f0c26d39631c6b0b27e3eef2655bda5f7",
+      "summary.json": "0de5a5cf64301c6e48106c6e28b515bd44b5847b4e4626c09b8273c5278ddec9"
+    },
+    "status": "FAIL"
+  },
+  "full_claim_exists": false,
+  "schema_version": 1,
+  "evidence_archive": {
+    "sha256": "0e372026f273ad21c632bdc2b2982717e0c244c7b273f58425b515c8271a6a7c",
+    "file_count": 20,
+    "raw_files_in_git": false
+  },
+  "source_preflight": {
+    "status": "PASS",
+    "source": {
+      "runner_commit": "375f47aa2521fab5964ebb8e9d5c1858fda1332c",
+      "backend_commit": "93606f740c1635136e9473b715b46aadcf34bf43",
+      "manifest_sha256": "e87e5b3e4dada7f4421932a362118862a49815ece39898b2e011252e645e6ab5"
+    },
+    "image": "sha256:aaf41f55867368e6eb77b876f75e7c1f5ccd82db6ce0441e939e80261a1b9ff9",
+    "container": "g2c-c-runtime-375f47aa",
+    "mounts": [
+      {
+        "source": "/srv/g2c-beta/c-eval.env",
+        "destination": "/run/secrets/c-eval.env",
+        "rw": false
+      },
+      {
+        "source": "/srv/g2c-beta/c-evidence",
+        "destination": "/evidence",
+        "rw": true
+      },
+      {
+        "source": "/srv/g2c-beta/budget",
+        "destination": "/home/cj/.local/share/g2c/m4-real-services",
+        "rw": true
+      },
+      {
+        "source": "/srv/g2c-beta/control",
+        "destination": "/control",
+        "rw": false
+      },
+      {
+        "source": "/srv/g2c-beta/control/budget",
+        "destination": "/control/budget",
+        "rw": true
+      },
+      {
+        "source": "/srv/g2c-beta/c-runner/375f47aa2521fab5964ebb8e9d5c1858fda1332c/eval",
+        "destination": "/app/eval",
+        "rw": false
+      },
+      {
+        "source": "/srv/g2c-beta/c-runner/375f47aa2521fab5964ebb8e9d5c1858fda1332c/evaluation",
+        "destination": "/app/evaluation",
+        "rw": false
+      },
+      {
+        "source": "/srv/g2c-beta/c-runner/375f47aa2521fab5964ebb8e9d5c1858fda1332c/c-eval-source.json",
+        "destination": "/app/c-eval-source.json",
+        "rw": false
+      }
+    ],
+    "environment_names": [
+      "CJ_C_EVAL_SOURCE_SHA256",
+      "CJ_DEPLOY_TARGET",
+      "CJ_ENV",
+      "CJ_M4_BUDGET_PRODUCER",
+      "CJ_M4_SYNTHETIC_ONLY",
+      "CJ_PG_BINDIR",
+      "CJ_TRIAL_VALID_UNTIL",
+      "LANG",
+      "PATH",
+      "PYTHONDONTWRITEBYTECODE",
+      "PYTHONPATH",
+      "PYTHON_SHA256",
+      "PYTHON_VERSION"
+    ],
+    "runtime_env": {
+      "CJ_ENV": "local",
+      "CJ_DEPLOY_TARGET": "hk-beta",
+      "CJ_M4_SYNTHETIC_ONLY": "1",
+      "CJ_M4_BUDGET_PRODUCER": "hk-beta-47.83.147.176",
+      "CJ_PG_BINDIR": "/usr/lib/postgresql/17/bin",
+      "CJ_TRIAL_VALID_UNTIL": "2027-02-03T00:00:00+08:00"
+    },
+    "ledger": {
+      "ledger_id": "32d95019ea16443b81e648960c4baba0",
+      "row_count": 316,
+      "sha256": "b3fe659dc356bfb8b537dcec99fa6aaed822c07fc18da600fd970b6938509a77",
+      "counts": {
+        "fact": 11,
+        "model": 205,
+        "place": 32,
+        "route": 11,
+        "weather": 57
+      },
+      "states": {
+        "INTENT": 63,
+        "RECEIVED": 253
+      },
+      "anchor_state": "ADOPTED"
+    },
+    "health": [
+      {
+        "name": "/g2c-beta-api-1",
+        "image": "sha256:a70611d1ba1d2a5deac8402d8875fb2eab92f50c4cfd5063b7deaadeb7ce520f",
+        "state": "running",
+        "health": "healthy"
+      },
+      {
+        "name": "/g2c-beta-worker-1",
+        "image": "sha256:a70611d1ba1d2a5deac8402d8875fb2eab92f50c4cfd5063b7deaadeb7ce520f",
+        "state": "running",
+        "health": null
+      }
+    ]
+  },
+  "process": {
+    "wrapper_pid": 18,
+    "started_epoch": 1793938628.151481,
+    "output": "/evidence/hk-936-smoke-001",
+    "command": [
+      "python",
+      "-B",
+      "/app/eval/hk.py",
+      "run",
+      "smoke",
+      "--output",
+      "/evidence/hk-936-smoke-001"
+    ]
+  },
+  "process_result": {
+    "wrapper_pid": 18,
+    "exit_code": 1,
+    "finished_epoch": 1793938692.6724043
+  },
+  "artifact_sha256": {
+    "budget-after.json": "6a1ef87f320f0d462591e2b5d37fa9b14b22f9c5423e62395b9a1632ec7d7cfe",
+    "budget-before.json": "3a38e0c0527444f92345e9b6cf4e81e53a7466296d8f4f3daaed784548545678",
+    "case-starts.json": "bcc4a7176a4c46b978b18a637d8d6df320440c6bf450efc20f0f9ce90c4d46c9",
+    "estimate.json": "754a932e304b5b9ddf6d17aff8d57b4acb764d1eb3ac360c2e16a2e9b2aed5a9",
+    "observations.json": "a3d2ce242f5a5c672c1e7cb8e9d20538f0d8893a1cfde5da1349ee75c247e3e4",
+    "packages.json": "cff3b2adf3252cb116925d5a60193915faa6bd9fccc6867023880ce388b0a01a",
+    "plan.json": "85d618875bca9275cca68520e508cb6606e44fafebf97d131e94aadf72eebcab",
+    "progress.json": "3b4bcc3960e3d0e74d8098c27e4d1d5d93853f834df799b72c8f0e1e454c6b6a",
+    "progress.md": "b4447903c310db173bd64e23960962a698ec6fb2809398678be6e1c8b8df0949",
+    "raw/fact-zh.json": "e676ff344df7c1075d618c8c1b67ae84b902a385f6ceab96ecbde9b76f7616f9",
+    "raw/place-route-en.json": "e06cca15453cbbd47fad187916cf558eb2b5710afc0ff9df3130ac7aaac3b025",
+    "raw/place-route-zh.json": "319d69f6c6f48a2a05e299a0de2706d43617bc94684009f5acf3ba83710a652d",
+    "raw/weather-en.json": "3e0c9fda815f0ca0233a94b70b6390deab3ec3db888fd7e8822a2973ed9cc871",
+    "raw/weather-zh.json": "b23984ee85c0f6fe88c59d63d837794f0c26d39631c6b0b27e3eef2655bda5f7",
+    "runtime-config.json": "7ecf55bb1fa756fa8ffaa762ef95165fdd567f3871e47ee852649ece6cc5a12b",
+    "summary.json": "0de5a5cf64301c6e48106c6e28b515bd44b5847b4e4626c09b8273c5278ddec9"
+  },
+  "old_mac": {
+    "identity": "sealed-for-hk-beta-47.83.147.176",
+    "transfer_state": "SEALED",
+    "ledger_id": "32d95019ea16443b81e648960c4baba0",
+    "local_dispatch_process_count": 0
+  },
+  "network": {
+    "hk_private_loopback": "recorded measurement only, not target coverage",
+    "china_client": {
+      "user_location": "China mainland",
+      "VPN": "on",
+      "target_egress": "UNKNOWN",
+      "actual_test": "UNRUN"
+    },
+    "overseas_pretrip": "UNRUN"
+  },
+  "review": {
+    "hard_invariants": "original independent program",
+    "fact_semantics": "UNKNOWN: no complete independent grounded review",
+    "no_human_review_fabricated": true
+  },
+  "B_blocker": "https://github.com/JTCAO515/G2C/issues/523#issuecomment-6676770510"
+}
