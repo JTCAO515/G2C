@@ -32,7 +32,7 @@ private final class Kernel: OfflineBootSemaphore {
         let root=try directory();defer {try? FileManager.default.removeItem(at:root)}
         let kernel=Kernel(),firstStore=try store(root)
         let first=try OfflineBootContinuity.prepare(store:firstStore,group:"group.g2c.offline",kernel:kernel)
-        #expect(first.name.utf8.count==31)
+        #expect(first.name.utf8.count==30)
         let bytes=try firstStore.read()
         let reopened=try OfflineBootContinuity.prepare(store:store(root),group:"group.g2c.offline",kernel:kernel)
         #expect(first.boot==reopened.boot);#expect(first.name==reopened.name)
@@ -76,4 +76,17 @@ private final class Kernel: OfflineBootSemaphore {
         #expect(try storage.read()==nil);#expect(kernel.created.isEmpty)
         #expect(kernel.names.isEmpty)
     }
+    #if os(macOS)
+    @Test func actualDarwinSemaphoreAcceptsThePreparedNameAndSurvivesCloseReopen() throws {
+        let root=try directory();defer {try? FileManager.default.removeItem(at:root)}
+        let kernel=POSIXOfflineBootSemaphore()
+        let first=try OfflineBootContinuity.prepare(store:store(root),group:"group.g2c.offline",kernel:kernel)
+        defer {try? kernel.removeCreated(first.name)}
+        #expect(first.name.utf8.count==30);#expect(try first.isCurrent())
+        #expect(throws:OfflineFailure.self) {try kernel.createExclusive(first.name)}
+        let reopened=try OfflineBootContinuity.prepare(store:store(root),group:"group.g2c.offline",kernel:kernel)
+        #expect(first.boot==reopened.boot);#expect(first.name==reopened.name)
+        #expect(try reopened.isCurrent())
+    }
+    #endif
 }

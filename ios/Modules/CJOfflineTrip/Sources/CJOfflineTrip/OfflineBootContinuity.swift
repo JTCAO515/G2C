@@ -42,15 +42,16 @@ struct POSIXOfflineBootSemaphore: OfflineBootSemaphore {
     }
     static func prepare(store: AtomicSnapshotStore, group: String,
                         kernel: any OfflineBootSemaphore = POSIXOfflineBootSemaphore()) throws -> Authority {
-        // Signed configuration is an input boundary; IPC names must fit PSEMNAMLEN.
-        guard group.hasPrefix("group."), group.utf8.count + 1 + 13 <= 31,
+        // Darwin's 31-byte name buffer includes its NUL terminator. A 31-byte
+        // string fails sem_open with ENAMETOOLONG; the maximum payload is 30.
+        guard group.hasPrefix("group."), group.utf8.count + 1 + 12 <= 30,
               group.utf8.allSatisfy({ (48...57).contains($0) || (65...90).contains($0) || (97...122).contains($0) || $0 == 46 }) else {
             throw OfflineFailure.unavailable
         }
         func authority(_ marker: Marker) -> Authority {
             let suffix = Data(SHA256.hash(data: Data(marker.boot.uuidString.utf8)))
                 .base64EncodedString().replacingOccurrences(of: "+", with: "-")
-                .replacingOccurrences(of: "/", with: "_").prefix(13)
+                .replacingOccurrences(of: "/", with: "_").prefix(12)
             return Authority(boot: marker.boot, name: group + "/" + suffix, kernel: kernel)
         }
         if let bytes = try store.read() {
