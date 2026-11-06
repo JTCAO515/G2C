@@ -110,6 +110,15 @@ B 在 #30 正式发布 READY 后，指定设备的 `DEBUG + G2C_M4_DEVICE_ACCEPT
 英文通过不能代替中文方法通过。设备断开时保存原 FAIL／UNRUN、清理精确一次性输入，
 等 JT 通知重连后再执行，不自动重启原批次。
 
+B 在 #30 正式交付手动 Needs 和 Feedback 后，可分别准备 `--case manual-needs`
+与 `--case general-feedback`：两者都执行中英主动填写、一次明确提交、换语言重启只查
+原动作，以及另一账号的隔离呈现；保留完整 UTF8、版本/来源和 `.all` AX。
+Needs 只新建本轮 `m4-a-needs-*` 合成记录，不改 B 的 smoke 原记录；Feedback 只用
+一般反馈、关联为空。两项都不发送消息、模型、工具、重放或删除。
+App 生成的原 action ID 以非秘密定位符导出，供 B 对照原 DB 字节/计数和跨 owner 负例；
+设备方法与服务端证明分别记录，UI 通过不能补写未知的服务端计量或正式规划/Memory/注销。
+这些是新增公域覆盖，未替换原本机业务用例；构建准备仍不计设备 PASS。
+
 ### 登录领域的指定真机入口
 
 `check_development_accounts.py` 支持指定设备及本轮获准的本机 TLS profile：
