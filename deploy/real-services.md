@@ -66,6 +66,10 @@ wrapper仅是本次模型输出，收费仍为一次原model调用；内层每�
 函数参数schema必须与冻结parser的互斥分支一致：tool为answer=null且1–4个调用；answer为
 非空白zh/en且calls=[]。非final使用交叉约束，不能把独立nullable字段的任意组合宣称合法；
 最终消费仍只取原parse_turn及原4查询/末轮限制，schema声明本身不证明模型遵循或真实通路通过。
+该命名函数显式设置 `function.strict=true`，沿用[官方 Chat Completions 工具定义示例](https://help.aliyun.com/zh/model-studio/context-cache)
+的参数约束开关；工具轮和终答轮都携带。函数名、schema、冻结parser和原Meter不变，
+不把无效返回修成有效包、不重派原UNKNOWN。真实英文天气曾在工具回执后出现
+`native_envelope_fields`；原具体缺失/额外字段仍UNKNOWN，补开关本身也不代称真实修复已通过，见#523。
 命名函数参数失败的固定reason另分`native_json_invalid/duplicate`、`native_envelope_type/fields`、
 `native_version_literal`、`native_answer_fields/calls/text`、`native_kind_literal`、
 `native_tool_answer`、`native_calls_type/bound`、`native_call_fields/name/arguments`和

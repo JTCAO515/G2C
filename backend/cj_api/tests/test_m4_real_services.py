@@ -57,6 +57,46 @@ def turn_sse(*,tool=False,usage=True,model=M4_MODEL,done=True,turn=None):
 
 
 class Boundaries(unittest.TestCase):
+    def test_forced_function_opts_into_supplier_strict_schema_in_both_phases(self):
+        for final in (False,True):
+            with self.subTest(final=final):
+                provider=self.provider(turn_sse().replace('chatcmpl-synthetic','chatcmpl-strict-'+str(final)));receipt={};reply={}
+                result=list(provider.invoke([dict(role='user',content='Synthetic forecast answer')],TOOL_SYSTEM,
+                    'strict-native-'+str(final),tools=TOOLS,native_turn_profile=M4_NATIVE_TURN_PROFILE,
+                    final_answer=final,receipt=receipt,native_reply=reply,guard=lambda:True))
+                request=json.loads(self.sent[-1].content)
+                function=request['tools'][0]['function']
+                self.assertIs(function.get('strict'),True)
+                self.assertEqual(function['name'],M4_TURN_FUNCTION)
+                self.assertEqual(request['tool_choice'],dict(type='function',function=dict(name=M4_TURN_FUNCTION)))
+                self.assertIs(function['parameters']['additionalProperties'],False)
+                self.assertEqual(set(function['parameters']['required']),{'version','kind','answer','calls'})
+                self.assertEqual(parse_turn(''.join(result).encode(),{'weather'}).answer_en,'Needs verification.')
+                self.assertEqual(receipt['usage']['total_tokens'],50)
+
+    def test_weather_continuation_with_wrong_envelope_fields_is_unknown_without_repair(self):
+        # Reproduce the observed rejection class, not the unavailable original
+        # keys: both extra and missing top-level fields must remain rejected.
+        valid=dict(version='MODEL-tool-turn.1',kind='answer',answer=dict(zh='合成天气待核实',en='Synthetic weather needs verification'),calls=[])
+        cases=[dict(valid,unexpected_synthetic_field=True),{k:v for k,v in valid.items() if k!='calls'}]
+        weather_tools=[t for t in TOOLS if t['function']['name']=='weather']
+        for index,turn in enumerate(cases):
+            provider=self.provider(turn_sse(turn=turn));receipt={};reply={};attempt='weather-envelope-'+str(index);before=len(self.sent)
+            messages=[dict(role='user',content='Synthetic weather question'),
+                dict(role='assistant',content=None,tool_calls=[dict(id='call_weather_synthetic',type='function',
+                    function=dict(name=M4_TURN_FUNCTION,arguments=json.dumps(dict(version='MODEL-tool-turn.1',kind='tool',answer=None,
+                        calls=[dict(name='weather',arguments=dict(start_date='2026-11-07',end_date='2026-11-07'))]))))]),
+                dict(role='tool',tool_call_id='call_weather_synthetic',content='SYNTHETIC WEATHER RESULT')]
+            def invoke():return list(provider.invoke(messages,TOOL_SYSTEM,attempt,tools=weather_tools,
+                native_turn_profile=M4_NATIVE_TURN_PROFILE,receipt=receipt,native_reply=reply,guard=lambda:True))
+            with self.assertLogs('cj_provider.audit',level='WARNING') as logs,self.assertRaises(ProviderUnknown):invoke()
+            self.assertIn('reason=native_envelope_fields','\n'.join(logs.output))
+            self.assertEqual((receipt,reply),({},{}))
+            row=next(r for r in self.budget.inspect() if r['attempt_id']==attempt)
+            self.assertEqual((row['state'],row['receipt']),('INTENT',None))
+            with self.assertRaises(BudgetUnknown):invoke()
+            self.assertEqual(len(self.sent)-before,1)
+
     def test_forced_function_schema_matches_frozen_branch_invariants(self):
         schema=_m4_turn_function(TOOLS,False)['function']['parameters']
         Draft202012Validator.check_schema(schema);validator=Draft202012Validator(schema)
