@@ -276,6 +276,11 @@ CJ_PG_BINDIR='<PostgreSQL-17-bin>' uv run --locked python -B \
 
 ### 注销与结构/AX 的指定真机入口
 
+JT 2026-11-06另批 `space.go2china.device-v4.acceptance` 使用既有
+`group.g2c.offline`，供注销全域用例实际生成并清理离线快照。仅 Debug
+使用该组与可信启动时钟；Keychain 仍为各自签名应用 ID，不加入共享业务数据
+或 Keychain 组。其他验收 ID 不继承此授权；签名构建准备不计实际注销 PASS。
+
 `check_account_cleanup_component.py --device` 限定为 `--native-device --all-provided`
 的 CJProbeApp 31个已提供域路径，仍要求预算4及精确后端 pin。原组件/完整阻塞
 清单用例保留模拟器入口，外部处理不计完成。设备前后文件证明使用每次新的
