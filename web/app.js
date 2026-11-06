@@ -1,26 +1,6 @@
 (() => {
   "use strict";
 
-  // Waitlist sign-ups go to FormSubmit (https://formsubmit.co), which emails each entry to CONTACT
-  // as a table. The very first submission triggers a one-time activation email to CONTACT; entries
-  // arrive after that link is clicked. To use another form service, point WAITLIST_ENDPOINT at any
-  // HTTPS endpoint that accepts a JSON POST and answers 2xx.
-  const CONTACT = "hello@go2china.space";
-  const WAITLIST_ENDPOINT = "https://formsubmit.co/ajax/" + CONTACT;
-
-  // Form options: [value sent to the sheet (English), English label, 中文 label]
-  const OPTS = {
-    source: [["Friend or family", "Friend or family", "亲友推荐"], ["Instagram", "Instagram", "Instagram"], ["TikTok", "TikTok", "TikTok"],
-      ["YouTube", "YouTube", "YouTube"], ["Xiaohongshu (RED)", "Xiaohongshu (RED)", "小红书"], ["Reddit", "Reddit", "Reddit"],
-      ["Search engine", "Google or other search", "搜索引擎"], ["News or blog", "News or blog", "新闻或博客"], ["Event", "Event or meetup", "活动或聚会"], ["Other", "Other", "其他"]],
-    optWhen: [["Within 3 months", "Within 3 months", "3 个月内"], ["3-6 months", "3–6 months", "3–6 个月"], ["6-12 months", "6–12 months", "6–12 个月"], ["Not sure yet", "Not sure yet", "还没定"], ["Already in China", "I'm in China now", "我已在中国"]],
-    optWho: [["Solo", "Solo", "独自"], ["Partner", "With a partner", "伴侣"], ["Family with kids", "Family with kids", "带孩子的家庭"], ["Friends", "Friends", "朋友"], ["Business", "Business", "商务"]],
-    optCities: [["Beijing", "Beijing", "北京"], ["Shanghai", "Shanghai", "上海"], ["Xi'an", "Xi'an", "西安"], ["Chengdu", "Chengdu", "成都"], ["Guilin", "Guilin", "桂林"],
-      ["Hangzhou", "Hangzhou", "杭州"], ["Guangzhou & Shenzhen", "Guangzhou & Shenzhen", "广州与深圳"], ["Yunnan", "Yunnan", "云南"], ["Tibet", "Tibet", "西藏"], ["Not sure yet", "Not sure yet", "还没想好"]],
-    optHelp: [["Payments", "Paying with apps", "移动支付"], ["Getting around", "Getting around", "交通出行"], ["Itinerary", "Planning the itinerary", "规划行程"],
-      ["Booking", "Booking tickets & tables", "预订门票与餐厅"], ["Food", "Finding great food", "找美食"], ["Language", "Language help", "语言沟通"], ["Visa & entry", "Visa & entry", "签证与入境"], ["Emergencies", "Help in an emergency", "紧急求助"]]
-  };
-
   const SIGHTS = [
     ["greatwall", "The Great Wall", "Beijing", "长城", "北京"],
     ["forbidden", "The Forbidden City", "Beijing", "故宫", "北京"],
@@ -37,22 +17,22 @@
 
   const T = {
     en: {
-      cta: "Join Waitlist",
+      cta: "Apply Early Access",
       heroTitle: "A personal agent for <i>every day</i> in China.",
-      heroLede: "CJ Agent answers, plans and gets things done. JT Agent quietly brings in a real person when it matters. And your personal details are redacted before any model sees them.",
+      heroLede: "CJ Agent helps with travel questions, daily plans and bookings. JT Agent brings in a person for problems that need a call or a local check. Your personal details are redacted before any model sees them.",
       soon: "Coming soon on iPhone · English & 中文",
       online: "Your personal agent",
       inputHint: "Ask anything about your trip…",
       agentsTitle: "Two agents, <i>one trip</i> that just works.",
-      cjTag: "Talks with you. Thinks ahead. Takes action.",
-      cjA: "Answers", cjAText: "Payments, transit, tickets, food — clear answers in plain English, with sources you can check.",
-      cjP: "Plans", cjPText: "Day-by-day itineraries shaped by what it remembers about you, and kept safe once you confirm them.",
-      cjE: "Acts", cjEText: "Turns the plan into done — and anything that spends money or changes your trip waits for your OK.",
-      jtTag: "Watches your back, and brings in a real person when AI isn't enough.",
-      jt1: "Spots what needs attention — a changed flight, a hotel that can't find you, a question going in circles.",
-      jt2: "Opens a private case with only the details that step needs.",
-      jt3: "A teammate verifies, calls, confirms — no queue, no “please hold”.",
-      jt4: "You simply get the result, back in your chat.",
+      cjTag: "Answers questions. Plans your days. Helps you act.",
+      cjA: "Answers", cjAText: "How to pay, catch a train or book a ticket — practical answers with sources you can check.",
+      cjP: "Plans", cjPText: "Build a daily plan around your interests, budget and pace. Keep confirmed arrangements safe as the trip changes.",
+      cjE: "Acts", cjEText: "Help with bookings and follow-up. Anything that spends money or changes your itinerary waits for your OK.",
+      jtTag: "A person steps in when the trip needs more than an answer.",
+      jt1: "Flags a changed flight, a missing hotel booking or an unresolved question.",
+      jt2: "Creates a private case with only the information needed to resolve it.",
+      jt3: "A teammate checks the details and contacts the hotel, venue or other provider.",
+      jt4: "The outcome and next step come back to your chat.",
       privTitle: "Your details <i>stay yours.</i>",
       privLede: "Names, passport numbers, phone numbers, emails and exact locations are swapped for placeholders on our side before any model reads them.",
       priv1: "Teammates see masked cases under a random case ID, never your account.",
@@ -67,16 +47,9 @@
       appLede: "We're opening the first spots to invited travelers. Leave your email and we'll let you know when it's your turn.",
       emailLabel: "Email address", emailPh: "you@example.com",
       footTag: "Your personal agent for China.",
+      companyName: "Guangzhou Chuangjing Technology Co., Ltd",
+      companyAddress: "Room 410, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue, Tianhe District, Guangzhou, China",
       sightsTitle: "From the Great Wall to the Bund, <i>it knows the way.</i>",
-      wlTitle: "Join the waitlist", wlLede: "A few quick questions so we can shape G2C around your trip.",
-      fName: "Name", fNamePh: "Your name", fEmail: "Email", fCountry: "Where are you from?", fCountryPh: "Country or region",
-      fSource: "How did you hear about us?", fSourcePh: "Choose one", fWhen: "When are you planning to visit China?",
-      fWho: "Who are you traveling with?", fCities: "Where would you like to go?", fHelp: "What would help you most?",
-      fNote: "Anything else we should know? (optional)",
-      bad: "Please add your name, a valid email and how you heard about us.",
-      sending: "Sending…",
-      ok: "You're on the list! We'll email you when your spot opens.",
-      fail: "Something went wrong. Please try again, or email " + CONTACT + ".",
       redact: [
         ["Hi, I'm ", null], ["Emma Clarke", "<NAME_1>"], [". Passport ", null], ["E12345678", "<PASSPORT_1>"],
         [", call me on ", null], ["+44 7700 900123", "<PHONE_1>"], [" — I'm at ", null], ["Gate 3, Hotel Lotus", "<LOCATION_1>"], [".", null]
@@ -99,22 +72,22 @@
       ]
     },
     zh: {
-      cta: "加入候补名单",
+      cta: "Apply Early Access",
       heroTitle: "在中国的<i>每一天</i>，都有你的私人助理。",
-      heroLede: "CJ Agent 为你解答、规划、办成事；JT Agent 在关键时刻悄悄请真人接手。你的个人信息在任何模型看到之前就已脱敏。",
+      heroLede: "CJ Agent 解答旅行问题、安排每日行程、协助预订；遇到需要打电话或当地核实的问题，JT Agent 请真人接手。个人信息在模型读取前已脱敏。",
       soon: "即将登陆 iPhone · 中文 & English",
       online: "你的私人助理",
       inputHint: "问问关于行程的任何事…",
       agentsTitle: "两个 Agent，<i>一趟</i>省心的旅程。",
-      cjTag: "陪你聊，替你想，帮你办。",
-      cjA: "解答", cjAText: "支付、交通、门票、美食——清楚直接的回答，附上可以核对的来源。",
-      cjP: "规划", cjPText: "根据它记住的你来安排每日行程；一经确认，就被妥善保护。",
-      cjE: "执行", cjEText: "把计划变成现实——凡是花钱或改变行程的事，都先等你点头。",
-      jtTag: "在背后守护你，AI 搞不定时请真人接手。",
-      jt1: "识别需要处理的情况——航班变动、酒店查不到订单、问题反复没解决。",
-      jt2: "建立独立工单，只带这一步需要的信息。",
-      jt3: "团队成员核实、致电、确认——不排队，不用“请稍候”。",
-      jt4: "你只需在对话里收到结果。",
+      cjTag: "解答问题，安排每天，协助办事。",
+      cjA: "解答", cjAText: "怎么付款、坐高铁、订门票——给出实用步骤，并附上可核对的来源。",
+      cjP: "规划", cjPText: "结合兴趣、预算和节奏安排每日行程；后续调整时，保护你已确认的安排。",
+      cjE: "执行", cjEText: "协助预订和后续跟进；凡是花钱或改变行程的事，都先等你点头。",
+      jtTag: "需要进一步核实或沟通时，让真人接手。",
+      jt1: "识别航班变动、酒店查不到订单，或反复未解决的问题。",
+      jt2: "建立独立工单，只带解决这件事所需的信息。",
+      jt3: "团队成员核实情况，联系酒店、场馆或其他服务方。",
+      jt4: "处理结果和下一步，回到同一段对话。",
       privTitle: "你的信息，<i>只属于你。</i>",
       privLede: "姓名、护照号、电话、邮箱和精确位置，在任何模型读取之前就已在我们这边替换为占位符。",
       priv1: "团队成员只看到打码的工单和随机工单号，看不到你的账号。",
@@ -129,16 +102,9 @@
       appLede: "首批名额将开放给受邀旅行者。留下邮箱，轮到你时我们会第一时间通知。",
       emailLabel: "邮箱地址", emailPh: "you@example.com",
       footTag: "你在中国的私人助理。",
+      companyName: "广州创竞科技有限公司",
+      companyAddress: "广州市天河区黄埔大道100号富力盈泰广场A座410室",
       sightsTitle: "从长城到外滩，<i>它都熟门熟路。</i>",
-      wlTitle: "加入候补名单", wlLede: "回答几个小问题，帮我们把 G2C 做得更贴合你的旅程。",
-      fName: "称呼", fNamePh: "你的名字", fEmail: "邮箱", fCountry: "你来自哪里？", fCountryPh: "国家或地区",
-      fSource: "你从哪里了解到我们？", fSourcePh: "请选择", fWhen: "计划什么时候来中国？",
-      fWho: "和谁一起出行？", fCities: "想去哪些地方？", fHelp: "最需要哪方面的帮助？",
-      fNote: "还有什么想告诉我们的？（选填）",
-      bad: "请填写称呼、有效邮箱，并选择了解渠道。",
-      sending: "提交中…",
-      ok: "已加入候补名单！名额开放时我们会发邮件通知你。",
-      fail: "提交失败，请重试，或发邮件至 " + CONTACT + "。",
       redact: [
         ["你好，我是", null], ["王小明", "<NAME_1>"], ["，护照号 ", null], ["E12345678", "<PASSPORT_1>"],
         ["，电话 ", null], ["138 0013 8000", "<PHONE_1>"], ["，我在", null], ["莲花酒店 3 号门", "<LOCATION_1>"], ["。", null]
@@ -162,11 +128,125 @@
     }
   };
 
-  let lang = "en";
+  T.ru = {
+    ...T.en,
+    heroTitle: "Личный помощник на <i>каждый день</i> в Китае.",
+    heroLede: "CJ Agent отвечает на вопросы, планирует дни и помогает с бронированием. JT Agent подключает человека, когда нужен звонок или проверка на месте. Личные данные скрываются до передачи модели.",
+    soon: "Скоро на iPhone · английский и китайский", online: "Ваш личный помощник", inputHint: "Спросите о поездке…",
+    agentsTitle: "Два помощника. <i>Одна спокойная поездка.</i>", cjTag: "Ответы, планы и помощь в делах.",
+    cjA: "Ответы", cjAText: "Как платить, ездить на поезде и покупать билеты — понятные шаги с проверяемыми источниками.",
+    cjP: "Планы", cjPText: "План на каждый день с учётом интересов, бюджета и темпа. Подтверждённые договорённости сохраняются при изменениях.",
+    cjE: "Действия", cjEText: "Помощь с бронированием и дальнейшими шагами. Расходы и изменения маршрута — только с вашего согласия.",
+    jtTag: "Человек подключается, когда одного ответа мало.",
+    jt1: "Замечает изменение рейса, пропавшую бронь или нерешённый вопрос.", jt2: "Создаёт отдельное обращение только с нужными для решения данными.",
+    jt3: "Сотрудник проверяет детали и связывается с отелем, площадкой или другим поставщиком услуг.", jt4: "Результат и следующий шаг приходят в тот же чат.",
+    privTitle: "Ваши данные <i>остаются вашими.</i>", privLede: "Имена, номера паспортов, телефоны, почта и точные адреса заменяются метками до передачи модели.",
+    priv1: "Сотрудники видят обезличенное обращение со случайным номером, а не ваш аккаунт.", priv2: "Данные раскрываются лишь по необходимости, на ограниченное время и с записью доступа.", priv3: "Вы можете просматривать, исправлять и удалять сохранённые сведения.",
+    you: "Вы", modelSees: "Что видит модель", s1: "Помнит вас", s1t: "Предпочтения сохраняются между беседами и поездками.", s2: "Указывает источники", s2t: "Проверяемые советы вместо догадок.", s3: "Берегёт планы", s3t: "Подтверждённое не меняется без вашего согласия.", s4: "Английский и 中文", s4t: "Переключайтесь в одной беседе.",
+    appTitle: "G2C для iPhone — <i>скоро.</i>", appLede: "Первые места — для приглашённых путешественников. Оставьте почту, и мы сообщим, когда появится место.", footTag: "Ваш личный помощник в Китае.", sightsTitle: "От Великой стены до Бунда — <i>он знает путь.</i>",
+    redact: [["Здравствуйте, я ",null],["Анна Иванова","<NAME_1>"],[". Паспорт ",null],["E12345678","<PASSPORT_1>"],[", телефон ",null],["+44 7700 900123","<PHONE_1>"],[". Я у ",null],["входа 3 отеля «Лотос»","<LOCATION_1>"],[".",null]],
+    suggest: ["Оплата в Китае", "3 дня в Пекине", "Забронировать занятие"],
+    chat: [
+      {t:"hello",text:"Привет! Я CJ, ваш личный помощник в Китае. Спрашивайте!"},
+      {t:"user",q:0,draft:"Нужны ли наличные",text:"Как платить без наличных?"},
+      {t:"bot",text:"Чаще всего используют Alipay и WeChat Pay. Можно привязать иностранную Visa или Mastercard. Лучше настроить всё до вылета — помогу по шагам.",src:"Источник: официальные инструкции Alipay и WeChat Pay"},
+      {t:"user",q:1,draft:"План на три дня",text:"Прилетаю в Пекин в пятницу на 3 дня. Люблю вкусно поесть, не люблю толпы."},
+      {t:"bot",text:"Запомню это для этой и следующих поездок."}, {t:"mem",text:"Сохранено · любит еду · избегает толп"},
+      {t:"plan",title:"3 дня в Пекине",tag:"ЧЕРНОВИК",rows:[["Пт","Завтрак в хутунах до приезда групп"],["Сб","Великая стена в Мутяньюй — тихий участок"],["Вс","Храм Неба к открытию, затем урок пельменей"]],foot:"Источники: часы работы · время в пути"},
+      {t:"user",q:2,text:"Забронируй урок на двоих. Паспорт ",secret:"E12345678",ph:"<PASSPORT_1>"},
+      {t:"shield",text:"Личные данные скрыты до передачи модели"},
+      {t:"ask",text:"Воскресенье, 10:00, около ¥300 за двоих. Продолжить?",yes:"Подтвердить",no:"Не сейчас"},
+      {t:"sys",text:"<b>JT Agent</b> · сотрудник уточняет бронь",done:"<b>Подтверждено</b> · воскресенье, 10:00 добавлено в план"}
+    ],
+    sights: [["Великая стена","Пекин"],["Запретный город","Пекин"],["Ночной Бунд","Шанхай"],["Терракотовая армия","Сиань"],["Хуаншань","Аньхой"],["Храм Неба","Пекин"],["Большие панды","Чэнду"],["Дворец Потала","Лхаса"],["Красные фонари","Новый год по лунному календарю"]]
+  };
+  T.es = {
+    ...T.en,
+    heroTitle: "Tu asistente para <i>cada día</i> en China.",
+    heroLede: "CJ Agent resuelve dudas, organiza tus días y ayuda con las reservas. JT Agent recurre a una persona si hace falta llamar o comprobar algo allí. Tus datos personales se ocultan antes de enviarlos al modelo.",
+    soon: "Próximamente en iPhone · inglés y chino", online: "Tu asistente personal", inputHint: "Pregunta sobre tu viaje…",
+    agentsTitle: "Dos agentes, <i>un viaje sin complicaciones.</i>", cjTag: "Resuelve dudas. Organiza tus días. Te ayuda a actuar.",
+    cjA: "Respuestas", cjAText: "Cómo pagar, tomar un tren o comprar entradas: pasos prácticos con fuentes que puedes consultar.",
+    cjP: "Planes", cjPText: "Un plan diario según tus intereses, presupuesto y ritmo. Lo que ya confirmaste se respeta al hacer cambios.",
+    cjE: "Acciones", cjEText: "Ayuda con reservas y gestiones. Cualquier gasto o cambio de itinerario requiere tu aprobación.",
+    jtTag: "Una persona interviene cuando una respuesta no basta.", jt1: "Detecta cambios de vuelo, reservas que no aparecen o dudas sin resolver.", jt2: "Abre un caso privado con solo los datos necesarios.", jt3: "Un miembro del equipo comprueba los detalles y contacta con el hotel, recinto o proveedor.", jt4: "El resultado y el siguiente paso vuelven al mismo chat.",
+    privTitle: "Tus datos <i>siguen siendo tuyos.</i>", privLede: "Nombres, pasaportes, teléfonos, correos y ubicaciones precisas se sustituyen por etiquetas antes de que el modelo los lea.", priv1: "El equipo ve casos anonimizados con un número aleatorio, no tu cuenta.", priv2: "Los datos solo se revelan cuando son necesarios, por tiempo limitado y con registro de acceso.", priv3: "Puedes consultar, corregir o borrar lo que se recuerda de ti.",
+    you: "Tú", modelSees: "Lo que ve el modelo", s1: "Te recuerda", s1t: "Tus preferencias continúan entre chats y viajes.", s2: "Cita sus fuentes", s2t: "Consejos verificables, sin conjeturas.", s3: "Protege tus planes", s3t: "Lo confirmado no cambia sin tu permiso.", s4: "Inglés y 中文", s4t: "Cambia de idioma en la misma conversación.",
+    appTitle: "G2C para iPhone, <i>muy pronto.</i>", appLede: "Las primeras plazas serán por invitación. Deja tu correo y te avisaremos cuando haya una para ti.", footTag: "Tu asistente personal para China.", sightsTitle: "De la Gran Muralla al Bund, <i>conoce el camino.</i>",
+    redact: [["Hola, soy ",null],["Ana García","<NAME_1>"],[". Pasaporte ",null],["E12345678","<PASSPORT_1>"],[", teléfono ",null],["+44 7700 900123","<PHONE_1>"],[". Estoy en ",null],["la puerta 3 del Hotel Lotus","<LOCATION_1>"],[".",null]],
+    suggest: ["Pagar en China", "3 días en Pekín", "Reservar una clase"],
+    chat: [
+      {t:"hello",text:"¡Hola! Soy CJ, tu asistente personal para China. ¿En qué te ayudo?"},
+      {t:"user",q:0,draft:"¿Necesito efectivo",text:"¿Cómo puedo pagar sin efectivo?"},
+      {t:"bot",text:"Lo habitual es usar Alipay o WeChat Pay. Ambos permiten vincular Visa y Mastercard extranjeras. Conviene configurarlos antes de volar; te guío paso a paso.",src:"Fuente: guías oficiales de Alipay y WeChat Pay"},
+      {t:"user",q:1,draft:"Organiza tres días",text:"Llego a Pekín el viernes para 3 días. Me encanta comer y evito las multitudes."},
+      {t:"bot",text:"Lo recordaré para este viaje y los siguientes."},{t:"mem",text:"Guardado · le gusta comer · evita multitudes"},
+      {t:"plan",title:"3 días en Pekín",tag:"BORRADOR",rows:[["Vie","Desayuno por los hutong antes de los grupos"],["Sáb","Gran Muralla en Mutianyu, por el tramo tranquilo"],["Dom","Templo del Cielo al abrir y clase de jiaozi"]],foot:"Fuentes: horarios oficiales · tiempos de traslado"},
+      {t:"user",q:2,text:"Reserva la clase para dos. Pasaporte ",secret:"E12345678",ph:"<PASSPORT_1>"},{t:"shield",text:"Datos ocultos antes de llegar al modelo"},
+      {t:"ask",text:"Domingo a las 10:00, unos ¥300 para dos. ¿Sigo?",yes:"Confirmar",no:"Ahora no"},
+      {t:"sys",text:"<b>JT Agent</b> · el equipo confirma con el local",done:"<b>Confirmado</b> · domingo a las 10:00 añadido al viaje"}
+    ],
+    sights: [["Gran Muralla","Pekín"],["Ciudad Prohibida","Pekín"],["El Bund de noche","Shanghái"],["Ejército de terracota","Xi'an"],["Huangshan","Anhui"],["Templo del Cielo","Pekín"],["Pandas gigantes","Chengdu"],["Palacio de Potala","Lhasa"],["Farolillos rojos","Año Nuevo lunar"]]
+  };
+  T.fr = {
+    ...T.en,
+    heroTitle: "Votre assistant pour <i>chaque jour</i> en Chine.",
+    heroLede: "CJ Agent répond à vos questions, organise vos journées et aide aux réservations. JT Agent fait intervenir une personne lorsqu’un appel ou une vérification sur place est nécessaire. Vos données personnelles sont masquées avant tout envoi au modèle.",
+    soon: "Bientôt sur iPhone · anglais et chinois", online: "Votre assistant personnel", inputHint: "Posez une question sur votre voyage…",
+    agentsTitle: "Deux agents, <i>un voyage serein.</i>", cjTag: "Des réponses, des itinéraires et une aide concrète.",
+    cjA: "Réponses", cjAText: "Payer, prendre le train ou acheter un billet : des étapes pratiques avec des sources vérifiables.", cjP: "Itinéraires", cjPText: "Un programme quotidien adapté à vos envies, votre budget et votre rythme. Les dispositions confirmées sont préservées lors des changements.", cjE: "Actions", cjEText: "Une aide pour les réservations et leur suivi. Toute dépense ou modification du voyage attend votre accord.",
+    jtTag: "Une personne prend le relais quand une réponse ne suffit pas.", jt1: "Repère un vol modifié, une réservation introuvable ou une question non résolue.", jt2: "Ouvre un dossier privé avec les seules informations nécessaires.", jt3: "Un membre de l’équipe vérifie les détails et contacte l’hôtel, le lieu ou le prestataire.", jt4: "Le résultat et la prochaine étape reviennent dans la même conversation.",
+    privTitle: "Vos données <i>restent les vôtres.</i>", privLede: "Noms, passeports, téléphones, e-mails et positions précises sont remplacés par des balises avant que le modèle ne les lise.", priv1: "L’équipe voit un dossier anonymisé avec un numéro aléatoire, jamais votre compte.", priv2: "Un accès aux données n’est accordé que si nécessaire, pour une durée limitée et avec traçabilité.", priv3: "Consultez, corrigez ou supprimez les informations mémorisées à tout moment.",
+    you: "Vous", modelSees: "Ce que voit le modèle", s1: "Se souvient de vous", s1t: "Vos préférences suivent vos conversations et voyages.", s2: "Cite ses sources", s2t: "Des conseils vérifiables, sans devinettes.", s3: "Protège vos projets", s3t: "Rien de confirmé ne change sans votre accord.", s4: "Anglais et 中文", s4t: "Changez de langue dans la même conversation.",
+    appTitle: "G2C sur iPhone, <i>bientôt disponible.</i>", appLede: "Les premières places seront sur invitation. Laissez votre e-mail : nous vous préviendrons lorsqu’une place se libère.", footTag: "Votre assistant personnel pour la Chine.", sightsTitle: "De la Grande Muraille au Bund, <i>il connaît le chemin.</i>",
+    redact: [["Bonjour, je suis ",null],["Emma Martin","<NAME_1>"],[". Passeport ",null],["E12345678","<PASSPORT_1>"],[", téléphone ",null],["+44 7700 900123","<PHONE_1>"],[". Je suis à ",null],["l’entrée 3 de l’hôtel Lotus","<LOCATION_1>"],[".",null]],
+    suggest: ["Payer en Chine", "3 jours à Pékin", "Réserver un cours"],
+    chat: [
+      {t:"hello",text:"Bonjour ! Je suis CJ, votre assistant pour la Chine. Posez-moi vos questions."},
+      {t:"user",q:0,draft:"Faut-il du liquide",text:"Comment payer sans espèces ?"},
+      {t:"bot",text:"Alipay et WeChat Pay sont très utilisés et acceptent les cartes Visa et Mastercard étrangères. Configurez-les avant le départ : je vous guide.",src:"Source : guides officiels Alipay et WeChat Pay"},
+      {t:"user",q:1,draft:"Prépare trois jours",text:"J’arrive à Pékin vendredi pour 3 jours. J’aime bien manger, mais pas les foules."},
+      {t:"bot",text:"Je le retiens pour ce voyage et les prochains."},{t:"mem",text:"Mémorisé · aime la cuisine · évite les foules"},
+      {t:"plan",title:"3 jours à Pékin",tag:"BROUILLON",rows:[["Ven","Petit-déjeuner dans les hutong avant les groupes"],["Sam","Grande Muraille à Mutianyu, côté tranquille"],["Dim","Temple du Ciel à l’ouverture, puis cours de raviolis"]],foot:"Sources : horaires officiels · temps de trajet"},
+      {t:"user",q:2,text:"Réserve le cours pour deux. Passeport ",secret:"E12345678",ph:"<PASSPORT_1>"},{t:"shield",text:"Données masquées avant l’envoi au modèle"},
+      {t:"ask",text:"Dimanche à 10 h, environ ¥300 pour deux. Je continue ?",yes:"Confirmer",no:"Pas maintenant"},
+      {t:"sys",text:"<b>JT Agent</b> · l’équipe vérifie auprès du lieu",done:"<b>Confirmé</b> · dimanche à 10 h ajouté au voyage"}
+    ],
+    sights: [["Grande Muraille","Pékin"],["Cité interdite","Pékin"],["Le Bund de nuit","Shanghai"],["Armée de terre cuite","Xi'an"],["Huangshan","Anhui"],["Temple du Ciel","Pékin"],["Pandas géants","Chengdu"],["Palais du Potala","Lhassa"],["Lanternes rouges","Nouvel An lunaire"]]
+  };
+  T.ar = {
+    ...T.en,
+    heroTitle: "مساعدك الشخصي في <i>كل يوم</i> في الصين.",
+    heroLede: "يجيب CJ Agent عن أسئلتك وينظم أيام رحلتك ويساعدك في الحجوزات. ويستعين JT Agent بشخص عند الحاجة إلى مكالمة أو تحقق محلي. تُحجب بياناتك الشخصية قبل إرسالها إلى النموذج.",
+    soon: "قريبًا على iPhone · الإنجليزية والصينية", online: "مساعدك الشخصي", inputHint: "اسأل عن رحلتك…",
+    agentsTitle: "مساعدان، <i>ورحلة مريحة.</i>", cjTag: "يجيب عن أسئلتك وينظم أيامك ويساعدك على إنجاز خططك.",
+    cjA: "إجابات", cjAText: "كيف تدفع أو تستقل القطار أو تحجز تذكرة؟ خطوات عملية مع مصادر يمكنك مراجعتها.", cjP: "خطط", cjPText: "برنامج يومي يناسب اهتماماتك وميزانيتك ووتيرتك، مع الحفاظ على الترتيبات التي أكّدتها عند إجراء تغييرات.", cjE: "مساعدة عملية", cjEText: "مساعدة في الحجز والمتابعة. أي إنفاق أو تغيير في برنامج الرحلة ينتظر موافقتك.",
+    jtTag: "يتدخل شخص عندما تحتاج الرحلة إلى أكثر من إجابة.", jt1: "يرصد تغيير الرحلة الجوية أو الحجز المفقود أو السؤال الذي لم يُحل.", jt2: "ينشئ طلب متابعة خاصًا بالمعلومات اللازمة فقط.", jt3: "يتحقق أحد أفراد الفريق من التفاصيل ويتواصل مع الفندق أو المكان أو مقدم الخدمة.", jt4: "تصلك النتيجة والخطوة التالية في المحادثة نفسها.",
+    privTitle: "بياناتك <i>تبقى ملكك.</i>", privLede: "تُستبدل الأسماء وأرقام الجوازات والهواتف والبريد والمواقع الدقيقة برموز قبل أن يقرأها النموذج.", priv1: "يرى الفريق طلبًا محجوب البيانات برقم عشوائي، ولا يرى حسابك.", priv2: "لا تُكشف البيانات إلا عند الحاجة ولمدة محدودة، مع تسجيل الوصول إليها.", priv3: "يمكنك عرض المعلومات المحفوظة وتصحيحها أو حذفها متى شئت.",
+    you: "أنت", modelSees: "ما يراه النموذج", s1: "يتذكرك", s1t: "تستمر تفضيلاتك بين المحادثات والرحلات.", s2: "يذكر مصادره", s2t: "نصائح يمكنك التحقق منها، لا تخمينات.", s3: "يحمي خططك", s3t: "لا تتغير ترتيباتك المؤكدة دون موافقتك.", s4: "الإنجليزية و中文", s4t: "بدّل اللغة ضمن المحادثة نفسها.",
+    appTitle: "G2C على iPhone، <i>قريبًا.</i>", appLede: "ستتاح المقاعد الأولى بدعوات للمسافرين. اترك بريدك لنخبرك عندما يتاح لك مكان.", footTag: "مساعدك الشخصي في الصين.", sightsTitle: "من سور الصين إلى البوند، <i>يعرف الطريق.</i>",
+    redact: [["مرحبًا، أنا ",null],["سارة أحمد","<NAME_1>"],[". جواز سفري ",null],["E12345678","<PASSPORT_1>"],["، وهاتفي ",null],["+44 7700 900123","<PHONE_1>"],[". أنا عند ",null],["البوابة 3 في فندق لوتس","<LOCATION_1>"],[".",null]],
+    suggest: ["الدفع في الصين", "3 أيام في بكين", "حجز درس"],
+    chat: [
+      {t:"hello",text:"مرحبًا! أنا CJ، مساعدك الشخصي في الصين. كيف أساعدك؟"},
+      {t:"user",q:0,draft:"هل أحتاج إلى النقد",text:"كيف أدفع دون نقود؟"},
+      {t:"bot",text:"يشيع استخدام Alipay وWeChat Pay، وكلاهما يدعم بطاقات Visa وMastercard الأجنبية. من الأفضل إعدادهما قبل السفر، وسأرشدك خطوة بخطوة.",src:"المصدر: أدلة Alipay وWeChat Pay الرسمية"},
+      {t:"user",q:1,draft:"خطط لثلاثة أيام",text:"أصل إلى بكين الجمعة لثلاثة أيام. أحب الطعام وأتجنب الزحام."},
+      {t:"bot",text:"سأتذكر ذلك لهذه الرحلة والرحلات القادمة."},{t:"mem",text:"تم الحفظ · يحب الطعام · يتجنب الزحام"},
+      {t:"plan",title:"3 أيام في بكين",tag:"مسودة",rows:[["الجمعة","إفطار في أزقة الهوتونغ قبل وصول المجموعات"],["السبت","سور الصين في موتيانيو، في الجزء الأهدأ"],["الأحد","معبد السماء عند الافتتاح، ثم درس لتحضير الزلابية"]],foot:"المصادر: أوقات العمل الرسمية · أوقات التنقل"},
+      {t:"user",q:2,text:"احجز الدرس لشخصين. جواز السفر ",secret:"E12345678",ph:"<PASSPORT_1>"},{t:"shield",text:"تُحجب البيانات قبل إرسالها إلى النموذج"},
+      {t:"ask",text:"الأحد الساعة 10:00، نحو ¥300 لشخصين. هل أتابع؟",yes:"تأكيد",no:"ليس الآن"},
+      {t:"sys",text:"<b>JT Agent</b> · يتواصل الفريق مع المكان للتأكيد",done:"<b>تم التأكيد</b> · أضيف الأحد الساعة 10:00 إلى رحلتك"}
+    ],
+    sights: [["سور الصين العظيم","بكين"],["المدينة المحرمة","بكين"],["البوند ليلًا","شنغهاي"],["جيش التيراكوتا","شيآن"],["هوانغشان","آنهوي"],["معبد السماء","بكين"],["الباندا العملاقة","تشنغدو"],["قصر بوتالا","لاسا"],["الفوانيس الحمراء","رأس السنة القمرية"]]
+  };
+
+  const LANGUAGES = ["en", "zh", "ru", "es", "ar", "fr"];
+  const browserLanguage = (navigator.language || "en").toLowerCase().split("-")[0];
+  let lang = LANGUAGES.includes(browserLanguage) ? browserLanguage : "en";
   try {
     const saved = localStorage.getItem("g2c-lang");
-    if (saved === "en" || saved === "zh") lang = saved;
-    else if ((navigator.language || "").toLowerCase().startsWith("zh")) lang = "zh";
+    if (LANGUAGES.includes(saved)) lang = saved;
   } catch (_) { /* storage unavailable */ }
 
   const $ = (s, r = document) => r.querySelector(s);
@@ -175,20 +255,23 @@
 
   function applyLang() {
     const d = T[lang];
-    document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+    document.documentElement.lang = lang === "zh" ? "zh-CN" : lang;
+    document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
+    document.title = "go2china.space — " + d.footTag;
     document.querySelectorAll("[data-i18n]").forEach((n) => { n.textContent = d[n.dataset.i18n]; });
     document.querySelectorAll("[data-i18n-html]").forEach((n) => { n.innerHTML = d[n.dataset.i18nHtml]; });
-    document.querySelectorAll("[data-i18n-ph]").forEach((n) => { n.placeholder = d[n.dataset.i18nPh]; });
-    $("#lang-toggle").textContent = lang === "zh" ? "EN" : "中文";
-    $("#form-note").textContent = "";
+    $("#lang-select").value = lang;
+    const formLanguage = lang === "zh" ? "zh-CN" : lang;
+    document.querySelectorAll("a.btn").forEach((a) => {
+      a.href = "https://form.jotform.com/263093841129055?language=" + formLanguage;
+    });
     startChat();
     startRedact();
     renderSights();
-    renderOptions();
   }
 
-  $("#lang-toggle").addEventListener("click", () => {
-    lang = lang === "zh" ? "en" : "zh";
+  $("#lang-select").addEventListener("change", (event) => {
+    lang = event.target.value;
     try { localStorage.setItem("g2c-lang", lang); } catch (_) { /* ignore */ }
     applyLang();
   });
@@ -381,82 +464,16 @@
 
   /* ---------- Sights ---------- */
   function renderSights() {
-    const card = ([id, en, enSub, zh, zhSub]) =>
-      `<figure class="sight"><img src="assets/sights/${id}.webp" alt="${esc(lang === "zh" ? zh : en)}" loading="lazy" width="1024" height="683">` +
-      `<figcaption><strong>${esc(lang === "zh" ? zh : en)}</strong><span>${esc(lang === "zh" ? zhSub : enSub)}</span></figcaption></figure>`;
+    const card = (item) => {
+      const [id, en, enSub, zh, zhSub] = item;
+      const [name, region] = T[lang].sights ? T[lang].sights[SIGHTS.indexOf(item)] : (lang === "zh" ? [zh, zhSub] : [en, enSub]);
+      return `<figure class="sight"><img src="assets/sights/${id}.webp" alt="${esc(name)}" loading="lazy" width="1024" height="683">` +
+        `<figcaption><strong>${esc(name)}</strong><span>${esc(region)}</span></figcaption></figure>`;
+    };
     const a = SIGHTS.slice(0, 5), b = SIGHTS.slice(5);
     const row = (items, cls) => `<div class="track${cls}">${items.map(card).join("")}${items.map(card).join("").replace(/<img /g, '<img aria-hidden="true" ')}</div>`;
     $("#marquee").innerHTML = row(a, "") + row(b, " rev");
   }
-
-  /* ---------- Waitlist ---------- */
-  const modal = $("#waitlist-modal"), form = $("#waitlist-form"), note = $("#form-note"), submitBtn = $("#wl-submit");
-  const label = (o) => (lang === "zh" ? o[2] : o[1]);
-
-  function renderOptions() {
-    const sel = $("#f-source"), cur = sel.value;
-    sel.innerHTML = `<option value="" disabled ${cur ? "" : "selected"}>${esc(T[lang].fSourcePh)}</option>` +
-      OPTS.source.map((o) => `<option value="${esc(o[0])}" ${o[0] === cur ? "selected" : ""}>${esc(label(o))}</option>`).join("");
-    form.querySelectorAll(".opts").forEach((box) => {
-      const picked = new Set([...box.querySelectorAll("input:checked")].map((i) => i.value));
-      box.innerHTML = OPTS[box.dataset.key].map((o) =>
-        `<label><input type="${box.dataset.type}" name="${box.dataset.name}" value="${esc(o[0])}" ${picked.has(o[0]) ? "checked" : ""}><span>${esc(label(o))}</span></label>`).join("");
-    });
-  }
-
-  function openModal(e) {
-    if (e) e.preventDefault();
-    if (typeof modal.showModal === "function") modal.showModal(); else modal.setAttribute("open", "");
-    const first = form.querySelector('input[name="name"]'); if (first && !form.classList.contains("sent")) first.focus();
-  }
-  const closeModal = () => { if (modal.close) modal.close(); else modal.removeAttribute("open"); };
-  document.querySelectorAll("[data-open-waitlist]").forEach((a) => a.addEventListener("click", openModal));
-  $("#wl-close").addEventListener("click", closeModal);
-  modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
-  if (location.hash === "#waitlist") setTimeout(openModal, 300);
-
-  form.addEventListener("input", (e) => { const f = e.target.closest(".f"); if (f) f.classList.remove("bad"); });
-  const params = new URLSearchParams(location.search);
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const d = T[lang];
-    const fd = new FormData(form);
-    if (fd.get("_honey")) return;
-    const name = String(fd.get("name") || "").trim();
-    const email = String(fd.get("email") || "").trim();
-    const source = String(fd.get("source") || "");
-    form.querySelectorAll(".f").forEach((f) => f.classList.remove("bad"));
-    const bad = [];
-    if (!name) bad.push('input[name="name"]');
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) bad.push('input[name="email"]');
-    if (!source) bad.push('select[name="source"]');
-    note.classList.remove("err");
-    if (bad.length) {
-      bad.forEach((q) => form.querySelector(q).closest(".f").classList.add("bad"));
-      note.textContent = d.bad; note.classList.add("err"); form.querySelector(bad[0]).focus(); return;
-    }
-    const all = (k) => fd.getAll(k).join(", ");
-    const payload = {
-      name, email, source,
-      country: String(fd.get("country") || "").trim(),
-      travel_time: all("travel_time"), travel_party: all("travel_party"),
-      destinations: all("destinations"), needs: all("needs"),
-      note: String(fd.get("note") || "").trim(),
-      language: lang,
-      utm_source: params.get("utm_source") || "", utm_medium: params.get("utm_medium") || "", utm_campaign: params.get("utm_campaign") || "",
-      referrer: document.referrer || "",
-      _subject: "G2C waitlist: " + name, _template: "table", _captcha: "false"
-    };
-    submitBtn.disabled = true; note.textContent = d.sending;
-    try {
-      const r = await fetch(WAITLIST_ENDPOINT, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(payload) });
-      const j = await r.json().catch(() => ({}));
-      if (!r.ok || String(j.success) === "false") throw new Error(String(r.status));
-      form.classList.add("sent"); note.textContent = d.ok; form.reset();
-    } catch (_) {
-      note.textContent = d.fail; note.classList.add("err");
-    } finally { submitBtn.disabled = false; }
-  });
 
   $("#year").textContent = String(new Date().getFullYear());
   applyLang();
