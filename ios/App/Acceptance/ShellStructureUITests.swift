@@ -24,6 +24,9 @@ import Foundation
         app.launchEnvironment.merge(try! deviceSession.applicationEnvironment(endpoint: fixtureURL, injecting: false)) { _, value in value }
         #endif
         app.launch()
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        deviceSession.waitForAppNetworkConsent()
+        #endif
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
     }
 

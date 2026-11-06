@@ -28,6 +28,9 @@ import Foundation
             deviceEnvironment()
             #endif
             app.launch()
+            #if G2C_M4_DEVICE_ACCEPTANCE
+            deviceSession.waitForAppNetworkConsent()
+            #endif
             XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
             let labels = language == "en" ? ["Assistant", "Trips", "Plugins", "Memory"] : ["助手", "行程", "插件", "记忆"]
             for label in labels {
@@ -62,6 +65,9 @@ import Foundation
         deviceEnvironment()
         #endif
         app.launch()
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        deviceSession.waitForAppNetworkConsent()
+        #endif
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
         capture("default-text-assistant-top")
         app.scrollViews.firstMatch.swipeUp()
@@ -105,6 +111,9 @@ import Foundation
         deviceEnvironment()
         #endif
         app.launch()
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        deviceSession.waitForAppNetworkConsent()
+        #endif
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
     }
 
