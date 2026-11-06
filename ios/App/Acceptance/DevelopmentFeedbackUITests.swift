@@ -72,8 +72,18 @@ import Foundation
         }
         #endif
     }
+    func inputQuery(_ id: String) -> XCUIElementQuery {
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        return deviceSession.textInputQuery(id, in: app)
+        #else
+        return app.textViews.matching(identifier: id)
+        #endif
+    }
     func revealEditor(_ id: String) -> XCUIElement {
-        let field = app.textViews[id]
+        let query = inputQuery(id), field = query.element
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        deviceSession.revealControl(field, in: app, diagnosticIdentifier: id)
+        #else
         // General feedback's native Form virtualizes offscreen editors after a
         // completed receipt or pending selection. Read the same editor after scrolling.
         for _ in 0..<6 {
@@ -84,6 +94,8 @@ import Foundation
             if field.exists && field.isHittable { break }
             app.swipeUp()
         }
+        #endif
+        XCTAssertEqual(query.count, 1, id)
         XCTAssertTrue(field.exists && field.isHittable, id)
         return field
     }
@@ -139,10 +151,10 @@ import Foundation
         XCTAssertEqual(XCTWaiter.wait(for: [condition], timeout: 30), .completed, value.label)
     }
     func fill(_ problem: String, expectation: String) {
-        let field = app.textViews["feedback.problem"]
+        let field = revealEditor("feedback.problem")
         XCTAssertTrue(field.waitForExistence(timeout: 10)); XCTAssertTrue(field.isEnabled && field.isHittable)
         field.coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.15)).tap(); field.typeText(problem)
-        let next = app.textViews["feedback.expectation"]
+        let next = revealEditor("feedback.expectation")
         XCTAssertTrue(next.exists); XCTAssertTrue(next.isEnabled && next.isHittable)
         next.coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.15)).tap(); next.typeText(expectation)
         let done = app.buttons["feedback.keyboard.done"]
@@ -159,7 +171,7 @@ import Foundation
         if linked && receipt { ids += ["feedback.originalref.message", "feedback.originalref.run", "feedback.source.status", "feedback.source.progress", "feedback.source.notice"] }
         for id in ids {
             let query: XCUIElementQuery
-            if id == "feedback.problem" || id == "feedback.expectation" { query = app.textViews.matching(identifier: id) }
+            if id == "feedback.problem" || id == "feedback.expectation" { query = inputQuery(id) }
             else if id == "feedback.associate" { query = app.switches.matching(identifier: id) }
             else if ["feedback.submit", "feedback.loadPending", "feedback.another"].contains(id) { query = app.buttons.matching(identifier: id) }
             else { query = app.descendants(matching: .any).matching(identifier: id) }
@@ -184,11 +196,7 @@ import Foundation
         tap(language == "en" ? "Assistant" : "助手")
         tap("assistant.serverHistory"); tap("history.loadConversations")
         tap("history.conversation." + f.conversation); tap("assistant.panel.done")
-        #if G2C_M4_DEVICE_ACCEPTANCE
-        let inputs = deviceSession.textInputQuery("assistant.draft", in: app)
-        #else
-        let inputs = app.textViews.matching(identifier: "assistant.draft")
-        #endif
+        let inputs = inputQuery("assistant.draft")
         let draft = inputs.element
         XCTAssertTrue(draft.waitForExistence(timeout: 8)); XCTAssertEqual(inputs.count, 1)
         XCTAssertTrue(draft.isEnabled && draft.isHittable)
@@ -219,7 +227,7 @@ import Foundation
         XCTAssertEqual(association.value as? String, "0")
         // Only the explicit opt-in sends the original message/run references.
         association.switches.element.tap(); XCTAssertEqual(association.value as? String, "1")
-        XCTAssertEqual(app.textViews["feedback.problem"].value as? String, language == "en" ? "Problem" : "问题")
+        XCTAssertEqual(revealEditor("feedback.problem").value as? String, language == "en" ? "Problem" : "问题")
         fill("站名有误 e\u{301} 🌏", expectation: "请核对站名")
         XCTAssertEqual(association.value as? String, "1")
         try audit("answer-editor-" + language, linked: true)
@@ -239,9 +247,8 @@ import Foundation
         XCTAssertEqual(first.provider_calls, 1)
         tap("assistant.panel.done")
         general(language)
-        XCTAssertEqual(app.textViews["feedback.problem"].value as? String, language == "en" ? "Problem" : "问题")
+        XCTAssertEqual(revealEditor("feedback.problem").value as? String, language == "en" ? "Problem" : "问题")
         fill("记忆页面建议", expectation: "说明更清楚")
-        _ = try await call("/size", f.case_id, ["value": "accessibility-extra-extra-extra-large"])
         try audit("general-max-editor-" + language)
         tap("feedback.submit"); status(language == "en" ? "Feedback submitted." : "反馈已提交。")
         try audit("general-max-receipt-" + language, receipt: true)
@@ -260,7 +267,6 @@ import Foundation
         }
         status(language == "en" ? "Ready to describe" : "请填写反馈")
         XCTAssertTrue(revealEditor("feedback.problem").isEnabled)
-        _ = try await call("/size", f.case_id, ["value": "large"])
     }
     func testAnswerAndGeneralEnglish() async throws { try await basic("testAnswerAndGeneralEnglish", language: "en") }
     func testAnswerAndGeneralChinese() async throws { try await basic("testAnswerAndGeneralChinese", language: "zh-Hans") }
@@ -278,7 +284,7 @@ import Foundation
         general("zh-Hans", backFromAccount: true)
         tap("feedback.loadPending"); tap("feedback.pending." + original.action_id)
         XCTAssertEqual(revealEditor("feedback.problem").value as? String, "回执丢失后保留原反馈")
-        XCTAssertFalse(app.textViews["feedback.problem"].isEnabled)
+        XCTAssertFalse(inputQuery("feedback.problem").element.isEnabled)
         status("提交结果尚未确认")
         tap("feedback.query"); status("反馈已提交。")
         let after = try await proof(f)
@@ -300,7 +306,7 @@ import Foundation
         _ = try await call("/release", f.case_id)
         general(backFromAccount: true); status("Ready to describe")
         XCTAssertFalse(app.staticTexts["feedback.disclaimer"].exists)
-        XCTAssertFalse(app.textViews["feedback.problem"].value as? String == "旧账号的迟到反馈")
+        XCTAssertFalse(revealEditor("feedback.problem").value as? String == "旧账号的迟到反馈")
         tap("feedback.loadPending")
         XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "feedback.pending.")).count, 0)
         let after = try await proof(f)

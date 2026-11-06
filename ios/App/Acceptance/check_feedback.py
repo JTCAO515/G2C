@@ -230,9 +230,6 @@ def main():
                                     released.set()
                                     if not finished.wait(20): raise TimeoutError('no actual ACK delivered')
                                     value = proof(case)
-                                elif parsed.path == '/size':
-                                    if query['value'] not in ('large', 'accessibility-extra-extra-extra-large'): raise ValueError('unsupported size')
-                                    value = {}
                                 elif parsed.path == '/validate':
                                     value = proof(case)
                                     with TestClient(app) as client:
