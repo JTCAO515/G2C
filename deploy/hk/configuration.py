@@ -13,7 +13,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 
 from cj_api.aead_cursor import AeadCursorCodec
 from cj_api.history_config import CursorPolicy,HistoryWireConfiguration
-from cj_api.local_app import create_local_app
+from cj_api.local_app import create_local_app,scope_for,ISSUER
 from cj_api.local_run_context import load_run_context
 from cj_api.supabase_test_database import SupabaseTestDatabase
 from cj_strict_json import reject_duplicates
@@ -30,13 +30,16 @@ SECRET_FILES={
     'backup':{'operator':{'CJ_SUPABASE_OPERATOR_URI','CJ_BETA_RECOVERY_PRIVATE_B64'},
               'backup':{'CJ_BETA_BACKUP_ROOT','OSS_ACCESS_KEY_ID','OSS_ACCESS_KEY_SECRET'}},
 }
+TYPED_POLICY='CJ_BETA_TYPED_MEMORY_POLICY_B64'
 
 
 def load_secret_environment(role,*,root=Path('/run/secrets')):
     """Docker receives only paths; secret bytes enter this process, not Config.Env."""
     expected=SECRET_FILES[role];values={}
     for file,names in expected.items():
-        if any(name in os.environ for name in names):raise ValueError('persistent_container_secret_environment_refused')
+        optional={TYPED_POLICY} if role=='api' and file=='api' else set()
+        allowed=names|optional
+        if any(name in os.environ for name in allowed):raise ValueError('persistent_container_secret_environment_refused')
         descriptor=os.open(Path(root)/(file+'.env'),os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK)
         with os.fdopen(descriptor,'rb') as source:
             metadata=os.fstat(source.fileno())
@@ -47,10 +50,10 @@ def load_secret_environment(role,*,root=Path('/run/secrets')):
         parsed={}
         for line in raw.decode('utf8').splitlines():
             name,separator,value=line.partition('=')
-            if not separator or name not in names or name in parsed or not value or '\0' in value:
+            if not separator or name not in allowed or name in parsed or not value or '\0' in value:
                 raise ValueError('explicit_secret_environment_fields_required')
             parsed[name]=value
-        if set(parsed)!=names:raise ValueError('complete_secret_environment_required')
+        if not names<=parsed.keys():raise ValueError('complete_secret_environment_required')
         values.update(parsed)
     os.environ.update(values)
 
@@ -78,6 +81,8 @@ class Runtime:
     context:object
     context_path:Path
     descriptors:list
+    typed_memory:object=None
+    subjects:frozenset=frozenset()
 
     @classmethod
     def load(cls,root,*,worker=False):
@@ -88,6 +93,13 @@ class Runtime:
                 or any(type(s) is not str or re.fullmatch('m4-synthetic-[a-z0-9-]{1,80}',s) is None for s in subjects)
                 or len(set(subjects))!=len(subjects)):
             raise ValueError('explicit_unique_beta_synthetic_subjects_required')
+        typed_memory=None
+        if TYPED_POLICY in os.environ:
+            if worker:raise ValueError('typed_memory_policy_is_API_only')
+            from cj_memory.typed_local import TypedConfiguration
+            typed_memory=TypedConfiguration.from_bytes(decoded(TYPED_POLICY))
+            if not frozenset(typed_memory.collection.profiles)<=frozenset(subjects):
+                raise ValueError('typed_memory_policy_outside_beta_invites')
         auth=root/'auth';auth.mkdir(mode=0o700,exist_ok=True)
         public=decoded('CJ_BETA_SIGNING_PUBLIC_B64')
         parsed=serialization.load_pem_public_key(public)
@@ -113,11 +125,12 @@ class Runtime:
         context_path.write_text(raw)
         context=load_run_context(context_path)
         if context.version!='CJ-LOCAL-RUN@2':raise ValueError('registered_beta_run_context_required')
-        return cls(auth,context,context_path,descriptors)
+        return cls(auth,context,context_path,descriptors,typed_memory,frozenset(subjects))
 
     def database(self):
         authorization()
-        return SupabaseTestDatabase(os.environ['CJ_SUPABASE_RUNTIME_URI'],os.environ['CJ_SUPABASE_CA_FILE'],run_context=self.context,transaction_guard=runtime_transaction)
+        return SupabaseTestDatabase(os.environ['CJ_SUPABASE_RUNTIME_URI'],os.environ['CJ_SUPABASE_CA_FILE'],run_context=self.context,
+            travel_context=self.typed_memory is not None,transaction_guard=runtime_transaction)
 
     def app(self):
         import time
@@ -125,9 +138,20 @@ class Runtime:
         codec=AeadCursorCodec(keys={'local-history-v1':key},active_key_id='local-history-v1',version='local-history-v1',
             clock=lambda:int(time.time()),max_ttl_seconds=300,max_token_bytes=2048,max_plaintext_bytes=512,max_binding_bytes=2048)
         history=HistoryWireConfiguration(20,16384,1_000_000,CursorPolicy(codec,300,2048))
-        return create_local_app(conninfo_path=None,auth_dir=self.auth,database=self.database(),run_context=self.context,
+        database=self.database()
+        for subject in self.subjects:
+            with database.connect(scope_for(ISSUER,subject)) as connection:
+                existing=connection.execute('SELECT 1 FROM cj_memory_scope LIMIT 1').fetchone()
+            if existing and (self.typed_memory is None or subject not in self.typed_memory.collection.profiles):
+                raise ValueError('existing_beta_memory_requires_explicit_policy')
+        message_subjects=None if self.typed_memory is None else self.subjects-frozenset(self.typed_memory.collection.profiles)
+        app=create_local_app(conninfo_path=None,auth_dir=self.auth,database=database,run_context=self.context,
             confirmation_signer=ConfirmationSigner(decoded('CJ_BETA_CONFIRMATION_B64',length=32)),history_configuration=history,
-            account_admission=True,needs_profile=os.environ.get('CJ_LOCAL_NEEDS_PROFILE'))
+            account_admission=True,needs_profile=os.environ.get('CJ_LOCAL_NEEDS_PROFILE'),message_subjects=message_subjects)
+        if self.typed_memory is not None:
+            from cj_memory.typed_api import register_typed_routes
+            register_typed_routes(app,database=database,auth_dir=self.auth,configuration=self.typed_memory)
+        return app
 
     def close(self):
         for fd in self.descriptors:os.close(fd)
