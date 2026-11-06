@@ -202,6 +202,27 @@ class DeviceCleanupTests(unittest.TestCase):
 
 
 class OperatorCaseTests(unittest.TestCase):
+    def test_prepared_beta_business_case_requires_explicit_operator_selection(self):
+        import check_beta_device as beta
+        import contextlib
+        import io
+        for method in ['testBilingualManualNeedsAndOriginalRecovery','testBilingualGeneralFeedbackAndOriginalRecovery']:
+            with self.subTest(method=method),tempfile.TemporaryDirectory() as directory:
+                root=Path(directory);meta=root/'prepared.json'
+                meta.write_text(json.dumps(dict(head='SYNTHETIC-HEAD',device='SYNTHETIC-DEVICE',
+                    test='DevelopmentBetaUITests/'+method,work=str(root/'private'),build=str(root/'build'))))
+                argv=['check_beta_device.py','--device','SYNTHETIC-DEVICE','--output',str(root/'exports'),
+                    '--prepared',str(meta),'--accounts-file',str(root/'never-read.json')]
+                def git(arguments,**kwargs):
+                    return b'' if arguments[1]=='status' else 'SYNTHETIC-HEAD'
+                with patch('sys.argv',argv),patch.object(beta.subprocess,'check_output',side_effect=git), \
+                     patch.object(beta,'operator_accounts') as accounts,patch.object(beta,'DeviceNative') as native, \
+                     contextlib.redirect_stderr(io.StringIO()):
+                    with self.assertRaises(SystemExit) as raised:beta.main()
+                self.assertEqual(raised.exception.code,2)
+                accounts.assert_not_called();native.assert_not_called()
+                self.assertEqual(json.loads((root/'exports/report.json').read_text())['status'],'FAIL')
+
     def test_authenticated_client_cannot_select_another_case(self):
         selected = ['testEnglish']; observed = []
         class Base(BaseHTTPRequestHandler):

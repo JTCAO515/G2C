@@ -1,4 +1,4 @@
-"""#498: prepare, then execute one existing-record beta device scenario.
+"""#498: prepare, then execute one approved synthetic beta device scenario.
 
 No model/message/delete call is made by this harness. The App uses system TLS
 for the exact beta origin; only its separate XCTest control uses local pinning.
@@ -26,6 +26,13 @@ CASE='beta-readonly-05'
 TEST='DevelopmentBetaUITests/testExistingAnswerRestoreAndOwnerIsolation'
 ENGLISH_DIAGNOSTIC='DevelopmentBetaUITests/testOriginalEnglishDiagnostic'
 CHINESE_RECOVERY='DevelopmentBetaUITests/testChineseRecoveryAndOwnerIsolation'
+SCENARIOS={
+    'full':(CASE,TEST),
+    'english-diagnostic':(CASE,ENGLISH_DIAGNOSTIC),
+    'chinese-recovery':(CASE,CHINESE_RECOVERY),
+    'manual-needs':('beta-manual-needs','DevelopmentBetaUITests/testBilingualManualNeedsAndOriginalRecovery'),
+    'general-feedback':('beta-general-feedback','DevelopmentBetaUITests/testBilingualGeneralFeedbackAndOriginalRecovery'),
+}
 
 
 def product_hashes(build):
@@ -58,17 +65,17 @@ def main():
     modes.add_argument('--prepare-only',action='store_true');modes.add_argument('--prepared',type=Path)
     p.add_argument('--local-tls',type=Path);p.add_argument('--build-dir',type=Path);p.add_argument('--work-dir',type=Path)
     p.add_argument('--accounts-file',type=Path)
-    p.add_argument('--case',choices=['full','english-diagnostic','chinese-recovery'])
+    p.add_argument('--case',choices=SCENARIOS)
     a=p.parse_args();os.umask(0o077)
     if subprocess.check_output(['git','status','--porcelain'],cwd=ROOT):raise ValueError('Commit candidate before preparing or executing')
     head=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
     output=a.output.resolve()
     if output.is_relative_to(ROOT):raise ValueError('External evidence output required')
     output.mkdir(mode=0o700)
-    selected={'full':TEST,'english-diagnostic':ENGLISH_DIAGNOSTIC,'chinese-recovery':CHINESE_RECOVERY}[a.case or 'full']
-    report=dict(status='RUNNING',head=head,layer='authorized physical iPhone / actual beta service; synthetic existing records',
+    case_id,selected=SCENARIOS[a.case or 'full']
+    report=dict(status='RUNNING',head=head,layer='authorized physical iPhone / actual beta service; synthetic records',
         cases={selected:'UNRUN'},raw_native_bundle_shareable=False,build_inputs_shareable=False,
-        unrun=['new messages/providers','Needs/Trip/typed Memory/cleanup cloud profiles','target-network quality','TestFlight'])
+        unrun=['new messages/providers','model-based Needs extraction/Trip/typed Memory/cleanup cloud profiles','target-network quality','TestFlight'])
     def save():(output/'report.json').write_text(json.dumps(report,indent=2))
     save();native=None;server=None;thread=None;accounts={};native_run_incomplete=False
     try:
@@ -97,6 +104,10 @@ def main():
             if meta['head']!=head or meta['device']!=a.device:raise ValueError('Prepared head/device differs')
             if a.case is not None and meta['test']!=selected:raise ValueError('Prepared selected method differs')
             selected=meta['test'];report['cases']={selected:'UNRUN'}
+            allowed={test:case for case,test in SCENARIOS.values()}
+            if selected not in allowed:raise ValueError('Unknown prepared beta scenario')
+            case_id=allowed[selected]
+            if case_id!=CASE and a.case is None:p.error('Business execution requires the explicit prepared --case')
             if product_hashes(build)!=meta['products']:raise ValueError('Prepared signed products changed')
             if project_hashes(work)!=meta['project_inputs']:raise ValueError('Prepared project/control inputs changed')
             tls=LocalTLS.load(Path(meta['tls']))
@@ -105,7 +116,10 @@ def main():
             if bootstrap['endpoint']!=meta['endpoint']:raise ValueError('Prepared control origin changed')
             control_token=bootstrap['token'];project=work/'G2CAcceptance.xcodeproj';config=work/'M4Device.xcconfig'
             accounts=operator_accounts(a.accounts_file)
-        native=DeviceNative(a.device,BUNDLE,project,config,build,ROOT,output,accounts,control_token,report,case_id=CASE)
+        report['scenario']=case_id
+        report['app_write_scope']={'beta-manual-needs':'new synthetic manual Needs only',
+            'beta-general-feedback':'new synthetic general Feedback only'}.get(case_id,'none: existing-record reads only')
+        native=DeviceNative(a.device,BUNDLE,project,config,build,ROOT,output,accounts,control_token,report,case_id=case_id)
         env={k:v for k,v in os.environ.items() if not k.startswith(('G2C_DEV_','G2C_M4_','SIMCTL_CHILD_','PG','LIBPQ','CJ_LOCAL_'))}
         env['OS_ACTIVITY_MODE']='disable'
         if a.prepare_only:
@@ -120,7 +134,7 @@ def main():
             class Control(BaseHTTPRequestHandler):
                 def log_message(self,*args):pass
                 def do_GET(self):self.send_error(404)
-            handler=authenticated_control(Control,control_token,lambda _:native.stage(CASE),lambda:CASE)
+            handler=authenticated_control(Control,control_token,lambda _:native.stage(case_id),lambda:case_id)
             origin=urlsplit(meta['endpoint'])
             if origin.scheme!='https' or origin.hostname!=tls.host or not origin.port:raise ValueError('Invalid prepared control origin')
             server=ThreadingHTTPServer((tls.host,origin.port),handler);tls.secure_http_server(server)
@@ -130,7 +144,7 @@ def main():
             native_run_incomplete=False
             native.scan('Debug')
             report.update(status='PARTIAL_PASS',cases={selected:'PASS'},token_key_scan='PASS',
-                provider_accounting='UNKNOWN: read-only UI scenario; server accounting requires separate evidence',
+                provider_accounting='UNKNOWN: selected UI scenario; server accounting/DB bytes require separate B evidence',
                 operator_account_file_cleanup='Mac handoff source remains owner-managed; App one-use input checked separately')
         if subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()!=head:raise ValueError('Candidate changed during acceptance')
     except BaseException as error:
