@@ -97,10 +97,20 @@ import Foundation
     }
     func tap(_ id: String) {
         let label = ["Memory", "记忆", "Assistant", "助手", "Preference", "偏好"].contains(id)
-        let query = app.buttons.matching(NSPredicate(format: label ? "label == %@" : "identifier == %@", id)), button = query.element
+        let query: XCUIElementQuery
         #if G2C_M4_DEVICE_ACCEPTANCE
         let tab = ["Memory", "记忆", "Assistant", "助手"].contains(id)
-        if tab {
+        // Reuse the fixed-container query used by Fact and cleanup acceptance.
+        // A navigation action cannot satisfy the page's below-navigation bounds.
+        if tab { query = app.tabBars.buttons.matching(NSPredicate(format: "label == %@", id)) }
+        else if id == "assistant.panel.done" { query = app.navigationBars.buttons.matching(identifier: id) }
+        else { query = app.buttons.matching(NSPredicate(format: label ? "label == %@" : "identifier == %@", id)) }
+        #else
+        query = app.buttons.matching(NSPredicate(format: label ? "label == %@" : "identifier == %@", id))
+        #endif
+        let button = query.element
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        if tab || id == "assistant.panel.done" {
             XCTAssertTrue(button.waitForExistence(timeout:10),id)
             XCTAssertTrue(button.isHittable,id)
         } else {
@@ -136,6 +146,21 @@ import Foundation
         XCTAssertEqual(result, .completed, id)
     }
     func enter(_ id: String, value: String, placeholder: String) {
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        let query = deviceSession.textInputQuery(id, in: app), field = query.element
+        reveal(field); XCTAssertEqual(query.count, 1)
+        field.tap()
+        XCTAssertTrue(app.keyboards.element.waitForExistence(timeout: 10), "The actual editor must acquire keyboard focus")
+        let done = app.toolbars.buttons.matching(identifier: "memoryCandidate.editor.done")
+        XCTAssertTrue(done.element.waitForExistence(timeout: 8)); XCTAssertEqual(done.count, 1)
+        deviceSession.revealControl(field, in: app, keyboardDone: done.element, diagnosticIdentifier: id)
+        // Place the caret at the visible last line, above the field's bottom edge.
+        field.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.8)).tap()
+        XCTAssertLessThanOrEqual(field.frame.maxY, min(done.element.frame.minY, app.keyboards.element.frame.minY))
+        M4DeviceTestSession.clearFocusedTextWithKeyboard(field)
+        XCTAssertNil(field.value)
+        XCTAssertEqual(field.placeholderValue, placeholder)
+        #else
         let multi = app.textViews.matching(identifier: id), single = app.textFields.matching(identifier: id)
         let multiline = multi.element.exists
         let query = multiline ? multi : single, field = query.element
@@ -153,6 +178,7 @@ import Foundation
             selectAll.element.tap(); field.typeText(XCUIKeyboardKey.delete.rawValue)
             XCTAssertEqual(field.value as? String, multiline ? placeholder : "")
         }
+        #endif
         field.typeText(value)
         XCTAssertEqual(Array((field.value as? String ?? "").utf8), Array(value.utf8))
     }
