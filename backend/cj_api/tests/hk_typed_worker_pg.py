@@ -1,5 +1,8 @@
 """One original worker, legacy and typed scopes; private PG/Fake, no cloud calls."""
 import json
+import base64
+import hashlib
+import os
 import sys
 from datetime import datetime,timezone
 from unittest.mock import patch
@@ -23,8 +26,6 @@ A='m4-synthetic-worker-a';B='m4-synthetic-worker-b'
 def exercise(auth,conninfo):
     host=RegisteredHost(auth,conninfo,{s:(8,2,50000) for s in (A,B)})
     path,context=host.profiles[A]
-    # Activation is private-harness-only; this test never changes cloud metadata.
-    harness.dev_auth.activate_travel(conninfo,B,context,'MESSAGE-TRAVEL-CONSUMER@1')
     database=LocalDatabase(conninfo,run_context=context,travel_context=True)
     app=create_local_app(conninfo_path=None,auth_dir=auth,database=database,run_context=context)
     def headers(s):return {**host.headers[s],'Content-Type':'application/octet-stream'}
@@ -46,6 +47,16 @@ def exercise(auth,conninfo):
     assert runtime.memory_configuration_for_scope(scope_for(ISSUER,B)) is config
     assert runtime.memory_configuration_for_scope(scope_for(ISSUER,'uninvited')) is None
     register_typed_routes(app,database=database,auth_dir=auth,configuration=TypedConfiguration.from_bytes(json.dumps(policy).encode()))
+    api_runtime=Runtime(auth,context,path,[],typed_memory=config.collection,subjects=frozenset((A,B)),
+                        typed_message_subjects=frozenset((B,)))
+    def configured_app():
+        with patch.dict(os.environ,dict(CJ_BETA_HISTORY_B64=base64.b64encode(b'h'*32).decode(),
+            CJ_BETA_CONFIRMATION_B64=base64.b64encode(b'c'*32).decode())),patch.object(Runtime,'database',return_value=database):
+            return api_runtime.app()
+    def memory_rows():
+        with database.connect(scope_for(ISSUER,B)) as c:
+            return {table:c.execute('SELECT to_jsonb(t)::text FROM '+table+' t ORDER BY 1').fetchall()
+                    for table in ('cj_memory_scope','cj_memory_item','cj_memory_source','cj_memory_operation')}
     class Recorded(FakeProvider):
         def __init__(self):super().__init__();self.inputs=[]
         def stream(self,messages,system=None):
@@ -57,6 +68,7 @@ def exercise(auth,conninfo):
             trip_id=None,creation_intent='none',expected_generation=head['generation'],expected_sequence=0,
             travel_context=None if travel is None else dict(id=travel['id'],expected_version=travel['version']),needs_reference=None)).encode()
         original=expect(api.post('/v2/messages',content=raw,headers=headers(B)))
+        assert original['receipt']['input_sha256']==hashlib.sha256(raw).hexdigest()
         found=expect(api.get('/v2/message-send-status',params={'conversation_id':tag,'message_id':tag},headers=host.headers[B]))
         assert found['receipt']==original['receipt'] and found['reference']==original['reference']
         return original
@@ -67,6 +79,47 @@ def exercise(auth,conninfo):
                 extent='long_term' if travel is None else 'current',occurred_at='date unknown',
                 context=None if travel is None else dict(kind='travel',id=travel['id'],expected_version=travel['version']))).encode()
             expect(api.post('/v2/memories',content=raw,headers=headers(B)))
+        before=memory_rows()
+        try:configured_app()
+        except ValueError as e:assert str(e)=='original_typed_message_travel_profile_required'
+        else:raise AssertionError('configured API bypassed missing canonical Travel profile')
+        try:harness.dev_auth.activate_travel(conninfo,B,context,'MESSAGE-TRAVEL-CONSUMER@1')
+        except ValueError:pass
+        else:raise AssertionError('old activation accepted existing Memory without its consumer')
+        try:harness.dev_auth.activate_travel(conninfo,A,context,'MESSAGE-TRAVEL-CONSUMER@1',
+            typed_memory_configuration=config,auth_dir=auth)
+        except RuntimeDenied:pass
+        else:raise AssertionError('unconfigured foreign owner activated with B consumer')
+        for options in (dict(typed_memory_configuration=object(),auth_dir=auth),
+                        dict(typed_memory_configuration=config)):
+            try:harness.dev_auth.activate_travel(conninfo,B,context,'MESSAGE-TRAVEL-CONSUMER@1',**options)
+            except ValueError:pass
+            else:raise AssertionError('activation accepted a noncanonical consumer or missing AUTH')
+        expired=json.loads(json.dumps(policy));expired['collection']['expires_at']='2000-01-01T00:00:00+00:00'
+        expired_config=TypedRuntimeConfiguration.from_bytes(json.dumps(dict(version='local-memory-run.2',collection=expired,
+            selections={B:dict(subject='self',slots=['preference'],max_bytes=1000)})).encode())
+        try:harness.dev_auth.activate_travel(conninfo,B,context,'MESSAGE-TRAVEL-CONSUMER@1',
+            typed_memory_configuration=expired_config,auth_dir=auth)
+        except RuntimeDenied:pass
+        else:raise AssertionError('expired policy enabled an existing Memory consumer')
+        missing=json.loads(json.dumps(policy));missing['collection']['profiles']={A:profile};missing['travel_contexts']={A:[]}
+        missing_config=TypedRuntimeConfiguration.from_bytes(json.dumps(dict(version='local-memory-run.2',collection=missing,
+            selections={A:dict(subject='self',slots=['preference'],max_bytes=1000)})).encode())
+        try:harness.dev_auth.activate_travel(conninfo,A,context,'MESSAGE-TRAVEL-CONSUMER@1',
+            typed_memory_configuration=missing_config,auth_dir=auth)
+        except RuntimeDenied:pass
+        else:raise AssertionError('readonly activation provisioned a missing Memory namespace')
+        assert memory_rows()==before
+        assert not database.travel_profile(scope_for(ISSUER,A)) and not database.travel_profile(scope_for(ISSUER,B))
+        # The operator uses the existing table owner, never a runtime GRANT.
+        assert harness.dev_auth.activate_travel(conninfo,B,context,'MESSAGE-TRAVEL-CONSUMER@1',
+            typed_memory_configuration=config,auth_dir=auth)=='activated'
+        assert harness.dev_auth.activate_travel(conninfo,B,context,'MESSAGE-TRAVEL-CONSUMER@1',
+            typed_memory_configuration=config,auth_dir=auth)=='existing'
+        assert memory_rows()==before
+        with database.connect(scope_for(ISSUER,B)) as c:
+            assert c.execute("SELECT has_table_privilege(current_user,'cj_message_context_profile','INSERT'),has_table_privilege(current_user,'cj_message_context_profile','UPDATE')").fetchone()==(False,False)
+    with TestClient(configured_app()) as api:
         old=host.send(api,A,'worker-legacy','Synthetic old scope without Memory')
         current=send(api,'worker-current-one',travels[0])
         model=Recorded()
@@ -105,7 +158,9 @@ def exercise(auth,conninfo):
         assert blocked.calls==1
         for original in (current,second,none,pending):
             receipt=original['receipt']
-            display=expect(api.get('/v2/run-display',params={'message_id':receipt['message_id']},headers=host.headers[B]))['snapshot']
+            value=expect(api.get('/v2/run-display',params={'message_id':receipt['message_id']},headers=host.headers[B]))
+            assert value['reference']==original['reference']
+            display=value['snapshot']
             assert display['run_id']==receipt['run_id'] and display['text']
         with database.connect(scope_for(ISSUER,A)) as c:
             assert c.execute('SELECT count(*) FROM cj_memory_item').fetchone()==(0,)

@@ -149,6 +149,26 @@ RUN、Meter 与真实出口执行。未选择的主体仍用原路径；已有 M
 实际激活前须核对原主体、原 Travel/版本和执行身份，按 #495 处理授权范围外的操作；
 真实模型续答、回执与质量仍分别在 #30/#32 验证。移除 worker 配置不能恢复已有 Memory 主体的旧派发。
 
+## 已有 Memory 主体的 MESSAGE 激活
+
+先交付匹配主体的原 typed worker。对已有 Memory 的主体，旧 `activate-travel` 仍明确拒绝；
+本机 operator 可显式传 `--typed-memory-run-policy` 与原 `--auth-dir`，由 C 的
+`TypedRuntimeConfiguration.bind_readonly` 核原邀请/当前账号/同 owner 和已有 Memory 命名空间。
+该验证不创建或修改 Memory。元数据仍只由原本机表 owner 写入，原 pending RUN/delivery trigger 不变；
+运行角色无 profile INSERT/UPDATE，不通过 GRANT、换身份、删除数据或伪造 lease 解锁。
+
+API 原 0600 `api.env` 可增加 `CJ_BETA_TYPED_MESSAGE_SUBJECTS_JSON`，值为明确选择的主体 JSON 数组。
+该集合必须非空、无重复、被同文件 typed policy 和原邀请覆盖；worker 文件不接受。
+API 启动还必须读到该主体已激活的原 `message-travel.1` profile。
+未选择主体保留 API-only 拒绝；A 原无 Memory 主体的消息路径不变。
+
+字段不是客户端权限或已安装 worker 的证明，只有受控部署确认同一配置/镜像后才可设置。
+云端需使用表 owner 的 metadata 激活属于单独运维操作，必须核实 #495 的原执行身份/操作授权后执行；
+此本机入口不接纳云 DSN。不得只改 API allow-list 提前开放队列。
+激活后保留原 profile/数据。停止时先停止原 worker，核原在途动作，再移除 API 消息 allow-list
+并重启 API 保持 API-only；仅移除 allow-list 不会撤销已入队的原动作。
+不能删除 profile 回退旧 writer，实际未知原动作仍只读核对。
+
 ## 验证
 
 ```sh

@@ -278,6 +278,50 @@ def test_worker_typed_runtime_invites_role_and_database_capability(tmp_path,monk
     finally:runtime.close()
 
 
+def test_api_typed_message_subjects_require_private_policy_and_role(tmp_path,monkeypatch):
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    activate(monkeypatch)
+    a,b='m4-synthetic-gate-a','m4-synthetic-gate-b'
+    public=rsa.generate_private_key(public_exponent=65537,key_size=2048).public_key().public_bytes(
+        serialization.Encoding.PEM,serialization.PublicFormat.SubjectPublicKeyInfo)
+    context=dict(version='CJ-LOCAL-RUN@2',history=[],current=dict(meter=dict(unit='provider_call',budget=20,
+        period_start=1,period_end=2000000000,max_steps=8,max_tools=1,max_output=5000,max_seconds=120),
+        output_limits=dict(model=2000,tool=2000,memory=1000)))
+    profile=dict(subjects=['self'],slots={'preference':dict(kind='preference',collection_allowed=True,semantic_resolved=True)},
+        extents=['long_term','current'],context_ids=[])
+    policy=dict(version='local-memory-typed.1',collection=dict(version='local-memory-policy.1',
+        expires_at='2099-11-30T23:59:59+08:00',profiles={b:profile}),travel_contexts={b:[]})
+    for k,v in dict(CJ_BETA_SUBJECTS_JSON=json.dumps([a,b]),CJ_BETA_RUN_CONTEXT_JSON=json.dumps(context),
+        CJ_BETA_SIGNING_PUBLIC_B64=base64.b64encode(public).decode()).items():monkeypatch.setenv(k,v)
+    monkeypatch.delenv(configuration.MEMORY_RUN_POLICY,raising=False)
+    monkeypatch.setenv(configuration.TYPED_POLICY,base64.b64encode(json.dumps(policy).encode()).decode())
+    for selected in ({},None,[],[b,b],[a],['m4-synthetic-uninvited'],b):
+        monkeypatch.setenv(configuration.TYPED_MESSAGE_SUBJECTS,json.dumps(selected))
+        with pytest.raises(ValueError,match='explicit_typed_message_policy'):
+            configuration.Runtime.load(tmp_path/'invalid')
+    monkeypatch.setenv(configuration.TYPED_MESSAGE_SUBJECTS,json.dumps([b]))
+    runtime=configuration.Runtime.load(tmp_path/'valid')
+    try:assert runtime.typed_message_subjects==frozenset((b,))
+    finally:runtime.close()
+    # The same opt-in cannot enter Config.Env or the worker's private file.
+    required={k:'synthetic-value' for k in configuration.SECRET_FILES['api']['api']}
+    values={**required,configuration.TYPED_MESSAGE_SUBJECTS:json.dumps([b])}
+    (tmp_path/'api.env').write_text('\n'.join(k+'='+v for k,v in values.items())+'\n');(tmp_path/'api.env').chmod(0o600)
+    with patch.dict(os.environ):
+        for key in {*values,configuration.TYPED_POLICY}:os.environ.pop(key,None)
+        configuration.load_secret_environment('api',root=tmp_path)
+        assert os.environ[configuration.TYPED_MESSAGE_SUBJECTS]==json.dumps([b])
+    monkeypatch.delenv(configuration.TYPED_POLICY)
+    with pytest.raises(ValueError,match='explicit_typed_message_policy'):configuration.Runtime.load(tmp_path/'missing-policy')
+    with pytest.raises(ValueError,match='API_only'):configuration.Runtime.load(tmp_path/'worker',worker=True)
+    worker={k:'synthetic-value' for k in configuration.SECRET_FILES['worker']['worker']}
+    (tmp_path/'worker.env').write_text('\n'.join(k+'='+v for k,v in {**worker,configuration.TYPED_MESSAGE_SUBJECTS:'[]'}.items())+'\n')
+    (tmp_path/'worker.env').chmod(0o600)
+    with patch.dict(os.environ):
+        for key in {*worker,configuration.TYPED_MESSAGE_SUBJECTS}:os.environ.pop(key,None)
+        with pytest.raises(ValueError):configuration.load_secret_environment('worker',root=tmp_path)
+
+
 def test_trial_expiry_at_final_model_and_fact_guard_sends_nothing(tmp_path,monkeypatch):
     import asyncio
     import httpx
