@@ -210,7 +210,9 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
                      LocalBudgetRouter(database,registrations=tools_configuration.registrations)))
 
 
-def run_once(database, model, auth_dir, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,background_jobs=None,formal_memory_configuration=None,real_services=None,account_admission=False):
+def run_once(database, model, auth_dir, *, memory_configuration=None,memory_configuration_for_scope=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,background_jobs=None,formal_memory_configuration=None,real_services=None,account_admission=False):
+    if memory_configuration_for_scope is not None and (memory_configuration is not None or formal_memory_configuration is not None):
+        raise ValueError('select one explicit Memory configuration source')
     if formal_memory_configuration is not None:
         from cj_api.local_formal_memory import configuration
         formal_memory_configuration=configuration(formal_memory_configuration)
@@ -239,8 +241,10 @@ def run_once(database, model, auth_dir, *, memory_configuration=None,tools_confi
         # One scope's unreconciled run (for example an unresolved original quota
         # period) must not starve every later scope; it is still raised below.
         try:
+            selected_memory=(memory_configuration if memory_configuration_for_scope is None
+                             else memory_configuration_for_scope(scope))
             results += _worker_for_scope(database,model,auth_dir,scope,checker,
-                                         memory_configuration=memory_configuration,tools_configuration=tools_configuration,draft_profile=draft_profile,place_draft_configuration=place_draft_configuration,formal_memory_configuration=formal_memory_configuration).process()
+                                         memory_configuration=selected_memory,tools_configuration=tools_configuration,draft_profile=draft_profile,place_draft_configuration=place_draft_configuration,formal_memory_configuration=formal_memory_configuration).process()
         except Exception as error:
             if failure is None: failure = error
     if background_jobs is not None:results+=background_jobs.run_once(model)
