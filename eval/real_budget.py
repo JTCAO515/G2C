@@ -1,6 +1,7 @@
 """Pre-dispatch conservative estimate, additional to B's unchanged sole journal.
 
-JT PR540 caps; JT 2026-11-05 raised the tool stop to10000, not the total200 cap.
+JT 2026-11-06 raised model total and stop to10000, including M1.
+The tool stop is10000 but its unchanged total200 cap remains binding.
 First round actual holds:137 model/54 paid tools. Six new smoke
 cases expect16 model rounds and8 paid tool calls (fact intents cost no hold).
 This is an estimate, never an invoice or permission to reset UNKNOWN amounts.
@@ -10,9 +11,9 @@ import json
 from pathlib import Path
 import sqlite3
 
-MODEL_STOP = 400
+MODEL_STOP = 10000
 TOOL_STOP = 10000
-MODEL_BUDGET = 500
+MODEL_BUDGET = 10000
 TOOL_BUDGET = 200
 STATE = Path.home()/'.local/share/g2c/m4-real-services'
 
@@ -53,5 +54,6 @@ def estimate(attempts, *, include_smoke):
                 within_stop_lines=within_stops, within_budget=within_budget,
                 within_authorization=within_stops and within_budget,
                 policy_ref='https://github.com/JTCAO515/G2C/issues/495#issuecomment-6644812116',
+                model_policy_ref='https://github.com/JTCAO515/G2C/issues/495#issuecomment-6688002330',
                 actual_billed_total='UNKNOWN', M1_hold_cny=13,
                 quantity_limits=dict(place=1200,route=600,weather=200,fact=240))
