@@ -268,6 +268,8 @@ class SmokeChecks(unittest.TestCase):
             self.assertFalse(real_phase.claim('full',p/'full-b','candidate1'))
 
     @patch.object(real_budget,'TOOL_STOP',160)
+    @patch.object(real_budget,'MODEL_STOP',400)
+    @patch.object(real_budget,'MODEL_BUDGET',500)
     def test_first_round_based_estimate_and_equality_stop(self):
         previous=[dict(kind='model')]*166+[dict(kind='place')]*17+[dict(kind='weather')]*57+[dict(kind='fact')]*10
         r=estimate(previous,include_smoke=True)
@@ -276,6 +278,8 @@ class SmokeChecks(unittest.TestCase):
         self.assertFalse(estimate(previous+[dict(kind='model')]*68,include_smoke=True)['within_stop_lines'])
         self.assertFalse(estimate(previous+[dict(kind='weather')]*24,include_smoke=True)['within_stop_lines'])
 
+    @patch.object(real_budget,'MODEL_STOP',400)
+    @patch.object(real_budget,'MODEL_BUDGET',500)
     def test_JT_tool_stop_change_allows_161_projection_within_original_200_budget(self):
         previous=[dict(kind='model')]*200+[dict(kind='place')]*99
         r=estimate(previous,include_smoke=True)
@@ -293,12 +297,16 @@ class SmokeChecks(unittest.TestCase):
                 self.assertEqual(r['within_budget'],allowed)
                 self.assertEqual(r['within_authorization'],allowed)
 
+    @patch.object(real_budget,'MODEL_STOP',400)
+    @patch.object(real_budget,'MODEL_BUDGET',500)
     def test_model_equality_stop_still_blocks_after_tool_stop_change(self):
         r=estimate([dict(kind='model')]*234,include_smoke=True)
         self.assertEqual(r['projected_conservative_cny']['model'],400)
         self.assertTrue(r['within_budget'])
         self.assertFalse(r['within_authorization'])
 
+    @patch.object(real_budget,'MODEL_STOP',400)
+    @patch.object(real_budget,'MODEL_BUDGET',500)
     def test_full_between_case_guard_uses_new_stop_and_original_total(self):
         for tools in (159,160,161,199):
             with self.subTest(tools=tools):
@@ -311,6 +319,41 @@ class SmokeChecks(unittest.TestCase):
     def test_full_between_case_guard_retains_historical_stop_policy(self):
         self.assertFalse(real_budget.stop_reached(dict(weather=159)))
         self.assertTrue(real_budget.stop_reached(dict(weather=160)))
+
+    def test_JT_model_total_and_stop_both_10000_keep_M1_and_tool_cap(self):
+        previous=[dict(kind='model',state='INTENT',receipt=None)]*232+[dict(kind='place')]*118
+        r=estimate(previous,include_smoke=True)
+        self.assertEqual(r['before_conservative_cny'],dict(model=245,tool=118))
+        self.assertEqual(r['additional_estimate_cny'],dict(model=153,tool=62))
+        self.assertEqual(r['projected_conservative_cny'],dict(model=398,tool=180))
+        self.assertEqual(r['stop_cny'],dict(model=10000,tool=10000))
+        self.assertEqual(r['budget_cny'],dict(model=10000,tool=200))
+        self.assertEqual(r['M1_hold_cny'],13)
+        self.assertTrue(r['within_authorization'])
+        self.assertEqual(r['actual_billed_total'],'UNKNOWN')
+
+    def test_model_10000_projection_equality_remains_a_stop(self):
+        for count,total,within_budget,allowed in ((9833,9999,True,True),(9834,10000,True,False),(9835,10001,False,False)):
+            with self.subTest(total=total):
+                r=estimate([dict(kind='model')]*count,include_smoke=True)
+                self.assertEqual(r['projected_conservative_cny']['model'],total)
+                self.assertEqual(r['within_budget'],within_budget)
+                self.assertEqual(r['within_authorization'],allowed)
+
+    def test_model_between_cases_stop_10000_includes_original_M1_hold(self):
+        self.assertFalse(real_budget.stop_reached(dict(model=9986)))
+        self.assertTrue(real_budget.stop_reached(dict(model=9987)))
+        self.assertTrue(real_budget.stop_reached(dict(model=9988)))
+        self.assertTrue(real_budget.stop_reached(dict(model=232,weather=200)))
+
+    def test_future_forecast_does_not_change_original_attempts_or_hold(self):
+        previous=[dict(kind='model',state='INTENT',receipt=None),dict(kind='weather',state='RECEIVED',receipt={})]
+        original=json.dumps(previous,sort_keys=True)
+        a=estimate(previous,include_smoke=True);b=estimate(previous,include_smoke=True)
+        self.assertEqual(a,b)
+        self.assertEqual(a['before_conservative_cny'],dict(model=14,tool=1))
+        self.assertEqual(a['additional_estimate_cny'],dict(model=153,tool=62))
+        self.assertEqual(json.dumps(previous,sort_keys=True),original)
 
     def test_smoke_over_total_budget_stops_before_credentials_claim_or_exit(self):
         with tempfile.TemporaryDirectory() as folder, \
