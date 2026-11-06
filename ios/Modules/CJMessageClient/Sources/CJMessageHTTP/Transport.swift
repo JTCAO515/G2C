@@ -819,7 +819,18 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
             return try await sendLocalRead(request, baseURL: baseURL, operationID: operationID, capability: memoryHistory)
         }
         if request.method == .get || request.method == .head {
-            return try await transport.send(request,body:body,baseURL:baseURL,operationID:operationID)
+            do {
+                let response=try await transport.send(request,body:body,baseURL:baseURL,operationID:operationID)
+                #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+                M4BetaReadDiagnostic.record(endpoint:baseURL,path:URLComponents(string:request.path ?? "")?.path ?? "",stage:"transport",status:response.0.status.code)
+                #endif
+                return response
+            } catch {
+                #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+                M4BetaReadDiagnostic.record(endpoint:baseURL,path:URLComponents(string:request.path ?? "")?.path ?? "",stage:"transport",error:error)
+                #endif
+                throw error
+            }
         }
         if let messages, request.method == .post, operationID == messages.wire.operation,
            request.path == messages.wire.path, request.scheme == nil, request.authority == nil,
@@ -938,26 +949,6 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
 
 }
 private final class RedirectBlocker: NSObject, URLSessionTaskDelegate, Sendable {
-    #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
-    /// Bounded local diagnostic only: no URL query, headers, body or credentials.
-    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: (any Error)?) {
-        let environment=ProcessInfo.processInfo.environment
-        guard environment["G2C_M4_BETA_API"] == "1",
-              let id=environment["G2C_M4_BETA_DIAGNOSTIC_ID"],UUID(uuidString:id)?.uuidString==id,
-              let url=task.originalRequest?.url,url.host=="api-beta.go2china.space",
-              ["/v5/message-history","/v6/run-display"].contains(url.path) else {return}
-        let failure=error as NSError?
-        let value:[String:Any]=["diagnostic_id":id,"path":url.path,
-            "status":(task.response as? HTTPURLResponse)?.statusCode as Any? ?? NSNull(),
-            "error_domain":failure.map {$0.domain==NSURLErrorDomain ? NSURLErrorDomain:"other"} ?? "none",
-            "error_code":failure?.code as Any? ?? NSNull()]
-        do {
-            let root=try FileManager.default.url(for:.cachesDirectory,in:.userDomainMask,appropriateFor:nil,create:true)
-            let name=url.path=="/v6/run-display" ? "G2CM4BetaRead-v6.json":"G2CM4BetaRead-v5.json"
-            try JSONSerialization.data(withJSONObject:value).write(to:root.appendingPathComponent(name),options:.atomic)
-        } catch {print("M4_BETA_READ_DIAGNOSTIC_UNAVAILABLE")}
-    }
-    #endif
     #if DEBUG && G2C_M4_DEVICE_ACCEPTANCE && canImport(Security)
     private let localServers: [M4LocalServerTrust]
     init(localServers: [M4LocalServerTrust] = []) { self.localServers = localServers }
@@ -1375,18 +1366,41 @@ extension MessageHTTPClient {
     /// only display state; it cannot recover an input or stage a RUN/Trip write.
     public func preservedRun(for row: MessageHumanHistoryItem, page: MessageReadResult<[MessageHumanHistoryItem]>,
         limits: MessageReadLimits, lease: Lease) async throws -> MessageReadResult<MessageHumanRun> {
+        #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+        var diagnosticStage="validate"
+        M4BetaReadDiagnostic.record(endpoint:endpoint.url,path:"/v6/run-display",stage:diagnosticStage)
+        #endif
+        do {
         try validateRead(page, lease: lease); try checkSendLease(lease)
         guard page.value.contains(where: { $0.id == row.id }) else { throw RecoveryError.inactive }
         var query = URLComponents(); query.path = "/v6/run-display"
         query.queryItems = [.init(name: "message_id", value: row.receipt.message_id)]
         query.percentEncodedQuery = query.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
         guard let path = query.string else { throw MessageHTTPFailure.invalidConfiguration }
+        #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+        diagnosticStage="exchange"
+        #endif
         let (status, bytes, trace) = try await versionedMessageExchange(path: path, operation: "readPreservedRunDisplayV6", raw: nil, lease: lease)
+        #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+        diagnosticStage="decode"
+        #endif
         guard status == 200 else { try readError(status, JSONDecoder().decode(Components.Schemas.ErrorResponse.self, from: bytes)) }
         let value = try decodePreservedRun(bytes, maximumBytes: endpoint.maximumResponseBytes,
             textLimit: limits.maximumDecodedBytes, trace: trace, row: row)
+        #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+        diagnosticStage="final-lease"
+        #endif
         try validateRead(page, lease: lease); try checkSendLease(lease)
+        #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+        M4BetaReadDiagnostic.record(endpoint:endpoint.url,path:"/v6/run-display",stage:"completed",status:status)
+        #endif
         return MessageReadResult(value: value, next: nil, requestID: trace, owner: readOwner, lease: lease)
+        } catch {
+            #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+            M4BetaReadDiagnostic.record(endpoint:endpoint.url,path:"/v6/run-display",stage:diagnosticStage,error:error)
+            #endif
+            throw error
+        }
     }
     public func tripDiscussionHistory(conversationID:String,limit:Int,after:MessageReadCursor?=nil,limits:MessageReadLimits,lease:Lease) async throws -> MessageReadResult<[MessageTripHistoryItem]> {
         try await versionedTripHistory(conversationID:conversationID,limit:limit,after:after,limits:limits,lease:lease,edit:false)
