@@ -251,6 +251,28 @@ class InterruptedReportTests(unittest.TestCase):
         self.assertEqual(report['status'], 'FAIL')
         self.assertFalse(any(row['status'] in ('PASS','PARTIAL_PASS') for row in snapshots))
 
+    def test_beta_native_failure_is_preserved_after_cleanup_and_failed_scan(self):
+        for failure,expected in [(None,'PASS'),(AssertionError('SYNTHETIC credential hit'),'FAIL'),
+                                 (RuntimeError('SYNTHETIC device unavailable'),'UNRUN')]:
+            with self.subTest(scan_status=expected):
+                node=self.driver_try('beta_device')
+                original=RuntimeError('SYNTHETIC native exit65')
+                node.body=[ast.Raise(exc=ast.Name(id='original',ctx=ast.Load()))]
+                report={'status':'RUNNING'};events=[];snapshots=[]
+                def scan(configuration):
+                    self.assertEqual(configuration,'Debug');events.append('scan')
+                    if failure:raise failure
+                native=SimpleNamespace(cleanup_input=lambda:events.append('cleanup'),scan=scan)
+                scope=dict(original=original,report=report,native=native,server=None,thread=None,
+                    native_run_incomplete=True,save=lambda:snapshots.append(copy.deepcopy(report)))
+                with self.assertRaises(RuntimeError) as raised:self.execute(node,scope)
+                self.assertIs(raised.exception,original)
+                self.assertEqual(events,['cleanup','scan'])
+                self.assertEqual(report['status'],'FAIL')
+                self.assertEqual(report['failure_container_scan']['status'],expected)
+                self.assertTrue(snapshots)
+                self.assertFalse(any(row['status'] in ('PASS','PARTIAL_PASS') for row in snapshots))
+
     def test_final_scan_error_never_publishes_success(self):
         for name in ('memory_candidate','memory_erasure'):
             with self.subTest(driver=name), tempfile.TemporaryDirectory() as directory:

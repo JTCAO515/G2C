@@ -42,7 +42,11 @@ def main():
     parser.add_argument('--build-dir', required=True, type=Path)
     parser.add_argument('--case', choices=CASES)
     parser.add_argument('--seed-only', action='store_true', help='Diagnose real formal-source preparation; every native case remains UNRUN')
+    parser.add_argument('--bootstrap-only', action='store_true', help='Device clock/bootstrap diagnostic only; original offline acceptance stays UNRUN')
     args = parser.parse_args()
+    # JT's dedicated group is approved for this exact device identity. Preserve
+    # the historical Simulator identity and all old device evidence as recorded.
+    bundle = 'space.go2china.offline.acceptance' if args.device else BUNDLE
     tls = None
     if args.device:
         if not args.local_tls: parser.error('--device requires the approved --local-tls profile')
@@ -51,6 +55,8 @@ def main():
         tls = LocalTLS.load(args.local_tls)
     elif args.local_tls or args.prepare_only: parser.error('Device options require --device')
     if args.seed_only and args.prepare_only: parser.error('Choose source diagnostic or device build preparation')
+    if args.bootstrap_only and (not args.device or args.case!='testReopenLanguageAndReadOnly' or args.seed_only):
+        parser.error('--bootstrap-only requires the selected device reopen case and is not a source diagnostic')
     os.umask(0o077)
     output, build = args.output.resolve(), args.build_dir.resolve()
     if tls: device_project_root, build = private_workspace(output, build)
@@ -244,9 +250,9 @@ def main():
                 def app_files():
                     if tls:
                         container = Path(tempfile.mkdtemp(prefix='device-offline-snapshot-', dir=root)) / 'app-data'
-                        scan_app_container(args.device, BUNDLE, container, tokens[active_case].values())
+                        scan_app_container(args.device, bundle, container, tokens[active_case].values())
                     else:
-                        container = Path(subprocess.check_output(['xcrun', 'simctl', 'get_app_container', args.simulator, BUNDLE, 'data'], env=env, text=True).strip())
+                        container = Path(subprocess.check_output(['xcrun', 'simctl', 'get_app_container', args.simulator, bundle, 'data'], env=env, text=True).strip())
                     environment_id = str(uuid.UUID(bytes=hashlib.sha256(('G2C.DEBUG.TRIP.environment|' + endpoint).encode()).digest()[:16])).upper()
                     files = sorted((container / 'Library/Application Support/G2COfflineTrip' / environment_id).glob('*/snapshot.aesgcm'))
                     return container, files
@@ -346,14 +352,14 @@ def main():
                     builder.directory.mkdir(); builder.write_project(0)
                     control_url = ('https://' + tls.host if tls else 'http://127.0.0.1') + ':' + str(control.server_port)
                     (builder.directory / 'G2CControl.swift').write_text((HERE / 'DevelopmentOfflineTripUITests.swift').read_text()
-                        .replace('__FIXTURE_URL__', control_url))
+                        .replace('__FIXTURE_URL__', control_url).replace(BUNDLE,bundle))
                     project = builder.directory / 'G2CAcceptance.xcodeproj'; pbx = project / 'project.pbxproj'
-                    text = pbx.read_text().replace('space.go2china.foundation.local', BUNDLE).replace('space.go2china.foundation.control', BUNDLE + '.control')
+                    text = pbx.read_text().replace('space.go2china.foundation.local', bundle).replace('space.go2china.foundation.control', bundle + '.control')
                     entitlement = builder.directory / 'Offline.entitlements'
-                    entitlement.write_bytes(plistlib.dumps({'application-identifier': BUNDLE, 'keychain-access-groups': [BUNDLE]}))
+                    entitlement.write_bytes(plistlib.dumps({'application-identifier': bundle, 'keychain-access-groups': [bundle]}))
                     text = text.replace(json.dumps(str(ROOT / 'ios/App/Development.entitlements')), json.dumps(str(entitlement)))
                     pbx.write_text(text)
-                    if tls: _, configuration_file, _ = configure_project(project, tls, control_url, control_token, bundle=BUNDLE)
+                    if tls: _, configuration_file, _ = configure_project(project, tls, control_url, control_token, bundle=bundle, offline_group='group.g2c.offline')
                     for case in ([args.case] if args.case else CASES):
                         assert subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip() == head
                         assert not subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT)
@@ -361,13 +367,18 @@ def main():
                             active_case = case; prepare_case(case)
                             detail = dict(status='RUNNING'); report.setdefault('device_native', {})[case] = detail
                             case_output = output / 'device-native' / case; case_output.mkdir(parents=True, mode=0o700)
-                            native = DeviceNative(args.device, BUNDLE, project, configuration_file, build, ROOT,
+                            native = DeviceNative(args.device, bundle, project, configuration_file, build, ROOT,
                                 case_output, tokens[case], control_token, detail, evidence_root=output,case_id=case)
-                            selected = ['DevelopmentOfflineTripUITests/' + case]
+                            selected = ['DevelopmentOfflineTripUITests/' + ('testClockBootstrapDiagnostic' if args.bootstrap_only else case)]
+                            detail['selected_tests']=selected
                             native.build_for_testing('Debug', selected, env)
                             if args.prepare_only:
                                 detail['status'] = 'PREPARED_EXECUTION_UNRUN'; report['cases'][case] = 'UNRUN'; save(); continue
                             native.run('Debug', selected, env); native.scan('Debug')
+                            if args.bootstrap_only:
+                                detail['status']='DIAGNOSTIC_PASS'
+                                report['clock_bootstrap_diagnostic']='PASS'
+                                report['cases'][case]='UNRUN';save();continue
                             detail['status'] = 'PASS'; report['cases'][case] = 'PASS'; report['unrun_cases'].remove(case); save(); continue
                         result = output / (case + '.xcresult')
                         command = ['xcodebuild', '-project', str(project), '-scheme', 'G2CControl', '-configuration', 'Debug',
@@ -412,7 +423,7 @@ def main():
             report['private_pg_stopped'] = True
             assert subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip() == head, 'head changed during execution'
             assert all(hashlib.sha256((ROOT / p).read_bytes()).hexdigest() == digest for p, digest in report['source_hashes'].items()), 'source changed during execution'
-            report['status'] = 'PREPARED_EXECUTION_UNRUN' if args.prepare_only else ('PARTIAL_PASS' if args.case else 'PASS')
+            report['status'] = 'PREPARED_EXECUTION_UNRUN' if args.prepare_only else ('DIAGNOSTIC_PASS' if args.bootstrap_only else ('PARTIAL_PASS' if args.case else 'PASS'))
     except BaseException as error:
         report['status'] = 'FAIL'; report['error'] = type(error).__name__; raise
     finally:

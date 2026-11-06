@@ -43,7 +43,7 @@ import Foundation
         #if G2C_M4_DEVICE_ACCEPTANCE
         let fixed=["Memory","记忆","Trips","行程","Assistant","助手"].contains(id)
         if fixed {XCTAssertTrue(target.waitForExistence(timeout:10),id)}
-        else {deviceSession.revealControl(target,in:app)}
+        else {deviceSession.revealControl(target,in:app,diagnosticIdentifier:id)}
         #else
         for _ in 0..<35 {
             if target.exists && target.isHittable { break }
@@ -90,6 +90,9 @@ import Foundation
             .merging(offsets) { _, new in new }
         #if G2C_M4_DEVICE_ACCEPTANCE
         app.launchEnvironment.merge(try deviceSession.applicationEnvironment(endpoint: f.endpoint, injecting: choices)) { _, value in value }
+        let diagnostic=UUID().uuidString
+        app.launchEnvironment["G2C_M4_DIAGNOSTIC_ID"]=diagnostic
+        print("M4_OFFLINE_DIAGNOSTIC_ID",diagnostic)
         #endif
         app.launch()
         XCTAssertTrue(app.tabBars.element.waitForExistence(timeout: 15))
@@ -172,6 +175,20 @@ import Foundation
         }
     }
 
+    #if G2C_M4_DEVICE_ACCEPTANCE
+    func testClockBootstrapDiagnostic() async throws {
+        let (f, _) = try await prepare("testReopenLanguageAndReadOnly")
+        defer {app?.terminate()}
+        try await launch(f);initialLogin(f)
+        // The real App constructor has opened the protected marker and the
+        // entitled kernel object. No synchronization/read acceptance is claimed.
+        XCTAssertFalse(app.staticTexts["g2c.dev.error"].exists)
+        tap("Trips")
+        let tree=XCTAttachment(string:app.debugDescription);tree.name="offline-entry-before-reveal";tree.lifetime = .keepAlways;add(tree)
+        tap("offline.open")
+        XCTAssertTrue(app.buttons.matching(identifier:"offline.read").element.waitForExistence(timeout:10))
+    }
+    #endif
     func testReopenLanguageAndReadOnly() async throws {
         let (f, record) = try await prepare("testReopenLanguageAndReadOnly")
         defer { app?.terminate() }

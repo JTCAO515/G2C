@@ -142,6 +142,9 @@ import Foundation
         tap(language == "en" ? "Memory" : "记忆")
         tap("memory.account"); tap("account.development.signin.A")
         guard let subject = fixture.subjects["A"] else { XCTFail("The actual local subject is required"); return }
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        deviceSession.requireAccount(subject,in:app)
+        #endif
         text("account.development.status", contains: subject)
         let back = app.navigationBars.buttons.matching(NSPredicate(format: "label == %@", language == "en" ? "Memory" : "记忆"))
         XCTAssertEqual(back.count, 1); back.element.tap()
