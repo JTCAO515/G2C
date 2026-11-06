@@ -109,6 +109,9 @@ import Foundation
         if !app.staticTexts["account.development.status"].exists { tap("memory.account") }
     }
     func signed(_ f: Fixture, _ key: String = "A") {
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        deviceSession.requireAccount(f.subjects[key]!,in:app)
+        #endif
         let expected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", f.subjects[key]!), object: app.staticTexts["account.development.status"])
         XCTAssertEqual(XCTWaiter.wait(for: [expected], timeout: 25), .completed)
     }
