@@ -28,7 +28,7 @@ import XCTest
 
     /// Use actual visible content bounds; keyboard accessories are outside Keyboard.frame.
     /// This follows the existing Needs driver gutter drag, away from editable rows.
-    func revealControl(_ element: XCUIElement, in app: XCUIApplication, keyboardDone: XCUIElement? = nil) {
+    func revealControl(_ element: XCUIElement, in app: XCUIApplication, keyboardDone: XCUIElement? = nil, diagnosticIdentifier: String? = nil) {
         for attempt in 0..<20 {
             let keyboard=app.keyboards.firstMatch
             if keyboardDone != nil && !keyboard.exists {
@@ -40,6 +40,11 @@ import XCTest
             if keyboard.exists {bottom=min(bottom,keyboard.frame.minY)}
             if let keyboardDone,keyboardDone.exists {bottom=min(bottom,keyboardDone.frame.minY)}
             let frame=element.exists ? element.frame : .zero
+            if let diagnosticIdentifier,attempt==0 || attempt==19 {
+                print("M4_EXACT_REVEAL",diagnosticIdentifier,"exists",element.exists,"frame",frame,"hittable",element.exists && element.isHittable,
+                    "bar",bar.exists ? bar.label:"none",bar.exists ? bar.frame:.zero,"bar_hittable",bar.exists && bar.isHittable,
+                    "tabs",tabs.exists ? tabs.frame:.zero,"limits",top,bottom)
+            }
             let located = !frame.isEmpty && frame.minY.isFinite && frame.maxY.isFinite
             let fits=located && frame.height<=bottom-top-8
             let within=located && (fits ? frame.minY>=top+4 && frame.maxY<=bottom-4 : frame.midY>top+4 && frame.midY<bottom-4)

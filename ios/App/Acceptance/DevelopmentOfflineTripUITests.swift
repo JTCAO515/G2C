@@ -43,7 +43,7 @@ import Foundation
         #if G2C_M4_DEVICE_ACCEPTANCE
         let fixed=["Memory","记忆","Trips","行程","Assistant","助手"].contains(id)
         if fixed {XCTAssertTrue(target.waitForExistence(timeout:10),id)}
-        else {deviceSession.revealControl(target,in:app)}
+        else {deviceSession.revealControl(target,in:app,diagnosticIdentifier:id)}
         #else
         for _ in 0..<35 {
             if target.exists && target.isHittable { break }
@@ -183,6 +183,10 @@ import Foundation
         // The real App constructor has opened the protected marker and the
         // entitled kernel object. No synchronization/read acceptance is claimed.
         XCTAssertFalse(app.staticTexts["g2c.dev.error"].exists)
+        tap("Trips")
+        let tree=XCTAttachment(string:app.debugDescription);tree.name="offline-entry-before-reveal";tree.lifetime = .keepAlways;add(tree)
+        tap("offline.open")
+        XCTAssertTrue(app.buttons.matching(identifier:"offline.read").element.waitForExistence(timeout:10))
     }
     #endif
     func testReopenLanguageAndReadOnly() async throws {
