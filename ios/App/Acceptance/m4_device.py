@@ -122,7 +122,7 @@ def private_workspace(output, build=None):
 
 
 def configure_project(project, tls, control_url, control_token, amap=False,
-                      bundle=None, include_release=False):
+                      bundle=None, include_release=False, app_local_tls=True):
     """Adapt the existing generated native project; real keys stay local-only."""
     project = Path(project)
     pbx = project / 'project.pbxproj'
@@ -133,6 +133,10 @@ def configure_project(project, tls, control_url, control_token, amap=False,
         raise ValueError('AMap requires its authorized formal Bundle ID')
     if amap and include_release:
         raise ValueError('Local AMap device configuration is Debug only')
+    if amap and not app_local_tls:
+        raise ValueError('The local AMap project requires its local test profile')
+    if not app_local_tls:
+        text=text.replace('G2C_DEBUG_LOCAL_NETWORK=1','G2C_DEBUG_SIGNING_IDENTITY=1')
     text = text.replace('space.go2china.foundation.local', bundle).replace(
         'space.go2china.foundation.control', 'space.go2china.m4.device.control')
     # Owning generators may already have replaced the foundation IDs. Keep
@@ -174,7 +178,7 @@ def configure_project(project, tls, control_url, control_token, amap=False,
     with pin_file.open('xb') as output:
         output.write(tls.public_der)
     pin_file.chmod(0o600)
-    resource_ids.append(resource(pin_file))
+    if app_local_tls:resource_ids.append(resource(pin_file))
     local = ROOT / 'ios/.local-amap-device'
     frozen_key = None
     if amap:
@@ -185,7 +189,7 @@ def configure_project(project, tls, control_url, control_token, amap=False,
     app_anchor = '000000000000000000000120 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = ('
     if text.count(app_anchor) != 1:
         raise ValueError('App resource phase changed')
-    text = text.replace(app_anchor, app_anchor + ', '.join(resource_ids) + ', ')
+    if resource_ids:text = text.replace(app_anchor, app_anchor + ', '.join(resource_ids) + ', ')
     bootstrap = project.parent / 'M4ControlBootstrap.plist'
     with bootstrap.open('xb') as output:
         output.write(plistlib.dumps(dict(endpoint=control_url, token=control_token)))

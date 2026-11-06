@@ -77,6 +77,39 @@ RFC1918/link-local IPv4 开发机地址及显式端口。现有签名 API、身�
 JT 通知连接设备后才执行签名、安装和验收；编译、手工步骤和模拟器 PASS 均不计
 真机 PASS。真机业务按 #29 的实际范围记录，TestFlight 保持 #33 UNRUN。
 
+### 已交付测试域名的 Debug 接线
+
+B 在 #30 正式发布 READY 后，指定设备的 `DEBUG + G2C_M4_DEVICE_ACCEPTANCE`
+构建可显式选择 `G2C_M4_BETA_API=1` 和
+`G2C_DEV_API_BASE_URL=https://api-beta.go2china.space`。只接受这个主机和默认443，
+不接受别名、其他端口、路径、用户信息、query 或 fragment；不能同时设置
+`G2C_M4_LOCAL_HOST`。Public HTTPS 使用系统 CA、主机名和有效期验证，不使用本机叶证书
+替换公域信任。原无重定向、路由、会话和原动作门禁继续执行。Release/Production
+不获得开发激活能力，也不增加 ATS 放行。
+
+真机定向诊断确认原 v6 回答读取在短请求出口发生 URLError.timedOut（-1001）。
+公域 v6 读取复用现有 Run 只读 session（请求30秒、资源150秒），保留同一来源/会话/
+身份/响应上限校验；普通消息写入仍走原10/20秒出口。没有自动重发，失败仍显式呈现。
+
+沿用一次性 `G2CM4DeviceAccounts.json` 输入，B 在包和驱动就绪时交付15分钟的既有
+合成主体 token。Bearer 不进启动环境、聊天或报告。App 消费后删除输入，原材料只按
+既有 Keychain 作用域保存；重开仍核服务端身份，不能以本地 claims 当授权。
+
+当前 B 已交付 plain 消息、原 RUN/SSE，未配置公域 Needs/typed Memory/cleanup，
+无预置 Trip/Memory。分别记录实测范围，未交组合保持 UNRUN；禁止向 beta 主体派发
+未经授权的删除。客户端接线通过不等于云端/目标网络验收 PASS，也不启动真实用户分发。
+
+公域已保存回答的 V6 只读请求使用独立的 30 秒请求／150 秒资源上限；普通消息
+写入仍走原 10／20 秒出口。该只读出口继续校验原记录、当前会话及 owner，不能授权
+发送或恢复原消息。Debug 的可选诊断只在本机 Caches 留固定两条路由的状态和错误码，
+不记录请求参数、头、正文或凭据，不能作为业务成功证据。
+
+`check_beta_device.py` 先 `--prepare-only` 固定 head、工程和产物哈希，再用
+`--prepared` 执行；`--case english-diagnostic` 和 `--case chinese-recovery` 可分别
+补英文读取及中文恢复／身份隔离。每个选定方法保留完整字节、来源和 `.all` AX 断言；
+英文通过不能代替中文方法通过。设备断开时保存原 FAIL／UNRUN、清理精确一次性输入，
+等 JT 通知重连后再执行，不自动重启原批次。
+
 ### 登录领域的指定真机入口
 
 `check_development_accounts.py` 支持指定设备及本轮获准的本机 TLS profile：

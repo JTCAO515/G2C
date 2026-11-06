@@ -67,7 +67,7 @@ def main():
         *list((ROOT/'ios/Modules/CJShell/Sources').rglob('*.swift')),*list((ROOT/'ios/Modules/CJMessageClient/Sources').rglob('*.swift')),
         Path(__file__),HERE/'DevelopmentMemoryLifecycleUITests.swift']
     if tls:sources += [HERE/name for name in ('m4_device.py','m4_native.py','m4_artifacts.py','M4DeviceControl.swift','M4DeviceTestSession.swift')]
-    report=dict(status='RUNNING',head=head,cases={},checks={},test_infrastructure=dict(os_activity_mode='disable',ui_queries='typed controls; no descendants(any)',authorization='JT 2026-10-30 XCTest infrastructure repair'),run_context=json.loads(args.run_context.read_text()),
+    report=dict(status='RUNNING',head=head,cases={},checks={},test_infrastructure=dict(os_activity_mode='disable',ui_queries='typed controls; exact-identifier any-type disclosure checks',authorization='JT 2026-10-30 XCTest infrastructure repair'),run_context=json.loads(args.run_context.read_text()),
         source_hashes={str(s.relative_to(ROOT)):hashlib.sha256(s.read_bytes()).hexdigest() for s in sources},
         git_trees={s:subprocess.check_output(['git','rev-parse',head+':'+s],cwd=ROOT,text=True).strip() for s in ('ios','backend','contracts','scripts')},
         unrun=['real accounts/models/fees/cloud','physical device','deployment'])

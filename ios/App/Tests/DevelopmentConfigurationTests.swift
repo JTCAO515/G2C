@@ -9,6 +9,29 @@ private func token(subject: String = "fixture", signature: String = "synthetic")
 }
 
 struct DevelopmentConfigurationTests {
+    @Test func betaServiceRequiresTheExplicitDebugChoiceAndKeepsItsRestoreScope() throws {
+        #if DEBUG
+        let base=["G2C_DEV_API_BASE_URL":"https://api-beta.go2china.space", "G2C_M4_BETA_API":"1"]
+        let canonical=URL(string:"https://api-beta.go2china.space")!
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        #expect(DevelopmentSessionConfiguration.readEndpoint(base)==canonical)
+        #expect(DevelopmentSessionConfiguration.readEndpoint(base.merging(["G2C_DEV_API_BASE_URL":"https://api-beta.go2china.space:443/"]){_,new in new})==canonical)
+        #expect(DevelopmentSessionConfiguration.restoring(endpoint:canonical,token:try token(),proposalID:nil,approvedLocalHost:nil,approvedBetaAPI:true)?.endpoint==canonical)
+        #else
+        #expect(DevelopmentSessionConfiguration.readEndpoint(base)==nil)
+        #expect(DevelopmentSessionConfiguration.restoring(endpoint:canonical,token:try token(),proposalID:nil,approvedLocalHost:nil,approvedBetaAPI:true)==nil)
+        #endif
+        #expect(DevelopmentSessionConfiguration.restoring(endpoint:canonical,token:try token(),proposalID:nil,approvedLocalHost:nil)==nil)
+        for raw in ["http://api-beta.go2china.space", "https://api-beta.go2china.space:444", "https://api-beta.go2china.space.evil.invalid", "https://go2china.space", "https://47.83.147.176", "https://api-beta.go2china.space/v1", "https://user@api-beta.go2china.space", "https://api-beta.go2china.space?x=1", "https://api-beta.go2china.space#x"] {
+            #expect(DevelopmentSessionConfiguration.readEndpoint(base.merging(["G2C_DEV_API_BASE_URL":raw]){_,new in new})==nil)
+        }
+        for change in [["G2C_M4_BETA_API":"true"], ["G2C_M4_LOCAL_HOST":"192.168.1.2"], ["G2C_M4_LOCAL_HOST":"api-beta.go2china.space"]] {
+            #expect(DevelopmentSessionConfiguration.readEndpoint(base.merging(change){_,new in new})==nil)
+        }
+        #else
+        #expect(DevelopmentSessionConfiguration.read(["G2C_M4_BETA_API":"1", "G2C_DEV_API_BASE_URL":"https://api-beta.go2china.space", "G2C_DEV_TOKEN":try token()])==nil)
+        #endif
+    }
     @Test func restoredMaterialRetainsOnlyTheOriginallyApprovedLocalHost() throws {
         #if DEBUG
         let endpoint=URL(string:"https://192.168.1.2:18443")!,jwt=try token()

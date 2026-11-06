@@ -26,12 +26,15 @@ public struct MessageEndpoint: Sendable {
         let loopback = url.scheme == "http" && url.host == "127.0.0.1" && url.port != nil
         #endif
         let deviceLocal: Bool
+        let beta: Bool
         #if DEBUG && G2C_M4_DEVICE_ACCEPTANCE
         deviceLocal = Self.isM4LocalHTTPS(url, approvedHost: ProcessInfo.processInfo.environment["G2C_M4_LOCAL_HOST"])
+        beta = Self.isM4BetaHTTPS(url, environment: ProcessInfo.processInfo.environment)
         #else
         deviceLocal = false
+        beta = false
         #endif
-        let local = allowLoopbackHTTP && (loopback || deviceLocal)
+        let local = allowLoopbackHTTP && (loopback || deviceLocal || beta)
         guard url.scheme == "https" || local, url.host != nil, url.user == nil, url.password == nil,
               url.query == nil, url.fragment == nil, ["", "/"].contains(url.path), maximumRequestBytes > 0, maximumResponseBytes > 0 else {
             throw MessageHTTPFailure.invalidConfiguration
@@ -51,6 +54,16 @@ public struct MessageEndpoint: Sendable {
               zip(fields, bytes).allSatisfy({ String($0.1) == $0.0 }) else { return false }
         return bytes[0] == 10 || (bytes[0] == 172 && (16...31).contains(bytes[1]))
             || (bytes[0] == 192 && bytes[1] == 168) || (bytes[0] == 169 && bytes[1] == 254)
+    }
+
+    /// The one M4 test service published READY in #30. Uses system TLS trust;
+    /// this classification never grants a route, session or Production access.
+    static func isM4BetaHTTPS(_ url: URL, environment: [String: String]) -> Bool {
+        environment["G2C_M4_BETA_API"] == "1" && environment["G2C_M4_LOCAL_HOST"] == nil
+            && url.scheme == "https" && url.host == "api-beta.go2china.space"
+            && (url.port == nil || url.port == 443)
+            && url.user == nil && url.password == nil && url.query == nil && url.fragment == nil
+            && ["", "/"].contains(url.path)
     }
 }
 
@@ -806,7 +819,18 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
             return try await sendLocalRead(request, baseURL: baseURL, operationID: operationID, capability: memoryHistory)
         }
         if request.method == .get || request.method == .head {
-            return try await transport.send(request,body:body,baseURL:baseURL,operationID:operationID)
+            do {
+                let response=try await transport.send(request,body:body,baseURL:baseURL,operationID:operationID)
+                #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+                M4BetaReadDiagnostic.record(endpoint:baseURL,path:URLComponents(string:request.path ?? "")?.path ?? "",stage:"transport",status:response.0.status.code)
+                #endif
+                return response
+            } catch {
+                #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+                M4BetaReadDiagnostic.record(endpoint:baseURL,path:URLComponents(string:request.path ?? "")?.path ?? "",stage:"transport",error:error)
+                #endif
+                throw error
+            }
         }
         if let messages, request.method == .post, operationID == messages.wire.operation,
            request.path == messages.wire.path, request.scheme == nil, request.authority == nil,
@@ -976,6 +1000,7 @@ public enum MessageHTTPOutcome: Sendable {
     let endpoint: MessageEndpoint
     private let credentials: any MessageCredentialsProvider
     private let transport: any ClientTransport
+    private let preservedRunReadTransport: NoRedirectTransport?
     let submissionEnabledForTest: Bool
     let readsScopedEditResults: Bool
     var tripEditStatusOperation: String { readsScopedEditResults ? "readTripEditStatusV5" : "readTripEditStatusV4" }
@@ -994,6 +1019,7 @@ public enum MessageHTTPOutcome: Sendable {
                 credentials: any MessageCredentialsProvider, interceptedTestTransport: any ClientTransport, readsScopedEditResults: Bool = false) {
         self.recovery = recovery; self.scope = scope; self.endpoint = endpoint
         self.credentials = credentials; self.transport = interceptedTestTransport
+        preservedRunReadTransport = nil
         self.readsScopedEditResults=readsScopedEditResults
         submissionEnabledForTest = true
         liveMessageTransport = nil
@@ -1001,9 +1027,11 @@ public enum MessageHTTPOutcome: Sendable {
     /// Production/default transports stay read-only. Only the explicit DEBUG Simulator
     /// message capability can send, through the current-process head/permit path.
     public init(recovery: MessageRecovery, scope: StorageScope, endpoint: MessageEndpoint,
-                credentials: any MessageCredentialsProvider, liveReadTransport: NoRedirectTransport, readsScopedEditResults: Bool = false) {
+                credentials: any MessageCredentialsProvider, liveReadTransport: NoRedirectTransport, readsScopedEditResults: Bool = false,
+                preservedRunReadTransport: NoRedirectTransport? = nil) {
         self.recovery = recovery; self.scope = scope; self.endpoint = endpoint
         self.credentials = credentials; self.transport = liveReadTransport
+        self.preservedRunReadTransport = preservedRunReadTransport
         self.readsScopedEditResults=readsScopedEditResults
         submissionEnabledForTest = false
         liveMessageTransport = liveReadTransport
@@ -1012,12 +1040,15 @@ public enum MessageHTTPOutcome: Sendable {
         let checked = try await checkedTransport(lease)
         return Client(serverURL: endpoint.url, configuration: configuration, transport: checked)
     }
-    func checkedTransport(_ lease: Lease) async throws -> CheckedTransport {
+    func checkedTransport(_ lease: Lease, readingPreservedRun: Bool = false) async throws -> CheckedTransport {
         try recovery.validateScope(scope, lease: lease)
         let value = try await credentials.bearer(for: scope, lease: lease)
         try recovery.validateScope(scope, lease: lease)
         guard let value, !value.isEmpty, value.utf8.allSatisfy({ $0 > 32 && $0 < 127 }) else { throw MessageHTTPFailure.credentialsUnavailable }
-        return CheckedTransport(underlying: transport, endpoint: endpoint, bearer: value,
+        let selected: any ClientTransport
+        if readingPreservedRun, let preservedRunReadTransport { selected = preservedRunReadTransport }
+        else { selected = transport }
+        return CheckedTransport(underlying: selected, endpoint: endpoint, bearer: value,
             validate: { [recovery,scope] in try recovery.validateScope(scope,lease:lease) })
     }
     public func submit(messageID: String, lease: Lease) async throws -> MessageHTTPOutcome {
@@ -1342,18 +1373,41 @@ extension MessageHTTPClient {
     /// only display state; it cannot recover an input or stage a RUN/Trip write.
     public func preservedRun(for row: MessageHumanHistoryItem, page: MessageReadResult<[MessageHumanHistoryItem]>,
         limits: MessageReadLimits, lease: Lease) async throws -> MessageReadResult<MessageHumanRun> {
+        #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+        var diagnosticStage="validate"
+        M4BetaReadDiagnostic.record(endpoint:endpoint.url,path:"/v6/run-display",stage:diagnosticStage)
+        #endif
+        do {
         try validateRead(page, lease: lease); try checkSendLease(lease)
         guard page.value.contains(where: { $0.id == row.id }) else { throw RecoveryError.inactive }
         var query = URLComponents(); query.path = "/v6/run-display"
         query.queryItems = [.init(name: "message_id", value: row.receipt.message_id)]
         query.percentEncodedQuery = query.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
         guard let path = query.string else { throw MessageHTTPFailure.invalidConfiguration }
+        #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+        diagnosticStage="exchange"
+        #endif
         let (status, bytes, trace) = try await versionedMessageExchange(path: path, operation: "readPreservedRunDisplayV6", raw: nil, lease: lease)
+        #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+        diagnosticStage="decode"
+        #endif
         guard status == 200 else { try readError(status, JSONDecoder().decode(Components.Schemas.ErrorResponse.self, from: bytes)) }
         let value = try decodePreservedRun(bytes, maximumBytes: endpoint.maximumResponseBytes,
             textLimit: limits.maximumDecodedBytes, trace: trace, row: row)
+        #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+        diagnosticStage="final-lease"
+        #endif
         try validateRead(page, lease: lease); try checkSendLease(lease)
+        #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+        M4BetaReadDiagnostic.record(endpoint:endpoint.url,path:"/v6/run-display",stage:"completed",status:status)
+        #endif
         return MessageReadResult(value: value, next: nil, requestID: trace, owner: readOwner, lease: lease)
+        } catch {
+            #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+            M4BetaReadDiagnostic.record(endpoint:endpoint.url,path:"/v6/run-display",stage:diagnosticStage,error:error)
+            #endif
+            throw error
+        }
     }
     public func tripDiscussionHistory(conversationID:String,limit:Int,after:MessageReadCursor?=nil,limits:MessageReadLimits,lease:Lease) async throws -> MessageReadResult<[MessageTripHistoryItem]> {
         try await versionedTripHistory(conversationID:conversationID,limit:limit,after:after,limits:limits,lease:lease,edit:false)
