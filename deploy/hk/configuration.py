@@ -31,13 +31,15 @@ SECRET_FILES={
               'backup':{'CJ_BETA_BACKUP_ROOT','OSS_ACCESS_KEY_ID','OSS_ACCESS_KEY_SECRET'}},
 }
 TYPED_POLICY='CJ_BETA_TYPED_MEMORY_POLICY_B64'
+MEMORY_RUN_POLICY='CJ_BETA_MEMORY_RUN_POLICY_B64'
 
 
 def load_secret_environment(role,*,root=Path('/run/secrets')):
     """Docker receives only paths; secret bytes enter this process, not Config.Env."""
     expected=SECRET_FILES[role];values={}
     for file,names in expected.items():
-        optional={TYPED_POLICY} if role=='api' and file=='api' else set()
+        optional=({TYPED_POLICY} if role=='api' and file=='api' else
+                  {MEMORY_RUN_POLICY} if role=='worker' and file=='worker' else set())
         allowed=names|optional
         if any(name in os.environ for name in allowed):raise ValueError('persistent_container_secret_environment_refused')
         descriptor=os.open(Path(root)/(file+'.env'),os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK)
@@ -83,6 +85,7 @@ class Runtime:
     descriptors:list
     typed_memory:object=None
     subjects:frozenset=frozenset()
+    memory_runtime:object=None
 
     @classmethod
     def load(cls,root,*,worker=False):
@@ -100,6 +103,15 @@ class Runtime:
             typed_memory=TypedConfiguration.from_bytes(decoded(TYPED_POLICY))
             if not frozenset(typed_memory.collection.profiles)<=frozenset(subjects):
                 raise ValueError('typed_memory_policy_outside_beta_invites')
+        memory_runtime=None
+        if MEMORY_RUN_POLICY in os.environ:
+            if not worker:raise ValueError('memory_run_policy_is_worker_only')
+            from cj_memory.typed_runtime import TypedRuntimeConfiguration
+            memory_runtime=TypedRuntimeConfiguration.from_bytes(decoded(MEMORY_RUN_POLICY))
+            selected=frozenset(memory_runtime.selections)
+            if (selected!=frozenset(memory_runtime.collection.collection.profiles)
+                    or not selected<=frozenset(subjects)):
+                raise ValueError('explicit_memory_run_selection_for_beta_invites_required')
         auth=root/'auth';auth.mkdir(mode=0o700,exist_ok=True)
         public=decoded('CJ_BETA_SIGNING_PUBLIC_B64')
         parsed=serialization.load_pem_public_key(public)
@@ -125,12 +137,18 @@ class Runtime:
         context_path.write_text(raw)
         context=load_run_context(context_path)
         if context.version!='CJ-LOCAL-RUN@2':raise ValueError('registered_beta_run_context_required')
-        return cls(auth,context,context_path,descriptors,typed_memory,frozenset(subjects))
+        return cls(auth,context,context_path,descriptors,typed_memory,frozenset(subjects),memory_runtime)
+
+    def memory_configuration_for_scope(self,scope):
+        if self.memory_runtime is not None and scope in {
+                scope_for(ISSUER,subject) for subject in self.memory_runtime.selections}:
+            return self.memory_runtime
+        return None
 
     def database(self):
         authorization()
         return SupabaseTestDatabase(os.environ['CJ_SUPABASE_RUNTIME_URI'],os.environ['CJ_SUPABASE_CA_FILE'],run_context=self.context,
-            travel_context=self.typed_memory is not None,transaction_guard=runtime_transaction)
+            travel_context=self.typed_memory is not None or self.memory_runtime is not None,transaction_guard=runtime_transaction)
 
     def app(self):
         import time
