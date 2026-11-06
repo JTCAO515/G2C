@@ -91,7 +91,7 @@ struct ServerHistoryView: View {
     }
     private func historyButton(_ title: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title).fixedSize(horizontal: false, vertical: true)
+            RunReadableText(text: title)
                 .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
         }.buttonStyle(ShellReadableButtonStyle())
     }
