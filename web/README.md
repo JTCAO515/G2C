@@ -19,4 +19,16 @@ python3 -m http.server 8080 --directory web
 
 ## 候补名单
 
-`app.js` 顶部 `WAITLIST_ENDPOINT` 为空时，提交会打开预填好的邮件发往 hello@go2china.space。接入收集服务后，把它设为接受 `POST {email, lang}` 的 HTTPS 地址即可；选用任何外部服务前须按 `docs/authorizations/` 获得授权。
+所有 Join Waitlist 按钮打开同一个表单弹窗，收集：称呼、邮箱、国家/地区、了解渠道（来源）、出行时间、同行人、想去的地方、最需要的帮助、备注；并自动附带页面语言、`utm_source/medium/campaign` 与 referrer。选项值统一以英文提交，便于汇总。
+
+提交由第三方 [FormSubmit](https://formsubmit.co) 处理（免账号、免密钥），每条报名以表格邮件发到 hello@go2china.space：
+
+1. 上线后第一次提交时，FormSubmit 会向 hello@go2china.space 发一封激活邮件，点击确认后才开始投递。
+2. 激活后 FormSubmit 会提供一个随机别名，可把 `app.js` 中 `WAITLIST_ENDPOINT` 的邮箱换成该别名，避免在页面源码暴露邮箱。
+3. 需要表格化管理时，可换成 Formspree / Tally / Google Sheets 等：把 `WAITLIST_ENDPOINT` 改为任意接受 JSON POST 且返回 2xx 的 HTTPS 地址即可。
+
+表单含蜜罐字段 `_honey` 防机器人。
+
+## 图片
+
+`assets/sights/` 的景点照片均来自 [rawpixel](https://www.rawpixel.com) 的 CC0 公有领域图片（经 Openverse 检索），已压缩为 WebP；来源见 `assets/sights/CREDITS.md`。

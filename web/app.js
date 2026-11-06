@@ -1,10 +1,37 @@
 (() => {
   "use strict";
 
-  // Set to an HTTPS endpoint that accepts POST {email, lang} to collect sign-ups.
-  // Left empty, the form opens a pre-filled email to the team instead.
-  const WAITLIST_ENDPOINT = "";
+  // Waitlist sign-ups go to FormSubmit (https://formsubmit.co), which emails each entry to CONTACT
+  // as a table. The very first submission triggers a one-time activation email to CONTACT; entries
+  // arrive after that link is clicked. To use another form service, point WAITLIST_ENDPOINT at any
+  // HTTPS endpoint that accepts a JSON POST and answers 2xx.
   const CONTACT = "hello@go2china.space";
+  const WAITLIST_ENDPOINT = "https://formsubmit.co/ajax/" + CONTACT;
+
+  // Form options: [value sent to the sheet (English), English label, 中文 label]
+  const OPTS = {
+    source: [["Friend or family", "Friend or family", "亲友推荐"], ["Instagram", "Instagram", "Instagram"], ["TikTok", "TikTok", "TikTok"],
+      ["YouTube", "YouTube", "YouTube"], ["Xiaohongshu (RED)", "Xiaohongshu (RED)", "小红书"], ["Reddit", "Reddit", "Reddit"],
+      ["Search engine", "Google or other search", "搜索引擎"], ["News or blog", "News or blog", "新闻或博客"], ["Event", "Event or meetup", "活动或聚会"], ["Other", "Other", "其他"]],
+    optWhen: [["Within 3 months", "Within 3 months", "3 个月内"], ["3-6 months", "3–6 months", "3–6 个月"], ["6-12 months", "6–12 months", "6–12 个月"], ["Not sure yet", "Not sure yet", "还没定"], ["Already in China", "I'm in China now", "我已在中国"]],
+    optWho: [["Solo", "Solo", "独自"], ["Partner", "With a partner", "伴侣"], ["Family with kids", "Family with kids", "带孩子的家庭"], ["Friends", "Friends", "朋友"], ["Business", "Business", "商务"]],
+    optCities: [["Beijing", "Beijing", "北京"], ["Shanghai", "Shanghai", "上海"], ["Xi'an", "Xi'an", "西安"], ["Chengdu", "Chengdu", "成都"], ["Guilin", "Guilin", "桂林"],
+      ["Hangzhou", "Hangzhou", "杭州"], ["Guangzhou & Shenzhen", "Guangzhou & Shenzhen", "广州与深圳"], ["Yunnan", "Yunnan", "云南"], ["Tibet", "Tibet", "西藏"], ["Not sure yet", "Not sure yet", "还没想好"]],
+    optHelp: [["Payments", "Paying with apps", "移动支付"], ["Getting around", "Getting around", "交通出行"], ["Itinerary", "Planning the itinerary", "规划行程"],
+      ["Booking", "Booking tickets & tables", "预订门票与餐厅"], ["Food", "Finding great food", "找美食"], ["Language", "Language help", "语言沟通"], ["Visa & entry", "Visa & entry", "签证与入境"], ["Emergencies", "Help in an emergency", "紧急求助"]]
+  };
+
+  const SIGHTS = [
+    ["greatwall", "The Great Wall", "Beijing", "长城", "北京"],
+    ["forbidden", "The Forbidden City", "Beijing", "故宫", "北京"],
+    ["shanghai", "The Bund at night", "Shanghai", "外滩夜景", "上海"],
+    ["terracotta", "Terracotta Army", "Xi'an", "兵马俑", "西安"],
+    ["huangshan", "Huangshan", "Anhui", "黄山", "安徽"],
+    ["heaven", "Temple of Heaven", "Beijing", "天坛", "北京"],
+    ["panda", "Giant pandas", "Chengdu", "大熊猫", "成都"],
+    ["potala", "Potala Palace", "Lhasa", "布达拉宫", "拉萨"],
+    ["lanterns", "Red lanterns", "Lunar New Year", "红灯笼", "春节"]
+  ];
 
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -40,12 +67,16 @@
       appLede: "We're opening the first spots to invited travelers. Leave your email and we'll let you know when it's your turn.",
       emailLabel: "Email address", emailPh: "you@example.com",
       footTag: "Your personal agent for China.",
-      bad: "Please enter a valid email address.",
-      ok: "You're on the list. We'll be in touch soon.",
-      okMail: "Your email app should open — just hit send and you're on the list.",
-      fail: "Something went wrong. Please email " + CONTACT + ".",
-      mailSubject: "Join the G2C waitlist",
-      mailBody: "Please add me to the G2C waitlist: ",
+      sightsTitle: "From the Great Wall to the Bund, <i>it knows the way.</i>",
+      wlTitle: "Join the waitlist", wlLede: "A few quick questions so we can shape G2C around your trip.",
+      fName: "Name", fNamePh: "Your name", fEmail: "Email", fCountry: "Where are you from?", fCountryPh: "Country or region",
+      fSource: "How did you hear about us?", fSourcePh: "Choose one", fWhen: "When are you planning to visit China?",
+      fWho: "Who are you traveling with?", fCities: "Where would you like to go?", fHelp: "What would help you most?",
+      fNote: "Anything else we should know? (optional)",
+      bad: "Please add your name, a valid email and how you heard about us.",
+      sending: "Sending…",
+      ok: "You're on the list! We'll email you when your spot opens.",
+      fail: "Something went wrong. Please try again, or email " + CONTACT + ".",
       redact: [
         ["Hi, I'm ", null], ["Emma Clarke", "<NAME_1>"], [". Passport ", null], ["E12345678", "<PASSPORT_1>"],
         [", call me on ", null], ["+44 7700 900123", "<PHONE_1>"], [" — I'm at ", null], ["Gate 3, Hotel Lotus", "<LOCATION_1>"], [".", null]
@@ -98,12 +129,16 @@
       appLede: "首批名额将开放给受邀旅行者。留下邮箱，轮到你时我们会第一时间通知。",
       emailLabel: "邮箱地址", emailPh: "you@example.com",
       footTag: "你在中国的私人助理。",
-      bad: "请输入有效的邮箱地址。",
-      ok: "已加入候补名单，我们会尽快联系你。",
-      okMail: "邮件应用即将打开——点击发送即可加入候补名单。",
-      fail: "提交失败，请发邮件至 " + CONTACT + "。",
-      mailSubject: "加入 G2C 候补名单",
-      mailBody: "请将我加入 G2C 候补名单：",
+      sightsTitle: "从长城到外滩，<i>它都熟门熟路。</i>",
+      wlTitle: "加入候补名单", wlLede: "回答几个小问题，帮我们把 G2C 做得更贴合你的旅程。",
+      fName: "称呼", fNamePh: "你的名字", fEmail: "邮箱", fCountry: "你来自哪里？", fCountryPh: "国家或地区",
+      fSource: "你从哪里了解到我们？", fSourcePh: "请选择", fWhen: "计划什么时候来中国？",
+      fWho: "和谁一起出行？", fCities: "想去哪些地方？", fHelp: "最需要哪方面的帮助？",
+      fNote: "还有什么想告诉我们的？（选填）",
+      bad: "请填写称呼、有效邮箱，并选择了解渠道。",
+      sending: "提交中…",
+      ok: "已加入候补名单！名额开放时我们会发邮件通知你。",
+      fail: "提交失败，请重试，或发邮件至 " + CONTACT + "。",
       redact: [
         ["你好，我是", null], ["王小明", "<NAME_1>"], ["，护照号 ", null], ["E12345678", "<PASSPORT_1>"],
         ["，电话 ", null], ["138 0013 8000", "<PHONE_1>"], ["，我在", null], ["莲花酒店 3 号门", "<LOCATION_1>"], ["。", null]
@@ -148,6 +183,8 @@
     $("#form-note").textContent = "";
     startChat();
     startRedact();
+    renderSights();
+    renderOptions();
   }
 
   $("#lang-toggle").addEventListener("click", () => {
@@ -342,24 +379,83 @@
     document.querySelectorAll(".flow li").forEach((li) => li.classList.add("lit"));
   }
 
+  /* ---------- Sights ---------- */
+  function renderSights() {
+    const card = ([id, en, enSub, zh, zhSub]) =>
+      `<figure class="sight"><img src="assets/sights/${id}.webp" alt="${esc(lang === "zh" ? zh : en)}" loading="lazy" width="1024" height="683">` +
+      `<figcaption><strong>${esc(lang === "zh" ? zh : en)}</strong><span>${esc(lang === "zh" ? zhSub : enSub)}</span></figcaption></figure>`;
+    const a = SIGHTS.slice(0, 5), b = SIGHTS.slice(5);
+    const row = (items, cls) => `<div class="track${cls}">${items.map(card).join("")}${items.map(card).join("").replace(/<img /g, '<img aria-hidden="true" ')}</div>`;
+    $("#marquee").innerHTML = row(a, "") + row(b, " rev");
+  }
+
   /* ---------- Waitlist ---------- */
-  const form = $("#waitlist-form"), note = $("#form-note"), input = $("#email");
+  const modal = $("#waitlist-modal"), form = $("#waitlist-form"), note = $("#form-note"), submitBtn = $("#wl-submit");
+  const label = (o) => (lang === "zh" ? o[2] : o[1]);
+
+  function renderOptions() {
+    const sel = $("#f-source"), cur = sel.value;
+    sel.innerHTML = `<option value="" disabled ${cur ? "" : "selected"}>${esc(T[lang].fSourcePh)}</option>` +
+      OPTS.source.map((o) => `<option value="${esc(o[0])}" ${o[0] === cur ? "selected" : ""}>${esc(label(o))}</option>`).join("");
+    form.querySelectorAll(".opts").forEach((box) => {
+      const picked = new Set([...box.querySelectorAll("input:checked")].map((i) => i.value));
+      box.innerHTML = OPTS[box.dataset.key].map((o) =>
+        `<label><input type="${box.dataset.type}" name="${box.dataset.name}" value="${esc(o[0])}" ${picked.has(o[0]) ? "checked" : ""}><span>${esc(label(o))}</span></label>`).join("");
+    });
+  }
+
+  function openModal(e) {
+    if (e) e.preventDefault();
+    if (typeof modal.showModal === "function") modal.showModal(); else modal.setAttribute("open", "");
+    const first = form.querySelector('input[name="name"]'); if (first && !form.classList.contains("sent")) first.focus();
+  }
+  const closeModal = () => { if (modal.close) modal.close(); else modal.removeAttribute("open"); };
+  document.querySelectorAll("[data-open-waitlist]").forEach((a) => a.addEventListener("click", openModal));
+  $("#wl-close").addEventListener("click", closeModal);
+  modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
+  if (location.hash === "#waitlist") setTimeout(openModal, 300);
+
+  form.addEventListener("input", (e) => { const f = e.target.closest(".f"); if (f) f.classList.remove("bad"); });
+  const params = new URLSearchParams(location.search);
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const d = T[lang];
-    const email = input.value.trim();
+    const fd = new FormData(form);
+    if (fd.get("_honey")) return;
+    const name = String(fd.get("name") || "").trim();
+    const email = String(fd.get("email") || "").trim();
+    const source = String(fd.get("source") || "");
+    form.querySelectorAll(".f").forEach((f) => f.classList.remove("bad"));
+    const bad = [];
+    if (!name) bad.push('input[name="name"]');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) bad.push('input[name="email"]');
+    if (!source) bad.push('select[name="source"]');
     note.classList.remove("err");
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { note.textContent = d.bad; note.classList.add("err"); input.focus(); return; }
-    if (WAITLIST_ENDPOINT) {
-      try {
-        const r = await fetch(WAITLIST_ENDPOINT, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, lang }) });
-        if (!r.ok) throw new Error(String(r.status));
-        note.textContent = d.ok; form.reset();
-      } catch (_) { note.textContent = d.fail; note.classList.add("err"); }
-      return;
+    if (bad.length) {
+      bad.forEach((q) => form.querySelector(q).closest(".f").classList.add("bad"));
+      note.textContent = d.bad; note.classList.add("err"); form.querySelector(bad[0]).focus(); return;
     }
-    window.location.href = `mailto:${CONTACT}?subject=${encodeURIComponent(d.mailSubject)}&body=${encodeURIComponent(d.mailBody + email)}`;
-    note.textContent = d.okMail;
+    const all = (k) => fd.getAll(k).join(", ");
+    const payload = {
+      name, email, source,
+      country: String(fd.get("country") || "").trim(),
+      travel_time: all("travel_time"), travel_party: all("travel_party"),
+      destinations: all("destinations"), needs: all("needs"),
+      note: String(fd.get("note") || "").trim(),
+      language: lang,
+      utm_source: params.get("utm_source") || "", utm_medium: params.get("utm_medium") || "", utm_campaign: params.get("utm_campaign") || "",
+      referrer: document.referrer || "",
+      _subject: "G2C waitlist: " + name, _template: "table", _captcha: "false"
+    };
+    submitBtn.disabled = true; note.textContent = d.sending;
+    try {
+      const r = await fetch(WAITLIST_ENDPOINT, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(payload) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || String(j.success) === "false") throw new Error(String(r.status));
+      form.classList.add("sent"); note.textContent = d.ok; form.reset();
+    } catch (_) {
+      note.textContent = d.fail; note.classList.add("err");
+    } finally { submitBtn.disabled = false; }
   });
 
   $("#year").textContent = String(new Date().getFullYear());

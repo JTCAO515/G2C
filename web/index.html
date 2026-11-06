@@ -28,7 +28,7 @@
     </a>
     <div class="nav-actions">
       <button class="lang" type="button" id="lang-toggle" aria-label="Switch language">中文</button>
-      <a class="btn btn-small" href="#waitlist" data-i18n="cta">Join Waitlist</a>
+      <a class="btn btn-small" href="#waitlist" data-open-waitlist data-i18n="cta">Join Waitlist</a>
     </div>
   </header>
 
@@ -38,7 +38,7 @@
         <h1 data-i18n-html="heroTitle">A personal agent for <i>every day</i> in China.</h1>
         <p class="lede" data-i18n="heroLede">CJ Agent answers, plans and gets things done. JT Agent quietly brings in a real person when it matters. And your personal details are redacted before any model sees them.</p>
         <div class="hero-cta">
-          <a class="btn" href="#waitlist" data-i18n="cta">Join Waitlist</a>
+          <a class="btn" href="#waitlist" data-open-waitlist data-i18n="cta">Join Waitlist</a>
           <span class="soon"><span class="dot"></span><span data-i18n="soon">Coming soon on iPhone · English &amp; 中文</span></span>
         </div>
       </div>
@@ -104,6 +104,11 @@
       </div>
     </section>
 
+    <section class="sights" aria-label="Places in China">
+      <h2 class="section-title" data-i18n-html="sightsTitle">From the Great Wall to the Bund, <i>it knows the way.</i></h2>
+      <div class="marquee" id="marquee"></div>
+    </section>
+
     <section class="privacy">
       <div class="privacy-copy">
         <h2 class="section-title light" data-i18n-html="privTitle">Your details <i>stay yours.</i></h2>
@@ -141,12 +146,7 @@
       <div class="app-copy">
         <h2 class="section-title" data-i18n-html="appTitle">G2C for iPhone, <i>landing soon.</i></h2>
         <p data-i18n="appLede">We're opening the first spots to invited travelers. Leave your email and we'll let you know when it's your turn.</p>
-        <form class="waitlist" id="waitlist-form" novalidate>
-          <label class="sr" for="email" data-i18n="emailLabel">Email address</label>
-          <input id="email" name="email" type="email" autocomplete="email" required data-i18n-ph="emailPh" placeholder="you@example.com">
-          <button class="btn" type="submit" data-i18n="cta">Join Waitlist</button>
-        </form>
-        <p class="form-note" id="form-note" role="status" aria-live="polite"></p>
+        <a class="btn btn-big" href="#waitlist" data-open-waitlist data-i18n="cta">Join Waitlist</a>
       </div>
     </section>
   </main>
@@ -163,10 +163,55 @@
       <span>广州创竞科技有限公司</span>
       <span class="en-name">Guangzhou Chuangjing Technology Co., Ltd</span>
       <span>广州市天河区黄埔大道100号富力盈泰广场A座410室</span>
+      <span class="en-name">Room 410, Tower A, R&amp;F Yingtai Plaza, No. 100 Huangpu Avenue, Tianhe District, Guangzhou, China</span>
       <a href="mailto:hello@go2china.space">hello@go2china.space</a>
     </address>
     <p class="copy">© <span id="year">2026</span> Guangzhou Chuangjing Technology Co., Ltd · 广州创竞科技有限公司</p>
   </footer>
+
+  <dialog class="modal" id="waitlist-modal" aria-labelledby="wl-title">
+    <form class="wl" id="waitlist-form" novalidate>
+      <button class="close" type="button" id="wl-close" aria-label="Close">×</button>
+      <div class="wl-head">
+        <img src="assets/logo.webp" width="56" height="56" alt="">
+        <div>
+          <h2 id="wl-title" data-i18n="wlTitle">Join the waitlist</h2>
+          <p data-i18n="wlLede">A few quick questions so we can shape G2C around your trip.</p>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <label class="f"><span data-i18n="fName">Name</span>
+          <input name="name" type="text" autocomplete="name" required maxlength="80" data-i18n-ph="fNamePh" placeholder="Your name"></label>
+        <label class="f"><span data-i18n="fEmail">Email</span>
+          <input name="email" type="email" autocomplete="email" required maxlength="120" placeholder="you@example.com"></label>
+      </div>
+      <div class="grid2">
+        <label class="f"><span data-i18n="fCountry">Where are you from?</span>
+          <input name="country" type="text" autocomplete="country-name" maxlength="60" data-i18n-ph="fCountryPh" placeholder="Country or region"></label>
+        <label class="f"><span data-i18n="fSource">How did you hear about us?</span>
+          <select name="source" required id="f-source"></select></label>
+      </div>
+
+      <fieldset class="f"><legend data-i18n="fWhen">When are you planning to visit China?</legend>
+        <div class="opts" data-name="travel_time" data-type="radio" data-key="optWhen"></div></fieldset>
+      <fieldset class="f"><legend data-i18n="fWho">Who are you traveling with?</legend>
+        <div class="opts" data-name="travel_party" data-type="radio" data-key="optWho"></div></fieldset>
+      <fieldset class="f"><legend data-i18n="fCities">Where would you like to go?</legend>
+        <div class="opts" data-name="destinations" data-type="checkbox" data-key="optCities"></div></fieldset>
+      <fieldset class="f"><legend data-i18n="fHelp">What would help you most?</legend>
+        <div class="opts" data-name="needs" data-type="checkbox" data-key="optHelp"></div></fieldset>
+
+      <label class="f"><span data-i18n="fNote">Anything else we should know? (optional)</span>
+        <textarea name="note" rows="2" maxlength="600"></textarea></label>
+
+      <input class="hp" type="text" name="_honey" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <div class="wl-foot">
+        <button class="btn" type="submit" id="wl-submit" data-i18n="cta">Join Waitlist</button>
+        <p class="form-note" id="form-note" role="status" aria-live="polite"></p>
+      </div>
+    </form>
+  </dialog>
 
   <script src="app.js" defer></script>
 </body>
