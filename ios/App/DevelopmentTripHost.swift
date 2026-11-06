@@ -820,8 +820,11 @@ import Observation
             transport = try NoRedirectTransport.developmentMessages(endpoint:endpoint,requestTimeout:10,resourceTimeout:20,validate:{try lifetime.validate()})
         }
         let credentials = DevelopmentMessageCredentials(token: configuration.token, scope: scope, lease: lease, lifetime: lifetime)
+        let betaRead = configuration.endpoint.host == "api-beta.go2china.space"
+        let runReads = try NoRedirectTransport(requestTimeout: betaRead ? 30 : 15, resourceTimeout: 150)
         let client = MessageHTTPClient(recovery: recovery, scope: scope, endpoint: endpoint,
-                                        credentials: credentials, liveReadTransport: transport,readsScopedEditResults:scopedResults)
+            credentials: credentials, liveReadTransport: transport,readsScopedEditResults:scopedResults,
+            preservedRunReadTransport:betaRead ? runReads:nil)
         let selectedTravel = try travelProfile.map { try TravelSelectionModel(ids:$0.travel_ids,client:client,lease:lease,isCurrent:{lifetime.current}) }
         let needsForBinding:(@MainActor ()->MessageNeedsSelection?)?
         if needsPlanning {
@@ -853,7 +856,6 @@ import Observation
             selectForSending: { [weak messages] cid in messages?.selectConversationForSending(cid) == true })) else {
             messages.invalidate(); throw RecoveryError.inactive
         }
-        let runReads = try NoRedirectTransport(requestTimeout: 15, resourceTimeout: 150)
         let runStops = try scopedEdits ? RunCancellationTransport.developmentEditCompatible(endpoint:endpoint,validate:{try lifetime.validate()})
             : tripDiscussions ? RunCancellationTransport.developmentTripCompatible(endpoint:endpoint,validate:{try lifetime.validate()})
             : travelProfile == nil ? RunCancellationTransport.development(endpoint:endpoint,validate:{try lifetime.validate()})

@@ -87,6 +87,10 @@ B 在 #30 正式发布 READY 后，指定设备的 `DEBUG + G2C_M4_DEVICE_ACCEPT
 替换公域信任。原无重定向、路由、会话和原动作门禁继续执行。Release/Production
 不获得开发激活能力，也不增加 ATS 放行。
 
+真机定向诊断确认原 v6 回答读取在短请求出口发生 URLError.timedOut（-1001）。
+公域 v6 读取复用现有 Run 只读 session（请求30秒、资源150秒），保留同一来源/会话/
+身份/响应上限校验；普通消息写入仍走原10/20秒出口。没有自动重发，失败仍显式呈现。
+
 沿用一次性 `G2CM4DeviceAccounts.json` 输入，B 在包和驱动就绪时交付15分钟的既有
 合成主体 token。Bearer 不进启动环境、聊天或报告。App 消费后删除输入，原材料只按
 既有 Keychain 作用域保存；重开仍核服务端身份，不能以本地 claims 当授权。

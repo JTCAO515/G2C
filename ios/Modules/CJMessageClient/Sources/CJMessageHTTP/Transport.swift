@@ -1000,6 +1000,7 @@ public enum MessageHTTPOutcome: Sendable {
     let endpoint: MessageEndpoint
     private let credentials: any MessageCredentialsProvider
     private let transport: any ClientTransport
+    private let preservedRunReadTransport: NoRedirectTransport?
     let submissionEnabledForTest: Bool
     let readsScopedEditResults: Bool
     var tripEditStatusOperation: String { readsScopedEditResults ? "readTripEditStatusV5" : "readTripEditStatusV4" }
@@ -1018,6 +1019,7 @@ public enum MessageHTTPOutcome: Sendable {
                 credentials: any MessageCredentialsProvider, interceptedTestTransport: any ClientTransport, readsScopedEditResults: Bool = false) {
         self.recovery = recovery; self.scope = scope; self.endpoint = endpoint
         self.credentials = credentials; self.transport = interceptedTestTransport
+        preservedRunReadTransport = nil
         self.readsScopedEditResults=readsScopedEditResults
         submissionEnabledForTest = true
         liveMessageTransport = nil
@@ -1025,9 +1027,11 @@ public enum MessageHTTPOutcome: Sendable {
     /// Production/default transports stay read-only. Only the explicit DEBUG Simulator
     /// message capability can send, through the current-process head/permit path.
     public init(recovery: MessageRecovery, scope: StorageScope, endpoint: MessageEndpoint,
-                credentials: any MessageCredentialsProvider, liveReadTransport: NoRedirectTransport, readsScopedEditResults: Bool = false) {
+                credentials: any MessageCredentialsProvider, liveReadTransport: NoRedirectTransport, readsScopedEditResults: Bool = false,
+                preservedRunReadTransport: NoRedirectTransport? = nil) {
         self.recovery = recovery; self.scope = scope; self.endpoint = endpoint
         self.credentials = credentials; self.transport = liveReadTransport
+        self.preservedRunReadTransport = preservedRunReadTransport
         self.readsScopedEditResults=readsScopedEditResults
         submissionEnabledForTest = false
         liveMessageTransport = liveReadTransport
@@ -1036,12 +1040,15 @@ public enum MessageHTTPOutcome: Sendable {
         let checked = try await checkedTransport(lease)
         return Client(serverURL: endpoint.url, configuration: configuration, transport: checked)
     }
-    func checkedTransport(_ lease: Lease) async throws -> CheckedTransport {
+    func checkedTransport(_ lease: Lease, readingPreservedRun: Bool = false) async throws -> CheckedTransport {
         try recovery.validateScope(scope, lease: lease)
         let value = try await credentials.bearer(for: scope, lease: lease)
         try recovery.validateScope(scope, lease: lease)
         guard let value, !value.isEmpty, value.utf8.allSatisfy({ $0 > 32 && $0 < 127 }) else { throw MessageHTTPFailure.credentialsUnavailable }
-        return CheckedTransport(underlying: transport, endpoint: endpoint, bearer: value,
+        let selected: any ClientTransport
+        if readingPreservedRun, let preservedRunReadTransport { selected = preservedRunReadTransport }
+        else { selected = transport }
+        return CheckedTransport(underlying: selected, endpoint: endpoint, bearer: value,
             validate: { [recovery,scope] in try recovery.validateScope(scope,lease:lease) })
     }
     public func submit(messageID: String, lease: Lease) async throws -> MessageHTTPOutcome {

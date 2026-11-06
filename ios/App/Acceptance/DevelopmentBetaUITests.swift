@@ -47,7 +47,7 @@ import CryptoKit
         XCTAssertTrue(message.element.waitForExistence(timeout:25));XCTAssertEqual(message.count,1)
         tap("history.answer.read."+original)
         let text=app.textViews.matching(identifier:"history.answer.text."+original)
-        XCTAssertTrue(text.element.waitForExistence(timeout:25));XCTAssertEqual(text.count,1)
+        XCTAssertTrue(text.element.waitForExistence(timeout:90));XCTAssertEqual(text.count,1)
         let value=try XCTUnwrap(text.element.value as? String),bytes=Data(value.utf8)
         XCTAssertEqual(bytes.count,224)
         XCTAssertEqual(SHA256.hash(data:bytes).map {String(format:"%02x",$0)}.joined(),answerSHA)
