@@ -21,17 +21,43 @@ from urllib.parse import parse_qs, urlsplit
 ROOT = Path(__file__).resolve().parents[3]
 HERE = Path(__file__).resolve().parent
 BUNDLE = "space.go2china.shell.acceptance"
+SUITES = {
+    "structure": ("ShellStructureUITests", {
+        "ordinary": ["testOrdinaryAppTabsLanguageAndDraft", "testOrdinaryHelpPrivacySupportInBothLanguages"],
+        "fixture": ["testMemoryStatesKeepSettingsReachable", "testLanguagePreservesReferencesAndDoesNotRepeatRequests", "testPluginsAreInertInBothLanguages"]}),
+    "accessibility": ("ShellAccessibilityUITests", {
+        "fixture": ["testMaximumTextLayout", "testAssistantStateSamplesInBothLanguages", "testTripAndMemoryReadStatesInBothLanguages", "testLongTextKeyboardAndUnavailableControls"],
+        "ordinary": ["testOrdinaryAppAccessibilityAudits"]}),
+    "account-deletion": ("AccountDeletionUITests", {
+        "ordinary": ["testOrdinaryEntryAndAccountInBothLanguages"],
+        "fixture": ["testEmptyAndFailedMemoryEntry", "testMaximumTextAndFullAccessibilityAudit"]}),
+}
+
+
+def selected_variants(suite, case):
+    test_class, variants = SUITES[suite]
+    required = [test for tests in variants.values() for test in tests]
+    if case is not None and case not in required:
+        raise ValueError("Selected original method is not in this suite")
+    selected = {variant: [test for test in tests if case is None or test == case]
+                for variant, tests in variants.items()}
+    return test_class, {variant: tests for variant, tests in selected.items() if tests}, [test for test in required if case is not None and test != case]
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--suite", choices=["structure", "accessibility", "account-deletion"], default="structure")
+    parser.add_argument("--case", help="One original method; all other methods remain UNRUN and overall status stays PARTIAL_PASS")
     target = parser.add_mutually_exclusive_group(required=True)
     target.add_argument("--simulator"); target.add_argument("--device")
     parser.add_argument("--local-tls", type=Path); parser.add_argument("--prepare-only", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--build-dir", type=Path, help="Reusable external build cache; evidence remains separate")
     args = parser.parse_args()
+    try:
+        test_class, variants, unrun_cases = selected_variants(args.suite, args.case)
+    except ValueError as error:
+        parser.error(str(error))
     tls = None
     if args.device:
         if not args.local_tls: parser.error("--device requires the approved --local-tls profile")
@@ -58,7 +84,7 @@ def main():
         devices = json.loads(subprocess.check_output(["xcrun", "simctl", "list", "devices", "available", "-j"], env=env))
         assert any("iOS-17-5" in runtime and d["udid"] == args.simulator
                    for runtime, rows in devices["devices"].items() for d in rows), "iOS 17.5 simulator required"
-    report = {"status": "RUNNING", "suite": args.suite, "cases": {}, "scope": "ordinary App + labelled synthetic readonly Shell fixture; no real service"}
+    report = {"status": "RUNNING", "suite": args.suite, "cases": {}, "unrun_cases": unrun_cases, "scope": "ordinary App + labelled synthetic readonly Shell fixture; no real service"}
     native = None; control_token = secrets.token_urlsafe(32) if tls else None
     if tls:
         report.update(head=subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
@@ -121,15 +147,6 @@ def main():
     spec = importlib.util.spec_from_file_location("trip_acceptance", ROOT / "scripts/check_ios_trip_confirm.py")
     module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
     try:
-        test_class = "ShellStructureUITests" if args.suite == "structure" else "ShellAccessibilityUITests"
-        variants = {
-            "ordinary": ["testOrdinaryAppTabsLanguageAndDraft", "testOrdinaryHelpPrivacySupportInBothLanguages"],
-            "fixture": ["testMemoryStatesKeepSettingsReachable", "testLanguagePreservesReferencesAndDoesNotRepeatRequests", "testPluginsAreInertInBothLanguages"]
-        } if args.suite == "structure" else {"fixture": ["testMaximumTextLayout", "testAssistantStateSamplesInBothLanguages", "testTripAndMemoryReadStatesInBothLanguages", "testLongTextKeyboardAndUnavailableControls"], "ordinary": ["testOrdinaryAppAccessibilityAudits"]}
-        if args.suite == "account-deletion":
-            test_class = "AccountDeletionUITests"
-            variants = {"ordinary": ["testOrdinaryEntryAndAccountInBothLanguages"],
-                        "fixture": ["testEmptyAndFailedMemoryEntry", "testMaximumTextAndFullAccessibilityAudit"]}
         for variant, tests in variants.items():
             # Reuse only the existing external Xcode project generator, not its Trip
             # API/PG setup or polling driver. Our XCTest source drives UI directly.
@@ -157,7 +174,18 @@ def main():
                 native.build_for_testing("Debug", selected, env)
                 if args.prepare_only:
                     detail["status"] = "PREPARED_EXECUTION_UNRUN"; report["cases"][variant] = dict(status="UNRUN", tests=tests); continue
-                native.run("Debug", selected, env)
+                try:
+                    native.run("Debug", selected, env)
+                except BaseException:
+                    detail["status"] = "FAIL"
+                    try:
+                        native.scan("Debug")
+                        detail["failure_container_scan"] = {"status": "PASS"}
+                    except Exception as scan_error:
+                        detail["failure_container_scan"] = {
+                            "status": "FAIL" if isinstance(scan_error, AssertionError) else "UNRUN",
+                            "error_type": type(scan_error).__name__}
+                    raise
                 native.scan("Debug")
                 detail["status"] = "PASS"; report["cases"][variant] = dict(status="PASS", tests=tests); continue
             result = output / (variant + ".xcresult")
@@ -197,7 +225,7 @@ def main():
             report["credential_scan"] = "PASS"
         else:
             subprocess.run(["xcrun", "simctl", "terminate", args.simulator, BUNDLE], env=env, capture_output=True)
-        if report["status"] != "FAIL": report["status"] = "PREPARED_EXECUTION_UNRUN" if args.prepare_only else "PASS"
+        if report["status"] != "FAIL": report["status"] = "PREPARED_EXECUTION_UNRUN" if args.prepare_only else ("PARTIAL_PASS" if args.case else "PASS")
         report_path.write_text(json.dumps(report, indent=2))
     print(json.dumps(report, indent=2))
 
