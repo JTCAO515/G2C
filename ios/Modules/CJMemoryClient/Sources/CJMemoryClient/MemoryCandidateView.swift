@@ -110,7 +110,7 @@ public struct MemoryCandidateView: View {
           }.frame(maxWidth: .infinity, alignment: .leading).padding()
         }
         .navigationTitle(language.text("Memory suggestions", "记忆建议"))
-        .sheet(item: Binding(get: { editor }, set: replaceEditor)) { draft in
+        .sheet(item: Binding(get: { editor }, set: { next in replaceEditor(next) })) { draft in
             MemoryCandidateEditor(model: model, draft: draft, language: language, makeReviewTravel: makeReviewTravel)
         }
     }
