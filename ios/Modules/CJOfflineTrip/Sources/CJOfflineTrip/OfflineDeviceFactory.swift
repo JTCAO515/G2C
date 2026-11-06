@@ -11,6 +11,10 @@ public enum OfflineDeviceClock {
             return read // Preserve existing consumers until they explicitly provision the new capability.
         }
         let root = directory.appendingPathComponent("BootContinuity", isDirectory: true)
+        #if DEBUG && os(iOS) && G2C_M4_DEVICE_ACCEPTANCE
+        var diagnosticStage="directory"
+        #endif
+        do {
         var attributes: [FileAttributeKey: Any] = [.posixPermissions: 0o700]
         #if os(iOS)
         attributes[.protectionKey] = FileProtectionType.complete
@@ -18,7 +22,13 @@ public enum OfflineDeviceClock {
         if !FileManager.default.fileExists(atPath: root.path) {
             try FileManager.default.createDirectory(at: root, withIntermediateDirectories: false, attributes: attributes)
         }
+        #if DEBUG && os(iOS) && G2C_M4_DEVICE_ACCEPTANCE
+        diagnosticStage="store-open"
+        #endif
         let store = try AtomicSnapshotStore(existingPrivateDirectory: root, name: "boot-continuity.v1")
+        #if DEBUG && os(iOS) && G2C_M4_DEVICE_ACCEPTANCE
+        diagnosticStage="boot-authority"
+        #endif
         let authority = try OfflineBootContinuity.prepare(store: store, group: group)
         return {
             do {
@@ -27,6 +37,24 @@ public enum OfflineDeviceClock {
                 guard clock_gettime(CLOCK_MONOTONIC, &value) == 0 else { return nil }
                 return sample(boot: authority.boot, uptime: Double(value.tv_sec) + Double(value.tv_nsec) / 1_000_000_000)
             } catch { return nil } // Missing kernel authority is unavailable, never a legacy-clock fallback.
+        }
+        } catch {
+            #if DEBUG && os(iOS) && G2C_M4_DEVICE_ACCEPTANCE
+            let code=errno
+            var physical=false
+            if let value=realpath(root.path,nil) {physical=String(cString:value)==root.path;free(value)}
+            let environment=ProcessInfo.processInfo.environment
+            if let id=environment["G2C_M4_DIAGNOSTIC_ID"],UUID(uuidString:id)?.uuidString==id {
+                let kind=(error as? OfflineFailure).map {String(describing:$0)} ?? "other"
+                do {
+                    let target=try FileManager.default.url(for:.cachesDirectory,in:.userDomainMask,appropriateFor:nil,create:true)
+                        .appendingPathComponent("G2CM4OfflineClockBootstrap.json")
+                    try JSONSerialization.data(withJSONObject:["diagnostic_id":id,"stage":diagnosticStage,"kind":kind,"posix_errno":code,"directory_is_physical":physical])
+                        .write(to:target,options:.atomic)
+                } catch {print("M4_OFFLINE_BOOT_DIAGNOSTIC_UNAVAILABLE")}
+            }
+            #endif
+            throw error
         }
     }
     /// A kernel boot-session UUID keeps a new boot from borrowing an old monotonic anchor.

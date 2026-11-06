@@ -90,6 +90,9 @@ import Foundation
             .merging(offsets) { _, new in new }
         #if G2C_M4_DEVICE_ACCEPTANCE
         app.launchEnvironment.merge(try deviceSession.applicationEnvironment(endpoint: f.endpoint, injecting: choices)) { _, value in value }
+        let diagnostic=UUID().uuidString
+        app.launchEnvironment["G2C_M4_DIAGNOSTIC_ID"]=diagnostic
+        print("M4_OFFLINE_DIAGNOSTIC_ID",diagnostic)
         #endif
         app.launch()
         XCTAssertTrue(app.tabBars.element.waitForExistence(timeout: 15))
