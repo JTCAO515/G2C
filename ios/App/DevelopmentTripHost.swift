@@ -27,8 +27,22 @@ import Observation
 @MainActor private func provisionJournalSiblings(of base: URL, suffixes: [String]) throws {
     let environment = ProcessInfo.processInfo.environment
     guard environment["G2C_DEV_ACCOUNT_MODE"] == "1", let profile = environment["G2C_DEV_CLEANUP_PROFILE"], ["device-v3", "device-v4"].contains(profile) else { return }
-    let original = try DeviceCleanupDirectory(existingPrivateDirectory: base)
-    let parentURL = base.deletingLastPathComponent()
+    // Resolve only the OS-supplied Application Support alias. App descendants
+    // are appended unchanged and still undergo the physical no-follow walk.
+    let support = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask,
+        appropriateFor: nil, create: true)
+    guard base.isFileURL, let physical = realpath(support.path, nil) else { throw CleanupFailure.unavailable }
+    defer { free(physical) }
+    let physicalSupport = URL(fileURLWithPath: String(cString: physical))
+    let parts = base.pathComponents, supplied = support.pathComponents, resolved = physicalSupport.pathComponents
+    let relative: [String]
+    if parts.starts(with: supplied) { relative = Array(parts.dropFirst(supplied.count)) }
+    else if parts.starts(with: resolved) { relative = Array(parts.dropFirst(resolved.count)) }
+    else { throw CleanupFailure.unavailable }
+    guard !relative.isEmpty, relative.allSatisfy({ $0 != "." && $0 != ".." }) else { throw CleanupFailure.unavailable }
+    let physicalBase = relative.reduce(physicalSupport) { $0.appendingPathComponent($1, isDirectory: true) }
+    let original = try DeviceCleanupDirectory(existingPrivateDirectory: physicalBase)
+    let parentURL = physicalBase.deletingLastPathComponent()
     let parent = try DeviceCleanupDirectory(existingPrivateDirectory: parentURL)
     let fd = open(parentURL.path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
     guard fd >= 0 else { throw CleanupFailure.unavailable }; defer { close(fd) }
