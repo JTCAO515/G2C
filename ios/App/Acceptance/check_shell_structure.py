@@ -174,10 +174,12 @@ def main():
                 native.build_for_testing("Debug", selected, env)
                 if args.prepare_only:
                     detail["status"] = "PREPARED_EXECUTION_UNRUN"; report["cases"][variant] = dict(status="UNRUN", tests=tests); continue
+                report["cases"][variant] = dict(status="RUNNING", tests=tests)
                 try:
                     native.run("Debug", selected, env)
                 except BaseException:
                     detail["status"] = "FAIL"
+                    report["cases"][variant] = dict(status="FAIL", tests=tests)
                     try:
                         native.scan("Debug")
                         detail["failure_container_scan"] = {"status": "PASS"}
