@@ -639,6 +639,13 @@ def group_hk_cloud_rehearsal():
 GROUPS.update(hk_cloud_rehearsal=group_hk_cloud_rehearsal)
 
 
+def group_hk_typed_memory():
+    return script('backend/cj_api/tests/hk_typed_memory_pg.py')
+
+
+GROUPS.update(hk_typed_memory=group_hk_typed_memory)
+
+
 def main(argv):
     if argv[:1] == ['--shard']:
         index, count = map(int, argv[1].split('/'))

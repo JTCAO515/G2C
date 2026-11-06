@@ -329,12 +329,15 @@ def trip_configuration(value):
 
 def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, history_configuration=None,
                      memory_configuration=None, run_context=None, travel_context=False, needs_profile=None, trip_context=False,edit_configuration=None,
-                     cleanup_configuration=None,formal_memory_configuration=None,database=None,account_admission=False):
+                     cleanup_configuration=None,formal_memory_configuration=None,database=None,account_admission=False,message_subjects=None):
     if os.environ.get('CJ_ENV') != 'local':
         raise CompositionUnavailable('CJ_ENV must explicitly be local')
     auth_dir = Path(auth_dir)
     if needs_profile not in (None,'manual-v1'):
         raise CompositionUnavailable('unknown local NEEDS profile')
+    if message_subjects is not None and (type(message_subjects) is not frozenset
+            or any(type(s) is not str or not s for s in message_subjects)):
+        raise CompositionUnavailable('explicit MESSAGE subject selection required')
     if database is None:
         database = LocalDatabase(conninfo_path,run_context=run_context,travel_context=travel_context,
                                  needs_context=needs_profile is not None,trip_context=trip_context,edit_configuration=edit_configuration)
@@ -375,6 +378,8 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
         access=AccountRevocationAccess(base_access,cleanup_runtime.retired)
 
     def message_repository(principal):
+        if message_subjects is not None and principal.subject not in message_subjects:
+            raise CompositionUnavailable('MESSAGE consumer unavailable for this API-only subject')
         scope = scope_for(principal.issuer, principal.subject)
         database.require_budget_account(scope)
         database.provision(scope)

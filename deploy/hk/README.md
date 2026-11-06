@@ -107,6 +107,31 @@ recovery命令在同一进程内创建目标、恢复并验证，结束时先核
 旧镜像没有该 API 时查询明确不可用，不能重建动作或改写原记录。
 私有 PG、真实云回执与 App 验收分别记录在 #577/#30，不以本说明或本机结果代称云端通过。
 
+## 可选的 typed 手动 Memory
+
+仅在 API 的原 `api.env`（UID10001、0600）添加
+`CJ_BETA_TYPED_MEMORY_POLICY_B64`，值为现有 `local-memory-typed.1` policy 的 Base64 JSON。
+缺省且无 Memory 命名空间时保持关闭；格式错误、未知或未邀请的主体、错误文件权限明确拒绝。
+policy 不进入镜像或 Docker Config.Env，也不放进 worker 的凭据文件。
+字段与既有 wire 见 [C canonical host](../../backend/memory/HOST.md)，不另定义管理/撤回接口。
+
+API 用原 `SupabaseTestDatabase`、RUN context 与 `runtime_transaction`，在构造时显式启用
+travel capability，并将同一个对象交给 C 的 `register_typed_routes`。
+Travel ID 必须来自原 `/v1/travel-context-actions` 回执，不从聊天、RUN 或客户端配置猜测。
+应用配置中的选项不是 owner、collection 或当前版本的授权，最终 guard/lease 仍由原 producer 检查。
+
+这是 API-only 的手动保存/管理/读取配置，不安装 worker 的 `TypedRuntimeConfiguration`，
+不激活 MESSAGE 或正式 Trip profile，不宣称模型召回已配置。
+policy 覆盖的主体在 canonical MESSAGE resolver 建行/入队前保持不可用；
+其他主体保留原 MESSAGE 路径，Travel/NEEDS/一般 Feedback 的独立边界不变。
+后续只有在相同主体的真实 worker 配置和原 MESSAGE reference/profile 组合交付后，才解除该消息门禁。
+
+已有受邀主体的 Memory 命名空间时，缺少覆盖它的 policy 会拒绝 API 启动。
+不能移除字段、删除数据或恢复旧账本来使旧镜像可写；旧镜像不识别该 API 私有字段时应保持不可用。
+回退须使用支持同一 policy/数据的已审镜像或向前修复，保留全部原动作、财务及删除 fence。
+真实 withdraw/stop-use/物理清理如超出旧授权演练范围，仍先按 #495 取得具体授权。
+实际已验范围与尚未运行的 worker/正式 Trip/真实用户部分记录在 #586/#30，不能据配置或私有 PG 提升。
+
 ## 验证
 
 ```sh

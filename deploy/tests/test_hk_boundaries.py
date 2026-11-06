@@ -173,6 +173,31 @@ def test_secret_environment_only_enters_process_after_owned_file_validation(tmp_
         with pytest.raises(ValueError,match='persistent_container_secret'):configuration.load_secret_environment('api',root=tmp_path)
 
 
+def test_typed_policy_is_optional_and_api_file_only(tmp_path):
+    name='CJ_BETA_TYPED_MEMORY_POLICY_B64'
+    required={'CJ_SUPABASE_RUNTIME_URI':'synthetic-uri','CJ_BETA_CONFIRMATION_B64':'synthetic-confirm','CJ_BETA_HISTORY_B64':'synthetic-history'}
+    values={**required,name:'synthetic-private-policy'}
+    path=tmp_path/'api.env';path.write_text('\n'.join(k+'='+v for k,v in values.items())+'\n');path.chmod(0o600)
+    with patch.dict(os.environ):
+        for key in values:os.environ.pop(key,None)
+        configuration.load_secret_environment('api',root=tmp_path)
+        assert os.environ[name]==values[name]
+        with pytest.raises(ValueError,match='persistent_container_secret'):
+            configuration.load_secret_environment('api',root=tmp_path)
+    # The existing mandatory credentials and rejection of unknown fields stay
+    # binding; the policy is configuration, never a new worker credential.
+    for change in ({name:'policy'}, {**required,'UNKNOWN_POLICY_FIELD':'policy'}):
+        path.write_text('\n'.join(k+'='+v for k,v in change.items())+'\n')
+        with patch.dict(os.environ):
+            for key in values:os.environ.pop(key,None)
+            with pytest.raises(ValueError):configuration.load_secret_environment('api',root=tmp_path)
+    worker={k:'synthetic-value' for k in configuration.SECRET_FILES['worker']['worker']}
+    path=tmp_path/'worker.env';path.write_text('\n'.join(k+'='+v for k,v in {**worker,name:'policy'}.items())+'\n');path.chmod(0o600)
+    with patch.dict(os.environ):
+        for key in {*worker,name}:os.environ.pop(key,None)
+        with pytest.raises(ValueError):configuration.load_secret_environment('worker',root=tmp_path)
+
+
 def test_trial_expiry_at_final_model_and_fact_guard_sends_nothing(tmp_path,monkeypatch):
     import asyncio
     import httpx
