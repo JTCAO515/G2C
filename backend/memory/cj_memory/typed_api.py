@@ -38,13 +38,36 @@ class _RequestBoundary(MemoryBoundary):
         return super()._context_value(context,kind,argument)
 
 
-def create_local_typed_app(*,conninfo_path,auth_dir,configuration,max_body_bytes=32768,max_response_bytes=1_000_000):
+def _require_typed_host(configuration,max_body_bytes,max_response_bytes):
     import os
     if (os.environ.get('CJ_ENV')!='local' or type(configuration) is not TypedConfiguration
             or type(max_body_bytes) is not int or not 1<=max_body_bytes<=32768
             or type(max_response_bytes) is not int or max_response_bytes<1):
         raise CompositionUnavailable('explicit bounded local typed MEMORY host required')
-    database=LocalDatabase(conninfo_path,travel_context=True)
+
+
+def create_local_typed_app(*,conninfo_path,auth_dir,configuration,max_body_bytes=32768,max_response_bytes=1_000_000):
+    _require_typed_host(configuration,max_body_bytes,max_response_bytes)
+    app=create_app()
+    _register_typed_routes(app,database=LocalDatabase(conninfo_path,travel_context=True),auth_dir=auth_dir,
+        configuration=configuration,max_body_bytes=max_body_bytes,max_response_bytes=max_response_bytes)
+    return app
+
+
+def register_typed_routes(app,*,database:LocalDatabase,auth_dir,configuration:TypedConfiguration,
+                          max_body_bytes=32768,max_response_bytes=1_000_000):
+    """Install existing v2 routes using the trusted host's scoped runtime database.
+
+    The host constructs the database with travel capability and its original
+    transaction guard; request fields never select a database or grant rights.
+    AUTH, account retirement, source policy and current leases stay route-owned.
+    """
+    _require_typed_host(configuration,max_body_bytes,max_response_bytes)
+    _register_typed_routes(app,database=database,auth_dir=auth_dir,configuration=configuration,
+        max_body_bytes=max_body_bytes,max_response_bytes=max_response_bytes)
+
+
+def _register_typed_routes(app,*,database,auth_dir,configuration,max_body_bytes,max_response_bytes):
     auth_dir=Path(auth_dir)
     keys=StaticPublicKeys({KEY_ID:VerificationKey('RS256',(auth_dir/'public.pem').read_bytes())})
 
@@ -70,7 +93,6 @@ def create_local_typed_app(*,conninfo_path,auth_dir,configuration,max_body_bytes
     boundary=build_memory_boundary(environment='local',jwt_configuration=JWTConfiguration(ISSUER,AUDIENCE,'RS256',0),
         verification_keys=keys,access_provider=AccountRevocationAccess(InvitedSubjects(auth_dir/'invited.json'),retired_for(database)),
         resolve_binding=resolve,source_policy=policy)
-    app=create_app()
 
     def query(request,fields):
         pairs=list(request.query_params.multi_items());value=dict(pairs)
@@ -191,4 +213,3 @@ def create_local_typed_app(*,conninfo_path,auth_dir,configuration,max_body_bytes
             if str(limit)!=value['limit'] or not 1<=limit<=100:raise InvalidInput('page bound')
         except (InvalidInput,ValueError,UnicodeError):return _error(request,400,'INVALID_INPUT','input','failed','do_not_retry')
         return await invoke(request,'list',(value.get('after'),limit))
-    return app
