@@ -194,6 +194,15 @@ import Foundation
         XCTAssertTrue(draft.isEnabled && draft.isHittable)
         draft.tap(); draft.typeText(f.prompt)
         XCTAssertEqual(Array((draft.value as? String ?? "").utf8), Array(f.prompt.utf8))
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        // Finish the real keyboard interaction before resolving the send button.
+        // Its old center can lie under the keyboard accessory after layout moves.
+        let done = app.toolbars.buttons.matching(NSPredicate(format: "label == %@", language == "en" ? "Done" : "完成"))
+        XCTAssertTrue(done.element.waitForExistence(timeout: 8)); XCTAssertEqual(done.count, 1)
+        XCTAssertTrue(done.element.isEnabled && done.element.isHittable); done.element.tap()
+        let hidden = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.keyboards.firstMatch)
+        XCTAssertEqual(XCTWaiter.wait(for: [hidden], timeout: 10), .completed)
+        #endif
         tap("assistant.send")
         let value = app.staticTexts["run.display.status"]
         let condition = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", language == "en" ? "Completed" : "已完成"), object: value)
