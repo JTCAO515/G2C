@@ -123,7 +123,9 @@ import Foundation
         #endif
         XCTAssertEqual(query.count, 1, id)
         let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: button)
-        XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 25), .completed, id)
+        let result = XCTWaiter.wait(for: [enabled], timeout: 25)
+        if result != .completed { print("CANDIDATE_DISABLED_CONDITIONS", id, button.value as Any) }
+        XCTAssertEqual(result, .completed, id)
         button.tap()
         #if G2C_M4_DEVICE_ACCEPTANCE
         if tab {

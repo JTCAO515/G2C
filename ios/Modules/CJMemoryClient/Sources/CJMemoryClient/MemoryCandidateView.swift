@@ -226,6 +226,7 @@ private struct MemoryCandidateEditor: View {
                         guard let selected = Components.Schemas.MemoryManualSaveCommand.kindPayload(rawValue: draft.kind) else { return }
                         submit(.confirm(kind: selected, text: draft.text, occurredAt: draft.occurredAt, travel: reviewTravel))
                     }
+                    .accessibilityValue("DIAGNOSTIC active=\(active) reading=\(readingTravel) current=\(model.canReview(entry: entry)) chosen=\(!draft.kind.isEmpty) travelRequired=\(entry.candidate.travel != nil) travelValid=\(entry.candidate.travel == nil || reviewTravel != nil)")
                     MemoryLifecycleButton(title: language.text("Reject this suggestion", "拒绝这条建议"), identifier: "memoryCandidate.editor.reject", enabled: canSubmit) { submit(.reject) }
                     if refused || !canSubmit {
                         MemoryRowText(text: language.text("This review could not be prepared. Check the text and time, or close and read the current suggestion again. No replacement was sent.", "暂时无法准备此操作。请核对内容与时间，或关闭后重新读取当前建议；未发送替代操作。"), style: .body)
