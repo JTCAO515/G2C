@@ -12,8 +12,10 @@ from unittest.mock import patch,AsyncMock,Mock
 from types import SimpleNamespace
 
 import httpx
+from jsonschema import Draft202012Validator,ValidationError
 
 from cj_agent.provider import DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,M4_NATIVE_ANSWER_PROFILE,M4_NATIVE_TURN_PROFILE,M4_TURN_FUNCTION,ProviderFailed,ProviderUnknown,_m4_wire,_bounded_sse_lines
+from cj_agent.provider import _m4_turn_function
 from cj_api.real_services import RealServices,RealTools,TOOLS
 from cj_api.real_services import canonical_tool
 from cj_api.real_services import ModelInput,TOOL_SYSTEM
@@ -55,6 +57,80 @@ def turn_sse(*,tool=False,usage=True,model=M4_MODEL,done=True,turn=None):
 
 
 class Boundaries(unittest.TestCase):
+    def test_forced_function_schema_matches_frozen_branch_invariants(self):
+        schema=_m4_turn_function(TOOLS,False)['function']['parameters']
+        Draft202012Validator.check_schema(schema);validator=Draft202012Validator(schema)
+        call=dict(name='place_search',arguments=dict(keyword='synthetic',city='Beijing',page=1,page_size=1))
+        good=[dict(version='MODEL-tool-turn.1',kind='tool',answer=None,calls=[call,call]),
+              dict(version='MODEL-tool-turn.1',kind='answer',answer=dict(zh='合成',en='Synthetic'),calls=[])]
+        for value in good:
+            validator.validate(value)
+            parse_turn(json.dumps(value).encode(),{t['function']['name'] for t in TOOLS})
+        bad=[dict(version='MODEL-tool-turn.1',kind='tool',answer=dict(zh='合成',en='Synthetic'),calls=[call]),
+             dict(version='MODEL-tool-turn.1',kind='answer',answer=None,calls=[]),
+             dict(version='MODEL-tool-turn.1',kind='tool',answer=None,calls=[]),
+             dict(version='MODEL-tool-turn.1',kind='answer',answer=dict(zh=' ',en='Synthetic'),calls=[])]
+        for value in bad:
+            with self.subTest(kind=value['kind'],calls=len(value['calls'])):
+                with self.assertRaises(ValueError):parse_turn(json.dumps(value).encode(),{t['function']['name'] for t in TOOLS})
+                with self.assertRaises(ValidationError):validator.validate(value)
+
+    def test_native_function_parse_reasons_are_specific_private_and_no_rearm(self):
+        private='SYNTHETIC_PRIVATE_ARGUMENT_NEVER_LOG'
+        good=dict(version='MODEL-tool-turn.1',kind='tool',answer=None,calls=[dict(name='place_search',arguments={})])
+        cases=[(private+'{','native_json_invalid'),
+            ('{"version":1,"version":2}','native_json_duplicate'),
+            ('[]','native_envelope_type'),
+            (json.dumps({**good,private:True}),'native_envelope_fields'),
+            (json.dumps({**good,'version':private}),'native_version_literal'),
+            (json.dumps({**good,'kind':private}),'native_kind_literal'),
+            (json.dumps({**good,'answer':dict(zh=private,en=private)}),'native_tool_answer'),
+            (json.dumps({**good,'calls':{}}),'native_calls_type'),
+            (json.dumps({**good,'calls':[]}),'native_calls_bound'),
+            (json.dumps({**good,'calls':[{private:True}]}),'native_call_fields'),
+            (json.dumps({**good,'calls':[dict(name=private,arguments={})]}),'native_call_name'),
+            (json.dumps({**good,'calls':[dict(name='place_search',arguments=private)]}),'native_call_arguments'),
+            (json.dumps({**good,'kind':'answer','answer':None,'calls':[]}),'native_answer_fields'),
+            (json.dumps({**good,'kind':'answer','answer':dict(zh=private,en=private)}),'native_answer_calls'),
+            (json.dumps({**good,'kind':'answer','answer':dict(zh=' ',en=private),'calls':[]}),'native_answer_text'),
+            # JSON stack accounting differs across supported interpreters;
+            # either decode rejection or the invalid root type must fail closed.
+            ('['*1100+']'*1100,('native_json_invalid','native_envelope_type'))]
+        for index,(arguments,reason) in enumerate(cases):
+            with self.subTest(reason=reason):
+                body=turn_sse();first=json.loads(body.splitlines()[0][6:])
+                first['choices'][0]['delta']['tool_calls'][0]['function']['arguments']=arguments
+                body='data: '+json.dumps(first)+'\n\n'+'\n'.join(body.splitlines()[2:])
+                provider=self.provider(body);attempt='native-reason-'+str(index);before=len(self.sent);receipt={};reply={}
+                def invoke():return list(provider.invoke([dict(role='user',content='Synthetic contract input')],TOOL_SYSTEM,attempt,
+                    tools=TOOLS,native_turn_profile=M4_NATIVE_TURN_PROFILE,receipt=receipt,native_reply=reply,guard=lambda:True))
+                with self.assertLogs('cj_provider.audit',level='WARNING') as logs,self.assertRaises(ProviderUnknown):invoke()
+                audit='\n'.join(logs.output)
+                expected=(reason,) if type(reason) is str else reason
+                self.assertTrue(any('reason='+code+' ' in audit for code in expected));self.assertIn('phase=native_function_turn',audit)
+                self.assertNotIn(private,audit);self.assertNotIn(KEY,audit)
+                self.assertEqual(receipt,{});self.assertEqual(reply,{})
+                row=next(r for r in self.budget.inspect() if r['attempt_id']==attempt)
+                self.assertEqual((row['state'],row['receipt']),('INTENT',None))
+                with self.assertRaises(BudgetUnknown):invoke()
+                self.assertEqual(len(self.sent)-before,1)
+
+    def test_native_json_resource_failure_is_unknown_without_private_exception(self):
+        body=turn_sse();first=json.loads(body.splitlines()[0][6:])
+        arguments=first['choices'][0]['delta']['tool_calls'][0]['function']['arguments']
+        original=json.loads
+        def resource_failure(raw,*args,**kwargs):
+            if raw==arguments:raise RecursionError('private decoder detail '+KEY)
+            return original(raw,*args,**kwargs)
+        provider=self.provider(body);receipt={}
+        with patch('cj_agent.provider.json.loads',resource_failure),self.assertLogs('cj_provider.audit',level='WARNING') as logs,self.assertRaises(ProviderUnknown):
+            self.invoke(provider,tools=TOOLS,native_turn_profile=M4_NATIVE_TURN_PROFILE,receipt=receipt)
+        audit='\n'.join(logs.output)
+        self.assertIn('reason=native_json_invalid',audit);self.assertNotIn(KEY,audit);self.assertNotIn('private decoder detail',audit)
+        self.assertEqual(receipt,{})
+        self.assertEqual(self.budget.inspect()[0]['state'],'INTENT')
+        with self.assertRaises(BudgetUnknown):self.invoke(provider,tools=TOOLS,native_turn_profile=M4_NATIVE_TURN_PROFILE)
+        self.assertEqual(len(self.sent),1)
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory()
         self.budget=AuthorizationBudget(Path(self.temp.name),clock=lambda:NOW)
