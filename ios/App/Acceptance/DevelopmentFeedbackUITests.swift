@@ -206,7 +206,13 @@ import Foundation
         tap("assistant.send")
         let value = app.staticTexts["run.display.status"]
         let condition = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", language == "en" ? "Completed" : "已完成"), object: value)
-        XCTAssertEqual(XCTWaiter.wait(for: [condition], timeout: 40), .completed)
+        let completed = XCTWaiter.wait(for: [condition], timeout: 40)
+        if completed != .completed {
+            capture("feedback-answer-not-completed")
+            let tree = XCTAttachment(string: app.debugDescription)
+            tree.name = "PRIVATE-feedback-answer-not-completed-tree"; tree.lifetime = .keepAlways; add(tree)
+        }
+        XCTAssertEqual(completed, .completed)
         tap("assistant.feedback")
         XCTAssertTrue(app.switches["feedback.associate"].waitForExistence(timeout: 10))
         let association = app.switches["feedback.associate"]
