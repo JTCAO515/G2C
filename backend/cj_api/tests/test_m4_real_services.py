@@ -1,6 +1,8 @@
 """Offline M4 boundaries; HTTP fixtures are not real provider evidence."""
 from datetime import datetime,timezone
 import asyncio
+import gzip
+import hashlib
 import json
 import logging
 from pathlib import Path
@@ -657,7 +659,7 @@ class Boundaries(unittest.TestCase):
                     yield b'\xff' if phase=='utf8' else b'<p>short</p>'
                     if phase=='body':raise error
                 close=AsyncMock()
-                response=SimpleNamespace(status=status,body=chunks(),close=close)
+                response=SimpleNamespace(status=status,content_encoding='identity',body=chunks(),close=close)
                 send=AsyncMock(return_value=response)
                 lookup=dns if phase!='dns' else AsyncMock(side_effect=error)
                 if not returned and phase!='dns':send.side_effect=error
@@ -675,7 +677,7 @@ class Boundaries(unittest.TestCase):
         dns=AsyncMock(return_value=[(2,1,6,'',('93.184.216.34',443))])
         raw=b'<p>Independent synthetic excerpt for source transport testing.</p>'
         async def chunks():yield raw
-        close=AsyncMock();response=SimpleNamespace(status=200,body=chunks(),close=close)
+        close=AsyncMock();response=SimpleNamespace(status=200,content_encoding='identity',body=chunks(),close=close)
         send=AsyncMock(return_value=response)
         with patch('asyncio.BaseEventLoop.getaddrinfo',dns),patch('cj_fact.live_source.PinnedHTTPSTransport.__call__',send),self.assertNoLogs('cj_provider.audit',level='WARNING'):
             value=asyncio.run(public_page(guard=lambda:True))
@@ -684,6 +686,56 @@ class Boundaries(unittest.TestCase):
         close.assert_awaited_once();send.assert_awaited_once()
         with patch('asyncio.BaseEventLoop.getaddrinfo',AsyncMock(side_effect=asyncio.CancelledError())),self.assertNoLogs('cj_provider.audit',level='WARNING'),self.assertRaises(asyncio.CancelledError):
             asyncio.run(public_page(guard=lambda:True))
+
+    def test_fact_gzip_original_response_shape(self):
+        raw=b'<p>Independent synthetic original fact excerpt, eligibility UNKNOWN.</p>'
+        compressed=gzip.compress(raw)
+        async def chunks():
+            for index in range(0,len(compressed),3):yield compressed[index:index+3]
+        close=AsyncMock()
+        response=SimpleNamespace(status=200,content_encoding='gzip',body=chunks(),close=close)
+        with patch('asyncio.BaseEventLoop.getaddrinfo',AsyncMock(return_value=[(2,1,6,'',('93.184.216.34',443))])),patch('cj_fact.live_source.PinnedHTTPSTransport.__call__',AsyncMock(return_value=response)):
+            value=asyncio.run(public_page(guard=lambda:True))
+        self.assertEqual(value['original_bytes'],len(raw))
+        self.assertEqual(value['original_sha256'],hashlib.sha256(raw).hexdigest())
+        self.assertEqual(value['excerpts'][0]['text'],'Independent synthetic original fact excerpt, eligibility UNKNOWN.')
+        self.assertEqual(value['status'],'unknown');close.assert_awaited_once()
+
+    def test_fact_gzip_limits_integrity_and_single_member_are_fail_closed(self):
+        from cj_fact.live_source import PAGE_POLICY
+        raw=b'<p>Independent original synthetic source excerpt with unknown applicability.</p>'
+        complete=gzip.compress(raw)
+        corrupt=bytearray(complete);corrupt[-8]^=1
+        cases=((gzip.compress(b'X'*(PAGE_POLICY.max_bytes+1)),'public_page_body_limit'),
+               (complete[:-4],'public_page_gzip_truncated'),(bytes(corrupt),'public_page_gzip_invalid'),
+               (complete+complete,'public_page_gzip_trailing'),(complete+b'junk','public_page_gzip_trailing'),
+               (b'not-gzip','public_page_gzip_invalid'))
+        for encoded,reason in cases:
+            with self.subTest(reason=reason):
+                async def chunks():
+                    for index in range(0,len(encoded),5):yield encoded[index:index+5]
+                close=AsyncMock();response=SimpleNamespace(status=200,content_encoding='gzip',body=chunks(),close=close)
+                with patch('asyncio.BaseEventLoop.getaddrinfo',AsyncMock(return_value=[(2,1,6,'',('93.184.216.34',443))])),patch('cj_fact.live_source.PinnedHTTPSTransport.__call__',AsyncMock(return_value=response)),self.assertLogs('cj_provider.audit',level='WARNING') as logs,self.assertRaisesRegex(FactFailure,reason):
+                    asyncio.run(public_page(guard=lambda:True))
+                self.assertIn('reason='+reason,'\n'.join(logs.output));close.assert_awaited_once()
+
+    def test_fact_gzip_exact_limit_and_cancelled_body(self):
+        from cj_fact.live_source import PAGE_POLICY
+        raw=b'<p>'+b'X'*(PAGE_POLICY.max_bytes-7)+b'</p>';encoded=gzip.compress(raw)
+        async def chunks():yield encoded
+        close=AsyncMock();response=SimpleNamespace(status=200,content_encoding='gzip',body=chunks(),close=close)
+        dns=AsyncMock(return_value=[(2,1,6,'',('93.184.216.34',443))])
+        with patch('asyncio.BaseEventLoop.getaddrinfo',dns),patch('cj_fact.live_source.PinnedHTTPSTransport.__call__',AsyncMock(return_value=response)):
+            value=asyncio.run(public_page(guard=lambda:True))
+        self.assertEqual(value['original_bytes'],PAGE_POLICY.max_bytes)
+        self.assertEqual(value['original_sha256'],hashlib.sha256(raw).hexdigest());close.assert_awaited_once()
+        async def cancelled():
+            yield encoded[:10]
+            raise asyncio.CancelledError()
+        close=AsyncMock();response=SimpleNamespace(status=200,content_encoding='gzip',body=cancelled(),close=close)
+        with patch('asyncio.BaseEventLoop.getaddrinfo',dns),patch('cj_fact.live_source.PinnedHTTPSTransport.__call__',AsyncMock(return_value=response)),self.assertRaises(asyncio.CancelledError):
+            asyncio.run(public_page(guard=lambda:True))
+        close.assert_awaited_once()
 
     def test_unknown_fact_audit_does_not_rearm_original_attempt(self):
         services=RealServices(self.provider(sse()),KEY,frozenset({'m4-synthetic-one'}))

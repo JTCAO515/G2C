@@ -11,6 +11,7 @@ import json
 import logging
 import socket
 import ssl
+import zlib
 from urllib.parse import urlsplit
 from urllib.parse import urlencode
 
@@ -32,7 +33,8 @@ PAGE_FAILURE_CODES=frozenset(('invalid_dns_answer','non_public_dns_answer',
     'duplicate_response_header','ambiguous_body_framing','unsupported_content_type',
     'encoded_body_rejected','body_limit','response_closed','wire_read_limit',
     'wire_byte_limit','chunk_limit','http_trailers_rejected','malformed_http_body',
-    'https_body_failed','public_page_status_unavailable','public_page_excerpt_unavailable'))
+    'https_body_failed','public_page_status_unavailable','public_page_excerpt_unavailable',
+    'public_page_body_limit','public_page_gzip_invalid','public_page_gzip_truncated','public_page_gzip_trailing'))
 
 
 def tls():
@@ -68,14 +70,22 @@ async def public_page(*,guard):
             addresses=public_addresses(tuple(dict.fromkeys(row[4][0] for row in records)))
             phase='https_exchange'
             transport=PinnedHTTPSTransport(PAGE_POLICY,tls_context=tls(),max_header_bytes=16384,
-                max_wire_bytes=524288,max_reads=512,allow_html=True,before_send=guard)
+                max_wire_bytes=524288,max_reads=512,allow_html=True,before_send=guard,allow_gzip=True)
             if guard() is not True:raise FactFailure('original_page_authority_invalid')
             response=await transport(PinnedTarget(NOTICE_URL,host,addresses,PAGE_POLICY.max_bytes,deadline))
             try:
                 phase='http_status';status=response.status
                 if status!=200:raise FactFailure('public_page_status_unavailable')
                 phase='body'
-                async for chunk in response.body:body.extend(chunk)
+                decoder=zlib.decompressobj(16+zlib.MAX_WBITS) if response.content_encoding.lower()=='gzip' else None
+                async for chunk in response.body:
+                    if decoder is None:body.extend(chunk)
+                    else:
+                        try:body.extend(decoder.decompress(chunk,PAGE_POLICY.max_bytes-len(body)+1))
+                        except zlib.error:raise FactFailure('public_page_gzip_invalid') from None
+                        if len(body)>PAGE_POLICY.max_bytes:raise FactFailure('public_page_body_limit')
+                        if decoder.unused_data:raise FactFailure('public_page_gzip_trailing')
+                if decoder is not None and not decoder.eof:raise FactFailure('public_page_gzip_truncated')
             finally:await response.close()
         phase='utf8';raw=bytes(body);text=raw.decode('utf8',errors='strict')
         phase='excerpt';parser=_Excerpts(text);parser.feed(text)

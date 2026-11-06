@@ -39,6 +39,13 @@ JT于2026-11-05在C会话把工具停止线改为¥10000（[#495记录](https://
   只提供原文片段和 hash/抓取时间；旅客资格、地域/日期适用性保持 UNKNOWN。
   Mac 的代理 Fake-IP 不能冒充公开目标 IP；如遇该边界，保留 UNKNOWN，待获准主机网络验证。
 
+固定NIA页的live profile显式接受identity或单成员gzip；通用FACT传输的默认配置继续拒绝压缩。
+压缩后的HTTP读取仍受原body/wire/chunk/deadline上限约束，解压后另限262144字节；CRC错误、
+截断、额外成员或尾随字节均UNKNOWN，关闭原响应，不重试。`original_bytes`/`original_sha256`
+仍指用于提取原文的完整UTF-8实体字节（有界Content-Encoding解码后）；传输编码元数据与
+实际压缩字节摘要应在真实调用证据中另列，不把压缩传输数据当UTF-8原文。该修复不变更
+冻结的合成FACT wire，也不增加来源/URL/适用性权限。
+
 事实页失败日志 `M4_FACT_PAGE_UNKNOWN` 仅记录 DNS/HTTPS/状态/正文读取/UTF-8/片段提取阶段、
 白名单原因码、已取得的HTTP状态（未取得为UNKNOWN）和已观察正文的字节数；不记录正文、
 响应头、地址、异常文本或凭据。该诊断不增加抓取、不改变成功结果或失败分类，不补造回执，
