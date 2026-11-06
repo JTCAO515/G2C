@@ -93,6 +93,20 @@ HK运行时每个业务事务在安装LOCAL scope前获取共享release事务锁
 recovery命令在同一进程内创建目标、恢复并验证，结束时先核目标完整行集/sequence均未变化，再关闭并轮换隔离目标，核源未变化后恢复源release。若活跃隔离侧接受了写入、注销或删除，拒绝切回旧源，保持源关闭；中间失败保留原PG数据、birth签名、release和控制记录；`--resume`只启动/核对该同一system ID并续结原演练，不重新initdb、COPY或恢复。临时COPY暂存库仍只供生成备份，从未获得release。
 隔离目标不自动替换现有云库或开放公网。
 
+## 可选的手动 NEEDS
+
+在已授权测试实例的 `common.env` 显式设置 `CJ_LOCAL_NEEDS_PROFILE=manual-v1` 后，
+香港 API 复用已冻结的手动 NEEDS producer：`POST /v1/needs-actions`、
+`GET /v1/needs-action-receipts?action_id=...`、`GET /v1/needs?needs_id=...` 与
+`GET /v1/needs-revisions?needs_id=...&version=...`。仍用原签名身份与 owner scope，
+提交原字节和 action_id；结果未知只查询原 action，不重发提交。
+未配置时接口保持关闭，未知值使应用启动失败。该配置不启用模型抽取、正式 Trip、Memory 或 cleanup。
+原 RUN@2 数据库入口已绑定 NEEDS scope，权限与迁移不变。
+
+回退先移除该配置，再用已审镜像重建 API；保留原 NEEDS 数据和全部动作回执。
+旧镜像没有该 API 时查询明确不可用，不能重建动作或改写原记录。
+私有 PG、真实云回执与 App 验收分别记录在 #577/#30，不以本说明或本机结果代称云端通过。
+
 ## 验证
 
 ```sh

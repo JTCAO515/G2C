@@ -127,7 +127,7 @@ class Runtime:
         history=HistoryWireConfiguration(20,16384,1_000_000,CursorPolicy(codec,300,2048))
         return create_local_app(conninfo_path=None,auth_dir=self.auth,database=self.database(),run_context=self.context,
             confirmation_signer=ConfirmationSigner(decoded('CJ_BETA_CONFIRMATION_B64',length=32)),history_configuration=history,
-            account_admission=True)
+            account_admission=True,needs_profile=os.environ.get('CJ_LOCAL_NEEDS_PROFILE'))
 
     def close(self):
         for fd in self.descriptors:os.close(fd)
