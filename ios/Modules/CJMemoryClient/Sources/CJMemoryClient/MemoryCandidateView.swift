@@ -68,7 +68,7 @@ public struct MemoryCandidateView: View {
                                     .accessibilityIdentifier("memoryCandidate.reviewUnavailable")
                             }
                             MemoryLifecycleButton(title: language.text("Review this suggestion", "核对这条建议"), identifier: "memoryCandidate.review." + candidate.utf8Identity.base64EncodedString(), enabled: model.canReview(candidateID: candidate.id)) {
-                                editor = model.captureReview(candidateID: candidate.id).map(MemoryCandidateEditorDraft.init)
+                                replaceEditor(model.captureReview(candidateID: candidate.id).map(MemoryCandidateEditorDraft.init))
                             }
                         }
                         .padding(12)
@@ -110,9 +110,13 @@ public struct MemoryCandidateView: View {
           }.frame(maxWidth: .infinity, alignment: .leading).padding()
         }
         .navigationTitle(language.text("Memory suggestions", "记忆建议"))
-        .sheet(item: $editor) { draft in
+        .sheet(item: Binding(get: { editor }, set: replaceEditor)) { draft in
             MemoryCandidateEditor(model: model, draft: draft, language: language, makeReviewTravel: makeReviewTravel)
         }
+    }
+    private func replaceEditor(_ next: MemoryCandidateEditorDraft?) {
+        if editor !== next { editor?.invalidate() }
+        editor = next
     }
     private func perform(_ work: MemoryCandidatePresentationWork?) {
         guard let work else { return }; Task { await model.perform(work) }
@@ -147,7 +151,8 @@ public struct MemoryCandidateView: View {
 }
 
 /// One unsent draft belongs to the captured review entry, rather than a
-/// particular reconstruction of its sheet content. Closing drops this object;
+/// particular reconstruction of its sheet content, including its explicit
+/// travel read. Dismissing or replacing the entry retires that read and its task;
 /// another candidate/account/conversation must capture its own entry.
 @MainActor @Observable private final class MemoryCandidateEditorDraft: Identifiable {
     let entry: MemoryCandidateEditorEntry
@@ -155,11 +160,22 @@ public struct MemoryCandidateView: View {
     var kind: String
     var text: String
     var occurredAt: String
+    var refused = false
+    var travel: TravelSelectionModel?
+    var capturedTravel: CapturedTravelSelection?
+    var travelTask: Task<Void, Never>?
+    var readingTravel = false
+    private(set) var active = true
     init(entry: MemoryCandidateEditorEntry) {
         self.entry = entry
         id = entry.id
         kind = entry.candidate.kind == .inference ? "" : entry.candidate.kind.rawValue
         text = entry.candidate.text; occurredAt = entry.candidate.occurredAt
+    }
+    func invalidate() {
+        active = false
+        travelTask?.cancel(); travelTask = nil
+        travel?.invalidate(); capturedTravel = nil
     }
 }
 
@@ -170,14 +186,8 @@ private struct MemoryCandidateEditor: View {
     let language: MemoryLanguage
     let makeReviewTravel: @MainActor () throws -> TravelSelectionModel?
     @Environment(\.dismiss) private var dismiss
-    @State private var refused = false
     private enum Field: Hashable { case text, time }
     @FocusState private var field: Field?
-    @State private var travel: TravelSelectionModel?
-    @State private var capturedTravel: CapturedTravelSelection?
-    @State private var travelTask: Task<Void, Never>?
-    @State private var readingTravel = false
-    @State private var active = true
     init(model: MemoryCandidatePresentation, draft: MemoryCandidateEditorDraft, language: MemoryLanguage,
         makeReviewTravel: @escaping @MainActor () throws -> TravelSelectionModel?) {
         self.model = model; self.draft = draft; self.language = language; self.makeReviewTravel = makeReviewTravel
@@ -226,9 +236,8 @@ private struct MemoryCandidateEditor: View {
                         guard let selected = Components.Schemas.MemoryManualSaveCommand.kindPayload(rawValue: draft.kind) else { return }
                         submit(.confirm(kind: selected, text: draft.text, occurredAt: draft.occurredAt, travel: reviewTravel))
                     }
-                    .accessibilityValue("DIAGNOSTIC active=\(active) reading=\(readingTravel) current=\(model.canReview(entry: entry)) chosen=\(!draft.kind.isEmpty) travelRequired=\(entry.candidate.travel != nil) travelValid=\(entry.candidate.travel == nil || reviewTravel != nil)")
                     MemoryLifecycleButton(title: language.text("Reject this suggestion", "拒绝这条建议"), identifier: "memoryCandidate.editor.reject", enabled: canSubmit) { submit(.reject) }
-                    if refused || !canSubmit {
+                    if draft.refused || !canSubmit {
                         MemoryRowText(text: language.text("This review could not be prepared. Check the text and time, or close and read the current suggestion again. No replacement was sent.", "暂时无法准备此操作。请核对内容与时间，或关闭后重新读取当前建议；未发送替代操作。"), style: .body)
                             .accessibilityIdentifier("memoryCandidate.editor.refused")
                     }
@@ -237,7 +246,7 @@ private struct MemoryCandidateEditor: View {
             }.scrollDismissesKeyboard(.interactively)
             .navigationTitle(language.text("Review suggestion", "核对建议"))
             .toolbar { ToolbarItem(placement: .cancellationAction) {
-                Button { dismiss() } label: {
+                Button { draft.invalidate(); dismiss() } label: {
                     Image(systemName: "xmark").font(.body).frame(minWidth: 44, minHeight: 44)
                 }.accessibilityLabel(language.text("Close", "关闭"))
                     .accessibilityIdentifier("memoryCandidate.editor.close")
@@ -247,33 +256,24 @@ private struct MemoryCandidateEditor: View {
                 Button(language.text("Done", "完成")) { field = nil }
                     .accessibilityIdentifier("memoryCandidate.editor.done")
             } }
-            .onAppear {
-                // A visible reconstruction may resume only this still-current
-                // captured entry. The model's authority check remains decisive.
-                active = model.canReview(entry: entry)
-            }
-            .onDisappear {
-                active = false; travelTask?.cancel(); travelTask = nil
-                travel?.invalidate(); capturedTravel = nil
+            .onChange(of: model.canReview(entry: entry)) { _, current in
+                if !current { draft.invalidate() }
             }
         }
     }
     private var canSubmit: Bool {
         let current = model.canReview(entry: entry)
-        return active && !readingTravel && current
+        return draft.active && !draft.readingTravel && current
     }
     private var canConfirm: Bool {
         let current = model.canReview(entry: entry)
         let chosen = !draft.kind.isEmpty
         let verified = entry.candidate.travel == nil || reviewTravel != nil
-        #if DEBUG && os(iOS)
-        print("M4_CANDIDATE_CONFIRM_CONDITIONS", "active", active, "reading", readingTravel,
-            "current", current, "chosen", chosen, "travelRequired", entry.candidate.travel != nil, "travelValid", verified)
-        #endif
-        return active && !readingTravel && current && chosen && verified
+        return draft.active && !draft.readingTravel && current && chosen && verified
     }
     private var reviewTravel: MemoryTravelSelection? {
-        guard let original = entry.candidate.travel, let travel, let capturedTravel else { return nil }
+        guard let original = entry.candidate.travel, let travel = draft.travel,
+              let capturedTravel = draft.capturedTravel else { return nil }
         do {
             try travel.validate(capturedTravel)
             guard let context = capturedTravel.context, Data(context.value.id.utf8) == Data(original.id.utf8) else { return nil }
@@ -283,20 +283,21 @@ private struct MemoryCandidateEditor: View {
     private func readTravel(_ id: String) {
         guard canSubmit else { return }
         do {
-            guard let reader = try makeReviewTravel(), canSubmit else { refused = true; return }
-            travel?.invalidate(); travel = reader; capturedTravel = nil; readingTravel = true
-            travelTask = Task {
-                guard active, !Task.isCancelled, model.canReview(entry: entry) else { return }
+            guard let reader = try makeReviewTravel(), canSubmit else { draft.refused = true; return }
+            draft.travel?.invalidate(); draft.travel = reader; draft.capturedTravel = nil; draft.readingTravel = true
+            draft.travelTask = Task {
+                guard draft.active, !Task.isCancelled, model.canReview(entry: entry) else { return }
                 await reader.selectTravel(id)
-                guard active, !Task.isCancelled, model.canReview(entry: entry), travel === reader else { return }
-                do { capturedTravel = try reader.capture(); refused = false }
-                catch { capturedTravel = nil; refused = true }
-                readingTravel = false; travelTask = nil
+                guard draft.active, !Task.isCancelled, model.canReview(entry: entry), draft.travel === reader else { return }
+                do { draft.capturedTravel = try reader.capture(); draft.refused = false }
+                catch { draft.capturedTravel = nil; draft.refused = true }
+                draft.readingTravel = false; draft.travelTask = nil
             }
-        } catch { capturedTravel = nil; refused = true }
+        } catch { draft.capturedTravel = nil; draft.refused = true }
     }
     private func submit(_ review: MemoryCandidateReview) {
-        guard let work = model.prepareReview(entry: entry, review: review) else { refused = true; return }
+        guard let work = model.prepareReview(entry: entry, review: review) else { draft.refused = true; return }
+        draft.invalidate()
         Task { await model.perform(work) }; dismiss()
     }
 }

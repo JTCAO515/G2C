@@ -284,6 +284,9 @@ import Foundation
         try audit("candidate-editor-" + language + "-max", target: app.buttons[actionButton])
         #if G2C_M4_DEVICE_ACCEPTANCE
         if operation == "confirm" { requireEditedValues(f, language: language, stage: "after-full-AX") }
+        if let travelID = f.travel_id, let version = f.travel_version {
+            text("memoryCandidate.editor.travel", contains: travelID + " · " + String(version))
+        }
         #endif
         tap(actionButton)
         let original = app.staticTexts["memoryCandidate.originalID"]; reveal(original); let actionID = original.label
