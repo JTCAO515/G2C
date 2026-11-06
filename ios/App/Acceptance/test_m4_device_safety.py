@@ -128,6 +128,8 @@ class DeviceWorkspaceTests(unittest.TestCase):
             control_phase=next(line for line in pbx.splitlines() if line.startswith('A00000000000000000000009 ='))
             self.assertEqual(app_phase,original_app_phase)
             self.assertIn('files = (E',control_phase)
+            self.assertNotIn('G2C_DEBUG_LOCAL_NETWORK=1',pbx)
+            self.assertIn('G2C_DEBUG_SIGNING_IDENTITY=1',pbx)
             self.assertNotIn('name = Production;',pbx)
 
     def test_implicit_build_and_generated_inputs_are_private(self):

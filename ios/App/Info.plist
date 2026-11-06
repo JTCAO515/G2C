@@ -15,8 +15,10 @@
 <key>CFBundleIconFiles</key><array><string>AppIcon60x60</string><string>AppIcon76x76</string><string>AppIcon83.5x83.5</string></array>
 </dict></dict>
 <key>UILaunchScreen</key><dict/>
-#if G2C_DEBUG_LOCAL_NETWORK
+#if G2C_DEBUG_LOCAL_NETWORK || G2C_DEBUG_SIGNING_IDENTITY
 <key>G2CDevelopmentApplicationIdentifier</key><string>$(AppIdentifierPrefix)$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+#endif
+#if G2C_DEBUG_LOCAL_NETWORK
 <key>NSAppTransportSecurity</key><dict><key>NSAllowsLocalNetworking</key><true/></dict>
 <key>NSLocalNetworkUsageDescription</key><string>Connect to the development Mac for synthetic-data testing. / 连接开发机执行合成数据测试。</string>
 #endif

@@ -135,6 +135,8 @@ def configure_project(project, tls, control_url, control_token, amap=False,
         raise ValueError('Local AMap device configuration is Debug only')
     if amap and not app_local_tls:
         raise ValueError('The local AMap project requires its local test profile')
+    if not app_local_tls:
+        text=text.replace('G2C_DEBUG_LOCAL_NETWORK=1','G2C_DEBUG_SIGNING_IDENTITY=1')
     text = text.replace('space.go2china.foundation.local', bundle).replace(
         'space.go2china.foundation.control', 'space.go2china.m4.device.control')
     # Owning generators may already have replaced the foundation IDs. Keep
