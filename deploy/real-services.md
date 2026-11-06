@@ -39,6 +39,18 @@ JT于2026-11-05在C会话把工具停止线改为¥10000（[#495记录](https://
   只提供原文片段和 hash/抓取时间；旅客资格、地域/日期适用性保持 UNKNOWN。
   Mac 的代理 Fake-IP 不能冒充公开目标 IP；如遇该边界，保留 UNKNOWN，待获准主机网络验证。
 
+固定NIA页的live profile显式接受identity或单成员gzip；通用FACT传输的默认配置继续拒绝压缩。
+压缩后的HTTP读取仍受原body/wire/chunk/deadline上限约束，解压后另限262144字节；CRC错误、
+截断、额外成员或尾随字节均UNKNOWN，关闭原响应，不重试。`original_bytes`/`original_sha256`
+仍指用于提取原文的完整UTF-8实体字节（有界Content-Encoding解码后）；传输编码元数据与
+实际压缩字节摘要应在真实调用证据中另列，不把压缩传输数据当UTF-8原文。该修复不变更
+冻结的合成FACT wire，也不增加来源/URL/适用性权限。
+
+事实页失败日志 `M4_FACT_PAGE_UNKNOWN` 仅记录 DNS/HTTPS/状态/正文读取/UTF-8/片段提取阶段、
+白名单原因码、已取得的HTTP状态（未取得为UNKNOWN）和已观察正文的字节数；不记录正文、
+响应头、地址、异常文本或凭据。该诊断不增加抓取、不改变成功结果或失败分类，不补造回执，
+不释放原INTENT；历史未保留的HTTP状态与失败阶段仍UNKNOWN。取消继续向外传播。
+
 模型原生 function calls 转为既有内部 MODEL-tool-turn.1 数据，再由代码注册表选择工具。
 网页/工具输出以不可信数据传给模型，不能提供 owner、密钥、预算或写入权限。
 原生参数现在用完整类型定义的 place_search/place_detail/place_route/weather/fact，
@@ -51,6 +63,14 @@ host 转为原 PLACE-query.1 / FACT-query.1 再经已有严格 codec。模型不
 wrapper仅是本次模型输出，收费仍为一次原model调用；内层每条真实查询仍逐一通过原tool.round.index、RequestRef、Registry和Meter。
 供应商唯一真实wrapper ID对应一条按原顺序含index/name/result的聚合tool回复，不生成供应商子ID，不重放已完成的内层调用。
 已观测北京命名函数流使用自然结束`stop`；与`tool_calls`一样，仅表示待核的结束候选。
+函数参数schema必须与冻结parser的互斥分支一致：tool为answer=null且1–4个调用；answer为
+非空白zh/en且calls=[]。非final使用交叉约束，不能把独立nullable字段的任意组合宣称合法；
+最终消费仍只取原parse_turn及原4查询/末轮限制，schema声明本身不证明模型遵循或真实通路通过。
+命名函数参数失败的固定reason另分`native_json_invalid/duplicate`、`native_envelope_type/fields`、
+`native_version_literal`、`native_answer_fields/calls/text`、`native_kind_literal`、
+`native_tool_answer`、`native_calls_type/bound`、`native_call_fields/name/arguments`和
+`native_contract_bound/invalid`；不记录值、字段名、异常文本或参数片段。原INTENT保持，旧日志
+没有的拒绝字段与token数仍UNKNOWN，不能用较新的分类倒填原请求。
 必须同时收到DONE、完整usage、同一模型/响应身份，以及唯一合法wrapper和原envelope后，才结算或执行内层工具；
 缺件、截断、length、过滤和未知结束原因仍拒绝，不把停止标记本身当成功或重试依据。
 末轮限制kind=answer，在提交回执前拒绝外部工具；上限仍八个模型回合、每回合最多四查询和原RUN工具总限额，不增加第九次或修复调用。

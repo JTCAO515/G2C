@@ -77,6 +77,13 @@ import Foundation
         dismissKeyboard()
         let view = app.textViews.matching(identifier:id).firstMatch
         let field = view.exists ? view : app.textFields.matching(identifier:id).firstMatch
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        if id == "memory2.manual.time" {
+            // The default-font iOS27 Form omits this lazy row until scrolled.
+            // Materialize the exact field before requiring existence/focus.
+            deviceSession.revealControl(field,in:app)
+        }
+        #endif
         XCTAssertTrue(field.waitForExistence(timeout:15),id)
         reveal(field,id:id)
         XCTAssertTrue(field.isHittable,id);field.tap()
