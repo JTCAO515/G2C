@@ -150,6 +150,17 @@ import Foundation
         let condition = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", expected), object: value)
         XCTAssertEqual(XCTWaiter.wait(for: [condition], timeout: 30), .completed, value.label)
     }
+    func requireEmptyProblem(_ language: String) {
+        let field = revealEditor("feedback.problem")
+        let placeholder = language == "en" ? "Problem" : "问题"
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        // iOS 27 exposes an empty TextField value as nil, independently of its placeholder.
+        XCTAssertNil(field.value as? String)
+        XCTAssertEqual(field.placeholderValue, placeholder)
+        #else
+        XCTAssertEqual(field.value as? String, placeholder)
+        #endif
+    }
     func fill(_ problem: String, expectation: String) {
         let field = revealEditor("feedback.problem")
         XCTAssertTrue(field.waitForExistence(timeout: 10)); XCTAssertTrue(field.isEnabled && field.isHittable)
@@ -227,7 +238,7 @@ import Foundation
         XCTAssertEqual(association.value as? String, "0")
         // Only the explicit opt-in sends the original message/run references.
         association.switches.element.tap(); XCTAssertEqual(association.value as? String, "1")
-        XCTAssertEqual(revealEditor("feedback.problem").value as? String, language == "en" ? "Problem" : "问题")
+        requireEmptyProblem(language)
         fill("站名有误 e\u{301} 🌏", expectation: "请核对站名")
         XCTAssertEqual(association.value as? String, "1")
         try audit("answer-editor-" + language, linked: true)
@@ -247,7 +258,7 @@ import Foundation
         XCTAssertEqual(first.provider_calls, 1)
         tap("assistant.panel.done")
         general(language)
-        XCTAssertEqual(revealEditor("feedback.problem").value as? String, language == "en" ? "Problem" : "问题")
+        requireEmptyProblem(language)
         fill("记忆页面建议", expectation: "说明更清楚")
         try audit("general-default-editor-" + language)
         tap("feedback.submit"); status(language == "en" ? "Feedback submitted." : "反馈已提交。")
