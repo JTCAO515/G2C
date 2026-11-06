@@ -1,5 +1,6 @@
 """Real task-private loopback TLS only. No provider, public DNS, system trust edit."""
 import asyncio
+import gzip
 import json
 from pathlib import Path
 import socket
@@ -194,6 +195,28 @@ class HTTPSLoopbackTests(unittest.IsolatedAsyncioTestCase):
             with self.subTest(index=records.index(raw)), self.assertRaises(FactFailure):
                 self.response_bytes = raw
                 await self.exchange()
+
+    async def test_html_gzip_requires_explicit_profile_and_keeps_original_wire_limits(self):
+        raw=gzip.compress(b'<p>Independent synthetic public source excerpt.</p>')
+        self.response_bytes=(b'HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Encoding: gzip\r\nContent-Length: '+str(len(raw)).encode()+b'\r\n\r\n'+raw)
+        self.transport=PinnedHTTPSTransport(POLICY,tls_context=self.transport.context,
+            max_header_bytes=1024,max_wire_bytes=8192,max_reads=32,allow_html=True,allow_gzip=True)
+        response=await self.exchange()
+        self.assertEqual(response.content_encoding,'gzip')
+        self.assertEqual(await self.consume(response),raw)
+        self.assertEqual(len(self.requests),1)
+        self.assertIn(b'Accept-Encoding: gzip, identity\r\n',self.requests[0])
+        self.response_bytes=self.response_bytes.replace(b'Content-Encoding: gzip',b'Content-Encoding: br')
+        with self.assertRaisesRegex(FactFailure,'encoded_body_rejected'):await self.exchange()
+
+    async def test_gzip_profile_requires_explicit_html_and_boolean_configuration(self):
+        for value in (1,None,'gzip'):
+            with self.subTest(value=value),self.assertRaisesRegex(FactFailure,'invalid_https_configuration'):
+                PinnedHTTPSTransport(POLICY,tls_context=self.transport.context,
+                    max_header_bytes=1024,max_wire_bytes=8192,max_reads=32,allow_html=True,allow_gzip=value)
+        with self.assertRaisesRegex(FactFailure,'invalid_https_configuration'):
+            PinnedHTTPSTransport(POLICY,tls_context=self.transport.context,
+                max_header_bytes=1024,max_wire_bytes=8192,max_reads=32,allow_gzip=True)
 
     async def test_streaming_body_limit_and_chunk_limit_close(self):
         self.response_bytes = b'HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nTransfer-Encoding: chunked\r\n\r\n1001\r\n' + b'x' * 4097 + b'\r\n0\r\n\r\n'
