@@ -23,7 +23,7 @@ def _positive(value):
 
 class PinnedHTTPSTransport:
     def __init__(self, policy: SourcePolicy, *, tls_context: ssl.SSLContext,
-                 max_header_bytes: int, max_wire_bytes: int, max_reads: int, allow_html=False,before_send=None):
+                 max_header_bytes: int, max_wire_bytes: int, max_reads: int, allow_html=False,before_send=None,allow_gzip=False):
         if not isinstance(policy, SourcePolicy) or not all(_positive(v) for v in
                 (max_header_bytes, max_wire_bytes, max_reads)):
             raise FactFailure('invalid_https_configuration')
@@ -32,8 +32,10 @@ class PinnedHTTPSTransport:
         self.max_header_bytes = max_header_bytes
         self.max_wire_bytes = max_wire_bytes
         self.max_reads = max_reads
-        if type(allow_html) is not bool:raise FactFailure('invalid_https_configuration')
+        if type(allow_html) is not bool or type(allow_gzip) is not bool or allow_gzip and not allow_html:
+            raise FactFailure('invalid_https_configuration')
         self.allow_html=allow_html
+        self.allow_gzip=allow_gzip
         self.before_send=before_send
         self._check_tls()
 
@@ -100,7 +102,7 @@ class PinnedHTTPSTransport:
                 request = h11.Request(method=b'GET', target=path.encode('ascii'), headers=[
                     (b'Host', target.hostname.encode('ascii')),
                     (b'Accept', b'text/html' if self.allow_html else b'application/json, text/plain'),
-                    (b'Accept-Encoding', b'identity'), (b'Connection', b'close')])
+                    (b'Accept-Encoding', b'gzip, identity' if self.allow_gzip else b'identity'), (b'Connection', b'close')])
                 if self.before_send is not None and self.before_send() is not True:
                     raise FactFailure('original_source_authority_invalid')
                 if loop.time()>=deadline:raise FactFailure('timeout')
@@ -199,7 +201,8 @@ class _Body:
                 if content_type.lower().replace(' ','') not in ('text/html','text/html;charset=utf-8'):
                     raise FactFailure('unsupported_content_type')
             else:_mime(content_type)
-            if self.header(event, b'content-encoding', 'identity').lower() != 'identity':
+            encoding=self.header(event,b'content-encoding','identity').lower()
+            if encoding!='identity' and not (self.transport.allow_gzip and encoding=='gzip'):
                 raise FactFailure('encoded_body_rejected')
             if length is not None and (len(length) > 20 or not length.isascii()
                                        or not length.isdecimal() or int(length) > self.target.max_bytes):
