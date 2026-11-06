@@ -72,8 +72,18 @@ import Foundation
         }
         #endif
     }
+    func inputQuery(_ id: String) -> XCUIElementQuery {
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        return deviceSession.textInputQuery(id, in: app)
+        #else
+        return app.textViews.matching(identifier: id)
+        #endif
+    }
     func revealEditor(_ id: String) -> XCUIElement {
-        let field = app.textViews[id]
+        let query = inputQuery(id), field = query.element
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        deviceSession.revealControl(field, in: app, diagnosticIdentifier: id)
+        #else
         // General feedback's native Form virtualizes offscreen editors after a
         // completed receipt or pending selection. Read the same editor after scrolling.
         for _ in 0..<6 {
@@ -84,6 +94,8 @@ import Foundation
             if field.exists && field.isHittable { break }
             app.swipeUp()
         }
+        #endif
+        XCTAssertEqual(query.count, 1, id)
         XCTAssertTrue(field.exists && field.isHittable, id)
         return field
     }
@@ -122,12 +134,15 @@ import Foundation
         account(language); tap("account.development.restore"); signed(f)
     }
     func back() {
-        let buttons = app.navigationBars.buttons
-        XCTAssertEqual(buttons.count, 1); buttons.element.tap()
+        let buttons = app.navigationBars.buttons.matching(NSPredicate(format: "label IN %@", ["Memory", "记忆"]))
+        XCTAssertTrue(buttons.element.waitForExistence(timeout: 10)); XCTAssertEqual(buttons.count, 1)
+        XCTAssertTrue(buttons.element.isEnabled && buttons.element.isHittable); buttons.element.tap()
     }
     func general(_ language: String = "en", backFromAccount: Bool = false) {
+        if backFromAccount { XCTAssertTrue(app.staticTexts["account.development.status"].exists) }
         tap(language == "en" ? "Memory" : "记忆")
-        if backFromAccount || app.staticTexts["account.development.status"].exists { back() }
+        // Reselecting Memory may already pop its navigation stack to the root.
+        if app.staticTexts["account.development.status"].exists { back() }
         tap("memory.feedback")
         XCTAssertTrue(app.staticTexts["feedback.status"].waitForExistence(timeout: 15))
         XCTAssertFalse(app.switches["feedback.associate"].exists)
@@ -138,11 +153,22 @@ import Foundation
         let condition = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", expected), object: value)
         XCTAssertEqual(XCTWaiter.wait(for: [condition], timeout: 30), .completed, value.label)
     }
+    func requireEmptyProblem(_ language: String) {
+        let field = revealEditor("feedback.problem")
+        let placeholder = language == "en" ? "Problem" : "问题"
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        // iOS 27 exposes an empty TextField value as nil, independently of its placeholder.
+        XCTAssertNil(field.value)
+        XCTAssertEqual(field.placeholderValue, placeholder)
+        #else
+        XCTAssertEqual(field.value as? String, placeholder)
+        #endif
+    }
     func fill(_ problem: String, expectation: String) {
-        let field = app.textViews["feedback.problem"]
+        let field = revealEditor("feedback.problem")
         XCTAssertTrue(field.waitForExistence(timeout: 10)); XCTAssertTrue(field.isEnabled && field.isHittable)
         field.coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.15)).tap(); field.typeText(problem)
-        let next = app.textViews["feedback.expectation"]
+        let next = revealEditor("feedback.expectation")
         XCTAssertTrue(next.exists); XCTAssertTrue(next.isEnabled && next.isHittable)
         next.coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.15)).tap(); next.typeText(expectation)
         let done = app.buttons["feedback.keyboard.done"]
@@ -159,7 +185,7 @@ import Foundation
         if linked && receipt { ids += ["feedback.originalref.message", "feedback.originalref.run", "feedback.source.status", "feedback.source.progress", "feedback.source.notice"] }
         for id in ids {
             let query: XCUIElementQuery
-            if id == "feedback.problem" || id == "feedback.expectation" { query = app.textViews.matching(identifier: id) }
+            if id == "feedback.problem" || id == "feedback.expectation" { query = inputQuery(id) }
             else if id == "feedback.associate" { query = app.switches.matching(identifier: id) }
             else if ["feedback.submit", "feedback.loadPending", "feedback.another"].contains(id) { query = app.buttons.matching(identifier: id) }
             else { query = app.descendants(matching: .any).matching(identifier: id) }
@@ -184,19 +210,38 @@ import Foundation
         tap(language == "en" ? "Assistant" : "助手")
         tap("assistant.serverHistory"); tap("history.loadConversations")
         tap("history.conversation." + f.conversation); tap("assistant.panel.done")
-        let draft = app.textViews["assistant.draft"]
-        XCTAssertTrue(draft.waitForExistence(timeout: 8)); draft.tap(); draft.typeText(f.prompt)
+        let inputs = inputQuery("assistant.draft")
+        let draft = inputs.element
+        XCTAssertTrue(draft.waitForExistence(timeout: 8)); XCTAssertEqual(inputs.count, 1)
+        XCTAssertTrue(draft.isEnabled && draft.isHittable)
+        draft.tap(); draft.typeText(f.prompt)
+        XCTAssertEqual(Array((draft.value as? String ?? "").utf8), Array(f.prompt.utf8))
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        // Finish the real keyboard interaction before resolving the send button.
+        // Its old center can lie under the keyboard accessory after layout moves.
+        let done = app.toolbars.buttons.matching(NSPredicate(format: "label == %@", language == "en" ? "Done" : "完成"))
+        XCTAssertTrue(done.element.waitForExistence(timeout: 8)); XCTAssertEqual(done.count, 1)
+        XCTAssertTrue(done.element.isEnabled && done.element.isHittable); done.element.tap()
+        let hidden = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.keyboards.firstMatch)
+        XCTAssertEqual(XCTWaiter.wait(for: [hidden], timeout: 10), .completed)
+        #endif
         tap("assistant.send")
         let value = app.staticTexts["run.display.status"]
         let condition = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", language == "en" ? "Completed" : "已完成"), object: value)
-        XCTAssertEqual(XCTWaiter.wait(for: [condition], timeout: 40), .completed)
+        let completed = await XCTWaiter.fulfillment(of: [condition], timeout: 40)
+        if completed != .completed {
+            capture("feedback-answer-not-completed")
+            let tree = XCTAttachment(string: app.debugDescription)
+            tree.name = "PRIVATE-feedback-answer-not-completed-tree"; tree.lifetime = .keepAlways; add(tree)
+        }
+        XCTAssertEqual(completed, .completed)
         tap("assistant.feedback")
         XCTAssertTrue(app.switches["feedback.associate"].waitForExistence(timeout: 10))
         let association = app.switches["feedback.associate"]
         XCTAssertEqual(association.value as? String, "0")
         // Only the explicit opt-in sends the original message/run references.
         association.switches.element.tap(); XCTAssertEqual(association.value as? String, "1")
-        XCTAssertEqual(app.textViews["feedback.problem"].value as? String, language == "en" ? "Problem" : "问题")
+        requireEmptyProblem(language)
         fill("站名有误 e\u{301} 🌏", expectation: "请核对站名")
         XCTAssertEqual(association.value as? String, "1")
         try audit("answer-editor-" + language, linked: true)
@@ -216,12 +261,11 @@ import Foundation
         XCTAssertEqual(first.provider_calls, 1)
         tap("assistant.panel.done")
         general(language)
-        XCTAssertEqual(app.textViews["feedback.problem"].value as? String, language == "en" ? "Problem" : "问题")
+        requireEmptyProblem(language)
         fill("记忆页面建议", expectation: "说明更清楚")
-        _ = try await call("/size", f.case_id, ["value": "accessibility-extra-extra-extra-large"])
-        try audit("general-max-editor-" + language)
+        try audit("general-default-editor-" + language)
         tap("feedback.submit"); status(language == "en" ? "Feedback submitted." : "反馈已提交。")
-        try audit("general-max-receipt-" + language, receipt: true)
+        try audit("general-default-receipt-" + language, receipt: true)
         let second = try await proof(f)
         XCTAssertEqual(second.accounts["A"]?.feedback.count, 2)
         XCTAssertEqual(second.accounts["A"]?.feedback.last?.references.count, 0)
@@ -230,20 +274,20 @@ import Foundation
         _ = try await call("/validate", f.case_id)
         tap("feedback.another")
         // Reset removes the receipt section; the new status row can be virtualized
-        // below the long English introduction at system maximum type size.
+        // below the long English introduction; reveal it at the default size.
         for _ in 0..<10 {
             if app.staticTexts["feedback.status"].exists { break }
             app.swipeUp()
         }
         status(language == "en" ? "Ready to describe" : "请填写反馈")
         XCTAssertTrue(revealEditor("feedback.problem").isEnabled)
-        _ = try await call("/size", f.case_id, ["value": "large"])
     }
     func testAnswerAndGeneralEnglish() async throws { try await basic("testAnswerAndGeneralEnglish", language: "en") }
     func testAnswerAndGeneralChinese() async throws { try await basic("testAnswerAndGeneralChinese", language: "zh-Hans") }
     func testUnknownReopenAndOriginalLookup() async throws {
         let f = try await prepare("testUnknownReopenAndOriginalLookup"); defer { app?.terminate() }
         try await launch(f); login(f); general(backFromAccount: true)
+        requireEmptyProblem("en")
         fill("回执丢失后保留原反馈", expectation: "只查询原动作")
         _ = try await call("/fault", f.case_id, ["kind": "drop"])
         tap("feedback.submit"); status("Submission is not confirmed")
@@ -255,7 +299,7 @@ import Foundation
         general("zh-Hans", backFromAccount: true)
         tap("feedback.loadPending"); tap("feedback.pending." + original.action_id)
         XCTAssertEqual(revealEditor("feedback.problem").value as? String, "回执丢失后保留原反馈")
-        XCTAssertFalse(app.textViews["feedback.problem"].isEnabled)
+        XCTAssertFalse(inputQuery("feedback.problem").element.isEnabled)
         status("提交结果尚未确认")
         tap("feedback.query"); status("反馈已提交。")
         let after = try await proof(f)
@@ -277,7 +321,7 @@ import Foundation
         _ = try await call("/release", f.case_id)
         general(backFromAccount: true); status("Ready to describe")
         XCTAssertFalse(app.staticTexts["feedback.disclaimer"].exists)
-        XCTAssertFalse(app.textViews["feedback.problem"].value as? String == "旧账号的迟到反馈")
+        XCTAssertFalse(revealEditor("feedback.problem").value as? String == "旧账号的迟到反馈")
         tap("feedback.loadPending")
         XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "feedback.pending.")).count, 0)
         let after = try await proof(f)

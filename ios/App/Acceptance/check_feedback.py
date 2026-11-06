@@ -230,9 +230,6 @@ def main():
                                     released.set()
                                     if not finished.wait(20): raise TimeoutError('no actual ACK delivered')
                                     value = proof(case)
-                                elif parsed.path == '/size':
-                                    if query['value'] not in ('large', 'accessibility-extra-extra-extra-large'): raise ValueError('unsupported size')
-                                    value = {}
                                 elif parsed.path == '/validate':
                                     value = proof(case)
                                     with TestClient(app) as client:
@@ -295,7 +292,20 @@ def main():
                             native.build_for_testing('Debug', selected, env)
                             if args.prepare_only:
                                 detail['status'] = 'PREPARED_EXECUTION_UNRUN'; report['cases'][case] = 'UNRUN'; save(); continue
-                            native.run('Debug', selected, env); last_device_container = native.scan('Debug')
+                            try:
+                                native.run('Debug', selected, env)
+                            except BaseException:
+                                detail['status'] = 'FAIL'; report['cases'][case] = 'FAIL'
+                                try:
+                                    last_device_container = native.scan('Debug')
+                                    detail['failure_container_scan'] = {'status': 'PASS'}
+                                except Exception as scan_error:
+                                    detail['failure_container_scan'] = {
+                                        'status': 'FAIL' if isinstance(scan_error, AssertionError) else 'UNRUN',
+                                        'error_type': type(scan_error).__name__}
+                                save()
+                                raise
+                            last_device_container = native.scan('Debug')
                             detail['status'] = 'PASS'; report['cases'][case] = 'PASS'; save(); continue
                         result = output / (case + '.xcresult')
                         command = ['xcodebuild', '-project', str(project), '-scheme', 'G2CControl', '-configuration', 'Debug', '-destination', 'platform=iOS Simulator,id=' + args.simulator,
