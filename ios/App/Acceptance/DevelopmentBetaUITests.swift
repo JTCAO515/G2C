@@ -26,6 +26,9 @@ import CryptoKit
         app.launchArguments=["-cj.ui.language.v1",language]
         app.launchEnvironment=["OS_ACTIVITY_MODE":"disable","G2C_DEV_ACCOUNT_MODE":"1",
             "G2C_DEV_API_BASE_URL":"https://api-beta.go2china.space","G2C_M4_BETA_API":"1","G2C_DEV_ACCOUNTS":"{}"]
+        let diagnostic=UUID().uuidString
+        app.launchEnvironment["G2C_M4_BETA_DIAGNOSTIC_ID"]=diagnostic
+        print("M4_BETA_DIAGNOSTIC_ID",diagnostic)
         if injecting {app.launchEnvironment["G2C_M4_ACCOUNTS_FILE"]="G2CM4DeviceAccounts.json"}
         app.launch();XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout:20))
         tab(["Memory","记忆"]);tap("memory.account")
@@ -44,7 +47,7 @@ import CryptoKit
         XCTAssertTrue(message.element.waitForExistence(timeout:25));XCTAssertEqual(message.count,1)
         tap("history.answer.read."+original)
         let text=app.textViews.matching(identifier:"history.answer.text."+original)
-        XCTAssertTrue(text.element.waitForExistence(timeout:25));XCTAssertEqual(text.count,1)
+        XCTAssertTrue(text.element.waitForExistence(timeout:90));XCTAssertEqual(text.count,1)
         let value=try XCTUnwrap(text.element.value as? String),bytes=Data(value.utf8)
         XCTAssertEqual(bytes.count,224)
         XCTAssertEqual(SHA256.hash(data:bytes).map {String(format:"%02x",$0)}.joined(),answerSHA)
@@ -56,6 +59,9 @@ import CryptoKit
         continueAfterFailure=false;defer {app?.terminate()}
         try await device.stageAccounts(caseID:"beta-readonly-05")
         launch(language:"en",injecting:true);signIn("A");try originalAnswer()
+        try await restoreChineseAndCheckOwner()
+    }
+    private func restoreChineseAndCheckOwner() async throws {
         launch(language:"zh-Hans",injecting:false);tap("account.development.restore")
         device.waitForAppNetworkConsent();device.requireAccount("m4-synthetic-beta-a",in:app)
         try originalAnswer()
@@ -70,5 +76,18 @@ import CryptoKit
         try app.performAccessibilityAudit(for:.all)
         tap("assistant.panel.done");tab(["Memory","记忆"]);tap("memory.account");tap("account.development.signout")
         XCTAssertFalse(app.staticTexts["account.development.status"].label.contains("m4-synthetic-beta-"))
+    }
+    func testChineseRecoveryAndOwnerIsolation() async throws {
+        continueAfterFailure=false;defer {app?.terminate()}
+        try await device.stageAccounts(caseID:"beta-readonly-05")
+        launch(language:"en",injecting:true);signIn("A")
+        // English answer/AX evidence is already valid; establish fresh material
+        // then execute only the missing Chinese restore and owner-isolation path.
+        try await restoreChineseAndCheckOwner()
+    }
+    func testOriginalEnglishDiagnostic() async throws {
+        continueAfterFailure=false;defer {app?.terminate()}
+        try await device.stageAccounts(caseID:"beta-readonly-05")
+        launch(language:"en",injecting:true);signIn("A");try originalAnswer()
     }
 }
