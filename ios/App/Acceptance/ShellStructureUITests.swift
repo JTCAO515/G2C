@@ -121,7 +121,7 @@ import Foundation
     private func requests() async throws -> [String] {
         let url = try XCTUnwrap(URL(string: fixtureURL + "/audit?run=" + runID))
         #if G2C_M4_DEVICE_ACCEPTANCE
-        let (data, response) = try await deviceSession.data(from: url)
+        let (data, response) = try await deviceSession.data(from: url, restoring: app)
         #else
         let (data, response) = try await URLSession.shared.data(from: url)
         #endif

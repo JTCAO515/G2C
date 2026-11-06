@@ -157,6 +157,15 @@ import XCTest
         return try await M4DeviceControl.data(from: url)
     }
 
+    /// Control preflight can activate the runner. Refresh the target App before
+    /// the caller resolves its next UI control; never reuse background hit points.
+    func data(from url: URL, restoring app: XCUIApplication) async throws -> (Data, URLResponse) {
+        let result = try await data(from: url)
+        app.activate()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
+        return result
+    }
+
     func stageAccounts(caseID: String? = nil) async throws {
         var components = URLComponents(url: control.appendingPathComponent("m4-stage-accounts"),
                                        resolvingAgainstBaseURL: false)!
