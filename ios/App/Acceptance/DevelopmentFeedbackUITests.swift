@@ -155,7 +155,7 @@ import Foundation
         let placeholder = language == "en" ? "Problem" : "问题"
         #if G2C_M4_DEVICE_ACCEPTANCE
         // iOS 27 exposes an empty TextField value as nil, independently of its placeholder.
-        XCTAssertNil(field.value as? String)
+        XCTAssertNil(field.value)
         XCTAssertEqual(field.placeholderValue, placeholder)
         #else
         XCTAssertEqual(field.value as? String, placeholder)
@@ -284,6 +284,7 @@ import Foundation
     func testUnknownReopenAndOriginalLookup() async throws {
         let f = try await prepare("testUnknownReopenAndOriginalLookup"); defer { app?.terminate() }
         try await launch(f); login(f); general(backFromAccount: true)
+        requireEmptyProblem("en")
         fill("回执丢失后保留原反馈", expectation: "只查询原动作")
         _ = try await call("/fault", f.case_id, ["kind": "drop"])
         tap("feedback.submit"); status("Submission is not confirmed")
