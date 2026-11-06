@@ -1,0 +1,60 @@
+{
+  "collector_commit": "6680eac2118cf91900878151e1d42b5eb149cd0a",
+  "collector_sha256": "ba1018755b62bb510e9828ac7a478188ce7089aa49da2f804c48262d742a7dcc",
+  "before": {
+    "images": [
+      {
+        "name": "/g2c-beta-api-1",
+        "image": "sha256:11fc41bd8cd7df6d3dbd4cb5baf8a64735aaa045fbb183386ace36b21db25898",
+        "state": "running"
+      },
+      {
+        "name": "/g2c-beta-worker-1",
+        "image": "sha256:11fc41bd8cd7df6d3dbd4cb5baf8a64735aaa045fbb183386ace36b21db25898",
+        "state": "running"
+      }
+    ],
+    "ledger": {
+      "rows": 342,
+      "sha256": "8a63860f9fed4ab147ffa54254db1d0b60a941f31e827298db93f70e75d3d2d1",
+      "ledger_id": "32d95019ea16443b81e648960c4baba0",
+      "state": "ADOPTED"
+    }
+  },
+  "after": {
+    "ledger": {
+      "rows": 342,
+      "sha256": "8a63860f9fed4ab147ffa54254db1d0b60a941f31e827298db93f70e75d3d2d1",
+      "ledger_id": "32d95019ea16443b81e648960c4baba0",
+      "state": "ADOPTED"
+    },
+    "images": [
+      {
+        "name": "/g2c-beta-api-1",
+        "image": "sha256:11fc41bd8cd7df6d3dbd4cb5baf8a64735aaa045fbb183386ace36b21db25898",
+        "state": "running"
+      },
+      {
+        "name": "/g2c-beta-worker-1",
+        "image": "sha256:11fc41bd8cd7df6d3dbd4cb5baf8a64735aaa045fbb183386ace36b21db25898",
+        "state": "running"
+      }
+    ]
+  },
+  "images_and_original_budget_unchanged": true,
+  "HTTP_GET_n": 1,
+  "HTTP_POST_n": 0,
+  "provider_dispatches": 0,
+  "canonical_phase_writes": 0,
+  "credential": {
+    "method": "one-time owned0600 short JWT",
+    "exact_credential_file_deleted": true,
+    "token_value_or_headers_persisted": false
+  },
+  "failure_attribution": "C collector expected RUN-display.6 on /v1; frozen /v1 has no version",
+  "failed_response_body_retained": false,
+  "failed_response_SHA": "0bbbe6026c6c7852c3513ea86793ba94bc898aab6ff1e5c004813eb9e9a5cb93",
+  "initial_fail_not_promoted_or_overwritten": true,
+  "actual_user_submit_to_answer_timing": "UNRUN",
+  "semantic_quality": "UNRUN"
+}

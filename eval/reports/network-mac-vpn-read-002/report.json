@@ -1,0 +1,138 @@
+{
+  "plan": {
+    "kind": "target_network_read_diagnostic",
+    "endpoint": "https://api-beta.go2china.space",
+    "method": "GET",
+    "message_id": "hk-api-smoke-20261106-06",
+    "run_id": "0d92e40a-847c-47e4-8b32-c483ee249724",
+    "generation": "5c70ee0510434cc6a94bc9fe6de99767",
+    "planned_n": 6,
+    "source_origin": "B public06; not a C smoke/full observation",
+    "network": {
+      "label": "China-mainland Mac + VPN",
+      "location_basis": "JT stated China mainland; VPN on",
+      "actual_egress_location": "UNKNOWN",
+      "settings_changed": false,
+      "default_interface": "utun6",
+      "target_interface": "utun6",
+      "proxy_flags": {
+        "HTTPEnable": 1,
+        "HTTPSEnable": 1,
+        "ProxyAutoConfigEnable": 0,
+        "ProxyAutoDiscoveryEnable": 0,
+        "SOCKSEnable": 0
+      },
+      "proxy_query_exit": 0
+    },
+    "serving_backend": "UNKNOWN: independently recorded in before/after operator provenance",
+    "wire_contract": "RUN-DISPLAY-WIRE@0.1.0-rc.1 /v1 envelope has request_id and snapshot, no version",
+    "created_at": "2026-11-06T07:45:18.585928+00:00",
+    "collector_sha256": "8812159f63e2aa64fcedffd4f0225bf65ab86a47fa4a8d3883b12879302bed39",
+    "provider_dispatch_permitted": false,
+    "financial_ledger_access": false,
+    "canonical_phase_access": false,
+    "clock_scope": "original GET to decoded response; original user POST clock unavailable",
+    "quality_release_decision": "UNRUN",
+    "first_body_seconds": "UNRUN",
+    "full_answer_seconds": "UNRUN"
+  },
+  "observations": [
+    {
+      "attempt": 1,
+      "method": "GET",
+      "status": "PASS",
+      "http_status": 200,
+      "first_decoded_bytes_seconds": 20.360590166999827,
+      "protected_read_seconds": 20.36092437499974,
+      "http_response_seconds": 20.36092437499974,
+      "response_bytes": 814,
+      "response_sha256": "8cdf16c5ccbde7dd8c41b5ff00acdf9765f4d07defc5bd71258a125fc1dac371",
+      "text_bytes": 462,
+      "text_sha256": "2d6a7433f5b164321f6c37dd1104a139c6b26858f8828b479e1e87d3a4a5aa9e"
+    },
+    {
+      "attempt": 2,
+      "method": "GET",
+      "status": "PASS",
+      "http_status": 200,
+      "first_decoded_bytes_seconds": 20.45757712500017,
+      "protected_read_seconds": 20.457691665998937,
+      "http_response_seconds": 20.457691665998937,
+      "response_bytes": 814,
+      "response_sha256": "7f7f6f17f771cec1dc1dc8f96d9bd49d0460a013cd887032616721f6778e8f11",
+      "text_bytes": 462,
+      "text_sha256": "2d6a7433f5b164321f6c37dd1104a139c6b26858f8828b479e1e87d3a4a5aa9e"
+    },
+    {
+      "attempt": 3,
+      "method": "GET",
+      "status": "PASS",
+      "http_status": 200,
+      "first_decoded_bytes_seconds": 20.673938249999992,
+      "protected_read_seconds": 20.6740942919987,
+      "http_response_seconds": 20.6740942919987,
+      "response_bytes": 814,
+      "response_sha256": "fb5c813c1e07bf1ca876a43bff3fb61232c8aca2d7d4b7c66077c26f2876cd8f",
+      "text_bytes": 462,
+      "text_sha256": "2d6a7433f5b164321f6c37dd1104a139c6b26858f8828b479e1e87d3a4a5aa9e"
+    },
+    {
+      "attempt": 4,
+      "method": "GET",
+      "status": "PASS",
+      "http_status": 200,
+      "first_decoded_bytes_seconds": 20.392101041001297,
+      "protected_read_seconds": 20.392199083000378,
+      "http_response_seconds": 20.392199083000378,
+      "response_bytes": 814,
+      "response_sha256": "664f18b4b72dd8b367823eabfd51f9e84d12ffb3bdf0079fd95940d05ca36379",
+      "text_bytes": 462,
+      "text_sha256": "2d6a7433f5b164321f6c37dd1104a139c6b26858f8828b479e1e87d3a4a5aa9e"
+    },
+    {
+      "attempt": 5,
+      "method": "GET",
+      "status": "PASS",
+      "http_status": 200,
+      "first_decoded_bytes_seconds": 20.42982083300012,
+      "protected_read_seconds": 20.42992941600096,
+      "http_response_seconds": 20.42992941600096,
+      "response_bytes": 814,
+      "response_sha256": "29fceacc56b3c737abf0152b302a2104be2e6ba91a7961ba3f912d8a7b95dd5d",
+      "text_bytes": 462,
+      "text_sha256": "2d6a7433f5b164321f6c37dd1104a139c6b26858f8828b479e1e87d3a4a5aa9e"
+    },
+    {
+      "attempt": 6,
+      "method": "GET",
+      "status": "PASS",
+      "http_status": 200,
+      "first_decoded_bytes_seconds": 20.86836737500016,
+      "protected_read_seconds": 20.86848608299988,
+      "http_response_seconds": 20.86848608299988,
+      "response_bytes": 814,
+      "response_sha256": "f6f45d1d37fafb1b04ee17b3909f1318bf9a578f3f0468041ded58e786af5e78",
+      "text_bytes": 462,
+      "text_sha256": "2d6a7433f5b164321f6c37dd1104a139c6b26858f8828b479e1e87d3a4a5aa9e"
+    }
+  ],
+  "planned_n": 6,
+  "outcomes": {
+    "PASS": 6,
+    "FAIL": 0,
+    "UNKNOWN": 0
+  },
+  "unrun_n": 0,
+  "valid_read_timing": {
+    "known_n": 6,
+    "planned_n": 6,
+    "p50": 20.42992941600096,
+    "p95": 20.86848608299988,
+    "max": 20.86848608299988
+  },
+  "availability": "PASS",
+  "quality_release_decision": "UNRUN",
+  "submitted_messages": 0,
+  "model_or_tool_dispatches": 0,
+  "actual_paid_cost": "UNKNOWN"
+}
