@@ -9,6 +9,12 @@ POLICY = dict(id='JT-2026-11-04-M4', source='docs/scope.md; #495; PR518',
               first_body_p95_maximum_seconds=5, full_answer_p95_maximum_seconds=90,
               required_target_phases=['overseas_pretrip','china_travel'])
 
+# Explicit opt-in for newly frozen plans. Historical plans keep POLICY above.
+MAC_VPN_NETWORK = dict(id='JT-2026-11-06-M4-NETWORK', source='#32 JT 2026-11-06; PR568',
+                      required_target_phases=['china_travel'],
+                      client_device='codex_development_mac', client_location='china_mainland', vpn='on',
+                      measurement_scope='user_submission_to_answer', clock='client_monotonic')
+
 
 def known_reference(value):
     return (isinstance(value,str) and bool(value.strip())
@@ -107,7 +113,7 @@ def _timing(stats, rows, field, limit, started):
                 maximum_seconds=limit, known_slow_n=slow, **stats)
 
 
-def network_status(network):
+def network_status(network, network_policy=POLICY):
     proof = network.get('measurement') or {}
     if (network.get('kind') not in ('local_real_services','target_network')
             or proof.get('kind') not in ('human','program') or proof.get('independent') is not True
@@ -116,12 +122,18 @@ def network_status(network):
         return 'UNKNOWN'
     if network['kind'] == 'target_network' and network['endpoint'] != 'https://api-beta.go2china.space':
         return 'UNKNOWN'
-    if network['kind'] == 'target_network' and network.get('travel_phase') not in POLICY['required_target_phases']:
+    if network['kind'] == 'target_network' and network.get('travel_phase') not in network_policy['required_target_phases']:
         return 'UNKNOWN'
+    if network['kind'] == 'target_network' and network_policy is MAC_VPN_NETWORK:
+        if (any(network.get(k) != network_policy[k] for k in ('client_device','client_location','vpn'))
+                or proof.get('scope') != network_policy['measurement_scope']
+                or proof.get('clock') != network_policy['clock']):
+            return 'UNKNOWN'
     return 'PASS'
 
 
-def profile_gate(*, counts, rows, first_body, full_answer, serious_errors, real, scenarios, network):
+def profile_gate(*, counts, rows, first_body, full_answer, serious_errors, real, scenarios, network,
+                 network_policy=POLICY):
     planned = len(rows)
     started = planned - counts['UNRUN']
     minimum = Fraction(str(POLICY['completion_rate_minimum']))
@@ -161,7 +173,7 @@ def profile_gate(*, counts, rows, first_body, full_answer, serious_errors, real,
         first_body_p95=_timing(first_body, rows, 'first_body_seconds', POLICY['first_body_p95_maximum_seconds'], started),
         full_answer_p95=_timing(full_answer, rows, 'full_answer_seconds', POLICY['full_answer_p95_maximum_seconds'], started))
     diagnostic = _combine([c['status'] for c in criteria.values()])
-    net = network_status(network)
+    net = network_status(network,network_policy)
     real_decision = _combine([diagnostic,net]) if real and started else 'UNRUN'
     return dict(criteria=criteria, diagnostic_status=diagnostic,
                 network_evidence_status=net,
@@ -169,13 +181,13 @@ def profile_gate(*, counts, rows, first_body, full_answer, serious_errors, real,
                 evidence_scope='real evaluation' if real else 'format-only; not a real quality conclusion')
 
 
-def acceptance(profiles, plan):
+def acceptance(profiles, plan, network_policy=POLICY):
     candidates = []
     for candidate in plan['candidates']:
         groups = [p for p in profiles if p['candidate_id'] == candidate['id']]
         target = any(p['network'].get('kind') == 'target_network' for p in groups)
         phases = {p['network'].get('travel_phase') for p in groups if p['network'].get('kind')=='target_network'}
-        missing = [phase for phase in POLICY['required_target_phases'] if phase not in phases]
+        missing = [phase for phase in network_policy['required_target_phases'] if phase not in phases]
         status = _combine([p['evaluation_release_decision'] for p in groups])
         if plan['evidence_layer'] == 'real' and missing and status != 'FAIL':
             status = 'UNKNOWN' if any(p['criteria']['completion_rate']['denominator'] for p in groups) else 'UNRUN'
@@ -183,7 +195,10 @@ def acceptance(profiles, plan):
                                target_network_planned=target,
                                missing_target_phases={phase:'UNRUN' for phase in missing},
                                evaluation_release_decision=status))
-    return dict(policy=POLICY, profiles=profiles, candidates=candidates,
+    reported_policy = (POLICY if network_policy is POLICY else
+                       dict(POLICY,required_target_phases=network_policy['required_target_phases'],
+                            network_policy=network_policy))
+    return dict(policy=reported_policy, profiles=profiles, candidates=candidates,
                 evaluation_release_decision=candidates[0]['evaluation_release_decision'] if len(candidates) == 1 else 'UNKNOWN',
                 scope='M4 evaluated candidate/language/network only; does not close other release prerequisites',
                 multi_candidate_rule='Never average or select the best across candidate versions')

@@ -146,9 +146,24 @@ p95超标时可FAIL，其他缺测为UNKNOWN/UNRUN。没有完整观测不能凭
 `measurement={kind:program/human,independent:true,outcome:PASS,ref:...}`。空值或
 UNKNOWN标记不能认证测量。本机ASGI不冒充目标网络；完整候选放行还须计划并测量
 `target_network`组，endpoint为`https://api-beta.go2china.space`。该组测量等B在#30
-通知就绪后再执行；按scope.md分别保留`travel_phase=overseas_pretrip/china_travel`
-两种来源，缺失地域直接列UNRUN，不用单一地域放行整体。缺组/未测不输出候选PASS；
+通知就绪后再执行。历史缺省口径按`JT-2026-11-04-M4`分别保留
+`travel_phase=overseas_pretrip/china_travel`两种来源，缺失地域列UNRUN；
+旧计划与旧报告不因后续决定被重新解释。缺组/未测不输出候选PASS；
 本机或单一网络真实服务范围的四指标可先单独报告，不冒其他网络已测。
+
+JT 2026-11-06在#32/PR568批准现有境内Codex开发Mac+VPN访问上述测试域名，
+不再要求两个独立地域客户端。新冻结计划须显式写
+`"network_policy":"JT-2026-11-06-M4-NETWORK"`才采用该口径；不写或指定
+`JT-2026-11-04-M4`仍走历史口径，其他值拒绝，不接受自定义阈值。
+新口径的`target_network`组使用`travel_phase=china_travel`，另有
+`client_device=codex_development_mac`、`client_location=china_mainland`、
+`vpn=on`；独立`measurement`还须标明`scope=user_submission_to_answer`和
+`clock=client_monotonic`。这些字段只描述可信执行方实际记录的条件，不认证
+外部证据真伪。缺字段/来源/实际任务时钟为UNKNOWN；实际VPN出口可如实UNKNOWN，
+不能把香港服务器、iPhone或纯GET快照计时填成该客户端的提交至正文证据。
+JSON与Markdown报告显示所选网络口径和来源。四项质量数值、原硬判定、事实/语义
+独立审查、样本/留出、每个计划格与全部attempt的统计保持原样；新网络口径不减少
+计划数，不把子集或读取诊断提升为完整66例质量PASS，也不追改任何历史结果。
 
 Fake/local/synthetic 报告会显示门槛的诊断PASS/FAIL/UNKNOWN，但
 `evaluation_release_decision=UNRUN`，不算真实结论。只有`evidence_layer=real`
