@@ -4,7 +4,7 @@ import re
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'evaluation/cj028'))
 from evaluate import summarize, validate, outcome, latency, require, number, amount, exact_sum, nonempty
-from gates import profile_gate, acceptance, hard_status, program_proof, known_reference
+from gates import POLICY, MAC_VPN_NETWORK, profile_gate, acceptance, hard_status, program_proof, known_reference
 
 
 def effective_observation(row, scenario):
@@ -79,6 +79,10 @@ def real_fees(rows):
 
 def report(plan, observations):
     scenarios,_,_ = validate(plan,observations)
+    selection=plan.get('network_policy',POLICY['id'])
+    require(type(selection) is str and selection in (POLICY['id'],MAC_VPN_NETWORK['id']),
+            'unknown or unapproved network policy')
+    network_policy=MAC_VPN_NETWORK if selection==MAC_VPN_NETWORK['id'] else POLICY
     for network in plan['networks']:
         measurement = network.get('measurement')
         require(measurement is None or isinstance(measurement,dict), 'invalid network measurement')
@@ -160,7 +164,8 @@ def report(plan, observations):
                                real_fees=real_fees(measured),
                                **profile_gate(counts=counts,rows=rows,first_body=latency(measured,'first_body_seconds'),
                                               full_answer=latency(measured,'full_answer_seconds'),serious_errors=errors,
-                                              real=plan['evidence_layer']=='real',scenarios=scenarios,network=network))
+                                              real=plan['evidence_layer']=='real',scenarios=scenarios,network=network,
+                                              network_policy=network_policy))
                 profile['call_volume'] = {}
                 for field in ('model_calls','tool_calls','memory_calls'):
                     values = [r.get(field) for r in measured if r is not None]
@@ -168,7 +173,7 @@ def report(plan, observations):
                         known_attempt_n=sum(v is not None for v in values),
                         unknown_or_missing_attempt_n=len(rows)-sum(v is not None for v in values))
                 profiles.append(profile)
-    result['quality_acceptance'] = acceptance(profiles,plan)
+    result['quality_acceptance'] = acceptance(profiles,plan,network_policy)
     # Preserve the original plan and global release authority distinction, while
     # removing the old reporter's now-superseded unconfirmed-threshold notice.
     result['release_blockers'] = [reason for reason in result['release_blockers'] if reason != 'thresholds unconfirmed']
@@ -203,6 +208,10 @@ def markdown(result):
     lines += ['', 'Fake/local/synthetic rows validate formatting only; their real quality decision is UNRUN.', '',
              '| Language | Network | Split | Task | N | PASS | FAIL | UNKNOWN | UNRUN | PASS / started | API p50 / p95 (s) | Model calls known / unknown attempts |',
              '|---|---|---|---|---:|---:|---:|---:|---:|---|---|---|']
+    network_policy=result['quality_acceptance']['policy'].get('network_policy')
+    if network_policy is not None:
+        lines[6:6]=[f"Network policy: {network_policy['id']} ({network_policy['source']}); mainland development Mac + VPN; client submitted-task clocks required.",
+                    'Read-only snapshot diagnostics and server location do not certify submitted-task timing.', '']
     for group in result['groups']:
         counts = group['outcomes']; elapsed = group['api_task_seconds']; calls = group['model_calls']
         lines.append(f"| {group['language']} | {group['network_id']} | {group['split']} | {group['task_kind']} | "
