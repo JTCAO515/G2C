@@ -1,0 +1,260 @@
+{
+  "ledger": {
+    "ledger_id": "32d95019ea16443b81e648960c4baba0",
+    "rows": 342,
+    "sha256": "8a63860f9fed4ab147ffa54254db1d0b60a941f31e827298db93f70e75d3d2d1",
+    "counts": {
+      "fact": 14,
+      "model": 220,
+      "place": 36,
+      "route": 13,
+      "weather": 59
+    },
+    "states": {
+      "INTENT": 66,
+      "RECEIVED": 276
+    },
+    "anchor_state": "ADOPTED"
+  },
+  "old341_unchanged": true,
+  "canonical_claim": {
+    "adapter_identity": {
+      "pin": "a18a58fe257032bbe99009e03efb6690aa0af5b9f0154d87d929ba27995268c7",
+      "source_sha256": {
+        "backend/agent/cj_agent/provider.py": "a302b1904a1de740b65076538207533061abf75ade6731b2ceb8cc6e4107abca",
+        "backend/cj_api/real_services.py": "192d59ef6ed9e55df81791bd013d67303801d03ae13055749d3523a0c482e911",
+        "backend/fact/cj_fact/https_transport.py": "c7b23cabfe965ebb2cdcfae00ccc0f789fdce4c35025d29f1ae79a7876987ba8",
+        "backend/fact/cj_fact/live_source.py": "a31d82c73bfb2abcc0be3288d1d19be04992946e1a4e2c26497ff920b834c88a"
+      },
+      "version": 2
+    },
+    "adapter_pin": "a18a58fe257032bbe99009e03efb6690aa0af5b9f0154d87d929ba27995268c7",
+    "candidate_id": "3eab64cabeef2bbdb932e3f234bcaf48b299691a",
+    "output": "/evidence/hk-gzip-smoke-001",
+    "phase": "smoke"
+  },
+  "canonical_result": {
+    "candidate_id": "3eab64cabeef2bbdb932e3f234bcaf48b299691a",
+    "hashes": {
+      "observations.json": "e2768a2f61fbf9998cadf01128c7b2a607507fc1dfe2a103fec73f437a3a33f7",
+      "plan.json": "042f7e4c14f002d8c2aaeb362727a73fdef741bb668a9aa7c7ff6e4db9b952b1",
+      "raw/place-route-zh.json": "e215008d337332aa1a54700ff6d70e0459e1748f7fb41c8c4c287e0a5c3cd5d2",
+      "summary.json": "969267783ecd299bce31ce392841a4f82fe54b1b3e3550ce33f48684c80e8f04"
+    },
+    "status": "FAIL"
+  },
+  "full_claim_exists": false,
+  "remaining_container_processes": [
+    "sleep"
+  ],
+  "private_PG_and_python": 0,
+  "schema_version": 1,
+  "source_preflight": {
+    "status": "PASS",
+    "source": {
+      "runner_commit": "3eab64cabeef2bbdb932e3f234bcaf48b299691a",
+      "backend_commit": "5348e7b0077b6c50323325f09d064aeac8bdbcd7",
+      "manifest_sha256": "3e47d283b3789ca86d47ccb72a60a8fd7276da7047c0ac4ee1029a9831fcdb12"
+    },
+    "identity": {
+      "version": 2,
+      "pin": "a18a58fe257032bbe99009e03efb6690aa0af5b9f0154d87d929ba27995268c7",
+      "source_sha256": {
+        "backend/agent/cj_agent/provider.py": "a302b1904a1de740b65076538207533061abf75ade6731b2ceb8cc6e4107abca",
+        "backend/cj_api/real_services.py": "192d59ef6ed9e55df81791bd013d67303801d03ae13055749d3523a0c482e911",
+        "backend/fact/cj_fact/live_source.py": "a31d82c73bfb2abcc0be3288d1d19be04992946e1a4e2c26497ff920b834c88a",
+        "backend/fact/cj_fact/https_transport.py": "c7b23cabfe965ebb2cdcfae00ccc0f789fdce4c35025d29f1ae79a7876987ba8"
+      }
+    },
+    "container": "g2c-c-runtime-3eab64ca",
+    "image": "sha256:2cdd48b7a0793f331eceedd1e9b0809d70be515841123ad7d268bf85ae04c653",
+    "mounts": [
+      {
+        "source": "/srv/g2c-beta/c-runner/3eab64cabeef2bbdb932e3f234bcaf48b299691a/evaluation",
+        "destination": "/app/evaluation",
+        "rw": false
+      },
+      {
+        "source": "/srv/g2c-beta/c-runner/3eab64cabeef2bbdb932e3f234bcaf48b299691a/c-eval-source.json",
+        "destination": "/app/c-eval-source.json",
+        "rw": false
+      },
+      {
+        "source": "/srv/g2c-beta/c-eval.env",
+        "destination": "/run/secrets/c-eval.env",
+        "rw": false
+      },
+      {
+        "source": "/srv/g2c-beta/c-evidence",
+        "destination": "/evidence",
+        "rw": true
+      },
+      {
+        "source": "/srv/g2c-beta/budget",
+        "destination": "/home/cj/.local/share/g2c/m4-real-services",
+        "rw": true
+      },
+      {
+        "source": "/srv/g2c-beta/control",
+        "destination": "/control",
+        "rw": false
+      },
+      {
+        "source": "/srv/g2c-beta/control/budget",
+        "destination": "/control/budget",
+        "rw": true
+      },
+      {
+        "source": "/srv/g2c-beta/c-runner/3eab64cabeef2bbdb932e3f234bcaf48b299691a/eval",
+        "destination": "/app/eval",
+        "rw": false
+      }
+    ],
+    "environment_names": [
+      "CJ_C_EVAL_SOURCE_SHA256",
+      "CJ_DEPLOY_TARGET",
+      "CJ_ENV",
+      "CJ_M4_BUDGET_PRODUCER",
+      "CJ_M4_SYNTHETIC_ONLY",
+      "CJ_PG_BINDIR",
+      "CJ_TRIAL_VALID_UNTIL",
+      "LANG",
+      "PATH",
+      "PYTHONDONTWRITEBYTECODE",
+      "PYTHONPATH",
+      "PYTHON_SHA256",
+      "PYTHON_VERSION"
+    ],
+    "ledger": {
+      "ledger_id": "32d95019ea16443b81e648960c4baba0",
+      "row_count": 341,
+      "sha256": "4c31822d036d4eca2de89799f74bc453b940de106b9c00406b372d268b089ca7",
+      "counts": {
+        "fact": 14,
+        "model": 219,
+        "place": 36,
+        "route": 13,
+        "weather": 59
+      },
+      "states": {
+        "INTENT": 65,
+        "RECEIVED": 276
+      },
+      "anchor_state": "ADOPTED"
+    },
+    "health": [
+      {
+        "name": "/g2c-beta-api-1",
+        "image": "sha256:11fc41bd8cd7df6d3dbd4cb5baf8a64735aaa045fbb183386ace36b21db25898",
+        "state": "running",
+        "health": "healthy"
+      },
+      {
+        "name": "/g2c-beta-worker-1",
+        "image": "sha256:11fc41bd8cd7df6d3dbd4cb5baf8a64735aaa045fbb183386ace36b21db25898",
+        "state": "running",
+        "health": null
+      }
+    ]
+  },
+  "archive": {
+    "sha256": "9d09094044c8ece3de83b23a9f7e4c060c599d56744ac6eb1526fad75d5d1c77",
+    "file_count": 16,
+    "raw_files_in_git": false
+  },
+  "artifact_sha256": {
+    "budget-after.json": "fbe25bcf9237740e65c42f327560c7632af7690f868edbf19c4ad58293f067ed",
+    "budget-before.json": "3882571ce269d6c2ce84bc1893e4051ea8bb0fe2b7c9af24cffb34d31472262b",
+    "case-starts.json": "c5fbaf83d09a5f6195c800cf7c9c4bedd4fe16b825de26350ecb8fd7a1923cd8",
+    "estimate.json": "1c463606c6e4d92992f6fa51124e938ee87c74205bb3fc64325d5fbe150c8c1b",
+    "observations.json": "e2768a2f61fbf9998cadf01128c7b2a607507fc1dfe2a103fec73f437a3a33f7",
+    "packages.json": "cff3b2adf3252cb116925d5a60193915faa6bd9fccc6867023880ce388b0a01a",
+    "plan.json": "042f7e4c14f002d8c2aaeb362727a73fdef741bb668a9aa7c7ff6e4db9b952b1",
+    "progress.json": "f7c6cf4bd8950fe35eb0333eb9a830ef4138ffcb7c9eff4f96a535793958f572",
+    "progress.md": "8264241477db2e9f08c53dcf93f31cc9ce098a74622ae051cd5079aaffdd886b",
+    "raw/place-route-zh.json": "e215008d337332aa1a54700ff6d70e0459e1748f7fb41c8c4c287e0a5c3cd5d2",
+    "runtime-config.json": "2a111c5e8f2529a328ce80f161fb6758b71654cde6fbcd51cd527430359e9b31",
+    "summary.json": "969267783ecd299bce31ce392841a4f82fe54b1b3e3550ce33f48684c80e8f04"
+  },
+  "original_process": {
+    "wrapper_pid": 19,
+    "started_epoch": 1793944141.3361304,
+    "output": "/evidence/hk-gzip-smoke-001",
+    "command": [
+      "python",
+      "-B",
+      "/app/eval/hk.py",
+      "run",
+      "smoke",
+      "--output",
+      "/evidence/hk-gzip-smoke-001"
+    ]
+  },
+  "original_process_result": {
+    "wrapper_pid": 19,
+    "exit_code": 1,
+    "finished_epoch": 1793944149.880638
+  },
+  "input_comparison": {
+    "old_RUN": "e3091c9d-bbe0-4ac8-9ba0-eb0819d140e5",
+    "new_RUN": "8ee5ba2e-df89-46fc-870d-83c2293baef1",
+    "original_first_model_input_equal": true,
+    "original_HTTP_model_input_sha_equal": true,
+    "old_model_input_sha": "49bdae18302938d0f942d5db9b63a2eb0f6db080554797066b923ceb674fef59",
+    "new_model_input_sha": "49bdae18302938d0f942d5db9b63a2eb0f6db080554797066b923ceb674fef59",
+    "old_receipt_state": "RECEIVED",
+    "new_receipt_state": "INTENT",
+    "old_pipeline_result": "completed",
+    "new_pipeline_result": "unknown",
+    "inference": "same original request bytes; exact rejected argument shape/root cause not retained, remains UNKNOWN; no retry"
+  },
+  "source_package": {
+    "runner_commit": "3eab64cabeef2bbdb932e3f234bcaf48b299691a",
+    "backend_commit": "5348e7b0077b6c50323325f09d064aeac8bdbcd7",
+    "manifest_sha256": "3e47d283b3789ca86d47ccb72a60a8fd7276da7047c0ac4ee1029a9831fcdb12",
+    "source_file_count": 638,
+    "adapter_identity": {
+      "version": 2,
+      "pin": "a18a58fe257032bbe99009e03efb6690aa0af5b9f0154d87d929ba27995268c7",
+      "source_sha256": {
+        "backend/agent/cj_agent/provider.py": "a302b1904a1de740b65076538207533061abf75ade6731b2ceb8cc6e4107abca",
+        "backend/cj_api/real_services.py": "192d59ef6ed9e55df81791bd013d67303801d03ae13055749d3523a0c482e911",
+        "backend/fact/cj_fact/live_source.py": "a31d82c73bfb2abcc0be3288d1d19be04992946e1a4e2c26497ff920b834c88a",
+        "backend/fact/cj_fact/https_transport.py": "c7b23cabfe965ebb2cdcfae00ccc0f789fdce4c35025d29f1ae79a7876987ba8"
+      }
+    },
+    "C_reviewed_blobs": [
+      {
+        "path": "eval/real_phase.py",
+        "reviewed_blob": "b94ae9c0e5ba8c307f0cf864956e504cc04bedba",
+        "current_blob": "b94ae9c0e5ba8c307f0cf864956e504cc04bedba"
+      },
+      {
+        "path": "eval/tests/test_phase_identity.py",
+        "reviewed_blob": "6edb22954b21e8621d543c907d567104a43a6b28",
+        "current_blob": "6edb22954b21e8621d543c907d567104a43a6b28"
+      },
+      {
+        "path": "eval/README.md",
+        "reviewed_blob": "112c604a63b626294f8353d858a7f2a93f3002f6",
+        "current_blob": "112c604a63b626294f8353d858a7f2a93f3002f6"
+      }
+    ],
+    "independent_review": "570#6677368160",
+    "CI": "42165647850 all10job +allprlintsSUCCESS; ordinary60/PG70uniqueall0",
+    "package": "source-only,no runtime or credentials",
+    "actual_C_model_tool_calls": 0,
+    "shared_phase_or_ledger_writes": 0
+  },
+  "B_blocker": "https://github.com/JTCAO515/G2C/issues/523#issuecomment-6678053103",
+  "network_policy": {
+    "id": "JT-2026-11-06-network",
+    "source": "https://github.com/JTCAO515/G2C/issues/32#issuecomment-6676777632",
+    "approved_client": "China-mainland Mac with VPN on",
+    "endpoint": "https://api-beta.go2china.space",
+    "actual_collection": "UNRUN",
+    "overseas_separate_client_required": false
+  },
+  "independent_semantic_review": "UNKNOWN; no human review fabricated",
+  "goal_complete": false
+}

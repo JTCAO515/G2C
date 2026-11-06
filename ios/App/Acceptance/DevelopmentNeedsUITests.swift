@@ -55,6 +55,8 @@ import Foundation
             let navigation = app.navigationBars.firstMatch
             var top = navigation.exists ? navigation.frame.maxY + 4 : app.frame.minY + 60
             var bottom = navigation.exists ? app.frame.maxY - 24 : app.tabBars.firstMatch.frame.minY
+            let tabs=app.tabBars.firstMatch
+            if tabs.exists && tabs.isHittable {bottom=min(bottom,tabs.frame.minY)}
             let header = app.otherElements.matching(identifier:"assistant.header").firstMatch
             let composer = app.otherElements.matching(identifier:"assistant.composer").firstMatch
             if !navigation.exists && !["assistant.draft","assistant.send","assistant.intent"].contains(id) && header.exists && composer.exists {
@@ -268,7 +270,16 @@ import Foundation
         tap("needs.save"); text("needs.container.state",contains:language == "en" ? "Original action verified" : "原动作与历史版本已核对")
     }
     private func readDetails(_ version: Int) {
-        tap("needs.read"); tap("needs.detail.open"); text("needs.detail.version",contains:String(version))
+        tap("needs.read")
+        // The read changes the panel geometry asynchronously. Wait for the
+        // actual loaded result before locating its detail disclosure control.
+        let state=textElement("needs.container.state")
+        XCTAssertTrue(state.waitForExistence(timeout:10))
+        let loaded=XCTNSPredicateExpectation(predicate:NSPredicate(format:"label IN %@",
+            ["User-provided details loaded.","已读取用户提供的条件。"]),object:state)
+        XCTAssertEqual(XCTWaiter.wait(for:[loaded],timeout:20),.completed)
+        tap("needs.detail.open")
+        text("needs.detail.version",contains:String(version))
         XCTAssertFalse(field("needs.editor.statement").exists,"Reading the saved record folds the separate unsaved editor without discarding it")
     }
     private func normal(_ name: String, language: String, large: Bool) async throws {
