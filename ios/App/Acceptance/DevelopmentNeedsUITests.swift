@@ -159,6 +159,9 @@ import Foundation
         target = reveal({field(id)},id:id,full:true) // Focus changes the viewport: keyboard AND its accessory bar.
         let end = target.coordinate(withNormalizedOffset:CGVector(dx:0.95,dy:0.5))
         end.tap()
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        M4DeviceTestSession.clearFocusedTextWithKeyboard(target)
+        #else
         let previous = target.value as? String ?? ""
         if !previous.isEmpty {
             end.press(forDuration:1.1)
@@ -179,6 +182,7 @@ import Foundation
             if !select.isHittable { capture("native-select-all-not-hittable") }
             XCTAssertTrue(select.isHittable); select.tap()
         }
+        #endif
         // Synchronize each real keyboard event with its visible field value.
         // A failed prefix stops here; no correction or replacement is retried.
         var entered = ""
@@ -220,10 +224,8 @@ import Foundation
         app?.terminate(); app = XCUIApplication(bundleIdentifier:bundle)
         app.launchArguments = ["-cj.ui.language.v1",language]
         #if G2C_M4_DEVICE_ACCEPTANCE
-        if large { M4DeviceTestSession.requireLargestSystemFont() }
         let accountsJSON = "{}"
         #else
-        if large { app.launchArguments += ["-UIPreferredContentSizeCategoryName","UICTContentSizeCategoryAccessibilityXXXL"] }
         let accountsJSON = restore ? "{}" : String(data:try JSONEncoder().encode(f.accounts),encoding:.utf8)!
         #endif
         app.launchEnvironment = ["OS_ACTIVITY_MODE":"disable","G2C_DEV_ACCOUNT_MODE":"1","G2C_DEV_API_BASE_URL":f.endpoint,

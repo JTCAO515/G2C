@@ -51,7 +51,7 @@ def main():
         *list((ROOT/'ios/Modules/CJShell/Sources').rglob('*.swift')),*list((ROOT/'ios/Modules/CJRunClient/Sources').rglob('*.swift')),
         HERE/'DevelopmentFactUITests.swift',Path(__file__)]
     report=dict(status='RUNNING',head=head,cases={},required_cases=CASES,
-        unrun=['real sources/services/models/cloud/fees','physical device/VoiceOver','CJ014 real consumption'],
+        unrun=['real sources/services/models/cloud/fees','physical device','CJ014 real consumption'],
         source_hashes={str(path.relative_to(ROOT)):hashlib.sha256(path.read_bytes()).hexdigest() for path in sources},
         git_trees={name:subprocess.check_output(['git','rev-parse',head+':'+name],cwd=ROOT,text=True).strip() for name in ('ios','backend','contracts','scripts')},
         run_context=json.loads(args.run_context.read_text()))

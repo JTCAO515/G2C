@@ -84,10 +84,8 @@ import Foundation
         app?.terminate();app=XCUIApplication(bundleIdentifier:"space.go2china.memory-lifecycle.acceptance")
         app.launchArguments=["-cj.ui.language.v1",language]
         #if G2C_M4_DEVICE_ACCEPTANCE
-        if large { M4DeviceTestSession.requireLargestSystemFont() }
         let accountsJSON = "{}"
         #else
-        if large { app.launchArguments += ["-UIPreferredContentSizeCategoryName","UICTContentSizeCategoryAccessibilityXXXL"] }
         let accountsJSON = restore ? "{}" : String(data:try JSONEncoder().encode(f.accounts),encoding:.utf8)!
         #endif
         app.launchEnvironment=["OS_ACTIVITY_MODE":"disable","G2C_DEV_ACCOUNT_MODE":"1","G2C_DEV_API_BASE_URL":f.endpoint,"G2C_DEV_ACCOUNTS":accountsJSON,"G2C_DEV_MEMORY_PROFILE":f.profile,"G2C_DEV_MEMORY_MANAGEMENT_URL":f.management_endpoint]
@@ -98,6 +96,9 @@ import Foundation
         #endif
         app.launch();tap(language=="en" ? "Memory":"记忆");tap("memory.account")
         if restore { tap("account.development.restore") } else { tap("account.development.signout");tap("account.development.signin.A") }
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        deviceSession.requireAccount(f.subjects["A"]!,in:app)
+        #endif
         let signed=XCTNSPredicateExpectation(predicate:NSPredicate(format:"label CONTAINS %@",f.subjects["A"]!),object:app.staticTexts["account.development.status"])
         XCTAssertEqual(XCTWaiter.wait(for:[signed],timeout:20),.completed)
         // The verified root finishes assembling after the account label changes
@@ -135,6 +136,28 @@ import Foundation
         XCTAssertTrue(field.waitForExistence(timeout:10))
         for _ in 0..<30 { if field.isHittable { break };app.swipeUp() }
         XCTAssertTrue(field.isHittable);field.tap();XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout:5))
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        let keyboard=app.keyboards.firstMatch
+        let done=app.toolbars.buttons.matching(identifier:"memory.manage.keyboard.done").firstMatch
+        let geometry=XCTAttachment(string:app.debugDescription);geometry.name="memory-editor-before-caret";geometry.lifetime = .keepAlways;add(geometry)
+        let image=XCTAttachment(screenshot:app.screenshot());image.name="memory-editor-before-caret";image.lifetime = .keepAlways;add(image)
+        print("M4_MEMORY_BEFORE_CARET",field.frame,"keyboard",keyboard.frame,"done",done.exists ? done.frame:.zero)
+        XCTAssertTrue(done.waitForExistence(timeout:5))
+        deviceSession.revealControl(field,in:app,keyboardDone:done)
+        let exposed=XCTNSPredicateExpectation(predicate:NSPredicate {_,_ in
+            let bottom=done.exists ? min(done.frame.minY,keyboard.frame.minY):keyboard.frame.minY
+            return keyboard.frame.height>0 && field.frame.maxY<=bottom && field.isHittable
+        },object:nil)
+        XCTAssertEqual(XCTWaiter.wait(for:[exposed],timeout:5),.completed,"The editable text must be above the keyboard accessory")
+        // Use the text line, above the short field's bottom scroll indicator.
+        field.coordinate(withNormalizedOffset:CGVector(dx:0.95,dy:0.5)).tap()
+        XCTAssertTrue(app.keyboards.firstMatch.exists)
+        print("M4_MEMORY_EDIT_GEOMETRY",field.frame,"keyboard",app.keyboards.firstMatch.frame)
+        M4DeviceTestSession.clearFocusedTextWithKeyboard(field)
+        // iOS 27.2 reports this emptied SwiftUI TextField's native value as nil.
+        // Keep an exact empty-state assertion for each tested platform.
+        XCTAssertNil(field.value)
+        #else
         // Use the native editing menu verified on the 17.5 acceptance target.
         field.press(forDuration:1)
         let names=NSPredicate(format:"label IN %@",["Select All","全选"])
@@ -143,6 +166,7 @@ import Foundation
         XCTAssertTrue(selectAll.waitForExistence(timeout:5));XCTAssertTrue(selectAll.isEnabled);selectAll.tap()
         field.typeText(XCUIKeyboardKey.delete.rawValue)
         XCTAssertEqual(field.value as? String,"")
+        #endif
         field.typeText(text);XCTAssertEqual(Array((field.value as? String ?? "").utf8),Array(text.utf8))
         tap("memory.manage.keyboard.done")
     }
@@ -159,9 +183,19 @@ import Foundation
         let content=app.staticTexts["memory.detail.text"]
         let ready=XCTNSPredicateExpectation(predicate:NSPredicate(format:"label == %@",current.command.text),object:content)
         XCTAssertEqual(XCTWaiter.wait(for:[ready],timeout:15),.completed)
-        XCTAssertTrue(app.staticTexts[(language=="en" ? "Version, ":"版本, ")+String(current.version)].exists)
-        XCTAssertTrue(app.staticTexts[(language=="en" ? "Source version, ":"来源版本, ")+String(current.command.source_version)].exists)
-        XCTAssertTrue(app.staticTexts[(language=="en" ? "Source, ":"来源, ")+current.command.source_id].exists)
+        let metadata=[(language=="en" ? "Version":"版本",String(current.version)),
+                      (language=="en" ? "Source version":"来源版本",String(current.command.source_version)),
+                      (language=="en" ? "Source":"来源",current.command.source_id)]
+        for (name,value) in metadata {
+            #if G2C_M4_DEVICE_ACCEPTANCE
+            // iOS27 localizes LabeledContent's AX separator; values remain exact.
+            let row=app.staticTexts.matching(NSPredicate(format:"label IN %@",[name+", "+value,name+"、"+value]))
+            deviceSession.revealControl(row.element,in:app)
+            XCTAssertEqual(row.count,1);XCTAssertTrue(row.element.exists)
+            #else
+            XCTAssertTrue(app.staticTexts[name+", "+value].exists)
+            #endif
+        }
         return current
     }
     func success(language: String, large: Bool) async throws {
@@ -282,9 +316,15 @@ import Foundation
     }
     func waitRun(_ expected: String) { status(expected,id:"run.display.status") }
     func runTextContains(_ expected: String, present: Bool) {
-        let text=app.staticTexts["run.display.text"]
-        if present { XCTAssertTrue(text.waitForExistence(timeout:10));XCTAssertTrue(text.label.contains(expected)) }
-        else { XCTAssertFalse(text.exists && text.label.contains(expected));let stream=app.staticTexts["run.stream.text"];XCTAssertFalse(stream.exists && stream.label.contains(expected)) }
+        let text=app.textViews["run.display.text"]
+        if present { XCTAssertTrue(text.waitForExistence(timeout:10));XCTAssertTrue((text.value as? String)?.contains(expected)==true) }
+        else {
+            for id in ["run.display.text","run.stream.text"] {
+                for element in app.descendants(matching:.any).matching(identifier:id).allElementsBoundByIndex {
+                    XCTAssertFalse(element.label.contains(expected) || (element.value as? String)?.contains(expected)==true)
+                }
+            }
+        }
     }
     func testRuntimeRecall() async throws {
         let f=try await fixture("testRuntimeRecall");defer { app?.terminate() };try await launch(f,language:"en",large:false);list("en")

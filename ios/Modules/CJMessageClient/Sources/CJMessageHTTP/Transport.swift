@@ -467,6 +467,8 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         config.httpCookieStorage = nil; config.urlCache = nil; config.urlCredentialStorage = nil
         config.timeoutIntervalForRequest = requestTimeout; config.timeoutIntervalForResource = resourceTimeout
         #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+        // Keep the original local request pending while iOS obtains network consent (TN3179).
+        config.waitsForConnectivity = true
         let delegate = try RedirectBlocker.localDeviceConfiguration()
         #else
         let delegate = RedirectBlocker()

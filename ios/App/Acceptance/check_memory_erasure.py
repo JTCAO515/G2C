@@ -78,12 +78,12 @@ def main():
         sources+=list((ROOT/'ios/Modules'/module/'Sources').rglob('*.swift'))
     report=dict(status='RUNNING',source_status='UNRUN',native='UNRUN',head=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
         backend_head=args.backend_head,cases={},source_hashes={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sources},
-        unrun=['physical device/VoiceOver','real accounts/cloud/providers/fees/backups'])
+        unrun=['physical device','real accounts/cloud/providers/fees/backups'])
     def save():(output/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
     if tls:report.update(layer='signed approved iPhone/local pinned HTTPS/private PG/canonical erasure host',
         raw_native_bundle_shareable=False,build_inputs_shareable=False,
-        device_font_scope='actual system maximum throughout case; original simulator transition remains separate',
-        unrun=['VoiceOver','actual system font setting record','in-place system-font transition','real accounts/cloud/providers/fees/backups'])
+        device_font_scope='system default font; no size override',
+        unrun=['real accounts/cloud/providers/fees/backups'])
     save();secrets=[];server=None;control=None;thread=None;native=None;control_token=None;original_size=None;executing_case=None;active={'case':None};lock=threading.Lock();observations={}
     suite_complete=False
     try:
@@ -208,8 +208,7 @@ def main():
                         elif path.path=='/size':
                             size='large' if query['value']=='standard' else 'accessibility-extra-extra-extra-large'
                             assert query['value'] in ('standard','max')
-                            if not tls:subprocess.run(['xcrun','simctl','ui',args.simulator,'content_size',size],env=env,check=True)
-                            value={'status':'actual system maximum throughout case' if tls else 'configured'}
+                            value={'status':'system default font; no size mutation'}
                         elif path.path=='/observed-save':
                             with lock:value={'item_id':observations[active['case']]['saved'][-1]['receipt']['item_id']}
                         elif path.path=='/local-proof':value=local_proof(active['case'])
@@ -224,7 +223,6 @@ def main():
                     authenticated_control(Control,control_token,stage_input,lambda: executing_case) if tls else Control)
                 if tls:tls.secure_http_server(control)
                 threading.Thread(target=control.serve_forever,daemon=True).start()
-                if not tls:original_size=subprocess.check_output(['xcrun','simctl','ui',args.simulator,'content_size'],env=env,text=True).strip()
                 spec=importlib.util.spec_from_file_location('erasure_builder',ROOT/'scripts/check_ios_trip_confirm.py');module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
                 builder=object.__new__(module.XCTestDriver);builder.directory=(device_project_root if tls else output)/'project';builder.directory.mkdir();builder.write_project(0)
                 control_url=('https://'+tls.host if tls else 'http://127.0.0.1')+':'+str(control.server_port)
@@ -300,7 +298,6 @@ def main():
                             report['status']='FAIL';save();raise AssertionError('control credential in evidence export')
                 if thread and thread.is_alive():
                     report['status']='FAIL';save();raise RuntimeError('erasure host did not stop')
-            if original_size:subprocess.run(['xcrun','simctl','ui',args.simulator,'content_size',original_size],env=env,check=True)
             if args.prepare_only and report['source_status']=='PASS':report.update(pg_stopped=True,task_credentials_destroyed=True)
             save()
             if suite_complete:

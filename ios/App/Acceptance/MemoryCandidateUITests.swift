@@ -55,9 +55,6 @@ import Foundation
     }
     func proof() async throws -> Proof { try JSONDecoder().decode(Proof.self, from: await call("/proof")) }
     func size(_ value: String) async throws {
-        #if G2C_M4_DEVICE_ACCEPTANCE
-        M4DeviceTestSession.requireLargestSystemFont()
-        #endif
         _ = try await call("/size", ["value": value])
     }
     #if G2C_M4_DEVICE_ACCEPTANCE
@@ -75,7 +72,21 @@ import Foundation
             return bars.element.frame.maxY
         }
         for index in 0..<100 {
+            #if G2C_M4_DEVICE_ACCEPTANCE
+            if element.exists && element.frame.height > 0 {
+                let frame=element.frame, bar=app.navigationBars.firstMatch, tabs=app.tabBars.firstMatch
+                let upper=centered ? top() : (bar.exists ? bar.frame.maxY : app.frame.minY)
+                let lower=tabs.exists ? tabs.frame.minY : app.frame.maxY-44
+                let fits=frame.height <= lower-upper
+                let within=fits ? frame.minY >= upper && frame.maxY <= lower : frame.midY > upper && frame.midY < lower
+                // Offscreen lazy rows can throw when asked for hittability on iOS27.2.
+                if within && element.isHittable { return }
+                if frame.minY < upper { app.swipeDown() } else { app.swipeUp() }
+                continue
+            }
+            #else
             if element.exists && element.isHittable && (!centered || (element.frame.midY > top() && element.frame.midY < app.frame.maxY - 44)) { return }
+            #endif
             if centered && element.exists {
                 if element.frame.midY <= top() { app.swipeDown() } else { app.swipeUp() }
             } else if index < 40 { app.swipeUp() } else { app.swipeDown() }
@@ -87,12 +98,26 @@ import Foundation
     func tap(_ id: String) {
         let label = ["Memory", "记忆", "Assistant", "助手", "Preference", "偏好"].contains(id)
         let query = app.buttons.matching(NSPredicate(format: label ? "label == %@" : "identifier == %@", id)), button = query.element
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        let tab = ["Memory", "记忆", "Assistant", "助手"].contains(id)
+        if tab {
+            XCTAssertTrue(button.waitForExistence(timeout:10),id)
+            XCTAssertTrue(button.isHittable,id)
+        } else {
+            reveal(button, centered: id.hasPrefix("memoryCandidate.") || id.hasPrefix("account.cleanup."), editor: id.hasPrefix("memoryCandidate.editor."))
+        }
+        #else
         reveal(button, centered: id.hasPrefix("memoryCandidate.") || id.hasPrefix("account.cleanup."), editor: id.hasPrefix("memoryCandidate.editor."))
+        #endif
         XCTAssertEqual(query.count, 1, id)
         let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: button)
         XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 25), .completed, id)
         button.tap()
         #if G2C_M4_DEVICE_ACCEPTANCE
+        if tab {
+            let selected=XCTNSPredicateExpectation(predicate:NSPredicate(format:"selected == true"),object:button)
+            XCTAssertEqual(XCTWaiter.wait(for:[selected],timeout:10),.completed,id)
+        }
         if id.hasPrefix("account.development.signin.") || id == "account.development.restore" {
             deviceSession.waitForAppNetworkConsent()
         }

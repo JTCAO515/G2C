@@ -15,7 +15,6 @@ import Foundation
         var url = try XCTUnwrap(URLComponents(string: control + path))
         url.queryItems = values.merging(["case": fixture.case_id]) { _, new in new }.map { URLQueryItem(name: $0.key, value: $0.value) }
         #if G2C_M4_DEVICE_ACCEPTANCE
-        if path == "/size" { M4DeviceTestSession.requireLargestSystemFont() }
         let (data, response) = try await deviceSession.data(from: XCTUnwrap(url.url))
         #else
         let (data, response) = try await URLSession.shared.data(from: XCTUnwrap(url.url))
@@ -41,17 +40,35 @@ import Foundation
     func tap(_ id: String) {
         let query = app.buttons.matching(identifier: id)
         let target = query.element
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        let fixed=["Memory","记忆","Trips","行程","Assistant","助手"].contains(id)
+        if fixed {XCTAssertTrue(target.waitForExistence(timeout:10),id)}
+        else {deviceSession.revealControl(target,in:app)}
+        #else
         for _ in 0..<35 {
             if target.exists && target.isHittable { break }
             if target.exists && target.frame.midY < app.navigationBars.element.frame.maxY { app.swipeDown() }
             else { app.swipeUp() }
         }
+        #endif
         XCTAssertEqual(query.count, 1, id)
         XCTAssertTrue(target.isHittable, id)
         let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: target)
         XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 20), .completed, id)
-        target.tap()
         #if G2C_M4_DEVICE_ACCEPTANCE
+        if id == "offline.sync" {
+            print("M4_OFFLINE_SYNC_TARGET",target.frame)
+            let shot=XCTAttachment(screenshot:app.screenshot());shot.name="offline-sync-before-touch";shot.lifetime = .keepAlways;add(shot)
+        }
+        target.coordinate(withNormalizedOffset:CGVector(dx:0.5,dy:0.5)).tap()
+        #else
+        target.tap()
+        #endif
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        if fixed {
+            let selected=XCTNSPredicateExpectation(predicate:NSPredicate(format:"selected == true"),object:target)
+            XCTAssertEqual(XCTWaiter.wait(for:[selected],timeout:10),.completed,id)
+        }
         if id.hasPrefix("account.development.signin.") || id == "account.development.restore" {
             deviceSession.waitForAppNetworkConsent()
         }
@@ -62,7 +79,6 @@ import Foundation
         app?.terminate(); app = XCUIApplication(bundleIdentifier: "space.go2china.offline-trip.acceptance")
         app.launchArguments = ["-cj.ui.language.v1", language]
         #if G2C_M4_DEVICE_ACCEPTANCE
-        M4DeviceTestSession.requireLargestSystemFont()
         let accountsJSON = "{}"
         if choices { try await deviceSession.stageAccounts(caseID: f.case_id) }
         #else
@@ -84,6 +100,9 @@ import Foundation
         if !app.staticTexts["account.development.status"].exists { tap("memory.account") }
     }
     func signed(_ f: Fixture, as key: String = "A") {
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        deviceSession.requireAccount(f.subjects[key]!,in:app)
+        #endif
         let value = app.staticTexts["account.development.status"]
         let expected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", f.subjects[key]!), object: value)
         XCTAssertEqual(XCTWaiter.wait(for: [expected], timeout: 20), .completed)
@@ -99,7 +118,12 @@ import Foundation
         let status = app.staticTexts["offline.sync.status"]
         let saved = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@",
             "Offline snapshot saved from this successful formal-trip read."), object: status)
-        XCTAssertEqual(XCTWaiter.wait(for: [saved], timeout: 25), .completed, status.label)
+        let result=XCTWaiter.wait(for:[saved],timeout:25)
+        if result != .completed {
+            let shot=XCTAttachment(screenshot:app.screenshot());shot.name="offline-sync-unconfirmed";shot.lifetime = .keepAlways;add(shot)
+            let tree=XCTAttachment(string:app.debugDescription);tree.name="offline-sync-unconfirmed-tree";tree.lifetime = .keepAlways;add(tree)
+        }
+        XCTAssertEqual(result,.completed,status.label)
         app.navigationBars.buttons.element(boundBy: 0).tap()
     }
     @discardableResult func openCache(_ record: Record, language: String = "en") -> Snapshot {

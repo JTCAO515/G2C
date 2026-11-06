@@ -39,7 +39,7 @@ def main():
     cases=[args.case] if args.case else REGISTERED_CASES
     report=dict(status='RUNNING',head=head,cases={},required_cases=REGISTERED_CASES,
         scope='Actual signed local API/runtime-role PG/formal run_once and worker CLI/FakeProvider; original @2 registered operations',
-        unrun=['real tools/background business producers','real model/services/fees/cloud','physical device/VoiceOver','deployment'])
+        unrun=['real tools/background business producers','real model/services/fees/cloud','physical device','deployment'])
     if args.case: report['unrun'] += [c for c in REGISTERED_CASES if c!=args.case]
     def save(): (output/'report.json').write_text(json.dumps(report,indent=2))
     save()

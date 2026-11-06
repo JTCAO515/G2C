@@ -115,17 +115,27 @@ import UIKit
             if tabBar.exists && tabBar.isHittable { bottom=min(bottom,tabBar.frame.minY) }
             let header=app.otherElements.matching(identifier:"assistant.header").firstMatch
             let composer=app.otherElements.matching(identifier:"assistant.composer").firstMatch
-            if !navigation.exists && !["assistant.draft","assistant.send","assistant.intent"].contains(id) && header.exists && composer.exists {
+            if !navigation.exists && !["assistant.draft","assistant.send"].contains(id) && header.exists && composer.exists {
                 top=max(top,header.frame.maxY+8);bottom=min(bottom,composer.frame.minY)
             }
             let frame=element.exists ? element.frame : .zero
-            if id.hasPrefix("planning.") && attempt % 10 == 0 { print("PLANNING_VIEWPORT",id,frame,top,bottom,element.exists,navigation.exists) }
-            if element.exists && element.isHittable && frame.midY>top && frame.midY<bottom { return element }
+            if (id.hasPrefix("planning.") || id == "trip.manual.prepare" || id == "assistant.intent") && attempt % 10 == 0 { print("CONTROL_VIEWPORT",id,frame,top,bottom,element.exists,navigation.exists) }
+            let fits=frame.height<=bottom-top
+            let inViewport=fits ? frame.minY>=top && frame.maxY<=bottom : frame.midY>top && frame.midY<bottom
+            if element.exists && element.isHittable && inViewport { return element }
             let located = !frame.isEmpty && frame.minY.isFinite && frame.maxY.isFinite
-            let down=located ? frame.midY<=top : attempt>=35
+            let down=located ? (fits ? frame.minY<top : frame.midY<=top) : attempt>=35
             let middle=(top+bottom)/2,step=min(150,(bottom-top)*0.35)
-            let start=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:largestFont && !mapViewport ? app.frame.width*0.85 : app.frame.width-6,dy:middle+(down ? -step : step)))
-            let end=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:largestFont && !mapViewport ? app.frame.width*0.85 : app.frame.width-6,dy:middle+(down ? step : -step)))
+            #if G2C_M4_DEVICE_ACCEPTANCE
+            // Native multiline fields consume drags inside their content.
+            // Use the form's empty gutter to scroll the enclosing page.
+            let editableForm=id.hasPrefix("trip.manual.")
+            #else
+            let editableForm=false
+            #endif
+            let x=largestFont && !mapViewport && !editableForm ? app.frame.width*0.85 : app.frame.width-6
+            let start=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:x,dy:middle+(down ? -step : step)))
+            let end=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:x,dy:middle+(down ? step : -step)))
             start.press(forDuration:0.05,thenDragTo:end)
         }
         capture("not-visible-"+id)
@@ -167,14 +177,12 @@ import UIKit
     private func launch(_ f:Fixture,language:String,large:Bool=false,restore:Bool=false,timezone:String?=nil) throws {
         #if G2C_M4_DEVICE_ACCEPTANCE
         largestFont=UIApplication.shared.preferredContentSizeCategory.isAccessibilityCategory
-        if large { M4DeviceTestSession.requireLargestSystemFont() }
         #else
         largestFont=large
         #endif
         app?.terminate();app=XCUIApplication(bundleIdentifier:bundle)
         app.launchArguments=["-cj.ui.language.v1",language]
         #if !G2C_M4_DEVICE_ACCEPTANCE
-        if large { app.launchArguments += ["-UIPreferredContentSizeCategoryName","UICTContentSizeCategoryAccessibilityXXXL"] }
         #endif
         app.launchEnvironment=["OS_ACTIVITY_MODE":"disable","G2C_DEV_ACCOUNT_MODE":"1","G2C_DEV_API_BASE_URL":f.endpoint,
             "G2C_DEV_ACCOUNTS":restore || f.device_host != nil ? "{}" : String(data:try JSONEncoder().encode(f.accounts),encoding:.utf8)!,"G2C_DEV_MESSAGE_PROFILE":"trip-edit-v1",
@@ -234,9 +242,16 @@ import UIKit
             return multiline.exists ? multiline : app.textFields.matching(identifier:id).firstMatch
         }
         let field=visible({input()},id:id)
-        XCTAssertTrue(field.isEnabled && field.isHittable);field.tap();field.press(forDuration:1.1)
+        XCTAssertTrue(field.isEnabled && field.isHittable);field.tap()
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        field.coordinate(withNormalizedOffset:CGVector(dx:0.95,dy:0.95)).tap()
+        M4DeviceTestSession.clearFocusedTextWithKeyboard(field)
+        #else
+        field.press(forDuration:1.1)
         let selection=app.descendants(matching:.any).matching(NSPredicate(format:"label IN %@",["Select All","全选"])).firstMatch
-        XCTAssertTrue(selection.waitForExistence(timeout:5));selection.tap();field.typeText(value)
+        XCTAssertTrue(selection.waitForExistence(timeout:5));selection.tap()
+        #endif
+        field.typeText(value)
         XCTAssertEqual(input().value as? String,value);tap("trip.manual.keyboard.done")
     }
     func testFormalPlaceMapEnglish() async throws { try await formalPlaceMap("testFormalPlaceMapEnglish",large:false) }
@@ -651,12 +666,29 @@ import UIKit
         try launch(f,language:"en");conversation(f)
         tap("assistant.travelContext");tap("travel.selection."+f.namespace);tap("assistant.panel.done")
         func setPlanningIntent(_ enabled:Bool) {
-            let toggle=visible({app.switches.matching(identifier:"assistant.intent").firstMatch},id:"assistant.intent")
+            let named=visible({app.switches.matching(identifier:"assistant.intent").firstMatch},id:"assistant.intent")
+            #if G2C_M4_DEVICE_ACCEPTANCE
+            let controls=named.switches
+            print("M4_PLANNING_SWITCH",named.frame,named.value as Any,"children",controls.count)
+            XCTAssertEqual(controls.count,1,"The named intent row must contain its actual switch")
+            let toggle=controls.element(boundBy:0)
+            #else
+            let toggle=named
+            #endif
             XCTAssertTrue(toggle.isEnabled && toggle.isHittable)
             XCTAssertEqual(toggle.value as? String,enabled ? "0" : "1")
+            #if G2C_M4_DEVICE_ACCEPTANCE
+            toggle.tap()
+            #else
             toggle.coordinate(withNormalizedOffset:CGVector(dx:0.95,dy:0.5)).tap()
+            #endif
             let changed=XCTNSPredicateExpectation(predicate:NSPredicate(format:"value == %@",enabled ? "1" : "0"),object:toggle)
-            XCTAssertEqual(XCTWaiter.wait(for:[changed],timeout:5),.completed)
+            let outcome=XCTWaiter.wait(for:[changed],timeout:5)
+            if outcome != .completed {
+                capture("planning-switch-not-changed")
+                let tree=XCTAttachment(string:app.debugDescription);tree.name="planning-switch-tree";tree.lifetime = .keepAlways;add(tree)
+            }
+            XCTAssertEqual(outcome,.completed)
         }
         setPlanningIntent(true)
         enter("SYNTHETIC Plan using my explicit saved requirements / 使用已保存需求",language:"en")
@@ -675,10 +707,12 @@ import UIKit
         XCTAssertFalse(app.buttons.matching(identifier:"scoped.accept").firstMatch.exists)
         capture(name+"-original-planning-run");try audit(name+"-published")
         tap("Memory")
-        for _ in 0..<3 {
-            if app.buttons.matching(identifier:"memory.language").firstMatch.exists { break }
-            let back=app.navigationBars.buttons.firstMatch;XCTAssertTrue(back.exists);back.tap()
+        let accountPage=app.navigationBars.matching(identifier:"Account").firstMatch
+        if accountPage.waitForExistence(timeout:2) {
+            XCTAssertEqual(accountPage.buttons.count,1,"The account navigation bar has one back control")
+            accountPage.buttons.element(boundBy:0).tap()
         }
+        XCTAssertTrue(app.navigationBars.matching(identifier:"Memory").firstMatch.waitForExistence(timeout:10))
         tap("memory.language");tap("简体中文");tap("助手")
         text("run.display.status",contains:"已完成");text("run.draft.status",contains:"已记录草稿候选，尚非正式行程")
         _ = try await call("/manual-save-proof",caseID:name)
@@ -742,6 +776,7 @@ import UIKit
             tap("planning.originals")
             let query=visible({app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@","planning.query.")).firstMatch},id:"planning.original.query")
             XCTAssertTrue(query.isEnabled && query.isHittable);query.tap()
+            capture(name+"-original-query-dispatched")
             if let invalidation {
                 text("planning.activity",contains:invalidation=="compete" ? "Conflict" : "UNKNOWN")
                 XCTAssertFalse(textElement("planning.receipt").exists)

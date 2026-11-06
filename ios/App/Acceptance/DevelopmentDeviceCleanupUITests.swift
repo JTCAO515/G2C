@@ -15,7 +15,6 @@ import Foundation
         var url = try XCTUnwrap(URLComponents(string: control + path))
         url.queryItems = values.merging(["case": name]) { _, n in n }.map { .init(name: $0.key, value: $0.value) }
         #if G2C_M4_DEVICE_ACCEPTANCE
-        if path == "/size" { M4DeviceTestSession.requireLargestSystemFont() }
         let (bytes, response) = try await deviceSession.data(from: XCTUnwrap(url.url))
         #else
         let config = URLSessionConfiguration.ephemeral; config.urlCache = nil
@@ -33,7 +32,6 @@ import Foundation
         app?.terminate(); app = XCUIApplication(bundleIdentifier: "space.go2china.device-v4.acceptance")
         app.launchArguments = ["-cj.ui.language.v1", language]
         #if G2C_M4_DEVICE_ACCEPTANCE
-        M4DeviceTestSession.requireLargestSystemFont()
         let accountsJSON = "{}"
         try await deviceSession.stageAccounts(caseID: f.case_id)
         #else

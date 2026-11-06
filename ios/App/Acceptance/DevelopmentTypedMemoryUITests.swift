@@ -58,6 +58,17 @@ import Foundation
         if id.hasPrefix("account.development.signin.") || id == "account.development.restore" {
             deviceSession.waitForAppNetworkConsent()
         }
+        if ["Memory","记忆"].contains(id) {
+            // Tab selection can restore the Account page retained by this tab.
+            // Return through its exact back control before using Memory-root actions.
+            let account=app.navigationBars.matching(identifier:localized("Account","账号")).firstMatch
+            if account.waitForExistence(timeout:2) {
+                XCTAssertEqual(account.buttons.count,1)
+                let back=account.buttons.element(boundBy:0)
+                XCTAssertTrue(back.isEnabled && back.isHittable);back.tap()
+                XCTAssertTrue(app.navigationBars.matching(identifier:localized("Memory","记忆")).firstMatch.waitForExistence(timeout:10))
+            }
+        }
         #endif
     }
     private func input(_ id: String,_ text: String) {
@@ -74,12 +85,13 @@ import Foundation
         XCTAssertEqual(Array((field.value as? String ?? "").utf8),Array(text.utf8))
     }
     private func text(_ id: String,contains expected: String) {
-        let label = app.staticTexts.matching(identifier:id).firstMatch
+        let answer = id == "run.display.text" || id == "run.stream.text"
+        let label = answer ? app.textViews.matching(identifier:id).firstMatch : app.staticTexts.matching(identifier:id).firstMatch
         // Form sections are lazy, including the original-result footer. Read
         // actual visible content rather than relying on an offscreen snapshot.
         reveal(label,id:id)
         XCTAssertTrue(label.waitForExistence(timeout:15),id)
-        let value = XCTNSPredicateExpectation(predicate:NSPredicate(format:"label CONTAINS %@",expected),object:label)
+        let value = XCTNSPredicateExpectation(predicate:NSPredicate(format:answer ? "value CONTAINS %@" : "label CONTAINS %@",expected),object:label)
         let result = XCTWaiter.wait(for:[value],timeout:30)
         if result != .completed {
             let image = XCTAttachment(screenshot:app.screenshot());image.name = "failed-" + id;image.lifetime = .keepAlways;add(image)
@@ -91,9 +103,7 @@ import Foundation
         XCTAssertTrue(target.waitForExistence(timeout:10));XCTAssertTrue(target.isHittable);target.tap()
     }
     private func prepare() async throws -> Fixture {
-        let (data,response) = try await URLSession.shared.data(from:XCTUnwrap(URL(string:control + "/prepare")))
-        XCTAssertEqual((response as? HTTPURLResponse)?.statusCode,200)
-        return try JSONDecoder().decode(Fixture.self,from:data)
+        return try JSONDecoder().decode(Fixture.self,from:await call("/prepare"))
     }
     private func reviewSave(_ value: String,scope: String) {
         tap("memory.add");tap("memory2.manual.option")
@@ -156,10 +166,8 @@ import Foundation
         app?.terminate();app = XCUIApplication(bundleIdentifier:"space.go2china.typed-memory.acceptance")
         app.launchArguments = ["-cj.ui.language.v1",chinese ? "zh-Hans" : "en"]
         #if G2C_M4_DEVICE_ACCEPTANCE
-        if chinese { M4DeviceTestSession.requireLargestSystemFont() }
         let accountsJSON = "{}"
         #else
-        if chinese {app.launchArguments += ["-UIPreferredContentSizeCategoryName","UICTContentSizeCategoryAccessibilityXXXL"]}
         let accountsJSON = restore ? "{}" : String(data:try JSONEncoder().encode(fixture.accounts),encoding:.utf8)!
         #endif
         app.launchEnvironment = ["OS_ACTIVITY_MODE":"disable","G2C_DEV_ACCOUNT_MODE":"1",
@@ -180,6 +188,9 @@ import Foundation
         tap("memory.account")
         if restore {tap("account.development.restore")}
         else {tap("account.development.signout");tap("account.development.signin.A")}
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        deviceSession.requireAccount(fixture.subjects["A"]!,in:app)
+        #endif
         text("account.development.status",contains:fixture.subjects["A"]!)
         let ready = app.buttons.matching(identifier:legacy ? "Load groups" : "memory2.items.open").firstMatch
         for _ in 0..<12 {
@@ -435,8 +446,7 @@ import Foundation
         let value = "中文本次偏好 / 安静房间 e\u{301}"
         save(value,scope:"Selected travel / 所选旅行")
         tap("memory2.items.open");tap("memory2.items.read")
-        let (data,response) = try await URLSession.shared.data(from:XCTUnwrap(URL(string:control + "/items")))
-        XCTAssertEqual((response as? HTTPURLResponse)?.statusCode,200)
+        let data = try await call("/items")
         let ids = try JSONDecoder().decode([String:String].self,from:data)
         tap("memory2.item." + (try XCTUnwrap(ids["travel"])));tap("memory2.detail.read")
         text("memory2.detail.text",contains:value);text("memory2.detail.scope",contains:fixture.travel_ids[0])
@@ -455,8 +465,7 @@ import Foundation
         text("travel.selection.status",contains:fixture.travel_ids[0]);tap("assistant.panel.done");tap("Memory")
         save("Travel A quiet room / 本次A安静房间",scope:"Selected travel / 所选旅行")
         tap("memory2.items.open");tap("memory2.items.read")
-        let (data,response) = try await URLSession.shared.data(from:XCTUnwrap(URL(string:control + "/items")))
-        XCTAssertEqual((response as? HTTPURLResponse)?.statusCode,200)
+        let data = try await call("/items")
         let ids = try JSONDecoder().decode([String:String].self,from:data)
         let id = try XCTUnwrap(ids["travel"])
         tap("memory2.item." + id);tap("memory2.detail.read")
@@ -487,8 +496,7 @@ import Foundation
         // The reopened client must query original save/lifecycle receipts before
         // a fresh save; navigating away does not erase verified completions.
         tap("Memory");tap("memory.manage.openOriginals");tap("memory2.originals.read")
-        let (originalData,originalResponse) = try await URLSession.shared.data(from:XCTUnwrap(URL(string:control + "/originals")))
-        XCTAssertEqual((originalResponse as? HTTPURLResponse)?.statusCode,200)
+        let originalData = try await call("/originals")
         let originals = try JSONDecoder().decode([String:[String]].self,from:originalData)
         for original in try XCTUnwrap(originals["saves"]) {tap("memory2.original.query." + original);text("memory2.save.status",contains:"Saved.")}
         for original in try XCTUnwrap(originals["management"]) {tap("memory2.action.query." + original);text("memory2.manage.status",contains:"Original receipt verified")}

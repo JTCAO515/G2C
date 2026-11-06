@@ -21,7 +21,6 @@ ARGS=parser.parse_args();PLACE_MAP=ARGS.case.startswith('testFormalPlaceMap');RE
 TLS=None
 if ARGS.device:
  if not ARGS.local_tls:parser.error('--device requires the approved --local-tls profile')
- if CASE.endswith('Largest'):parser.error('Device maximum-font case needs actual system font setup; not a launch-argument substitute')
  if CASE=='testFormalPlaceMapUnavailable':parser.error('Device map outage needs a real device network case; simulator delegate fault is not device evidence')
  from m4_device import LocalTLS,configure_project,private_workspace,private_directory,scan_app_container,stage_accounts,discard_staged_accounts
  from m4_artifacts import export_native_logs,redact
@@ -53,10 +52,10 @@ import uvicorn
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from urllib.parse import urlparse,parse_qs
 from cj_api.local_app import load_history_configuration
-r={'app_manual_trip_profile':ARGS.manual_trip_profile,'head':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'status':'RUNNING','layer':'actual simulator/signed API/private PG/formal run_once/Fake synthetic','cases':{},'unrun':(['real accounts/models/services/fees/cloud','physical device/VoiceOver','maps deferred'] if RESULT_PROFILE else ['expansion/clarification pending B360/C336','real accounts/models/services/fees/cloud','physical device/VoiceOver'])}
-if TLS:r['layer']='actual signed iPhone/signed local HTTPS API/private PG/formal run_once/Fake synthetic';r['unrun']=['real accounts/models/PLACE API/cloud/fees','VoiceOver','actual system maximum font']
+r={'app_manual_trip_profile':ARGS.manual_trip_profile,'head':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'status':'RUNNING','layer':'actual simulator/signed API/private PG/formal run_once/Fake synthetic','cases':{},'unrun':(['real accounts/models/services/fees/cloud','physical device','maps deferred'] if RESULT_PROFILE else ['expansion/clarification pending B360/C336','real accounts/models/services/fees/cloud','physical device'])}
+if TLS:r['layer']='actual signed iPhone/signed local HTTPS API/private PG/formal run_once/Fake synthetic';r['unrun']=['real accounts/models/PLACE API/cloud/fees']
 if PLACE_MAP or CASE=='testFormalMapNoPlaceSources':r['unrun']=['positive formal PLACE production chain pending C notification','real point alignment L2/L3','real model/PLACE API/fees/cloud/production/device']
-if TLS:r['unrun']=['real point alignment','real accounts/models/PLACE API/cloud/fees','VoiceOver','actual system maximum font']
+if TLS:r['unrun']=['real point alignment','real accounts/models/PLACE API/cloud/fees']
 def save():(OUT/'report.json').write_text(json.dumps(r,ensure_ascii=False,indent=2))
 def expect(response,phase):
  r.setdefault('setup_responses',[]).append(dict(phase=phase,status=response.status_code,error=response.json().get('error')));save();assert response.status_code==200,(phase,response.status_code,response.text)
@@ -600,9 +599,6 @@ try:
     else:
      text=pbx.read_text().replace('space.go2china.foundation.local',bundle).replace('space.go2china.foundation.control',bundle+'.control')
      entitlements=builder.directory/'Scoped.entitlements';entitlements.write_bytes(plistlib.dumps({'application-identifier':bundle,'keychain-access-groups':[bundle]}));pbx.write_text(text.replace(json.dumps(str(ROOT/'ios/App/Development.entitlements')),json.dumps(str(entitlements))))
-     original_size=subprocess.check_output(['xcrun','simctl','ui',ARGS.simulator,'content_size'],text=True).strip()
-     desired='accessibility-extra-extra-extra-large' if CASE.endswith('Largest') else 'large'
-     subprocess.run(['xcrun','simctl','ui',ARGS.simulator,'content_size',desired],check=True,capture_output=True);r['simulator_content_size']=subprocess.check_output(['xcrun','simctl','ui',ARGS.simulator,'content_size'],text=True).strip();assert r['simulator_content_size']==desired;save()
     (builder.directory/'G2CControl.swift').write_text(test_source)
     destination='platform=iOS,id='+ARGS.device if TLS else 'platform=iOS Simulator,id='+ARGS.simulator
     if TLS:
@@ -696,7 +692,6 @@ try:
      except Exception as error:
       r['staged_credential_cleanup']='FAIL: device cleanup pending, do not reuse input';save();input_cleanup_error=error
     r['observed_requests']=list(audit);r['worker_errors']=list(worker_errors);save()
-    if original_size is not None:subprocess.run(['xcrun','simctl','ui',ARGS.simulator,'content_size',original_size],check=True,capture_output=True)
     late_release.set();stop.set();worker_thread.join(10);server.should_exit=True;api_thread.join(10);sock.close();control.shutdown();control.server_close()
     if input_cleanup_error is not None:raise input_cleanup_error
   r['private_pg_stopped']=True

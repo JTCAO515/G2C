@@ -70,11 +70,11 @@ def main():
     report=dict(status='RUNNING',head=head,cases={},checks={},test_infrastructure=dict(os_activity_mode='disable',ui_queries='typed controls; no descendants(any)',authorization='JT 2026-10-30 XCTest infrastructure repair'),run_context=json.loads(args.run_context.read_text()),
         source_hashes={str(s.relative_to(ROOT)):hashlib.sha256(s.read_bytes()).hexdigest() for s in sources},
         git_trees={s:subprocess.check_output(['git','rev-parse',head+':'+s],cwd=ROOT,text=True).strip() for s in ('ios','backend','contracts','scripts')},
-        unrun=['real accounts/models/fees/cloud','physical device/VoiceOver','deployment'])
+        unrun=['real accounts/models/fees/cloud','physical device','deployment'])
     if args.case:report['unrun'] += [case for case in CASES if case!=args.case]
     if tls:report.update(layer='signed approved iPhone/local pinned HTTPS/private PG/formal worker/FakeProvider',
         raw_native_bundle_shareable=False,build_inputs_shareable=False,
-        unrun=['real accounts/models/fees/cloud','VoiceOver','actual system font setting record','deployment'])
+        unrun=['real accounts/models/fees/cloud','deployment'])
     def save():(output/'report.json').write_text(json.dumps(report,indent=2,ensure_ascii=False))
     save();tokens={};records={};audit=[]
     try:

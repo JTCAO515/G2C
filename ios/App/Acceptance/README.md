@@ -2,7 +2,7 @@
 
 M4 的完整本机矩阵、正式构建身份与真机记录入口见
 [M4-ACCEPTANCE](M4-ACCEPTANCE.md)。指定真机的开发测试已获 M4 条目 1、2 授权，
-当前等 JT 连接通知；不能用模拟器 AX 代替 VoiceOver。
+指定设备按实时 #498/#29 执行；JT已取消最大字号与VoiceOver验收，保留默认字号、中英业务与完整.all AX。
 
 Run on an available iOS 17.5 simulator with Xcode's native XCTest input:
 
@@ -42,12 +42,12 @@ Release behavior, CJAuth and production write gates are unchanged.
 
 This verifies UI structure and local fixture behavior. It does not approve help,
 privacy or support wording (#159), prove real authentication/storage, or replace
-the separate accessibility/state suite below or real VoiceOver/device acceptance (L3 #29).
+the separate accessibility/state suite below or real device acceptance (L3 #29).
 
 ## Accessibility and state samples (#158)
 
 Use `--suite accessibility` for the ordinary App's complete system accessibility
-checks on the four roots and language selection in both languages, plus the labelled fixture's maximum text, assistant
+checks on the four roots and language selection in both languages, plus the labelled fixture's default text, assistant
 states, readonly Trip/memory states, long content and keyboard scenarios. Five
 XCTest methods must pass with no skips; keyboard cases type and retain mixed
 Chinese/English text in the Chinese UI and English text in the English UI:
@@ -71,10 +71,9 @@ client is also readonly. Loading responses wait for an explicit test release;
 all observed business requests must remain GETs. Assistant state and long-text
 samples are presentation data, not evidence of a real model or backend outcome.
 
-The physical VoiceOver listening, focus and activation checks remain UNRUN under
-L3 #29, linked from #7/#158 per ADR-0007. Apple states that VoiceOver is not
-available in Simulator; system accessibility audits do not replace it:
-[Apple accessibility testing](https://developer.apple.com/documentation/accessibility/performing-accessibility-testing-for-your-app).
+VoiceOver acceptance was removed by JT on 2026-11-05. Prior listening/focus/activation
+records are retained; cancellation is not PASS. The ordinary touch/keyboard paths
+and complete `.all` accessibility audits remain required.
 
 ## Message sending and recovery (#164)
 
@@ -133,7 +132,7 @@ CJ_PG_BINDIR='<PostgreSQL-17-bin>' uv run --locked python -B ios/App/Acceptance/
 
 Each named case remains PARTIAL_PASS until the complete required matrix is
 independently aggregated. Preserve every historical FAIL and xcresult. Real tools,
-real models/fees, cloud, physical VoiceOver/device and release remain separate.
+real models/fees, cloud, physical device and release remain separate.
 
 Complete matrix (23 named cases; each gets a fresh private DB and new subjects):
 
@@ -188,8 +187,8 @@ Boot an iOS 17.5 simulator, then run `check_shell_structure.py --suite account-d
 with its existing `--simulator`, `--output` and `--build-dir` arguments. The ordinary
 App checks both root/account entries and full AX in both languages. The labelled
 read-only fixture checks empty/failed memory and explanation content, then full
-`.all` AX at the actual system maximum content-size category. The harness restores
-the previous category afterward; it does not pin SwiftUI's size during the audit.
+`.all` AX at the system default content-size category. The harness does not override
+the system or SwiftUI font size (JT scope revision 2026-11-05).
 Fixtures prove layout only and issue no business writes.
 
 `check_development_accounts.py --suite account-deletion` uses the actual signed
@@ -206,7 +205,7 @@ acceptance is implied by these entry tests; those remain in #27/#32/#29.
 `CJ-LOCAL-RUN@2` context, external output/build directories and a committed head.
 It creates formal records through signed MESSAGE → unmodified worker/FakeProvider
 → signed Trip confirmation/act, then lets the actual App synchronize them.
-Four cases cover reopen/bilingual/system-maximum-font/full AX, expiry/rollback/
+Four cases cover reopen/bilingual/default-font/full AX, expiry/rollback/
 untrusted clocks and fresh renewal, local switch/logout, and temporary failures
 versus actual server invitation denial. App requests after setup must stay GET/HEAD;
 provider calls, original response hashes, unchanged/removed ciphertext and runtime
@@ -220,7 +219,7 @@ The opt-in is `G2C_DEV_OFFLINE_TRIP=last-sync-v1` with account mode. Test-only
 `G2C_DEV_OFFLINE_TIME_TRUSTED=0` inject clocks without a network clock source.
 They do not activate Release/real-device roots. The original account-cleanup
 operation/device receipt in box 4 stays UNRUN pending B; real device offline and
-VoiceOver remain #29. No handoff update is performed for this follow-up.
+device checks remain #29. No handoff update is performed for this follow-up.
 
 ## Feedback App acceptance (#15 / #430)
 
@@ -233,7 +232,7 @@ This supports B's notified candidate before merge without editing backend files.
 It uses actual account admission, App MESSAGE submission, unmodified worker with
 FakeProvider, signed feedback POST/original GET, and restricted runtime PG.
 Native cases cover opt-in message/run refs and independent Memory general refs,
-bilingual Chinese content, full `.all` AX and system maximum type size, post-commit
+bilingual Chinese content, full `.all` AX and system default type size, post-commit
 ACK loss/reopen/query without another POST, and a held original ACK across account
 switch. The response delivery faults are labelled; no successful receipt is
 manufactured. Own/foreign receipt/locator checks and source/content/token scans
@@ -254,7 +253,7 @@ No accepted message, permission, receipt or background job is injected into App.
 The six methods cover bilingual per-conversation default-off/manual-save isolation,
 explicit enable/disable, original UNKNOWN/reopen versus another device's current
 state, CAS conflict/fresh review, late ACK account switch, and read503 not becoming
-default off. Actual system maximum and unfiltered .all AX cover the policy and
+default off. System default font and unfiltered .all AX cover the policy and
 stopping/confirmation explanations. Worker job POST routes remain closed to App.
 
 Response delivery faults are labelled. Missing/uninitialized foreign history scopes
@@ -263,4 +262,4 @@ receipt or grant, and are not rewritten to null. The verifier also attempts sign
 foreign settings and action access. Every run checks original byte hashes, runtime
 role, zero organizer dispatch, source/head/clean equality and credentials/plaintext
 scans. OS_ACTIVITY_MODE=disable and exact native IDs/viewport-bounded drags remain.
-Real model quality, cloud, actual users and physical device/VoiceOver stay #32/#29.
+Real model quality, cloud, actual users and physical device stay #32/#29.

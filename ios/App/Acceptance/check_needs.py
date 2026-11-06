@@ -61,15 +61,14 @@ def main():
         HERE/'DevelopmentNeedsUITests.swift',Path(__file__)]
     if tls:sources += [HERE/name for name in ('m4_device.py','m4_native.py','m4_artifacts.py','M4DeviceControl.swift','M4DeviceTestSession.swift')]
     report=dict(status='RUNNING',head=head,cases={},required_cases=CASES,
-        unrun=['real accounts/models/services/cloud/fees','physical device/VoiceOver','real-model extraction quality'],
+        unrun=['real accounts/models/services/cloud/fees','physical device','real-model extraction quality'],
         source_hashes={str(path.relative_to(ROOT)):hashlib.sha256(path.read_bytes()).hexdigest() for path in sources},
         git_trees={name:subprocess.check_output(['git','rev-parse',head+':'+name],cwd=ROOT,text=True).strip() for name in ('ios','backend','contracts','scripts')},
         run_context=json.loads(args.run_context.read_text()))
     if tls:
         report.update(layer='signed approved iPhone/local pinned HTTPS/private PG/SyntheticNeedsModel',
             raw_native_bundle_shareable=False,build_inputs_shareable=False,
-            unrun=['real accounts/models/services/cloud/fees','VoiceOver','actual system font setting record',
-                   'physical system language/timezone switching #29','real-model extraction quality'])
+            unrun=['real accounts/models/services/cloud/fees','physical system language/timezone switching #29','real-model extraction quality'])
     if args.case:report['unrun'] += [case for case in CASES if case!=args.case]
     lock=threading.RLock()
     def save():

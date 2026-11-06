@@ -16,7 +16,7 @@ target=p.add_mutually_exclusive_group(required=True)
 target.add_argument('--simulator');target.add_argument('--device')
 p.add_argument('--local-tls',type=Path);p.add_argument('--prepare-only',action='store_true')
 p.add_argument('--output',type=Path,required=True);p.add_argument('--build-dir',type=Path,required=True)
-p.add_argument('--largest-recovery',action='store_true')
+p.add_argument('--chinese-recovery','--largest-recovery',dest='chinese_recovery',action='store_true',help='Chinese restart/original-query path; legacy alias retained, no font override')
 p.add_argument('--case',choices=['testNeedsManualTitleSave','testNeedsManualFixedRoundTrip','testNeedsManualTimeTextSave','testNeedsManualSaveACKLoss','testNeedsManualSaveConflict','testNeedsManualLateAccount','testNeedsManualPrepareCancellation','testNeedsManualCanonicalFixedRefusal','testNeedsManualInvalidWindow','testNeedsPlanningPrefix','testNeedsPlanningAccept','testNeedsPlanningReject','testNeedsPlanningACKLoss','testNeedsPlanningDiscoveryUnavailable','testNeedsPlanningStaleAccept','testNeedsPlanningConflict','testNeedsPlanningLateAccount','testNeedsPlanningInterruptedAccept','testNeedsPlanningManualComposition','testNeedsPlanningCurrentFixedAccept','testNeedsPlanningCurrentUnlockedReject','testNeedsPlanningOriginalsLargest','testNeedsPlanningCurrentFixedACKLoss'],required=True)
 a=p.parse_args();BACKEND=a.backend_root.resolve();OUT=a.output.resolve();BUILD=a.build_dir.resolve();CASE=a.case;PLANNING_PREFIX=CASE.startswith('testNeedsPlanning')
 TLS=None
@@ -27,7 +27,7 @@ if a.device:
  TLS=LocalTLS.load(a.local_tls)
  device_project_root,BUILD=private_workspace(OUT,BUILD)
 elif a.local_tls or a.prepare_only:p.error('Device options require --device')
-if a.largest_recovery and CASE!='testNeedsPlanningAccept':p.error('--largest-recovery applies to the existing source1 acceptance/recovery case only')
+if a.chinese_recovery and CASE!='testNeedsPlanningAccept':p.error('--chinese-recovery applies to the existing source1 acceptance/recovery case only')
 HISTORY_LARGEST=CASE=='testNeedsPlanningOriginalsLargest'
 CURRENT_REPLAN=CASE in ('testNeedsPlanningCurrentFixedAccept','testNeedsPlanningCurrentUnlockedReject','testNeedsPlanningCurrentFixedACKLoss')
 PLANNING_DECISION=CURRENT_REPLAN or CASE in ('testNeedsPlanningAccept','testNeedsPlanningReject','testNeedsPlanningACKLoss','testNeedsPlanningStaleAccept','testNeedsPlanningConflict','testNeedsPlanningInterruptedAccept','testNeedsPlanningManualComposition')
@@ -66,7 +66,7 @@ if TLS:
   cases={CASE:'UNRUN'},
   raw_native_bundle_shareable=False,build_inputs_shareable=False,
   unrun=['main backend delivery if pin unmerged','real services/models/fees/cloud',
-         'VoiceOver','actual system font setting record','physical system language/timezone switching #29'])
+         'physical system language/timezone switching #29'])
 if PLANNING_PREFIX:
  r['unrun']+=['source-input.2 main delivery until B378 merges' if CURRENT_REPLAN else 'source-input.2 formal replanning']
  if PLANNING_DECISION:r['verified_scope']='original NEEDS planning discovery/decision/recovery'
@@ -77,9 +77,9 @@ if PLANNING_PREFIX:
   r['verified_scope']='explicit MESSAGE-send.2 / original RUN published prefix only'
   r['unrun']+=['planning discovery/decision not exercised by prefix-only case']
 if HISTORY_LARGEST:
- r['verified_scope']='largest Chinese planning originals navigation only; zero App messages/model/Trip writes'
+ r['verified_scope']='Chinese planning originals navigation at system default font; zero App messages/model/Trip writes'
  r['unrun']+=['discovery/decision/recovery not exercised by navigation-only case']
-r['largest_recovery']=a.largest_recovery
+r['largest_recovery']=a.chinese_recovery
 def save():(OUT/'report.json').write_text(json.dumps(r,ensure_ascii=False,indent=2))
 def check(resp,phase):
  r['responses'].append(dict(phase=phase,status=resp.status_code,error=resp.json().get('error')));save();assert resp.status_code==200,(phase,resp.status_code,resp.text);return resp.json()
@@ -426,7 +426,7 @@ try:
       url=urlparse(self.path);assert parse_qs(url.query).get('case')==[CASE]
       if url.path=='/prepare':
        if TLS:native.stage()
-       value=dict(case_id=CASE,endpoint=endpoint,conversation='source',namespace=namespace['id'],accounts={} if TLS else tokens,subjects=subjects,formal_trips=[] if PLANNING_PREFIX else [dict(id=tid,title=formal['content']['title'],version=1,content_sha256=formal['content_sha256'],item_ids=[x['id'] for x in formal['content']['items']])],manual_profile=True,manual_only=not PLANNING_PREFIX,needs_planning=PLANNING_PREFIX,largest_recovery=a.largest_recovery,
+       value=dict(case_id=CASE,endpoint=endpoint,conversation='source',namespace=namespace['id'],accounts={} if TLS else tokens,subjects=subjects,formal_trips=[] if PLANNING_PREFIX else [dict(id=tid,title=formal['content']['title'],version=1,content_sha256=formal['content_sha256'],item_ids=[x['id'] for x in formal['content']['items']])],manual_profile=True,manual_only=not PLANNING_PREFIX,needs_planning=PLANNING_PREFIX,largest_recovery=a.chinese_recovery,
         device_host=TLS.host if TLS else None,device_port=str(sock.getsockname()[1]) if TLS else None)
       elif url.path=='/prefix-not-sent':value=prefix_not_sent()
       elif url.path=='/wait-planning-response':

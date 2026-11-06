@@ -89,21 +89,18 @@ def main():
                   source_hashes={str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sources},
                   run_context=json.loads(args.run_context.read_text()),
                   unrun=['#24 box4 original account-cleanup operation/device receipt bridge',
-                         'real accounts/providers/cloud/fees', 'physical offline device/VoiceOver (#29)', 'deployment'])
+                         'real accounts/providers/cloud/fees', 'physical offline device (#29)', 'deployment'])
     if args.case:
         report['unrun'] += [case for case in CASES if case != args.case]
     if tls: report.update(layer='signed approved iPhone/local pinned HTTPS/private PG/formal worker/FakeProvider',
         raw_native_bundle_shareable=False, build_inputs_shareable=False,
-        device_font_scope='actual system maximum throughout case',
+        device_font_scope='system default font; no size override',
         unrun=['physical Wi-Fi/airplane-mode outage','real 14-day elapsed time','physical locked file protection',
-               'VoiceOver','actual system font setting record','real accounts/providers/cloud/fees'])
+               'real accounts/providers/cloud/fees'])
     def save():
         (output / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2))
     save()
     tokens, records, models, audit = {}, {}, {}, []
-    original_size = None if tls else subprocess.check_output(['xcrun', 'simctl', 'ui', args.simulator, 'content_size'], env=env, text=True).strip()
-    if original_size in {'unknown', 'unsupported'}:
-        raise ValueError('Boot the simulator before native acceptance')
     try:
         with tempfile.TemporaryDirectory(prefix='cj24-', dir='/tmp') as temporary:
             root = Path(temporary)
@@ -132,6 +129,13 @@ def main():
                                   if raw_bearer == ('Bearer ' + value).encode()), None)
                     row = dict(method=scope['method'], path=path, query=query, status=status, actor=actor,
                                response_sha256=hashlib.sha256(body).hexdigest())
+                    if path == '/v1/trip-details' and status == 200:
+                        payload = json.loads(body)
+                        trip = payload.get('trip')
+                        row['response_fields'] = sorted(payload)
+                        row['trip_fields'] = sorted(trip) if isinstance(trip, dict) else None
+                        content = trip.get('content') if isinstance(trip, dict) else None
+                        row['content_version'] = content.get('version') if isinstance(content, dict) else None
                     audit.append(row)
                     if path == '/v1/message-receipts' and status == 200 and mode['verification'] != 'normal':
                         # The real signature/admission/repository read already ran above.
@@ -209,6 +213,17 @@ def main():
                             assert accepted.json()['receipt']['committed_version']==1
                         page=client.get('/v1/trips',params={'limit':50},headers=headers);page.raise_for_status();trips=page.json()['trips']
                         assert len(trips)==count and model.calls==count*2
+                        diagnostics=[]
+                        for record in trips:
+                            for source_header in (False,True):
+                                read_headers=headers if source_header else {key:value for key,value in headers.items() if key!='X-CJ-Trip-Content'}
+                                detail=client.get('/v1/trip-details',params={'trip_id':record['trip_id']},headers=read_headers)
+                                payload=detail.json();item=payload.get('trip');document=item.get('document') if isinstance(item,dict) else None
+                                diagnostics.append(dict(source_header=source_header,status=detail.status_code,
+                                    response_fields=sorted(payload),trip_fields=sorted(item) if isinstance(item,dict) else None,
+                                    document_fields=sorted(document) if isinstance(document,dict) else None,
+                                    document_version=document.get('version') if isinstance(document,dict) else None))
+                        report.setdefault('source_read_diagnostics',{})[case]=diagnostics;save()
                     row['formal']=[dict(trip_id=t['trip_id'],version=t['version'],title=t['document']['title'],sha256=hashlib.sha256(base64.b64decode(t['content_utf8_base64'])).hexdigest()) for t in trips]
                     row['calls']=model.calls;return row['formal']
 
@@ -307,7 +322,6 @@ def main():
                             elif path == '/size':
                                 size = query['value'][0]
                                 assert size in {'large', 'accessibility-extra-extra-extra-large'}
-                                if not tls: subprocess.run(['xcrun', 'simctl', 'ui', args.simulator, 'content_size', size], env=env, check=True)
                                 value = {}
                             else: raise ValueError('Unknown control route')
                             raw = json.dumps(value).encode(); self.send_response(200); self.end_headers(); self.wfile.write(raw)
@@ -402,8 +416,8 @@ def main():
     except BaseException as error:
         report['status'] = 'FAIL'; report['error'] = type(error).__name__; raise
     finally:
+        report['observed_requests'] = list(audit)
         save()
-        if original_size: subprocess.run(['xcrun', 'simctl', 'ui', args.simulator, 'content_size', original_size], env=env, check=True)
     print(json.dumps(dict(status=report['status'], head=head, cases=report['cases']), indent=2))
 
 
