@@ -5,6 +5,7 @@ import Foundation
     private let bundle = "space.go2china.needs.acceptance"
     private let control = "__FIXTURE_URL__"
     private var app: XCUIApplication!
+    private var expectedAccount: String!
     #if G2C_M4_DEVICE_ACCEPTANCE
     private lazy var deviceSession = M4DeviceTestSession(test: self, control: control)
     #endif
@@ -221,6 +222,7 @@ import Foundation
         continueAfterFailure = false; XCTAssertEqual(count,0)
     }
     private func launch(_ f: Fixture, language: String = "en", large: Bool = false, restore: Bool = false, timezone: String? = nil) async throws {
+        expectedAccount=f.subjects["A"]!
         app?.terminate(); app = XCUIApplication(bundleIdentifier:bundle)
         app.launchArguments = ["-cj.ui.language.v1",language]
         #if G2C_M4_DEVICE_ACCEPTANCE
@@ -268,7 +270,24 @@ import Foundation
         tap("needs.save"); text("needs.container.state",contains:language == "en" ? "Original action verified" : "原动作与历史版本已核对")
     }
     private func readDetails(_ version: Int) {
-        tap("needs.read"); tap("needs.detail.open"); text("needs.detail.version",contains:String(version))
+        tap("needs.read"); tap("needs.detail.open")
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        let account=app.navigationBars.matching(NSPredicate(format:"identifier IN %@",["Account","账号"]))
+        if !textElement("needs.detail.version").exists && account.firstMatch.exists {
+            // An observed resume replaced the verified root while this saved
+            // read was displayed. Reopen the same owner's read surface only;
+            // no sign-in, save, model or unknown original write is repeated.
+            print("M4_NEEDS_VERIFIED_ROOT_REPLACEMENT")
+            deviceSession.requireAccount(expectedAccount,in:app)
+            let assistant=app.tabBars.buttons.matching(NSPredicate(format:"label IN %@",["Assistant","助手"]))
+            XCTAssertEqual(assistant.count,1);XCTAssertTrue(assistant.element.isHittable)
+            assistant.element.tap();XCTAssertTrue(assistant.element.isSelected)
+            let panel=app.scrollViews.matching(identifier:"needs.content").firstMatch
+            if !panel.waitForExistence(timeout:2) {tap("assistant.needs")}
+            tap("needs.read");tap("needs.detail.open")
+        }
+        #endif
+        text("needs.detail.version",contains:String(version))
         XCTAssertFalse(field("needs.editor.statement").exists,"Reading the saved record folds the separate unsaved editor without discarding it")
     }
     private func normal(_ name: String, language: String, large: Bool) async throws {
