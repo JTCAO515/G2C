@@ -113,6 +113,23 @@ class OneUseInputTests(unittest.TestCase):
 
 
 class DeviceWorkspaceTests(unittest.TestCase):
+    def test_public_beta_app_does_not_bundle_the_control_server_pin(self):
+        spec=importlib.util.spec_from_file_location('m4_fixture_generator',ROOT/'scripts/check_ios_trip_confirm.py')
+        module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+        with tempfile.TemporaryDirectory() as directory:
+            builder=object.__new__(module.XCTestDriver);builder.directory=Path(directory);builder.write_project(0)
+            project=builder.directory/'G2CAcceptance.xcodeproj'
+            original_app_phase=next(line for line in (project/'project.pbxproj').read_text().splitlines() if line.startswith('000000000000000000000120 ='))
+            tls=SimpleNamespace(public_der=b'SYNTHETIC-PUBLIC-CERTIFICATE',team='SYNTHETIC1')
+            configure_project(project,tls,'https://192.168.1.1:1234','SYNTHETIC-CONTROL',
+                bundle='space.go2china.beta.acceptance',app_local_tls=False)
+            pbx=(project/'project.pbxproj').read_text()
+            app_phase=next(line for line in pbx.splitlines() if line.startswith('000000000000000000000120 ='))
+            control_phase=next(line for line in pbx.splitlines() if line.startswith('A00000000000000000000009 ='))
+            self.assertEqual(app_phase,original_app_phase)
+            self.assertIn('files = (E',control_phase)
+            self.assertNotIn('name = Production;',pbx)
+
     def test_implicit_build_and_generated_inputs_are_private(self):
         with tempfile.TemporaryDirectory() as directory:
             output=Path(directory)/'exports';output.mkdir()
