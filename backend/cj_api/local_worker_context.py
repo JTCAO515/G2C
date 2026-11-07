@@ -15,14 +15,24 @@ from cj_usage.registered_exit import RegisteredExit, MODEL_REGISTRY
 from .local_app import ISSUER, AUDIENCE, KEY_ID, scope_for, InvitedSubjects
 
 
-def checker_for(auth_dir,*,account_retired=None):
-    access=InvitedSubjects(auth_dir/'invited.json')
-    if account_retired is not None:
+def checker_factory_for(auth_dir):
+    invitations = InvitedSubjects(auth_dir / 'invited.json')
+    verifier = PyJWTVerifier(
+        JWTConfiguration(ISSUER, AUDIENCE, 'RS256', 0),
+        StaticPublicKeys({KEY_ID: VerificationKey('RS256', (auth_dir / 'public.pem').read_bytes())}),
+    )
+
+    def build(account_retired=None):
+        if account_retired is None:
+            return AdmissionChecker(verifier, invitations)
         from cj_auth.account_revocation import AccountRevocationAccess
-        access=AccountRevocationAccess(access,account_retired)
-    return AdmissionChecker(PyJWTVerifier(JWTConfiguration(ISSUER,AUDIENCE,'RS256',0),
-        StaticPublicKeys({KEY_ID:VerificationKey('RS256',(auth_dir/'public.pem').read_bytes())})),
-        access)
+        return AdmissionChecker(verifier, AccountRevocationAccess(invitations, account_retired))
+
+    return build
+
+
+def checker_for(auth_dir, *, account_retired=None):
+    return checker_factory_for(auth_dir)(account_retired)
 
 
 class LocalBudgetRouter:

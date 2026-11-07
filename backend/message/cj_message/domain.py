@@ -204,6 +204,14 @@ class Cursor:
     after: int
 
 
+def read_active_message(tx, message_id):
+    """Read under the caller's MESSAGE scope lock and validate the original chat."""
+    stored = tx.find(message_id)
+    if stored is not None:
+        tx.chat(stored.receipt.conversation_id, stored.receipt.generation)
+    return stored
+
+
 class Service:
     """Repository is pre-scoped by a future trusted AUTH composition root.
 
@@ -292,9 +300,7 @@ class Service:
     def query(self, message_id):
         with self.repository.transaction() as tx:
             tx.lock_scope()
-            old = tx.find(message_id)
-            if old is not None:
-                tx.chat(old.receipt.conversation_id, old.receipt.generation)
+            old = read_active_message(tx, message_id)
         # None means absent in this ledger; production retention policy still gates retry.
         return old
 

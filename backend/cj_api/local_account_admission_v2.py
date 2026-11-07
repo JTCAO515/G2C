@@ -20,8 +20,26 @@ def retired_for(database):
         owner=scope_for(principal.issuer,principal.subject)
         with database.connect(owner) as conn:
             row=conn.execute('SELECT public.cj_account_scope_current(%s)',(owner,)).fetchone()
-        if row not in ((True,),(False,)):raise CompositionUnavailable('account retirement state unavailable')
-        return Fact.NO if row[0] else Fact.YES
+        return _retirement_fact(row)
+    return retired
+
+
+def _retirement_fact(row):
+    if row not in ((True,), (False,)):
+        raise CompositionUnavailable('account retirement state unavailable')
+    return Fact.NO if row[0] else Fact.YES
+
+
+def retired_in_transaction(cursor, scope):
+    """Check fresh retirement state on the same locked, bound MESSAGE transaction."""
+    from .local_app import scope_for
+
+    def retired(principal):
+        if scope_for(principal.issuer, principal.subject) != scope:
+            raise CompositionUnavailable('account retirement scope changed')
+        cursor.execute('SELECT public.cj_account_scope_current(%s)', (scope,))
+        return _retirement_fact(cursor.fetchone())
+
     return retired
 
 

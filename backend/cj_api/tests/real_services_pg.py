@@ -1,6 +1,7 @@
 """Real PG/RUN/Meter with native HTTP fixtures; no live key/network/cost."""
 import asyncio,json,os,time
 from pathlib import Path
+from contextlib import contextmanager
 from datetime import datetime,timezone
 from unittest.mock import patch
 
@@ -24,7 +25,7 @@ from test_m4_real_services import turn_sse,KEY,NOW
 
 
 def exercise(auth,conninfo):
-    subjects=['m4-synthetic-'+v for v in ('ok','limit','unknown','malformed','late','permission','revoke','repeat','tail','tailbad','batch','batchfail','stop')]
+    subjects=['m4-synthetic-'+v for v in ('ok','limit','unknown','malformed','late','permission','revoke','repeat','tail','tailbad','batch','batchfail','stop','guard-unknown')]
     harness.dev_auth.init(auth,subjects)
     now=int(time.time());profiles={}
     for subject in subjects:
@@ -110,13 +111,75 @@ def exercise(auth,conninfo):
             return None,Writer()
         services=RealServices(model,KEY,frozenset(subjects));tools=RealTools(services)
         db=LocalDatabase(conninfo,run_context=profiles[subject][1])
-        with api(subject) as client,patch('cj_api.real_services.fetch_candidate',place):
+        opened = []
+        open_runtime = db._open_runtime_connection
+
+        def counted_checkout():
+            opened.append(None)
+            return open_runtime()
+
+        with api(subject) as client, patch('cj_api.real_services.fetch_candidate',place), patch.object(db,'_open_runtime_connection',counted_checkout):
             receipt=send(client,subject)
             before=len(tool_calls)
             if subject.endswith('late'):
                 with patch('cj_agent.provider.asyncio.open_connection',handshake):
-                    outcomes=run_worker.run_once(db,model,auth,tools_configuration=tools,real_services=services)
-            else:outcomes=run_worker.run_once(db,model,auth,tools_configuration=tools,real_services=services)
+                    outcomes=run_worker.run_once(db,model,auth,tools_configuration=tools,real_services=services,account_admission=True)
+            elif subject.endswith('guard-unknown'):
+                from cj_api.local_account_admission_v2 import retired_in_transaction
+                original_chunks = model._chunks
+                original_commit = psycopg.Connection.commit
+                active = False
+                scoped_connection = None
+                lost = False
+
+                @contextmanager
+                def last_guard(*args):
+                    nonlocal active
+                    active = True
+                    try:
+                        with original_chunks(*args) as chunks:
+                            yield chunks
+                    finally:
+                        active = False
+
+                def capture_retirement(cursor, scope):
+                    nonlocal scoped_connection
+                    if active:
+                        scoped_connection = cursor.connection
+                    return retired_in_transaction(cursor, scope)
+
+                def commit_with_lost_ack(connection):
+                    nonlocal lost
+                    original_commit(connection)
+                    if active and connection is scoped_connection:
+                        lost = True
+                        raise psycopg.OperationalError('synthetic guard commit acknowledgement lost')
+
+                from cj_message.domain import CommitUnknown as MessageCommitUnknown
+                before_models = len(model_calls)
+                with patch.object(model, '_chunks', last_guard), patch(
+                        'cj_api.local_account_admission_v2.retired_in_transaction', capture_retirement), patch.object(
+                        psycopg.Connection, 'commit', commit_with_lost_ack):
+                    try:
+                        run_worker.run_once(db,model,auth,tools_configuration=tools,real_services=services,account_admission=True)
+                    except MessageCommitUnknown:
+                        pass
+                    else:
+                        raise AssertionError('lost commit acknowledgement must remain unknown')
+                assert lost and len(model_calls) == before_models
+                original_attempts = budget.inspect()
+                assert [(row['kind'], row['state']) for row in original_attempts] == [('model','INTENT')]
+                with db.connect(scope_for(ISSUER,subject)) as connection:
+                    assert connection.execute('SELECT status FROM cj_run_record WHERE run_id=%s',
+                                              (receipt['run_id'],)).fetchone() == ('running',)
+                    assert connection.execute('SELECT acknowledged FROM cj_message_delivery WHERE run_id=%s',
+                                              (receipt['run_id'],)).fetchone() == (False,)
+                outcomes = run_worker.run_once(db,model,auth,tools_configuration=tools,real_services=services,account_admission=True)
+                assert [(outcome.run_id, outcome.status) for outcome in outcomes] == [(receipt['run_id'],'unknown')]
+                assert budget.inspect() == original_attempts and len(model_calls) == before_models
+            else:outcomes=run_worker.run_once(db,model,auth,tools_configuration=tools,real_services=services,account_admission=True)
+            if subject.endswith('ok'):
+                assert len(opened) <= 110, f'excessive worker database checkouts: {len(opened)}'
             if subject.endswith(('ok','stop')):
                 assert outcomes[0].status=='completed',(outcomes,budget.inspect(),model.calls,len(tool_calls))
                 assert model.calls==2 and len(tool_calls)==before+1
@@ -158,7 +221,7 @@ def exercise(auth,conninfo):
                 assert outcomes[0].status=='context_invalid' and model.calls==1 and len(tool_calls)==before
                 (auth/'invited.json').write_text(json.dumps(subjects))
             calls=model.calls
-            assert run_worker.run_once(db,model,auth,tools_configuration=tools,real_services=services)==[] and model.calls==calls
+            assert run_worker.run_once(db,model,auth,tools_configuration=tools,real_services=services,account_admission=True)==[] and model.calls==calls
         scope=scope_for(ISSUER,subject);account=ledger_scope_for(scope,profiles[subject][1].current.meter)
         with db.connect(scope) as conn:
             operations=conn.execute('SELECT operation_key,attempt_id FROM cj_run_metered_operation WHERE run_id=%s',(receipt['run_id'],)).fetchall()
