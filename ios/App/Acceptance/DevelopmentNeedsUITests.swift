@@ -24,8 +24,15 @@ import Foundation
         search.tap()
         search.typeText("Paris")
         let result = settings.staticTexts.matching(NSPredicate(format: "label IN %@ OR identifier == %@",
-            ["巴黎（法国）", "巴黎 (法国)", "巴黎", "Paris (France)", "Paris, France", "Paris"], destination))
-        try unique(result).tap()
+            ["巴黎（法国）", "巴黎 (法国)", "Paris (France)", "Paris, France"], destination))
+        // The search can briefly expose overlapping result views while it settles.
+        let ready = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            result.allElementsBoundByIndex.filter(\.isHittable).count == 1
+        }, object: nil)
+        guard XCTWaiter.wait(for: [ready], timeout: 12) == .completed else { throw Failure.unexpectedSettings }
+        let visible = result.allElementsBoundByIndex.filter(\.isHittable)
+        guard visible.count == 1 else { throw Failure.unexpectedSettings }
+        visible[0].tap()
         try verifyZone(destination)
         print("M4_SYSTEM_TIMEZONE_CHANGED zone=\(destination) automaticZone=0")
     }
