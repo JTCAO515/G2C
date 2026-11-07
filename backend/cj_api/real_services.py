@@ -13,7 +13,7 @@ from pathlib import Path
 import re
 from types import MappingProxyType
 
-from cj_agent.provider import DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,M4_NATIVE_TURN_PROFILE,ProviderUnknown,ProviderFailed
+from cj_agent.provider import DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,M4_NATIVE_TURN_PROFILE_V2,ProviderUnknown,ProviderFailed
 from cj_fact.contract_v1 import decode_query as fact_query
 from cj_fact.live_source import NOTICE_URL,WEATHER_URL,public_page,weather
 from cj_fact.policy import FactFailure
@@ -162,7 +162,7 @@ class RealTools:
             raise BudgetUnknown('M4 model registration mismatch')
         raw=canonical(dict(messages=messages,system=system,endpoint=M4_BASE,model=M4_MODEL,synthetic_only=True,
                            native_tools=self.native_tools if system==TOOL_SYSTEM else None,
-                           **({'native_turn_profile':M4_NATIVE_TURN_PROFILE,'external_tools_disabled':final_answer} if system==TOOL_SYSTEM else {})))
+                           **({'native_turn_profile':M4_NATIVE_TURN_PROFILE_V2,'external_tools_disabled':final_answer} if system==TOOL_SYSTEM else {})))
         inputs=json.loads(raw);metadata={}
         def bind(operation,guard):
             self.services.require_scope(operation.binding.scope)

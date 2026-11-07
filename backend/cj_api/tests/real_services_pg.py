@@ -8,7 +8,7 @@ import httpx
 import psycopg
 from fastapi.testclient import TestClient
 
-from cj_agent.provider import DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL
+from cj_agent.provider import DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,M4_TURN_FUNCTION_V2
 from cj_api.real_services import RealServices,RealTools
 from cj_api.local_app import LocalDatabase,app_from_environment,scope_for,ISSUER
 from cj_api.local_run_context import load_run_context
@@ -56,14 +56,14 @@ def exercise(auth,conninfo):
             model_calls.append(subject)
             if subject.endswith('unknown'):raise httpx.ReadTimeout('synthetic unknown')
             body=json.loads(request.content)
-            assert body['tool_choice']=={'type':'function','function':{'name':'m4_tool_turn'}}
+            assert body['tool_choice']=={'type':'function','function':{'name':M4_TURN_FUNCTION_V2}}
             assert 'response_format' not in body
             follow=any(m['role']=='tool' and 'tool_call_id' in m for m in body['messages'])
             if follow:
                 assistant=next(m for m in reversed(body['messages']) if m['role']=='assistant')
                 result=body['messages'][-1]
                 assert result['role']=='tool' and result['tool_call_id']==assistant['tool_calls'][0]['id']
-                assert assistant['tool_calls'][0]['function']['name']=='m4_tool_turn'
+                assert assistant['tool_calls'][0]['function']['name']==M4_TURN_FUNCTION_V2
                 prior=json.loads(assistant['tool_calls'][0]['function']['arguments'])
                 assert prior['calls'][0]['name']=='place_search'
                 assert json.loads(result['content'])['results'][0]['name']=='place_search'
@@ -73,7 +73,7 @@ def exercise(auth,conninfo):
                 if subject.endswith('ok'):assert assistant['content']=='Synthetic preface; checking the location.'
             if subject.endswith('revoke') and not follow:
                 (auth/'invited.json').write_text(json.dumps([s for s in subjects if s!=subject]))
-            payload=turn_sse(tool=not follow or subject.endswith('repeat')).replace('chatcmpl-synthetic','chatcmpl-synthetic-'+str(len(model_calls)))
+            payload=turn_sse(tool=not follow or subject.endswith('repeat'),compact=True).replace('chatcmpl-synthetic','chatcmpl-synthetic-'+str(len(model_calls)))
             if subject.endswith(('batch','batchfail')) and not follow:
                 event=json.loads(payload.splitlines()[0][6:]);call=event['choices'][0]['delta']['tool_calls'][0]
                 turn=json.loads(call['function']['arguments']);first=turn['calls'][0]
@@ -81,9 +81,9 @@ def exercise(auth,conninfo):
                 call['function']['arguments']=json.dumps(turn)
                 payload='data: '+json.dumps(event)+'\n\n'+'\n'.join(payload.splitlines()[2:])
             if subject.endswith(('tail','tailbad')):
-                final=body['tools'][0]['function']['parameters']['properties']['kind']['enum']==['answer']
+                final=set(body['tools'][0]['function']['parameters']['properties'])=={'answer'}
                 assert final==(sum(m['role']=='tool' for m in body['messages'])==7)
-                payload=turn_sse(tool=not final or subject.endswith('tailbad')).replace('chatcmpl-synthetic','chatcmpl-synthetic-'+str(len(model_calls)))
+                payload=turn_sse(tool=not final or subject.endswith('tailbad'),compact=True).replace('chatcmpl-synthetic','chatcmpl-synthetic-'+str(len(model_calls)))
                 if not final or subject.endswith('tailbad'):
                     event=json.loads(payload.splitlines()[0][6:]);call=event['choices'][0]['delta']['tool_calls'][0]
                     call['id']='call_synthetic_'+str(len(model_calls))
