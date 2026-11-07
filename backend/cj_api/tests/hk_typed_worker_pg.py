@@ -228,7 +228,17 @@ def exercise(auth,conninfo):
         harness.expect(api.get('/v1/run-events',params=stream_params,headers=host.headers[B]),503)
         old_params={'message_id':old['message_id']}
         harness.expect(api.get('/v2/run-events',params=old_params,headers=host.headers[A]),503)
-        assert api.get('/v1/run-events',params=old_params,headers=host.headers[A]).status_code==200
+        with TestClient(baseline_post) as baseline,patch.object(database,'_open_runtime_connection',
+                wraps=database._open_runtime_connection) as opened:
+            old_baseline=baseline.get('/v1/run-events',params=old_params,headers=host.headers[A])
+            old_checkouts=opened.call_count
+        with patch.object(database,'_open_runtime_connection',wraps=database._open_runtime_connection) as opened:
+            old_stream=api.get('/v1/run-events',params=old_params,headers=host.headers[A])
+            old_leased_checkouts=opened.call_count
+        assert old_stream.status_code==old_baseline.status_code==200
+        assert old_stream.content==old_baseline.content
+        assert old_leased_checkouts<old_checkouts,(old_checkouts,old_leased_checkouts)
+        print(f'PASS original legacy SSE fresh checkouts {old_checkouts} -> {old_leased_checkouts}')
         with database.connect(scope_for(ISSUER,A)) as c:
             assert c.execute('SELECT count(*) FROM cj_memory_item').fetchone()==(0,)
         with database.connect(scope_for(ISSUER,B)) as c:
