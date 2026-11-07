@@ -1,6 +1,97 @@
 import XCTest
 import Foundation
 
+#if G2C_M4_DEVICE_ACCEPTANCE
+@MainActor private final class PhysicalTimeZoneSettings {
+    private enum Failure: Error { case unexpectedSettings, timeZoneNotObserved }
+    private let settings = XCUIApplication(bundleIdentifier: "com.apple.Preferences")
+    let original = TimeZone.autoupdatingCurrent.identifier
+    let destination = "Europe/Paris"
+    private(set) var restorePending = false
+
+    func switchToParis() throws {
+        settings.activate()
+        guard settings.wait(for: .runningForeground, timeout: 15), original != destination,
+              try value(automaticZone()) == "1", try value(automaticTime()) == "1" else {
+            throw Failure.unexpectedSettings
+        }
+        restorePending = true
+        print("M4_SYSTEM_TIMEZONE_RESTORE_PENDING zone=\(original) automaticZone=1 automaticTime=1")
+        try setAutomaticZone("0")
+        let city = settings.staticTexts.matching(NSPredicate(format: "label IN %@", ["时区城市", "Time Zone City"]))
+        try unique(city).tap()
+        let search = try unique(settings.searchFields)
+        search.tap()
+        search.typeText("Paris")
+        let result = settings.staticTexts.matching(NSPredicate(format: "label IN %@ OR identifier == %@",
+            ["巴黎", "Paris", "巴黎，法国", "法国，巴黎", "法国巴黎", "巴黎, 法国", "Paris, France"], destination))
+        try unique(result).tap()
+        try verifyZone(destination)
+        print("M4_SYSTEM_TIMEZONE_CHANGED zone=\(destination) automaticZone=0")
+    }
+
+    func restore() throws {
+        guard restorePending else { return }
+        settings.activate()
+        guard settings.wait(for: .runningForeground, timeout: 15) else { throw Failure.unexpectedSettings }
+        if automaticZoneQuery().count != 1 {
+            let back = settings.navigationBars.buttons.matching(NSPredicate(format: "label IN %@ OR identifier == %@",
+                ["日期与时间", "Date & Time", "返回", "Back", "取消", "Cancel"], "BackButton"))
+            try unique(back).tap()
+        }
+        try setAutomaticZone("1")
+        guard try value(automaticTime()) == "1" else { throw Failure.unexpectedSettings }
+        try verifyZone(original)
+        restorePending = false
+        print("M4_SYSTEM_TIMEZONE_RESTORED zone=\(original) automaticZone=1 automaticTime=1")
+    }
+
+    private func automaticZoneQuery() -> XCUIElementQuery {
+        settings.switches.matching(NSPredicate(format: "label IN %@", ["自动设定时区", "Set Time Zone Automatically"]))
+    }
+
+    private func automaticZone() throws -> XCUIElement { try unique(automaticZoneQuery()) }
+
+    private func automaticTime() throws -> XCUIElement {
+        try unique(settings.switches.matching(NSPredicate(format: "label IN %@", ["自动设定时间", "Set Time Automatically"])))
+    }
+
+    private func unique(_ query: XCUIElementQuery) throws -> XCUIElement {
+        guard query.firstMatch.waitForExistence(timeout: 8), query.count == 1,
+              query.element.isHittable else { throw Failure.unexpectedSettings }
+        return query.element
+    }
+
+    private func value(_ element: XCUIElement) throws -> String {
+        guard let value = element.value as? String, value == "0" || value == "1" else { throw Failure.unexpectedSettings }
+        return value
+    }
+
+    private func setAutomaticZone(_ expected: String) throws {
+        let control = try automaticZone()
+        guard try value(control) != expected else { return }
+        guard control.isEnabled else { throw Failure.unexpectedSettings }
+        let width = control.frame.width
+        if width > 110 {
+            control.coordinate(withNormalizedOffset: CGVector(dx: (width - 42) / width, dy: 0.5)).tap()
+        } else {
+            control.tap()
+        }
+        let settled = XCTNSPredicateExpectation(predicate: NSPredicate { object, _ in
+            (object as? XCUIElement)?.value as? String == expected
+        }, object: control)
+        guard XCTWaiter.wait(for: [settled], timeout: 10) == .completed else { throw Failure.unexpectedSettings }
+    }
+
+    private func verifyZone(_ identifier: String) throws {
+        let settled = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            TimeZone.autoupdatingCurrent.identifier == identifier
+        }, object: nil)
+        guard XCTWaiter.wait(for: [settled], timeout: 30) == .completed else { throw Failure.timeZoneNotObserved }
+    }
+}
+#endif
+
 @MainActor final class DevelopmentNeedsUITests: XCTestCase {
     private let bundle = "space.go2china.needs.acceptance"
     private let control = "__FIXTURE_URL__"
@@ -11,6 +102,7 @@ import Foundation
     private struct Fixture: Decodable {
         let case_id: String; let endpoint: String; let accounts: [String:String]; let subjects: [String:String]
         let conversation: String; let needs_id: String
+        let physical_system_timezone: Bool?
     }
     private struct Original: Decodable {
         let action_id: String; let body_sha256: String; let status: Int?; let expected_version: Int
@@ -387,12 +479,32 @@ import Foundation
     }
     func testDeviceTimezones() async throws {
         let f = try await prepare("testDeviceTimezones"); defer { app?.terminate() }
-        try await launch(f,timezone:"Pacific/Honolulu"); try await preview(f,source:rich("en")); beginAndCopy(); appendStatement("SYNTHETIC timezone test",language:"en"); save(); readDetails(1)
-        text("needs.deviceTimezone",contains:"Pacific/Honolulu"); text("needs.detail.arrival.time",contains:"23:30")
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        let physical = f.physical_system_timezone == true ? PhysicalTimeZoneSettings() : nil
+        defer {
+            if let physical, physical.restorePending {
+                do { try physical.restore() }
+                catch { XCTFail("Could not verify restoration of the original system time zone") }
+            }
+        }
+        let initialZone = physical?.original ?? "Pacific/Honolulu"
+        let finalZone = physical?.destination ?? "Europe/Paris"
+        let injectTimeZone = physical == nil
+        #else
+        let initialZone = "Pacific/Honolulu", finalZone = "Europe/Paris", injectTimeZone = true
+        #endif
+        try await launch(f,timezone:injectTimeZone ? initialZone : nil); try await preview(f,source:rich("en")); beginAndCopy(); appendStatement("SYNTHETIC timezone test",language:"en"); save(); readDetails(1)
+        text("needs.deviceTimezone",contains:initialZone); text("needs.detail.arrival.time",contains:"23:30")
         let before = try await proof(f)
-        try await launch(f,restore:true,timezone:"Europe/Paris"); tap("assistant.needs"); readDetails(1)
-        text("needs.deviceTimezone",contains:"Europe/Paris"); text("needs.detail.arrival.date",contains:"2026-11-02"); text("needs.detail.arrival.time",contains:"23:30"); text("needs.detail.arrival.timezone",contains:"Asia/Shanghai")
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        try physical?.switchToParis()
+        #endif
+        try await launch(f,restore:true,timezone:injectTimeZone ? finalZone : nil); tap("assistant.needs"); readDetails(1)
+        text("needs.deviceTimezone",contains:finalZone); text("needs.detail.arrival.date",contains:"2026-11-02"); text("needs.detail.arrival.time",contains:"23:30"); text("needs.detail.arrival.timezone",contains:"Asia/Shanghai")
         let after = try await proof(f); XCTAssertEqual(after.snapshot_fields_json,before.snapshot_fields_json); XCTAssertEqual(after.manual_posts,1); XCTAssertEqual(after.model_calls,1)
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        try physical?.restore()
+        #endif
     }
     func testReleaseClosed() async throws {
         let f = try await prepare("testReleaseClosed"); defer { app?.terminate() }
