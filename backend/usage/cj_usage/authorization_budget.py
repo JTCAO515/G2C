@@ -1,7 +1,8 @@
 """M4 authorization ceiling, in addition to (never instead of) the RUN Meter.
 
 One durable intent per original Meter attempt; no retry or financial settlement.
-All attempts retain a conservative CNY hold when actual billing is unavailable.
+Complete, priceable receipts use public list prices. Unresolved attempts retain
+their original hold, and a new attempt must fit its full hold before dispatch.
 The operator keeps this journal across releases/restores, outside database dumps.
 """
 from contextlib import contextmanager,nullcontext
@@ -11,21 +12,36 @@ import fcntl
 import json
 import os
 from pathlib import Path
+import re
 import sqlite3
 import uuid
 from zoneinfo import ZoneInfo
 
 from .metered_exit import BudgetUnknown
 
-# JT 2026-11-06 raised both model ceilings; M1's original holds remain occupied.
+# JT 2026-11-07, #495/6708986558. Keep the previous count limits and unit holds.
 MODEL_STOP_CNY=10000
 MODEL_TOTAL_CNY=10000
 MODEL_M1_HOLD_CNY=13
 LIMITS={'model':(min(MODEL_STOP_CNY,MODEL_TOTAL_CNY)-MODEL_M1_HOLD_CNY,1),
         'place':(1200,1),'route':(600,1),'weather':(200,1),'fact':(240,0)}
-# JT changed the tool stop line on 2026-11-05; the original total stays binding.
 TOOL_STOP_CNY=10000
-TOOL_TOTAL_CNY=200
+TOOL_TOTAL_CNY=500
+# Fixed point in 10^-7 CNY. Gross public prices exclude free quota, discounts
+# and cache deductions. These estimates do not settle the supplier invoice.
+CNY_SCALE=10_000_000
+MODEL_INPUT_PRICE=8
+MODEL_OUTPUT_PRICE=27
+AMAP_PRICE=30_000
+AMAP_ENDPOINTS={
+    'place': frozenset(('https://restapi.amap.com/v3/place/text','https://restapi.amap.com/v3/place/detail')),
+    'route': frozenset(('https://restapi.amap.com/v3/direction/walking','https://restapi.amap.com/v3/direction/driving')),
+    'weather': frozenset(('https://restapi.amap.com/v3/weather/weatherInfo',)),
+}
+# #2 / PR507 is outside this SQLite ledger: 8 complete Beijing receipts and
+# five unresolved original holds. Keep the older 13-hold count cap above.
+M1_ESTIMATED=1294*MODEL_INPUT_PRICE+129*MODEL_OUTPUT_PRICE
+M1_UNRESOLVED_CNY=MODEL_M1_HOLD_CNY-8
 DEADLINE=datetime(2026,12,1,tzinfo=ZoneInfo('Asia/Shanghai'))
 MAC_PRODUCER='codex-mac'
 HK_PRODUCER='hk-beta-47.83.147.176'
@@ -40,6 +56,53 @@ def canonical(value):
 def journal_state(db):
     rows=db.execute('SELECT id,kind,input_sha,state,receipt FROM attempt ORDER BY id').fetchall()
     return len(rows),hashlib.sha256(canonical(rows)).hexdigest()
+
+
+def _price_receipt(kind, raw):
+    if raw is None:
+        return None
+    try:
+        receipt=json.loads(raw)
+    except (ValueError,TypeError):
+        return None
+    if type(receipt) is not dict:
+        return None
+    digest=receipt.get('receipt_sha256' if kind=='model' else 'response_sha256')
+    if type(digest) is not str or re.fullmatch('[0-9a-f]{64}',digest) is None:
+        return None
+    if kind=='model':
+        if (receipt.get('model_id')!='qwen3.8-flash' or receipt.get('region')!='cn-beijing'
+                or receipt.get('endpoint')!='https://dashscope.aliyuncs.com/compatible-mode/v1'):
+            return None
+        usage=receipt.get('usage')
+        if type(usage) is not dict:
+            return None
+        prompt,completion,total=(usage.get(key) for key in ('prompt_tokens','completion_tokens','total_tokens'))
+        if (any(type(value) is not int or not 0<=value<=1_000_000 for value in (prompt,completion,total))
+                or not 0<total==prompt+completion):
+            return None
+        return prompt*MODEL_INPUT_PRICE+completion*MODEL_OUTPUT_PRICE
+    endpoint=receipt.get('endpoint')
+    if kind in AMAP_ENDPOINTS and type(endpoint) is str and endpoint in AMAP_ENDPOINTS[kind]:
+        return AMAP_PRICE
+    return None
+
+
+def authorization_usage(db):
+    """Read-only totals over original rows, in fixed-point CNY for each category."""
+    counts=dict.fromkeys(LIMITS,0)
+    estimates=dict.fromkeys(LIMITS,0)
+    holds=dict.fromkeys(LIMITS,0)
+    for kind,state,receipt in db.execute('SELECT kind,state,receipt FROM attempt'):
+        counts[kind]+=1
+        estimate=_price_receipt(kind,receipt) if state=='RECEIVED' else None
+        if estimate is None:
+            holds[kind]+=LIMITS[kind][1]*CNY_SCALE
+        else:
+            estimates[kind]+=estimate
+    estimates['model']+=M1_ESTIMATED
+    holds['model']+=M1_UNRESOLVED_CNY*CNY_SCALE
+    return counts,estimates,holds
 
 
 def save_anchor(value):
@@ -120,11 +183,13 @@ class AuthorizationBudget:
         with self.mutation() as db:
             if db.execute('SELECT 1 FROM attempt WHERE id=?',(attempt,)).fetchone():
                 raise BudgetUnknown('M4 original attempt is read only')
-            counts=dict(db.execute('SELECT kind,count(*) FROM attempt GROUP BY kind'))
-            # M1 #2 retains thirteen CNY holds. Never release UNKNOWN or assume a
-            # fresh quota when the current operation/period/database changes.
-            if counts.get(kind,0)>=LIMITS[kind][0]:raise BudgetUnknown('M4 call allowance exhausted')
-            if kind!='model' and sum(counts.get(k,0)*LIMITS[k][1] for k in LIMITS if k!='model')+LIMITS[kind][1]>min(TOOL_STOP_CNY,TOOL_TOTAL_CNY):
+            counts,estimates,holds=authorization_usage(db)
+            if counts[kind]>=LIMITS[kind][0]:raise BudgetUnknown('M4 call allowance exhausted')
+            reserve=LIMITS[kind][1]*CNY_SCALE
+            if kind=='model':
+                if estimates[kind]+holds[kind]+reserve>min(MODEL_STOP_CNY,MODEL_TOTAL_CNY)*CNY_SCALE:
+                    raise BudgetUnknown('M4 model authorization ceiling')
+            elif sum(estimates[k]+holds[k] for k in LIMITS if k!='model')+reserve>min(TOOL_STOP_CNY,TOOL_TOTAL_CNY)*CNY_SCALE:
                 raise BudgetUnknown('M4 tool authorization ceiling')
             db.execute('INSERT INTO attempt VALUES(?,?,?,\'INTENT\',NULL)',
                        (attempt,kind,hashlib.sha256(raw).hexdigest()))

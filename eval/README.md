@@ -108,6 +108,18 @@ uv run --locked python -B eval/report.py --plan PLAN.json --observations OBSERVA
 严重错误0，首字 p95 ≤5秒，完整回答 p95 ≤90秒。样本/留出和全部原尝试不变。
 不同候选不能合并或自动挑最好版本；同候选任一语言/网络失败不能由另一格抵消。
 
+JT 在 [2026-11-07](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6708986558)
+批准 `quality_policy=JT-2026-11-07-M4`。新正式计划显式选择该版本。每种语言和网络组
+分别判定首个 App 可见 RUN 进度 p95 ≤5 秒、首正文 p95 ≤15 秒、完整回答 p95 ≤90 秒、
+完成率 ≥90%、严重错误 0。未指定版本的冻结计划仍用 `JT-2026-11-04-M4`，历史 FAIL
+和报告原样保留。计划中的 `approved_thresholds` 只记录口径。未知版本拒绝生成判定。
+
+新版进度证据写在观测的 `first_visible_progress` 中，记录提交至 App 渲染的 `seconds`、
+`clock=client_monotonic`、`observed_at=app_render`、`source=server_run_status_event`、
+首个真实状态事件的正整数 `event_sequence`、原 `run_id` 和 `ref`。`run_id` 必须与观测
+一致。证据需来自真实 App，提交回执、快照状态、服务端写入时钟和本地动画仅供诊断。
+未接 App 时钟的正式 runner 不填此字段，门槛保持 UNKNOWN 或 UNRUN。
+
 完成率沿原口径 P/(P+F+U)，缺测R保留并阻止PASS。延迟使用全计划样本的最近秩
 p95；缺时延不能从分母删除，只给已知子集诊断。已知慢样本已足以证明全计划
 p95超标时可FAIL，其他缺测为UNKNOWN/UNRUN。没有完整观测不能凭成功子集放行。
