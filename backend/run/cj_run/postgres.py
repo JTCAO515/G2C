@@ -5,12 +5,17 @@ from datetime import datetime
 import hashlib
 import json
 import logging
+from psycopg.errors import LockNotAvailable
 from .core import Binding, State, Event, Cursor, Conflict, Denied, ResyncRequired, WorkerOwnershipLost, advance, page
 from .usage_binding import UsageBinding
 
 
 class RecoveryReadUnavailable(Exception):
     """Strict read cleanup failed; no recovered value may be published."""
+
+
+class RunScopeBusy(LockNotAvailable):
+    """The RUN scope lock statement timed out before any RUN state was read."""
 
 
 class CommitUnknown(Exception):
@@ -172,7 +177,12 @@ class Repository:
                     cur.execute("SELECT set_config('cj.background_protocol',%s,true)",(background_protocol,))
                 cur.execute("SELECT set_config('statement_timeout',%s,true), set_config('lock_timeout',%s,true)",
                             (str(self.statement_timeout_ms), str(self.lock_timeout_ms)))
-                cur.execute('SELECT epoch,active FROM cj_run_scope WHERE scope=%s'+(' FOR UPDATE' if scope_lock else ''), (self.scope,))
+                try:
+                    cur.execute('SELECT epoch,active FROM cj_run_scope WHERE scope=%s'+(' FOR UPDATE' if scope_lock else ''), (self.scope,))
+                except LockNotAvailable as error:
+                    if scope_lock:
+                        raise RunScopeBusy(*error.args) from error
+                    raise
                 row = cur.fetchone()
                 if row is None or row[1] is not True:
                     raise Denied('scope unavailable')

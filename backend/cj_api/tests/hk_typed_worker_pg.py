@@ -24,10 +24,12 @@ A='m4-synthetic-worker-a';B='m4-synthetic-worker-b'
 
 
 def check_legacy_sse_followup(api, host, database):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Event as Signal
     from cj_message.domain import Service as MessageService
     from cj_run.core import Binding, Event, Service as RunService
     from cj_run.display_snapshot import DisplaySnapshotReader, RunSnapshotAdvanced
-    from cj_run.postgres import Repository
+    from cj_run.postgres import Repository, RunScopeBusy
 
     scope = scope_for(ISSUER, A)
     messages = MessageService(database.message_repository(scope), new_run_id=lambda: None)
@@ -37,7 +39,7 @@ def check_legacy_sse_followup(api, host, database):
     original_invitations = invitations.read_bytes()
     source, body = 'Source: fixture\n', 'Body 样例'
 
-    for scenario in ('advance', 'consecutive', 'revoked'):
+    for scenario in ('advance', 'consecutive', 'revoked', 'scope-busy', 'scope-revoked'):
         mid = 'legacy-sse-' + scenario
         accepted = host.send(api, A, mid, 'Private PG protected stream')
         receipt = messages.query(mid).receipt
@@ -46,15 +48,37 @@ def check_legacy_sse_followup(api, host, database):
         assert runs.accept(binding).status == 'queued'
         assert runs.apply(Event(binding, 1, 'start', 'started')).status == 'running'
         recoveries = []
+        held, release = Signal(), Signal()
+        holder = None
+
+        def hold_scope():
+            with database.connect(scope) as connection:
+                assert connection.execute('SELECT epoch FROM cj_run_scope WHERE scope=%s FOR UPDATE', (scope,)).fetchone()
+                held.set()
+                assert release.wait(18)
 
         def recover(repository, candidate, **kwargs):
+            nonlocal holder
             if candidate != binding:
                 return recover_original(repository, candidate, **kwargs)
             call = len(recoveries) + 1
+            if call == 3 and scenario in ('scope-busy', 'scope-revoked'):
+                holder = executor.submit(hold_scope)
+                assert held.wait(3)
             if call == 5 and scenario == 'advance':
                 runs.apply(Event(binding, 3, 'answer', 'text_delta', body))
                 runs.apply(Event(binding, 4, 'end', 'completed'))
-            result = recover_original(repository, candidate, **kwargs)
+            try:
+                result = recover_original(repository, candidate, **kwargs)
+            except RunScopeBusy:
+                assert holder is not None
+                recoveries.append('scope-busy')
+                release.set()
+                holder.result(timeout=3)
+                runs.apply(Event(binding, 2, 'source', 'text_delta', source))
+                runs.apply(Event(binding, 3, 'answer', 'text_delta', body))
+                runs.apply(Event(binding, 4, 'end', 'completed'))
+                raise
             recoveries.append(result.state.sequence)
             if call == 3:
                 runs.apply(Event(binding, 2, 'source', 'text_delta', source))
@@ -65,30 +89,38 @@ def check_legacy_sse_followup(api, host, database):
         def read(reader, token, key):
             try:
                 return read_original(reader, token, key)
-            except RunSnapshotAdvanced:
-                if scenario == 'revoked':
+            except (RunSnapshotAdvanced, RunScopeBusy):
+                if scenario in ('revoked', 'scope-revoked'):
                     invitations.write_text(json.dumps([B]))
                 raise
 
         params = {'message_id': mid}
-        try:
-            with patch.object(Repository, 'recover', recover), patch.object(DisplaySnapshotReader, 'read', read):
-                response = api.get('/v1/run-events', params=params, headers=host.headers[A])
-        finally:
-            invitations.write_bytes(original_invitations)
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            try:
+                with patch.object(Repository, 'recover', recover), patch.object(DisplaySnapshotReader, 'read', read):
+                    response = api.get('/v1/run-events', params=params, headers=host.headers[A])
+            finally:
+                release.set()
+                invitations.write_bytes(original_invitations)
         assert response.status_code == 200
         frames = [json.loads(line[6:]) for line in response.text.splitlines() if line.startswith('data: ')]
-        if scenario == 'advance':
-            assert recoveries == [1, 1, 1, 2, 4, 4]
+        if scenario in ('advance', 'scope-busy'):
+            expected = [1, 1, 1, 2, 4, 4] if scenario == 'advance' else [1, 1, 'scope-busy', 4, 4]
+            assert recoveries == expected
             assert frames == [{'status': 'running'}, {'text': source + body}, {'status': 'completed'}]
             resumed = api.get('/v1/run-events', params=params,
                               headers={**host.headers[A], 'Last-Event-ID': str(len(source.encode()))})
             assert resumed.status_code == 200 and resumed.text.count(body) == 1 and 'Source: fixture' not in resumed.text
             harness.expect(api.get('/v1/run-events', params=params, headers=host.headers[B]), 503)
         else:
-            assert recoveries == ([1, 1, 1, 2, 2, 3] if scenario == 'consecutive' else [1, 1, 1, 2])
+            expected = {
+                'consecutive': [1, 1, 1, 2, 2, 3],
+                'revoked': [1, 1, 1, 2],
+                'scope-revoked': [1, 1, 'scope-busy'],
+            }
+            assert recoveries == expected[scenario]
             assert frames == [{'status': 'running'}, {'status': 'unavailable'}]
-    print('PASS original legacy SSE same-RUN advance, one bounded follow-up, revocation and byte resume')
+    print('PASS original legacy SSE same-RUN advance, scope lock timeout, bounded follow-up, revocation and byte resume')
 
 
 def exercise(auth,conninfo):
