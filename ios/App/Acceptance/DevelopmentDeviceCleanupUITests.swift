@@ -158,7 +158,13 @@ import Foundation
         keyboardDone.element.tap()
     }
     func acceptAndCacheFormalTrip(_ f: Fixture) {
-        tap("Trips"); tap("View current draft"); tap("Read current draft"); tap("Accept"); tap("Confirm")
+        tap("Trips"); tap("View current draft"); tap("Read current draft"); tap("Accept")
+        let failure = app.staticTexts.matching(identifier: "trip.prepare.failure")
+        let confirm = app.buttons.matching(identifier: "Confirm")
+        let settled = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in failure.element.exists || confirm.element.exists }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [settled], timeout: 25), .completed)
+        XCTAssertFalse(failure.element.exists, "Product refused prepare; no confirmation bypass")
+        tap("Confirm")
         XCTAssertTrue(app.staticTexts["Accepted"].waitForExistence(timeout: 25))
         let back = app.navigationBars["Trip draft"].buttons.matching(identifier: "Trips")
         XCTAssertEqual(back.count, 1); back.element.tap()

@@ -12,7 +12,11 @@ final class TripLiveTransport: ClientTransport, Sendable {
     private let session: URLSession
     private let writes: URLSessionTransport
 
-    init(reads: NoRedirectTransport, endpoint: URL) {
+    convenience init(reads: NoRedirectTransport, endpoint: URL) {
+        self.init(reads: reads, endpoint: endpoint, delegate: TripRedirectBlocker())
+    }
+
+    init(reads: NoRedirectTransport, endpoint: URL, delegate: any URLSessionDelegate) {
         self.reads = reads; self.endpoint = endpoint
         let configuration = URLSessionConfiguration.ephemeral
         configuration.httpCookieStorage = nil
@@ -20,7 +24,7 @@ final class TripLiveTransport: ClientTransport, Sendable {
         configuration.urlCache = nil
         configuration.timeoutIntervalForRequest = 30
         configuration.timeoutIntervalForResource = 60
-        let session = URLSession(configuration: configuration, delegate: TripRedirectBlocker(), delegateQueue: nil)
+        let session = URLSession(configuration: configuration, delegate: delegate, delegateQueue: nil)
         self.session = session
         writes = URLSessionTransport(configuration: .init(session: session))
     }

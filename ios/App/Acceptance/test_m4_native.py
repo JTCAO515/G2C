@@ -56,6 +56,30 @@ class DeviceCleanupTests(unittest.TestCase):
         self.addCleanup(lambda: shutil.rmtree(native.private))
         return native
 
+    def test_failed_run_scans_original_tokens_without_masking_native_failure(self):
+        for scan_error, expected in [(None, 'PASS'), (AssertionError('synthetic leak'), 'FAIL'),
+                                     (RuntimeError('synthetic device unavailable'), 'UNRUN')]:
+            with self.subTest(scan=expected), tempfile.TemporaryDirectory() as directory:
+                native = self.make(directory)
+                original = RuntimeError('synthetic native failure')
+                observed = []
+                def copy_and_scan(device, bundle, destination, tokens):
+                    observed.extend(tokens)
+                    destination.mkdir()
+                    (destination/'opaque.bin').write_bytes(b'SYNTHETIC-JWT' if scan_error else b'ciphertext')
+                    if scan_error: raise scan_error
+                with patch.object(native, 'run', side_effect=original), \
+                     patch('m4_native.scan_app_container', side_effect=copy_and_scan):
+                    with self.assertRaises(RuntimeError) as caught:
+                        native.run_and_scan('Debug', ['original method'], {})
+                self.assertIs(caught.exception, original)
+                self.assertIn('SYNTHETIC-JWT', observed)
+                self.assertIn('SYNTHETIC-CONTROL', observed)
+                self.assertEqual(native.report['status'], 'FAIL')
+                self.assertEqual(native.report['failure_container_scan']['status'], expected)
+                for path in native.output.rglob('*'):
+                    if path.is_file(): self.assertNotIn(b'SYNTHETIC-JWT', path.read_bytes())
+
     def test_copy_failure_still_requires_exact_device_cleanup(self):
         with tempfile.TemporaryDirectory() as directory:
             native = self.make(directory)
@@ -250,6 +274,23 @@ class InterruptedReportTests(unittest.TestCase):
         with self.assertRaises(KeyboardInterrupt): self.execute(node, scope)
         self.assertEqual(report['status'], 'FAIL')
         self.assertFalse(any(row['status'] in ('PASS','PARTIAL_PASS') for row in snapshots))
+
+    def test_cleanup_native_failure_marks_the_actual_case_failed(self):
+        tree = ast.parse(Path(__file__).with_name('check_account_cleanup_component.py').read_text())
+        node = copy.deepcopy(next(n for n in ast.walk(tree) if isinstance(n, ast.Try)
+            and isinstance(n.body[0], ast.Assign) and isinstance(n.body[0].value, ast.Call)
+            and isinstance(n.body[0].value.func, ast.Attribute)
+            and n.body[0].value.func.attr == 'run_and_scan'))
+        original = RuntimeError('synthetic native failure after scan')
+        def fail(*args): raise original
+        report = dict(cases={'PROVIDED': 'RUNNING'}); detail = {}
+        scope = dict(native=SimpleNamespace(run_and_scan=fail), selected=[], env={},
+            detail=detail, report=report, case='PROVIDED', save=lambda: None)
+        with self.assertRaises(RuntimeError) as caught: self.execute(node, scope)
+        self.assertIs(caught.exception, original)
+        self.assertEqual(report['cases']['PROVIDED'], 'FAIL')
+        self.assertEqual(report['native'], 'FAIL')
+        self.assertEqual(detail['status'], 'FAIL')
 
     def test_beta_native_failure_is_preserved_after_cleanup_and_failed_scan(self):
         for failure,expected in [(None,'PASS'),(AssertionError('SYNTHETIC credential hit'),'FAIL'),

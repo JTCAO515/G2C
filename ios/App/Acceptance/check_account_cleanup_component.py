@@ -496,7 +496,11 @@ def main():
                         native.build_for_testing('Debug',selected,env)
                         if args.prepare_only:
                             detail['status']='PREPARED_EXECUTION_UNRUN';report['cases'][case]='UNRUN';save();continue
-                        summary=native.run('Debug',selected,env);native.scan('Debug')
+                        try:
+                            summary=native.run_and_scan('Debug',selected,env)
+                        except BaseException:
+                            detail['status']='FAIL';report['cases'][case]='FAIL';report['native']='FAIL';save()
+                            raise
                         report.setdefault('results',{})[case]={k:summary[k] for k in ('passedTests','failedTests','skippedTests')}
                         detail['status']='PASS';report['cases'][case]='PASS';save()
                     else:

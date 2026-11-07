@@ -34,12 +34,32 @@ import OpenAPIRuntime
     }
     /// Live reads plus prepare/confirm writes. Requires the encrypted pending store, so every
     /// confirmed action is durable before it leaves the device.
-    public init(endpoint: TripEndpoint, credentials: @escaping TripCredentialCallback,
+    public convenience init(endpoint: TripEndpoint, credentials: @escaping TripCredentialCallback,
                 currentBinding: @escaping @MainActor () -> TripBinding?, session: SessionLifecycle, sessionOperation: SessionOperation,
                 pendingStore: TripPendingStore, liveTransport: NoRedirectTransport, liveWrites: TripLiveWrites) {
-        self.endpoint = endpoint; self.credentials = credentials; self.currentBinding = currentBinding
         _ = liveWrites
-        transport = TripLiveTransport(reads: liveTransport, endpoint: endpoint.url)
+        self.init(endpoint: endpoint, credentials: credentials, currentBinding: currentBinding,
+            session: session, sessionOperation: sessionOperation, pendingStore: pendingStore,
+            preparedLiveTransport: TripLiveTransport(reads: liveTransport, endpoint: endpoint.url))
+    }
+    #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+    /// The approved device host shares the existing strict local TLS policy,
+    /// while retaining this transport's two explicit Trip write routes.
+    public convenience init(developmentDevice endpoint: TripEndpoint, credentials: @escaping TripCredentialCallback,
+                currentBinding: @escaping @MainActor () -> TripBinding?, session: SessionLifecycle, sessionOperation: SessionOperation,
+                pendingStore: TripPendingStore, liveTransport: NoRedirectTransport, liveWrites: TripLiveWrites) throws {
+        _ = liveWrites
+        let delegate = try NoRedirectTransport.developmentLocalTLSDelegate()
+        self.init(endpoint: endpoint, credentials: credentials, currentBinding: currentBinding,
+            session: session, sessionOperation: sessionOperation, pendingStore: pendingStore,
+            preparedLiveTransport: TripLiveTransport(reads: liveTransport, endpoint: endpoint.url, delegate: delegate))
+    }
+    #endif
+    private init(endpoint: TripEndpoint, credentials: @escaping TripCredentialCallback,
+                 currentBinding: @escaping @MainActor () -> TripBinding?, session: SessionLifecycle, sessionOperation: SessionOperation,
+                 pendingStore: TripPendingStore, preparedLiveTransport: TripLiveTransport) {
+        self.endpoint = endpoint; self.credentials = credentials; self.currentBinding = currentBinding
+        transport = preparedLiveTransport
         testWrites = false; self.liveWrites = true; store = pendingStore
         self.session = session; self.sessionOperation = sessionOperation
     }
