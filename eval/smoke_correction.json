@@ -62,7 +62,7 @@
     "eval/worker_probe.py": "e133ac3e44ffa7bc2744844c806b6e491dfa38fe51ff0a56a1d7702fa4ca416d",
     "evaluation/cj028/evaluate.py": "0eb75ad82d1b8e3567591d87b9cb7ddec3a16a9dc014fd6e63ffcd61bdfcba28"
   },
-  "approved_body_file_sha256": "71b235127f6270774660f5209feda1aef7dabde82f420cceb4e9143a16bd396d",
+  "approved_body_file_sha256": "c777853ca8690ca8df8f7fdb20c8274d2ac1cbed72db01f1dbbe29d909319e6c",
   "missing_cell": {
     "case_id": "fact",
     "language": "en"
