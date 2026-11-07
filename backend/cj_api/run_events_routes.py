@@ -41,7 +41,8 @@ def _sse(event, data, event_id=None):
     return ('\n'.join(lines) + '\n\n').encode('utf-8')
 
 
-def register_run_events_route(app, reader=None, display_configuration=None, configuration=None, *, travel_reader=None):
+def register_run_events_route(app, reader=None, display_configuration=None, configuration=None, *,
+                              travel_reader=None, legacy_reader=None):
     if configuration is not None and type(configuration) is not RunEventsConfiguration:
         raise ValueError('explicit RUN events configuration required')
     from .run_cancel_routes import register_run_cancel_route
@@ -116,7 +117,8 @@ def register_run_events_route(app, reader=None, display_configuration=None, conf
 
     @app.get('/v1/run-events')
     async def legacy_events(request: Request):
-        return await stream(request, reader.read if reader is not None else None)
+        source = legacy_reader if legacy_reader is not None else reader
+        return await stream(request, source.read if source is not None else None)
 
     @app.get('/v2/run-events')
     async def travel_events(request: Request):

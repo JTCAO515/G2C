@@ -99,5 +99,5 @@ def create_app(*, _message_boundary=None, _max_body_bytes=None, _history_configu
     from .run_events_routes import register_run_events_route
     events_reader = _run_display_reader if _run_events_reader is None else _run_events_reader
     register_run_events_route(app, events_reader, _run_display_configuration, _run_events_configuration,
-                              travel_reader=_run_display_reader)
+                              travel_reader=_run_display_reader,legacy_reader=_run_display_reader)
     return app
