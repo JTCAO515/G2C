@@ -22,7 +22,12 @@ def main():
     p.add_argument('--local-tls',type=Path);p.add_argument('--prepare-only',action='store_true')
     p.add_argument('--output',type=Path,required=True)
     p.add_argument('--build-dir',type=Path,required=True);p.add_argument('--run-context',type=Path,required=True)
-    p.add_argument('--case',choices=CASES);args=p.parse_args()
+    p.add_argument('--case',choices=CASES)
+    p.add_argument('--physical-system-timezone',action='store_true',
+        help='Run the selected time zone case using the real device Settings instead of process TZ; leave Date & Time open before starting')
+    args=p.parse_args()
+    if args.physical_system_timezone and (not args.device or args.case!='testDeviceTimezones'):
+        p.error('--physical-system-timezone requires --device and --case testDeviceTimezones')
     tls=None
     if args.device:
         if not args.local_tls:p.error('--device requires the approved --local-tls profile')
@@ -69,6 +74,7 @@ def main():
         report.update(layer='signed approved iPhone/local pinned HTTPS/private PG/SyntheticNeedsModel',
             raw_native_bundle_shareable=False,build_inputs_shareable=False,
             unrun=['real accounts/models/services/cloud/fees','physical system language/timezone switching #29','real-model extraction quality'])
+    if args.physical_system_timezone:report['physical_system_timezone']='UNRUN'
     if args.case:report['unrun'] += [case for case in CASES if case!=args.case]
     lock=threading.RLock()
     def save():
@@ -156,7 +162,8 @@ def main():
                     with TestClient(app) as client:
                         result=client.put('/v1/conversations',params={'conversation_id':case},headers={'Authorization':'Bearer '+tokens[case]['A']});assert result.status_code==200
                     with lock:specs[case]=row;active[0]=case
-                    return dict(case_id=case,endpoint=endpoint,accounts={} if tls else tokens[case],subjects=subjects[case],conversation=case,needs_id='needs-'+case)
+                    return dict(case_id=case,endpoint=endpoint,accounts={} if tls else tokens[case],subjects=subjects[case],conversation=case,needs_id='needs-'+case,
+                        physical_system_timezone=args.physical_system_timezone)
                 def proof(case,settled=False):
                     row=specs[case];scope=scope_for(ISSUER,subjects[case]['A']);deadline=time.monotonic()+20
                     while True:
@@ -272,8 +279,15 @@ def main():
                             if args.prepare_only:
                                 case_report['status']='PREPARED_EXECUTION_UNRUN'
                                 report['cases'][case]='UNRUN';save();continue
-                            native.run(configuration,selected,env)
-                            last_device_container=native.scan(configuration)
+                            if args.physical_system_timezone:
+                                try:
+                                    native.run_and_scan(configuration,selected,env)
+                                except BaseException:
+                                    case_report['status']='FAIL';report['cases'][case]='FAIL';save();raise
+                                last_device_container=native.private/(configuration+'-app-data')
+                            else:
+                                native.run(configuration,selected,env)
+                                last_device_container=native.scan(configuration)
                             case_report['status']='PASS';report['cases'][case]='PASS';save();continue
                         result=output/(case+'.xcresult')
                         command=['xcodebuild','-project',str(project),'-scheme','G2CControl','-configuration','Release' if case=='testReleaseClosed' else 'Debug',
@@ -338,6 +352,10 @@ def main():
             assert head==subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'head changed during acceptance'
             assert all(hashlib.sha256((ROOT/name).read_bytes()).hexdigest()==digest for name,digest in report['source_hashes'].items()),'source changed during acceptance'
             if not args.prepare_only:report['status']='PASS' if not args.case else 'PARTIAL_PASS'
+            if args.physical_system_timezone and report['cases'].get(args.case)=='PASS':
+                report['physical_system_timezone']='PASS: actual system change, unchanged China-local Needs bytes, original time zone restored'
+                report['unrun'].remove('physical system language/timezone switching #29')
+                report['unrun'].append('physical system language switching #29')
             save()
     except BaseException as error:report['status']='FAIL';report['error']=type(error).__name__;raise
     finally:save()
