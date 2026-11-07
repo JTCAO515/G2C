@@ -18,20 +18,21 @@ import real_phase
 import smoke
 from cj_api.real_services import canonical_tool, TOOL_SYSTEM, TOOLS
 from cj_agent.provider import M4_BASE, M4_MODEL, M4_NATIVE_TURN_PROFILE, M4_TURN_FUNCTION
+from cj_agent.provider import M4_NATIVE_TURN_PROFILE_V2, M4_TURN_FUNCTION_V2
 from cj_place.models import (Result, Source, Outcome, Observed, FieldState, Place, Coordinate, Route)
 from cj_place.contract_v1 import decode_query, encode_result
 from datetime import datetime, timezone
 from cj_usage.authorization_budget import canonical
 
 
-def evidence(case, language='zh', *, proxy=False):
+def evidence(case, language='zh', *, proxy=False, profile=M4_NATIVE_TURN_PROFILE):
     run='original-'+case['id']+'-'+language;mid='message-'+run;answer='Actual fixture body'
     ops=[];attempts=[]
     def model(n,messages):
         aid=run+'-model-'+str(n)
         inputs=dict(messages=deepcopy(messages),system=TOOL_SYSTEM,
                     native_tools=[t for t in TOOLS if t['function']['name'] in case['native']])
-        if proxy:inputs.update(native_turn_profile=M4_NATIVE_TURN_PROFILE,external_tools_disabled=False)
+        if proxy:inputs.update(native_turn_profile=profile,external_tools_disabled=False)
         ops.append(dict(run_id=run,operation_key='model.tool_turn.'+str(n),registration_id='model.tool_turn',
                         attempt_id=aid,input=inputs))
         attempts.append(dict(attempt_id=aid,kind='model',input_sha=model_input_digest(inputs),state='RECEIVED',receipt=dict(
@@ -76,11 +77,15 @@ def evidence(case, language='zh', *, proxy=False):
     if proxy:
         turn=dict(version='MODEL-tool-turn.1',kind='tool',answer=None,calls=[
             dict(name=c['function']['name'],arguments=json.loads(c['function']['arguments'])) for c in calls])
+        function_name=M4_TURN_FUNCTION
+        if profile==M4_NATIVE_TURN_PROFILE_V2:
+            turn=dict(calls=turn['calls'])
+            function_name=M4_TURN_FUNCTION_V2
         wrapper=run+'-wrapper'
         aggregate=[dict(index=i,name=call['function']['name'],**json.loads(result['content']))
                    for i,(call,result) in enumerate(zip(calls,results))]
         messages=[dict(role='assistant',content=None,tool_calls=[dict(id=wrapper,type='function',
-            function=dict(name=M4_TURN_FUNCTION,arguments=json.dumps(turn)))]),
+            function=dict(name=function_name,arguments=json.dumps(turn)))]),
             dict(role='tool',tool_call_id=wrapper,content=json.dumps(dict(results=aggregate)))]
     else:messages=[dict(role='assistant',content=None,tool_calls=calls),*results]
     model(1,messages)
@@ -92,6 +97,36 @@ def evidence(case, language='zh', *, proxy=False):
 
 
 class SmokeChecks(unittest.TestCase):
+    def test_compact_profile_requires_same_original_tool_chain_in_all_six_cells(self):
+        for case in cases('2026-11-04'):
+            for language in ('zh','en'):
+                with self.subTest(case=case['id'],language=language):
+                    raw=evidence(case,language,proxy=True,profile=M4_NATIVE_TURN_PROFILE_V2)
+                    self.assertEqual(check(case,raw)['status'],'PASS')
+
+    def test_compact_profile_rejects_wrong_wrapper_shape_binding_and_tool_result(self):
+        case=cases('2026-11-04')[0]
+        for mutation in ('legacy_wrapper','duplicate_calls','mixed_branches','foreign_id','changed_result'):
+            with self.subTest(mutation=mutation):
+                raw=evidence(case,proxy=True,profile=M4_NATIVE_TURN_PROFILE_V2)
+                follow=raw['operations'][-1]
+                assistant,tool=follow['input']['messages']
+                wrapper=assistant['tool_calls'][0]['function']
+                if mutation=='legacy_wrapper':wrapper['name']=M4_TURN_FUNCTION
+                elif mutation=='duplicate_calls':wrapper['arguments']='{"calls":[],'+wrapper['arguments'][1:]
+                elif mutation=='mixed_branches':
+                    arguments=json.loads(wrapper['arguments'])
+                    arguments['answer']={'zh':'回答','en':'Answer'}
+                    wrapper['arguments']=json.dumps(arguments)
+                elif mutation=='foreign_id':tool['tool_call_id']='foreign-wrapper'
+                else:
+                    bundle=json.loads(tool['content'])
+                    bundle['results'][0]['result']={}
+                    tool['content']=json.dumps(bundle)
+                receipt=next(a for a in raw['authorization_attempts'] if a['attempt_id']==follow['attempt_id'])
+                receipt['input_sha']=model_input_digest(follow['input'])
+                self.assertEqual(check(case,raw)['status'],'FAIL')
+
     def test_proxy_four_tool_flows_preserve_all_original_receipt_requirements(self):
         for case in cases('2026-11-04'):
             for language in ('zh','en'):
