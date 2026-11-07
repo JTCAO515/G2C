@@ -11,6 +11,14 @@ from .configuration import authorization,load_secret_environment
 from . import checkpoint,oss_backup
 
 
+def check_release():
+    control = Path(os.environ['CJ_DEPLOY_CONTROL'])
+    with checkpoint.operator() as (connection, _), connection.transaction():
+        connection.execute('SET TRANSACTION READ ONLY')
+        with connection.cursor() as cursor:
+            checkpoint.runtime_transaction(cursor, control)
+
+
 def run():
     authorization();control=Path(os.environ['CJ_DEPLOY_CONTROL']);root=Path(os.environ['CJ_BETA_BACKUP_ROOT'])
     root.mkdir(mode=0o700,parents=True,exist_ok=True)
@@ -44,7 +52,18 @@ def run():
 
 
 if __name__=='__main__':
-    try:load_secret_environment('backup');run()
+    arguments = sys.argv[1:]
+    try:
+        if arguments == ['--check-release']:
+            load_secret_environment('recovery')
+            check_release()
+        elif not arguments:
+            load_secret_environment('backup')
+            run()
+        else:
+            raise ValueError('explicit backup operation required')
     except (oss_backup.oss.exceptions.BaseError,OSError,ValueError,KeyError,psycopg.Error):
-        print('ALERT beta_backup_unavailable_original_journal_retained',file=sys.stderr)
+        alert = ('beta_backup_source_release_unavailable' if arguments == ['--check-release']
+                 else 'beta_backup_unavailable_original_journal_retained')
+        print('ALERT '+alert,file=sys.stderr)
         raise SystemExit(1) from None
