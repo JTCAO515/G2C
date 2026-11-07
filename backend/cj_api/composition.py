@@ -151,11 +151,15 @@ def create_composed_app(*, environment, jwt_configuration, verification_keys,
         if type(feedback_configuration) is not FeedbackWireConfiguration:
             raise CompositionUnavailable('Explicit FEEDBACK configuration/resolver required')
         feedback_boundary,feedback_modules = _feedback_with_shared_message(boundary,resolve_feedback,resolve_feedback_run,scope_binder=feedback_scope_binder,scope_current=feedback_scope_current)
-    run_display_reader = run_display_modules = None
+    run_display_reader = run_display_modules = run_events_reader = None
     if run_display_configuration is not None or resolve_run_display is not None or run_display_message_boundary is not None:
         from .run_display_composition import _attach_run_display
-        display_boundary = boundary if run_display_message_boundary is None else run_display_message_boundary
-        run_display_reader,run_display_modules = _attach_run_display(display_boundary,resolve_run_display,run_display_configuration)
+        run_display_reader,run_display_modules = _attach_run_display(boundary,resolve_run_display,run_display_configuration)
+        if run_display_message_boundary is not None:
+            # The events reader is also the source of the original cancellation boundary.
+            run_events_reader = run_display_reader
+            run_display_reader,run_display_modules = _attach_run_display(
+                run_display_message_boundary,resolve_run_display,run_display_configuration)
     preview_boundary = preview_modules = None
     if manual_preview_configuration is not None:
         if trip_boundary is None:raise CompositionUnavailable('Manual preview requires the existing configured TRIP boundary')
@@ -190,7 +194,7 @@ def create_composed_app(*, environment, jwt_configuration, verification_keys,
                       _usage_status_configuration=usage_status_configuration,_usage_status_dependencies=usage_status_dependencies,
                       _original_usage_reader=original_usage_reader,_original_usage_configuration=original_usage_configuration,_original_usage_modules=original_usage_modules,
                       _cleanup_progress_configuration=cleanup_progress_configuration,_cleanup_progress_dependencies=cleanup_progress_dependencies,
-                      _run_events_configuration=run_events_configuration)
+                      _run_events_configuration=run_events_configuration, _run_events_reader=run_events_reader)
     if feedback_scope_binder is not None:
         from cj_feedback.diagnostics import DiagnosticReader
         from .feedback_diagnostic_routes import register_feedback_diagnostic_routes

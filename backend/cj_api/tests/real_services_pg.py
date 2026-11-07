@@ -216,6 +216,12 @@ def exercise(auth,conninfo):
                                 assert denied.status_code == 503 and 'snapshot' not in denied.json()
                         finally:
                             invitations.write_bytes(previous)
+                    with TestClient(read_app) as reader, patch.object(db, 'provision', wraps=db.provision) as provision:
+                        terminal = harness.expect(reader.post('/v1/run-cancellations',
+                            json=dict(version='RUN-cancel.1', message_id=subject), headers=headers[subject]))
+                        assert (terminal['run_id'], terminal['status'], terminal['event_highwater']) == (
+                            receipt['run_id'], 'completed', display['snapshot']['event_highwater'])
+                        provision.assert_called_once_with(scope_for(ISSUER, subject))
             elif subject.endswith('repeat'):
                 assert outcomes[0].status=='failed' and model.calls==2 and len(tool_calls)==before+1
                 assert [(r['kind'],r['state']) for r in budget.inspect()]==[('model','RECEIVED'),('place','RECEIVED'),('model','RECEIVED')]
