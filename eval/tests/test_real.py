@@ -54,6 +54,7 @@ class RealCollectorChecks(unittest.TestCase):
 
     def test_standalone_source_links_with_padding_remain_metadata(self):
         self.assertFalse(real.body_available('  来源：https://en.nia.gov.cn/  \n\n Source: https://example.com/path '))
+        self.assertFalse(real.body_available('来源：\n Source: \t https://example.com/path '))
 
     def test_citation_prefixed_body_keeps_the_original_submission_clock(self):
         body='来源：官方页面实际摘录。资格 UNKNOWN。'

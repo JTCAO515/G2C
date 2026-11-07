@@ -121,7 +121,7 @@ def body_available(text):
     # The host inserts standalone source URLs before the model's answer.
     for line in text.splitlines():
         content=line.strip()
-        if content and re.fullmatch(r'(?:Source: |来源：)https?://\S+',content) is None:
+        if content and re.fullmatch(r'(?:Source:|来源：)\s*(?:https?://\S+)?',content) is None:
             return True
     return False
 
