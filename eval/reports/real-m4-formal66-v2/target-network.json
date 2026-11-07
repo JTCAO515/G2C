@@ -1,0 +1,328 @@
+{
+  "network_policy": "JT-2026-11-06-M4-NETWORK",
+  "endpoint": "https://api-beta.go2china.space",
+  "kind": "target_network",
+  "travel_phase": "china_travel",
+  "client_device": "codex_development_mac",
+  "client_location": "china_mainland",
+  "vpn": "on",
+  "clock": "client_monotonic",
+  "measurement_scope": "user_submission_to_answer",
+  "group_scope": "two FACT samples, one per language; separate from fixed66",
+  "samples": [
+    {
+      "language": "zh",
+      "client_environment": {
+        "label": "China-mainland Mac + VPN",
+        "location_basis": "JT stated China mainland; VPN on",
+        "actual_egress_location": "UNKNOWN",
+        "settings_changed": false,
+        "default_interface": "utun6",
+        "target_interface": "utun6",
+        "proxy_flags": {
+          "HTTPEnable": 1,
+          "HTTPSEnable": 1,
+          "ProxyAutoConfigEnable": 0,
+          "ProxyAutoDiscoveryEnable": 0,
+          "SOCKSEnable": 0
+        },
+        "proxy_query_exit": 0,
+        "actual_route": "target tunnel interface"
+      },
+      "transport_status": "PASS",
+      "phase": "COMPLETE_BODY",
+      "original_run": "903fc278-2981-4a09-a876-bc6e397c54dd",
+      "input_sha256": "7b39c807cec970efd67f05a81eacb3d67edf5648d33c6b58548f6fdbacdb235a",
+      "acceptance_seconds": 8.250499832996866,
+      "first_body_seconds": 221.729209290992,
+      "full_answer_seconds": 221.729209290992,
+      "safe_GET_503": 4,
+      "original_client_report_sha256": "a499bdc222145606b4e29183164f102ba89ac0cb02a8899882d427f40a923aa2",
+      "original_client_plan_sha256": "b3a5bf1e480820babc77eb7d2a8b35ab0a67da9347ea2c170dcb291d0489c826",
+      "B_run_proof_sha256": "a581a0b2de4775a0e36251fcd0bdd21d3e183a7de2017c58cb65833efba38744",
+      "B_ledger_export_sha256": "4cace398e3c381c4343f264611972ad95b927635cadc1b9327baeeb80ea6b923",
+      "original_body_sha256": "b5b4d20e893a0824791b08ac6e7c0208f2c5c0b11a680c6168effd6afebf176e",
+      "original_body_bytes": 970,
+      "delivery_ack": true,
+      "original_attempts": [
+        {
+          "attempt_id": "610d5e12c20946fd83f5f03101c5e48a",
+          "kind": "model",
+          "input_sha": "9510f5e6995be85da6b62322d7ef6f023e821ed9dbe350b5efb87f24769a20e1",
+          "state": "RECEIVED",
+          "receipt": {
+            "actual_cost_cny": "UNKNOWN",
+            "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+            "model_id": "qwen3.8-flash",
+            "receipt_sha256": "bee3efc1e3390b683cd6c64a5d8c7c8442804740530c9fff644d46d1edb82dcc",
+            "region": "cn-beijing",
+            "usage": {
+              "completion_tokens": 61,
+              "prompt_tokens": 1428,
+              "total_tokens": 1489
+            }
+          }
+        },
+        {
+          "attempt_id": "c212a6a9e58b4e8dbe306f450ffbceff",
+          "kind": "fact",
+          "input_sha": "f1c8fbd3753192ccc8c7c41c4649dc6192247ebed64934f16527601112e6aec3",
+          "state": "RECEIVED",
+          "receipt": {
+            "actual_cost_cny": "0",
+            "endpoint": "https://en.nia.gov.cn/",
+            "region": "China",
+            "response_sha256": "ca183e6c39974b1706b32c95f9ab19673293e75c304ea0e6d569c5925852ee38",
+            "result_status": "unknown"
+          }
+        },
+        {
+          "attempt_id": "d878d42ecb8c432a9bf79e992280eb77",
+          "kind": "model",
+          "input_sha": "2d4b9d10a56a7f2d59954bc293b2eadd8e8365203da53e1f103a2a1d6e300dc0",
+          "state": "RECEIVED",
+          "receipt": {
+            "actual_cost_cny": "UNKNOWN",
+            "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+            "model_id": "qwen3.8-flash",
+            "receipt_sha256": "a76946f6674c9c1a9f520010221bcc8fd6aafd8be55f0ceb8cdc842817dcdb73",
+            "region": "cn-beijing",
+            "usage": {
+              "completion_tokens": 500,
+              "prompt_tokens": 2077,
+              "total_tokens": 2577
+            }
+          }
+        }
+      ],
+      "usage": {
+        "call_attempts_by_kind": {
+          "model": 2,
+          "fact": 1
+        },
+        "complete_receipts": {
+          "model": 2,
+          "fact": 1
+        },
+        "unknown_intents": {},
+        "model_tokens_from_complete_receipts": {
+          "prompt_tokens": 3505,
+          "completion_tokens": 561,
+          "total_tokens": 4066
+        },
+        "token_unknown_model_attempt_n": 0,
+        "conservative_hold_cny": {
+          "model": 2,
+          "tool": 0
+        },
+        "token_price_estimate": {
+          "currency": "CNY",
+          "basis": "estimated_public_price_not_billed",
+          "source": "https://help.aliyun.com/zh/model-studio/qwen3-8-flash",
+          "source_as_of": "2026-11-05",
+          "model": "qwen3.8-flash",
+          "region": "cn-beijing",
+          "input_per_million": "0.8",
+          "output_per_million": "2.7",
+          "complete_model_receipts": 2,
+          "unknown_model_attempts": 0,
+          "prompt_tokens": 3505,
+          "completion_tokens": 561,
+          "known_receipt_subtotal_cny": "0.0043187",
+          "entire_model_estimate_cny": "0.0043187",
+          "actual_billed_cny": "UNKNOWN",
+          "tool_monetary_cost": "UNKNOWN",
+          "exclusions": "Incomplete windows, tools, cache discounts, credits and invoice adjustments are not inferred; UNKNOWN holds stay reserved"
+        },
+        "actual_billed_cny": "UNKNOWN",
+        "note": "Original authorization/call attempts; not every uncertain intent is proven sent. No invoice supplied."
+      },
+      "before_rows": 564,
+      "after_rows": 567,
+      "after_anchor": "c063086daa0e82ff603a2c89548f5267d3321f44af1db589505f895aa514a905",
+      "model_hold_including_M1": 394,
+      "paid_tools": 168,
+      "first_threshold": "FAIL",
+      "full_threshold": "FAIL"
+    },
+    {
+      "language": "en",
+      "client_environment": {
+        "label": "China-mainland Mac + VPN",
+        "location_basis": "JT stated China mainland; VPN on",
+        "actual_egress_location": "UNKNOWN",
+        "settings_changed": false,
+        "default_interface": "utun6",
+        "target_interface": "utun6",
+        "proxy_flags": {
+          "HTTPEnable": 1,
+          "HTTPSEnable": 1,
+          "ProxyAutoConfigEnable": 0,
+          "ProxyAutoDiscoveryEnable": 0,
+          "SOCKSEnable": 0
+        },
+        "proxy_query_exit": 0,
+        "actual_route": "target tunnel interface"
+      },
+      "transport_status": "PASS",
+      "phase": "COMPLETE_BODY",
+      "original_run": "8e21d7ec-cb15-4d32-a752-6fd661beac50",
+      "input_sha256": "64194a1b990dec717ca885a1de5f7564329a6d9128df87f6816eaaa5b7c51ea5",
+      "acceptance_seconds": 8.494413667009212,
+      "first_body_seconds": 219.43440787500003,
+      "full_answer_seconds": 219.43440787500003,
+      "safe_GET_503": 5,
+      "original_client_report_sha256": "e6dab82c62a4ce5ff7a5f490bfe9c9bca97454b86403b2fd89b6ba748f3b13d8",
+      "original_client_plan_sha256": "a5f47e8816bb13a2136b38d8a34160f3e96188a13b9df5d31f804e5e402f4309",
+      "B_run_proof_sha256": "4f9c6847ef2d7a7f5bd1959f0d6811d98995784f0e8710d23b6383ce936a224f",
+      "B_ledger_export_sha256": "49fb9f52b899cf8e33fb4ec28bf94e12324a42c05cc5e275cfe448648135ddec",
+      "original_body_sha256": "12b2a51cfd34b2a4aa899e7221cac7732f5246562f626d98b814b52b512ba3cc",
+      "original_body_bytes": 953,
+      "delivery_ack": true,
+      "original_attempts": [
+        {
+          "attempt_id": "3754e0ef9b094dc4bd88b1b877f0b2cd",
+          "kind": "model",
+          "input_sha": "785c1e43b4fef706476384a3badda04bb56cf32ea4c42906de95803f8c6e58b3",
+          "state": "RECEIVED",
+          "receipt": {
+            "actual_cost_cny": "UNKNOWN",
+            "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+            "model_id": "qwen3.8-flash",
+            "receipt_sha256": "b955080caa49f1544395256747074ddd15177e1d305db7f298a3d94168a5e3d9",
+            "region": "cn-beijing",
+            "usage": {
+              "completion_tokens": 61,
+              "prompt_tokens": 1428,
+              "total_tokens": 1489
+            }
+          }
+        },
+        {
+          "attempt_id": "3af5a6bc34b34e7b86cb844c08d7d6f8",
+          "kind": "model",
+          "input_sha": "9723aa9c7961b1b694a4a50859c49e6f151f7bee82643c7d94417efcfe11ad33",
+          "state": "RECEIVED",
+          "receipt": {
+            "actual_cost_cny": "UNKNOWN",
+            "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+            "model_id": "qwen3.8-flash",
+            "receipt_sha256": "0fa875c34dc1e55ed9f2790a4db281e05978fb3a99a2c722b639f28f56200ccd",
+            "region": "cn-beijing",
+            "usage": {
+              "completion_tokens": 483,
+              "prompt_tokens": 2077,
+              "total_tokens": 2560
+            }
+          }
+        },
+        {
+          "attempt_id": "5bc55b9b2e14429aa965c7680f1b2b38",
+          "kind": "fact",
+          "input_sha": "76f68bf8f90c02be4daa2769e9e5d1ee8a71c6539f88486056a82e14ea3eaf96",
+          "state": "RECEIVED",
+          "receipt": {
+            "actual_cost_cny": "0",
+            "endpoint": "https://en.nia.gov.cn/",
+            "region": "China",
+            "response_sha256": "85af3e22f0788030397e5e7e88fe3cc8b35f847c5e6980baf8b777effe40a14f",
+            "result_status": "unknown"
+          }
+        }
+      ],
+      "usage": {
+        "call_attempts_by_kind": {
+          "model": 2,
+          "fact": 1
+        },
+        "complete_receipts": {
+          "model": 2,
+          "fact": 1
+        },
+        "unknown_intents": {},
+        "model_tokens_from_complete_receipts": {
+          "prompt_tokens": 3505,
+          "completion_tokens": 544,
+          "total_tokens": 4049
+        },
+        "token_unknown_model_attempt_n": 0,
+        "conservative_hold_cny": {
+          "model": 2,
+          "tool": 0
+        },
+        "token_price_estimate": {
+          "currency": "CNY",
+          "basis": "estimated_public_price_not_billed",
+          "source": "https://help.aliyun.com/zh/model-studio/qwen3-8-flash",
+          "source_as_of": "2026-11-05",
+          "model": "qwen3.8-flash",
+          "region": "cn-beijing",
+          "input_per_million": "0.8",
+          "output_per_million": "2.7",
+          "complete_model_receipts": 2,
+          "unknown_model_attempts": 0,
+          "prompt_tokens": 3505,
+          "completion_tokens": 544,
+          "known_receipt_subtotal_cny": "0.0042728",
+          "entire_model_estimate_cny": "0.0042728",
+          "actual_billed_cny": "UNKNOWN",
+          "tool_monetary_cost": "UNKNOWN",
+          "exclusions": "Incomplete windows, tools, cache discounts, credits and invoice adjustments are not inferred; UNKNOWN holds stay reserved"
+        },
+        "actual_billed_cny": "UNKNOWN",
+        "note": "Original authorization/call attempts; not every uncertain intent is proven sent. No invoice supplied."
+      },
+      "before_rows": 567,
+      "after_rows": 570,
+      "after_anchor": "1ea19dfa75abcfa7cbc884bb263f4d0ebfea879f8df4a9fb3a9e245bc24011e6",
+      "model_hold_including_M1": 396,
+      "paid_tools": 168,
+      "first_threshold": "FAIL",
+      "full_threshold": "FAIL"
+    }
+  ],
+  "actual_billed": "UNKNOWN",
+  "usage": {
+    "call_attempts_by_kind": {
+      "model": 4,
+      "fact": 2
+    },
+    "complete_receipts": {
+      "model": 4,
+      "fact": 2
+    },
+    "unknown_intents": {},
+    "model_tokens_from_complete_receipts": {
+      "prompt_tokens": 7010,
+      "completion_tokens": 1105,
+      "total_tokens": 8115
+    },
+    "token_unknown_model_attempt_n": 0,
+    "conservative_hold_cny": {
+      "model": 4,
+      "tool": 0
+    },
+    "token_price_estimate": {
+      "currency": "CNY",
+      "basis": "estimated_public_price_not_billed",
+      "source": "https://help.aliyun.com/zh/model-studio/qwen3-8-flash",
+      "source_as_of": "2026-11-05",
+      "model": "qwen3.8-flash",
+      "region": "cn-beijing",
+      "input_per_million": "0.8",
+      "output_per_million": "2.7",
+      "complete_model_receipts": 4,
+      "unknown_model_attempts": 0,
+      "prompt_tokens": 7010,
+      "completion_tokens": 1105,
+      "known_receipt_subtotal_cny": "0.0085915",
+      "entire_model_estimate_cny": "0.0085915",
+      "actual_billed_cny": "UNKNOWN",
+      "tool_monetary_cost": "UNKNOWN",
+      "exclusions": "Incomplete windows, tools, cache discounts, credits and invoice adjustments are not inferred; UNKNOWN holds stay reserved"
+    },
+    "actual_billed_cny": "UNKNOWN",
+    "note": "Original authorization/call attempts; not every uncertain intent is proven sent. No invoice supplied."
+  },
+  "human_semantics": "UNKNOWN"
+}

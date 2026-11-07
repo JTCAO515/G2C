@@ -1,0 +1,506 @@
+{
+  "execution_source": {
+    "runner_commit": "9215f745b54872f1f2b5673074056068b18d1403",
+    "backend_commit": "6809804d23021942702f09640062b2277c20f811",
+    "manifest_sha256": "63471bcccfb82f7a7a5e1f01719a95b93e184da470e246b225675032e2e91bab"
+  },
+  "full_preflight": {
+    "status": "PASS",
+    "source": {
+      "runner_commit": "9215f745b54872f1f2b5673074056068b18d1403",
+      "backend_commit": "6809804d23021942702f09640062b2277c20f811",
+      "manifest_sha256": "63471bcccfb82f7a7a5e1f01719a95b93e184da470e246b225675032e2e91bab"
+    },
+    "manifest_files": 642,
+    "identity": {
+      "version": 2,
+      "pin": "acbc62427ee95199cb6b4c6ddd7aa26b787c6831c943f7073729e9147b1f975e",
+      "source_sha256": {
+        "backend/agent/cj_agent/provider.py": "8aa4929b0c1006eb336ce2b7042151d211973e58f5ee013e36c04876355a356b",
+        "backend/cj_api/real_services.py": "2d4c492290a5e06febb7fc42a7185b2a85df0b5fd0e4b97381bea9edbc9834f1",
+        "backend/fact/cj_fact/live_source.py": "a31d82c73bfb2abcc0be3288d1d19be04992946e1a4e2c26497ff920b834c88a",
+        "backend/fact/cj_fact/https_transport.py": "c7b23cabfe965ebb2cdcfae00ccc0f789fdce4c35025d29f1ae79a7876987ba8"
+      }
+    },
+    "secret": {
+      "keys": [
+        "CJ_AMAP_WEB_KEY",
+        "CJ_MODEL_API_KEY"
+      ],
+      "owner": 10001,
+      "mode": "0600"
+    },
+    "ledger": {
+      "ledger_id": "32d95019ea16443b81e648960c4baba0",
+      "rows": 429,
+      "sha256": "27188245e37b89a99b2c3aa077e7956ffdf4d090efa4fbdd6396b7d32068b1b4",
+      "counts": {
+        "model": 270,
+        "weather": 67,
+        "fact": 17,
+        "place": 54,
+        "route": 21
+      },
+      "states": {
+        "RECEIVED": 360,
+        "INTENT": 69
+      },
+      "anchor_state": "ADOPTED"
+    },
+    "forecast": {
+      "basis": "C first real batch actual authorization holds + planned6 smoke minimum flow; not billed costs",
+      "counts": {
+        "model": 270,
+        "weather": 67,
+        "fact": 17,
+        "place": 54,
+        "route": 21
+      },
+      "before_conservative_cny": {
+        "model": 283,
+        "tool": 142
+      },
+      "additional_estimate_cny": {
+        "model": 137,
+        "tool": 54
+      },
+      "projected_conservative_cny": {
+        "model": 420,
+        "tool": 196
+      },
+      "stop_cny": {
+        "model": 10000,
+        "tool": 10000
+      },
+      "budget_cny": {
+        "model": 10000,
+        "tool": 200
+      },
+      "within_stop_lines": true,
+      "within_budget": true,
+      "within_authorization": true,
+      "policy_ref": "https://github.com/JTCAO515/G2C/issues/495#issuecomment-6644812116",
+      "model_policy_ref": "https://github.com/JTCAO515/G2C/issues/495#issuecomment-6688002330",
+      "actual_billed_total": "UNKNOWN",
+      "M1_hold_cny": 13,
+      "quantity_limits": {
+        "place": 1200,
+        "route": 600,
+        "weather": 200,
+        "fact": 240
+      }
+    },
+    "smoke_claimed": true,
+    "correction_claimed": true,
+    "full_claimed": false
+  },
+  "full_end": {
+    "ledger": {
+      "id": "32d95019ea16443b81e648960c4baba0",
+      "rows": 564,
+      "sha256": "119d38b6380a7050147dabc1e6578603ea0a5d4f26d2e7fd1c9d54cf4a987fe9",
+      "counts": {
+        "model": 379,
+        "weather": 72,
+        "fact": 17,
+        "place": 71,
+        "route": 25
+      },
+      "states": {
+        "RECEIVED": 493,
+        "INTENT": 71
+      },
+      "anchor_state": "ADOPTED"
+    },
+    "source": {
+      "runner_commit": "9215f745b54872f1f2b5673074056068b18d1403",
+      "backend_commit": "6809804d23021942702f09640062b2277c20f811",
+      "manifest_sha256": "63471bcccfb82f7a7a5e1f01719a95b93e184da470e246b225675032e2e91bab"
+    },
+    "identity": {
+      "version": 2,
+      "pin": "acbc62427ee95199cb6b4c6ddd7aa26b787c6831c943f7073729e9147b1f975e",
+      "source_sha256": {
+        "backend/agent/cj_agent/provider.py": "8aa4929b0c1006eb336ce2b7042151d211973e58f5ee013e36c04876355a356b",
+        "backend/cj_api/real_services.py": "2d4c492290a5e06febb7fc42a7185b2a85df0b5fd0e4b97381bea9edbc9834f1",
+        "backend/fact/cj_fact/live_source.py": "a31d82c73bfb2abcc0be3288d1d19be04992946e1a4e2c26497ff920b834c88a",
+        "backend/fact/cj_fact/https_transport.py": "c7b23cabfe965ebb2cdcfae00ccc0f789fdce4c35025d29f1ae79a7876987ba8"
+      }
+    },
+    "original_FAIL_unchanged": true,
+    "correction_claim": {
+      "adapter_identity": {
+        "pin": "acbc62427ee95199cb6b4c6ddd7aa26b787c6831c943f7073729e9147b1f975e",
+        "source_sha256": {
+          "backend/agent/cj_agent/provider.py": "8aa4929b0c1006eb336ce2b7042151d211973e58f5ee013e36c04876355a356b",
+          "backend/cj_api/real_services.py": "2d4c492290a5e06febb7fc42a7185b2a85df0b5fd0e4b97381bea9edbc9834f1",
+          "backend/fact/cj_fact/https_transport.py": "c7b23cabfe965ebb2cdcfae00ccc0f789fdce4c35025d29f1ae79a7876987ba8",
+          "backend/fact/cj_fact/live_source.py": "a31d82c73bfb2abcc0be3288d1d19be04992946e1a4e2c26497ff920b834c88a"
+        },
+        "version": 2
+      },
+      "approval_ref": "https://github.com/JTCAO515/G2C/issues/495#issuecomment-6702591531",
+      "candidate_id": "9215f745b54872f1f2b5673074056068b18d1403",
+      "execution_source": {
+        "backend_commit": "6809804d23021942702f09640062b2277c20f811",
+        "manifest_sha256": "63471bcccfb82f7a7a5e1f01719a95b93e184da470e246b225675032e2e91bab",
+        "runner_commit": "9215f745b54872f1f2b5673074056068b18d1403"
+      },
+      "new_case": {
+        "case_id": "fact",
+        "language": "en"
+      },
+      "original_result_sha256": "07ab06a3a565e40d6c90e087204cf36e174c76bfe5d10b282ac0ffab3f56c5ba",
+      "output": "/evidence/hk-body-correction-001",
+      "version": "C-SMOKE-CORRECTION.1"
+    },
+    "correction_result": {
+      "candidate_id": "9215f745b54872f1f2b5673074056068b18d1403",
+      "hashes": {
+        "observations.json": "b8be39cd64e1db8e0cc0ab9144ad6ca2df706ecc11a3ca459ca9bedb9f494d0c",
+        "original-observations.json": "4e58487b035387c906348c2b02f204e037f95fd390229840311a50b525b1920d",
+        "original-plan.json": "41c93d942ab758f5d3d867d48ace893d585c7ab11b82a81818bfc8dfed7c4af5",
+        "original-summary.json": "ad1ea88ef583918ac63d78c3571609bd4ee9973ff936c596e34634828fbd1803",
+        "plan.json": "285fb296c5d3a2606ec61340390caa8653c49539c2a09340903915f268f7f1cc",
+        "raw/fact-en.json": "b098556f614094127745caef1b7949c6e708d410e5d72d0c90e494a5881b8e12",
+        "raw/fact-zh.json": "ca807d7fd574e37b3c8c01b5549eac01b2eaf2501dc260e255e1d852f4db4e84",
+        "raw/place-route-en.json": "9c955361c20a6f093e0df3b4e9e0e4a253149f3362b83ae66634360a57a783ff",
+        "raw/place-route-zh.json": "5e34a2e450e447d259f54ab70e6bd3c82750864f87fdff729143eadb222b440b",
+        "raw/weather-en.json": "b00ed1a72a40d1bdb8d2ed33cbdd14a75d733fed1266aa29dd08faa5af3be448",
+        "raw/weather-zh.json": "f221d482442aa420bc0107e4064f221e2b5afc1e6fc37d756e03cec7ecf3f2ad",
+        "summary.json": "8c3182f0db3a7ee10323183e8b0d4a8cdbb1375c3a752a63498746c0f77f3397"
+      },
+      "status": "PASS"
+    },
+    "full_claim": {
+      "adapter_identity": {
+        "pin": "acbc62427ee95199cb6b4c6ddd7aa26b787c6831c943f7073729e9147b1f975e",
+        "source_sha256": {
+          "backend/agent/cj_agent/provider.py": "8aa4929b0c1006eb336ce2b7042151d211973e58f5ee013e36c04876355a356b",
+          "backend/cj_api/real_services.py": "2d4c492290a5e06febb7fc42a7185b2a85df0b5fd0e4b97381bea9edbc9834f1",
+          "backend/fact/cj_fact/https_transport.py": "c7b23cabfe965ebb2cdcfae00ccc0f789fdce4c35025d29f1ae79a7876987ba8",
+          "backend/fact/cj_fact/live_source.py": "a31d82c73bfb2abcc0be3288d1d19be04992946e1a4e2c26497ff920b834c88a"
+        },
+        "version": 2
+      },
+      "adapter_pin": "acbc62427ee95199cb6b4c6ddd7aa26b787c6831c943f7073729e9147b1f975e",
+      "candidate_id": "9215f745b54872f1f2b5673074056068b18d1403",
+      "output": "/evidence/hk-body-correction-full-001",
+      "phase": "full"
+    },
+    "exit": {
+      "wrapper_pid": 195,
+      "runner_pid": 201,
+      "exit_code": 1,
+      "finished_unix": 1794030916.1499205
+    },
+    "full_forecast": {
+      "basis": "C first real batch actual authorization holds + planned6 smoke minimum flow; not billed costs",
+      "counts": {
+        "model": 379,
+        "weather": 72,
+        "fact": 17,
+        "place": 71,
+        "route": 25
+      },
+      "before_conservative_cny": {
+        "model": 392,
+        "tool": 168
+      },
+      "additional_estimate_cny": {
+        "model": 137,
+        "tool": 54
+      },
+      "projected_conservative_cny": {
+        "model": 529,
+        "tool": 222
+      },
+      "stop_cny": {
+        "model": 10000,
+        "tool": 10000
+      },
+      "budget_cny": {
+        "model": 10000,
+        "tool": 200
+      },
+      "within_stop_lines": true,
+      "within_budget": false,
+      "within_authorization": false,
+      "policy_ref": "https://github.com/JTCAO515/G2C/issues/495#issuecomment-6644812116",
+      "model_policy_ref": "https://github.com/JTCAO515/G2C/issues/495#issuecomment-6688002330",
+      "actual_billed_total": "UNKNOWN",
+      "M1_hold_cny": 13,
+      "quantity_limits": {
+        "place": 1200,
+        "route": 600,
+        "weather": 200,
+        "fact": 240
+      }
+    }
+  },
+  "correction_end": {
+    "ledger": {
+      "id": "32d95019ea16443b81e648960c4baba0",
+      "rows": 429,
+      "sha256": "27188245e37b89a99b2c3aa077e7956ffdf4d090efa4fbdd6396b7d32068b1b4",
+      "counts": {
+        "model": 270,
+        "weather": 67,
+        "fact": 17,
+        "place": 54,
+        "route": 21
+      },
+      "states": {
+        "RECEIVED": 360,
+        "INTENT": 69
+      },
+      "anchor_state": "ADOPTED"
+    },
+    "source": {
+      "runner_commit": "9215f745b54872f1f2b5673074056068b18d1403",
+      "backend_commit": "6809804d23021942702f09640062b2277c20f811",
+      "manifest_sha256": "63471bcccfb82f7a7a5e1f01719a95b93e184da470e246b225675032e2e91bab"
+    },
+    "identity": {
+      "version": 2,
+      "pin": "acbc62427ee95199cb6b4c6ddd7aa26b787c6831c943f7073729e9147b1f975e",
+      "source_sha256": {
+        "backend/agent/cj_agent/provider.py": "8aa4929b0c1006eb336ce2b7042151d211973e58f5ee013e36c04876355a356b",
+        "backend/cj_api/real_services.py": "2d4c492290a5e06febb7fc42a7185b2a85df0b5fd0e4b97381bea9edbc9834f1",
+        "backend/fact/cj_fact/live_source.py": "a31d82c73bfb2abcc0be3288d1d19be04992946e1a4e2c26497ff920b834c88a",
+        "backend/fact/cj_fact/https_transport.py": "c7b23cabfe965ebb2cdcfae00ccc0f789fdce4c35025d29f1ae79a7876987ba8"
+      }
+    },
+    "original_FAIL_unchanged": true,
+    "correction_claim": {
+      "adapter_identity": {
+        "pin": "acbc62427ee95199cb6b4c6ddd7aa26b787c6831c943f7073729e9147b1f975e",
+        "source_sha256": {
+          "backend/agent/cj_agent/provider.py": "8aa4929b0c1006eb336ce2b7042151d211973e58f5ee013e36c04876355a356b",
+          "backend/cj_api/real_services.py": "2d4c492290a5e06febb7fc42a7185b2a85df0b5fd0e4b97381bea9edbc9834f1",
+          "backend/fact/cj_fact/https_transport.py": "c7b23cabfe965ebb2cdcfae00ccc0f789fdce4c35025d29f1ae79a7876987ba8",
+          "backend/fact/cj_fact/live_source.py": "a31d82c73bfb2abcc0be3288d1d19be04992946e1a4e2c26497ff920b834c88a"
+        },
+        "version": 2
+      },
+      "approval_ref": "https://github.com/JTCAO515/G2C/issues/495#issuecomment-6702591531",
+      "candidate_id": "9215f745b54872f1f2b5673074056068b18d1403",
+      "execution_source": {
+        "backend_commit": "6809804d23021942702f09640062b2277c20f811",
+        "manifest_sha256": "63471bcccfb82f7a7a5e1f01719a95b93e184da470e246b225675032e2e91bab",
+        "runner_commit": "9215f745b54872f1f2b5673074056068b18d1403"
+      },
+      "new_case": {
+        "case_id": "fact",
+        "language": "en"
+      },
+      "original_result_sha256": "07ab06a3a565e40d6c90e087204cf36e174c76bfe5d10b282ac0ffab3f56c5ba",
+      "output": "/evidence/hk-body-correction-001",
+      "version": "C-SMOKE-CORRECTION.1"
+    },
+    "correction_result": {
+      "candidate_id": "9215f745b54872f1f2b5673074056068b18d1403",
+      "hashes": {
+        "observations.json": "b8be39cd64e1db8e0cc0ab9144ad6ca2df706ecc11a3ca459ca9bedb9f494d0c",
+        "original-observations.json": "4e58487b035387c906348c2b02f204e037f95fd390229840311a50b525b1920d",
+        "original-plan.json": "41c93d942ab758f5d3d867d48ace893d585c7ab11b82a81818bfc8dfed7c4af5",
+        "original-summary.json": "ad1ea88ef583918ac63d78c3571609bd4ee9973ff936c596e34634828fbd1803",
+        "plan.json": "285fb296c5d3a2606ec61340390caa8653c49539c2a09340903915f268f7f1cc",
+        "raw/fact-en.json": "b098556f614094127745caef1b7949c6e708d410e5d72d0c90e494a5881b8e12",
+        "raw/fact-zh.json": "ca807d7fd574e37b3c8c01b5549eac01b2eaf2501dc260e255e1d852f4db4e84",
+        "raw/place-route-en.json": "9c955361c20a6f093e0df3b4e9e0e4a253149f3362b83ae66634360a57a783ff",
+        "raw/place-route-zh.json": "5e34a2e450e447d259f54ab70e6bd3c82750864f87fdff729143eadb222b440b",
+        "raw/weather-en.json": "b00ed1a72a40d1bdb8d2ed33cbdd14a75d733fed1266aa29dd08faa5af3be448",
+        "raw/weather-zh.json": "f221d482442aa420bc0107e4064f221e2b5afc1e6fc37d756e03cec7ecf3f2ad",
+        "summary.json": "8c3182f0db3a7ee10323183e8b0d4a8cdbb1375c3a752a63498746c0f77f3397"
+      },
+      "status": "PASS"
+    },
+    "full_claim": null,
+    "exit": {
+      "wrapper_pid": 21,
+      "runner_pid": 26,
+      "exit_code": 0,
+      "finished_unix": 1794030288.2974727
+    },
+    "full_forecast": {
+      "basis": "C first real batch actual authorization holds + planned6 smoke minimum flow; not billed costs",
+      "counts": {
+        "model": 270,
+        "weather": 67,
+        "fact": 17,
+        "place": 54,
+        "route": 21
+      },
+      "before_conservative_cny": {
+        "model": 283,
+        "tool": 142
+      },
+      "additional_estimate_cny": {
+        "model": 137,
+        "tool": 54
+      },
+      "projected_conservative_cny": {
+        "model": 420,
+        "tool": 196
+      },
+      "stop_cny": {
+        "model": 10000,
+        "tool": 10000
+      },
+      "budget_cny": {
+        "model": 10000,
+        "tool": 200
+      },
+      "within_stop_lines": true,
+      "within_budget": true,
+      "within_authorization": true,
+      "policy_ref": "https://github.com/JTCAO515/G2C/issues/495#issuecomment-6644812116",
+      "model_policy_ref": "https://github.com/JTCAO515/G2C/issues/495#issuecomment-6688002330",
+      "actual_billed_total": "UNKNOWN",
+      "M1_hold_cny": 13,
+      "quantity_limits": {
+        "place": 1200,
+        "route": 600,
+        "weather": 200,
+        "fact": 240
+      }
+    }
+  },
+  "correction_new_case": {
+    "case_id": "fact",
+    "language": "en",
+    "run_id": "c5c66710-b586-40ee-96a8-03d3970ff3ec",
+    "raw_sha256": "b098556f614094127745caef1b7949c6e708d410e5d72d0c90e494a5881b8e12"
+  },
+  "correction_archive_sha256": "fac1cfd20f9277c011f9471917e06d39882634619caab0bae5a90a82d1cda24a",
+  "formal_archive_sha256": "7fbdb19ff33eab9329af400e8de3b2854545d6a483f937e11835f7720e40b4ff",
+  "full_launch": {
+    "pid": 195,
+    "started_unix": 1794030325.737423,
+    "stage": "hk-body-correction-full-001",
+    "command": [
+      "python",
+      "-B",
+      "/app/eval/hk.py",
+      "run",
+      "full",
+      "--output",
+      "/evidence/hk-body-correction-full-001",
+      "--smoke",
+      "/evidence/hk-body-correction-001",
+      "--batch-id",
+      "body-correct-v2"
+    ],
+    "diagnostic_sidecar": "M4_NATIVE_ENVELOPE_SHAPE only"
+  },
+  "full_processes_remaining": [
+    "sleep"
+  ],
+  "original_full_files": {
+    "budget-after.json": "bb539e87c9344dbcfc0ca85e08e00d78b6e8bc6a895d64508910e3625fc7e7e9",
+    "budget-before.json": "bae777677af80643926ba613f33959f0ae5e9c2fe68b6cb576aafc8e4a77c31f",
+    "case-starts.json": "bb1979a250ee939c3e8260004a8e91240ac8721f17856ee6bfcae9dc0acba99b",
+    "observations.json": "4d47f4701a4613d7f04d0d0b316c52c2202b71b9ad358e7e7eb509e34462a80a",
+    "packages.json": "cff3b2adf3252cb116925d5a60193915faa6bd9fccc6867023880ce388b0a01a",
+    "plan.json": "83ed239ed160d40bfbad671368f75fa4e9afda5801b8cfaa046d031a38d016b1",
+    "preflight-estimate.json": "65beec38eb7cf1091561ab4fedda96f2ff5af156d0929a83263fd4449742b32d",
+    "progress.json": "5f25ac7b713b15353992cf3d3d8ec6683b6876a0df685187596271f031f8ad3e",
+    "progress.md": "090231e9cd585245ab10be5b1fad742be89a975fbcb6de8e6e7362f2613042e0",
+    "raw/accept-once-en-1.json": "3f4128fd7b73b20001613604295f8713c6ca70fdbc2985b80212a6005d77da7d",
+    "raw/accept-once-zh-1.json": "9e4d7e727e05935bc8e72192c01638e18af91ccf96f6d113291038afb48aef86",
+    "raw/arrival-timezone-en-1.json": "7faa0cd27fd785849b8ade8f971071ffc66e47608470186bd1ef413c601883ac",
+    "raw/arrival-timezone-zh-1.json": "00da5af1530be8ab0e3280f3f653300f25a7ea18e41332ffde48485699dac7b1",
+    "raw/beijing-explore-en-1.json": "2f3610382416527a737aed9cde0f3b271334d522c5d53e2ad45cd2fca4aabe09",
+    "raw/beijing-explore-zh-1.json": "9b9ddd6c32a55dabca76f71b31a9f8fd06f32d45e14ce5912902e81056927f8d",
+    "raw/beijing-preview-en-1.json": "1c2a315d7b2faa534e1cc36ff7685bed711b9c47db719117b5d1985b090e4c1f",
+    "raw/beijing-preview-zh-1.json": "294a07eb9d175bde05439d8e28501ac76cdfbbf53d77f981bd83fa0e76a3d025",
+    "raw/companion-not-self-en-1.json": "a0a314eec87e881347a41b8ce6a392280d21b4b527604c8e558c6e56fc26cc1c",
+    "raw/companion-not-self-zh-1.json": "8fe3b5b404d70edb414708eb1f21ec8c9a29ac77b992e421998ed3ba3ceb772c",
+    "raw/daily-budget-en-1.json": "39c2b831b5045b4b598672272b5ccac8dca0865ca7b0c42b60d0a936dda71722",
+    "raw/daily-budget-zh-1.json": "e43d69c7b617a15a4282f8ca90a2804e50d41137b0f019a33601e8b605491f90",
+    "raw/holdout-account-boundary-en-1.json": "68b18c353056b2692b7953666267b933f2420e41b1d484d2adf8ce9145954166",
+    "raw/holdout-account-boundary-zh-1.json": "5766213e5d3e3a4a24710cf8c15a622367503331a9724847502197536dccab6f",
+    "raw/holdout-current-weather-en-1.json": "b3dfc7894053b5234f762068cac6e37c3b760cc8f3b143d299da71218432ee34",
+    "raw/holdout-current-weather-zh-1.json": "12e061f0e7e2423b95bd4acfad276533cf27a4d8a137ae0b206aa620f5c3bca6",
+    "raw/holdout-feedback-en-1.json": "f1ae74058ed64a5af1dcdab8477175785933737de4a56c319aa449df17a6706a",
+    "raw/holdout-feedback-zh-1.json": "8b3ad3692688fb98f958a17ed202812f9b02305a2dddb25591be0136df73354b",
+    "raw/holdout-fixed-arrangement-en-1.json": "52a5eb12d315313390cf2c1a049793c0a2ed788b87d8484e6a1353ffe6a1e724",
+    "raw/holdout-fixed-arrangement-zh-1.json": "3487c8a5af8f312bdc340c1b85375b7dd8d9bda4681142667ee70aaeb62ae1c0",
+    "raw/holdout-history-consent-en-1.json": "f9ad8ae4321f7532f91fffec4161175769b88a302156b23d7f56dd8439bad3c9",
+    "raw/holdout-history-consent-zh-1.json": "b5684a355934c7bd8dd056701381571322cff8ad1eb4a7ea5d8f935ae0a4c9a6",
+    "raw/holdout-local-adjust-en-1.json": "cd1ff854d6f40190c2777cacace3ad2bea7008e699ba76ee870f5d2a46fb58cc",
+    "raw/holdout-local-adjust-zh-1.json": "e426410504158a04f3fe823a8389ba8664f3be1d42ac6a482ba901a68d7a042e",
+    "raw/holdout-memory-stop-en-1.json": "65f69d8cce788cb9aced126e53ed9e829661f112b2345efc12930984eb8b2bbf",
+    "raw/holdout-memory-stop-zh-1.json": "873474995930a4efc9b2df96973f2252b1f56b97f577d5092307c762dbb6b058",
+    "raw/holdout-no-confirm-en-1.json": "b4f24060770c2753a826c1b5e2647e17d084feeb87a7a449385a85d4411cce5d",
+    "raw/holdout-no-confirm-zh-1.json": "4d902f2621af8f9888712c469353285127b82009f0e01240e8ce0036865529b8",
+    "raw/holdout-place-source-en-1.json": "498f5bd91d98942c30573e3a86eac1efdd8c37cef20befc20c22a9a0e1ac5eb3",
+    "raw/holdout-place-source-zh-1.json": "f8e49c21db0c8255f1ae34e3a40e08574e3adc5585412887a219b1f72627f67d",
+    "raw/holdout-plugin-placeholder-en-1.json": "4c0d18b9faac54b06aa456d4ef9593b856727377f663d7fd2922eed31f0e1d43",
+    "raw/holdout-plugin-placeholder-zh-1.json": "226cab4f312a01629121204f5e0e975844cf9145805b1ebb6cb6232599917e26",
+    "raw/holdout-unsupported-booking-en-1.json": "9eb1231b4b8f847d02f2522c68a5214f1cc053dbb792c182035d91eda3fafb58",
+    "raw/holdout-unsupported-booking-zh-1.json": "7ef023c27025083bcab328f97f5aeca625979870a83304baece3dca4323d4a26",
+    "raw/inference-not-fact-en-1.json": "20261ffe9a2783b80e683b22f5a94d540cac59cbf2567226424e14160f3f1151",
+    "raw/inference-not-fact-zh-1.json": "4aa97b8e43d150452f99516b8fc2589035158bd9eb974b23635f64c5437d46ef",
+    "raw/memory-correct-en-1.json": "261823bcb23642d2c7350941156e8be3ec7bc032ec8f5e4f3c425ca63848e813",
+    "raw/memory-correct-zh-1.json": "5c7b5b3ee6c6dfe3a6681aaaa941c0f6825ba1368c13b0f99c2db0caa302fff6",
+    "raw/memory-disabled-en-1.json": "c3e0bd6dda63f24e5121cf771ac813be7c907458e8dcfe98c99de3385dd4bcbb",
+    "raw/memory-disabled-zh-1.json": "82f154a51bb9f992cbd0834d5366bbf7390d279283a6adc25b9ea3f0bc460124",
+    "raw/memory-explicit-en-1.json": "46c5a48cc1f8a96e59534696ce7eb5909411fb46b948e961f3e52912c02e59de",
+    "raw/memory-explicit-experience-en-1.json": "6c6c883d8c34e8db6e35ce1af653b73569758bf3b4e411aae98f291f6668e170",
+    "raw/memory-explicit-experience-zh-1.json": "1b47f23082d5b1c328381fa62a84e16894f13895c2f889d1d30032b6729eec83",
+    "raw/memory-explicit-fact-en-1.json": "a7a51cdce50eea1c82eb646d2e111b6db579a3e7921e48f504933c4b5b721aaa",
+    "raw/memory-explicit-fact-zh-1.json": "67688df82b087ec2f6b099e8a3fc1885414cdc7a95a84b3f8cce95d8476aebd8",
+    "raw/memory-explicit-zh-1.json": "4b3a78a828d1f98c1fae3d1937a6b23210cdb384967d79404d09418e2f48b2ac",
+    "raw/memory-new-chat-en-1.json": "9f664e6f1fb97fded2b9264e1a85ffc2e79bb414cf99cd5480545422e759fb19",
+    "raw/memory-new-chat-zh-1.json": "c1da39a91425cf5adb214a7c9d221a1cbbcaf13e4a940e9c57615b11f4448b55",
+    "raw/memory-other-travel-en-1.json": "77d5bf51cb75031d0a73aea1957d28531b054c1b6eb320dfaaaecaea4ac3fc34",
+    "raw/memory-other-travel-zh-1.json": "ba2ca8abf57288456ecbff3984bdc68c36d783aade924b95e81d691354bfeb7b",
+    "raw/memory-restart-en-1.json": "05fa0033bf11445a76e98ab7842dd2e017b2e9260f4ca02167010c6130f43184",
+    "raw/memory-restart-zh-1.json": "25a42ccac39b359615bf6c01759aae8f484c5dd37179783fdd00e205652d952c",
+    "raw/reject-preview-en-1.json": "67ac40d26febc1a8fb1b8e6bf77b2ec940271f0128ab6ef0c7052587612e476d",
+    "raw/reject-preview-zh-1.json": "d7247bc976e5b748a6bab0d3d34c4d8eb4823dddb03802e436aaae72861371c0",
+    "raw/short-trip-en-1.json": "2d702b7c7eab94e3b6b73daba12236822042864a545f1cb9cab2a0d1e6208687",
+    "raw/short-trip-zh-1.json": "3c9e90df0be7772692f775fcae2b04377c7800f84da1d266a457d599b041819c",
+    "raw/skip-onboarding-en-1.json": "cec27482aa6308949dc09da19f55ee21a69901935897d45af4a33ac75c4faabe",
+    "raw/skip-onboarding-zh-1.json": "58697205e84e99a02e4ddc73061fb35fb00ff310d862fc529e948555e8de48c2",
+    "raw/slow-pace-en-1.json": "aedfe904f8534bcf2f333af712465868dbcfcc7c0f37795cb069d8586f634c2f",
+    "raw/slow-pace-zh-1.json": "481ddfd35bf10d669dd87cc46ac5e6f315d41fe4b16e8b7878950f4ca3ba8b18",
+    "raw/temporary-not-longterm-en-1.json": "ae237d0f69eaf50178910ebf03b512514f96dab6973d909475df1f49fdfe407c",
+    "raw/temporary-not-longterm-zh-1.json": "fc372c09a442c03f41bc0fa99ee71fcb469b8c12e9747888cb8b9cfaf8f75f02",
+    "raw/transport-gap-en-1.json": "e23a9b32c13f992b87c59051efa4d148f065f3b33e670c7c0d52344b62531a50",
+    "raw/transport-gap-zh-1.json": "15f4992812b6412860ec4b37e9249d1d195ad1349440dc60c2390a77a0b3da6c",
+    "raw/uncertain-hours-en-1.json": "c1889cbaf434f27276c84bbb28960c8a454f1b2fad8c560f27e20ea580a6234c",
+    "raw/uncertain-hours-zh-1.json": "7ec2887b71575a63174fb1ce5c378de80351b4089295d53edb244d62984ab1e3",
+    "report.json": "423ab8a90f36c60891fbeb76f5b442c1267d25462e36c03fbf6e9e1c0a4032b8",
+    "report.md": "168ff3d9dad4aab36a1a0f4fba0bcb5d41919846feb6fb0b2833d3bc651822b6",
+    "runtime-config.json": "02c062d6b96e13f228741a865c42e61d4690aeffc04a21bb1670077fe06f9af9"
+  },
+  "original_correction_files": {
+    "budget-after.json": "bae777677af80643926ba613f33959f0ae5e9c2fe68b6cb576aafc8e4a77c31f",
+    "budget-before.json": "36252ab37d58cb335518a413660fb98f2b761fc94cd6c1a41b312c8c00f42f91",
+    "case-starts.json": "994dcbfcd35027330b072e75d2cd1a64663341a7378bba9fde25fe24939061d1",
+    "estimate.json": "bbef8a9ab23b3d89e3c9f93fedd53e08409e9fd527c76e83831f0edb8af8ddda",
+    "observations.json": "b8be39cd64e1db8e0cc0ab9144ad6ca2df706ecc11a3ca459ca9bedb9f494d0c",
+    "original-observations.json": "4e58487b035387c906348c2b02f204e037f95fd390229840311a50b525b1920d",
+    "original-plan.json": "41c93d942ab758f5d3d867d48ace893d585c7ab11b82a81818bfc8dfed7c4af5",
+    "original-summary.json": "ad1ea88ef583918ac63d78c3571609bd4ee9973ff936c596e34634828fbd1803",
+    "packages.json": "cff3b2adf3252cb116925d5a60193915faa6bd9fccc6867023880ce388b0a01a",
+    "plan.json": "285fb296c5d3a2606ec61340390caa8653c49539c2a09340903915f268f7f1cc",
+    "progress.json": "09b1a52af8abcefce62e299e46a78c9cfa805310d8c0a56755f4ccbf3cf4cdfb",
+    "progress.md": "37fdba3b56015c01c3c9c42510822e9eae83e7fd4da438f7779154e1d272e614",
+    "raw/fact-en.json": "b098556f614094127745caef1b7949c6e708d410e5d72d0c90e494a5881b8e12",
+    "raw/fact-zh.json": "ca807d7fd574e37b3c8c01b5549eac01b2eaf2501dc260e255e1d852f4db4e84",
+    "raw/place-route-en.json": "9c955361c20a6f093e0df3b4e9e0e4a253149f3362b83ae66634360a57a783ff",
+    "raw/place-route-zh.json": "5e34a2e450e447d259f54ab70e6bd3c82750864f87fdff729143eadb222b440b",
+    "raw/weather-en.json": "b00ed1a72a40d1bdb8d2ed33cbdd14a75d733fed1266aa29dd08faa5af3be448",
+    "raw/weather-zh.json": "f221d482442aa420bc0107e4064f221e2b5afc1e6fc37d756e03cec7ecf3f2ad",
+    "runtime-config.json": "c20d7dec97f9ce6b43546ab925a699bd9ee8b9fd98daceabe9a8bd7942e49a0f",
+    "summary.json": "8c3182f0db3a7ee10323183e8b0d4a8cdbb1375c3a752a63498746c0f77f3397"
+  },
+  "approval_ref": "https://github.com/JTCAO515/G2C/issues/495#issuecomment-6702591531",
+  "quality_release": "FAIL",
+  "human_semantics": "UNKNOWN",
+  "actual_paid": "UNKNOWN"
+}
