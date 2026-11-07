@@ -83,6 +83,17 @@ import Foundation
     }
     func contains(_ id: String, _ expected: String, towardTop: Bool = true) {
         let target = app.staticTexts[id]
+        if id == "account.cleanup.native" {
+            // The native result inserts rows above the former clear button.
+            // Wait for the host's original-device control to settle before
+            // scrolling; a pinned heading does not establish content position.
+            let read = app.buttons.matching(identifier: "account.cleanup.readDevice")
+            XCTAssertTrue(read.element.waitForExistence(timeout: 25))
+            XCTAssertEqual(read.count, 1)
+            let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: read.element)
+            XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 25), .completed)
+            app.swipeDown()
+        }
         if id.hasPrefix("account.cleanup.") {
             // A replaced List row can remain in AX while its current UILabel is
             // offscreen. Reset to the exact heading even when an old node exists.
