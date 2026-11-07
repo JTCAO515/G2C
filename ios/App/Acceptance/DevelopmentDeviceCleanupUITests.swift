@@ -83,6 +83,17 @@ import Foundation
     }
     func contains(_ id: String, _ expected: String, towardTop: Bool = true) {
         let target = app.staticTexts[id]
+        if id == "account.cleanup.native" {
+            // The native result inserts rows above the former clear button.
+            // Wait for the host's original-device control to settle before
+            // scrolling; a pinned heading does not establish content position.
+            let read = app.buttons.matching(identifier: "account.cleanup.readDevice")
+            XCTAssertTrue(read.element.waitForExistence(timeout: 25))
+            XCTAssertEqual(read.count, 1)
+            let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: read.element)
+            XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 25), .completed)
+            app.swipeDown()
+        }
         if id.hasPrefix("account.cleanup.") {
             // A replaced List row can remain in AX while its current UILabel is
             // offscreen. Reset to the exact heading even when an old node exists.
@@ -158,7 +169,13 @@ import Foundation
         keyboardDone.element.tap()
     }
     func acceptAndCacheFormalTrip(_ f: Fixture) {
-        tap("Trips"); tap("View current draft"); tap("Read current draft"); tap("Accept"); tap("Confirm")
+        tap("Trips"); tap("View current draft"); tap("Read current draft"); tap("Accept")
+        let failure = app.staticTexts.matching(identifier: "trip.prepare.failure")
+        let confirm = app.buttons.matching(identifier: "Confirm")
+        let settled = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in failure.element.exists || confirm.element.exists }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [settled], timeout: 25), .completed)
+        XCTAssertFalse(failure.element.exists, "Product refused prepare; no confirmation bypass")
+        tap("Confirm")
         XCTAssertTrue(app.staticTexts["Accepted"].waitForExistence(timeout: 25))
         let back = app.navigationBars["Trip draft"].buttons.matching(identifier: "Trips")
         XCTAssertEqual(back.count, 1); back.element.tap()

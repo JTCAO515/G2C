@@ -61,6 +61,7 @@ public struct TripProposalCard: View {
         case .preparing: ProgressView(language.text("Preparing the action for your confirmation", "正在准备待确认的动作"))
         case .prepareFailed:
             Text(language.text("The action could not be prepared. Nothing was saved; review the draft and try again.", "未能准备该动作，未保存任何内容；请重新查看草稿后再试。"))
+                .accessibilityIdentifier("trip.prepare.failure")
         case .expiredUncommitted:
             Text(language.text("That confirmation expired and was not saved. Review the draft again before deciding.", "该确认已过期且未保存。请重新查看草稿后再决定。"))
         case .awaitingConfirmation(let prepared):

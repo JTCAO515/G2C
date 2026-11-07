@@ -189,8 +189,13 @@ import Observation
                 session: lifetime.session, sessionOperation: lifetime.operation, pendingStore: store,
                 requestTimeout: 10, resourceTimeout: 20, maximumJournalBytes: 4_000_000, maximumJournalRecords: 100)
         } else {
+            #if os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+            client = try TripClient(developmentDevice: endpoint, credentials: credentials, currentBinding: { lifetime.current },
+                session: lifetime.session, sessionOperation: lifetime.operation, pendingStore: store, liveTransport: transport, liveWrites: TripLiveWrites())
+            #else
             client = TripClient(endpoint: endpoint, credentials: credentials, currentBinding: { lifetime.current },
                 session: lifetime.session, sessionOperation: lifetime.operation, pendingStore: store, liveTransport: transport, liveWrites: TripLiveWrites())
+            #endif
         }
         trips = TripContainerHost(shell: shell)
         guard trips.bind(TripContainerBinding(client: client, trip: lifetime.trip, shellGeneration: shell.generation,

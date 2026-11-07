@@ -166,6 +166,25 @@ class DeviceNative:
         assert summary['failedTests'] == summary['skippedTests'] == 0
         return summary
 
+    def run_and_scan(self, configuration, tests, env):
+        """Keep the failed run's original token bag until its scan is attempted."""
+        try:
+            summary = self.run(configuration, tests, env)
+        except BaseException:
+            self.report['status'] = 'FAIL'
+            try:
+                self.scan(configuration)
+            except Exception as scan_error:
+                self.report['failure_container_scan'] = dict(
+                    status='FAIL' if isinstance(scan_error, AssertionError) else 'UNRUN',
+                    error_type=type(scan_error).__name__)
+            else:
+                self.report['failure_container_scan'] = dict(status='PASS')
+            self.save_progress()
+            raise
+        self.scan(configuration)
+        return summary
+
     def scan(self, configuration):
         self._staging_closed.set()
         with self._staging_lock:
