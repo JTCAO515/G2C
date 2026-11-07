@@ -175,6 +175,46 @@ class Boundaries(unittest.TestCase):
                 self.assertEqual((receipt,reply),({},{}))
                 self.assertEqual(self.budget.inspect()[-1]['state'],'INTENT')
 
+    def test_compact_prompt_pins_nested_keys_and_flat_fields_keep_original_intent(self):
+        # The real stream reported only two extra root keys and no recognized keys.
+        # These are synthetic examples of that shape, not the original arguments.
+        variants = ((dict(start_date='2026-11-17', end_date='2026-11-17'), False),
+                    (dict(zh='合成测试', en='synthetic-private-answer'), True))
+        for index, (arguments, final) in enumerate(variants):
+            with self.subTest(final=final):
+                body = turn_sse(compact=True)
+                event = json.loads(body.splitlines()[0][6:])
+                event['choices'][0]['delta']['tool_calls'][0]['function']['arguments'] = json.dumps(arguments)
+                body = 'data: ' + json.dumps(event) + '\n\n' + '\n'.join(body.splitlines()[2:])
+                provider = self.provider(body)
+                receipt, reply = {}, {}
+                attempt = 'compact-flat-' + str(index)
+
+                def invoke():
+                    return list(provider.invoke([], TOOL_SYSTEM, attempt, tools=TOOLS,
+                        native_turn_profile=M4_NATIVE_TURN_PROFILE_V2, final_answer=final,
+                        receipt=receipt, native_reply=reply, guard=lambda: True))
+
+                sent = len(self.sent)
+                with self.assertLogs('cj_provider.audit', level='WARNING') as logs, self.assertRaises(ProviderUnknown):
+                    invoke()
+                audit = '\n'.join(logs.output)
+                self.assertIn('reason=native_envelope_fields', audit)
+                self.assertIn('present_mask=0 extra_count=2', audit)
+                self.assertNotIn('synthetic-private-answer', audit)
+                self.assertEqual((receipt, reply), ({}, {}))
+                original = self.budget.inspect()
+                self.assertEqual(original[-1]['state'], 'INTENT')
+                prompt = json.loads(self.sent[-1].content)['messages'][0]['content']
+                self.assertIn('only top-level key is "answer"', prompt)
+                self.assertIn('Inside "answer", use exactly "zh" and "en"', prompt)
+                self.assertEqual('only top-level key is "calls"' in prompt, not final)
+                if not final:
+                    self.assertIn('Put all tool parameters inside "arguments"', prompt)
+                with self.assertRaises(BudgetUnknown):
+                    invoke()
+                self.assertEqual((len(self.sent), self.budget.inspect()), (sent + 1, original))
+
     def test_first_native_envelope_field_shape_does_not_disclose_or_rearm(self):
         # The real failing shape had complete SSE/usage and one named call, but
         # the original key names were not retained. These variants are fixtures.
