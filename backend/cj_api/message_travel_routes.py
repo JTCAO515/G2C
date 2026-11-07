@@ -39,7 +39,11 @@ def register_message_travel_routes(app,boundary,max_body_bytes,message_failure,f
                 body=await run_in_threadpool(formal_receiver,token,raw,lambda value:project(value).body)
                 return Response(content=body,media_type='application/json')
             receive=boundary.receive_v4 if version==4 else boundary.receive_v3 if version==3 else boundary.receive_v2
-            value=await run_in_threadpool(receive,token,raw)
+            from .local_account_admission_v2 import retirement_read_operation
+            def receive_original():
+                with retirement_read_operation():
+                    return receive(token,raw)
+            value=await run_in_threadpool(receive_original)
             return project(value)
         except Exception as exc:
             return failure(request,exc,True)

@@ -183,21 +183,25 @@ class Runtime:
             account_admission=True,needs_profile=os.environ.get('CJ_LOCAL_NEEDS_PROFILE'),message_subjects=message_subjects,
             existing_display_reads=True)
         if self.typed_memory is not None:
-            from cj_api.local_account_admission_v2 import permit_retirement_read_lease
-            from cj_api.supabase_test_database import current_authorization,require_environment
             from cj_memory.typed_api import register_typed_routes
             register_typed_routes(app,database=database,auth_dir=self.auth,configuration=self.typed_memory)
 
-            def require_current():
-                current_authorization()
-                require_environment()
+        from cj_api.local_account_admission_v2 import permit_retirement_read_lease
+        from cj_api.supabase_test_database import current_authorization,require_environment
 
-            @app.middleware('http')
-            async def typed_list_retirement_lease(request,call_next):
-                if request.method=='GET' and request.url.path=='/v2/memories':
-                    with permit_retirement_read_lease(database,require_current):
-                        return await call_next(request)
-                return await call_next(request)
+        def require_current():
+            current_authorization()
+            require_environment()
+
+        @app.middleware('http')
+        async def retirement_lease(request,call_next):
+            path=request.url.path
+            if ((request.method=='POST' and path in ('/v1/messages','/v2/messages'))
+                    or (request.method=='GET' and (path=='/v2/run-events'
+                        or self.typed_memory is not None and path=='/v2/memories'))):
+                with permit_retirement_read_lease(database,require_current):
+                    return await call_next(request)
+            return await call_next(request)
         return app
 
     def close(self):

@@ -280,6 +280,7 @@ async def _m4_wire(config,raw,guard,observation=None):
     """Single fixed POST with one total deadline across DNS/TLS/write/read."""
     loop=asyncio.get_running_loop();deadline=loop.time()+config.timeout_seconds
     writer=None
+    read_wait=0.0
     try:
         async with asyncio.timeout_at(deadline):
             reader,writer=await asyncio.open_connection('dashscope.aliyuncs.com',443,ssl=tls_context(),
@@ -293,12 +294,19 @@ async def _m4_wire(config,raw,guard,observation=None):
                 (b'Accept-Encoding',b'identity'),(b'Content-Length',str(len(raw)).encode()),(b'Connection',b'close')])
             writer.write(connection.send(request)+connection.send(h11.Data(data=raw))+connection.send(h11.EndOfMessage()))
             await writer.drain()
+            if observation is not None:
+                observation['sent_at']=time.monotonic()
             yield _M4_REQUEST_SENT
             headers=False;wire=0
             while True:
                 event=connection.next_event()
                 if event is h11.NEED_DATA:
-                    chunk=await reader.read(8192);wire+=len(chunk)
+                    waiting=time.monotonic()
+                    try:
+                        chunk=await reader.read(8192)
+                    finally:
+                        read_wait+=time.monotonic()-waiting
+                    wire+=len(chunk)
                     if wire>327680:raise _M4Rejection('wire_bound','M4 raw wire bound exceeded')
                     connection.receive_data(chunk)
                 elif isinstance(event,h11.Response):
@@ -316,6 +324,8 @@ async def _m4_wire(config,raw,guard,observation=None):
                     headers=True
                 elif isinstance(event,h11.Data):
                     if not headers:raise _M4Rejection('wire_missing_headers','M4 response headers unavailable')
+                    if observation is not None:
+                        observation.setdefault('first_body_at',time.monotonic())
                     yield bytes(event.data)
                 elif isinstance(event,h11.EndOfMessage):
                     if not headers or event.headers:raise _M4Rejection('wire_end','M4 response framing unavailable')
@@ -330,6 +340,8 @@ async def _m4_wire(config,raw,guard,observation=None):
     except h11.ProtocolError:
         raise _M4Rejection('wire_protocol','M4 total transport outcome unknown') from None
     finally:
+        if observation is not None:
+            observation['read_wait']=read_wait
         if writer is not None:writer.transport.abort()
 
 
@@ -630,6 +642,14 @@ class MeteredDashScopeProvider:
             failure_reason='parse_error'
             raise ProviderUnknown('M4 original model outcome unknown') from None
         finally:
+            if 'sent_at' in observation:
+                sent=observation['sent_at']
+                first=observation.get('first_body_at')
+                logging.getLogger('cj_usage.audit').info(
+                    'M4_MODEL_WIRE_TIMING attempt_sha256=%s first_provider_body_ms=%s socket_read_ms=%.3f',
+                    hashlib.sha256(attempt.encode()).hexdigest(),
+                    'UNKNOWN' if first is None else format((first-sent)*1000,'.3f'),
+                    observation.get('read_wait',0.0)*1000)
             if not committed:
                 # Fixed field names/enumerated phases and numeric metadata only.
                 # Never log exception text, provider IDs, prompts, deltas or keys.

@@ -8,6 +8,7 @@ with Last-Event-ID and never receives a byte twice.
 import asyncio
 from dataclasses import dataclass
 import json
+import logging
 import time
 
 from fastapi import Request
@@ -15,9 +16,11 @@ from fastapi.responses import StreamingResponse
 from starlette.concurrency import run_in_threadpool
 
 from .history_routes import _query
+from .local_account_admission_v2 import retirement_read_operation
 from .message_routes import _error, _token
 
 TERMINAL = frozenset({'completed', 'failed', 'cancelled', 'context_invalid', 'unknown'})
+_timing_log = logging.getLogger('cj_usage.audit')
 
 
 @dataclass(frozen=True)
@@ -47,7 +50,7 @@ def register_run_events_route(app, reader=None, display_configuration=None, conf
     def unavailable(request):
         return _error(request, 503, 'RUN_EVENTS_UNAVAILABLE', 'dependency', 'unknown', 'retry_safe_read')
 
-    async def stream(request: Request, read):
+    async def stream(request: Request, read, *, timing=False):
         if read is None or configuration is None:
             return unavailable(request)
         token = _token(request)
@@ -65,14 +68,22 @@ def register_run_events_route(app, reader=None, display_configuration=None, conf
             return _error(request, 400, 'INVALID_INPUT', 'input', 'failed', 'do_not_retry')
 
         def snapshot():
-            payload = json.loads(read(token, mid))
+            with retirement_read_operation():
+                payload = json.loads(read(token, mid))
             return payload['status'], payload['text'].encode('utf-8')
 
         try:
+            initial_read = time.monotonic()
             status, text = await run_in_threadpool(snapshot)
-        except Exception:
+        except Exception as error:
+            if timing:
+                _timing_log.info('M4_SSE_INITIAL_TIMING request_id=%s elapsed_ms=%.3f outcome=%s',
+                                 request.state.request_id,(time.monotonic()-initial_read)*1000,type(error).__name__)
             # Same withholding as /v1/run-display: absent, foreign and unavailable look alike.
             return unavailable(request)
+        if timing:
+            _timing_log.info('M4_SSE_INITIAL_TIMING request_id=%s elapsed_ms=%.3f outcome=read',
+                             request.state.request_id,(time.monotonic()-initial_read)*1000)
         if offset > len(text):
             return _error(request, 409, 'RESYNC_REQUIRED', 'input', 'failed', 'retry_safe_read')
         try:
@@ -109,4 +120,4 @@ def register_run_events_route(app, reader=None, display_configuration=None, conf
 
     @app.get('/v2/run-events')
     async def travel_events(request: Request):
-        return await stream(request, travel_reader.read_travel_events if travel_reader is not None else None)
+        return await stream(request, travel_reader.read_travel_events if travel_reader is not None else None,timing=True)
