@@ -55,7 +55,31 @@ def exercise(root,conninfo):
         assert before['status']=='awaiting_confirmation'
         post(progress_url+'/confirmation',dict(version='CLEANUP-API@1',registry_digest=prepared['registry_digest'],confirmation='wrong'),code=403)
         post(progress_url+'/confirmation',dict(version='CLEANUP-API@1',registry_digest=prepared['registry_digest'],confirmation='DELETE_ACCOUNT'),'bob',403)
-        result=post(progress_url+'/confirmation',dict(version='CLEANUP-API@1',registry_digest=prepared['registry_digest'],confirmation='DELETE_ACCOUNT'))
+        from cj_api.local_account_admission_v2 import (
+            account_checker_for, permit_retirement_read_lease, retirement_read_operation,
+        )
+        from cj_auth.interfaces import AdmissionStatus
+        from unittest.mock import patch
+        database=LocalDatabase(conninfo)
+        independent=account_checker_for(auth,database)
+        opened=[]
+        original_open=database._open_runtime_connection
+
+        def record_checkout():
+            connection=original_open()
+            opened.append(connection)
+            return connection
+
+        with patch.object(database,'_open_runtime_connection',side_effect=record_checkout):
+            with permit_retirement_read_lease(database,lambda:None),retirement_read_operation():
+                assert independent.check(tokens['alice']).status is AdmissionStatus.ALLOWED
+                assert independent.check(tokens['bob']).status is AdmissionStatus.UNKNOWN
+                result=post(progress_url+'/confirmation',dict(version='CLEANUP-API@1',
+                            registry_digest=prepared['registry_digest'],confirmation='DELETE_ACCOUNT'))
+                assert independent.check(tokens['alice']).status is AdmissionStatus.DENIED
+                assert len(opened)==1 and not opened[0].closed
+            assert opened[0].closed
+        print('PASS retirement read lease uses one physical connection, rejects foreign scope and sees freshly committed retirement')
         assert result['business_access']=='revoked' and result['online_status']=='complete' and result['status']!='complete'
         # Public C owner seam: the fence came from the actual signed confirmation.
         # Its isolated assertion also works in a genuinely read-only transaction.
@@ -85,10 +109,6 @@ def exercise(root,conninfo):
         with psycopg.connect(**config) as audit:
             assert audit.execute('SELECT (SELECT count(*) FROM cj_account_fence),(SELECT count(*) FROM cj_cleanup_operation),(SELECT count(*) FROM cj_cleanup_domain_result)').fetchone()==counts
         print('PASS public account-retirement helper: actual signed-confirmation fence, readonly success/None, no writes, absent/foreign/original-operation/purpose negatives; B hooks also compose it after require_intent')
-        from cj_api.local_account_admission_v2 import account_checker_for
-        from cj_auth.interfaces import AdmissionStatus
-        from unittest.mock import patch
-        independent=account_checker_for(auth,LocalDatabase(conninfo))
         assert independent.check(tokens['alice']).status is AdmissionStatus.DENIED
         assert independent.check(tokens['bob']).status is AdmissionStatus.ALLOWED
         with patch.object(LocalDatabase,'connect',side_effect=RuntimeError('injected storage uncertainty')):

@@ -119,6 +119,20 @@ def exercise(auth,conninfo):
         assert memory_rows()==before
         with database.connect(scope_for(ISSUER,B)) as c:
             assert c.execute("SELECT has_table_privilege(current_user,'cj_message_context_profile','INSERT'),has_table_privilege(current_user,'cj_message_context_profile','UPDATE')").fetchone()==(False,False)
+    params={'limit':10}
+    with TestClient(app) as baseline,patch.object(database,'_open_runtime_connection',wraps=database._open_runtime_connection) as opened:
+        original_items=expect(baseline.get('/v2/memories',params=params,headers=headers(B)))['items']
+        original_checkouts=opened.call_count
+    with patch('cj_api.supabase_test_database.current_authorization') as authorize:
+        with TestClient(configured_app()) as leased,patch.object(database,'_open_runtime_connection',wraps=database._open_runtime_connection) as opened:
+            assert expect(leased.get('/v2/memories',params=params,headers=headers(B)))['items']==original_items
+            assert opened.call_count<original_checkouts
+            assert authorize.call_count>1
+            authorization_calls=authorize.call_count
+            expect(leased.get('/v2/memory-items',params={'item_id':'worker-item-0'},headers=headers(B)))
+            assert authorize.call_count==authorization_calls
+            harness.expect(leased.get('/v2/memories',params=params,headers=headers(A)),503)
+    print('PASS HK typed list preserves original items with fewer checkouts; detail and foreign behavior unchanged')
     with TestClient(configured_app()) as api:
         old=host.send(api,A,'worker-legacy','Synthetic old scope without Memory')
         current=send(api,'worker-current-one',travels[0])
