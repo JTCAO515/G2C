@@ -71,7 +71,7 @@ def register_run_events_route(app, reader=None, display_configuration=None, conf
             return _error(request, 400, 'INVALID_INPUT', 'input', 'failed', 'do_not_retry')
 
         def snapshot():
-            with retirement_read_operation(snapshot=True):
+            with retirement_read_operation(purpose='sse_snapshot'):
                 payload = json.loads(read(token, mid))
             return payload['status'], payload['text'].encode('utf-8')
 
