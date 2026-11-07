@@ -130,6 +130,13 @@ class DisplaySnapshotReader:
     def read_travel_display(self,token,message_id,request_id):
         return self._context_display(token,message_id,request_id,formal=False)
 
+    def read_travel_events(self, token, message_id):
+        def encode(state, original, reference):
+            if reference.message_version != 'MESSAGE-send.2':
+                raise SnapshotUnavailable('travel stream requires original send.2')
+            return _encode_snapshot(state, self.configuration)
+        return self._read_materialized(token, message_id, encode, travel=True)
+
     def _context_display(self,token,message_id,request_id,*,formal,edit=False,results=False):
         def encode(state,original,reference):
             value=dict(request_id=request_id,version='RUN-display.5' if results else 'RUN-display.4' if edit else 'RUN-display.3' if formal else 'RUN-display.2',

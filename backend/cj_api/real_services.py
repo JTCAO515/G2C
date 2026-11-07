@@ -13,7 +13,10 @@ from pathlib import Path
 import re
 from types import MappingProxyType
 
-from cj_agent.provider import DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,M4_NATIVE_TURN_PROFILE_V2,ProviderUnknown,ProviderFailed
+from cj_agent.provider import (
+    DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,M4_REAL_OUTPUT_TOKENS,
+    M4_NATIVE_TURN_PROFILE_V2,ProviderUnknown,ProviderFailed,
+)
 from cj_fact.contract_v1 import decode_query as fact_query
 from cj_fact.live_source import NOTICE_URL,WEATHER_URL,public_page,weather
 from cj_fact.policy import FactFailure
@@ -133,7 +136,8 @@ class RealServices:
         subjects=frozenset(json.loads((Path(auth_dir)/'invited.json').read_text()))
         root=Path.home()/'.local/share/g2c/m4-real-services'
         budget=AuthorizationBudget(root,authorization_guard=authorization_guard)
-        model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,secret('CJ_MODEL_API_KEY'),max_output_tokens=1024),budget)
+        model=MeteredDashScopeProvider(DashScopeConfig(
+            M4_BASE,M4_MODEL,secret('CJ_MODEL_API_KEY'),max_output_tokens=M4_REAL_OUTPUT_TOKENS),budget)
         return cls(model,secret('CJ_AMAP_WEB_KEY'),subjects)
 
 

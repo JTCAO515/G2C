@@ -16,7 +16,7 @@ from jsonschema import Draft202012Validator,ValidationError
 
 from cj_agent.provider import DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,M4_NATIVE_ANSWER_PROFILE,M4_NATIVE_TURN_PROFILE,M4_TURN_FUNCTION,ProviderFailed,ProviderUnknown,_m4_wire,_bounded_sse_lines
 from cj_agent.provider import _m4_turn_function
-from cj_agent.provider import M4_NATIVE_TURN_PROFILE_V2,M4_TURN_FUNCTION_V2
+from cj_agent.provider import M4_NATIVE_TURN_PROFILE_V2,M4_REAL_OUTPUT_TOKENS,M4_TURN_FUNCTION_V2
 from cj_api.real_services import RealServices,RealTools,TOOLS
 from cj_api.real_services import canonical_tool
 from cj_api.real_services import ModelInput,TOOL_SYSTEM
@@ -61,6 +61,65 @@ def turn_sse(*,tool=False,usage=True,model=M4_MODEL,done=True,turn=None,compact=
 
 
 class Boundaries(unittest.TestCase):
+    def test_compact_native_length_headroom_keeps_strict_original_receipt(self):
+        answer='Synthetic "quoted" place\\name.\nSecond line.'
+        turn=dict(version='MODEL-tool-turn.1',kind='answer',answer=dict(zh='合成答案。',en=answer),calls=[])
+        body=turn_sse(turn=turn,compact=True).replace('"finish_reason": "tool_calls"','"finish_reason": "stop"')
+        def response(request):
+            self.sent.append(request)
+            value=json.loads(request.content)
+            self.assertEqual(value['max_tokens'],1536)
+            self.assertIn('Use JSON string escaping',value['messages'][0]['content'])
+            self.assertTrue(value['tools'][0]['function']['strict'])
+            return httpx.Response(200,stream=httpx.ByteStream(body.encode()))
+        provider=MeteredDashScopeProvider(
+            DashScopeConfig(M4_BASE,M4_MODEL,KEY,max_output_tokens=M4_REAL_OUTPUT_TOKENS),
+            self.budget,transport=httpx.MockTransport(response))
+        receipt={}
+        result=self.invoke(provider,tools=TOOLS,native_turn_profile=M4_NATIVE_TURN_PROFILE_V2,receipt=receipt)
+        self.assertEqual(parse_turn(''.join(result).encode(),{'place_search'}).answer_en,answer)
+        self.assertEqual(receipt['usage']['total_tokens'],50)
+        self.assertEqual(self.budget.inspect()[0]['state'],'RECEIVED')
+        with self.assertRaises(BudgetUnknown):
+            self.invoke(provider,tools=TOOLS,native_turn_profile=M4_NATIVE_TURN_PROFILE_V2)
+        self.assertEqual(len(self.sent),1)
+
+    def test_compact_wire_yields_empty_only_after_the_one_original_send(self):
+        body=turn_sse(compact=True).replace('"finish_reason": "tool_calls"','"finish_reason": "stop"').encode()
+        wire=(b'HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nContent-Length: '+
+              str(len(body)).encode()+b'\r\n\r\n'+body)
+        writes=[]
+        reads=[]
+        class Reader:
+            async def read(self, size):
+                reads.append(size)
+                return wire
+        class Writer:
+            transport=None
+            def __init__(self):
+                self.transport=self
+            def write(self, raw):
+                writes.append(raw)
+            async def drain(self):
+                pass
+            def abort(self):
+                pass
+        async def open_socket(*args,**kwargs):
+            return Reader(),Writer()
+        provider=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),self.budget)
+        receipt={}
+        with patch('cj_agent.provider.asyncio.open_connection',open_socket):
+            stream=provider.invoke([dict(role='user',content='Synthetic status only')],
+                TOOL_SYSTEM,'one-send',tools=TOOLS,native_turn_profile=M4_NATIVE_TURN_PROFILE_V2,
+                receipt=receipt,guard=lambda:True)
+            self.assertEqual(next(stream),'')
+            self.assertEqual(len(writes),1)
+            self.assertEqual((receipt,self.budget.inspect()[0]['state']),({},'INTENT'))
+            self.assertEqual(parse_turn(''.join(stream).encode(),{'place_search'}).answer_en,'Needs verification.')
+        self.assertEqual(len(writes),1)
+        self.assertEqual(len(reads),1)
+        self.assertEqual(self.budget.inspect()[0]['state'],'RECEIVED')
+
     def test_compact_answer_only_has_an_explicit_profile_and_preserves_the_original_wrapper(self):
         # The actual failure established only the outer field set. This nested
         # bilingual value is a synthetic fixture, not the lost provider bytes.
