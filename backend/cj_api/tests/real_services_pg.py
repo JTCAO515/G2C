@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 
 from cj_agent.provider import DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,M4_TURN_FUNCTION_V2
 from cj_api.real_services import RealServices,RealTools
-from cj_api.local_app import LocalDatabase,app_from_environment,scope_for,ISSUER
+from cj_api.local_app import LocalDatabase,app_from_environment,create_local_app,scope_for,ISSUER
 from cj_api.local_run_context import load_run_context
 from cj_place.gaode import Response
 from cj_place.https_transport import TransportResult
@@ -188,6 +188,34 @@ def exercise(auth,conninfo):
                 assert 'Needs verification.' in display['snapshot']['text']
                 assert 'TOOL-output.1' not in display['snapshot']['text']
                 harness.expect(client.get('/v1/run-display',params=dict(message_id=subject),headers=headers[subjects[1]]),503)
+                if subject.endswith('ok'):
+                    from cj_message import domain as message_domain
+                    read_app = create_local_app(conninfo_path=None, auth_dir=auth, database=db,
+                                                run_context=profiles[subject][1], account_admission=True,
+                                                existing_display_reads=True)
+                    query = dict(message_id=subject)
+                    before_display = len(opened)
+                    with TestClient(read_app) as reader, patch.object(
+                            db, 'provision', side_effect=AssertionError('existing display must not provision')):
+                        exact = harness.expect(reader.get('/v1/run-display', params=query, headers=headers[subject]))
+                        assert exact['snapshot'] == display['snapshot']
+                        assert len(opened) - before_display <= 12
+                        harness.expect(reader.get('/v1/run-display', params=query, headers=headers[subjects[1]]),503)
+                        original_read = message_domain.read_active_message
+                        invitations = auth/'invited.json'
+                        previous = invitations.read_bytes()
+
+                        def revoke_after_read(tx, message_id):
+                            record = original_read(tx, message_id)
+                            invitations.write_text(json.dumps([s for s in subjects if s != subject]))
+                            return record
+
+                        try:
+                            with patch.object(message_domain, 'read_active_message', revoke_after_read):
+                                denied = reader.get('/v1/run-display', params=query, headers=headers[subject])
+                                assert denied.status_code == 503 and 'snapshot' not in denied.json()
+                        finally:
+                            invitations.write_bytes(previous)
             elif subject.endswith('repeat'):
                 assert outcomes[0].status=='failed' and model.calls==2 and len(tool_calls)==before+1
                 assert [(r['kind'],r['state']) for r in budget.inspect()]==[('model','RECEIVED'),('place','RECEIVED'),('model','RECEIVED')]

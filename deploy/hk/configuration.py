@@ -180,7 +180,8 @@ class Runtime:
                           self.subjects-(frozenset(self.typed_memory.collection.profiles)-self.typed_message_subjects))
         app=create_local_app(conninfo_path=None,auth_dir=self.auth,database=database,run_context=self.context,
             confirmation_signer=ConfirmationSigner(decoded('CJ_BETA_CONFIRMATION_B64',length=32)),history_configuration=history,
-            account_admission=True,needs_profile=os.environ.get('CJ_LOCAL_NEEDS_PROFILE'),message_subjects=message_subjects)
+            account_admission=True,needs_profile=os.environ.get('CJ_LOCAL_NEEDS_PROFILE'),message_subjects=message_subjects,
+            existing_display_reads=True)
         if self.typed_memory is not None:
             from cj_memory.typed_api import register_typed_routes
             register_typed_routes(app,database=database,auth_dir=self.auth,configuration=self.typed_memory)

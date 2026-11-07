@@ -91,7 +91,8 @@ def create_composed_app(*, environment, jwt_configuration, verification_keys,
                         trip_configuration=None, resolve_trip=None, trip_confirmation_validator=None, trip_confirmation_signer=None,
                         needs_configuration=None, resolve_needs=None, needs_repository_factory=None,
                         feedback_configuration=None, resolve_feedback=None, resolve_feedback_run=None,feedback_scope_binder=None,feedback_scope_current=None,
-                        run_display_configuration=None, resolve_run_display=None,manual_preview_configuration=None,
+                        run_display_configuration=None, resolve_run_display=None, run_display_message_boundary=None,
+                        manual_preview_configuration=None,
                         usage_status_configuration=None,resolve_usage_status=None,
                         original_usage_configuration=None,resolve_original_usage_run=None,
                         cleanup_progress_configuration=None,resolve_cleanup_progress=None,
@@ -151,9 +152,10 @@ def create_composed_app(*, environment, jwt_configuration, verification_keys,
             raise CompositionUnavailable('Explicit FEEDBACK configuration/resolver required')
         feedback_boundary,feedback_modules = _feedback_with_shared_message(boundary,resolve_feedback,resolve_feedback_run,scope_binder=feedback_scope_binder,scope_current=feedback_scope_current)
     run_display_reader = run_display_modules = None
-    if run_display_configuration is not None or resolve_run_display is not None:
+    if run_display_configuration is not None or resolve_run_display is not None or run_display_message_boundary is not None:
         from .run_display_composition import _attach_run_display
-        run_display_reader,run_display_modules = _attach_run_display(boundary,resolve_run_display,run_display_configuration)
+        display_boundary = boundary if run_display_message_boundary is None else run_display_message_boundary
+        run_display_reader,run_display_modules = _attach_run_display(display_boundary,resolve_run_display,run_display_configuration)
     preview_boundary = preview_modules = None
     if manual_preview_configuration is not None:
         if trip_boundary is None:raise CompositionUnavailable('Manual preview requires the existing configured TRIP boundary')

@@ -202,13 +202,15 @@ class Boundary:
     verified TrustedPrincipal to a repository scoped to that identity/environment.
     Caller bodies cannot supply a repository, scope or principal.
     """
-    def __init__(self, checker, resolve_repository, new_run_id, *, resolve_travel_repository=None):
+    def __init__(self, checker, resolve_repository, new_run_id, *, resolve_travel_repository=None,
+                 checker_in_transaction=None):
         if INTERFACE_VERSION != EXPECTED_AUTH or not isinstance(checker, AdmissionChecker):
             raise ValueError('fixed AUTH interface required')
         self.checker = checker
         self.resolve_repository = resolve_repository
         self.new_run_id = new_run_id
         self.resolve_travel_repository = resolve_travel_repository
+        self.checker_in_transaction = checker_in_transaction
 
     def _bind(self, token, *, travel=False):
         first = self.checker.check(token)
@@ -222,13 +224,19 @@ class Boundary:
         repository = resolver(first.principal)
         bound_scope = repository.scope
 
-        def guard(stage):
-            current = self.checker.check(token)
+        def check(stage, tx):
+            checker = self.checker
+            if tx is not None and self.checker_in_transaction is not None:
+                checker = self.checker_in_transaction(tx, bound_scope)
+            current = checker.check(token)
             if current.status is not AdmissionStatus.ALLOWED:
                 raise AccessBlocked(current, stage)
             if current.principal != first.principal or repository.scope != bound_scope:
                 # Do not accept an identity replacement even if it independently passes.
                 raise IdentityChanged(stage)
+
+        def guard(stage):
+            check(stage, None)
 
         class GuardedRepository:
             scope = bound_scope
@@ -236,9 +244,9 @@ class Boundary:
             @contextmanager
             def transaction(self):
                 with repository.transaction() as tx:
-                    guard('transaction')
+                    check('transaction', tx)
                     yield tx
-                    guard('commit')
+                    check('commit', tx)
                 guard('return')
 
         return Service(GuardedRepository(), self.new_run_id), first.principal, bound_scope, guard

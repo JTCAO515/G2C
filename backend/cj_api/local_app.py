@@ -339,7 +339,8 @@ def trip_configuration(value):
 
 def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, history_configuration=None,
                      memory_configuration=None, run_context=None, travel_context=False, needs_profile=None, trip_context=False,edit_configuration=None,
-                     cleanup_configuration=None,formal_memory_configuration=None,database=None,account_admission=False,message_subjects=None):
+                     cleanup_configuration=None,formal_memory_configuration=None,database=None,account_admission=False,message_subjects=None,
+                     existing_display_reads=False):
     if os.environ.get('CJ_ENV') != 'local':
         raise CompositionUnavailable('CJ_ENV must explicitly be local')
     auth_dir = Path(auth_dir)
@@ -387,13 +388,32 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
         else:raise CompositionUnavailable('matching explicit cleanup host configuration required')
         access=AccountRevocationAccess(base_access,cleanup_runtime.retired)
 
-    def message_repository(principal):
+    def message_repository(principal, *, provision=True):
         if message_subjects is not None and principal.subject not in message_subjects:
             raise CompositionUnavailable('MESSAGE consumer unavailable for this API-only subject')
         scope = scope_for(principal.issuer, principal.subject)
         database.require_budget_account(scope)
-        database.provision(scope)
+        if provision:
+            database.provision(scope)
         return database.message_repository(scope)
+
+    display_boundary = None
+    if existing_display_reads:
+        if not account_admission or cleanup_runtime is not None:
+            raise CompositionUnavailable('existing display reads require runtime retirement checks')
+        from cj_auth.admission import AdmissionChecker
+        from cj_auth.jwt_adapter import PyJWTVerifier
+        from cj_message.auth_boundary import Boundary
+        from .local_account_admission_v2 import retired_in_transaction
+
+        verifier = PyJWTVerifier(config, keys)
+
+        def display_checker(tx, scope):
+            return AdmissionChecker(verifier, AccountRevocationAccess(base_access, retired_in_transaction(tx.cur, scope)))
+
+        display_boundary = Boundary(AdmissionChecker(verifier, access),
+                                    lambda principal: message_repository(principal, provision=False), None,
+                                    checker_in_transaction=display_checker)
 
     def travel_repository(principal):
         # Identity exists before any chat/Trip/NEEDS or metered account. Provision
@@ -494,7 +514,7 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
         max_body_bytes=16384, history_configuration=history_configuration,
         run_display_configuration=RunDisplayWireConfiguration(max_message_id_bytes=256, max_text_bytes=200000,
                                                               max_response_bytes=400000),
-        resolve_run_display=run_repository,
+        resolve_run_display=run_repository, run_display_message_boundary=display_boundary,
         run_events_configuration=RunEventsConfiguration(poll_interval_seconds=0.2, max_stream_seconds=120),
         trip_configuration=TripWireConfiguration(max_action_bytes=4096, max_page_limit=50,
                                                  max_private_response_bytes=1_000_000),
