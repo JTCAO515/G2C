@@ -64,7 +64,7 @@
 
 | 线 | 队列 | 本线拥有的文件 | 跨线依赖 |
 |---|---|---|---|
-| A App | #398 CLOSED；#498 设备矩阵代码已交PR597/602/604/606/608/610 → #4/#29真机余项BLOCKED、未完成 | 无新增，仍仅本线ios与获准文档 | 等JT新XCTest系统验证、B新600短窗/593 owner批准、原型605 owner；第三group/TLS续期已批，其他设备/TestFlight另批 |
+| A App | #398/#498/#4 CLOSED → #29 真机余项整线 BLOCKED，#605 OPEN 并由 #29 承接 | ios/**、本线获准文档、JT 指定的 #605 原型 spikes/ios | 待指定 iPhone 网络恢复和重连、B 正式短窗、高德 SDK 缓存停点及原 77 实际到期 |
 | B 后端消息与运行 | 本轮[#354](https://github.com/JTCAO515/G2C/issues/354)/[#360](https://github.com/JTCAO515/G2C/issues/360)/[#378](https://github.com/JTCAO515/G2C/issues/378)均CLOSED（PR359/379/380/382）；goal结束仅B交接，C实际B接口缺口优先响应360/343；315按JT保持OPEN不投入 | `backend/run/**`、`backend/message/**`、`backend/needs/**`、`backend/usage/**`、`backend/cj_api/**`、`backend/place/**`、`backend/fact/**`、`scripts/dev_auth.py`；下列 B 线协调文件 | source1 needs-structured.1与source2 needs-current-trip.1独立正式入口；publisher@2/M29同cursor结果与新读版本供C336/A337。C381/M30生产交付由C负责，A App/真实资源按各owner验，不由B probe/后端验收代称全M2完成；业务锁已释放 |
 | C M2后端记忆、草稿与可行性 | M2本线已派后端均交：366/374/336及25后端完成；保持原M2 goal，继续处理真实C-owner联调缺口，当前唯一剩余21地图按JT暂缓UNRUN | backend/trip/**、backend/draft/**、backend/feasibility/**、backend/agent/cj_agent/draft.py、backend/memory/**、backend/memory_management/**、backend/memory_jobs/**、backend/memory_withdrawal/**、backend/manual_edit/**；只做后端 | B354/360/378及A337/373/286/22/25均已交闭；C381同RUN cursor结果/受保护读取与M30已合并。实时M2仅21地图综合余项，JT决定授权调整、A实施；无独立C项时保留实际停点，不重复测试/handoff或求同一地图授权，不将M2标complete。 |
 
@@ -201,7 +201,9 @@
 - M1 授权条目 1（DashScope）、2（Supabase 测试项目）有效至 2026-11-30，只用合成数据。
 - 高德 SDK 只进本机构建配置，CI 的 arm64 模拟器构建不能因此失败。
 
-- A（2026-11-07，本Goal唯一blocked交接）：PR597/602/604/606/608/610已锁head合并；610锁039fd1b9合cbf8c02e，精确独审/10job/latest lint/外部检查SUCCESS。离线12/13、反馈21/22/24、结构33–44和独立删除49/51按原head/方法通过并收尾；候选53仅旧2691英文PASS，新039中英仍UNRUN，54/57/58/59历史保留；609注销55/56 FAIL，60临时类别诊断仅构建，未绕Confirm或放宽TLS。第三device-v4 group已获JT批准并portal/profile18实际PASS；本机TLS每24小时原条件续期也已批，不重复审批。三连续Goal turn核实无设备/PG live：本机候选/注销等JT看着指定iPhone完成新XCTest系统验证；公域等B新600窗口、完整profile等593/JT owner批准；4原型Contrast等spikes owner605，其他设备仍不在本轮范围。只保留默认字号/完整.all及原业务/字节/隔离；最大字号/VO取消不计PASS。63与合并main整个ios树相同，冻结3cd/9f公域包和所有原证据保留，按影响复用不重跑；无输入/PG遗留。#498/#4/#29 OPEN、Goal BLOCKED未完成，不替C补32网络格、不冒M4完成；本次只一次A交接，B/C不改。
+- A（2026-11-08，本 Goal 整线阻塞交接）已交指定真机候选 65/66、注销 69 本机 31 域、离线 77、锁屏 81、系统时区 105、WGS84 131。PR642 锁 head 合并，精确 CI 全部通过。恢复顺序和剩余层级见 [#29](https://github.com/JTCAO515/G2C/issues/29)、[#605](https://github.com/JTCAO515/G2C/issues/605) 和 handoff。历史 FAIL、UNRUN 和 UNKNOWN 保留。
+
+- A（2026-11-07，PR611 历史阻塞快照）：PR597/602/604/606/608/610已锁head合并；610锁039fd1b9合cbf8c02e，精确独审/10job/latest lint/外部检查SUCCESS。离线12/13、反馈21/22/24、结构33–44和独立删除49/51按原head/方法通过并收尾；候选53仅旧2691英文PASS，新039中英仍UNRUN，54/57/58/59历史保留；609注销55/56 FAIL，60临时类别诊断仅构建，未绕Confirm或放宽TLS。第三device-v4 group已获JT批准并portal/profile18实际PASS；本机TLS每24小时原条件续期也已批，不重复审批。三连续Goal turn核实无设备/PG live：本机候选/注销等JT看着指定iPhone完成新XCTest系统验证；公域等B新600窗口、完整profile等593/JT owner批准；4原型Contrast等spikes owner605，其他设备仍不在本轮范围。只保留默认字号/完整.all及原业务/字节/隔离；最大字号/VO取消不计PASS。63与合并main整个ios树相同，冻结3cd/9f公域包和所有原证据保留，按影响复用不重跑；无输入/PG遗留。#498/#4/#29 OPEN、Goal BLOCKED未完成，不替C补32网络格、不冒M4完成；本次只一次A交接，B/C不改。
 
 - A（2026-11-06，PR584历史blocked快照，已由上条实时交接替代）：PR573/576/580已锁head合并，适用独审与exact CI全成功；#398 CLOSED，#498/#4/#29仍OPEN。默认字号下的本机/真机选定PASS按实时#498表和原head复用，整套不继承；离线完整08/entry09及公域中文06旧FAIL保留。3cd77fa9业务分支已保存，三个独立签名准备包（原05中文恢复优先、手动Needs、一般Feedback）均核head/方法/设备/工程/产物，执行UNRUN。所有剩余实际App验收均受JT当前手机暂缓约束，已连续三轮核实；注销device-v4的group关联还等#495/6679809178，最低系统设备资源另批，正式云Trip/Memory/cleanup等B。#30当前bb/28f5仅已交手动Needs/Feedback及既有读取；不拿本机/Fake代云端或C的#32网络格。保持默认L/50%/关闭及VO关闭；取消要求不计PASS。不得触碰手机/mint/新调用或重复旧矩阵；收到JT重连/授权/服务变化后才续作。本次仅A handoff，不更新B/C快照，不关闭父票或M4。以下2026-11-04的A条目保留为历史，实时Issue优先。
 
