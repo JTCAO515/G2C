@@ -9,6 +9,11 @@ POLICY = dict(id='JT-2026-11-04-M4', source='docs/scope.md; #495; PR518',
               first_body_p95_maximum_seconds=5, full_answer_p95_maximum_seconds=90,
               required_target_phases=['overseas_pretrip','china_travel'])
 
+VISIBLE_PROGRESS_POLICY = dict(POLICY, id='JT-2026-11-07-M4',
+    source='https://github.com/JTCAO515/G2C/issues/495#issuecomment-6708986558',
+    first_visible_progress_p95_maximum_seconds=5, first_body_p95_maximum_seconds=15)
+QUALITY_POLICIES = {policy['id']: policy for policy in (POLICY, VISIBLE_PROGRESS_POLICY)}
+
 # Explicit opt-in for newly frozen plans. Historical plans keep POLICY above.
 MAC_VPN_NETWORK = dict(id='JT-2026-11-06-M4-NETWORK', source='#32 JT 2026-11-06; PR568',
                       required_target_phases=['china_travel'],
@@ -133,7 +138,7 @@ def network_status(network, network_policy=POLICY):
 
 
 def profile_gate(*, counts, rows, first_body, full_answer, serious_errors, real, scenarios, network,
-                 network_policy=POLICY):
+                 network_policy=POLICY, quality_policy=POLICY, first_visible_progress=None):
     planned = len(rows)
     started = planned - counts['UNRUN']
     minimum = Fraction(str(POLICY['completion_rate_minimum']))
@@ -170,8 +175,11 @@ def profile_gate(*, counts, rows, first_body, full_answer, serious_errors, real,
                             maximum=POLICY['serious_errors_maximum'], observed_n=len(serious_errors), errors=serious_errors,
                             hard_failure_refs=hard_failures, review_failure_refs=review_failures,
                             reviewed_n=reviewed, hard_unknown_n=hard_unknown_n, planned_n=planned),
-        first_body_p95=_timing(first_body, rows, 'first_body_seconds', POLICY['first_body_p95_maximum_seconds'], started),
+        first_body_p95=_timing(first_body, rows, 'first_body_seconds', quality_policy['first_body_p95_maximum_seconds'], started),
         full_answer_p95=_timing(full_answer, rows, 'full_answer_seconds', POLICY['full_answer_p95_maximum_seconds'], started))
+    if first_visible_progress is not None:
+        criteria['first_visible_progress_p95'] = _timing(first_visible_progress, rows, 'first_visible_progress_seconds',
+            quality_policy['first_visible_progress_p95_maximum_seconds'], started)
     diagnostic = _combine([c['status'] for c in criteria.values()])
     net = network_status(network,network_policy)
     real_decision = _combine([diagnostic,net]) if real and started else 'UNRUN'
@@ -181,7 +189,7 @@ def profile_gate(*, counts, rows, first_body, full_answer, serious_errors, real,
                 evidence_scope='real evaluation' if real else 'format-only; not a real quality conclusion')
 
 
-def acceptance(profiles, plan, network_policy=POLICY):
+def acceptance(profiles, plan, network_policy=POLICY, quality_policy=POLICY):
     candidates = []
     for candidate in plan['candidates']:
         groups = [p for p in profiles if p['candidate_id'] == candidate['id']]
@@ -195,8 +203,8 @@ def acceptance(profiles, plan, network_policy=POLICY):
                                target_network_planned=target,
                                missing_target_phases={phase:'UNRUN' for phase in missing},
                                evaluation_release_decision=status))
-    reported_policy = (POLICY if network_policy is POLICY else
-                       dict(POLICY,required_target_phases=network_policy['required_target_phases'],
+    reported_policy = (quality_policy if network_policy is POLICY else
+                       dict(quality_policy,required_target_phases=network_policy['required_target_phases'],
                             network_policy=network_policy))
     return dict(policy=reported_policy, profiles=profiles, candidates=candidates,
                 evaluation_release_decision=candidates[0]['evaluation_release_decision'] if len(candidates) == 1 else 'UNKNOWN',

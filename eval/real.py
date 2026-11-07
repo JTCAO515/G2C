@@ -27,7 +27,7 @@ import uvicorn
 
 from runtime import ROOT, private_database
 from cases import state
-from gates import POLICY
+from gates import VISIBLE_PROGRESS_POLICY
 from judge import judge
 from report import report, markdown
 from progress import write as write_progress
@@ -355,7 +355,8 @@ def main():
     plan = dict(schema_version=1, sample_set_id='g2c-m4-synthetic-33',
         sample_set_version='2:' + sha256(raw).hexdigest(), evidence_layer='real',
         provenance='Original fixed33/11; synthetic only, no tuning of prompts, model, holdout or judges.',
-        collector_sha256=sha256(Path(__file__).read_bytes()).hexdigest(), approved_thresholds=dict(POLICY), attempts=[1],
+        collector_sha256=sha256(Path(__file__).read_bytes()).hexdigest(),
+        quality_policy=VISIBLE_PROGRESS_POLICY['id'], approved_thresholds=dict(VISIBLE_PROGRESS_POLICY), attempts=[1],
         batch_id=args.batch_id, smoke_evidence_sha256=sha256((args.smoke/'summary.json').read_bytes()).hexdigest(),
         execution_source=hk.source_info(),
         candidates=[dict(id=commit, commit=commit, config_version='M4 real-m4 / signed MESSAGE-send.2 / registered exit / legacy draft / typed memory',
