@@ -1,0 +1,169 @@
+{
+  "original_stage": "hk-compact-e3b36c39-smoke-001",
+  "original_candidate": "e3b36c39b637f564a369e91ca559bcf4d64c0f79",
+  "original_summary_sha256": "ad1ea88ef583918ac63d78c3571609bd4ee9973ff936c596e34634828fbd1803",
+  "original_canonical_status": "FAIL",
+  "corrected_offline_assessment": {
+    "candidate_id": "e3b36c39b637f564a369e91ca559bcf4d64c0f79",
+    "batch_id": "round2-smoke",
+    "status": "UNRUN",
+    "planned_n": 6,
+    "executed_n": 5,
+    "outcomes": [
+      {
+        "case_id": "place-route",
+        "language": "zh",
+        "raw_evidence_ref": "raw/place-route-zh.json",
+        "raw_evidence_sha256": "5e34a2e450e447d259f54ab70e6bd3c82750864f87fdff729143eadb222b440b",
+        "status": "PASS",
+        "reasons": [],
+        "covered": [
+          "place",
+          "route"
+        ],
+        "required": [
+          "place",
+          "route"
+        ],
+        "run_id": "75ed703f-eaa9-4730-98cd-40f2dcbc7ec3",
+        "message_id": "m4-synthetic-r2-smoke-place-route-zh-task",
+        "kind": "program",
+        "independent": true,
+        "ref": "eval/smoke.py:check"
+      },
+      {
+        "case_id": "place-route",
+        "language": "en",
+        "raw_evidence_ref": "raw/place-route-en.json",
+        "raw_evidence_sha256": "9c955361c20a6f093e0df3b4e9e0e4a253149f3362b83ae66634360a57a783ff",
+        "status": "PASS",
+        "reasons": [],
+        "covered": [
+          "place",
+          "route"
+        ],
+        "required": [
+          "place",
+          "route"
+        ],
+        "run_id": "9fcd94e8-1df4-4d49-aa4b-82086d1c7ebe",
+        "message_id": "m4-synthetic-r2-smoke-place-route-en-task",
+        "kind": "program",
+        "independent": true,
+        "ref": "eval/smoke.py:check"
+      },
+      {
+        "case_id": "weather",
+        "language": "zh",
+        "raw_evidence_ref": "raw/weather-zh.json",
+        "raw_evidence_sha256": "f221d482442aa420bc0107e4064f221e2b5afc1e6fc37d756e03cec7ecf3f2ad",
+        "status": "PASS",
+        "reasons": [],
+        "covered": [
+          "weather"
+        ],
+        "required": [
+          "weather"
+        ],
+        "run_id": "955134d3-4d7e-4710-b8b7-e952003e2213",
+        "message_id": "m4-synthetic-r2-smoke-weather-zh-task",
+        "kind": "program",
+        "independent": true,
+        "ref": "eval/smoke.py:check"
+      },
+      {
+        "case_id": "weather",
+        "language": "en",
+        "raw_evidence_ref": "raw/weather-en.json",
+        "raw_evidence_sha256": "b00ed1a72a40d1bdb8d2ed33cbdd14a75d733fed1266aa29dd08faa5af3be448",
+        "status": "PASS",
+        "reasons": [],
+        "covered": [
+          "weather"
+        ],
+        "required": [
+          "weather"
+        ],
+        "run_id": "ff6a623e-dbb0-4d6a-869e-1062b365bb7c",
+        "message_id": "m4-synthetic-r2-smoke-weather-en-task",
+        "kind": "program",
+        "independent": true,
+        "ref": "eval/smoke.py:check"
+      },
+      {
+        "case_id": "fact",
+        "language": "zh",
+        "raw_evidence_ref": "raw/fact-zh.json",
+        "raw_evidence_sha256": "ca807d7fd574e37b3c8c01b5549eac01b2eaf2501dc260e255e1d852f4db4e84",
+        "status": "PASS",
+        "reasons": [],
+        "covered": [
+          "fact"
+        ],
+        "required": [
+          "fact"
+        ],
+        "run_id": "f016657e-e2c1-45e3-992b-ab26c8173c9e",
+        "message_id": "m4-synthetic-r2-smoke-fact-zh-task",
+        "kind": "program",
+        "independent": true,
+        "ref": "eval/smoke.py:check"
+      },
+      {
+        "case_id": "fact",
+        "language": "en",
+        "status": "UNRUN"
+      }
+    ],
+    "full66_authorized_to_start": false,
+    "product_quality_verdict": "UNRUN: prerequisite tool smoke only"
+  },
+  "first_body_from_original_events": [
+    {
+      "case_id": "place-route",
+      "language": "zh",
+      "recorded_first_body_seconds": 14.408294395980192,
+      "derived_first_body_seconds": 14.408294395980192,
+      "clock_source": "original per-event client_seconds; no new clock or request",
+      "raw_sha256": "5e34a2e450e447d259f54ab70e6bd3c82750864f87fdff729143eadb222b440b"
+    },
+    {
+      "case_id": "place-route",
+      "language": "en",
+      "recorded_first_body_seconds": 14.793807584996102,
+      "derived_first_body_seconds": 14.793807584996102,
+      "clock_source": "original per-event client_seconds; no new clock or request",
+      "raw_sha256": "9c955361c20a6f093e0df3b4e9e0e4a253149f3362b83ae66634360a57a783ff"
+    },
+    {
+      "case_id": "weather",
+      "language": "zh",
+      "recorded_first_body_seconds": 6.100842479994753,
+      "derived_first_body_seconds": 6.100842479994753,
+      "clock_source": "original per-event client_seconds; no new clock or request",
+      "raw_sha256": "f221d482442aa420bc0107e4064f221e2b5afc1e6fc37d756e03cec7ecf3f2ad"
+    },
+    {
+      "case_id": "weather",
+      "language": "en",
+      "recorded_first_body_seconds": 7.509015690011438,
+      "derived_first_body_seconds": 7.509015690011438,
+      "clock_source": "original per-event client_seconds; no new clock or request",
+      "raw_sha256": "b00ed1a72a40d1bdb8d2ed33cbdd14a75d733fed1266aa29dd08faa5af3be448"
+    },
+    {
+      "case_id": "fact",
+      "language": "zh",
+      "recorded_first_body_seconds": null,
+      "derived_first_body_seconds": 10.933814085990889,
+      "clock_source": "original per-event client_seconds; no new clock or request",
+      "raw_sha256": "ca807d7fd574e37b3c8c01b5549eac01b2eaf2501dc260e255e1d852f4db4e84"
+    }
+  ],
+  "checker_file_sha256": {
+    "eval/real.py": "71b235127f6270774660f5209feda1aef7dabde82f420cceb4e9143a16bd396d"
+  },
+  "dispatch_authorized": false,
+  "provenance": "Re-evaluated original sealed raw bytes using archived actual authorization ledger; no provider invocation",
+  "human_semantics": "UNKNOWN"
+}
