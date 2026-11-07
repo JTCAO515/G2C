@@ -128,8 +128,9 @@ class Repository:
                 try: logging.getLogger(__name__).warning('run_worker_lease_cleanup_failed')
                 except BaseException: pass
 
-    def transaction(self, *, require_clean_close=False):
-        return self._transaction(require_clean_close=require_clean_close,scope_lock=True)
+    def transaction(self, *, require_clean_close=False, borrowed_connection=None, validate_connection=None):
+        return self._transaction(require_clean_close=require_clean_close,scope_lock=True,
+                                 borrowed_connection=borrowed_connection,validate_connection=validate_connection)
 
     def job_transaction(self, *, require_clean_close=False,background_protocol=None):
         # Job rows have their own locks/physical lease. Taking the shared RUN
@@ -137,8 +138,9 @@ class Repository:
         return self._transaction(require_clean_close=require_clean_close,scope_lock=False,background_protocol=background_protocol)
 
     @contextmanager
-    def _transaction(self, *, require_clean_close,scope_lock,background_protocol=None):
-        conn = self.connect()
+    def _transaction(self, *, require_clean_close,scope_lock,background_protocol=None,
+                     borrowed_connection=None,validate_connection=None):
+        conn = self.connect() if borrowed_connection is None else borrowed_connection
         cur = None
         outcome = 'setup_failed'
         cleanup_error = None
@@ -164,6 +166,8 @@ class Repository:
                 bind_scope = getattr(conn, 'bind_scope', None)
                 if bind_scope is not None:
                     bind_scope(cur)
+                if validate_connection is not None:
+                    validate_connection(cur)
                 if background_protocol is not None:
                     cur.execute("SELECT set_config('cj.background_protocol',%s,true)",(background_protocol,))
                 cur.execute("SELECT set_config('statement_timeout',%s,true), set_config('lock_timeout',%s,true)",
@@ -187,7 +191,8 @@ class Repository:
         finally:
             if cur is not None:
                 cleanup(cur.close, 'cursor_close')
-            cleanup(conn.close, 'connection_close')
+            if borrowed_connection is None or outcome != 'committed' or cleanup_error is not None:
+                cleanup(conn.close, 'connection_close')
         if require_clean_close and cleanup_error is not None:
             if not isinstance(cleanup_error, Exception):
                 raise cleanup_error

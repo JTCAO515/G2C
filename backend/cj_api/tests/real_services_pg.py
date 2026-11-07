@@ -27,7 +27,7 @@ from test_m4_real_services import turn_sse,KEY,NOW
 
 
 def exercise(auth,conninfo):
-    subjects=['m4-synthetic-'+v for v in ('ok','limit','unknown','malformed','late','permission','revoke','repeat','tail','tailbad','batch','batchfail','stop','guard-unknown','progress')]
+    subjects=['m4-synthetic-'+v for v in ('ok','limit','unknown','malformed','late','permission','revoke','repeat','tail','tailbad','batch','batchfail','stop','guard-unknown','progress','run-commit-unknown')]
     harness.dev_auth.init(auth,subjects)
     now=int(time.time());profiles={}
     for subject in subjects:
@@ -57,7 +57,8 @@ def exercise(auth,conninfo):
         budget=AuthorizationBudget(auth.parent/subject,clock=lambda:NOW)
         def response(request):
             model_calls.append(subject)
-            if subject.endswith('unknown'):raise httpx.ReadTimeout('synthetic unknown')
+            if subject.endswith('unknown') and not subject.endswith('run-commit-unknown'):
+                raise httpx.ReadTimeout('synthetic unknown')
             body=json.loads(request.content)
             assert body['tool_choice']=={'type':'function','function':{'name':M4_TURN_FUNCTION_V2}}
             assert 'response_format' not in body
@@ -209,10 +210,42 @@ def exercise(auth,conninfo):
                 outcomes = run_worker.run_once(db,model,auth,tools_configuration=tools,real_services=services,account_admission=True)
                 assert [(outcome.run_id, outcome.status) for outcome in outcomes] == [(receipt['run_id'],'unknown')]
                 assert budget.inspect() == original_attempts and len(model_calls) == before_models
+            elif subject.endswith('run-commit-unknown'):
+                from cj_run.postgres import CommitUnknown as RunCommitUnknown, Transaction
+                publication_connection = None
+                original_put = Transaction.put
+                original_commit = psycopg.Connection.commit
+
+                def capture_publication(tx, state):
+                    nonlocal publication_connection
+                    original_put(tx, state)
+                    if state.events[-1].kind == 'text_delta':
+                        publication_connection = tx.cur.connection
+
+                def commit_without_ack(connection):
+                    original_commit(connection)
+                    if connection is publication_connection:
+                        raise psycopg.OperationalError('synthetic RUN publication commit acknowledgement lost')
+
+                with patch.object(Transaction,'put',capture_publication),patch.object(psycopg.Connection,'commit',commit_without_ack):
+                    try:
+                        run_worker.run_once(db,model,auth,tools_configuration=tools,real_services=services,account_admission=True)
+                    except RunCommitUnknown:
+                        pass
+                    else:
+                        raise AssertionError('lost RUN commit acknowledgement must remain unknown')
+                assert publication_connection is not None and publication_connection.closed
+                original_attempts = budget.inspect()
+                assert model.calls==1 and len(tool_calls)==before+1
+                assert [(row['kind'],row['state']) for row in original_attempts]==[
+                    ('model','RECEIVED'),('place','RECEIVED')]
+                with db.connect(scope_for(ISSUER,subject)) as connection:
+                    assert connection.execute('SELECT status FROM cj_run_record WHERE run_id=%s',
+                                              (receipt['run_id'],)).fetchone()==('running',)
+                outcomes=run_worker.run_once(db,model,auth,tools_configuration=tools,real_services=services,account_admission=True)
             else:outcomes=run_worker.run_once(db,model,auth,tools_configuration=tools,real_services=services,account_admission=True)
             if subject.endswith('ok'):
-                # Without the per-RUN execution lease this fixture used 85 physical checkouts.
-                assert len(opened) <= 65, f'excessive worker database checkouts: {len(opened)}'
+                assert len(opened) <= 50, f'excessive worker database checkouts: {len(opened)}'
             if subject.endswith(('ok','stop')):
                 assert outcomes[0].status=='completed',(outcomes,budget.inspect(),model.calls,len(tool_calls))
                 assert model.calls==2 and len(tool_calls)==before+1
@@ -275,6 +308,12 @@ def exercise(auth,conninfo):
                     assert display['snapshot']['text_state']=='complete' and 'Needs verification.' in display['snapshot']['text']
             elif subject.endswith('limit'):
                 assert outcomes[0].status=='failed' and model.calls==1 and len(tool_calls)==before
+            elif subject.endswith('run-commit-unknown'):
+                assert [(outcome.run_id,outcome.status) for outcome in outcomes]==[(receipt['run_id'],'unknown')]
+                assert model.calls==1 and len(tool_calls)==before+1 and budget.inspect()==original_attempts
+                with db.connect(scope_for(ISSUER,subject)) as connection:
+                    assert connection.execute('SELECT acknowledged FROM cj_message_delivery WHERE run_id=%s',
+                                              (receipt['run_id'],)).fetchone()==(True,)
             elif subject.endswith(('unknown','malformed')):
                 assert outcomes[0].status=='unknown' and model.calls==1 and len(tool_calls)==before
                 assert budget.inspect()[0]['state']==('INTENT' if subject.endswith('unknown') else 'RECEIVED')

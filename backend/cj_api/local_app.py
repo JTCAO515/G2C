@@ -322,6 +322,25 @@ class LocalDatabase:
         return RunRepository(connect, scope, expires_at=datetime.now(timezone.utc) + RUN_RETENTION,
                              statement_timeout_ms=10000, lock_timeout_ms=5000)
 
+    @contextmanager
+    def lease_run_transactions(self, repository):
+        connection = repository.connect()
+
+        def transaction():
+            if connection.closed:
+                # An independent check or recovery can still use the normal path.
+                # The failed transaction itself is never rerun here.
+                return repository.transaction()
+            if connection.info.transaction_status != TransactionStatus.IDLE:
+                raise CompositionUnavailable('idle original RUN connection required')
+            return repository.transaction(borrowed_connection=connection,
+                                          validate_connection=self._check_execution_connection)
+
+        try:
+            yield transaction
+        finally:
+            connection.close()
+
 
 def local_confirmation(scope, action, proposal):
     """Local only: the authenticated owner's explicit accept/reject action is the confirmation.
