@@ -57,16 +57,16 @@ def check_legacy_message_preflight(api, host, database, configured_app):
         assert rejected['error']['code'] == 'MESSAGE_UNAVAILABLE'
         provision.assert_not_called()
 
-    preflight = database._message_preflight_transaction
+    preflight = database.scoped_cursor
 
     @contextmanager
-    def lose_read_ack(connection):
-        with preflight(connection) as cursor:
+    def lose_read_ack(scope, *, connection=None):
+        with preflight(scope, connection=connection) as cursor:
             yield cursor
         raise psycopg.OperationalError('fixture budget read acknowledgement lost')
 
     unknown_mid = 'legacy-budget-ack-unknown'
-    with patch.object(database, '_message_preflight_transaction', lose_read_ack), \
+    with patch.object(database, 'scoped_cursor', lose_read_ack), \
             patch.object(database, '_provision_scope', wraps=database._provision_scope) as provision:
         unknown = harness.expect(api.post('/v1/messages', content=body(unknown_mid, 1), headers=headers), 503)
         assert unknown['error']['code'] == 'MESSAGE_UNAVAILABLE'

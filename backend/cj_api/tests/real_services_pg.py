@@ -243,6 +243,55 @@ def exercise(auth,conninfo):
                     assert connection.execute('SELECT status FROM cj_run_record WHERE run_id=%s',
                                               (receipt['run_id'],)).fetchone()==('running',)
                 outcomes=run_worker.run_once(db,model,auth,tools_configuration=tools,real_services=services,account_admission=True)
+            elif subject.endswith('ok'):
+                from cj_api.composition import CompositionUnavailable
+                from cj_run.core import Service as RunService
+
+                scope = scope_for(ISSUER, subject)
+                scoped_cursor = db.scoped_cursor
+                retained = []
+
+                @contextmanager
+                def retain_fixture_scope(scope, *, connection=None):
+                    assert connection is not None
+                    retained.append(connection)
+                    with scoped_cursor(scope, connection=connection) as cursor:
+                        yield cursor
+                        cursor.execute("SELECT set_config('cj.usage_scope', 'stale-fixture-scope', false)")
+
+                with patch.object(db, 'scoped_cursor', retain_fixture_scope):
+                    try:
+                        run_worker.run_once(db,model,auth,tools_configuration=tools,real_services=services,account_admission=True)
+                    except CompositionUnavailable:
+                        pass
+                    else:
+                        raise AssertionError('retained scope must stop the original before RUN creation')
+                assert retained and retained[0].closed and not budget.inspect() and model.calls == 0
+                with db.connect(scope) as connection:
+                    assert connection.execute('SELECT status FROM cj_run_record WHERE run_id=%s',
+                                              (receipt['run_id'],)).fetchone() is None
+                    assert connection.execute('SELECT acknowledged FROM cj_message_delivery WHERE run_id=%s',
+                                              (receipt['run_id'],)).fetchone() == (False,)
+
+                opened.clear()
+                stages = []
+                accept, apply = RunService.accept, RunService.apply
+
+                def observe_accept(service, binding):
+                    state = accept(service, binding)
+                    stages.append((state.status, len(opened)))
+                    return state
+
+                def observe_apply(service, event):
+                    state = apply(service, event)
+                    if event.kind == 'started':
+                        stages.append(('started', len(opened)))
+                    return state
+
+                with patch.object(RunService, 'accept', observe_accept), patch.object(RunService, 'apply', observe_apply):
+                    outcomes=run_worker.run_once(db,model,auth,tools_configuration=tools,real_services=services,account_admission=True)
+                assert stages == [('queued', len(subjects) + 5), ('started', len(subjects) + 7)], stages
+                print('PASS original queued/started scope checkouts, retained scope refused before RUN and Meter')
             else:outcomes=run_worker.run_once(db,model,auth,tools_configuration=tools,real_services=services,account_admission=True)
             if subject.endswith('ok'):
                 assert len(opened) <= 50, f'excessive worker database checkouts: {len(opened)}'
