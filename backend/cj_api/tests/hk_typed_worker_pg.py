@@ -29,7 +29,7 @@ def check_legacy_sse_followup(api, host, database):
     from cj_message.domain import Service as MessageService
     from cj_run.core import Binding, Event, Service as RunService
     from cj_run.display_snapshot import DisplaySnapshotReader, RunSnapshotAdvanced
-    from cj_run.postgres import RecoveryScopeBusy, Repository
+    from cj_run.postgres import Repository, RunScopeBusy
 
     scope = scope_for(ISSUER, A)
     messages = MessageService(database.message_repository(scope), new_run_id=lambda: None)
@@ -70,7 +70,7 @@ def check_legacy_sse_followup(api, host, database):
                 runs.apply(Event(binding, 4, 'end', 'completed'))
             try:
                 result = recover_original(repository, candidate, **kwargs)
-            except RecoveryScopeBusy:
+            except RunScopeBusy:
                 assert holder is not None
                 recoveries.append('scope-busy')
                 release.set()
@@ -89,7 +89,7 @@ def check_legacy_sse_followup(api, host, database):
         def read(reader, token, key):
             try:
                 return read_original(reader, token, key)
-            except (RunSnapshotAdvanced, RecoveryScopeBusy):
+            except (RunSnapshotAdvanced, RunScopeBusy):
                 if scenario in ('revoked', 'scope-revoked'):
                     invitations.write_text(json.dumps([B]))
                 raise

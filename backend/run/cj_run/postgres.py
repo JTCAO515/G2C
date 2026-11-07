@@ -14,8 +14,8 @@ class RecoveryReadUnavailable(Exception):
     """Strict read cleanup failed; no recovered value may be published."""
 
 
-class RecoveryScopeBusy(LockNotAvailable):
-    """The original RUN scope lock timed out before reading any state."""
+class RunScopeBusy(LockNotAvailable):
+    """The RUN scope lock statement timed out before any RUN state was read."""
 
 
 class CommitUnknown(Exception):
@@ -133,11 +133,9 @@ class Repository:
                 try: logging.getLogger(__name__).warning('run_worker_lease_cleanup_failed')
                 except BaseException: pass
 
-    def transaction(self, *, require_clean_close=False, borrowed_connection=None, validate_connection=None,
-                    recovery_read=False):
+    def transaction(self, *, require_clean_close=False, borrowed_connection=None, validate_connection=None):
         return self._transaction(require_clean_close=require_clean_close,scope_lock=True,
-                                 borrowed_connection=borrowed_connection,validate_connection=validate_connection,
-                                 recovery_read=recovery_read)
+                                 borrowed_connection=borrowed_connection,validate_connection=validate_connection)
 
     def job_transaction(self, *, require_clean_close=False,background_protocol=None):
         # Job rows have their own locks/physical lease. Taking the shared RUN
@@ -146,7 +144,7 @@ class Repository:
 
     @contextmanager
     def _transaction(self, *, require_clean_close,scope_lock,background_protocol=None,
-                     borrowed_connection=None,validate_connection=None,recovery_read=False):
+                     borrowed_connection=None,validate_connection=None):
         conn = self.connect() if borrowed_connection is None else borrowed_connection
         cur = None
         outcome = 'setup_failed'
@@ -182,9 +180,8 @@ class Repository:
                 try:
                     cur.execute('SELECT epoch,active FROM cj_run_scope WHERE scope=%s'+(' FOR UPDATE' if scope_lock else ''), (self.scope,))
                 except LockNotAvailable as error:
-                    # Only this exact pre-read lock can be deferred by SSE.
-                    if recovery_read:
-                        raise RecoveryScopeBusy('original RUN scope read busy') from error
+                    if scope_lock:
+                        raise RunScopeBusy(*error.args) from error
                     raise
                 row = cur.fetchone()
                 if row is None or row[1] is not True:
@@ -213,7 +210,7 @@ class Repository:
 
     def recover(self, binding, *, require_clean_close=False):
         """Deterministic original-run read, never a worker execution authorization."""
-        transaction = (self.transaction(require_clean_close=True) if require_clean_close else self.transaction(recovery_read=True))
+        transaction = (self.transaction(require_clean_close=True) if require_clean_close else self.transaction())
         with transaction as tx:
             state = tx.get(binding)
             result = Recovery(state, Cursor(binding, tx.epoch, state.sequence, 0),
