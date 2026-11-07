@@ -1,0 +1,2390 @@
+{
+  "original_full_snapshot": {
+    "ledger_id": "32d95019ea16443b81e648960c4baba0",
+    "rows": 429,
+    "sha256": "27188245e37b89a99b2c3aa077e7956ffdf4d090efa4fbdd6396b7d32068b1b4",
+    "counts": {
+      "model": 270,
+      "weather": 67,
+      "fact": 17,
+      "place": 54,
+      "route": 21
+    },
+    "states": {
+      "RECEIVED": 360,
+      "INTENT": 69
+    },
+    "anchor_state": "ADOPTED"
+  },
+  "final_full_snapshot": {
+    "id": "32d95019ea16443b81e648960c4baba0",
+    "rows": 564,
+    "sha256": "119d38b6380a7050147dabc1e6578603ea0a5d4f26d2e7fd1c9d54cf4a987fe9",
+    "counts": {
+      "model": 379,
+      "weather": 72,
+      "fact": 17,
+      "place": 71,
+      "route": 25
+    },
+    "states": {
+      "RECEIVED": 493,
+      "INTENT": 71
+    },
+    "anchor_state": "ADOPTED"
+  },
+  "formal_attempts": [
+    {
+      "attempt_id": "77dc7b86eda949fd8de06ca806dead16",
+      "kind": "model",
+      "input_sha": "520b8c83653fe48f7b2b9f8733ec3bc7378b8dcf18bba7868bd07afa8e1dc0c0",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "c0cce816a1cfe94ef106b91a0b56d80150e8a1768f179e73a116a75471a2f476",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 621,
+          "prompt_tokens": 1389,
+          "total_tokens": 2010
+        }
+      }
+    },
+    {
+      "attempt_id": "208d0e2ea9fe4c339436a51cef2505a3",
+      "kind": "model",
+      "input_sha": "fb70d5346739aa7bb5c195da89ca75e7e0339e217002a20bbb6130b795d83485",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "5b763be868688cc5468594636a1b5fbae5fd800cf414e092b9e959c3d57ea1a0",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 168,
+          "prompt_tokens": 1393,
+          "total_tokens": 1561
+        }
+      }
+    },
+    {
+      "attempt_id": "c454acf25f114e2d9e45be21ae13f2e2",
+      "kind": "place",
+      "input_sha": "988c89c5156083ff44667670415db6e8fff62425519d1f32b32d5382b1873613",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://restapi.amap.com/v3/place/text",
+        "provider_code": "10000",
+        "region": "China",
+        "response_sha256": "b01f86c2ec284d3b5a9298bc6dfddeba51ee028e3eb6077a49307cd8a628e0ab",
+        "result_status": "ok"
+      }
+    },
+    {
+      "attempt_id": "118dbf8d09e5464d8ef4ee30a0cc03c3",
+      "kind": "place",
+      "input_sha": "2408e5f8c28b5e946cc4f9995b1ce6f76bbc63ecc9eb8d5e4315cf1fbffc6b7b",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://restapi.amap.com/v3/place/text",
+        "provider_code": "10000",
+        "region": "China",
+        "response_sha256": "1eb7d4642f056ab99b993c7c77ec68c18ea2eec8d42829d82a036c96ccd125f5",
+        "result_status": "ok"
+      }
+    },
+    {
+      "attempt_id": "e060af9e48844ef2a8366974772717a7",
+      "kind": "place",
+      "input_sha": "3d37d3115a0fc870e90063c0c8a328b61a9eb653bdfaa506eae3fb7358b43684",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://restapi.amap.com/v3/place/text",
+        "provider_code": "10000",
+        "region": "China",
+        "response_sha256": "c2030d4780e64df0300932b5a9f4507fd2f63b0ae88bc990bb2b5edc229e30ba",
+        "result_status": "ok"
+      }
+    },
+    {
+      "attempt_id": "9be36d9b87714ff8ad7355bb6bd60a36",
+      "kind": "place",
+      "input_sha": "f118e797ea93cd46bd5744808c0b06347964668ef41e30f92e0a127902a3ecaf",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://restapi.amap.com/v3/place/text",
+        "provider_code": "10000",
+        "region": "China",
+        "response_sha256": "a443413003a197636044ee19e4f7f64f64edf0b4b8cc74cd44ad4f5f9d2c4db3",
+        "result_status": "ok"
+      }
+    },
+    {
+      "attempt_id": "02f7352591aa4faeab9ea116458af5f1",
+      "kind": "model",
+      "input_sha": "d0c3b0130615611e39b1f9a1aa2148e20f3e80821dd8926d775cc44fc0d063da",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "60d3e8c9c1126b6edc99c7013fb74da6b4ab927e899b34e08024da5b81e20ca2",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 826,
+          "prompt_tokens": 7174,
+          "total_tokens": 8000
+        }
+      }
+    },
+    {
+      "attempt_id": "b2c7baf3cc1d466d97239f304ea18ef4",
+      "kind": "model",
+      "input_sha": "f9008fbd906de9601dc3ef2413770c11a714d6dd032db90554b422066a2d8b13",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "96df010c070757417ceec0e1aff67ae5afa2e3739c7243cdc5034337720fb7bf",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 337,
+          "prompt_tokens": 1390,
+          "total_tokens": 1727
+        }
+      }
+    },
+    {
+      "attempt_id": "5f312f70d0174a059d1e339190a87f18",
+      "kind": "model",
+      "input_sha": "4c530034bad7322a4d6d6e68d44883cc8602b6fb3c5b1c438e407d2480225467",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "2d9e9768c1fd3957fd540f03caa3842b28d95fd083a9aab3f25013326c46edcd",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 118,
+          "prompt_tokens": 147,
+          "total_tokens": 265
+        }
+      }
+    },
+    {
+      "attempt_id": "5866330ccc67445788861f90cf6cd6c2",
+      "kind": "model",
+      "input_sha": "d2d80cd0a538a21f60a82b65c29768a431afa086d4fffb6586530d7d1febc6f9",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "f2654f8faccfc606445ed8cad6573ff938feafa8f6eb6cf1bcecd8469f160e1d",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 128,
+          "prompt_tokens": 1395,
+          "total_tokens": 1523
+        }
+      }
+    },
+    {
+      "attempt_id": "3abb230d5ab94431891d0bbf475bae25",
+      "kind": "place",
+      "input_sha": "3218f093bfb09d4b0515e6781d108a1fc71f607cbef7fa2f8862ad7134a7ee57",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://restapi.amap.com/v3/place/text",
+        "provider_code": "10000",
+        "region": "China",
+        "response_sha256": "6ec20fb13465eb76ff4eb0f83752ef0ea840ff8239cdb73fe634749ccf49c3a0",
+        "result_status": "ok"
+      }
+    },
+    {
+      "attempt_id": "16586594b189454c9018c4cc180b4128",
+      "kind": "place",
+      "input_sha": "f9333cc50ea2f5b6104a6279c9eb9161f635c42e90312d2e56b42625b03c9346",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://restapi.amap.com/v3/place/text",
+        "provider_code": "10000",
+        "region": "China",
+        "response_sha256": "559bd64ef93b520507bf3e256bff30e92000c27bf926f0ddb1760c9cc4613858",
+        "result_status": "ok"
+      }
+    },
+    {
+      "attempt_id": "5329dcd552d14060a89277fc4dc7c392",
+      "kind": "place",
+      "input_sha": "a775b844d28157996983ad2508e3d16051a81ead36d2cca0e88831137321b772",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://restapi.amap.com/v3/place/text",
+        "provider_code": "10000",
+        "region": "China",
+        "response_sha256": "79d8d5115888885801576147553c0bfe9776a4e1e6d51318041ed9ef9649a358",
+        "result_status": "ok"
+      }
+    },
+    {
+      "attempt_id": "764388a85d0645b6a753207001aa5bce",
+      "kind": "model",
+      "input_sha": "5ba449b7ee841e0cfc2e28fc92d3602521ff4f15c257d080a36a8d63b5e05b50",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "2d59f6162b026c3b79a11b48b14f80c54024f16d6115fbd40ac97649516f68a7",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 728,
+          "prompt_tokens": 5768,
+          "total_tokens": 6496
+        }
+      }
+    },
+    {
+      "attempt_id": "7deee782c5ea4ba7a1b5607b77615add",
+      "kind": "model",
+      "input_sha": "7690bb7cd919aa1875ef78cb2f642b1d64e1da0f86d80d305a2ded5b6b97e461",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "8b389a8e73f7d39822a5f35c658570dbc42c733f14ce3e1d2c789d62c3ad9ba1",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 147,
+          "prompt_tokens": 152,
+          "total_tokens": 299
+        }
+      }
+    },
+    {
+      "attempt_id": "d85ae6261c654ff2ab7f395d6c1fea77",
+      "kind": "model",
+      "input_sha": "5ca272ae34edb6e7b8e3055ad6245a3f8490b3943c12a24db77b944a65f9a9c5",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "7f2e6da99b75fb7a0bfb8b9032f5d065c4eb0c94cda475430585e004217b2447",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 164,
+          "prompt_tokens": 1385,
+          "total_tokens": 1549
+        }
+      }
+    },
+    {
+      "attempt_id": "6144c58066ca4a00bed0d645b4f3ab7f",
+      "kind": "place",
+      "input_sha": "35f6f594c53abc945bf1f10f44dc671666683edb060a086a984e0629697c6e6a",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://restapi.amap.com/v3/place/text",
+        "provider_code": "10000",
+        "region": "China",
+        "response_sha256": "26c31c8b0523fecd195883a54219540401b2617e8cc49ca89308109c29478286",
+        "result_status": "ok"
+      }
+    },
+    {
+      "attempt_id": "cc9833dc9d0f4e17b7c385238db796c4",
+      "kind": "place",
+      "input_sha": "21fd721b553c34bf5a3e7bc0faf234eccfdea0f52428fcb052e6e4722f9e1c32",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://restapi.amap.com/v3/place/text",
+        "provider_code": "10000",
+        "region": "China",
+        "response_sha256": "6d8ca65d0d18681c4d3d7e3c6b34d306549c2f4a12cefde67836c7dc7e45d826",
+        "result_status": "ok"
+      }
+    },
+    {
+      "attempt_id": "9967e3b3abf8494ca51e859087acbb89",
+      "kind": "place",
+      "input_sha": "af959ac2d4289ee4e5b46fb276a670593f6386afaf0c3c5856841a147ddeafcf",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://restapi.amap.com/v3/place/text",
+        "provider_code": "10000",
+        "region": "China",
+        "response_sha256": "f5c17e3ea138e64508abb2eafe3f93182c8e8fe3fb9e31abe1f7c1c8751d4fc0",
+        "result_status": "ok"
+      }
+    },
+    {
+      "attempt_id": "e9cf9aa64da44255aef32a1bcb6a3482",
+      "kind": "place",
+      "input_sha": "f9a6f084e0450a50e11427e3854ebe7920a46b3deb09f594672b1e6293f64167",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://restapi.amap.com/v3/place/text",
+        "provider_code": "10000",
+        "region": "China",
+        "response_sha256": "0c6bf0b38c676f316662c0a50900e554a5fdf173ac07ec88818d30ce2c3ea206",
+        "result_status": "ok"
+      }
+    },
+    {
+      "attempt_id": "0f632c860fe84c80b67a15f851d0e458",
+      "kind": "model",
+      "input_sha": "568969230ec2eb60caf4801c6d8ba87e20a08d71ca36653381cd749e22c8e845",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "e9869d0a6c8cf4659a4e13068cf94b7748835b4a9dbc971cd2c2576ab24487c7",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 377,
+          "prompt_tokens": 5446,
+          "total_tokens": 5823
+        }
+      }
+    },
+    {
+      "attempt_id": "abc7f48670464ea7a93b9c620ee9c81f",
+      "kind": "route",
+      "input_sha": "83cf4fb74a20b1b8b11c5071e69ff2694f5ddc4d0bd9cbbfdab250498b0e6852",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://restapi.amap.com/v3/direction/walking",
+        "provider_code": "10000",
+        "region": "China",
+        "response_sha256": "4b364b86be227805dfe48c1a5b919a9fb7ed102801dc3f6346978999387bb9f5",
+        "result_status": "ok"
+      }
+    },
+    {
+      "attempt_id": "8145592581b340b990115379a52fc385",
+      "kind": "route",
+      "input_sha": "2ac343777bef8fdb55cb8c49ffba917429604fdad167b49df5faa223a6f4b87b",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://restapi.amap.com/v3/direction/driving",
+        "provider_code": "10000",
+        "region": "China",
+        "response_sha256": "73dd9bd29c4b49ce0b5e9f145ba9e1e6e92663c069d370859fbbae8582e5c758",
+        "result_status": "binding_mismatch"
+      }
+    },
+    {
+      "attempt_id": "bc2b6b6711dd4ec2b4908e5f925519e9",
+      "kind": "route",
+      "input_sha": "baecf541df481bfa725cb4f5ff9f3ccb5a20bb04211c8ebcdd6df87fcfc8cdd6",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://restapi.amap.com/v3/direction/driving",
+        "provider_code": "10000",
+        "region": "China",
+        "response_sha256": "9afc7cbd10aa346edec8d455d0b962a61135c5b1b55a7ab25758fa94251f1598",
+        "result_status": "binding_mismatch"
+      }
+    },
+    {
+      "attempt_id": "5acb45b5215643b8a557327372981067",
+      "kind": "model",
+      "input_sha": "923062c63c0393773e6495e24f1de31e6165cecd83c0ec6457d723d9d5d4f6f9",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "6e7a562d2c355dfcecaaadaa55efa6076616552d5eadc6524539038b07a0c918",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 713,
+          "prompt_tokens": 7681,
+          "total_tokens": 8394
+        }
+      }
+    },
+    {
+      "attempt_id": "5ac7daa97ec0419abe237bc1de74f3f2",
+      "kind": "model",
+      "input_sha": "af9851db71f37dc7ba6e442af37f25db88ab1c5503d78c20acb3eb635b741243",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "3cfc6806a127591bc98c7d9881fa5170f7f7ff80de6905628f2657dff7b1b3d4",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 83,
+          "prompt_tokens": 142,
+          "total_tokens": 225
+        }
+      }
+    },
+    {
+      "attempt_id": "b2eb0ebf741444af86d3cb9ffba80408",
+      "kind": "model",
+      "input_sha": "85ab7dc4c0141a938743e47ac0f8ea503fe424ff0c2edb777be224785d72f0d8",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "64fca11352ce78bed73ecaa427dfa0f060ba82562d12f922976267612e4b0f3c",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 472,
+          "prompt_tokens": 1389,
+          "total_tokens": 1861
+        }
+      }
+    },
+    {
+      "attempt_id": "01836eedeb9d466bbe81e4d2b4f1b95a",
+      "kind": "model",
+      "input_sha": "edac913d8fc728ae7374243e4575be5bd2938593313a694868931ef42b5e8873",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "0182640e896b8badd2b2c737493f092386fb96e5bc71cad3308f09a0bec89b6c",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 141,
+          "prompt_tokens": 146,
+          "total_tokens": 287
+        }
+      }
+    },
+    {
+      "attempt_id": "777bc244235a49c1810f84628cd19d97",
+      "kind": "model",
+      "input_sha": "544e89ca96ece2720524e9fe0cff817cafbc4e550be9b1886192d9baac196215",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "f32cbeb78000da055f7b53b74b9035d9bf038604f302a128a1564173055d96e6",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 287,
+          "prompt_tokens": 1393,
+          "total_tokens": 1680
+        }
+      }
+    },
+    {
+      "attempt_id": "668ee0cacd9843e19e257274700a83d8",
+      "kind": "model",
+      "input_sha": "4ae8e44cd2e05c0bf1793b5fe3ef3c0f76c983830508a16ed2ba4677f3ae3d8b",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "2dd235fec4992cc79e0cabed5240037bdb784163c499de6aa724eb922c292af1",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 156,
+          "prompt_tokens": 150,
+          "total_tokens": 306
+        }
+      }
+    },
+    {
+      "attempt_id": "dd2e6bb6dd504e118a8f12d5202068db",
+      "kind": "model",
+      "input_sha": "e2dc81482093b69ba409aeb5158494dd2e71d4e60e2230db22366323b7ef5787",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "2fc85122466f9661b0199422d673a3979249a018bca6007e30429b700d759d1c",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 282,
+          "prompt_tokens": 1397,
+          "total_tokens": 1679
+        }
+      }
+    },
+    {
+      "attempt_id": "693a01cd613e40f894c823dcb2830302",
+      "kind": "model",
+      "input_sha": "ebb09d61afb58ce2dc6f85856fbd9295c6712807a3f4d9ca5919e03c8d9d924d",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "161ff8e0cc4b5dc5d608657bebbace6f274456d1411903d3d3cf83cc0c1e26c1",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 179,
+          "prompt_tokens": 154,
+          "total_tokens": 333
+        }
+      }
+    },
+    {
+      "attempt_id": "736202dac9e14bddb9e49de3d1da3d31",
+      "kind": "model",
+      "input_sha": "c0ed18b918040cc836e652a846193b067f6cc4d3861a8936f801f2ab10afb0d5",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "513feef380fd71610716441311ce3dd3ef54f5cb93db4d927869422b3bda89de",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 220,
+          "prompt_tokens": 1387,
+          "total_tokens": 1607
+        }
+      }
+    },
+    {
+      "attempt_id": "cdfa68bf8bda409abe405f7debd556e4",
+      "kind": "model",
+      "input_sha": "abfcd66f972907089b7bc855b3a7c3cbd9cf5694e029cb036065b43f1e2dc6d2",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "d6cf1db7dafe0092fc3a79b8935dead8340a391cccb0432d13de482b3382f8dc",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 143,
+          "prompt_tokens": 144,
+          "total_tokens": 287
+        }
+      }
+    },
+    {
+      "attempt_id": "e67512fb0cbe4f809a83a0df9fd6afc0",
+      "kind": "model",
+      "input_sha": "7b22c44027986ecfea7b4f6b8a06ef8497aee3c22297ffd1542f68b39925f96c",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "90d0e7efad30242906da2c445d167e5f902b338d6d0ac1345d3293dd895ffc91",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 169,
+          "prompt_tokens": 1387,
+          "total_tokens": 1556
+        }
+      }
+    },
+    {
+      "attempt_id": "bb6fee85bd384d05b18aa0f8836a30d1",
+      "kind": "place",
+      "input_sha": "98635c91ff83cd6f0b39e57f9f7a500e5be1469d39b0f1ef11cbc5f28163fcd9",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://restapi.amap.com/v3/place/text",
+        "provider_code": "10000",
+        "region": "China",
+        "response_sha256": "d8b97deab89bc609469744df0765a9566183683ab44f4a302a9df2ae5bb936f2",
+        "result_status": "ok"
+      }
+    },
+    {
+      "attempt_id": "5a6788cf6bc9453cb2c937806fa18eab",
+      "kind": "place",
+      "input_sha": "2720d1141779ce674229ab553f4355586e6bcb2a130700edcbc416ae0d81d3a5",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://restapi.amap.com/v3/place/text",
+        "provider_code": "10000",
+        "region": "China",
+        "response_sha256": "b9a79c29fd0ef04b61db4e8aef464a4ae8de464a311d34bef15d376755206b6d",
+        "result_status": "ok"
+      }
+    },
+    {
+      "attempt_id": "0eaf71a7cf2444e7bf19c225f05968c4",
+      "kind": "place",
+      "input_sha": "9162e07d0d58339d2da5903a6f639bf064af2984f0c7f3ef88c9a5e58e834d55",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://restapi.amap.com/v3/place/text",
+        "provider_code": "10000",
+        "region": "China",
+        "response_sha256": "6602a88080aec40bcf7ff200d9ac3be4445c54ec7fc5f3700435125611e35f24",
+        "result_status": "ok"
+      }
+    },
+    {
+      "attempt_id": "44a3c0b7eb83408f8887558dec4e50e6",
+      "kind": "weather",
+      "input_sha": "8b5216af4f42464c03e1d06ac04bf5f731f95966c953b9e4f7fe21f34bf134ae",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://restapi.amap.com/v3/weather/weatherInfo",
+        "region": "China",
+        "response_sha256": "bddf7419ccf582d2fdbbcc4027e0814547f34b1b4d6f360cca1eb7c432e13ae1",
+        "result_status": "unknown"
+      }
+    },
+    {
+      "attempt_id": "38bb082019fb483ebf1fc6f2ddbd66d6",
+      "kind": "model",
+      "input_sha": "9e498f6042cdd04224a0f4c434e88d1d80f3215aef7164dd06278c671cff2b94",
+      "state": "INTENT",
+      "receipt": null
+    },
+    {
+      "attempt_id": "3bea7621b673444ca25227238162b5ad",
+      "kind": "model",
+      "input_sha": "0672414330826c43f5c7b5502e62feb11ace74427cc5bc072a2d842ca6888255",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "b908c4ee706b597d2a5f43ced697ff2591bbe539afe2810561cf5f800c64b79f",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 107,
+          "prompt_tokens": 1389,
+          "total_tokens": 1496
+        }
+      }
+    },
+    {
+      "attempt_id": "40d5ac8f235c417f882ac11a3ea4288f",
+      "kind": "model",
+      "input_sha": "a7c19aaeedbf656143719d4f356225c7cdb8057aecb57cef8039fc778d83f42c",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "ef6b8cbcdaf24fe5191a31a005fd9c03982c8364abfa79499921278153d28289",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 86,
+          "prompt_tokens": 1391,
+          "total_tokens": 1477
+        }
+      }
+    },
+    {
+      "attempt_id": "475445b78c6f45ecba7cf1a5edd825ec",
+      "kind": "model",
+      "input_sha": "c4a09e9b3ca7b3ce5888a5c9962d14fc386c6b2b4ced7fe2e298173db8e23554",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "dafef45ea9922934b55e3ca79c67d0c48dc1a41600f9fd403f96f1f18ec3e8a2",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 255,
+          "prompt_tokens": 1392,
+          "total_tokens": 1647
+        }
+      }
+    },
+    {
+      "attempt_id": "1955d4403a9f42e1bdf213c16604ef6e",
+      "kind": "model",
+      "input_sha": "f461032eb92626c4b28f1916d269364f8f878455149a2f5606d196612d87e217",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "3068de1da701fb38f75f1103478f6803e66d3e9a93b3e0bbb833ff0b1f23c860",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 538,
+          "prompt_tokens": 1395,
+          "total_tokens": 1933
+        }
+      }
+    },
+    {
+      "attempt_id": "462b7eb9d1fb4cf7b15384cb1cec8bc9",
+      "kind": "model",
+      "input_sha": "b9f42dcb41c27da292fef1ec46b28e85ebb8743d1a71cd0f45c6eddacba66633",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "44079ee9f0c6896fc712d088dcb7542e2a5eb02655eaea81bb359aad18957323",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 153,
+          "prompt_tokens": 1395,
+          "total_tokens": 1548
+        }
+      }
+    },
+    {
+      "attempt_id": "85ed5e8adc28458d91f884ac90eca9f2",
+      "kind": "model",
+      "input_sha": "75b5eeb60bca7aa9481de37cbed71db4d64af4a41e7ba2bff461584aa8da916c",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "d12f5ac976dda6244e472d1e58125fa0d903e164985bac2663b87d2b9c15222b",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 53,
+          "prompt_tokens": 152,
+          "total_tokens": 205
+        }
+      }
+    },
+    {
+      "attempt_id": "6f3334d74d554bbda8a0e4aa5fad5109",
+      "kind": "model",
+      "input_sha": "5c14f07f39b5bc145cacee3788a0f146ec56c57ea60c78122717ce4a15887f9d",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "72900a100f93e2ba9543cce1b1bd27758801e944906a5d0e38940eeb860b120e",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 105,
+          "prompt_tokens": 1401,
+          "total_tokens": 1506
+        }
+      }
+    },
+    {
+      "attempt_id": "f5eb55a276ab4e31b61674285c08dcec",
+      "kind": "model",
+      "input_sha": "c52ef6a131b4ff9c101b4dfeccd5d0f4d3224cf61c8a81c25ee66d5206088a65",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "673a9970b69862e745c1f73f5894b1386f2f5e25c4544d8e38aa1e450750774b",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 37,
+          "prompt_tokens": 158,
+          "total_tokens": 195
+        }
+      }
+    },
+    {
+      "attempt_id": "3d6858579b7948ada9d2f1d9e223e05a",
+      "kind": "model",
+      "input_sha": "d883df48072caaee527370c58ae06bdd9fc6d035ee1c841180751883503946dc",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "10af19f9cf8e9fdbd448424d5c58e65b11014c1c68cf7f9cd81d3cc350833c6a",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 268,
+          "prompt_tokens": 1392,
+          "total_tokens": 1660
+        }
+      }
+    },
+    {
+      "attempt_id": "08426690dc6f438d8ec1e4b8747ac9d7",
+      "kind": "model",
+      "input_sha": "d2ba60f53b516d1e477c65d649786d49eddeb99c09de1f03dba1886c76c21b34",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "ed824b39bca36b680f2702c082d34354509d9b8052e1b6ba8d2fd11e1027d92b",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 86,
+          "prompt_tokens": 149,
+          "total_tokens": 235
+        }
+      }
+    },
+    {
+      "attempt_id": "07d4a55f2bee4f4180150990eb8049ba",
+      "kind": "model",
+      "input_sha": "8d29b6131723b603edf125bd54b0f72425c21f095f18efebf42c1d5d48134dc9",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "9798398ebfe829a64c9b1ccc914e787e6786bcc8667ff456dce2d7decebf8dcc",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 161,
+          "prompt_tokens": 1392,
+          "total_tokens": 1553
+        }
+      }
+    },
+    {
+      "attempt_id": "8dd485c5a35f45f08ca8411a3b6b8ff7",
+      "kind": "model",
+      "input_sha": "36ada334c898b30ed9cc71c24c2d3bd71bc1833a4d4c2af0ebc3d57d78de6187",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "4bdc3c8a0ea389223b9036b34a38bc26829790fa4b4dc0a8dd7453517a4a592f",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 106,
+          "prompt_tokens": 149,
+          "total_tokens": 255
+        }
+      }
+    },
+    {
+      "attempt_id": "c85ed64858264b94a97f1d65abda4114",
+      "kind": "model",
+      "input_sha": "3ba5a70dc76f862b6531ad3d4ee2915eaa3107570581342d6c7d62eaa16f1fde",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "198199e8c8844d060ba74d64ba2018d89acc670ec1ba394485777817007606a4",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 384,
+          "prompt_tokens": 1390,
+          "total_tokens": 1774
+        }
+      }
+    },
+    {
+      "attempt_id": "99a6a54a5bcf40b8b9ce9ad79e5a82ac",
+      "kind": "model",
+      "input_sha": "a04e94672a7777f849699b84653b803b9a95007751e81214caf5f4932d78c69d",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "be94610c486725a36739230bd2fb740fa06f6ab70c5cbbab5ced2cbecb199496",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 72,
+          "prompt_tokens": 147,
+          "total_tokens": 219
+        }
+      }
+    },
+    {
+      "attempt_id": "382207b9ec794767ac878439993dff71",
+      "kind": "model",
+      "input_sha": "ef168943735f2e58f0665ab2b06c5838498eca5538d295d4c1fe748ffce1d145",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "a7637488333d65ab31b34dac6ce6e635ff3a0a6aa710701b66d2b191421e3400",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 293,
+          "prompt_tokens": 1391,
+          "total_tokens": 1684
+        }
+      }
+    },
+    {
+      "attempt_id": "d1522c06c9884a2899358d4a44d2710d",
+      "kind": "model",
+      "input_sha": "4d4067b614b2545fa785df1031b4490a37ec007af731f102a6232f1d5fe4182d",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "3a34624611f0fcec5408c4c8fb5260ffdca91e1ea1169cb5b69f810fa3749b29",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 51,
+          "prompt_tokens": 148,
+          "total_tokens": 199
+        }
+      }
+    },
+    {
+      "attempt_id": "3567ef08b58a493082f44a35841f0d33",
+      "kind": "model",
+      "input_sha": "b1fdda211b9d079a595e7d10797619adc22cca86c744119071bc35893488f52f",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "4321046cc45ab98efadd1f12b0ba63b2443a9ee7ee37948d9c1c66c6cf1f2e5d",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 79,
+          "prompt_tokens": 1402,
+          "total_tokens": 1481
+        }
+      }
+    },
+    {
+      "attempt_id": "f4fba05f3ac64af8ac752652dd4bc6dd",
+      "kind": "model",
+      "input_sha": "6e3f3fdd32dec487ce7ae4bf0a15915ccfc26eff83c433dd9bb674a2b3304fb0",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "3d81e22d8c6c33932e511a3f3ec880e26a0074b5cd4eb40b7e3a5253f540dbd0",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 227,
+          "prompt_tokens": 1516,
+          "total_tokens": 1743
+        }
+      }
+    },
+    {
+      "attempt_id": "bbbcfc43c43c4f97bbaf536a8b4a06ac",
+      "kind": "model",
+      "input_sha": "9167af7d3e20d1f730356e2e7d43cd42b535ee88a67f7c04c26ad78fb56e47ef",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "f6f22e25f9b73610bb968d71fabef68040bce31fb50a9cb9f23cb9acf00e0e26",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 139,
+          "prompt_tokens": 1402,
+          "total_tokens": 1541
+        }
+      }
+    },
+    {
+      "attempt_id": "d97b78f25bba40539d14c203a23951a4",
+      "kind": "model",
+      "input_sha": "2342d714761032a2c8f4d3f0e8f0f1a3ac0956eb001ccdd84dc39c9a3f28199d",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "5199fe440394450173322300cd4fd47554e03a3edf5a32aae66c284d4e25ca70",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 124,
+          "prompt_tokens": 1514,
+          "total_tokens": 1638
+        }
+      }
+    },
+    {
+      "attempt_id": "aad54a3329354aafaf3d65c05593b71c",
+      "kind": "model",
+      "input_sha": "b1fdda211b9d079a595e7d10797619adc22cca86c744119071bc35893488f52f",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "9d7520f5b9c919b4a6b3dad51744d8a9ecd1c42542649b65d58a96df4e658e7e",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 130,
+          "prompt_tokens": 1402,
+          "total_tokens": 1532
+        }
+      }
+    },
+    {
+      "attempt_id": "635cf4c2b3bb4a129a0f9337405c2896",
+      "kind": "model",
+      "input_sha": "30a5e6cd33ac92156e1447998f969a806344ede026330a3caa642f10d3bd58bd",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "33bad1c3df7aa28e5fe35e876ffbcddbd52c7b3904290f0d40c19fdd37124818",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 160,
+          "prompt_tokens": 1508,
+          "total_tokens": 1668
+        }
+      }
+    },
+    {
+      "attempt_id": "6e3c16f35b594a5b89413476ebcb175c",
+      "kind": "model",
+      "input_sha": "9167af7d3e20d1f730356e2e7d43cd42b535ee88a67f7c04c26ad78fb56e47ef",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "5f04b9e188be3d95634419d3e3bc20b82baf62116385a0bf872ac0df4cb624c3",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 97,
+          "prompt_tokens": 1402,
+          "total_tokens": 1499
+        }
+      }
+    },
+    {
+      "attempt_id": "6b11a0a665d7460a9886c167c346c912",
+      "kind": "model",
+      "input_sha": "1562e6a7b77d7201ee23d5d226701bdb3e07c2eeb41292ae837447dea8a66bee",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "8ce2dfa3fe7f1b0236076a51349cdeda47b09dd6cd322fafaba4598054a71fa8",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 129,
+          "prompt_tokens": 1515,
+          "total_tokens": 1644
+        }
+      }
+    },
+    {
+      "attempt_id": "a03c072610724ddf8c99420bded0fcb3",
+      "kind": "model",
+      "input_sha": "b1fdda211b9d079a595e7d10797619adc22cca86c744119071bc35893488f52f",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "7b47ed0ff391c3f22501a2ae86e39f876c389b7255a6b97b6dd25971695cb830",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 82,
+          "prompt_tokens": 1402,
+          "total_tokens": 1484
+        }
+      }
+    },
+    {
+      "attempt_id": "b8bf6398970446618201190fcaf26809",
+      "kind": "model",
+      "input_sha": "9dc52b1c1cb619c379eebb5166702ac1cecd7f64bf53061d5e4e2eba679cb7a7",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "addff9bda734a60cdae63f7e4468800d61f003453cd204415ab4377996eab34e",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 102,
+          "prompt_tokens": 1515,
+          "total_tokens": 1617
+        }
+      }
+    },
+    {
+      "attempt_id": "519b022e5b6444d3acf75ce568f98b7b",
+      "kind": "model",
+      "input_sha": "9167af7d3e20d1f730356e2e7d43cd42b535ee88a67f7c04c26ad78fb56e47ef",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "30f8a05c62115307b065ceb1508f25e9624fdbdde1f41ab8ae0d28030954f37a",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 109,
+          "prompt_tokens": 1402,
+          "total_tokens": 1511
+        }
+      }
+    },
+    {
+      "attempt_id": "639467c57ffc426ebd6a7a143404f814",
+      "kind": "model",
+      "input_sha": "e3312d1091372bd21e2d223b75c6de637909900f34084e2a8c67418bbdfc59ba",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "e18b136ba7be26cdb6acb2e98a023377565980a956e3a22a5350b047533dff4f",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 126,
+          "prompt_tokens": 1523,
+          "total_tokens": 1649
+        }
+      }
+    },
+    {
+      "attempt_id": "10da6e8b22b644839c25259c78170011",
+      "kind": "model",
+      "input_sha": "b1fdda211b9d079a595e7d10797619adc22cca86c744119071bc35893488f52f",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "88b6c5ad7102ada1c69d21251ab41686e4e9a599ca2017f284923d18186b152f",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 80,
+          "prompt_tokens": 1402,
+          "total_tokens": 1482
+        }
+      }
+    },
+    {
+      "attempt_id": "d4743a81fe9d441da95e0d4affc6fc3a",
+      "kind": "model",
+      "input_sha": "7bb8b574f914c4897a254713a1923802e2cfc42dd28abbf1b50afd190a717397",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "f2e7e486b2d0dfe257a476db89d3b7684a1058146f79d1e98eddb1f50a1c2e9c",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 187,
+          "prompt_tokens": 1516,
+          "total_tokens": 1703
+        }
+      }
+    },
+    {
+      "attempt_id": "12c006ae569e41e3ac0a760ac123c288",
+      "kind": "model",
+      "input_sha": "9167af7d3e20d1f730356e2e7d43cd42b535ee88a67f7c04c26ad78fb56e47ef",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "93a3d2b9c8475103240cbc1836c97a8bf2ab6bb77753197c2bb0e78eb8564728",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 98,
+          "prompt_tokens": 1402,
+          "total_tokens": 1500
+        }
+      }
+    },
+    {
+      "attempt_id": "e1e3e05596e243679277a1ff1071d826",
+      "kind": "model",
+      "input_sha": "598414e76bd8fcef6fe9badd899a9e6f354c163cd234ea50373e3437ff1f6ceb",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "fbd51f228a8600b0c0f37c9cc6a391da43032fd760fac9d13c8a5c0f3a3c91ce",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 176,
+          "prompt_tokens": 1513,
+          "total_tokens": 1689
+        }
+      }
+    },
+    {
+      "attempt_id": "f44daa62b0dc472aa81f263c395d61b4",
+      "kind": "model",
+      "input_sha": "b1fdda211b9d079a595e7d10797619adc22cca86c744119071bc35893488f52f",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "d6796818d7ac3eed2e8e05f1709704087d20697cff54d351adbfdd05ade2b5e3",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 140,
+          "prompt_tokens": 1402,
+          "total_tokens": 1542
+        }
+      }
+    },
+    {
+      "attempt_id": "8f9fa84e8a4d4b44a83708d2f4fe2299",
+      "kind": "model",
+      "input_sha": "cb972bd209b94509dd2c4a2e5af8ccce75b3ce923435a81ffe6056447bc88242",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "2aca9479c57cd3e0031aedf71dfdfd272a539f8496191f2d375212d406cb2893",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 94,
+          "prompt_tokens": 1519,
+          "total_tokens": 1613
+        }
+      }
+    },
+    {
+      "attempt_id": "f546b28e264b4f3c8e3f680544890a2d",
+      "kind": "model",
+      "input_sha": "9167af7d3e20d1f730356e2e7d43cd42b535ee88a67f7c04c26ad78fb56e47ef",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "57053263722494aa3c34c42ce10eee8dabb79cf03c47149bc70c1bd416115b0a",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 113,
+          "prompt_tokens": 1402,
+          "total_tokens": 1515
+        }
+      }
+    },
+    {
+      "attempt_id": "b1b9eb63529a46938850b41a914163a7",
+      "kind": "model",
+      "input_sha": "7a1cec572c98bf017747ba9a39bc6762a8d512aa211bde824f9264794cbbbe11",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "2396f09478e9226faffcf8a8b0ccfce6f8713550fc2a41b1a3bf2af28e728f2d",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 135,
+          "prompt_tokens": 1527,
+          "total_tokens": 1662
+        }
+      }
+    },
+    {
+      "attempt_id": "69503e2dc9004912adb7a6c1dd01f9e0",
+      "kind": "model",
+      "input_sha": "b1fdda211b9d079a595e7d10797619adc22cca86c744119071bc35893488f52f",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "6ee3b1cc9a43e88b383492cef7f383c2213b98bd0f2087c38d5c05c543ebe022",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 96,
+          "prompt_tokens": 1402,
+          "total_tokens": 1498
+        }
+      }
+    },
+    {
+      "attempt_id": "77182a3981354c6fa7649d6b2b0cf37f",
+      "kind": "model",
+      "input_sha": "98c832f822167304c27cdf628e616487b547660d0bb1098de571c47d2f3eeb25",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "353ed065411b805ebb84a7b2ca331837c3cb142966e76e00d43fef48433e18a3",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 88,
+          "prompt_tokens": 1413,
+          "total_tokens": 1501
+        }
+      }
+    },
+    {
+      "attempt_id": "30d5b2a09e044999aa6c91e37ea72f52",
+      "kind": "model",
+      "input_sha": "9167af7d3e20d1f730356e2e7d43cd42b535ee88a67f7c04c26ad78fb56e47ef",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "49ebb4ab4278dff720f147f8b3299652bce9c3d3f084d83503f3b08e589a54db",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 222,
+          "prompt_tokens": 1402,
+          "total_tokens": 1624
+        }
+      }
+    },
+    {
+      "attempt_id": "bbdbbbf72f514c9281e1d7eb166c9a91",
+      "kind": "model",
+      "input_sha": "5db8845db82f1d57a88538eabb3b706145fa30e09a6117ac452ba3e4e54152ca",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "9d334578282ad0b04c4daa3da72e5f5d76641f879c2ada35eb5617a7df7e4d38",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 135,
+          "prompt_tokens": 1418,
+          "total_tokens": 1553
+        }
+      }
+    },
+    {
+      "attempt_id": "40f73e30cc5943bdbf35ec6bbfc92e41",
+      "kind": "model",
+      "input_sha": "b5c91d0194bf6d04a0c5e69fe2cfe6a4daa9007d8ff728c548a7bcb28b6a2029",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "444b7bc4446ddc00fb9f05e0c657635aefb41777b4e979d15520d2f3bbcc45db",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 162,
+          "prompt_tokens": 1391,
+          "total_tokens": 1553
+        }
+      }
+    },
+    {
+      "attempt_id": "8dcf525bf3ef431c845e1027b799b9a7",
+      "kind": "model",
+      "input_sha": "50bcfb579d6549c70cc6e8c2f9f24d5e7399b15d72145ed97618465a9464ef04",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "1d28fb17063fcfc6d8debf5157398965b77b040fbb957ef957d6ebfb2bae3ed2",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 73,
+          "prompt_tokens": 1393,
+          "total_tokens": 1466
+        }
+      }
+    },
+    {
+      "attempt_id": "59bb4e54e2dc41448828abc212b6fd57",
+      "kind": "model",
+      "input_sha": "3ee925c2d5baa9301f190128e2bd0e7238e422fe5e590b9185483d1dd63301e7",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "adc50a4a4e26643fb194a0986c59193448b061b86adeae630b93b52c22986094",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 111,
+          "prompt_tokens": 1390,
+          "total_tokens": 1501
+        }
+      }
+    },
+    {
+      "attempt_id": "b3c4022802cf42f586e74f2ceef53195",
+      "kind": "model",
+      "input_sha": "ec6c434a4745db9a07b9624d55e5620035a91b7fc52a49a76a7ec3ccd34c05d3",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "bae2a693a0202016c7a8348ccf605f3af4ea000705968274847806334011cb60",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 123,
+          "prompt_tokens": 1394,
+          "total_tokens": 1517
+        }
+      }
+    },
+    {
+      "attempt_id": "76454e1bd82c4eb292267533369458fc",
+      "kind": "model",
+      "input_sha": "2235707005d6f3d4df0f5b73cdea459d5118429c5891a6fbf396c1bb5a3ae11c",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "e6c52aa47fd6dbac92c11087b7f092d9eab05645bad3e2d457e2d272d0995255",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 99,
+          "prompt_tokens": 1388,
+          "total_tokens": 1487
+        }
+      }
+    },
+    {
+      "attempt_id": "3c9ff785a43f48cf9e12a59a50dccbc7",
+      "kind": "model",
+      "input_sha": "75cb1807dd299be7da7984fbaf1cd770ba278a7b10882f331a1785915c1aad05",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "4c570c53994bfcc3267da937bb6dd5b334b0f74cefa2712c388ac676d4e0fe7c",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 137,
+          "prompt_tokens": 1394,
+          "total_tokens": 1531
+        }
+      }
+    },
+    {
+      "attempt_id": "0d767df77f294a009d1b1e5eb9ac4ec7",
+      "kind": "model",
+      "input_sha": "19505752d0c30d5f96d5b2add26b61d555322aa836cc0df8f88033d94e3eef34",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "83490827c16e3c33ae734310795c0bb96177f688e499e670d0ca8ec0cfb4ef9e",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 259,
+          "prompt_tokens": 1386,
+          "total_tokens": 1645
+        }
+      }
+    },
+    {
+      "attempt_id": "dbc8acd93b9f4a70bf53c8eabb12400e",
+      "kind": "model",
+      "input_sha": "b9e53ae599e9409bd395f26a1d0b33f2b3d1387c29b6e29e7efebb4da0ab3e5d",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "b2d5ee064b35d1bbd585255975cbc7dc679c8b11ec64ec5b71b6de1c7276a9f0",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 328,
+          "prompt_tokens": 1389,
+          "total_tokens": 1717
+        }
+      }
+    },
+    {
+      "attempt_id": "a10329057a84462e9fb84f39ff36364c",
+      "kind": "model",
+      "input_sha": "b1fdda211b9d079a595e7d10797619adc22cca86c744119071bc35893488f52f",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "95dd7751c7a3bb651f86e44a56aba7725b65eb2cbdc4aa3adb447e362bc5cf89",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 107,
+          "prompt_tokens": 1402,
+          "total_tokens": 1509
+        }
+      }
+    },
+    {
+      "attempt_id": "c032521918464e4887da6a73d811480e",
+      "kind": "model",
+      "input_sha": "919da89ebf7f67e3a22b3bf743a08a743570476b8beda269c46f8d3c2dada3e3",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "c0df777ca164caac56e43d10c12fc5ff75a59f55e5b832e143f3ad0389081e7c",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 132,
+          "prompt_tokens": 1416,
+          "total_tokens": 1548
+        }
+      }
+    },
+    {
+      "attempt_id": "f1031e1ac1b14cdab67a42635d7e0709",
+      "kind": "model",
+      "input_sha": "9167af7d3e20d1f730356e2e7d43cd42b535ee88a67f7c04c26ad78fb56e47ef",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "82e1d6e6ac2d2119e5a17d2d10b9311a2eeada7a12eaa756dd9b2343c54c2b53",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 92,
+          "prompt_tokens": 1402,
+          "total_tokens": 1494
+        }
+      }
+    },
+    {
+      "attempt_id": "832a4d4216d448e897a9cb4b7f373002",
+      "kind": "place",
+      "input_sha": "6f88a180909b6369ffe3ac20f77943cfcede5e28a726785514949c62c77dc985",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://restapi.amap.com/v3/place/text",
+        "provider_code": "10000",
+        "region": "China",
+        "response_sha256": "52995577d336c1e7624cbc8060867761f6375b31ddfc33f45ebc8859485d9276",
+        "result_status": "ok"
+      }
+    },
+    {
+      "attempt_id": "6cd9184175594b6ea999c6bdba0e7029",
+      "kind": "place",
+      "input_sha": "3e15db07f5f7266f4ce84e2327903ae11a484316ea1a7d20e3d00b851e88debf",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://restapi.amap.com/v3/place/text",
+        "provider_code": "10000",
+        "region": "China",
+        "response_sha256": "8abb8c450f518f31c16f06e0d064554a28bda125a9696f9c1ef5dadc9b6c542c",
+        "result_status": "ok"
+      }
+    },
+    {
+      "attempt_id": "02e6e7e75a1248f8a96da391a608f9e2",
+      "kind": "model",
+      "input_sha": "b68619ffb8031b92a269a838ff0561acacd54f2a04abc8dc59ca9eccbe3883df",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "b464241bc7a251fbb27f9ce8402eb0f81079a653f3460bd61635641669860791",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 180,
+          "prompt_tokens": 4319,
+          "total_tokens": 4499
+        }
+      }
+    },
+    {
+      "attempt_id": "79390bf77ab74699b9a91a4cea91ec94",
+      "kind": "route",
+      "input_sha": "b314af2f4ef84261ed8ff85c5506ff50a98afbe73e3d4ad160c931498ddd3b8b",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://restapi.amap.com/v3/direction/driving",
+        "provider_code": "10000",
+        "region": "China",
+        "response_sha256": "008eee74f1a5845fb1d23616c045056fcee0527555b382c5ff1fc60f13af6a35",
+        "result_status": "binding_mismatch"
+      }
+    },
+    {
+      "attempt_id": "92d2f4741f574c11bb9bfc94f6f25bb6",
+      "kind": "weather",
+      "input_sha": "5eec456c9f407711c303f7c79b5edc0219a7b4cabe5180f22b67cc8308959f55",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://restapi.amap.com/v3/weather/weatherInfo",
+        "region": "China",
+        "response_sha256": "61aef19e655cbf016a6d1db83832b1f279fa7cbe5d678184f975aadd95f37d35",
+        "result_status": "observed"
+      }
+    },
+    {
+      "attempt_id": "b3455ae8a67c4be8916f1da036668be4",
+      "kind": "model",
+      "input_sha": "5f5b2e8af42792ee2c80fe03305b881468f45374fd9ea2be602756e620636e93",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "36ad775bfd755d6444550d670cfa1f935ae050cd85ba1377588fc6f5c9927a6c",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 753,
+          "prompt_tokens": 5329,
+          "total_tokens": 6082
+        }
+      }
+    },
+    {
+      "attempt_id": "6e03a049e2244035939b9cc16f8a085b",
+      "kind": "model",
+      "input_sha": "89406a0424b9f75619f0f586d3050a75c6b710dc0354a65dc33ec38fbcfea8b2",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "c78c7472a050c0d4296f3dc6cbd14c60634b4bc502ea16d62bdf8f951d3af22c",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 92,
+          "prompt_tokens": 1417,
+          "total_tokens": 1509
+        }
+      }
+    },
+    {
+      "attempt_id": "c8bfb130700d46f3b4cb5143c3386187",
+      "kind": "model",
+      "input_sha": "778a8e6f94f97c75da011a58aec4a2a658b7cf998e97c75d719da56991b44327",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "585f101824fb185d7467cdb7c8ed29042cf13818bab2aeda232bc784ad8bc747",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 275,
+          "prompt_tokens": 1392,
+          "total_tokens": 1667
+        }
+      }
+    },
+    {
+      "attempt_id": "1c5248dece594bf0a1a6a2b1eb5a4caa",
+      "kind": "model",
+      "input_sha": "07bdc2c8cd0279424e5a59df2a02172ec724a995003663585584a3f9f6f775f5",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "44e9d2311702c22e66e342fe60d92eace380d1ab4e8470519caa41630540e423",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 89,
+          "prompt_tokens": 149,
+          "total_tokens": 238
+        }
+      }
+    },
+    {
+      "attempt_id": "44cda1cfe92d4fe68ef3977cc78c439f",
+      "kind": "model",
+      "input_sha": "46377fe65e20952b35af8657d8e6d09001dcfa0fb1ba4c7e06c2ca5813ce48da",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "f2fc3c2f30ecba29b4b29c08e540a14e89ab395fb0554254761fb3d1f259fd35",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 401,
+          "prompt_tokens": 1395,
+          "total_tokens": 1796
+        }
+      }
+    },
+    {
+      "attempt_id": "db6d8b6a734f469387114e879a51f194",
+      "kind": "model",
+      "input_sha": "31376306faae93e8b49809bf019d8c50193d62147f30dc4bd2b87556bd7a67bb",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "92cdec418728741d3c2ae4bb445c14224735831b55a5211de3db1057ca914e21",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 51,
+          "prompt_tokens": 152,
+          "total_tokens": 203
+        }
+      }
+    },
+    {
+      "attempt_id": "c48c145650d64ffb8232748c7a9282ad",
+      "kind": "model",
+      "input_sha": "d6c8e5835c11ca909a4b52deb743a1542e99b8007cc14979e4cd4a5e44ddca09",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "eb731eeda6cbada1a57df767df05cc49f25508e68ba1ed324c45f1569019d2ad",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 112,
+          "prompt_tokens": 1387,
+          "total_tokens": 1499
+        }
+      }
+    },
+    {
+      "attempt_id": "7bf14cae85954caa96384c2842f97815",
+      "kind": "model",
+      "input_sha": "6933ebde50ecc364d5ce924fc9ae17e666ef4397afae283c6f6c203f62919c23",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "a97edb79d40c2b595c0cf72415688137a1cc027f7c35c76b08b059f35fadd1d9",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 152,
+          "prompt_tokens": 1391,
+          "total_tokens": 1543
+        }
+      }
+    },
+    {
+      "attempt_id": "3eab37e9ced14afeb2c291b55e2e80b6",
+      "kind": "model",
+      "input_sha": "b96c37bfe4e54ef531e6d606e11f86dc341d866639f42b2e890cf80147ac7a4f",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "be0b2781e47533effd94f8a6454c7badd4260fe711ef0cd0dcd81dbe3854d07d",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 130,
+          "prompt_tokens": 1390,
+          "total_tokens": 1520
+        }
+      }
+    },
+    {
+      "attempt_id": "0cda2fa276d84f3ba2498b9e8c23df6b",
+      "kind": "model",
+      "input_sha": "fec18c5349167e0dd6ec02298273406e75f1db4ea7b78eeda0f87a3b411b5974",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "51f8bbac35baa355c91b377c5206105e00691a8076677137fbe5f0780ca5ef6d",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 97,
+          "prompt_tokens": 1391,
+          "total_tokens": 1488
+        }
+      }
+    },
+    {
+      "attempt_id": "53d4e049d46545e1ae4aa0157df44b33",
+      "kind": "place",
+      "input_sha": "d4709787f4dacb2deae9db3ebf5ce8a126449de6c2e2938b663bb3f52f82b99b",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://restapi.amap.com/v3/place/text",
+        "provider_code": "10000",
+        "region": "China",
+        "response_sha256": "c18a793f131a3c5755d8c79f04d522ae5175a10bb439fa2b05e11322344fccfa",
+        "result_status": "ok"
+      }
+    },
+    {
+      "attempt_id": "f356d5e2a12241e0bea88f18d508c61a",
+      "kind": "weather",
+      "input_sha": "dc0b585cb41edd9541b071aba765735a7f13eda16ad477b790ad36617321d6d8",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://restapi.amap.com/v3/weather/weatherInfo",
+        "region": "China",
+        "response_sha256": "6a3e46d16898cb78f6984632edf4a2e3c608a683af069e67650f7fee603078fd",
+        "result_status": "unknown"
+      }
+    },
+    {
+      "attempt_id": "42c2b45ed25641bfa970aea0260dca14",
+      "kind": "model",
+      "input_sha": "8ac48573607aeeb9d563f0411b2bb1887266c06abda592e0eba2b2d725e05437",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "87e4b4757d925bd87ca381eed9f3e03c42d95e6337853d6354a2ed4e869a0103",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 680,
+          "prompt_tokens": 3118,
+          "total_tokens": 3798
+        }
+      }
+    },
+    {
+      "attempt_id": "40dda3533985438381d8d753517e55cd",
+      "kind": "model",
+      "input_sha": "2b0f75294eacff1f834f4f8510a78b7e02d465dbf854ff4dcd6acff6d10d19ac",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "674bbab61416e198b72c0e0d2c262bca47dd7c6782a6a8f3f0718203c95c98ed",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 253,
+          "prompt_tokens": 1392,
+          "total_tokens": 1645
+        }
+      }
+    },
+    {
+      "attempt_id": "4718ff150d094c8faa058c6008648b95",
+      "kind": "model",
+      "input_sha": "5f640a6ed649a6a52c27b6bb03dd91831986f50791b92b8f96ee1e55f163026e",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "db3c3c254419bf4c98a1d81fc88dcc8c3d7e74b9f253546e52aae60e8b730562",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 301,
+          "prompt_tokens": 1392,
+          "total_tokens": 1693
+        }
+      }
+    },
+    {
+      "attempt_id": "647bfeecf73644888bbedfac70792a6b",
+      "kind": "model",
+      "input_sha": "e895109c83c7fe3e64098b01b6d76035f992c8ad7bbc0b33539ef60924eaa551",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "5d47fe34721319eed9508e1da4066e1e77eaf7cbffa5d5b83c4d0cf4b2556abf",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 61,
+          "prompt_tokens": 1389,
+          "total_tokens": 1450
+        }
+      }
+    },
+    {
+      "attempt_id": "311d9b4db1e7453aafbe476428b4ade2",
+      "kind": "weather",
+      "input_sha": "f8d8d56cc6502065ce6ccb116cca091975d1a3e3ddd1254b00ee7bfc1ccc3142",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://restapi.amap.com/v3/weather/weatherInfo",
+        "region": "China",
+        "response_sha256": "1e4b5a2dee585f282bd2e64a9c9d0c19832010bd9183fc746024ccc17388fa7d",
+        "result_status": "unknown"
+      }
+    },
+    {
+      "attempt_id": "ec01aa3b9f7e45bd83c644ce6e428505",
+      "kind": "model",
+      "input_sha": "e297eae245449a37df2f47629285558f19ddca22081343acf08d7fdcfe458d9c",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "4c65df75826552f49bb7ebf339f4744f79b838e5fb24f7041458ee2773eb9835",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 180,
+          "prompt_tokens": 1674,
+          "total_tokens": 1854
+        }
+      }
+    },
+    {
+      "attempt_id": "f4f624edaaf543b58a3215f099c02651",
+      "kind": "model",
+      "input_sha": "8c2db37c122fb95a05274380618e7521cc72fe33de7329683c3ee484ad24d6e9",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "60b037ee76ace1a8d6ad88fad0f78a391d07107bad587161b1cd4fe25e998b6a",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 61,
+          "prompt_tokens": 1395,
+          "total_tokens": 1456
+        }
+      }
+    },
+    {
+      "attempt_id": "0f4962c120e94c0baada088bb2602679",
+      "kind": "weather",
+      "input_sha": "f0f6a9d646828269d096724a7cffc1ceb7b93b6b62e19b311507954c580f2340",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://restapi.amap.com/v3/weather/weatherInfo",
+        "region": "China",
+        "response_sha256": "af174ca597ab32acbc41c7531e89f777b7f2c050fbe4cc6878f2eb8ec93a4f80",
+        "result_status": "unknown"
+      }
+    },
+    {
+      "attempt_id": "02888b54c6884833a13f51b861caea1b",
+      "kind": "model",
+      "input_sha": "3d7e1a92cf6bd59382b1fb65e8ab84763805d7ebc63b570d974793ba301051a2",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "fe070521938e9129bc4b78aca0a0abea82c89f3cf8969096d8b940ae2bf7f90c",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 125,
+          "prompt_tokens": 1680,
+          "total_tokens": 1805
+        }
+      }
+    },
+    {
+      "attempt_id": "0487a25315b941ecaad938263f721546",
+      "kind": "model",
+      "input_sha": "e47e979dcae78aea649c2d5a28284dd775a3374dd2dc61f18e4bc49123f44cde",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "cbedbe60fbc3d5761fb2c769a1755431a72936a7f498aac97f957a760e5ce1f3",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 212,
+          "prompt_tokens": 1393,
+          "total_tokens": 1605
+        }
+      }
+    },
+    {
+      "attempt_id": "b891c04bc25d45a799c51543223443a1",
+      "kind": "model",
+      "input_sha": "655e1568a66059b6f2d1575a3ee4afd0d40db050fa6f5e5d26557559de1d686a",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "9b31cfd3542c19f26ee25bd0f43d7b5e60347632d1a5dfb6a431da27a094086f",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 253,
+          "prompt_tokens": 1397,
+          "total_tokens": 1650
+        }
+      }
+    },
+    {
+      "attempt_id": "445002dd252f4785970da676fccdd078",
+      "kind": "model",
+      "input_sha": "74386caf5e3cd454c6406b3d9853b5cf9feabc352c02318fc82f85adb214d026",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "dd5357f8b8e1b8f7072319a55ce4352ceb038ee00e4abb7ad3e101caf5dfbc1a",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 117,
+          "prompt_tokens": 1388,
+          "total_tokens": 1505
+        }
+      }
+    },
+    {
+      "attempt_id": "920aba4fb6e14983be33c9a17d041c5e",
+      "kind": "model",
+      "input_sha": "06a07d7a21cd6222136f40cae2355a3ff28cf8be6dc726a8edf2d6643e1f95fc",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "4491c89e007afbdbdb1d66d38fe7d6effe1089e7ae40353dd6753ffab7b58348",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 178,
+          "prompt_tokens": 1390,
+          "total_tokens": 1568
+        }
+      }
+    },
+    {
+      "attempt_id": "82650f887cc840bd9734b20b3a00d4f4",
+      "kind": "model",
+      "input_sha": "0b8b4c29365cc1d8cd5ab9ad81743007080d011b8ed650223ed4a8d3631ec3fd",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "c7cb9596d4aede70401d47e4a9fb30cfa50b9f2cbb498508e29e4e234278347c",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 211,
+          "prompt_tokens": 1390,
+          "total_tokens": 1601
+        }
+      }
+    },
+    {
+      "attempt_id": "7037107231b34d99b01aedc8c7d112d5",
+      "kind": "model",
+      "input_sha": "eb5493c3fda68b5b9b30070684265eec1bd9b13904988d3f23d4ac0e9b77d789",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "aff6e433546f68c4b7d678a18d11a3ccf3789738156319afdc0aaff0c52a1e90",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 206,
+          "prompt_tokens": 1391,
+          "total_tokens": 1597
+        }
+      }
+    },
+    {
+      "attempt_id": "5570ee5e7e374b38a305870a3b2f6bf8",
+      "kind": "model",
+      "input_sha": "e6ae6c3f51afc181148bf2f3745415126193e6690a957d8f987399ec489792b2",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "9c2fccf480e8d43cae87eee7bc0937109362740bb953c8dfb96a39505e38acd7",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 645,
+          "prompt_tokens": 1393,
+          "total_tokens": 2038
+        }
+      }
+    },
+    {
+      "attempt_id": "b36a2022371343c0b04acd1273380243",
+      "kind": "model",
+      "input_sha": "6466be188a1872df4b5a4006990fc4f2b2511908a386d27cd9e5d50ebeaefd69",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "2947ab93c551fb0a3a37311ca4f682f3384b3c98c620b48885903bac2371eb21",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 466,
+          "prompt_tokens": 1392,
+          "total_tokens": 1858
+        }
+      }
+    },
+    {
+      "attempt_id": "6f1402b79c51456981240632d868eac3",
+      "kind": "model",
+      "input_sha": "b1fdda211b9d079a595e7d10797619adc22cca86c744119071bc35893488f52f",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "9bb6f5620f39cfaa6a823ddf2737206fa6f0a1ab180cecab7a9f586fb597f537",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 85,
+          "prompt_tokens": 1402,
+          "total_tokens": 1487
+        }
+      }
+    },
+    {
+      "attempt_id": "fae7a07b71c24918a1f3497c8fc114d0",
+      "kind": "model",
+      "input_sha": "2e20af1fa1b2d605d212664befa60507b852c8d0812cafba5a01bdfcfb7b6567",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "804c7828efca3e8ded5a774f2b51e35445a7a4727e9b21ce1cca982759644d30",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 157,
+          "prompt_tokens": 1513,
+          "total_tokens": 1670
+        }
+      }
+    },
+    {
+      "attempt_id": "78737be3e6a7418a9dcfbbb183328a8d",
+      "kind": "model",
+      "input_sha": "9167af7d3e20d1f730356e2e7d43cd42b535ee88a67f7c04c26ad78fb56e47ef",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "3fb0a2fa6d42b6a7c994bdeb4848e811dcb6b3838fbe43d6e2f3e642d59bf86f",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 93,
+          "prompt_tokens": 1402,
+          "total_tokens": 1495
+        }
+      }
+    },
+    {
+      "attempt_id": "2d251c1215a347fba90c27c7b08c1bf5",
+      "kind": "model",
+      "input_sha": "e3d68a65e93dc6e3bd2a84cc054263edc2410266978038a4fe6b03f5bf27b9cf",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "163a5a0eee04b1f5ba62f70c686b2802cb63961bf55c6101fc09517ca8ad0e69",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 101,
+          "prompt_tokens": 1515,
+          "total_tokens": 1616
+        }
+      }
+    },
+    {
+      "attempt_id": "76a8045098d94c63ae4fc966413c5630",
+      "kind": "model",
+      "input_sha": "b1fdda211b9d079a595e7d10797619adc22cca86c744119071bc35893488f52f",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "b6d7e98f2aaaa2a5f8526b8224e79deba4112b40115164d70e9e9f0d8bacf81c",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 81,
+          "prompt_tokens": 1402,
+          "total_tokens": 1483
+        }
+      }
+    },
+    {
+      "attempt_id": "df232c7dcb134abbb7228f1757fe2a74",
+      "kind": "model",
+      "input_sha": "30027d630fd74a03bdc02dc58e57e211c3dd5e83fd117d4e94ce75f4f085378e",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "68f41ab12c759a61948fef766292f99268e275e374528f2025c195d44b110498",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 202,
+          "prompt_tokens": 1519,
+          "total_tokens": 1721
+        }
+      }
+    },
+    {
+      "attempt_id": "22b48fcb8f624d1685f37f90a656a8e8",
+      "kind": "model",
+      "input_sha": "9167af7d3e20d1f730356e2e7d43cd42b535ee88a67f7c04c26ad78fb56e47ef",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "5719900bf9041dc633975f3a8f74f4584cfa9b4084a9ce366b106614309cefab",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 38,
+          "prompt_tokens": 1402,
+          "total_tokens": 1440
+        }
+      }
+    },
+    {
+      "attempt_id": "66ccebbd9e8f42ec853c4e5f3b69c7fb",
+      "kind": "model",
+      "input_sha": "fc7d67d95bf227735bbc765639e24b67989f0b04b11b3af7c1007f410aa6d5fb",
+      "state": "INTENT",
+      "receipt": null
+    },
+    {
+      "attempt_id": "7b77a949b12a464c9e9815e4eadf560a",
+      "kind": "model",
+      "input_sha": "dcbcf544546f42667421ef9d793c1baed694ff8f888b77f3c4a517119b916005",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "0e363ea32961b809f18f0e2eb8292daae520a668993e617de686cf4ecbbd49a2",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 168,
+          "prompt_tokens": 1393,
+          "total_tokens": 1561
+        }
+      }
+    },
+    {
+      "attempt_id": "49f84a5f561c43a2a0ddef1b10fdf612",
+      "kind": "model",
+      "input_sha": "81bcfc468bc61544c15f626c38372c3a96034f58c139e44bed7fcc8ddf93947c",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "1182c1b6b1358fc209aa5ea73d4d26957c15b61c24d13487aec024b9e9480874",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 263,
+          "prompt_tokens": 1394,
+          "total_tokens": 1657
+        }
+      }
+    }
+  ],
+  "correction_attempts": [
+    {
+      "attempt_id": "28f9b31b1c9d4897a23c659742d16f68",
+      "kind": "model",
+      "input_sha": "a8865eca4205601bbba381a1cd6884cc19b139f6c657d26d722a13042b3fc3e6",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "dd92ad4b05f0b0a219c77bd3a23ebf03b1f009e448b77583670038a3bddf35d5",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 61,
+          "prompt_tokens": 733,
+          "total_tokens": 794
+        }
+      }
+    },
+    {
+      "attempt_id": "269975a8e2624f2eb649193639846100",
+      "kind": "fact",
+      "input_sha": "c27fa4081eeba1acdab51c0aa01a0d5794d2a31d4ba8886ed4dc8f9de6734bd5",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "0",
+        "endpoint": "https://en.nia.gov.cn/",
+        "region": "China",
+        "response_sha256": "a311a4ab8fa5a3434da70df50a2def0bbbfb1de93246b44a8faa4ecce9c60e20",
+        "result_status": "unknown"
+      }
+    },
+    {
+      "attempt_id": "fea7a86846ae4043a51f9f1e0ea1908c",
+      "kind": "model",
+      "input_sha": "cf0d4e13781edf5b5e2f849a7518225d89729815a53b50fb6c32f574850361a3",
+      "state": "RECEIVED",
+      "receipt": {
+        "actual_cost_cny": "UNKNOWN",
+        "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_id": "qwen3.8-flash",
+        "receipt_sha256": "e1a325be7f54128e7d2e0ba8ea9dfb1f85a96220b8ee4a68aa241567abc14b45",
+        "region": "cn-beijing",
+        "usage": {
+          "completion_tokens": 464,
+          "prompt_tokens": 1382,
+          "total_tokens": 1846
+        }
+      }
+    }
+  ],
+  "reused_five_ownership": "Original e3 stage only; never included in formal or new correction cost",
+  "actual_paid": "UNKNOWN"
+}
