@@ -118,7 +118,8 @@ def register_run_events_route(app, reader=None, display_configuration=None, conf
     @app.get('/v1/run-events')
     async def legacy_events(request: Request):
         source = legacy_reader if legacy_reader is not None else reader
-        return await stream(request, source.read if source is not None else None)
+        return await stream(request, source.read if source is not None else None,
+                            timing=legacy_reader is not None)
 
     @app.get('/v2/run-events')
     async def travel_events(request: Request):
