@@ -197,7 +197,8 @@ class Runtime:
         async def retirement_lease(request,call_next):
             path=request.url.path
             if ((request.method=='POST' and path in ('/v1/messages','/v2/messages'))
-                    or (self.typed_memory is not None and request.method=='GET' and path=='/v2/memories')):
+                    or (request.method=='GET' and (path=='/v2/run-events'
+                        or self.typed_memory is not None and path=='/v2/memories'))):
                 with permit_retirement_read_lease(database,require_current):
                     return await call_next(request)
             return await call_next(request)

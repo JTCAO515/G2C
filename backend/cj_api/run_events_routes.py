@@ -15,6 +15,7 @@ from fastapi.responses import StreamingResponse
 from starlette.concurrency import run_in_threadpool
 
 from .history_routes import _query
+from .local_account_admission_v2 import retirement_read_operation
 from .message_routes import _error, _token
 
 TERMINAL = frozenset({'completed', 'failed', 'cancelled', 'context_invalid', 'unknown'})
@@ -65,7 +66,8 @@ def register_run_events_route(app, reader=None, display_configuration=None, conf
             return _error(request, 400, 'INVALID_INPUT', 'input', 'failed', 'do_not_retry')
 
         def snapshot():
-            payload = json.loads(read(token, mid))
+            with retirement_read_operation():
+                payload = json.loads(read(token, mid))
             return payload['status'], payload['text'].encode('utf-8')
 
         try:

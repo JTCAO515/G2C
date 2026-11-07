@@ -204,7 +204,16 @@ def exercise(auth,conninfo):
             display=value['snapshot']
             assert display['run_id']==receipt['run_id'] and display['text']
         stream_params={'message_id':none['receipt']['message_id']}
-        stream=api.get('/v2/run-events',params=stream_params,headers=host.headers[B])
+        with TestClient(baseline_post) as baseline,patch.object(database,'_open_runtime_connection',
+                wraps=database._open_runtime_connection) as opened:
+            baseline_stream=baseline.get('/v2/run-events',params=stream_params,headers=host.headers[B])
+            baseline_stream_checkouts=opened.call_count
+        with patch.object(database,'_open_runtime_connection',wraps=database._open_runtime_connection) as opened:
+            stream=api.get('/v2/run-events',params=stream_params,headers=host.headers[B])
+            leased_stream_checkouts=opened.call_count
+        assert stream.content==baseline_stream.content
+        assert leased_stream_checkouts<baseline_stream_checkouts,(baseline_stream_checkouts,leased_stream_checkouts)
+        print(f'PASS original typed SSE snapshot fresh checkouts {baseline_stream_checkouts} -> {leased_stream_checkouts}')
         assert stream.status_code==200 and stream.headers['content-type'].startswith('text/event-stream')
         frames=[json.loads(line[6:]) for line in stream.text.splitlines() if line.startswith('data: ')]
         body=expect(api.get('/v2/run-display',params=stream_params,headers=host.headers[B]))['snapshot']['text']
