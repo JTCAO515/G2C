@@ -97,6 +97,15 @@ def evidence(case, language='zh', *, proxy=False, profile=M4_NATIVE_TURN_PROFILE
 
 
 class SmokeChecks(unittest.TestCase):
+    def test_completed_fact_answer_with_citation_prefix_keeps_receipt_requirements(self):
+        case=cases('2026-11-04')[2]
+        raw=evidence(case,proxy=True,profile=M4_NATIVE_TURN_PROFILE_V2)
+        raw['answer']='来源：https://en.nia.gov.cn/\n来源：实际官方摘录。日期适用性和资格 UNKNOWN。'
+        raw['events'][0]['data']['text']=raw['answer']
+        self.assertEqual(check(case,raw)['status'],'PASS')
+        next(r for r in raw['authorization_attempts'] if r['kind']=='fact').update(state='INTENT',receipt=None)
+        self.assertEqual(check(case,raw)['status'],'FAIL')
+
     def test_compact_profile_requires_same_original_tool_chain_in_all_six_cells(self):
         for case in cases('2026-11-04'):
             for language in ('zh','en'):

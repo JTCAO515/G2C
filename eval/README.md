@@ -212,6 +212,21 @@ runner/config改动均不能产生新身份。来源身份不同也不自动授�
 旧 M1 ¥13 及 B 的并行调用不释放；观测只归属本场景原 Meter attempt，
 全局账本快照另存，不能把其他线的并行调用算成本线。
 
+`C-SMOKE-CORRECTION.1` 是 JT 批准的单次接续，专用于 `hk-compact-e3b36c39-smoke-001`
+的正文误报。批准见 [#495](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6702591531)。
+`smoke_correction.json` 固定原 acbc adapter、原 e3 阶段与 FAIL 凭证、原文件哈希和适用的 C 判定代码。
+新入口用原真实账本复核五条完整链路，核 `case-starts` 证明英文 FACT 从未开始，再对唯一未运行格和固定66预检。
+通过后单独原子认领 `smoke-correction-1`，只运行原问题的英文 FACT，工具白名单仅 FACT。
+认领即消耗该单次机会，失败或中断按原动作只读对账。
+
+```sh
+python -B eval/hk.py run smoke-correction --output /evidence/hk-body-correction-001
+```
+
+新目录的五份 raw 逐字来自封存原件，`original-*` 保存原判定，`plan.correction` 记录接续及原执行来源。
+接续凭证锁定全部六格，仍需同候选独立判定及真实原回执全部 PASS 才进入原 `full`。
+原 smoke FAIL 和常规阶段认领保留。接续仅适用本批准的一格，其他失败按原规则处理。
+
 签名 MESSAGE-send.2、原 NEEDS 来源、Trip 显式确认与 typed Memory 保存/管理/撤回
 经现有 API；角色/owner/正式写入/上下文由原独立 judge 核对。重启案例用新真实
 worker 进程消费同一 PG/原消息/授权账本。使用 B 已交 legacy draft，不绕过它与
