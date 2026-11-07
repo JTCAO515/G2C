@@ -176,6 +176,23 @@ def exercise(auth,conninfo):
             assert value['reference']==original['reference']
             display=value['snapshot']
             assert display['run_id']==receipt['run_id'] and display['text']
+        stream_params={'message_id':none['receipt']['message_id']}
+        stream=api.get('/v2/run-events',params=stream_params,headers=host.headers[B])
+        assert stream.status_code==200 and stream.headers['content-type'].startswith('text/event-stream')
+        frames=[json.loads(line[6:]) for line in stream.text.splitlines() if line.startswith('data: ')]
+        body=expect(api.get('/v2/run-display',params=stream_params,headers=host.headers[B]))['snapshot']['text']
+        assert frames==[{'text':body},{'status':'completed'}]
+        resumed=api.get('/v2/run-events',params=stream_params,
+            headers={**host.headers[B],'Last-Event-ID':str(len(body.encode('utf8')))})
+        assert resumed.status_code==200 and 'event: delta' not in resumed.text
+        assert 'data: {"status":"completed"}' in resumed.text
+        harness.expect(api.get('/v2/run-events',params=stream_params,
+            headers={**host.headers[B],'Last-Event-ID':str(len(body.encode('utf8'))+1)}),409)
+        harness.expect(api.get('/v2/run-events',params=stream_params,headers=host.headers[A]),503)
+        harness.expect(api.get('/v1/run-events',params=stream_params,headers=host.headers[B]),503)
+        old_params={'message_id':old['message_id']}
+        harness.expect(api.get('/v2/run-events',params=old_params,headers=host.headers[A]),503)
+        assert api.get('/v1/run-events',params=old_params,headers=host.headers[A]).status_code==200
         with database.connect(scope_for(ISSUER,A)) as c:
             assert c.execute('SELECT count(*) FROM cj_memory_item').fetchone()==(0,)
         with database.connect(scope_for(ISSUER,B)) as c:
