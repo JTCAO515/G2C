@@ -269,7 +269,14 @@ class LocalDatabase:
         executor.execute('INSERT INTO cj_trip_scope(scope) VALUES (%s) ON CONFLICT DO NOTHING', (trip_scope_for(scope),))
 
     @contextmanager
-    def _message_preflight_transaction(self, connection):
+    def scoped_cursor(self, scope, *, connection=None):
+        if connection is None:
+            with self.connect(scope) as owned, owned.cursor() as cursor:
+                yield cursor
+            return
+        if (connection._scope != scope or connection.closed
+                or connection.info.transaction_status != TransactionStatus.IDLE):
+            raise CompositionUnavailable('idle connection for the original scope required')
         with connection.transaction(), connection.cursor() as cursor:
             cursor.execute('SET TRANSACTION ISOLATION LEVEL READ COMMITTED')
             connection.bind_scope(cursor)
@@ -278,9 +285,9 @@ class LocalDatabase:
 
     def prepare_legacy_message_scope(self, connection, scope):
         # Preserve the budget read commit before provisioning and the separate MESSAGE writer.
-        with self._message_preflight_transaction(connection) as cursor:
+        with self.scoped_cursor(scope, connection=connection) as cursor:
             self._check_budget_account(cursor, scope, self.run_context.current)
-        with self._message_preflight_transaction(connection) as cursor:
+        with self.scoped_cursor(scope, connection=connection) as cursor:
             self._provision_scope(cursor, scope)
 
     def message_repository(self, scope):
@@ -306,8 +313,8 @@ class LocalDatabase:
             with conn.cursor() as cursor:
                 return profile(cursor,scope)
 
-    def require_execution(self, scope, binding=None):
-        with self.execution_transaction(scope, binding):
+    def require_execution(self, scope, binding=None, *, connection=None):
+        with self.execution_transaction(scope, binding, connection=connection):
             pass
 
     @contextmanager

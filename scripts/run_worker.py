@@ -7,7 +7,7 @@ is enabled; --real refuses before reading credentials. Interrupted work is queri
 by its original identity and never automatically resent.
 """
 import argparse
-from contextlib import contextmanager, nullcontext
+from contextlib import closing, contextmanager, nullcontext
 import json
 import os
 from pathlib import Path
@@ -101,12 +101,12 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
                 or place_draft_configuration.publisher is None or place_draft_configuration.publisher.abi!=PUBLISHER_ABI
                 or type(tools_configuration) is not LocalPlaceDraftTools or draft_profile is not None):
             raise CompositionUnavailable('explicit compatible PLACE-source tools and C producer required')
-    database.require_execution(scope)
-    edit_config=None
-    # Co-locate composition reads under the same scoped checkout. The later
-    # travel-context read and per-delivery execution guard still read live state.
-    with database.connect(scope) as connection:
-        with connection.cursor() as cursor:
+    reuse_preflight = (account_checker_builder is not None and memory_configuration is None
+                       and formal_memory_configuration is None)
+    with (closing(database.connect(scope)) if reuse_preflight else nullcontext()) as preflight_connection:
+        database.require_execution(scope, connection=preflight_connection)
+        edit_config = None
+        with database.scoped_cursor(scope, connection=preflight_connection) as cursor:
             editing = edit_profile(cursor, scope)
             if editing:
                 from cj_message.edit_reference import configured
@@ -122,14 +122,18 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
                     raise CompositionUnavailable('explicit existing formal profile and sole C formal Memory configuration required')
             else:
                 _require_memory_configuration(cursor, scope, memory_configuration, travel_profile(cursor, scope))
-    if editing and formal_memory_configuration is not None:
-        raise CompositionUnavailable('formal discussion and scoped edit have separate C configurations')
-    if tools_configuration is not None and (database.run_context is None or database.run_context.version!='CJ-LOCAL-RUN@2'):
-        raise CompositionUnavailable('tools require the registered M2 exit')
-    messages = MessageService(database.message_repository(scope), new_run_id=lambda: None)
-    subject = scope.removeprefix('local:' + ISSUER + ':')
-    def token(subject=subject): return dev_auth.token(Path(auth_dir),subject,5)
-    memory_credential = token() if memory_configuration is not None or editing or formal_memory_configuration is not None else None
+        if editing and formal_memory_configuration is not None:
+            raise CompositionUnavailable('formal discussion and scoped edit have separate C configurations')
+        if tools_configuration is not None and (database.run_context is None or database.run_context.version!='CJ-LOCAL-RUN@2'):
+            raise CompositionUnavailable('tools require the registered M2 exit')
+        messages = MessageService(database.message_repository(scope), new_run_id=lambda: None)
+        subject = scope.removeprefix('local:' + ISSUER + ':')
+        def token(subject=subject): return dev_auth.token(Path(auth_dir),subject,5)
+        memory_credential = token() if memory_configuration is not None or editing or formal_memory_configuration is not None else None
+        # Use a new transaction for the final live Travel profile check.
+        with database.scoped_cursor(scope, connection=preflight_connection) as cursor:
+            travel_enabled = travel_profile(cursor, scope)
+
     def memory_admit(credential=memory_credential, scope=scope):
         decision = checker.check(credential)
         if decision.status is AdmissionStatus.UNKNOWN:
@@ -139,7 +143,7 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
             raise RuntimeDenied('memory admission denied')
         return decision.principal
     message_context=None
-    if database.travel_profile(scope) or type(memory_configuration) is TypedRuntimeConfiguration:
+    if travel_enabled or type(memory_configuration) is TypedRuntimeConfiguration:
         from cj_message.travel_reference import MessageContextAuthority
         credential=memory_credential if type(memory_configuration) is TypedRuntimeConfiguration or formal_memory_configuration is not None else token()
         def travel_admit():
@@ -254,7 +258,7 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
         execution_lease=lease_execution if reuse_connections else nullcontext,
         owned_transaction_lease=(lambda: database.lease_run_transactions(runs.repository)) if reuse_connections else None,
         tools=tools_configuration,place_sources=place_sources,
-        execution_guard=lambda binding:database.require_execution(binding.scope,binding),
+        execution_guard=lambda binding: database.require_execution(binding.scope, binding, connection=execution_connection),
         needs_lease=needs_lease_for(database,checker,token),
         budget_exit=(LocalBudgetRouter(database) if tools_configuration is None else
                      LocalBudgetRouter(database,registrations=tools_configuration.registrations)))
