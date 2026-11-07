@@ -260,12 +260,16 @@ def exercise(auth,conninfo):
                                                 run_context=profiles[subject][1], account_admission=True,
                                                 existing_display_reads=True)
                     query = dict(message_id=subject)
+                    legacy_stream = client.get('/v1/run-events',params=query,headers=headers[subject])
                     before_display = len(opened)
                     with TestClient(read_app) as reader, patch.object(
                             db, 'provision', side_effect=AssertionError('existing display must not provision')):
                         exact = harness.expect(reader.get('/v1/run-display', params=query, headers=headers[subject]))
                         assert exact['snapshot'] == display['snapshot']
                         assert len(opened) - before_display <= 12
+                        protected_stream = reader.get('/v1/run-events',params=query,headers=headers[subject])
+                        assert protected_stream.status_code == legacy_stream.status_code == 200
+                        assert protected_stream.content == legacy_stream.content
                         harness.expect(reader.get('/v1/run-display', params=query, headers=headers[subjects[1]]),503)
                         original_read = message_domain.read_active_message
                         invitations = auth/'invited.json'
