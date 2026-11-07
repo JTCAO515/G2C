@@ -1,8 +1,10 @@
 """Real PG/RUN/Meter with native HTTP fixtures; no live key/network/cost."""
 import asyncio,json,os,time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from contextlib import contextmanager
 from datetime import datetime,timezone
+from threading import Event
 from unittest.mock import patch
 
 import httpx
@@ -25,7 +27,7 @@ from test_m4_real_services import turn_sse,KEY,NOW
 
 
 def exercise(auth,conninfo):
-    subjects=['m4-synthetic-'+v for v in ('ok','limit','unknown','malformed','late','permission','revoke','repeat','tail','tailbad','batch','batchfail','stop','guard-unknown')]
+    subjects=['m4-synthetic-'+v for v in ('ok','limit','unknown','malformed','late','permission','revoke','repeat','tail','tailbad','batch','batchfail','stop','guard-unknown','progress')]
     harness.dev_auth.init(auth,subjects)
     now=int(time.time());profiles={}
     for subject in subjects:
@@ -100,7 +102,7 @@ def exercise(auth,conninfo):
             return httpx.Response(200,stream=httpx.ByteStream(payload.encode()))
         model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),budget,transport=httpx.MockTransport(response))
         writes=[]
-        if subject.endswith('late'):model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),budget)
+        if subject.endswith(('late','progress')):model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),budget)
         class Writer:
             def __init__(self):self.transport=self
             def write(self,raw):writes.append(raw)
@@ -124,6 +126,36 @@ def exercise(auth,conninfo):
             if subject.endswith('late'):
                 with patch('cj_agent.provider.asyncio.open_connection',handshake):
                     outcomes=run_worker.run_once(db,model,auth,tools_configuration=tools,real_services=services,account_admission=True)
+            elif subject.endswith('progress'):
+                sent,release=Event(),Event()
+                body=turn_sse(compact=True).replace('"finish_reason": "tool_calls"','"finish_reason": "stop"').encode()
+                response_bytes=(b'HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nContent-Length: '+
+                                str(len(body)).encode()+b'\r\n\r\n'+body)
+
+                class PausedReader:
+                    async def read(self, size):
+                        if not await asyncio.to_thread(release.wait,15):
+                            raise TimeoutError('synthetic response release expired')
+                        return response_bytes
+
+                class SentWriter(Writer):
+                    async def drain(self):
+                        sent.set()
+
+                async def paused_handshake(*args,**kwargs):
+                    return PausedReader(),SentWriter()
+
+                with patch('cj_agent.provider.asyncio.open_connection',paused_handshake),ThreadPoolExecutor(max_workers=1) as pool:
+                    original=pool.submit(run_worker.run_once,db,model,auth,tools_configuration=tools,
+                                         real_services=services,account_admission=True)
+                    try:
+                        assert sent.wait(10)
+                        assert budget.inspect()[0]['state']=='INTENT'
+                        running=harness.expect(client.get('/v1/run-display',params=dict(message_id=subject),headers=headers[subject]))
+                        assert running['snapshot']['status']=='running' and running['snapshot']['text']==''
+                    finally:
+                        release.set()
+                    outcomes=original.result(timeout=15)
             elif subject.endswith('guard-unknown'):
                 from cj_api.local_account_admission_v2 import retired_in_transaction
                 original_chunks = model._chunks
@@ -248,6 +280,9 @@ def exercise(auth,conninfo):
             elif subject.endswith('late'):
                 assert outcomes[0].status=='failed' and model.calls==1 and len(tool_calls)==before and not writes
                 assert budget.inspect()[0]['state']=='INTENT'
+            elif subject.endswith('progress'):
+                assert outcomes[0].status=='completed' and model.calls==len(writes)==1 and len(tool_calls)==before
+                assert budget.inspect()[0]['state']=='RECEIVED'
             elif subject.endswith('permission'):
                 assert outcomes[0].status=='failed' and model.calls==1 and len(tool_calls)==before+1
                 assert budget.inspect()[-1]['receipt']['provider_code']=='10012'
