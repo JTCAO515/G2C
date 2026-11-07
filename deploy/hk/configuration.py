@@ -32,13 +32,14 @@ SECRET_FILES={
 }
 TYPED_POLICY='CJ_BETA_TYPED_MEMORY_POLICY_B64'
 MEMORY_RUN_POLICY='CJ_BETA_MEMORY_RUN_POLICY_B64'
+TYPED_MESSAGE_SUBJECTS='CJ_BETA_TYPED_MESSAGE_SUBJECTS_JSON'
 
 
 def load_secret_environment(role,*,root=Path('/run/secrets')):
     """Docker receives only paths; secret bytes enter this process, not Config.Env."""
     expected=SECRET_FILES[role];values={}
     for file,names in expected.items():
-        optional=({TYPED_POLICY} if role=='api' and file=='api' else
+        optional=({TYPED_POLICY,TYPED_MESSAGE_SUBJECTS} if role=='api' and file=='api' else
                   {MEMORY_RUN_POLICY} if role=='worker' and file=='worker' else set())
         allowed=names|optional
         if any(name in os.environ for name in allowed):raise ValueError('persistent_container_secret_environment_refused')
@@ -86,6 +87,7 @@ class Runtime:
     typed_memory:object=None
     subjects:frozenset=frozenset()
     memory_runtime:object=None
+    typed_message_subjects:frozenset=frozenset()
 
     @classmethod
     def load(cls,root,*,worker=False):
@@ -112,6 +114,15 @@ class Runtime:
             if (selected!=frozenset(memory_runtime.collection.collection.profiles)
                     or not selected<=frozenset(subjects)):
                 raise ValueError('explicit_memory_run_selection_for_beta_invites_required')
+        typed_message_subjects=frozenset()
+        if TYPED_MESSAGE_SUBJECTS in os.environ:
+            if worker:raise ValueError('typed_message_subjects_are_API_only')
+            selected=json.loads(os.environ[TYPED_MESSAGE_SUBJECTS],object_pairs_hook=reject_duplicates(ValueError,'duplicate_typed_message_field'))
+            if (typed_memory is None or type(selected) is not list or not selected
+                    or any(type(s) is not str for s in selected) or len(set(selected))!=len(selected)
+                    or not frozenset(selected)<=frozenset(typed_memory.collection.profiles)):
+                raise ValueError('explicit_typed_message_policy_subjects_required')
+            typed_message_subjects=frozenset(selected)
         auth=root/'auth';auth.mkdir(mode=0o700,exist_ok=True)
         public=decoded('CJ_BETA_SIGNING_PUBLIC_B64')
         parsed=serialization.load_pem_public_key(public)
@@ -137,7 +148,7 @@ class Runtime:
         context_path.write_text(raw)
         context=load_run_context(context_path)
         if context.version!='CJ-LOCAL-RUN@2':raise ValueError('registered_beta_run_context_required')
-        return cls(auth,context,context_path,descriptors,typed_memory,frozenset(subjects),memory_runtime)
+        return cls(auth,context,context_path,descriptors,typed_memory,frozenset(subjects),memory_runtime,typed_message_subjects)
 
     def memory_configuration_for_scope(self,scope):
         if self.memory_runtime is not None and scope in {
@@ -162,7 +173,11 @@ class Runtime:
                 existing=connection.execute('SELECT 1 FROM cj_memory_scope LIMIT 1').fetchone()
             if existing and (self.typed_memory is None or subject not in self.typed_memory.collection.profiles):
                 raise ValueError('existing_beta_memory_requires_explicit_policy')
-        message_subjects=None if self.typed_memory is None else self.subjects-frozenset(self.typed_memory.collection.profiles)
+        for subject in self.typed_message_subjects:
+            if not database.travel_profile(scope_for(ISSUER,subject)):
+                raise ValueError('original_typed_message_travel_profile_required')
+        message_subjects=(None if self.typed_memory is None else
+                          self.subjects-(frozenset(self.typed_memory.collection.profiles)-self.typed_message_subjects))
         app=create_local_app(conninfo_path=None,auth_dir=self.auth,database=database,run_context=self.context,
             confirmation_signer=ConfirmationSigner(decoded('CJ_BETA_CONFIRMATION_B64',length=32)),history_configuration=history,
             account_admission=True,needs_profile=os.environ.get('CJ_LOCAL_NEEDS_PROFILE'),message_subjects=message_subjects)
