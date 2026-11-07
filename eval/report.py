@@ -4,7 +4,20 @@ import re
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'evaluation/cj028'))
 from evaluate import summarize, validate, outcome, latency, require, number, amount, exact_sum, nonempty
-from gates import POLICY, MAC_VPN_NETWORK, profile_gate, acceptance, hard_status, program_proof, known_reference
+from gates import POLICY, MAC_VPN_NETWORK, QUALITY_POLICIES, VISIBLE_PROGRESS_POLICY
+from gates import profile_gate, acceptance, hard_status, program_proof, known_reference
+
+
+def visible_progress_seconds(row):
+    proof = row.get('first_visible_progress')
+    if (isinstance(proof, dict) and proof.get('source') == 'server_run_status_event'
+            and proof.get('observed_at') == 'app_render' and proof.get('clock') == 'client_monotonic'
+            and known_reference(proof.get('ref')) and known_reference(row.get('run_id'))
+            and proof.get('run_id') == row['run_id']
+            and type(proof.get('event_sequence')) is int and proof['event_sequence'] > 0
+            and number(proof.get('seconds'))):
+        return proof['seconds']
+    return None
 
 
 def effective_observation(row, scenario):
@@ -79,6 +92,9 @@ def real_fees(rows):
 
 def report(plan, observations):
     scenarios,_,_ = validate(plan,observations)
+    quality_id = plan.get('quality_policy', POLICY['id'])
+    require(type(quality_id) is str and quality_id in QUALITY_POLICIES, 'unknown or unapproved quality policy')
+    quality_policy = QUALITY_POLICIES[quality_id]
     selection=plan.get('network_policy',POLICY['id'])
     require(type(selection) is str and selection in (POLICY['id'],MAC_VPN_NETWORK['id']),
             'unknown or unapproved network policy')
@@ -154,18 +170,25 @@ def report(plan, observations):
                 groups = [g for g in result['groups'] if g['candidate_id']==candidate['id']
                           and g['language']==language and g['network_id']==network['id']]
                 rows = [a['observation'] for g in groups for a in g['attempts']]
+                if quality_policy is VISIBLE_PROGRESS_POLICY:
+                    rows = [dict(r, first_visible_progress_seconds=visible_progress_seconds(r)) if r is not None
+                            else None for r in rows]
                 # Missing observations never contribute timing or money, even if
                 # an externally supplied 'missing' record contains other fields.
                 measured = [r if r is not None and r['_measurement_available'] else None for r in rows]
+                first_visible_progress = (latency(measured, 'first_visible_progress_seconds')
+                                          if quality_policy is VISIBLE_PROGRESS_POLICY else None)
                 counts = {s:sum(g['outcomes'][s] for g in groups) for s in ('PASS','FAIL','UNKNOWN','UNRUN')}
                 errors = [e for g in groups for e in g['serious_errors']]
                 profile = dict(candidate_id=candidate['id'],language=language,network_id=network['id'],network=network,
                                outcomes=counts,planned_attempt_n=len(rows),
                                real_fees=real_fees(measured),
-                               **profile_gate(counts=counts,rows=rows,first_body=latency(measured,'first_body_seconds'),
+                               **profile_gate(counts=counts,rows=rows,
+                                              first_body=latency(measured,'first_body_seconds'),
                                               full_answer=latency(measured,'full_answer_seconds'),serious_errors=errors,
                                               real=plan['evidence_layer']=='real',scenarios=scenarios,network=network,
-                                              network_policy=network_policy))
+                                              network_policy=network_policy,quality_policy=quality_policy,
+                                              first_visible_progress=first_visible_progress))
                 profile['call_volume'] = {}
                 for field in ('model_calls','tool_calls','memory_calls'):
                     values = [r.get(field) for r in measured if r is not None]
@@ -173,7 +196,7 @@ def report(plan, observations):
                         known_attempt_n=sum(v is not None for v in values),
                         unknown_or_missing_attempt_n=len(rows)-sum(v is not None for v in values))
                 profiles.append(profile)
-    result['quality_acceptance'] = acceptance(profiles,plan,network_policy)
+    result['quality_acceptance'] = acceptance(profiles,plan,network_policy,quality_policy)
     # Preserve the original plan and global release authority distinction, while
     # removing the old reporter's now-superseded unconfirmed-threshold notice.
     result['release_blockers'] = [reason for reason in result['release_blockers'] if reason != 'thresholds unconfirmed']
@@ -181,6 +204,8 @@ def report(plan, observations):
 
 
 def markdown(result):
+    policy = result['quality_acceptance']['policy']
+    has_progress = policy['id'] == VISIBLE_PROGRESS_POLICY['id']
     lines = ['# G2C M4 evaluation', '',
              f"Dataset: {result['plan']['sample_set_version']}",
              f"Product scenarios: {result['independent_product_scenario_n']}; fixed holdout: {result['holdout_product_scenario_n']}",
@@ -189,11 +214,19 @@ def markdown(result):
              'JT 2026-11-04: each language completion >=90%, serious errors0, first-body p95<=5s, full-answer p95<=90s.', '',
              '| Candidate | Language | Network | Completion | Serious errors | First-body p95 | Full-answer p95 | Real quality decision |',
              '|---|---|---|---|---|---|---|---|']
+    if has_progress:
+        lines[6] = ('JT 2026-11-07: each language completion >=90%, serious errors0, first visible RUN progress '
+                    'p95<=5s, first-body p95<=15s, full-answer p95<=90s.')
+        lines[8] = lines[8].replace(' | First-body', ' | First visible progress p95 | First-body')
+        lines[9] += '---|'
     for profile in result['quality_acceptance']['profiles']:
         c=profile['criteria']; rate=c['completion_rate']
+        progress = c.get('first_visible_progress_p95')
+        progress_cell = f"{progress['status']} {progress['p95']}s | " if progress else ''
         lines.append(f"| {profile['candidate_id']} | {profile['language']} | {profile['network_id']} | "
                      f"{rate['status']} {rate['numerator']}/{rate['denominator']} | "
                      f"{c['serious_errors']['status']} n={c['serious_errors']['observed_n']} | "
+                     f"{progress_cell}"
                      f"{c['first_body_p95']['status']} {c['first_body_p95']['p95']}s | "
                      f"{c['full_answer_p95']['status']} {c['full_answer_p95']['p95']}s | {profile['evaluation_release_decision']} |")
     lines += ['', '| Language | Network | Actual billed currency subtotals | Estimated / reserved | Fee completeness | Model / tool / memory calls (known; unknown attempts) |',

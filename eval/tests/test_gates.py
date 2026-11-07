@@ -5,8 +5,8 @@ from pathlib import Path
 import sys
 import unittest
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from report import report
-from gates import profile_gate
+from report import report, markdown
+from gates import profile_gate, VISIBLE_PROGRESS_POLICY
 from evaluate import InputError, latency
 
 
@@ -68,6 +68,43 @@ class GateChecks(unittest.TestCase):
         p=self.profile(report(self.plan,self.rows))
         self.assertEqual(p['criteria']['completion_rate']['status'],'FAIL')
         self.assertEqual(p['criteria']['first_body_p95']['status'],'FAIL')
+
+    def test_versioned_progress_and_body_limits(self):
+        for row in self.rows:
+            row.update(run_id='synthetic:run',first_body_seconds=15,
+                first_visible_progress=dict(seconds=5, clock='client_monotonic', observed_at='app_render',
+                    source='server_run_status_event',run_id='synthetic:run',event_sequence=1,ref='synthetic:app-trace'))
+        legacy=self.profile(report(self.plan,self.rows))['criteria']
+        self.assertEqual(legacy['first_body_p95']['status'],'FAIL')
+        self.assertNotIn('first_visible_progress_p95',legacy)
+        self.plan['quality_policy']=VISIBLE_PROGRESS_POLICY['id']
+        result=report(self.plan,self.rows)
+        self.assertEqual({c['status'] for c in self.profile(result)['criteria'].values()},{'PASS'})
+        self.assertIn('First visible progress p95',markdown(result))
+        self.rows[0]['first_visible_progress']['seconds']=5.01
+        self.rows[0]['first_body_seconds']=15.01
+        criteria=self.profile(report(self.plan,self.rows))['criteria']
+        self.assertEqual(criteria['first_visible_progress_p95']['status'],'FAIL')
+        self.assertEqual(criteria['first_body_p95']['status'],'FAIL')
+
+    def test_progress_requires_real_event_render_evidence_from_same_run(self):
+        self.plan['quality_policy']=VISIBLE_PROGRESS_POLICY['id']
+        row=self.rows[0]
+        row.update(run_id='synthetic:run',first_visible_progress_seconds=0.1,
+            first_visible_progress=dict(seconds=.1, clock='client_monotonic', observed_at='app_render',
+                source='server_run_status_event',run_id='synthetic:run',event_sequence=1,ref='synthetic:app-trace'))
+        for field,value in (('run_id','different'),('observed_at','snapshot_read'),('source','local_animation'),
+                            ('clock','server_wall'),('event_sequence',0),('ref','UNKNOWN')):
+            with self.subTest(field=field):
+                old=row['first_visible_progress'][field]
+                row['first_visible_progress'][field]=value
+                criteria=self.profile(report(self.plan,self.rows))['criteria']
+                self.assertEqual(criteria['first_visible_progress_p95']['known_n'],0)
+                self.assertEqual(criteria['first_visible_progress_p95']['status'],'UNKNOWN')
+                row['first_visible_progress'][field]=old
+        self.plan['quality_policy']='unapproved'
+        with self.assertRaisesRegex(InputError,'unapproved quality policy'):
+            report(self.plan,self.rows)
 
     def test_human_task_review_still_requires_program_hard_evidence(self):
         self.rows[0]['judgment']=dict(kind='human',independent=True,outcome='PASS',ref='synthetic:human-task-review')
