@@ -18,6 +18,10 @@ class SnapshotChanged(SnapshotUnavailable):
     pass
 
 
+class RunSnapshotAdvanced(SnapshotChanged):
+    """The original RUN appended events while the projection was withheld."""
+
+
 class SnapshotTooLarge(SnapshotUnavailable):
     pass
 
@@ -210,6 +214,13 @@ class DisplaySnapshotReader:
             # Projection, encoding and final envelope bound precede every final guard.
             final = _checked_recovery(repository, binding)
             if final.state != first.state or final.cursor != first.cursor:
+                if (final.cursor.epoch == first.cursor.epoch
+                        and final.cursor.after == first.cursor.after
+                        and final.state.usage == first.state.usage
+                        and final.state.sequence > first.state.sequence
+                        and final.state.events[:first.state.sequence] == first.state.events):
+                    source_guard()
+                    raise RunSnapshotAdvanced('RUN changed during snapshot projection')
                 raise SnapshotChanged('RUN changed during snapshot projection')
             source_guard()
             return encoded
