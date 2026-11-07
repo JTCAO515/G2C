@@ -37,8 +37,8 @@
 | 条件方案 | 该历史终点后的模型／工具预测 | 约束 |
 |---|---|---|
 | 新六格＋原66 | 432／204 | 工具总200不足4，预检拒绝 |
-| 复用已执行5格、仅补英文FACT＋原66 | 418／196 | 需先明确原FAIL封印与候选pin的合法接续规则 |
+| 复用已执行5格、仅补英文FACT＋原66 | 418／196 | JT 已批准该次受限接续，开跑须按实时锚重核 |
 
-当前 `real_phase.py` 与 README 规定同adapter仅一次原子阶段认领，C提交和runner改动不能解锁原FAIL。修复PR只交正文识别和原证据审计。追加接续规则须先审定，原已派发动作全部保留，英文FACT和固定66保持UNRUN。预算停点及本线误判已记 [#495](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6702488879)。
+原阶段一次性认领和 FAIL 保持原样。JT 批准 `C-SMOKE-CORRECTION.1` 为此确切阶段追加单次接续，原始封印与原五格仍以真实账本和固定哈希复核。只补未开始的英文FACT，原六格齐备才可进入固定66。B后续英文FACT公网后验增加2模型和1 FACT，已核原423行保留，实时交接锚426行时预测为420／196。英文FACT接续和固定66在本报告编写时仍为UNRUN。 [预算停点](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6702488879) · [JT批准](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6702591531)
 
 `review.*` 提供五条实际回答及原工具结果，交JT逐条事实／语言／严重错误审阅。境内Mac＋VPN客户端POST计时保持UNRUN，#541/#32 OPEN。

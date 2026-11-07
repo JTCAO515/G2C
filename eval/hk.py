@@ -152,7 +152,7 @@ def main():
     commands=parser.add_subparsers(dest='command',required=True)
     pack=commands.add_parser('package');pack.add_argument('--output',type=Path,required=True)
     pack.add_argument('--backend-commit',required=True)
-    run=commands.add_parser('run');run.add_argument('phase',choices=('smoke','full'))
+    run=commands.add_parser('run');run.add_argument('phase',choices=('smoke','full','smoke-correction'))
     run.add_argument('arguments',nargs=argparse.REMAINDER)
     args=parser.parse_args()
     if args.command=='package':
@@ -160,7 +160,8 @@ def main():
         print('C_SOURCE='+commit+' MANIFEST_SHA256='+digest)
     else:
         if not active():raise ValueError('explicit_HK_execution_context_required')
-        script=ROOT/'eval'/('smoke.py' if args.phase=='smoke' else 'real.py')
+        scripts={'smoke':'smoke.py','full':'real.py','smoke-correction':'smoke_correction.py'}
+        script=ROOT/'eval'/scripts[args.phase]
         sys.argv=[str(script),*args.arguments]
         runpy.run_path(str(script),run_name='__main__')
 
