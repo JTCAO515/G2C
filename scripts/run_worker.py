@@ -7,6 +7,7 @@ is enabled; --real refuses before reading credentials. Interrupted work is queri
 by its original identity and never automatically resent.
 """
 import argparse
+from contextlib import contextmanager, nullcontext
 import json
 import os
 from pathlib import Path
@@ -164,6 +165,19 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
         if last.status is AdmissionStatus.UNKNOWN: raise LeaseUnavailable('worker admission unknown')
         return original is True and last.status is AdmissionStatus.ALLOWED and last.principal==first.principal
 
+    execution_connection = None
+
+    @contextmanager
+    def lease_execution():
+        nonlocal execution_connection
+        connection = database.connect(scope)
+        execution_connection = connection
+        try:
+            yield
+        finally:
+            execution_connection = None
+            connection.close()
+
     def valid(binding):
         if message_context is not None:
             return message_context.valid(binding)
@@ -173,7 +187,7 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
         if binding.scope != scope:
             return False
         from cj_api.local_account_admission_v2 import retired_in_transaction
-        with database.execution_transaction(scope, binding) as tx:
+        with database.execution_transaction(scope, binding, connection=execution_connection) as tx:
             scoped_checker = account_checker_builder(retired_in_transaction(tx.cur, scope))
 
             def same_original():
@@ -226,6 +240,7 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
         memory=memory,edit_publisher=None if edit_config is None else edit_config.publisher,edit_results=database.edit_results,
         memory_history=history is not None,history_adapter=history,
         message_context=message_context,
+        execution_lease=lease_execution if account_checker_builder is not None and message_context is None else nullcontext,
         tools=tools_configuration,place_sources=place_sources,
         execution_guard=lambda binding:database.require_execution(binding.scope,binding),
         needs_lease=needs_lease_for(database,checker,token),

@@ -59,6 +59,15 @@ def _require_unbound(cursor):
         raise CompositionUnavailable('database scope already present')
 
 
+def _require_runtime_role(executor):
+    role = executor.execute("SELECT rolsuper,rolbypassrls,rolcreatedb,rolcreaterole,rolreplication,"
+                            "EXISTS(SELECT 1 FROM pg_auth_members WHERE member=r.oid),"
+                            "EXISTS(SELECT 1 FROM pg_class WHERE relowner=r.oid) "
+                            "FROM pg_roles r WHERE rolname=current_user").fetchone()
+    if role != (False, False, False, False, False, False, False):
+        raise CompositionUnavailable('unsafe local runtime database role')
+
+
 class _ScopedConnection:
     """IDLE DB-API connection with an explicit transaction-entry binding hook.
 
@@ -213,12 +222,7 @@ class LocalDatabase:
                 raise CompositionUnavailable('fresh idle runtime connection required')
             with conn.cursor() as cursor:
                 _require_unbound(cursor)
-            role = conn.execute("SELECT rolsuper,rolbypassrls,rolcreatedb,rolcreaterole,rolreplication,"
-                                "EXISTS(SELECT 1 FROM pg_auth_members WHERE member=r.oid),"
-                                "EXISTS(SELECT 1 FROM pg_class WHERE relowner=r.oid) "
-                                "FROM pg_roles r WHERE rolname=current_user").fetchone()
-            if role != (False, False, False, False, False, False, False):
-                raise CompositionUnavailable('unsafe local runtime database role')
+            _require_runtime_role(conn)
             # No scope is installed at checkout. Repositories still receive IDLE;
             # their transaction entry installs LOCAL authority which PostgreSQL
             # removes on commit/rollback even when a physical connection survives.
@@ -284,9 +288,14 @@ class LocalDatabase:
             pass
 
     @contextmanager
-    def execution_transaction(self, scope, binding=None):
+    def execution_transaction(self, scope, binding=None, *, connection=None):
         """Hold the original MESSAGE lock while its caller checks execution authority."""
-        with self.message_repository(scope).transaction() as tx:
+        if connection is not None and (connection._scope != scope or connection.closed
+                or connection.info.transaction_status != TransactionStatus.IDLE):
+            raise CompositionUnavailable('idle execution connection for the original scope required')
+        with self.message_repository(scope).transaction(borrowed_connection=connection) as tx:
+            if connection is not None:
+                self._check_execution_connection(tx.cur)
             tx.lock_scope()
             tx.local_execution(None if binding is None else binding.message_id,
                                None if binding is None else binding.run_id)
@@ -301,6 +310,9 @@ class LocalDatabase:
             if trip_profile(tx.cur,scope) and not self.trip_context and self.edit_configuration is None:
                 raise CompositionUnavailable('formal Trip execution requires explicit compatible configuration')
             yield tx
+
+    def _check_execution_connection(self, cursor):
+        _require_runtime_role(cursor)
 
     def trip_repository(self, scope):
         return TripRepository(lambda: self.connect(scope), trip_scope_for(scope), confirm=local_confirmation)
