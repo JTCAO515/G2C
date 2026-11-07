@@ -26,7 +26,7 @@ from cj_api.local_app import LocalDatabase,ISSUER,scope_for,create_local_app
 from cj_api.local_run_context import load_run_context
 from account_retention_pg import main as account_exercise
 from manual_history_erasure_pg import exercise as memory_exercise
-from deploy.hk import checkpoint,schema,configuration,staging
+from deploy.hk import backup,checkpoint,schema,configuration,staging
 import migrate
 import pg_suites
 import dev_auth
@@ -115,6 +115,10 @@ def main():
                 safety=root/'fresh-safety';latest=checkpoint.export(safety,control,base=base,schema_root=schema_root)
                 checkpoint.restore(target,base,safety,control,target_control,schema_root=schema_root)
                 assert not (control/'release.json').exists(), 'source and restored target were both released'
+                with patch.dict(os.environ,{'CJ_DEPLOY_CONTROL':str(control)}):
+                    try:backup.check_release()
+                    except (OSError,ValueError):pass
+                    else:raise AssertionError('backup recovery accepted a suspended source')
                 guarded_source=LocalDatabase(path)
                 guarded_source._before_scope=lambda cursor:checkpoint.runtime_transaction(cursor,control)
                 try:
@@ -163,6 +167,7 @@ def main():
                 assert checkpoint.finish_rehearsal(target,control,target_control)=='SOURCE_RESUMED_ISOLATION_REVOKED'
                 assert not (target_control/'release.json').exists()
                 with psycopg.connect(**config) as connection:checkpoint.require_release(connection,control)
+                with patch.dict(os.environ,{'CJ_DEPLOY_CONTROL':str(control)}):backup.check_release()
                 with guarded_source.connect(scope_for(ISSUER,'retention-b')) as connection:assert connection.execute('SELECT 1').fetchone()==(1,)
                 runtime._before_scope=lambda cursor:checkpoint.runtime_transaction(cursor,target_control)
                 try:

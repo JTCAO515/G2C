@@ -5,6 +5,7 @@ No atomic distributed account/database revocation guarantee is claimed.
 """
 from dataclasses import dataclass
 from .composition import CompositionUnavailable, _internal_modules
+from .local_account_admission_v2 import retirement_read_operation
 
 
 class MemoryAccessBlocked(Exception):
@@ -54,6 +55,7 @@ class MemoryBoundary:
         if kind == 'list': return context.list_items(*argument)
         raise ValueError('Unsupported memory operation')
 
+    @retirement_read_operation()
     def invoke(self, token, kind, argument, project):
         from cj_auth.interfaces import AdmissionStatus, TrustedPrincipal
         domain = self.modules['cj_memory.domain']
