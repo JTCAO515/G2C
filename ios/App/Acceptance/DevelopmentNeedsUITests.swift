@@ -117,9 +117,15 @@ import Foundation
         let control = try automaticZone()
         guard try value(control) != expected else { return }
         guard control.isEnabled else { throw Failure.unexpectedSettings }
-        let width = control.frame.width
-        if width > 110 {
-            control.coordinate(withNormalizedOffset: CGVector(dx: (width - 42) / width, dy: 0.5)).tap()
+        let row = control.frame
+        if row.width > 110 {
+            // The accessible row can shrink independently of the Settings accessory column.
+            let viewport = settings.frame
+            guard !viewport.isEmpty, row.midY > viewport.minY, row.midY < viewport.maxY else {
+                throw Failure.unexpectedSettings
+            }
+            let y = (row.midY - viewport.minY) / viewport.height
+            settings.coordinate(withNormalizedOffset: CGVector(dx: 0.84, dy: y)).tap()
         } else {
             control.tap()
         }
