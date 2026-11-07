@@ -5,12 +5,17 @@ from datetime import datetime
 import hashlib
 import json
 import logging
+from psycopg.errors import LockNotAvailable
 from .core import Binding, State, Event, Cursor, Conflict, Denied, ResyncRequired, WorkerOwnershipLost, advance, page
 from .usage_binding import UsageBinding
 
 
 class RecoveryReadUnavailable(Exception):
     """Strict read cleanup failed; no recovered value may be published."""
+
+
+class RecoveryScopeBusy(LockNotAvailable):
+    """The original RUN scope lock timed out before reading any state."""
 
 
 class CommitUnknown(Exception):
@@ -128,9 +133,11 @@ class Repository:
                 try: logging.getLogger(__name__).warning('run_worker_lease_cleanup_failed')
                 except BaseException: pass
 
-    def transaction(self, *, require_clean_close=False, borrowed_connection=None, validate_connection=None):
+    def transaction(self, *, require_clean_close=False, borrowed_connection=None, validate_connection=None,
+                    recovery_read=False):
         return self._transaction(require_clean_close=require_clean_close,scope_lock=True,
-                                 borrowed_connection=borrowed_connection,validate_connection=validate_connection)
+                                 borrowed_connection=borrowed_connection,validate_connection=validate_connection,
+                                 recovery_read=recovery_read)
 
     def job_transaction(self, *, require_clean_close=False,background_protocol=None):
         # Job rows have their own locks/physical lease. Taking the shared RUN
@@ -139,7 +146,7 @@ class Repository:
 
     @contextmanager
     def _transaction(self, *, require_clean_close,scope_lock,background_protocol=None,
-                     borrowed_connection=None,validate_connection=None):
+                     borrowed_connection=None,validate_connection=None,recovery_read=False):
         conn = self.connect() if borrowed_connection is None else borrowed_connection
         cur = None
         outcome = 'setup_failed'
@@ -172,7 +179,13 @@ class Repository:
                     cur.execute("SELECT set_config('cj.background_protocol',%s,true)",(background_protocol,))
                 cur.execute("SELECT set_config('statement_timeout',%s,true), set_config('lock_timeout',%s,true)",
                             (str(self.statement_timeout_ms), str(self.lock_timeout_ms)))
-                cur.execute('SELECT epoch,active FROM cj_run_scope WHERE scope=%s'+(' FOR UPDATE' if scope_lock else ''), (self.scope,))
+                try:
+                    cur.execute('SELECT epoch,active FROM cj_run_scope WHERE scope=%s'+(' FOR UPDATE' if scope_lock else ''), (self.scope,))
+                except LockNotAvailable as error:
+                    # Only this exact pre-read lock can be deferred by SSE.
+                    if recovery_read:
+                        raise RecoveryScopeBusy('original RUN scope read busy') from error
+                    raise
                 row = cur.fetchone()
                 if row is None or row[1] is not True:
                     raise Denied('scope unavailable')
@@ -200,7 +213,7 @@ class Repository:
 
     def recover(self, binding, *, require_clean_close=False):
         """Deterministic original-run read, never a worker execution authorization."""
-        transaction = (self.transaction(require_clean_close=True) if require_clean_close else self.transaction())
+        transaction = (self.transaction(require_clean_close=True) if require_clean_close else self.transaction(recovery_read=True))
         with transaction as tx:
             state = tx.get(binding)
             result = Recovery(state, Cursor(binding, tx.epoch, state.sequence, 0),

@@ -15,6 +15,7 @@ from fastapi import Request
 from fastapi.responses import StreamingResponse
 from starlette.concurrency import run_in_threadpool
 from cj_run.display_snapshot import RunSnapshotAdvanced
+from cj_run.postgres import RecoveryScopeBusy
 
 from .history_routes import _query
 from .local_account_admission_v2 import retirement_read_operation
@@ -116,7 +117,7 @@ def register_run_events_route(app, reader=None, display_configuration=None, conf
                     if timing:
                         _timing_log.info('M4_SSE_POLL_TIMING request_id=%s elapsed_ms=%.3f outcome=%s',
                                          request.state.request_id,(time.monotonic()-poll_started)*1000,type(error).__name__)
-                    if isinstance(error, RunSnapshotAdvanced) and not missed_poll:
+                    if isinstance(error, (RunSnapshotAdvanced, RecoveryScopeBusy)) and not missed_poll:
                         # The failed projection returned no bytes. The next normal
                         # poll checks the same bearer, owner and original again.
                         missed_poll = True
