@@ -72,11 +72,17 @@ wrapper仅是本次模型输出，收费仍为一次原model调用；内层每�
 的参数约束开关；工具轮和终答轮都携带。函数名、schema、冻结parser和原Meter不变，
 不把无效返回修成有效包、不重派原UNKNOWN。真实英文天气曾在工具回执后出现
 `native_envelope_fields`；原具体缺失/额外字段仍UNKNOWN，补开关本身也不代称真实修复已通过，见#523。
+英文天气08真实通过后，C 的英文地点＋路线首轮仍出现同类字段拒绝（未到工具），原具体字段仍UNKNOWN。
+命名函数的系统指令明确要求四个顶层字段全部出现、版本字面量、null/空数组与终答限制；
+这是生成端约束，不补造供应商字段、不放宽解析器。真实效果须经独立新场景验证，不能据提示或strict声明判定。
 命名函数参数失败的固定reason另分`native_json_invalid/duplicate`、`native_envelope_type/fields`、
 `native_version_literal`、`native_answer_fields/calls/text`、`native_kind_literal`、
 `native_tool_answer`、`native_calls_type/bound`、`native_call_fields/name/arguments`和
 `native_contract_bound/invalid`；不记录值、字段名、异常文本或参数片段。原INTENT保持，旧日志
 没有的拒绝字段与token数仍UNKNOWN，不能用较新的分类倒填原请求。
+字段形状错误另记录 `M4_NATIVE_ENVELOPE_SHAPE`：同attempt SHA，present_mask的1/2/4/8位
+表示version/kind/answer/calls是否存在，extra_count只记额外字段数量；不记录未知键名、值或原参数。
+原 `M4_MODEL_UNKNOWN` 格式保持，旧失败证据不会补出此位图。
 必须同时收到DONE、完整usage、同一模型/响应身份，以及唯一合法wrapper和原envelope后，才结算或执行内层工具；
 缺件、截断、length、过滤和未知结束原因仍拒绝，不把停止标记本身当成功或重试依据。
 末轮限制kind=answer，在提交回执前拒绝外部工具；上限仍八个模型回合、每回合最多四查询和原RUN工具总限额，不增加第九次或修复调用。

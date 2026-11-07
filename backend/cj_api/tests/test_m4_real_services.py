@@ -57,6 +57,35 @@ def turn_sse(*,tool=False,usage=True,model=M4_MODEL,done=True,turn=None):
 
 
 class Boundaries(unittest.TestCase):
+    def test_first_native_envelope_field_shape_does_not_disclose_or_rearm(self):
+        # The real failing shape had complete SSE/usage and one named call, but
+        # the original key names were not retained. These variants are fixtures.
+        private='SYNTHETIC_PRIVATE_TOP_LEVEL_KEY_NOT_FOR_LOGS'
+        good=dict(version='MODEL-tool-turn.1',kind='tool',answer=None,calls=[
+            dict(name='place_search',arguments=dict(keyword=keyword,city='Beijing',page=1,page_size=1))
+            for keyword in ('synthetic first point','synthetic second point')])
+        for i,(missing,add_extra,mask,extra) in enumerate((('version',False,14,0),('answer',True,11,1))):
+            with self.subTest(missing=missing,extra=extra):
+                turn=dict(good);del turn[missing]
+                if add_extra:turn[private]=private
+                body=turn_sse(turn=turn).replace('"finish_reason": "tool_calls"','"finish_reason": "stop"')
+                provider=self.provider(body);attempt='first-native-shape-'+str(i);receipt={};reply={};before=len(self.sent)
+                def invoke():return list(provider.invoke([dict(role='user',content='Synthetic English request for a walking route')],
+                    TOOL_SYSTEM,attempt,tools=TOOLS,native_turn_profile=M4_NATIVE_TURN_PROFILE,
+                    receipt=receipt,native_reply=reply,guard=lambda:True))
+                with self.assertLogs('cj_provider.audit',level='WARNING') as logs,self.assertRaises(ProviderUnknown):invoke()
+                audit='\n'.join(logs.output)
+                self.assertIn('phase=native_function_turn http_status=200 done=True finished=True usage=True content_chars=0 tool_count=1 reason=native_envelope_fields',audit)
+                self.assertIn('M4_NATIVE_ENVELOPE_SHAPE attempt_sha256='+hashlib.sha256(attempt.encode()).hexdigest()+
+                    f' present_mask={mask} extra_count={extra}',audit)
+                self.assertNotIn(private,audit)
+                self.assertEqual((receipt,reply),({},{}))
+                original=self.budget.inspect()
+                self.assertEqual((original[-1]['state'],original[-1]['receipt']),('INTENT',None))
+                with self.assertRaises(BudgetUnknown):invoke()
+                self.assertEqual(self.budget.inspect(),original)
+                self.assertEqual(len(self.sent)-before,1)
+
     def test_forced_function_opts_into_supplier_strict_schema_in_both_phases(self):
         for final in (False,True):
             with self.subTest(final=final):
@@ -68,6 +97,11 @@ class Boundaries(unittest.TestCase):
                 function=request['tools'][0]['function']
                 self.assertIs(function.get('strict'),True)
                 self.assertEqual(function['name'],M4_TURN_FUNCTION)
+                system=request['messages'][0]['content']
+                self.assertIn('version, kind, answer, calls',system)
+                self.assertIn('version="MODEL-tool-turn.1"',system)
+                self.assertIn('even when its value is null or empty',system)
+                self.assertEqual('For source queries set kind="tool"' in system,not final)
                 self.assertEqual(request['tool_choice'],dict(type='function',function=dict(name=M4_TURN_FUNCTION)))
                 self.assertIs(function['parameters']['additionalProperties'],False)
                 self.assertEqual(set(function['parameters']['required']),{'version','kind','answer','calls'})
