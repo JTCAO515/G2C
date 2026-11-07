@@ -136,6 +136,33 @@ def exercise(auth,conninfo):
     with TestClient(configured_app()) as api:
         old=host.send(api,A,'worker-legacy','Synthetic old scope without Memory')
         current=send(api,'worker-current-one',travels[0])
+        # Compare two reads of the same original through its idempotent POST
+        # path. Count fresh checkouts, not cached admission verdicts.
+        from contextlib import nullcontext
+        with patch('cj_api.local_account_admission_v2.permit_retirement_read_lease',return_value=nullcontext()):
+            baseline_post=configured_app()
+        original=current['receipt']
+        replay=json.dumps(dict(version='MESSAGE-send.2',conversation_id=original['conversation_id'],
+            message_id=original['message_id'],text='Synthetic original request worker-current-one',
+            trip_id=None,creation_intent='none',expected_generation=original['generation'],expected_sequence=0,
+            travel_context=dict(id=travels[0]['id'],expected_version=travels[0]['version']),needs_reference=None)).encode()
+        with TestClient(baseline_post) as baseline,patch.object(database,'_open_runtime_connection',
+                wraps=database._open_runtime_connection) as opened:
+            assert expect(baseline.post('/v2/messages',content=replay,headers=headers(B)))['receipt']==original
+            fresh_baseline=opened.call_count
+        with patch.object(database,'_open_runtime_connection',wraps=database._open_runtime_connection) as opened:
+            assert expect(api.post('/v2/messages',content=replay,headers=headers(B)))['receipt']==original
+            fresh_leased=opened.call_count
+        assert fresh_leased<fresh_baseline,(fresh_baseline,fresh_leased)
+        print(f'PASS original typed POST fresh checkouts {fresh_baseline} -> {fresh_leased}; original receipt retained')
+        from cj_auth.interfaces import Fact
+        with patch('cj_api.local_account_admission_v2._retirement_fact',
+                side_effect=(Fact.NO,Fact.NO,Fact.NO,Fact.YES)) as retirement:
+            denied=harness.expect(api.post('/v2/messages',content=replay,headers=headers(B)),503)
+            assert denied['error']['code']=='MESSAGE_OUTCOME_UNKNOWN' and retirement.call_count==4
+        assert expect(api.get('/v2/message-send-status',
+            params={'conversation_id':original['conversation_id'],'message_id':original['message_id']},
+            headers=headers(B)))['receipt']==original
         model=Recorded()
         results=run_worker.run_once(database,model,auth,memory_configuration_for_scope=runtime.memory_configuration_for_scope)
         assert {r.message_id:r.status for r in results}=={'worker-legacy':'completed','worker-current-one':'completed'},results
@@ -177,7 +204,16 @@ def exercise(auth,conninfo):
             display=value['snapshot']
             assert display['run_id']==receipt['run_id'] and display['text']
         stream_params={'message_id':none['receipt']['message_id']}
-        stream=api.get('/v2/run-events',params=stream_params,headers=host.headers[B])
+        with TestClient(baseline_post) as baseline,patch.object(database,'_open_runtime_connection',
+                wraps=database._open_runtime_connection) as opened:
+            baseline_stream=baseline.get('/v2/run-events',params=stream_params,headers=host.headers[B])
+            baseline_stream_checkouts=opened.call_count
+        with patch.object(database,'_open_runtime_connection',wraps=database._open_runtime_connection) as opened:
+            stream=api.get('/v2/run-events',params=stream_params,headers=host.headers[B])
+            leased_stream_checkouts=opened.call_count
+        assert stream.content==baseline_stream.content
+        assert leased_stream_checkouts<baseline_stream_checkouts,(baseline_stream_checkouts,leased_stream_checkouts)
+        print(f'PASS original typed SSE snapshot fresh checkouts {baseline_stream_checkouts} -> {leased_stream_checkouts}')
         assert stream.status_code==200 and stream.headers['content-type'].startswith('text/event-stream')
         frames=[json.loads(line[6:]) for line in stream.text.splitlines() if line.startswith('data: ')]
         body=expect(api.get('/v2/run-display',params=stream_params,headers=host.headers[B]))['snapshot']['text']
