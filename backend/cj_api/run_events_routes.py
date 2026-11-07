@@ -38,7 +38,7 @@ def _sse(event, data, event_id=None):
     return ('\n'.join(lines) + '\n\n').encode('utf-8')
 
 
-def register_run_events_route(app, reader=None, display_configuration=None, configuration=None):
+def register_run_events_route(app, reader=None, display_configuration=None, configuration=None, *, travel_reader=None):
     if configuration is not None and type(configuration) is not RunEventsConfiguration:
         raise ValueError('explicit RUN events configuration required')
     from .run_cancel_routes import register_run_cancel_route
@@ -47,9 +47,8 @@ def register_run_events_route(app, reader=None, display_configuration=None, conf
     def unavailable(request):
         return _error(request, 503, 'RUN_EVENTS_UNAVAILABLE', 'dependency', 'unknown', 'retry_safe_read')
 
-    @app.get('/v1/run-events')
-    async def stream(request: Request):
-        if reader is None or configuration is None:
+    async def stream(request: Request, read):
+        if read is None or configuration is None:
             return unavailable(request)
         token = _token(request)
         if token is None:
@@ -66,7 +65,7 @@ def register_run_events_route(app, reader=None, display_configuration=None, conf
             return _error(request, 400, 'INVALID_INPUT', 'input', 'failed', 'do_not_retry')
 
         def snapshot():
-            payload = json.loads(reader.read(token, mid))
+            payload = json.loads(read(token, mid))
             return payload['status'], payload['text'].encode('utf-8')
 
         try:
@@ -103,3 +102,11 @@ def register_run_events_route(app, reader=None, display_configuration=None, conf
 
         return StreamingResponse(events(), media_type='text/event-stream',
                                  headers={'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no'})
+
+    @app.get('/v1/run-events')
+    async def legacy_events(request: Request):
+        return await stream(request, reader.read if reader is not None else None)
+
+    @app.get('/v2/run-events')
+    async def travel_events(request: Request):
+        return await stream(request, travel_reader.read_travel_events if travel_reader is not None else None)

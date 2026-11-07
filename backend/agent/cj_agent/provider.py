@@ -168,12 +168,14 @@ class DashScopeProvider:
 
 M4_BASE='https://dashscope.aliyuncs.com/compatible-mode/v1'
 M4_MODEL='qwen3.8-flash'
+M4_REAL_OUTPUT_TOKENS=1536
 M4_NATIVE_ANSWER_PROFILE='bilingual-json-schema.1'
 M4_NATIVE_TURN_PROFILE='model-tool-turn-function.1'
 M4_TURN_FUNCTION='m4_tool_turn'
 M4_NATIVE_TURN_PROFILE_V2='model-tool-turn-function.2'
 M4_TURN_FUNCTION_V2='m4_tool_turn_v2'
 _M4_TURN_FIELDS=('version','kind','answer','calls')
+_M4_REQUEST_SENT=object()
 
 
 class _M4Rejection(ProviderUnknown):
@@ -291,6 +293,7 @@ async def _m4_wire(config,raw,guard,observation=None):
                 (b'Accept-Encoding',b'identity'),(b'Content-Length',str(len(raw)).encode()),(b'Connection',b'close')])
             writer.write(connection.send(request)+connection.send(h11.Data(data=raw))+connection.send(h11.EndOfMessage()))
             await writer.drain()
+            yield _M4_REQUEST_SENT
             headers=False;wire=0
             while True:
                 event=connection.next_event()
@@ -354,7 +357,7 @@ class MeteredDashScopeProvider:
     """
     def __init__(self,config,authorization,*,transport=None):
         if (type(config) is not DashScopeConfig or config.base_url!=M4_BASE or config.model_id!=M4_MODEL
-                or not 1<=config.max_output_tokens<=1024 or not 0<config.timeout_seconds<=90):
+                or not 1<=config.max_output_tokens<=M4_REAL_OUTPUT_TOKENS or not 0<config.timeout_seconds<=90):
             raise ProviderFailed('M4 Beijing configuration required')
         self.config,self.authorization,self.transport=config,authorization,transport
         self.calls=0
@@ -422,6 +425,7 @@ class MeteredDashScopeProvider:
             if not final_answer:
                 prompt+='For source queries return only calls, with 1–4 permitted name/arguments items. '
             prompt+='For an answer return only answer with two non-blank strings, zh and en. Cite sources and UNKNOWN conditions.'
+            prompt+=' Keep the two answers concise. Use JSON string escaping for quotes, backslashes and line breaks.'
         elif proxy:
             prompt+=f'\nCall {M4_TURN_FUNCTION} exactly once. Its arguments must be one JSON object with exactly these top-level keys: {", ".join(_M4_TURN_FIELDS)}. '
             prompt+='Include every key, even when its value is null or empty. Set version="MODEL-tool-turn.1". '
@@ -432,7 +436,8 @@ class MeteredDashScopeProvider:
         elif native_tools:
             prompt+='\nUse the supplied tools for current facts. Final answer must be JSON {"zh":"...","en":"..."}; cite sources and UNKNOWN conditions.'
         body=dict(model=M4_MODEL,messages=[dict(role='system',content=prompt),*wire_messages],stream=True,
-                  stream_options={'include_usage':True},enable_thinking=False,max_tokens=self.config.max_output_tokens)
+                  stream_options={'include_usage':True},enable_thinking=False,
+                  max_tokens=self.config.max_output_tokens if compact else min(1024,self.config.max_output_tokens))
         if proxy:
             definition=(_m4_compact_turn_function(native_tools,final_answer) if compact else
                         _m4_turn_function(native_tools,final_answer))
@@ -456,6 +461,14 @@ class MeteredDashScopeProvider:
         envelope_shape=None
         try:
             with self._chunks(raw,guard,observation) as chunks:
+                if self.transport is None:
+                    if next(chunks,None) is not _M4_REQUEST_SENT:
+                        raise ProviderUnknown('M4 original request send unavailable')
+                    if compact:
+                        # The first advance runs under the RUN dispatch fence.
+                        # Release it after the one send and before reading the
+                        # structured reply. This carries no display text.
+                        yield ''
                 for line in _bounded_sse_lines(chunks,self.config.timeout_seconds):
                     self.authorization.check_date()
                     if done:
