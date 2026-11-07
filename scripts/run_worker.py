@@ -32,6 +32,9 @@ from cj_memory.runtime import RuntimeDenied, RuntimeUnknown
 from cj_memory.typed_runtime import TypedRuntimeConfiguration
 import dev_auth
 from cj_message.domain import Service as MessageService, Unavailable as MessageUnavailable, read_active_message
+from cj_message.edit_reference import profile as edit_profile
+from cj_message.travel_reference import profile as travel_profile
+from cj_message.trip_reference import profile as trip_profile
 from cj_run.core import Service as RunService, Denied
 
 
@@ -72,13 +75,17 @@ class InvitedProvider:
 
 
 def require_memory_configuration(database, scope, configuration):
-    typed=type(configuration) is TypedRuntimeConfiguration
-    travel=database.travel_profile(scope)
-    if travel and configuration is not None and not typed:
-        raise RuntimeDenied('travel execution requires explicit typed memory configuration')
     with database.connect(scope) as conn:
-        exists=conn.execute('SELECT 1 FROM cj_memory_scope WHERE scope=%s',(scope,)).fetchone() is not None
-    if database.trip_profile(scope) and (exists or configuration is not None):
+        with conn.cursor() as cursor:
+            _require_memory_configuration(cursor, scope, configuration, travel_profile(cursor, scope))
+
+
+def _require_memory_configuration(cursor, scope, configuration, travel):
+    if travel and configuration is not None and type(configuration) is not TypedRuntimeConfiguration:
+        raise RuntimeDenied('travel execution requires explicit typed memory configuration')
+    cursor.execute('SELECT 1 FROM cj_memory_scope WHERE scope=%s', (scope,))
+    exists = cursor.fetchone() is not None
+    if trip_profile(cursor, scope) and (exists or configuration is not None):
         raise RuntimeDenied('formal Trip MEMORY adapter is not installed')
     if exists and configuration is None:
         raise RuntimeDenied('existing memory requires explicit runtime configuration')
@@ -95,23 +102,26 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
                 or type(tools_configuration) is not LocalPlaceDraftTools or draft_profile is not None):
             raise CompositionUnavailable('explicit compatible PLACE-source tools and C producer required')
     database.require_execution(scope)
-    editing=database.edit_profile(scope)
     edit_config=None
-    if editing:
-        from cj_message.edit_reference import configured
-        edit_config=configured(database.edit_configuration)
-        from cj_api.edit_result_profile import profile as result_profile
-        with database.connect(scope) as connection:
-            with connection.cursor() as cursor:result_mode=result_profile(cursor,scope)
-        if result_mode!=database.edit_results:
-            raise CompositionUnavailable('explicit activated publisher2 profile/configuration required')
-        if memory_configuration is not None or tools_configuration is not None:
-            raise CompositionUnavailable('edit profile requires its negotiated memory/publisher only')
-    elif formal_memory_configuration is not None:
-        if (memory_configuration is not None or not database.trip_context or not database.travel_context
-                or not database.trip_profile(scope)):
-            raise CompositionUnavailable('explicit existing formal profile and sole C formal Memory configuration required')
-    else:require_memory_configuration(database, scope, memory_configuration)
+    # Co-locate composition reads under the same scoped checkout. The later
+    # travel-context read and per-delivery execution guard still read live state.
+    with database.connect(scope) as connection:
+        with connection.cursor() as cursor:
+            editing = edit_profile(cursor, scope)
+            if editing:
+                from cj_message.edit_reference import configured
+                from cj_api.edit_result_profile import profile as result_profile
+                edit_config = configured(database.edit_configuration)
+                if result_profile(cursor, scope) != database.edit_results:
+                    raise CompositionUnavailable('explicit activated publisher2 profile/configuration required')
+                if memory_configuration is not None or tools_configuration is not None:
+                    raise CompositionUnavailable('edit profile requires its negotiated memory/publisher only')
+            elif formal_memory_configuration is not None:
+                if (memory_configuration is not None or not database.trip_context or not database.travel_context
+                        or not trip_profile(cursor, scope)):
+                    raise CompositionUnavailable('explicit existing formal profile and sole C formal Memory configuration required')
+            else:
+                _require_memory_configuration(cursor, scope, memory_configuration, travel_profile(cursor, scope))
     if editing and formal_memory_configuration is not None:
         raise CompositionUnavailable('formal discussion and scoped edit have separate C configurations')
     if tools_configuration is not None and (database.run_context is None or database.run_context.version!='CJ-LOCAL-RUN@2'):
