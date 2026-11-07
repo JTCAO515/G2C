@@ -43,7 +43,19 @@ def main():
     parser.add_argument('--case', choices=CASES)
     parser.add_argument('--seed-only', action='store_true', help='Diagnose real formal-source preparation; every native case remains UNRUN')
     parser.add_argument('--bootstrap-only', action='store_true', help='Device clock/bootstrap diagnostic only; original offline acceptance stays UNRUN')
+    parser.add_argument('--physical-radio-offline', action='store_true',
+                        help='Additionally disable cellular and Wi-Fi through Settings during the selected device reopen case')
     args = parser.parse_args()
+    if args.physical_radio_offline and (not args.device or args.case != 'testReopenLanguageAndReadOnly'
+                                        or args.seed_only or args.bootstrap_only):
+        parser.error('--physical-radio-offline requires the selected device reopen case')
+    if args.physical_radio_offline and not args.prepare_only:
+        devices = json.loads(subprocess.check_output(['xcrun', 'devicectl', 'list', 'devices',
+            '--json-output', '-', '--quiet', '--timeout', '15'], text=True))['result']['devices']
+        connected = [device['connectionProperties'] for device in devices
+                     if device.get('identifier') == args.device or device['hardwareProperties'].get('udid') == args.device]
+        if len(connected) != 1 or connected[0].get('transportType') != 'wired' or connected[0].get('tunnelState') != 'connected':
+            parser.error('--physical-radio-offline requires a connected wired device tunnel')
     # JT's dedicated group is approved for this exact device identity. Preserve
     # the historical Simulator identity and all old device evidence as recorded.
     bundle = 'space.go2china.offline.acceptance' if args.device else BUNDLE
@@ -96,6 +108,8 @@ def main():
                   run_context=json.loads(args.run_context.read_text()),
                   unrun=['#24 box4 original account-cleanup operation/device receipt bridge',
                          'real accounts/providers/cloud/fees', 'physical offline device (#29)', 'deployment'])
+    if args.physical_radio_offline:
+        report['physical_radio_offline'] = 'UNRUN'
     if args.case:
         report['unrun'] += [case for case in CASES if case != args.case]
     if tls: report.update(layer='signed approved iPhone/local pinned HTTPS/private PG/formal worker/FakeProvider',
@@ -300,7 +314,8 @@ def main():
                     for s in subjects[case].values(): operator(s, 'init-budget')
                     models[case] = FakeProvider(chunks_per_reply=2)
                     records[case] = dict(audit_start=len(audit))
-                    value = dict(endpoint=endpoint, accounts={} if tls else tokens[case], subjects=subjects[case], case_id=case)
+                    value = dict(endpoint=endpoint, accounts={} if tls else tokens[case], subjects=subjects[case], case_id=case,
+                                 physical_radio_offline=args.physical_radio_offline)
                     if tls: prepared[case] = value
                     return value
                 class Control(BaseHTTPRequestHandler):
@@ -371,19 +386,11 @@ def main():
                             if args.prepare_only:
                                 detail['status'] = 'PREPARED_EXECUTION_UNRUN'; report['cases'][case] = 'UNRUN'; save(); continue
                             try:
-                                native.run('Debug', selected, env)
+                                native.run_and_scan('Debug', selected, env)
                             except BaseException:
                                 detail['status'] = 'FAIL'; report['cases'][case] = 'FAIL'
-                                try:
-                                    native.scan('Debug')
-                                    detail['failure_container_scan'] = {'status': 'PASS'}
-                                except Exception as scan_error:
-                                    detail['failure_container_scan'] = {
-                                        'status': 'FAIL' if isinstance(scan_error, AssertionError) else 'UNRUN',
-                                        'error_type': type(scan_error).__name__}
                                 save()
                                 raise
-                            native.scan('Debug')
                             if args.bootstrap_only:
                                 detail['status']='DIAGNOSTIC_PASS'
                                 report['clock_bootstrap_diagnostic']='PASS'
@@ -433,6 +440,9 @@ def main():
             assert subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip() == head, 'head changed during execution'
             assert all(hashlib.sha256((ROOT / p).read_bytes()).hexdigest() == digest for p, digest in report['source_hashes'].items()), 'source changed during execution'
             report['status'] = 'PREPARED_EXECUTION_UNRUN' if args.prepare_only else ('DIAGNOSTIC_PASS' if args.bootstrap_only else ('PARTIAL_PASS' if args.case else 'PASS'))
+            if args.physical_radio_offline and report['cases'].get(args.case) == 'PASS':
+                report['physical_radio_offline'] = 'PASS: actual airplane mode and Wi-Fi off, cached reopen, original radio settings restored'
+                report['unrun'].remove('physical Wi-Fi/airplane-mode outage')
     except BaseException as error:
         report['status'] = 'FAIL'; report['error'] = type(error).__name__; raise
     finally:

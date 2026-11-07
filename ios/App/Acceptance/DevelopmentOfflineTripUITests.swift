@@ -1,13 +1,127 @@
 import XCTest
 import Foundation
 
+#if G2C_M4_DEVICE_ACCEPTANCE
+/// This uses the real Settings controls while XCTest stays connected over USB.
+@MainActor private final class OfflineRadioSettings {
+    private enum Failure: Error { case unavailableControl, invalidValue, unexpectedInitialState, unverifiedChange }
+    private struct Original {
+        let bluetooth: String
+        var wifiInAirplane: String?
+    }
+
+    private let settings = XCUIApplication(bundleIdentifier: "com.apple.Preferences")
+    private let wifiLabels = ["无线局域网", "Wi-Fi", "Wi‑Fi"]
+    private let bluetoothLabels = ["蓝牙", "Bluetooth"]
+    private var original: Original?
+    var needsRestore: Bool { original != nil }
+
+    func disconnect() throws {
+        settings.launch()
+        guard try value(airplane()) == "0", try value(wifi()) == "1" else {
+            throw Failure.unexpectedInitialState
+        }
+        original = Original(bluetooth: try value(bluetooth()))
+        print("M4_PHYSICAL_RADIO_RESTORE_PENDING")
+        try set("1", on: airplane())
+        let wlan = try wifi()
+        original?.wifiInAirplane = try value(wlan)
+        try set("0", on: wlan)
+        print("M4_PHYSICAL_RADIOS_OFFLINE airplane=1 wifi=0")
+    }
+
+    func requireDisconnected() throws {
+        settings.activate()
+        guard try value(airplane()) == "1", try value(wifi()) == "0" else {
+            throw Failure.unverifiedChange
+        }
+        print("M4_PHYSICAL_RADIOS_AFTER_REOPEN airplane=1 wifi=0")
+    }
+
+    func restore() throws {
+        guard let original else { return }
+        settings.activate()
+        // Preserve the remembered Wi-Fi choice while in airplane mode as well
+        // as the visible switches when returning to the original network.
+        if let remembered = original.wifiInAirplane, try value(airplane()) == "1" {
+            try set(remembered, on: wifi())
+        }
+        try set("0", on: airplane())
+        try set("1", on: wifi())
+        try set(original.bluetooth, on: bluetooth())
+        self.original = nil
+        settings.terminate()
+        print("M4_PHYSICAL_RADIOS_RESTORED airplane=0 wifi=1 bluetooth=\(original.bluetooth)")
+    }
+
+    private func airplane() throws -> XCUIElement {
+        guard settings.wait(for: .runningForeground, timeout: 15) else { throw Failure.unavailableControl }
+        let control = settings.switches.matching(NSPredicate(format: "label IN %@ OR identifier IN %@",
+            ["飞行模式", "Airplane Mode"], ["AIRPLANE_MODE", "Airplane Mode"]))
+        for _ in 0..<6 {
+            if control.count == 1 { return try visible(control) }
+            let back = settings.navigationBars.buttons.matching(NSPredicate(format: "label IN %@",
+                ["设置", "Settings", "返回", "Back", "通用", "General", "辅助功能", "Accessibility",
+                 "显示与亮度", "Display & Brightness", "显示与文字大小", "Display & Text Size"]))
+            try visible(back).tap()
+        }
+        throw Failure.unavailableControl
+    }
+
+    private func wifi() throws -> XCUIElement { try detailSwitch(labels: wifiLabels, identifier: "WIFI") }
+    private func bluetooth() throws -> XCUIElement { try detailSwitch(labels: bluetoothLabels, identifier: "BLUETOOTH") }
+
+    private func detailSwitch(labels: [String], identifier: String) throws -> XCUIElement {
+        _ = try airplane()
+        let row = settings.staticTexts.matching(NSPredicate(format: "label IN %@", labels))
+        try visible(row).tap()
+        return try visible(settings.switches.matching(NSPredicate(format: "label IN %@ OR identifier IN %@",
+            labels, [identifier] + labels)))
+    }
+
+    private func visible(_ query: XCUIElementQuery) throws -> XCUIElement {
+        guard query.firstMatch.waitForExistence(timeout: 8), query.count == 1,
+              query.element.isHittable else { throw Failure.unavailableControl }
+        return query.element
+    }
+
+    private func value(_ control: XCUIElement) throws -> String {
+        guard let value = control.value as? String, value == "0" || value == "1" else { throw Failure.invalidValue }
+        return value
+    }
+
+    private func set(_ expected: String, on control: XCUIElement) throws {
+        guard try value(control) != expected else { return }
+        guard control.isEnabled else { throw Failure.unavailableControl }
+        // iOS Settings may expose the whole row as the switch. For that
+        // layout, target the trailing control within the exact matched row.
+        let width = control.frame.width
+        if width > 110 {
+            control.coordinate(withNormalizedOffset: CGVector(dx: (width - 42) / width, dy: 0.5)).tap()
+        } else {
+            control.tap()
+        }
+        let settled = XCTNSPredicateExpectation(predicate: NSPredicate { object, _ in
+            (object as? XCUIElement)?.value as? String == expected
+        }, object: control)
+        guard XCTWaiter.wait(for: [settled], timeout: 10) == .completed else { throw Failure.unverifiedChange }
+    }
+}
+#endif
+
 @MainActor final class DevelopmentOfflineTripUITests: XCTestCase {
     let control = "__FIXTURE_URL__"
     var app: XCUIApplication!
     #if G2C_M4_DEVICE_ACCEPTANCE
     private lazy var deviceSession = M4DeviceTestSession(test: self, control: control)
     #endif
-    struct Fixture: Decodable { let endpoint: String; let accounts: [String: String]; let subjects: [String: String]; let case_id: String }
+    struct Fixture: Decodable {
+        let endpoint: String
+        let accounts: [String: String]
+        let subjects: [String: String]
+        let case_id: String
+        let physical_radio_offline: Bool?
+    }
     struct Record: Decodable { let trip_id: String; let version: Int; let title: String; let sha256: String }
     struct Snapshot { let hash: String; let synced: String; let deadline: String }
 
@@ -192,6 +306,15 @@ import Foundation
     func testReopenLanguageAndReadOnly() async throws {
         let (f, record) = try await prepare("testReopenLanguageAndReadOnly")
         defer { app?.terminate() }
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        let radios = f.physical_radio_offline == true ? OfflineRadioSettings() : nil
+        defer {
+            if let radios, radios.needsRestore {
+                do { try radios.restore() }
+                catch { XCTFail("Could not verify restoration of the original radio settings") }
+            }
+        }
+        #endif
         try await launch(f); initialLogin(f); synchronize(record)
         let original = openCache(record)
         try await call("/verify", f, ["stage": "checkpoint", "snapshot_hash": original.hash])
@@ -200,6 +323,9 @@ import Foundation
         try audit("offline-en-standard")
         try await call("/verify", f, ["network": "none", "stage": "unchanged", "snapshot_hash": original.hash])
         try await call("/offline", f)
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        if let radios { try radios.disconnect() }
+        #endif
         try await launch(f, choices: false)
         let reopened = openCache(record)
         XCTAssertEqual(reopened.hash, original.hash); XCTAssertEqual(reopened.deadline, original.deadline)
@@ -209,6 +335,14 @@ import Foundation
         XCTAssertEqual(chinese.hash, original.hash)
         XCTAssertEqual(chinese.deadline.components(separatedBy: "：").last, original.deadline.components(separatedBy: ": ").last)
         try audit("offline-zh-default")
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        if let radios {
+            try radios.requireDisconnected()
+            try radios.restore()
+            app.activate()
+            XCTAssertTrue(app.wait(for: .runningForeground, timeout: 15))
+        }
+        #endif
         try await call("/verify", f, ["network": "none", "stage": "unchanged", "snapshot_hash": original.hash])
         try await call("/online", f)
     }
