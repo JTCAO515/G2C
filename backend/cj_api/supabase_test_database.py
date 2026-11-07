@@ -101,6 +101,10 @@ class SupabaseTestDatabase(LocalDatabase):
     def _before_scope(self,cursor):
         if self._transaction_guard is not None:self._transaction_guard(cursor)
 
+    def _check_execution_connection(self, cursor):
+        require_identity(cursor,'cj_m1_runtime')
+        super()._check_execution_connection(cursor)
+
     def _open_runtime_connection(self):
         current_authorization();require_environment()
         conn=psycopg.connect(**self.conninfo,autocommit=True,prepare_threshold=None)

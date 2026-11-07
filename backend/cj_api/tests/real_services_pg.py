@@ -198,7 +198,7 @@ def exercise(auth,conninfo):
                         pass
                     else:
                         raise AssertionError('lost commit acknowledgement must remain unknown')
-                assert lost and len(model_calls) == before_models
+                assert lost and scoped_connection.closed and len(model_calls) == before_models
                 original_attempts = budget.inspect()
                 assert [(row['kind'], row['state']) for row in original_attempts] == [('model','INTENT')]
                 with db.connect(scope_for(ISSUER,subject)) as connection:
@@ -211,7 +211,8 @@ def exercise(auth,conninfo):
                 assert budget.inspect() == original_attempts and len(model_calls) == before_models
             else:outcomes=run_worker.run_once(db,model,auth,tools_configuration=tools,real_services=services,account_admission=True)
             if subject.endswith('ok'):
-                assert len(opened) <= 110, f'excessive worker database checkouts: {len(opened)}'
+                # Without the per-RUN execution lease this fixture used 85 physical checkouts.
+                assert len(opened) <= 65, f'excessive worker database checkouts: {len(opened)}'
             if subject.endswith(('ok','stop')):
                 assert outcomes[0].status=='completed',(outcomes,budget.inspect(),model.calls,len(tool_calls))
                 assert model.calls==2 and len(tool_calls)==before+1
