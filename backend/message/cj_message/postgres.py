@@ -34,7 +34,7 @@ class Repository:
         self.connect, self.scope, self.bind_needs = connect, scope, bind_needs
 
     @contextmanager
-    def transaction(self, *, borrowed_connection=None):
+    def transaction(self, *, borrowed_connection=None, validate_connection=None):
         # The trusted host can retain an idle connection for one execution.
         # The repository still owns each transaction and discards a failed lease.
         conn = self.connect() if borrowed_connection is None else borrowed_connection
@@ -65,6 +65,8 @@ class Repository:
                 bind_scope = getattr(conn, 'bind_scope', None)
                 if bind_scope is not None:
                     bind_scope(cur)
+                if validate_connection is not None:
+                    validate_connection(cur)
                 yield Transaction(cur, self.scope, bind_needs=self.bind_needs, local_run_mode=self.local_run_mode, registered_usage=self.registered_usage,travel_mode=self.travel_mode,travel_metadata=self.travel_metadata,trip_mode=self.trip_mode,trip_metadata=self.trip_metadata,edit_mode=self.edit_mode,edit_metadata=self.edit_metadata)
             except BaseException:
                 outcome = 'body_failed'

@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 from dataclasses import dataclass
 from collections.abc import Mapping
 from contextlib import contextmanager
+from functools import partial
 import json
 import os
 import re
@@ -16,6 +17,7 @@ from pathlib import Path
 import tempfile
 import stat
 import time
+from types import SimpleNamespace
 import uuid
 
 import psycopg
@@ -428,6 +430,19 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
             database.provision(scope)
         return database.message_repository(scope)
 
+    from .local_account_admission_v2 import snapshot_connection
+
+    def display_message_repository(principal):
+        repository = message_repository(principal, provision=False)
+        connection = snapshot_connection(database, repository.scope)
+        if connection is None:
+            return repository
+        return SimpleNamespace(
+            scope=repository.scope,
+            transaction=partial(repository.transaction, borrowed_connection=connection,
+                                validate_connection=database._check_execution_connection),
+        )
+
     display_boundary = None
     if existing_display_reads:
         if not account_admission or cleanup_runtime is not None:
@@ -442,8 +457,7 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
         def display_checker(tx, scope):
             return AdmissionChecker(verifier, AccountRevocationAccess(base_access, retired_in_transaction(tx.cur, scope)))
 
-        display_boundary = Boundary(AdmissionChecker(verifier, access),
-                                    lambda principal: message_repository(principal, provision=False), None,
+        display_boundary = Boundary(AdmissionChecker(verifier, access), display_message_repository, None,
                                     checker_in_transaction=display_checker)
 
     def travel_repository(principal):
@@ -459,7 +473,15 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
     def run_repository(principal, scope):
         if scope != scope_for(principal.issuer, principal.subject):
             raise CompositionUnavailable('scope mismatch')
-        return database.run_repository(scope)
+        repository = database.run_repository(scope)
+        connection = snapshot_connection(database, scope)
+        if connection is None:
+            return repository
+        return SimpleNamespace(
+            scope=scope,
+            recover=partial(repository.recover, borrowed_connection=connection,
+                            validate_connection=database._check_execution_connection),
+        )
 
     def feedback_resolver(principal):
         scope=scope_for(principal.issuer,principal.subject)
