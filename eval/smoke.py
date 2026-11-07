@@ -33,6 +33,7 @@ from real_budget import verified_journal
 from real_phase import claim, claimed, finish_smoke, verify_smoke
 from cj_api.real_services import canonical_tool
 from cj_agent.provider import M4_NATIVE_TURN_PROFILE, M4_TURN_FUNCTION
+from cj_agent.provider import M4_NATIVE_TURN_PROFILE_V2, M4_TURN_FUNCTION_V2, compact_turn_envelope
 from cj_run.tool_turn import parse_turn
 from cj_strict_json import reject_duplicates
 from cj_usage.authorization_budget import canonical
@@ -88,13 +89,25 @@ def tool_exchange(value,index,native):
     calls=messages[position]['tool_calls']
     profile=value.get('native_turn_profile')
     if profile is not None:
-        if profile!=M4_NATIVE_TURN_PROFILE or len(calls)!=1:
+        if profile not in (M4_NATIVE_TURN_PROFILE,M4_NATIVE_TURN_PROFILE_V2) or len(calls)!=1:
             raise ValueError('one_known_native_wrapper_required')
         wrapper=calls[0]
-        if wrapper['function']['name']!=M4_TURN_FUNCTION:
+        compact=profile==M4_NATIVE_TURN_PROFILE_V2
+        wrapper_name=M4_TURN_FUNCTION_V2 if compact else M4_TURN_FUNCTION
+        if wrapper['function']['name']!=wrapper_name:
             raise ValueError('original_native_wrapper_required')
-        turn=parse_turn(wrapper['function']['arguments'].encode(),
-                        {t['function']['name'] for t in value['native_tools']})
+        arguments=wrapper['function']['arguments']
+        if compact:
+            if type(arguments) is not str or len(arguments)>32768:
+                raise ValueError('bounded_compact_tool_turn_required')
+            try:
+                decoded=json.loads(arguments,object_pairs_hook=reject_duplicates(ValueError,'duplicate_native_turn_field'))
+                raw=canonical(compact_turn_envelope(decoded))
+            except RecursionError as error:
+                raise ValueError('bounded_compact_tool_turn_required') from error
+        else:
+            raw=arguments.encode()
+        turn=parse_turn(raw,{t['function']['name'] for t in value['native_tools']})
         if not 1<=len(turn.calls)<=4 or index>=len(turn.calls) or turn.calls[index].name!=native:
             raise ValueError('original_inner_tool_required')
         replies=[m for m in messages[position+1:] if m['role']=='tool' and m.get('tool_call_id')==wrapper['id']]
