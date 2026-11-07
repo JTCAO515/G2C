@@ -93,8 +93,17 @@ import Foundation
     private func set(_ expected: String, on control: XCUIElement) throws {
         guard try value(control) != expected else { return }
         guard control.isEnabled else { throw Failure.unavailableControl }
-        control.tap()
-        let settled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", expected), object: control)
+        // iOS Settings may expose the whole row as the switch. For that
+        // layout, target the trailing control within the exact matched row.
+        let width = control.frame.width
+        if width > 110 {
+            control.coordinate(withNormalizedOffset: CGVector(dx: (width - 42) / width, dy: 0.5)).tap()
+        } else {
+            control.tap()
+        }
+        let settled = XCTNSPredicateExpectation(predicate: NSPredicate { object, _ in
+            (object as? XCUIElement)?.value as? String == expected
+        }, object: control)
         guard XCTWaiter.wait(for: [settled], timeout: 10) == .completed else { throw Failure.unverifiedChange }
     }
 }

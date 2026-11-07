@@ -442,8 +442,7 @@ def main():
             report['status'] = 'PREPARED_EXECUTION_UNRUN' if args.prepare_only else ('DIAGNOSTIC_PASS' if args.bootstrap_only else ('PARTIAL_PASS' if args.case else 'PASS'))
             if args.physical_radio_offline and report['cases'].get(args.case) == 'PASS':
                 report['physical_radio_offline'] = 'PASS: actual airplane mode and Wi-Fi off, cached reopen, original radio settings restored'
-                report['unrun'].remove('physical offline device (#29)')
-                report['unrun'].append('physical lock and elapsed 14 days (#29)')
+                report['unrun'].remove('physical Wi-Fi/airplane-mode outage')
     except BaseException as error:
         report['status'] = 'FAIL'; report['error'] = type(error).__name__; raise
     finally:
