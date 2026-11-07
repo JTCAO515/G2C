@@ -204,6 +204,7 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
             return check_admitted_original(binding, scoped_checker, same_original)
 
     runs = RunService(database.run_repository(scope),valid=valid)
+    reuse_connections = account_checker_builder is not None and message_context is None
     place_sources=None
     if place_draft_configuration is not None:
         if editing or database.run_context is None or database.run_context.version!='CJ-LOCAL-RUN@2' or message_context is None:
@@ -240,7 +241,8 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
         memory=memory,edit_publisher=None if edit_config is None else edit_config.publisher,edit_results=database.edit_results,
         memory_history=history is not None,history_adapter=history,
         message_context=message_context,
-        execution_lease=lease_execution if account_checker_builder is not None and message_context is None else nullcontext,
+        execution_lease=lease_execution if reuse_connections else nullcontext,
+        owned_transaction_lease=(lambda: database.lease_run_transactions(runs.repository)) if reuse_connections else None,
         tools=tools_configuration,place_sources=place_sources,
         execution_guard=lambda binding:database.require_execution(binding.scope,binding),
         needs_lease=needs_lease_for(database,checker,token),
