@@ -23,6 +23,74 @@ import run_worker
 A='m4-synthetic-worker-a';B='m4-synthetic-worker-b'
 
 
+def check_legacy_sse_followup(api, host, database):
+    from cj_message.domain import Service as MessageService
+    from cj_run.core import Binding, Event, Service as RunService
+    from cj_run.display_snapshot import DisplaySnapshotReader, RunSnapshotAdvanced
+    from cj_run.postgres import Repository
+
+    scope = scope_for(ISSUER, A)
+    messages = MessageService(database.message_repository(scope), new_run_id=lambda: None)
+    runs = RunService(database.run_repository(scope), valid=lambda _: True)
+    recover_original, read_original = Repository.recover, DisplaySnapshotReader.read
+    invitations = host.auth / 'invited.json'
+    original_invitations = invitations.read_bytes()
+    source, body = 'Source: fixture\n', 'Body 样例'
+
+    for scenario in ('advance', 'consecutive', 'revoked'):
+        mid = 'legacy-sse-' + scenario
+        accepted = host.send(api, A, mid, 'Private PG protected stream')
+        receipt = messages.query(mid).receipt
+        assert accepted['run_id'] == receipt.run_id
+        binding = Binding(scope, receipt.conversation_id, receipt.generation, mid, receipt.run_id, receipt.sequence)
+        assert runs.accept(binding).status == 'queued'
+        assert runs.apply(Event(binding, 1, 'start', 'started')).status == 'running'
+        recoveries = []
+
+        def recover(repository, candidate, **kwargs):
+            if candidate != binding:
+                return recover_original(repository, candidate, **kwargs)
+            call = len(recoveries) + 1
+            if call == 5 and scenario == 'advance':
+                runs.apply(Event(binding, 3, 'answer', 'text_delta', body))
+                runs.apply(Event(binding, 4, 'end', 'completed'))
+            result = recover_original(repository, candidate, **kwargs)
+            recoveries.append(result.state.sequence)
+            if call == 3:
+                runs.apply(Event(binding, 2, 'source', 'text_delta', source))
+            if call == 5 and scenario == 'consecutive':
+                runs.apply(Event(binding, 3, 'hidden', 'text_delta', body))
+            return result
+
+        def read(reader, token, key):
+            try:
+                return read_original(reader, token, key)
+            except RunSnapshotAdvanced:
+                if scenario == 'revoked':
+                    invitations.write_text(json.dumps([B]))
+                raise
+
+        params = {'message_id': mid}
+        try:
+            with patch.object(Repository, 'recover', recover), patch.object(DisplaySnapshotReader, 'read', read):
+                response = api.get('/v1/run-events', params=params, headers=host.headers[A])
+        finally:
+            invitations.write_bytes(original_invitations)
+        assert response.status_code == 200
+        frames = [json.loads(line[6:]) for line in response.text.splitlines() if line.startswith('data: ')]
+        if scenario == 'advance':
+            assert recoveries == [1, 1, 1, 2, 4, 4]
+            assert frames == [{'status': 'running'}, {'text': source + body}, {'status': 'completed'}]
+            resumed = api.get('/v1/run-events', params=params,
+                              headers={**host.headers[A], 'Last-Event-ID': str(len(source.encode()))})
+            assert resumed.status_code == 200 and resumed.text.count(body) == 1 and 'Source: fixture' not in resumed.text
+            harness.expect(api.get('/v1/run-events', params=params, headers=host.headers[B]), 503)
+        else:
+            assert recoveries == ([1, 1, 1, 2, 2, 3] if scenario == 'consecutive' else [1, 1, 1, 2])
+            assert frames == [{'status': 'running'}, {'status': 'unavailable'}]
+    print('PASS original legacy SSE same-RUN advance, one bounded follow-up, revocation and byte resume')
+
+
 def exercise(auth,conninfo):
     host=RegisteredHost(auth,conninfo,{s:(8,2,50000) for s in (A,B)})
     path,context=host.profiles[A]
@@ -280,6 +348,7 @@ def exercise(auth,conninfo):
         assert run_worker.run_once(database,native,auth,tools_configuration=registered,real_services=services,
             memory_configuration_for_scope=runtime.memory_configuration_for_scope)==[]
         assert len(calls)==2 and len(tools)==1
+        check_legacy_sse_followup(api, host, database)
     print('PASS HK single worker/legacy and typed scopes/original signed MESSAGE2/owned travel lease/selected Memory/isolated input/held original resume/no duplicate calls; real providers UNRUN')
 
 

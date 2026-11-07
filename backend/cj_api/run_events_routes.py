@@ -14,6 +14,7 @@ import time
 from fastapi import Request
 from fastapi.responses import StreamingResponse
 from starlette.concurrency import run_in_threadpool
+from cj_run.display_snapshot import RunSnapshotAdvanced
 
 from .history_routes import _query
 from .local_account_admission_v2 import retirement_read_operation
@@ -95,6 +96,7 @@ def register_run_events_route(app, reader=None, display_configuration=None, conf
         async def events():
             nonlocal status, text
             sent, last_status = offset, None
+            missed_poll = False
             deadline = time.monotonic() + configuration.max_stream_seconds
             while True:
                 if len(text) > sent:
@@ -106,9 +108,19 @@ def register_run_events_route(app, reader=None, display_configuration=None, conf
                 if status in TERMINAL or time.monotonic() >= deadline or await request.is_disconnected():
                     return
                 await asyncio.sleep(configuration.poll_interval_seconds)
+                poll_started = time.monotonic()
                 try:
                     status, text = await run_in_threadpool(snapshot)
-                except Exception:
+                    missed_poll = False
+                except Exception as error:
+                    if timing:
+                        _timing_log.info('M4_SSE_POLL_TIMING request_id=%s elapsed_ms=%.3f outcome=%s',
+                                         request.state.request_id,(time.monotonic()-poll_started)*1000,type(error).__name__)
+                    if isinstance(error, RunSnapshotAdvanced) and not missed_poll:
+                        # The failed projection returned no bytes. The next normal
+                        # poll checks the same bearer, owner and original again.
+                        missed_poll = True
+                        continue
                     yield _sse('status', {'status': 'unavailable'}, sent)
                     return
 
