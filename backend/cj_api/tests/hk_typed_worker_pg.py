@@ -23,6 +23,61 @@ import run_worker
 A='m4-synthetic-worker-a';B='m4-synthetic-worker-b'
 
 
+def check_legacy_message_preflight(api, host, database, configured_app):
+    from contextlib import contextmanager
+    import psycopg
+    from cj_api.composition import CompositionUnavailable
+
+    mid = 'worker-legacy'
+    chat = harness.expect(api.put('/v1/conversations', params={'conversation_id': mid}, headers=host.headers[A]))
+    headers = {**host.headers[A], 'Content-Type': 'application/octet-stream'}
+
+    def body(message_id, sequence):
+        return json.dumps(dict(version='MESSAGE-send.1', conversation_id=mid, message_id=message_id,
+            text='Synthetic old scope without Memory', trip_id=None, creation_intent='none',
+            expected_generation=chat['generation'], expected_sequence=sequence)).encode()
+
+    original = body(mid, 0)
+    with patch.object(database, '_open_runtime_connection', wraps=database._open_runtime_connection) as opened:
+        accepted = harness.expect(api.post('/v1/messages', content=original, headers=headers))['receipt']
+        candidate_count = opened.call_count
+    assert accepted['input_sha256'] == hashlib.sha256(original).hexdigest()
+    with patch('cj_api.local_account_admission_v2.request_scope_connection', return_value=None):
+        baseline = configured_app()
+    with TestClient(baseline) as client, patch.object(database, '_open_runtime_connection',
+            wraps=database._open_runtime_connection) as opened:
+        replay = harness.expect(client.post('/v1/messages', content=original, headers=headers))['receipt']
+        baseline_count = opened.call_count
+    assert replay == accepted and (baseline_count, candidate_count) == (4, 2)
+
+    rejected_mid = 'legacy-budget-rejected'
+    with patch.object(database, '_check_budget_account', side_effect=CompositionUnavailable('fixture budget missing')), \
+            patch.object(database, '_provision_scope', wraps=database._provision_scope) as provision:
+        rejected = harness.expect(api.post('/v1/messages', content=body(rejected_mid, 1), headers=headers), 503)
+        assert rejected['error']['code'] == 'MESSAGE_UNAVAILABLE'
+        provision.assert_not_called()
+
+    preflight = database._message_preflight_transaction
+
+    @contextmanager
+    def lose_read_ack(connection):
+        with preflight(connection) as cursor:
+            yield cursor
+        raise psycopg.OperationalError('fixture budget read acknowledgement lost')
+
+    unknown_mid = 'legacy-budget-ack-unknown'
+    with patch.object(database, '_message_preflight_transaction', lose_read_ack), \
+            patch.object(database, '_provision_scope', wraps=database._provision_scope) as provision:
+        unknown = harness.expect(api.post('/v1/messages', content=body(unknown_mid, 1), headers=headers), 503)
+        assert unknown['error']['code'] == 'MESSAGE_UNAVAILABLE'
+        provision.assert_not_called()
+    with database.connect(scope_for(ISSUER, A)) as connection:
+        assert connection.execute('SELECT message_id FROM cj_message_delivery WHERE message_id IN (%s,%s,%s) ORDER BY message_id',
+                                  (mid, rejected_mid, unknown_mid)).fetchall() == [(mid,)]
+    print('PASS original legacy POST physical checkouts 4 -> 2, receipt replay and budget/preflight fail-closed')
+    return accepted
+
+
 def check_legacy_sse_followup(api, host, database):
     from concurrent.futures import ThreadPoolExecutor
     from threading import Event as Signal
@@ -234,7 +289,7 @@ def exercise(auth,conninfo):
             harness.expect(leased.get('/v2/memories',params=params,headers=headers(A)),503)
     print('PASS HK typed list preserves original items with fewer checkouts; detail and foreign behavior unchanged')
     with TestClient(configured_app()) as api:
-        old=host.send(api,A,'worker-legacy','Synthetic old scope without Memory')
+        old=check_legacy_message_preflight(api, host, database, configured_app)
         current=send(api,'worker-current-one',travels[0])
         # Compare two reads of the same original through its idempotent POST
         # path. Count fresh checkouts, not cached admission verdicts.

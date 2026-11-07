@@ -110,7 +110,7 @@ def register_message_routes(app, boundary=None, max_body_bytes=None,formal_recei
             if write:
                 from .local_account_admission_v2 import retirement_read_operation
                 def receive():
-                    with retirement_read_operation():
+                    with retirement_read_operation(purpose='legacy_message_preflight'):
                         return boundary.receive(token, argument)
                 value = await run_in_threadpool(receive)
             else:

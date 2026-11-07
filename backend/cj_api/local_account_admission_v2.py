@@ -16,10 +16,10 @@ _retirement_lease = ContextVar('retirement_read_lease', default=None)
 
 
 class _RetirementReadLease:
-    def __init__(self, database, require_current, snapshot):
+    def __init__(self, database, require_current, purpose):
         self.database = database
         self.require_current = require_current
-        self.snapshot = snapshot
+        self.purpose = purpose
         self.thread = get_ident()
         self.owner = None
         self.connection = None
@@ -39,12 +39,12 @@ class _RetirementReadLease:
             cursor.execute('SELECT public.cj_account_scope_current(%s)', (owner,))
             return _retirement_fact(cursor.fetchone())
 
-    def borrow_snapshot(self, database, owner):
+    def borrow(self, database, owner):
         connection = self.connection
         if (database is not self.database or get_ident() != self.thread or owner != self.owner
                 or connection is None or connection.closed
                 or connection.info.transaction_status != TransactionStatus.IDLE):
-            raise CompositionUnavailable('idle original snapshot connection required')
+            raise CompositionUnavailable('idle original request connection required')
         self.require_current()
         return connection
 
@@ -60,13 +60,13 @@ def permit_retirement_read_lease(database, require_current):
 
 
 @contextmanager
-def retirement_read_operation(*, snapshot=False):
+def retirement_read_operation(*, purpose=None):
     """Acquire and close the leased connection in the guarded worker thread."""
     permission = _retirement_permission.get()
     if permission is None:
         yield
         return
-    lease = _RetirementReadLease(*permission, snapshot)
+    lease = _RetirementReadLease(*permission, purpose)
     token = _retirement_lease.set(lease)
     try:
         yield
@@ -76,12 +76,12 @@ def retirement_read_operation(*, snapshot=False):
             lease.connection.close()
 
 
-def snapshot_connection(database, scope):
-    """Borrow only within a single authenticated protected SSE snapshot."""
+def request_scope_connection(database, scope, *, purpose):
+    """Borrow the already authenticated scope in the current synchronous operation."""
     lease = _retirement_lease.get()
-    if lease is None or not lease.snapshot:
+    if lease is None or lease.purpose != purpose:
         return None
-    return lease.borrow_snapshot(database, scope)
+    return lease.borrow(database, scope)
 
 
 def subject_digest(principal):

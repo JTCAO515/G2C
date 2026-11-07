@@ -244,23 +244,44 @@ class LocalDatabase:
     def require_budget_account(self, scope, *, profile=None):
         if self.run_context is None: return
         profile=self.run_context.current if profile is None else profile
-        account=ledger_scope_for(scope,profile.meter)
         with self.connect(scope,usage_profile=profile) as conn:
-            row=conn.execute('SELECT format_version,ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(account,)).fetchone()
-            if row is None or row[0]!=1 or decode_ledger(row[1]).config!=profile.meter:
-                raise CompositionUnavailable('original budget account unavailable or changed')
+            self._check_budget_account(conn, scope, profile)
+
+    def _check_budget_account(self, executor, scope, profile):
+        account = ledger_scope_for(scope, profile.meter)
+        row = executor.execute('SELECT format_version,ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',
+                               (account,)).fetchone()
+        if row is None or row[0] != 1 or decode_ledger(row[1]).config != profile.meter:
+            raise CompositionUnavailable('original budget account unavailable or changed')
 
     def provision(self, scope):
         """Trusted, idempotent scope provisioning for the local host only."""
         with self.connect(scope) as conn:
-            conn.execute('INSERT INTO cj_message_scope(scope) VALUES (%s) ON CONFLICT DO NOTHING', (scope,))
-            conn.execute('SELECT scope FROM cj_message_scope WHERE scope=%s FOR UPDATE',(scope,))
-            if self.run_context is None and conn.execute('SELECT 1 FROM cj_local_run_protection WHERE scope=%s',(scope,)).fetchone():
-                # Safe original history stays readable without creating new runtime
-                # state; writes/dispatch check protection inside their own scope lock.
-                return
-            conn.execute("INSERT INTO cj_run_scope(scope, epoch, active) VALUES (%s, '1', true) ON CONFLICT DO NOTHING", (scope,))
-            conn.execute('INSERT INTO cj_trip_scope(scope) VALUES (%s) ON CONFLICT DO NOTHING', (trip_scope_for(scope),))
+            self._provision_scope(conn, scope)
+
+    def _provision_scope(self, executor, scope):
+        executor.execute('INSERT INTO cj_message_scope(scope) VALUES (%s) ON CONFLICT DO NOTHING', (scope,))
+        executor.execute('SELECT scope FROM cj_message_scope WHERE scope=%s FOR UPDATE', (scope,))
+        if self.run_context is None and executor.execute('SELECT 1 FROM cj_local_run_protection WHERE scope=%s', (scope,)).fetchone():
+            # Keep the original history read path available without enabling runtime state.
+            return
+        executor.execute("INSERT INTO cj_run_scope(scope, epoch, active) VALUES (%s, '1', true) ON CONFLICT DO NOTHING", (scope,))
+        executor.execute('INSERT INTO cj_trip_scope(scope) VALUES (%s) ON CONFLICT DO NOTHING', (trip_scope_for(scope),))
+
+    @contextmanager
+    def _message_preflight_transaction(self, connection):
+        with connection.transaction(), connection.cursor() as cursor:
+            cursor.execute('SET TRANSACTION ISOLATION LEVEL READ COMMITTED')
+            connection.bind_scope(cursor)
+            self._check_execution_connection(cursor)
+            yield cursor
+
+    def prepare_legacy_message_scope(self, connection, scope):
+        # Preserve the budget read commit before provisioning and the separate MESSAGE writer.
+        with self._message_preflight_transaction(connection) as cursor:
+            self._check_budget_account(cursor, scope, self.run_context.current)
+        with self._message_preflight_transaction(connection) as cursor:
+            self._provision_scope(cursor, scope)
 
     def message_repository(self, scope):
         return MessageRepository(lambda: self.connect(scope), scope, bind_needs=self.run_context is not None,
@@ -421,20 +442,25 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
         else:raise CompositionUnavailable('matching explicit cleanup host configuration required')
         access=AccountRevocationAccess(base_access,cleanup_runtime.retired)
 
+    from .local_account_admission_v2 import request_scope_connection
+
     def message_repository(principal, *, provision=True):
         if message_subjects is not None and principal.subject not in message_subjects:
             raise CompositionUnavailable('MESSAGE consumer unavailable for this API-only subject')
         scope = scope_for(principal.issuer, principal.subject)
-        database.require_budget_account(scope)
-        if provision:
-            database.provision(scope)
+        connection = (request_scope_connection(database, scope, purpose='legacy_message_preflight')
+                      if provision and database.run_context is not None else None)
+        if connection is not None:
+            database.prepare_legacy_message_scope(connection, scope)
+        else:
+            database.require_budget_account(scope)
+            if provision:
+                database.provision(scope)
         return database.message_repository(scope)
-
-    from .local_account_admission_v2 import snapshot_connection
 
     def display_message_repository(principal):
         repository = message_repository(principal, provision=False)
-        connection = snapshot_connection(database, repository.scope)
+        connection = request_scope_connection(database, repository.scope, purpose='sse_snapshot')
         if connection is None:
             return repository
         return SimpleNamespace(
@@ -474,7 +500,7 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
         if scope != scope_for(principal.issuer, principal.subject):
             raise CompositionUnavailable('scope mismatch')
         repository = database.run_repository(scope)
-        connection = snapshot_connection(database, scope)
+        connection = request_scope_connection(database, scope, purpose='sse_snapshot')
         if connection is None:
             return repository
         return SimpleNamespace(
