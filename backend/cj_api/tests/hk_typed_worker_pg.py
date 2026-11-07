@@ -308,9 +308,11 @@ def exercise(auth,conninfo):
                 wraps=database._open_runtime_connection) as opened:
             baseline_stream=baseline.get('/v2/run-events',params=stream_params,headers=host.headers[B])
             baseline_stream_checkouts=opened.call_count
-        with patch.object(database,'_open_runtime_connection',wraps=database._open_runtime_connection) as opened:
+        with patch.object(database,'_open_runtime_connection',wraps=database._open_runtime_connection) as opened, \
+                patch.object(database,'_check_execution_connection',wraps=database._check_execution_connection) as checked:
             stream=api.get('/v2/run-events',params=stream_params,headers=host.headers[B])
             leased_stream_checkouts=opened.call_count
+        assert leased_stream_checkouts <= 2 and checked.call_count == 5
         assert stream.content==baseline_stream.content
         assert leased_stream_checkouts<baseline_stream_checkouts,(baseline_stream_checkouts,leased_stream_checkouts)
         print(f'PASS original typed SSE snapshot fresh checkouts {baseline_stream_checkouts} -> {leased_stream_checkouts}')
@@ -332,13 +334,26 @@ def exercise(auth,conninfo):
                 wraps=database._open_runtime_connection) as opened:
             old_baseline=baseline.get('/v1/run-events',params=old_params,headers=host.headers[A])
             old_checkouts=opened.call_count
-        with patch.object(database,'_open_runtime_connection',wraps=database._open_runtime_connection) as opened:
+        with patch.object(database,'_open_runtime_connection',wraps=database._open_runtime_connection) as opened, \
+                patch.object(database,'_check_execution_connection',wraps=database._check_execution_connection) as checked:
             old_stream=api.get('/v1/run-events',params=old_params,headers=host.headers[A])
             old_leased_checkouts=opened.call_count
+        assert old_leased_checkouts <= 2 and checked.call_count == 5
         assert old_stream.status_code==old_baseline.status_code==200
         assert old_stream.content==old_baseline.content
         assert old_leased_checkouts<old_checkouts,(old_checkouts,old_leased_checkouts)
         print(f'PASS original legacy SSE fresh checkouts {old_checkouts} -> {old_leased_checkouts}')
+        validate = database._check_execution_connection
+
+        def retain_fixture_scope(cursor):
+            validate(cursor)
+            cursor.execute("SELECT set_config('cj.usage_scope', 'stale-fixture-scope', false)")
+
+        with patch.object(database, '_check_execution_connection', side_effect=retain_fixture_scope) as checked:
+            denied = api.get('/v1/run-events', params=old_params, headers=host.headers[A])
+        assert denied.status_code == 503 and checked.call_count == 1
+        assert api.get('/v1/run-events', params=old_params, headers=host.headers[A]).content == old_stream.content
+        print('PASS retained session scope is rejected; a separate original read remains available')
         with database.connect(scope_for(ISSUER,A)) as c:
             assert c.execute('SELECT count(*) FROM cj_memory_item').fetchone()==(0,)
         with database.connect(scope_for(ISSUER,B)) as c:

@@ -208,9 +208,13 @@ class Repository:
                 raise cleanup_error
             raise RecoveryReadUnavailable('RUN read cleanup failed') from None
 
-    def recover(self, binding, *, require_clean_close=False):
+    def recover(self, binding, *, require_clean_close=False, borrowed_connection=None, validate_connection=None):
         """Deterministic original-run read, never a worker execution authorization."""
-        transaction = (self.transaction(require_clean_close=True) if require_clean_close else self.transaction())
+        if borrowed_connection is not None:
+            transaction = self.transaction(require_clean_close=require_clean_close, borrowed_connection=borrowed_connection,
+                                           validate_connection=validate_connection)
+        else:
+            transaction = self.transaction(require_clean_close=True) if require_clean_close else self.transaction()
         with transaction as tx:
             state = tx.get(binding)
             result = Recovery(state, Cursor(binding, tx.epoch, state.sequence, 0),
