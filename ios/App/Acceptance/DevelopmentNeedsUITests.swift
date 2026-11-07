@@ -5,26 +5,41 @@ import Foundation
 @MainActor private final class PhysicalTimeZoneSettings {
     private enum Failure: Error { case unexpectedSettings, timeZoneNotObserved }
     private let settings = XCUIApplication(bundleIdentifier: "com.apple.Preferences")
+    private let beijing = ["北京", "Beijing"]
+    private let paris = ["巴黎", "Paris"]
     let original = TimeZone.autoupdatingCurrent.identifier
     let destination = "Europe/Paris"
     private(set) var restorePending = false
+    private var manualCityNeedsRestore = false
 
     func switchToParis() throws {
         settings.activate()
-        guard settings.wait(for: .runningForeground, timeout: 15), original != destination,
+        guard settings.wait(for: .runningForeground, timeout: 15), original == "Asia/Shanghai",
               try value(automaticZone()) == "1", try value(automaticTime()) == "1" else {
             throw Failure.unexpectedSettings
         }
+        try verifyDisplayedCity(beijing)
         restorePending = true
         print("M4_SYSTEM_TIMEZONE_RESTORE_PENDING zone=\(original) automaticZone=1 automaticTime=1")
         try setAutomaticZone("0")
+        try verifyDisplayedCity(beijing)
+        manualCityNeedsRestore = true
+        try selectCity("Paris", labels: ["巴黎（法国）", "巴黎 (法国)", "Paris (France)", "Paris, France"], identifier: destination)
+        try verifyDisplayedCity(paris)
+        guard try value(automaticZone()) == "0", try value(automaticTime()) == "1" else {
+            throw Failure.unexpectedSettings
+        }
+        print("M4_SYSTEM_TIMEZONE_CHANGED zone=\(destination) automaticZone=0")
+    }
+
+    private func selectCity(_ name: String, labels: [String], identifier: String) throws {
         let city = settings.staticTexts.matching(NSPredicate(format: "label IN %@", ["时区城市", "Time Zone City"]))
         try unique(city).tap()
         let search = try unique(settings.searchFields)
         search.tap()
-        search.typeText("Paris")
+        search.typeText(name)
         let result = settings.staticTexts.matching(NSPredicate(format: "label IN %@ OR identifier == %@",
-            ["巴黎（法国）", "巴黎 (法国)", "Paris (France)", "Paris, France"], destination))
+            labels, identifier))
         // The search can briefly expose overlapping result views while it settles.
         let ready = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
             result.allElementsBoundByIndex.filter(\.isHittable).count == 1
@@ -33,17 +48,40 @@ import Foundation
         let visible = result.allElementsBoundByIndex.filter(\.isHittable)
         guard visible.count == 1 else { throw Failure.unexpectedSettings }
         visible[0].tap()
-        try verifyZone(destination)
-        print("M4_SYSTEM_TIMEZONE_CHANGED zone=\(destination) automaticZone=0")
     }
 
     func restore() throws {
         guard restorePending else { return }
         settings.activate()
         guard settings.wait(for: .runningForeground, timeout: 15) else { throw Failure.unexpectedSettings }
+        try dismissCitySheet()
+        do {
+            if manualCityNeedsRestore {
+                // Automatic mode hides the last manual city but does not reset it.
+                try setAutomaticZone("0")
+                if !displayedCityIs(beijing) {
+                    try selectCity("Beijing", labels: ["北京（中国）", "北京 (中国)", "Beijing (China)", "Beijing, China"], identifier: original)
+                }
+                try verifyDisplayedCity(beijing)
+                manualCityNeedsRestore = false
+                print("M4_SYSTEM_TIMEZONE_MANUAL_CITY_RESTORED zone=\(original)")
+            }
+        } catch {
+            try dismissCitySheet()
+            try setAutomaticZone("1")
+            throw error
+        }
+        try setAutomaticZone("1")
+        guard try value(automaticTime()) == "1" else { throw Failure.unexpectedSettings }
+        try verifyDisplayedCity(beijing)
+        restorePending = false
+        print("M4_SYSTEM_TIMEZONE_RESTORED zone=\(original) automaticZone=1 automaticTime=1")
+    }
+
+    private func dismissCitySheet() throws {
         let autoZone = automaticZoneQuery()
         for _ in 0..<2 {
-            if autoZone.count == 1 && autoZone.element.isHittable { break }
+            if autoZone.count == 1 && autoZone.element.isHittable { return }
             // iOS can show the search cancel and the city sheet close in succession.
             let dismissal = settings.buttons.matching(NSPredicate(format: "label IN %@ OR identifier == %@",
                 ["取消搜索", "Cancel Search", "关闭", "Close", "取消", "Cancel", "日期与时间", "Date & Time"], "BackButton"))
@@ -51,11 +89,7 @@ import Foundation
             guard visible.count == 1 else { throw Failure.unexpectedSettings }
             visible[0].tap()
         }
-        try setAutomaticZone("1")
-        guard try value(automaticTime()) == "1" else { throw Failure.unexpectedSettings }
-        try verifyZone(original)
-        restorePending = false
-        print("M4_SYSTEM_TIMEZONE_RESTORED zone=\(original) automaticZone=1 automaticTime=1")
+        guard autoZone.count == 1, autoZone.element.isHittable else { throw Failure.unexpectedSettings }
     }
 
     private func automaticZoneQuery() -> XCUIElementQuery {
@@ -95,11 +129,18 @@ import Foundation
         guard XCTWaiter.wait(for: [settled], timeout: 10) == .completed else { throw Failure.unexpectedSettings }
     }
 
-    private func verifyZone(_ identifier: String) throws {
+    private func displayedCityIs(_ labels: [String]) -> Bool {
+        let autoZone = automaticZoneQuery()
+        guard autoZone.count == 1, autoZone.element.isHittable else { return false }
+        let city = settings.staticTexts.matching(NSPredicate(format: "label IN %@", labels))
+        return city.count == 1 && city.element.frame.intersects(settings.frame)
+    }
+
+    private func verifyDisplayedCity(_ labels: [String]) throws {
         let settled = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
-            TimeZone.autoupdatingCurrent.identifier == identifier
+            self.displayedCityIs(labels)
         }, object: nil)
-        guard XCTWaiter.wait(for: [settled], timeout: 30) == .completed else { throw Failure.timeZoneNotObserved }
+        guard XCTWaiter.wait(for: [settled], timeout: 15) == .completed else { throw Failure.timeZoneNotObserved }
     }
 }
 #endif
