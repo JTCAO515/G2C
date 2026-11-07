@@ -593,7 +593,9 @@ class Boundaries(unittest.TestCase):
         with self.assertRaises(ProviderUnknown):self.invoke(self.provider(sse()),guard=lambda:False)
         self.assertEqual(self.sent,[])
         self.assertEqual(self.budget.inspect()[0]['state'],'INTENT')
+    @patch.dict('cj_usage.authorization_budget.LIMITS',{'model':(387,1)})
     def test_expiry_and_combined_model_ceiling(self):
+        # Preserve the historical 400-stop fixture; current defaults are below.
         for i in range(227):self.budget.begin(str(i),'model',b'synthetic')
         previous=self.budget.inspect()
         self.budget=AuthorizationBudget(Path(self.temp.name),clock=lambda:NOW)
@@ -604,6 +606,36 @@ class Boundaries(unittest.TestCase):
         with self.assertRaises(BudgetUnknown):self.budget.begin('next','model',b'synthetic')
         self.budget.clock=lambda:datetime(2026,12,1,tzinfo=timezone.utc)
         with self.assertRaises(BudgetUnknown):self.budget.begin('late','fact',b'synthetic')
+
+    def test_jt_model_total_and_stop_10000_keep_m1_and_all_old_intents(self):
+        from cj_usage.authorization_budget import MODEL_STOP_CNY,MODEL_TOTAL_CNY,MODEL_M1_HOLD_CNY,LIMITS
+        self.assertEqual((MODEL_STOP_CNY,MODEL_TOTAL_CNY,MODEL_M1_HOLD_CNY,LIMITS['model']),(10000,10000,13,(9987,1)))
+        with patch.dict('cj_usage.authorization_budget.LIMITS',{'model':(387,1)}):
+            for i in range(387):self.budget.begin(str(i),'model',b'synthetic old intent')
+            previous=self.budget.inspect()
+            with self.assertRaises(BudgetUnknown):self.budget.begin('old-stop','model',b'synthetic')
+        self.budget=AuthorizationBudget(Path(self.temp.name),clock=lambda:NOW)
+        self.assertEqual(self.budget.inspect(),previous)
+        self.budget.begin('now-authorized','model',b'synthetic new intent')
+        self.assertEqual(self.budget.inspect()[:387],previous)
+        # Seed only this temporary fixture close to the real boundary; no calls,
+        # resets or synthetic receipts stand in for live billing evidence.
+        with self.budget.connect() as db:
+            db.executemany("INSERT INTO attempt VALUES(?,'model',?,'INTENT',NULL)",
+                [('synthetic-limit-'+str(i),'0'*64) for i in range(9986-388)])
+        self.budget.begin('at-model-total','model',b'synthetic last allowance')
+        at_total=self.budget.inspect()
+        self.assertEqual(len(at_total)+MODEL_M1_HOLD_CNY,10000)
+        self.assertTrue(all(r['state']=='INTENT' for r in at_total))
+        self.budget=AuthorizationBudget(Path(self.temp.name),clock=lambda:NOW)
+        for attempt in ('over-model-total','0'):
+            with self.subTest(attempt=attempt),self.assertRaises(BudgetUnknown):
+                self.budget.begin(attempt,'model',b'cannot rearm or exceed total')
+        self.assertEqual(self.budget.inspect(),at_total)
+        self.budget.clock=lambda:datetime(2026,12,1,tzinfo=timezone.utc)
+        with self.assertRaises(BudgetUnknown):self.budget.begin('late-model','model',b'synthetic')
+        self.assertEqual(self.budget.inspect(),at_total)
+        self.assertEqual(self.sent,[])
     @patch('cj_usage.authorization_budget.TOOL_STOP_CNY',160)
     def test_tool_holds_shared_across_categories(self):
         for i in range(80):self.budget.begin(str(i),'route' if i%2 else 'place',b'synthetic')

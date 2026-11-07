@@ -15,8 +15,10 @@ Memory fence、原动作只读恢复均继续生效。默认 local/Fake 路径�
 
 原注册出口先持久 input bytes/attempt，再经原 Meter reserve/claim/最后 guard。
 真实 adapter 补一份授权累计意图账本，固定在用户数据目录 `g2c/m4-real-services`，
-不取代产品 Meter。按已合PR540的M4授权，北京每 intent 保守占用 ¥1、保留 M1 的 ¥13，
-累计387个M4模型intent（合计¥400）后停止；地点/路线/天气每 intent保守占用¥1。
+不取代产品 Meter。按 [JT 2026-11-06 决定](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6688002330)，
+模型总上限与停止线均为 ¥10,000，北京每 intent 保守占用 ¥1、保留 M1 的 ¥13，
+累计9,987个M4模型intent（含M1合计¥10,000）后停止，不释放任何旧UNKNOWN/INTENT。
+原387停线只作为显式历史测试保留。地点/路线/天气每 intent保守占用¥1。
 JT于2026-11-05在C会话把工具停止线改为¥10000（[#495记录](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6644812116)），
 原工具总预算¥200未提高，实际出口按停止线与总预算的较小值拒绝新付费意图，因此当前最多保守占用¥200。
 各分类同时保持M4的1200/600/200/240次数上限，事实页保守占用0，2026-11-30到期；UNKNOWN不释放占用。

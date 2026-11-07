@@ -17,7 +17,12 @@ from zoneinfo import ZoneInfo
 
 from .metered_exit import BudgetUnknown
 
-LIMITS={'model':(387,1),'place':(1200,1),'route':(600,1),'weather':(200,1),'fact':(240,0)}
+# JT 2026-11-06 raised both model ceilings; M1's original holds remain occupied.
+MODEL_STOP_CNY=10000
+MODEL_TOTAL_CNY=10000
+MODEL_M1_HOLD_CNY=13
+LIMITS={'model':(min(MODEL_STOP_CNY,MODEL_TOTAL_CNY)-MODEL_M1_HOLD_CNY,1),
+        'place':(1200,1),'route':(600,1),'weather':(200,1),'fact':(240,0)}
 # JT changed the tool stop line on 2026-11-05; the original total stays binding.
 TOOL_STOP_CNY=10000
 TOOL_TOTAL_CNY=200
