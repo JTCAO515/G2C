@@ -1,0 +1,777 @@
+{
+  "candidate_id": "e3b36c39b637f564a369e91ca559bcf4d64c0f79",
+  "stage": "hk-compact-e3b36c39-smoke-001",
+  "review_recipient": "JT",
+  "completed_independent_human_reviews": 0,
+  "human_review": "UNKNOWN",
+  "items": [
+    {
+      "case_id": "place-route",
+      "language": "zh",
+      "question": "合成旅行冒烟：先用place_search查询北京故宫、景山公园各1个地点，city北京/page1/page_size1。仅复制实际结果的POI ID、原始GCJ-02坐标和点角色，用place_route查询两点walking路线。根据实际来源说明查询时估计及未知项，不创建或保存行程。",
+      "original_prerequisite": "PASS",
+      "run_id": "75ed703f-eaa9-4730-98cd-40f2dcbc7ec3",
+      "answer": "来源：https://restapi.amap.com/v3/place/text\n来源：https://restapi.amap.com/v3/place/text\n来源：https://restapi.amap.com/v3/direction/walking\n来源：高德地点搜索与步行路线查询（实时调用）。\n\n- 故宫博物院：provider_id B000A8UIN8；POI中心 GCJ-02 坐标 116.397029,39.917839；入口/出口坐标缺失，角色为 poi_center。\n- 景山公园：provider_id B000A7I1OL；POI中心 GCJ-02 坐标 116.396551,39.925875；入口/出口坐标缺失，角色为 poi_center。\n\n步行路线估计（查询时）：约 1445 米、1156 秒（约19分钟）。这是提供商在查询时刻给出的估算，不保证未来相同，未创建或保存行程。\n\n未知项：具体入口/出口点及对应坐标、实际步行路径细节、无障碍情况、实时交通/天气影响、开放时间与门票适用性。",
+      "sources": [
+        {
+          "tool": "place",
+          "name": "place_search",
+          "actual_result": {
+            "outcome": "ok",
+            "places": [
+              {
+                "address_zh": {
+                  "state": "present",
+                  "value": "景山前街4号"
+                },
+                "coordinate": {
+                  "state": "present",
+                  "value": {
+                    "crs": "GCJ-02",
+                    "latitude": "39.917839",
+                    "longitude": "116.397029",
+                    "raw": "116.397029,39.917839"
+                  }
+                },
+                "entrance_coordinate": {
+                  "state": "missing",
+                  "value": null
+                },
+                "exit_coordinate": {
+                  "state": "missing",
+                  "value": null
+                },
+                "name_zh": "故宫博物院",
+                "navigation_id": {
+                  "state": "missing",
+                  "value": null
+                },
+                "official_address_en": {
+                  "state": "unknown",
+                  "value": null
+                },
+                "official_name_en": {
+                  "state": "unknown",
+                  "value": null
+                },
+                "parent_id": {
+                  "state": "empty_array",
+                  "value": null
+                },
+                "provider": "gaode",
+                "provider_id": "B000A8UIN8",
+                "typecode": {
+                  "state": "present",
+                  "value": "110201|140100"
+                }
+              }
+            ],
+            "provider_code": "10000",
+            "provider_count": 100,
+            "query": {
+              "city": "北京",
+              "keyword": "故宫",
+              "kind": "Search",
+              "page": 1,
+              "page_size": 1
+            },
+            "reason": "page_results",
+            "routes": [],
+            "source": {
+              "adapter_profile": "CJ-PLACE-GAODE@0.1.0-rc.1",
+              "api_version": "v3",
+              "binding_digest": "88d5065950720abb9527933a0f5cadc7d0d3bcfe3ca36c394475a295b10a26b5",
+              "endpoint": "https://restapi.amap.com/v3/place/text",
+              "evidence_kind": "live_provider",
+              "provider": "gaode",
+              "provider_updated_at": null,
+              "query_started_at": {
+                "fold": 0,
+                "iso8601": "2026-11-07T04:49:09.401682+00:00"
+              },
+              "received_at": {
+                "fold": 0,
+                "iso8601": "2026-11-07T04:49:09.586845+00:00"
+              },
+              "recording_ref": null,
+              "request_ref": "op-c5c1aa65ce6f749c110ac5db5f27ac2ca7fa1815773432a8d45d76c0f77d567e"
+            },
+            "version": "PLACE-result.1"
+          }
+        },
+        {
+          "tool": "place",
+          "name": "place_search",
+          "actual_result": {
+            "outcome": "ok",
+            "places": [
+              {
+                "address_zh": {
+                  "state": "present",
+                  "value": "景山西街44号"
+                },
+                "coordinate": {
+                  "state": "present",
+                  "value": {
+                    "crs": "GCJ-02",
+                    "latitude": "39.925875",
+                    "longitude": "116.396551",
+                    "raw": "116.396551,39.925875"
+                  }
+                },
+                "entrance_coordinate": {
+                  "state": "missing",
+                  "value": null
+                },
+                "exit_coordinate": {
+                  "state": "missing",
+                  "value": null
+                },
+                "name_zh": "景山公园",
+                "navigation_id": {
+                  "state": "missing",
+                  "value": null
+                },
+                "official_address_en": {
+                  "state": "unknown",
+                  "value": null
+                },
+                "official_name_en": {
+                  "state": "unknown",
+                  "value": null
+                },
+                "parent_id": {
+                  "state": "empty_array",
+                  "value": null
+                },
+                "provider": "gaode",
+                "provider_id": "B000A7I1OL",
+                "typecode": {
+                  "state": "present",
+                  "value": "110101"
+                }
+              }
+            ],
+            "provider_code": "10000",
+            "provider_count": 96,
+            "query": {
+              "city": "北京",
+              "keyword": "景山公园",
+              "kind": "Search",
+              "page": 1,
+              "page_size": 1
+            },
+            "reason": "page_results",
+            "routes": [],
+            "source": {
+              "adapter_profile": "CJ-PLACE-GAODE@0.1.0-rc.1",
+              "api_version": "v3",
+              "binding_digest": "cf2f92ca72dd2b267a7c6340fbb9738e7e712ae86053cd7e79f4e5adf2b2c933",
+              "endpoint": "https://restapi.amap.com/v3/place/text",
+              "evidence_kind": "live_provider",
+              "provider": "gaode",
+              "provider_updated_at": null,
+              "query_started_at": {
+                "fold": 0,
+                "iso8601": "2026-11-07T04:49:09.906271+00:00"
+              },
+              "received_at": {
+                "fold": 0,
+                "iso8601": "2026-11-07T04:49:10.088416+00:00"
+              },
+              "recording_ref": null,
+              "request_ref": "op-c6badf2249f6526f52a22025fab8c19ba532e0511d988efdadc92ab962685059"
+            },
+            "version": "PLACE-result.1"
+          }
+        },
+        {
+          "tool": "place",
+          "name": "place_route",
+          "actual_result": {
+            "outcome": "ok",
+            "places": [],
+            "provider_code": "10000",
+            "provider_count": 1,
+            "query": {
+              "departure": {
+                "at": null,
+                "condition": "at_query_time"
+              },
+              "destination": {
+                "coordinate": {
+                  "crs": "GCJ-02",
+                  "latitude": "39.925875",
+                  "longitude": "116.396551",
+                  "raw": "116.396551,39.925875"
+                },
+                "coordinate_role": "poi_center",
+                "provider_id": "B000A7I1OL"
+              },
+              "kind": "RouteQuery",
+              "mode": "walking",
+              "origin": {
+                "coordinate": {
+                  "crs": "GCJ-02",
+                  "latitude": "39.917839",
+                  "longitude": "116.397029",
+                  "raw": "116.397029,39.917839"
+                },
+                "coordinate_role": "poi_center",
+                "provider_id": "B000A8UIN8"
+              }
+            },
+            "reason": "route_estimates",
+            "routes": [
+              {
+                "distance": {
+                  "state": "present",
+                  "value": {
+                    "raw": "1445",
+                    "unit": "m",
+                    "value": "1445"
+                  }
+                },
+                "duration": {
+                  "state": "present",
+                  "value": {
+                    "raw": "1156",
+                    "unit": "s",
+                    "value": "1156"
+                  }
+                },
+                "future_guaranteed": false,
+                "query": {
+                  "departure": {
+                    "at": null,
+                    "condition": "at_query_time"
+                  },
+                  "destination": {
+                    "coordinate": {
+                      "crs": "GCJ-02",
+                      "latitude": "39.925875",
+                      "longitude": "116.396551",
+                      "raw": "116.396551,39.925875"
+                    },
+                    "coordinate_role": "poi_center",
+                    "provider_id": "B000A7I1OL"
+                  },
+                  "kind": "RouteQuery",
+                  "mode": "walking",
+                  "origin": {
+                    "coordinate": {
+                      "crs": "GCJ-02",
+                      "latitude": "39.917839",
+                      "longitude": "116.397029",
+                      "raw": "116.397029,39.917839"
+                    },
+                    "coordinate_role": "poi_center",
+                    "provider_id": "B000A8UIN8"
+                  }
+                },
+                "time_semantics": "provider_estimate_at_query_time"
+              }
+            ],
+            "source": {
+              "adapter_profile": "CJ-PLACE-GAODE@0.1.0-rc.1",
+              "api_version": "v3",
+              "binding_digest": "18e41bf68bfbe3e39f534a694026138a5d2b5de757fe84db8a03c9353cf5638d",
+              "endpoint": "https://restapi.amap.com/v3/direction/walking",
+              "evidence_kind": "live_provider",
+              "provider": "gaode",
+              "provider_updated_at": null,
+              "query_started_at": {
+                "fold": 0,
+                "iso8601": "2026-11-07T04:49:12.893359+00:00"
+              },
+              "received_at": {
+                "fold": 0,
+                "iso8601": "2026-11-07T04:49:12.932787+00:00"
+              },
+              "recording_ref": null,
+              "request_ref": "op-0db8e04a95f460c874086927fcedf8bc28645828b6dbba3eb144af5a704b5590"
+            },
+            "version": "PLACE-result.1"
+          }
+        }
+      ],
+      "human_review": "UNKNOWN",
+      "raw_evidence_sha256": "5e34a2e450e447d259f54ab70e6bd3c82750864f87fdff729143eadb222b440b"
+    },
+    {
+      "case_id": "place-route",
+      "language": "en",
+      "question": "Synthetic travel smoke: use place_search for Forbidden City and Jingshan Park, Beijing, each page1/page_size1. Copy actual POI IDs, raw GCJ-02 coordinates and point roles into place_route for walking between them. Report query-time estimates, sources and unknowns; no trip write.",
+      "original_prerequisite": "PASS",
+      "run_id": "9fcd94e8-1df4-4d49-aa4b-82086d1c7ebe",
+      "answer": "Source: https://restapi.amap.com/v3/place/text\nSource: https://restapi.amap.com/v3/place/text\nSource: https://restapi.amap.com/v3/direction/walking\nQuery-time results (live Gaode provider; no future guarantee):\n- Forbidden City / 故宫博物院: provider_id B000A8UIN8, raw GCJ-02 poi_center 116.397029,39.917839. Entrance/exit coordinates missing.\n- Jingshan Park / 景山公园: provider_id B000A7I1OL, raw GCJ-02 poi_center 116.396551,39.925875. Entrance/exit coordinates missing.\n- Walking estimate between the two POI centers: about 1,445 m and 1,156 s (~19 min). Sources: https://restapi.amap.com/v3/place/text and https://restapi.amap.com/v3/direction/walking; queried 2026-11-07T04:49 UTC.\nUnknowns: gate-specific route, opening/ticket status, official English names/addresses, navigation IDs. No trip was written or booked.",
+      "sources": [
+        {
+          "tool": "place",
+          "name": "place_search",
+          "actual_result": {
+            "outcome": "ok",
+            "places": [
+              {
+                "address_zh": {
+                  "state": "present",
+                  "value": "景山前街4号"
+                },
+                "coordinate": {
+                  "state": "present",
+                  "value": {
+                    "crs": "GCJ-02",
+                    "latitude": "39.917839",
+                    "longitude": "116.397029",
+                    "raw": "116.397029,39.917839"
+                  }
+                },
+                "entrance_coordinate": {
+                  "state": "missing",
+                  "value": null
+                },
+                "exit_coordinate": {
+                  "state": "missing",
+                  "value": null
+                },
+                "name_zh": "故宫博物院",
+                "navigation_id": {
+                  "state": "missing",
+                  "value": null
+                },
+                "official_address_en": {
+                  "state": "unknown",
+                  "value": null
+                },
+                "official_name_en": {
+                  "state": "unknown",
+                  "value": null
+                },
+                "parent_id": {
+                  "state": "empty_array",
+                  "value": null
+                },
+                "provider": "gaode",
+                "provider_id": "B000A8UIN8",
+                "typecode": {
+                  "state": "present",
+                  "value": "110201|140100"
+                }
+              }
+            ],
+            "provider_code": "10000",
+            "provider_count": 100,
+            "query": {
+              "city": "北京",
+              "keyword": "故宫",
+              "kind": "Search",
+              "page": 1,
+              "page_size": 1
+            },
+            "reason": "page_results",
+            "routes": [],
+            "source": {
+              "adapter_profile": "CJ-PLACE-GAODE@0.1.0-rc.1",
+              "api_version": "v3",
+              "binding_digest": "f638167859ae54ac120fcc524d767dbe6d14fc3b1bea8e3aaf279562ef68385e",
+              "endpoint": "https://restapi.amap.com/v3/place/text",
+              "evidence_kind": "live_provider",
+              "provider": "gaode",
+              "provider_updated_at": null,
+              "query_started_at": {
+                "fold": 0,
+                "iso8601": "2026-11-07T04:49:23.886620+00:00"
+              },
+              "received_at": {
+                "fold": 0,
+                "iso8601": "2026-11-07T04:49:23.999828+00:00"
+              },
+              "recording_ref": null,
+              "request_ref": "op-86d3e3e0e5e455b9cce62316e64ab2c35ca6042dfe336ad7c1ec3a8e3caf2694"
+            },
+            "version": "PLACE-result.1"
+          }
+        },
+        {
+          "tool": "place",
+          "name": "place_search",
+          "actual_result": {
+            "outcome": "ok",
+            "places": [
+              {
+                "address_zh": {
+                  "state": "present",
+                  "value": "景山西街44号"
+                },
+                "coordinate": {
+                  "state": "present",
+                  "value": {
+                    "crs": "GCJ-02",
+                    "latitude": "39.925875",
+                    "longitude": "116.396551",
+                    "raw": "116.396551,39.925875"
+                  }
+                },
+                "entrance_coordinate": {
+                  "state": "missing",
+                  "value": null
+                },
+                "exit_coordinate": {
+                  "state": "missing",
+                  "value": null
+                },
+                "name_zh": "景山公园",
+                "navigation_id": {
+                  "state": "missing",
+                  "value": null
+                },
+                "official_address_en": {
+                  "state": "unknown",
+                  "value": null
+                },
+                "official_name_en": {
+                  "state": "unknown",
+                  "value": null
+                },
+                "parent_id": {
+                  "state": "empty_array",
+                  "value": null
+                },
+                "provider": "gaode",
+                "provider_id": "B000A7I1OL",
+                "typecode": {
+                  "state": "present",
+                  "value": "110101"
+                }
+              }
+            ],
+            "provider_code": "10000",
+            "provider_count": 96,
+            "query": {
+              "city": "北京",
+              "keyword": "景山公园",
+              "kind": "Search",
+              "page": 1,
+              "page_size": 1
+            },
+            "reason": "page_results",
+            "routes": [],
+            "source": {
+              "adapter_profile": "CJ-PLACE-GAODE@0.1.0-rc.1",
+              "api_version": "v3",
+              "binding_digest": "09edcd056ceb7bf266f7eed906be28f4417c4e5bef6ea6b6923925da9ca1e96e",
+              "endpoint": "https://restapi.amap.com/v3/place/text",
+              "evidence_kind": "live_provider",
+              "provider": "gaode",
+              "provider_updated_at": null,
+              "query_started_at": {
+                "fold": 0,
+                "iso8601": "2026-11-07T04:49:24.257559+00:00"
+              },
+              "received_at": {
+                "fold": 0,
+                "iso8601": "2026-11-07T04:49:24.453389+00:00"
+              },
+              "recording_ref": null,
+              "request_ref": "op-293314bc045489722229df091fd18606edc11dd825e41e47d195caa1538fee5a"
+            },
+            "version": "PLACE-result.1"
+          }
+        },
+        {
+          "tool": "place",
+          "name": "place_route",
+          "actual_result": {
+            "outcome": "ok",
+            "places": [],
+            "provider_code": "10000",
+            "provider_count": 1,
+            "query": {
+              "departure": {
+                "at": null,
+                "condition": "at_query_time"
+              },
+              "destination": {
+                "coordinate": {
+                  "crs": "GCJ-02",
+                  "latitude": "39.925875",
+                  "longitude": "116.396551",
+                  "raw": "116.396551,39.925875"
+                },
+                "coordinate_role": "poi_center",
+                "provider_id": "B000A7I1OL"
+              },
+              "kind": "RouteQuery",
+              "mode": "walking",
+              "origin": {
+                "coordinate": {
+                  "crs": "GCJ-02",
+                  "latitude": "39.917839",
+                  "longitude": "116.397029",
+                  "raw": "116.397029,39.917839"
+                },
+                "coordinate_role": "poi_center",
+                "provider_id": "B000A8UIN8"
+              }
+            },
+            "reason": "route_estimates",
+            "routes": [
+              {
+                "distance": {
+                  "state": "present",
+                  "value": {
+                    "raw": "1445",
+                    "unit": "m",
+                    "value": "1445"
+                  }
+                },
+                "duration": {
+                  "state": "present",
+                  "value": {
+                    "raw": "1156",
+                    "unit": "s",
+                    "value": "1156"
+                  }
+                },
+                "future_guaranteed": false,
+                "query": {
+                  "departure": {
+                    "at": null,
+                    "condition": "at_query_time"
+                  },
+                  "destination": {
+                    "coordinate": {
+                      "crs": "GCJ-02",
+                      "latitude": "39.925875",
+                      "longitude": "116.396551",
+                      "raw": "116.396551,39.925875"
+                    },
+                    "coordinate_role": "poi_center",
+                    "provider_id": "B000A7I1OL"
+                  },
+                  "kind": "RouteQuery",
+                  "mode": "walking",
+                  "origin": {
+                    "coordinate": {
+                      "crs": "GCJ-02",
+                      "latitude": "39.917839",
+                      "longitude": "116.397029",
+                      "raw": "116.397029,39.917839"
+                    },
+                    "coordinate_role": "poi_center",
+                    "provider_id": "B000A8UIN8"
+                  }
+                },
+                "time_semantics": "provider_estimate_at_query_time"
+              }
+            ],
+            "source": {
+              "adapter_profile": "CJ-PLACE-GAODE@0.1.0-rc.1",
+              "api_version": "v3",
+              "binding_digest": "45558f888c1ca917b22dd352303659a4d77999cbaf8a73ff3a1f2f562580ac15",
+              "endpoint": "https://restapi.amap.com/v3/direction/walking",
+              "evidence_kind": "live_provider",
+              "provider": "gaode",
+              "provider_updated_at": null,
+              "query_started_at": {
+                "fold": 0,
+                "iso8601": "2026-11-07T04:49:26.978304+00:00"
+              },
+              "received_at": {
+                "fold": 0,
+                "iso8601": "2026-11-07T04:49:27.019714+00:00"
+              },
+              "recording_ref": null,
+              "request_ref": "op-a8486223926cb1d0f186b4a5086452569f74f099482b0791be6a396ca0bbb575"
+            },
+            "version": "PLACE-result.1"
+          }
+        }
+      ],
+      "human_review": "UNKNOWN",
+      "raw_evidence_sha256": "9c955361c20a6f093e0df3b4e9e0e4a253149f3362b83ae66634360a57a783ff"
+    },
+    {
+      "case_id": "weather",
+      "language": "zh",
+      "question": "合成天气冒烟：调用weather查询北京2026-11-08，start_date/end_date均为该日期，Asia/Shanghai。按返回来源、报告时点和未知项回答，不重复相同查询，不保存行程。",
+      "original_prerequisite": "PASS",
+      "run_id": "955134d3-4d7e-4710-b8b7-e952003e2213",
+      "answer": "来源：https://restapi.amap.com/v3/weather/weatherInfo\n北京 2026-11-08（Asia/Shanghai）预报：白天雨夹雪，约6.0°C，东北风1–3级；夜间多云，约−4.0°C，东北风1–3级。来源为高德地图天气接口 https://restapi.amap.com/v3/weather/weatherInfo，区域代码110000；提供商报告时点2026-11-07 12:34:10，系统检索时点2026-11-07T04:49:38Z，状态observed。未知项：实际花费（actual_cost_cny=UNKNOWN），且该结果仅为提供商预报、并非未来保证（reason=provider_forecast_not_future_guarantee）。未保存行程。",
+      "sources": [
+        {
+          "tool": "weather",
+          "name": "weather",
+          "actual_result": {
+            "actual_cost_cny": "UNKNOWN",
+            "calendar_timezone": "Asia/Shanghai",
+            "forecasts": [
+              {
+                "date": "2026-11-08",
+                "daypower": "1-3",
+                "daytemp": "6",
+                "daytemp_float": "6.0",
+                "dayweather": "雨夹雪",
+                "daywind": "东北",
+                "nightpower": "1-3",
+                "nighttemp": "-4",
+                "nighttemp_float": "-4.0",
+                "nightweather": "多云",
+                "nightwind": "东北",
+                "week": "7"
+              }
+            ],
+            "original_sha256": "04d44dc854fa3475e1cf33508b173831c7e56956091c0d6aea40e2901b6bb00e",
+            "provider_reporttime": "2026-11-07 12:34:10",
+            "reason": "provider_forecast_not_future_guarantee",
+            "region_adcode": "110000",
+            "retrieved_at": "2026-11-07T04:49:38.099530+00:00",
+            "source_url": "https://restapi.amap.com/v3/weather/weatherInfo",
+            "status": "observed"
+          }
+        }
+      ],
+      "human_review": "UNKNOWN",
+      "raw_evidence_sha256": "f221d482442aa420bc0107e4064f221e2b5afc1e6fc37d756e03cec7ecf3f2ad"
+    },
+    {
+      "case_id": "weather",
+      "language": "en",
+      "question": "Synthetic weather smoke: call weather for Beijing with start_date/end_date 2026-11-08, Asia/Shanghai. Answer using actual report time, source and unknowns; do not repeat the same query or write a trip.",
+      "original_prerequisite": "PASS",
+      "run_id": "ff6a623e-dbb0-4d6a-869e-1062b365bb7c",
+      "answer": "Source: https://restapi.amap.com/v3/weather/weatherInfo\nBeijing forecast for 2026-11-08 (Asia/Shanghai): day — sleet/rain-snow mix, ~6°C, NE wind level 1–3; night — cloudy, ~-4°C, NE wind level 1–3. Source: AMap weather API (https://restapi.amap.com/v3/weather/weatherInfo); provider report time 2026-11-07 12:34:10, retrieved 2026-11-07T04:49:44Z, status observed. Unknowns: actual_cost_cny is UNKNOWN. Caveat: this is a provider forecast, not a guarantee of future conditions (reason: provider_forecast_not_future_guarantee). No trip was written or booked.",
+      "sources": [
+        {
+          "tool": "weather",
+          "name": "weather",
+          "actual_result": {
+            "actual_cost_cny": "UNKNOWN",
+            "calendar_timezone": "Asia/Shanghai",
+            "forecasts": [
+              {
+                "date": "2026-11-08",
+                "daypower": "1-3",
+                "daytemp": "6",
+                "daytemp_float": "6.0",
+                "dayweather": "雨夹雪",
+                "daywind": "东北",
+                "nightpower": "1-3",
+                "nighttemp": "-4",
+                "nighttemp_float": "-4.0",
+                "nightweather": "多云",
+                "nightwind": "东北",
+                "week": "7"
+              }
+            ],
+            "original_sha256": "04d44dc854fa3475e1cf33508b173831c7e56956091c0d6aea40e2901b6bb00e",
+            "provider_reporttime": "2026-11-07 12:34:10",
+            "reason": "provider_forecast_not_future_guarantee",
+            "region_adcode": "110000",
+            "retrieved_at": "2026-11-07T04:49:44.387683+00:00",
+            "source_url": "https://restapi.amap.com/v3/weather/weatherInfo",
+            "status": "observed"
+          }
+        }
+      ],
+      "human_review": "UNKNOWN",
+      "raw_evidence_sha256": "b00ed1a72a40d1bdb8d2ed33cbdd14a75d733fed1266aa29dd08faa5af3be448"
+    },
+    {
+      "case_id": "fact",
+      "language": "zh",
+      "question": "合成事实冒烟：调用fact，start_date/end_date为2026-11-07。只根据官方国家移民管理局页面的实际摘录说明来源；旅客资格与日期适用性保持UNKNOWN。不编造、订票或保存行程。",
+      "original_prerequisite": "FAIL",
+      "run_id": "f016657e-e2c1-45e3-992b-ab26c8173c9e",
+      "answer": "来源：https://en.nia.gov.cn/\n来源：国家移民管理局官方英文页面（https://en.nia.gov.cn/）的实际摘录，检索时间 2026-11-07。摘录内容包括：“A Total of 178 Million Exits and Entries Recorded in Q3 ...”、“192 Million Cross-Border Trips Recorded in Q3; Visa-Free Entries by Foreign Nationals Up 24.1 Percent”、“China Sees 15.46 Million Cross-Border Passenger Trips During National Day Holiday”、“The National Immigration Administration's Announcement on the Nationwide Implementation of Online Accommodation Reg...”以及“NIA Launches China Immigration Service Hotline and English Version Website on April 8”等。工具返回状态为 unknown，且说明日期、地区和资格均未核实。因此，2026-11-07 的适用性以及任何旅客资格均为 UNKNOWN；未编造结论，也未订票或保存行程。",
+      "sources": [
+        {
+          "tool": "fact",
+          "name": "fact",
+          "actual_result": {
+            "excerpts": [
+              {
+                "end": 1462,
+                "start": 1427,
+                "text": "National Immigration administration"
+              },
+              {
+                "end": 5968,
+                "start": 5909,
+                "text": "Sub-Forum on Migration Management Cooperation Held as Pa..."
+              },
+              {
+                "end": 6548,
+                "start": 6489,
+                "text": "A Total of 178 Million Exits and Entries Recorded in Q3 ..."
+              },
+              {
+                "end": 7136,
+                "start": 7077,
+                "text": "Russian, French, Spanish and Arabic Versions of National..."
+              },
+              {
+                "end": 7644,
+                "start": 7543,
+                "text": "192 Million Cross-Border Trips Recorded in Q3; Visa-Free Entries by Foreign Nationals Up 24.1 Percent"
+              },
+              {
+                "end": 7800,
+                "start": 7719,
+                "text": "China Sees 15.46 Million Cross-Border Passenger Trips During National Day Holiday"
+              },
+              {
+                "end": 7962,
+                "start": 7875,
+                "text": "China Sees 6.71 Million Cross-Border Passenger Trips During Mid-Autumn Festival Holiday"
+              },
+              {
+                "end": 8155,
+                "start": 8037,
+                "text": "The National Immigration Administration's Announcement on the Nationwide Implementation of Online Accommodation Reg..."
+              },
+              {
+                "end": 8681,
+                "start": 8591,
+                "text": "Conference on Regional Migration Governance Policies Held in Lianyungang, Jiangsu Province"
+              },
+              {
+                "end": 9066,
+                "start": 8931,
+                "text": "Sub-Forum on Migration Management Cooperation Held as Part of 2025 Conference of Global Public Security Cooperation Forum (Lianyungang)"
+              },
+              {
+                "end": 9402,
+                "start": 9317,
+                "text": "NIA Launches China Immigration Service Hotline and English Version Website on April 8"
+              },
+              {
+                "end": 9773,
+                "start": 9753,
+                "text": "Laws and Regulations"
+              }
+            ],
+            "original_bytes": 27101,
+            "original_sha256": "3cdf421c58c3fa2f79794d3fc3aa9f122e994cc78dba5206b58f15583615ce3b",
+            "reason": "source_excerpts_only_dates_region_and_eligibility_not_verified",
+            "retrieved_at": "2026-11-07T04:49:53.309902+00:00",
+            "source_url": "https://en.nia.gov.cn/",
+            "status": "unknown"
+          }
+        }
+      ],
+      "human_review": "UNKNOWN",
+      "raw_evidence_sha256": "ca807d7fd574e37b3c8c01b5549eac01b2eaf2501dc260e255e1d852f4db4e84"
+    },
+    {
+      "case_id": "fact",
+      "language": "en",
+      "question": "Synthetic fact smoke: call fact with start_date/end_date 2026-11-07. Answer only from actual official NIA page excerpts and cite source; traveler eligibility/date applicability stay UNKNOWN. No invented execution, booking or trip write.",
+      "original_prerequisite": "UNRUN",
+      "run_id": null,
+      "answer": null,
+      "sources": [],
+      "human_review": "UNKNOWN"
+    }
+  ]
+}

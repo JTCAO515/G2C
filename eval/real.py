@@ -118,9 +118,12 @@ def post(client, path, body, headers, evidence, name):
 
 
 def body_available(text):
-    # Source URLs/tool metadata are not first answer-body content.
-    return any(line.strip() and not line.startswith(('Source: ', '来源：'))
-               for line in text.splitlines())
+    # The host inserts standalone source URLs before the model's answer.
+    for line in text.splitlines():
+        content=line.strip()
+        if content and re.fullmatch(r'(?:Source:|来源：)\s*(?:https?://\S+)?',content) is None:
+            return True
+    return False
 
 
 def stream_run(client, headers, mid, future, started, evidence):
