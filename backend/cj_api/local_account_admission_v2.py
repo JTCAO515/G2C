@@ -1,8 +1,67 @@
 """ACCOUNT-ADMISSION@2: fresh local retirement read through cj_m1_runtime."""
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import asdict
+from threading import get_ident
+
 from cj_auth.interfaces import Fact
 from cj_cleanup.core import Scope,digest,encode
 from .composition import CompositionUnavailable
+
+
+_retirement_permission = ContextVar('retirement_read_permission', default=None)
+_retirement_lease = ContextVar('retirement_read_lease', default=None)
+
+
+class _RetirementReadLease:
+    def __init__(self, database, require_current):
+        self.database = database
+        self.require_current = require_current
+        self.thread = get_ident()
+        self.owner = None
+        self.connection = None
+
+    def read(self, owner):
+        if get_ident() != self.thread or self.owner not in (None, owner):
+            raise CompositionUnavailable('retirement read scope changed')
+        self.require_current()
+        if self.connection is None:
+            self.connection = self.database.connect(owner)
+            self.owner = owner
+        # Keep each release lock and each snapshot within a single admission.
+        # A concurrent retirement must be visible to the next SELECT.
+        with self.connection.transaction(), self.connection.cursor() as cursor:
+            cursor.execute('SET TRANSACTION ISOLATION LEVEL READ COMMITTED READ ONLY')
+            self.connection.bind_scope(cursor)
+            cursor.execute('SELECT public.cj_account_scope_current(%s)', (owner,))
+            return _retirement_fact(cursor.fetchone())
+
+
+@contextmanager
+def permit_retirement_read_lease(database, require_current):
+    """Let an explicit host route opt its synchronous read operation in."""
+    token = _retirement_permission.set((database, require_current))
+    try:
+        yield
+    finally:
+        _retirement_permission.reset(token)
+
+
+@contextmanager
+def retirement_read_operation():
+    """Acquire and close the leased connection in the guarded worker thread."""
+    permission = _retirement_permission.get()
+    if permission is None:
+        yield
+        return
+    lease = _RetirementReadLease(*permission)
+    token = _retirement_lease.set(lease)
+    try:
+        yield
+    finally:
+        _retirement_lease.reset(token)
+        if lease.connection is not None:
+            lease.connection.close()
 
 
 def subject_digest(principal):
@@ -18,6 +77,9 @@ def retired_for(database):
     def retired(principal):
         from .local_app import scope_for
         owner=scope_for(principal.issuer,principal.subject)
+        lease = _retirement_lease.get()
+        if lease is not None and lease.database is database:
+            return lease.read(owner)
         with database.connect(owner) as conn:
             row=conn.execute('SELECT public.cj_account_scope_current(%s)',(owner,)).fetchone()
         return _retirement_fact(row)
