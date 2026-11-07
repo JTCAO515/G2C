@@ -23,14 +23,14 @@ from cj_agent.worker import RunWorker, original_context_valid
 from cj_api.local_app import LocalDatabase, ISSUER, scope_for, travel_configuration, trip_configuration
 from cj_api.composition import CompositionUnavailable
 from cj_api.local_run_context import load_run_context
-from cj_api.local_worker_context import LocalBudgetRouter, checker_for, needs_lease_for
+from cj_api.local_worker_context import LocalBudgetRouter, checker_for, checker_factory_for, needs_lease_for
 from cj_auth.interfaces import AdmissionStatus
 from cj_needs.revision_lease import LeaseUnavailable
 from cj_memory.local_runtime import load_runtime_configuration
 from cj_memory.runtime import RuntimeDenied, RuntimeUnknown
 from cj_memory.typed_runtime import TypedRuntimeConfiguration
 import dev_auth
-from cj_message.domain import Service as MessageService
+from cj_message.domain import Service as MessageService, Unavailable as MessageUnavailable, read_active_message
 from cj_run.core import Service as RunService, Denied
 
 
@@ -83,7 +83,7 @@ def require_memory_configuration(database, scope, configuration):
         raise RuntimeDenied('existing memory requires explicit runtime configuration')
 
 
-def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,formal_memory_configuration=None):
+def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,formal_memory_configuration=None,account_checker_builder=None):
     if draft_profile not in (None,'needs-structured.1','needs-current-trip.1'):
         raise CompositionUnavailable('unknown explicit draft profile')
     if place_draft_configuration is not None:
@@ -153,19 +153,42 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
     else:
         memory=(memory_configuration.bind(database,scope,subject,memory_admit)
                 if memory_configuration is not None else None)
-    def valid(binding, messages=messages, subject=subject, token=token):
-        if message_context is not None:
-            return message_context.valid(binding)
-        database.require_execution(binding.scope,binding)
+    def check_admitted_original(binding, active_checker, read_original):
         credential=token()
-        first=checker.check(credential)
+        first=active_checker.check(credential)
         if first.status is AdmissionStatus.UNKNOWN: raise LeaseUnavailable('worker admission unknown')
         if first.status is not AdmissionStatus.ALLOWED: return False
         if scope_for(first.principal.issuer,first.principal.subject)!=binding.scope: return False
-        original=original_context_valid(binding,messages,lambda:True)
-        last=checker.check(credential)
+        original=read_original()
+        last=active_checker.check(credential)
         if last.status is AdmissionStatus.UNKNOWN: raise LeaseUnavailable('worker admission unknown')
         return original is True and last.status is AdmissionStatus.ALLOWED and last.principal==first.principal
+
+    def valid(binding):
+        if message_context is not None:
+            return message_context.valid(binding)
+        if account_checker_builder is None:
+            database.require_execution(binding.scope, binding)
+            return check_admitted_original(binding, checker, lambda: original_context_valid(binding, messages, lambda: True))
+        if binding.scope != scope:
+            return False
+        from cj_api.local_account_admission_v2 import retired_in_transaction
+        with database.execution_transaction(scope, binding) as tx:
+            scoped_checker = account_checker_builder(retired_in_transaction(tx.cur, scope))
+
+            def same_original():
+                try:
+                    stored = read_active_message(tx, binding.message_id)
+                except MessageUnavailable:
+                    return False
+                if stored is None:
+                    return False
+                receipt = stored.receipt
+                return (receipt.message_id, receipt.conversation_id, receipt.generation, receipt.run_id, receipt.sequence) == (
+                    binding.message_id, binding.conversation_id, binding.generation, binding.run_id, binding.message_sequence)
+
+            return check_admitted_original(binding, scoped_checker, same_original)
+
     runs = RunService(database.run_repository(scope),valid=valid)
     place_sources=None
     if place_draft_configuration is not None:
@@ -231,7 +254,13 @@ def run_once(database, model, auth_dir, *, memory_configuration=None,memory_conf
                 or database.run_context.version!='CJ-LOCAL-RUN@2' or background_jobs is not None):
             raise ProviderFailed('explicit registered M4 real composition required')
         for scope in pending_scopes:real_services.require_scope(scope)
-    if formal_memory_configuration is None and not account_admission:checker=checker_for(Path(auth_dir))
+    account_checker_builder = None
+    if formal_memory_configuration is None and not account_admission:
+        checker = checker_for(Path(auth_dir))
+    elif real_services is not None and account_admission:
+        from cj_api.local_account_admission_v2 import retired_for
+        account_checker_builder = checker_factory_for(Path(auth_dir))
+        checker = account_checker_builder(retired_for(database))
     else:
         from cj_api.local_account_admission_v2 import account_checker_for
         checker=account_checker_for(Path(auth_dir),database)
@@ -244,7 +273,8 @@ def run_once(database, model, auth_dir, *, memory_configuration=None,memory_conf
             selected_memory=(memory_configuration if memory_configuration_for_scope is None
                              else memory_configuration_for_scope(scope))
             results += _worker_for_scope(database,model,auth_dir,scope,checker,
-                                         memory_configuration=selected_memory,tools_configuration=tools_configuration,draft_profile=draft_profile,place_draft_configuration=place_draft_configuration,formal_memory_configuration=formal_memory_configuration).process()
+                                         memory_configuration=selected_memory,tools_configuration=tools_configuration,draft_profile=draft_profile,place_draft_configuration=place_draft_configuration,formal_memory_configuration=formal_memory_configuration,
+                                         account_checker_builder=account_checker_builder).process()
         except Exception as error:
             if failure is None: failure = error
     if background_jobs is not None:results+=background_jobs.run_once(model)

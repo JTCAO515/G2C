@@ -8,6 +8,7 @@ Real email OTP (Supabase) replaces the local key in P2c.
 from datetime import datetime, timedelta, timezone
 from dataclasses import dataclass
 from collections.abc import Mapping
+from contextlib import contextmanager
 import json
 import os
 import re
@@ -80,22 +81,24 @@ class _ScopedConnection:
                 raise CompositionUnavailable('active transaction required for scope binding')
             _require_unbound(cursor)
             if self._before_scope is not None:self._before_scope(cursor)
-            cursor.execute("SELECT set_config('cj.message_scope',%s,true), set_config('cj.trip_scope',%s,true)",
-                           (self._scope, trip_scope_for(self._scope)))
-            cursor.execute("SELECT set_config('cj.message_context_abi',%s,true)",(TRAVEL_ABI,))
             from cj_message.trip_context import ABI
-            cursor.execute("SELECT set_config('cj.message_trip_abi',%s,true)",(ABI,))
             from cj_message.edit_protocol import EDIT_ABI
-            cursor.execute("SELECT set_config('cj.message_edit_abi',%s,true)",(EDIT_ABI,))
+            settings = [
+                ('cj.message_scope', self._scope),
+                ('cj.trip_scope', trip_scope_for(self._scope)),
+                ('cj.message_context_abi', TRAVEL_ABI),
+                ('cj.message_trip_abi', ABI),
+                ('cj.message_edit_abi', EDIT_ABI),
+            ]
             if self._edit_results:
                 from cj_message.edit_result_protocol import CONFIGURATION_ABI
-                cursor.execute("SELECT set_config('cj.message_edit_result_abi',%s,true)",(CONFIGURATION_ABI,))
+                settings.append(('cj.message_edit_result_abi', CONFIGURATION_ABI))
             if self._needs_scope is not None:
-                if self._usage_scope is None:
-                    cursor.execute("SELECT set_config('cj.needs_scope',%s,true)",(self._needs_scope,))
-                else:
-                    cursor.execute("SELECT set_config('cj.needs_scope',%s,true), set_config('cj.usage_scope',%s,true)",
-                                   (self._needs_scope,self._usage_scope))
+                settings.append(('cj.needs_scope', self._needs_scope))
+                if self._usage_scope is not None:
+                    settings.append(('cj.usage_scope', self._usage_scope))
+            cursor.execute('SELECT ' + ', '.join('set_config(%s,%s,true)' for _ in settings),
+                           tuple(value for setting in settings for value in setting))
         except BaseException:
             self._connection.close()
             raise
@@ -277,6 +280,12 @@ class LocalDatabase:
                 return profile(cursor,scope)
 
     def require_execution(self, scope, binding=None):
+        with self.execution_transaction(scope, binding):
+            pass
+
+    @contextmanager
+    def execution_transaction(self, scope, binding=None):
+        """Hold the original MESSAGE lock while its caller checks execution authority."""
         with self.message_repository(scope).transaction() as tx:
             tx.lock_scope()
             tx.local_execution(None if binding is None else binding.message_id,
@@ -291,6 +300,7 @@ class LocalDatabase:
                 raise CompositionUnavailable('explicit edit configuration required')
             if trip_profile(tx.cur,scope) and not self.trip_context and self.edit_configuration is None:
                 raise CompositionUnavailable('formal Trip execution requires explicit compatible configuration')
+            yield tx
 
     def trip_repository(self, scope):
         return TripRepository(lambda: self.connect(scope), trip_scope_for(scope), confirm=local_confirmation)
