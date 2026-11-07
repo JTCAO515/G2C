@@ -256,6 +256,7 @@ import UIKit
     }
     func testFormalPlaceMapEnglish() async throws { try await formalPlaceMap("testFormalPlaceMapEnglish",large:false) }
     func testFormalPlaceMapChineseLargest() async throws { try await formalPlaceMap("testFormalPlaceMapChineseLargest",large:true) }
+    func testFormalPlaceMapNonGCJ() async throws { try await formalPlaceMap("testFormalPlaceMapNonGCJ",large:false) }
     func testFormalPlaceMapMissing() async throws { try await formalPlaceMap("testFormalPlaceMapMissing",large:false) }
     func testFormalPlaceMapUnavailable() async throws { try await formalPlaceMap("testFormalPlaceMapUnavailable",large:false) }
     func testFormalPlaceMapLateAccount() async throws {
@@ -286,12 +287,13 @@ import UIKit
                 text("trip.map.identity."+point.id,contains:point.provider_id)
                 text("trip.map.name."+point.id,contains:point.name_zh)
                 text("trip.map.address."+point.id,contains:point.address_zh ?? "UNKNOWN")
-                text("trip.map.coordinate."+point.id,contains:point.coordinate?.raw ?? "UNKNOWN")
+                text("trip.map.coordinate."+point.id,contains:point.coordinate.map { $0.raw + " · " + $0.crs } ?? "UNKNOWN")
             }
-            let located=points.filter { $0.coordinate != nil }
+            let located=points.filter { $0.coordinate?.crs == "GCJ-02" }
             if located.isEmpty {
                 XCTAssertFalse(app.buttons.matching(identifier:"trip.map.show").firstMatch.exists)
                 XCTAssertFalse(app.descendants(matching:.any).matching(identifier:"trip.map.canvas").firstMatch.exists)
+                XCTAssertEqual(app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.map.marker.")).count,0)
                 for point in points { text("trip.map.status."+point.id,contains:language=="en" ? "no marker" : "不画点") }
             } else {
                 tap("trip.map.show")

@@ -16,7 +16,7 @@ parser.add_argument('--local-tls',type=Path)
 parser.add_argument('--amap-device',action='store_true')
 parser.add_argument('--output',type=Path,required=True)
 parser.add_argument('--build-dir',type=Path,required=True);parser.add_argument('--run-context',type=Path,required=True)
-parser.add_argument('--case',choices=['testScopedItemAndLanguageSwitch','testScopedDayChineseLargest','testScopedUndeterminedDayWithoutModel','testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateLateAccount','testScopedCandidateStaleAcceptance','testScopedCandidateDiscoveryUnavailable','testScopedFixedReorderChineseLargest','testManualProtectedPrepareUnknownRestart','testScopedResultClarification','testScopedResultExpansionKeep','testScopedResultExpansionReselection','testScopedResultWithdrawal','testScopedResultLateAccount','testFormalMapNoPlaceSources','testFormalPlaceMapEnglish','testFormalPlaceMapChineseLargest','testFormalPlaceMapMissing','testFormalPlaceMapUnavailable','testFormalPlaceMapLateAccount'],required=True)
+parser.add_argument('--case',choices=['testScopedItemAndLanguageSwitch','testScopedDayChineseLargest','testScopedUndeterminedDayWithoutModel','testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateLateAccount','testScopedCandidateStaleAcceptance','testScopedCandidateDiscoveryUnavailable','testScopedFixedReorderChineseLargest','testManualProtectedPrepareUnknownRestart','testScopedResultClarification','testScopedResultExpansionKeep','testScopedResultExpansionReselection','testScopedResultWithdrawal','testScopedResultLateAccount','testFormalMapNoPlaceSources','testFormalPlaceMapEnglish','testFormalPlaceMapChineseLargest','testFormalPlaceMapMissing','testFormalPlaceMapUnavailable','testFormalPlaceMapLateAccount','testFormalPlaceMapNonGCJ'],required=True)
 ARGS=parser.parse_args();PLACE_MAP=ARGS.case.startswith('testFormalPlaceMap');RESULT_PROFILE=ARGS.case.startswith('testScopedResult');OUT=ARGS.output.resolve();BUILD=ARGS.build_dir.resolve();CASE=ARGS.case
 TLS=None
 if ARGS.device:
@@ -219,14 +219,32 @@ try:
      yield packed(dict(version=prompt['edit_version'],request_id=prompt['request_id'],trip_id=prompt['trip_id'],expected_version=prompt['expected_version'],original_hash=prompt['original_hash'],title=None,order=order,changes=[dict(item_id=changed,field='text',value='SYNTHETIC lighter choice / 本次轻松一点')])).decode()
    formal=detail['trip'];spec=dict(id=tid,title=formal['content']['title'],version=formal['version'],content_sha256=formal['content_sha256'],item_ids=[item['id'] for item in formal['content']['items']])
    map_points=[]
+   non_gcj_content=None
    if PLACE_MAP:
-    for entry in formal['content']['sources']:
+    map_content=formal['content']
+    if CASE=='testFormalPlaceMapNonGCJ':
+     # A deliberate client-side negative fixture. The signed backend still
+     # serves and stores its original contract-valid GCJ-02 source.
+     non_gcj_content=deepcopy(map_content)
+     for entry in non_gcj_content['sources']:
+      if entry['kind']!='place':continue
+      snapshot=json.loads(base64.b64decode(entry['snapshot_utf8_base64'],validate=True))
+      coordinate=snapshot['record']['place']['coordinate']['value']
+      assert coordinate['crs']=='GCJ-02'
+      coordinate['crs']='WGS84'
+      source_bytes=packed(snapshot)
+      entry['snapshot_utf8_base64']=base64.b64encode(source_bytes).decode('ascii')
+      entry['snapshot_sha256']=hashlib.sha256(source_bytes).hexdigest()
+     map_content=non_gcj_content
+    for entry in map_content['sources']:
      if entry['kind']!='place':continue
      source_bytes=base64.b64decode(entry['snapshot_utf8_base64']);assert hashlib.sha256(source_bytes).hexdigest()==entry['snapshot_sha256']
      place=json.loads(source_bytes)['record']['place'];coordinate=place['coordinate']
      map_points.append(dict(id=entry['id'],provider_id=place['provider_id'],name_zh=place['name_zh'],address_zh=place['address_zh']['value'],state=coordinate['state'],coordinate=coordinate['value'],snapshot_sha256=entry['snapshot_sha256']))
     assert len(map_points)==(1 if CASE=='testFormalPlaceMapMissing' else 2)
-    r['original_map_points']=map_points;save()
+    if non_gcj_content is None:r['original_map_points']=map_points
+    else:r['delivered_non_gcj_points']=map_points
+    save()
    cid=CASE
    with TestClient(edit_api) as client:expect(client.put('/v1/conversations',params=dict(conversation_id=cid),headers=headers),'native-original-chat')
    structured=create_local_structured_read_app(conninfo_path=connection,auth_dir=auth,run_context=context)
@@ -247,14 +265,35 @@ try:
      return message
     drop_ack=CASE=='testScopedCandidateACKLoss' and path=='/v1/trip-scoped-actions' and scope['method']=='POST'
     hold_discovery=(CASE=='testScopedCandidateLateAccount' and path=='/v1/trip-scoped-discovery') or (CASE=='testScopedResultLateAccount' and path=='/v1/trip-scoped-results') or (CASE=='testFormalPlaceMapLateAccount' and path=='/v5/trip-structured' and not late_captured.is_set())
+    non_gcj_read=non_gcj_content is not None and path in ('/v1/trip-structured-list','/v5/trip-structured')
     actual_reply=[]
     async def sent(message):
      if message['type']=='http.response.start':entry['status']=message['status']
      if path in ('/v4/messages','/v1/trip-manual-preparations','/v1/trip-scoped-results') and message['type']=='http.response.body':reply.append(message.get('body',b''))
-     if drop_ack or hold_discovery:actual_reply.append(message)
+     if drop_ack or hold_discovery or non_gcj_read:actual_reply.append(message)
      else:await send(message)
     target=structured if path in ('/v1/trip-structured-list','/v5/trip-structured') else manual_app if path.startswith(('/v1/trip-manual-','/v1/trip-structured-initialization')) else scoped_app if path.startswith('/v1/trip-scoped-') else typed_app if path.startswith(('/v2/memor','/v2/memory-')) else edit_api
     await target(scope,received,sent)
+    if non_gcj_read:
+     start=actual_reply[0]
+     if start['status']==200:
+      response=json.loads(b''.join(part.get('body',b'') for part in actual_reply[1:]))
+      delivered_sha=hashlib.sha256(packed(non_gcj_content)).hexdigest()
+      records=response['trips'] if path=='/v1/trip-structured-list' else [response['trip']]
+      for record in records:
+       if record is None or record['trip_id']!=tid:continue
+       assert record['content_sha256']==formal['content_sha256']
+       entry.update(original_sha256=record['content_sha256'],delivered_non_gcj_sha256=delivered_sha)
+       record['content_sha256']=delivered_sha
+       if path=='/v5/trip-structured':
+        assert record['content']==formal['content']
+        record['content']=non_gcj_content
+      body=packed(response)
+      start['headers']=[(key,value) for key,value in start['headers'] if key!=b'content-length']
+      await send(start)
+      await send(dict(type='http.response.body',body=body))
+     else:
+      for message in actual_reply:await send(message)
     if path=='/v1/trip-scoped-results' and entry.get('status')==200:
      projection=json.loads(b''.join(reply))['display'];entry.update(result_state=projection['state'],result_present=projection['result'] is not None,expected_version=projection['expected_version'],current_version=projection['current_version'])
     if drop_ack:
@@ -333,7 +372,8 @@ try:
     assert any(x['path']=='/v5/trip-structured' and x.get('status')==200 for x in audit)
     if CASE=='testFormalPlaceMapLateAccount':
      assert late_state.get('original_response_delivered') and late_state['release_elapsed_seconds']<14
-    value=dict(runtime_role=role,formal_trip_id=tid,formal_version=1,content_sha256=formal['content_sha256'],source_message_receipt=r['source_message_receipt'],source_message_sha256=r['source_message_sha256'],points=map_points,app_writes=0,app_models=0,app_messages=0,setup_models=model.calls,setup_place_calls=source_tools.place.invocations,source_unchanged=True)
+    value=dict(runtime_role=role,formal_trip_id=tid,formal_version=1,content_sha256=formal['content_sha256'],source_message_receipt=r['source_message_receipt'],source_message_sha256=r['source_message_sha256'],points=map_points if non_gcj_content is None else None,app_writes=0,app_models=0,app_messages=0,setup_models=model.calls,setup_place_calls=source_tools.place.invocations,source_unchanged=True)
+    if non_gcj_content is not None:value['delivered_non_gcj_points']=map_points
     value['late_original']=dict(late_state) if CASE=='testFormalPlaceMapLateAccount' else None
     r['map_source_proof']=value;r['observed_requests']=list(audit);save();return value
    def map_no_place_proof():
@@ -675,6 +715,9 @@ try:
      assert verified['messages']==verified['posts']==1 and verified['forbidden_writes']==0 and not worker_errors
      if CASE=='testScopedUndeterminedDayWithoutModel':assert verified['model_calls']==verified['registered_operations']==verified['pending_proposals']==0 and verified['draft_outcome']=='validation_failed'
      else:assert verified['model_calls']==verified['registered_operations']==verified['pending_proposals']==1 and verified['draft_outcome']=='published'
+    if non_gcj_content is not None:
+     reads=[entry for entry in audit if entry['path']=='/v5/trip-structured' and 'delivered_non_gcj_sha256' in entry]
+     assert len(reads)>=2 and all(entry['original_sha256']==formal['content_sha256'] for entry in reads)
     if TLS:scan_app_container(ARGS.device,bundle,quarantine/'device-app-data',native_tokens.values())
     else:
      container=Path(subprocess.check_output(['xcrun','simctl','get_app_container',ARGS.simulator,bundle,'data'],text=True).strip())
