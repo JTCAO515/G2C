@@ -741,7 +741,8 @@ class Boundaries(unittest.TestCase):
         for i in range(240):self.budget.begin('free-page-'+str(i),'fact',b'synthetic')
         with self.assertRaises(BudgetUnknown):self.budget.begin('next-free-page','fact',b'synthetic')
 
-    def test_jt_tool_stop_10000_does_not_raise_the_200_total_or_release_old_unknowns(self):
+    @patch('cj_usage.authorization_budget.TOOL_TOTAL_CNY',200)
+    def test_historical_tool_stop_10000_does_not_raise_the_200_total_or_release_old_unknowns(self):
         from cj_usage.authorization_budget import TOOL_STOP_CNY,TOOL_TOTAL_CNY
         self.assertEqual((TOOL_STOP_CNY,TOOL_TOTAL_CNY),(10000,200))
         with patch('cj_usage.authorization_budget.TOOL_STOP_CNY',160):
@@ -761,6 +762,75 @@ class Boundaries(unittest.TestCase):
         self.budget.begin('free-at-total','fact',b'synthetic public page')
         self.budget.begin('model-independent','model',b'synthetic model')
         self.assertEqual(self.sent,[])  # Admission-only fixture, not provider evidence.
+
+    def test_jt_receipt_cost_and_original_unknown_holds(self):
+        from cj_usage.authorization_budget import (
+            CNY_SCALE,M1_ESTIMATED,TOOL_TOTAL_CNY,authorization_usage,
+        )
+        self.assertEqual(TOOL_TOTAL_CNY,500)
+        for attempt,kind in (
+            ('complete-model','model'),('unknown-model','model'),('bad-usage','model'),
+            ('complete-place','place'),('unknown-route','route'),('wrong-weather','weather'),
+        ):
+            self.budget.begin(attempt,kind,b'synthetic receipt estimate')
+        complete_model=dict(model_id=M4_MODEL,region='cn-beijing',endpoint=M4_BASE,
+            receipt_sha256='a'*64,usage=dict(prompt_tokens=1300,completion_tokens=200,total_tokens=1500))
+        self.budget.finish('complete-model',complete_model)
+        self.budget.finish('bad-usage',dict(complete_model,receipt_sha256='b'*64,
+            usage=dict(prompt_tokens=1300,completion_tokens=200,total_tokens=1499)))
+        self.budget.finish('complete-place',dict(
+            endpoint='https://restapi.amap.com/v3/place/text',response_sha256='c'*64))
+        self.budget.finish('wrong-weather',dict(
+            endpoint=['https://restapi.amap.com/v3/weather/weatherInfo'],response_sha256='d'*64))
+        before=self.budget.inspect()
+        with self.budget.connect() as db:
+            counts,estimates,holds=authorization_usage(db)
+        self.assertEqual(counts,dict(model=3,place=1,route=1,weather=1,fact=0))
+        self.assertEqual(estimates,dict(model=M1_ESTIMATED+15_800,place=30_000,route=0,weather=0,fact=0))
+        self.assertEqual(holds,dict(model=7*CNY_SCALE,place=0,route=CNY_SCALE,weather=CNY_SCALE,fact=0))
+        self.assertEqual(self.budget.inspect(),before)
+        self.assertEqual(self.sent,[])
+
+    @patch('cj_usage.authorization_budget.TOOL_TOTAL_CNY',2)
+    def test_estimated_total_still_reserves_full_next_send(self):
+        for attempt in ('first','second'):
+            self.budget.begin(attempt,'place',b'synthetic next-send reserve')
+        with self.assertRaises(BudgetUnknown):
+            self.budget.begin('third','weather',b'no room for third reservation')
+        self.budget.finish('first',dict(
+            endpoint='https://restapi.amap.com/v3/place/text',response_sha256='e'*64))
+        with self.assertRaises(BudgetUnknown):
+            self.budget.begin('third','weather',b'1.003 occupied, 0.997 available')
+        self.budget.finish('second',dict(
+            endpoint='https://restapi.amap.com/v3/place/detail',response_sha256='f'*64))
+        self.budget.begin('third','weather',b'0.006 occupied, 1.994 available')
+        self.assertEqual([row['state'] for row in self.budget.inspect()],['RECEIVED','RECEIVED','INTENT'])
+        self.assertEqual(self.sent,[])
+
+    @patch('cj_usage.authorization_budget.MODEL_STOP_CNY',6)
+    def test_next_model_must_fit_m1_estimate_and_original_unknown_holds(self):
+        with self.assertRaises(BudgetUnknown):
+            self.budget.begin('first-model','model',b'one yuan would exceed remaining headroom')
+        self.assertEqual(self.budget.inspect(),[])
+        self.assertEqual(self.sent,[])
+
+    @patch('cj_usage.authorization_budget.TOOL_TOTAL_CNY',1)
+    def test_concurrent_candidates_cannot_share_one_reservation(self):
+        from concurrent.futures import ThreadPoolExecutor
+        from threading import Barrier
+        ready=Barrier(2)
+        def attempt_send(attempt):
+            ready.wait(timeout=5)
+            try:
+                self.budget.begin(attempt,'place',b'one available reservation')
+            except BudgetUnknown:
+                return None
+            return attempt
+        with ThreadPoolExecutor(max_workers=2) as workers:
+            accepted=[a for a in workers.map(attempt_send,('a','b')) if a is not None]
+        self.assertEqual(len(accepted),1)
+        self.assertEqual([row['attempt_id'] for row in self.budget.inspect()],accepted)
+        self.assertEqual(self.sent,[])
     def test_subject_and_region_closed(self):
         p=self.provider(sse())
         with self.assertRaises(ValueError):RealServices(p,KEY,frozenset({'alice'}))
