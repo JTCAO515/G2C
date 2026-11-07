@@ -182,7 +182,7 @@ def exercise(auth,conninfo):
             content=json.dumps(body['messages'])
             assert 'CURRENT_ONE_ONLY' in content and 'CURRENT_TWO_ONLY' not in content and 'LONG_ONLY' not in content
             follow=any(m['role']=='tool' for m in body['messages'])
-            return httpx.Response(200,stream=httpx.ByteStream(turn_sse(tool=not follow).replace(
+            return httpx.Response(200,stream=httpx.ByteStream(turn_sse(tool=not follow,compact=True).replace(
                 'chatcmpl-synthetic','chatcmpl-worker-'+str(len(calls))).encode()))
         async def place(config,request,credentials,*,before_send=None,basic=False):
             tools.append(request.request_ref)

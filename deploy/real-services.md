@@ -59,7 +59,9 @@ JT于2026-11-05在C会话把工具停止线改为¥10000（[#495记录](https://
 host 转为原 PLACE-query.1 / FACT-query.1 再经已有严格 codec。模型不必猜封装版本或坐标Decimal字段。
 续接保留实际 `assistant.tool_calls` 和逐一匹配的 `role=tool/tool_call_id`，
 同时保留工具调用响应中合法的说明文字；它只随原assistant消息续接，不作为最终回答或工具权限。
-正式M4使用 `model-tool-turn-function.1`，将原 `MODEL-tool-turn.1` envelope作为唯一
+正式 M4 的新模型意图使用 [`model-tool-turn-function.2`](../contracts/place/MODEL-TOOL-TURN-FUNCTION-V2.md)。
+该外层仅接受精确的 answer 或 calls 单字段，再经未改的 `MODEL-tool-turn.1` parser。
+原 `model-tool-turn-function.1` 将 `MODEL-tool-turn.1` envelope作为唯一
 `m4_tool_turn` 命名函数的参数传输。依据[官方强制函数说明](https://help.aliyun.com/en/model-studio/qwen-function-calling)，
 非思考模式显式选择该函数；不使用Qwen不保证支持的required策略。原input bytes绑定新profile。
 wrapper仅是本次模型输出，收费仍为一次原model调用；内层每条真实查询仍逐一通过原tool.round.index、RequestRef、Registry和Meter。
@@ -75,6 +77,8 @@ wrapper仅是本次模型输出，收费仍为一次原model调用；内层每�
 英文天气08真实通过后，C 的英文地点＋路线首轮仍出现同类字段拒绝（未到工具），原具体字段仍UNKNOWN。
 命名函数的系统指令明确要求四个顶层字段全部出现、版本字面量、null/空数组与终答限制；
 这是生成端约束，不补造供应商字段、不放宽解析器。真实效果须经独立新场景验证，不能据提示或strict声明判定。
+337 的 C 英文天气在真实工具回执后再次拒绝。原位图 4、额外字段 0，确认顶层只有 answer，嵌套值仍 UNKNOWN。
+新 v2 将这些内部协议常量移到适配层，原 v1 仍按旧规则拒绝这种输出。新候选实际效果另验。
 命名函数参数失败的固定reason另分`native_json_invalid/duplicate`、`native_envelope_type/fields`、
 `native_version_literal`、`native_answer_fields/calls/text`、`native_kind_literal`、
 `native_tool_answer`、`native_calls_type/bound`、`native_call_fields/name/arguments`和

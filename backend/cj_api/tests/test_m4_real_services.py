@@ -16,6 +16,7 @@ from jsonschema import Draft202012Validator,ValidationError
 
 from cj_agent.provider import DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,M4_NATIVE_ANSWER_PROFILE,M4_NATIVE_TURN_PROFILE,M4_TURN_FUNCTION,ProviderFailed,ProviderUnknown,_m4_wire,_bounded_sse_lines
 from cj_agent.provider import _m4_turn_function
+from cj_agent.provider import M4_NATIVE_TURN_PROFILE_V2,M4_TURN_FUNCTION_V2
 from cj_api.real_services import RealServices,RealTools,TOOLS
 from cj_api.real_services import canonical_tool
 from cj_api.real_services import ModelInput,TOOL_SYSTEM
@@ -45,18 +46,76 @@ def sse(*,tool=False,usage=True,model=M4_MODEL,done=True):
     return ''.join('data: '+json.dumps(v)+'\n\n' for v in values)+('data: [DONE]\n\n' if done else '')
 
 
-def turn_sse(*,tool=False,usage=True,model=M4_MODEL,done=True,turn=None):
+def turn_sse(*,tool=False,usage=True,model=M4_MODEL,done=True,turn=None,compact=False):
     if turn is None:
         turn=dict(version='MODEL-tool-turn.1',kind='tool' if tool else 'answer',
             answer=None if tool else dict(zh='待核实。',en='Needs verification.'),
             calls=[dict(name='place_search',arguments=dict(keyword='synthetic',city='北京',page=1,page_size=1))] if tool else [])
     body=sse(tool=True,usage=usage,model=model,done=done)
     first=json.loads(body.splitlines()[0][6:]);call=first['choices'][0]['delta']['tool_calls'][0]
-    call['function']=dict(name=M4_TURN_FUNCTION,arguments=json.dumps(turn))
+    if compact:
+        field='calls' if turn['kind']=='tool' else 'answer'
+        turn={field:turn[field]}
+    call['function']=dict(name=M4_TURN_FUNCTION_V2 if compact else M4_TURN_FUNCTION,arguments=json.dumps(turn))
     return 'data: '+json.dumps(first)+'\n\n'+'\n'.join(body.splitlines()[2:])+'\n'
 
 
 class Boundaries(unittest.TestCase):
+    def test_compact_answer_only_has_an_explicit_profile_and_preserves_the_original_wrapper(self):
+        # The actual failure established only the outer field set. This nested
+        # bilingual value is a synthetic fixture, not the lost provider bytes.
+        raw='{"answer":{"zh":"实际预报待核","en":"Forecast remains uncertain."}}'
+        for compact in (False,True):
+            with self.subTest(compact=compact):
+                profile=M4_NATIVE_TURN_PROFILE_V2 if compact else M4_NATIVE_TURN_PROFILE
+                name=M4_TURN_FUNCTION_V2 if compact else M4_TURN_FUNCTION
+                body=turn_sse().replace('"finish_reason": "tool_calls"','"finish_reason": "stop"')
+                event=json.loads(body.splitlines()[0][6:])
+                event['choices'][0]['delta']['tool_calls'][0]['function']=dict(name=name,arguments=raw)
+                body='data: '+json.dumps(event)+'\n\n'+'\n'.join(body.splitlines()[2:])
+                provider=self.provider(body);receipt={};reply={};attempt='compact-answer-'+str(compact)
+                def invoke():
+                    return list(provider.invoke([dict(role='user',content='Synthetic weather response')],
+                        TOOL_SYSTEM,attempt,tools=TOOLS,native_turn_profile=profile,
+                        receipt=receipt,native_reply=reply,guard=lambda:True))
+                if compact:
+                    result=parse_turn(''.join(invoke()).encode(),{'weather'})
+                    self.assertEqual(result.answer_en,'Forecast remains uncertain.')
+                    wrapper=reply['assistant']['tool_calls'][0]
+                    self.assertEqual(wrapper['function'],dict(name=name,arguments=raw))
+                    self.assertEqual(receipt['usage']['total_tokens'],50)
+                    request=json.loads(self.sent[-1].content)
+                    schema=request['tools'][0]['function']['parameters']
+                    Draft202012Validator(schema).validate(json.loads(raw))
+                else:
+                    with self.assertRaises(ProviderUnknown):invoke()
+                    self.assertEqual((receipt,reply),({},{}))
+                    self.assertEqual(self.budget.inspect()[-1]['state'],'INTENT')
+                original=self.budget.inspect();sent=len(self.sent)
+                with self.assertRaises(BudgetUnknown):invoke()
+                self.assertEqual(self.budget.inspect(),original)
+                self.assertEqual(len(self.sent),sent)
+
+    def test_compact_shape_and_final_tool_rejections_keep_intent(self):
+        answer=dict(zh='待核',en='Unknown')
+        call=dict(name='weather',arguments=dict(start_date='2026-11-07',end_date='2026-11-07'))
+        cases=((dict(answer=answer,calls=[call]),False),
+               (dict(answer=answer,extra=True),False),
+               (dict(answer=dict(zh='待核',en=' ')),False),
+               (dict(calls=[call]),True))
+        for index,(arguments,final) in enumerate(cases):
+            with self.subTest(index=index):
+                body=turn_sse(compact=True);event=json.loads(body.splitlines()[0][6:])
+                event['choices'][0]['delta']['tool_calls'][0]['function']['arguments']=json.dumps(arguments)
+                body='data: '+json.dumps(event)+'\n\n'+'\n'.join(body.splitlines()[2:])
+                receipt={};reply={}
+                with self.assertRaises(ProviderUnknown):
+                    list(self.provider(body).invoke([],TOOL_SYSTEM,'compact-invalid-'+str(index),
+                        tools=TOOLS,native_turn_profile=M4_NATIVE_TURN_PROFILE_V2,final_answer=final,
+                        receipt=receipt,native_reply=reply,guard=lambda:True))
+                self.assertEqual((receipt,reply),({},{}))
+                self.assertEqual(self.budget.inspect()[-1]['state'],'INTENT')
+
     def test_first_native_envelope_field_shape_does_not_disclose_or_rearm(self):
         # The real failing shape had complete SSE/usage and one named call, but
         # the original key names were not retained. These variants are fixtures.
@@ -298,7 +357,7 @@ class Boundaries(unittest.TestCase):
         tools=RealTools(services)
         prepared=tools._model_input(ModelInput([dict(role='user',content='Synthetic marker')],TOOL_SYSTEM,provider,{}))
         declared=json.loads(prepared.original_bytes)
-        self.assertEqual(declared['native_turn_profile'],M4_NATIVE_TURN_PROFILE)
+        self.assertEqual(declared['native_turn_profile'],M4_NATIVE_TURN_PROFILE_V2)
         self.assertNotIn('answer_format_profile',declared)
         self.assertEqual(declared['native_tools'],tools.native_tools)
         ordinary=tools._model_input(([dict(role='user',content='Synthetic draft')],'existing structured system',provider))
@@ -596,7 +655,7 @@ class Boundaries(unittest.TestCase):
         self.assertEqual(result.places[0].entrance_coordinate.state.value,'missing')
 
     def test_place_only_verification_rejects_weather_before_tool_intent(self):
-        provider=self.provider(turn_sse(tool=True).replace('place_search','weather'))
+        provider=self.provider(turn_sse(tool=True,compact=True).replace('place_search','weather'))
         services=RealServices(provider,KEY,frozenset({'m4-synthetic-one'}))
         tools=RealTools(services,allowed_native=frozenset({'place_search'}))
         self.assertNotIn('tool.weather',tools.registrations)
