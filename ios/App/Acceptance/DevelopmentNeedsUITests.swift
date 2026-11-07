@@ -24,7 +24,7 @@ import Foundation
         search.tap()
         search.typeText("Paris")
         let result = settings.staticTexts.matching(NSPredicate(format: "label IN %@ OR identifier == %@",
-            ["巴黎", "Paris", "巴黎，法国", "法国，巴黎", "法国巴黎", "巴黎, 法国", "Paris, France"], destination))
+            ["巴黎（法国）", "巴黎 (法国)", "巴黎", "Paris (France)", "Paris, France", "Paris"], destination))
         try unique(result).tap()
         try verifyZone(destination)
         print("M4_SYSTEM_TIMEZONE_CHANGED zone=\(destination) automaticZone=0")
@@ -34,10 +34,15 @@ import Foundation
         guard restorePending else { return }
         settings.activate()
         guard settings.wait(for: .runningForeground, timeout: 15) else { throw Failure.unexpectedSettings }
-        if automaticZoneQuery().count != 1 {
-            let back = settings.navigationBars.buttons.matching(NSPredicate(format: "label IN %@ OR identifier == %@",
-                ["日期与时间", "Date & Time", "返回", "Back", "取消", "Cancel"], "BackButton"))
-            try unique(back).tap()
+        let autoZone = automaticZoneQuery()
+        for _ in 0..<2 {
+            if autoZone.count == 1 && autoZone.element.isHittable { break }
+            // iOS can show the search cancel and the city sheet close in succession.
+            let dismissal = settings.buttons.matching(NSPredicate(format: "label IN %@ OR identifier == %@",
+                ["取消搜索", "Cancel Search", "关闭", "Close", "取消", "Cancel", "日期与时间", "Date & Time"], "BackButton"))
+            let visible = dismissal.allElementsBoundByIndex.filter(\.isHittable)
+            guard visible.count == 1 else { throw Failure.unexpectedSettings }
+            visible[0].tap()
         }
         try setAutomaticZone("1")
         guard try value(automaticTime()) == "1" else { throw Failure.unexpectedSettings }
@@ -481,6 +486,10 @@ import Foundation
         let f = try await prepare("testDeviceTimezones"); defer { app?.terminate() }
         #if G2C_M4_DEVICE_ACCEPTANCE
         let physical = f.physical_system_timezone == true ? PhysicalTimeZoneSettings() : nil
+        if physical != nil {
+            // Leave time for the actual Settings change and reopen after the full Needs workflow.
+            executionTimeAllowance = 1650
+        }
         defer {
             if let physical, physical.restorePending {
                 do { try physical.restore() }
