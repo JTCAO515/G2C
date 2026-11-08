@@ -4,7 +4,8 @@ import base64
 import hashlib
 import os
 import sys
-from datetime import datetime,timezone
+from datetime import datetime,timedelta,timezone
+from types import SimpleNamespace
 from unittest.mock import patch
 import httpx
 from fastapi.testclient import TestClient
@@ -20,7 +21,7 @@ sys.path.insert(0,str(harness.ROOT))
 from deploy.hk.configuration import Runtime
 import run_worker
 
-A='m4-synthetic-worker-a';B='m4-synthetic-worker-b'
+A='m4-synthetic-worker-a';B='m4-synthetic-beta-b'
 
 
 def check_legacy_message_preflight(api, host, database, configured_app):
@@ -322,10 +323,11 @@ def exercise(auth,conninfo):
         results=run_worker.run_once(database,model,auth,memory_configuration_for_scope=runtime.memory_configuration_for_scope)
         assert {r.message_id:r.status for r in results}=={'worker-legacy':'completed','worker-current-one':'completed'},results
         assert model.calls==2
-        plain,typed=['\n'.join(m['content'] for m in rows) for rows in model.inputs]
+        plain_rows,typed_rows=sorted(model.inputs,key=lambda rows:'MEMORY-RUN-CONSUME@2' in rows[0]['content'])
+        plain,typed=['\n'.join(m['content'] for m in rows) for rows in (plain_rows,typed_rows)]
         assert all(text not in plain for text in ('LONG_ONLY','CURRENT_ONE_ONLY','CURRENT_TWO_ONLY'))
         assert 'CURRENT_ONE_ONLY' in typed and 'CURRENT_TWO_ONLY' not in typed and 'LONG_ONLY' not in typed
-        payload=json.loads(model.inputs[1][0]['content'].split('\n',1)[1])
+        payload=json.loads(typed_rows[0]['content'].split('\n',1)[1])
         assert payload['version']=='MEMORY-RUN-CONSUME@2'
         assert payload['items'][0]['context']==dict(kind='travel',id=travels[0]['id'])
         second=send(api,'worker-current-two',travels[1]);model=Recorded()
@@ -423,7 +425,29 @@ def exercise(auth,conninfo):
         from cj_place.https_transport import TransportResult
         from test_m4_real_services import turn_sse,KEY,NOW
         budget=AuthorizationBudget(auth.parent/'fixture-only-authorization',clock=lambda:NOW)
-        calls=[];tools=[]
+        calls=[];tools=[];issued=[]
+        offset = 0
+        tool_delay = 301
+
+        class JWTClock(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return datetime.now(tz) + timedelta(seconds=offset)
+
+        from cj_auth.admission import AdmissionChecker
+        initialize_checker = AdmissionChecker.__init__
+        def jwt_time():
+            return JWTClock.now(timezone.utc).timestamp()
+
+        def clocked_checker(checker, verifier, access):
+            initialize_checker(checker, verifier, access, clock=jwt_time)
+
+        sign = run_worker.dev_auth.token
+
+        def observe_signature(directory, subject, minutes, *, jti=None):
+            issued.append((subject, minutes, jti))
+            return sign(directory, subject, minutes, jti=jti)
+
         def response(request):
             body=json.loads(request.content);calls.append(body)
             content=json.dumps(body['messages'])
@@ -432,24 +456,53 @@ def exercise(auth,conninfo):
             return httpx.Response(200,stream=httpx.ByteStream(turn_sse(tool=not follow,compact=True).replace(
                 'chatcmpl-synthetic','chatcmpl-worker-'+str(len(calls))).encode()))
         async def place(config,request,credentials,*,before_send=None,basic=False):
+            nonlocal offset
             tools.append(request.request_ref)
             raw=json.dumps(dict(status='1',info='OK',infocode='10000',count='1',pois=[dict(
                 id='SYNTH_ONLY',name='Synthetic fixture only',location='116.1,39.1')])).encode()
+            offset += tool_delay
             return TransportResult('received','fixture',Response(request.binding_digest,request.origin,request.path,200,raw,datetime.now(timezone.utc)))
         native=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),budget,transport=httpx.MockTransport(response))
         services=RealServices(native,KEY,frozenset((A,B)));registered=RealTools(services)
         original=send(api,'worker-native-fixture',travels[0])
-        with patch('cj_api.real_services.fetch_candidate',place):
-            outcomes=run_worker.run_once(database,native,auth,tools_configuration=registered,real_services=services,
-                memory_configuration_for_scope=runtime.memory_configuration_for_scope)
-        assert [o.status for o in outcomes]==['completed'],outcomes
-        assert len(calls)==2 and len(tools)==1
-        assert [(r['kind'],r['state']) for r in budget.inspect()]==[('model','RECEIVED'),('place','RECEIVED'),('model','RECEIVED')]
+        second=send(api,'worker-native-fixture-next',travels[0])
+        kwargs = dict(tools_configuration=registered,real_services=services,
+            memory_configuration_for_scope=runtime.memory_configuration_for_scope,account_admission=True,
+            hk_beta_b_run_credential=True)
+        with patch('cj_api.real_services.fetch_candidate',place), patch('jwt.api_jwt.datetime',JWTClock), \
+                patch.object(AdmissionChecker, '__init__', clocked_checker), \
+                patch.object(run_worker.dev_auth, 'time', SimpleNamespace(time=jwt_time)), \
+                patch.object(run_worker.dev_auth, 'token', observe_signature):
+            outcomes=run_worker.run_once(database,native,auth,**kwargs)
+            assert {(o.run_id,o.status) for o in outcomes}=={(entry['receipt']['run_id'],'completed') for entry in (original,second)}, (outcomes,[(s,m) for s,m,_ in issued],len(calls),len(tools))
+            assert [item[:2] for item in issued] == [(B,5),(B,11),(B,11)]
+            assert issued[1][2] and issued[2][2] and issued[1][2] != issued[2][2]
+            assert run_worker.run_once(database,native,auth,**kwargs)==[]
+        assert len(calls)==4 and len(tools)==2
+        assert [(r['kind'],r['state']) for r in budget.inspect()]==[('model','RECEIVED'),('place','RECEIVED'),('model','RECEIVED')]*2
+        from cj_run.step_usage import ledger_scope_for
+        from cj_usage.codec import decode
+        account=ledger_scope_for(scope_for(ISSUER,B),database.run_context.current.meter)
+        with database.connect(scope_for(ISSUER,B)) as connection:
+            ledger=decode(connection.execute('SELECT ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(account,)).fetchone()[0])
+            assert all(ledger.attempts[r['attempt_id']].receipt is not None for r in budget.inspect())
         display=expect(api.get('/v2/run-display',params={'message_id':'worker-native-fixture'},headers=host.headers[B]))['snapshot']
         assert display['run_id']==original['receipt']['run_id'] and 'Needs verification.' in display['text']
-        assert run_worker.run_once(database,native,auth,tools_configuration=registered,real_services=services,
-            memory_configuration_for_scope=runtime.memory_configuration_for_scope)==[]
-        assert len(calls)==2 and len(tools)==1
+
+        offset, tool_delay = 0, 661
+        expired=send(api,'worker-native-fixture-expired',travels[0])
+        with patch('cj_api.real_services.fetch_candidate',place), patch('jwt.api_jwt.datetime',JWTClock):
+            outcomes=run_worker.run_once(database,native,auth,**kwargs)
+        assert [(o.run_id,o.status) for o in outcomes]==[(expired['receipt']['run_id'],'context_invalid')],outcomes
+        assert len(calls)==5 and len(tools)==3
+        last=budget.inspect()[-1]
+        assert (last['kind'],last['state'])==('place','RECEIVED')
+        with database.connect(scope_for(ISSUER,B)) as connection:
+            ledger=decode(connection.execute('SELECT ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(account,)).fetchone()[0])
+            assert ledger.attempts[last['attempt_id']].receipt is None
+            assert connection.execute('SELECT acknowledged FROM cj_message_delivery WHERE run_id=%s',
+                                      (expired['receipt']['run_id'],)).fetchone()==(True,)
+        print('PASS beta-b per-RUN signed credential survives 301s, settles original Meter and still expires at 660s')
         check_legacy_sse_followup(api, host, database)
     print('PASS HK single worker/legacy and typed scopes/original signed MESSAGE2/owned travel lease/selected Memory/isolated input/held original resume/no duplicate calls; real providers UNRUN')
 

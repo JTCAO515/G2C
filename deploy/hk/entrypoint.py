@@ -77,6 +77,7 @@ def worker(runtime):
             with database._open_runtime_connection() as connection:checkpoint.require_release(connection,control())
             with worker_pulse():
                 outcomes=run_worker.run_once(database,services.model,runtime.auth,tools_configuration=tools,real_services=services,account_admission=True,
+                    hk_beta_b_run_credential=True,
                     memory_configuration_for_scope=None if runtime.memory_runtime is None else runtime.memory_configuration_for_scope)
             for outcome in outcomes:
                 if outcome.status in ('unknown','failed'):
