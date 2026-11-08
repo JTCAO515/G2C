@@ -141,6 +141,7 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
     @contextmanager
     def lease_beta_b_credential():
         nonlocal issue_run_credential
+        from cj_api.local_account_admission_v2 import permit_retirement_read_lease,retirement_read_operation
 
         @cache
         def issue():
@@ -148,7 +149,11 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
 
         issue_run_credential = issue
         try:
-            yield
+            # Reuse only the physical connection: every retirement check still
+            # gets a fresh read-only transaction with the current scope/release.
+            with permit_retirement_read_lease(database,lambda:tools_configuration.services.require_scope(scope)), \
+                    retirement_read_operation(purpose='hk_beta_b_worker_retirement'):
+                yield
         finally:
             issue_run_credential = None
             issue.cache_clear()
