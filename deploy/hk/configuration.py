@@ -1,6 +1,6 @@
 """Beta environment boundary. Persistent application secrets live only in 0600 env files."""
 import base64
-from dataclasses import dataclass
+from dataclasses import dataclass,field
 from datetime import datetime,timezone
 import json
 import os
@@ -92,6 +92,7 @@ class Runtime:
     memory_runtime:object=None
     typed_message_subjects:frozenset=frozenset()
     assembly_subjects:frozenset=frozenset()
+    _database:SupabaseTestDatabase|None=field(default=None,init=False)
 
     @classmethod
     def load(cls,root,*,worker=False):
@@ -178,9 +179,15 @@ class Runtime:
 
     def database(self):
         authorization()
-        return SupabaseTestDatabase(os.environ['CJ_SUPABASE_RUNTIME_URI'],os.environ['CJ_SUPABASE_CA_FILE'],run_context=self.context,
-            travel_context=self.typed_memory is not None or self.memory_runtime is not None,
-            needs_context=bool(self.assembly_subjects),transaction_guard=runtime_transaction)
+        if self._database is None:
+            size=os.environ.get('CJ_BETA_DB_POOL_SIZE')
+            if size is not None and re.fullmatch('[1-8]',size) is None:
+                raise ValueError('bounded_beta_runtime_pool_required')
+            self._database=SupabaseTestDatabase(os.environ['CJ_SUPABASE_RUNTIME_URI'],os.environ['CJ_SUPABASE_CA_FILE'],run_context=self.context,
+                travel_context=self.typed_memory is not None or self.memory_runtime is not None,
+                needs_context=bool(self.assembly_subjects),transaction_guard=runtime_transaction,
+                pool_size=None if size is None else int(size))
+        return self._database
 
     def app(self):
         import time
@@ -247,6 +254,7 @@ class Runtime:
         return app
 
     def close(self):
+        if self._database is not None:self._database.close()
         for fd in self.descriptors:os.close(fd)
         self.descriptors.clear()
 
@@ -262,7 +270,7 @@ def cleanup_transaction(cursor,runtime_database):
     # while the separately approved runtime login checks the signed DB identity.
     # Cleanup writes still use only the independent cleanup login and its RLS.
     cursor.execute('SELECT pg_advisory_xact_lock_shared(%s)',(checkpoint.RELEASE_LOCK,))
-    with runtime_database._open_runtime_connection() as runtime:
+    with runtime_database._open_dedicated_runtime_connection() as runtime:
         checkpoint.require_release(runtime,Path(os.environ['CJ_DEPLOY_CONTROL']))
 
 

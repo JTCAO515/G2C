@@ -203,6 +203,9 @@ class LocalDatabase:
     def _open_runtime_connection(self):
         return psycopg.connect(**self.conninfo,autocommit=True)
 
+    def _open_dedicated_runtime_connection(self):
+        return self._open_runtime_connection()
+
     @property
     def edit_results(self):
         # C's actual factory creates its publisher with this database, then
@@ -215,10 +218,10 @@ class LocalDatabase:
         if passfile is not None:
             passfile.close()
 
-    def connect(self, scope, *, usage_profile=None):
+    def connect(self, scope, *, usage_profile=None, dedicated=False):
         if type(scope) is not str or not scope.startswith('local:' + ISSUER + ':') or not scope.removeprefix('local:' + ISSUER + ':'):
             raise CompositionUnavailable('verified local scope required')
-        conn = self._open_runtime_connection()
+        conn = self._open_dedicated_runtime_connection() if dedicated else self._open_runtime_connection()
         try:
             if conn.closed or conn.info.transaction_status != TransactionStatus.IDLE or conn.autocommit is not True:
                 raise CompositionUnavailable('fresh idle runtime connection required')
@@ -347,10 +350,11 @@ class LocalDatabase:
     def trip_repository(self, scope):
         return TripRepository(lambda: self.connect(scope), trip_scope_for(scope), confirm=local_confirmation)
 
-    def run_repository(self, scope, *, usage_profile=None):
+    def run_repository(self, scope, *, usage_profile=None, connect_worker=None):
         connect = (lambda: self.connect(scope)) if usage_profile is None else (lambda: self.connect(scope,usage_profile=usage_profile))
         return RunRepository(connect, scope, expires_at=datetime.now(timezone.utc) + RUN_RETENTION,
-                             statement_timeout_ms=10000, lock_timeout_ms=5000)
+                             statement_timeout_ms=10000, lock_timeout_ms=5000,
+                             connect_worker=connect_worker)
 
     @contextmanager
     def lease_run_transactions(self, repository):

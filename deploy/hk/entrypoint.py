@@ -11,6 +11,7 @@ from contextlib import contextmanager
 
 import psycopg
 from fastapi.responses import JSONResponse
+from starlette.concurrency import run_in_threadpool
 
 import migrate
 import run_worker
@@ -42,7 +43,7 @@ def api(runtime):
     @app.middleware('http')
     async def deployment_gate(request,call_next):
         if request.url.path=='/health/live':return JSONResponse({'status':'alive'})
-        reason=ready(database)
+        reason=await run_in_threadpool(ready,database)
         if request.url.path=='/health/ready':
             return JSONResponse({'status':'ready' if reason is None else 'unavailable','component':reason},status_code=200 if reason is None else 503)
         if reason is not None:return JSONResponse({'error':'deployment_unavailable'},status_code=503)

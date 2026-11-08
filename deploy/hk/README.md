@@ -52,6 +52,13 @@ schema资产绑定原迁移hash并放进镜像；镜像标签和OCI revision均�
 API和worker都使用独立cj_m1_runtime登录，每次连接校验前后身份、TLS、RESET后scope。
 原ACCOUNT-ADMISSION@2在API和worker前台启用，不能重建退休账号。
 
+`CJ_BETA_DB_POOL_SIZE=4` 可在香港合成环境启用每进程有界的运行角色连接池，允许 1–8 条。
+省略时逐次新建连接。每次借用仍在 5432 session 模式核实际 TLS 与身份，执行 DISCARD ALL，
+并确认 scope 已清空。事务入口重新绑定 LOCAL scope，原签名 release 与撤权查询每次重新核对。
+跨事务持有的 worker advisory lock 使用独立物理连接。operator、cleanup 及备份角色不入运行连接池。
+失败事务和结果不明的写入沿原恢复规则，连接池不重放业务 SQL。移除设置并重启即可回到逐次连接。
+启用时日志记录物理连接 TLS 时长和 checkout 校验时长，记录不含 scope、凭据或业务内容。
+
 Caddy仅发布80/443、自动HTTPS并保留流式响应；应用端口不对主机外发布。
 `/health/live`仅进程存活；`/health/ready`核有效期、签名release、实际库identity/schema和15秒worker心跳。
 未就绪时所有业务读写503。worker按原RUN ID记录failed/unknown告警，并保留注册计量audit；不输出内容、key或URI。
