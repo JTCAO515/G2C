@@ -5,15 +5,19 @@ on every checkout before binding LOCAL authority. Transaction pooler is refused:
 resetting one transaction-mode backend cannot reset all future borrowed backends.
 """
 from datetime import datetime
+import logging
 import os
 from pathlib import Path
 import tempfile
+from time import monotonic
 from zoneinfo import ZoneInfo
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes,serialization
 import psycopg
 from psycopg.conninfo import conninfo_to_dict
+from psycopg.pq import TransactionStatus
+from psycopg_pool import ConnectionPool, PoolTimeout
 
 from .composition import CompositionUnavailable
 from .local_app import LocalDatabase,_require_unbound
@@ -22,6 +26,7 @@ REF='sajkhvjpllldfyfryalx'
 HOST='aws-0-ap-southeast-1.pooler.supabase.com'
 CA_SHA='807025ad50d4ed219d2c9c7d299c004f824eb00cf7f65afef607d07b72e6cafa'
 DEADLINE=datetime(2026,12,1,tzinfo=ZoneInfo('Asia/Shanghai'))
+_timing_log=logging.getLogger('cj_usage.audit')
 
 
 def current_authorization():
@@ -86,16 +91,110 @@ def pin_ca(ca_file):
     return pinned
 
 
+class _TimedConnection(psycopg.Connection):
+    @classmethod
+    def connect(cls, *args, **kwargs):
+        started = monotonic()
+        connection = super().connect(*args, **kwargs)
+        _timing_log.info('M4_DB_PHYSICAL_TIMING pid=%d connect_tls_ms=%.3f',
+                         connection.info.backend_pid,(monotonic()-started)*1000)
+        return connection
+
+
+class _RuntimeLease:
+    """Preserve the existing DB-API transaction and close boundaries."""
+
+    def __init__(self, pool, connection):
+        self._pool = pool
+        self._connection = connection
+        self._returned = False
+
+    def __getattr__(self, name):
+        return getattr(self._active_connection(), name)
+
+    def _active_connection(self):
+        if self.closed:
+            raise psycopg.OperationalError('runtime session lease ended')
+        return self._connection
+
+    @property
+    def closed(self):
+        return self._returned or self._connection.closed
+
+    @property
+    def autocommit(self):
+        return self._active_connection().autocommit
+
+    @autocommit.setter
+    def autocommit(self, value):
+        self._active_connection().autocommit = value
+
+    def __enter__(self):
+        if self.closed:
+            raise psycopg.OperationalError('runtime session lease ended')
+        return self
+
+    def __exit__(self, exc_type, exc, traceback):
+        try:
+            if not self.closed:
+                if exc_type is None:
+                    self.commit()
+                else:
+                    self.rollback()
+        except psycopg.Error:
+            if exc_type is None:
+                raise
+        finally:
+            self.close()
+
+    def commit(self):
+        connection = self._active_connection()
+        try:
+            connection.commit()
+        except BaseException:
+            connection.close()
+            raise
+
+    def rollback(self):
+        connection = self._active_connection()
+        try:
+            connection.rollback()
+        except BaseException:
+            connection.close()
+            raise
+
+    def close(self):
+        if self._returned:
+            return
+        self._returned = True
+        if self._connection.info.transaction_status != TransactionStatus.IDLE:
+            self._connection.close()
+        self._pool.putconn(self._connection)
+
+
 class SupabaseTestDatabase(LocalDatabase):
-    def __init__(self,uri,ca_file,*,run_context=None,travel_context=False,needs_context=False,trip_context=False,edit_configuration=None,transaction_guard=None):
+    _pool:ConnectionPool|None=None
+
+    def __init__(self,uri,ca_file,*,run_context=None,travel_context=False,needs_context=False,trip_context=False,edit_configuration=None,transaction_guard=None,pool_size=None):
         self._ca=None;self._empty_passfile=None;self._transaction_guard=transaction_guard
         config=decode_uri(uri)
         self._ca=pin_ca(ca_file)
         self._configure(run_context=run_context,travel_context=travel_context,needs_context=needs_context,
                         trip_context=trip_context,edit_configuration=edit_configuration)
         self.conninfo=dict(config,sslrootcert=self._ca.name)
+        if pool_size is not None:
+            if type(pool_size) is not int or not 1 <= pool_size <= 8:
+                raise CompositionUnavailable('bounded beta runtime pool required')
+            self._pool = ConnectionPool(connection_class=_TimedConnection,
+                                        kwargs=dict(self.conninfo,autocommit=True,prepare_threshold=None),
+                                        min_size=0,max_size=pool_size,max_waiting=32,timeout=10,
+                                        max_lifetime=900,max_idle=60,open=True,name='hk-beta-runtime')
 
     def __del__(self):
+        self.close()
+
+    def close(self):
+        if self._pool is not None:self._pool.close()
         if self._ca is not None:self._ca.close()
 
     def _before_scope(self,cursor):
@@ -106,13 +205,39 @@ class SupabaseTestDatabase(LocalDatabase):
         super()._check_execution_connection(cursor)
 
     def _open_runtime_connection(self):
+        if self._pool is None:
+            return self._open_dedicated_runtime_connection()
         current_authorization();require_environment()
-        conn=psycopg.connect(**self.conninfo,autocommit=True,prepare_threshold=None)
+        started=monotonic()
+        try:
+            connection = self._pool.getconn()
+        except PoolTimeout:
+            raise CompositionUnavailable('beta runtime pool checkout unavailable') from None
+        lease = _RuntimeLease(self._pool, connection)
+        try:
+            connection.autocommit = True
+            prepare_owned_session(connection,'cj_m1_runtime')
+            _timing_log.info('M4_DB_CHECKOUT_TIMING pid=%d pooled=true elapsed_ms=%.3f',
+                             connection.info.backend_pid,(monotonic()-started)*1000)
+            return lease
+        except BaseException:
+            connection.close()
+            lease.close()
+            raise
+
+    def _open_dedicated_runtime_connection(self):
+        current_authorization();require_environment()
+        started=monotonic()
+        connect=psycopg.connect if self._pool is None else _TimedConnection.connect
+        conn=connect(**self.conninfo,autocommit=True,prepare_threshold=None)
         try:
             # Reset only our owned session, with actual login/TLS checked before
             # and after. Persistent targets never resolve through pg_temp.
             prepare_owned_session(conn,'cj_m1_runtime')
             current_authorization();require_environment()
+            if self._pool is not None:
+                _timing_log.info('M4_DB_CHECKOUT_TIMING pid=%d pooled=false elapsed_ms=%.3f',
+                                 conn.info.backend_pid,(monotonic()-started)*1000)
             return conn
         except BaseException:
             conn.close()
