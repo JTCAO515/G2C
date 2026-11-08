@@ -31,7 +31,7 @@ def create_local_manual_app(*, conninfo_path, auth_dir, confirmation_signer,
 
 
 def register_local_manual_routes(app,*,database,auth_dir,confirmation_signer,max_response_bytes=1_000_000,
-                                 editing_only=False):
+                                 editing_only=False,selected_subjects=None):
     run_context=database.run_context
     if (os.environ.get('CJ_ENV') != 'local' or type(confirmation_signer) is not ConfirmationSigner
             or type(max_response_bytes) is not int or max_response_bytes < 1):
@@ -57,7 +57,8 @@ def register_local_manual_routes(app,*,database,auth_dir,confirmation_signer,max
                 check(stage)
                 if repository.manual_origin is not origin:raise Denied('original source reader changed')
             return repository,principal,guard
-    boundary=ManualBoundary(account_checker_for(Path(auth_dir),database),resolve,confirmation_signer,structured=True)
+    checker=account_checker_for(Path(auth_dir),database,selected_subjects=selected_subjects)
+    boundary=ManualBoundary(checker,resolve,confirmation_signer,structured=True)
 
     def query(request, fields):
         pairs=list(request.query_params.multi_items()); values=dict(pairs)

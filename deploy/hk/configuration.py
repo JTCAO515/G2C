@@ -182,13 +182,6 @@ class Runtime:
             travel_context=self.typed_memory is not None or self.memory_runtime is not None,
             needs_context=bool(self.assembly_subjects),transaction_guard=runtime_transaction)
 
-    def assembly_auth(self):
-        directory=self.auth.parent/'assembly-auth'
-        directory.mkdir(mode=0o700,exist_ok=True)
-        (directory/'public.pem').write_bytes((self.auth/'public.pem').read_bytes())
-        (directory/'invited.json').write_text(json.dumps(sorted(self.assembly_subjects)))
-        return directory
-
     def app(self):
         import time
         key=decoded('CJ_BETA_HISTORY_B64',length=32)
@@ -208,12 +201,10 @@ class Runtime:
                           self.subjects-(frozenset(self.typed_memory.collection.profiles)-self.typed_message_subjects))
         needs_profile=os.environ.get('CJ_LOCAL_NEEDS_PROFILE')
         signer=ConfirmationSigner(decoded('CJ_BETA_CONFIRMATION_B64',length=32))
-        assembly_auth=None
         cleanup=None
         if self.assembly_subjects:
             if not self.assembly_subjects<=self.typed_message_subjects or needs_profile!='manual-v1':
                 raise ValueError('assembly_requires_original_typed_message_and_manual_needs')
-            assembly_auth=self.assembly_auth()
             cleanup=assembly_cleanup(database)
         elif ASSEMBLY_CLEANUP & os.environ.keys():
             raise ValueError('cleanup_requires_explicit_assembly_pair')
@@ -221,20 +212,21 @@ class Runtime:
             confirmation_signer=signer,history_configuration=history,
             account_admission=True,needs_profile=needs_profile,message_subjects=message_subjects,
             existing_display_reads=True,cleanup_configuration=cleanup,
-            cleanup_invites=None if assembly_auth is None else assembly_auth/'invited.json')
+            cleanup_subjects=self.assembly_subjects or None)
         if self.typed_memory is not None:
             from cj_memory.typed_api import register_typed_routes
             register_typed_routes(app,database=database,auth_dir=self.auth,configuration=self.typed_memory)
-        if assembly_auth is not None:
+        if self.assembly_subjects:
             from cj_trip.local_needs_app import register_local_needs_routes
             from cj_trip.local_manual_app import register_local_manual_routes
             from cj_trip.local_structured_read import register_local_structured_read_routes
-            register_local_needs_routes(app,database=database,auth_dir=assembly_auth,
-                confirmation_signer=signer,planning_only=True)
-            register_local_manual_routes(app,database=database,auth_dir=assembly_auth,
-                confirmation_signer=signer,editing_only=True)
-            register_local_structured_read_routes(app,database=database,auth_dir=assembly_auth)
-            register_assembly_erasure(app,database,assembly_auth,cleanup)
+            register_local_needs_routes(app,database=database,auth_dir=self.auth,confirmation_signer=signer,
+                planning_only=True,selected_subjects=self.assembly_subjects)
+            register_local_manual_routes(app,database=database,auth_dir=self.auth,confirmation_signer=signer,
+                editing_only=True,selected_subjects=self.assembly_subjects)
+            register_local_structured_read_routes(app,database=database,auth_dir=self.auth,
+                selected_subjects=self.assembly_subjects)
+            register_assembly_erasure(app,database,self.auth,cleanup,self.assembly_subjects)
 
         from cj_api.local_account_admission_v2 import permit_retirement_read_lease
         from cj_api.supabase_test_database import current_authorization,require_environment
@@ -290,7 +282,7 @@ def assembly_cleanup(database):
         lambda cursor:cleanup_transaction(cursor,database))
 
 
-def register_assembly_erasure(app,database,auth_dir,configuration):
+def register_assembly_erasure(app,database,auth_dir,configuration,subjects):
     import uuid
     from cj_api.local_account_admission_v2 import account_checker_for
     from cj_api.supabase_cleanup import SupabaseCleanupRuntime
@@ -301,7 +293,7 @@ def register_assembly_erasure(app,database,auth_dir,configuration):
     from cj_memory_withdrawal.erasure_driver_v2 import ErasureServiceV2
     from cj_message.auth_boundary import Boundary
 
-    checker=account_checker_for(auth_dir,database)
+    checker=account_checker_for(auth_dir,database,selected_subjects=subjects)
     boundary=Boundary(checker,lambda principal:database.message_repository(scope_for(principal.issuer,principal.subject)),
         lambda:uuid.uuid4().hex)
 

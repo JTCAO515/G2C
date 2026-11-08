@@ -26,7 +26,7 @@ def create_local_structured_read_app(*,conninfo_path,auth_dir,run_context,max_re
     return app
 
 
-def register_local_structured_read_routes(app,*,database,auth_dir,max_response_bytes=1_000_000):
+def register_local_structured_read_routes(app,*,database,auth_dir,max_response_bytes=1_000_000,selected_subjects=None):
     run_context=database.run_context
     if os.environ.get('CJ_ENV')!='local' or run_context is None or type(max_response_bytes) is not int or max_response_bytes<1:
         raise CompositionUnavailable('explicit local structured read host required')
@@ -36,7 +36,8 @@ def register_local_structured_read_routes(app,*,database,auth_dir,max_response_b
         with database.connect(owner) as conn:
             conn.execute('INSERT INTO cj_trip_scope(scope) VALUES(%s) ON CONFLICT DO NOTHING',(scope,))
         return lambda:database.connect(owner),scope
-    boundary=Boundary(account_checker_for(Path(auth_dir),database),resolve,structured=True)
+    checker=account_checker_for(Path(auth_dir),database,selected_subjects=selected_subjects)
+    boundary=Boundary(checker,resolve,structured=True)
 
     def structured(trip):
         content=json.loads(trip.content);version=content.get('content_version')

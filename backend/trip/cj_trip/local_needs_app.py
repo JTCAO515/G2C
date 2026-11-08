@@ -36,11 +36,11 @@ def create_local_needs_app(*,conninfo_path,auth_dir,run_context,confirmation_sig
 
 
 def register_local_needs_routes(app,*,database,auth_dir,confirmation_signer,max_response_bytes=1_000_000,
-                                planning_only=False):
+                                planning_only=False,selected_subjects=None):
     run_context=database.run_context
     if os.environ.get('CJ_ENV')!='local' or type(confirmation_signer) is not ConfirmationSigner or run_context is None or type(max_response_bytes) is not int or max_response_bytes<1:
         raise CompositionUnavailable('explicit local source-bound Trip host required')
-    checker=account_checker_for(Path(auth_dir),database)
+    checker=account_checker_for(Path(auth_dir),database,selected_subjects=selected_subjects)
     def resolve(principal):
         owner=scope_for(principal.issuer,principal.subject)
         return lambda:database.connect(owner),trip_scope_for(owner)
