@@ -64,7 +64,7 @@
 
 | 线 | 队列 | 本线拥有的文件 | 跨线依赖 |
 |---|---|---|---|
-| A App | #398/#498/#4 CLOSED → #29 真机余项整线 BLOCKED，#605 OPEN 并由 #29 承接 | ios/**、本线获准文档、JT 指定的 #605 原型 spikes/ios | 待指定 iPhone 网络恢复和重连、B 正式短窗、高德 SDK 缓存停点及原 77 实际到期 |
+| A App | #398/#498/#4 CLOSED → #29 按 JT 2026-11-08 修订验收；#605 和 PR658 已关闭 | ios/**、本线获准文档 | 等 B 的公域组合及两小时合成账号窗口，见 M4 现行队列 |
 | B 后端消息与运行 | 本轮[#354](https://github.com/JTCAO515/G2C/issues/354)/[#360](https://github.com/JTCAO515/G2C/issues/360)/[#378](https://github.com/JTCAO515/G2C/issues/378)均CLOSED（PR359/379/380/382）；goal结束仅B交接，C实际B接口缺口优先响应360/343；315按JT保持OPEN不投入 | `backend/run/**`、`backend/message/**`、`backend/needs/**`、`backend/usage/**`、`backend/cj_api/**`、`backend/place/**`、`backend/fact/**`、`scripts/dev_auth.py`；下列 B 线协调文件 | source1 needs-structured.1与source2 needs-current-trip.1独立正式入口；publisher@2/M29同cursor结果与新读版本供C336/A337。C381/M30生产交付由C负责，A App/真实资源按各owner验，不由B probe/后端验收代称全M2完成；业务锁已释放 |
 | C M2后端记忆、草稿与可行性 | M2本线已派后端均交：366/374/336及25后端完成；保持原M2 goal，继续处理真实C-owner联调缺口，当前唯一剩余21地图按JT暂缓UNRUN | backend/trip/**、backend/draft/**、backend/feasibility/**、backend/agent/cj_agent/draft.py、backend/memory/**、backend/memory_management/**、backend/memory_jobs/**、backend/memory_withdrawal/**、backend/manual_edit/**；只做后端 | B354/360/378及A337/373/286/22/25均已交闭；C381同RUN cursor结果/受保护读取与M30已合并。实时M2仅21地图综合余项，JT决定授权调整、A实施；无独立C项时保留实际停点，不重复测试/handoff或求同一地图授权，不将M2标complete。 |
 
@@ -190,7 +190,7 @@
 
 | 线 | 队列 | 新增拥有的文件 | 依赖 |
 |---|---|---|---|
-| A App | #398 CLOSED；#498 设备矩阵代码已交PR597/602/604/606/608/610 → #4/#29真机余项BLOCKED、未完成 | 无新增，仍仅本线ios与获准文档 | 等JT新XCTest系统验证、B新600短窗/593 owner批准、原型605 owner；第三group/TLS续期已批，其他设备/TestFlight另批 |
+| A App | #398/#498/#4 CLOSED；[#29](https://github.com/JTCAO515/G2C/issues/29) 等公域中英各一条连续真机流程，已复用时区/系统语言及本机注销。#605 不计划、PR658 未合并；高德历史缓存已清理 | 无新增，仍仅本线 ios 与获准文档 | B 公域正式 Trip/修改/注销能力、两份可独立注销的合成身份及 0600 两小时窗口；同会话组装见 #660。原离线到期只作被动观察 |
 | B 后端与平台 | #2/#496/#527/#539/#523/#593 已关闭。#32/#630 延迟 Goal BLOCKED，#30 待已批 OSS 核验窗口 | 新增部署目录、备份恢复脚本 | JT 模型流与合成 beta-b 凭据时长批准，A 渲染及 C 核证，见 #495/#630 |
 | C 质量 | #28 不变量（本机 L1）→ #497 评测集与判定程序 → #32 真实复跑 | `eval/**`（JT 本轮明确归C） | 真实复跑等 #2、#495、#225 及B正式真实入口 |
 
