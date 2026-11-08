@@ -138,6 +138,26 @@ import Foundation
             XCTAssertTrue(app.navigationBars[chinese ? "帮助" : "Help"].exists)
             text(chinese ? "首次使用与建号" : "Getting started")
             capture("help-" + language)
+            let guidance = [
+                ("help.invited.access", chinese ? "仍需服务端验证。" : "Server verification is required."),
+                ("help.trip.actions", chinese ? "使用可用的按钮采用或拒绝草稿，或保存修改。" : "Use the available controls to accept or reject a draft or save changes."),
+                ("help.trip.offline", chinese ? "期限从最近一次成功同步起算，最长 14 天。" : "up to 14 days from the last successful sync."),
+                ("help.account.deletion", chinese ? "请先核对范围，再确认删除。" : "review its scope and confirm the action."),
+            ]
+            for (identifier, expected) in guidance {
+                let matches = app.staticTexts.matching(identifier: identifier)
+                let paragraph = matches.element
+                #if G2C_M4_DEVICE_ACCEPTANCE
+                deviceSession.revealControl(paragraph, in: app, diagnosticIdentifier: identifier)
+                #else
+                for _ in 0..<12 {
+                    if paragraph.exists && paragraph.isHittable { break }
+                    app.swipeUp()
+                }
+                #endif
+                XCTAssertEqual(matches.count, 1, identifier)
+                XCTAssertTrue(paragraph.label.contains(expected), identifier)
+            }
             app.navigationBars.buttons.element(boundBy: 0).tap()
             tap(chinese ? "隐私说明（内测版）" : "Privacy notice (beta)")
             XCTAssertTrue(app.navigationBars[chinese ? "隐私说明（内测版）" : "Privacy notice (beta)"].exists)
