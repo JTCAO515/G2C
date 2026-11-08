@@ -61,6 +61,44 @@ def turn_sse(*,tool=False,usage=True,model=M4_MODEL,done=True,turn=None,compact=
 
 
 class Boundaries(unittest.TestCase):
+    def test_slow_protected_body_writes_leave_time_to_read_terminal_usage(self):
+        # Hong Kong observed about 17 s for each protected partial write.
+        # Model transport is paused while each yielded fragment is persisted.
+        texts=['Visible synthetic answer. '*4]+['A synthetic continuation. '*13]*6
+        lines=sse().splitlines(keepends=True)
+        event=json.loads(lines[0][6:])
+
+        class Fragments(httpx.SyncByteStream):
+            def __iter__(self):
+                for part in texts:
+                    event['choices'][0]['delta']['content']=part
+                    yield ('data: '+json.dumps(event)+'\n\n').encode()
+                yield ''.join(lines[2:]).encode()
+
+        def respond(request):
+            self.sent.append(request)
+            return httpx.Response(200,stream=Fragments())
+
+        elapsed=0.0
+        provider=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),self.budget,
+            transport=httpx.MockTransport(respond))
+        receipt={};outputs=[]
+        with patch('cj_agent.provider.time',SimpleNamespace(monotonic=lambda:elapsed)):
+            for fragment in provider.invoke([dict(role='user',content='Synthetic long answer')],TOOL_SYSTEM,
+                    'slow-protected-write',tools=TOOLS,native_turn_profile=M4_NATIVE_TURN_STREAM,
+                    receipt=receipt,guard=lambda:True):
+                if not outputs:
+                    self.assertTrue(fragment.strip())
+                    self.assertEqual(receipt,{})
+                else:
+                    self.assertEqual(receipt['usage']['total_tokens'],50)
+                outputs.append(fragment)
+                elapsed+=17
+        self.assertEqual(''.join(outputs),''.join(texts))
+        self.assertEqual(receipt['usage']['total_tokens'],50)
+        self.assertEqual(len(self.sent),1)
+        self.assertEqual(self.budget.inspect()[0]['state'],'RECEIVED')
+
     def test_model_turn_stream_rejects_usage_before_terminal_body_or_tool(self):
         lines=sse().splitlines(keepends=True)
         preterminal=''.join(lines[4:6]+lines[:4]+lines[6:])

@@ -174,10 +174,9 @@ M4_NATIVE_TURN_PROFILE='model-tool-turn-function.1'
 M4_TURN_FUNCTION='m4_tool_turn'
 M4_NATIVE_TURN_PROFILE_V2='model-tool-turn-function.2'
 M4_NATIVE_TURN_STREAM='MODEL-TOOL-TURN-STREAM@1'
-# Publish the first fragment promptly, then batch later fragments to limit writes
-# on the Hong Kong -> Singapore connection.
+# Publish one early fragment; further synchronous RUN writes would pause reads
+# of the same provider stream before terminal usage can arrive.
 _M4_STREAM_FIRST_CHARS=24
-_M4_STREAM_FOLLOWUP_CHARS=256
 M4_TURN_FUNCTION_V2='m4_tool_turn_v2'
 _M4_TURN_FIELDS=('version','kind','answer','calls')
 _M4_REQUEST_SENT=object()
@@ -566,8 +565,8 @@ class MeteredDashScopeProvider:
                                 pending+=text
                                 keep=len(self.config.api_key)-1
                                 stop=len(pending)-keep
-                                threshold=(_M4_STREAM_FOLLOWUP_CHARS if first_output is not None else _M4_STREAM_FIRST_CHARS) if incremental else 1
-                                if stop>=threshold:
+                                threshold=_M4_STREAM_FIRST_CHARS if incremental else 1
+                                if stop>=threshold and (not incremental or first_output is None):
                                     if incremental and first_output is None:first_output=time.monotonic()
                                     yield pending[:stop]
                                     pending=pending[stop:]
