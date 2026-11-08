@@ -200,6 +200,12 @@ class SupabaseTestDatabase(LocalDatabase):
     def _before_scope(self,cursor):
         if self._transaction_guard is not None:self._transaction_guard(cursor)
 
+    def run_repository(self,scope,*,usage_profile=None):
+        connect_worker=None
+        if self._pool is not None:
+            connect_worker=lambda: self.connect(scope,usage_profile=usage_profile,dedicated=True)
+        return super().run_repository(scope,usage_profile=usage_profile,connect_worker=connect_worker)
+
     def _check_execution_connection(self, cursor):
         require_identity(cursor,'cj_m1_runtime')
         super()._check_execution_connection(cursor)

@@ -350,11 +350,11 @@ class LocalDatabase:
     def trip_repository(self, scope):
         return TripRepository(lambda: self.connect(scope), trip_scope_for(scope), confirm=local_confirmation)
 
-    def run_repository(self, scope, *, usage_profile=None):
+    def run_repository(self, scope, *, usage_profile=None, connect_worker=None):
         connect = (lambda: self.connect(scope)) if usage_profile is None else (lambda: self.connect(scope,usage_profile=usage_profile))
         return RunRepository(connect, scope, expires_at=datetime.now(timezone.utc) + RUN_RETENTION,
                              statement_timeout_ms=10000, lock_timeout_ms=5000,
-                             connect_worker=lambda: self.connect(scope,usage_profile=usage_profile,dedicated=True))
+                             connect_worker=connect_worker)
 
     @contextmanager
     def lease_run_transactions(self, repository):

@@ -47,7 +47,7 @@ class Repository:
             if type(n) is not int or not 1 <= n <= 2147483647:
                 raise ValueError('explicit positive timeout required')
         self.connect, self.scope, self.expires_at = connect, scope, expires_at
-        self.connect_worker = connect if connect_worker is None else connect_worker
+        self.connect_worker = connect_worker
         self.statement_timeout_ms, self.lock_timeout_ms = statement_timeout_ms, lock_timeout_ms
 
     def snapshot_optional(self,binding):
@@ -68,7 +68,8 @@ class Repository:
         unsigned = int.from_bytes(hashlib.sha256(raw).digest()[:8], 'big')
         key = unsigned if unsigned < 1 << 63 else unsigned - (1 << 64)
         high, low = unsigned >> 32, unsigned & 0xffffffff
-        conn = self.connect_worker()
+        connect = self.connect if self.connect_worker is None else self.connect_worker
+        conn = connect()
         cur = None; acquired = False; active = False; failed = False
         def budget():
             cur.execute("SELECT set_config('statement_timeout',%s,true), set_config('lock_timeout',%s,true)",

@@ -14,6 +14,7 @@ import supabase_pool_gate as gate
 from cj_api.local_app import ISSUER,scope_for
 from cj_api.supabase_test_database import SupabaseTestDatabase,require_identity
 from cj_api.composition import CompositionUnavailable
+from cj_run.core import Binding
 
 
 def local_identity(conn):
@@ -63,8 +64,10 @@ def runtime_pool(config,scopes,root):
                 replacement=connection.info.backend_pid
                 assert replacement!=pid
                 assert connection.execute('SELECT scope FROM cj_message_scope').fetchall()==[(scopes[1],)]
-                with database.connect(scopes[1],dedicated=True) as dedicated:
-                    assert dedicated.info.backend_pid!=replacement
+                binding=Binding(scopes[1],'pool-chat','1','pool-message','pool-run',1)
+                with database.run_repository(scopes[1]).worker_lease(binding) as owned:
+                    assert owned is not None
+                    owned()
             with database.connect(scopes[0]) as connection:
                 assert connection.info.backend_pid==replacement
                 assert connection.execute('SELECT scope FROM cj_message_scope').fetchall()==[(scopes[0],)]
