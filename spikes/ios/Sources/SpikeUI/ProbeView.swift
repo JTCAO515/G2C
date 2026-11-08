@@ -4,7 +4,7 @@ import Textual
 #endif
 
 public struct ProbeView: View {
-    @Environment(\.dynamicTypeSize) private var systemType
+    @Environment(\.colorScheme) private var colorScheme
     @State private var streamMetrics: String?
     @State private var draft = ""
     @State private var shown = 1
@@ -26,13 +26,13 @@ public struct ProbeView: View {
     }
 
     public var body: some View {
-        TabView {
-            assistant.tabItem { Label("助手 Assistant", systemImage: "bubble.left") }
-            Text("行程 Trips · 样例无正式数据 No product data").tabItem { Label("行程 Trips", systemImage: "map") }
-            Text("插件尚未开放 Plugins are not available").tabItem { Label("插件 Plugins", systemImage: "puzzlepiece") }
-            Text("记忆 Memory · 账号登录未运行 Auth UNRUN").tabItem { Label("记忆 Memory", systemImage: "brain") }
+        Group {
+            if largeType {
+                tabs.dynamicTypeSize(.accessibility3)
+            } else {
+                tabs
+            }
         }
-        .dynamicTypeSize(largeType ? .accessibility3 : systemType)
         .task {
             if ProcessInfo.processInfo.arguments.contains("--keyboard") {
                 do { try await Task.sleep(for: .milliseconds(300)) }
@@ -49,65 +49,77 @@ public struct ProbeView: View {
         } message: { Text(notice ?? "") }
     }
 
+    private var tabs: some View {
+        TabView {
+            assistant.tabItem { Label("助手 Assistant", systemImage: "bubble.left") }
+            Text("行程 Trips · 样例无正式数据 No product data").tabItem { Label("行程 Trips", systemImage: "map") }
+            Text("插件尚未开放 Plugins are not available").tabItem { Label("插件 Plugins", systemImage: "puzzlepiece") }
+            Text("记忆 Memory · 账号登录未运行 Auth UNRUN").tabItem { Label("记忆 Memory", systemImage: "brain") }
+        }
+    }
+
     private var assistant: some View {
         ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 22) {
-                    Text("CJ-004 · 合成渲染样例 Synthetic rendering probe")
-                        .font(.caption).foregroundStyle(.secondary)
-                    VStack(alignment: .leading) {
-                        #if canImport(Textual)
-                        Toggle("Textual", isOn: $useTextual)
-                        #else
-                        Text("原生纯文本 Native plain text").font(.caption)
-                        #endif
-                        Toggle("大字 Large", isOn: $largeType)
-                    }
-                    Button(streaming ? "停止 Stop" : "增量文本 Stream fixture", action: toggleStream)
-                    ForEach(0..<shown, id: \.self) { index in
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("样例段落 Fixture \(index + 1)").font(.caption).foregroundStyle(.secondary)
+            VStack(spacing: 0) {
+                floatingControls
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 22) {
+                        Text("CJ-004 · 合成渲染样例 Synthetic rendering probe")
+                            .font(.caption).foregroundStyle(.primary)
+                        VStack(alignment: .leading) {
                             #if canImport(Textual)
-                            if useTextual {
-                                StructuredText(markdown: index == 0 ? Self.sample : partial)
-                                    .textual.textSelection(.enabled)
-                                    .textual.imageAttachmentLoader(BlockedAttachments())
-                                    .textual.emojiAttachmentLoader(BlockedAttachments())
-                            } else {
-                                Text(index == 0 ? Self.sample : partial).textSelection(.enabled)
-                            }
+                            Toggle("Textual", isOn: $useTextual)
                             #else
-                            Text(index == 0 ? Self.sample : partial).textSelection(.enabled)
+                            Text("原生纯文本 Native plain text").font(.caption)
                             #endif
-                            if index == 1, let streamMetrics {
-                                Text(streamMetrics).font(.caption).foregroundStyle(.secondary)
+                            Toggle("大字 Large", isOn: $largeType)
+                        }
+                        Button(streaming ? "停止 Stop" : "增量文本 Stream fixture", action: toggleStream)
+                            .tint(.primary)
+                        ForEach(0..<shown, id: \.self) { index in
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("样例段落 Fixture \(index + 1)").font(.caption).foregroundStyle(.primary)
+                                #if canImport(Textual)
+                                if useTextual {
+                                    StructuredText(markdown: index == 0 ? Self.sample : partial)
+                                        .textual.textSelection(.enabled)
+                                        .textual.imageAttachmentLoader(BlockedAttachments())
+                                        .textual.emojiAttachmentLoader(BlockedAttachments())
+                                } else {
+                                    Text(index == 0 ? Self.sample : partial).textSelection(.enabled)
+                                }
+                                #else
+                                Text(index == 0 ? Self.sample : partial).textSelection(.enabled)
+                                #endif
+                                if index == 1, let streamMetrics {
+                                    Text(streamMetrics).font(.caption).foregroundStyle(.secondary)
+                                }
                             }
+                            .id(index)
                         }
-                        .id(index)
+                        Color.clear.frame(height: 1).id("end")
                     }
-                    Color.clear.frame(height: 1).id("end")
+                    .padding(.horizontal, 18)
+                    .padding(.top, largeType ? 64 : 16)
+                    .padding(.bottom, 12)
                 }
-                .padding(.horizontal, 18)
-                .padding(.top, largeType ? 120 : 72)
-                .padding(.bottom, 12)
-            }
-            .clipped() // Keep scrolling content out of the system status-bar safe area.
-            .scrollDismissesKeyboard(.interactively)
-            .simultaneousGesture(DragGesture().onChanged { _ in following = false })
-            .overlay(alignment: .top) { floatingControls }
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                VStack(spacing: 8) {
-                    if streaming { Button("停止 Stop", action: stopStream) }
-                    if !following {
-                        Button("回到底部 Follow latest") {
-                            following = true
-                            proxy.scrollTo("end", anchor: .bottom)
+                .clipped() // Keep scrolling content out of the system status-bar safe area.
+                .scrollDismissesKeyboard(.interactively)
+                .simultaneousGesture(DragGesture().onChanged { _ in following = false })
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    VStack(spacing: 8) {
+                        if streaming { Button("停止 Stop", action: stopStream) }
+                        if !following {
+                            Button("回到底部 Follow latest") {
+                                following = true
+                                proxy.scrollTo("end", anchor: .bottom)
+                            }.tint(.primary)
                         }
+                        composer
                     }
-                    composer
+                    .padding(10)
+                    .background(.regularMaterial)
                 }
-                .padding(10)
-                .background(.regularMaterial)
             }
             .onChange(of: partial) { _, _ in
                 if following { proxy.scrollTo("end", anchor: .bottom) }
@@ -174,13 +186,14 @@ public struct ProbeView: View {
             Spacer(minLength: 8)
             Button { notice = "角色入口占位 Character placeholder" } label: {
                 Label("Muse", systemImage: "person.crop.circle").padding(12)
-            }.background(.thinMaterial, in: Capsule())
+            }.background(colorScheme == .dark ? Color(white: 0.14) : Color(white: 0.91), in: Capsule())
             Spacer(minLength: 8)
             Button { notice = "礼物尚未开放 Gifts unavailable" } label: {
                 Image(systemName: "gift").frame(minWidth: 44, minHeight: 44)
             }.accessibilityLabel("礼物 Gifts")
                 .background(.thinMaterial, in: Capsule())
         }
+        .tint(.primary)
         .padding(.horizontal, 12).padding(.top, 6)
         // Only individual controls hit-test; no full-width overlay background.
     }
