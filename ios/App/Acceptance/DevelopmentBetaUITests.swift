@@ -207,18 +207,25 @@ import CryptoKit
         back.element.tap()
     }
 
-    private func readCompletedRun(_ completed: String) {
+    private func readCompletedRun(_ completed: String, stopped: [String]) {
         let button = app.buttons.matching(identifier: "run.snapshot.read").element
         let status = app.descendants(matching: .any).matching(identifier: "run.display.status").element
-        let deadline = Date().addingTimeInterval(210)
+        // The original public Chinese run completed after the former 210s
+        // observation limit. Poll only its read action and stop on a known terminal result.
+        let deadline = Date().addingTimeInterval(600)
+        let terminal = [completed] + stopped
         while Date() < deadline {
             let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == true AND enabled == true"), object: button)
-            guard XCTWaiter.wait(for: [ready], timeout: 20) == .completed else { break }
-            businessTap("run.snapshot.read")
-            let done = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", completed), object: status)
-            if XCTWaiter.wait(for: [done], timeout: 15) == .completed { return }
+            if XCTWaiter.wait(for: [ready], timeout: 20) == .completed {
+                businessTap("run.snapshot.read")
+            }
+            let done = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label IN %@", terminal), object: status)
+            if XCTWaiter.wait(for: [done], timeout: 15) == .completed {
+                XCTAssertEqual(status.label, completed, "The original run reached a non-success terminal state")
+                return
+            }
         }
-        XCTFail("The original run did not produce a verified completed snapshot")
+        XCTFail("The original run did not produce a verified terminal snapshot before the observation deadline")
     }
 
     func testInternalComposition() async throws {
@@ -272,7 +279,12 @@ import CryptoKit
             "Plan from my saved needs. Keep the name and address in Chinese, show the local dates and any CNY cost, and mark uncertainty.",
             "请根据已保存需求规划。保留中文地名和地址，标注当地日期、人民币金额与未确认事项。"))
         dismissKeyboard(label("Done", "完成")); businessTap("assistant.send")
-        readCompletedRun(label("Completed", "已完成"))
+        readCompletedRun(label("Completed", "已完成"), stopped: [
+            label("Failed · partial text", "运行失败 · 部分正文"),
+            label("Cancelled · partial text", "已取消 · 部分正文"),
+            label("Context invalid · partial text", "上下文失效 · 部分正文"),
+            label("Result unknown · partial text", "结果未知 · 部分正文"),
+        ])
         readLabel("run.draft.status", containing: label("Draft candidate recorded", "已记录草稿候选"))
         let answer = businessElement("run.display.text")
         let answerText = try XCTUnwrap(answer.value as? String)
