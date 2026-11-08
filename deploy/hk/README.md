@@ -149,6 +149,11 @@ RUN、Meter 与真实出口执行。未选择的主体仍用原路径；已有 M
 实际激活前须核对原主体、原 Travel/版本和执行身份，按 #495 处理授权范围外的操作；
 真实模型续答、回执与质量仍分别在 #30/#32 验证。移除 worker 配置不能恢复已有 Memory 主体的旧派发。
 
+`worker.env` 可另设 `CJ_BETA_MODEL_STREAM_SUBJECT` 为一个原已邀请合成主体，
+仅选择 [MODEL-TOOL-TURN-STREAM@1](../../contracts/run/MODEL-TOOL-TURN-STREAM-V1.md)。
+默认不设，其他主体继续使用原 v2。先暂停测试提交、核对原 delivery 已清空，
+再切换或移除该选项；同一原 UNKNOWN 只读核对。
+
 ## 已有 Memory 主体的 MESSAGE 激活
 
 先交付匹配主体的原 typed worker。对已有 Memory 的主体，旧 `activate-travel` 仍明确拒绝；

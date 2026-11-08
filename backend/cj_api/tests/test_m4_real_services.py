@@ -16,7 +16,7 @@ from jsonschema import Draft202012Validator,ValidationError
 
 from cj_agent.provider import DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,M4_NATIVE_ANSWER_PROFILE,M4_NATIVE_TURN_PROFILE,M4_TURN_FUNCTION,ProviderFailed,ProviderUnknown,_m4_wire,_bounded_sse_lines
 from cj_agent.provider import _m4_turn_function
-from cj_agent.provider import M4_NATIVE_TURN_PROFILE_V2,M4_REAL_OUTPUT_TOKENS,M4_TURN_FUNCTION_V2
+from cj_agent.provider import M4_NATIVE_TURN_PROFILE_V2,M4_NATIVE_TURN_STREAM,M4_REAL_OUTPUT_TOKENS,M4_TURN_FUNCTION_V2
 from cj_api.real_services import RealServices,RealTools,TOOLS
 from cj_api.real_services import canonical_tool
 from cj_api.real_services import ModelInput,TOOL_SYSTEM
@@ -61,6 +61,31 @@ def turn_sse(*,tool=False,usage=True,model=M4_MODEL,done=True,turn=None,compact=
 
 
 class Boundaries(unittest.TestCase):
+    def test_model_turn_stream_withholds_split_secret_and_missing_receipt_tail(self):
+        for label,fragments in (
+            ('secret',['Safe text that appears before the guarded tail of this synthetic answer. '+KEY[:12],KEY[12:]]),
+            ('truncated',['Safe text that appears before the guarded tail of this synthetic answer. ','Unfinished tail']),
+        ):
+            with self.subTest(label=label):
+                first=json.loads(sse().splitlines()[0][6:])
+                lines=[]
+                for fragment in fragments:
+                    first['choices'][0]['delta']['content']=fragment
+                    lines.append('data: '+json.dumps(first)+'\n\n')
+                provider=self.provider(''.join(lines));receipt={};reply={};published=[]
+                with self.assertRaises(ProviderUnknown):
+                    for chunk in provider.invoke([dict(role='user',content='Synthetic answer test')],TOOL_SYSTEM,label,
+                            tools=TOOLS,native_turn_profile=M4_NATIVE_TURN_STREAM,receipt=receipt,native_reply=reply,guard=lambda:True):
+                        published.append(chunk)
+                self.assertTrue(''.join(published).startswith('Safe text'))
+                self.assertNotIn(KEY[:12],''.join(published))
+                self.assertEqual((receipt,reply),({},{}))
+                self.assertEqual(self.budget.inspect()[-1]['state'],'INTENT')
+                with self.assertRaises(BudgetUnknown):
+                    list(provider.invoke([dict(role='user',content='Synthetic answer test')],TOOL_SYSTEM,label,
+                        tools=TOOLS,native_turn_profile=M4_NATIVE_TURN_STREAM,receipt={},guard=lambda:True))
+                self.assertEqual(provider.calls,1)
+
     def test_compact_native_length_headroom_keeps_strict_original_receipt(self):
         answer='Synthetic "quoted" place\\name.\nSecond line.'
         turn=dict(version='MODEL-tool-turn.1',kind='answer',answer=dict(zh='合成答案。',en=answer),calls=[])

@@ -33,6 +33,7 @@ SECRET_FILES={
 TYPED_POLICY='CJ_BETA_TYPED_MEMORY_POLICY_B64'
 MEMORY_RUN_POLICY='CJ_BETA_MEMORY_RUN_POLICY_B64'
 TYPED_MESSAGE_SUBJECTS='CJ_BETA_TYPED_MESSAGE_SUBJECTS_JSON'
+MODEL_STREAM_SUBJECT='CJ_BETA_MODEL_STREAM_SUBJECT'
 
 
 def load_secret_environment(role,*,root=Path('/run/secrets')):
@@ -40,7 +41,7 @@ def load_secret_environment(role,*,root=Path('/run/secrets')):
     expected=SECRET_FILES[role];values={}
     for file,names in expected.items():
         optional=({TYPED_POLICY,TYPED_MESSAGE_SUBJECTS} if role=='api' and file=='api' else
-                  {MEMORY_RUN_POLICY} if role=='worker' and file=='worker' else set())
+                  {MEMORY_RUN_POLICY,MODEL_STREAM_SUBJECT} if role=='worker' and file=='worker' else set())
         allowed=names|optional
         if any(name in os.environ for name in allowed):raise ValueError('persistent_container_secret_environment_refused')
         descriptor=os.open(Path(root)/(file+'.env'),os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK)

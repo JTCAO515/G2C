@@ -4,7 +4,7 @@ Ordinary RUN text stays ordinary text. Frozen synthetic PLACE/FACT transcripts,
 client modes and draft/confirmation semantics remain unchanged.
 """
 import asyncio
-from contextlib import contextmanager
+from contextlib import closing,contextmanager
 from dataclasses import dataclass
 from datetime import datetime,timezone
 import hashlib
@@ -18,7 +18,7 @@ from types import MappingProxyType
 
 from cj_agent.provider import (
     DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,M4_REAL_OUTPUT_TOKENS,
-    M4_NATIVE_TURN_PROFILE_V2,ProviderUnknown,ProviderFailed,
+    M4_NATIVE_TURN_PROFILE_V2,M4_NATIVE_TURN_STREAM,ProviderUnknown,ProviderFailed,
 )
 from cj_fact.contract_v1 import decode_query as fact_query
 from cj_fact.live_source import NOTICE_URL,WEATHER_URL,public_page,weather
@@ -94,6 +94,7 @@ class ModelInput:
     provider:object
     native_reply:dict
     final_answer:bool=False
+    turn_profile:str=M4_NATIVE_TURN_PROFILE_V2
 
 
 def canonical_tool(name,raw):
@@ -169,9 +170,13 @@ class RealServices:
 
 
 class RealTools:
-    def __init__(self,services,*,allowed_native=NATIVE_TOOLS,coordinate_routes=True):
+    def __init__(self,services,*,allowed_native=NATIVE_TOOLS,coordinate_routes=True,streaming_subject=None):
         if type(coordinate_routes) is not bool:raise ValueError('explicit_coordinate_route_profile_required')
         self.services=services;self.coordinate_routes=coordinate_routes
+        from .local_app import ISSUER,scope_for
+        if streaming_subject is not None and (type(streaming_subject) is not str or streaming_subject not in services.subjects):
+            raise ValueError('explicit_invited_streaming_subject_required')
+        self.streaming_scope=None if streaming_subject is None else scope_for(ISSUER,streaming_subject)
         if type(allowed_native) is not frozenset or not allowed_native or not allowed_native<=NATIVE_TOOLS:
             raise ValueError('explicit code-owned native tool subset required')
         self.names=allowed_native
@@ -185,18 +190,21 @@ class RealTools:
             messages,system,provider=argument.messages,argument.system,argument.provider
             native_reply=argument.native_reply
             final_answer=argument.final_answer
+            turn_profile=argument.turn_profile
         else:
-            messages,system,provider=argument;native_reply=None;final_answer=False
+            messages,system,provider=argument;native_reply=None;final_answer=False;turn_profile=M4_NATIVE_TURN_PROFILE_V2
         from cj_agent.worker import _MemoryProvider,_EditMemoryProvider
         wrapped=type(provider) in (_MemoryProvider,_EditMemoryProvider)
         if (provider.original if wrapped else provider) is not self.services.model:
             raise BudgetUnknown('M4 model registration mismatch')
         raw=canonical(dict(messages=messages,system=system,endpoint=M4_BASE,model=M4_MODEL,synthetic_only=True,
                            native_tools=self.native_tools if system==TOOL_SYSTEM else None,
-                           **({'native_turn_profile':M4_NATIVE_TURN_PROFILE_V2,'external_tools_disabled':final_answer} if system==TOOL_SYSTEM else {})))
+                           **({'native_turn_profile':turn_profile,'external_tools_disabled':final_answer} if system==TOOL_SYSTEM else {})))
         inputs=json.loads(raw);metadata={}
         def bind(operation,guard):
             self.services.require_scope(operation.binding.scope)
+            if turn_profile==M4_NATIVE_TURN_STREAM and operation.binding.scope!=self.streaming_scope:
+                raise BudgetUnknown('original model streaming subject not admitted')
             def admitted():
                 if wrapped:provider._check()
                 valid=guard()
@@ -267,11 +275,24 @@ class RealTools:
         self.services.require_scope(binding.scope)
         messages=list(messages);seen=set()
         chinese=any('一'<=c<='鿿' for c in messages[-1]['content'])
+        incremental=binding.scope==self.streaming_scope
+        profile=M4_NATIVE_TURN_STREAM if incremental else M4_NATIVE_TURN_PROFILE_V2
         for round_index in range(8):
             worker._model_history(binding,messages,TOOL_SYSTEM)
             native_reply={}
-            raw=''.join(worker._registered_stream(binding,'model.tool_turn.'+str(round_index),'model.tool_turn',
-                ModelInput(messages,TOOL_SYSTEM,worker.provider,native_reply,final_answer=round_index==7)))
+            chunks=worker._registered_stream(binding,'model.tool_turn.'+str(round_index),'model.tool_turn',
+                ModelInput(messages,TOOL_SYSTEM,worker.provider,native_reply,final_answer=round_index==7,turn_profile=profile))
+            if incremental:
+                raw=None
+                with closing(chunks):
+                    for chunk in chunks:
+                        if 'assistant' in native_reply:raw=chunk
+                        elif chunk:yield chunk
+                # An answer already streamed to the original RUN. Tool data
+                # is emitted once by the producer and can dispatch only after
+                # the generator has settled the original Meter receipt.
+                if raw is None:return
+            else:raw=''.join(chunks)
             try:turn=parse_turn(raw.encode(),self.names)
             except ValueError:raise ProviderUnknown('live model tool turn unavailable') from None
             if not turn.calls:
@@ -294,6 +315,11 @@ class RealTools:
                 source=data.get('source',{}).get('endpoint') if name=='place' else data['source_url']
                 if source:yield ('来源：' if chinese else 'Source: ')+source+'\n'
                 results.append(dict(index=index,name=call.name,tool=name,result=data))
-            messages.append(dict(role='tool',tool_call_id=assistant['tool_calls'][0]['id'],
-                content=canonical(dict(results=results)).decode()))
+            if incremental:
+                for supplier_call,result in zip(assistant['tool_calls'],results,strict=True):
+                    messages.append(dict(role='tool',tool_call_id=supplier_call['id'],
+                        content=canonical(dict(results=[result])).decode()))
+            else:
+                messages.append(dict(role='tool',tool_call_id=assistant['tool_calls'][0]['id'],
+                    content=canonical(dict(results=results)).decode()))
         raise BudgetUnknown('M4 tool round limit reached')
