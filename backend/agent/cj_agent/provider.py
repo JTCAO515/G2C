@@ -457,6 +457,8 @@ class MeteredDashScopeProvider:
             prompt+='Return the envelope as this named function\'s arguments, not assistant content. Cite sources and UNKNOWN conditions.'
         elif native_tools:
             prompt+='\nUse the supplied tools for current facts. Final answer must be JSON {"zh":"...","en":"..."}; cite sources and UNKNOWN conditions.'
+        elif system is not None and 'json' not in prompt.casefold():
+            prompt+='\nReturn a single JSON object matching the requested output format.'
         body=dict(model=M4_MODEL,messages=[dict(role='system',content=prompt),*wire_messages],stream=True,
                   stream_options={'include_usage':True},enable_thinking=False,
                   max_tokens=self.config.max_output_tokens if compact or incremental else min(1024,self.config.max_output_tokens))

@@ -40,6 +40,19 @@ from cj_message.trip_reference import profile as trip_profile
 from cj_run.core import Service as RunService, Denied
 
 
+HK_ASSEMBLY_PLAN_JSON = (
+    '\nReturn one JSON object for TRIP-model-plan.1 with exactly version, title, items, proposed_subjects. '
+    'Set version to "TRIP-model-plan.1". Each item has id, text, verification, evidence, schedule, '
+    'fixed, source_category, source_refs. schedule has start and end, each with date, time, timezone, '
+    'utc_offset observations. Use {"state":"unknown"} for unknown observations and UTC offsets. '
+    'For every original fixed_items entry keep its id (item_id), text (description), fixed (locked), '
+    'date, time, timezone and order. Set verification to "pending", evidence and source_refs to [], '
+    'source_category to "user_provided" for unchanged source text. New items have unknown fixed '
+    'and source_category "unknown". Map exactly their IDs to explicit original participant IDs '
+    'in proposed_subjects; use {} if no items are new. Do not invent source evidence or approval.'
+)
+
+
 def provider(real):
     if real: raise ProviderFailed('no approved metered real provider adapter')
     return FakeProvider()
@@ -264,6 +277,8 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
         if draft_profile=='needs-structured.1':
             from cj_draft.needs_local import publisher
             drafts=publisher(database,checker,message_context,token,scope)
+            if assembly_planning:
+                drafts.system+=HK_ASSEMBLY_PLAN_JSON
         else:
             from cj_api.local_current_plan import publisher
             drafts=publisher(database,checker,message_context,token,scope)
