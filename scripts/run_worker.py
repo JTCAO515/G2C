@@ -106,7 +106,7 @@ def _require_memory_configuration(cursor, scope, configuration, travel):
         raise RuntimeDenied('existing memory requires explicit runtime configuration')
 
 
-def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,formal_memory_configuration=None,account_checker_builder=None,beta_b_run_credential=False,assembly_planning=False):
+def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,formal_memory_configuration=None,account_checker_builder=None,run_credential=False,assembly_planning=False):
     if draft_profile not in (None,'needs-structured.1','needs-current-trip.1'):
         raise CompositionUnavailable('unknown explicit draft profile')
     if place_draft_configuration is not None:
@@ -152,7 +152,7 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
     issue_run_credential = None
 
     @contextmanager
-    def lease_beta_b_credential():
+    def lease_run_credential():
         nonlocal issue_run_credential
         from cj_api.local_account_admission_v2 import permit_retirement_read_lease,retirement_read_operation
 
@@ -165,7 +165,7 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
             # Reuse only the physical connection: every retirement check still
             # gets a fresh read-only transaction with the current scope/release.
             with permit_retirement_read_lease(database,lambda:tools_configuration.services.require_scope(scope)), \
-                    retirement_read_operation(purpose='hk_beta_b_worker_retirement'):
+                    retirement_read_operation(purpose='hk_worker_retirement'):
                 yield
         finally:
             issue_run_credential = None
@@ -299,22 +299,26 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
         memory=memory,edit_publisher=None if edit_config is None else edit_config.publisher,edit_results=database.edit_results,
         memory_history=history is not None,history_adapter=history,
         message_context=message_context,
-        execution_lease=lease_beta_b_credential if beta_b_run_credential else lease_execution if reuse_connections else nullcontext,
+        execution_lease=lease_run_credential if run_credential else lease_execution if reuse_connections else nullcontext,
         owned_transaction_lease=(lambda: database.lease_run_transactions(runs.repository)) if reuse_connections else None,
         tools=tools_configuration,place_sources=place_sources,
         execution_guard=lambda binding: database.require_execution(binding.scope, binding, connection=execution_connection),
-        needs_lease=needs_lease_for(database,checker,memory_credential if beta_b_run_credential else token),
+        needs_lease=needs_lease_for(database,checker,memory_credential if run_credential else token),
         budget_exit=(LocalBudgetRouter(database) if tools_configuration is None else
                      LocalBudgetRouter(database,registrations=tools_configuration.registrations)))
 
 
-def run_once(database, model, auth_dir, *, memory_configuration=None,memory_configuration_for_scope=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,background_jobs=None,formal_memory_configuration=None,real_services=None,account_admission=False,hk_beta_b_run_credential=False,hk_assembly_scopes=frozenset()):
+def run_once(database, model, auth_dir, *, memory_configuration=None,memory_configuration_for_scope=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,background_jobs=None,formal_memory_configuration=None,real_services=None,account_admission=False,hk_beta_b_run_credential=False,hk_assembly_scopes=frozenset(),hk_assembly_run_credential_scopes=frozenset()):
     if memory_configuration_for_scope is not None and (memory_configuration is not None or formal_memory_configuration is not None):
         raise ValueError('select one explicit Memory configuration source')
     if hk_assembly_scopes and (real_services is None or not account_admission or draft_profile is not None
             or place_draft_configuration is not None or memory_configuration_for_scope is None
             or not database.travel_context or not database.needs_context):
         raise CompositionUnavailable('explicit Hong Kong Typed planning composition required')
+    if hk_assembly_run_credential_scopes and (
+            hk_assembly_run_credential_scopes!=hk_assembly_scopes or database.run_context is None
+            or database.run_context.current.meter.max_seconds!=600):
+        raise CompositionUnavailable('explicit Hong Kong assembly credential pair and 600-second Meter required')
     if formal_memory_configuration is not None:
         from cj_api.local_formal_memory import configuration
         formal_memory_configuration=configuration(formal_memory_configuration)
@@ -345,6 +349,9 @@ def run_once(database, model, auth_dir, *, memory_configuration=None,memory_conf
         checker=account_checker_for(Path(auth_dir),database)
     results = []
     failure = None
+    run_credential_scopes=hk_assembly_run_credential_scopes
+    if hk_beta_b_run_credential:
+        run_credential_scopes=run_credential_scopes|{scope_for(ISSUER,'m4-synthetic-beta-b')}
     for scope in pending_scopes:
         # One scope's unreconciled run (for example an unresolved original quota
         # period) must not starve every later scope; it is still raised below.
@@ -354,15 +361,14 @@ def run_once(database, model, auth_dir, *, memory_configuration=None,memory_conf
             assembly_planning=scope in hk_assembly_scopes
             if assembly_planning and type(selected_memory) is not TypedRuntimeConfiguration:
                 raise CompositionUnavailable('assembly planning requires original Typed runtime')
-            beta_b_run_credential = (hk_beta_b_run_credential and account_checker_builder is not None
-                and scope == scope_for(ISSUER, 'm4-synthetic-beta-b')
+            run_credential = (scope in run_credential_scopes and account_checker_builder is not None
                 and type(selected_memory) is TypedRuntimeConfiguration
                 and database.run_context.current.meter.max_seconds == 600)
             results += _worker_for_scope(database,model,auth_dir,scope,checker,
                                          memory_configuration=selected_memory,tools_configuration=tools_configuration,
                                          draft_profile='needs-structured.1' if assembly_planning else draft_profile,
                                          place_draft_configuration=place_draft_configuration,formal_memory_configuration=formal_memory_configuration,
-                                         account_checker_builder=account_checker_builder,beta_b_run_credential=beta_b_run_credential,
+                                         account_checker_builder=account_checker_builder,run_credential=run_credential,
                                          assembly_planning=assembly_planning).process()
         except Exception as error:
             if failure is None: failure = error
