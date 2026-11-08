@@ -8,12 +8,14 @@ by its original identity and never automatically resent.
 """
 import argparse
 from contextlib import closing, contextmanager, nullcontext
+from functools import cache
 import json
 import os
 from pathlib import Path
 import sys
 import logging
 import time
+from uuid import uuid4
 
 if os.environ.get('CJ_ENV') != 'local':
     raise SystemExit('CJ_ENV=local is required')
@@ -91,7 +93,7 @@ def _require_memory_configuration(cursor, scope, configuration, travel):
         raise RuntimeDenied('existing memory requires explicit runtime configuration')
 
 
-def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,formal_memory_configuration=None,account_checker_builder=None):
+def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,formal_memory_configuration=None,account_checker_builder=None,beta_b_run_credential=False):
     if draft_profile not in (None,'needs-structured.1','needs-current-trip.1'):
         raise CompositionUnavailable('unknown explicit draft profile')
     if place_draft_configuration is not None:
@@ -129,13 +131,33 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
         messages = MessageService(database.message_repository(scope), new_run_id=lambda: None)
         subject = scope.removeprefix('local:' + ISSUER + ':')
         def token(subject=subject): return dev_auth.token(Path(auth_dir),subject,5)
-        memory_credential = token() if memory_configuration is not None or editing or formal_memory_configuration is not None else None
+        bootstrap_credential = token() if memory_configuration is not None or editing or formal_memory_configuration is not None else None
         # Use a new transaction for the final live Travel profile check.
         with database.scoped_cursor(scope, connection=preflight_connection) as cursor:
             travel_enabled = travel_profile(cursor, scope)
 
-    def memory_admit(credential=memory_credential, scope=scope):
-        decision = checker.check(credential)
+    issue_run_credential = None
+
+    @contextmanager
+    def lease_beta_b_credential():
+        nonlocal issue_run_credential
+
+        @cache
+        def issue():
+            return dev_auth.token(Path(auth_dir), subject, 11, jti=str(uuid4()))
+
+        issue_run_credential = issue
+        try:
+            yield
+        finally:
+            issue_run_credential = None
+            issue.cache_clear()
+
+    def memory_credential():
+        return bootstrap_credential if issue_run_credential is None else issue_run_credential()
+
+    def memory_admit():
+        decision = checker.check(memory_credential())
         if decision.status is AdmissionStatus.UNKNOWN:
             raise RuntimeUnknown('memory admission unknown')
         if decision.status is not AdmissionStatus.ALLOWED or scope_for(
@@ -145,9 +167,10 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
     message_context=None
     if travel_enabled or type(memory_configuration) is TypedRuntimeConfiguration:
         from cj_message.travel_reference import MessageContextAuthority
-        credential=memory_credential if type(memory_configuration) is TypedRuntimeConfiguration or formal_memory_configuration is not None else token()
+        uses_memory_credential = type(memory_configuration) is TypedRuntimeConfiguration or formal_memory_configuration is not None
+        travel_credential = None if uses_memory_credential else token()
         def travel_admit():
-            decision=checker.check(credential)
+            decision=checker.check(memory_credential() if uses_memory_credential else travel_credential)
             if decision.status is AdmissionStatus.UNKNOWN:
                 raise LeaseUnavailable('travel admission unknown')
             if (decision.status is not AdmissionStatus.ALLOWED
@@ -255,16 +278,16 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
         memory=memory,edit_publisher=None if edit_config is None else edit_config.publisher,edit_results=database.edit_results,
         memory_history=history is not None,history_adapter=history,
         message_context=message_context,
-        execution_lease=lease_execution if reuse_connections else nullcontext,
+        execution_lease=lease_beta_b_credential if beta_b_run_credential else lease_execution if reuse_connections else nullcontext,
         owned_transaction_lease=(lambda: database.lease_run_transactions(runs.repository)) if reuse_connections else None,
         tools=tools_configuration,place_sources=place_sources,
         execution_guard=lambda binding: database.require_execution(binding.scope, binding, connection=execution_connection),
-        needs_lease=needs_lease_for(database,checker,token),
+        needs_lease=needs_lease_for(database,checker,memory_credential if beta_b_run_credential else token),
         budget_exit=(LocalBudgetRouter(database) if tools_configuration is None else
                      LocalBudgetRouter(database,registrations=tools_configuration.registrations)))
 
 
-def run_once(database, model, auth_dir, *, memory_configuration=None,memory_configuration_for_scope=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,background_jobs=None,formal_memory_configuration=None,real_services=None,account_admission=False):
+def run_once(database, model, auth_dir, *, memory_configuration=None,memory_configuration_for_scope=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,background_jobs=None,formal_memory_configuration=None,real_services=None,account_admission=False,hk_beta_b_run_credential=False):
     if memory_configuration_for_scope is not None and (memory_configuration is not None or formal_memory_configuration is not None):
         raise ValueError('select one explicit Memory configuration source')
     if formal_memory_configuration is not None:
@@ -303,9 +326,13 @@ def run_once(database, model, auth_dir, *, memory_configuration=None,memory_conf
         try:
             selected_memory=(memory_configuration if memory_configuration_for_scope is None
                              else memory_configuration_for_scope(scope))
+            beta_b_run_credential = (hk_beta_b_run_credential and account_checker_builder is not None
+                and scope == scope_for(ISSUER, 'm4-synthetic-beta-b')
+                and type(selected_memory) is TypedRuntimeConfiguration
+                and database.run_context.current.meter.max_seconds == 600)
             results += _worker_for_scope(database,model,auth_dir,scope,checker,
                                          memory_configuration=selected_memory,tools_configuration=tools_configuration,draft_profile=draft_profile,place_draft_configuration=place_draft_configuration,formal_memory_configuration=formal_memory_configuration,
-                                         account_checker_builder=account_checker_builder).process()
+                                         account_checker_builder=account_checker_builder,beta_b_run_credential=beta_b_run_credential).process()
         except Exception as error:
             if failure is None: failure = error
     if background_jobs is not None:results+=background_jobs.run_once(model)
