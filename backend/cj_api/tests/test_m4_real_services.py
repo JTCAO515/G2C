@@ -523,6 +523,27 @@ class Boundaries(unittest.TestCase):
         self.assertNotIn('tools',body)
         self.assertNotIn('tool_choice',body)
 
+    def test_structured_draft_declares_json_mode_to_supplier(self):
+        def respond(request):
+            self.sent.append(request)
+            body=json.loads(request.content)
+            self.assertEqual(body['response_format'],{'type':'json_object'})
+            if not any('json' in m['content'].casefold() for m in body['messages']):
+                return httpx.Response(400,json={'error':{'code':'invalid_parameter'}})
+            return httpx.Response(200,stream=httpx.ByteStream(sse().encode()))
+
+        provider=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),self.budget,
+            transport=httpx.MockTransport(respond))
+        messages=[dict(role='user',content='请按保存的需求规划。'),
+                  dict(role='system',content='TRIP-source-input.1')]
+        receipt={}
+        chunks=provider.invoke(messages,'TRIP-model-plan.1: preserve fixed observations.',
+            'draft-json-shape',receipt=receipt,guard=lambda:True)
+        self.assertEqual(json.loads(''.join(chunks))['en'],'Needs verification.')
+        self.assertEqual(receipt['usage']['total_tokens'],50)
+        self.assertEqual(len(self.sent),1)
+        self.assertEqual(self.budget.inspect()[0]['state'],'RECEIVED')
+
     def test_old_json_object_intent_cannot_be_redispatched_as_a_schema_request(self):
         raw=b'{"response_format":{"type":"json_object"},"synthetic_prior_request":true}'
         self.budget.begin('original','model',raw);before=self.budget.inspect()
