@@ -10,9 +10,9 @@ from cj_api.local_plan_model import NeedsPlanFakeProvider
 from cj_api.composition import CompositionUnavailable
 from cj_agent.provider import FakeProvider,ProviderUnknown
 from cj_trip.domain import packed
-from cj_trip.local_needs_app import create_local_needs_app
-from cj_trip.local_manual_app import create_local_manual_app
-from cj_trip.local_structured_read import create_local_structured_read_app
+from cj_trip.local_needs_app import create_local_needs_app,register_local_needs_routes
+from cj_trip.local_manual_app import create_local_manual_app,register_local_manual_routes
+from cj_trip.local_structured_read import create_local_structured_read_app,register_local_structured_read_routes
 from cj_agent.draft import trip_scope_for
 sys.path[:0]=[str(harness.ROOT/'scripts'),str(harness.ROOT/'backend/draft/tests')]
 import dev_auth,run_worker
@@ -67,6 +67,36 @@ def exercise(auth,conninfo):
     assert outcomes[0].status=='completed' and outcomes[0].proposal_id and model.calls==2
     trip=accept('explicit',outcomes[0])
     assert run_worker.run_once(database('explicit'),model,auth,draft_profile='needs-structured.1')==[] and model.calls==2
+    # Hosted composition uses one app and an independent admission list for Trip.
+    selected=auth.parent/'assembly-auth'
+    selected.mkdir()
+    (selected/'public.pem').write_bytes((auth/'public.pem').read_bytes())
+    (selected/'invited.json').write_text('["explicit"]')
+    composed=app('explicit')
+    register_local_needs_routes(composed,database=database('explicit'),auth_dir=selected,
+        confirmation_signer=signer,planning_only=True)
+    register_local_manual_routes(composed,database=database('explicit'),auth_dir=selected,
+        confirmation_signer=signer,editing_only=True)
+    register_local_structured_read_routes(composed,database=database('explicit'),auth_dir=selected)
+    with TestClient(composed) as client:
+        headers={**host.headers['explicit'],'Content-Type':'application/octet-stream'}
+        foreign=host.headers['foreign']
+        selection=dict(trip_id=trip['trip_id'])
+        harness.expect(client.get('/v5/trip-structured',params=selection,headers=foreign),503)
+        assert harness.expect(client.get('/v5/trip-structured',params=selection,headers=headers))['trip']==trip
+        body=packed(dict(version='TRIP-needs-edit.1',needs_reference=dict(id='visit',expected_version=1),
+            edit=dict(version='TRIP-manual-edit.2',request_id='assembly-edit',trip_id=trip['trip_id'],
+                expected_version=1,original_hash=trip['content_sha256'],title='Assembly title',changes=[],order=None)))
+        preparation=harness.expect(client.post('/v1/trip-needs-edits',content=body,headers=headers))['preparation']
+        body=packed(dict(version='TRIP-needs-save.1',action_id='assembly-save',
+            proposal_id=preparation['proposal_id'],candidate_hash=preparation['candidate_hash']))
+        receipt=harness.expect(client.post('/v1/trip-needs-saves',content=body,headers=headers))['receipt']
+        assert receipt['committed_version']==2
+        result=harness.expect(client.get('/v5/trip-structured',params=selection,headers=headers))['trip']
+        assert result['version']==2 and result['content']['title']=='Assembly title'
+        assert harness.expect(client.get('/v1/trip-needs-action-receipts',
+            params=dict(action_id='assembly-save'),headers=headers))['receipt']==receipt
+        harness.expect(client.post('/v1/trip-source-initializations',content=b'',headers=headers),404)
     # Actual CLI selects the source-compatible offline model; same source/B Meter.
     setup('cli')
     env=dict(os.environ,CJ_ENV='local')

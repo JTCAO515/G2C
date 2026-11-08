@@ -401,7 +401,7 @@ def trip_configuration(value):
 def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, history_configuration=None,
                      memory_configuration=None, run_context=None, travel_context=False, needs_profile=None, trip_context=False,edit_configuration=None,
                      cleanup_configuration=None,formal_memory_configuration=None,database=None,account_admission=False,message_subjects=None,
-                     existing_display_reads=False):
+                     existing_display_reads=False,cleanup_invites=None):
     if os.environ.get('CJ_ENV') != 'local':
         raise CompositionUnavailable('CJ_ENV must explicitly be local')
     auth_dir = Path(auth_dir)
@@ -614,7 +614,8 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
             resolve_run=run_repository,configuration=RunDisplayWireConfiguration(256,200000,400000))
         register_scoped_result_routes(app,reader,history_configuration)
     from .account_cleanup_routes import register_account_cleanup_routes
-    register_account_cleanup_routes(app,None if cleanup_runtime is None else cleanup_runtime.gateway(config,keys,base_access))
+    cleanup_access=base_access if cleanup_invites is None else InvitedSubjects(cleanup_invites)
+    register_account_cleanup_routes(app,None if cleanup_runtime is None else cleanup_runtime.gateway(config,keys,cleanup_access))
     return app
 
 

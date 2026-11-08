@@ -23,13 +23,22 @@ from .structured import validate_document
 
 def create_local_manual_app(*, conninfo_path, auth_dir, confirmation_signer,
                             max_response_bytes=1_000_000, run_context=None):
+    app=create_app()
+    database=LocalDatabase(conninfo_path,run_context=run_context)
+    register_local_manual_routes(app,database=database,auth_dir=auth_dir,
+        confirmation_signer=confirmation_signer,max_response_bytes=max_response_bytes)
+    return app
+
+
+def register_local_manual_routes(app,*,database,auth_dir,confirmation_signer,max_response_bytes=1_000_000,
+                                 editing_only=False):
+    run_context=database.run_context
     if (os.environ.get('CJ_ENV') != 'local' or type(confirmation_signer) is not ConfirmationSigner
             or type(max_response_bytes) is not int or max_response_bytes < 1):
         raise CompositionUnavailable('explicit bounded local structured manual host required')
     from cj_api.local_run_context import LocalRunContext
     if run_context is not None and type(run_context) is not LocalRunContext:
         raise CompositionUnavailable('canonical explicit local run context required')
-    database = LocalDatabase(conninfo_path,run_context=run_context)
     def resolve(principal):
         message_scope=scope_for(principal.issuer,principal.subject)
         scope=trip_scope_for(message_scope)
@@ -49,7 +58,6 @@ def create_local_manual_app(*, conninfo_path, auth_dir, confirmation_signer,
                 if repository.manual_origin is not origin:raise Denied('original source reader changed')
             return repository,principal,guard
     boundary=ManualBoundary(account_checker_for(Path(auth_dir),database),resolve,confirmation_signer,structured=True)
-    app=create_app()
 
     def query(request, fields):
         pairs=list(request.query_params.multi_items()); values=dict(pairs)
@@ -142,6 +150,9 @@ def create_local_manual_app(*, conninfo_path, auth_dir, confirmation_signer,
 
     @app.get('/v3/trip-structured')
     async def detail(request:Request):return await read(request,'detail','trip_id')
+
+    if editing_only:
+        return
 
     @app.post('/v1/trip-structured-initializations')
     async def initialize(request:Request):return await write(request,'initialize')

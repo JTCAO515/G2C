@@ -15,6 +15,7 @@ from fastapi.responses import JSONResponse
 import migrate
 import run_worker
 from cj_api.composition import CompositionUnavailable
+from cj_api.local_app import ISSUER,scope_for
 from cj_api.real_services import RealServices,RealTools
 from local_run_context import provision_budget_connection
 from .configuration import MODEL_STREAM_SUBJECT,Runtime,authorization,load_secret_environment
@@ -78,6 +79,7 @@ def worker(runtime):
             with worker_pulse():
                 outcomes=run_worker.run_once(database,services.model,runtime.auth,tools_configuration=tools,real_services=services,account_admission=True,
                     hk_beta_b_run_credential=True,
+                    hk_assembly_scopes=frozenset(scope_for(ISSUER,subject) for subject in runtime.assembly_subjects),
                     memory_configuration_for_scope=None if runtime.memory_runtime is None else runtime.memory_configuration_for_scope)
             for outcome in outcomes:
                 if outcome.status in ('unknown','failed'):

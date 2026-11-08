@@ -93,7 +93,7 @@ def _require_memory_configuration(cursor, scope, configuration, travel):
         raise RuntimeDenied('existing memory requires explicit runtime configuration')
 
 
-def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,formal_memory_configuration=None,account_checker_builder=None,beta_b_run_credential=False):
+def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,formal_memory_configuration=None,account_checker_builder=None,beta_b_run_credential=False,assembly_planning=False):
     if draft_profile not in (None,'needs-structured.1','needs-current-trip.1'):
         raise CompositionUnavailable('unknown explicit draft profile')
     if place_draft_configuration is not None:
@@ -258,7 +258,8 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
     elif draft_profile is None:
         drafts=DraftPublisher(database.trip_repository(scope))
     else:
-        if editing or tools_configuration is not None or database.run_context is None or database.run_context.version!='CJ-LOCAL-RUN@2' or message_context is None:
+        if (editing or tools_configuration is not None and not assembly_planning
+                or database.run_context is None or database.run_context.version!='CJ-LOCAL-RUN@2' or message_context is None):
             raise CompositionUnavailable('NEEDS draft profile requires registered M2/travel creation host')
         if draft_profile=='needs-structured.1':
             from cj_draft.needs_local import publisher
@@ -292,9 +293,13 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
                      LocalBudgetRouter(database,registrations=tools_configuration.registrations)))
 
 
-def run_once(database, model, auth_dir, *, memory_configuration=None,memory_configuration_for_scope=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,background_jobs=None,formal_memory_configuration=None,real_services=None,account_admission=False,hk_beta_b_run_credential=False):
+def run_once(database, model, auth_dir, *, memory_configuration=None,memory_configuration_for_scope=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,background_jobs=None,formal_memory_configuration=None,real_services=None,account_admission=False,hk_beta_b_run_credential=False,hk_assembly_scopes=frozenset()):
     if memory_configuration_for_scope is not None and (memory_configuration is not None or formal_memory_configuration is not None):
         raise ValueError('select one explicit Memory configuration source')
+    if hk_assembly_scopes and (real_services is None or not account_admission or draft_profile is not None
+            or place_draft_configuration is not None or memory_configuration_for_scope is None
+            or not database.travel_context or not database.needs_context):
+        raise CompositionUnavailable('explicit Hong Kong Typed planning composition required')
     if formal_memory_configuration is not None:
         from cj_api.local_formal_memory import configuration
         formal_memory_configuration=configuration(formal_memory_configuration)
@@ -331,13 +336,19 @@ def run_once(database, model, auth_dir, *, memory_configuration=None,memory_conf
         try:
             selected_memory=(memory_configuration if memory_configuration_for_scope is None
                              else memory_configuration_for_scope(scope))
+            assembly_planning=scope in hk_assembly_scopes
+            if assembly_planning and type(selected_memory) is not TypedRuntimeConfiguration:
+                raise CompositionUnavailable('assembly planning requires original Typed runtime')
             beta_b_run_credential = (hk_beta_b_run_credential and account_checker_builder is not None
                 and scope == scope_for(ISSUER, 'm4-synthetic-beta-b')
                 and type(selected_memory) is TypedRuntimeConfiguration
                 and database.run_context.current.meter.max_seconds == 600)
             results += _worker_for_scope(database,model,auth_dir,scope,checker,
-                                         memory_configuration=selected_memory,tools_configuration=tools_configuration,draft_profile=draft_profile,place_draft_configuration=place_draft_configuration,formal_memory_configuration=formal_memory_configuration,
-                                         account_checker_builder=account_checker_builder,beta_b_run_credential=beta_b_run_credential).process()
+                                         memory_configuration=selected_memory,tools_configuration=tools_configuration,
+                                         draft_profile='needs-structured.1' if assembly_planning else draft_profile,
+                                         place_draft_configuration=place_draft_configuration,formal_memory_configuration=formal_memory_configuration,
+                                         account_checker_builder=account_checker_builder,beta_b_run_credential=beta_b_run_credential,
+                                         assembly_planning=assembly_planning).process()
         except Exception as error:
             if failure is None: failure = error
     if background_jobs is not None:results+=background_jobs.run_once(model)
