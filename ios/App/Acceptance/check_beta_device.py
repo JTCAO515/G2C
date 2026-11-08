@@ -12,6 +12,7 @@ import json
 import os
 from pathlib import Path
 import plistlib
+import re
 import secrets
 import subprocess
 import threading
@@ -26,6 +27,12 @@ CASE='beta-readonly-05'
 TEST='DevelopmentBetaUITests/testExistingAnswerRestoreAndOwnerIsolation'
 ENGLISH_DIAGNOSTIC='DevelopmentBetaUITests/testOriginalEnglishDiagnostic'
 CHINESE_RECOVERY='DevelopmentBetaUITests/testChineseRecoveryAndOwnerIsolation'
+SCENARIOS={
+    'full':(CASE,TEST),
+    'english-diagnostic':(CASE,ENGLISH_DIAGNOSTIC),
+    'chinese-recovery':(CASE,CHINESE_RECOVERY),
+    'general-feedback-recovery':('beta-general-feedback-recovery','DevelopmentBetaUITests/testGeneralFeedbackOriginalRecoveryOnly'),
+}
 
 
 def product_hashes(build):
@@ -51,6 +58,21 @@ def operator_accounts(path):
     return value
 
 
+def feedback_original(path):
+    if path.is_symlink() or not path.is_file() or path.stat().st_uid!=os.getuid() or path.stat().st_mode&0o777!=0o600:
+        raise ValueError('Owned regular 0600 synthetic Feedback evidence required')
+    if path.stat().st_size > 1024:
+        raise ValueError('Feedback evidence exceeds the input boundary')
+    raw = path.read_bytes()
+    value = json.loads(raw)
+    if (not isinstance(value, dict) or set(value) != {'action_id', 'problem_sha256'}
+            or not all(isinstance(item, str) for item in value.values())
+            or not re.fullmatch(r'[A-F0-9]{8}(?:-[A-F0-9]{4}){3}-[A-F0-9]{12}', value['action_id'])
+            or not re.fullmatch(r'[a-f0-9]{64}', value['problem_sha256'])):
+        raise ValueError('Exact original Feedback action and SHA-256 required')
+    return value, hashlib.sha256(raw).hexdigest()
+
+
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--device',required=True);p.add_argument('--output',required=True,type=Path)
@@ -58,14 +80,17 @@ def main():
     modes.add_argument('--prepare-only',action='store_true');modes.add_argument('--prepared',type=Path)
     p.add_argument('--local-tls',type=Path);p.add_argument('--build-dir',type=Path);p.add_argument('--work-dir',type=Path)
     p.add_argument('--accounts-file',type=Path)
-    p.add_argument('--case',choices=['full','english-diagnostic','chinese-recovery'])
+    p.add_argument('--feedback-original',type=Path,help='Synthetic original action and problem SHA-256; recovery preparation only')
+    p.add_argument('--case',choices=SCENARIOS)
     a=p.parse_args();os.umask(0o077)
+    if bool(a.feedback_original) != (a.prepare_only and a.case=='general-feedback-recovery'):
+        p.error('--feedback-original is required only when preparing general-feedback-recovery')
     if subprocess.check_output(['git','status','--porcelain'],cwd=ROOT):raise ValueError('Commit candidate before preparing or executing')
     head=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
     output=a.output.resolve()
     if output.is_relative_to(ROOT):raise ValueError('External evidence output required')
     output.mkdir(mode=0o700)
-    selected={'full':TEST,'english-diagnostic':ENGLISH_DIAGNOSTIC,'chinese-recovery':CHINESE_RECOVERY}[a.case or 'full']
+    case_id,selected=SCENARIOS[a.case or 'full']
     report=dict(status='RUNNING',head=head,layer='authorized physical iPhone / actual beta service; synthetic existing records',
         cases={selected:'UNRUN'},raw_native_bundle_shareable=False,build_inputs_shareable=False,
         unrun=['new messages/providers','Needs/Trip/typed Memory/cleanup cloud profiles','target-network quality','TestFlight'])
@@ -83,6 +108,11 @@ def main():
             module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
             builder=object.__new__(module.XCTestDriver);builder.directory=work;builder.write_project(0)
             source=(ROOT/'ios/App/Acceptance/DevelopmentBetaUITests.swift').read_text()
+            original_provenance = None
+            if a.feedback_original:
+                original, original_provenance = feedback_original(a.feedback_original)
+                source = source.replace('__FEEDBACK_ORIGINAL_ID__', original['action_id'])
+                source = source.replace('__FEEDBACK_ORIGINAL_PROBLEM_SHA__', original['problem_sha256'])
             control_token=secrets.token_urlsafe(32)
             server=ThreadingHTTPServer((tls.host,0),BaseHTTPRequestHandler)
             endpoint='https://'+tls.host+':'+str(server.server_port)
@@ -91,12 +121,22 @@ def main():
             _,config,_=configure_project(project,tls,endpoint,control_token,bundle=BUNDLE,app_local_tls=False)
             meta=dict(head=head,device=a.device,test=selected,work=str(work),build=str(build),tls=str(a.local_tls.resolve()),
                 endpoint=endpoint,certificate_sha256=hashlib.sha256(tls.public_der).hexdigest())
+            if original_provenance:
+                meta['feedback_original_sha256'] = original_provenance
         else:
             if not a.accounts_file or a.local_tls or a.build_dir or a.work_dir:p.error('Execution needs --prepared private metadata and --accounts-file only')
             meta=json.loads(a.prepared.read_text());work=Path(meta['work']);build=Path(meta['build'])
             if meta['head']!=head or meta['device']!=a.device:raise ValueError('Prepared head/device differs')
             if a.case is not None and meta['test']!=selected:raise ValueError('Prepared selected method differs')
             selected=meta['test'];report['cases']={selected:'UNRUN'}
+            allowed={test:case for case,test in SCENARIOS.values()}
+            if selected not in allowed:raise ValueError('Unknown prepared beta scenario')
+            case_id=allowed[selected]
+            if case_id!=CASE:
+                if a.case is None:p.error('Feedback recovery requires the explicit prepared --case')
+                provenance=meta.get('feedback_original_sha256')
+                if not isinstance(provenance,str) or not re.fullmatch(r'[a-f0-9]{64}',provenance):
+                    p.error('Prepared original Feedback evidence is missing')
             if product_hashes(build)!=meta['products']:raise ValueError('Prepared signed products changed')
             if project_hashes(work)!=meta['project_inputs']:raise ValueError('Prepared project/control inputs changed')
             tls=LocalTLS.load(Path(meta['tls']))
@@ -105,7 +145,9 @@ def main():
             if bootstrap['endpoint']!=meta['endpoint']:raise ValueError('Prepared control origin changed')
             control_token=bootstrap['token'];project=work/'G2CAcceptance.xcodeproj';config=work/'M4Device.xcconfig'
             accounts=operator_accounts(a.accounts_file)
-        native=DeviceNative(a.device,BUNDLE,project,config,build,ROOT,output,accounts,control_token,report,case_id=CASE)
+        report['scenario']=case_id
+        report['app_write_scope']='none: existing-record reads only'
+        native=DeviceNative(a.device,BUNDLE,project,config,build,ROOT,output,accounts,control_token,report,case_id=case_id)
         env={k:v for k,v in os.environ.items() if not k.startswith(('G2C_DEV_','G2C_M4_','SIMCTL_CHILD_','PG','LIBPQ','CJ_LOCAL_'))}
         env['OS_ACTIVITY_MODE']='disable'
         if a.prepare_only:
@@ -120,7 +162,7 @@ def main():
             class Control(BaseHTTPRequestHandler):
                 def log_message(self,*args):pass
                 def do_GET(self):self.send_error(404)
-            handler=authenticated_control(Control,control_token,lambda _:native.stage(CASE),lambda:CASE)
+            handler=authenticated_control(Control,control_token,lambda _:native.stage(case_id),lambda:case_id)
             origin=urlsplit(meta['endpoint'])
             if origin.scheme!='https' or origin.hostname!=tls.host or not origin.port:raise ValueError('Invalid prepared control origin')
             server=ThreadingHTTPServer((tls.host,origin.port),handler);tls.secure_http_server(server)
