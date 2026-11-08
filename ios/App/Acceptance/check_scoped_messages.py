@@ -662,8 +662,14 @@ try:
     destination='platform=iOS,id='+ARGS.device if TLS else 'platform=iOS Simulator,id='+ARGS.simulator
     if TLS:
      quarantine=private_directory(OUT,'g2c-m4-private-native-')
-     result=quarantine/(CASE+'.xcresult');r['private_native_result']=str(result);r['raw_native_bundle_shareable']=False;save()
-     r['native_artifacts']=dict(status='UNRUN: native process has not reached a terminal exit',raw_bundle_shareable=False);save()
+     result=quarantine/(CASE+'.xcresult')
+     r['raw_native_bundle_shareable']=False
+     if DEVICE_LANGUAGE:
+      r['system_language_phases']={}
+     else:
+      r['private_native_result']=str(result)
+      r['native_artifacts']=dict(status='UNRUN: native process has not reached a terminal exit',raw_bundle_shareable=False)
+     save()
     else:result=OUT/(CASE+'.xcresult')
     command=['xcodebuild','-project',str(project),'-scheme','G2CControl','-configuration','Debug','-destination',destination,'-derivedDataPath',str(BUILD),'-resultBundlePath',str(result),'-scmProvider','system','-skipPackageUpdates','-onlyUsePackageVersionsFromResolvedFile','-parallel-testing-enabled','NO','-collect-test-diagnostics','never','ARCHS=arm64','ONLY_ACTIVE_ARCH=YES','CODE_SIGNING_ALLOWED=YES','CODE_SIGN_IDENTITY=-','-only-testing:G2CControl/DevelopmentScopedMessageUITests/'+CASE,'test']
     if TLS:
@@ -733,10 +739,13 @@ try:
 
     if DEVICE_LANGUAGE:
      def run_language_phase(phase):
-      attempt=r.setdefault('system_language_phases',{}).setdefault(phase,{})
+      phase_result=quarantine/(phase+'.xcresult')
+      attempt=dict(private_native_result=str(phase_result),native_status='RUNNING')
+      r['system_language_phases'][phase]=attempt
       phase_output=OUT/phase
       phase_output.mkdir(mode=0o700)
-      run_native(quarantine/(phase+'.xcresult'),phase_output,attempt)
+      save()
+      run_native(phase_result,phase_output,attempt)
 
      def wait_for_language(phase):
       r['status']='WAITING_FOR_SYSTEM_LANGUAGE'
