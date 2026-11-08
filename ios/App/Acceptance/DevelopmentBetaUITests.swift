@@ -366,6 +366,28 @@ import CryptoKit
         try app.performAccessibilityAudit(for: .all)
         backFrom(label("Feedback", "问题反馈"))
 
+        print("M4_COMPOSITION_STAGE help-privacy-support")
+        businessTap("memory.help")
+        let guidance = [
+            ("help.account.registration", label("open Account and choose Register", "进入账号并选择注册")),
+            ("help.invited.access", label("Server verification is required.", "仍需服务端验证。")),
+            ("help.trip.actions", label("Use the available controls to accept or reject a draft or save changes.", "使用可用的按钮采用或拒绝草稿，或保存修改。")),
+            ("help.trip.offline", label("up to 14 days from the last successful sync.", "期限从最近一次成功同步起算，最长 14 天。")),
+            ("help.account.deletion", label("review its scope and confirm the action.", "请先核对范围，再确认删除。")),
+        ]
+        for (id, expected) in guidance {
+            XCTAssertTrue(businessElement(id).label.contains(expected), id)
+        }
+        try app.performAccessibilityAudit(for: .all)
+        backFrom(label("Help", "帮助"))
+        businessTap("memory.privacy")
+        let provider = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Context Jump LLC"))
+        XCTAssertTrue(provider.firstMatch.waitForExistence(timeout: 10))
+        backFrom(label("Privacy notice (beta)", "隐私说明（内测版）"))
+        businessTap("memory.support")
+        XCTAssertTrue(businessElement("support.email").label.contains("hello@go2china.space"))
+        backFrom(label("Support", "支持"))
+
         print("M4_COMPOSITION_STAGE account-deletion")
         businessTap("memory.account"); exactText("account.development.status", label("Signed in as ", "已登录：") + fixture.subject)
         businessTap("account.deletion.open")

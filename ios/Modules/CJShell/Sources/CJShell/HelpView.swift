@@ -17,6 +17,7 @@ struct HelpView: View {
                           "通过助手、行程、插件和记忆四个标签使用应用。账号和语言设置位于记忆内。插件暂未开放。")
                 paragraph("This is a new account system. Previous accounts, chats, trips, memories and subscriptions are not transferred. When account services are connected, open Account and choose Register; complete email verification if requested. Disabled actions mean registration is unavailable here.",
                           "本产品使用全新账号体系，不迁移旧账号、聊天、行程、记忆或订阅。账号服务接入后，可进入账号并选择注册；如提示验证邮箱，须完成验证。操作禁用时，此处尚不能建号。")
+                    .accessibilityIdentifier("help.account.registration")
                 NavigationLink(language.text("Open Account", "进入账号"), value: MemoryRoute.account)
                 NavigationLink(language.text("Change language", "切换语言"), value: MemoryRoute.language)
             }

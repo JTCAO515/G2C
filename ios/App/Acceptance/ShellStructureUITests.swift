@@ -139,6 +139,7 @@ import Foundation
             text(chinese ? "首次使用与建号" : "Getting started")
             capture("help-" + language)
             let guidance = [
+                ("help.account.registration", chinese ? "进入账号并选择注册" : "open Account and choose Register"),
                 ("help.invited.access", chinese ? "仍需服务端验证。" : "Server verification is required."),
                 ("help.trip.actions", chinese ? "使用可用的按钮采用或拒绝草稿，或保存修改。" : "Use the available controls to accept or reject a draft or save changes."),
                 ("help.trip.offline", chinese ? "期限从最近一次成功同步起算，最长 14 天。" : "up to 14 days from the last successful sync."),
