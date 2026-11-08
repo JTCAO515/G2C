@@ -110,6 +110,24 @@ B 在 #30 正式发布 READY 后，指定设备的 `DEBUG + G2C_M4_DEVICE_ACCEPT
 英文通过不能代替中文方法通过。设备断开时保存原 FAIL／UNRUN、清理精确一次性输入，
 等 JT 通知重连后再执行，不自动重启原批次。
 
+### #660 内测组装
+
+`G2C_M4_BETA_COMPOSITION=internal-v1` 在现有 Debug 真机验收账号入口启用一个受限组合。
+经同一次服务端身份核验后，App 使用该会话的 owner 作用域和撤权门禁装配正式 Needs 规划、手动 Trip 修改、
+Typed Memory、反馈和 device-v4 注销。规划采用和手动修改保留各自的原操作和回执。Typed 是唯一的 Memory 写入口，
+旧版原操作仍可按既有恢复规则只读核对。普通开发 profile 的互斥规则及 Release 边界保持。
+
+先用 `check_beta_device.py --case composition --prepare-only` 准备 `space.go2china.device-v4.acceptance`
+的签名包与驱动。控制器沿用本机 Debug TLS，业务 App 使用 api-beta 系统 TLS。准备阶段保持公域执行 `UNRUN`。
+B 确认服务端组合及两个可分别注销的合成主体就绪后，以同一 `--prepared` 产物先中文后英文，各开一个独立输出目录，
+每轮明确给出 `--case composition --accounts-file <0600-账号文件> --composition-input <0600-本轮范围文件>`。
+范围文件字段为 `language`（`zh-Hans` 或 `en`）、`account`（`A` 或 `B`）、`subject`（`m4-synthetic-660-` 前缀）、
+`conversation_id`、`needs_id`、`travel_id`、`memory_profile`（`app-memory.2` 对象）、`memory_subject`、`memory_slot`。
+只有本轮选中的账号会进入一次性输入，测试在规划和注销前核对完整的已验证主体标签。
+
+两轮各自保留完整 `.all`、原生终态、输入清理及容器与导出扫描。服务端原请求、回执、数据库状态、
+旧 token 拒绝及补充验收框由 A/B 按 #29 清单核对。涉及 UNKNOWN 的写入按原操作只读核对后再决定后续执行。
+
 ### 登录领域的指定真机入口
 
 `check_development_accounts.py` 支持指定设备及本轮获准的本机 TLS profile：

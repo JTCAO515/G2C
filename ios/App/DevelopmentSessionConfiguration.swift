@@ -454,3 +454,49 @@ struct DevelopmentOfflineProfile {
         #endif
     }
 }
+
+/// Explicit opt-in for the signed internal beta account root. Individual
+/// development profiles retain their own compatibility rules.
+struct DevelopmentBetaComposition {
+    static let setting = "G2C_M4_BETA_COMPOSITION"
+    enum Failure: Error { case invalidConfiguration }
+
+    let endpoint: URL
+    let needs: DevelopmentNeedsProfile
+    let typedMemory: DevelopmentTypedMode
+    let manualEditing: DevelopmentTripEditingProfile
+    let feedback: DevelopmentFeedbackProfile
+    let offline: DevelopmentOfflineProfile
+
+    static func read(_ environment: [String: String]) throws -> Self? {
+        #if DEBUG
+        guard environment[setting] != nil else { return nil }
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        let incompatibleSettings = [
+            "G2C_DEV_TOKEN", "G2C_DEV_PROPOSAL_ID", "G2C_DEV_MESSAGE_PROFILE",
+            "G2C_DEV_MEMORY_PROFILE", "G2C_DEV_MEMORY_MANAGEMENT_URL", "G2C_DEV_MEMORY_HISTORY_PROFILE",
+            "G2C_DEV_MEMORY_CANDIDATE_URL", "G2C_DEV_PLACE_TOOLS", "G2C_DEV_FACT_TOOLS", "G2C_DEV_NEEDS_PREVIEW",
+            "G2C_DEV_OFFLINE_WALL_OFFSET", "G2C_DEV_OFFLINE_UPTIME_OFFSET", "G2C_DEV_OFFLINE_TIME_TRUSTED",
+        ]
+        guard environment[setting] == "internal-v1", environment["G2C_M4_BETA_API"] == "1",
+              environment["G2C_DEV_ACCOUNT_MODE"] == "1", environment["G2C_DEV_CLEANUP_PROFILE"] == "device-v4",
+              [nil, "{}"].contains(environment["G2C_DEV_ACCOUNTS"]),
+              incompatibleSettings.allSatisfy({ environment[$0] == nil }),
+              let endpoint = DevelopmentSessionConfiguration.readEndpoint(environment),
+              let needs = try DevelopmentNeedsProfile.read(environment),
+              let typedMemory = try DevelopmentTypedMode.read(environment),
+              typedMemory.memoryEndpoint == endpoint, !typedMemory.travel.travel_ids.isEmpty,
+              DevelopmentSessionConfiguration.readEndpoint(environment, key: "G2C_DEV_MEMORY_ERASURE_URL") == endpoint,
+              let manualEditing = try DevelopmentTripEditingProfile.read(environment),
+              let feedback = try DevelopmentFeedbackProfile.read(environment),
+              let offline = try DevelopmentOfflineProfile.read(environment) else { throw Failure.invalidConfiguration }
+        return Self(endpoint: endpoint, needs: needs, typedMemory: typedMemory,
+                    manualEditing: manualEditing, feedback: feedback, offline: offline)
+        #else
+        throw Failure.invalidConfiguration
+        #endif
+        #else
+        return nil
+        #endif
+    }
+}
