@@ -12,12 +12,67 @@ sys.path.insert(0,str(ROOT/'scripts'))
 import migrate,pg_suites
 import supabase_pool_gate as gate
 from cj_api.local_app import ISSUER,scope_for
-from cj_api.supabase_test_database import require_identity
+from cj_api.supabase_test_database import SupabaseTestDatabase,require_identity
 from cj_api.composition import CompositionUnavailable
+from cj_run.core import Binding
 
 
 def local_identity(conn):
     assert conn.execute("SELECT current_user,session_user,(SELECT ssl FROM pg_stat_ssl WHERE pid=pg_backend_pid())").fetchone()==('cj_m1_runtime','cj_m1_runtime',False)
+
+
+def runtime_pool(config,scopes,root):
+    role_config=dict(config,user='cj_m1_runtime')
+    blocked=False
+
+    def guard(cursor):
+        if blocked:
+            raise CompositionUnavailable('fixture retired')
+
+    # Local Unix PG proves session mechanics only. Cloud checkout checks live TLS.
+    with patch('cj_api.supabase_test_database.decode_uri',return_value=role_config), \
+            patch('cj_api.supabase_test_database.pin_ca',side_effect=lambda _:tempfile.TemporaryFile(dir=root)), \
+            patch('cj_api.supabase_test_database.require_identity',side_effect=lambda connection,role:local_identity(connection)):
+        database=SupabaseTestDatabase('fixture','fixture',pool_size=1,transaction_guard=guard)
+        try:
+            with database._open_runtime_connection() as connection:
+                pid=connection.info.backend_pid
+                connection.execute("SELECT set_config('cj.message_scope',%s,false)",(scopes[0],))
+                connection.execute('CREATE TEMP TABLE cj_message_scope (scope text)')
+                connection.execute('SELECT pg_advisory_lock(42)')
+            with database.connect(scopes[1]) as connection:
+                assert connection.info.backend_pid==pid
+                assert connection.execute('SELECT scope FROM cj_message_scope').fetchall()==[(scopes[1],)]
+                assert connection.execute("SELECT count(*) FROM pg_locks WHERE pid=pg_backend_pid() AND locktype='advisory'").fetchone()==(0,)
+            try:
+                with database.connect(scopes[0]) as connection:
+                    assert connection.info.backend_pid==pid
+                    assert connection.execute('SELECT scope FROM cj_message_scope').fetchall()==[(scopes[0],)]
+                    raise LookupError('force rollback')
+            except LookupError:
+                pass
+            blocked=True
+            try:
+                with database.connect(scopes[0]):
+                    raise AssertionError('pooled checkout bypassed the fresh transaction guard')
+            except CompositionUnavailable:
+                pass
+            blocked=False
+            with database.connect(scopes[1]) as connection:
+                # A guard failure closed the old leased transaction. Reuse
+                # begins only on a clean replacement, with fresh admission.
+                replacement=connection.info.backend_pid
+                assert replacement!=pid
+                assert connection.execute('SELECT scope FROM cj_message_scope').fetchall()==[(scopes[1],)]
+                binding=Binding(scopes[1],'pool-chat','1','pool-message','pool-run',1)
+                with database.run_repository(scopes[1]).worker_lease(binding) as owned:
+                    assert owned is not None
+                    owned()
+            with database.connect(scopes[0]) as connection:
+                assert connection.info.backend_pid==replacement
+                assert connection.execute('SELECT scope FROM cj_message_scope').fetchall()==[(scopes[0],)]
+        finally:
+            database.close()
 
 
 def main():
@@ -38,6 +93,7 @@ def main():
                     for first,second in (scopes,scopes[::-1]):
                         conn.execute("SELECT set_config('cj.message_scope',%s,false),set_config('cj.trip_scope',%s,false)",('retained-prior-session','retained-prior-session'))
                         gate.scoped_sequence(conn,first,second,rollback,identity[2],query,data,local_identity)
+            runtime_pool(config,scopes,root)
             # A broken policy accepting every nonempty scope used to pass the
             # gate. Inject it only into this private fixture, never a cloud DB.
             with psycopg.connect(**config,autocommit=True) as conn:
@@ -75,7 +131,7 @@ def main():
                 gate.cleanup_owned(conn,state,root/'unknown-cleanup.json',query)
                 assert gate.original_observation(conn,state,query)['status']=='EMPTY_CONFIRMED'
                 assert json.loads((root/'unknown-cleanup.json').read_text())['state']=='CLEANUP_INTENT'
-    print('PASS actual local Unix PG: signed seed, same-session DISCARD ALL, commit/rollback two-owner positive and all12 unbound SELECT/UPDATE/INSERT negatives; cloud/TLS/real keys UNRUN')
+    print('PASS actual local Unix PG: signed seed, bounded runtime pool, same-session DISCARD ALL, fresh guard, dedicated session, commit/rollback two-owner and all12 unbound negatives; cloud/TLS/real keys UNRUN')
 
 
 if __name__=='__main__':main()
