@@ -174,6 +174,24 @@ API 启动还必须读到该主体已激活的原 `message-travel.1` profile。
 并重启 API 保持 API-only；仅移除 allow-list 不会撤销已入队的原动作。
 不能删除 profile 回退旧 writer，实际未知原动作仍只读核对。
 
+## 可选的 #660 内测组装
+
+只给同一批 `m4-synthetic-660-<12位十六进制>-zh` 和 `-en` 开启。将两份可分别注销的合成主体加入
+原邀请、API Typed policy 和 MESSAGE allow-list，以及 worker 的同一 Typed policy/selection。
+`CJ_BETA_ASSEMBLY_SUBJECTS_JSON` 明确选择两份主体，`CJ_LOCAL_NEEDS_PROFILE` 沿用 `manual-v1`。
+在 API 0600 文件增加原受限 cleanup URI 和 32 字节 cleanup HMAC。worker 无需这两项。
+规划沿同一原 MESSAGE、Needs/Travel、RUN 和 Meter；Trip 采用、修改和正式读回仅对组装主体开放。
+Typed 保存、管理及既有 `/v1/memory-erasures` 不安装 V1 记忆写入。device-v4 使用同一认证身份，
+注销采用既有 cleanup 登录和原登记内容域，离线与客户端控制记录按原清理协议验收。
+
+在原 A/C 无在途且 API、worker 暂停的维护窗口，用同版镜像执行
+`python -m deploy.hk.assembly_profiles bootstrap|insert|inspect <subject>`。
+使用当前签名 release 和原 0600 operator/worker 配置，挂已有 release、CA、以及持久私有 `/operation`。
+先以原初始化入口建新合成主体的预算及 Typed 命名空间。`insert` 要求 canonical Typed 只读预检，
+原 profile 缺失才以已有 `postgres` 写一次。持久 intent 存在或结果不明时只能 `inspect`。
+配置切换前保留当前镜像与环境版本。回退先停提交并核原动作。已写的 profile、账本及 fence 保留。
+用原签名 API 预建每个主体的空会话、合成 Needs 和 Travel，再向 A 交 0600 范围和两小时凭据。
+
 ## 验证
 
 ```sh

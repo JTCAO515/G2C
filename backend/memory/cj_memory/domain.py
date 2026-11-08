@@ -132,9 +132,9 @@ class Service:
                 result = tx.insert(c, status, operation_raw=raw)
         return result
 
-    def save_manual_typed(self, raw, authority, principal):
+    def save_manual_typed(self, raw, authority, principal, *, mark_write=None):
         from .typed import save_manual
-        return save_manual(self, raw, authority, principal)
+        return save_manual(self, raw, authority, principal, mark_write=mark_write)
 
     def query(self, operation_id):
         with self.repository.transaction() as tx:

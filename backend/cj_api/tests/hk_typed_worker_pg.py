@@ -236,6 +236,12 @@ def exercise(auth,conninfo):
                 context=None if travel is None else dict(kind='travel',id=travel['id'],expected_version=travel['version']))).encode()
             expect(api.post('/v2/memories',content=raw,headers=headers(B)))
         before=memory_rows()
+        conflict=json.dumps(dict(version='MEMORY-manual.2',operation_id='worker-save-slot-conflict',
+            item_id='worker-item-slot-conflict',subject='self',slot='preference',kind='preference',
+            text='Another synthetic long term preference',extent='long_term',occurred_at='date unknown',
+            context=None)).encode()
+        response=harness.expect(api.post('/v2/memories',content=conflict,headers=headers(B)),409)
+        assert response['error']['code']=='MEMORY_CONFLICT' and memory_rows()==before
         try:configured_app()
         except ValueError as e:assert str(e)=='original_typed_message_travel_profile_required'
         else:raise AssertionError('configured API bypassed missing canonical Travel profile')

@@ -125,6 +125,6 @@ def retired_in_transaction(cursor, scope):
     return retired
 
 
-def account_checker_for(auth_dir,database):
+def account_checker_for(auth_dir,database,*,selected_subjects=None):
     from .local_worker_context import checker_for
-    return checker_for(auth_dir,account_retired=retired_for(database))
+    return checker_for(auth_dir,account_retired=retired_for(database),selected_subjects=selected_subjects)

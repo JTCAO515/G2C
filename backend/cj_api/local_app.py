@@ -384,11 +384,13 @@ def local_confirmation(scope, action, proposal):
 class InvitedSubjects:
     """Server-owned invite list (auth_dir/invited.json); token claims never grant access."""
 
-    def __init__(self, path):
+    def __init__(self, path, selected_subjects=None):
         self.path = Path(path)
+        self.selected_subjects = selected_subjects
 
     def evaluate(self, principal):
-        invited = principal.subject in json.loads(self.path.read_text())
+        invited = (principal.subject in json.loads(self.path.read_text())
+                   and (self.selected_subjects is None or principal.subject in self.selected_subjects))
         return CJAccessFacts(principal, Fact.YES, Fact.YES, Fact.YES if invited else Fact.NO)
 
 
@@ -401,7 +403,7 @@ def trip_configuration(value):
 def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, history_configuration=None,
                      memory_configuration=None, run_context=None, travel_context=False, needs_profile=None, trip_context=False,edit_configuration=None,
                      cleanup_configuration=None,formal_memory_configuration=None,database=None,account_admission=False,message_subjects=None,
-                     existing_display_reads=False):
+                     existing_display_reads=False,cleanup_subjects=None):
     if os.environ.get('CJ_ENV') != 'local':
         raise CompositionUnavailable('CJ_ENV must explicitly be local')
     auth_dir = Path(auth_dir)
@@ -447,7 +449,8 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
         elif type(cleanup_configuration) is SupabaseCleanupConfiguration and type(database) is SupabaseTestDatabase:
             cleanup_runtime=SupabaseCleanupRuntime(database,cleanup_configuration,scope_for)
         else:raise CompositionUnavailable('matching explicit cleanup host configuration required')
-        access=AccountRevocationAccess(base_access,cleanup_runtime.retired)
+        if not account_admission:
+            access=AccountRevocationAccess(base_access,cleanup_runtime.retired)
 
     from .local_account_admission_v2 import request_scope_connection
 
@@ -478,7 +481,7 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
 
     display_boundary = None
     if existing_display_reads:
-        if not account_admission or cleanup_runtime is not None:
+        if not account_admission or (cleanup_runtime is not None and cleanup_subjects is None):
             raise CompositionUnavailable('existing display reads require runtime retirement checks')
         from cj_auth.admission import AdmissionChecker
         from cj_auth.jwt_adapter import PyJWTVerifier
@@ -614,7 +617,8 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
             resolve_run=run_repository,configuration=RunDisplayWireConfiguration(256,200000,400000))
         register_scoped_result_routes(app,reader,history_configuration)
     from .account_cleanup_routes import register_account_cleanup_routes
-    register_account_cleanup_routes(app,None if cleanup_runtime is None else cleanup_runtime.gateway(config,keys,base_access))
+    cleanup_access=base_access if cleanup_subjects is None else InvitedSubjects(auth_dir/'invited.json',cleanup_subjects)
+    register_account_cleanup_routes(app,None if cleanup_runtime is None else cleanup_runtime.gateway(config,keys,cleanup_access))
     return app
 
 

@@ -67,6 +67,60 @@ def exercise(auth,conninfo):
     assert outcomes[0].status=='completed' and outcomes[0].proposal_id and model.calls==2
     trip=accept('explicit',outcomes[0])
     assert run_worker.run_once(database('explicit'),model,auth,draft_profile='needs-structured.1')==[] and model.calls==2
+    # Boot the hosted API on the private PG transport with the existing local cleanup login.
+    from cj_api.local_cleanup import Configuration,Runtime as LocalCleanup
+    from cj_memory.typed_local import TypedConfiguration
+    sys.path.insert(0,str(harness.ROOT))
+    from deploy.hk import configuration
+
+    selected=frozenset({'explicit'})
+    profile=dict(subjects=['self'],slots={'preference':dict(kind='preference',
+        collection_allowed=True,semantic_resolved=True)},extents=['long_term'],context_ids=[])
+    policy=TypedConfiguration.from_bytes(packed(dict(version='local-memory-typed.1',
+        collection=dict(version='local-memory-policy.1',expires_at='2099-11-30T23:59:59+08:00',
+            profiles={'explicit':profile}),travel_contexts={'explicit':[]})))
+    cleanup=Configuration({'fixture':b'c'*32},'fixture',3600,('business/message',),
+        harness.ROOT/'backend/storage-registry.json')
+    path,context=host.profiles['explicit']
+    db=database('explicit')
+    runtime=configuration.Runtime(auth,context,path,[],typed_memory=policy,
+        subjects=frozenset(host.subjects),typed_message_subjects=selected,assembly_subjects=selected)
+    env=dict(CJ_LOCAL_NEEDS_PROFILE='manual-v1',CJ_BETA_HISTORY_B64=base64.b64encode(b'h'*32).decode(),
+        CJ_BETA_CONFIRMATION_B64=base64.b64encode(b'c'*32).decode())
+    with patch.dict(os.environ,env),patch.object(configuration.Runtime,'database',return_value=db), \
+            patch.object(configuration,'assembly_cleanup',return_value=cleanup), \
+            patch('cj_api.supabase_cleanup.SupabaseCleanupRuntime',return_value=LocalCleanup(db,cleanup,scope_for)):
+        composed=runtime.app()
+    with TestClient(composed) as client:
+        headers={**host.headers['explicit'],'Content-Type':'application/octet-stream'}
+        foreign=host.headers['foreign']
+        stream=client.get('/v2/run-events',params={'message_id':'message-explicit'},headers=headers)
+        assert stream.status_code==200 and b'"status":"completed"' in stream.content
+        selection=dict(trip_id=trip['trip_id'])
+        harness.expect(client.get('/v5/trip-structured',params=selection,headers=foreign),503)
+        assert harness.expect(client.get('/v5/trip-structured',params=selection,headers=headers))['trip']==trip
+        body=packed(dict(version='TRIP-needs-edit.1',needs_reference=dict(id='visit',expected_version=1),
+            edit=dict(version='TRIP-manual-edit.2',request_id='assembly-edit',trip_id=trip['trip_id'],
+                expected_version=1,original_hash=trip['content_sha256'],title='Assembly title',changes=[],order=None)))
+        preparation=harness.expect(client.post('/v1/trip-needs-edits',content=body,headers=headers))['preparation']
+        body=packed(dict(version='TRIP-needs-save.1',action_id='assembly-save',
+            proposal_id=preparation['proposal_id'],candidate_hash=preparation['candidate_hash']))
+        receipt=harness.expect(client.post('/v1/trip-needs-saves',content=body,headers=headers))['receipt']
+        assert receipt['committed_version']==2
+        result=harness.expect(client.get('/v5/trip-structured',params=selection,headers=headers))['trip']
+        assert result['version']==2 and result['content']['title']=='Assembly title'
+        assert harness.expect(client.get('/v1/trip-needs-action-receipts',
+            params=dict(action_id='assembly-save'),headers=headers))['receipt']==receipt
+        harness.expect(client.post('/v1/trip-source-initializations',content=b'',headers=headers),404)
+        original=auth/'invited.json'
+        saved=original.read_bytes()
+        try:
+            original.write_text(json.dumps(sorted(set(host.subjects)-selected)))
+            harness.expect(client.get('/v5/trip-structured',params=selection,headers=headers),503)
+            harness.expect(client.get('/v1/memory-erasure-progress',params={'action_id':'assembly-erase'},headers=headers),403)
+            harness.expect(client.get('/v1/account-cleanup-preparations',params={'action_id':'assembly-cleanup'},headers=headers),403)
+        finally:
+            original.write_bytes(saved)
     # Actual CLI selects the source-compatible offline model; same source/B Meter.
     setup('cli')
     env=dict(os.environ,CJ_ENV='local')

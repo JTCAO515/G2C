@@ -114,7 +114,7 @@ def parse_stored(raw):
     return TypedCommand.parse(raw) if 'version' in value else Command.parse(raw)
 
 
-def save_manual(service, raw, authority, principal):
+def save_manual(service, raw, authority, principal, *, mark_write=None):
     """Protected host only; genuine B M/T lease spans the canonical Memory commit."""
     from contextlib import nullcontext
     from .domain import Conflict, Unavailable
@@ -156,6 +156,8 @@ def save_manual(service, raw, authority, principal):
                 resolved = service.manual_policy.evaluate(command,raw)
                 if lease is not None:
                     lease.check()
+                if mark_write is not None:
+                    mark_write()
                 tx.create_manual_source(command,resolved,service.manual_policy.expires_at)
                 confirmed = tx.source(command)
                 result = tx.insert(command,'active' if confirmed and command.kind!='inference' else 'candidate',
