@@ -61,6 +61,21 @@ def turn_sse(*,tool=False,usage=True,model=M4_MODEL,done=True,turn=None,compact=
 
 
 class Boundaries(unittest.TestCase):
+    def test_model_turn_stream_rejects_usage_before_terminal_body_or_tool(self):
+        lines=sse().splitlines(keepends=True)
+        preterminal=''.join(lines[4:6]+lines[:4]+lines[6:])
+        tool_lines=sse(tool=True).splitlines(keepends=True)
+        preterminal_tool=''.join(tool_lines[4:6]+tool_lines[:4]+tool_lines[6:])
+        for label,body in (('preterminal-usage',preterminal),('preterminal-tool-usage',preterminal_tool)):
+            with self.subTest(label=label):
+                provider=self.provider(body);receipt={};reply={}
+                with self.assertRaises(ProviderUnknown):
+                    list(provider.invoke([dict(role='user',content='Synthetic invalid stream')],TOOL_SYSTEM,label,
+                        tools=TOOLS,native_turn_profile=M4_NATIVE_TURN_STREAM,
+                        receipt=receipt,native_reply=reply,guard=lambda:True))
+                self.assertEqual((receipt,reply),({},{}))
+                self.assertEqual(self.budget.inspect()[-1]['state'],'INTENT')
+
     def test_model_turn_stream_withholds_split_secret_and_missing_receipt_tail(self):
         for label,fragments in (
             ('secret',['Safe text that appears before the guarded tail of this synthetic answer. '+KEY[:12],KEY[12:]]),

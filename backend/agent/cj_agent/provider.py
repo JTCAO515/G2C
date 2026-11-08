@@ -527,6 +527,10 @@ class MeteredDashScopeProvider:
                     choices=value.get('choices',[])
                     if type(choices) is not list or len(choices)>1:
                         choice_rejection='choices_shape';raise _M4Rejection('choice_rejected','M4 stream choice invalid')
+                    if incremental and supplied is not None and not finished and (
+                            not choices or type(choices[0]) is not dict
+                            or choices[0].get('finish_reason') not in ('stop','tool_calls')):
+                        raise ProviderUnknown('M4 usage before terminal choice')
                     for choice in choices:
                         if type(choice) is not dict:
                             choice_rejection='choice_shape';raise _M4Rejection('choice_rejected','M4 stream choice invalid')
