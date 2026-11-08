@@ -435,6 +435,7 @@ def exercise(auth,conninfo):
                 return datetime.now(tz) + timedelta(seconds=offset)
 
         from cj_auth.admission import AdmissionChecker
+        from cj_api.local_account_admission_v2 import _retirement_fact
         initialize_checker = AdmissionChecker.__init__
         def jwt_time():
             return JWTClock.now(timezone.utc).timestamp()
@@ -469,7 +470,9 @@ def exercise(auth,conninfo):
         kwargs = dict(tools_configuration=registered,real_services=services,
             memory_configuration_for_scope=runtime.memory_configuration_for_scope,account_admission=True,
             hk_beta_b_run_credential=True)
-        with patch('cj_api.real_services.fetch_candidate',place), patch('jwt.api_jwt.datetime',JWTClock), \
+        with patch.object(database,'_open_runtime_connection',wraps=database._open_runtime_connection) as checkouts, \
+                patch('cj_api.local_account_admission_v2._retirement_fact',wraps=_retirement_fact) as fresh_retirement, \
+                patch('cj_api.real_services.fetch_candidate',place), patch('jwt.api_jwt.datetime',JWTClock), \
                 patch.object(AdmissionChecker, '__init__', clocked_checker), \
                 patch.object(run_worker.dev_auth, 'time', SimpleNamespace(time=jwt_time)), \
                 patch.object(run_worker.dev_auth, 'token', observe_signature):
@@ -478,6 +481,10 @@ def exercise(auth,conninfo):
             assert [item[:2] for item in issued] == [(B,5),(B,11),(B,11)]
             assert issued[1][2] and issued[2][2] and issued[1][2] != issued[2][2]
             assert run_worker.run_once(database,native,auth,**kwargs)==[]
+        # The signed multi-step originals must continue to check retirement at
+        # each authority boundary without opening a socket for each such read.
+        assert fresh_retirement.call_count>100 and checkouts.call_count<fresh_retirement.call_count, (
+            checkouts.call_count,fresh_retirement.call_count)
         assert len(calls)==4 and len(tools)==2
         assert [(r['kind'],r['state']) for r in budget.inspect()]==[('model','RECEIVED'),('place','RECEIVED'),('model','RECEIVED')]*2
         from cj_run.step_usage import ledger_scope_for
@@ -503,6 +510,24 @@ def exercise(auth,conninfo):
             assert connection.execute('SELECT acknowledged FROM cj_message_delivery WHERE run_id=%s',
                                       (expired['receipt']['run_id'],)).fetchone()==(True,)
         print('PASS beta-b per-RUN signed credential survives 301s, settles original Meter and still expires at 660s')
+
+        offset=tool_delay=0
+        withdrawn=send(api,'worker-native-fixture-retirement',travels[0])
+        def retire_after_provider(row):
+            return Fact.YES if len(tools)==4 else _retirement_fact(row)
+        with patch('cj_api.real_services.fetch_candidate',place), \
+                patch('cj_api.local_account_admission_v2._retirement_fact',side_effect=retire_after_provider):
+            outcomes=run_worker.run_once(database,native,auth,**kwargs)
+        assert [(o.run_id,o.status) for o in outcomes]==[(withdrawn['receipt']['run_id'],'context_invalid')],outcomes
+        assert len(calls)==6 and len(tools)==4
+        last=budget.inspect()[-1]
+        assert (last['kind'],last['state'])==('place','RECEIVED')
+        with database.connect(scope_for(ISSUER,B)) as connection:
+            ledger=decode(connection.execute('SELECT ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(account,)).fetchone()[0])
+            assert ledger.attempts[last['attempt_id']].receipt is None
+            assert connection.execute('SELECT acknowledged FROM cj_message_delivery WHERE run_id=%s',
+                                      (withdrawn['receipt']['run_id'],)).fetchone()==(True,)
+        print('PASS beta-b reused retirement connection sees withdrawal after tool receipt and stops the original without resend')
         check_legacy_sse_followup(api, host, database)
     print('PASS HK single worker/legacy and typed scopes/original signed MESSAGE2/owned travel lease/selected Memory/isolated input/held original resume/no duplicate calls; real providers UNRUN')
 
