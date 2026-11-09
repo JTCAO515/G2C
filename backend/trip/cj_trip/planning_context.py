@@ -10,6 +10,7 @@ from .manual_needs import EditV2,prepare
 class TripContext:
     trip:Trip
     proposed:bytes
+    needs_source:bytes
 
 
 def read_current(repository,needs_scope,needs_id):
@@ -28,7 +29,7 @@ def current_in_tx(cur,repository,needs_scope,needs_id):
     from .needs_lineage import current_origin
     origin=current_origin(cur,repository,trip)
     if (origin['needs_scope'],origin['needs_id'])!=(needs_scope,needs_id):raise Denied('selected source identity mismatch')
-    return TripContext(trip,origin['proposed'])
+    return TripContext(trip,origin['proposed'],origin['source'])
 
 
 def protect_model(original,document):
