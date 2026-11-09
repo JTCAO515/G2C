@@ -1775,14 +1775,10 @@ private func developmentCleanupHash(_ value: Data) -> String {
               try sdkStore.load()?.withBytes(developmentCleanupHash) == ordinary.sdkHash,
               try executionStore.load() == nil, let device, let account else { throw CleanupFailure.stale }
         switch device.state {
-        case .ready, .enrolled: break
+        case .ready, .registrationUnknown, .enrolled: break
         default: throw CleanupFailure.stale
         }
-        switch account.state {
-        case .ready, .registered: break
-        default: throw CleanupFailure.stale
-        }
-        guard try !device.hasVerifiedIdentityRefusal,
+        guard try account.permitsOrdinaryCredentialRenewal, try !device.hasVerifiedIdentityRefusal,
               try manifestStore.load()?.withBytes({ $0 }) == original.encoded() else { throw CleanupFailure.stale }
         var next = original
         next.renewedSDKHash = ordinary.sdkHash

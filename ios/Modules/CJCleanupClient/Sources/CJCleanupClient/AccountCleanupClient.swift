@@ -153,6 +153,14 @@ public enum AccountCleanupReadResult: Sendable { case notObserved, prepared(Acco
             return true
         }
     }
+    /// The host still verifies the new owner and credential bytes. A merely
+    /// prepared operation can retain its original journal across that renewal.
+    public var permitsOrdinaryCredentialRenewal: Bool {
+        get throws {
+            guard try !requiresRestrictedProgress else { return false }
+            return try journal.record.currentProgress()?.businessRevoked != true
+        }
+    }
     /// Historical original confirmation response is separate from later GET state.
     public var historicalConfirmation: AccountCleanupProgress? {
         get throws {
