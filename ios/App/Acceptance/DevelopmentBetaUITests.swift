@@ -210,9 +210,11 @@ import CryptoKit
     private func readCompletedRun(_ completed: String, stopped: [String]) {
         let button = app.buttons.matching(identifier: "run.snapshot.read").element
         let status = app.descendants(matching: .any).matching(identifier: "run.display.status").element
-        // The original public Chinese run completed after the former 210s
-        // observation limit. Poll only its read action and stop on a known terminal result.
-        let deadline = Date().addingTimeInterval(600)
+        // Allow the approved worker lifetime plus delivery and read-back time.
+        // This is an observation bound, not an acceptance latency threshold.
+        let started = Date()
+        let deadline = started.addingTimeInterval(720)
+        defer { print("M4_COMPOSITION_RUN_OBSERVATION_SECONDS", Date().timeIntervalSince(started)) }
         let terminal = [completed] + stopped
         while Date() < deadline {
             let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == true AND enabled == true"), object: button)
@@ -226,6 +228,23 @@ import CryptoKit
             }
         }
         XCTFail("The original run did not produce a verified terminal snapshot before the observation deadline")
+    }
+
+    private func observeNativeAnswerSelection(_ answer: XCUIElement, language: String) {
+        answer.press(forDuration: 1)
+        let copyNames = NSPredicate(format: "label IN %@", ["Copy", "拷贝", "复制"])
+        let menuItems = app.menuItems.matching(copyNames)
+        let copy = menuItems.element.waitForExistence(timeout: 2) ? menuItems : app.buttons.matching(copyNames)
+        if copy.element.waitForExistence(timeout: 5), copy.count == 1, copy.element.isEnabled {
+            let evidence = XCTAttachment(screenshot: app.screenshot())
+            evidence.name = "beta-answer-selection-" + language
+            evidence.lifetime = .keepAlways
+            add(evidence)
+            print("M4_COMPOSITION_SELECTION_MENU_OBSERVED", language)
+        } else {
+            print("M4_COMPOSITION_SELECTION_UNVERIFIED", language)
+        }
+        answer.tap()
     }
 
     func testInternalComposition() async throws {
@@ -290,6 +309,7 @@ import CryptoKit
         let answerText = try XCTUnwrap(answer.value as? String)
         XCTAssertFalse(answerText.isEmpty)
         try app.performAccessibilityAudit(for: .all)
+        observeNativeAnswerSelection(answer, language: fixture.language)
 
         print("M4_COMPOSITION_STAGE accept-and-edit")
         businessTap("planning.discover"); businessTap("planning.accept")
