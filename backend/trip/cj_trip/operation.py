@@ -96,6 +96,7 @@ class OperationContext:
     def lio_revisions(self, trip_id, *, before=None, limit=10): return self.__call('lio_revisions', trip_id, before, limit)
     def lio_current_trip(self, needs_scope, needs_id): return self.__call('lio_current_trip', needs_scope, needs_id)
     def lio_plan_receipt(self, binding): return self.__call('lio_plan_receipt', binding)
+    def lio_edit_receipt(self, binding): return self.__call('lio_edit_receipt', binding)
     def undo_lio(self, request): return self.__call('undo_lio', request)
     def lio_undo_receipt(self, request): return self.__call('lio_undo_receipt', request)
     def detail(self, trip_id): return self.__call('detail', trip_id)
