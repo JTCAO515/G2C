@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+from threading import Event
 import sys
 import tempfile
 import time
@@ -204,9 +205,34 @@ def exercise(root,conninfo):
             model=FakeProvider()
             worker=run_worker._worker_for_scope(database,model,auth,scope_for(ISSUER,SUBJECT),
                 checker_for(auth),memory_configuration=memory)
-            outcomes=worker.process()
+            from cj_api.demo_dialogue_events import _project
+            event_route='/v1/demo-dialogue/events'
+            event_params={'message_id':'first'}
+            accepted_only=Event()
+
+            def observe_queue(binding,state,after):
+                if state is None and binding.run_id==first['run_id']:
+                    accepted_only.set()
+                return _project(binding,state,after)
+
+            with patch('cj_api.demo_dialogue_events._project',side_effect=observe_queue),                    ThreadPoolExecutor(max_workers=1) as pool:
+                watch=pool.submit(api.get,event_route,params=event_params,headers=old)
+                assert accepted_only.wait(5), 'protected original outbox was not observed before the RUN'
+                outcomes=worker.process()
+                streamed=watch.result(timeout=15)
             assert len(outcomes)==4 and all(outcome.status=='completed' for outcome in outcomes)
             assert model.calls==4
+            assert streamed.status_code==200
+            def frames(response):
+                return [json.loads(line[6:]) for line in response.text.splitlines() if line.startswith('data: ')]
+            actual=frames(streamed)
+            assert [entry['payload']['stage'] for entry in actual if entry['kind']=='status']==['queued','running','completed']
+            assert all(entry['run_id']==first['run_id'] and entry['message_id']==first['message_id'] for entry in actual)
+            assert ''.join(entry['payload']['text'] for entry in actual if entry['kind']=='answer_delta')
+            cursor=actual[1]['event_id']
+            assert frames(api.get(event_route,params=event_params,headers={**old,'Last-Event-ID':str(cursor)}))==actual[2:]
+            assert api.get(event_route,params=event_params,headers={**old,'Last-Event-ID':'99999'}).status_code==409
+            assert api.get(event_route,params=event_params,headers=foreign).status_code==503
             with psycopg.connect(**conninfo) as db:
                 assert db.execute('SELECT count(*) FROM cj_message_delivery WHERE scope=%s AND acknowledged',
                     (scope_for(ISSUER,SUBJECT),)).fetchone()==(4,)
@@ -214,6 +240,7 @@ def exercise(root,conninfo):
             assert demo_accounts.manage(runtime,'revoke',SUBJECT,control,operation)=='revoked'
             assert login(CODE).status_code==401
             assert api.get(route,params={'message_id':'first'},headers=old).status_code==403
+            assert api.get(event_route,params={'message_id':'first'},headers=old).status_code==403
             assert api.post(route,content=dialogue('revoked'),headers=old).status_code==403
             assert api.put('/v1/conversations',params=params,headers=old).status_code==403
             assert demo_accounts.manage(runtime,'rotate',SUBJECT,control,operation,(digest(NEW_CODE),expiry))=='active'

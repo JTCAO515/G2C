@@ -92,6 +92,13 @@ class HistoryReadContext:
         self._check()
         return result
 
+    def query_dialogue_message(self, message_id):
+        from .demo_dialogue import read_source
+        self._check()
+        result = read_source(self._service, message_id)
+        self._check()
+        return result
+
     def query_edit_message(self,message_id,*,require_active=True):
         self._check()
         if type(message_id) is not str or not message_id.strip():raise InvalidInput('message ID required')

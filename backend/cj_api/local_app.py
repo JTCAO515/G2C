@@ -634,7 +634,7 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
 
         dialogue_boundary = Boundary(checker, dialogue_repository, lambda: str(uuid.uuid4()),
                                      checker_in_transaction=dialogue_checker)
-        register_demo_dialogue_routes(app, dialogue_boundary)
+        register_demo_dialogue_routes(app, dialogue_boundary, database.run_repository)
     if database.edit_results:
         from .run_display_composition import build_run_display_reader
         from .scoped_result_routes import register_scoped_result_routes

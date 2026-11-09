@@ -7,6 +7,7 @@ import uuid
 
 from .domain import Command, InputConflict, InvalidInput, Unavailable, unique_fields
 from .travel import ABI, Action, Service as TravelService
+from .travel_reference import OriginalTravelMessage, read_reference
 
 
 MESSAGE_VERSION = 'DEMO-dialogue-message.1'
@@ -146,3 +147,14 @@ def query(service, mid):
         stored = tx.find(mid)
         tx.chat(stored.receipt.conversation_id, stored.receipt.generation)
         return _receipt(stored, digest)
+
+
+def read_source(service, mid):
+    """Resolve only an original that entered through the additive dialogue route."""
+    with service.repository.transaction() as tx:
+        tx.lock_scope()
+        if _original_digest(tx, mid) is None:
+            return None
+        stored = tx.find(mid)
+        tx.chat(stored.receipt.conversation_id, stored.receipt.generation)
+        return OriginalTravelMessage(stored, read_reference(tx, stored))
