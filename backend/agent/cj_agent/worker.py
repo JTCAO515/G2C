@@ -270,11 +270,13 @@ class RunWorker:
                     self.provider.stream(messages) if system is None else self.provider.stream(messages,system=system))
         yield from self._stream_source(binding,source,draft=draft)
 
-    def _registered_stream(self,binding,key,registration,argument):
+    def _registered_stream(self,binding,key,registration,argument,*,progress=None):
         if self.memory_history and registration in ('model.answer','model.draft'):
             messages,system,_=argument
             self._model_history(binding,messages,system)
         prepared=self.budget_exit.prepare_operation(self.runs,binding,key,registration,argument,stage='answer')
+        if progress is not None:
+            yield progress
         yield from self._stream_source(binding,lambda:self.budget_exit.stream(prepared),draft=False)
 
     def _model_history(self,binding,messages,system):
@@ -456,7 +458,7 @@ class RunWorker:
         proposal_id = None
         buffer = ''
         try:
-            from cj_message.lio_context import LioCitation, answer_prompt
+            from cj_message.lio_context import LioCitation, LioToolProgress, answer_prompt
 
             locale = self.lio_locale(binding) if self.lio_locale is not None else None
             if locale is not None and self.lio_planning is not None:
@@ -474,7 +476,7 @@ class RunWorker:
             else:
                 chunks = self.tools.answer(self, binding, inputs, lio_locale=locale)
             for chunk in chunks:
-                if isinstance(chunk, LioCitation):
+                if isinstance(chunk, (LioCitation, LioToolProgress)):
                     state = self._event(binding, state, 'effect_committed', chunk.effect())
                     continue
                 buffer += chunk

@@ -95,6 +95,7 @@ def check_lio(api, database, auth, other, headers, conninfo):
     from cj_draft.needs_publisher import SYSTEM as PLAN_SYSTEM
     from cj_message import demo_dialogue
     from cj_message.domain import CommitUnknown
+    from cj_message.lio_context import LioCitation, LioToolProgress
     from cj_message.lio_plan_needs import original_needs
     from cj_run.core import Binding, ResyncRequired
     from cj_trip.confirmation import ConfirmationSigner
@@ -194,7 +195,7 @@ def check_lio(api, database, auth, other, headers, conninfo):
     assert model.calls == 2 and all(entry['answer'] and entry['failure'] is None for entry in ready)
     assert prompts[0].endswith('Reply in Chinese.') and prompts[1].endswith('Reply in English.')
     assert all(prompt.startswith('You are Lio, a lion-dance mascot') for prompt in prompts)
-    assert all(set(entry) == {'message_id','text','answer','status','failure','sources','trip','memory'} for entry in ready)
+    assert all(set(entry) == {'message_id','text','answer','status','failure','activity','sources','trip','memory'} for entry in ready)
     assert api.get(timeline, params=dict(before='lio-second'), headers=owner).json()['messages'] == ready[:1]
     assert api.get(timeline, params=dict(before='first'), headers=owner).status_code == 400
     unknown = original('lio-unknown', 'Synthetic lost model outcome', 'en')
@@ -210,6 +211,30 @@ def check_lio(api, database, auth, other, headers, conninfo):
                     headers=owner).status_code == 200
     assert [outcome.status for outcome in worker.process()] == ['completed']
     assert model.calls == 4
+
+    class ObservedTools:
+        def answer(self, worker, binding, messages, *, lio_locale):
+            assert lio_locale == 'en'
+            yield LioToolProgress('tool.0.0', 'checking_places')
+            with database.run_repository(scope).transaction():
+                response = api.get(timeline, headers=owner)
+                assert response.status_code == 200, response.text
+                active = response.json()['messages'][-1]
+                assert (active['status'], active['activity']) == ('answering', 'checking_places')
+            yield LioToolProgress('tool.0.0', None)
+            yield LioCitation('tool.0.0', 'Synthetic place evidence',
+                              'https://example.test/place', '2026-11-09T12:00:00+00:00')
+            yield 'There is a park nearby.'
+
+    worker.tools = ObservedTools()
+    assert api.post(messages, content=original('lio-with-source', 'Find a park nearby', 'en'),
+                    headers=owner).status_code == 200
+    assert [outcome.status for outcome in worker.process()] == ['completed']
+    sourced = api.get(timeline, headers=owner).json()['messages'][-1]
+    assert sourced['activity'] is None and sourced['sources'] == [dict(
+        title='Synthetic place evidence', url='https://example.test/place',
+        observed_at='2026-11-09T12:00:00+00:00')]
+    worker.tools = None
     with psycopg.connect(**conninfo) as db:
         generation, run_id, sequence = db.execute(
             'UPDATE cj_run_record SET expires_at=clock_timestamp()-interval \'1 second\' '
@@ -262,6 +287,7 @@ def check_lio(api, database, auth, other, headers, conninfo):
     saved = api.get(timeline, headers=owner).json()['messages'][-1]
     assert saved['status'] == 'completed' and saved['answer'] == 'I saved your itinerary.', saved
     assert saved['trip']['title'] == 'Beijing walk'
+    assert saved['trip']['days'][0]['items'][0]['fixed'] is None
 
     commit_plan = LioPlanPublisher._commit_plan
     def lose_save_ack(publisher, *args):

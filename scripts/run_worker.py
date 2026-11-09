@@ -333,8 +333,6 @@ def run_once(database, model, auth_dir, *, memory_configuration=None,memory_conf
     if memory_configuration_for_scope is not None and (memory_configuration is not None or formal_memory_configuration is not None):
         raise ValueError('select one explicit Memory configuration source')
     planning_scopes=hk_assembly_scopes|hk_demo_scopes
-    if hk_demo_scopes and lio_confirmation is None:
-        raise CompositionUnavailable('original Lio confirmation signer required')
     if planning_scopes and (real_services is None or not account_admission or draft_profile is not None
             or place_draft_configuration is not None or memory_configuration_for_scope is None
             or not database.travel_context or not database.needs_context):

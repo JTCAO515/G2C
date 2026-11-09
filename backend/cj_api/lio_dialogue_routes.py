@@ -7,7 +7,7 @@ from starlette.concurrency import run_in_threadpool
 
 from cj_message.demo_dialogue import LIO_CHAT_PATTERN, message_id
 from cj_message.domain import InvalidInput
-from cj_message.lio_context import SOURCE_EFFECT
+from cj_message.lio_context import SOURCE_EFFECT, TOOL_EFFECT
 from cj_message.lio_plan_needs import BOUND_EFFECT
 from cj_run.core import Binding
 from cj_run.display_snapshot import SnapshotTooLarge
@@ -45,14 +45,17 @@ def _message(item, state, *, expired=False, trip=None):
         failure = ('quota' if state.budget_exhausted_stage != 'none'
                    else 'unavailable')
     sources = []
+    activity = None
     if state is not None:
         for effect in state.effects:
             if effect.startswith(SOURCE_EFFECT):
                 citation = json.loads(effect.removeprefix(SOURCE_EFFECT))
                 sources.append(dict(title=citation['title'], url=citation['url'],
                                     observed_at=citation['observed_at']))
+            elif status == 'answering' and effect.startswith(TOOL_EFFECT):
+                activity = json.loads(effect.removeprefix(TOOL_EFFECT))['activity']
     return dict(message_id=item.message_id, text=item.text, answer=state.text if state else '',
-                status=status, failure=failure, sources=sources, trip=trip, memory=None)
+                status=status, failure=failure, activity=activity, sources=sources, trip=trip, memory=None)
 
 
 def _timeline(boundary, resolve_runs, trip_cards, token, conversation_id, before):

@@ -37,7 +37,7 @@ def _card(trip):
         date = start['date'].get('value')
         days.setdefault(date, []).append(dict(item_id=item['id'], label=item['text'],
             start_time=start['time'].get('value'), end_time=end['time'].get('value'),
-            fixed=item['fixed'].get('value') is True))
+            fixed=item['fixed'].get('value')))
     order = sorted(days, key=lambda day: (day is None, day or ''))
     return dict(trip_id=trip.trip_id, title=value['title'],
                 days=[dict(date=day, items=days[day]) for day in order])

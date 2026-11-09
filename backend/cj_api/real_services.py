@@ -303,7 +303,7 @@ class RealTools:
         if lio_locale is None:
             chinese=any('一'<=c<='鿿' for c in messages[-1]['content'])
         else:
-            from cj_message.lio_context import LioCitation, answer_prompt
+            from cj_message.lio_context import LioCitation, LioToolProgress, answer_prompt
             chinese = lio_locale == 'zh'
             system += ' ' + answer_prompt(lio_locale)
         if binding.scope in self.buffered_streaming_scopes:profile=M4_NATIVE_TURN_BUFFERED
@@ -347,7 +347,21 @@ class RealTools:
                 original_query=(name,arguments)
                 if original_query in seen:raise ProviderFailed('M4 original tool query already dispatched; no repeat')
                 seen.add(original_query)
-                result=''.join(worker._registered_stream(binding,key,'tool.'+name,(arguments,ref)))
+                if lio_locale is None:
+                    result=''.join(worker._registered_stream(binding,key,'tool.'+name,(arguments,ref)))
+                else:
+                    activity = {'place':'checking_places', 'weather':'checking_weather',
+                                'fact':'checking_travel_information'}[name]
+                    pieces = []
+                    with closing(worker._registered_stream(binding,key,'tool.'+name,(arguments,ref),
+                                                           progress=LioToolProgress(key, activity))) as stream:
+                        for part in stream:
+                            if isinstance(part, LioToolProgress):
+                                yield part
+                            else:
+                                pieces.append(part)
+                    result = ''.join(pieces)
+                    yield LioToolProgress(key, None)
                 data=json.loads(result)
                 if name=='place' and data.get('provider_code')=='10012':
                     raise ProviderFailed('place service permission denied; operator action required')

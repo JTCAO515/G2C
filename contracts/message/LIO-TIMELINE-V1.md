@@ -42,6 +42,7 @@ has an empty array and null conversation ID and cursor.
       "answer": "You can take a walk through a neighborhood park.",
       "status": "completed",
       "failure": null,
+      "activity": null,
       "sources": [],
       "trip": null,
       "memory": null
@@ -52,7 +53,9 @@ has an empty array and null conversation ID and cursor.
 ```
 
 Display status is `sending`, `answering`, `completed`, or `failed`. Answer
-text during `answering` is the committed prefix. A source contains `title`,
+text during `answering` is the committed prefix. Activity is null or one of
+`checking_places`, `checking_weather`, or `checking_travel_information`.
+It reflects a prepared service operation on the original answer. A source contains `title`,
 `url`, and `observed_at`; a missing observation time is null. Sources come
 from observed service evidence. Trip and memory attachments are nullable. A
 client-observed connection error maps to `network`. Server failures use
@@ -61,7 +64,7 @@ status internally and is never dispatched again by a timeline read.
 
 A saved trip has `trip_id`, `title`, and `days`. Each day has a calendar
 `date` or null and an `items` array. Each item has `item_id`, `label`,
-`start_time`, `end_time`, and `fixed`. Unspecified times are null. A card
+`start_time`, `end_time`, and `fixed`. Unspecified times and lock states are null. A card
 reflects the saved version associated with the message. A verified save
 receipt can complete the display even when the final reply was lost.
 

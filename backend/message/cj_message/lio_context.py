@@ -15,6 +15,17 @@ PERSONA = (
 )
 
 SOURCE_EFFECT = 'lio_source:'
+TOOL_EFFECT = 'lio_tool:'
+
+
+@dataclass(frozen=True)
+class LioToolProgress:
+    key: str
+    activity: str | None
+
+    def effect(self):
+        return TOOL_EFFECT + json.dumps(dict(key=self.key, activity=self.activity),
+                                        separators=(',', ':'))
 
 
 @dataclass(frozen=True)
