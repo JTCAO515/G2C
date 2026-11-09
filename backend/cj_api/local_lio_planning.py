@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from hashlib import sha256
 import json
-import re
 from zoneinfo import ZoneInfo
 
 from psycopg import Error as DatabaseError
@@ -17,17 +16,9 @@ from cj_needs.domain import InvalidInput, decode, exact
 from cj_needs.preview import encode, preview
 from cj_run.postgres import CommitUnknown
 
-from .lio_planning_grounding import grounded_fields, stated_city
+from .lio_planning_grounding import PLAN_REQUEST, grounded_fields, stated_city
 
 
-PLAN_REQUEST = re.compile(
-    r"^\s*(?:(?:(?:请|麻烦)?(?:(?:帮|给|为)(?:我们|我)[^。！？.!?]{0,16}?)?"
-    r"(?:规划|(?:安排|设计|做)(?:个|一个|一份)?[^。！？.!?]*(?:行程|日游|天游|旅行|旅游|游玩|攻略))"
-    r"|(?:(?:can|could|would) you\s+|please\s+|i(?: would|'d) like you to\s+)?"
-    r"(?:help (?:me|us) (?:to )?)?(?:plan|build|create|organize|put together|draft|make)\b"
-    r"[^.!?]*\b(?:itinerary|trip|visit|days?\s+in)\b))",
-    re.IGNORECASE,
-)
 ASK_MORE = 'lio_planning_needs_details'
 MAX_CLARIFICATIONS = 4
 SYSTEM = (
@@ -182,11 +173,11 @@ def extract(worker, binding, locale, texts, references):
         if city is not None and (type(city) is not str or not city.strip() or city not in source
                                  or len(city.encode('utf-8')) > 256):
             raise InvalidInput('unbound destination')
-        if city is not None and not stated_city(source, city):
+        if city is not None and not stated_city(texts, city):
             city = None
         value = json.loads(preview(encode(envelope['extraction']), message_id=binding.message_id,
                                    run_id=binding.run_id, source_text=source))
-        fields, missing_fixed = grounded_fields(source, city, today)
+        fields, missing_fixed = grounded_fields(texts, city, today)
     except (InvalidInput, UnicodeError) as exc:
         raise ProviderUnknown('Lio planning details unavailable') from exc
     questions = []

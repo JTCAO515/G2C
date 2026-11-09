@@ -117,23 +117,36 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     fixed_words = 'The hotel meetup from 9 to 10 a.m. on the first day is fixed'
     sample = f'Plan three days in Beijing for two people starting tomorrow. {fixed_words}.'
     today = date(2026, 11, 9)
-    grounded, missing = grounded_fields(sample, 'Beijing', today)
+    grounded, missing = grounded_fields((sample,), 'Beijing', today)
     assert not missing and len(grounded['fixed_items']) == 1
     assert grounded['arrival']['date']['value'] == '2026-11-10'
     assert grounded['departure']['date']['value'] == '2026-11-12'
     assert grounded['fixed_items'][0]['start']['time']['value'] == '09:00'
     assert grounded['fixed_items'][0]['booking_status'] == {'state':'unknown'}
     negative = 'We have not actually booked a hotel for the first day 09:00 to 10:00.'
-    unconfirmed, missing = grounded_fields(negative, 'Beijing', today)
-    assert missing and 'fixed_items' not in unconfirmed
+    unconfirmed, _ = grounded_fields((negative,), 'Beijing', today)
+    assert 'fixed_items' not in unconfirmed
     rejected_dates, _ = grounded_fields(
-        'I cannot travel on 2026-11-10. Travel from 2026-11-11 to 2026-11-12.', 'Beijing', today)
+        ('I cannot travel on 2026-11-10. Travel from 2026-11-11 to 2026-11-12.',), 'Beijing', today)
     assert rejected_dates['arrival']['date']['value'] == '2026-11-11'
     foreign_appointment, missing = grounded_fields(
-        'My daughter has an already booked appointment on 2026-11-11 from 09:00 to 10:00.',
+        ('My daughter has an already booked appointment on 2026-11-11 from 09:00 to 10:00.',),
         'Beijing', today)
     assert missing and 'fixed_items' not in foreign_appointment
-    assert not stated_city('Plan a trip from Beijing to Shanghai.', 'Beijing')
+    assert not stated_city(('Plan a trip from Beijing to Shanghai.',), 'Beijing')
+    assert not stated_city(('Plan a trip to Shanghai. I live in Beijing.',), 'Beijing')
+    meetings, _ = grounded_fields(('The trip dates are undecided. The meeting is from 2026-11-11 to 2026-11-12.',),
+                                   'Beijing', today)
+    assert meetings['arrival']['date']['state'] == 'missing'
+    hypothetical, _ = grounded_fields(('If I have already booked a hotel meetup from 09:00 to 10:00 on the first day.',),
+                                       'Beijing', today)
+    assert 'fixed_items' not in hypothetical
+    filled, missing = grounded_fields(('Plan a trip to Beijing from 2026-11-11 to 2026-11-12. The hotel meetup is fixed.',
+        'For everyone, on the first day from 09:00 to 10:00.'), 'Beijing', today)
+    assert not missing and filled['fixed_items'][0]['applies_to'] == ['party']
+    chinese = '帮我为两个人规划从明天开始的北京三天游，第一天 9:00–10:00 的酒店集合已经定好。'
+    zh, missing = grounded_fields((chinese,), '北京', today)
+    assert not missing and zh['departure']['date']['value'] == '2026-11-12'
 
     messages = '/v1/lio/messages'
     timeline = '/v1/lio/timeline'
