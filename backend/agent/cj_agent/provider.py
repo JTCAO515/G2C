@@ -445,7 +445,7 @@ class MeteredDashScopeProvider:
                 finally:loop.close()
 
     def invoke(self,messages,system,attempt,*,tools=None,receipt,guard,native_reply=None,tool_choice=None,
-               native_turn_profile=None,final_answer=False):
+               native_turn_profile=None,final_answer=False,release_after_send=False):
         from cj_usage.authorization_budget import canonical
         native_tools=tools or []
         buffered=native_turn_profile==M4_NATIVE_TURN_BUFFERED
@@ -457,6 +457,8 @@ class MeteredDashScopeProvider:
                 or (proxy or incremental) and (not native_tools or tool_choice is not None)
                 or final_answer and not (proxy or incremental)):
             raise ProviderFailed('explicit native turn transport required')
+        if release_after_send and (native_tools or system is None):
+            raise ProviderFailed('explicit structured model input required')
         if tool_choice is not None and (tool_choice!='none' or not native_tools):
             raise ProviderFailed('explicit native final-answer strategy required')
         wire_messages=[]
@@ -516,7 +518,7 @@ class MeteredDashScopeProvider:
                 if self.transport is None:
                     if next(chunks,None) is not _M4_REQUEST_SENT:
                         raise ProviderUnknown('M4 original request send unavailable')
-                    if compact or incremental:
+                    if compact or incremental or release_after_send:
                         # The first advance runs under the RUN dispatch fence.
                         # Release it after the one send and before reading the
                         # structured reply. This carries no display text.

@@ -540,7 +540,87 @@ def check_lio_conversational_edit(api, owner, worker, original, model, conninfo,
     print('PASS signed Lio day-two replacement, no model operation, original edit receipt recovery, and undo')
 
 
-def check_lio_memory(database, auth, path, context, foreign, actor, unknown_actor):
+def check_lio_provider_wire(root, database, auth, runtime, actor, api, headers):
+    import httpx
+
+    from cj_agent.provider import DashScopeConfig, MeteredDashScopeProvider, M4_BASE, M4_MODEL
+    from cj_api.local_app import load_confirmation_signer
+    from cj_api.real_services import RealServices, RealTools
+    from cj_memory_jobs.model_v2 import SYSTEM as MEMORY_SYSTEM
+    from cj_usage.authorization_budget import AuthorizationBudget
+    from cj_usage.codec import decode as decode_ledger
+
+    scope = scope_for(ISSUER,actor)
+    subjects = frozenset({actor})
+    question = 'I always prefer a slower travel pace.'
+    answer = 'I can suggest a relaxed route.'
+    attempts = []
+    key = 'synthetic-wire-fixture-key-only'
+    journal = AuthorizationBudget(root/'lio-wire-journal')
+
+    def reply(request):
+        assert str(request.url) == M4_BASE+'/chat/completions'
+        assert request.headers['Authorization'] == 'Bearer '+key
+        payload = json.loads(request.content)
+        attempts.append(payload)
+        if len(attempts) == 1:
+            assert payload['tools'] and payload['messages'][-1] == dict(role='user',content=question)
+            content = answer
+        else:
+            assert len(attempts) == 2 and 'tools' not in payload and 'tool_choice' not in payload
+            assert payload['response_format'] == dict(type='json_object')
+            system, data = payload['messages']
+            assert system['role'] == 'system' and system['content'].startswith(MEMORY_SYSTEM)
+            assert data['role'] == 'user'
+            entry, = json.loads(data['content'])['messages']
+            assert entry['text'] == question
+            content = json.dumps(dict(version='MEMORY-EXTRACT@2',entries=[dict(subject='self',
+                slot='travel.pace',kind='preference',text=question,extent='long_term',occurred_at='date unknown',
+                evidence=[dict(ref=entry['ref'],quote=question)])]))
+        identity = dict(id='synthetic-lio-wire-'+str(len(attempts)),model=M4_MODEL)
+        events = [dict(**identity,choices=[dict(index=0,delta=dict(content=content),finish_reason=None)]),
+                  dict(**identity,choices=[dict(index=0,delta={},finish_reason='stop')]),
+                  dict(**identity,choices=[],usage=dict(prompt_tokens=40,completion_tokens=10,total_tokens=50))]
+        stream = ''.join('data: '+json.dumps(event)+'\n\n' for event in events)+'data: [DONE]\n\n'
+        return httpx.Response(200,stream=httpx.ByteStream(stream.encode()))
+
+    model = MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,key),journal,transport=httpx.MockTransport(reply))
+    services = RealServices(model,key,subjects,demo_subjects=subjects)
+    tools = RealTools(services,buffered_streaming_subjects=subjects)
+    signer = load_confirmation_signer(auth)
+
+    def process():
+        return run_worker.run_once(database,model,auth,tools_configuration=tools,real_services=services,
+            memory_configuration_for_scope=lambda owner:runtime if owner==scope else None,
+            account_admission=True,hk_demo_scopes=frozenset({scope}),lio_confirmation=signer)
+
+    mid = 'lio-memory-wire-original'
+    payload = json.dumps(dict(version='LIO-message.1',message_id=mid,text=question,locale='en')).encode()
+    send = '/v1/lio/messages'
+    accepted = api.post(send,headers=headers,content=payload)
+    assert accepted.status_code == 200, accepted.text
+    assert [(outcome.message_id,outcome.status) for outcome in process()] == [(mid,'completed')]
+    read = api.get('/v1/lio/timeline',headers=headers)
+    assert read.status_code == 200, read.text
+    turn, = [row for row in read.json()['messages'] if row['message_id'] == mid]
+    assert turn['answer'] == answer and turn['status'] == 'completed'
+    tag, = turn['memory']['tags']
+    assert tag['text'] == question
+    assert api.post(send,headers=headers,content=payload).json() == accepted.json()
+    assert process() == [] and model.calls == 2 and len(attempts) == 2
+    with database.connect(scope) as db:
+        rows = db.execute("""SELECT o.attempt_id,o.kind,o.registration_id FROM cj_run_metered_operation o
+            JOIN cj_message_receipt m USING(scope,run_id) WHERE m.message_id=%s""",(mid,)).fetchall()
+        ledger = decode_ledger(db.execute('SELECT ledger FROM cj_usage_ledger_candidate').fetchone()[0])
+    assert {(kind,registration) for _,kind,registration in rows} == {
+        ('model','model.tool_turn'),('memory','memory.lio_extract.1')}
+    assert all(ledger.attempts[key].state == 'settled' for key,_,_ in rows)
+    assert {(row['attempt_id'],row['kind'],row['state']) for row in journal.inspect()} == {
+        (key,'model','RECEIVED') for key,_,_ in rows}
+    print('PASS signed HK-style worker, offline DashScope wire, matched original Meter and authorization receipts')
+
+
+def check_lio_memory(root, database, auth, path, context, foreign, actor, unknown_actor):
     from cj_api.lio_memory_routes import LioMemoryCards, _decode_target, _encode_target
     from cj_api.local_lio_memory import lio_candidates
     from cj_memory.domain import CommitUnknown as MemoryCommitUnknown
@@ -721,6 +801,7 @@ def check_lio_memory(database, auth, path, context, foreign, actor, unknown_acto
                                   (unknown_original.run_id,)).fetchone()
             ledger = decode_ledger(db.execute('SELECT ledger FROM cj_usage_ledger_candidate').fetchone()[0])
             assert ledger.attempts[attempt].state == 'unknown'
+        check_lio_provider_wire(root,database,auth,runtime,actor,api,owner)
     print('PASS signed Lio Meter and middle-turn Pub4, explicit remember/dismiss, stale choice, isolation, ACK recovery and original UNKNOWN')
     return app, remember
 
@@ -828,7 +909,7 @@ def check_lio_retirement(root, database, auth, conninfo, context, memory, clean_
 def exercise(root,conninfo):
     auth=root/'auth'
     other='other-dialogue-owner'
-    memory_actor='lio-memory-only'
+    memory_actor='m4-synthetic-lio-memory'
     dev_auth.init(auth,[SUBJECT,other,'invited-outside-dialogue','legacy-dialogue-only',memory_actor])
     path=root/'conn.json'
     path.write_text(json.dumps(conninfo))
@@ -954,7 +1035,7 @@ def exercise(root,conninfo):
                 assert db.execute('SELECT count(*) FROM cj_message_delivery WHERE scope=%s AND acknowledged',
                     (scope_for(ISSUER,SUBJECT),)).fetchone()==(4,)
             check_lio(api, database, auth, other, old, conninfo, memory)
-            memory_app, memory_choice = check_lio_memory(database, auth, path, context, old, memory_actor, other)
+            memory_app, memory_choice = check_lio_memory(root, database, auth, path, context, old, memory_actor, other)
             check_lio_retirement(root, database, auth, conninfo, context, memory, memory_actor, other,
                                  memory_app, memory_choice)
             assert login(CODE).status_code==200

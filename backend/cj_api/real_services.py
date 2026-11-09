@@ -208,10 +208,13 @@ class RealTools:
         self.native_tools=[t for t in TOOLS if t['function']['name'] in allowed_native]
         model=Registration('model',self._model_input)
         self.registrations=MappingProxyType({'model.answer':model,'model.draft':model,'model.tool_turn':model,
-            'memory.lio_extract.1':Registration('memory',self._model_input),
+            'memory.lio_extract.1':Registration('memory',self._lio_memory_input),
             **{'tool.'+name:Registration('tool',lambda argument,name=name:self._tool_input(name,argument)) for name in {NATIVE_REGISTRATION[n] for n in allowed_native}}})
 
-    def _model_input(self,argument):
+    def _lio_memory_input(self, argument):
+        return self._model_input(argument, release_after_send=True)
+
+    def _model_input(self,argument,*,release_after_send=False):
         native_turn = type(argument) is ModelInput
         if native_turn:
             messages,system,provider=argument.messages,argument.system,argument.provider
@@ -226,6 +229,7 @@ class RealTools:
             raise BudgetUnknown('M4 model registration mismatch')
         raw=canonical(dict(messages=messages,system=system,endpoint=M4_BASE,model=M4_MODEL,synthetic_only=True,
                            native_tools=self.native_tools if native_turn else None,
+                           **({'response_mode':'lio-memory-json.1'} if release_after_send else {}),
                            **({'native_turn_profile':turn_profile,'external_tools_disabled':final_answer} if native_turn else {})))
         inputs=json.loads(raw);metadata={}
         def bind(operation,guard):
@@ -242,7 +246,8 @@ class RealTools:
                 with _external_timing('model',operation,admitted) as checked:
                     yield from self.services.model.invoke(inputs['messages'],inputs['system'],operation.command.attempt_id,
                         tools=inputs['native_tools'],receipt=metadata,guard=checked,native_reply=native_reply,
-                        native_turn_profile=inputs.get('native_turn_profile'),final_answer=inputs.get('external_tools_disabled',False))
+                        native_turn_profile=inputs.get('native_turn_profile'),final_answer=inputs.get('external_tools_disabled',False),
+                        release_after_send=inputs.get('response_mode')=='lio-memory-json.1')
             return invoke
         return InvocationInput(raw,None,bind,_receipt(metadata))
 
