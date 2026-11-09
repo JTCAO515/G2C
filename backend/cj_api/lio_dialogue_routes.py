@@ -88,7 +88,7 @@ def _timeline(boundary, resolve_runs, trip_cards, memory_cards, token, conversat
     return boundary.with_history_context(token, project)
 
 
-def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, memory_cards=None):
+def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, prepare_scope, memory_cards=None):
     @app.post('/v1/lio/messages')
     async def send(request: Request):
         token = _token(request)
@@ -98,7 +98,7 @@ def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, mem
             return _failure(400)
         try:
             raw = await _read_body(request, 16384)
-            receipt = await run_in_threadpool(boundary.receive_lio, token, raw)
+            receipt = await run_in_threadpool(boundary.receive_lio, token, raw, prepare_scope=prepare_scope)
         except BodyError as exc:
             return _failure(exc.status)
         except Exception as exc:

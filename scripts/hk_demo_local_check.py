@@ -257,7 +257,6 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     messages = '/v1/lio/messages'
     timeline = '/v1/lio/timeline'
     scope = scope_for(ISSUER, other)
-    database.provision(scope)
     owner = {**headers, 'Authorization': 'Bearer ' + dev_auth.token(auth, other, 300)}
     legacy_only = {**headers, 'Authorization': 'Bearer ' + dev_auth.token(auth, 'legacy-dialogue-only', 300)}
     assert api.get(timeline, headers=legacy_only).status_code == 403
@@ -270,10 +269,14 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
 
     raw = original('lio-first', '北京有哪些公园？', 'zh')
     assert api.post('/v1/demo-dialogue/messages', content=raw, headers=owner).status_code == 400
+    foreign_chat = original('lio-invalid-first', 'Hello', 'en', conversation_id='lio-dialogue-'+'0'*32)
+    assert api.post(messages, content=foreign_chat, headers=owner).status_code == 400
+    with psycopg.connect(**conninfo) as db:
+        assert db.execute('SELECT 1 FROM cj_run_scope WHERE scope=%s', (scope,)).fetchone() is None
     receive = demo_dialogue._receive
 
-    def lose_commit_ack(service, command):
-        receive(service, command)
+    def lose_commit_ack(service, command, *, prepare_scope):
+        receive(service, command, prepare_scope=prepare_scope)
         raise CommitUnknown()
 
     with patch.object(demo_dialogue, '_receive', side_effect=lose_commit_ack):

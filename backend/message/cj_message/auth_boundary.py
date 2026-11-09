@@ -333,9 +333,9 @@ class Boundary:
         from .demo_dialogue import receive
         return receive(self._service(token), raw)
 
-    def receive_lio(self, token, raw):
+    def receive_lio(self, token, raw, *, prepare_scope):
         from .demo_dialogue import receive_lio
-        return receive_lio(self._service(token), raw)
+        return receive_lio(self._service(token), raw, prepare_scope=prepare_scope)
 
     def query_dialogue(self, token, message_id):
         from .demo_dialogue import query

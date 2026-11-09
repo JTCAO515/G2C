@@ -648,7 +648,8 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
             lio_boundary, lio_checker = dialogue_binding(lio_dialogue_subjects)
             memory_cards = lio_memory_factory(lio_boundary) if lio_memory_factory is not None else None
             register_lio_dialogue_routes(app, lio_boundary, database.run_repository,
-                                         LioTripCards(database, lio_checker), memory_cards=memory_cards)
+                                         LioTripCards(database, lio_checker), prepare_scope=database._provision_scope,
+                                         memory_cards=memory_cards)
             if memory_cards is not None:
                 from .lio_memory_routes import register_lio_memory_routes
                 register_lio_memory_routes(app, memory_cards)
