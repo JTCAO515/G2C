@@ -48,18 +48,16 @@ class NeedsActions:
                 if digest!=request.candidate_hash:raise Conflict('original candidate changed')
                 check()
                 if request.kind=='accept':
-                    source_value=json.loads(raw)
-                    self.planning_context(cur,repository,proposal.proposal_id,source_value)
+                    self.planning_context(cur,repository,proposal.proposal_id,value)
                 action=repository.confirm.issue(repository.scope,ProposalDetail(proposal,digest,status),
                     action_id=request.action_id,kind=request.kind,candidate_hash=request.candidate_hash).action
                 receipt,pending=repository._act_in_tx(cur,action)
                 cur.execute('INSERT INTO cj_trip_needs_action(scope,action_id,proposal_id,original_input,original_action) VALUES(%s,%s,%s,%s,%s)',
                     (repository.scope,request.action_id,request.proposal_id,request.raw,action.raw()))
                 if receipt.committed_version is not None:
-                    source=json.loads(raw)
                     cur.execute('INSERT INTO cj_trip_needs_current(scope,needs_scope,needs_id,trip_id,trip_version) VALUES(%s,%s,%s,%s,%s) '
                         'ON CONFLICT(scope,needs_scope,needs_id) DO UPDATE SET trip_id=EXCLUDED.trip_id,trip_version=EXCLUDED.trip_version',
-                        (repository.scope,source['needs_scope'],source['needs_id'],receipt.trip_id,receipt.committed_version))
+                        (repository.scope,value['needs_scope'],value['needs_id'],receipt.trip_id,receipt.committed_version))
                 return receipt
 
     @staticmethod
