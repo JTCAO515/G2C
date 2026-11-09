@@ -31,7 +31,8 @@ struct AssistantShell: View {
                 conversationContext
                 if let text = messageHost.visibleOriginalText {
                     VStack(alignment: .trailing, spacing: 6) {
-                        Text(state.language.text("You", "你")).font(.caption.weight(.semibold))
+                        Label(state.language.text("You", "你"), systemImage: "person.crop.circle")
+                            .font(.caption.weight(.semibold))
                         RunSelectableText(text: text)
                             .accessibilityLabel(state.language.text("Original message", "原消息"))
                             .accessibilityIdentifier("assistant.originalText")
@@ -43,24 +44,26 @@ struct AssistantShell: View {
                 MemoryCandidateConversationBubble(host: candidateHost, language: state.language) { panel = .memoryCandidates }
                 if let bodyText, !runHost.isShowingOriginal {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(state.language.text("Assistant", "助手")).font(.caption.weight(.semibold))
+                        Label(state.language.text("Assistant", "助手"), systemImage: "sparkles")
+                            .font(.caption.weight(.semibold))
                         Text(bodyText).textSelection(.enabled)
-                    }.assistantCard()
-                    Button(state.language.text("Report a problem with this answer", "反馈此回答的问题")) {
+                    }.shellCard()
+                    Button {
                         feedbackEntry = answerEntry; panel = .feedback
-                    }.buttonStyle(AssistantOptionButtonStyle())
+                    } label: {
+                        feedbackLabel
+                    }.buttonStyle(ShellActionButtonStyle())
                 }
                 RunContainerView(host: runHost, messages: messageHost, language: state.language, openNeeds: { panel = .needs })
-                    .assistantCard()
+                    .shellCard()
                 if runHost.originalPresentationID != nil {
                     Button {
                         do { feedbackEntry = try feedbackHost.prepareAnswer(from: runHost) }
                         catch { feedbackEntry = nil } // The panel explicitly reports unavailable; no alternate source.
                         panel = .feedback
                     } label: {
-                        RunReadableText(text: state.language.text("Report a problem with this answer", "反馈此回答的问题"))
-                            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
-                    }.buttonStyle(AssistantOptionButtonStyle()).accessibilityIdentifier("assistant.feedback")
+                        feedbackLabel
+                    }.buttonStyle(ShellActionButtonStyle()).accessibilityIdentifier("assistant.feedback")
                 }
                 if messageHost.supportsScopedEdits, let scoped = messageHost.scopedCandidates,messageHost.scopedDisplays?.hasResult != true {
                     ScopedCandidateView(host: scoped, messages: messageHost, language: state.language)
@@ -134,10 +137,15 @@ struct AssistantShell: View {
 
     }
 
+    private var feedbackLabel: some View {
+        ShellActionLabel(title: state.language.text("Report a problem with this answer", "反馈此回答的问题"),
+                         symbol: "exclamationmark.bubble")
+    }
+
     private var conversationContext: some View {
         VStack(alignment: .leading, spacing: 12) {
-            RunReadableText(text: state.language.text("Conversation context", "会话上下文"), style: .headline)
-                .accessibilityAddTraits(.isHeader)
+            ShellCardHeading(title: state.language.text("Conversation context", "会话上下文"),
+                             symbol: "bubble.left.and.bubble.right")
             if let conversation = messageHost.selectedConversation {
                 if messageHost.supportsTripMessages {
                     RunReadableText(text: state.language.text("Conversation identifier", "会话标识"), style: .caption)
@@ -155,7 +163,10 @@ struct AssistantShell: View {
                     get: { messageHost.creationIntent == .considerTrip },
                     set: { messageHost.creationIntent = $0 ? .considerTrip : .none }
                 )) {
-                    RunReadableText(text: state.language.text("Trip planning", "规划行程"))
+                    HStack(spacing: 8) {
+                        Image(systemName: "map").accessibilityHidden(true)
+                        RunReadableText(text: state.language.text("Trip planning", "规划行程"))
+                    }
                 }
                 .accessibilityLabel(state.language.text("Trip planning", "规划行程"))
                 .disabled(messageHost.isBusy)
@@ -179,14 +190,14 @@ struct AssistantShell: View {
                 RunReadableText(text: sendGuidance, style: .caption)
                     .accessibilityIdentifier("assistant.send.guidance")
             }
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8, alignment: .leading),
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8, alignment: .topLeading),
                                      count: dynamicTypeSize.isAccessibilitySize ? 1 : 2), spacing: 8) {
                 Button { panel = .needs } label: {
-                    AssistantOptionLabel(title: state.language.text("Journey needs", "本次旅行需求"), symbol: "list.bullet.rectangle")
+                    ShellActionLabel(title: state.language.text("Journey needs", "本次旅行需求"), symbol: "list.bullet.rectangle")
                 }.accessibilityIdentifier("assistant.needs")
                 if messageHost.travelSelection != nil {
                     Button { panel = .travel } label: {
-                        AssistantOptionLabel(title: state.language.text("Choose travel context", "选择旅行上下文"), symbol: "suitcase")
+                        ShellActionLabel(title: state.language.text("Choose travel context", "选择旅行上下文"), symbol: "suitcase")
                     }.accessibilityIdentifier("assistant.travelContext")
                 }
                 if messageHost.supportsDemoConversationOpening {
@@ -194,17 +205,19 @@ struct AssistantShell: View {
                     Button {
                         if let newChat { messageHost.performConversationIntent(newChat) }
                     } label: {
-                        AssistantOptionLabel(title: state.language.text("New conversation", "新建会话"), symbol: "plus.bubble")
+                        ShellActionLabel(title: state.language.text("New conversation", "新建会话"), symbol: "plus.bubble")
                     }
                     .disabled(newChat == nil).accessibilityIdentifier("assistant.chat.new")
                 }
                 Button { panel = .server } label: {
-                    AssistantOptionLabel(title: state.language.text("Server history and drafts", "服务器历史与草稿"), symbol: "clock")
-                }.accessibilityIdentifier("assistant.serverHistory")
-                Button { panel = .usage } label: {
-                    AssistantOptionLabel(title: state.language.text("Original usage status", "原调用用量"), symbol: "chart.bar")
+                    ShellActionLabel(title: state.language.text("History & drafts", "历史与草稿"), symbol: "clock")
                 }
-            }.buttonStyle(AssistantOptionButtonStyle())
+                .accessibilityLabel(state.language.text("Server history and drafts", "服务器历史与草稿"))
+                .accessibilityIdentifier("assistant.serverHistory")
+                Button { panel = .usage } label: {
+                    ShellActionLabel(title: state.language.text("Original usage status", "原调用用量"), symbol: "chart.bar")
+                }
+            }.buttonStyle(ShellActionButtonStyle())
             if messageHost.supportsDemoConversationOpening, case .unknown = messageHost.conversationState {
                 RunReadableText(text: state.language.text("Conversation result unknown. Check the original in local recovery.",
                                                            "会话结果未知，请在本地恢复中核对原请求。"), style: .caption)
@@ -217,7 +230,7 @@ struct AssistantShell: View {
                 TripDiscussionChoiceView(host: messageHost, language: state.language,
                     openTrips: { state.selectedTab = .trips })
             }
-        }.assistantCard()
+        }.shellCard()
     }
 
     private var needsVersion: Int64? {
@@ -302,7 +315,11 @@ struct AssistantShell: View {
         VStack(alignment: .leading, spacing: 0) {
             Divider()
             if state.hasDraft, messageHost.supportsSending, let sendGuidance {
-                RunReadableText(text: sendGuidance, style: .caption)
+                Label {
+                    RunReadableText(text: sendGuidance, style: .caption)
+                } icon: {
+                    Image(systemName: "info.circle").font(.caption).accessibilityHidden(true)
+                }
                     .padding(.horizontal)
                     .padding(.top, 6)
                     .accessibilityIdentifier("assistant.send.guidance")
@@ -327,8 +344,7 @@ struct AssistantShell: View {
                                 .frame(minHeight: 36)
                         }
                     }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
+                    .buttonStyle(AssistantSendButtonStyle())
                     .disabled(!messageHost.canSend)
                     .accessibilityLabel(state.language.text("Send", "发送"))
                     .accessibilityIdentifier("assistant.send")
@@ -355,6 +371,21 @@ struct AssistantShell: View {
 
 /// A toolbar hosts this complete native control, preserving both UIKit hit
 /// testing and content-size-category updates; a label-only bridge loses the hit.
+private struct AssistantSendButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .frame(minWidth: 44, minHeight: 44)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 4)
+            .foregroundStyle(isEnabled ? Color(uiColor: .systemBackground) : Color.primary)
+            .background(isEnabled ? Color.primary : Color(uiColor: .tertiarySystemFill), in: Capsule())
+            .contentShape(Capsule())
+            .opacity(configuration.isPressed ? 0.75 : 1)
+    }
+}
+
 struct AssistantPanelDoneButton: UIViewRepresentable {
     let title: String
     var identifier: String = "assistant.panel.done"

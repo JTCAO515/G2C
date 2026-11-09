@@ -49,19 +49,19 @@ struct ManualTripForm: View {
                         }).disabled(!contentAllowed)
                     }
                     let lockAllowed=selected && draft.texts[id] == nil && draft.schedules[id] == nil
-                    rowButton("trip.manual.fixed.true."+id,language.text("Explicitly fix this item","明确固定此条目"),disabled:!lockAllowed) { edit { try $0.setFixed(true,itemID:id) } }
-                    rowButton("trip.manual.fixed.false."+id,language.text("Explicitly unlock this item","明确取消固定此条目"),disabled:!lockAllowed) { edit { try $0.setFixed(false,itemID:id) } }
+                    rowButton("trip.manual.fixed.true."+id,language.text("Explicitly fix this item","明确固定此条目"), symbol: "lock", disabled:!lockAllowed) { edit { try $0.setFixed(true,itemID:id) } }
+                    rowButton("trip.manual.fixed.false."+id,language.text("Explicitly unlock this item","明确取消固定此条目"), symbol: "lock.open", disabled:!lockAllowed) { edit { try $0.setFixed(false,itemID:id) } }
                     if let lock=draft.fixed[id] {
                         RunReadableText(text:lock ? language.text("Selected change: fixed","选定改动：固定") : language.text("Selected change: unlocked","选定改动：取消固定"))
                             .accessibilityIdentifier("trip.manual.fixed.input."+id)
-                        rowButton("trip.manual.fixed.clear."+id,language.text("Leave protection unchanged","不修改保护状态")) { edit { try $0.leaveUnchanged(.fixed,itemID:id) } }
+                        rowButton("trip.manual.fixed.clear."+id,language.text("Leave protection unchanged","不修改保护状态"), symbol: "arrow.uturn.backward") { edit { try $0.leaveUnchanged(.fixed,itemID:id) } }
                     }
-                    rowButton("trip.manual.up."+id,language.text("Move up","上移"),disabled:!selected || item.fixed != .known(false)) { move(id,-1) }
-                    rowButton("trip.manual.down."+id,language.text("Move down","下移"),disabled:!selected || item.fixed != .known(false)) { move(id,1) }
+                    rowButton("trip.manual.up."+id,language.text("Move up","上移"), symbol: "arrow.up", disabled:!selected || item.fixed != .known(false)) { move(id,-1) }
+                    rowButton("trip.manual.down."+id,language.text("Move down","下移"), symbol: "arrow.down", disabled:!selected || item.fixed != .known(false)) { move(id,1) }
                 } label: { RunReadableText(text:item.id+" · "+item.text).accessibilityIdentifier("trip.manual.item.open."+id) }
             }
             if draft.order != nil {
-                rowButton("trip.manual.order.clear",language.text("Keep the original order","保留原顺序")) { edit { try $0.setOrder(nil) } }
+                rowButton("trip.manual.order.clear",language.text("Keep the original order","保留原顺序"), symbol: "arrow.uturn.backward") { edit { try $0.setOrder(nil) } }
             }
             if let issue { RunReadableText(text:issue).accessibilityIdentifier("trip.manual.input.issue") }
         }
@@ -76,9 +76,10 @@ struct ManualTripForm: View {
         guard order.indices.contains(target) else { return }
         var next=order;next.swapAt(index,target);edit { try $0.setOrder(next) }
     }
-    private func rowButton(_ id:String,_ title:String,disabled:Bool=false,action:@escaping()->Void) -> some View {
-        Button(action:action) { RunReadableText(text:title).frame(maxWidth:.infinity,minHeight:44,alignment:.leading).contentShape(Rectangle()) }
-            .buttonStyle(ShellReadableButtonStyle()).disabled(disabled).accessibilityIdentifier(id)
+    private func rowButton(_ id: String, _ title: String, symbol: String, disabled: Bool = false,
+                           action: @escaping () -> Void) -> some View {
+        Button(action: action) { ShellActionLabel(title: title, symbol: symbol) }
+            .buttonStyle(ShellActionButtonStyle()).disabled(disabled).accessibilityIdentifier(id)
     }
 }
 

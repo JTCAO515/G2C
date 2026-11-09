@@ -21,29 +21,51 @@ struct TravelSelectionView: View {
                         RunReadableText(text:language.text("The selection could not be verified. No message has been sent.", "无法核实本次选择，尚未发送消息。"))
                             .accessibilityIdentifier("travel.selection.error")
                     }
-                }.assistantCard()
+                }.shellCard()
                     .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
                     .listRowBackground(Color.clear)
                 if !requiresTravel { Button {
                     do { try model.selectNone();selectionFailed = false }
                     catch { selectionFailed = true }
                 } label: {
-                    RunReadableText(text:language.text("No travel · long-term memory only", "不绑定旅行 · 仅长期记忆"))
-                        .frame(maxWidth:.infinity,minHeight:44,alignment:.leading).contentShape(Rectangle())
-                }.buttonStyle(AssistantOptionButtonStyle()).accessibilityIdentifier("travel.selection.none") }
+                    ShellActionLabel(title: language.text("No travel · long-term memory only", "不绑定旅行 · 仅长期记忆"),
+                                     symbol: "tray", accessory: noTravelSelected ? "checkmark.circle.fill" : nil)
+                }
+                .buttonStyle(ShellActionButtonStyle())
+                .accessibilityAddTraits(noTravelSelected ? .isSelected : [])
+                .accessibilityIdentifier("travel.selection.none")
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden) }
             } header: { ShellSectionHeading(title:language.text("Memory context", "记忆上下文")) }
             Section {
                 ForEach(model.ids,id:\.self) { id in
+                    let selected = selectedTravel(id)
                     Button {
                         selectionFailed = false
                         Task { await model.selectTravel(id) }
                     } label: {
-                        RunReadableText(text:language.text("Travel ", "旅行 ") + id)
-                            .frame(maxWidth:.infinity,minHeight:44,alignment:.leading).contentShape(Rectangle())
-                    }.buttonStyle(AssistantOptionButtonStyle()).accessibilityIdentifier("travel.selection." + id)
+                        ShellActionLabel(title: language.text("Travel", "旅行"), symbol: "suitcase", detail: id,
+                                         accessory: selected ? "checkmark.circle.fill" : "chevron.right")
+                    }
+                    .buttonStyle(ShellActionButtonStyle())
+                    .accessibilityLabel(language.text("Travel ", "旅行 ") + id)
+                    .accessibilityAddTraits(selected ? .isSelected : [])
+                    .accessibilityIdentifier("travel.selection." + id)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
                 }
             } header: { ShellSectionHeading(title:language.text("Travel choices", "可选旅行")) }
         }.navigationTitle(language.text("Travel context", "旅行上下文"))
+    }
+
+    private var noTravelSelected: Bool {
+        if case .none = model.state { return true }
+        return false
+    }
+
+    private func selectedTravel(_ id: String) -> Bool {
+        if case .travel(let travel) = model.state { return travel.id == id }
+        return false
     }
 
     @ViewBuilder private var status: some View {
