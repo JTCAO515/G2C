@@ -313,6 +313,10 @@ class Repository:
         from .lio_history import plan_receipt
         return plan_receipt(self, binding)
 
+    def lio_edit_receipt(self, binding):
+        from .lio_history import edit_receipt
+        return edit_receipt(self, binding)
+
     def undo_lio(self, request):
         from .lio_history import undo
         return undo(self, request)
