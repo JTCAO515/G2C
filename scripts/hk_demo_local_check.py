@@ -358,6 +358,9 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     assert saved['status'] == 'completed' and saved['answer'] == 'I saved your itinerary.', saved
     assert saved['trip']['title'] == 'Beijing walk'
     assert saved['trip']['days'][0]['items'][0]['fixed'] is None
+    first_version = api.get('/v1/lio/trip', headers=owner).json()
+    assert first_version['current'] == saved['trip']
+    assert first_version['history'] == [] and first_version['undo_target'] is None
 
     commit_plan = LioPlanPublisher._commit_plan
     def lose_save_ack(publisher, *args):
@@ -375,6 +378,7 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     assert cards[1]['trip']['title'] == 'Beijing walks'
     assert api.post(messages, content=change, headers=owner).status_code == 200
     assert worker.process() == []
+    check_lio_undo(api, owner, headers, cards)
     with psycopg.connect(**conninfo) as db:
         try:
             with db.transaction():
@@ -384,6 +388,44 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
         else:
             raise AssertionError('migration down erased Lio originals')
     print('PASS signed Lio timeline, bilingual one-chat replay, ACK recovery, and retained display')
+
+
+def check_lio_undo(api, owner, foreign, cards):
+    from cj_trip import lio_history
+    from cj_trip.domain import CommitUnknown
+
+    history = '/v1/lio/trip'
+    undo = history + '/undo'
+    before = api.get(history, headers=owner).json()
+    assert before['current'] == cards[1]['trip'] and before['history'] == [cards[0]['trip']]
+    assert api.get(history, headers=foreign).json()['current'] is None
+    command = dict(action_id='lio-undo-original', target=before['undo_target'])
+    original = json.dumps(dict(command, version='LIO-trip-undo.1')).encode()
+    assert api.get(undo, headers=owner, params=command).json()['committed'] is False
+    assert api.post(undo, headers=foreign, content=original).status_code == 403
+
+    append = lio_history._append_undo
+
+    def lose_undo_ack(*args):
+        append(*args)
+        raise CommitUnknown('synthetic lost undo response')
+
+    with patch.object(lio_history, '_append_undo', side_effect=lose_undo_ack) as write:
+        recovered = api.post(undo, headers=owner, content=original)
+        assert recovered.status_code == 200 and recovered.json()['committed'] is True
+        assert api.post(undo, headers=owner, content=original).json() == recovered.json()
+        assert write.call_count == 1
+    assert api.get(undo, headers=owner, params=command).json() == recovered.json()
+    assert api.get(undo, headers=foreign, params=command).json()['committed'] is False
+    assert api.post(undo, headers=owner, content=json.dumps(
+        dict(command, version='LIO-trip-undo.1', action_id='lio-undo-stale')).encode()).status_code == 409
+
+    after = api.get(history, headers=owner).json()
+    assert after['current'] == cards[0]['trip']
+    assert after['history'] == [cards[1]['trip'], cards[0]['trip']]
+    assert api.post(undo, headers=owner, content=json.dumps(
+        dict(command, version='LIO-trip-undo.1', target=after['undo_target'])).encode()).status_code == 409
+    print('PASS signed Lio current/history, undo original receipt recovery, replay, stale target, and isolation')
 
 
 def exercise(root,conninfo):
@@ -434,7 +476,9 @@ def exercise(root,conninfo):
         assert demo_accounts.manage(runtime,'insert',SUBJECT,control,operation)=='existing'
         local_run_context.provision_budget(path,context,other)
         dev_auth.activate_travel(path,other,context,ABI)
+        from cj_api.local_app import load_confirmation_signer
         app=create_local_app(conninfo_path=None,auth_dir=auth,run_context=context,database=database,account_admission=True,
+            confirmation_signer=load_confirmation_signer(auth),
             demo_dialogue_subjects=frozenset({SUBJECT,other,'legacy-dialogue-only'}),
             lio_dialogue_subjects=frozenset({SUBJECT,other}))
         demo_login.register_demo_login(app)

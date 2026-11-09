@@ -17,8 +17,8 @@ def _origin_args(binding):
             binding.run_id, binding.message_sequence, LIO_VERSION)
 
 
-def _needs_id(binding):
-    return 'lio-' + _identity(binding.scope, binding.conversation_id)
+def lio_needs_id(scope, conversation_id):
+    return 'lio-' + _identity(scope, conversation_id)
 
 
 def original_needs(cursor, binding):
@@ -32,7 +32,7 @@ def original_needs(cursor, binding):
         'AND b.needs_scope=%s AND b.needs_id=%s '
         'AND EXISTS(SELECT 1 FROM cj_run_event e WHERE (e.scope,e.run_id)=(m.scope,m.run_id) '
         'AND e.kind=%s AND e.value=%s)',
-        (*_origin_args(binding), needs_scope_for(binding.scope), _needs_id(binding),
+        (*_origin_args(binding), needs_scope_for(binding.scope), lio_needs_id(binding.scope, binding.conversation_id),
          'effect_committed', BOUND_EFFECT)).fetchone()
 
 
@@ -45,7 +45,7 @@ def attach(cursor, binding, original, fields, references):
     if origin != (original.receipt.input_sha256,):
         raise Unavailable('original Lio planning authority unavailable')
     scope = needs_scope_for(binding.scope)
-    needs_id = _needs_id(binding)
+    needs_id = lio_needs_id(binding.scope, binding.conversation_id)
     cursor.execute("SELECT set_config('cj.needs_runtime_abi','NEEDS-MANUAL-RUNTIME@1',true)")
     cursor.execute('SELECT pg_catalog.pg_advisory_xact_lock(public.cj_needs_fence_key(%s))', (scope,))
     cursor.execute('INSERT INTO cj_needs_scope(scope) VALUES(%s) ON CONFLICT DO NOTHING', (scope,))
