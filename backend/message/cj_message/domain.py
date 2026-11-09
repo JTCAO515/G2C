@@ -366,20 +366,25 @@ class Service:
                     raise Unavailable('send.3 requires explicit versioned read')
         return TravelSendStatus(stored,head,reference) if travel else SendStatus(stored, head)
 
+    def _message_cursor(self, tx, conversation_id, cursor):
+        """Current chat plus a cursor bound to it; a stale or foreign cursor needs resync."""
+        chat = tx.chat(conversation_id)
+        if cursor is None:
+            cursor = Cursor(self.repository.scope, conversation_id, chat.generation,
+                            chat.epoch, chat.last_sequence, 0)
+        if (type(cursor) is not Cursor or
+            (cursor.scope, cursor.conversation_id, cursor.generation, cursor.epoch) !=
+            (self.repository.scope, conversation_id, chat.generation, chat.epoch) or
+            not 0 <= cursor.after <= cursor.through <= chat.last_sequence):
+            raise ResyncRequired()
+        return chat, cursor
+
     def page(self, conversation_id, cursor=None, limit=20):
         if type(limit) is not int or not 1 <= limit <= 100:
             raise InvalidInput('invalid limit')
         with self.repository.transaction() as tx:
             tx.lock_scope()
-            chat = tx.chat(conversation_id)
-            if cursor is None:
-                cursor = Cursor(self.repository.scope, conversation_id, chat.generation,
-                                chat.epoch, chat.last_sequence, 0)
-            if (type(cursor) is not Cursor or
-                (cursor.scope, cursor.conversation_id, cursor.generation, cursor.epoch) !=
-                (self.repository.scope, conversation_id, chat.generation, chat.epoch) or
-                not 0 <= cursor.after <= cursor.through <= chat.last_sequence):
-                raise ResyncRequired()
+            chat, cursor = self._message_cursor(tx, conversation_id, cursor)
             rows = tx.page(conversation_id, cursor.generation, cursor.after, cursor.through, limit)
             # A hole is not an empty/successful history page.
             expected = min(limit, cursor.through - cursor.after)
@@ -415,15 +420,7 @@ class Service:
             raise InvalidInput('invalid limit')
         with self.repository.transaction() as tx:
             tx.lock_scope()
-            chat = tx.chat(conversation_id)
-            if cursor is None:
-                cursor = Cursor(self.repository.scope, conversation_id, chat.generation,
-                                chat.epoch, chat.last_sequence, 0)
-            if (type(cursor) is not Cursor or
-                (cursor.scope, cursor.conversation_id, cursor.generation, cursor.epoch) !=
-                (self.repository.scope, conversation_id, chat.generation, chat.epoch) or
-                not 0 <= cursor.after <= cursor.through <= chat.last_sequence):
-                raise ResyncRequired()
+            chat, cursor = self._message_cursor(tx, conversation_id, cursor)
             stored = tx.history(conversation_id, chat.generation, cursor.after, cursor.through, limit)
             if len(stored) != min(limit, cursor.through - cursor.after):
                 raise ResyncRequired()
