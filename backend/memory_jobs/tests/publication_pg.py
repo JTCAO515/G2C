@@ -534,9 +534,13 @@ def exercise(conninfo,auth):
 
 
 def exercise_demo_candidates(conninfo, auth):
+    from cj_api.local_account_admission_v2 import subject_digest
     from cj_memory_jobs.codec import Unavailable
     from cj_memory_jobs.demo_candidates import DemoCandidates
     from cj_memory_jobs.publication_result import VERSION_DEMO
+    from cj_memory_withdrawal.erasure_command import ErasureCommand
+    from cj_memory_withdrawal.erasure_evidence import parse_original
+    from cj_memory_withdrawal.erasure_store import freeze
 
     actors = ('demo-alice', 'demo-bob')
     dev_auth.init(auth, actors)
@@ -555,6 +559,7 @@ def exercise_demo_candidates(conninfo, auth):
     headers = {'Authorization':'Bearer '+owner,'Content-Type':'application/octet-stream'}
     digest = lambda raw:hashlib.sha256(raw).hexdigest()
     chat = 'demo-candidate-chat'
+    publications = {}
     with TestClient(app) as client:
         def post(path, value):
             response = client.post(path,content=json.dumps(value,ensure_ascii=False).encode(),headers=headers)
@@ -600,6 +605,7 @@ def exercise_demo_candidates(conninfo, auth):
             recovered = host.boundary.with_history_context(owner,lambda context:demo.query_publication_in_context(
                 context,owner,jid,aid,message_id=mid,run_id=receipt['run_id']))
             assert recovered == raw
+            publications[jid] = raw
             try:host.boundary.with_history_context(owner,lambda context:service.query_publication_v2_in_context(context,owner,jid,aid))
             except Unavailable:pass
             else:raise AssertionError('old publication version consumed a Demo receipt')
@@ -636,7 +642,24 @@ def exercise_demo_candidates(conninfo, auth):
             assert current(receipt)['candidates'] == []
         with host.database.connect(scope_for(ISSUER,'demo-alice')) as conn:
             assert conn.execute("SELECT slot FROM cj_memory_item WHERE status='active'").fetchall() == [('travel.pace',)]
+        def erase(context):
+            repository,principal,guard = service._binding(context,owner)
+            with repository.transaction() as memory:
+                active, = memory.effective('self',None)
+                assert active.command.item_id == first_card['candidate_id'] and active.version == 2
+                command = ErasureCommand.parse(json.dumps(dict(version='MEMORY-ERASURE@1',action_id='demo-erase',
+                    item_id=active.command.item_id,expected_version=active.version,derived_range='owned_trip_derived_scope')).encode())
+                original = freeze(memory,command,subject_digest(principal),max_sources=1000,max_jobs=1000,max_bytes=1_000_000)
+                evidence, = memory.cur.execute('SELECT evidence FROM cj_memory_erasure_manifest WHERE scope=%s AND action_id=%s',
+                    (memory.scope,command.action_id)).fetchone()
+                jobs = parse_original(bytes(evidence),json.loads(original),digest(original))['jobs']
+                assert [(job['job_id'],job['publication_utf8'].encode()) for job in jobs] == [('demo-job-0',publications['demo-job-0'])]
+                assert memory.effective('self',None) == []
+                guard('demo_original_erasure_freeze')
+                return b'original Demo publication frozen'
+        assert host.boundary.with_history_context(owner,erase) == b'original Demo publication frozen'
         print('PASS actual Demo single-source input fence, mixed and empty candidate-only publication, exact recovery, explicit confirm and dismiss')
+        print('PASS original Demo Pub4 proof is frozen unchanged and the removed item leaves canonical context')
 
 
 if __name__=='__main__':
