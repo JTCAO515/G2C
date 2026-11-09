@@ -51,6 +51,18 @@ struct AssistantShell: View {
                         .disabled(messageHost.isBusy)
                         .accessibilityIdentifier("assistant.intent")
                 }
+                if messageHost.supportsDemoConversationOpening {
+                    let newChat = messageHost.captureNewConversationIntent()
+                    Button(state.language.text("New conversation", "新建会话")) {
+                        if let newChat { messageHost.performConversationIntent(newChat) }
+                    }
+                    .disabled(newChat == nil).accessibilityIdentifier("assistant.chat.new")
+                    if case .unknown = messageHost.conversationState {
+                        RunReadableText(text: state.language.text("Conversation result unknown. Check the original in local recovery.",
+                                                                   "会话结果未知，请在本地恢复中核对原请求。"), style: .caption)
+                            .accessibilityIdentifier("assistant.chat.status")
+                    }
+                }
                 MemoryCandidateConversationBubble(host: candidateHost, language: state.language) { panel = .memoryCandidates }
                 if let bodyText, !runHost.isShowingOriginal {
                     Text(bodyText).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)

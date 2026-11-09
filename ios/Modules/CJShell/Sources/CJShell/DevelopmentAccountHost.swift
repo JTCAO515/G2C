@@ -13,6 +13,10 @@ public enum DevelopmentSessionCheck: Equatable, Sendable {
     case accepted(account: String), rejected, serverRejected, expired, networkUnknown
 }
 
+public enum DemoAccountExchangeFailure: Error {
+    case rejected, expired, unavailable
+}
+
 public enum DevelopmentAccountState: Equatable, Sendable {
     case signedOut, checking, signedIn(String), paused, rejected, expired, networkUnknown, storageUnavailable
 }
@@ -21,6 +25,7 @@ public enum DevelopmentAccountState: Equatable, Sendable {
 /// Verification and activation are supplied by the trusted DEBUG simulator root.
 @MainActor @Observable public final class DevelopmentAccountHost {
     public let choices: [DevelopmentAccountChoice]
+    public let demoMode: Bool
     public private(set) var state: DevelopmentAccountState = .signedOut
     @ObservationIgnored private let shell: ShellState
     @ObservationIgnored private let session: SessionLifecycle
@@ -36,7 +41,7 @@ public enum DevelopmentAccountState: Equatable, Sendable {
     @ObservationIgnored private var task: Task<Void, Never>?
     @ObservationIgnored private var active: (SessionMaterial, SessionOperation)?
 
-    public init(shell: ShellState, choices: [DevelopmentAccountChoice], persistence: any SessionPersistence,
+    public init(shell: ShellState, choices: [DevelopmentAccountChoice], persistence: any SessionPersistence, demoMode: Bool = false,
                 material: @escaping (String) throws -> SessionMaterial,
                 verify: @escaping (SessionMaterial) async -> DevelopmentSessionCheck,
                 activate: @escaping (SessionMaterial, SessionLifecycle, SessionOperation) throws -> Void,
@@ -45,7 +50,7 @@ public enum DevelopmentAccountState: Equatable, Sendable {
                 serverRejected: ((SessionMaterial) throws -> Void)? = nil,
                 identityWillChange: (() -> Void)? = nil,
                 rejectedContext: ((SessionMaterial, SessionLifecycle, SessionOperation) async throws -> Void)? = nil) {
-        self.shell = shell; self.choices = choices
+        self.shell = shell; self.choices = choices; self.demoMode = demoMode
         self.session = SessionLifecycle(persistence: persistence, restorePolicy: .userInitiatedOnly)
         self.material = material; self.verify = verify; self.activate = activate; self.invalidate = invalidate
         self.clearOffline = clearOffline; self.serverRejected = serverRejected; self.identityWillChange = identityWillChange; self.rejectedContext = rejectedContext
@@ -77,21 +82,7 @@ public enum DevelopmentAccountState: Equatable, Sendable {
         identityWillChange?()
         guard let (id, generation) = begin() else { return }
         do {
-            if let clearOffline {
-                var cacheFailure: (any Error)?
-                do { try clearOffline() } catch { cacheFailure = error }
-                guard request == id, shell.generation == generation else { return }
-                let result = session.clearWithSettlement()
-                guard request == id, shell.generation == generation else { return }
-                guard result == .cleared else { throw SessionFailure.storageUnavailable }
-                if let cacheFailure { throw cacheFailure }
-            }
-            // A persisted logout marker can only be replaced by this explicit new login.
-            if session.state == .blocked(.restorationBlocked) {
-                guard session.clearWithSettlement() == .cleared else { throw SessionFailure.storageUnavailable }
-            }
-            guard request == id, shell.generation == generation else { return }
-            let operation = try session.beginTrustedSDKSave()
+            guard let operation = try prepareExplicitSignIn(id, generation) else { return }
             let candidate = try material(choiceID)
             guard current(id, generation, operation) else { return }
             start(candidate, operation: operation, id: id, generation: generation, save: true)
@@ -99,6 +90,81 @@ public enum DevelopmentAccountState: Equatable, Sendable {
             guard request == id, shell.generation == generation else { return }
             state = .storageUnavailable
         }
+    }
+
+    private func prepareExplicitSignIn(_ id: UUID, _ generation: ShellGeneration) throws -> SessionOperation? {
+        if let clearOffline {
+            var cacheFailure: (any Error)?
+            do { try clearOffline() } catch { cacheFailure = error }
+            guard request == id, shell.generation == generation else { return nil }
+            let result = session.clearWithSettlement()
+            guard request == id, shell.generation == generation else { return nil }
+            guard result == .cleared else { throw SessionFailure.storageUnavailable }
+            if let cacheFailure { throw cacheFailure }
+        }
+        // A persisted logout marker can only be replaced by this explicit new login.
+        if session.state == .blocked(.restorationBlocked) {
+            guard session.clearWithSettlement() == .cleared else { throw SessionFailure.storageUnavailable }
+        }
+        guard request == id, shell.generation == generation else { return nil }
+        return try session.beginTrustedSDKSave()
+    }
+
+    /// A signed Beta obtains candidate bytes from the fixed-origin invite
+    /// exchange. A late exchange cannot save or activate after identity changes.
+    public func signIn(exchanging exchange: @escaping @MainActor () async throws -> SessionMaterial) {
+        guard demoMode else { return }
+        identityWillChange?()
+        guard let (id, generation) = begin() else { return }
+        let operation: SessionOperation
+        do {
+            guard let prepared = try prepareExplicitSignIn(id, generation) else { return }
+            operation = prepared
+        } catch {
+            if request == id, shell.generation == generation { state = .storageUnavailable }
+            return
+        }
+        state = .checking
+        task = Task { [weak self] in
+            guard let self else { return }
+            do {
+                let candidate = try await exchange()
+                guard !Task.isCancelled, self.current(id, generation, operation) else { return }
+                self.start(candidate, operation: operation, id: id, generation: generation, save: true)
+            } catch {
+                guard !Task.isCancelled, self.current(id, generation, operation) else { return }
+                switch error as? DemoAccountExchangeFailure {
+                case .rejected: self.state = .rejected
+                case .expired: self.state = .expired
+                default: self.state = .networkUnknown
+                }
+                self.task = nil
+            }
+        }
+    }
+
+    /// Recheck the current material without changing its generation on success.
+    /// A late denial for a replaced session cannot sign out the new owner.
+    public func recheckDemoSession() async {
+        guard demoMode, let (candidate, operation) = active else { return }
+        let id = request, generation = shell.generation
+        guard current(id, generation, operation) else { return }
+        let result = await verify(candidate)
+        guard !Task.isCancelled, current(id, generation, operation) else { return }
+        _ = settleDemoDenial(result)
+    }
+
+    private func settleDemoDenial(_ result: DevelopmentSessionCheck) -> Bool {
+        guard demoMode else { return false }
+        let denial: DevelopmentAccountState
+        switch result {
+        case .expired: denial = .expired
+        case .rejected, .serverRejected: denial = .rejected
+        case .accepted, .networkUnknown: return false
+        }
+        signOut()
+        if state == .signedOut { state = denial }
+        return true
     }
 
     /// Called only by an explicit Restore button; no background/automatic Keychain restore.
@@ -169,6 +235,7 @@ public enum DevelopmentAccountState: Equatable, Sendable {
             guard let self else { return }
             let result = await self.verify(candidate)
             guard !Task.isCancelled, self.current(id, generation, operation) else { return }
+            if self.settleDemoDenial(result) { return }
             switch result {
             case .accepted(let account):
                 do {

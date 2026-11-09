@@ -6,6 +6,9 @@ import CJShell
 @main
 struct CJProbeApp: App {
     @State private var shell: ShellState
+    #if G2C_DEMO_BETA
+    @State private var demo: DevelopmentAccountRoot?
+    #endif
     #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
     @State private var development: DevelopmentTripHost?
     @State private var developmentAccounts: DevelopmentAccountRoot?
@@ -16,6 +19,9 @@ struct CJProbeApp: App {
     init() {
         let shell = ShellState()
         _shell = State(initialValue: shell)
+        #if G2C_DEMO_BETA
+        _demo = State(initialValue: try? DevelopmentAccountRoot(demo: shell))
+        #endif
         #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
         do {
             let environment = ProcessInfo.processInfo.environment
@@ -43,7 +49,10 @@ struct CJProbeApp: App {
 
     var body: some Scene {
         WindowGroup {
-            #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
+            #if G2C_DEMO_BETA
+            if let demo { DemoBetaRootView(shell: shell, root: demo) }
+            else { Text(shell.language.text("Secure demo session is unavailable.", "安全演示会话暂不可用。")) }
+            #elseif DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
             ShellView(state: shell, messageHost: developmentAccounts?.trip?.messages.messages ?? development?.messages.messages,
                       serverHistoryHost: developmentAccounts?.trip?.messages.history ?? development?.messages.history,
                       memoryContainerHost: developmentAccounts?.trip?.memory?.host ?? development?.memory?.host,

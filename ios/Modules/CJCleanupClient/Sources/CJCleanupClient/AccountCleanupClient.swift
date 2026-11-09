@@ -61,7 +61,9 @@ public enum AccountCleanupReadResult: Sendable { case notObserved, prepared(Acco
         credentials: @escaping @MainActor () async throws -> String?,
         beforeConfirmation: @escaping @MainActor (String) throws -> Void,
         requestTimeout: TimeInterval, resourceTimeout: TimeInterval) throws {
-        #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
+        #if !(DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE)))
+        guard endpoint.allowsDemoBetaActivation else { throw MessageHTTPFailure.productionActivationUnavailable }
+        #endif
         try Self.validateDevelopmentConfiguration(endpoint, requestTimeout: requestTimeout, resourceTimeout: resourceTimeout)
         self.endpoint = endpoint; self.lifetime = lifetime
         journal = try AccountCleanupJournal(persistence: securePersistence, scope: lifetime.scope)
@@ -69,15 +71,14 @@ public enum AccountCleanupReadResult: Sendable { case notObserved, prepared(Acco
         transportFactory = { try NoRedirectTransport.developmentAccountCleanup(endpoint: endpoint,
             requestTimeout: requestTimeout, resourceTimeout: resourceTimeout, validate: $0) }
         try checkLifetime(ordinary: true)
-        #else
-        throw MessageHTTPFailure.productionActivationUnavailable
-        #endif
     }
     /// Restores only a real persisted original operation and its restricted token.
     /// It never acquires ordinary SDK credentials or permits a write.
     public init(developmentRestrictedProgress endpoint: MessageEndpoint, lifetime: AccountCleanupLifetime,
         securePersistence: any SessionPersistence, requestTimeout: TimeInterval, resourceTimeout: TimeInterval) throws {
-        #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
+        #if !(DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE)))
+        guard endpoint.allowsDemoBetaActivation else { throw MessageHTTPFailure.productionActivationUnavailable }
+        #endif
         try Self.validateDevelopmentConfiguration(endpoint, requestTimeout: requestTimeout, resourceTimeout: resourceTimeout)
         self.endpoint = endpoint; self.lifetime = lifetime; ordinary = nil
         journal = try AccountCleanupJournal(persistence: securePersistence, scope: lifetime.scope)
@@ -85,9 +86,6 @@ public enum AccountCleanupReadResult: Sendable { case notObserved, prepared(Acco
         transportFactory = { try NoRedirectTransport.developmentAccountCleanup(endpoint: endpoint,
             requestTimeout: requestTimeout, resourceTimeout: resourceTimeout, validate: $0) }
         try checkLifetime(ordinary: false)
-        #else
-        throw MessageHTTPFailure.productionActivationUnavailable
-        #endif
     }
     /// Non-network component seam, unavailable to App callers.
     init(endpoint: MessageEndpoint, lifetime: AccountCleanupLifetime, securePersistence: any SessionPersistence,
@@ -108,7 +106,7 @@ public enum AccountCleanupReadResult: Sendable { case notObserved, prepared(Acco
         try checkLifetime(ordinary: ordinary != nil)
     }
     private static func validateDevelopmentConfiguration(_ endpoint: MessageEndpoint, requestTimeout: TimeInterval, resourceTimeout: TimeInterval) throws {
-        guard endpoint.allowsDevelopmentActivation, endpoint.maximumRequestBytes <= 16384, endpoint.maximumResponseBytes <= 65536,
+        guard endpoint.allowsDevelopmentActivation || endpoint.allowsDemoBetaActivation, endpoint.maximumRequestBytes <= 16384, endpoint.maximumResponseBytes <= 65536,
               requestTimeout > 0, requestTimeout.isFinite, resourceTimeout > 0, resourceTimeout.isFinite else { throw CleanupFailure.unavailable }
     }
     public func invalidate() { active = false }
@@ -153,6 +151,14 @@ public enum AccountCleanupReadResult: Sendable { case notObserved, prepared(Acco
                 return try AccountCleanupProgress(accountCleanupDocument(bytes), originalOperationID: journal.record.original().operationID).businessRevoked
             }
             return true
+        }
+    }
+    /// The host still verifies the new owner and credential bytes. A merely
+    /// prepared operation can retain its original journal across that renewal.
+    public var permitsOrdinaryCredentialRenewal: Bool {
+        get throws {
+            guard try !requiresRestrictedProgress else { return false }
+            return try journal.record.currentProgress()?.businessRevoked != true
         }
     }
     /// Historical original confirmation response is separate from later GET state.

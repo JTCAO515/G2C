@@ -179,6 +179,8 @@ public enum DiscussionConversationState {
     public var supportsTripDiscussions:Bool { bindingIsCurrent && binding?.tripDiscussions == true }
     public var supportsScopedEdits:Bool { bindingIsCurrent && binding?.scopedEdits == true }
     public var supportsTripMessages:Bool { supportsTripDiscussions || supportsScopedEdits }
+    var supportsDemoConversationOpening: Bool { bindingIsCurrent && binding?.sendClient?.supportsDemoConversationOpening == true }
+    private var supportsConversationOpening: Bool { supportsTripMessages || supportsDemoConversationOpening }
     public var discussionRefusal:MessageDiscussionRefusal? { bindingIsCurrent ? storedDiscussionRefusal : nil }
     public var conversationState:DiscussionConversationState { bindingIsCurrent ? storedConversationState : .idle }
     public var hasUnassignedDraft:Bool { bindingIsCurrent && selectedConversationID==nil && !shell.draft.isEmpty }
@@ -275,22 +277,22 @@ public enum DiscussionConversationState {
         return result
     }
     public func captureNewConversationIntent() -> DiscussionConversationIntent? {
-        guard supportsTripMessages,!isBusy,creationIntent == .none,
+        guard supportsConversationOpening,!isBusy,creationIntent == .none,
               selectedConversationID != nil || shell.draft.isEmpty,let binding else { return nil }
         do {
             if binding.scopedEdits { guard scopedPresentation?.trip != nil else { return nil } }
-            else { _=try capturedDiscussion() }
+            else if binding.tripDiscussions { _=try capturedDiscussion() }
             guard try !binding.recovery.conversationOpenings(lease:binding.lease).contains(where:{ $0.phase == .queryRequired }),
                   isSameBinding(binding),bindingIsCurrent,isSameBinding(binding) else { return nil }
             return conversationIntent(.create)
         } catch { return nil }
     }
     public func captureConversationQuery(id:String) -> DiscussionConversationIntent? {
-        guard supportsTripMessages,!isBusy,conversationOpenings.contains(where:{ Data($0.conversationID.utf8)==Data(id.utf8) }) else { return nil }
+        guard supportsConversationOpening,!isBusy,conversationOpenings.contains(where:{ Data($0.conversationID.utf8)==Data(id.utf8) }) else { return nil }
         return conversationIntent(.query(id))
     }
     public func captureConversationSelection(id:String) -> DiscussionConversationIntent? {
-        guard supportsTripMessages,!isBusy else { return nil }
+        guard supportsConversationOpening,!isBusy else { return nil }
         let known:Bool
         if case .available(let current)=storedConversationState,Data(current.utf8)==Data(id.utf8) { known=true }
         else { known=conversationOpenings.contains(where:{ $0.phase == .available && Data($0.conversationID.utf8)==Data(id.utf8) }) }
@@ -306,7 +308,7 @@ public enum DiscussionConversationState {
     /// The rendered choice is pinned before a Task. New chats begin with an
     /// empty draft; text from an earlier conversation stays under its old ID.
     public func performConversationIntent(_ intent:DiscussionConversationIntent) {
-        guard currentConversationIntent(intent),supportsTripMessages,!isBusy,currentConversationIntent(intent),let binding,let client=binding.sendClient else { return }
+        guard currentConversationIntent(intent),supportsConversationOpening,!isBusy,currentConversationIntent(intent),let binding,let client=binding.sendClient else { return }
         if case .select(let id)=intent.kind { _=selectConversationForSending(id);return }
         do {
             let work:DiscussionConversationWork,creating:Bool

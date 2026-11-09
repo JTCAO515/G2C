@@ -24,6 +24,9 @@ private struct ConversationOpeningExit:ClientTransport {
     }
 }
 extension MessageHTTPClient {
+    public var supportsDemoConversationOpening: Bool { endpoint.allowsDemoBetaActivation }
+
+
     public func prepareNewDiscussionConversation(lease:Lease) throws -> DiscussionConversationWork {
         try prepareNewConversation(lease:lease,edit:false)
     }
@@ -33,6 +36,7 @@ extension MessageHTTPClient {
     private func requireConversationCapability(edit:Bool) throws {
         if let liveMessageTransport {
             if edit { try liveMessageTransport.validateTripEditSending(to:endpoint) }
+            else if supportsDemoConversationOpening { try liveMessageTransport.validateTravelMessageSending(to:endpoint) }
             else { try liveMessageTransport.validateTripDiscussionSending(to:endpoint) }
         } else if !submissionEnabledForTest { throw MessageHTTPFailure.productionActivationUnavailable }
     }
@@ -61,6 +65,9 @@ extension MessageHTTPClient {
     public func performDiscussionConversation(_ work:DiscussionConversationWork) async throws -> DiscussionConversationOutcome {
         try validateOpening(work)
         if !work.creation {
+            if supportsDemoConversationOpening, !work.edit {
+                return try await reconcileDemoOpening(work)
+            }
             if work.edit { tripEditPermitState.heads.removeValue(forKey:Data(work.conversationID.utf8)) }
             else { tripDiscussionPermitState.heads.removeValue(forKey:Data(work.conversationID.utf8)) }
             var parts=URLComponents();parts.path=work.edit ? "/v\(tripEditStatusVersion)/message-send-status" : "/v3/message-send-status";parts.queryItems=[.init(name:"conversation_id",value:work.conversationID)]
@@ -108,4 +115,26 @@ extension MessageHTTPClient {
             return .rejected(status:response.status.code,error:error)
         } catch { throw MessageHTTPFailure.exchangeUnknown }
     }
+
+    private func reconcileDemoOpening(_ work: DiscussionConversationWork) async throws -> DiscussionConversationOutcome {
+        var parts = URLComponents()
+        parts.path = "/v2/message-send-status"
+        parts.queryItems = [.init(name: "conversation_id", value: work.conversationID)]
+        guard let path = parts.string else { throw MessageHTTPFailure.invalidConfiguration }
+        let (status, raw, trace) = try await versionedMessageExchange(path: path,
+            operation: Operations.getMessageSendStatusV2.id, raw: nil, lease: work.lease)
+        try validateOpening(work)
+        guard status == 200 else {
+            return .rejected(status: status, error: try JSONDecoder().decode(Components.Schemas.ErrorResponse.self, from: raw))
+        }
+        let body = try JSONDecoder().decode(Components.Schemas.MessageSendStatusV2Response.self, from: raw)
+        guard body.request_id == trace, case .CJExplicitJSONNull = body.receipt,
+              case .CJExplicitJSONNull = body.reference else { throw MessageHTTPFailure.invalidResponse }
+        guard case .MessageHead(let head) = body.head else { return .unknown }
+        guard DiscussionJSON.same(head.conversation_id, work.conversationID),
+              !head.generation.isEmpty, head.last_sequence >= 0 else { throw MessageHTTPFailure.invalidResponse }
+        try recovery.observeConversationOpening(work.operation, phase: .available, httpStatus: 200, responseUTF8: raw)
+        return .available(work.conversationID)
+    }
+
 }

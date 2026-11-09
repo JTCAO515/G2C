@@ -9,7 +9,7 @@ struct DevelopmentAccountView: View {
         List {
             Section { AccountDeletionLink(language: language) }
             Section {
-                Text(language.text("Development session", "开发会话")).font(.headline)
+                Text(host.demoMode ? language.text("Demo session", "演示会话") : language.text("Development session", "开发会话")).font(.headline)
                 Text(status).accessibilityIdentifier("account.development.status")
                 if host.state == .checking { ProgressView() }
             }
@@ -19,8 +19,10 @@ struct DevelopmentAccountView: View {
                         host.signIn(choice.id)
                     }.accessibilityIdentifier("account.development.signin.\(choice.id)")
                 }
-                Button(language.text("Restore saved session", "恢复已保存的会话")) { host.restore() }
-                    .accessibilityIdentifier("account.development.restore")
+                if !host.demoMode {
+                    Button(language.text("Restore saved session", "恢复已保存的会话")) { host.restore() }
+                        .accessibilityIdentifier("account.development.restore")
+                }
                 Button(language.text("Sign out", "退出登录")) { host.signOut() }
                     .accessibilityIdentifier("account.development.signout")
             }

@@ -18,6 +18,7 @@ public struct MessageEndpoint: Sendable {
     /// Capability classification established once at the URL/config boundary.
     /// Only development factories use it; it never grants a route by itself.
     public let allowsDevelopmentActivation: Bool
+    public let allowsDemoBetaActivation: Bool
     public init(url: URL, maximumRequestBytes: Int, maximumResponseBytes: Int, allowLoopbackHTTP: Bool = false) throws {
         if let port = url.port, !(1...65535).contains(port) { throw MessageHTTPFailure.invalidConfiguration }
         #if os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
@@ -41,6 +42,20 @@ public struct MessageEndpoint: Sendable {
         }
         self.url = url; self.maximumRequestBytes = maximumRequestBytes; self.maximumResponseBytes = maximumResponseBytes
         allowsDevelopmentActivation = local
+        #if os(iOS)
+        allowsDemoBetaActivation = Self.isDemoBetaEndpoint(url,
+            bundleIdentifier: Bundle.main.bundleIdentifier,
+            signedMarker: Bundle.main.object(forInfoDictionaryKey: "G2CDemoBeta") as? Bool == true)
+        #else
+        allowsDemoBetaActivation = false
+        #endif
+    }
+
+    // Xcode's app configuration does not propagate to Swift Package targets.
+    // Admit this exact origin only from the signed Beta's bundle metadata.
+    static func isDemoBetaEndpoint(_ url: URL, bundleIdentifier: String?, signedMarker: Bool) -> Bool {
+        signedMarker && bundleIdentifier == "space.go2china.app"
+            && url.absoluteString == "https://api-beta.go2china.space"
     }
 
     /// M4 local test traffic is limited to one explicitly supplied private IPv4
@@ -202,13 +217,13 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
 
     private static func developmentMessageTransport(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
         resourceTimeout: TimeInterval, wire: MessageWire, validate: @escaping @MainActor @Sendable () throws -> Void) throws -> NoRedirectTransport {
-        #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
-        guard endpoint.allowsDevelopmentActivation else { throw MessageHTTPFailure.invalidConfiguration }
+        #if !(DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE)))
+        guard endpoint.allowsDemoBetaActivation else { throw MessageHTTPFailure.productionActivationUnavailable }
+        #endif
+        if endpoint.allowsDemoBetaActivation, wire != .travel { throw MessageHTTPFailure.invalidConfiguration }
+        guard endpoint.allowsDevelopmentActivation || endpoint.allowsDemoBetaActivation else { throw MessageHTTPFailure.invalidConfiguration }
         return try NoRedirectTransport(requestTimeout: requestTimeout, resourceTimeout: resourceTimeout,
             preview: nil, messages: MessageCapability(endpoint: endpoint, validate: validate, wire: wire))
-        #else
-        throw MessageHTTPFailure.productionActivationUnavailable
-        #endif
     }
 
     /// Existing #226 manual wire only, scoped to the explicit local simulator
@@ -241,59 +256,55 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     /// lifecycle writes only; legacy and MESSAGE capabilities remain closed.
     public static func developmentTypedMemory(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
         resourceTimeout: TimeInterval, validate: @escaping @MainActor @Sendable () throws -> Void) throws -> NoRedirectTransport {
-        #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
-        guard endpoint.allowsDevelopmentActivation,
+        #if !(DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE)))
+        guard endpoint.allowsDemoBetaActivation else { throw MessageHTTPFailure.productionActivationUnavailable }
+        #endif
+        guard endpoint.allowsDevelopmentActivation || endpoint.allowsDemoBetaActivation,
               endpoint.maximumRequestBytes <= 32768,endpoint.maximumResponseBytes <= 1_000_000 else { throw MessageHTTPFailure.invalidConfiguration }
         return try NoRedirectTransport(requestTimeout:requestTimeout,resourceTimeout:resourceTimeout,
             preview:nil,typedMemory:EndpointCapability(endpoint:endpoint,validate:validate))
-        #else
-        throw MessageHTTPFailure.productionActivationUnavailable
-        #endif
     }
 
     /// CJ-LOCAL-NEEDS@1 manual-v1 only. The per-work validator is captured
     /// before dispatch and rechecked after body collection at the live exit.
     public static func developmentNeeds(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
         resourceTimeout: TimeInterval, validate: @escaping @MainActor @Sendable () throws -> Void) throws -> NoRedirectTransport {
-        #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
-        guard endpoint.allowsDevelopmentActivation,
+        #if !(DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE)))
+        guard endpoint.allowsDemoBetaActivation else { throw MessageHTTPFailure.productionActivationUnavailable }
+        #endif
+        guard endpoint.allowsDevelopmentActivation || endpoint.allowsDemoBetaActivation,
               endpoint.maximumRequestBytes <= 131072, endpoint.maximumResponseBytes <= 1048576 else {
             throw MessageHTTPFailure.invalidConfiguration
         }
         return try NoRedirectTransport(requestTimeout: requestTimeout, resourceTimeout: resourceTimeout,
             preview: nil, needs: EndpointCapability(endpoint: endpoint, validate: validate))
-        #else
-        throw MessageHTTPFailure.productionActivationUnavailable
-        #endif
     }
 
     /// Per-work signed local Trip editing capability. Ordinary/Release construction
     /// never enables these routes, and no other write or remote host is admitted.
     public static func developmentTripEditing(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
         resourceTimeout: TimeInterval, validate: @escaping @MainActor @Sendable () throws -> Void) throws -> NoRedirectTransport {
-        #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
-        guard endpoint.allowsDevelopmentActivation,
+        #if !(DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE)))
+        guard endpoint.allowsDemoBetaActivation else { throw MessageHTTPFailure.productionActivationUnavailable }
+        #endif
+        guard endpoint.allowsDevelopmentActivation || endpoint.allowsDemoBetaActivation,
               endpoint.maximumRequestBytes <= 1_000_000, endpoint.maximumResponseBytes <= 1_000_000 else { throw MessageHTTPFailure.invalidConfiguration }
         return try NoRedirectTransport(requestTimeout: requestTimeout, resourceTimeout: resourceTimeout,
             preview: nil, tripEditing: EndpointCapability(endpoint: endpoint, validate: validate))
-        #else
-        throw MessageHTTPFailure.productionActivationUnavailable
-        #endif
     }
 
     /// FEEDBACK@1.0 local Simulator capability. No generic or Release write grant.
     public static func developmentFeedback(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
         resourceTimeout: TimeInterval, validate: @escaping @MainActor @Sendable () throws -> Void) throws -> NoRedirectTransport {
-        #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
-        guard endpoint.allowsDevelopmentActivation,
+        #if !(DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE)))
+        guard endpoint.allowsDemoBetaActivation else { throw MessageHTTPFailure.productionActivationUnavailable }
+        #endif
+        guard endpoint.allowsDevelopmentActivation || endpoint.allowsDemoBetaActivation,
               endpoint.maximumRequestBytes <= 16384, endpoint.maximumResponseBytes <= 1_000_000 else {
             throw MessageHTTPFailure.invalidConfiguration
         }
         return try NoRedirectTransport(requestTimeout: requestTimeout, resourceTimeout: resourceTimeout,
             preview: nil, feedback: EndpointCapability(endpoint: endpoint, validate: validate))
-        #else
-        throw MessageHTTPFailure.productionActivationUnavailable
-        #endif
     }
 
     /// Explicit MEMORY-HISTORY@1 consent only; never an organizer job dispatch grant.
@@ -339,13 +350,12 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     /// Explicit MEMORY-ERASURE@1 original POST/progress GET, not account deletion.
     public static func developmentMemoryErasure(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
         resourceTimeout: TimeInterval, validate: @escaping @MainActor @Sendable () throws -> Void) throws -> NoRedirectTransport {
-        #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
-        guard endpoint.allowsDevelopmentActivation, endpoint.maximumRequestBytes <= 32768, endpoint.maximumResponseBytes <= 524288 else { throw MessageHTTPFailure.invalidConfiguration }
+        #if !(DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE)))
+        guard endpoint.allowsDemoBetaActivation else { throw MessageHTTPFailure.productionActivationUnavailable }
+        #endif
+        guard endpoint.allowsDevelopmentActivation || endpoint.allowsDemoBetaActivation, endpoint.maximumRequestBytes <= 32768, endpoint.maximumResponseBytes <= 524288 else { throw MessageHTTPFailure.invalidConfiguration }
         return try NoRedirectTransport(requestTimeout: requestTimeout, resourceTimeout: resourceTimeout,
             preview: nil, memoryErasure: EndpointCapability(endpoint: endpoint, validate: validate))
-        #else
-        throw MessageHTTPFailure.productionActivationUnavailable
-        #endif
     }
     /// Non-network unit seam, unavailable to App callers.
     init(interceptedTransport: any ClientTransport, memoryErasureEndpoint: MessageEndpoint,
@@ -389,14 +399,13 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     /// business access, device erase, receipt write or background job dispatch.
     public static func developmentAccountCleanup(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
         resourceTimeout: TimeInterval, validate: @escaping @MainActor @Sendable () throws -> Void) throws -> NoRedirectTransport {
-        #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
-        guard endpoint.allowsDevelopmentActivation,
+        #if !(DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE)))
+        guard endpoint.allowsDemoBetaActivation else { throw MessageHTTPFailure.productionActivationUnavailable }
+        #endif
+        guard endpoint.allowsDevelopmentActivation || endpoint.allowsDemoBetaActivation,
               endpoint.maximumRequestBytes <= 16384, endpoint.maximumResponseBytes <= 65536 else { throw MessageHTTPFailure.invalidConfiguration }
         return try NoRedirectTransport(requestTimeout: requestTimeout, resourceTimeout: resourceTimeout,
             preview: nil, accountCleanup: EndpointCapability(endpoint: endpoint, validate: validate))
-        #else
-        throw MessageHTTPFailure.productionActivationUnavailable
-        #endif
     }
 
     /// Non-network boundary-test seam; never an App factory bypass.
@@ -417,15 +426,15 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     /// neither generic account progress nor any content/control erase or write.
     public static func developmentDeviceCompletion(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
         resourceTimeout: TimeInterval, validate: @escaping @MainActor @Sendable () throws -> Void, version: CleanupDeviceVersion = .v3) throws -> NoRedirectTransport {
-        #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
-        guard endpoint.allowsDevelopmentActivation, endpoint.maximumRequestBytes <= 16384, endpoint.maximumResponseBytes <= 65536 else { throw MessageHTTPFailure.invalidConfiguration }
+        #if !(DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE)))
+        guard endpoint.allowsDemoBetaActivation else { throw MessageHTTPFailure.productionActivationUnavailable }
+        #endif
+        if endpoint.allowsDemoBetaActivation, version != .v4 { throw MessageHTTPFailure.invalidConfiguration }
+        guard endpoint.allowsDevelopmentActivation || endpoint.allowsDemoBetaActivation, endpoint.maximumRequestBytes <= 16384, endpoint.maximumResponseBytes <= 65536 else { throw MessageHTTPFailure.invalidConfiguration }
         let bounded = try MessageEndpoint(url: endpoint.url, maximumRequestBytes: endpoint.maximumRequestBytes,
             maximumResponseBytes: min(endpoint.maximumResponseBytes, 4096), allowLoopbackHTTP: true)
         return try NoRedirectTransport(requestTimeout: requestTimeout, resourceTimeout: resourceTimeout,
             preview: nil, deviceCompletion: EndpointCapability(endpoint: bounded, validate: validate), deviceVersion: version)
-        #else
-        throw MessageHTTPFailure.productionActivationUnavailable
-        #endif
     }
     /// Non-network boundary-test seam; not available to App consumers.
     init(interceptedTransport: any ClientTransport, deviceCompletionEndpoint: MessageEndpoint,
@@ -442,13 +451,13 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     /// Version-fixed V3 device control exits; no arbitrary business or domain write.
     public static func developmentDeviceCleanup(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
         resourceTimeout: TimeInterval, validate: @escaping @MainActor @Sendable () throws -> Void, version: CleanupDeviceVersion = .v3) throws -> NoRedirectTransport {
-        #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
-        guard endpoint.allowsDevelopmentActivation, endpoint.maximumRequestBytes <= 16384, endpoint.maximumResponseBytes <= 65536 else { throw MessageHTTPFailure.invalidConfiguration }
+        #if !(DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE)))
+        guard endpoint.allowsDemoBetaActivation else { throw MessageHTTPFailure.productionActivationUnavailable }
+        #endif
+        if endpoint.allowsDemoBetaActivation, version != .v4 { throw MessageHTTPFailure.invalidConfiguration }
+        guard endpoint.allowsDevelopmentActivation || endpoint.allowsDemoBetaActivation, endpoint.maximumRequestBytes <= 16384, endpoint.maximumResponseBytes <= 65536 else { throw MessageHTTPFailure.invalidConfiguration }
         return try NoRedirectTransport(requestTimeout: requestTimeout, resourceTimeout: resourceTimeout,
             preview: nil, deviceCleanup: EndpointCapability(endpoint: endpoint, validate: validate), deviceVersion: version)
-        #else
-        throw MessageHTTPFailure.productionActivationUnavailable
-        #endif
     }
     init(interceptedTransport: any ClientTransport, deviceCleanupEndpoint: MessageEndpoint,
          validateDeviceCleanup: @escaping @MainActor @Sendable () throws -> Void, version: CleanupDeviceVersion = .v3) {
@@ -691,7 +700,8 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     /// once-staged work may enter this original-operation exit.
     func sendConversationOpening(_ request:HTTPRequest,body:HTTPBody?,baseURL:URL,operationID:String,
         validateOriginal:@escaping @MainActor @Sendable () throws -> Void) async throws -> (HTTPResponse,HTTPBody?) {
-        guard let messages,(messages.wire == .discussion || messages.wire == .edit),baseURL==messages.endpoint.url,
+        guard let messages, (messages.wire == .discussion || messages.wire == .edit
+              || (messages.wire == .travel && messages.endpoint.allowsDemoBetaActivation)), baseURL==messages.endpoint.url,
               operationID==Operations.openConversation.id,request.method == .put,body==nil,
               request.scheme==nil,request.authority==nil,
               !request.headerFields.contains(where:{ $0.name.canonicalName=="host" }),

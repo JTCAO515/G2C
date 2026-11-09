@@ -13,7 +13,7 @@ enum DevelopmentKeychainIdentity {
         return signedIdentifier
     }
     static func read() throws -> String {
-        #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+        #if os(iOS) && !targetEnvironment(simulator) && (G2C_DEMO_BETA || (DEBUG && G2C_M4_DEVICE_ACCEPTANCE))
         return try validated(bundleIdentifier:Bundle.main.bundleIdentifier,
             signedIdentifier:Bundle.main.object(forInfoDictionaryKey:"G2CDevelopmentApplicationIdentifier") as? String)
         #else
@@ -66,7 +66,7 @@ enum DevelopmentAccountInput {
         return try decode(raw)
     }
 }
-#if DEBUG
+#if DEBUG || G2C_DEMO_BETA
 import CryptoKit
 #endif
 
@@ -267,7 +267,7 @@ struct DevelopmentSessionConfiguration: CustomStringConvertible, CustomReflectab
     var description: String { "<redacted development configuration>" }
     var customMirror: Mirror { Mirror(self, children: [:]) }
 
-    #if DEBUG
+    #if DEBUG || G2C_DEMO_BETA
     static func restoring(endpoint: URL, token: String, proposalID: String?, approvedLocalHost: String?, approvedBetaAPI: Bool = false) -> Self? {
         var environment=["G2C_DEV_API_BASE_URL":endpoint.absoluteString,"G2C_DEV_TOKEN":token]
         if let proposalID { environment["G2C_DEV_PROPOSAL_ID"]=proposalID }
@@ -284,6 +284,9 @@ struct DevelopmentSessionConfiguration: CustomStringConvertible, CustomReflectab
     let expiresAt: Double?
 
     static func readEndpoint(_ environment: [String: String], key: String = "G2C_DEV_API_BASE_URL") -> URL? {
+        #if G2C_DEMO_BETA
+        return nil
+        #else
         guard let rawURL = environment[key],
               var url = URLComponents(string: rawURL),
               url.user == nil, url.password == nil,
@@ -313,6 +316,7 @@ struct DevelopmentSessionConfiguration: CustomStringConvertible, CustomReflectab
         guard loopback || (url.scheme == "https" && approved) else { return nil }
         url.path = ""
         return url.url
+        #endif
     }
 
     // Independent environment-input boundary. The transport separately admits
@@ -352,30 +356,38 @@ struct DevelopmentSessionConfiguration: CustomStringConvertible, CustomReflectab
     enum DevelopmentToolsFailure: Error { case invalidProfile }
 
     static func environmentNamespace(_ endpoint: URL) -> UUID {
+        #if G2C_DEMO_BETA
+        namespace("G2C.DEMO.TRIP.environment|" + endpoint.absoluteString)
+        #else
         namespace("G2C.DEBUG.TRIP.environment|" + endpoint.absoluteString)
+        #endif
     }
 
     static func read(_ environment: [String: String]) -> Self? {
+        #if G2C_DEMO_BETA
+        return nil
+        #else
         guard let endpoint = readEndpoint(environment),
-              let token = environment["G2C_DEV_TOKEN"], !token.isEmpty, token.utf8.count <= 16384,
-              token.utf8.allSatisfy({ $0 > 32 && $0 < 127 }) else { return nil }
-        // These local dev-token claims partition simulator storage only. The API
-        // remains the JWT/auth authority; no Supabase/production session is created.
-        let parts = token.split(separator: ".", omittingEmptySubsequences: false)
-        guard parts.count == 3, parts.allSatisfy({ !$0.isEmpty }) else { return nil }
-        var payload = String(parts[1]).replacingOccurrences(of: "-", with: "+").replacingOccurrences(of: "_", with: "/")
-        payload += String(repeating: "=", count: (4 - payload.count % 4) % 4)
-        guard let bytes = Data(base64Encoded: payload),
-              let claims = try? JSONSerialization.jsonObject(with: bytes) as? [String: Any],
-              claims["iss"] as? String == "https://local.g2c.invalid", claims["aud"] as? String == "g2c-local",
-              let subject = claims["sub"] as? String, !subject.isEmpty, subject.utf8.count <= 256 else { return nil }
+              let token = environment["G2C_DEV_TOKEN"], let claims = DevelopmentBearerClaims.read(token) else { return nil }
+        let subject = claims.subject
         let proposalID = environment["G2C_DEV_PROPOSAL_ID"]
         if let proposalID, proposalID.range(of: "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$", options: .regularExpression) == nil { return nil }
         return Self(endpoint: endpoint, token: token, proposalID: proposalID,
             environmentID: environmentNamespace(endpoint),
             accountID: namespace("G2C.DEBUG.TRIP.account|https://local.g2c.invalid|" + subject),
-            subject: subject, expiresAt: claims["exp"] as? Double)
+            subject: subject, expiresAt: claims.expiration)
+        #endif
     }
+
+    #if G2C_DEMO_BETA
+    static func demo(_ invite: DemoInviteSession) -> Self {
+        let endpoint = DemoBetaConfiguration.endpoint
+        return Self(endpoint: endpoint, token: invite.grant.access_token, proposalID: nil,
+            environmentID: environmentNamespace(endpoint),
+            accountID: namespace("G2C.DEMO.TRIP.account|https://local.g2c.invalid|" + invite.grant.subject),
+            subject: invite.grant.subject, expiresAt: invite.grant.expiry?.timeIntervalSince1970)
+    }
+    #endif
 
     private static func namespace(_ value: String) -> UUID {
         let b = Array(SHA256.hash(data: Data(value.utf8)))
@@ -386,7 +398,7 @@ struct DevelopmentSessionConfiguration: CustomStringConvertible, CustomReflectab
     #endif
 }
 
-#if DEBUG
+#if DEBUG || G2C_DEMO_BETA
 /// Same operator-owned profile schema as local-memory-policy.1. These values
 /// describe choices only; the signed API remains the consent/owner authority.
 struct DevelopmentMemoryProfile: Decodable {
@@ -498,5 +510,26 @@ struct DevelopmentBetaComposition {
         #else
         return nil
         #endif
+    }
+}
+
+/// Unverified JWT metadata may constrain a local namespace or deny an expired
+/// attempt. Only the signed API's verification grants a business session.
+struct DevelopmentBearerClaims {
+    let subject: String
+    let expiration: Double?
+
+    static func read(_ token: String) -> Self? {
+        guard !token.isEmpty, token.utf8.count <= 16384,
+              token.utf8.allSatisfy({ $0 > 32 && $0 < 127 }) else { return nil }
+        let parts = token.split(separator: ".", omittingEmptySubsequences: false)
+        guard parts.count == 3, parts.allSatisfy({ !$0.isEmpty }) else { return nil }
+        var payload = String(parts[1]).replacingOccurrences(of: "-", with: "+").replacingOccurrences(of: "_", with: "/")
+        payload += String(repeating: "=", count: (4 - payload.count % 4) % 4)
+        guard let bytes = Data(base64Encoded: payload),
+              let claims = try? JSONSerialization.jsonObject(with: bytes) as? [String: Any],
+              claims["iss"] as? String == "https://local.g2c.invalid", claims["aud"] as? String == "g2c-local",
+              let subject = claims["sub"] as? String, !subject.isEmpty, subject.utf8.count <= 256 else { return nil }
+        return Self(subject: subject, expiration: claims["exp"] as? Double)
     }
 }

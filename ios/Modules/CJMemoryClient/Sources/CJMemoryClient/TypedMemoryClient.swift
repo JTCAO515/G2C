@@ -19,16 +19,17 @@ import OpenAPIRuntime
     private var usedManagementReads: Set<UUID> = []
     // Historical exact-action completion only, retained across presentation retirement.
     private var managementConfirmed: Set<Data> = []
-    #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
     public convenience init(localEndpoint: MemoryEndpoint,credentials: @escaping MemoryCredentialCallback,
         currentBinding: @escaping @MainActor () -> MemoryBinding?,pendingStore: TypedMemoryPendingStore,
         localTransport: NoRedirectTransport,validatePriorOriginals: @escaping @MainActor () throws -> Void) throws {
-        guard localEndpoint.allowsDevelopmentActivation,localEndpoint.maximumRequestBytes <= 32768,
+        #if !(DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE)))
+        guard localEndpoint.allowsDemoBetaActivation else { throw MemoryFailure.unconfigured }
+        #endif
+        guard localEndpoint.allowsDevelopmentActivation || localEndpoint.allowsDemoBetaActivation,localEndpoint.maximumRequestBytes <= 32768,
               localEndpoint.maximumResponseBytes <= 1_000_000 else { throw MemoryFailure.unconfigured }
         self.init(endpoint:localEndpoint,credentials:credentials,currentBinding:currentBinding,pendingStore:pendingStore,
             interceptedTransport:localTransport,validatePriorOriginals:validatePriorOriginals)
     }
-    #endif
     init(endpoint: MemoryEndpoint,credentials: @escaping MemoryCredentialCallback,
         currentBinding: @escaping @MainActor () -> MemoryBinding?,pendingStore: TypedMemoryPendingStore,
         interceptedTransport: any ClientTransport,validatePriorOriginals: @escaping @MainActor () throws -> Void = {}) {

@@ -256,16 +256,15 @@ extension TripClient {
         currentBinding: @escaping @MainActor () -> TripBinding?, session: SessionLifecycle, sessionOperation: SessionOperation,
         pendingStore: TripPendingStore, requestTimeout: TimeInterval, resourceTimeout: TimeInterval,
         maximumJournalBytes: Int, maximumJournalRecords: Int) throws {
-        #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
-        guard endpoint.allowsDevelopmentActivation,
+        #if !(DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE)))
+        guard endpoint.allowsDemoBetaActivation else { throw TripFailure.liveWriteUnavailable }
+        #endif
+        guard endpoint.allowsDevelopmentActivation || endpoint.allowsDemoBetaActivation,
               endpoint.maximumRequestBytes<=1_000_000,endpoint.maximumResponseBytes<=1_000_000 else { throw TripFailure.invalidInput }
         let reads=try NoRedirectTransport(requestTimeout:requestTimeout,resourceTimeout:resourceTimeout)
         self.init(endpoint:endpoint,credentials:credentials,currentBinding:currentBinding,session:session,sessionOperation:sessionOperation,pendingStore:pendingStore,liveReadTransport:reads)
         manualRuntime=try ManualTripRuntime(client:self,store:pendingStore,maximumBytes:maximumJournalBytes,maximumRecords:maximumJournalRecords,
             factory: { validate in try NoRedirectTransport.developmentTripEditing(endpoint:endpoint,requestTimeout:requestTimeout,resourceTimeout:resourceTimeout,validate:validate) })
-        #else
-        throw TripFailure.liveWriteUnavailable
-        #endif
     }
     func enableManualFixture(maximumBytes: Int, maximumRecords: Int, factory: @escaping ManualTripRuntime.Factory) throws {
         guard testWrites,let store else { throw TripFailure.liveWriteUnavailable }
