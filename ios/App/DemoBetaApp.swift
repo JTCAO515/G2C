@@ -91,6 +91,7 @@ struct DemoBetaRootView: View {
     let shell: ShellState
     let root: DevelopmentAccountRoot
     @Environment(\.scenePhase) private var phase
+    @State private var openAssistantAfterConsent = false
 
     var body: some View {
         Group {
@@ -104,7 +105,16 @@ struct DemoBetaRootView: View {
                     }
                 }
             } else {
-                DemoInviteView(shell: shell, accounts: root.accounts)
+                DemoInviteView(shell: shell, accounts: root.accounts) {
+                    openAssistantAfterConsent = true
+                }
+            }
+        }
+        .onChange(of: root.accounts.state) { _, state in
+            guard openAssistantAfterConsent, state != .checking else { return }
+            openAssistantAfterConsent = false
+            if case .signedIn = state, !root.finishingDemoCleanup {
+                shell.selectedTab = .assistant
             }
         }
         .onChange(of: phase) { _, current in
@@ -136,9 +146,16 @@ struct DemoBetaRootView: View {
 private struct DemoInviteView: View {
     let shell: ShellState
     let accounts: DevelopmentAccountHost
+    let onConsent: () -> Void
     @State private var code = ""
-    @State private var consent = false
+    @State private var pendingConsent: ConsentAction?
+    @FocusState private var enteringCode: Bool
     private var language: ShellLanguage { shell.language }
+
+    private enum ConsentAction: String, Identifiable {
+        case signIn, restore
+        var id: Self { self }
+    }
 
     var body: some View {
         NavigationStack {
@@ -153,28 +170,51 @@ private struct DemoInviteView: View {
                     SecureField(language.text("Invitation code", "邀请码"), text: $code)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
+                        .focused($enteringCode)
                         .accessibilityIdentifier("demo.invite.code")
-                    Toggle(language.text("I agree to use fictional trip information and omit personal data in this internal demo.",
-                                         "我同意在本次内部演示中使用虚构行程信息，并不填写个人信息。"), isOn: $consent)
-                        .accessibilityIdentifier("demo.invite.consent")
-                    Button(language.text("Sign in", "登录")) {
-                        let candidate = code
-                        let agreed = consent
-                        code = ""
-                        let starter: DemoStarterLanguage = language == .chinese ? .zh : .en
-                        accounts.signIn { try await DemoInviteClient.exchange(code: candidate, consent: agreed, language: starter) }
+                    Button(language.text("Continue", "继续")) {
+                        enteringCode = false
+                        pendingConsent = .signIn
                     }
-                    .disabled(!consent || code.isEmpty || accounts.state == .checking)
-                    .accessibilityIdentifier("demo.invite.signin")
-                    Button(language.text("Restore saved session", "恢复已保存的会话")) { accounts.restore() }
-                        .disabled(!consent || accounts.state == .checking)
-                        .accessibilityIdentifier("demo.invite.restore")
+                    .disabled(code.isEmpty || accounts.state == .checking)
+                    .accessibilityIdentifier("demo.invite.continue")
+                    Button(language.text("Restore saved session", "恢复已保存的会话")) {
+                        enteringCode = false
+                        pendingConsent = .restore
+                    }
+                    .disabled(accounts.state == .checking)
+                    .accessibilityIdentifier("demo.invite.restore")
                 }
                 if let notice {
                     Section { Text(notice).accessibilityIdentifier("demo.invite.status") }
                 }
             }
             .navigationTitle(language.text("Internal demo", "内部演示"))
+        }
+        .sheet(item: $pendingConsent) { action in
+            NavigationStack {
+                DemoV2ConsentView(
+                    language: language, canAgree: accounts.state != .checking && (action != .signIn || !code.isEmpty),
+                    onAgree: { completeConsent(action) }, onBack: { pendingConsent = nil })
+            }
+        }
+    }
+
+    private func completeConsent(_ action: ConsentAction) {
+        guard pendingConsent == action, accounts.state != .checking else { return }
+        pendingConsent = nil
+        switch action {
+        case .signIn:
+            let candidate = code
+            guard !candidate.isEmpty else { return }
+            code = ""
+            let starter: DemoStarterLanguage = language == .chinese ? .zh : .en
+            onConsent()
+            accounts.signIn { try await DemoInviteClient.exchange(code: candidate, consent: true, language: starter) }
+        case .restore:
+            code = ""
+            onConsent()
+            accounts.restore()
         }
     }
 
