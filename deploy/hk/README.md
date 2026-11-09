@@ -188,6 +188,10 @@ API 启动还必须读到该主体已激活的原 `message-travel.1` profile。
 `CJ_BETA_ASSEMBLY_SUBJECTS_JSON` 明确选择两份主体，`CJ_LOCAL_NEEDS_PROFILE` 沿用 `manual-v1`。
 在 API 0600 文件增加原受限 cleanup URI 和 32 字节 cleanup HMAC。worker 无需这两项。
 规划沿同一原 MESSAGE、Needs/Travel、RUN 和 Meter；Trip 采用、修改和正式读回仅对组装主体开放。
+仅在该组装对另获内部凭据授权后，在 0600 的 `worker.env` 配置
+`CJ_BETA_ASSEMBLY_RUN_CREDENTIAL_SUBJECTS_JSON`，值为同一对主体的 JSON 数组。
+默认关闭。启用要求现有 600 秒 Meter，每个原 RUN 最多一枚 11 分钟内部凭据，仍逐次检查撤权。
+暂停提交并确认无在途后，从 worker 文件移除该字段并重建 worker 可恢复原 5 分钟组装范围。
 Typed 保存、管理及既有 `/v1/memory-erasures` 不安装 V1 记忆写入。device-v4 使用同一认证身份，
 注销采用既有 cleanup 登录和原登记内容域，离线与客户端控制记录按原清理协议验收。
 

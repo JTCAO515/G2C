@@ -81,6 +81,8 @@ def worker(runtime):
                 outcomes=run_worker.run_once(database,services.model,runtime.auth,tools_configuration=tools,real_services=services,account_admission=True,
                     hk_beta_b_run_credential=True,
                     hk_assembly_scopes=frozenset(scope_for(ISSUER,subject) for subject in runtime.assembly_subjects),
+                    hk_assembly_run_credential_scopes=frozenset(
+                        scope_for(ISSUER,subject) for subject in runtime.assembly_run_credential_subjects),
                     memory_configuration_for_scope=None if runtime.memory_runtime is None else runtime.memory_configuration_for_scope)
             for outcome in outcomes:
                 if outcome.status in ('unknown','failed'):

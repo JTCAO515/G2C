@@ -200,13 +200,14 @@ def test_typed_policy_is_optional_and_api_file_only(tmp_path):
 
 def test_typed_run_policy_requires_original_worker_file_and_mandatory_keys(tmp_path):
     name=configuration.MEMORY_RUN_POLICY
+    credential=configuration.ASSEMBLY_RUN_CREDENTIAL_SUBJECTS
     required={k:'synthetic-value' for k in configuration.SECRET_FILES['worker']['worker']}
     path=tmp_path/'worker.env'
-    for values,accepted in ((required,True),({**required,name:'synthetic-policy'},True),
+    for values,accepted in ((required,True),({**required,name:'synthetic-policy',credential:'[]'},True),
                             ({name:'synthetic-policy'},False),({**required,configuration.TYPED_POLICY:'wrong-role'},False)):
         path.write_text('\n'.join(k+'='+v for k,v in values.items())+'\n');path.chmod(0o600)
         with patch.dict(os.environ):
-            for key in {*required,name,configuration.TYPED_POLICY}:os.environ.pop(key,None)
+            for key in {*required,name,credential,configuration.TYPED_POLICY}:os.environ.pop(key,None)
             if accepted:
                 configuration.load_secret_environment('worker',root=tmp_path)
                 assert all(os.environ[k]==v for k,v in values.items())
@@ -216,11 +217,12 @@ def test_typed_run_policy_requires_original_worker_file_and_mandatory_keys(tmp_p
                 with pytest.raises(ValueError):configuration.load_secret_environment('worker',root=tmp_path)
                 assert all(key not in os.environ for key in values)
     api={k:'synthetic-value' for k in configuration.SECRET_FILES['api']['api']}
-    (tmp_path/'api.env').write_text('\n'.join(k+'='+v for k,v in {**api,name:'wrong-role'}.items())+'\n')
-    (tmp_path/'api.env').chmod(0o600)
-    with patch.dict(os.environ):
-        for key in {*api,name}:os.environ.pop(key,None)
-        with pytest.raises(ValueError):configuration.load_secret_environment('api',root=tmp_path)
+    for worker_only in (name,credential):
+        (tmp_path/'api.env').write_text('\n'.join(k+'='+v for k,v in {**api,worker_only:'wrong-role'}.items())+'\n')
+        (tmp_path/'api.env').chmod(0o600)
+        with patch.dict(os.environ):
+            for key in {*api,worker_only}:os.environ.pop(key,None)
+            with pytest.raises(ValueError):configuration.load_secret_environment('api',root=tmp_path)
 
 
 def test_worker_typed_runtime_invites_role_and_database_capability(tmp_path,monkeypatch):
@@ -275,6 +277,29 @@ def test_worker_typed_runtime_invites_role_and_database_capability(tmp_path,monk
         assert runtime.memory_runtime is None and runtime.memory_configuration_for_scope(scope_for(ISSUER,who)) is None
         with patch.object(configuration,'SupabaseTestDatabase') as database:
             runtime.database();assert database.call_args.kwargs['travel_context'] is False
+    finally:runtime.close()
+
+    pair=['m4-synthetic-660-0123456789ab-'+language for language in ('zh','en')]
+    monkeypatch.setenv('CJ_BETA_SUBJECTS_JSON',json.dumps([who,*pair]))
+    monkeypatch.setenv(configuration.ASSEMBLY_SUBJECTS,json.dumps(pair))
+    for subject in pair:
+        collection['collection']['profiles'][subject]=profile
+        collection['travel_contexts'][subject]=[]
+        policy['selections'][subject]=policy['selections'][who]
+    choose(policy)
+    runtime=configuration.Runtime.load(tmp_path/'assembly-default',worker=True)
+    try:assert runtime.assembly_run_credential_subjects==frozenset()
+    finally:runtime.close()
+    name=configuration.ASSEMBLY_RUN_CREDENTIAL_SUBJECTS
+    for invalid in ([],pair[:1],[pair[0],pair[0]],[who,pair[1]],[*pair,who]):
+        monkeypatch.setenv(name,json.dumps(invalid))
+        with pytest.raises(ValueError,match='assembly_run_credential_pair'):
+            configuration.Runtime.load(tmp_path/'invalid-credential-pair',worker=True)
+    monkeypatch.setenv(name,json.dumps(pair[::-1]))
+    with pytest.raises(ValueError,match='assembly_run_credential_pair'):
+        configuration.Runtime.load(tmp_path/'wrong-credential-role')
+    runtime=configuration.Runtime.load(tmp_path/'approved-credential-pair',worker=True)
+    try:assert runtime.assembly_run_credential_subjects==frozenset(pair)
     finally:runtime.close()
 
 

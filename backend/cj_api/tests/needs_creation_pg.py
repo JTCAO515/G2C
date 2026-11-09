@@ -25,8 +25,86 @@ def fixed(key,start,end,locked):
     return dict(item_id=key,kind='appointment',description='explicit original '+key,applies_to=['self'],locked=known(locked),booking_status=known('booked'),start=event(start),end=event(end))
 
 
+def check_assembly_run_credential(auth,host,database,setup,pair):
+    from datetime import datetime,timedelta,timezone
+    from types import SimpleNamespace
+    import httpx
+    from cj_agent.provider import DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL
+    from cj_agent.worker import RunWorker
+    from cj_api.real_services import RealServices,RealTools
+    from cj_auth.admission import AdmissionChecker
+    from cj_draft.needs_publisher import SYSTEM
+    from cj_memory.typed_runtime import TypedRuntimeConfiguration
+    from cj_usage.authorization_budget import AuthorizationBudget
+    from test_m4_real_services import KEY,NOW,sse,turn_sse
+
+    profile=dict(subjects=['self'],slots={'pace':dict(kind='preference',collection_allowed=True,
+        semantic_resolved=True)},extents=['long_term'],context_ids=[])
+    collection=dict(version='local-memory-typed.1',collection=dict(version='local-memory-policy.1',
+        expires_at='2099-11-30T23:59:59+08:00',profiles=dict.fromkeys(pair,profile)),travel_contexts={s:[] for s in pair})
+    memory=TypedRuntimeConfiguration.from_bytes(packed(dict(version='local-memory-run.2',collection=collection,
+        selections={s:dict(subject='self',slots=['pace'],max_bytes=1000) for s in pair})))
+    scopes=frozenset(scope_for(ISSUER,s) for s in pair)
+    offset=0
+
+    class Clock(datetime):
+        @classmethod
+        def now(cls,tz=None):
+            return datetime.now(tz)+timedelta(seconds=offset)
+
+    def clock():return Clock.now(timezone.utc).timestamp()
+
+    initialize=AdmissionChecker.__init__
+    def checker(instance,verifier,access):
+        initialize(instance,verifier,access,clock=clock)
+
+    original_step=RunWorker._step
+    def after_draft_receipt(worker,binding,invoke,effect=None,*,draft=False):
+        nonlocal offset
+        if draft and effect is not None:offset=301
+        return original_step(worker,binding,invoke,effect,draft=draft)
+
+    for subject,enabled in zip(pair,(False,True)):
+        offset=0
+        original,_=setup(subject)
+        receipt=original['receipt']
+        def response(request):
+            body=json.loads(request.content)
+            if body.get('tools'):
+                wire=turn_sse(compact=True)
+                response_id=subject+'-answer'
+            else:
+                plan=''.join(NeedsPlanFakeProvider().stream(body['messages'][1:],system=SYSTEM))
+                wire=sse().replace(json.dumps('{"zh":"待核实。","en":"Needs verification."}'),json.dumps(plan))
+                response_id=subject+'-draft'
+            return httpx.Response(200,stream=httpx.ByteStream(wire.replace('chatcmpl-synthetic',response_id).encode()))
+        budget=AuthorizationBudget(auth.parent/(subject+'-budget'),clock=lambda:NOW)
+        model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),budget,transport=httpx.MockTransport(response))
+        services=RealServices(model,KEY,frozenset(pair))
+        db=database(subject)
+        options=dict(memory_configuration_for_scope=lambda _:memory,tools_configuration=RealTools(services),
+            real_services=services,account_admission=True,hk_assembly_scopes=scopes,
+            hk_assembly_run_credential_scopes=scopes if enabled else frozenset())
+        with patch('jwt.api_jwt.datetime',Clock),patch.object(AdmissionChecker,'__init__',checker), \
+                patch.object(dev_auth,'time',SimpleNamespace(time=clock)),patch.object(RunWorker,'_step',after_draft_receipt):
+            outcome,=run_worker.run_once(db,model,auth,**options)
+            assert run_worker.run_once(db,model,auth,**options)==[]
+        assert offset==301 and outcome.run_id==receipt['run_id']
+        assert (outcome.status,outcome.proposal_id)==(
+            ('completed','p-'+receipt['run_id']) if enabled else ('context_invalid',None))
+        attempts=budget.inspect()
+        assert [row['state'] for row in attempts]==['RECEIVED','RECEIVED']
+        ledger=host.ledger(subject)
+        assert all(ledger.attempts[row['attempt_id']].receipt is not None for row in attempts)
+        with db.connect(scope_for(ISSUER,subject)) as connection:
+            assert connection.execute('SELECT acknowledged FROM cj_message_delivery WHERE run_id=%s',
+                (receipt['run_id'],)).fetchone()==(True,)
+    print('PASS #674 opt-in original assembly draft publishes after 301s with its original Meter and ACK; default fails closed')
+
+
 def exercise(auth,conninfo):
-    subjects=['explicit','cli','legacy','stale','unknown','foreign']
+    pair=('m4-synthetic-660-0123456789ab-zh','m4-synthetic-660-0123456789ab-en')
+    subjects=['explicit','cli','legacy','stale','unknown','foreign',*pair]
     host=RegisteredHost(auth,conninfo,{s:(12,2,30000) for s in subjects})
     for s in subjects:dev_auth.activate_travel(conninfo,s,host.profiles[s][1],'MESSAGE-TRAVEL-CONSUMER@1')
     signer=load_confirmation_signer(auth);cfg=json.loads(conninfo.read_text())
@@ -162,6 +240,7 @@ def exercise(auth,conninfo):
         def stream(self,messages,system=None):self.calls+=1;raise ProviderUnknown('controlled outbound unknown');yield
     model=Unknown();assert run_worker.run_once(database('unknown'),model,auth,draft_profile='needs-structured.1')[0].status=='unknown' and model.calls==1
     assert run_worker.run_once(database('unknown'),model,auth,draft_profile='needs-structured.1')==[] and model.calls==1
+    check_assembly_run_credential(auth,host,database,setup,pair)
     print('PASS354 unpatched run_once+CLI explicit C publisher/source prompt, registered Meter, original C confirm/act/adopt, structured list/detail and NEEDS basis; legacy/currentness/UNKNOWN negatives')
     print('INITIALIZE503 retained only for actual protected legacy source; root C manual_origin.ManualOrigin._run rejects cj_local_run_protection/NEEDS binding, no C file or budget gate modified')
 

@@ -35,6 +35,7 @@ MEMORY_RUN_POLICY='CJ_BETA_MEMORY_RUN_POLICY_B64'
 TYPED_MESSAGE_SUBJECTS='CJ_BETA_TYPED_MESSAGE_SUBJECTS_JSON'
 MODEL_STREAM_SUBJECT='CJ_BETA_MODEL_STREAM_SUBJECT'
 ASSEMBLY_SUBJECTS='CJ_BETA_ASSEMBLY_SUBJECTS_JSON'
+ASSEMBLY_RUN_CREDENTIAL_SUBJECTS='CJ_BETA_ASSEMBLY_RUN_CREDENTIAL_SUBJECTS_JSON'
 ASSEMBLY_CLEANUP={'CJ_SUPABASE_CLEANUP_URI','CJ_BETA_CLEANUP_B64'}
 
 
@@ -43,7 +44,8 @@ def load_secret_environment(role,*,root=Path('/run/secrets')):
     expected=SECRET_FILES[role];values={}
     for file,names in expected.items():
         optional=({TYPED_POLICY,TYPED_MESSAGE_SUBJECTS}|ASSEMBLY_CLEANUP if role=='api' and file=='api' else
-                  {MEMORY_RUN_POLICY,MODEL_STREAM_SUBJECT} if role=='worker' and file=='worker' else set())
+                  {MEMORY_RUN_POLICY,MODEL_STREAM_SUBJECT,ASSEMBLY_RUN_CREDENTIAL_SUBJECTS}
+                  if role=='worker' and file=='worker' else set())
         allowed=names|optional
         if any(name in os.environ for name in allowed):raise ValueError('persistent_container_secret_environment_refused')
         descriptor=os.open(Path(root)/(file+'.env'),os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK)
@@ -92,6 +94,7 @@ class Runtime:
     memory_runtime:object=None
     typed_message_subjects:frozenset=frozenset()
     assembly_subjects:frozenset=frozenset()
+    assembly_run_credential_subjects:frozenset=frozenset()
     _database:SupabaseTestDatabase|None=field(default=None,init=False)
 
     @classmethod
@@ -115,6 +118,14 @@ class Runtime:
             if not zh.endswith('-zh') or not en.endswith('-en') or zh[:-2]!=en[:-2]:
                 raise ValueError('explicit_invited_bilingual_assembly_pair_required')
             assembly_subjects=frozenset(selected)
+        assembly_run_credential_subjects=frozenset()
+        if ASSEMBLY_RUN_CREDENTIAL_SUBJECTS in os.environ:
+            selected=json.loads(os.environ[ASSEMBLY_RUN_CREDENTIAL_SUBJECTS])
+            if (not worker or not assembly_subjects or type(selected) is not list or len(selected)!=2
+                    or any(type(subject) is not str for subject in selected)
+                    or frozenset(selected)!=assembly_subjects):
+                raise ValueError('explicit_worker_assembly_run_credential_pair_required')
+            assembly_run_credential_subjects=assembly_subjects
         typed_memory=None
         if TYPED_POLICY in os.environ:
             if worker:raise ValueError('typed_memory_policy_is_API_only')
@@ -169,7 +180,7 @@ class Runtime:
         context=load_run_context(context_path)
         if context.version!='CJ-LOCAL-RUN@2':raise ValueError('registered_beta_run_context_required')
         return cls(auth,context,context_path,descriptors,typed_memory,frozenset(subjects),memory_runtime,
-                   typed_message_subjects,assembly_subjects)
+                   typed_message_subjects,assembly_subjects,assembly_run_credential_subjects)
 
     def memory_configuration_for_scope(self,scope):
         if self.memory_runtime is not None and scope in {
