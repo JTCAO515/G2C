@@ -314,6 +314,14 @@ class Boundary:
     def receive_v2(self, token, raw):
         return self._service(token).receive_v2(raw)
 
+    def receive_dialogue(self, token, raw):
+        from .demo_dialogue import receive
+        return receive(self._service(token), raw)
+
+    def query_dialogue(self, token, message_id):
+        from .demo_dialogue import query
+        return query(self._service(token), message_id)
+
     def send_status_v2(self, token, conversation_id, message_id=None):
         return self._service(token).send_status_v2(conversation_id,message_id)
 

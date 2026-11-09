@@ -142,11 +142,17 @@ class Transaction:
         row = self.cur.fetchone()
         return Stored(bytes(row[0]), Receipt(*row[1:7]),row[7] if self.travel_metadata else None,row[8 if self.travel_metadata else 7] if self.trip_metadata else None,row[-1] if self.edit_metadata else None) if row else None
 
-    def insert(self, stored, *, command=None):
-        protected=self.local_execution()
+    def insert(self, stored, *, command=None, dialogue=None):
+        protected = self.local_execution()
         r = stored.receipt
-        self.cur.execute('INSERT INTO cj_message_receipt (scope, message_id, conversation_id, generation, sequence, run_id, input_sha256, raw_input) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)',
-                         (self.scope, r.message_id, r.conversation_id, r.generation, r.sequence, r.run_id, r.input_sha256, stored.raw))
+        columns = 'scope, message_id, conversation_id, generation, sequence, run_id, input_sha256, raw_input'
+        values = (self.scope, r.message_id, r.conversation_id, r.generation, r.sequence,
+                  r.run_id, r.input_sha256, stored.raw)
+        if dialogue is not None:
+            columns += ', demo_dialogue_input_sha256, demo_dialogue_locale'
+            values += (dialogue.input_sha256, dialogue.locale)
+        placeholders = ','.join(['%s'] * len(values))
+        self.cur.execute(f'INSERT INTO cj_message_receipt ({columns}) VALUES ({placeholders})', values)
         if protected:
             from .local_protection import capture as capture_requirement
             capture_requirement(self.cur,self.scope,stored,self.registered_usage)

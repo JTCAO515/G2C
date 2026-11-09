@@ -101,13 +101,46 @@ def _sanitized_read(read):
         raise ReadInterrupted() from None
 
 
+def message_failure(request, exc, write):
+    from cj_auth.interfaces import AdmissionReason, AdmissionStatus
+    from cj_message.auth_boundary import AccessBlocked, IdentityChanged
+    from cj_message.domain import CommitUnknown, InputConflict, SequenceConflict, InvalidInput
+    if isinstance(exc, (AccessBlocked, IdentityChanged)):
+        # Fixed repository does not expose a proven rollback result after commit-stage denial.
+        # Preserve possible prior effects before considering an ordinary identity refusal.
+        if exc.commit_possible or exc.stage == 'commit':
+            return _error(request, 503, 'MESSAGE_OUTCOME_UNKNOWN', 'dependency', 'unknown', 'reconcile_original')
+        if isinstance(exc, IdentityChanged):
+            return _error(request, 403, 'ACCESS_DENIED', 'access', 'failed', 'do_not_retry')
+        if exc.status is AdmissionStatus.UNKNOWN:
+            return _error(request, 503, 'ACCESS_UNKNOWN', 'access', 'unknown', 'retry_safe_read')
+        status = 401 if exc.reason is AdmissionReason.IDENTITY_INVALID else 403
+        return _error(request, status, 'ACCESS_DENIED', 'access', 'failed', 'do_not_retry')
+    if isinstance(exc, CommitUnknown):
+        return _error(request, 503, 'MESSAGE_OUTCOME_UNKNOWN', 'dependency', 'unknown', 'reconcile_original')
+    if write and isinstance(exc,DatabaseError):
+        if exc.sqlstate=='P5D01':
+            return _error(request,429,'DEMO_DAILY_LIMIT','input','failed','do_not_retry',
+                message_en='Daily limit of 40 questions reached',message_zh='今日已达到 40 个问题')
+        if exc.sqlstate=='P5D02':
+            return _error(request,403,'ACCESS_DENIED','access','failed','do_not_retry')
+    if isinstance(exc, InvalidInput):
+        return _error(request, 400, 'INVALID_INPUT', 'input', 'failed', 'do_not_retry')
+    if isinstance(exc, InputConflict):
+        return _error(request, 409, 'INPUT_CONFLICT', 'conflict', 'failed', 'do_not_retry')
+    if isinstance(exc, SequenceConflict):
+        return _error(request, 409, 'SEQUENCE_CONFLICT', 'conflict', 'failed', 'reconcile_original')
+    # Includes unavailable repositories and invalid projection after a possible commit.
+    return _error(request, 503, 'MESSAGE_UNAVAILABLE', 'dependency', 'unknown',
+                  'reconcile_original' if write else 'retry_safe_read')
+
+
 def register_message_routes(app, boundary=None, max_body_bytes=None,formal_receiver=None):
     from .travel_routes import register_travel_routes
     register_travel_routes(app, boundary, max_body_bytes)
     if boundary is not None:
-        from cj_auth.interfaces import AdmissionReason, AdmissionStatus
-        from cj_message.auth_boundary import Boundary, AccessBlocked, IdentityChanged
-        from cj_message.domain import CommitUnknown, InputConflict, SequenceConflict, InvalidInput, Unavailable, Stored, Receipt
+        from cj_message.auth_boundary import Boundary
+        from cj_message.domain import Unavailable, Stored, Receipt
         if (not isinstance(boundary, Boundary) or type(max_body_bytes) is not int or max_body_bytes <= 0):
             raise ValueError('Explicit pinned MESSAGE boundary and body limit required')
 
@@ -140,39 +173,10 @@ def register_message_routes(app, boundary=None, max_body_bytes=None,formal_recei
             response_type = MessageReceiveResponse if write else MessageReceiptQueryResponse
             return response_type.model_validate({'request_id':request.state.request_id, 'receipt':receipt})
         except Exception as exc:
-            return failure(request, exc, write)
-
-    def failure(request, exc, write):
-        if isinstance(exc, (AccessBlocked, IdentityChanged)):
-            # Fixed repository does not expose a proven rollback result after commit-stage denial.
-            # Preserve possible prior effects before considering an ordinary identity refusal.
-            if exc.commit_possible or exc.stage == 'commit':
-                return _error(request, 503, 'MESSAGE_OUTCOME_UNKNOWN', 'dependency', 'unknown', 'reconcile_original')
-            if isinstance(exc, IdentityChanged):
-                return _error(request, 403, 'ACCESS_DENIED', 'access', 'failed', 'do_not_retry')
-            if exc.status is AdmissionStatus.UNKNOWN:
-                return _error(request, 503, 'ACCESS_UNKNOWN', 'access', 'unknown', 'retry_safe_read')
-            status = 401 if exc.reason is AdmissionReason.IDENTITY_INVALID else 403
-            return _error(request, status, 'ACCESS_DENIED', 'access', 'failed', 'do_not_retry')
-        if isinstance(exc, CommitUnknown):
-            return _error(request, 503, 'MESSAGE_OUTCOME_UNKNOWN', 'dependency', 'unknown', 'reconcile_original')
-        if write and isinstance(exc,DatabaseError):
-            if exc.sqlstate=='P5D01':
-                return _error(request,429,'DEMO_DAILY_LIMIT','input','failed','do_not_retry',
-                    message_en='Daily limit of 40 questions reached',message_zh='今日已达到 40 个问题')
-            if exc.sqlstate=='P5D02':
-                return _error(request,403,'ACCESS_DENIED','access','failed','do_not_retry')
-        if isinstance(exc, InvalidInput):
-            return _error(request, 400, 'INVALID_INPUT', 'input', 'failed', 'do_not_retry')
-        if isinstance(exc, InputConflict):
-            return _error(request, 409, 'INPUT_CONFLICT', 'conflict', 'failed', 'do_not_retry')
-        if isinstance(exc, SequenceConflict):
-            return _error(request, 409, 'SEQUENCE_CONFLICT', 'conflict', 'failed', 'reconcile_original')
-        # Includes unavailable repositories and invalid projection after a possible commit.
-        return unavailable(request, write)
+            return message_failure(request, exc, write)
 
     from .message_travel_routes import register_message_travel_routes
-    register_message_travel_routes(app,boundary,max_body_bytes,failure,formal_receiver)
+    register_message_travel_routes(app,boundary,max_body_bytes,message_failure,formal_receiver)
 
     @app.put('/v1/conversations')
     async def open_conversation(request: Request):
@@ -192,7 +196,7 @@ def register_message_routes(app, boundary=None, max_body_bytes=None,formal_recei
         try:
             chat = await run_in_threadpool(boundary.open_conversation, token, pairs[0][1])
         except Exception as exc:
-            return failure(request, exc, True)
+            return message_failure(request, exc, True)
         return JSONResponse({'request_id': request.state.request_id, 'conversation_id': pairs[0][1],
                              'generation': chat.generation, 'last_sequence': chat.last_sequence})
 
@@ -255,4 +259,4 @@ def register_message_routes(app, boundary=None, max_body_bytes=None,formal_recei
         try:
             return await run_in_threadpool(boundary.with_history_context, token, project)
         except Exception as exc:
-            return failure(request, exc, False)
+            return message_failure(request, exc, False)
