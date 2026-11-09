@@ -7,7 +7,7 @@ import re
 from cj_needs.domain import Command as NeedsCommand, InvalidInput as NeedsInvalid, decode, validate_fields
 from cj_needs.runtime import apply_dialogue_confirmation
 
-from .demo_dialogue import CHAT_PATTERN, DialogueMessage, _identity, _json, enqueue_dialogue, message_id
+from .demo_dialogue import CHAT_PATTERN, PLANNING_VERSION, DialogueMessage, _identity, _json, enqueue_dialogue, message_id
 from .domain import InputConflict, InvalidInput, SequenceConflict, Unavailable
 from .needs_binding import needs_scope_for
 
@@ -138,8 +138,10 @@ def _source(tx, card, conversation, chat):
     if (origin is None or (origin.receipt.run_id,origin.receipt.conversation_id,origin.receipt.generation)
             != (card.origin_run_id,conversation,chat.generation)):
         raise Unavailable('original needs card unavailable')
-    terminal = tx.cur.execute("SELECT status FROM cj_run_record WHERE scope=%s AND run_id=%s",
-                              (tx.scope,card.origin_run_id)).fetchone()
+    terminal = tx.cur.execute("SELECT status FROM cj_run_record r WHERE r.scope=%s AND r.run_id=%s "
+        "AND EXISTS (SELECT 1 FROM cj_run_event e WHERE (e.scope,e.run_id)=(r.scope,r.run_id) "
+        "AND e.kind='effect_committed' AND e.value='demo_needs_card')",
+        (tx.scope,card.origin_run_id)).fetchone()
     if terminal != ('completed',):
         raise SequenceConflict('needs card publication is not complete')
     return origin
@@ -157,7 +159,7 @@ def _confirm(service, tx, card, conversation, chat, action, command=None):
     if command is None:
         locale = tx.cur.execute('SELECT demo_dialogue_locale FROM cj_message_receipt WHERE scope=%s AND message_id=%s',
                                 (tx.scope,card.origin_message_id)).fetchone()[0]
-        command = DialogueMessage('demo-plan-'+_identity(tx.scope,action.id),text,locale,conversation,False,action.digest)
+        command = DialogueMessage('demo-plan-'+_identity(tx.scope,action.id),text,locale,conversation,False,action.digest,PLANNING_VERSION)
     else:
         command = replace(command,text=text)
     queued = enqueue_dialogue(service,tx,command,conversation,chat,
@@ -195,8 +197,10 @@ def act(service, raw):
                     raise NeedsInvalid('corrected card exceeds bound')
             except NeedsInvalid as exc:
                 raise InvalidInput('invalid corrected needs') from exc
-            place = action.changes.get('arrival',{}).get('place',{})
-            city = place.get('value') if place.get('state')=='known' else card.city
+            city = card.city
+            if 'arrival' in action.changes:
+                place = action.changes['arrival']['place']
+                city = place.get('value') if place['state']=='known' else None
             if city is not None and len(city.encode('utf-8'))>256:
                 raise InvalidInput('city exceeds bound')
             updated = replace(card,version=card.version+1,fields=fields,city=city,action_id=action.id,

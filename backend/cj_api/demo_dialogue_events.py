@@ -19,6 +19,7 @@ from .run_events_routes import _sse
 
 
 EVENT_VERSION = 'DEMO-dialogue-event.1'
+RUN_EVENT_STRIDE = 64
 
 
 @dataclass(frozen=True)
@@ -29,7 +30,7 @@ class EventPage:
     more: bool
 
 
-def _project(binding, state, after, *, needs=None):
+def _project(binding, state, after, *, needs=None, trip=None):
     frames = []
     cursor_known = after == 0
     more = False
@@ -52,13 +53,18 @@ def _project(binding, state, after, *, needs=None):
         if len(state.text.encode('utf-8')) > 200000:
             raise SnapshotUnavailable('dialogue answer exceeds the protected read bound')
         for event in state.events:
-            index = event.sequence + 1
+            index = event.sequence * RUN_EVENT_STRIDE
             if event.kind == 'text_delta':
                 add(index, 'answer_delta', dict(text=event.value))
             elif event.kind == 'effect_committed' and event.value == 'demo_needs_card':
                 if needs is None:
                     raise SnapshotUnavailable('original needs card missing')
                 add(index, 'needs_card', needs)
+            elif event.kind == 'effect_committed' and event.value.startswith('trip_proposal:') and state.status=='completed':
+                card,sources=trip
+                add(index,'trip_candidate',card)
+                for offset,source in enumerate(sources,1):
+                    add(index+offset,'source',source)
             elif event.kind == 'started' or event.kind in TERMINAL:
                 status = 'running' if event.kind == 'started' else event.kind
                 payload = dict(status=status, stage=status)
@@ -73,7 +79,7 @@ def _project(binding, state, after, *, needs=None):
     return EventPage(tuple(frames), cursor_known, not more and state is not None and state.status in TERMINAL, more)
 
 
-def _read(boundary, resolve_run_repository, token, mid, after):
+def _read(boundary, resolve_run_repository, trip_cards, token, mid, after):
     def operation(ctx):
         source = ctx.query_dialogue_message(mid)
         if source is None:
@@ -85,11 +91,16 @@ def _read(boundary, resolve_run_repository, token, mid, after):
         if repository.scope != ctx.scope:
             raise SnapshotUnavailable('dialogue RUN scope mismatch')
         state = repository.snapshot_optional(binding)
-        if state is not None and 'demo_needs_card' in state.effects:
-            needs = ctx.query_dialogue_needs(binding.message_id,binding.run_id)
-            page = _project(binding, state, after, needs=needs)
+        if state is None:
+            page = _project(binding,state,after)
         else:
-            page = _project(binding, state, after)
+            needs=(ctx.query_dialogue_needs(binding.message_id,binding.run_id)
+                   if 'demo_needs_card' in state.effects else None)
+            candidate=next((effect.removeprefix('trip_proposal:') for effect in state.effects
+                            if effect.startswith('trip_proposal:')),None)
+            trip=(trip_cards.read(token,binding,candidate)
+                  if candidate is not None and state.status=='completed' else None)
+            page=_project(binding,state,after,needs=needs,trip=trip)
         final = repository.snapshot_optional(binding)
         if ctx.query_dialogue_message(mid) != source:
             raise SnapshotChanged('dialogue source changed')
@@ -103,7 +114,7 @@ def _read(boundary, resolve_run_repository, token, mid, after):
     return boundary.with_history_context(token, operation)
 
 
-def register_dialogue_event_stream(app, boundary, resolve_run_repository):
+def register_dialogue_event_stream(app, boundary, resolve_run_repository, trip_cards):
     @app.get('/v1/demo-dialogue/events')
     async def events(request: Request):
         token = _token(request)
@@ -120,7 +131,7 @@ def register_dialogue_event_stream(app, boundary, resolve_run_repository):
             return _error(request, 400, 'INVALID_INPUT', 'input', 'failed', 'do_not_retry')
 
         def read(cursor):
-            return _read(boundary, resolve_run_repository, token, mid, cursor)
+            return _read(boundary, resolve_run_repository, trip_cards, token, mid, cursor)
 
         try:
             try:

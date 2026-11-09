@@ -147,7 +147,7 @@ def check_planning(api, headers, foreign, database, auth, memory, conninfo):
         return response.json()
 
     def send(mid,text,locale='en',**extra):
-        return post(messages,dict(version='DEMO-dialogue-message.1',message_id=mid,text=text,
+        return post(messages,dict(version='DEMO-dialogue-message.2',message_id=mid,text=text,
                                   locale=locale,**extra))['receipt']
 
     def preview_card(receipt):
@@ -177,6 +177,13 @@ def check_planning(api, headers, foreign, database, auth, memory, conninfo):
             assert 'demo needs card originals must be preserved' in str(exc)
         else:
             raise AssertionError('migration down erased original needs cards')
+    second=send('need-second','Please plan a Beijing trip for two people?',
+                conversation_id=original['conversation_id'])
+    assert worker.process()[0].status=='completed'
+    assert preview_card(second)['card_id']!=card['card_id']
+    post(messages,dict(version='DEMO-dialogue-message.2',message_id='ambiguous-yes',text='yes',
+                       locale='en',conversation_id=original['conversation_id']),409)
+    assert not worker.process()
     action=dict(version='DEMO-dialogue-action.1',action_id='edit-people',
         conversation_id=original['conversation_id'],card_id=card['card_id'],expected_version=1,
         operation='correct_needs',changes=dict(party_size=known(3)))
@@ -205,6 +212,14 @@ def check_planning(api, headers, foreign, database, auth, memory, conninfo):
     assert next_message['run_id']==confirmed['run_id'] and next_message['conversation_id']==original['conversation_id']
     result,=worker.process()
     assert result.status=='completed' and result.proposal_id and result.run_id==confirmed['run_id'],result
+    response=api.get(events,params={'message_id':next_message['message_id']},headers=headers)
+    assert response.status_code==200,response.text
+    rows=[json.loads(line[6:]) for line in response.text.splitlines() if line.startswith('data: ')]
+    trip_card=next(event['payload'] for event in rows if event['kind']=='trip_candidate')
+    assert trip_card['proposal_id']==result.proposal_id and trip_card['status']=='pending'
+    assert trip_card['days']==[dict(date='2026-11-10',items=[dict(item_id='lobby',label='酒店大堂集合',
+        place='酒店大堂',starts_at='2026-11-10T09:00',ends_at='2026-11-10T10:00',
+        time_zone='Asia/Shanghai',source_ids=trip_card['days'][0]['items'][0]['source_ids'],fixed=True)])]
     with psycopg.connect(**conninfo) as db:
         fields=db.execute('SELECT content FROM cj_needs_record WHERE scope=%s AND needs_id=%s',
             (needs_scope_for(scope),card['card_id'])).fetchone()[0]
@@ -213,6 +228,13 @@ def check_planning(api, headers, foreign, database, auth, memory, conninfo):
             (trip_scope_for(scope),result.proposal_id)).fetchone()==('pending',)
         assert db.execute('SELECT count(*) FROM cj_trip_record WHERE scope=%s',
             (trip_scope_for(scope),)).fetchone()==(0,)
+
+    legacy=post(messages,dict(version='DEMO-dialogue-message.1',message_id='legacy-planning',
+        text='Could you plan a relaxed two-day Beijing visit for two people?',locale='en'))['receipt']
+    result,=worker.process()
+    assert result.status=='completed' and result.proposal_id is None and result.run_id==legacy['run_id']
+    legacy_events=api.get(events,params={'message_id':legacy['message_id']},headers=headers)
+    assert legacy_events.status_code==200 and 'needs_card' not in legacy_events.text
 
     zh=send('need-zh','帮我们两个人规划从明天开始的北京两天游，节奏轻松。','zh',new_conversation=True)
     assert worker.process()[0].status=='completed'
@@ -351,10 +373,10 @@ def exercise(root,conninfo):
             event_params={'message_id':'first'}
             accepted_only=Event()
 
-            def observe_queue(binding,state,after):
+            def observe_queue(binding,state,after,**extra):
                 if state is None and binding.run_id==first['run_id']:
                     accepted_only.set()
-                return _project(binding,state,after)
+                return _project(binding,state,after,**extra)
 
             with patch('cj_api.demo_dialogue_events._project',side_effect=observe_queue),                    ThreadPoolExecutor(max_workers=1) as pool:
                 watch=pool.submit(api.get,event_route,params=event_params,headers=old)
@@ -399,7 +421,7 @@ def exercise(root,conninfo):
                     message_id='demo-'+str(number),text='Fictional trip',trip_id=None,creation_intent='none',
                     expected_generation=generation,expected_sequence=number-1,travel_context=None,needs_reference=None)).encode()
             receipts=[]
-            for number in range(1,33):
+            for number in range(1,31):
                 response=api.post('/v2/messages',content=command(number),headers=headers)
                 assert response.status_code==200,(number,response.status_code,response.text)
                 receipts.append(response.json()['receipt'])
@@ -425,7 +447,7 @@ def exercise(root,conninfo):
                     except psycopg.errors.InsufficientPrivilege:pass
                     else:raise AssertionError('runtime changed protected state: '+label)
                 db.execute("UPDATE public.cj_message_receipt SET demo_question_day=demo_question_day-1 WHERE scope=%s",(scope,))
-            assert api.post('/v2/messages',content=command(33),headers=headers).status_code==200
+            assert api.post('/v2/messages',content=command(31),headers=headers).status_code==200
             with psycopg.connect(**conninfo) as db:
                 assert db.execute("SELECT count(*) FROM public.cj_message_receipt WHERE scope=%s AND demo_question_day=(clock_timestamp() AT TIME ZONE 'Asia/Shanghai')::date",(scope,)).fetchone()==(1,)
     print('PASS signed zero-setup dialogue, concurrent original replay, default Travel, no downgrade, revoke, 40/day, migration data protection and Beijing day rollover')

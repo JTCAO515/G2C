@@ -100,6 +100,12 @@ class Repository:
         try: logger.warning('NEEDS connection cleanup failed: %s', stage)
         except BaseException: pass
 
+    def _receipt(self, cur, action_id):
+        return _receipt(cur, self.scope, action_id)
+
+    def _snapshot(self, cur, needs_id):
+        return _snapshot(cur, self.scope, needs_id)
+
     def act(self, command):
         if type(command) is not Command: raise ValueError('validated command required')
         with self.transaction() as cur:
@@ -107,12 +113,12 @@ class Repository:
 
     def query_action(self, action_id):
         with self.transaction() as cur:
-            found = _receipt(cur, self.scope, identifier(action_id))
+            found = self._receipt(cur, identifier(action_id))
             return found[0] if found else None
 
     def detail(self, needs_id):
         with self.transaction() as cur:
-            return _snapshot(cur, self.scope, identifier(needs_id))
+            return self._snapshot(cur, identifier(needs_id))
 
     def revision(self, needs_id, version):
         if type(version) is not int or not 1 <= version < 2**63: raise ValueError('invalid version')

@@ -408,8 +408,8 @@
       "name": "demo_needs_cards",
       "file": "backend/migrations/0051_demo_needs_cards.sql",
       "down": "backend/migrations/down/0051_demo_needs_cards.down.sql",
-      "sha256": "d877610fb6ab99479915af1ced41a17ea71dd04148daf4eb316fdaa9f8f5df5e",
-      "down_sha256": "2bea9b3d24bee8eda55ec9ff536f9b8e64835d80fc2b46d8e5cd287acf2e3390"
+      "sha256": "4d22d705074f03aa8e6dce4f2b121d8931b766f57b0631069db9b820a8e9a4c5",
+      "down_sha256": "2d1967999ef0f519f6f17a074af0012e5757250fc36d1381d399924822728a05"
     }
   ]
 }

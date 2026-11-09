@@ -52,6 +52,7 @@ class DialogueNeedsPreview:
 
     def locale(self,binding,text):
         import re
+        from cj_message.demo_dialogue import PLANNING_VERSION
         if not re.match(
                 r'(?is)^\s*(?:(?:请|麻烦)?(?:(?:帮|给|为)(?:我们|我)[^。！？.!?]{0,16}?)?(?:规划|安排|设计|做)(?:个|一个|一份)?'
                 r'.*(?:行程|日游|天游|旅行|旅游|游玩|攻略)|'
@@ -60,8 +61,8 @@ class DialogueNeedsPreview:
             return None
         with self.database.connect(binding.scope) as connection:
             row=connection.execute('SELECT demo_dialogue_locale FROM cj_message_receipt WHERE scope=%s '
-                'AND message_id=%s AND run_id=%s AND demo_dialogue_input_sha256 IS NOT NULL',
-                (binding.scope,binding.message_id,binding.run_id)).fetchone()
+                'AND message_id=%s AND run_id=%s AND demo_dialogue_protocol=%s',
+                (binding.scope,binding.message_id,binding.run_id,PLANNING_VERSION)).fetchone()
         return row[0] if row is not None else None
 
     def execute(self,worker,binding,state,source,locale):

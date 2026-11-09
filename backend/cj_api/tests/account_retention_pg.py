@@ -114,6 +114,13 @@ def main(root,conninfo):
            names[2]:DomainHook(store,needs_scope_for(owner),NEEDS),names[3]:usage_hook}
     plan={t:{'domain_scope':needs_scope_for(owner) if t==names[2] else owner,'selection':{'kind':'account'}} for t in names}
     host2=Coordinator(store,lambda:manifest2,hooks)
+    # Dialogue cards inherit physical erasure through their original receipt FK.
+    for account in (owner,other):
+        with database.connect(account) as conn:
+            run,=conn.execute('SELECT run_id FROM cj_message_receipt WHERE scope=%s AND message_id=%s',
+                              (account,'retained-message')).fetchone()
+            conn.execute("INSERT INTO cj_demo_needs_card(scope,origin_message_id,origin_run_id,card_id,version,fields) "
+                         "VALUES(%s,%s,%s,%s,1,%s)",(account,'retained-message',run,'needs-'+'a'*32,b'{}'))
     host2.create('real-b-domain-erasure',digest(b'explicit local B domain proof'),'account',plan)
     # The real API creates this prepared operation before confirmation.
     with store.transaction('real-b-domain-erasure') as cur:
@@ -131,6 +138,8 @@ def main(root,conninfo):
     assert host2.query('real-b-domain-erasure')['status']=='complete'
     with psycopg.connect(**config) as conn:
         assert conn.execute('SELECT count(*) FROM cj_message_receipt WHERE scope=%s',(owner,)).fetchone()[0]==0
+        assert conn.execute('SELECT count(*) FROM cj_demo_needs_card WHERE scope=%s',(owner,)).fetchone()==(0,)
+        assert conn.execute('SELECT count(*) FROM cj_demo_needs_card WHERE scope=%s',(other,)).fetchone()==(1,)
         assert conn.execute('SELECT count(*) FROM cj_run_record WHERE scope=%s',(owner,)).fetchone()[0]==0
         assert conn.execute('SELECT count(*) FROM cj_usage_ledger_candidate WHERE scope_id=%s',(ledger_scope_for(owner,context.current.meter),)).fetchone()[0]==0
         assert conn.execute('SELECT count(*) FROM cj_usage_ledger_candidate WHERE scope_id=%s',(old_owner_ledger,)).fetchone()[0]==0

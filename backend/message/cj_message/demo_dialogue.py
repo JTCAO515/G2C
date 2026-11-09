@@ -11,6 +11,7 @@ from .travel_reference import OriginalTravelMessage, read_reference
 
 
 MESSAGE_VERSION = 'DEMO-dialogue-message.1'
+PLANNING_VERSION = 'DEMO-dialogue-message.2'
 RECEIPT_VERSION = 'DEMO-dialogue-receipt.1'
 CHAT_PATTERN = re.compile(r'demo-dialogue-[0-9a-f]{32}')
 
@@ -30,6 +31,7 @@ class DialogueMessage:
     conversation_id: str | None
     new_conversation: bool
     input_sha256: str
+    protocol: str = MESSAGE_VERSION
 
     @classmethod
     def parse(cls, raw):
@@ -38,7 +40,7 @@ class DialogueMessage:
             required = {'version', 'message_id', 'text', 'locale'}
             if (type(value) is not dict or not required <= value.keys()
                     or value.keys() - required - {'conversation_id', 'new_conversation'}
-                    or value['version'] != MESSAGE_VERSION or value['locale'] not in ('zh', 'en')
+                    or value['version'] not in (MESSAGE_VERSION,PLANNING_VERSION) or value['locale'] not in ('zh', 'en')
                     or ('new_conversation' in value and (value['new_conversation'] is not True
                                                        or 'conversation_id' in value))):
                 raise InvalidInput('invalid dialogue message fields')
@@ -49,7 +51,7 @@ class DialogueMessage:
             if 'conversation_id' in value and (type(conversation) is not str or not CHAT_PATTERN.fullmatch(conversation)):
                 raise InvalidInput('invalid dialogue conversation identifier')
             return cls(message_id(value['message_id']), text, value['locale'], conversation,
-                       value.get('new_conversation', False), hashlib.sha256(raw).hexdigest())
+                       value.get('new_conversation', False), hashlib.sha256(raw).hexdigest(), value['version'])
         except (UnicodeError, ValueError) as exc:
             raise InvalidInput('invalid dialogue message') from exc
 
@@ -128,7 +130,8 @@ def receive(service, raw):
             if original is None:
                 raise Unavailable('dialogue conversation unavailable')
 
-        if not command.new_conversation and command.text.strip().casefold() in ('可以', 'yes'):
+        if (command.protocol == PLANNING_VERSION and not command.new_conversation
+                and command.text.strip().casefold() in ('可以', 'yes')):
             from .demo_needs_cards import confirm_text
             confirmed = confirm_text(service, tx, command, conversation, chat)
             if confirmed is not None:

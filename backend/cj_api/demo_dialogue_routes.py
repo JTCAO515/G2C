@@ -13,8 +13,8 @@ from .history_routes import _query
 from .message_routes import BodyError, _body_error, _error, _read_body, _token, message_failure
 
 
-def register_demo_dialogue_routes(app, boundary, resolve_run_repository):
-    register_dialogue_event_stream(app, boundary, resolve_run_repository)
+def register_demo_dialogue_routes(app, boundary, resolve_run_repository, trip_cards):
+    register_dialogue_event_stream(app,boundary,resolve_run_repository,trip_cards)
     def response(request, receipt):
         return JSONResponse(dict(request_id=request.state.request_id, version=RECEIPT_VERSION,
                                  receipt=asdict(receipt) if receipt is not None else None))
