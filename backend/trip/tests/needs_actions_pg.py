@@ -617,6 +617,7 @@ class NeedsActionChecks(unittest.TestCase):
         limits=Limits(datetime(2026,11,1,tzinfo=timezone.utc),7*86400,1,10_000_000,60,120,128,.05,.05,100)
 
         def generated(plan):
+            plan['items'][1].update(text='Accepted lunch override',source_category='unknown')
             item=deepcopy(plan['items'][1])
             item.update(id='generated',text='Jingshan Park',fixed=dict(state='unknown'),source_category='unknown')
             item['schedule']['start']['time']=dict(state='known',value='13:00')
@@ -663,6 +664,7 @@ class NeedsActionChecks(unittest.TestCase):
         self.assertEqual(before['items'][-1]['fixed'],dict(state='known',value=False))
         self.assertEqual(before['items'][-1]['verification'],'pending')
         self.assertEqual(before['items'][0]['fixed'],dict(state='known',value=True))
+        self.assertEqual(before['items'][1]['text'],'Accepted lunch override')
 
         admitted['lio-edit-locked']=TripHead.from_trip(original)
         locked=self.replan(subject,'lio-edit-locked',expect_proposal=False,wrap_publisher=wrap,
@@ -688,8 +690,23 @@ class NeedsActionChecks(unittest.TestCase):
         action=Undo.parse(packed(dict(version='TRIP-lio-undo.1',action_id='undo-lio-edit',
             trip_id=original.trip_id,expected_version=2,original_hash=sha256(edited.content).hexdigest())))
         self.assertEqual(repository.undo_lio(action).committed_version,3)
-        self.assertEqual(repository.detail(original.trip_id).content,original.content)
+        restored=repository.detail(original.trip_id)
+        self.assertEqual(restored.content,original.content)
         self.assertEqual(repository.lio_edit_receipt(binding),receipt)
+
+        with patch.dict(__import__('os').environ,self.env),self.host.api(subject) as client:
+            source=json.dumps(dict(action_id='edit-source-restated',needs_id='visit',expected_version=1,
+                source=dict(kind='manual',text='restated commitments'),
+                changes=dict(fixed_items=[source_fixture.fixed('a','09:00','10:00',True),
+                                          source_fixture.fixed('b','11:00','12:00',False)]))).encode()
+            response=client.post('/v1/needs-actions',content=source,
+                headers={**self.host.headers[subject],'Content-Type':'application/octet-stream'})
+            self.assertEqual(response.status_code,200,response.text)
+        admitted['lio-edit-new-source']=TripHead.from_trip(restored)
+        newer=self.replan(subject,'lio-edit-new-source',expect_proposal=False,wrap_publisher=wrap,
+                          needs_version=2,text='Replace Jingshan Park with Summer Palace')
+        self.assertIsNone(repository.query_action(edit_action_id(newer.run_id)))
+        self.assertEqual(repository.detail(original.trip_id),restored)
 
     def test_lio_undo_appends_original_bytes_and_keeps_the_accepted_history(self):
         from contextlib import contextmanager
