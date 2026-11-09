@@ -59,5 +59,8 @@ client-observed connection error maps to `network`. Server failures use
 `quota` or `unavailable`. A lost model result retains its original terminal
 status internally and is never dispatched again by a timeline read.
 
+Retained answers remain visible after the operational recovery window expires.
+Reading a retained answer neither renews that window nor authorizes execution.
+
 Both endpoints send `Cache-Control: no-store`. Existing Demo, MESSAGE, RUN,
 and Trip contracts keep their existing version and validation.

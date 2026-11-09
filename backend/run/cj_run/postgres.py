@@ -6,7 +6,7 @@ import hashlib
 import json
 import logging
 from psycopg.errors import LockNotAvailable
-from .core import Binding, State, Event, Cursor, Conflict, Denied, RecoveryExpired, ResyncRequired, WorkerOwnershipLost, advance, page
+from .core import Binding, State, Event, Cursor, Conflict, Denied, ResyncRequired, WorkerOwnershipLost, advance, page
 from .usage_binding import UsageBinding
 
 
@@ -54,6 +54,20 @@ class Repository:
         """Original history may precede RUN acceptance; failure is never absence."""
         with self.transaction(require_clean_close=True) as tx:
             return None if tx._record(binding) is None else tx.get(binding)
+
+    def lio_timeline(self, bindings):
+        """Display retained Lio originals already resolved by the MESSAGE boundary."""
+        with self.transaction(require_clean_close=True) as tx:
+            snapshots = []
+            for binding in bindings:
+                row = tx._record(binding)
+                if row is None:
+                    snapshots.append((None, False))
+                    continue
+                state = tx._read_state(binding, row, retained=True)
+                expired = row[6] is not True and state.status in ('queued', 'running')
+                snapshots.append((state, expired))
+            return snapshots
 
     @contextmanager
     def worker_lease(self, binding):
@@ -275,10 +289,13 @@ class Transaction:
         row = self._record(binding)
         if row is None:
             raise Conflict('unavailable')
+        return self._read_state(binding, row)
+
+    def _read_state(self, binding, row, *, retained=False):
         if row[:4] != (binding.conversation_id, binding.generation, binding.message_id, binding.message_sequence):
             raise Conflict('binding changed')
-        if row[6] is not True:
-            raise RecoveryExpired('run recovery expired; not absent')
+        if not retained and row[6] is not True:
+            raise ResyncRequired('run recovery expired; not absent')
         self.cur.execute('SELECT sequence,event_id,kind,value FROM cj_run_event WHERE scope=%s AND run_id=%s ORDER BY sequence',
                          (self.scope, binding.run_id))
         events=self.cur.fetchall()

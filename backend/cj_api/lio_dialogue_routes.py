@@ -8,7 +8,7 @@ from starlette.concurrency import run_in_threadpool
 from cj_message.demo_dialogue import LIO_CHAT_PATTERN, message_id
 from cj_message.domain import InvalidInput
 from cj_message.lio_context import SOURCE_EFFECT
-from cj_run.core import Binding, RecoveryExpired
+from cj_run.core import Binding
 from cj_run.display_snapshot import SnapshotTooLarge
 
 from .history_routes import _query
@@ -58,17 +58,11 @@ def _timeline(boundary, resolve_runs, token, conversation_id, before):
         messages = []
         if page.messages:
             repository = resolve_runs(context.scope)
-            for item in page.messages:
-                binding = Binding(context.scope, page.conversation_id, page.generation,
-                                  item.message_id, item.run_id, item.sequence)
-                try:
-                    state = repository.snapshot_optional(binding)
-                except RecoveryExpired:
-                    # An expired RUN no longer grants output recovery. Keep the message
-                    # visible and report unavailability without opening a new execution.
-                    messages.append(_message(item, None, expired=True))
-                else:
-                    messages.append(_message(item, state))
+            bindings = [Binding(context.scope, page.conversation_id, page.generation,
+                                item.message_id, item.run_id, item.sequence) for item in page.messages]
+            snapshots = repository.lio_timeline(bindings)
+            messages = [_message(item, state, expired=expired)
+                        for item, (state, expired) in zip(page.messages, snapshots, strict=True)]
         response = _json(dict(version=TIMELINE_VERSION, conversation_id=page.conversation_id,
                               messages=messages, next_before=page.next_before))
         if len(response.body) > 4_500_000:

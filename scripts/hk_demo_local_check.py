@@ -21,7 +21,7 @@ from cryptography.hazmat.primitives.serialization import Encoding,NoEncryption,P
 from fastapi.testclient import TestClient
 from cj_api.local_app import ISSUER,LocalDatabase,create_local_app,scope_for
 from cj_api.local_worker_context import checker_for
-from cj_agent.provider import FakeProvider, ProviderUnknown
+from cj_agent.provider import FakeProvider, ProviderFailed, ProviderUnknown
 from cj_api.local_run_context import load_run_context
 from cj_memory.typed_runtime import TypedRuntimeConfiguration
 from cj_message.travel import ABI
@@ -90,8 +90,11 @@ def verify_upgrade(root, blueprint, target):
 
 
 def check_lio(api, database, auth, other, headers, conninfo):
+    from cj_api.local_lio_planning import LioPlanning, SYSTEM
     from cj_message import demo_dialogue
     from cj_message.domain import CommitUnknown
+    from cj_message.lio_plan_needs import original_needs
+    from cj_run.core import Binding, ResyncRequired
 
     messages = '/v1/lio/messages'
     timeline = '/v1/lio/timeline'
@@ -139,6 +142,20 @@ def check_lio(api, database, auth, other, headers, conninfo):
         def stream(self, messages, system=None):
             self.calls += 1
             prompts.append(system)
+            if system.startswith(SYSTEM):
+                fields = {}
+                city = None
+                if len(messages) == 2:
+                    assert messages[0]['content'] == '帮我规划旅行'
+                    assert messages[1]['content'] == '北京，2026-11-11 到 2026-11-12'
+                    city = '北京'
+                    for edge, day in (('arrival','2026-11-11'), ('departure','2026-11-12')):
+                        fields[edge] = dict(date=dict(state='known', value=day), time=dict(state='missing'),
+                                            timezone=dict(state='missing'), place=dict(state='missing'))
+                yield json.dumps(dict(city=city, continues_trip=True, extraction=dict(
+                    version='NEEDS-extraction.1', fields=fields, unresolved=[], long_term_requests=[])),
+                    ensure_ascii=False)
+                return
             if messages[-1]['content'] == 'Synthetic lost model outcome':
                 raise ProviderUnknown()
             yield '北京有许多适合散步的公园。' if system.endswith('Reply in Chinese.') else 'Beijing has many parks for walking.'
@@ -164,6 +181,50 @@ def check_lio(api, database, auth, other, headers, conninfo):
         assert (failed['status'], failed['failure']) == ('failed', 'unavailable')
     assert api.post(messages, content=unknown, headers=owner).json() == accepted.json()
     assert worker.process() == [] and model.calls == 3
+    assert api.post(messages, content=original('lio-followup', 'Any nearby museums?', 'en'),
+                    headers=owner).status_code == 200
+    assert [outcome.status for outcome in worker.process()] == ['completed']
+    assert model.calls == 4
+    with psycopg.connect(**conninfo) as db:
+        generation, run_id, sequence = db.execute(
+            'UPDATE cj_run_record SET expires_at=clock_timestamp()-interval \'1 second\' '
+            'WHERE scope=%s AND message_id=%s RETURNING generation,run_id,message_sequence',
+            (scope, 'lio-first')).fetchone()
+    binding = Binding(scope, conversation, generation, 'lio-first', run_id, sequence)
+    try:
+        database.run_repository(scope).snapshot_optional(binding)
+    except ResyncRequired:
+        pass
+    else:
+        raise AssertionError('retained display relaxed the original operational recovery deadline')
+    assert api.get(timeline, headers=owner).json()['messages'][0] == ready[0]
+
+    seen = []
+    def validate_intake(worker, plan, state, details, locale):
+        with database.connect(scope) as connection:
+            with connection.cursor() as cursor:
+                needs_id, revision = original_needs(cursor, plan)
+                assert original_needs(cursor, binding) is None
+                seen.append((needs_id, revision, details.city, locale))
+        # This tests the B admission and intake boundary in isolation.
+        # An unavailable save must never look like a completed trip.
+        raise ProviderFailed('synthetic C save unavailable')
+
+    worker.lio_planning = LioPlanning(database, validate_intake)
+    assert api.post(messages, content=original('lio-plan-ask', '帮我规划旅行', 'zh'),
+                    headers=owner).status_code == 200
+    assert [outcome.status for outcome in worker.process()] == ['completed']
+    ask = api.get(timeline, headers=owner).json()['messages'][-1]
+    assert '哪座城市' in ask['answer'] and '几天' in ask['answer'] and ask['trip'] is None
+    assert not seen
+    reply = original('lio-plan-detail', '北京，2026-11-11 到 2026-11-12', 'zh')
+    assert api.post(messages, content=reply, headers=owner).status_code == 200
+    assert [outcome.status for outcome in worker.process()] == ['failed']
+    assert len(seen) == 1 and seen[0][1:] == (1, '北京', 'zh')
+    unavailable = api.get(timeline, headers=owner).json()['messages'][-1]
+    assert (unavailable['status'], unavailable['failure'], unavailable['trip']) == ('failed', 'unavailable', None)
+    assert api.post(messages, content=reply, headers=owner).status_code == 200
+    assert worker.process() == [] and len(seen) == 1
     with psycopg.connect(**conninfo) as db:
         try:
             with db.transaction():
@@ -172,7 +233,7 @@ def check_lio(api, database, auth, other, headers, conninfo):
             assert 'Lio dialogue originals must be preserved' in str(exc)
         else:
             raise AssertionError('migration down erased Lio originals')
-    print('PASS signed Lio timeline, bilingual one-chat original replay and read-only ACK recovery')
+    print('PASS signed Lio timeline, bilingual one-chat replay, ACK recovery, and retained display')
 
 
 def exercise(root,conninfo):
