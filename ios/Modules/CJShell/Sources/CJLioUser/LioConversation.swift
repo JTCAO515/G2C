@@ -13,6 +13,7 @@ struct LioQuestion: Identifiable, Equatable, Sendable {
     let messageID: String
     let text: String
     let language: LioLanguage
+    var isResend = false
 
     var id: Data { Data(messageID.utf8) }
 }
@@ -81,6 +82,7 @@ final class LioConversation {
     private(set) var turns: [LioTurn] = []
     private(set) var pending: LioQuestion?
     private var sendGeneration = 0
+    private var receiving = false
 
     init(service: LioService) { self.service = service }
 
@@ -99,7 +101,9 @@ final class LioConversation {
               turns[index].status == .failed(.notSent) else { return }
         turns[index].status = .thinking
         sendGeneration += 1
-        pending = turns[index].question
+        var question = turns[index].question
+        question.isResend = true
+        pending = question
     }
 
     func askAgain(_ id: Data) {
@@ -109,8 +113,12 @@ final class LioConversation {
     }
 
     func receive(_ question: LioQuestion) async {
-        guard pending?.id == question.id else { return }
-        defer { pending = nil }
+        guard pending == question, !receiving else { return }
+        receiving = true
+        defer {
+            receiving = false
+            pending = nil
+        }
         for await event in service.events(question) {
             guard !Task.isCancelled else { break }
             if case .snapshot(let timeline) = event {

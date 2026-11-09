@@ -72,6 +72,15 @@ struct LioTimelineServiceTests {
         #expect(await fixture.sent.isEmpty)
     }
 
+    @Test func restartedObservationDoesNotSubmitAnAlreadyAttemptedQuestion() async throws {
+        let fixture = TimelineFixture(loseResponse: true)
+        let service = service(fixture)
+        let question = LioQuestion(messageID: "restart", text: "Metro?", language: .english)
+        for await _ in service.events(question) {}
+        for await _ in service.events(question) {}
+        #expect(await fixture.sent.map(\.messageID) == [question.messageID])
+    }
+
     private func service(_ fixture: TimelineFixture) -> LioService {
         .timeline(send: { try await fixture.submit($0) }, read: { try await fixture.read($0) },
                   pollInterval: .milliseconds(1), observationWindow: .seconds(2))

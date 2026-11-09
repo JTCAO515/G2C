@@ -12,7 +12,9 @@ struct LioConversationTests {
         continuation.yield(.failed(.notSent))
         await model.receive(first)
         model.resend(first.id)
-        #expect(model.pending == first)
+        var resend = first
+        resend.isResend = true
+        #expect(model.pending == resend)
         #expect(model.turns.count == 1)
         #expect(model.turns.first?.status == .thinking)
         continuation.finish()

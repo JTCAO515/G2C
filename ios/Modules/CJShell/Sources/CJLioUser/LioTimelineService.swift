@@ -104,7 +104,12 @@ private actor LioTimelineSession {
     let send: @Sendable (LioTimelineWire.Send) async throws -> LioService.SendResult
     let read: @Sendable (String?) async throws -> LioTimelineWire.Page
     private var conversationID: String?
-    private var retryable: [Data: LioTimelineWire.Send] = [:]
+    private enum Submission {
+        case attempted
+        case notSent(LioTimelineWire.Send)
+    }
+
+    private var submissions: [Data: Submission] = [:]
 
     init(send: @escaping @Sendable (LioTimelineWire.Send) async throws -> LioService.SendResult,
          read: @escaping @Sendable (String?) async throws -> LioTimelineWire.Page) {
@@ -114,18 +119,24 @@ private actor LioTimelineSession {
 
     func submit(_ question: LioQuestion) async throws -> LioService.SendResult {
         let original: LioTimelineWire.Send
-        if let retry = retryable.removeValue(forKey: question.id) {
+        switch (question.isResend, submissions[question.id]) {
+        case (true, .notSent(let retry)):
             original = retry
-        } else {
+        case (false, .notSent):
+            return .notSent
+        case (false, nil):
             original = try LioTimelineWire.Send(messageID: question.messageID, text: question.text,
                                                 locale: question.language == .english ? .english : .chinese,
                                                 conversationID: conversationID)
+        default:
+            return .uncertain
         }
+        submissions[question.id] = .attempted
         do {
             let outcome = try await send(original)
             switch outcome {
             case .accepted(let id): conversationID = id
-            case .notSent: retryable[question.id] = original
+            case .notSent: submissions[question.id] = .notSent(original)
             case .dailyLimit, .uncertain: break
             }
             return outcome
