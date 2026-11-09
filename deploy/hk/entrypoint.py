@@ -71,7 +71,9 @@ def worker(runtime):
         raise ValueError('original_shared_authorization_journal_required')
     services=RealServices.from_environment(runtime.auth,authorization_guard=authorization)
     with services.model.authorization.connect() as journal:services.model.authorization.require_producer(journal)
-    tools=RealTools(services,streaming_subject=os.environ.get(MODEL_STREAM_SUBJECT));database=runtime.database()
+    tools=RealTools(services,streaming_subject=os.environ.get(MODEL_STREAM_SUBJECT),
+        assembly_streaming_subjects=runtime.assembly_model_stream_subjects)
+    database=runtime.database()
     while True:
         component='deployment_gate';status='unavailable'
         try:

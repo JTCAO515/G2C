@@ -201,13 +201,14 @@ def test_typed_policy_is_optional_and_api_file_only(tmp_path):
 def test_typed_run_policy_requires_original_worker_file_and_mandatory_keys(tmp_path):
     name=configuration.MEMORY_RUN_POLICY
     credential=configuration.ASSEMBLY_RUN_CREDENTIAL_SUBJECTS
+    streaming=configuration.ASSEMBLY_MODEL_STREAM_SUBJECTS
     required={k:'synthetic-value' for k in configuration.SECRET_FILES['worker']['worker']}
     path=tmp_path/'worker.env'
-    for values,accepted in ((required,True),({**required,name:'synthetic-policy',credential:'[]'},True),
+    for values,accepted in ((required,True),({**required,name:'synthetic-policy',credential:'[]',streaming:'[]'},True),
                             ({name:'synthetic-policy'},False),({**required,configuration.TYPED_POLICY:'wrong-role'},False)):
         path.write_text('\n'.join(k+'='+v for k,v in values.items())+'\n');path.chmod(0o600)
         with patch.dict(os.environ):
-            for key in {*required,name,credential,configuration.TYPED_POLICY}:os.environ.pop(key,None)
+            for key in {*required,name,credential,streaming,configuration.TYPED_POLICY}:os.environ.pop(key,None)
             if accepted:
                 configuration.load_secret_environment('worker',root=tmp_path)
                 assert all(os.environ[k]==v for k,v in values.items())
@@ -217,7 +218,7 @@ def test_typed_run_policy_requires_original_worker_file_and_mandatory_keys(tmp_p
                 with pytest.raises(ValueError):configuration.load_secret_environment('worker',root=tmp_path)
                 assert all(key not in os.environ for key in values)
     api={k:'synthetic-value' for k in configuration.SECRET_FILES['api']['api']}
-    for worker_only in (name,credential):
+    for worker_only in (name,credential,streaming):
         (tmp_path/'api.env').write_text('\n'.join(k+'='+v for k,v in {**api,worker_only:'wrong-role'}.items())+'\n')
         (tmp_path/'api.env').chmod(0o600)
         with patch.dict(os.environ):
@@ -288,7 +289,7 @@ def test_worker_typed_runtime_invites_role_and_database_capability(tmp_path,monk
         policy['selections'][subject]=policy['selections'][who]
     choose(policy)
     runtime=configuration.Runtime.load(tmp_path/'assembly-default',worker=True)
-    try:assert runtime.assembly_run_credential_subjects==frozenset()
+    try:assert runtime.assembly_run_credential_subjects==runtime.assembly_model_stream_subjects==frozenset()
     finally:runtime.close()
     name=configuration.ASSEMBLY_RUN_CREDENTIAL_SUBJECTS
     for invalid in ([],pair[:1],[pair[0],pair[0]],[who,pair[1]],[*pair,who]):
@@ -301,6 +302,18 @@ def test_worker_typed_runtime_invites_role_and_database_capability(tmp_path,monk
     runtime=configuration.Runtime.load(tmp_path/'approved-credential-pair',worker=True)
     try:assert runtime.assembly_run_credential_subjects==frozenset(pair)
     finally:runtime.close()
+    name=configuration.ASSEMBLY_MODEL_STREAM_SUBJECTS
+    for invalid in ([],pair[:1],[pair[0],pair[0]],[who,pair[1]],[*pair,who]):
+        monkeypatch.setenv(name,json.dumps(invalid))
+        with pytest.raises(ValueError,match='assembly_model_stream_pair'):
+            configuration.Runtime.load(tmp_path/'invalid-stream-pair',worker=True)
+    monkeypatch.setenv(name,json.dumps(pair))
+    runtime=configuration.Runtime.load(tmp_path/'approved-stream-pair',worker=True)
+    try:assert runtime.assembly_model_stream_subjects==frozenset(pair)
+    finally:runtime.close()
+    monkeypatch.delenv(configuration.ASSEMBLY_RUN_CREDENTIAL_SUBJECTS)
+    with pytest.raises(ValueError,match='assembly_model_stream_pair'):
+        configuration.Runtime.load(tmp_path/'wrong-stream-role')
 
 
 def test_api_typed_message_subjects_require_private_policy_and_role(tmp_path,monkeypatch):
