@@ -53,42 +53,58 @@ struct CJProbeApp: App {
             if let demo { DemoBetaRootView(shell: shell, root: demo) }
             else { Text(shell.language.text("Secure demo session is unavailable.", "安全演示会话暂不可用。")) }
             #elseif DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
-            ShellView(state: shell, messageHost: developmentAccounts?.trip?.messages.messages ?? development?.messages.messages,
-                      serverHistoryHost: developmentAccounts?.trip?.messages.history ?? development?.messages.history,
-                      memoryContainerHost: developmentAccounts?.trip?.memory?.host ?? development?.memory?.host,
-                      typedMemoryContainerHost:developmentAccounts?.trip?.typedMemory?.host ?? development?.typedMemory?.host,
-                      tripContainerHost: developmentAccounts?.trip?.trips ?? development?.trips,
-                      structuredTripHost: developmentAccounts?.trip?.structuredTrips ?? development?.structuredTrips,
-                      needsContainerHost: developmentAccounts?.trip?.needs?.host ?? development?.needs?.host,
-                      answerFeedbackHost: developmentAccounts?.trip?.feedback?.answer ?? development?.feedback?.answer,
-                      generalFeedbackHost: developmentAccounts?.trip?.feedback?.general ?? development?.feedback?.general,
-                      runContainerHost: developmentAccounts?.trip?.messages.runs ?? development?.messages.runs,
-                      developmentAccountHost: developmentAccounts?.accounts, offlineTripController: developmentAccounts?.offline,
-                      memoryHistoryContainerHost: developmentAccounts?.trip?.memoryHistory?.host ?? development?.memoryHistory?.host)
-                .environment(\.accountCleanupHost, developmentAccounts?.cleanup)
-                .id(developmentAccounts?.trip?.id ?? development?.id) // host lifetime only; ShellState/language retained
-                .safeAreaInset(edge: .top) {
-                    if developmentFailed {
-                        Text(shell.language.text("Development trip connection unavailable", "开发行程连接不可用"))
-                            .font(.caption).accessibilityIdentifier("g2c.dev.error")
-                    }
-                }
-                .onChange(of: scenePhase) { _, phase in
-                    if let developmentAccounts {
-                        if phase == .active { developmentAccounts.accounts.resume() }
-                        else { developmentAccounts.accounts.suspend() }
-                        return
-                    }
-                    if phase != .active { development?.invalidate() }
-                    else if let configuration = DevelopmentSessionConfiguration.read(ProcessInfo.processInfo.environment),
-                            development?.trips.isConfigured != true {
-                        do { development = try DevelopmentTripHost(configuration: configuration, shell: shell); developmentFailed = false }
-                        catch { development = nil; developmentFailed = true }
-                    }
-                }
+            #if targetEnvironment(simulator)
+            if ProcessInfo.processInfo.arguments.contains("--demo-v2-preview"),
+               !ProcessInfo.processInfo.environment.keys.contains(where: { $0.hasPrefix("G2C_DEV_") }),
+               development == nil, developmentAccounts == nil, !developmentFailed {
+                DemoV2Preview(shell: shell)
+            } else {
+                developmentShell
+            }
+            #else
+            developmentShell
+            #endif
             #else
             ShellView(state: shell)
             #endif
         }
     }
+
+    #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
+    private var developmentShell: some View {
+        ShellView(state: shell, messageHost: developmentAccounts?.trip?.messages.messages ?? development?.messages.messages,
+                  serverHistoryHost: developmentAccounts?.trip?.messages.history ?? development?.messages.history,
+                  memoryContainerHost: developmentAccounts?.trip?.memory?.host ?? development?.memory?.host,
+                  typedMemoryContainerHost:developmentAccounts?.trip?.typedMemory?.host ?? development?.typedMemory?.host,
+                  tripContainerHost: developmentAccounts?.trip?.trips ?? development?.trips,
+                  structuredTripHost: developmentAccounts?.trip?.structuredTrips ?? development?.structuredTrips,
+                  needsContainerHost: developmentAccounts?.trip?.needs?.host ?? development?.needs?.host,
+                  answerFeedbackHost: developmentAccounts?.trip?.feedback?.answer ?? development?.feedback?.answer,
+                  generalFeedbackHost: developmentAccounts?.trip?.feedback?.general ?? development?.feedback?.general,
+                  runContainerHost: developmentAccounts?.trip?.messages.runs ?? development?.messages.runs,
+                  developmentAccountHost: developmentAccounts?.accounts, offlineTripController: developmentAccounts?.offline,
+                  memoryHistoryContainerHost: developmentAccounts?.trip?.memoryHistory?.host ?? development?.memoryHistory?.host)
+            .environment(\.accountCleanupHost, developmentAccounts?.cleanup)
+            .id(developmentAccounts?.trip?.id ?? development?.id) // host lifetime only; ShellState/language retained
+            .safeAreaInset(edge: .top) {
+                if developmentFailed {
+                    Text(shell.language.text("Development trip connection unavailable", "开发行程连接不可用"))
+                        .font(.caption).accessibilityIdentifier("g2c.dev.error")
+                }
+            }
+            .onChange(of: scenePhase) { _, phase in
+                if let developmentAccounts {
+                    if phase == .active { developmentAccounts.accounts.resume() }
+                    else { developmentAccounts.accounts.suspend() }
+                    return
+                }
+                if phase != .active { development?.invalidate() }
+                else if let configuration = DevelopmentSessionConfiguration.read(ProcessInfo.processInfo.environment),
+                        development?.trips.isConfigured != true {
+                    do { development = try DevelopmentTripHost(configuration: configuration, shell: shell); developmentFailed = false }
+                    catch { development = nil; developmentFailed = true }
+                }
+            }
+    }
+    #endif
 }
