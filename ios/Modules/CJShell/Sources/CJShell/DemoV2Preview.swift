@@ -379,13 +379,14 @@ public struct DemoV2Preview: View {
             let source = try turn.event("source", payload: [
                 "source_id": "sample-transport", "label": language.text("Source 1", "来源 1"), "state": "unknown"
             ])
-            guard case .status(let state) = status.payload, state.stage == .completed,
-                  case .answer(let content) = answer.payload,
-                  case .source(let citation) = source.payload else { throw DemoV2Dialogue.Failure.invalidEvent }
-            reply(content.text, status: language.text("Sample run completed", "示例运行已完成"),
-                  sources: [.init(id: citation.source_id, title: citation.label,
-                                  details: language.text("This sample has no verified external source.", "此示例没有已核实的外部来源。"),
-                                  link: citation.openableURL)])
+            var projection = DemoV2RunProjection()
+            [answer, source, status].forEach { projection.apply($0) }
+            let citations = projection.sources.map { citation in
+                DemoV2Source(id: citation.source_id, title: citation.label,
+                             details: language.text("This sample has no verified external source.", "此示例没有已核实的外部来源。"),
+                             link: citation.openableURL)
+            }
+            reply(projection.answer, status: projection.activity(language), sources: citations)
         } catch {
             reply(language.text("The local fixture did not produce a readable result.", "本地样例没有产生可读取的结果。"))
         }
