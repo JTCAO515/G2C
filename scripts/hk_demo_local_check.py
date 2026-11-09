@@ -542,11 +542,8 @@ def check_lio_conversational_edit(api, owner, worker, original, model, conninfo,
 
 def check_lio_memory(database, auth, path, context, foreign, actor):
     from cj_api.lio_memory_routes import LioMemoryCards, _decode_target, _encode_target
-    from cj_memory.manual import ManualPolicy
-    from cj_memory.postgres import Repository
-    from cj_memory_jobs.collection import CollectionService
-    from cj_memory_jobs.demo_candidates import DemoCandidates
-    from cj_memory_jobs.extraction import CollectionPolicy
+    from cj_api.local_lio_memory import lio_candidates
+    from cj_memory.typed_local import TypedConfiguration
     from cj_memory_jobs.publication_result import VERSION_DEMO
     from cj_memory_jobs.service import OperationWithheld
     from cj_message.source import SourceQuery
@@ -556,86 +553,87 @@ def check_lio_memory(database, auth, path, context, foreign, actor):
 
     quiet, pace = 'I usually prefer quiet entrances.', 'I prefer fewer stops in a day.'
     text = quiet + ' ' + pace
-    slots = frozenset({'quiet.entrance', 'travel.pace'})
-    policy = CollectionPolicy(frozenset({'self'}), slots, 4, 500,
-        lambda entry: entry.text in (quiet, pace),
-        lambda entry, rows: any(entry.text in row.text for row in rows))
-    manual = ManualPolicy(policy.subjects, slots, frozenset({'long_term'}), frozenset(),
-        datetime.now(timezone.utc)+timedelta(hours=1),lambda command,raw:True,lambda command,raw:True)
     selected = frozenset({actor})
-    service = None
-    demo = None
-
-    # The current C Demo reader selects its legacy reader internally. The
-    # staged fixture gives it the additive, scoped Lio original-reader seam.
-    def source_context(current):
-        return SimpleNamespace(principal=current.principal, scope=current.scope,
-            query_message=current.query_lio_message, send_status=current.send_status)
+    expiry = (datetime.now(timezone.utc)+timedelta(hours=1)).isoformat()
+    configuration = TypedConfiguration.from_bytes(encoded(dict(version='local-memory-typed.1',
+        collection=dict(version='local-memory-policy.1',expires_at=expiry,profiles={actor:dict(
+            subjects=['self'],extents=['long_term'],context_ids=[],slots={
+                slot:dict(kind='preference',collection_allowed=True,semantic_resolved=True)
+                for slot in ('quiet.entrance','travel.pace')})}),
+        travel_contexts={actor:[]})))
+    candidates = None
 
     def memory_host(boundary):
-        nonlocal service, demo
-
-        def resolve(principal, scope):
-            return Repository(lambda: database.connect(scope), scope, typed_context=True,
-                              transaction_binder=lambda connection,cursor:connection.bind_scope(cursor))
-
-        service = CollectionService(boundary, resolve, lambda principal:(policy,manual,lambda entry:(None,None)))
-        demo = DemoCandidates(service, selected)
-        return LioMemoryCards(service, lambda current,token,mid,run:demo.current(
-            source_context(current), token, mid, run))
+        nonlocal candidates
+        candidates = lio_candidates(database, boundary, selected, configuration)
+        return LioMemoryCards(candidates.collection, candidates.current)
 
     scope = scope_for(ISSUER, actor)
     local_run_context.provision_budget(path, context, actor)
     dev_auth.activate_travel(path, actor, context, ABI)
-    database.provision(scope)
     token = dev_auth.token(auth,actor,30)
     owner = {'Authorization':'Bearer '+token,'Content-Type':'application/octet-stream'}
     app = create_local_app(conninfo_path=None,auth_dir=auth,run_context=context,database=database,
         account_admission=True,demo_dialogue_subjects=selected,lio_dialogue_subjects=selected,
         lio_memory_factory=memory_host)
+    service = candidates.collection
     with TestClient(app) as api:
         mid = 'lio-memory-original'
-        sent = api.post('/v1/lio/messages', headers=owner, content=encoded(dict(
-            version='LIO-message.1',message_id=mid,text=text,locale='en')))
-        assert sent.status_code == 200, sent.text
-        conversation = sent.json()['conversation_id']
-        stored, head = service.boundary.with_history_context(token,lambda current:(
-            current.query_lio_message(mid), current.send_status(conversation).head))
+        originals = [('lio-before-memory', 'Tell me about a park.'), (mid, text),
+                     ('lio-after-memory', 'Which metro station is nearby?')]
+        for message, question in originals:
+            sent = api.post('/v1/lio/messages', headers=owner, content=encoded(dict(
+                version='LIO-message.1',message_id=message,text=question,locale='en')))
+            assert sent.status_code == 200, sent.text
+        stored = service.boundary.with_history_context(token,lambda current:current.query_lio_message(mid))
         receipt = stored.receipt
         worker = run_worker._worker_for_scope(database,FakeProvider(),auth,scope,checker_for(auth),
                                              demo_planning=True)
-        assert [outcome.status for outcome in worker.process()] == ['completed']
-        service.apply_consent(token,encoded(dict(version='MEMORY-HISTORY@1',action_id='lio-memory-consent',
-            operation='enable',conversation_id=conversation,expected_generation=head.generation,
-            expected_epoch=head.epoch,expected_source_version=0)))
+        assert [outcome.status for outcome in worker.process()] == ['completed'] * 3
         timeline = '/v1/lio/timeline'
-        assert api.get(timeline,headers=owner).json()['messages'][0]['memory'] is None
 
-        source = dict(conversation_id=conversation,generation=head.generation,epoch=head.epoch,
-                      after=0,through=1,source_version=1,withdrawal_epoch=1,mode='incremental')
-        job, attempt = 'lio-memory-job','lio-memory-attempt'
-        service.enqueue(token,encoded(dict(version='MEMORY-JOBS@1',job_id=job,attempt_id=attempt,source=source)))
-        service.transition(token,job,attempt,'inflight')
-        prepared = service.prepare_model_input_v2(token,job,attempt,max_payload_bytes=8192)
+        def displayed():
+            response = api.get(timeline,headers=owner)
+            assert response.status_code == 200, response.text
+            before, selected_turn, after = response.json()['messages']
+            assert [row['message_id'] for row in (before, selected_turn, after)] == [row[0] for row in originals]
+            assert before['memory'] is None and after['memory'] is None
+            return selected_turn['memory']
+
+        assert displayed() is None
+        original = json.loads(candidates.prepare(token,mid,receipt.run_id,max_payload_bytes=8192))
+        source = SourceQuery(**original['source'])
+        assert (source.after, source.through, original['state']) == (1, 2, 'inflight')
+        job, attempt = original['job_id'], original['attempt_id']
+        prepared = original['prepared_input_utf8'].encode()
+        repeated = json.loads(candidates.prepare(token,mid,receipt.run_id,max_payload_bytes=8192))
+        assert (repeated['job_id'], repeated['attempt_id'], repeated['prepared_input_utf8']) == (job, attempt, None)
         evidence, = json.loads(json.loads(prepared)['messages'][0]['content'])['messages']
+        assert evidence['text'] == text
         output = encoded(dict(version='MEMORY-EXTRACT@2',entries=[
             dict(subject='self',slot=slot,kind='preference',text=quote,extent='long_term',
                  occurred_at='date unknown',evidence=[dict(ref=evidence['ref'],quote=quote)])
             for slot,quote in (('quiet.entrance',quiet),('travel.pace',pace))]))
 
         def publish(current):
-            policy = demo.publication_policy(
-                source_context(current),token,job,attempt,prepared,hashlib.sha256(prepared).hexdigest(),
-                output,hashlib.sha256(output).hexdigest(),message_id=mid,run_id=receipt.run_id,
-                max_payload_bytes=8192,before_commit=lambda:None)
-            return current.with_enabled_source(SourceQuery(**source),policy,policy.apply_original_result)
+            options = dict(message_id=mid,run_id=receipt.run_id,max_payload_bytes=8192)
+            prepared_digest = hashlib.sha256(prepared).hexdigest()
+            processing = candidates.processing_policy(current,token,job,attempt,prepared,prepared_digest,**options)
+            checked = current.with_enabled_source(source,processing,
+                lambda snapshot:processing.with_input(snapshot,lambda raw:hashlib.sha256(raw).hexdigest().encode()))
+            assert checked == prepared_digest.encode()
+            publication = candidates.publication_policy(current,token,job,attempt,prepared,prepared_digest,
+                output,hashlib.sha256(output).hexdigest(),before_commit=lambda:None,**options)
+            return current.with_enabled_source(source,publication,publication.apply_original_result)
 
         result = json.loads(service.boundary.with_history_context(token,publish))
         assert result['version'] == VERSION_DEMO and [item['status'] for item in result['receipts']] == ['candidate'] * 2
-        tags = {tag['text']:tag for tag in api.get(timeline,headers=owner).json()['messages'][0]['memory']['tags']}
+        tags = {tag['text']:tag for tag in displayed()['tags']}
         assert set(tags) == {quiet, pace}
         with database.connect(scope) as db:
             assert db.execute('SELECT status FROM cj_memory_item ORDER BY status').fetchall() == [('candidate',),('candidate',)]
+            assert db.execute('SELECT count(*) FROM cj_memory_history_consent').fetchone() == (0,)
+            assert db.execute('SELECT count(*) FROM cj_memory_history_job').fetchone() == (1,)
 
         actions = '/v1/lio/memory/actions'
         receipts = '/v1/lio/memory/receipt'
@@ -663,14 +661,14 @@ def check_lio_memory(database, auth, path, context, foreign, actor):
         assert api.post(receipts,headers=owner,content=encoded(remember)).json() == saved.json()
         assert api.post(receipts,headers=owner,content=encoded(dict(remember,operation='dismiss'))).status_code == 409
         assert api.post(actions,headers=owner,content=encoded(reject)).status_code == 409
-        refreshed, = api.get(timeline,headers=owner).json()['messages'][0]['memory']['tags']
+        refreshed, = displayed()['tags']
         assert refreshed['text'] == pace
         assert api.post(actions,headers=owner,content=encoded(
             dict(reject,target=refreshed['target']))).json()['status'] == 'dismissed'
-        assert api.get(timeline,headers=owner).json()['messages'][0]['memory'] is None
+        assert displayed() is None
         with database.connect(scope) as db:
             assert db.execute('SELECT status FROM cj_memory_item ORDER BY status').fetchall() == [('active',),('withdrawn',)]
-    print('PASS signed Lio memory tags, exact explicit remember/dismiss, stale choice, isolation, and ACK recovery')
+    print('PASS signed Lio middle-turn Pub4, explicit remember/dismiss, stale choice, isolation, and ACK recovery')
     return app, remember
 
 
