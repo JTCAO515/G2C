@@ -11,6 +11,7 @@ from fees import usage
 
 SCENES = tuple(f'{prefix}{index:02d}' for prefix in ('Z', 'E') for index in range(1, 6))
 OUTCOMES = ('PASS', 'FAIL', 'UNKNOWN', 'UNRUN')
+INDEPENDENT_VERDICTS = ('program', 'human')
 CLOCKS = ('first_server_progress_seconds', 'first_running_or_tool_seconds',
           'first_app_visible_progress_seconds', 'first_body_seconds', 'complete_seconds')
 PAID_TOOLS = {'place', 'route', 'weather'}
@@ -61,7 +62,8 @@ def summarize(attempts):
         if (scene not in by_scene or type(index) is not int or index != len(by_scene[scene]) + 1 or
                 verdict not in OUTCOMES[:-1]):
             raise ValueError('original scene attempts must be in order')
-        if verdict in ('PASS', 'FAIL') and not source.get('verdict_ref'):
+        if verdict in ('PASS', 'FAIL') and (source.get('verdict_basis') not in INDEPENDENT_VERDICTS or
+                not isinstance(source.get('verdict_ref'), str) or not source['verdict_ref'].strip()):
             raise ValueError('independent scene verdict reference required')
         runs = []
         run_ids = set()
@@ -78,7 +80,10 @@ def summarize(attempts):
                 raise ValueError('complete clock needs the original first body')
             all_runs.add(run)
             run_ids.add(run)
-            runs.append(dict(run_id=run, evidence_ref=row['evidence_ref'], **clocks))
+            evidence = row['evidence_ref']
+            if not isinstance(evidence, str) or not evidence.strip():
+                raise ValueError('original RUN evidence reference required')
+            runs.append(dict(run_id=run, evidence_ref=evidence, **clocks))
         if verdict == 'PASS' and not runs:
             raise ValueError('scene PASS requires original RUN evidence')
         actions = []
@@ -98,7 +103,8 @@ def summarize(attempts):
                 raise ValueError('Meter must attach once to an original scene RUN')
             all_meters.add(identity)
         all_rows.extend(rows)
-        by_scene[scene].append(dict(attempt=index, verdict=verdict, verdict_ref=source.get('verdict_ref'),
+        by_scene[scene].append(dict(attempt=index, verdict=verdict, verdict_basis=source.get('verdict_basis'),
+            verdict_ref=source.get('verdict_ref'),
             runs=runs, actions=actions, meter_attempt_ids=[row['attempt_id'] for row in rows], fees=_fees(rows, meter is not None)))
     states = {scene: rows[0]['verdict'] if rows else 'UNRUN' for scene, rows in by_scene.items()}
     languages = {}

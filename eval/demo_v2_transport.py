@@ -40,6 +40,14 @@ def _journal(path, value):
     _write(path, (json.dumps(value, ensure_ascii=False, allow_nan=False) + '\n').encode('utf-8'))
 
 
+def _sync_directory(directory):
+    descriptor = os.open(directory, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
 def _small_read(client, method, path, directory, label, *, max_bytes=65_536, **kwargs):
     data = bytearray()
     try:
@@ -103,6 +111,8 @@ def submit_once(client, raw, directory, *, clock=time.perf_counter):
         raise ValueError('attempt directory must be named for the original ID')
     directory.mkdir(mode=0o700)
     _write(directory / 'intent.utf8', raw)
+    _sync_directory(directory)
+    _sync_directory(directory.parent)
     started = clock()
     status, response = _small_read(client, 'POST', path, directory, 'submit', content=raw,
                                    headers={'Content-Type': 'application/octet-stream'})

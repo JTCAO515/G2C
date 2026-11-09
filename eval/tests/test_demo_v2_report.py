@@ -14,7 +14,7 @@ def original(run, *, body=1.2, complete=2.3):
 
 
 def attempt(scene, index, verdict, runs, meter, **extra):
-    return dict(scene=scene, attempt=index, verdict=verdict, verdict_ref='original-verdict.json',
+    return dict(scene=scene, attempt=index, verdict=verdict, verdict_basis='program', verdict_ref='original-verdict.json',
                 runs=runs, meter=meter, **extra)
 
 
@@ -67,3 +67,5 @@ def test_original_run_meter_and_attempt_order_are_never_rebound():
         summarize([dict(first, attempt=2)])
     with pytest.raises(ValueError, match='first body'):
         summarize([dict(first, runs=[original('first', body=None)])])
+    with pytest.raises(ValueError, match='independent scene verdict'):
+        summarize([dict(first, verdict_basis='model')])
