@@ -159,6 +159,7 @@ class RealServices:
     def dispatch_scopes(self,scopes):
         if not self.demo_subjects or self.model.authorization.clock()<DEADLINE:
             return scopes
+        from .local_app import ISSUER,scope_for
         eligible={scope_for(ISSUER,subject) for subject in self.demo_subjects}
         return [scope for scope in scopes if scope in eligible]
 
