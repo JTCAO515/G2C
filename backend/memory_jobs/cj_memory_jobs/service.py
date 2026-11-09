@@ -193,7 +193,7 @@ class Service:
             with repository.transaction() as memory:
                 tx = Transaction(memory)
                 tx.require_live()
-                result = tx.job(job_id,attempt_id)[0].encode()
+                result = tx.legacy_job(job_id,attempt_id)[0].encode()
                 guard('history_query')
             return result
         return self._invoke(token,query,request_id,'MEMORY-JOBS-result@1')
@@ -211,7 +211,7 @@ class Service:
             with repository.transaction() as memory:
                 tx = Transaction(memory)
                 tx.require_live()
-                row = tx.job(job_id,attempt_id)
+                row = tx.legacy_job(job_id,attempt_id)
                 if target in ('unknown','cancelled','failed'):
                     result = tx.transition(job_id,attempt_id,target).encode()
                     guard('history_metadata_precommit')
