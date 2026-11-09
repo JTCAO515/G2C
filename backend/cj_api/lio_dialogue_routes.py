@@ -28,7 +28,7 @@ def _failure(status):
     return _json({'failure': 'quota' if status == 429 else 'unavailable'}, status)
 
 
-def _message(item, state, *, expired=False, trip=None):
+def _message(item, state, *, expired=False, trip=None, memory=None):
     failure = None
     if trip is not None:
         status = 'completed'
@@ -55,10 +55,10 @@ def _message(item, state, *, expired=False, trip=None):
             elif status == 'answering' and effect.startswith(TOOL_EFFECT):
                 activity = json.loads(effect.removeprefix(TOOL_EFFECT))['activity']
     return dict(message_id=item.message_id, text=item.text, answer=state.text if state else '',
-                status=status, failure=failure, activity=activity, sources=sources, trip=trip, memory=None)
+                status=status, failure=failure, activity=activity, sources=sources, trip=trip, memory=memory)
 
 
-def _timeline(boundary, resolve_runs, trip_cards, token, conversation_id, before):
+def _timeline(boundary, resolve_runs, trip_cards, memory_cards, token, conversation_id, before):
     def project(context):
         page = context.lio_timeline(conversation_id, before)
         messages = []
@@ -74,7 +74,9 @@ def _timeline(boundary, resolve_runs, trip_cards, token, conversation_id, before
                         trip = trip_cards.read(token, binding, edit=True)
                     elif BOUND_EFFECT in state.effects:
                         trip = trip_cards.read(token, binding)
-                messages.append(_message(item, state, expired=expired, trip=trip))
+                memory = (memory_cards.project(context, token, item.message_id, binding.run_id)
+                          if memory_cards is not None and state is not None and state.status == 'completed' else None)
+                messages.append(_message(item, state, expired=expired, trip=trip, memory=memory))
         response = _json(dict(version=TIMELINE_VERSION, conversation_id=page.conversation_id,
                               messages=messages, next_before=page.next_before))
         if len(response.body) > 4_500_000:
@@ -86,7 +88,7 @@ def _timeline(boundary, resolve_runs, trip_cards, token, conversation_id, before
     return boundary.with_history_context(token, project)
 
 
-def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards):
+def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, memory_cards=None):
     @app.post('/v1/lio/messages')
     async def send(request: Request):
         token = _token(request)
@@ -118,7 +120,7 @@ def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards):
         except (ValueError, UnicodeError):
             return _failure(400)
         try:
-            return await run_in_threadpool(_timeline, boundary, resolve_runs, trip_cards, token,
+            return await run_in_threadpool(_timeline, boundary, resolve_runs, trip_cards, memory_cards, token,
                                            conversation, before)
         except Exception as exc:
             return _failure(message_failure(request, exc, False).status_code)
