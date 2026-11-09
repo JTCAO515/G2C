@@ -112,6 +112,43 @@ private actor DialogueReceiptFixture: ClientTransport {
         #expect(calls.dropFirst().allSatisfy { $0.body == nil && $0.path == "/v1/demo-dialogue/messages?message_id=a%2Bb" })
     }
 
+    @Test func lostConfirmationReopensAsAnActionAndRecoversTheNewRun() async throws {
+        let store = DialogueFixtureStorage(), scope = try StorageScope(environment: UUID().uuidString, account: "one")
+        let first = MessageRecovery(storage: store), lease = try first.activate(scope)
+        let raw = Data(#"{"version":"DEMO-dialogue-action.1","action_id":"a+b","conversation_id":"\#(conversationID)","card_id":"original-card","expected_version":1,"operation":"confirm_needs"}"#.utf8)
+        let digest = SHA256.hash(data: raw).map { String(format: "%02x", $0) }.joined()
+        let confirmed = try JSONSerialization.data(withJSONObject: [
+            "version": "DEMO-dialogue-action-receipt.1", "request_id": requestID,
+            "receipt": [
+                "action_id": "a+b", "conversation_id": conversationID, "card_id": "original-card", "version": 2,
+                "operation": "confirm_needs", "input_sha256": digest, "message_id": "new-message", "run_id": "new-run",
+                "card": ["card_id": "original-card", "version": 2, "status": "confirmed"]
+            ]
+        ])
+        let responder = DialogueReceiptFixture(trace: requestID, replies: [.lost, .response(200, confirmed)])
+        let writing = try fixture(recovery: first, scope: scope, responder: responder)
+        guard case .unknown = try await writing.submitNeedsAction(originalUTF8: raw, lease: lease) else {
+            Issue.record("A lost confirmation must remain query-only"); return
+        }
+        first.invalidate()
+        let reopened = MessageRecovery(storage: store), restoredLease = try reopened.activate(scope)
+        let reading = try fixture(recovery: reopened, scope: scope, responder: responder)
+        #expect(try reading.unresolvedMessages(lease: restoredLease).isEmpty)
+        #expect(try reading.unresolvedNeedsActions(lease: restoredLease) == ["a+b"])
+        await #expect(throws: RecoveryError.queryOnly) {
+            _ = try await reading.submit(originalUTF8: original("new-question"), lease: restoredLease)
+        }
+        guard case .accepted(let receipt, let body) = try await reading.reconcileNeedsAction(actionID: "a+b", lease: restoredLease)
+        else { Issue.record("Expected the original confirmation receipt"); return }
+        #expect(receipt.messageID == "new-message" && receipt.runID == "new-run")
+        #expect(body == confirmed)
+        #expect(try reading.unresolvedNeedsActions(lease: restoredLease).isEmpty)
+        let calls = await responder.calls
+        #expect(calls.map(\.method) == [.post, .get])
+        #expect(calls.first?.path == "/v1/demo-dialogue/actions" && calls.first?.body == raw)
+        #expect(calls.last?.path == "/v1/demo-dialogue/actions?action_id=a%2Bb" && calls.last?.body == nil)
+    }
+
     @Test func wrongDigestAndOtherOwnerDoNotSettleTheOriginal() async throws {
         let store = DialogueFixtureStorage(), scope = try StorageScope(environment: UUID().uuidString, account: "one")
         let first = MessageRecovery(storage: store), lease = try first.activate(scope), raw = original()

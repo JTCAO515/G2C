@@ -979,8 +979,10 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         let media = request.headerFields.filter { $0.name == .contentType }
         guard media.count == 1, media.first?.value == "application/octet-stream" else { throw MessageHTTPFailure.invalidConfiguration }
         try Task.checkCancellation()
+        let dialogueLimit = operationID == DemoDialogueRoute.submitAction
+            ? DemoDialogueRoute.maximumActionBytes : DemoDialogueRoute.maximumRequestBytes
         let limit = messageWire == .demoDialogue
-            ? min(capability.endpoint.maximumRequestBytes, DemoDialogueRoute.maximumRequestBytes)
+            ? min(capability.endpoint.maximumRequestBytes, dialogueLimit)
             : capability.endpoint.maximumRequestBytes
         let bytes = try await Data(collecting: body, upTo: limit)
         switch messageWire {
@@ -988,7 +990,12 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         case .travel: _ = try OriginalTravelMessageSend(raw: bytes, maximumBytes: capability.endpoint.maximumRequestBytes)
         case .discussion: _ = try OriginalTripDiscussion(raw: bytes, maximumBytes: capability.endpoint.maximumRequestBytes)
         case .edit: _ = try OriginalTripEdit(raw: bytes, maximumBytes: capability.endpoint.maximumRequestBytes)
-        case .demoDialogue: try DemoDialogueRoute.validateOriginal(bytes)
+        case .demoDialogue:
+            if operationID == DemoDialogueRoute.submitAction {
+                try DemoDialogueRoute.validateNeedsAction(bytes)
+            } else {
+                try DemoDialogueRoute.validateOriginal(bytes)
+            }
         case nil: break
         }
         try await capability.validate()
