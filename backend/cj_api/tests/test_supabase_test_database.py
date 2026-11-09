@@ -33,6 +33,26 @@ class SupabaseBoundaries(unittest.TestCase):
             for suffix in ('?hostaddr=127.0.0.1','?service=other','?options=-crole%3Dpostgres','?sslmode=disable'):
                 with self.subTest(suffix=suffix),self.assertRaises(CompositionUnavailable):decode_uri(uri()+suffix)
         with patch.dict(os.environ,dict(CJ_ENV='local',PGHOST='other'),clear=True),self.assertRaises(CompositionUnavailable):decode_uri(uri())
+
+    def test_hk_socket_role_and_transport_are_explicit(self):
+        base='postgresql://cj_m1_runtime:'+('a'*43)+'@/postgres?host=%2Frun%2Fg2c-pg&port=5432&sslmode=disable'
+        with patch.dict(os.environ,dict(CJ_ENV='local'),clear=True):
+            self.assertEqual(boundary.decode_hk_socket_uri(base,'cj_m1_runtime')['host'],boundary.HK_SOCKET)
+            for changed in (base.replace('%2Frun%2Fg2c-pg','127.0.0.1'),base.replace('5432','6543'),
+                            base.replace('disable','require'),base+'&hostaddr=127.0.0.1',
+                            base.replace('cj_m1_runtime','cj_local_cleanup'),base.replace('a'*43,'weak')):
+                with self.assertRaises(CompositionUnavailable):
+                    boundary.decode_hk_socket_uri(changed,'cj_m1_runtime')
+            with self.assertRaises(CompositionUnavailable):decode_uri(base)
+
+    def test_hk_socket_refuses_network_or_role_drift_before_reset(self):
+        for row in (('cj_m1_runtime','cj_m1_runtime','127.0.0.1',''),
+                    ('cj_m1_runtime','cj_m1_runtime',None,'*'),('cj_m1_runtime','cj',None,'')):
+            connection=MagicMock()
+            connection.execute.return_value.fetchone.return_value=row
+            with patch.dict(os.environ,dict(CJ_ENV='local'),clear=True),self.assertRaises(CompositionUnavailable):
+                boundary.prepare_hk_socket_session(connection,'cj_m1_runtime')
+            self.assertEqual(connection.execute.call_count,1)
     def test_unencrypted_or_wrong_role_never_reset_or_reach_business(self):
         for identity in (('cj_m1_runtime','cj_m1_runtime',False),('postgres','postgres',True),('cj_m1_runtime','postgres',True),None):
             obj=SupabaseTestDatabase.__new__(SupabaseTestDatabase);obj._ca=None;obj._empty_passfile=None;obj.conninfo={}

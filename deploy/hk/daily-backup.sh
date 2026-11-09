@@ -3,7 +3,11 @@ set -eu
 cd /srv/g2c-beta
 
 compose() {
-    docker compose --env-file compose.env -f deploy/hk/compose.yaml "$@"
+    if grep -qx 'CJ_BETA_DB_TARGET=hk-local' common.env; then
+        docker compose --env-file compose.env -f deploy/hk/compose.yaml -f deploy/hk/compose.local-pg.yaml "$@"
+    else
+        docker compose --env-file compose.env -f deploy/hk/compose.yaml "$@"
+    fi
 }
 
 api_before=$(compose ps -q --status running api)
