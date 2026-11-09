@@ -174,7 +174,7 @@ class RealServices:
 
 class RealTools:
     def __init__(self,services,*,allowed_native=NATIVE_TOOLS,coordinate_routes=True,streaming_subject=None,
-                 assembly_streaming_subjects=frozenset()):
+                 assembly_streaming_subjects=frozenset(),controlled_probe=None):
         if type(coordinate_routes) is not bool:raise ValueError('explicit_coordinate_route_profile_required')
         self.services=services;self.coordinate_routes=coordinate_routes
         from .local_app import ISSUER,scope_for
@@ -186,6 +186,7 @@ class RealTools:
         subjects=assembly_streaming_subjects
         if streaming_subject is not None:subjects=subjects|{streaming_subject}
         self.streaming_scopes=frozenset(scope_for(ISSUER,subject) for subject in subjects)
+        self.controlled_probe=controlled_probe
         if type(allowed_native) is not frozenset or not allowed_native or not allowed_native<=NATIVE_TOOLS:
             raise ValueError('explicit code-owned native tool subset required')
         self.names=allowed_native
@@ -286,12 +287,16 @@ class RealTools:
         chinese=any('一'<=c<='鿿' for c in messages[-1]['content'])
         incremental=binding.scope in self.streaming_scopes
         profile=M4_NATIVE_TURN_STREAM if incremental else M4_NATIVE_TURN_PROFILE_V2
-        for round_index in range(8):
+        # The single approved cutover probe reserves the sixth model slot for
+        # its original structured draft. Every other original keeps eight turns.
+        controlled=self.controlled_probe is not None and (binding.scope,binding.message_id)==self.controlled_probe
+        turns=5 if controlled else 8
+        for round_index in range(turns):
             worker._model_history(binding,messages,TOOL_SYSTEM)
             native_reply={}
             chunks=worker._registered_stream(binding,'model.tool_turn.'+str(round_index),'model.tool_turn',
                 ModelInput(messages,TOOL_SYSTEM,worker.provider,native_reply,
-                    final_answer=round_index==7 or len(seen)==MAX_TOOLS_PER_RUN,turn_profile=profile))
+                    final_answer=round_index==turns-1 or len(seen)==MAX_TOOLS_PER_RUN,turn_profile=profile))
             if incremental:
                 raw=None
                 with closing(chunks):

@@ -37,6 +37,7 @@ MODEL_STREAM_SUBJECT='CJ_BETA_MODEL_STREAM_SUBJECT'
 ASSEMBLY_SUBJECTS='CJ_BETA_ASSEMBLY_SUBJECTS_JSON'
 ASSEMBLY_RUN_CREDENTIAL_SUBJECTS='CJ_BETA_ASSEMBLY_RUN_CREDENTIAL_SUBJECTS_JSON'
 ASSEMBLY_MODEL_STREAM_SUBJECTS='CJ_BETA_ASSEMBLY_MODEL_STREAM_SUBJECTS_JSON'
+ASSEMBLY_PROBE_MESSAGE='CJ_BETA_ASSEMBLY_PROBE_MESSAGE_ID'
 ASSEMBLY_CLEANUP={'CJ_SUPABASE_CLEANUP_URI','CJ_BETA_CLEANUP_B64'}
 
 
@@ -45,7 +46,8 @@ def load_secret_environment(role,*,root=Path('/run/secrets')):
     expected=SECRET_FILES[role];values={}
     for file,names in expected.items():
         optional=({TYPED_POLICY,TYPED_MESSAGE_SUBJECTS}|ASSEMBLY_CLEANUP if role=='api' and file=='api' else
-                  {MEMORY_RUN_POLICY,MODEL_STREAM_SUBJECT,ASSEMBLY_RUN_CREDENTIAL_SUBJECTS,ASSEMBLY_MODEL_STREAM_SUBJECTS}
+                  {MEMORY_RUN_POLICY,MODEL_STREAM_SUBJECT,ASSEMBLY_RUN_CREDENTIAL_SUBJECTS,ASSEMBLY_MODEL_STREAM_SUBJECTS,
+                   ASSEMBLY_PROBE_MESSAGE}
                   if role=='worker' and file=='worker' else set())
         allowed=names|optional
         if any(name in os.environ for name in allowed):raise ValueError('persistent_container_secret_environment_refused')
@@ -82,6 +84,13 @@ def authorization():
     except (KeyError,ValueError):raise ValueError('verified_trial_expiry_required') from None
     if end.tzinfo is None or datetime.now(timezone.utc)>=min(end,datetime(2026,11,30,16,tzinfo=timezone.utc)):
         raise ValueError('trial_or_database_authorization_expired')
+
+
+def local_database_target():
+    target=os.environ.get('CJ_BETA_DB_TARGET','supabase')
+    if target not in ('supabase','hk-local'):
+        raise ValueError('explicit beta database target required')
+    return target=='hk-local'
 
 
 def _worker_assembly_pair(key,worker,assembly_subjects,error):
@@ -202,10 +211,12 @@ class Runtime:
             size=os.environ.get('CJ_BETA_DB_POOL_SIZE')
             if size is not None and re.fullmatch('[1-8]',size) is None:
                 raise ValueError('bounded_beta_runtime_pool_required')
-            self._database=SupabaseTestDatabase(os.environ['CJ_SUPABASE_RUNTIME_URI'],os.environ['CJ_SUPABASE_CA_FILE'],run_context=self.context,
+            local=local_database_target()
+            ca=None if local else os.environ['CJ_SUPABASE_CA_FILE']
+            self._database=SupabaseTestDatabase(os.environ['CJ_SUPABASE_RUNTIME_URI'],ca,run_context=self.context,
                 travel_context=self.typed_memory is not None or self.memory_runtime is not None,
                 needs_context=bool(self.assembly_subjects),transaction_guard=runtime_transaction,
-                pool_size=None if size is None else int(size))
+                pool_size=None if size is None else int(size),local_socket=local)
         return self._database
 
     def app(self):
@@ -305,8 +316,10 @@ def assembly_cleanup(database):
         'business/memory-management-actions','checkpoints/run','memory-derived',*TARGETS,'external-processing')
     config=Configuration({key_id:decoded('CJ_BETA_CLEANUP_B64',length=32)},key_id,3600,inventory,
         Path(__file__).resolve().parents[2]/'backend/storage-registry.json',extra_hooks=account_hooks,control_records=True)
-    return SupabaseCleanupConfiguration(config,os.environ['CJ_SUPABASE_CLEANUP_URI'],Path(os.environ['CJ_SUPABASE_CA_FILE']),
-        lambda cursor:cleanup_transaction(cursor,database))
+    local=local_database_target()
+    ca=None if local else Path(os.environ['CJ_SUPABASE_CA_FILE'])
+    return SupabaseCleanupConfiguration(config,os.environ['CJ_SUPABASE_CLEANUP_URI'],ca,
+        lambda cursor:cleanup_transaction(cursor,database),local_socket=local)
 
 
 def register_assembly_erasure(app,database,auth_dir,configuration,subjects):

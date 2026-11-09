@@ -822,6 +822,33 @@ class Boundaries(unittest.TestCase):
         self.assertEqual(executed,[f'tool.{round_index}.{index}' for round_index in range(2) for index in range(4)])
         self.assertEqual(self.budget.inspect(),[])
 
+    def test_controlled_original_reserves_sixth_model_slot_for_draft(self):
+        scope='local:https://local.g2c.invalid:m4-synthetic-one'
+        services=RealServices(self.provider(sse()),KEY,frozenset({'m4-synthetic-one'}))
+        host=RealTools(services,allowed_native=frozenset({'place_search'}),controlled_probe=(scope,'approved-probe'))
+        for message,rounds in (('approved-probe',5),('different-original',8)):
+            flags=[];tools=[]
+            class Worker:
+                provider=services.model
+                def _model_history(self,*args):pass
+                def _registered_stream(self,binding,key,registration,argument):
+                    if registration!='model.tool_turn':
+                        tools.append(key)
+                        return iter([json.dumps(dict(provider_code=None,source=dict(endpoint=None)))])
+                    flags.append(argument.final_answer)
+                    calls=[] if argument.final_answer else [
+                        dict(name='place_search',arguments=dict(keyword=key,city='北京',page=1,page_size=1))]
+                    raw=json.dumps(dict(version='MODEL-tool-turn.1',kind='answer' if argument.final_answer else 'tool',
+                        answer=dict(zh='完成',en='Done') if argument.final_answer else None,calls=calls))
+                    argument.native_reply['assistant']=dict(role='assistant',content=None,tool_calls=[
+                        dict(id=key,type='function',function=dict(name=M4_TURN_FUNCTION_V2,arguments=raw))])
+                    return iter([raw])
+            binding=SimpleNamespace(scope=scope,run_id=message,message_id=message)
+            self.assertEqual(list(host.answer(Worker(),binding,[dict(role='user',content='Synthetic probe')])),['Done'])
+            self.assertEqual(flags,[False]*(rounds-1)+[True])
+            self.assertEqual(len(tools),rounds-1)
+        self.assertEqual(self.budget.inspect(),[])
+
     def test_grouped_source_calls_keep_one_supplier_id_and_separate_execution_keys(self):
         for fail_second in (False,True):
             with self.subTest(fail_second=fail_second):

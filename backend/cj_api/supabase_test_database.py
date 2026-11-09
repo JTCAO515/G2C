@@ -8,6 +8,7 @@ from datetime import datetime
 import logging
 import os
 from pathlib import Path
+import re
 import tempfile
 from time import monotonic
 from zoneinfo import ZoneInfo
@@ -25,6 +26,7 @@ from .local_app import LocalDatabase,_require_unbound
 REF='sajkhvjpllldfyfryalx'
 HOST='aws-0-ap-southeast-1.pooler.supabase.com'
 CA_SHA='807025ad50d4ed219d2c9c7d299c004f824eb00cf7f65afef607d07b72e6cafa'
+HK_SOCKET='/run/g2c-pg'
 DEADLINE=datetime(2026,12,1,tzinfo=ZoneInfo('Asia/Shanghai'))
 _timing_log=logging.getLogger('cj_usage.audit')
 
@@ -46,6 +48,20 @@ def decode_uri(uri,*,operator=False):
 
 def decode_cleanup_uri(uri):
     return _decode_uri(uri,'cj_local_cleanup')
+
+
+def decode_hk_socket_uri(uri,role):
+    current_authorization();require_environment()
+    if type(uri) is not str or not uri.startswith('postgresql://'):
+        raise CompositionUnavailable('explicit HK socket URI required')
+    try:config=conninfo_to_dict(uri)
+    except psycopg.Error:raise CompositionUnavailable('invalid HK socket URI') from None
+    if (set(config)!={'host','port','user','password','dbname','sslmode'} or config['host']!=HK_SOCKET
+            or config['port']!='5432' or config['dbname']!='postgres' or config['user']!=role
+            or config['sslmode']!='disable' or re.fullmatch(r'[A-Za-z0-9_-]{43}',config['password']) is None):
+        raise CompositionUnavailable('fixed HK socket and role connection required')
+    return dict(config,connect_timeout=5,
+                options='-c statement_timeout=10000 -c lock_timeout=5000 -c search_path=pg_catalog,public,pg_temp')
 
 
 def _decode_uri(uri,role):
@@ -80,6 +96,18 @@ def prepare_owned_session(connection,role):
     require_identity(connection,role)
     discard_session(connection)
     require_identity(connection,role)
+
+
+def require_hk_socket_identity(connection,role):
+    current_authorization();require_environment()
+    if connection.execute("SELECT current_user,session_user,inet_server_addr(),current_setting('listen_addresses')").fetchone()!=(role,role,None,''):
+        raise CompositionUnavailable('independent HK socket login without TCP required')
+
+
+def prepare_hk_socket_session(connection,role):
+    require_hk_socket_identity(connection,role)
+    discard_session(connection)
+    require_hk_socket_identity(connection,role)
 
 
 def pin_ca(ca_file):
@@ -174,14 +202,20 @@ class _RuntimeLease:
 
 class SupabaseTestDatabase(LocalDatabase):
     _pool:ConnectionPool|None=None
+    _local_socket=False
 
-    def __init__(self,uri,ca_file,*,run_context=None,travel_context=False,needs_context=False,trip_context=False,edit_configuration=None,transaction_guard=None,pool_size=None):
+    def __init__(self,uri,ca_file,*,run_context=None,travel_context=False,needs_context=False,trip_context=False,edit_configuration=None,transaction_guard=None,pool_size=None,local_socket=False):
         self._ca=None;self._empty_passfile=None;self._transaction_guard=transaction_guard
-        config=decode_uri(uri)
-        self._ca=pin_ca(ca_file)
+        self._local_socket=local_socket
+        if local_socket:
+            config=decode_hk_socket_uri(uri,'cj_m1_runtime')
+        else:
+            config=decode_uri(uri)
+            self._ca=pin_ca(ca_file)
+            config=dict(config,sslrootcert=self._ca.name)
         self._configure(run_context=run_context,travel_context=travel_context,needs_context=needs_context,
                         trip_context=trip_context,edit_configuration=edit_configuration)
-        self.conninfo=dict(config,sslrootcert=self._ca.name)
+        self.conninfo=config
         if pool_size is not None:
             if type(pool_size) is not int or not 1 <= pool_size <= 8:
                 raise CompositionUnavailable('bounded beta runtime pool required')
@@ -207,8 +241,13 @@ class SupabaseTestDatabase(LocalDatabase):
         return super().run_repository(scope,usage_profile=usage_profile,connect_worker=connect_worker)
 
     def _check_execution_connection(self, cursor):
-        require_identity(cursor,'cj_m1_runtime')
+        identity=require_hk_socket_identity if self._local_socket else require_identity
+        identity(cursor,'cj_m1_runtime')
         super()._check_execution_connection(cursor)
+
+    def _prepare_session(self,connection):
+        prepare=prepare_hk_socket_session if self._local_socket else prepare_owned_session
+        prepare(connection,'cj_m1_runtime')
 
     def _open_runtime_connection(self):
         if self._pool is None:
@@ -222,7 +261,7 @@ class SupabaseTestDatabase(LocalDatabase):
         lease = _RuntimeLease(self._pool, connection)
         try:
             connection.autocommit = True
-            prepare_owned_session(connection,'cj_m1_runtime')
+            self._prepare_session(connection)
             _timing_log.info('M4_DB_CHECKOUT_TIMING pid=%d pooled=true elapsed_ms=%.3f',
                              connection.info.backend_pid,(monotonic()-started)*1000)
             return lease
@@ -239,7 +278,7 @@ class SupabaseTestDatabase(LocalDatabase):
         try:
             # Reset only our owned session, with actual login/TLS checked before
             # and after. Persistent targets never resolve through pg_temp.
-            prepare_owned_session(conn,'cj_m1_runtime')
+            self._prepare_session(conn)
             current_authorization();require_environment()
             if self._pool is not None:
                 _timing_log.info('M4_DB_CHECKOUT_TIMING pid=%d pooled=false elapsed_ms=%.3f',

@@ -37,6 +37,26 @@ def test_trial_and_explicit_environment_fail_closed(monkeypatch):
     with pytest.raises(ValueError):configuration.authorization()
 
 
+def test_hk_pg_business_gate_requires_signed_forward_only_backup(tmp_path,monkeypatch):
+    from deploy.hk import local_postgres
+    key=Ed25519PrivateKey.generate()
+    private=key.private_bytes(serialization.Encoding.Raw,serialization.PrivateFormat.Raw,serialization.NoEncryption())
+    public=key.public_key().public_bytes(serialization.Encoding.Raw,serialization.PublicFormat.Raw)
+    monkeypatch.setenv('CJ_BETA_RECOVERY_PRIVATE_B64',base64.b64encode(private).decode())
+    monkeypatch.setenv('CJ_BETA_RECOVERY_PUBLIC_B64',base64.b64encode(public).decode())
+    monkeypatch.delenv('CJ_BETA_DB_TARGET',raising=False)
+    local_postgres.require_serving(tmp_path)
+    monkeypatch.setenv('CJ_BETA_DB_TARGET','hk-local')
+    with pytest.raises(FileNotFoundError):local_postgres.require_serving(tmp_path)
+    marker=tmp_path/local_postgres.STATE
+    checkpoint.atomic(marker,dict(version='g2c-hk-local.1',state='BACKUP_REQUIRED'))
+    with pytest.raises(ValueError,match='manual backup gate'):local_postgres.require_serving(tmp_path)
+    checkpoint.atomic(marker,dict(version='g2c-hk-local.1',state='FORWARD_ONLY'))
+    local_postgres.require_serving(tmp_path)
+    value=json.loads(marker.read_bytes());value['value']['state']='BACKUP_REQUIRED';marker.write_text(json.dumps(value))
+    with pytest.raises(ValueError,match='signature'):local_postgres.require_serving(tmp_path)
+
+
 def test_shared_budget_transfer_keeps_unknown_and_fences_stale_instances(tmp_path,monkeypatch):
     monkeypatch.setattr(transfer,'MAC_ROOT',tmp_path/'mac')
     monkeypatch.setattr(transfer,'HK_ROOT',tmp_path/'hk')

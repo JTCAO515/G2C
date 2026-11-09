@@ -208,6 +208,24 @@ Typed 保存、管理及既有 `/v1/memory-erasures` 不安装 V1 记忆写入�
 
 ## 验证
 
+### 香港本机 PG17
+
+仅在已批准的 (b2) 切换使用 `CJ_BETA_DB_TARGET=hk-local` 和 `compose.local-pg.yaml`。PG 服务使用
+已审 operator 镜像，禁用网络，只在受控挂载的 Unix socket 接收 SCRAM 登录。API、worker、cleanup
+和 operator 各按原角色边界加载 0600 文件，原 Supabase TLS 配置作为归档保留。
+
+暂停 API/worker、确认 A/C 无在途及原账本锚点、暂停日备。原配置下以新 operator 镜像挂载空的私有
+`/local-pg` 并执行 `python -B -m deploy.hk.local_postgres stage`。它从已签名日备取基准，
+再取完整安全点、按原恢复顺序加载 fence，验证目标状态后冻结源的应用登录和默认读写。
+保留归档状态；任何不确定结果先核原件。只将新连接值分别安装到原 0600 角色文件，签名密钥与
+唯一 SQLite 挂载路径继续复用。切换到本机配置后启动 `postgres` 服务，再用同一 operator 运行
+`activate`、一次现有 OSS backup 和 `allow-writes`。前置 backup 要求当前 UTC 日尚未成功备份；
+只有新签名备份完整上送并核对行、序列和 fence 后，才启动 API/worker。
+
+发布前可撤掉目标 release 并核原 Supabase 快照，恢复源写入仍须另批。放行业务后只允许香港前滚，
+使用同一 lineage 最新签名安全点并重放 fence，无法核实最新 fence 时保留不可用状态。
+旧 `suspended.json` 和 `latest.json` 归档，保持原 Supabase 只读。
+
 ```sh
 uv run --locked python -B scripts/test.py
 CJ_PG_BINDIR=/path/to/pg17/bin CJ_PG17_BINDIR=/path/to/pg17/bin uv run --locked python -B scripts/pg_suites.py

@@ -4,6 +4,7 @@ import json
 import logging
 import os
 from pathlib import Path
+import re
 import sys
 import time
 import threading
@@ -19,8 +20,8 @@ from cj_api.composition import CompositionUnavailable
 from cj_api.local_app import ISSUER,scope_for
 from cj_api.real_services import RealServices,RealTools
 from local_run_context import provision_budget_connection
-from .configuration import MODEL_STREAM_SUBJECT,Runtime,authorization,load_secret_environment
-from . import checkpoint
+from .configuration import ASSEMBLY_PROBE_MESSAGE,MODEL_STREAM_SUBJECT,Runtime,authorization,load_secret_environment,local_database_target
+from . import checkpoint,local_postgres
 
 
 def control():return Path(os.environ['CJ_DEPLOY_CONTROL'])
@@ -30,6 +31,7 @@ def heartbeat():return Path(os.environ['CJ_DEPLOY_HEARTBEAT'])/'worker.json'
 def ready(database):
     try:
         authorization()
+        local_postgres.require_serving(control())
         with database._open_runtime_connection() as connection:checkpoint.require_release(connection,control())
         state=json.loads(heartbeat().read_bytes())
         if set(state)!={'at','component','status'} or not 0<=time.time()-state['at']<15:return 'worker_heartbeat_stale'
@@ -71,13 +73,23 @@ def worker(runtime):
         raise ValueError('original_shared_authorization_journal_required')
     services=RealServices.from_environment(runtime.auth,authorization_guard=authorization)
     with services.model.authorization.connect() as journal:services.model.authorization.require_producer(journal)
+    probe=os.environ.get(ASSEMBLY_PROBE_MESSAGE)
+    binding=None
+    if probe is not None:
+        if (not local_database_target() or not runtime.assembly_subjects
+                or runtime.assembly_run_credential_subjects!=runtime.assembly_subjects
+                or re.fullmatch(r'hk-674-jt-20261109-[a-f0-9]{8}',probe) is None):
+            raise ValueError('explicit authorized HK assembly probe required')
+        subject=next(s for s in runtime.assembly_subjects if s.endswith('-zh'))
+        binding=(scope_for(ISSUER,subject),probe)
     tools=RealTools(services,streaming_subject=os.environ.get(MODEL_STREAM_SUBJECT),
-        assembly_streaming_subjects=runtime.assembly_model_stream_subjects)
+        assembly_streaming_subjects=runtime.assembly_model_stream_subjects,controlled_probe=binding)
     database=runtime.database()
     while True:
         component='deployment_gate';status='unavailable'
         try:
             authorization()
+            local_postgres.require_serving(control())
             with database._open_runtime_connection() as connection:checkpoint.require_release(connection,control())
             with worker_pulse():
                 outcomes=run_worker.run_once(database,services.model,runtime.auth,tools_configuration=tools,real_services=services,account_admission=True,
@@ -100,6 +112,9 @@ def worker(runtime):
 
 def initialize(runtime):
     with checkpoint.operator() as (connection,_):
+        if local_database_target():
+            checkpoint.require_release(connection,control())
+            return
         if (control()/'release.json').exists():checkpoint.require_release(connection,control())
         migrate.up(connection,migrate.load(),checkpoint.versions()[-1])
     def seed(connection):
