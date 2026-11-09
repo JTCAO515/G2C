@@ -1,3 +1,25 @@
+# Lio user app
+
+`G2CBeta` and `G2CProduction` open the Lio conversation shell. Beta keeps the
+existing invitation and consent gate and uses labelled local sample replies
+while the B timeline is pending. Production does not activate Beta sign-in or
+the sample service. Debug retains the existing profiles; its simulator-only
+`--lio-preview` option opens Lio with sample replies. The historical
+`Release` configuration uses the disconnected engineering fixture for the
+existing negative tests; the distributable configuration is `Production`.
+
+To run the English and Chinese conversation and accessibility checks on a
+booted iOS simulator:
+
+```sh
+python3 -B ios/App/Acceptance/check_lio_home.py \
+  --simulator '<simulator-UDID>' --output '<new-external-output-directory>' \
+  --build-dir '<external-derived-data-directory>'
+```
+
+The regular CJShell package test job runs the user copy scan alongside the
+existing engineering tests.
+
 # DEBUG simulator Trip host
 
 This App keeps the ordinary disconnected shell in Release, on physical devices, or

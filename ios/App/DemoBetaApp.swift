@@ -1,120 +1,27 @@
 #if G2C_DEMO_BETA && os(iOS)
-import Foundation
 import SwiftUI
 import CJShell
-import CJSession
-
-private final class DemoInviteRedirectBlocker: NSObject, URLSessionTaskDelegate, Sendable {
-    nonisolated func urlSession(_ session: URLSession, task: URLSessionTask,
-                                willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest,
-                                completionHandler: @escaping @Sendable (URLRequest?) -> Void) {
-        completionHandler(nil)
-    }
-}
-
-enum DemoInviteClient {
-    static func exchange(code: String, consent: Bool, language: DemoStarterLanguage) async throws -> SessionMaterial {
-        let request: URLRequest
-        do { request = try DemoBetaConfiguration.inviteRequest(code: code, consent: consent) }
-        catch { throw DemoAccountExchangeFailure.rejected }
-        let configuration = URLSessionConfiguration.ephemeral
-        configuration.httpCookieStorage = nil
-        configuration.urlCache = nil
-        configuration.urlCredentialStorage = nil
-        configuration.timeoutIntervalForRequest = 15
-        configuration.timeoutIntervalForResource = 25
-        let session = URLSession(configuration: configuration, delegate: DemoInviteRedirectBlocker(), delegateQueue: nil)
-        defer { session.invalidateAndCancel() }
-
-        do {
-            let (body, http) = try await read(request, session: session)
-            let grant = try DemoBetaConfiguration.verifyInviteResponse(body, status: http.statusCode,
-                contentType: http.value(forHTTPHeaderField: "Content-Type"), now: Date())
-            let conversations: DemoStarterReads.Conversations = try await starter("/v1/conversations",
-                query: .init(name: "limit", value: "20"), grant: grant, session: session, trace: \.request_id)
-            let needs: DemoStarterReads.Needs = try await starter("/v1/needs",
-                query: .init(name: "needs_id", value: language.needsID), grant: grant, session: session, trace: \.request_id)
-            let travel: DemoStarterReads.Travel = try await starter("/v1/travel-context-actions/" + language.travelActionID,
-                grant: grant, session: session, trace: \.request_id)
-            let profile = try DemoStarterReads.profile(language: language, conversations: conversations, needs: needs, travel: travel)
-            try Task.checkCancellation()
-            try grant.validate(now: Date())
-            return try SessionMaterial(trustedSDKBytes: JSONEncoder().encode(DemoInviteSession(grant: grant, composition: profile)))
-        } catch DemoBetaConfiguration.Failure.inviteDenied {
-            throw DemoAccountExchangeFailure.rejected
-        } catch DemoBetaConfiguration.Failure.invalidInput {
-            throw DemoAccountExchangeFailure.rejected
-        } catch DemoBetaConfiguration.Failure.expired {
-            throw DemoAccountExchangeFailure.expired
-        } catch let failure as DemoAccountExchangeFailure {
-            throw failure
-        } catch {
-            throw DemoAccountExchangeFailure.unavailable
-        }
-    }
-
-    private static func starter<Value: Decodable>(_ path: String, query: URLQueryItem? = nil,
-        grant: DemoInviteGrant, session: URLSession, trace: KeyPath<Value, String>) async throws -> Value {
-        var url = URLComponents(url: DemoBetaConfiguration.endpoint, resolvingAgainstBaseURL: false)!
-        url.path = path
-        url.queryItems = query.map { [$0] }
-        var request = URLRequest(url: url.url!)
-        request.setValue("Bearer " + grant.access_token, forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        let (body, response) = try await read(request, session: session)
-        if response.statusCode == 401 || response.statusCode == 403 { throw DemoAccountExchangeFailure.rejected }
-        guard response.statusCode == 200,
-              response.value(forHTTPHeaderField: "Content-Type")?.split(separator: ";").first?.lowercased() == "application/json" else {
-            throw DemoAccountExchangeFailure.unavailable
-        }
-        let value = try JSONDecoder().decode(Value.self, from: body)
-        let requestID = value[keyPath: trace]
-        guard UUID(uuidString: requestID) != nil, requestID == response.value(forHTTPHeaderField: "X-Request-ID") else {
-            throw DemoAccountExchangeFailure.unavailable
-        }
-        return value
-    }
-
-    private static func read(_ request: URLRequest, session: URLSession) async throws -> (Data, HTTPURLResponse) {
-        let (stream, response) = try await session.bytes(for: request)
-        guard let http = response as? HTTPURLResponse, http.url == request.url else { throw DemoAccountExchangeFailure.unavailable }
-        var body = Data()
-        for try await byte in stream {
-            guard body.count < 65536 else { throw DemoAccountExchangeFailure.unavailable }
-            body.append(byte)
-        }
-        return (body, http)
-    }
-}
+import CJLioUser
 
 struct DemoBetaRootView: View {
     let shell: ShellState
     let root: DevelopmentAccountRoot
     @Environment(\.scenePhase) private var phase
-    @State private var openAssistantAfterConsent = false
-
     var body: some View {
         Group {
-            if case .signedIn = root.accounts.state {
-                business
-            } else if root.finishingDemoCleanup {
-                business.safeAreaInset(edge: .top) {
-                    if root.cleanup?.presentation.controlsFinalized == true {
-                        Button(shell.language.text("Done", "完成")) { root.finishDemoCleanup() }
-                            .padding().accessibilityIdentifier("demo.cleanup.done")
+            if root.finishingDemoCleanup {
+                NavigationStack { LioAccountDeletion(shell: shell, root: root) }
+            } else if case .signedIn = root.accounts.state, let trip = root.trip {
+                LioHome(language: shell.language.lio, service: .demo, isDemo: true) {
+                    LioLanguagePicker(shell: shell)
+                    NavigationLink(shell.language.text("Delete account", "注销账号")) {
+                        LioAccountDeletion(shell: shell, root: root)
                     }
+                    Button(shell.language.text("Sign out", "退出登录")) { root.accounts.signOut() }
                 }
+                .id(trip.id)
             } else {
-                DemoInviteView(shell: shell, accounts: root.accounts) {
-                    openAssistantAfterConsent = true
-                }
-            }
-        }
-        .onChange(of: root.accounts.state) { _, state in
-            guard openAssistantAfterConsent, state != .checking else { return }
-            openAssistantAfterConsent = false
-            if case .signedIn = state, !root.finishingDemoCleanup {
-                shell.selectedTab = .assistant
+                DemoInviteView(shell: shell, accounts: root.accounts)
             }
         }
         .onChange(of: phase) { _, current in
@@ -131,22 +38,104 @@ struct DemoBetaRootView: View {
         }
     }
 
-    private var business: some View {
-        ShellView(state: shell, messageHost: root.trip?.messages.messages,
-                  serverHistoryHost: root.trip?.messages.history, typedMemoryContainerHost: root.trip?.typedMemory?.host,
-                  tripContainerHost: root.trip?.trips, structuredTripHost: root.trip?.structuredTrips,
-                  needsContainerHost: root.trip?.needs?.host, answerFeedbackHost: root.trip?.feedback?.answer,
-                  generalFeedbackHost: root.trip?.feedback?.general, runContainerHost: root.trip?.messages.runs,
-                  developmentAccountHost: root.accounts, offlineTripController: root.offline)
-            .environment(\.accountCleanupHost, root.cleanup)
-            .id(root.trip?.id)
+}
+
+private struct LioAccountDeletion: View {
+    let shell: ShellState
+    let root: DevelopmentAccountRoot
+    @Environment(\.scenePhase) private var phase
+    @State private var confirmed = false
+
+    private var language: ShellLanguage { shell.language }
+
+    var body: some View {
+        Form {
+            Text(language.text(
+                "This requests deletion of your G2C account and its data. Saved content may still be visible on other devices while they’re offline. Backups roll off after 30 days. Other services manage their own copies.",
+                "注销会申请删除你的 G2C 账号及其数据。其他设备离线时可能仍能看到已保存的内容。备份按 30 天滚动保留，其他服务的副本由各自管理。"))
+            if let host = root.cleanup {
+                controls(host)
+            } else {
+                Text(language.text("Account deletion is temporarily unavailable.", "暂时无法注销账号。"))
+            }
+        }
+        .navigationTitle(language.text("Delete account", "注销账号"))
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    @ViewBuilder
+    private func controls(_ host: AccountCleanupContainerHost) -> some View {
+        let value = host.presentation
+        if value.controlsFinalized {
+            Text(language.text("Your account was deleted and data on this device was cleared.", "账号已注销，本机数据已清理。"))
+            Button(language.text("Done", "完成")) { root.finishDemoCleanup() }
+                .accessibilityIdentifier("demo.cleanup.done")
+        } else if value.unavailable || value.unknown {
+            Text(language.text("Account deletion information is temporarily unavailable. Keep this device connected.",
+                               "暂时无法显示注销信息，请保持联网。"))
+        } else if value.businessStopped {
+            Text(language.text("You can’t use this account on this device while cleanup continues.",
+                               "清理期间，暂时无法在本机使用此账号。"))
+        }
+        if host.busy || value.preparing { ProgressView() }
+        if value.canReview {
+            Button(language.text("Continue", "继续")) { host.perform(.review) }
+                .disabled(host.busy)
+        }
+        if value.canConfirm {
+            Toggle(language.text("I understand that this deletes my account and its data.",
+                                 "我已了解，注销会删除我的账号和数据。"), isOn: $confirmed)
+            Button(language.text("Delete my account", "注销我的账号"), role: .destructive) {
+                confirmed = false
+                host.perform(.confirm)
+            }
+            .disabled(!confirmed || host.busy)
+        }
+        if value.canCleanDevice {
+            Button(language.text("Clear data on this device", "清除本机数据"), role: .destructive) {
+                host.perform(.cleanDevice)
+            }
+            .disabled(host.busy)
+        }
+        if value.canFinalizeControls {
+            Button(language.text("Finish clearing this device", "清理本机剩余数据"), role: .destructive) {
+                host.perform(.finalizeControls)
+            }
+            .disabled(host.busy)
+        }
+        Color.clear.frame(height: 0).accessibilityHidden(true)
+            .task(id: phase) {
+                guard phase == .active else { return }
+                await followUp(host)
+            }
+    }
+
+    private func followUp(_ host: AccountCleanupContainerHost) async {
+        var preferDevice = false
+        while !Task.isCancelled, root.cleanup === host, !host.presentation.controlsFinalized {
+            let value = host.presentation
+            if !host.busy {
+                let needsAccountUpdate = value.canRead && (value.unknown || value.businessStopped)
+                if value.canReportDevice {
+                    // The journal permits a new receipt only for an eligible
+                    // device result and blocks reuse after an ambiguous write.
+                    host.perform(.reportDevice)
+                } else if value.canReadDevice, preferDevice || !needsAccountUpdate {
+                    host.perform(.checkDevice)
+                    preferDevice = false
+                } else if needsAccountUpdate {
+                    host.perform(.checkOriginal)
+                    preferDevice = true
+                }
+            }
+            do { try await Task.sleep(for: .seconds(20)) } catch { return }
+        }
     }
 }
 
 private struct DemoInviteView: View {
     let shell: ShellState
     let accounts: DevelopmentAccountHost
-    let onConsent: () -> Void
     @State private var code = ""
     @State private var pendingConsent: ConsentAction?
     @FocusState private var enteringCode: Bool
@@ -161,10 +150,7 @@ private struct DemoInviteView: View {
         NavigationStack {
             Form {
                 Section {
-                    Picker(language.text("Language", "语言"), selection: Binding(get: { language }, set: { shell.selectLanguage($0) })) {
-                        Text("English").tag(ShellLanguage.english)
-                        Text("简体中文").tag(ShellLanguage.chinese)
-                    }
+                    LioLanguagePicker(shell: shell)
                 }
                 Section {
                     SecureField(language.text("Invitation code", "邀请码"), text: $code)
@@ -178,7 +164,7 @@ private struct DemoInviteView: View {
                     }
                     .disabled(code.isEmpty || accounts.state == .checking)
                     .accessibilityIdentifier("demo.invite.continue")
-                    Button(language.text("Restore saved session", "恢复已保存的会话")) {
+                    Button(language.text("Continue with your account", "继续使用账号")) {
                         enteringCode = false
                         pendingConsent = .restore
                     }
@@ -209,22 +195,20 @@ private struct DemoInviteView: View {
             guard !candidate.isEmpty else { return }
             code = ""
             let starter: DemoStarterLanguage = language == .chinese ? .zh : .en
-            onConsent()
             accounts.signIn { try await DemoInviteClient.exchange(code: candidate, consent: true, language: starter) }
         case .restore:
             code = ""
-            onConsent()
             accounts.restore()
         }
     }
 
     private var notice: String? {
         switch accounts.state {
-        case .checking: language.text("Checking session…", "正在验证会话…")
-        case .expired: language.text("This session has expired. Use an invitation code to sign in again.", "会话已过期，请使用邀请码重新登录。")
-        case .rejected: language.text("This invitation or session is unavailable. Ask your demo organizer for access.", "邀请码或会话不可用，请联系演示组织者。")
-        case .networkUnknown: language.text("Unable to verify the session right now. Try again when connected.", "暂时无法验证会话，请联网后重试。")
-        case .storageUnavailable: language.text("Secure session storage is unavailable.", "安全会话存储暂不可用。")
+        case .checking: language.text("Signing you in…", "正在登录…")
+        case .expired: language.text("Your sign-in expired. Use an invitation code to sign in again.", "登录已过期，请使用邀请码重新登录。")
+        case .rejected: language.text("We couldn’t sign you in. Ask your demo organizer for access.", "暂时无法登录，请联系演示组织者。")
+        case .networkUnknown: language.text("We couldn’t sign you in. Check your connection and try again.", "暂时无法登录，请检查网络后重试。")
+        case .storageUnavailable: language.text("Sign-in is temporarily unavailable.", "暂时无法登录。")
         case .paused, .signedOut, .signedIn: nil
         }
     }
