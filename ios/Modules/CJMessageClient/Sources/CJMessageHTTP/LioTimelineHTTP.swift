@@ -55,7 +55,11 @@ public final class LioTimelineHTTP {
         let (response, body) = try await transport.readLio(conversationID: conversationID, before: before, bearer: token)
         guard response.status.code == 200 else { throw MessageHTTPFailure.invalidResponse }
         let bytes = try await json(response, body, limit: 4_500_000)
-        return try LioTimelineWire.decodePage(bytes, for: conversationID)
+        let page = try LioTimelineWire.decodePage(bytes, for: conversationID)
+        if let before, page.messages.contains(where: { $0.id.utf8.elementsEqual(before.utf8) }) {
+            throw MessageHTTPFailure.invalidResponse
+        }
+        return page
     }
 
     private func bearer() async throws -> String {

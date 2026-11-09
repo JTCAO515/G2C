@@ -29,6 +29,22 @@ public struct LioHome<MenuContent: View>: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 22) {
                     if conversation.turns.isEmpty { examples }
+                    if conversation.nextBefore != nil {
+                        Button(language.text("Earlier messages", "更早的消息")) {
+                            Task {
+                                if let id = await conversation.loadEarlier() {
+                                    scroll.scrollTo(id, anchor: .top)
+                                }
+                            }
+                        }
+                        .disabled(conversation.loadingEarlier)
+                        .accessibilityIdentifier("lio.earlier")
+                        if conversation.loadingEarlier { ProgressView() }
+                        if conversation.earlierUnavailable {
+                            Text(language.text("Couldn’t show earlier messages. Try again.", "暂时看不到更早的消息，请再试一次。"))
+                                .font(.footnote)
+                        }
+                    }
                     ForEach(conversation.turns) { turn in
                         turnView(turn)
                     }
@@ -41,7 +57,7 @@ public struct LioHome<MenuContent: View>: View {
                 .frame(maxWidth: .infinity)
             }
             .scrollDismissesKeyboard(.interactively)
-            .onChange(of: conversation.turns.count) { _, _ in
+            .onChange(of: conversation.turns.last?.id) { _, _ in
                 if reduceMotion { scroll.scrollTo("lio.bottom", anchor: .bottom) }
                 else { withAnimation(.easeOut(duration: 0.22)) { scroll.scrollTo("lio.bottom", anchor: .bottom) } }
             }

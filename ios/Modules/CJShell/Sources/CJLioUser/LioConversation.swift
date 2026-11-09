@@ -40,7 +40,7 @@ enum LioFailure: Equatable, Sendable {
 }
 
 enum LioEvent: Sendable {
-    case snapshot([LioTimelineTurn])
+    case snapshot(LioTimelinePage)
     case activity(LioActivity)
     case text(String)
     case source(LioSource)
@@ -49,12 +49,15 @@ enum LioEvent: Sendable {
 }
 
 public struct LioService: Sendable {
-    let updates: (@Sendable ([Data]) -> AsyncStream<[LioTimelineTurn]>)?
+    let updates: (@Sendable ([Data]) -> AsyncStream<LioTimelinePage>)?
+    let earlier: (@Sendable (String) async throws -> LioTimelinePage)?
     let events: @Sendable (LioQuestion) -> AsyncStream<LioEvent>
 
-    init(updates: (@Sendable ([Data]) -> AsyncStream<[LioTimelineTurn]>)? = nil,
+    init(updates: (@Sendable ([Data]) -> AsyncStream<LioTimelinePage>)? = nil,
+         earlier: (@Sendable (String) async throws -> LioTimelinePage)? = nil,
          events: @escaping @Sendable (LioQuestion) -> AsyncStream<LioEvent>) {
         self.updates = updates
+        self.earlier = earlier
         self.events = events
     }
 
@@ -81,6 +84,9 @@ final class LioConversation {
     private let service: LioService
     private(set) var turns: [LioTurn] = []
     private(set) var pending: LioQuestion?
+    private(set) var nextBefore: String?
+    private(set) var loadingEarlier = false
+    private(set) var earlierUnavailable = false
     private var sendGeneration = 0
     private var receiving = false
 
@@ -160,15 +166,39 @@ final class LioConversation {
         }
     }
 
-    private func display(_ timeline: [LioTimelineTurn]) {
-        let visibleIDs = Set(timeline.map(\.id))
+    func loadEarlier() async -> Data? {
+        guard let cursor = nextBefore, let earlier = service.earlier, !loadingEarlier else { return nil }
+        loadingEarlier = true
+        earlierUnavailable = false
+        defer { loadingEarlier = false }
+        do {
+            let page = try await earlier(cursor)
+            guard !Task.isCancelled, nextBefore == cursor else { return nil }
+            let known = Set(turns.map(\.id))
+            let older = page.turns.filter { !known.contains($0.id) }
+            turns.insert(contentsOf: older.map { makeTurn($0) }, at: 0)
+            nextBefore = page.nextBefore
+            return older.first?.id
+        } catch is CancellationError {
+            return nil
+        } catch {
+            earlierUnavailable = true
+            return nil
+        }
+    }
+
+    private func display(_ page: LioTimelinePage) {
+        let visibleIDs = Set(page.turns.map(\.id))
         let existing = Dictionary(uniqueKeysWithValues: turns.map { ($0.id, $0.question) })
         let previous = turns.filter { $0.fromTimeline && !visibleIDs.contains($0.id) }
         let local = turns.filter { !$0.fromTimeline && !visibleIDs.contains($0.id) }
-        turns = previous + timeline.map { row in
-            let question = existing[row.id] ?? LioQuestion(messageID: row.messageID, text: row.text, language: .english)
-            return LioTurn(question: question, status: row.status, answer: row.answer,
-                           sources: row.sources, fromTimeline: true)
-        } + local
+        if previous.isEmpty { nextBefore = page.nextBefore }
+        turns = previous + page.turns.map { makeTurn($0, question: existing[$0.id]) } + local
+    }
+
+    private func makeTurn(_ row: LioTimelineTurn, question: LioQuestion? = nil) -> LioTurn {
+        let question = question ?? LioQuestion(messageID: row.messageID, text: row.text, language: .english)
+        return LioTurn(question: question, status: row.status, answer: row.answer,
+                       sources: row.sources, fromTimeline: true)
     }
 }

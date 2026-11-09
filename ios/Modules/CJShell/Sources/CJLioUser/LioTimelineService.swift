@@ -36,6 +36,16 @@ struct LioTimelineTurn: Sendable {
     }
 }
 
+struct LioTimelinePage: Sendable {
+    let turns: [LioTimelineTurn]
+    let nextBefore: String?
+
+    init(_ page: LioTimelineWire.Page) {
+        turns = page.messages.map(LioTimelineTurn.init)
+        nextBefore = page.nextBefore
+    }
+}
+
 extension LioService {
     public static func signedTimeline(_ client: LioTimelineHTTP) -> LioService {
         timeline(send: { original in
@@ -44,8 +54,8 @@ extension LioService {
             case .notSent: .notSent
             case .dailyLimit: .dailyLimit
             }
-        }, read: { id in
-            try await client.timeline(conversationID: id)
+        }, read: { id, before in
+            try await client.timeline(conversationID: id, before: before)
         })
     }
 
@@ -58,7 +68,7 @@ extension LioService {
     /// Uncertain sends are observed through the timeline and never repeated here.
     static func timeline(
         send: @escaping @Sendable (LioTimelineWire.Send) async throws -> SendResult,
-        read: @escaping @Sendable (String?) async throws -> LioTimelineWire.Page,
+        read: @escaping @Sendable (String?, String?) async throws -> LioTimelineWire.Page,
         pollInterval: Duration = .seconds(2),
         observationWindow: Duration = .seconds(90),
         recoveryInterval: Duration = .seconds(15)
@@ -67,6 +77,8 @@ extension LioService {
         return LioService(updates: { waiting in
             session.observe(waiting: waiting, interval: pollInterval, window: observationWindow,
                             recoveryInterval: waiting.isEmpty ? nil : recoveryInterval)
+        }, earlier: { cursor in
+            try await session.page(before: cursor)
         }) { question in
             AsyncStream { continuation in
                 let task = Task {
@@ -81,7 +93,7 @@ extension LioService {
                                                                 window: observationWindow) {
                             try Task.checkCancellation()
                             continuation.yield(.snapshot(timeline))
-                            if let status = timeline.first(where: { $0.id == question.id })?.status {
+                            if let status = timeline.turns.first(where: { $0.id == question.id })?.status {
                                 switch status {
                                 case .finished: continuation.yield(.finished); return
                                 case .failed(let failure): continuation.yield(.failed(failure)); return
@@ -104,7 +116,7 @@ extension LioService {
 
 private actor LioTimelineSession {
     let send: @Sendable (LioTimelineWire.Send) async throws -> LioService.SendResult
-    let read: @Sendable (String?) async throws -> LioTimelineWire.Page
+    let read: @Sendable (String?, String?) async throws -> LioTimelineWire.Page
     private var conversationID: String?
     private enum Submission {
         case attempted
@@ -114,7 +126,7 @@ private actor LioTimelineSession {
     private var submissions: [Data: Submission] = [:]
 
     init(send: @escaping @Sendable (LioTimelineWire.Send) async throws -> LioService.SendResult,
-         read: @escaping @Sendable (String?) async throws -> LioTimelineWire.Page) {
+         read: @escaping @Sendable (String?, String?) async throws -> LioTimelineWire.Page) {
         self.send = send
         self.read = read
     }
@@ -150,7 +162,7 @@ private actor LioTimelineSession {
     }
 
     nonisolated func observe(waiting: [Data], interval: Duration, window: Duration,
-                             recoveryInterval: Duration? = nil) -> AsyncStream<[LioTimelineTurn]> {
+                             recoveryInterval: Duration? = nil) -> AsyncStream<LioTimelinePage> {
         AsyncStream { continuation in
             let task = Task {
                 defer { continuation.finish() }
@@ -160,10 +172,10 @@ private actor LioTimelineSession {
                 repeat {
                     do {
                         try Task.checkCancellation()
-                        let timeline = try await refresh()
+                        let timeline = try await page()
                         continuation.yield(timeline)
-                        knownActive = timeline.contains(where: \.isActive)
-                        if !knownActive && waiting.allSatisfy({ id in timeline.contains { $0.id == id } }) {
+                        knownActive = timeline.turns.contains(where: \.isActive)
+                        if !knownActive && waiting.allSatisfy({ id in timeline.turns.contains { $0.id == id } }) {
                             return
                         }
                     } catch is CancellationError {
@@ -191,10 +203,10 @@ private actor LioTimelineSession {
         }
     }
 
-    func refresh() async throws -> [LioTimelineTurn] {
-        let page = try await read(conversationID)
+    func page(before: String? = nil) async throws -> LioTimelinePage {
+        let page = try await read(conversationID, before)
         try Task.checkCancellation()
         if let id = page.conversationID { conversationID = id }
-        return page.messages.map(LioTimelineTurn.init)
+        return LioTimelinePage(page)
     }
 }
