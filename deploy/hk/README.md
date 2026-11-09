@@ -160,6 +160,9 @@ RUN、Meter 与真实出口执行。未选择的主体仍用原路径；已有 M
 仅选择 [MODEL-TOOL-TURN-STREAM@1](../../contracts/run/MODEL-TOOL-TURN-STREAM-V1.md)。
 默认不设，其他主体继续使用原 v2。先暂停测试提交、核对原 delivery 已清空，
 再切换或移除该选项；同一原 UNKNOWN 只读核对。
+另获组装流式授权时，在同一个 0600 worker 文件设置
+`CJ_BETA_ASSEMBLY_MODEL_STREAM_SUBJECTS_JSON` 为与现有组装完全相同的中英主体数组。
+两主体的同一原模型轮按既有 profile 增量输出最后正文；单主体配置和默认 v2 选择继续生效。
 
 ## 已有 Memory 主体的 MESSAGE 激活
 

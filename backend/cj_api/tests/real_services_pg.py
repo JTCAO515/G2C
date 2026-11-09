@@ -28,6 +28,8 @@ from test_m4_real_services import sse,turn_sse,KEY,NOW
 
 def exercise(auth,conninfo):
     subjects=['m4-synthetic-'+v for v in ('ok','limit','unknown','malformed','late','permission','revoke','repeat','tail','tailbad','batch','batchfail','stop','guard-unknown','progress','run-commit-unknown','stream','stream-mixed')]
+    assembly_pair=tuple('m4-synthetic-660-0123456789ab-'+lang for lang in ('zh','en'))
+    subjects.extend(assembly_pair)
     harness.dev_auth.init(auth,subjects)
     now=int(time.time());profiles={}
     for subject in subjects:
@@ -55,7 +57,8 @@ def exercise(auth,conninfo):
         return harness.expect(client.post('/v1/messages',content=raw,headers={**headers[s],'Content-Type':'application/octet-stream'}))['receipt']
     for subject in subjects:
         budget=AuthorizationBudget(auth.parent/subject,clock=lambda:NOW)
-        incremental=subject.endswith(('stream','stream-mixed'))
+        legacy_stream=subject.endswith(('stream','stream-mixed'))
+        incremental=legacy_stream or subject in assembly_pair
         mixed=subject.endswith('stream-mixed')
         paused,release=Event(),Event()
         prefix='Synthetic visible answer before the provider completes; '
@@ -155,7 +158,9 @@ def exercise(auth,conninfo):
         async def handshake(*args,**kwargs):
             await asyncio.sleep(1.1)
             return None,Writer()
-        services=RealServices(model,KEY,frozenset(subjects));tools=RealTools(services,streaming_subject=subject if incremental else None)
+        services=RealServices(model,KEY,frozenset(subjects))
+        tools=RealTools(services,streaming_subject=subject if legacy_stream else None,
+                        assembly_streaming_subjects=frozenset(assembly_pair))
         db=LocalDatabase(conninfo,run_context=profiles[subject][1])
         opened = []
         open_runtime = db._open_runtime_connection

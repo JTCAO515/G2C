@@ -173,13 +173,19 @@ class RealServices:
 
 
 class RealTools:
-    def __init__(self,services,*,allowed_native=NATIVE_TOOLS,coordinate_routes=True,streaming_subject=None):
+    def __init__(self,services,*,allowed_native=NATIVE_TOOLS,coordinate_routes=True,streaming_subject=None,
+                 assembly_streaming_subjects=frozenset()):
         if type(coordinate_routes) is not bool:raise ValueError('explicit_coordinate_route_profile_required')
         self.services=services;self.coordinate_routes=coordinate_routes
         from .local_app import ISSUER,scope_for
         if streaming_subject is not None and (type(streaming_subject) is not str or streaming_subject not in services.subjects):
             raise ValueError('explicit_invited_streaming_subject_required')
-        self.streaming_scope=None if streaming_subject is None else scope_for(ISSUER,streaming_subject)
+        if (type(assembly_streaming_subjects) is not frozenset
+                or not assembly_streaming_subjects<=services.subjects):
+            raise ValueError('explicit_invited_assembly_streaming_subjects_required')
+        subjects=assembly_streaming_subjects
+        if streaming_subject is not None:subjects=subjects|{streaming_subject}
+        self.streaming_scopes=frozenset(scope_for(ISSUER,subject) for subject in subjects)
         if type(allowed_native) is not frozenset or not allowed_native or not allowed_native<=NATIVE_TOOLS:
             raise ValueError('explicit code-owned native tool subset required')
         self.names=allowed_native
@@ -206,7 +212,7 @@ class RealTools:
         inputs=json.loads(raw);metadata={}
         def bind(operation,guard):
             self.services.require_scope(operation.binding.scope)
-            if turn_profile==M4_NATIVE_TURN_STREAM and operation.binding.scope!=self.streaming_scope:
+            if turn_profile==M4_NATIVE_TURN_STREAM and operation.binding.scope not in self.streaming_scopes:
                 raise BudgetUnknown('original model streaming subject not admitted')
             def admitted():
                 if wrapped:provider._check()
@@ -278,7 +284,7 @@ class RealTools:
         self.services.require_scope(binding.scope)
         messages=list(messages);seen=set()
         chinese=any('一'<=c<='鿿' for c in messages[-1]['content'])
-        incremental=binding.scope==self.streaming_scope
+        incremental=binding.scope in self.streaming_scopes
         profile=M4_NATIVE_TURN_STREAM if incremental else M4_NATIVE_TURN_PROFILE_V2
         for round_index in range(8):
             worker._model_history(binding,messages,TOOL_SYSTEM)
