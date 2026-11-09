@@ -12,6 +12,33 @@ import XCTest
         try exerciseTrip("zh-Hans", clarification: "北京三天", trips: "行程", day: "第 1 天", fixed: "酒店入住")
     }
 
+    func testSavedTripMapLoadsOnlyWhenOpenedAndKeepsTheScheduleOnFailure() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "-cj.ui.language.v1", "en"]
+        app.launchEnvironment = [
+            "G2C_LIO_PREVIEW_TRIP": "__LIO_RECORDED_TRIP_FIXTURE__",
+            "G2C_ACCEPTANCE_MAP_LOADING": "synthetic-delegate-failure"
+        ]
+        app.launch()
+        defer { app.terminate() }
+
+        XCTAssertTrue(app.tabBars.buttons["Trips"].waitForExistence(timeout: 12))
+        app.tabBars.buttons["Trips"].tap()
+        let trip = app.buttons["Draft"]
+        XCTAssertTrue(trip.waitForExistence(timeout: 8), app.debugDescription)
+        trip.tap()
+        let schedule = app.staticTexts["Date to be decided"]
+        XCTAssertTrue(schedule.waitForExistence(timeout: 8))
+        let map = app.buttons["lio.trip.recorded-map"]
+        if !map.isHittable { app.swipeUp() }
+        XCTAssertTrue(map.isHittable, app.debugDescription)
+        XCTAssertFalse(app.staticTexts["Map unavailable"].exists)
+        map.tap()
+        XCTAssertTrue(app.staticTexts["Map unavailable"].waitForExistence(timeout: 8))
+        XCTAssertTrue(schedule.exists)
+    }
+
     private func exerciseTrip(_ language: String, clarification: String, trips: String, day: String, fixed: String) throws {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")

@@ -1,5 +1,6 @@
 """Drive the actual Lio App in a simulator with sample replies only."""
 import argparse
+import base64
 import importlib.util
 import json
 import os
@@ -9,6 +10,23 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[3]
 HERE = Path(__file__).resolve().parent
 
+
+
+def recorded_trip_fixture():
+    path = ROOT / "ios/Modules/CJTripClient/Tests/CJTripClientTests/Fixtures/STRUCTURED-V1.json"
+    source = next(row for row in json.loads(path.read_text()) if row["name"] == "sources")
+    content = json.loads(base64.b64decode(source["canonical_utf8_base64"]))
+    trace = "B35279D6-8B42-466D-A55D-8A16B64BB270"
+    envelope = {"version": "TRIP-structured-read.1", "request_id": trace}
+    saved = {"trip_id": "trip:lio-map-demo", "version": 1, "content_sha256": source["sha256"]}
+    detail = {**envelope, "trip": {**saved, "content": content}}
+    listing = {**envelope, "trips": [{**saved, "title": content["title"], "content_version": content["content_version"]}],
+               "next_after": None}
+
+    def encoded(value):
+        return base64.b64encode(json.dumps(value, separators=(",", ":")).encode()).decode()
+
+    return encoded({"trace": trace, "list": encoded(listing), "detail": encoded(detail)})
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -27,7 +45,8 @@ def main():
     builder = object.__new__(module.XCTestDriver)
     builder.directory = output
     builder.write_project(0)
-    (output / "G2CControl.swift").write_text((HERE / "LioHomeUITests.swift").read_text())
+    tests = (HERE / "LioHomeUITests.swift").read_text()
+    (output / "G2CControl.swift").write_text(tests.replace("__LIO_RECORDED_TRIP_FIXTURE__", recorded_trip_fixture()))
     project = output / "G2CAcceptance.xcodeproj"
     settings = project / "project.pbxproj"
     settings.write_text(settings.read_text().replace("space.go2china.foundation.local", "space.go2china.lio.acceptance"))
@@ -45,7 +64,7 @@ def main():
         subprocess.run(command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=600)
     summary = subprocess.check_output(["xcrun", "xcresulttool", "get", "test-results", "summary", "--path", str(result)])
     (output / "summary.json").write_bytes(summary)
-    assert json.loads(summary)["passedTests"] == 4, summary
+    assert json.loads(summary)["passedTests"] == 5, summary
 
 
 if __name__ == "__main__":
