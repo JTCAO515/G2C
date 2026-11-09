@@ -301,6 +301,27 @@ class Repository:
             row = self._receipt(cur, identifier(action_id))
             return row[0] if row else None
 
+    def lio_revisions(self, trip_id, before, limit):
+        from .lio_history import revisions
+        return revisions(self, trip_id, before=before, limit=limit)
+
+    def lio_current_trip(self, needs_scope, needs_id):
+        from .lio_history import current_head
+        return current_head(self, needs_scope, needs_id)
+
+    def lio_plan_receipt(self, binding):
+        from .lio_history import plan_receipt
+        return plan_receipt(self, binding)
+
+    def undo_lio(self, request):
+        from .lio_history import undo
+        return undo(self, request)
+
+    def lio_undo_receipt(self, request):
+        from .needs_action_store import NeedsActions
+        with self.transaction() as cur:
+            return NeedsActions._previous(self, cur, request)
+
     def read_decision_source(self,query,project,max_source_bytes,max_result_bytes):
         from .decision_source import read
         return read(self,query,project,max_source_bytes,max_result_bytes)
