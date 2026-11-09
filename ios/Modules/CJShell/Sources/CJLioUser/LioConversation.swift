@@ -40,6 +40,7 @@ enum LioEvent: Sendable {
     case activity(LioActivity)
     case text(String)
     case source(LioSource)
+    case savedItinerary(LioItinerary)
     case finished
     case failed(LioFailure)
 }
@@ -61,6 +62,7 @@ struct LioTurn: Identifiable {
     var status: Status = .thinking
     var answer = ""
     var sources: [LioSource] = []
+    var itinerary: LioItinerary?
     var id: UUID { question.id }
 }
 
@@ -68,6 +70,7 @@ struct LioTurn: Identifiable {
 final class LioConversation {
     private let service: LioService
     private(set) var turns: [LioTurn] = []
+    private(set) var itineraries: [LioItinerary] = []
     private(set) var pending: LioQuestion?
 
     init(service: LioService) { self.service = service }
@@ -109,6 +112,13 @@ final class LioConversation {
             case .source(let source):
                 if !turns[index].sources.contains(where: { $0.id == source.id }) {
                     turns[index].sources.append(source)
+                }
+            case .savedItinerary(let itinerary):
+                turns[index].itinerary = itinerary
+                if let savedIndex = itineraries.firstIndex(where: { $0.id == itinerary.id }) {
+                    itineraries[savedIndex] = itinerary
+                } else {
+                    itineraries.append(itinerary)
                 }
             case .finished:
                 turns[index].status = .finished
