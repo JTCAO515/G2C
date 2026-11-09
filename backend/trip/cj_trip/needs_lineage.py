@@ -6,7 +6,7 @@ from cj_needs.domain import decode,validate_fields
 
 
 def current_origin(cur,repository,trip):
-    cur.execute('SELECT r.action_id,r.proposal_id,r.candidate_hash,r.original_input,b.message_scope,b.run_id,b.needs_scope,b.needs_id,b.source_input,b.source_sha256,b.proposed_input '
+    cur.execute('SELECT r.action_id,r.proposal_id,r.candidate_hash,r.original_input,b.message_scope,b.run_id,b.needs_scope,b.needs_id,b.source_input,b.source_sha256,b.proposed_input,b.needs_version '
         'FROM cj_trip_receipt r JOIN cj_trip_needs_basis b ON (b.scope,b.proposal_id)=(r.scope,r.proposal_id) '
         "WHERE r.scope=%s AND r.trip_id=%s AND r.committed_version=%s AND r.kind='accept'",(repository.scope,trip.trip_id,trip.version))
     rows=cur.fetchall()
@@ -21,4 +21,4 @@ def current_origin(cur,repository,trip):
     source=bytes(row[8])
     if sha256(source).hexdigest()!=row[9]:raise Denied('retained source integrity mismatch')
     proposed=bytes(row[10]);fields=decode(proposed);validate_fields(fields,complete=True)
-    return dict(message_scope=row[4],run_id=row[5],needs_scope=row[6],needs_id=row[7],source=source,proposed=proposed)
+    return dict(message_scope=row[4],run_id=row[5],needs_scope=row[6],needs_id=row[7],source=source,proposed=proposed,needs_version=row[11])
