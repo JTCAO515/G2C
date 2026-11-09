@@ -10,11 +10,17 @@ public struct DemoV2Preview: View {
     @State private var draft = ""
     @State private var messages: [DemoV2Message] = []
     @State private var fixtureConversation: String?
+    @State private var fixtureTurn: PreviewTurn?
     @State private var newConversationRequested = false
+    @State private var nextFailure: DemoV2DeliveryNotice?
+    @State private var deliveryNotice: DemoV2DeliveryNotice?
+    @State private var unresolved: DemoV2Dialogue.OriginalMessage?
+    @State private var history: [HistoryEntry] = []
     @State private var activeCard: DemoV2Message?
     @State private var trip: [DemoV2Day] = []
     @State private var memory: String?
     @State private var memoryPaused = false
+    @State private var confirmingMemoryDeletion = false
     @State private var edit: Edit?
     @State private var editText = ""
     @State private var needsCorrection: String?
@@ -23,8 +29,14 @@ public struct DemoV2Preview: View {
 
     private enum Page { case invite, consent, conversation }
     private enum Edit: String, Identifiable {
-        case afternoon, memory
+        case afternoon, memory, history
         var id: Self { self }
+    }
+
+    private struct HistoryEntry: Identifiable {
+        let id: String
+        let messages: [DemoV2Message]
+        let draft: String
     }
 
     public init(shell: ShellState) { self.shell = shell }
@@ -42,8 +54,10 @@ public struct DemoV2Preview: View {
                         VStack(spacing: 0) {
                             previewBanner
                             DemoV2ConversationView(language: language, messages: messages, activeCardID: activeCard?.id,
-                                                   draft: $draft, canSend: !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-                                                   onSend: send, onAction: handle)
+                                                   draft: $draft,
+                                                   canSend: canSend,
+                                                   onSend: send, onAction: handle,
+                                                   deliveryNotice: deliveryNotice, onCheckOriginal: checkOriginal)
                         }
                             .navigationTitle(ShellTab.assistant.title(language))
                             .navigationBarTitleDisplayMode(.inline)
@@ -51,6 +65,18 @@ public struct DemoV2Preview: View {
                                 ToolbarItem(placement: .topBarLeading) {
                                     Menu {
                                         Button(language.text("New chat", "新对话"), systemImage: "square.and.pencil", action: startNewChat)
+                                            .disabled(unresolved != nil)
+                                        Button(language.text("History", "历史对话"), systemImage: "clock") {
+                                            edit = .history
+                                        }
+                                        .disabled(unresolved != nil)
+                                        Menu(language.text("Sample result for next send", "下次发送使用样例结果")) {
+                                            Button(language.text("Network unavailable", "网络不可用")) { nextFailure = .offline }
+                                            Button(language.text("Daily limit", "每日额度用完")) { nextFailure = .dailyLimit }
+                                            Button(language.text("Unknown result", "结果未知")) { nextFailure = .unknown }
+                                            Button(language.text("Request failed", "请求失败")) { nextFailure = .rejected }
+                                        }
+                                        .disabled(unresolved != nil)
                                     } label: {
                                         Label(language.text("Conversation", "对话"), systemImage: "ellipsis.circle")
                                     }
@@ -81,24 +107,57 @@ public struct DemoV2Preview: View {
         }
         .environment(\.locale, Locale(identifier: language.rawValue))
         .sheet(item: $edit) { field in
-            NavigationStack {
-                Form {
-                    TextField(field == .memory ? language.text("Preference", "偏好") : language.text("Afternoon plan", "下午安排"),
-                              text: $editText)
+            if field == .history {
+                historySheet
+            } else {
+                editSheet(field)
+            }
+        }
+    }
+
+    private func editSheet(_ field: Edit) -> some View {
+        NavigationStack {
+            Form {
+                TextField(field == .memory ? language.text("Preference", "偏好") : language.text("Afternoon plan", "下午安排"),
+                          text: $editText)
+            }
+            .navigationTitle(language.text("Edit", "修改"))
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(language.text("Cancel", "取消")) { edit = nil }
                 }
-                .navigationTitle(language.text("Edit", "修改"))
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button(language.text("Cancel", "取消")) { edit = nil }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(language.text("Save", "保存")) {
+                        if field == .memory { memory = editText }
+                        else { replaceAfternoon(with: editText) }
+                        edit = nil
                     }
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button(language.text("Save", "保存")) {
-                            if field == .memory { memory = editText }
-                            else { replaceAfternoon(with: editText) }
-                            edit = nil
-                        }
-                        .disabled(editText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(editText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+        }
+    }
+
+    private var historySheet: some View {
+        NavigationStack {
+            List {
+                if history.allSatisfy({ $0.id == fixtureConversation }) {
+                    RunReadableText(text: language.text("No previous conversations", "还没有历史对话"))
+                }
+                ForEach(history.filter { $0.id != fixtureConversation }) { entry in
+                    Button {
+                        openHistory(entry)
+                    } label: {
+                        RunReadableText(text: entry.messages.first(where: \.fromUser)?.text ?? language.text("Conversation", "对话"))
+                            .frame(minHeight: 44, alignment: .leading)
                     }
+                }
+            }
+            .navigationTitle(language.text("History", "历史对话"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(language.text("Done", "完成")) { edit = nil }
                 }
             }
         }
@@ -161,7 +220,7 @@ public struct DemoV2Preview: View {
                     button(language.text("Plan a trip", "去规划行程"), symbol: "bubble.left") { shell.selectedTab = .assistant }
                 } else {
                     ForEach(trip) { DemoV2DayCard(day: $0, language: language) }
-                    if let afternoon = trip.first(where: { $0.id == "2" })?.stops.first(where: { $0.id == "gallery" && !$0.locked }) {
+                    if let afternoon = trip.lazy.flatMap(\.stops).first(where: { $0.id == "gallery" && $0.locked == false }) {
                         button(language.text("Edit itinerary", "直接编辑"), symbol: "pencil") {
                             editText = afternoon.place
                             edit = .afternoon
@@ -193,8 +252,7 @@ public struct DemoV2Preview: View {
                     button(memoryPaused ? language.text("Resume", "恢复") : language.text("Pause", "停用"),
                            symbol: memoryPaused ? "play" : "pause") { memoryPaused.toggle() }
                     button(language.text("Delete", "删除"), symbol: "trash") {
-                        self.memory = nil
-                        memoryPaused = false
+                        confirmingMemoryDeletion = true
                     }
                 } else {
                     ShellCardHeading(title: language.text("No saved memories yet", "还没有已保存的记忆"), symbol: "bookmark")
@@ -205,22 +263,68 @@ public struct DemoV2Preview: View {
             .padding(16)
         }
         .navigationTitle(ShellTab.memory.title(language))
+        .confirmationDialog(language.text("Delete this preference?", "删除这个偏好吗？"),
+                            isPresented: $confirmingMemoryDeletion, titleVisibility: .visible) {
+            Button(language.text("Delete preference", "确认删除"), role: .destructive) {
+                memory = nil
+                memoryPaused = false
+            }
+            Button(language.text("Cancel", "取消"), role: .cancel) {}
+        }
+    }
+
+    private var canSend: Bool {
+        unresolved == nil && deliveryNotice != .dailyLimit &&
+            !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private func archiveCurrent() {
+        guard let fixtureConversation, !messages.isEmpty else { return }
+        history.removeAll { $0.id == fixtureConversation }
+        history.insert(.init(id: fixtureConversation, messages: messages, draft: draft), at: 0)
+    }
+
+    private func openHistory(_ entry: HistoryEntry) {
+        guard unresolved == nil else { return }
+        archiveCurrent()
+        fixtureConversation = entry.id
+        fixtureTurn = nil
+        messages = entry.messages
+        draft = entry.draft
+        activeCard = nil
+        newConversationRequested = false
+        editingNeeds = false
+        editingPlan = false
+        if deliveryNotice != .dailyLimit { deliveryNotice = nil }
+        edit = nil
     }
 
     private func startNewChat() {
+        guard unresolved == nil else { return }
+        archiveCurrent()
         messages.removeAll()
         activeCard = nil
         draft = ""
         fixtureConversation = nil
+        fixtureTurn = nil
         newConversationRequested = true
+        if deliveryNotice != .dailyLimit { deliveryNotice = nil }
         editingNeeds = false
         editingPlan = false
     }
 
     private func send() {
-        guard let turn = try? PreviewTurn(text: draft, language: language, conversation: fixtureConversation,
-                                          newConversation: newConversationRequested) else { return }
+        guard canSend, let original = try? makeOriginal() else { return }
+        if let nextFailure {
+            self.nextFailure = nil
+            deliveryNotice = nextFailure
+            if nextFailure == .unknown { unresolved = original }
+            return
+        }
+        guard let turn = try? PreviewTurn(original: original) else { return }
+        deliveryNotice = nil
         fixtureConversation = turn.receipt.conversation_id
+        fixtureTurn = turn
         newConversationRequested = false
         let text = turn.original.command.text
         messages.append(.init(id: turn.receipt.message_id, fromUser: true, text: text))
@@ -246,6 +350,22 @@ public struct DemoV2Preview: View {
         }
     }
 
+    private func makeOriginal() throws -> DemoV2Dialogue.OriginalMessage {
+        let destination = newConversationRequested ? .newConversation
+            : fixtureConversation.map(DemoV2Dialogue.Destination.conversation) ?? .initial
+        return try .init(.init(id: UUID(), text: draft, language: language, destination: destination))
+    }
+
+    private func checkOriginal() {
+        guard let unresolved else { return }
+        // Exercise the actual null-envelope decoder using the fixture. There is no I/O.
+        let raw = Data(#"{"version":"DEMO-dialogue-receipt.1","request_id":"fixture","receipt":null}"#.utf8)
+        if case .notObserved? = try? DemoV2Dialogue.response(raw, status: 200, contentType: "application/json",
+                                                            original: unresolved, operation: .reconcile) {
+            deliveryNotice = .notObserved
+        }
+    }
+
     private var noSavedPreference: String {
         language.text("There’s no active saved preference for this sample.", "这个示例没有启用中的已保存偏好。")
     }
@@ -264,7 +384,8 @@ public struct DemoV2Preview: View {
                   case .source(let citation) = source.payload else { throw DemoV2Dialogue.Failure.invalidEvent }
             reply(content.text, status: language.text("Sample run completed", "示例运行已完成"),
                   sources: [.init(id: citation.source_id, title: citation.label,
-                                  details: language.text("This sample has no verified external source.", "此示例没有已核实的外部来源。"))])
+                                  details: language.text("This sample has no verified external source.", "此示例没有已核实的外部来源。"),
+                                  link: citation.openableURL)])
         } catch {
             reply(language.text("The local fixture did not produce a readable result.", "本地样例没有产生可读取的结果。"))
         }
@@ -275,7 +396,7 @@ public struct DemoV2Preview: View {
         self.activeCard = nil
         switch (activeCard.card, action) {
         case (.needs, .confirmNeeds):
-            reply(language.text("Here’s a three-day suggestion.", "这是一份三天行程建议。"), card: .itinerary(sampleTrip))
+            showSampleTrip()
         case (.needs, .editNeeds):
             editingNeeds = true
             reply(language.text("What would you like to change in your trip details?", "你想修改哪些旅行需求？"))
@@ -306,13 +427,13 @@ public struct DemoV2Preview: View {
     }
 
     private func replaceAfternoon(with place: String) {
-        guard let index = trip.firstIndex(where: { $0.id == "2" }) else { return }
+        guard let index = trip.firstIndex(where: { $0.stops.contains(where: { $0.id == "gallery" }) }) else { return }
         let day = trip[index]
         let stops = day.stops.map { stop in
-            guard stop.id == "gallery", !stop.locked else { return stop }
-            return DemoV2Day.Stop(id: stop.id, time: stop.time, place: place, source: stop.source)
+            guard stop.id == "gallery", stop.locked == false else { return stop }
+            return DemoV2Day.Stop(id: stop.id, time: stop.time, place: place, source: stop.source, location: stop.location)
         }
-        trip[index] = .init(id: day.id, title: day.title, stops: stops)
+        trip[index] = .init(id: day.id, title: day.title, stops: stops, date: day.date)
     }
 
     private var details: [DemoV2Card.Detail] {
@@ -329,20 +450,45 @@ public struct DemoV2Preview: View {
         return result
     }
 
-    private var sampleTrip: [DemoV2Day] {
-        let source = language.text("Fictional itinerary example", "虚构行程示例")
-        return [
-            .init(id: "1", title: language.text("Day 1", "第 1 天"), stops: [
-                .init(id: "arrival", time: "14:00", place: language.text("Arrive in Beijing", "抵达北京"), source: source)
-            ]),
-            .init(id: "2", title: language.text("Day 2", "第 2 天"), stops: [
-                .init(id: "meeting", time: "09:00", place: language.text("Hotel lobby meeting", "酒店大堂集合"), source: source, locked: true),
-                .init(id: "gallery", time: "14:00", place: language.text("Visit a gallery", "参观展馆"), source: source)
-            ]),
-            .init(id: "3", title: language.text("Day 3", "第 3 天"), stops: [
-                .init(id: "departure", time: "16:00", place: language.text("Leave Beijing", "离开北京"), source: source)
+    private func showSampleTrip() {
+        guard let fixtureTurn else { return }
+        do {
+            func stop(_ id: String, label: String, place: String?, start: String, end: String, fixed: Bool?) -> [String: Any] {
+                [
+                    "item_id": id, "label": label, "place": place.map { $0 as Any } ?? NSNull(),
+                    "starts_at": start, "ends_at": end, "time_zone": "Asia/Shanghai",
+                    "source_ids": ["sample"], "fixed": fixed.map { $0 as Any } ?? NSNull()
+                ]
+            }
+            let days: [[String: Any]] = [
+                ["date": "2026-11-10", "items": [
+                    stop("arrival", label: language.text("Arrive in Beijing", "抵达北京"), place: "Beijing",
+                         start: "2026-11-10T14:00", end: "2026-11-10T15:00", fixed: false)
+                ]],
+                ["date": "2026-11-11", "items": [
+                    stop("meeting", label: language.text("Hotel lobby meeting", "酒店大堂集合"),
+                         place: language.text("Hotel lobby", "酒店大堂"),
+                         start: "2026-11-11T09:00", end: "2026-11-11T10:00", fixed: true),
+                    stop("gallery", label: language.text("Visit a gallery", "参观展馆"), place: nil,
+                         start: "2026-11-11T14:00", end: "2026-11-11T15:00", fixed: false)
+                ]],
+                ["date": "2026-11-12", "items": [
+                    stop("departure", label: language.text("Leave Beijing", "离开北京"), place: nil,
+                         start: "2026-11-12T16:00", end: "2026-11-12T17:00", fixed: nil)
+                ]]
+            ]
+            let event = try fixtureTurn.event("trip_candidate", payload: [
+                "card_id": "sample-trip-card", "version": 1, "status": "pending", "proposal_id": "sample-proposal",
+                "trip_id": NSNull(), "expected_trip_version": NSNull(), "candidate_hash": String(repeating: "a", count: 64),
+                "days": days
             ])
-        ]
+            guard case .trip(let candidate) = event.payload else { throw DemoV2Dialogue.Failure.invalidEvent }
+            let source = language.text("Fictional itinerary example", "虚构行程示例")
+            let projection = candidate.displayedDays(language: language, sourceLabels: ["sample": source])
+            reply(language.text("Here’s a three-day suggestion.", "这是一份三天行程建议。"), card: .itinerary(projection))
+        } catch {
+            reply(language.text("The local itinerary sample couldn’t be read.", "无法读取本地行程样例。"))
+        }
     }
 
     private func button(_ title: String, symbol: String, prominent: Bool = false, action: @escaping () -> Void) -> some View {
@@ -355,16 +501,14 @@ private struct PreviewTurn {
     let original: DemoV2Dialogue.OriginalMessage
     let receipt: DemoV2Dialogue.Receipt
 
-    init(text: String, language: ShellLanguage, conversation: String?, newConversation: Bool) throws {
-        let destination = newConversation ? .newConversation : conversation.map(DemoV2Dialogue.Destination.conversation) ?? .initial
-        let command = try DemoV2Dialogue.Message(id: UUID(), text: text, language: language, destination: destination)
-        let original = try DemoV2Dialogue.OriginalMessage(command)
+    init(original: DemoV2Dialogue.OriginalMessage) throws {
+        let command = original.command
         self.original = original
         let raw = try JSONSerialization.data(withJSONObject: [
             "version": "DEMO-dialogue-receipt.1", "request_id": UUID().uuidString,
             "receipt": [
                 "message_id": command.message_id,
-                "conversation_id": conversation ?? "demo-dialogue-" + UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased(),
+                "conversation_id": command.conversation_id ?? "demo-dialogue-" + UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased(),
                 "run_id": UUID().uuidString.lowercased(),
                 "input_sha256": original.sha256
             ]
@@ -375,7 +519,7 @@ private struct PreviewTurn {
         self.receipt = receipt
     }
 
-    func event(_ kind: String, payload: [String: String]) throws -> DemoV2Dialogue.Event {
+    func event(_ kind: String, payload: [String: Any]) throws -> DemoV2Dialogue.Event {
         let data = try JSONSerialization.data(withJSONObject: [
             "version": "DEMO-dialogue-event.1", "event_id": UUID().uuidString.lowercased(),
             "conversation_id": receipt.conversation_id, "message_id": receipt.message_id,

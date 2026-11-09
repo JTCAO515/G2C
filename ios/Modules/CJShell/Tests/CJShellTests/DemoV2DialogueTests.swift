@@ -59,6 +59,16 @@ struct DemoV2DialogueTests {
         ])
         guard case .source(let other) = unsafe.payload else { Issue.record("Expected a source"); return }
         #expect(other.openableURL == nil)
+        let verified = try event(kind: "source", payload: [
+            "source_id": "3", "label": "Original", "state": "verified", "url": "https://example.test/original"
+        ])
+        guard case .source(let valid) = verified.payload else { Issue.record("Expected a source"); return }
+        #expect(valid.openableURL?.absoluteString == "https://example.test/original")
+        let pending = try event(kind: "source", payload: [
+            "source_id": "4", "label": "Pending", "state": "pending", "url": "https://example.test/original"
+        ])
+        guard case .source(let unverified) = pending.payload else { Issue.record("Expected a source"); return }
+        #expect(unverified.openableURL == nil)
     }
 
     @Test func reconciliationUsesOriginalIDAndNeverAttachesTheWriteBody() throws {
@@ -129,6 +139,66 @@ struct DemoV2DialogueTests {
         guard case .dailyLimit = try failure(429, code: "DEMO_DAILY_LIMIT", outcome: "failed", recovery: "do_not_retry"),
               case .unknown = try failure(503, code: "MESSAGE_OUTCOME_UNKNOWN", outcome: "unknown", recovery: "reconcile_original")
         else { Issue.record("Daily limit and uncertain write must render distinct states"); return }
+    }
+
+    @Test func tripProjectionKeepsOriginalLocalTimesAndUnknownFacts() throws {
+        let parsed = try event(kind: "trip_candidate", payload: [
+            "card_id": "trip-card", "version": 1, "status": "pending",
+            "proposal_id": "proposal", "trip_id": NSNull(), "expected_trip_version": NSNull(),
+            "candidate_hash": String(repeating: "1", count: 64),
+            "days": [
+                ["date": "2026-11-10", "items": [
+                    ["item_id": "fixed", "label": "集合", "place": "酒店大堂", "starts_at": "2026-11-10T09:00",
+                     "ends_at": "2026-11-10T10:00", "time_zone": "Asia/Shanghai", "source_ids": ["needs"], "fixed": true]
+                ]],
+                ["date": NSNull(), "items": [
+                    ["item_id": "unknown", "label": "Walk", "place": NSNull(), "starts_at": NSNull(),
+                     "ends_at": NSNull(), "time_zone": NSNull(), "source_ids": [String](), "fixed": NSNull()]
+                ]]
+            ]
+        ])
+        guard case .trip(let card) = parsed.payload else { Issue.record("Expected an itinerary candidate"); return }
+        let fixed = try #require(card.days.first?.items.first)
+        let unknown = try #require(card.days.last?.items.first)
+        #expect(fixed.starts_at == "2026-11-10T09:00")
+        #expect(fixed.ends_at == "2026-11-10T10:00")
+        #expect(fixed.fixed == true && fixed.source_ids == ["needs"])
+        #expect(card.days.last?.date == nil)
+        #expect(unknown.place == nil && unknown.starts_at == nil && unknown.fixed == nil)
+        #expect(card.trip_id == nil && card.expected_trip_version == nil)
+    }
+
+    @Test func memoryCandidateKeepsProposalTextAndIdentity() throws {
+        let parsed = try event(kind: "memory_candidate", payload: [
+            "card_id": "memory-card", "version": 3, "status": "pending", "candidate_id": "original-candidate",
+            "kind": "preference", "text": " 每天两个景点 / two sights 🧳 "
+        ])
+        guard case .memory(let card) = parsed.payload else { Issue.record("Expected a memory candidate"); return }
+        #expect(card.text == " 每天两个景点 / two sights 🧳 ")
+        #expect(card.candidate_id == "original-candidate")
+        #expect(card.version == 3 && card.status == "pending")
+    }
+
+    @Test func explicitActionKeepsTheOriginalCardVersionAndRejectsOtherKinds() throws {
+        let original = try DemoV2Dialogue.OriginalMessage(.init(id: id, text: "Preference", language: .english, destination: .initial))
+        let receipt = DemoV2Dialogue.Receipt(message_id: original.command.message_id, conversation_id: conversation,
+                                             run_id: "run", input_sha256: original.sha256)
+        let card = try event(kind: "memory_candidate", messageID: receipt.message_id, payload: [
+            "card_id": "card", "version": 3, "status": "pending", "candidate_id": "candidate",
+            "kind": "preference", "text": "Slow pace"
+        ])
+        let action = try DemoV2Dialogue.Action(id: id, operation: .remember, event: card, receipt: receipt)
+        let json = try #require(JSONSerialization.jsonObject(with: JSONEncoder().encode(action)) as? [String: Any])
+        #expect(json["version"] as? String == "DEMO-dialogue-action.1")
+        #expect(json["action_id"] as? String == id.uuidString.lowercased())
+        #expect(json["conversation_id"] as? String == conversation)
+        #expect(json["card_id"] as? String == "card")
+        #expect(json["expected_version"] as? Int == 3)
+        #expect(json["operation"] as? String == "remember")
+        #expect(json.count == 6)
+        #expect(throws: DemoV2Dialogue.Failure.invalidAction) {
+            try DemoV2Dialogue.Action(id: id, operation: .acceptTrip, event: card, receipt: receipt)
+        }
     }
 
     private func event(kind: String, messageID: String = "message", runID: String = "run",
