@@ -297,7 +297,9 @@
     later(() => { t.remove(); cb(); }, ms);
   }
 
-  function render(step) {
+  // instant: final state now (reduced motion), not a timer that clear() would cancel.
+  function render(step, instant = false) {
+    const at = instant ? (fn) => fn() : later;
     let n;
     switch (step.t) {
       case "user":
@@ -305,7 +307,7 @@
         if (step.secret) {
           const m = el("span", "mask", esc(step.secret));
           n.appendChild(m);
-          later(() => { m.textContent = step.ph; m.classList.add("on"); }, 900);
+          at(() => { m.textContent = step.ph; m.classList.add("on"); }, 900);
         }
         break;
       case "hello":
@@ -320,17 +322,17 @@
         break;
       case "ask":
         n = el("div", "msg bot", `${esc(step.text)}<div class="actions"><span class="yes">${esc(step.yes)}</span><span>${esc(step.no)}</span></div>`);
-        later(() => { const y = n.querySelector(".yes"); if (y) y.classList.add("pressed"); }, 1300);
+        at(() => { const y = n.querySelector(".yes"); if (y) y.classList.add("pressed"); }, 1300);
         break;
       case "sys":
         n = el("div", "sys", `<span class="spin"></span><span class="txt">${step.text}</span>`);
-        later(() => { n.classList.add("done"); n.querySelector(".txt").innerHTML = step.done; }, 2400);
+        at(() => { n.classList.add("done"); n.querySelector(".txt").innerHTML = step.done; }, 2400);
         break;
     }
     chat.appendChild(n);
     scrollChat();
     // content inside may grow (plan rows); trim again after it settles
-    later(scrollChat, 700);
+    at(scrollChat, 700);
   }
 
   const inputBox = document.querySelector(".chat-input");
@@ -394,7 +396,7 @@
     renderSuggest();
     const steps = T[lang].chat;
 
-    if (reduced) { steps.slice(-6).forEach((s) => render(s)); clear(); return; }
+    if (reduced) { steps.slice(-6).forEach((s) => render(s, true)); return; }
 
     let i = 0;
     const next = () => {
