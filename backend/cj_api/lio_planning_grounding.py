@@ -18,28 +18,56 @@ PLAN_REQUEST = re.compile(
 )
 ISO = r'(?<!\d)\d{4}-\d{2}-\d{2}(?!\d)'
 SPAN = re.compile(rf'({ISO})\s*(?:to\b|through\b|到|至|–|—)\s*({ISO})', re.I)
-TRIP_DATES = re.compile(rf'^(?:(?:Travel|Trip dates?)\s*(?:from\s*)?|(?:日期|行程日期)\s*[:：]?\s*|'
-                        rf'(?:Beijing|北京)\s*[,，：:]\s*)?(?:{ISO})\s*(?:to\b|through\b|到|至|–|—)', re.I)
+SPAN_TAIL = re.compile(rf'\s*(?:for\s+(?:our party|(?:{NUMBER})\s+people)|[,，]\s*(?:{NUMBER})个人)?\s*', re.I)
+TRIP_DATES = re.compile(r'(?:(?:Travel|Trip dates?)\s*(?:from\s*)?|(?:日期|行程日期)\s*[:：]?\s*|'
+                        r'(?:Beijing|北京)\s*[,，：:]\s*(?:from\s*|从\s*)?)?'
+                        + SPAN.pattern + SPAN_TAIL.pattern, re.I)
 DATES_UNDECIDED = re.compile(
     r'\b(?:dates? (?:are|is) undecided|travel dates? (?:are|is) unknown)\b|'
     r'\b(?:suggest|recommend|choose|pick|help me decide)\b[^.?!]{0,32}\bdates?\b|'
     r'日期(?:未定|待定)|(?:推荐|建议|帮我选)[^。！？]{0,12}日期', re.I)
-DURATION = re.compile(rf'({NUMBER})\s*(?:-?\s*days?\b|天)', re.I)
 START = re.compile(r'\b(?:starting|beginning|from)\s+(tomorrow|today)\b|从?(明天|今天|后天)(?:开始|起)', re.I)
+RELATIVE_REPLY = re.compile(
+    rf'(?:Beijing\s*[,，:]\s*)?(?:(?:starting|beginning|from)\s+)?(tomorrow|today)'
+    rf'(?:\s*[,，]?\s+for\s+({NUMBER})\s+days?)?'
+    rf'|(?:北京\s*[,，：:]\s*)?从?(明天|今天|后天)(?:开始|起)?(?:\s*[,，]?\s*(?:玩|待)?({NUMBER})天)?', re.I,
+)
+EARLIER_DURATION = re.compile(rf'\b({NUMBER})\s*(?:-day\s+(?:trip|visit|itinerary)|days?\s+(?:in|to|visiting))\b'
+                              rf'|北京\s*({NUMBER})天(?:游|行程)|({NUMBER})天的?北京(?:游|行程)', re.I)
+ADJACENT_DURATION = re.compile(rf'\s*[,，]?\s*(?:for\s+({NUMBER})\s+days?\b|(?:玩|待)\s*({NUMBER})天)', re.I)
+DESTINATION_NEUTRAL = re.compile(r'^(?:please\s+)?(?:plan|make|build|create)\s+(?:a\s+|an\s+)?(?:trip|itinerary)'
+                                 r'|^(?:请|帮我|给我)?\s*规划(?:一趟|一次|一个|一份)?(?:旅行|行程)', re.I)
+WITHDRAWAL = re.compile(
+    r'^(?:never mind|forget it|cancel (?:the |this |my )?(?:trip|plan|itinerary))\b|'
+    r'\b(?:wait for my (?:approval|confirmation)|(?:only after|once) I (?:approve|confirm))\b|'
+    r'^(?:算了|不用规划了)(?:$|[，, ])|等我(?:确认|同意|批准)',
+    re.I,
+)
+SAVE_LANGUAGE = re.compile(r'\b(?:sav(?:e|es|ed|ing)|stor(?:e|es|ed|ing)|persist(?:s|ed|ing)?|'
+                           r'publish(?:es|ed|ing)?|writ(?:e|es|ing)\b[^.!?]{0,24}\bdown)\b'
+                           r'|保存|存入|存下|存到|记录|写入|发布', re.I)
+NONPERSISTENT_SAVE = re.compile(r'\bsav(?:e|ing)\s+(?:time|money)\b', re.I)
+SAVE_ASSENT = re.compile(
+    r'(?:please\s+)?(?:save|store)\s+(?:it|this|(?:this|the|my)\s+(?:trip|plan|itinerary))'
+    r'(?:\s+(?:to|in)\s+(?:my account|my trips|the trips tab))?'
+    r'|(?:请\s*)?(?:把(?:这份|这个|我的)?行程)?保存(?:这份行程|这个行程|行程|到行程页)?',
+    re.I,
+)
+SAVE_JOIN = re.compile(r'\s+(?:and|then)\s+|[，,]?\s*(?:并|然后)', re.I)
 PARTY = re.compile(rf'\bfor\s+({NUMBER})\s+(?:people|persons?)\b|({NUMBER})\s*(?:个人|人)', re.I)
 DESTINATION = re.compile(r'\b(?:itinerary|trip|days?)\s+(?:in|to)\s+Beijing\b|'
                          r'\bBeijing\s+(?:itinerary|trip|visit)\b|'
                          r'(?:去|到|在)北京|北京(?:\s*[，,：:]|[一二两三四五六七八九十\d]+天|游|行程)', re.I)
 PRIMARY_DESTINATION = re.compile(r'\b(?:itinerary|trip|days?)\s+(?:in|to)\s+([A-Za-z]+)\b', re.I)
 NAMED_BEIJING = re.compile(r'\bBeijing\s+(?:itinerary|trip|visit)\b', re.I)
-ZH_DIRECT = re.compile(r'(?:规划|安排|设计|做)\s*(?:一下|一个|一份)?\s*(?:去|到|在)?北京')
+ZH_DIRECT = re.compile(rf'(?:规划|安排|设计|做)\s*(?:一下|一个|一份)?\s*(?:(?:{NUMBER})天的?)?(?:去|到|在)?北京')
 ZH_RELATIVE = re.compile(r'(?:规划|安排|设计|做)\s*从?(?:明天|今天|后天)(?:开始|起)的?北京')
 TRIP_PARTY_GAP = rf'\s*(?:for\s+(?:{NUMBER})\s+people\s+)?'
 OTHER_DESTINATION = re.compile(r'\bfrom\s+Beijing\s+to\b|从北京(?:去|到)', re.I)
 CITY_REPLY = re.compile(r'^(?:Beijing|北京)(?=$|[,，：:]|\s+(?:\d{4}-|from\b|从|明天|今天))', re.I)
-FIXED = re.compile(r'已经定好|固定安排|已锁定|已预订|已订|不可更改|不能改|'
+FIXED = re.compile(r'已经定好|固定安排|已锁定|已预订|已订|已买票|已经买票|已预约|已经预约|不可更改|不能改|'
                    r'\b(?:is fixed|already set|already booked|have (?:actually )?booked|'
-                   r'has booked|is booked|must keep|cannot be changed)\b', re.I)
+                   r'has booked|is booked|must keep|cannot be changed|(?:we|i) have tickets? (?:to|for))\b', re.I)
 NEGATED = re.compile(
     r"\b(?:not|never|cancel|without|if|whether|maybe|might|suppose|assuming|in case|hypothetically)\b"
     r"|n['’]t\b|还没|没有|未订|不再|不要|取消|如果|可能|不确定|假如|假设|要是|倘若", re.I)
@@ -57,6 +85,50 @@ def _clauses(text):
 
 def _number(value):
     return int(value) if value.isascii() and value.isdigit() else NUMBERS[value.lower()]
+
+
+def _planning_without_assent(clause):
+    for separator in SAVE_JOIN.finditer(clause):
+        plan = clause[:separator.start()]
+        if (PLAN_REQUEST.match(plan) and not NEGATED.search(plan)
+                and not SAVE_LANGUAGE.search(NONPERSISTENT_SAVE.sub('', plan))
+                and SAVE_ASSENT.fullmatch(clause[separator.end():])):
+            return plan
+    return None
+
+
+def planning_withdrawn(text):
+    for clause in _clauses(text):
+        if WITHDRAWAL.search(clause):
+            return True
+        if not SAVE_LANGUAGE.search(NONPERSISTENT_SAVE.sub('', clause)):
+            continue
+        if not SAVE_ASSENT.fullmatch(clause) and _planning_without_assent(clause) is None:
+            return True
+    return False
+
+
+def _relative_span(word, duration, today):
+    offset = {'tomorrow':1,'明天':1,'后天':2,'today':0,'今天':0}[word.lower()]
+    first = today + timedelta(days=offset)
+    return first, first + timedelta(days=duration-1)
+
+
+def _declared_duration(turns):
+    durations = set()
+    for turn in turns:
+        for clause in _clauses(turn):
+            if not PLAN_REQUEST.match(clause) or NEGATED.search(clause):
+                continue
+            primary = PRIMARY_DESTINATION.search(clause)
+            for match in EARLIER_DURATION.finditer(clause):
+                if primary is None or match.start() <= primary.start():
+                    durations.add(_number(match[1] or match[2] or match[3]))
+            if primary is not None:
+                after_destination = ADJACENT_DURATION.match(clause, primary.end())
+                if after_destination is not None:
+                    durations.add(_number(after_destination[1] or after_destination[2]))
+    return durations.pop() if len(durations) == 1 else None
 
 
 def _known(value):
@@ -81,17 +153,50 @@ def stated_city(turns, city):
                                  for clause in _clauses(turns[-1]))
 
 
+def _compatible_turns(turns, city):
+    if city is None:
+        return turns
+    retained = []
+    waiting_for_city = False
+    for turn in turns:
+        compatible = []
+        for clause in _clauses(turn):
+            clause = _planning_without_assent(clause) or clause
+            named = stated_city((clause,), city)
+            if PLAN_REQUEST.match(clause) and not named and not DESTINATION_NEUTRAL.fullmatch(clause):
+                retained.clear()
+                compatible.clear()
+                waiting_for_city = True
+                continue
+            if named or (city in clause and CITY_REPLY.match(clause) and not NEGATED.search(clause)):
+                waiting_for_city = False
+            if not waiting_for_city:
+                compatible.append(clause)
+        if compatible:
+            retained.append('\n'.join(compatible))
+    return tuple(retained)
+
+
 def _timing_follows_destination(clause, position, *, absolute):
     primary = PRIMARY_DESTINATION.search(clause)
     destination = primary or NAMED_BEIJING.search(clause) or ZH_DIRECT.search(clause)
     if destination is None or destination.end() > position:
         return False
     gap = clause[destination.end():position]
-    expected = TRIP_PARTY_GAP + (r'(?:from|从|在)\s*' if absolute else '')
+    expected = TRIP_PARTY_GAP + (r'(?:from|从|在)\s*' if absolute
+                                else rf'(?:for\s+(?:{NUMBER})\s+days?\s+)?')
     return re.fullmatch(expected, gap, re.I) is not None
 
 
 def _day_span(turns, today):
+    if len(turns) > 1:
+        reply = RELATIVE_REPLY.fullmatch(turns[-1].strip().rstrip('.。！!'))
+        if reply is not None:
+            count = reply[2] or reply[4]
+            duration = _number(count) if count else _declared_duration(turns[:-1])
+            if not duration:
+                return None, None
+            return _relative_span(reply[1] or reply[3], duration, today)
     for turn in reversed(turns):
         if DATES_UNDECIDED.search(turn):
             return None, None
@@ -99,24 +204,26 @@ def _day_span(turns, today):
         for clause in _clauses(turn):
             if NEGATED.search(clause) or FIXED.search(clause):
                 continue
-            if not (PLAN_REQUEST.match(clause) or TRIP_DATES.match(clause)):
+            date_reply = TRIP_DATES.fullmatch(clause)
+            if not (PLAN_REQUEST.match(clause) or date_reply):
                 continue
             try:
                 explicit = tuple(SPAN.finditer(clause))
                 for match in explicit:
-                    scoped = (TRIP_DATES.match(clause) is not None
-                              or _timing_follows_destination(clause, match.start(), absolute=True))
+                    scoped = date_reply is not None or (
+                        _timing_follows_destination(clause, match.start(), absolute=True)
+                        and SPAN_TAIL.fullmatch(clause[match.end():]) is not None)
                     if scoped:
                         spans.add((date.fromisoformat(match[1]), date.fromisoformat(match[2])))
                 if explicit:
                     continue
-                start, duration = START.search(clause), DURATION.search(clause)
-                if start and duration and (_timing_follows_destination(clause, start.start(), absolute=False)
-                                           or ZH_RELATIVE.search(clause)):
-                    word = (start[1] or start[2]).lower()
-                    offset = {'tomorrow':1,'明天':1,'后天':2,'today':0,'今天':0}[word]
-                    first = today + timedelta(days=offset)
-                    spans.add((first, first + timedelta(days=_number(duration[1])-1)))
+                start = START.search(clause)
+                if start and (_timing_follows_destination(clause, start.start(), absolute=False)
+                              or ZH_RELATIVE.search(clause)):
+                    suffix = ADJACENT_DURATION.match(clause, start.end())
+                    duration = _number(suffix[1] or suffix[2]) if suffix else _declared_duration((clause,))
+                    if duration:
+                        spans.add(_relative_span(start[1] or start[2], duration, today))
             except ValueError:
                 return None, None
         if spans:
@@ -163,7 +270,7 @@ def _fixed_item(clause, first, zone, party, *, reply=''):
     end = _clock(end_h, end_m, end_meridiem or start_meridiem)
     if not start or not end or end <= start:
         return None
-    if re.search(r'全体|大家|\b(?:for our party|for everyone|for both of us)\b', details, re.I):
+    if re.search(r'全体|大家|\b(?:for our party|for everyone|for both of us|we have tickets?)\b', details, re.I):
         subject = 'party'
     elif re.search(r'本人|我参加|\b(?:for myself|for me only|only me)\b', details, re.I):
         subject = 'self'
@@ -178,6 +285,7 @@ def _fixed_item(clause, first, zone, party, *, reply=''):
 
 
 def grounded_fields(turns, city, today):
+    turns = _compatible_turns(turns, city)
     clauses = tuple(clause for turn in turns for clause in _clauses(turn))
     first, last = _day_span(turns, today)
     parties = {_number(match[1] or match[2]) for clause in clauses
