@@ -79,6 +79,14 @@ struct LioTurn: Identifiable {
     var itinerary: LioItinerary?
     var fromTimeline = false
     var id: Data { question.id }
+
+    var hasTimelineResult: Bool {
+        guard fromTimeline else { return false }
+        return switch status {
+        case .finished, .failed(.dailyLimit), .failed(.unavailable): true
+        default: false
+        }
+    }
 }
 
 @MainActor @Observable
@@ -158,11 +166,13 @@ final class LioConversation {
                 turns[index].status = .finished
                 return
             case .failed(let failure):
-                turns[index].status = .failed(failure)
+                if failure != .waiting || !turns[index].hasTimelineResult {
+                    turns[index].status = .failed(failure)
+                }
                 return
             }
         }
-        if let index = turns.firstIndex(where: { $0.id == question.id }) {
+        if let index = turns.firstIndex(where: { $0.id == question.id }), !turns[index].hasTimelineResult {
             turns[index].status = .failed(.waiting)
         }
     }
@@ -174,6 +184,10 @@ final class LioConversation {
         for await timeline in updates(waiting) {
             guard !Task.isCancelled, generation == sendGeneration, pending == nil else { return }
             display(timeline)
+            if !waiting.isEmpty && !timeline.turns.contains(where: \.isActive)
+                && waiting.allSatisfy({ id in turns.contains { $0.id == id && $0.hasTimelineResult } }) {
+                return
+            }
         }
     }
 
@@ -190,7 +204,18 @@ final class LioConversation {
             var firstInserted: Data?
             for row in page.turns.reversed() {
                 if let existing = turns.firstIndex(where: { $0.id == row.id }) {
-                    insertion = existing
+                    let turn = turns[existing]
+                    if turn.fromTimeline {
+                        if !turn.hasTimelineResult {
+                            turns[existing] = makeTurn(row, question: turn.question)
+                        }
+                        insertion = existing
+                    } else {
+                        turns.remove(at: existing)
+                        if existing < insertion { insertion -= 1 }
+                        turns.insert(makeTurn(row, question: turn.question), at: insertion)
+                        firstInserted = row.id
+                    }
                 } else {
                     turns.insert(makeTurn(row), at: insertion)
                     firstInserted = row.id

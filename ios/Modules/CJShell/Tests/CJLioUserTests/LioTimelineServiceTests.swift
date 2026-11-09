@@ -172,6 +172,41 @@ struct LioTimelineServiceTests {
         #expect(await fixture.sent.isEmpty)
     }
 
+    @Test func earlierPageReplacesAWaitingPlaceholderWithTheConfirmedAnswer() async throws {
+        let fixture = TimelineFixture(loseResponse: true)
+        await fixture.disconnect()
+        let actual = LioService.timeline(
+            send: { try await fixture.submit($0) }, read: { try await fixture.read($0, before: $1) },
+            pollInterval: .milliseconds(10), observationWindow: .milliseconds(2))
+        let (latest, continuation) = AsyncStream<LioTimelinePage>.makeStream()
+        let model = LioConversation(service: LioService(
+            updates: { _ in latest }, earlier: actual.earlier, events: actual.events
+        ))
+        model.send("在哪里坐地铁？", language: .chinese)
+        let question = try #require(model.pending)
+        await model.receive(question)
+        #expect(model.turns.last?.status == .failed(.waiting))
+
+        for index in 1...25 {
+            await fixture.restore(try LioTimelineWire.Send(messageID: "other-\(index)", text: "Metro?", locale: .english))
+        }
+        await fixture.reconnectAfterReads(0)
+        let page = try await fixture.read(nil, before: nil)
+        continuation.yield(LioTimelinePage(page))
+        continuation.finish()
+        await model.refreshTimeline()
+        #expect(model.nextBefore == "other-6")
+
+        _ = await model.loadEarlier()
+
+        #expect(model.turns.map { $0.question.messageID } == ["previous", question.messageID] + (1...25).map { "other-\($0)" })
+        let recovered = try #require(model.turns.first { $0.id == question.id })
+        #expect(recovered.question.language == .chinese)
+        #expect(recovered.status == .finished)
+        #expect(recovered.answer == "Take the metro.")
+        #expect(await fixture.sent.map(\.messageID) == [question.messageID])
+    }
+
     private func service(_ fixture: TimelineFixture) -> LioService {
         .timeline(send: { try await fixture.submit($0) }, read: { try await fixture.read($0, before: $1) },
                   pollInterval: .milliseconds(1), observationWindow: .seconds(2))
