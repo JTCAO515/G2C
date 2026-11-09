@@ -7,7 +7,6 @@ import hashlib
 import json
 import os
 from pathlib import Path
-from threading import Event
 import sys
 import tempfile
 import time
@@ -22,7 +21,7 @@ from cryptography.hazmat.primitives.serialization import Encoding,NoEncryption,P
 from fastapi.testclient import TestClient
 from cj_api.local_app import ISSUER,LocalDatabase,create_local_app,scope_for
 from cj_api.local_worker_context import checker_for
-from cj_agent.provider import FakeProvider
+from cj_agent.provider import FakeProvider, ProviderUnknown
 from cj_api.local_run_context import load_run_context
 from cj_memory.typed_runtime import TypedRuntimeConfiguration
 from cj_message.travel import ABI
@@ -90,166 +89,90 @@ def verify_upgrade(root, blueprint, target):
                 raise AssertionError('schema upgrade accepted a second application')
 
 
-def check_planning(api, headers, foreign, database, auth, memory, conninfo):
-    from cj_api.local_needs_preview import DIALOGUE_SYSTEM
-    from cj_draft.needs_publisher import SYSTEM
-    from cj_message.needs_binding import needs_scope_for
-    from cj_agent.draft import trip_scope_for
+def check_lio(api, database, auth, other, headers, conninfo):
+    from cj_message import demo_dialogue
+    from cj_message.domain import CommitUnknown
 
-    def known(value):
-        return dict(state='known',value=value)
+    messages = '/v1/lio/messages'
+    timeline = '/v1/lio/timeline'
+    scope = scope_for(ISSUER, other)
+    database.provision(scope)
+    owner = {**headers, 'Authorization': 'Bearer ' + dev_auth.token(auth, other, 300)}
+    assert api.get(timeline, headers=owner).json() == dict(
+        version='LIO-timeline.1', conversation_id=None, messages=[], next_before=None)
 
-    def event(day, clock=None):
-        return dict(date=known(day),time=known(clock) if clock else dict(state='missing'),
-                    timezone=known('Asia/Shanghai'),place=known('酒店大堂'))
+    def original(mid, text, locale, **extra):
+        return json.dumps(dict(version='LIO-message.1', message_id=mid, text=text,
+                               locale=locale, **extra), ensure_ascii=False).encode()
 
-    item=dict(item_id='lobby',kind='appointment',description='酒店大堂集合',applies_to=['party'],
-              locked=known(True),booking_status=dict(state='unknown'),
-              start=event('2026-11-10','09:00'),end=event('2026-11-10','10:00'))
-    extracted=dict(party_size=known(2),pace=known('轻松'),arrival=event('2026-11-10'),
-                   departure=event('2026-11-11'),fixed_items=[item])
+    raw = original('lio-first', '北京有哪些公园？', 'zh')
+    assert api.post('/v1/demo-dialogue/messages', content=raw, headers=owner).status_code == 400
+    receive = demo_dialogue._receive
 
-    class PlanModel(FakeProvider):
-        def stream(self,messages,system=None):
-            if system and system.startswith(DIALOGUE_SYSTEM):
-                self.calls+=1
-                assert len(messages)==1 and messages[0]['role']=='user'
-                text=messages[0]['content']
-                city='Beijing' if 'Beijing' in text else '北京'
-                yield json.dumps(dict(city=city,extraction=dict(version='NEEDS-extraction.1',
-                    fields=extracted,unresolved=[],long_term_requests=[])),ensure_ascii=False)
-            elif system and system.startswith(SYSTEM):
-                self.calls+=1
-                source=json.loads(messages[-1]['content'])
-                assert source['fields']['fixed_items']==[item]
-                schedule={edge:{key:item[edge][key] for key in ('date','time','timezone')}
-                          for edge in ('start','end')}
-                for value in schedule.values():
-                    value['utc_offset']=dict(state='unknown')
-                yield json.dumps(dict(version='TRIP-model-plan.1',title='Synthetic confirmed plan',items=[
-                    dict(id=item['item_id'],text=item['description'],verification='pending',evidence=[],
-                         schedule=schedule,fixed=item['locked'],source_category='user_provided',source_refs=[])],
-                    proposed_subjects={}),ensure_ascii=False)
-            else:
-                yield from super().stream(messages,system=system)
+    def lose_commit_ack(service, command):
+        receive(service, command)
+        raise CommitUnknown()
 
-    scope=scope_for(ISSUER,SUBJECT)
-    worker_model=PlanModel()
-    worker=run_worker._worker_for_scope(database,worker_model,auth,scope,checker_for(auth),
-        memory_configuration=memory,draft_profile='needs-structured.1',assembly_planning=True,demo_planning=True)
-    messages='/v1/demo-dialogue/messages'
-    actions='/v1/demo-dialogue/actions'
-    events='/v1/demo-dialogue/events'
+    with patch.object(demo_dialogue, '_receive', side_effect=lose_commit_ack):
+        first = api.post(messages, content=raw, headers=owner)
+    assert first.status_code == 200, first.text
+    assert api.post(messages, content=raw, headers=owner).json() == first.json()
+    assert api.get('/v1/demo-dialogue/messages', params=dict(message_id='lio-first'),
+                   headers=owner).json()['receipt'] is None
+    assert api.post(messages, content=raw+b' ', headers=owner).status_code == 409
+    assert set(first.json()) == {'version', 'message_id', 'conversation_id'}
+    conversation = first.json()['conversation_id']
+    assert api.get(timeline, params=dict(conversation_id=conversation), headers=headers).status_code == 400
+    assert api.get(timeline, headers=headers).json()['messages'] == []
+    assert api.post(messages, content=original('lio-owner-check','Hello','en',
+        conversation_id=conversation), headers=headers).status_code == 400
+    second = api.post(messages, content=original('lio-second','What should I see in Beijing?','en',
+        conversation_id=conversation), headers=owner)
+    assert second.status_code == 200 and second.json()['conversation_id'] == conversation
+    pending_response = api.get(timeline, headers=owner)
+    assert pending_response.status_code == 200, pending_response.text
+    pending = pending_response.json()['messages']
+    assert [entry['status'] for entry in pending] == ['sending', 'sending']
+    assert [entry['message_id'] for entry in pending] == ['lio-first', 'lio-second']
+    prompts = []
+    class LioModel(FakeProvider):
+        def stream(self, messages, system=None):
+            self.calls += 1
+            prompts.append(system)
+            if messages[-1]['content'] == 'Synthetic lost model outcome':
+                raise ProviderUnknown()
+            yield '北京有许多适合散步的公园。' if system.endswith('Reply in Chinese.') else 'Beijing has many parks for walking.'
 
-    def post(route, payload, code=200, bearer=headers):
-        response=api.post(route,content=json.dumps(payload,ensure_ascii=False).encode(),headers=bearer)
-        assert response.status_code==code,(response.status_code,response.text)
-        return response.json()
-
-    def send(mid,text,locale='en',**extra):
-        return post(messages,dict(version='DEMO-dialogue-message.2',message_id=mid,text=text,
-                                  locale=locale,**extra))['receipt']
-
-    def preview_card(receipt):
-        response=api.get(events,params={'message_id':receipt['message_id']},headers=headers)
-        assert response.status_code==200,response.text
-        data=[json.loads(line[6:]) for line in response.text.splitlines() if line.startswith('data: ')]
-        assert all(event['run_id']==receipt['run_id'] and event['event_id'].isdigit() for event in data)
-        return next(event['payload'] for event in data if event['kind']=='needs_card')
-
-    original=send('need-first','Could you plan a relaxed two-day Beijing visit for two people?')
-    result,=worker.process()
-    assert result.status=='completed' and result.proposal_id is None and worker_model.calls==1,result
-    card=preview_card(original)
-    assert card==dict(card_id=card['card_id'],version=1,status='pending',
-        dates=dict(start='2026-11-10',end='2026-11-11'),city='Beijing',party_size=2,pace='轻松',
-        fixed_items=[dict(item_id='lobby',label='酒店大堂集合',starts_at='2026-11-10T09:00',
-                          ends_at='2026-11-10T10:00',time_zone='Asia/Shanghai')])
+    model = LioModel()
+    worker = run_worker._worker_for_scope(database, model, auth, scope, checker_for(auth),
+                                         demo_planning=True)
+    assert [outcome.status for outcome in worker.process()] == ['completed', 'completed']
+    ready = api.get(timeline, headers=owner).json()['messages']
+    assert [entry['status'] for entry in ready] == ['completed', 'completed']
+    assert model.calls == 2 and all(entry['answer'] and entry['failure'] is None for entry in ready)
+    assert prompts[0].endswith('Reply in Chinese.') and prompts[1].endswith('Reply in English.')
+    assert all(prompt.startswith('You are Lio, a lion-dance mascot') for prompt in prompts)
+    assert all(set(entry) == {'message_id','text','answer','status','failure','sources','trip','memory'} for entry in ready)
+    assert api.get(timeline, params=dict(before='lio-second'), headers=owner).json()['messages'] == ready[:1]
+    assert api.get(timeline, params=dict(before='first'), headers=owner).status_code == 400
+    unknown = original('lio-unknown', 'Synthetic lost model outcome', 'en')
+    accepted = api.post(messages, content=unknown, headers=owner)
+    assert accepted.status_code == 200
+    assert [outcome.status for outcome in worker.process()] == ['unknown']
+    for _ in range(2):
+        failed = api.get(timeline, headers=owner).json()['messages'][-1]
+        assert (failed['status'], failed['failure']) == ('failed', 'unavailable')
+    assert api.post(messages, content=unknown, headers=owner).json() == accepted.json()
+    assert worker.process() == [] and model.calls == 3
     with psycopg.connect(**conninfo) as db:
-        assert db.execute('SELECT count(*) FROM cj_needs_record WHERE scope=%s AND needs_id=%s',
-            (needs_scope_for(scope),card['card_id'])).fetchone()==(0,)
-        assert db.execute('SELECT count(*) FROM cj_trip_proposal WHERE scope=%s',
-            (trip_scope_for(scope),)).fetchone()==(0,)
         try:
             with db.transaction():
-                migrate.down(db,migrate.load(),50)
+                migrate.down(db, migrate.load(), 50)
         except psycopg.errors.RaiseException as exc:
-            assert 'demo needs card originals must be preserved' in str(exc)
+            assert 'Lio dialogue originals must be preserved' in str(exc)
         else:
-            raise AssertionError('migration down erased original needs cards')
-    second=send('need-second','Please plan a Beijing trip for two people?',
-                conversation_id=original['conversation_id'])
-    assert worker.process()[0].status=='completed'
-    assert preview_card(second)['card_id']!=card['card_id']
-    post(messages,dict(version='DEMO-dialogue-message.2',message_id='ambiguous-yes',text='yes',
-                       locale='en',conversation_id=original['conversation_id']),409)
-    assert not worker.process()
-    action=dict(version='DEMO-dialogue-action.1',action_id='edit-people',
-        conversation_id=original['conversation_id'],card_id=card['card_id'],expected_version=1,
-        operation='correct_needs',changes=dict(party_size=known(3)))
-    corrected=post(actions,action)['receipt']
-    assert corrected['card']['party_size']==3 and corrected['version']==2 and corrected['run_id'] is None
-    assert post(actions,action)['receipt']==corrected
-    post(actions,dict(action,changes=dict(party_size=known(4))),409)
-    assert api.get(actions,params={'action_id':'edit-people'},headers=foreign).json()['receipt'] is None
-    post(actions,dict(action,action_id='foreign-correction'),503,bearer=foreign)
-    assert preview_card(original)==card
-    confirm={key:value for key,value in action.items() if key!='changes'}
-    confirm.update(action_id='needs-confirm',operation='confirm_needs')
-    post(actions,confirm,409)
-    confirm['expected_version']=2
-    from cj_message import demo_needs_cards
-    with patch.object(demo_needs_cards,'enqueue_dialogue',side_effect=RuntimeError('synthetic enqueue failure')):
-        post(actions,dict(confirm,action_id='fault-before-enqueue'),503)
-    with psycopg.connect(**conninfo) as db:
-        assert db.execute('SELECT count(*) FROM cj_needs_record WHERE scope=%s AND needs_id=%s',
-            (needs_scope_for(scope),card['card_id'])).fetchone()==(0,)
-    confirmed=post(actions,confirm)['receipt']
-    assert confirmed['card']['status']=='confirmed' and confirmed['version']==3
-    assert post(actions,confirm)['receipt']==confirmed
-    assert api.get(actions,params={'action_id':'needs-confirm'},headers=headers).json()['receipt']==confirmed
-    next_message=api.get(messages,params={'message_id':confirmed['message_id']},headers=headers).json()['receipt']
-    assert next_message['run_id']==confirmed['run_id'] and next_message['conversation_id']==original['conversation_id']
-    result,=worker.process()
-    assert result.status=='completed' and result.proposal_id and result.run_id==confirmed['run_id'],result
-    response=api.get(events,params={'message_id':next_message['message_id']},headers=headers)
-    assert response.status_code==200,response.text
-    rows=[json.loads(line[6:]) for line in response.text.splitlines() if line.startswith('data: ')]
-    trip_card=next(event['payload'] for event in rows if event['kind']=='trip_candidate')
-    assert trip_card['proposal_id']==result.proposal_id and trip_card['status']=='pending'
-    assert trip_card['days']==[dict(date='2026-11-10',items=[dict(item_id='lobby',label='酒店大堂集合',
-        place='酒店大堂',starts_at='2026-11-10T09:00',ends_at='2026-11-10T10:00',
-        time_zone='Asia/Shanghai',source_ids=trip_card['days'][0]['items'][0]['source_ids'],fixed=True)])]
-    with psycopg.connect(**conninfo) as db:
-        fields=db.execute('SELECT content FROM cj_needs_record WHERE scope=%s AND needs_id=%s',
-            (needs_scope_for(scope),card['card_id'])).fetchone()[0]
-        assert json.loads(fields)['party_size']==known(3)
-        assert db.execute('SELECT status FROM cj_trip_proposal WHERE scope=%s AND proposal_id=%s',
-            (trip_scope_for(scope),result.proposal_id)).fetchone()==('pending',)
-        assert db.execute('SELECT count(*) FROM cj_trip_record WHERE scope=%s',
-            (trip_scope_for(scope),)).fetchone()==(0,)
-
-    legacy=post(messages,dict(version='DEMO-dialogue-message.1',message_id='legacy-planning',
-        text='Could you plan a relaxed two-day Beijing visit for two people?',locale='en'))['receipt']
-    result,=worker.process()
-    assert result.status=='completed' and result.proposal_id is None and result.run_id==legacy['run_id']
-    legacy_events=api.get(events,params={'message_id':legacy['message_id']},headers=headers)
-    assert legacy_events.status_code==200 and 'needs_card' not in legacy_events.text
-
-    zh=send('need-zh','帮我们两个人规划从明天开始的北京两天游，节奏轻松。','zh',new_conversation=True)
-    assert worker.process()[0].status=='completed'
-    zh_card=preview_card(zh)
-    assert zh_card['city']=='北京'
-    spoken=send('spoken-confirm','可以','zh',conversation_id=zh['conversation_id'])
-    assert send('spoken-confirm','可以','zh',conversation_id=zh['conversation_id'])==spoken
-    result,=worker.process()
-    assert result.status=='completed' and result.proposal_id and result.run_id==spoken['run_id'],result
-    with psycopg.connect(**conninfo) as db:
-        assert db.execute('SELECT count(*) FROM cj_demo_needs_card WHERE scope=%s AND operation=%s',
-            (scope,'confirm_needs')).fetchone()==(2,)
-        assert db.execute('SELECT count(*) FROM cj_trip_record WHERE scope=%s',
-            (trip_scope_for(scope),)).fetchone()==(0,)
-    print('PASS signed needs card, correction/replay, failed enqueue rollback, typed and text confirmation, original planning outbox and protected pending Trip')
+            raise AssertionError('migration down erased Lio originals')
+    print('PASS signed Lio timeline, bilingual one-chat original replay and read-only ACK recovery')
 
 
 def exercise(root,conninfo):
@@ -368,43 +291,17 @@ def exercise(root,conninfo):
             model=FakeProvider()
             worker=run_worker._worker_for_scope(database,model,auth,scope_for(ISSUER,SUBJECT),
                 checker_for(auth),memory_configuration=memory)
-            from cj_api.demo_dialogue_events import _project
-            event_route='/v1/demo-dialogue/events'
-            event_params={'message_id':'first'}
-            accepted_only=Event()
-
-            def observe_queue(binding,state,after,**extra):
-                if state is None and binding.run_id==first['run_id']:
-                    accepted_only.set()
-                return _project(binding,state,after,**extra)
-
-            with patch('cj_api.demo_dialogue_events._project',side_effect=observe_queue),                    ThreadPoolExecutor(max_workers=1) as pool:
-                watch=pool.submit(api.get,event_route,params=event_params,headers=old)
-                assert accepted_only.wait(5), 'protected original outbox was not observed before the RUN'
-                outcomes=worker.process()
-                streamed=watch.result(timeout=15)
+            outcomes=worker.process()
             assert len(outcomes)==4 and all(outcome.status=='completed' for outcome in outcomes)
             assert model.calls==4
-            assert streamed.status_code==200
-            def frames(response):
-                return [json.loads(line[6:]) for line in response.text.splitlines() if line.startswith('data: ')]
-            actual=frames(streamed)
-            assert [entry['payload']['stage'] for entry in actual if entry['kind']=='status']==['queued','running','completed']
-            assert all(entry['run_id']==first['run_id'] and entry['message_id']==first['message_id'] for entry in actual)
-            assert ''.join(entry['payload']['text'] for entry in actual if entry['kind']=='answer_delta')
-            cursor=actual[1]['event_id']
-            assert frames(api.get(event_route,params=event_params,headers={**old,'Last-Event-ID':str(cursor)}))==actual[2:]
-            assert api.get(event_route,params=event_params,headers={**old,'Last-Event-ID':'99999'}).status_code==409
-            assert api.get(event_route,params=event_params,headers=foreign).status_code==503
             with psycopg.connect(**conninfo) as db:
                 assert db.execute('SELECT count(*) FROM cj_message_delivery WHERE scope=%s AND acknowledged',
                     (scope_for(ISSUER,SUBJECT),)).fetchone()==(4,)
-            check_planning(api,old,foreign,database,auth,memory,conninfo)
+            check_lio(api, database, auth, other, old, conninfo)
             assert login(CODE).status_code==200
             assert demo_accounts.manage(runtime,'revoke',SUBJECT,control,operation)=='revoked'
             assert login(CODE).status_code==401
             assert api.get(route,params={'message_id':'first'},headers=old).status_code==403
-            assert api.get(event_route,params={'message_id':'first'},headers=old).status_code==403
             assert api.post(route,content=dialogue('revoked'),headers=old).status_code==403
             assert api.put('/v1/conversations',params=params,headers=old).status_code==403
             assert demo_accounts.manage(runtime,'rotate',SUBJECT,control,operation,(digest(NEW_CODE),expiry))=='active'
@@ -421,12 +318,15 @@ def exercise(root,conninfo):
                     message_id='demo-'+str(number),text='Fictional trip',trip_id=None,creation_intent='none',
                     expected_generation=generation,expected_sequence=number-1,travel_context=None,needs_reference=None)).encode()
             receipts=[]
-            for number in range(1,31):
+            for number in range(1,37):
                 response=api.post('/v2/messages',content=command(number),headers=headers)
                 assert response.status_code==200,(number,response.status_code,response.text)
                 receipts.append(response.json()['receipt'])
             limited=api.post(route,content=dialogue('daily-limit'),headers=headers)
             assert limited.status_code==429 and limited.json()['error']['code']=='DEMO_DAILY_LIMIT',limited.text
+            lio_limited=api.post('/v1/lio/messages',content=dialogue('lio-limit').replace(
+                b'DEMO-dialogue-message.1', b'LIO-message.1'),headers=headers)
+            assert lio_limited.status_code==429 and lio_limited.json()=={'failure':'quota'}
             replay=api.post('/v2/messages',content=command(1),headers=headers)
             assert replay.status_code==200 and replay.json()['receipt']==receipts[0]
             scope=scope_for(ISSUER,SUBJECT)
@@ -447,7 +347,7 @@ def exercise(root,conninfo):
                     except psycopg.errors.InsufficientPrivilege:pass
                     else:raise AssertionError('runtime changed protected state: '+label)
                 db.execute("UPDATE public.cj_message_receipt SET demo_question_day=demo_question_day-1 WHERE scope=%s",(scope,))
-            assert api.post('/v2/messages',content=command(31),headers=headers).status_code==200
+            assert api.post('/v2/messages',content=command(37),headers=headers).status_code==200
             with psycopg.connect(**conninfo) as db:
                 assert db.execute("SELECT count(*) FROM public.cj_message_receipt WHERE scope=%s AND demo_question_day=(clock_timestamp() AT TIME ZONE 'Asia/Shanghai')::date",(scope,)).fetchone()==(1,)
     print('PASS signed zero-setup dialogue, concurrent original replay, default Travel, no downgrade, revoke, 40/day, migration data protection and Beijing day rollover')

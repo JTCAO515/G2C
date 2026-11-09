@@ -5,15 +5,15 @@ import json
 import re
 import uuid
 
-from .domain import Command, InputConflict, InvalidInput, Unavailable, unique_fields
+from .domain import Command, CommitUnknown, InputConflict, InvalidInput, Unavailable, unique_fields
 from .travel import ABI, Action, Service as TravelService
-from .travel_reference import OriginalTravelMessage, read_reference
 
 
 MESSAGE_VERSION = 'DEMO-dialogue-message.1'
-PLANNING_VERSION = 'DEMO-dialogue-message.2'
+LIO_VERSION = 'LIO-message.1'
 RECEIPT_VERSION = 'DEMO-dialogue-receipt.1'
 CHAT_PATTERN = re.compile(r'demo-dialogue-[0-9a-f]{32}')
+LIO_CHAT_PATTERN = re.compile(r'lio-dialogue-[0-9a-f]{32}')
 
 
 def message_id(value):
@@ -34,13 +34,15 @@ class DialogueMessage:
     protocol: str = MESSAGE_VERSION
 
     @classmethod
-    def parse(cls, raw):
+    def parse(cls, raw, *, lio=False):
         try:
             value = json.loads(raw.decode('utf-8'), object_pairs_hook=unique_fields)
             required = {'version', 'message_id', 'text', 'locale'}
+            version = LIO_VERSION if lio else MESSAGE_VERSION
+            optional = {'conversation_id'} if lio else {'conversation_id', 'new_conversation'}
             if (type(value) is not dict or not required <= value.keys()
-                    or value.keys() - required - {'conversation_id', 'new_conversation'}
-                    or value['version'] not in (MESSAGE_VERSION,PLANNING_VERSION) or value['locale'] not in ('zh', 'en')
+                    or value.keys() - required - optional
+                    or value['version'] != version or value['locale'] not in ('zh', 'en')
                     or ('new_conversation' in value and (value['new_conversation'] is not True
                                                        or 'conversation_id' in value))):
                 raise InvalidInput('invalid dialogue message fields')
@@ -48,7 +50,8 @@ class DialogueMessage:
             if type(text) is not str or not text.strip() or '\x00' in text or len(text.encode('utf-8')) > 12000:
                 raise InvalidInput('invalid dialogue text')
             conversation = value.get('conversation_id')
-            if 'conversation_id' in value and (type(conversation) is not str or not CHAT_PATTERN.fullmatch(conversation)):
+            pattern = LIO_CHAT_PATTERN if lio else CHAT_PATTERN
+            if 'conversation_id' in value and (type(conversation) is not str or not pattern.fullmatch(conversation)):
                 raise InvalidInput('invalid dialogue conversation identifier')
             return cls(message_id(value['message_id']), text, value['locale'], conversation,
                        value.get('new_conversation', False), hashlib.sha256(raw).hexdigest(), value['version'])
@@ -66,6 +69,10 @@ class DialogueReceipt:
 
 def _identity(scope, purpose):
     return hashlib.sha256(f'{purpose}\x00{scope}'.encode()).hexdigest()[:32]
+
+
+def lio_conversation(scope):
+    return 'lio-dialogue-' + _identity(scope, 'lio-default')
 
 
 def _json(value):
@@ -101,7 +108,23 @@ def _travel(tx, repository):
 
 
 def receive(service, raw):
-    command = DialogueMessage.parse(raw)
+    return _receive(service, DialogueMessage.parse(raw))
+
+
+def receive_lio(service, raw):
+    command = DialogueMessage.parse(raw, lio=True)
+    try:
+        return _receive(service, command)
+    except CommitUnknown:
+        original = query(service, command.id, lio=True)
+        if original is None:
+            raise
+        if original.input_sha256 != command.input_sha256:
+            raise InputConflict()
+        return original
+
+
+def _receive(service, command):
     with service.repository.transaction() as tx:
         tx.lock_scope()
         stored = tx.find(command.id)
@@ -113,7 +136,12 @@ def receive(service, raw):
             return _receipt(stored, digest)
 
         conversation = command.conversation_id
-        if conversation is None:
+        if command.protocol == LIO_VERSION:
+            default = lio_conversation(tx.scope)
+            if conversation is not None and conversation != default:
+                raise InvalidInput('invalid Lio conversation identifier')
+            conversation = default
+        elif conversation is None:
             purpose = 'new:' + command.id if command.new_conversation else 'default:' + command.locale
             conversation = 'demo-dialogue-' + _identity(tx.scope, purpose)
         chat = tx.active_head(conversation)
@@ -130,44 +158,24 @@ def receive(service, raw):
             if original is None:
                 raise Unavailable('dialogue conversation unavailable')
 
-        if (command.protocol == PLANNING_VERSION and not command.new_conversation
-                and command.text.strip().casefold() in ('可以', 'yes')):
-            from .demo_needs_cards import confirm_text
-            confirmed = confirm_text(service, tx, command, conversation, chat)
-            if confirmed is not None:
-                return confirmed
-        return enqueue_dialogue(service, tx, command, conversation, chat)
+        tx.cur.execute("SELECT set_config('cj.message_context_abi',%s,true)", (ABI,))
+        selection = _travel(tx, service.repository)
+        inner = Command.parse_v2(_json(dict(version='MESSAGE-send.2', conversation_id=conversation,
+            message_id=command.id, text=command.text, trip_id=None, creation_intent='none',
+            expected_generation=chat.generation, expected_sequence=chat.last_sequence,
+            travel_context=selection, needs_reference=None)))
+        receipt = service.accept_new(tx, inner, travel=True, dialogue=command)
+        return DialogueReceipt(receipt.message_id, receipt.conversation_id, receipt.run_id, command.input_sha256)
 
 
-def enqueue_dialogue(service, tx, command, conversation, chat, *, needs=None):
-    tx.cur.execute("SELECT set_config('cj.message_context_abi',%s,true)", (ABI,))
-    selection = _travel(tx, service.repository)
-    inner = Command.parse_v2(_json(dict(version='MESSAGE-send.2', conversation_id=conversation,
-        message_id=command.id, text=command.text, trip_id=None,
-        creation_intent='consider_trip' if needs is not None else 'none',
-        expected_generation=chat.generation, expected_sequence=chat.last_sequence,
-        travel_context=selection, needs_reference=needs)))
-    receipt = service.accept_new(tx, inner, travel=True, dialogue=command)
-    return DialogueReceipt(receipt.message_id, receipt.conversation_id, receipt.run_id, command.input_sha256)
-
-
-def query(service, mid):
+def query(service, mid, *, lio=False):
     with service.repository.transaction() as tx:
         tx.lock_scope()
         digest = _original_digest(tx, mid)
         if digest is None:
             return None
         stored = tx.find(mid)
+        if (LIO_CHAT_PATTERN.fullmatch(stored.receipt.conversation_id) is not None) != lio:
+            return None
         tx.chat(stored.receipt.conversation_id, stored.receipt.generation)
         return _receipt(stored, digest)
-
-
-def read_source(service, mid):
-    """Resolve only an original that entered through the additive dialogue route."""
-    with service.repository.transaction() as tx:
-        tx.lock_scope()
-        if _original_digest(tx, mid) is None:
-            return None
-        stored = tx.find(mid)
-        tx.chat(stored.receipt.conversation_id, stored.receipt.generation)
-        return OriginalTravelMessage(stored, read_reference(tx, stored))

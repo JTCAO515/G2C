@@ -102,7 +102,7 @@ class Outcome:
 
 
 class RunWorker:
-    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None, memory=None, message_context=None, tools=None, edit_publisher=None,edit_results=False,place_sources=None,memory_history=False,history_adapter=None,execution_lease=nullcontext,owned_transaction_lease=None,dialogue_preview=None):
+    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None, memory=None, message_context=None, tools=None, edit_publisher=None,edit_results=False,place_sources=None,memory_history=False,history_adapter=None,execution_lease=nullcontext,owned_transaction_lease=None,lio_locale=None):
         """`messages`: cj_message.domain.Service and `runs`: cj_run.core.Service, both bound to `scope`.
 
         `drafts`: optional cj_agent.draft.DraftPublisher for this user's TRIP scope; messages
@@ -124,7 +124,7 @@ class RunWorker:
         self.edit_results=edit_results
         self.tools=tools
         self.place_sources=place_sources
-        self.dialogue_preview=dialogue_preview
+        self.lio_locale = lio_locale
 
     def process(self, limit=20):
         outcomes = []
@@ -144,13 +144,13 @@ class RunWorker:
         return Binding(self.scope, receipt.conversation_id, receipt.generation,
                        receipt.message_id, receipt.run_id, receipt.sequence)
 
-    def _event(self, binding, state, kind, value='', *, mutation=None):
+    def _event(self, binding, state, kind, value=''):
         sequence = state.sequence + 1
         try:
             event = Event(binding, sequence, f'{binding.run_id}:{sequence}', kind, value)
             memory_effect=self.memory_run is not None and kind in {'text_delta','completed','draft_outcome'}
             travel_effect=self.message_context is not None and kind in {'started','text_delta','completed','effect_committed'}
-            if not memory_effect and not travel_effect and mutation is None:
+            if not memory_effect and not travel_effect:
                 return self.runs.apply(event)
             with ExitStack() as leases:
                 with self.runs.repository.transaction() as tx:
@@ -162,7 +162,6 @@ class RunWorker:
                         raise Conflict('state changed during memory publication')
                     if context is not None:context.check(binding)
                     if check_memory is not None:check_memory()
-                    if mutation is not None:mutation(tx.cur)
                     tx.put(updated)
             return updated
         except Conflict:
@@ -257,16 +256,17 @@ class RunWorker:
             raise
         return state, result
 
-    def _stream(self, binding, messages, system=None):
+    def _stream(self, binding, messages, system=None, *, answer=False):
         self._model_history(binding,messages,system)
+        draft = system is not None and not answer
         prepared = None
         if self.budget_exit is not None:
-            prepared = self.budget_exit.prepare(self.runs,binding,'draft' if system is not None else 'answer',
+            prepared = self.budget_exit.prepare(self.runs,binding,'draft' if draft else 'answer',
                                                 messages,system,self.provider)
         def source():
             return (self.budget_exit.stream(prepared) if prepared is not None else
                     self.provider.stream(messages) if system is None else self.provider.stream(messages,system=system))
-        yield from self._stream_source(binding,source,draft=system is not None)
+        yield from self._stream_source(binding,source,draft=draft)
 
     def _registered_stream(self,binding,key,registration,argument):
         if self.memory_history and registration in ('model.answer','model.draft'):
@@ -380,7 +380,7 @@ class RunWorker:
                               memory=self.memory,memory_history=self.memory_history,history_adapter=self.history_adapter,
                               message_context=self.message_context,
                               tools=self.tools,edit_publisher=self.edit_publisher,edit_results=self.edit_results,place_sources=self.place_sources,
-                              dialogue_preview=self.dialogue_preview,
+                              lio_locale=self.lio_locale,
                               runs=Service(OwnedRepository(), runs.valid))
             if self.edit_publisher is not None:
                 with self.message_context.worker_repository(owned.runs.repository):
@@ -453,17 +453,23 @@ class RunWorker:
         proposal_id = None
         buffer = ''
         try:
-            if self.dialogue_preview is not None and command['creation_intent']=='none':
-                locale = self.dialogue_preview.locale(binding,text)
-                if locale is not None:
-                    state = self.dialogue_preview.execute(self,binding,state,text,locale)
-                    return self._finish(receipt,state)
+            from cj_message.lio_context import LioCitation, answer_prompt
+
             inputs = ([{'role': 'user', 'content': text}] if self.memory_run is None
                       else self.memory_run.messages(text))
             if self.message_context is not None:
                 inputs=self.message_context.answer_messages(binding,inputs)
-            chunks=self._stream(binding,inputs) if self.tools is None else self.tools.answer(self,binding,inputs)
+            locale = self.lio_locale(binding) if self.lio_locale is not None else None
+            if locale is None:
+                chunks = self._stream(binding, inputs) if self.tools is None else self.tools.answer(self, binding, inputs)
+            elif self.tools is None:
+                chunks = self._stream(binding, inputs, system=answer_prompt(locale), answer=True)
+            else:
+                chunks = self.tools.answer(self, binding, inputs, lio_locale=locale)
             for chunk in chunks:
+                if isinstance(chunk, LioCitation):
+                    state = self._event(binding, state, 'effect_committed', chunk.effect())
+                    continue
                 buffer += chunk
                 if len(buffer) >= FLUSH_CHARS:
                     state, buffer = self._event(binding, state, 'text_delta', buffer), ''

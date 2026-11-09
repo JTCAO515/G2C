@@ -151,8 +151,8 @@ class Transaction:
         if dialogue is not None:
             columns += ', demo_dialogue_input_sha256, demo_dialogue_locale'
             values += (dialogue.input_sha256, dialogue.locale)
-            from .demo_dialogue import PLANNING_VERSION
-            if dialogue.protocol == PLANNING_VERSION:
+            from .demo_dialogue import LIO_VERSION
+            if dialogue.protocol == LIO_VERSION:
                 columns += ', demo_dialogue_protocol'
                 values += (dialogue.protocol,)
         placeholders = ','.join(['%s'] * len(values))

@@ -1,5 +1,5 @@
 {
-  "version": "1.28.0",
+  "version": "1.27.0",
   "stores": [
     {
       "id": "business",
@@ -18,7 +18,6 @@
             "cj_message_scope",
             "cj_message_chat",
             "cj_message_receipt",
-            "cj_demo_needs_card",
             "cj_message_delivery",
             "cj_message_draft",
             "cj_travel_context",
@@ -43,7 +42,6 @@
           "sensitive_fields": [
             "raw_input bytes",
             "draft original_utf8",
-            "Demo needs card original fields, corrections and action digests; cascades from original MESSAGE on account erasure",
             "conversation/message/run IDs and receipts",
             "delivery state/history metadata",
             "travel_reference_version and immutable owner/message/run/generation/sequence/raw-input hash binding",

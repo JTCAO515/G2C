@@ -8,43 +8,6 @@ from .domain import (Command, CommitUnknown, Conflict, Denied, Receipt, Revision
 logger = logging.getLogger(__name__)
 
 
-def _receipt(cur, scope, action_id):
-    cur.execute('SELECT action_id,needs_id,version,original_input FROM cj_needs_revision WHERE scope=%s AND operation=%s AND action_id=%s',
-                (scope, 'manual_patch', action_id))
-    row = cur.fetchone()
-    return (Receipt(*row[:3]), bytes(row[3])) if row else None
-
-
-def _snapshot(cur, scope, needs_id):
-    cur.execute('SELECT needs_id,version,content FROM cj_needs_record WHERE scope=%s AND needs_id=%s', (scope, needs_id))
-    row = cur.fetchone()
-    return Snapshot(row[0], row[1], bytes(row[2])) if row else None
-
-
-def apply_on_cursor(cur, scope, command):
-    """Canonical manual revision writer, after the caller's NEEDS fence."""
-    obj = command.data
-    old = _receipt(cur, scope, command.action_id)
-    if old:
-        if old[1] != command.raw: raise Conflict('original action bytes differ')
-        return old[0]
-    current = _snapshot(cur, scope, obj['needs_id'])
-    version = current.version if current else 0
-    if version != obj['expected_version']: raise Conflict('needs version changed')
-    fields = current.fields if current else {}
-    fields.update(obj['changes'])
-    validate_fields(fields, complete=True)
-    content = json.dumps(fields, ensure_ascii=False, separators=(',', ':'), allow_nan=False).encode('utf-8')
-    # Bound cumulative growth as well as each command.
-    if len(content) > 131072: raise ValueError('needs record too large')
-    version += 1
-    cur.execute('INSERT INTO cj_needs_record VALUES (%s,%s,%s,%s) ON CONFLICT(scope,needs_id) DO UPDATE SET version=EXCLUDED.version,content=EXCLUDED.content',
-                (scope, obj['needs_id'], version, content))
-    cur.execute('INSERT INTO cj_needs_revision(scope,needs_id,version,action_id,operation,original_input,content,source_kind) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)',
-                (scope, obj['needs_id'], version, command.action_id, 'manual_patch', command.raw, content, 'user_provided'))
-    return Receipt(command.action_id, obj['needs_id'], version)
-
-
 class Repository:
     def __init__(self, connect, scope, guard, *, strict_close=False):
         self.connect, self.scope, self.guard = connect, identifier(scope), guard
@@ -101,15 +64,39 @@ class Repository:
         except BaseException: pass
 
     def _receipt(self, cur, action_id):
-        return _receipt(cur, self.scope, action_id)
+        cur.execute('SELECT action_id,needs_id,version,original_input FROM cj_needs_revision WHERE scope=%s AND operation=%s AND action_id=%s',
+                    (self.scope, 'manual_patch', action_id))
+        row = cur.fetchone()
+        return (Receipt(*row[:3]), bytes(row[3])) if row else None
 
     def _snapshot(self, cur, needs_id):
-        return _snapshot(cur, self.scope, needs_id)
+        cur.execute('SELECT needs_id,version,content FROM cj_needs_record WHERE scope=%s AND needs_id=%s', (self.scope, needs_id))
+        row = cur.fetchone()
+        return Snapshot(row[0], row[1], bytes(row[2])) if row else None
 
     def act(self, command):
         if type(command) is not Command: raise ValueError('validated command required')
+        obj = command.data
         with self.transaction() as cur:
-            return apply_on_cursor(cur, self.scope, command)
+            old = self._receipt(cur, command.action_id)
+            if old:
+                if old[1] != command.raw: raise Conflict('original action bytes differ')
+                return old[0]
+            current = self._snapshot(cur, obj['needs_id'])
+            version = current.version if current else 0
+            if version != obj['expected_version']: raise Conflict('needs version changed')
+            fields = current.fields if current else {}
+            fields.update(obj['changes'])
+            validate_fields(fields, complete=True)
+            content = json.dumps(fields, ensure_ascii=False, separators=(',', ':'), allow_nan=False).encode('utf-8')
+            # Bound cumulative growth as well as each command.
+            if len(content) > 131072: raise ValueError('needs record too large')
+            version += 1
+            cur.execute('INSERT INTO cj_needs_record VALUES (%s,%s,%s,%s) ON CONFLICT(scope,needs_id) DO UPDATE SET version=EXCLUDED.version,content=EXCLUDED.content',
+                        (self.scope, obj['needs_id'], version, content))
+            cur.execute('INSERT INTO cj_needs_revision(scope,needs_id,version,action_id,operation,original_input,content,source_kind) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)',
+                        (self.scope, obj['needs_id'], version, command.action_id, 'manual_patch', command.raw, content, 'user_provided'))
+            return Receipt(command.action_id, obj['needs_id'], version)
 
     def query_action(self, action_id):
         with self.transaction() as cur:

@@ -6,7 +6,7 @@ import hashlib
 import json
 import logging
 from psycopg.errors import LockNotAvailable
-from .core import Binding, State, Event, Cursor, Conflict, Denied, ResyncRequired, WorkerOwnershipLost, advance, page
+from .core import Binding, State, Event, Cursor, Conflict, Denied, RecoveryExpired, ResyncRequired, WorkerOwnershipLost, advance, page
 from .usage_binding import UsageBinding
 
 
@@ -278,7 +278,7 @@ class Transaction:
         if row[:4] != (binding.conversation_id, binding.generation, binding.message_id, binding.message_sequence):
             raise Conflict('binding changed')
         if row[6] is not True:
-            raise ResyncRequired('run recovery expired; not absent')
+            raise RecoveryExpired('run recovery expired; not absent')
         self.cur.execute('SELECT sequence,event_id,kind,value FROM cj_run_event WHERE scope=%s AND run_id=%s ORDER BY sequence',
                          (self.scope, binding.run_id))
         events=self.cur.fetchall()

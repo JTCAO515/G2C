@@ -207,7 +207,7 @@ class RealTools:
         self.names=allowed_native
         self.native_tools=[t for t in TOOLS if t['function']['name'] in allowed_native]
         model=Registration('model',self._model_input)
-        self.registrations=MappingProxyType({'model.answer':model,'model.draft':model,'model.tool_turn':model,'model.needs_preview':model,
+        self.registrations=MappingProxyType({'model.answer':model,'model.draft':model,'model.tool_turn':model,
             **{'tool.'+name:Registration('tool',lambda argument,name=name:self._tool_input(name,argument)) for name in {NATIVE_REGISTRATION[n] for n in allowed_native}}})
 
     def _model_input(self,argument):
@@ -296,10 +296,16 @@ class RealTools:
             return invoke
         return InvocationInput(original,None,bind,_receipt(metadata))
 
-    def answer(self,worker,binding,messages):
+    def answer(self,worker,binding,messages,*,lio_locale=None):
         self.services.require_scope(binding.scope)
         messages=list(messages);seen=set()
-        chinese=any('一'<=c<='鿿' for c in messages[-1]['content'])
+        system = TOOL_SYSTEM
+        if lio_locale is None:
+            chinese=any('一'<=c<='鿿' for c in messages[-1]['content'])
+        else:
+            from cj_message.lio_context import LioCitation, answer_prompt
+            chinese = lio_locale == 'zh'
+            system += ' ' + answer_prompt(lio_locale)
         if binding.scope in self.buffered_streaming_scopes:profile=M4_NATIVE_TURN_BUFFERED
         elif binding.scope in self.streaming_scopes:profile=M4_NATIVE_TURN_STREAM
         else:profile=M4_NATIVE_TURN_PROFILE_V2
@@ -309,10 +315,10 @@ class RealTools:
         controlled=self.controlled_probe is not None and (binding.scope,binding.message_id)==self.controlled_probe
         turns=5 if controlled else 8
         for round_index in range(turns):
-            worker._model_history(binding,messages,TOOL_SYSTEM)
+            worker._model_history(binding,messages,system)
             native_reply={}
             chunks=worker._registered_stream(binding,'model.tool_turn.'+str(round_index),'model.tool_turn',
-                ModelInput(messages,TOOL_SYSTEM,worker.provider,native_reply,
+                ModelInput(messages,system,worker.provider,native_reply,
                     final_answer=round_index==turns-1 or len(seen)==MAX_TOOLS_PER_RUN,turn_profile=profile))
             if incremental:
                 raw=None
@@ -346,7 +352,16 @@ class RealTools:
                 if name=='place' and data.get('provider_code')=='10012':
                     raise ProviderFailed('place service permission denied; operator action required')
                 source=data.get('source',{}).get('endpoint') if name=='place' else data['source_url']
-                if source:yield ('来源：' if chinese else 'Source: ')+source+'\n'
+                if source and lio_locale is None:
+                    yield ('来源：' if chinese else 'Source: ')+source+'\n'
+                elif source:
+                    title_zh, title_en = {
+                        'place': ('高德地图', 'Amap'),
+                        'weather': ('高德天气', 'Amap Weather'),
+                        'fact': ('国家移民管理局', 'National Immigration Administration'),
+                    }[name]
+                    observed_at = data['source']['received_at'] if name == 'place' else data['retrieved_at']
+                    yield LioCitation(key, title_zh if chinese else title_en, source, observed_at)
                 results.append(dict(index=index,name=call.name,tool=name,result=data))
             if incremental:
                 for supplier_call,result in zip(assistant['tool_calls'],results,strict=True):

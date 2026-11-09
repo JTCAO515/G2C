@@ -405,11 +405,11 @@
     },
     {
       "version": 51,
-      "name": "demo_needs_cards",
-      "file": "backend/migrations/0051_demo_needs_cards.sql",
-      "down": "backend/migrations/down/0051_demo_needs_cards.down.sql",
-      "sha256": "4d22d705074f03aa8e6dce4f2b121d8931b766f57b0631069db9b820a8e9a4c5",
-      "down_sha256": "2d1967999ef0f519f6f17a074af0012e5757250fc36d1381d399924822728a05"
+      "name": "lio_dialogue",
+      "file": "backend/migrations/0051_lio_dialogue.sql",
+      "down": "backend/migrations/down/0051_lio_dialogue.down.sql",
+      "sha256": "3d69b2c34147749ef103a649397747a1eb018686916ac6ce5102827481472520",
+      "down_sha256": "d14320f39ff244e10eef4dbd249822af30babcbbef10d5115fad0cf144f86467"
     }
   ]
 }

@@ -12,6 +12,10 @@ class ResyncRequired(Exception):
     pass
 
 
+class RecoveryExpired(ResyncRequired):
+    """The original RUN is retained past its recovery window."""
+
+
 class Denied(Exception):
     pass
 

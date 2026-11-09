@@ -92,20 +92,12 @@ class HistoryReadContext:
         self._check()
         return result
 
-    def query_dialogue_message(self, message_id):
-        from .demo_dialogue import read_source
+    def lio_timeline(self, conversation_id, before):
+        from .lio_timeline import read
         self._check()
-        result = read_source(self._service, message_id)
+        result = read(self._service, conversation_id, before)
         self._check()
         return result
-
-    def query_dialogue_needs(self, message_id, run_id):
-        from .demo_needs_cards import read_initial
-        self._check()
-        with self._service.repository.transaction() as tx:
-            value=read_initial(tx,message_id,run_id)
-        self._check()
-        return value
 
     def query_edit_message(self,message_id,*,require_active=True):
         self._check()
@@ -333,17 +325,13 @@ class Boundary:
         from .demo_dialogue import receive
         return receive(self._service(token), raw)
 
+    def receive_lio(self, token, raw):
+        from .demo_dialogue import receive_lio
+        return receive_lio(self._service(token), raw)
+
     def query_dialogue(self, token, message_id):
         from .demo_dialogue import query
         return query(self._service(token), message_id)
-
-    def act_dialogue(self, token, raw):
-        from .demo_needs_cards import act
-        return act(self._service(token), raw)
-
-    def query_dialogue_action(self, token, action_id):
-        from .demo_needs_cards import query
-        return query(self._service(token), action_id)
 
     def send_status_v2(self, token, conversation_id, message_id=None):
         return self._service(token).send_status_v2(conversation_id,message_id)
