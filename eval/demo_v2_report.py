@@ -10,6 +10,12 @@ from fees import usage
 
 
 SCENES = tuple(f'{prefix}{index:02d}' for prefix in ('Z', 'E') for index in range(1, 6))
+LIO_PHASE_SCENES = {
+    1: ('Z01', 'Z02', 'E01', 'E02'),
+    2: ('Z03', 'E03'),
+    3: ('Z04', 'Z05', 'E04', 'E05'),
+    4: SCENES,
+}
 OUTCOMES = ('PASS', 'FAIL', 'UNKNOWN', 'UNRUN')
 INDEPENDENT_VERDICTS = ('program', 'human')
 CLOCKS = ('first_server_progress_seconds', 'first_running_or_tool_seconds',
@@ -47,14 +53,15 @@ def _fees(attempts, meter_complete):
                 unresolved=value['unknown_intents'], actual_billed_cny='UNKNOWN')
 
 
-def summarize(attempts):
+def summarize(attempts, *, lio_phase=None):
     """Input rows identify an original attempt, its runs and its attributed Meter.
 
     A null meter is missing evidence; an empty meter is a verified zero-call set.
     Each scene's first attempt counts in the fixed denominator. Further attempts
     retain their own verdict, timings and costs without replacing the first.
     """
-    by_scene = {scene: [] for scene in SCENES}
+    planned_scenes = SCENES if lio_phase is None else LIO_PHASE_SCENES[lio_phase]
+    by_scene = {scene: [] for scene in planned_scenes}
     all_runs, all_actions, all_meters = set(), set(), set()
     all_rows = []
     for source in attempts:
@@ -109,15 +116,26 @@ def summarize(attempts):
     states = {scene: rows[0]['verdict'] if rows else 'UNRUN' for scene, rows in by_scene.items()}
     languages = {}
     for language, prefix in (('zh', 'Z'), ('en', 'E')):
-        counts = Counter(states[scene] for scene in SCENES if scene.startswith(prefix))
-        languages[language] = dict(planned=5, outcomes={key: counts[key] for key in OUTCOMES},
-                                   success_rate=None if counts['UNRUN'] == 5 else counts['PASS'] / 5)
-    return dict(scenes=by_scene, first_attempt_outcomes=states, languages=languages,
-                fees=_fees(all_rows, bool(attempts) and all(row['meter'] is not None for row in attempts)))
+        counts = Counter(states[scene] for scene in states if scene.startswith(prefix))
+        planned = sum(counts.values())
+        group = dict(planned=planned, outcomes={key: counts[key] for key in OUTCOMES},
+                     success_rate=None if counts['UNRUN'] == planned else counts['PASS'] / planned)
+        if lio_phase is not None:
+            latest = Counter((rows[-1]['verdict'] if rows else 'UNRUN')
+                             for scene, rows in by_scene.items() if scene.startswith(prefix))
+            group['latest_outcomes'] = {key: latest[key] for key in OUTCOMES}
+            group['latest_success_rate'] = None if latest['UNRUN'] == planned else latest['PASS'] / planned
+        languages[language] = group
+    report = dict(scenes=by_scene, first_attempt_outcomes=states, languages=languages,
+                  fees=_fees(all_rows, bool(attempts) and all(row['meter'] is not None for row in attempts)))
+    if lio_phase is not None:
+        report['lio_phase'] = lio_phase
+    return report
 
 
 def markdown(report):
-    lines = ['# Demo v2 零配置冒烟', '']
+    phase = report.get('lio_phase')
+    lines = [f'# Lio 阶段 {phase} 冒烟' if phase is not None else '# Demo v2 零配置冒烟', '']
     if 'batch' in report:
         batch = report['batch']
         lines += [f'部署 `{batch["source"]}`／`{batch["image"]}`，原账本 `{batch["ledger_start"]}` → '
@@ -129,6 +147,13 @@ def markdown(report):
         values = [language, str(group['planned']), *(str(group['outcomes'][key]) for key in OUTCOMES),
                   'UNRUN' if rate is None else f'{rate:.0%}']
         lines.append('| ' + ' | '.join(values) + ' |')
+    if phase is not None:
+        lines += ['', '最近一次尝试单列，首次结果及所有复跑见下表。', '']
+        for language, group in report['languages'].items():
+            rate = group['latest_success_rate']
+            latest = group['latest_outcomes']
+            label = 'UNRUN' if rate is None else f'{rate:.0%}'
+            lines.append(f'- {language.upper()} {latest["PASS"]}/{group["planned"]}（{label}）')
     lines += ['', '分母固定。每场首次尝试决定该场计数，复跑单列。时钟按原 RUN 分开，实付保留 UNKNOWN。', '',
               '| 场景／尝试 | 结论 | 原 RUN | 首状态／开始运行／App 显示／首正文／完整（秒） | 保守已知模型／工具 | 已知模型估算／工具估算 | 实付 |',
               '|---|---|---|---|---|---|---|']
@@ -160,9 +185,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('evidence', type=Path)
     parser.add_argument('output', type=Path)
+    parser.add_argument('--lio-phase', type=int, choices=LIO_PHASE_SCENES)
     args = parser.parse_args()
     evidence = json.loads(args.evidence.read_bytes())
-    report = summarize(evidence['attempts'])
+    report = summarize(evidence['attempts'], lio_phase=args.lio_phase)
     report['batch'] = {key: evidence['batch'][key] for key in ('source', 'image', 'ledger_start', 'ledger_end')}
     args.output.mkdir(mode=0o700)
     (args.output / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')

@@ -33,6 +33,24 @@ def test_original_failure_and_child_run_survive_successful_repeat():
     assert '| Z03／2 | PASS | retest |' in markdown(report)
 
 
+def test_lio_stage_uses_its_fixed_denominator_and_reports_the_latest_attempt_separately():
+    rows = [
+        attempt('Z03', 1, 'FAIL', [original('initial')], []),
+        attempt('Z03', 2, 'PASS', [original('rerun')], []),
+    ]
+    report = summarize(rows, lio_phase=2)
+    assert set(report['scenes']) == {'Z03', 'E03'}
+    assert report['languages']['zh']['success_rate'] == 0
+    assert report['languages']['zh']['latest_success_rate'] == 1
+    assert report['languages']['en']['latest_success_rate'] is None
+    rendered = markdown(report)
+    assert rendered.startswith('# Lio 阶段 2')
+    assert '| Z03／1 | FAIL | initial |' in rendered
+    assert '| Z03／2 | PASS | rerun |' in rendered
+    with pytest.raises(ValueError, match='attempts must be in order'):
+        summarize(rows, lio_phase=1)
+
+
 def test_missing_and_unresolved_meter_remain_unknown_with_known_subtotals():
     completed = dict(attempt_id='model-received', run_id='question', kind='model', state='RECEIVED',
                      receipt=dict(model_id='qwen3.8-flash', region='cn-beijing',
