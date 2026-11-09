@@ -182,11 +182,11 @@ struct AssistantShell: View {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8, alignment: .leading),
                                      count: dynamicTypeSize.isAccessibilitySize ? 1 : 2), spacing: 8) {
                 Button { panel = .needs } label: {
-                    Label(state.language.text("Journey needs", "本次旅行需求"), systemImage: "list.bullet.rectangle")
+                    AssistantOptionLabel(title: state.language.text("Journey needs", "本次旅行需求"), symbol: "list.bullet.rectangle")
                 }.accessibilityIdentifier("assistant.needs")
                 if messageHost.travelSelection != nil {
                     Button { panel = .travel } label: {
-                        Label(state.language.text("Choose travel context", "选择旅行上下文"), systemImage: "suitcase")
+                        AssistantOptionLabel(title: state.language.text("Choose travel context", "选择旅行上下文"), symbol: "suitcase")
                     }.accessibilityIdentifier("assistant.travelContext")
                 }
                 if messageHost.supportsDemoConversationOpening {
@@ -194,15 +194,15 @@ struct AssistantShell: View {
                     Button {
                         if let newChat { messageHost.performConversationIntent(newChat) }
                     } label: {
-                        Label(state.language.text("New conversation", "新建会话"), systemImage: "plus.bubble")
+                        AssistantOptionLabel(title: state.language.text("New conversation", "新建会话"), symbol: "plus.bubble")
                     }
                     .disabled(newChat == nil).accessibilityIdentifier("assistant.chat.new")
                 }
                 Button { panel = .server } label: {
-                    Label(state.language.text("Server history and drafts", "服务器历史与草稿"), systemImage: "clock")
+                    AssistantOptionLabel(title: state.language.text("Server history and drafts", "服务器历史与草稿"), symbol: "clock")
                 }.accessibilityIdentifier("assistant.serverHistory")
                 Button { panel = .usage } label: {
-                    Label(state.language.text("Original usage status", "原调用用量"), systemImage: "chart.bar")
+                    AssistantOptionLabel(title: state.language.text("Original usage status", "原调用用量"), symbol: "chart.bar")
                 }
             }.buttonStyle(AssistantOptionButtonStyle())
             if messageHost.supportsDemoConversationOpening, case .unknown = messageHost.conversationState {

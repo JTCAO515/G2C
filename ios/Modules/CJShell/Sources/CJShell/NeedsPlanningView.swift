@@ -73,22 +73,14 @@ struct NeedsPlanningView:View {
             StructuredTripDocumentView(document:candidate.content,language:language,prefix:"planning.proposal")
         }
     }
-    @ViewBuilder private func command(_ id: String, _ title: String, disabled: Bool, prominent: Bool = false,
-                                      action: @escaping () -> Void) -> some View {
-        if prominent {
-            Button(action: action) {
-                Text(title).font(.body.weight(.semibold))
-                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-            }
-            .buttonStyle(.borderedProminent)
-            .disabled(disabled)
-            .accessibilityIdentifier(id)
-        } else {
-            Button(title, action: action)
-                .buttonStyle(AssistantOptionButtonStyle())
-                .disabled(disabled)
-                .accessibilityIdentifier(id)
+    private func command(_ id: String, _ title: String, disabled: Bool, prominent: Bool = false,
+                         action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            RunReadableText(text: title, style: prominent ? .headline : .body)
         }
+        .buttonStyle(AssistantOptionButtonStyle(emphasized: prominent))
+        .disabled(disabled)
+        .accessibilityIdentifier(id)
     }
     private func state(_ value:ScopedDiscoveryState) -> String {
         switch value {

@@ -1,8 +1,22 @@
 #if os(iOS)
 import SwiftUI
+import CJRunClient
 import UIKit
 
+struct AssistantOptionLabel: View {
+    let title: String
+    let symbol: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: symbol).accessibilityHidden(true)
+            RunReadableText(text: title)
+        }
+    }
+}
+
 struct AssistantOptionButtonStyle: ButtonStyle {
+    var emphasized = false
     @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
@@ -11,10 +25,11 @@ struct AssistantOptionButtonStyle: ButtonStyle {
             .padding(.horizontal, 12)
             .padding(.vertical, 4)
             .foregroundStyle(.primary)
-            .background(Color(uiColor: .systemBackground), in: RoundedRectangle(cornerRadius: 12))
+            .background(emphasized ? Color.accentColor.opacity(0.14) : Color(uiColor: .systemBackground),
+                        in: RoundedRectangle(cornerRadius: 12))
             .overlay {
                 RoundedRectangle(cornerRadius: 12)
-                    .strokeBorder(Color(uiColor: .separator), lineWidth: 1)
+                    .strokeBorder(emphasized ? Color.accentColor : Color(uiColor: .separator), lineWidth: 1)
                     .allowsHitTesting(false)
             }
             .contentShape(RoundedRectangle(cornerRadius: 12))
