@@ -6,6 +6,7 @@ from cj_needs.revision_lease import LeaseUnavailable
 from cj_trip.planning_context import read_current,current_in_tx,protect_model
 from cj_trip.needs_source import NeedsSourceAuthority
 from cj_trip.needs_plan import build as build_original,parse_model,_build
+from cj_trip.structured import SourceRejected
 from .needs_publisher import NeedsDraftPublisher
 
 
@@ -31,9 +32,12 @@ class ContextPublisher(NeedsDraftPublisher):
         if context is None:return build_original(raw,capture)
         value=parse_model(raw);document=dict(content_version='structured.2',title=value['title'],items=value['items'],sources=[])
         from cj_feasibility.trip_time_v2 import evaluate
-        if evaluate(packed(document)).status=='CONFLICT':raise ValueError('explicit Trip time conflict')
+        time_report=evaluate(packed(document))
+        if time_report.status=='CONFLICT':
+            conflict=next(c for c in time_report.checks if c.status=='CONFLICT')
+            raise SourceRejected(conflict.evidence[0].path,conflict.code)
         try:protect_model(context.trip,document)
-        except Conflict as exc:raise ValueError(str(exc)) from None
+        except Conflict:raise SourceRejected('items','adopted Trip fixed and selected scope required') from None
         before,_=capture.records();source_items={item['item_id']:item for item in before.fields.get('fixed_items',[])}
         # Local Trip fixed intent is checked above and retained in Trip content;
         # it is not silently written back into canonical NEEDS declarations.
@@ -41,19 +45,20 @@ class ContextPublisher(NeedsDraftPublisher):
         prior_fields=json.loads(context.proposed)
         adopted={item['item_id']:item for item in prior_fields.get('fixed_items',[]) if item['item_id'] not in source_items}
         projection=deepcopy(value)
-        for item in projection['items']:
+        for index,item in enumerate(projection['items']):
             original=current_items.get(item['id'])
             for edge,event in item['schedule'].items():
                 if event['utc_offset'].get('state')=='known':
                     if original is None or event!=original['schedule'][edge]:
-                        raise ValueError('model invented an observed UTC offset')
+                        raise SourceRejected(f'items[{index}].schedule.{edge}.utc_offset','model cannot invent an observed UTC offset')
                     # NEEDS has no offset field. Keep the confirmed observation
                     # in Trip output; its time was checked above with that offset.
                     event['utc_offset']={'state':'unknown'}
             source=source_items.get(item['id'])
             expected=(original['source_category'] if original is not None and original['text']==item['text']
                       else 'user_provided' if source is not None and source['description']==item['text'] else 'unknown')
-            if item['source_category']!=expected:raise ValueError('model changed current source classification')
+            if item['source_category']!=expected:
+                raise SourceRejected(f'items[{index}].source_category','model changed current source classification')
             if source is not None:
                 item['fixed']=deepcopy(source['locked'])
                 item['source_category']='user_provided' if item['text']==source['description'] else 'unknown'
