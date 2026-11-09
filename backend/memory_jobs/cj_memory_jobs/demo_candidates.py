@@ -8,6 +8,7 @@ from .model_v2 import origin_reference
 from .policy_v2 import ProcessingSourcePolicyV2
 from .policy_v3 import ResultSourcePolicyV3
 from .postgres import encode
+from .publication_result import VERSION_DEMO, is_demo_candidate, original_result
 from .publication_store import PublicationTransaction
 
 
@@ -31,9 +32,11 @@ class _CandidateInput(_OriginalMessage, ProcessingSourcePolicyV2):
 
 
 class _CandidateResult(_OriginalMessage, ResultSourcePolicyV3):
+    result_version = VERSION_DEMO
+
     def _entries(self, raw, messages, policy):
         return tuple(ParsedEntry(parsed.entry, False) for parsed in super()._entries(raw, messages, policy)
-                     if parsed.entry.extent == 'long_term' and parsed.entry.kind in ('fact', 'preference'))
+                     if is_demo_candidate(parsed.entry))
 
     def encode_result(self, status, receipts):
         if any(row['status'] != 'candidate' for row in receipts):
@@ -76,6 +79,18 @@ class DemoCandidates:
             prepared_input_sha256, extraction, max_payload_bytes=max_payload_bytes,
             model_output=model_output, model_output_sha256=model_output_sha256,
             memory_policy=memory, before_commit=before_commit, original=stored.receipt)
+
+    def query_publication_in_context(self, context, token, job_id, attempt_id, *, message_id, run_id):
+        stored, (repository, _, guard) = self._binding(context, token, message_id, run_id)
+        with repository.transaction() as memory:
+            tx = PublicationTransaction(memory)
+            tx.require_live()
+            row, _ = tx.output(job_id, attempt_id)
+            if len(row[4]) != 1 or row[4][0].receipt != stored.receipt:
+                raise Unavailable('original Demo publication message differs')
+            result = original_result(tx, job_id, attempt_id, expected_version=VERSION_DEMO)
+            guard('demo_publication_receipt')
+            return result if result is not None else b'null'
 
     def current(self, context, token, message_id, run_id, after_candidate_id=''):
         """Only the current candidates from this protected original MESSAGE/RUN."""

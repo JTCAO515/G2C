@@ -11,12 +11,17 @@ from .postgres import encode
 
 VERSION='MEMORY-PUBLICATION-result@1'
 VERSION_V2='MEMORY-PUBLICATION-result@2'
+VERSION_DEMO='MEMORY-PUBLICATION-result@4'
 FIELDS={'version','job_id','attempt_id','enqueue_input_sha256','prepared_input_sha256','model_output_sha256','receipts'}
 RECEIPT_FIELDS={'operation_id','item_id','version','status','input_sha256'}
 
 
 def _digest(value):
     return type(value) is str and len(value)==64 and all(c in '0123456789abcdef' for c in value)
+
+
+def is_demo_candidate(entry):
+    return entry.extent=='long_term' and entry.kind in ('fact','preference')
 
 
 def encode_result(status,prepared_input_sha256,model_output_sha256,receipts,*,version=VERSION):
@@ -27,10 +32,10 @@ def encode_result(status,prepared_input_sha256,model_output_sha256,receipts,*,ve
     return raw
 
 
-def decode_result(raw,status,model_output):
+def decode_result(raw,status,model_output,*,versions=(VERSION,VERSION_V2)):
     try:
         value=strict_object(raw)
-        if (type(value) is not dict or set(value)!=FIELDS or value['version'] not in (VERSION,VERSION_V2)
+        if (type(value) is not dict or set(value)!=FIELDS or value['version'] not in versions
                 or value['job_id']!=status.job_id or value['attempt_id']!=status.attempt_id
                 or value['enqueue_input_sha256']!=status.input_sha256
                 or not _digest(value['prepared_input_sha256'])
@@ -56,16 +61,21 @@ def decode_result(raw,status,model_output):
 def original_result(tx,job_id,attempt_id,*,expected_version=VERSION):
     row,output=tx.output(job_id,attempt_id)
     if row[0].state!='completed':return None
-    value=decode_result(row[6],row[0],output)
+    demo=expected_version==VERSION_DEMO
+    value=decode_result(row[6],row[0],output,versions=(VERSION_DEMO,) if demo else (VERSION,VERSION_V2))
     if value['version']!=expected_version:raise Unavailable('explicit original publication version required')
     messages=row[4]
     try:
-        if expected_version==VERSION_V2:
+        if expected_version in (VERSION_V2,VERSION_DEMO):
             from .model_v2 import decode_output as decode_v2
             entries=decode_v2(output,messages,tx.scope)
         else:entries=decode_output(output,messages)
     except InvalidExtraction:
         raise Unavailable('original model output unavailable') from None
+    if demo:
+        if len(messages)!=1 or any(receipt['status']!='candidate' for receipt in value['receipts']):
+            raise Unavailable('original Demo candidate publication differs')
+        entries=tuple(entry for entry in entries if is_demo_candidate(entry))
     if len(entries)!=len(value['receipts']):
         raise Unavailable('original publication entry count differs')
     for entry,receipt in zip(entries,value['receipts']):

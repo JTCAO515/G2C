@@ -536,11 +536,12 @@ def exercise(conninfo,auth):
 def exercise_demo_candidates(conninfo, auth):
     from cj_memory_jobs.codec import Unavailable
     from cj_memory_jobs.demo_candidates import DemoCandidates
+    from cj_memory_jobs.publication_result import VERSION_DEMO
 
     actors = ('demo-alice', 'demo-bob')
     dev_auth.init(auth, actors)
     tokens = {actor:dev_auth.token(auth,actor,30) for actor in actors}
-    slots = frozenset({'travel.pace', 'seating'})
+    slots = frozenset({'travel.pace', 'seating', 'experience'})
     extraction = CollectionPolicy(frozenset({'self'}),slots,4,500,lambda entry:True,lambda entry,rows:True)
     memory_policy = ManualPolicy(extraction.subjects,slots,frozenset({'long_term'}),frozenset(),
         datetime.now(timezone.utc)+timedelta(hours=1),lambda command,raw:True,lambda command,raw:True)
@@ -570,7 +571,7 @@ def exercise_demo_candidates(conninfo, auth):
             return json.loads(host.boundary.with_history_context(token,lambda context:service.current(
                 context,token,receipt['message_id'],run or receipt['run_id'])))
 
-        def collect(index, slot, text):
+        def collect(index, slot, text, *, kind='preference', extent='long_term', extra=False, expected=1):
             mid,jid,aid = f'demo-message-{index}',f'demo-job-{index}',f'demo-attempt-{index}'
             receipt = post('/v1/messages',dict(version='MESSAGE-send.1',conversation_id=chat,message_id=mid,
                 text=text,trip_id=None,creation_intent='none',expected_generation=head['generation'],expected_sequence=index))['receipt']
@@ -580,9 +581,10 @@ def exercise_demo_candidates(conninfo, auth):
             service.transition(owner,jid,aid,'inflight')
             prepared = service.prepare_model_input_v2(owner,jid,aid,max_payload_bytes=8192)
             message, = json.loads(json.loads(prepared)['messages'][0]['content'])['messages']
-            result = json.dumps(dict(version='MEMORY-EXTRACT@2',entries=[dict(subject='self',slot=slot,kind='preference',
-                text=text,extent='long_term',occurred_at='date unknown',evidence=[dict(ref=message['ref'],quote=text)])]),
-                ensure_ascii=False).encode()
+            entry = dict(subject='self',slot=slot,kind=kind,text=text,extent=extent,occurred_at='date unknown',
+                         evidence=[dict(ref=message['ref'],quote=text)])
+            entries = [entry,dict(entry,slot='experience',kind='experience')] if extra else [entry]
+            result = json.dumps(dict(version='MEMORY-EXTRACT@2',entries=entries),ensure_ascii=False).encode()
             bound = dict(message_id=mid,run_id=receipt['run_id'],max_payload_bytes=8192)
             def publish(context):
                 processing = demo.processing_policy(context,owner,jid,aid,prepared,digest(prepared),**bound)
@@ -591,13 +593,22 @@ def exercise_demo_candidates(conninfo, auth):
                 policy = demo.publication_policy(context,owner,jid,aid,prepared,digest(prepared),
                     result,digest(result),before_commit=lambda:None,**bound)
                 return context.with_enabled_source(SourceQuery(**source),policy,policy.apply_original_result)
-            original = json.loads(host.boundary.with_history_context(owner,publish))
-            candidate, = original['receipts']
-            assert candidate['status'] == 'candidate'
+            raw = host.boundary.with_history_context(owner,publish)
+            original = json.loads(raw)
+            assert original['version'] == VERSION_DEMO and original['model_output_sha256'] == digest(result)
+            assert [row['status'] for row in original['receipts']] == ['candidate'] * expected
+            recovered = host.boundary.with_history_context(owner,lambda context:demo.query_publication_in_context(
+                context,owner,jid,aid,message_id=mid,run_id=receipt['run_id']))
+            assert recovered == raw
+            try:host.boundary.with_history_context(owner,lambda context:service.query_publication_v2_in_context(context,owner,jid,aid))
+            except Unavailable:pass
+            else:raise AssertionError('old publication version consumed a Demo receipt')
             return receipt
 
-        first = collect(0,'travel.pace','I prefer no more than two sights a day')
+        first = collect(0,'travel.pace','I prefer no more than two sights a day',extra=True)
         second = collect(1,'seating','I usually prefer window seats')
+        temporary = collect(2,'seating','For today only, I need an aisle seat',extent='current',expected=0)
+        assert current(temporary)['candidates'] == []
         first_read,second_read = current(first),current(second)
         first_card, = first_read['candidates']
         second_card, = second_read['candidates']
@@ -625,7 +636,7 @@ def exercise_demo_candidates(conninfo, auth):
             assert current(receipt)['candidates'] == []
         with host.database.connect(scope_for(ISSUER,'demo-alice')) as conn:
             assert conn.execute("SELECT slot FROM cj_memory_item WHERE status='active'").fetchall() == [('travel.pace',)]
-        print('PASS actual Demo single-source input fence, candidate-only direct statements, exact MESSAGE/RUN read, explicit confirm and dismiss')
+        print('PASS actual Demo single-source input fence, mixed and empty candidate-only publication, exact recovery, explicit confirm and dismiss')
 
 
 if __name__=='__main__':
