@@ -44,7 +44,7 @@ class NeedsDraftPublisher:
     def build_plan(self,raw,capture):return build(raw,capture)
     def check_trip_context(self,cur,binding,capture):return None
     def retain_trip_context(self,cur,proposal,binding,capture):return None
-    def publish_for_message(self,binding,original,current,reply,capture,*,before_publish=None):
+    def validated_plan(self,binding,original,current,reply,capture,before_publish):
         self.source.check(binding,capture)
         if (current is None or current!=original or capture.binding!=binding
                 or self.repository.scope!=trip_scope_for(binding.scope) or before_publish is None):
@@ -54,26 +54,34 @@ class NeedsDraftPublisher:
             raise _rejected(binding,error.stage,error.field,error.rule) from None
         except ValueError:
             raise _rejected(binding,'schema','plan','valid canonical structured plan required') from None
+        return content,candidate
+
+    def publish_candidate(self,cur,proposal,binding,capture,candidate):
+        value=json.loads(capture.raw)
+        digest=self.repository._publish_in_tx(cur,proposal)
+        cur.execute('SELECT source_sha256,proposed_input FROM cj_trip_needs_basis WHERE scope=%s AND proposal_id=%s',
+                    (self.repository.scope,proposal.proposal_id))
+        prior=cur.fetchone()
+        if prior is not None:
+            if prior!=(sha256(capture.raw).hexdigest(),candidate.content):
+                raise _rejected(binding,'authority','needs_basis','immutable source basis changed')
+        else:
+            cur.execute('INSERT INTO cj_trip_needs_basis(scope,proposal_id,message_scope,run_id,needs_scope,needs_id,needs_version,source_input,source_sha256,proposed_input) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',
+                        (self.repository.scope,proposal.proposal_id,binding.scope,binding.run_id,value['needs_scope'],
+                         value['needs_id'],value['revision'],capture.raw,sha256(capture.raw).hexdigest(),candidate.content))
+        self.retain_trip_context(cur,proposal,binding,capture)
+        return digest
+
+    def publish_for_message(self,binding,original,current,reply,capture,*,before_publish=None):
+        content,candidate=self.validated_plan(binding,original,current,reply,capture,before_publish)
         now=self.clock()
         proposal=Proposal(proposal_id_for(binding.run_id),'trip-'+binding.run_id,0,
             'needs-run-'+binding.run_id,int(now)+PROPOSAL_TTL_SECONDS,content)
-        value=json.loads(capture.raw)
         def final(cur):
             self.source.check(binding,capture)
             before_publish()  # Original final deadline remains last, no SQL after it.
         with self.repository.transaction(before_commit=final) as cur:
             self.source.check(binding,capture)
             self.check_trip_context(cur,binding,capture)
-            digest=self.repository._publish_in_tx(cur,proposal)
-            cur.execute('SELECT source_sha256,proposed_input FROM cj_trip_needs_basis WHERE scope=%s AND proposal_id=%s',
-                        (self.repository.scope,proposal.proposal_id))
-            prior=cur.fetchone()
-            if prior is not None:
-                if prior!=(sha256(capture.raw).hexdigest(),candidate.content):
-                    raise _rejected(binding,'authority','needs_basis','immutable source basis changed')
-            else:
-                cur.execute('INSERT INTO cj_trip_needs_basis(scope,proposal_id,message_scope,run_id,needs_scope,needs_id,needs_version,source_input,source_sha256,proposed_input) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',
-                    (self.repository.scope,proposal.proposal_id,binding.scope,binding.run_id,value['needs_scope'],
-                     value['needs_id'],value['revision'],capture.raw,sha256(capture.raw).hexdigest(),candidate.content))
-            self.retain_trip_context(cur,proposal,binding,capture)
+            digest=self.publish_candidate(cur,proposal,binding,capture,candidate)
         return Draft(proposal.proposal_id,proposal.trip_id,digest)

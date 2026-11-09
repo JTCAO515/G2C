@@ -45,20 +45,22 @@ class OperationContext:
         self.__check()
         s = self.__state
         try:
-            if name in ('act', 'save_manual', 'prepare_manual', 'prepare_initialization', 'save_initialization','act_needs','prepare_needs','save_needs','act_scoped','prepare_source_initialization','save_source_initialization'):
+            writing = name in ('act', 'save_manual', 'prepare_manual', 'prepare_initialization', 'save_initialization','act_needs','prepare_needs','save_needs','act_scoped','prepare_source_initialization','save_source_initialization','undo_lio')
+            if writing:
                 from .manual import ManualSave, ManualEdit
                 from .needs_action import NeedsAction
                 from .scoped_actions import ScopedAction
                 from .manual_needs import NeedsEdit,NeedsSave
                 from .initialization import Initialization, InitializationSave
                 from .source_initialization import SourceInitialization,SourceInitializationSave
+                from .lio_history import Undo
                 if s['action_id'] is not None: raise ValueError('one action per operation')
                 expected = {'act':Action,'save_manual':ManualSave,'prepare_manual':ManualEdit,
-                            'prepare_initialization':Initialization,'save_initialization':InitializationSave,'act_needs':NeedsAction,'act_scoped':ScopedAction,'prepare_needs':NeedsEdit,'save_needs':NeedsSave,'prepare_source_initialization':SourceInitialization,'save_source_initialization':SourceInitializationSave}[name]
+                            'prepare_initialization':Initialization,'save_initialization':InitializationSave,'act_needs':NeedsAction,'act_scoped':ScopedAction,'prepare_needs':NeedsEdit,'save_needs':NeedsSave,'prepare_source_initialization':SourceInitialization,'save_source_initialization':SourceInitializationSave,'undo_lio':Undo}[name]
                 if not isinstance(args[0], expected): raise ValueError('validated original action required')
                 s['action_id'] = args[0].request_id if name in ('prepare_manual','prepare_initialization','prepare_needs','prepare_source_initialization') else args[0].action_id
             result = getattr(self.__repository, name)(*args)
-            if name in ('act', 'save_manual', 'prepare_manual', 'prepare_initialization', 'save_initialization','act_needs','prepare_needs','save_needs','act_scoped','prepare_source_initialization','save_source_initialization'): s['commit_possible'] = True
+            if writing: s['commit_possible'] = True
             return result
         except BaseException as exc:
             s['blocked'] = True
@@ -91,6 +93,11 @@ class OperationContext:
     def save_manual(self, save): return self.__call('save_manual', save)
     def manual_preparation(self, request_id): return self.__call('manual_preparation', request_id)
     def query_action(self, action_id): return self.__call('query_action', action_id)
+    def lio_revisions(self, trip_id, *, before=None, limit=10): return self.__call('lio_revisions', trip_id, before, limit)
+    def lio_current_trip(self, needs_scope, needs_id): return self.__call('lio_current_trip', needs_scope, needs_id)
+    def lio_plan_receipt(self, binding): return self.__call('lio_plan_receipt', binding)
+    def undo_lio(self, request): return self.__call('undo_lio', request)
+    def lio_undo_receipt(self, request): return self.__call('lio_undo_receipt', request)
     def detail(self, trip_id): return self.__call('detail', trip_id)
     def read_decision_source(self,query,project,*,max_source_bytes,max_result_bytes):
         return self.__call('read_decision_source',query,project,max_source_bytes,max_result_bytes)
