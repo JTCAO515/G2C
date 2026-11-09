@@ -31,6 +31,10 @@ DESTINATION = re.compile(r'\b(?:itinerary|trip|days?)\s+(?:in|to)\s+Beijing\b|'
                          r'\bBeijing\s+(?:itinerary|trip|visit)\b|'
                          r'(?:去|到|在)北京|北京(?:\s*[，,：:]|[一二两三四五六七八九十\d]+天|游|行程)', re.I)
 PRIMARY_DESTINATION = re.compile(r'\b(?:itinerary|trip|days?)\s+(?:in|to)\s+([A-Za-z]+)\b', re.I)
+NAMED_BEIJING = re.compile(r'\bBeijing\s+(?:itinerary|trip|visit)\b', re.I)
+ZH_DIRECT = re.compile(r'(?:规划|安排|设计|做)\s*(?:一下|一个|一份)?\s*(?:去|到|在)?北京')
+ZH_RELATIVE = re.compile(r'(?:规划|安排|设计|做)\s*从?(?:明天|今天|后天)(?:开始|起)的?北京')
+TRIP_PARTY_GAP = rf'\s*(?:for\s+(?:{NUMBER})\s+people\s+)?'
 OTHER_DESTINATION = re.compile(r'\bfrom\s+Beijing\s+to\b|从北京(?:去|到)', re.I)
 CITY_REPLY = re.compile(r'^(?:Beijing|北京)(?=$|[,，：:]|\s+(?:\d{4}-|from\b|从|明天|今天))', re.I)
 FIXED = re.compile(r'已经定好|固定安排|已锁定|已预订|已订|不可更改|不能改|'
@@ -69,10 +73,22 @@ def stated_city(turns, city):
                     or NEGATED.search(clause) or OTHER_DESTINATION.search(clause)):
                 continue
             primary = PRIMARY_DESTINATION.search(clause)
+            if city == '北京' and not (ZH_DIRECT.search(clause) or ZH_RELATIVE.search(clause)):
+                continue
             if primary is None or primary[1].casefold() == 'beijing':
                 return True
     return len(turns) > 1 and any(city in clause and CITY_REPLY.match(clause) and not NEGATED.search(clause)
                                  for clause in _clauses(turns[-1]))
+
+
+def _timing_follows_destination(clause, position, *, absolute):
+    primary = PRIMARY_DESTINATION.search(clause)
+    destination = primary or NAMED_BEIJING.search(clause) or ZH_DIRECT.search(clause)
+    if destination is None or destination.end() > position:
+        return False
+    gap = clause[destination.end():position]
+    expected = TRIP_PARTY_GAP + (r'(?:from|从|在)\s*' if absolute else '')
+    return re.fullmatch(expected, gap, re.I) is not None
 
 
 def _day_span(turns, today):
@@ -88,16 +104,15 @@ def _day_span(turns, today):
             try:
                 explicit = tuple(SPAN.finditer(clause))
                 for match in explicit:
-                    prefix = clause[:match.start()].strip()
-                    scoped = TRIP_DATES.match(clause) is not None or re.search(
-                        rf'(?:Beijing(?:\s+for\s+(?:{NUMBER})\s+people)?\s+from|'
-                        r'北京\s*(?:从|在)?|(?:trip|itinerary)\s+dates?\s*[:：]?)$', prefix, re.I)
+                    scoped = (TRIP_DATES.match(clause) is not None
+                              or _timing_follows_destination(clause, match.start(), absolute=True))
                     if scoped:
                         spans.add((date.fromisoformat(match[1]), date.fromisoformat(match[2])))
                 if explicit:
                     continue
                 start, duration = START.search(clause), DURATION.search(clause)
-                if start and duration:
+                if start and duration and (_timing_follows_destination(clause, start.start(), absolute=False)
+                                           or ZH_RELATIVE.search(clause)):
                     word = (start[1] or start[2]).lower()
                     offset = {'tomorrow':1,'明天':1,'后天':2,'today':0,'今天':0}[word]
                     first = today + timedelta(days=offset)

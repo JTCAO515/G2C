@@ -136,12 +136,18 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     assert not stated_city(('Plan a trip from Beijing to Shanghai.',), 'Beijing')
     assert not stated_city(('Plan a trip to Shanghai. I live in Beijing.',), 'Beijing')
     assert not stated_city(('Plan a trip to Shanghai with a short visit to Beijing.',), 'Beijing')
+    assert not stated_city(('帮我规划上海行程，途经北京，从 2026-11-11 到 2026-11-12',
+                            '2026-11-11 到 2026-11-12'), '北京')
     meetings, _ = grounded_fields(('The trip dates are undecided. The meeting is from 2026-11-11 to 2026-11-12.',),
                                    'Beijing', today)
     assert meetings['arrival']['date']['state'] == 'missing'
     suggested, _ = grounded_fields(('Plan a trip to Beijing and suggest dates around my meeting from 2026-11-11 to 2026-11-12.',),
                                     'Beijing', today)
     assert suggested['arrival']['date']['state'] == 'missing'
+    conference, _ = grounded_fields((
+        'Plan a trip to Beijing around my conference in Beijing from 2026-11-11 to 2026-11-12. When should I travel?',
+    ), 'Beijing', today)
+    assert conference['arrival']['date']['state'] == 'missing'
     hypothetical, _ = grounded_fields(('If I have already booked a hotel meetup from 09:00 to 10:00 on the first day.',),
                                        'Beijing', today)
     assert 'fixed_items' not in hypothetical
