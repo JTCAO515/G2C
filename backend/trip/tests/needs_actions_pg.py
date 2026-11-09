@@ -25,7 +25,7 @@ class NeedsActionChecks(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         Harness.setUpClass.__func__(cls)
-        cls.host=RegisteredHost(cls.auth/'needs-actions',Path(CONNINFO),{s:(12,2,30000) for s in ('accept','reject','stale','manual','fault-rollback','fault-ack','adopted','switch','manual-writer','manual-save','save-rollback','save-ack','schema','publish-replay','saved-offset','new-offset','malformed-model','edit-during-model','scoped-preview','lio-history','lio-plan')})
+        cls.host=RegisteredHost(cls.auth/'needs-actions',Path(CONNINFO),{s:(12,2,30000) for s in ('accept','reject','stale','manual','fault-rollback','fault-ack','adopted','switch','manual-writer','manual-save','save-rollback','save-ack','schema','publish-replay','saved-offset','new-offset','malformed-model','edit-during-model','scoped-preview','lio-history','lio-plan','lio-edit')})
         cls.env=dict(CJ_LOCAL_NEEDS_PROFILE='manual-v1',CJ_LOCAL_TRAVEL_CONTEXT='message-travel.1')
         cls.signer=ConfirmationSigner(b'synthetic-source-action-key-1234567890')
         for subject in cls.host.subjects:
@@ -69,10 +69,11 @@ class NeedsActionChecks(unittest.TestCase):
         return client.post('/v1/trip-needs-saves',content=raw,
             headers={**self.host.headers[subject],'Content-Type':'application/octet-stream'})
 
-    def replan(self,subject,key,change=None,expect_proposal=True,wrap_publisher=None,needs_version=1):
+    def replan(self,subject,key,change=None,expect_proposal=True,wrap_publisher=None,needs_version=1,
+               text='continue original trip'):
         with patch.dict(__import__('os').environ,self.env),self.host.api(subject) as client:
             chat=client.put('/v1/conversations',params={'conversation_id':key},headers=self.host.headers[subject]).json()
-            raw=json.dumps(dict(version='MESSAGE-send.2',conversation_id=key,message_id=key,text='continue original trip',trip_id=None,
+            raw=json.dumps(dict(version='MESSAGE-send.2',conversation_id=key,message_id=key,text=text,trip_id=None,
                 creation_intent='consider_trip',expected_generation=chat['generation'],expected_sequence=0,travel_context=None,
                 needs_reference=dict(id='visit',expected_version=needs_version))).encode()
             response=client.post('/v2/messages',content=raw,headers={**self.host.headers[subject],'Content-Type':'application/octet-stream'})
@@ -595,6 +596,117 @@ class NeedsActionChecks(unittest.TestCase):
             trip_id=saved.trip_id,expected_version=2,original_hash=sha256(updated.content).hexdigest())))
         self.assertEqual(repository.undo_lio(request).committed_version,3)
         self.assertEqual(repository.detail(saved.trip_id).content,original.content)
+
+    def test_lio_travel_message_saves_one_replacement_and_can_undo_it(self):
+        from copy import deepcopy
+        from datetime import datetime, timezone
+        from hashlib import sha256
+        from cj_api.local_needs import protected_reader
+        from cj_api.local_worker_context import checker_for
+        from cj_draft.lio_plan import LioPlanPublisher
+        from cj_draft.needs_context import publisher
+        from cj_feasibility.solver import Limits
+        from cj_trip.current_needs_source import CurrentNeedsSource
+        from cj_trip.lio_history import TripHead, Undo, edit_action_id
+        from cj_trip.needs_edit_store import NeedsEdits
+
+        subject='lio-edit'
+        owner=scope_for(ISSUER,subject)
+        first=self.setup_source(subject)
+        admitted={first['message_id']:None}
+        limits=Limits(datetime(2026,11,1,tzinfo=timezone.utc),7*86400,1,10_000_000,60,120,128,.05,.05,100)
+
+        def generated(plan):
+            plan['items'][1].update(text='Accepted lunch override',source_category='unknown')
+            item=deepcopy(plan['items'][1])
+            item.update(id='generated',text='Jingshan Park',fixed=dict(state='unknown'),source_category='unknown')
+            item['schedule']['start']['time']=dict(state='known',value='13:00')
+            item['schedule']['end']['time']=dict(state='known',value='14:00')
+            plan['items'].append(item)
+            plan['proposed_subjects']['generated']=['self']
+
+        def original_needs(cursor,binding):
+            return cursor.execute('SELECT needs_id,needs_version,content_sha256 FROM cj_message_needs_binding '
+                'WHERE message_scope=%s AND message_id=%s AND run_id=%s',
+                (binding.scope,binding.message_id,binding.run_id)).fetchone()
+
+        class FixturePublisher(LioPlanPublisher):
+            def publish_for_message(self,binding,original,current,reply,capture,*,before_publish):
+                def final(*,check_trip):
+                    before_publish()
+                    check_trip()
+                if binding.message_id==first['message_id']:
+                    return super().publish_for_message(binding,original,current,reply,capture,before_publish=final)
+                trip=self.source.contexts[binding].trip
+                item='a' if binding.message_id=='lio-edit-locked' else 'generated'
+                identity=dict(request_id=binding.message_id,trip_id=trip.trip_id,expected_version=trip.version,
+                              original_hash=sha256(trip.content).hexdigest())
+                request=packed(dict(identity,version='TRIP-scoped-request.1',text=json.loads(original.raw)['text'],
+                                    language='en',selection=dict(kind='items',item_ids=[item])))
+                change=packed(dict(identity,version='TRIP-manual-edit.2',title=None,order=None,
+                                   changes=[dict(item_id=item,field='text',value='Summer Palace')]))
+                return self.publish_edit_for_message(binding,original,current,request,change,capture,
+                                                     limits=limits,before_publish=final)
+
+        def wrap(base):
+            return FixturePublisher(base,self.signer,original_needs,lambda binding,original,expected:
+                binding.message_id in admitted and admitted[binding.message_id]==expected
+                and original.receipt.run_id==binding.run_id)
+
+        worker,db=self.worker(subject,source_fixture.PlanModel(generated))
+        checker=checker_for(self.host.auth)
+        token=self.host.headers[subject]['Authorization'][7:]
+        worker.drafts=wrap(publisher(db,checker,worker.message_context,lambda:token,owner))
+        self.assertEqual(worker.process()[0].status,'completed')
+        repository=worker.drafts.repository
+        original,=repository.list_trips()
+        before=json.loads(original.content)
+        self.assertEqual(before['items'][-1]['fixed'],dict(state='known',value=False))
+        self.assertEqual(before['items'][-1]['verification'],'pending')
+        self.assertEqual(before['items'][0]['fixed'],dict(state='known',value=True))
+        self.assertEqual(before['items'][1]['text'],'Accepted lunch override')
+
+        admitted['lio-edit-locked']=TripHead.from_trip(original)
+        locked=self.replan(subject,'lio-edit-locked',expect_proposal=False,wrap_publisher=wrap,
+                           text='Replace the original a with Summer Palace')
+        self.assertIsNone(repository.query_action(edit_action_id(locked.run_id)))
+        self.assertEqual(repository.detail(original.trip_id),original)
+
+        admitted['lio-edit-replace']=TripHead.from_trip(original)
+        result=self.replan(subject,'lio-edit-replace',wrap_publisher=wrap,
+                           text='Replace Jingshan Park with Summer Palace')
+        stored=worker.messages.query('lio-edit-replace')
+        binding=worker._binding(stored.receipt)
+        receipt=repository.lio_edit_receipt(binding)
+        self.assertEqual((receipt.proposal_id,receipt.trip_id,receipt.committed_version),
+                         (result.proposal_id,original.trip_id,2))
+        self.assertIsNone(repository.lio_plan_receipt(binding))
+        edited=repository.detail(original.trip_id)
+        after=json.loads(edited.content)
+        before['items'][-1]['text']='Summer Palace'
+        self.assertEqual(after,before)
+
+        repository.needs_edits=NeedsEdits(CurrentNeedsSource(db,checker,token,protected_reader(db,checker)))
+        action=Undo.parse(packed(dict(version='TRIP-lio-undo.1',action_id='undo-lio-edit',
+            trip_id=original.trip_id,expected_version=2,original_hash=sha256(edited.content).hexdigest())))
+        self.assertEqual(repository.undo_lio(action).committed_version,3)
+        restored=repository.detail(original.trip_id)
+        self.assertEqual(restored.content,original.content)
+        self.assertEqual(repository.lio_edit_receipt(binding),receipt)
+
+        with patch.dict(__import__('os').environ,self.env),self.host.api(subject) as client:
+            source=json.dumps(dict(action_id='edit-source-restated',needs_id='visit',expected_version=1,
+                source=dict(kind='manual',text='restated commitments'),
+                changes=dict(fixed_items=[source_fixture.fixed('a','09:00','10:00',True),
+                                          source_fixture.fixed('b','11:00','12:00',False)]))).encode()
+            response=client.post('/v1/needs-actions',content=source,
+                headers={**self.host.headers[subject],'Content-Type':'application/octet-stream'})
+            self.assertEqual(response.status_code,200,response.text)
+        admitted['lio-edit-new-source']=TripHead.from_trip(restored)
+        newer=self.replan(subject,'lio-edit-new-source',expect_proposal=False,wrap_publisher=wrap,
+                          needs_version=2,text='Replace Jingshan Park with Summer Palace')
+        self.assertIsNone(repository.query_action(edit_action_id(newer.run_id)))
+        self.assertEqual(repository.detail(original.trip_id),restored)
 
     def test_lio_undo_appends_original_bytes_and_keeps_the_accepted_history(self):
         from contextlib import contextmanager
