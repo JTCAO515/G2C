@@ -1,6 +1,7 @@
 """Trusted Lio origin metadata and user-facing answer prompt."""
 from dataclasses import dataclass
 import json
+import re
 
 from .demo_dialogue import LIO_VERSION
 
@@ -42,6 +43,20 @@ class LioCitation:
 
 def answer_prompt(locale):
     return PERSONA + (' Reply in Chinese.' if locale == 'zh' else ' Reply in English.')
+
+
+_INTERNAL_ANSWER = re.compile(
+    r'(?<![A-Za-z0-9_])(?:RUN|NEEDS|INTENT|RLS)(?![A-Za-z0-9_])|'
+    r'(?i:\b(?:run_id|message_id|conversation_id|scope_id|tripproposal|message-send|commit_unknown)\b)|'
+    r'会话上下文|原运行|规划候选|消息投递|原回执'
+)
+_UNKNOWN_LABEL = re.compile(r'(?<![A-Za-z0-9_])UNKNOWN(?![A-Za-z0-9_])')
+
+
+def display_answer(text, locale):
+    if _INTERNAL_ANSWER.search(text):
+        return None
+    return _UNKNOWN_LABEL.sub('尚未核实' if locale == 'zh' else 'not yet verified', text)
 
 
 def locale_for(database, binding):

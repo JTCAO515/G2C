@@ -557,7 +557,7 @@ def check_lio_provider_wire(root, database, auth, runtime, actor, api, headers):
     scope = scope_for(ISSUER,actor)
     subjects = frozenset({actor})
     question = 'I always prefer a slower travel pace.'
-    answer = 'I can suggest a relaxed route.'
+    answer = 'I can suggest a relaxed route. The entrance hours are UNKNOWN.'
     attempts = []
     key = 'synthetic-wire-fixture-key-only'
     journal = AuthorizationBudget(root/'lio-wire-journal')
@@ -569,6 +569,9 @@ def check_lio_provider_wire(root, database, auth, runtime, actor, api, headers):
         attempts.append(payload)
         if len(attempts) == 1:
             assert payload['tools'] and payload['messages'][-1] == dict(role='user',content=question)
+            instructions = payload['messages'][0]['content']
+            assert 'You are Lio' in instructions and 'what you could not verify' in instructions
+            assert 'UNKNOWN' not in instructions
             content = answer
         else:
             assert len(attempts) == 2 and 'tools' not in payload and 'tool_choice' not in payload
@@ -607,7 +610,7 @@ def check_lio_provider_wire(root, database, auth, runtime, actor, api, headers):
     read = api.get('/v1/lio/timeline',headers=headers)
     assert read.status_code == 200, read.text
     turn, = [row for row in read.json()['messages'] if row['message_id'] == mid]
-    assert turn['answer'] == answer and turn['status'] == 'completed'
+    assert turn['answer'] == answer.replace('UNKNOWN','not yet verified') and turn['status'] == 'completed'
     tag, = turn['memory']['tags']
     assert tag['text'] == question
     assert api.post(send,headers=headers,content=payload).json() == accepted.json()
@@ -616,6 +619,10 @@ def check_lio_provider_wire(root, database, auth, runtime, actor, api, headers):
         rows = db.execute("""SELECT o.attempt_id,o.kind,o.registration_id FROM cj_run_metered_operation o
             JOIN cj_message_receipt m USING(scope,run_id) WHERE m.message_id=%s""",(mid,)).fetchall()
         ledger = decode_ledger(db.execute('SELECT ledger FROM cj_usage_ledger_candidate').fetchone()[0])
+        original_answer = db.execute('''SELECT e.value FROM cj_run_event e
+            JOIN cj_message_receipt m USING(scope,run_id) WHERE m.message_id=%s AND e.kind='text_delta'
+            ORDER BY e.sequence''',(mid,)).fetchall()
+        assert ''.join(value for value, in original_answer) == answer
     assert {(kind,registration) for _,kind,registration in rows} == {
         ('model','model.tool_turn'),('memory','memory.lio_extract.1')}
     assert all(ledger.attempts[key].state == 'settled' for key,_,_ in rows)

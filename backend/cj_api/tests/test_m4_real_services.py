@@ -561,8 +561,9 @@ class Boundaries(unittest.TestCase):
         from cj_message.lio_context import answer_prompt
         lio = tools._model_input(ModelInput(
             [dict(role='user',content='Synthetic Lio question')], TOOL_SYSTEM + ' ' + answer_prompt('en'),
-            provider, {}))
+            provider, {}, lio_answer=True))
         lio_input = json.loads(lio.original_bytes)
+        self.assertEqual(lio_input['answer_format_profile'],'lio-user.1')
         self.assertEqual(lio_input['native_turn_profile'], M4_NATIVE_TURN_PROFILE_V2)
         self.assertEqual(lio_input['native_tools'], tools.native_tools)
         self.assertIn('You are Lio', lio_input['system'])
@@ -629,6 +630,27 @@ class Boundaries(unittest.TestCase):
             with self.assertRaises(BudgetUnknown):
                 list(invoke())
         self.assertEqual(len(requests),1)
+
+    def test_lio_timeline_keeps_uncertainty_plain_and_withholds_internal_answers(self):
+        from cj_api.lio_dialogue_routes import _message
+        from cj_message.lio_timeline import TimelineMessage
+
+        def completed(text):
+            return SimpleNamespace(status='completed',text=text,draft_outcome=None,effects=())
+
+        english = TimelineMessage('message','run',1,'Can I run in the park?', 'en')
+        chinese = TimelineMessage('message','run',1,'开放了吗？', 'zh')
+        self.assertEqual(_message(english,completed('The hours are UNKNOWN.'))['answer'],
+                         'The hours are not yet verified.')
+        self.assertEqual(_message(chinese,completed('开放时间：UNKNOWN。'))['answer'],'开放时间：尚未核实。')
+        self.assertEqual(_message(english,completed('You can run in the park.'))['answer'],
+                         'You can run in the park.')
+        for item, answer in ((english,'The RUN receipt contains your run_id.'),
+                             (chinese,'我核对了消息投递和原回执。')):
+            with self.subTest(locale=item.locale):
+                view = _message(item,completed(answer))
+                self.assertEqual((view['answer'],view['status'],view['failure']),('','failed','unavailable'))
+                self.assertEqual(view['text'],item.text)
 
     def test_lio_place_timestamp_uses_the_display_wire_type(self):
         from cj_api.local_app import ISSUER,scope_for

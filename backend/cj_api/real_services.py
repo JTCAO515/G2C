@@ -98,6 +98,7 @@ class ModelInput:
     native_reply:dict
     final_answer:bool=False
     turn_profile:str=M4_NATIVE_TURN_PROFILE_V2
+    lio_answer:bool=False
 
 
 def canonical_tool(name,raw):
@@ -230,6 +231,7 @@ class RealTools:
         raw=canonical(dict(messages=messages,system=system,endpoint=M4_BASE,model=M4_MODEL,synthetic_only=True,
                            native_tools=self.native_tools if native_turn else None,
                            **({'response_mode':'lio-memory-json.1'} if release_after_send else {}),
+                           **({'answer_format_profile':'lio-user.1'} if native_turn and argument.lio_answer else {}),
                            **({'native_turn_profile':turn_profile,'external_tools_disabled':final_answer} if native_turn else {})))
         inputs=json.loads(raw);metadata={}
         def bind(operation,guard):
@@ -247,7 +249,8 @@ class RealTools:
                     yield from self.services.model.invoke(inputs['messages'],inputs['system'],operation.command.attempt_id,
                         tools=inputs['native_tools'],receipt=metadata,guard=checked,native_reply=native_reply,
                         native_turn_profile=inputs.get('native_turn_profile'),final_answer=inputs.get('external_tools_disabled',False),
-                        release_after_send=inputs.get('response_mode')=='lio-memory-json.1')
+                        release_after_send=inputs.get('response_mode')=='lio-memory-json.1',
+                        lio_answer=inputs.get('answer_format_profile')=='lio-user.1')
             return invoke
         return InvocationInput(raw,None,bind,_receipt(metadata))
 
@@ -326,7 +329,8 @@ class RealTools:
             native_reply={}
             chunks=worker._registered_stream(binding,'model.tool_turn.'+str(round_index),'model.tool_turn',
                 ModelInput(messages,system,worker.provider,native_reply,
-                    final_answer=round_index==turns-1 or len(seen)==MAX_TOOLS_PER_RUN,turn_profile=profile))
+                    final_answer=round_index==turns-1 or len(seen)==MAX_TOOLS_PER_RUN,turn_profile=profile,
+                    lio_answer=lio_locale is not None))
             if incremental:
                 raw=None
                 with closing(chunks):
