@@ -1,0 +1,295 @@
+#if os(iOS)
+import SwiftUI
+import CJRunClient
+
+public struct LioHome<MenuContent: View>: View {
+    private let language: LioLanguage
+    private let isDemo: Bool
+    private let menu: MenuContent
+    @State private var conversation: LioConversation
+    @State private var draft = ""
+    @State private var menuOpen = false
+    @State private var source: LioSource?
+    @FocusState private var typing: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    public init(language: LioLanguage, service: LioService, isDemo: Bool,
+                @ViewBuilder menu: () -> MenuContent) {
+        self.language = language
+        self.isDemo = isDemo
+        self.menu = menu()
+        _conversation = State(initialValue: LioConversation(service: service))
+    }
+
+    public var body: some View {
+        let pending = conversation.pending
+        ScrollViewReader { scroll in
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 22) {
+                    if conversation.turns.isEmpty { examples }
+                    ForEach(conversation.turns) { turn in
+                        turnView(turn)
+                    }
+                    Color.clear.frame(height: 1).id("lio.bottom")
+                }
+                .frame(maxWidth: 680)
+                .padding(.horizontal, 18)
+                .padding(.top, 86)
+                .padding(.bottom, 12)
+                .frame(maxWidth: .infinity)
+            }
+            .scrollDismissesKeyboard(.interactively)
+            .onChange(of: conversation.turns.count) { _, _ in
+                if reduceMotion { scroll.scrollTo("lio.bottom", anchor: .bottom) }
+                else { withAnimation(.easeOut(duration: 0.22)) { scroll.scrollTo("lio.bottom", anchor: .bottom) } }
+            }
+            .onChange(of: conversation.turns.last?.status) { _, status in
+                if status == .finished { scroll.scrollTo("lio.bottom", anchor: .bottom) }
+            }
+        }
+        .background(Color(uiColor: .systemBackground))
+        .overlay(alignment: .top) { floatingControls }
+        .safeAreaInset(edge: .bottom, spacing: 0) { composer }
+        .sheet(isPresented: $menuOpen) {
+            NavigationStack {
+                List {
+                    if isDemo {
+                        Text(language.text("Sample replies only", "仅提供演示回答"))
+                    }
+                    menu
+                }
+                .navigationTitle(language.text("Menu", "菜单"))
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button(language.text("Done", "完成")) { menuOpen = false }
+                    }
+                }
+            }
+        }
+        .sheet(item: $source) { selected in
+            LioSourceSheet(source: selected, language: language)
+        }
+        .task(id: pending?.id) {
+            if let pending { await conversation.receive(pending) }
+        }
+    }
+
+    private var floatingControls: some View {
+        ZStack(alignment: .leading) {
+            HStack(spacing: 8) {
+                Image("LioAvatar", bundle: .module)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 34, height: 34)
+                    .clipShape(Circle())
+                    .accessibilityHidden(true)
+                Text("Lio").font(.headline)
+            }
+            .padding(6)
+            .padding(.trailing, 8)
+            .background(.regularMaterial, in: Capsule())
+            .frame(maxWidth: .infinity)
+            .accessibilityIdentifier("lio.name")
+            Button {
+                typing = false
+                menuOpen = true
+            } label: {
+                Text("≋")
+                    .font(.title3.weight(.medium))
+                    .frame(width: 48, height: 48)
+                    .background(.regularMaterial, in: Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(language.text("Menu", "菜单"))
+            .accessibilityIdentifier("lio.menu")
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+    }
+
+    private var examples: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(language.text("Where are you headed?", "你想去哪儿？"))
+                .font(.title2.weight(.semibold))
+            if isDemo {
+                Text(language.text("Try a sample question.", "可以先试一个示例问题。"))
+                    .font(.subheadline)
+                    .foregroundStyle(Color.primary.opacity(0.78))
+                ForEach(Array(LioDemo.examples(language).enumerated()), id: \.offset) { index, example in
+                    Button {
+                        draft = example
+                        typing = true
+                    } label: {
+                        HStack(spacing: 12) {
+                            RunReadableText(text: example)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            Image(systemName: "arrow.up.left").accessibilityHidden(true)
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .frame(minHeight: 48)
+                        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(example)
+                    .accessibilityIdentifier("lio.example.\(index)")
+                }
+            }
+        }
+    }
+
+    private var composer: some View {
+        let placeholder = language.text("Start chatting", "开始聊天")
+        let canSend = !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && conversation.pending == nil
+        return HStack(alignment: .bottom, spacing: 10) {
+            TextField(placeholder, text: $draft, prompt: Text(placeholder).foregroundStyle(Color.primary.opacity(0.78)), axis: .vertical)
+                .lineLimit(1...5)
+                .frame(minHeight: 44)
+                .focused($typing)
+                .accessibilityIdentifier("lio.composer")
+            Button {
+                conversation.send(draft, language: language)
+                draft = ""
+                typing = false
+            } label: {
+                Image(systemName: "arrow.up")
+                    .font(.body.weight(.semibold))
+                    .frame(width: 44, height: 44)
+                    .foregroundStyle(canSend ? Color(uiColor: .systemBackground) : Color.primary.opacity(0.72))
+                    .background(canSend ? Color.primary : Color(uiColor: .tertiarySystemFill), in: Circle())
+            }
+            .disabled(!canSend)
+            .buttonStyle(.plain)
+            .accessibilityLabel(language.text("Send", "发送"))
+            .accessibilityIdentifier("lio.send")
+        }
+        .padding(.leading, 16)
+        .padding(5)
+        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 27))
+        .frame(maxWidth: 680)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity)
+        .background(Color(uiColor: .systemBackground))
+    }
+
+    private func turnView(_ turn: LioTurn) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 4) {
+                Spacer(minLength: 32)
+                if turn.status == .failed(.notSent) {
+                    Button {
+                        conversation.resend(turn.id)
+                    } label: {
+                        Image(systemName: "exclamationmark.circle.fill")
+                            .foregroundStyle(.red)
+                            .frame(width: 44, height: 44)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(conversation.pending != nil)
+                    .accessibilityLabel(language.text("Send again", "重新发送"))
+                    .accessibilityIdentifier("lio.resend")
+                }
+                Text(turn.question.text)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 19))
+                    .textSelection(.enabled)
+                    .accessibilityIdentifier("lio.question")
+            }
+            if !turn.answer.isEmpty {
+                Text(turn.answer)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .textSelection(.enabled)
+                    .accessibilityIdentifier("lio.answer")
+            }
+            messageStatus(turn)
+            ForEach(turn.sources) { item in
+                Button { source = item } label: {
+                    Label(item.title, systemImage: "link")
+                        .font(.footnote)
+                        .padding(.horizontal, 11)
+                        .frame(minHeight: 44)
+                        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("lio.source")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func messageStatus(_ turn: LioTurn) -> some View {
+        switch turn.status {
+        case .thinking:
+            statusLine(language.text("Thinking…", "思考中…"))
+        case .working(let activity):
+            let status = switch activity {
+            case .places: language.text("Looking up places…", "正在找地点…")
+            case .weather: language.text("Checking the weather…", "正在查天气…")
+            case .directions: language.text("Looking for directions…", "正在找路线…")
+            }
+            statusLine(status)
+        case .failed(let failure):
+            let message = switch failure {
+            case .notSent: language.text("Message couldn’t be sent. Check your connection and tap to try again.",
+                                         "消息没发出去。检查网络后，点感叹号重发。")
+            case .dailyLimit: language.text("You’ve used today’s 40 questions. Try again tomorrow.",
+                                            "今天的 40 个问题已用完，明天再来聊吧。")
+            case .unfinished: language.text("I couldn’t finish this one.", "这次没答完。")
+            case .waiting: language.text("I don’t have an answer for this yet.", "这条消息暂时还没有回答。")
+            case .unavailable: language.text("Chat isn’t available right now.", "现在暂时不能聊天。")
+            }
+            Text(message)
+                .font(.footnote)
+                .foregroundStyle(Color.primary.opacity(0.78))
+                .accessibilityIdentifier("lio.failure")
+            if failure == .unfinished {
+                Button(language.text("Ask again", "重新问")) { conversation.askAgain(turn.id) }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
+                    .disabled(conversation.pending != nil)
+                    .accessibilityIdentifier("lio.askAgain")
+            }
+        case .answering, .finished:
+            EmptyView()
+        }
+    }
+
+    private func statusLine(_ title: String) -> some View {
+        Label(title, systemImage: "ellipsis.bubble")
+            .font(.footnote)
+            .foregroundStyle(Color.primary.opacity(0.78))
+            .accessibilityIdentifier("lio.progress")
+    }
+}
+
+private struct LioSourceSheet: View {
+    let source: LioSource
+    let language: LioLanguage
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Text(source.title).textSelection(.enabled)
+                if let url = source.url {
+                    Link(language.text("Open source", "打开来源"), destination: url)
+                } else {
+                    Text(language.text("No link for this source.", "这条来源没有链接。"))
+                        .foregroundStyle(Color.primary.opacity(0.78))
+                }
+            }
+            .navigationTitle(language.text("Source", "来源"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(language.text("Done", "完成")) { dismiss() }
+                }
+            }
+        }
+    }
+}
+#endif

@@ -1,8 +1,10 @@
 import SwiftUI
 import CJShell
+#if G2C_LIO_APP
+import CJLioUser
+#endif
 
-/// G2C App entry: the four-tab Muse shell (P2c). The state lives for the window lifetime;
-/// no `.id(language)` or recreation on language change (CJShell README).
+/// The native product uses Lio. Development profiles keep their existing shell.
 @main
 struct CJProbeApp: App {
     @State private var shell: ShellState
@@ -54,21 +56,41 @@ struct CJProbeApp: App {
             else { Text(shell.language.text("Secure demo session is unavailable.", "安全演示会话暂不可用。")) }
             #elseif DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
             #if targetEnvironment(simulator)
-            if ProcessInfo.processInfo.arguments.contains("--demo-v2-preview"),
+            #if G2C_LIO_APP
+            if ProcessInfo.processInfo.arguments.contains("--lio-preview"),
                !ProcessInfo.processInfo.environment.keys.contains(where: { $0.hasPrefix("G2C_DEV_") }),
                development == nil, developmentAccounts == nil, !developmentFailed {
-                DemoV2Preview(shell: shell)
+                LioHome(language: shell.language.lio, service: .demo, isDemo: true) { LioLanguagePicker(shell: shell) }
             } else {
-                developmentShell
+                debugPreviewOrShell
             }
+            #else
+            debugPreviewOrShell
+            #endif
             #else
             developmentShell
             #endif
-            #else
+            #elseif DEBUG || !G2C_LIO_APP
+            // The generated acceptance projects keep the disconnected shell
+            // to exercise their existing Release negative cases.
             ShellView(state: shell)
+            #else
+            LioHome(language: shell.language.lio, service: .unavailable, isDemo: false) { LioLanguagePicker(shell: shell) }
             #endif
         }
     }
+
+    #if DEBUG && targetEnvironment(simulator)
+    @ViewBuilder private var debugPreviewOrShell: some View {
+        if ProcessInfo.processInfo.arguments.contains("--demo-v2-preview"),
+           !ProcessInfo.processInfo.environment.keys.contains(where: { $0.hasPrefix("G2C_DEV_") }),
+           development == nil, developmentAccounts == nil, !developmentFailed {
+            DemoV2Preview(shell: shell)
+        } else {
+            developmentShell
+        }
+    }
+    #endif
 
     #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
     private var developmentShell: some View {
@@ -108,3 +130,21 @@ struct CJProbeApp: App {
     }
     #endif
 }
+
+#if G2C_LIO_APP
+extension ShellLanguage {
+    var lio: LioLanguage { self == .chinese ? .chinese : .english }
+}
+
+struct LioLanguagePicker: View {
+    let shell: ShellState
+
+    var body: some View {
+        Picker(shell.language.text("Language", "语言"),
+               selection: Binding(get: { shell.language }, set: { shell.selectLanguage($0) })) {
+            Text("English").tag(ShellLanguage.english)
+            Text("简体中文").tag(ShellLanguage.chinese)
+        }
+    }
+}
+#endif
