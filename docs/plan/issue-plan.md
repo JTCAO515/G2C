@@ -64,7 +64,7 @@
 
 | 线 | 队列 | 本线拥有的文件 | 跨线依赖 |
 |---|---|---|---|
-| A App | #398/#498/#4 CLOSED → #29 按 JT 2026-11-08 修订验收；#605 和 PR658 已关闭 | ios/**、本线获准文档 | 等指定 iPhone 重连及 B 新两小时窗口，见 M4 现行队列 |
+| A App | #398/#498/#4 CLOSED → #29 按 JT 修订验收；#605 和 PR658 已关闭 | ios/**、本线获准文档 | 等 B 公域候选后验及两小时功能窗口，见 M4 现行队列 |
 | B 后端消息与运行 | 本轮[#354](https://github.com/JTCAO515/G2C/issues/354)/[#360](https://github.com/JTCAO515/G2C/issues/360)/[#378](https://github.com/JTCAO515/G2C/issues/378)均CLOSED（PR359/379/380/382）；goal结束仅B交接，C实际B接口缺口优先响应360/343；315按JT保持OPEN不投入 | `backend/run/**`、`backend/message/**`、`backend/needs/**`、`backend/usage/**`、`backend/cj_api/**`、`backend/place/**`、`backend/fact/**`、`scripts/dev_auth.py`；下列 B 线协调文件 | source1 needs-structured.1与source2 needs-current-trip.1独立正式入口；publisher@2/M29同cursor结果与新读版本供C336/A337。C381/M30生产交付由C负责，A App/真实资源按各owner验，不由B probe/后端验收代称全M2完成；业务锁已释放 |
 | C M2后端记忆、草稿与可行性 | M2本线已派后端均交：366/374/336及25后端完成；保持原M2 goal，继续处理真实C-owner联调缺口，当前唯一剩余21地图按JT暂缓UNRUN | backend/trip/**、backend/draft/**、backend/feasibility/**、backend/agent/cj_agent/draft.py、backend/memory/**、backend/memory_management/**、backend/memory_jobs/**、backend/memory_withdrawal/**、backend/manual_edit/**；只做后端 | B354/360/378及A337/373/286/22/25均已交闭；C381同RUN cursor结果/受保护读取与M30已合并。实时M2仅21地图综合余项，JT决定授权调整、A实施；无独立C项时保留实际停点，不重复测试/handoff或求同一地图授权，不将M2标complete。 |
 
@@ -190,7 +190,7 @@
 
 | 线 | 队列 | 新增拥有的文件 | 依赖 |
 |---|---|---|---|
-| A App | #398/#498/#4 CLOSED；#660 App 组装已合，L1 未验；[#29](https://github.com/JTCAO515/G2C/issues/29) 首窗中文失败、英文 UNRUN。B 的 #668 独立公域候选验证通过 | 无新增，仍仅本线 ios 与获准文档 | 旧窗已到期。等指定 iPhone 重连解锁及 B 新 0600 两小时窗，与 C 错峰。原离线到期只作被动观察 |
+| A App | #660 App 组装已合，L1 未验；[#29](https://github.com/JTCAO515/G2C/issues/29) 等中英连续真机验收。PR677 已部署，原草稿校验见 #680 | 无新增，仍仅本线 ios 与获准文档 | 等 B 公域候选及新 0600 两小时功能窗口。窗口结束后等 (b2) 迁移完成再续窗。原离线到期只作被动观察 |
 | B 后端与平台 | #2/#496/#527/#539/#523/#593 已关闭。#32/#630 延迟 Goal BLOCKED，#30 待已批 OSS 核验窗口 | 新增部署目录、备份恢复脚本 | JT 模型流与合成 beta-b 凭据时长批准，A 渲染及 C 核证，见 #495/#630 |
 | C 质量 | #28 不变量（本机 L1）→ #497 评测集与判定程序 → #32 真实复跑 | `eval/**`（JT 本轮明确归C） | 真实复跑等 #2、#495、#225 及B正式真实入口 |
 
