@@ -45,15 +45,14 @@ private struct LioAccountDeletion: View {
     let root: DevelopmentAccountRoot
     @Environment(\.scenePhase) private var phase
     @State private var confirmed = false
-    @State private var reportStarted = false
-    @State private var finishStarted = false
 
     private var language: ShellLanguage { shell.language }
 
     var body: some View {
         Form {
-            Text(language.text("This deletes your G2C account and its data. Other devices clear their data when they reconnect. Backups are kept for up to 30 days.",
-                               "注销会删除你的 G2C 账号及其数据。其他设备会在重新联网后清理，备份最多保留 30 天。"))
+            Text(language.text(
+                "This requests deletion of your G2C account and its data. Saved content may still be visible on other devices while they’re offline. Backups roll off after 30 days. Other services manage their own copies.",
+                "注销会申请删除你的 G2C 账号及其数据。其他设备离线时可能仍能看到已保存的内容。备份按 30 天滚动保留，其他服务的副本由各自管理。"))
             if let host = root.cleanup {
                 controls(host)
             } else {
@@ -71,10 +70,12 @@ private struct LioAccountDeletion: View {
             Text(language.text("Your account was deleted and data on this device was cleared.", "账号已注销，本机数据已清理。"))
             Button(language.text("Done", "完成")) { root.finishDemoCleanup() }
                 .accessibilityIdentifier("demo.cleanup.done")
-        } else if value.businessStopped {
-            Text(language.text("Your account can no longer be used. Cleanup is still in progress.", "账号已停用，数据仍在清理。"))
         } else if value.unavailable || value.unknown {
-            Text(language.text("Account deletion hasn’t finished. Keep this device connected.", "账号注销尚未完成，请保持联网。"))
+            Text(language.text("We don’t know if deletion has finished yet. Keep this device connected.",
+                               "暂时还不清楚注销是否完成，请保持联网。"))
+        } else if value.businessStopped {
+            Text(language.text("You can’t use this account on this device while cleanup continues.",
+                               "清理期间，暂时无法在本机使用此账号。"))
         }
         if host.busy || value.preparing { ProgressView() }
         if value.canReview {
@@ -96,6 +97,12 @@ private struct LioAccountDeletion: View {
             }
             .disabled(host.busy)
         }
+        if value.canFinalizeControls {
+            Button(language.text("Finish clearing this device", "清理本机剩余数据"), role: .destructive) {
+                host.perform(.finalizeControls)
+            }
+            .disabled(host.busy)
+        }
         Color.clear.frame(height: 0).accessibilityHidden(true)
             .task(id: phase) {
                 guard phase == .active else { return }
@@ -108,16 +115,15 @@ private struct LioAccountDeletion: View {
         while !Task.isCancelled, root.cleanup === host, !host.presentation.controlsFinalized {
             let value = host.presentation
             if !host.busy {
-                if value.canFinalizeControls, !finishStarted {
-                    finishStarted = true
-                    host.perform(.finalizeControls)
-                } else if value.canReportDevice, !reportStarted {
-                    reportStarted = true
+                let needsAccountUpdate = value.canRead && (value.unknown || value.businessStopped)
+                if value.canReportDevice {
+                    // The journal permits a new receipt only for an eligible
+                    // device result and blocks reuse after an ambiguous write.
                     host.perform(.reportDevice)
-                } else if value.canReadDevice, preferDevice || !value.canRead {
+                } else if value.canReadDevice, preferDevice || !needsAccountUpdate {
                     host.perform(.checkDevice)
                     preferDevice = false
-                } else if value.canRead, value.unknown || value.businessStopped {
+                } else if needsAccountUpdate {
                     host.perform(.checkOriginal)
                     preferDevice = true
                 }
