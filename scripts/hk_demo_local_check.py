@@ -131,6 +131,9 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
         reply_fields, _ = grounded_fields(turns, city, today)
         assert reply_fields['arrival']['date']['value'] == '2026-11-10'
         assert reply_fields['departure']['date']['value'] == '2026-11-12'
+    one_turn, _ = grounded_fields(
+        ('Plan a trip to Beijing for three days starting tomorrow.',), 'Beijing', today)
+    assert one_turn['departure']['date']['value'] == '2026-11-12'
     changed_city, _ = grounded_fields(
         ('Plan a trip to Shanghai from 2026-12-01 to 2026-12-03.',
          'Beijing, from 2026-12-11 to 2026-12-13.'), 'Beijing', today)
@@ -140,6 +143,9 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
         ('Plan a trip to Shanghai from 2026-12-01 to 2026-12-03.',
          '2026-12-04 to 2026-12-06.', 'Beijing.'), 'Beijing', today)
     assert unstated['arrival']['date']['state'] == 'missing'
+    separate_clauses, _ = grounded_fields(
+        ('Plan a trip to Shanghai from 2026-12-01 to 2026-12-03. Plan a Beijing itinerary.',), 'Beijing', today)
+    assert separate_clauses['arrival']['date']['state'] == 'missing'
     unrelated, _ = grounded_fields(
         ('Plan a trip to Beijing starting tomorrow, but we have a 7 day Shanghai trip later.',), 'Beijing', today)
     assert unrelated['departure']['date']['state'] == 'missing'
@@ -399,12 +405,13 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     assert cards[1]['trip']['title'] == 'Beijing walks'
     assert api.post(messages, content=change, headers=owner).status_code == 200
     assert worker.process() == []
-    assert api.post(messages, headers=owner, content=original(
-        'lio-withdrawal', 'Plan a trip to Beijing from 2026-12-01 to 2026-12-03. Do not save it.', 'en')).status_code == 200
-    calls = model.calls
-    assert [outcome.status for outcome in worker.process()] == ['completed'] and model.calls == calls
-    canceled = api.get(timeline, headers=owner).json()['messages'][-1]
-    assert canceled['trip'] is None and "won't save" in canceled['answer']
+    for i, withdrawal in enumerate(('Do not save it.', "Please don't save it yet.", 'Show me a draft without saving.')):
+        assert api.post(messages, headers=owner, content=original(
+            f'lio-withdrawal-{i}', 'Plan a trip to Beijing from 2026-12-01 to 2026-12-03. ' + withdrawal, 'en')).status_code == 200
+        calls = model.calls
+        assert [outcome.status for outcome in worker.process()] == ['completed'] and model.calls == calls
+        canceled = api.get(timeline, headers=owner).json()['messages'][-1]
+        assert canceled['trip'] is None and "won't save" in canceled['answer']
     assert api.post(messages, headers=owner, content=original(
         'lio-withdrawal-intake', '帮我规划旅行', 'zh')).status_code == 200
     assert [outcome.status for outcome in worker.process()] == ['completed']

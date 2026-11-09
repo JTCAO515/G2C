@@ -37,7 +37,10 @@ DESTINATION_NEUTRAL = re.compile(r'^(?:please\s+)?(?:plan|make|build|create)\s+(
                                  r'|^(?:请|帮我|给我)?\s*规划(?:一趟|一次|一个|一份)?(?:旅行|行程)', re.I)
 WITHDRAWAL = re.compile(
     r"^(?:never mind|forget it|cancel (?:the |this |my )?(?:trip|plan|itinerary))\b|"
-    r"\b(?:don't|don’t|do not) save(?: anything| it| this| (?:this|the|my) (?:trip|plan|itinerary))?$|"
+    r"\b(?:don't|don’t|do not|never) (?:automatically )?(?:save|store)"
+    r"(?: anything| it| this| (?:this|the|my) (?:trip|plan|itinerary))?"
+    r"(?=\s*(?:$|[,，]|yet\b|until\b|for now\b|right now\b))|"
+    r"\b(?:without saving|hold off on saving|wait before saving)\b|"
     r'^(?:算了|不用规划了)(?:$|[，, ])|(?:先别|不要|不用)保存(?:这个|这份|我的)?(?:行程|规划)?$',
     re.I,
 )
@@ -129,18 +132,20 @@ def _compatible_turns(turns, city):
     retained = []
     waiting_for_city = False
     for turn in turns:
-        clauses = _clauses(turn)
-        plans = [clause for clause in clauses if PLAN_REQUEST.match(clause)]
-        named = stated_city((turn,), city)
-        if plans and not named and not all(DESTINATION_NEUTRAL.fullmatch(clause) for clause in plans):
-            retained.clear()
-            waiting_for_city = True
-            continue
-        if named or any(city in clause and CITY_REPLY.match(clause) and not NEGATED.search(clause)
-                        for clause in clauses):
-            waiting_for_city = False
-        if not waiting_for_city:
-            retained.append(turn)
+        compatible = []
+        for clause in _clauses(turn):
+            named = stated_city((clause,), city)
+            if PLAN_REQUEST.match(clause) and not named and not DESTINATION_NEUTRAL.fullmatch(clause):
+                retained.clear()
+                compatible.clear()
+                waiting_for_city = True
+                continue
+            if named or (city in clause and CITY_REPLY.match(clause) and not NEGATED.search(clause)):
+                waiting_for_city = False
+            if not waiting_for_city:
+                compatible.append(clause)
+        if compatible:
+            retained.append('\n'.join(compatible))
     return tuple(retained)
 
 
@@ -150,7 +155,8 @@ def _timing_follows_destination(clause, position, *, absolute):
     if destination is None or destination.end() > position:
         return False
     gap = clause[destination.end():position]
-    expected = TRIP_PARTY_GAP + (r'(?:from|从|在)\s*' if absolute else '')
+    expected = TRIP_PARTY_GAP + (r'(?:from|从|在)\s*' if absolute
+                                else rf'(?:for\s+(?:{NUMBER})\s+days?\s+)?')
     return re.fullmatch(expected, gap, re.I) is not None
 
 
