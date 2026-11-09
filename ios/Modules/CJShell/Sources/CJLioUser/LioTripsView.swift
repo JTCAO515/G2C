@@ -41,6 +41,7 @@ struct LioTripsView: View {
     let itineraries: [LioItinerary]
     let language: LioLanguage
     let library: LioTripLibrary?
+    let recordedMap: (@MainActor (StructuredTripDocument) -> AnyView)?
     let openChat: () -> Void
     @State private var mapDay: LioItinerary.Day?
     @State private var saved: [StructuredTripSummary]?
@@ -74,6 +75,12 @@ struct LioTripsView: View {
                         ForEach(itineraries) { itinerary in
                             Section(itinerary.title) {
                                 LioTripDays(itinerary: itinerary, language: language) { mapDay = $0 }
+                                if let library {
+                                    NavigationLink(language.text("Trip details", "行程详情")) {
+                                        LioTripDetail(tripID: itinerary.id, title: itinerary.title, library: library,
+                                                      language: language, recordedMap: recordedMap)
+                                    }
+                                }
                             }
                         }
                         if listUnavailable {
@@ -85,7 +92,7 @@ struct LioTripsView: View {
                             let visible = Set(itineraries.map(\.id))
                             ForEach(saved.filter { !visible.contains($0.tripID) }, id: \.tripID) { trip in
                                 NavigationLink(trip.title) {
-                                    LioTripDetail(summary: trip, library: library, language: language)
+                                    LioTripDetail(tripID: trip.tripID, title: trip.title, library: library, language: language, recordedMap: recordedMap)
                                 }
                             }
                         }
@@ -115,19 +122,22 @@ struct LioTripsView: View {
 }
 
 private struct LioTripDetail: View {
-    let summary: StructuredTripSummary
+    let tripID: String
+    let title: String
     let library: LioTripLibrary
     let language: LioLanguage
-    @State private var itinerary: LioItinerary?
+    let recordedMap: (@MainActor (StructuredTripDocument) -> AnyView)?
+    @State private var record: StructuredTripRecord?
     @State private var unavailable = false
     @State private var attempt = 0
     @State private var mapDay: LioItinerary.Day?
 
     var body: some View {
         Group {
-            if let itinerary {
+            if let record {
                 List {
-                    LioTripDays(itinerary: itinerary, language: language) { mapDay = $0 }
+                    LioTripDays(itinerary: LioItinerary(record), language: language) { mapDay = $0 }
+                    if let recordedMap { recordedMap(record.document) }
                 }
             } else if unavailable {
                 ContentUnavailableView {
@@ -139,17 +149,17 @@ private struct LioTripDetail: View {
                 ProgressView()
             }
         }
-        .navigationTitle(summary.title)
+        .navigationTitle(title)
         .sheet(item: $mapDay) { day in
             LioDayMap(day: day, language: language)
         }
         .task(id: attempt) {
             unavailable = false
             do {
-                let record = try await library.detail(summary.tripID)
+                let value = try await library.detail(tripID)
                 try Task.checkCancellation()
-                itinerary = record.map(LioItinerary.init)
-                unavailable = itinerary == nil
+                record = value
+                unavailable = value == nil
             } catch is CancellationError {
                 return
             } catch {

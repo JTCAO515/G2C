@@ -12,7 +12,10 @@ struct DemoBetaRootView: View {
             if root.finishingDemoCleanup {
                 NavigationStack { LioAccountDeletion(shell: shell, root: root) }
             } else if case .signedIn = root.accounts.state, let trip = root.trip {
-                LioHome(language: shell.language.lio, service: trip.messages.lio, isDemo: false, tripLibrary: trip.lioTripLibrary) {
+                LioHome(language: shell.language.lio, service: trip.messages.lio, isDemo: false,
+                        tripLibrary: trip.lioTripLibrary, recordedMap: { document in
+                    AnyView(LioRecordedTripMap(document: document, language: shell.language))
+                }) {
                     LioLanguagePicker(shell: shell)
                     NavigationLink(shell.language.text("Delete account", "注销账号")) {
                         LioAccountDeletion(shell: shell, root: root)
