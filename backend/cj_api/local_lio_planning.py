@@ -25,7 +25,7 @@ PLAN_REQUEST = re.compile(
     r"(?:规划|(?:安排|设计|做)(?:个|一个|一份)?[^。！？.!?]*(?:行程|日游|天游|旅行|旅游|游玩|攻略))"
     r"|(?:(?:can|could|would) you\s+|please\s+|i(?: would|'d) like you to\s+)?"
     r"(?:help (?:me|us) (?:to )?)?(?:plan|build|create|organize|put together|draft|make)\b"
-    r"[^.!?]*\b(?:itinerary|trip|visit)\b))",
+    r"[^.!?]*\b(?:itinerary|trip|visit|days?\s+in)\b))",
     re.IGNORECASE,
 )
 ASK_MORE = 'lio_planning_needs_details'
@@ -186,7 +186,7 @@ def extract(worker, binding, locale, texts, references):
             city = None
         value = json.loads(preview(encode(envelope['extraction']), message_id=binding.message_id,
                                    run_id=binding.run_id, source_text=source))
-        fields, missing_fixed = grounded_fields(source, city, value['fields'], today)
+        fields, missing_fixed = grounded_fields(source, city, today)
     except (InvalidInput, UnicodeError) as exc:
         raise ProviderUnknown('Lio planning details unavailable') from exc
     questions = []
@@ -202,6 +202,6 @@ def extract(worker, binding, locale, texts, references):
     questions.extend(q['text_zh' if locale == 'zh' else 'text_en'] for q in value['questions']
                      if q['field'] == 'fixed_items')
     if missing_fixed:
-        questions.append('哪项安排需要保留？请告诉我具体哪天、几点开始和结束。' if locale == 'zh'
-                         else 'Which arrangement should I keep? Please share the day and its start and end times.')
+        questions.append('哪项安排需要保留？请告诉我谁参加、哪天以及开始和结束时间。' if locale == 'zh'
+                         else 'Which arrangement should I keep? Please share who is going, the day, and the start and end times.')
     return PlanningDetails(city, fields, ' '.join(questions) if questions else None, references)

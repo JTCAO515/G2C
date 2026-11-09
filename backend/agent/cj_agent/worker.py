@@ -150,7 +150,8 @@ class RunWorker:
         sequence = state.sequence + 1
         try:
             event = Event(binding, sequence, f'{binding.run_id}:{sequence}', kind, value)
-            memory_effect=self.memory_run is not None and kind in {'text_delta','completed','draft_outcome'}
+            memory_effect=self.memory_run is not None and (
+                mutation is not None or kind in {'text_delta','completed','draft_outcome'})
             travel_effect=self.message_context is not None and kind in {'started','text_delta','completed','effect_committed'}
             if not memory_effect and not travel_effect and mutation is None:
                 return self.runs.apply(event)

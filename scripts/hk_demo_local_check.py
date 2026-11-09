@@ -100,7 +100,7 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     from cj_run.core import Binding, ResyncRequired
     from cj_trip.confirmation import ConfirmationSigner
     from cj_trip.domain import CommitUnknown as TripCommitUnknown
-    from cj_api.lio_planning_grounding import grounded_fields
+    from cj_api.lio_planning_grounding import grounded_fields, stated_city
     from datetime import date
     from deploy.hk import entrypoint
 
@@ -116,19 +116,32 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
 
     fixed_words = 'The hotel meetup from 9 to 10 a.m. on the first day is fixed'
     sample = f'Plan three days in Beijing for two people starting tomorrow. {fixed_words}.'
-    grounded, missing = grounded_fields(sample, 'Beijing', {'fixed_items': [
-        dict(description=fixed_words), dict(description='Hotel Fabricated is booked')]}, date(2026, 11, 9))
+    today = date(2026, 11, 9)
+    grounded, missing = grounded_fields(sample, 'Beijing', today)
     assert not missing and len(grounded['fixed_items']) == 1
     assert grounded['arrival']['date']['value'] == '2026-11-10'
     assert grounded['departure']['date']['value'] == '2026-11-12'
     assert grounded['fixed_items'][0]['start']['time']['value'] == '09:00'
     assert grounded['fixed_items'][0]['booking_status'] == {'state':'unknown'}
+    negative = 'We have not actually booked a hotel for the first day 09:00 to 10:00.'
+    unconfirmed, missing = grounded_fields(negative, 'Beijing', today)
+    assert missing and 'fixed_items' not in unconfirmed
+    rejected_dates, _ = grounded_fields(
+        'I cannot travel on 2026-11-10. Travel from 2026-11-11 to 2026-11-12.', 'Beijing', today)
+    assert rejected_dates['arrival']['date']['value'] == '2026-11-11'
+    foreign_appointment, missing = grounded_fields(
+        'My daughter has an already booked appointment on 2026-11-11 from 09:00 to 10:00.',
+        'Beijing', today)
+    assert missing and 'fixed_items' not in foreign_appointment
+    assert not stated_city('Plan a trip from Beijing to Shanghai.', 'Beijing')
 
     messages = '/v1/lio/messages'
     timeline = '/v1/lio/timeline'
     scope = scope_for(ISSUER, other)
     database.provision(scope)
     owner = {**headers, 'Authorization': 'Bearer ' + dev_auth.token(auth, other, 300)}
+    legacy_only = {**headers, 'Authorization': 'Bearer ' + dev_auth.token(auth, 'legacy-dialogue-only', 300)}
+    assert api.get(timeline, headers=legacy_only).status_code == 403
     assert api.get(timeline, headers=owner).json() == dict(
         version='LIO-timeline.1', conversation_id=None, messages=[], next_before=None)
 
@@ -212,7 +225,7 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     model = LioModel()
     deferred = run_worker._worker_for_scope(database, model, auth, scope, checker_for(auth),
                                            demo_planning=True, require_lio_confirmation=True)
-    assert [outcome.status for outcome in deferred.process()] == ['waiting'] and model.calls == 0
+    assert [outcome.status for outcome in deferred.process()] == ['waiting','waiting'] and model.calls == 0
     worker = run_worker._worker_for_scope(database, model, auth, scope, checker_for(auth),
                                          demo_planning=True)
     assert [outcome.status for outcome in worker.process()] == ['completed', 'completed']
@@ -347,7 +360,7 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
 def exercise(root,conninfo):
     auth=root/'auth'
     other='other-dialogue-owner'
-    dev_auth.init(auth,[SUBJECT,other,'invited-outside-dialogue'])
+    dev_auth.init(auth,[SUBJECT,other,'invited-outside-dialogue','legacy-dialogue-only'])
     path=root/'conn.json'
     path.write_text(json.dumps(conninfo))
     now=int(time.time())
@@ -393,7 +406,8 @@ def exercise(root,conninfo):
         local_run_context.provision_budget(path,context,other)
         dev_auth.activate_travel(path,other,context,ABI)
         app=create_local_app(conninfo_path=None,auth_dir=auth,run_context=context,database=database,account_admission=True,
-            demo_dialogue_subjects=frozenset({SUBJECT,other}))
+            demo_dialogue_subjects=frozenset({SUBJECT,other,'legacy-dialogue-only'}),
+            lio_dialogue_subjects=frozenset({SUBJECT,other}))
         demo_login.register_demo_login(app)
         with demo_login.signing_socket(runtime),TestClient(app) as api:
             def login(code,consent=True):
