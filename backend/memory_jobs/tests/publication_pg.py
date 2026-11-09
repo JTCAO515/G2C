@@ -682,7 +682,8 @@ def exercise_lio_candidates(conninfo, auth):
     run_context = registered.profiles[actors[0]][1]
     for actor in actors:
         dev_auth.activate_travel(Path(conninfo), actor, run_context, ABI, auth_dir=auth)
-    slots = frozenset({'travel.pace'})
+    pace, quiet = 'I always like a slow travel pace.', 'I always prefer a quiet entrance.'
+    slots = frozenset({'travel.pace', 'quiet.entrance'})
     extraction = CollectionPolicy(frozenset({'self'}),slots,4,500,lambda entry:True,lambda entry,rows:True)
     memory_policy = ManualPolicy(extraction.subjects,slots,frozenset({'long_term'}),frozenset(),
         datetime.now(timezone.utc)+timedelta(hours=1),lambda command,raw:True,lambda command,raw:True)
@@ -710,7 +711,7 @@ def exercise_lio_candidates(conninfo, auth):
         head=client.put('/v1/conversations',params={'conversation_id':chat},headers=headers)
         assert head.status_code==200,head.text
         for index,(mid,text) in enumerate((('lio-before','Tell me about a park.'),
-                (selected,'I always like a slow travel pace.'),('lio-after','What is the weather?'))):
+                (selected,pace+' '+quiet),('lio-after','What is the weather?'))):
             command=dict(version='MESSAGE-send.2',message_id=mid,text=text,conversation_id=chat,trip_id=None,
                          creation_intent='none',expected_generation=head.json()['generation'],
                          expected_sequence=index,travel_context=None,needs_reference=None)
@@ -730,16 +731,17 @@ def exercise_lio_candidates(conninfo, auth):
         assert (query.after,query.through,prepared['state'])==(1,2,'inflight')
         raw=prepared['prepared_input_utf8'].encode()
         turn,=json.loads(json.loads(raw)['messages'][0]['content'])['messages']
-        assert turn['text']=='I always like a slow travel pace.'
+        assert turn['text']==pace+' '+quiet
         assert json.loads(lio.prepare(token,selected,receipt['run_id'],max_payload_bytes=8192))['prepared_input_utf8'] is None
         for subject,run in ((other,receipt['run_id']),(token,'other-run')):
             try:lio.prepare(subject,selected,run,max_payload_bytes=8192)
             except Unavailable:pass
             else:raise AssertionError('foreign owner or wrong original RUN scheduled')
 
-        model=encode(dict(version='MEMORY-EXTRACT@2',entries=[dict(subject='self',slot='travel.pace',
-            kind='preference',text=turn['text'],extent='long_term',occurred_at='date unknown',
-            evidence=[dict(ref=turn['ref'],quote=turn['text'])])]))
+        model=encode(dict(version='MEMORY-EXTRACT@2',entries=[dict(subject='self',slot=slot,
+            kind='preference',text=text,extent='long_term',occurred_at='date unknown',
+            evidence=[dict(ref=turn['ref'],quote=text)])
+            for slot,text in (('travel.pace',pace),('quiet.entrance',quiet))]))
         params=dict(message_id=selected,run_id=receipt['run_id'],max_payload_bytes=8192)
 
         def publish(context):
@@ -752,17 +754,18 @@ def exercise_lio_candidates(conninfo, auth):
 
         result=service.boundary.with_history_context(token,publish)
         assert json.loads(result)['version']==VERSION_DEMO
-        assert [row['status'] for row in json.loads(result)['receipts']]==['candidate']
+        assert [row['status'] for row in json.loads(result)['receipts']]==['candidate','candidate']
         assert service.boundary.with_history_context(token,lambda context:
             lio.query_publication_in_context(context,token,jid,aid,message_id=selected,run_id=receipt['run_id']))==result
         projected=json.loads(current())
-        card,=projected['candidates']
+        cards={card['slot']:card for card in projected['candidates']}
+        card,sibling=cards['travel.pace'],cards['quiet.entrance']
         assert json.loads(service.current_conversation_candidates(token,chat,''))['candidates']==[]
         try:service.query_original(token,jid,aid)
         except Unavailable:pass
         else:raise AssertionError('old job reader consumed a Lio job')
         with host.database.connect(scope_for(ISSUER,actors[0])) as conn:
-            assert conn.execute('SELECT status FROM cj_memory_item').fetchall()==[('candidate',)]
+            assert conn.execute('SELECT status FROM cj_memory_item').fetchall()==[('candidate',),('candidate',)]
             assert conn.execute('SELECT count(*) FROM cj_memory_history_consent').fetchone()==(0,)
             original,=conn.execute('SELECT original_input FROM cj_memory_history_job WHERE job_id=%s',(jid,)).fetchone()
             assert EnqueueCommand.parse(bytes(original)).query==query
@@ -773,7 +776,7 @@ def exercise_lio_candidates(conninfo, auth):
             **{key:card[key] for key in ('kind','text','extent','context','occurred_at')}))
         accepted=service.apply_candidate(token,choice)
         assert json.loads(accepted)['receipt']['status']=='active' and service.apply_candidate(token,choice)==accepted
-        assert json.loads(current())['candidates']==[]
+        assert json.loads(current())['candidates']==[sibling]
 
         def erase(context):
             repository,principal,guard=service._binding(context,token)
@@ -787,8 +790,14 @@ def exercise_lio_candidates(conninfo, auth):
                 guard('lio_erasure')
                 return b'null'
         service.boundary.with_history_context(token,erase)
-        assert json.loads(current())['candidates']==[]
-        print('PASS Lio protected middle Travel message, isolated queue, candidate-only Pub4, explicit save and erasure')
+        # Simulate removal of the exact shared payload after the canonical
+        # freeze. The retained origin and pending sibling remain user-visible.
+        with psycopg.connect(**json.loads(Path(conninfo).read_text())) as observer:
+            assert observer.execute('DELETE FROM cj_memory_history_job WHERE scope=%s AND job_id=%s '
+                'AND attempt_id=%s RETURNING job_id',(scope_for(ISSUER,actors[0]),jid,aid)).fetchone()==(jid,)
+        assert json.loads(current())['candidates']==[sibling]
+        assert json.loads(service.current_conversation_candidates(token,chat,''))['candidates']==[]
+        print('PASS Lio protected middle Travel message, candidate-only Pub4, explicit save and sibling after erasure')
 
 
 if __name__=='__main__':

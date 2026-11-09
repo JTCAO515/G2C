@@ -12,7 +12,7 @@ from .postgres import encode
 from .publication_store import PublicationTransaction
 from .service import Service,OperationWithheld
 from .source_policy import SourcePolicy
-from .lio_batch import VERSION as LIO_BATCH
+from .lio_batch import JOB_PREFIX as LIO_JOB_PREFIX, ATTEMPT_PREFIX as LIO_ATTEMPT_PREFIX
 
 
 def _candidate(item):
@@ -121,11 +121,10 @@ class CollectionService(Service):
                     JOIN cj_memory_item i ON (i.scope,i.source_id,i.item_id)=(o.scope,o.source_id,o.item_id)
                     WHERE o.scope=%s AND i.status='candidate' AND o.job_id>%s
                     AND o.origin_refs @> %s::jsonb
-                    AND NOT EXISTS(SELECT 1 FROM cj_memory_history_job j
-                        WHERE (j.scope,j.job_id,j.attempt_id)=(o.scope,o.job_id,o.attempt_id)
-                        AND convert_from(j.batch,'UTF8')::jsonb->>'version'=%s)
+                    AND NOT (o.job_id LIKE %s AND o.attempt_id LIKE %s)
                     ORDER BY o.job_id LIMIT 51''',
-                    (tx.scope,after_job_id,json.dumps([dict(conversation_id=conversation_id)]),LIO_BATCH))
+                    (tx.scope,after_job_id,json.dumps([dict(conversation_id=conversation_id)]),
+                     LIO_JOB_PREFIX+'%',LIO_ATTEMPT_PREFIX+'%'))
                 rows=tx.cur.fetchall()
                 value=dict(conversation_id=conversation_id,
                     jobs=[dict(job_id=job,attempt_id=attempt) for job,attempt in rows[:50]],
@@ -150,11 +149,10 @@ class CollectionService(Service):
                 tx.cur.execute('''SELECT i.item_id,o.job_id,o.attempt_id FROM cj_memory_item i
                     JOIN cj_memory_history_origin o ON (o.scope,o.source_id,o.item_id)=(i.scope,i.source_id,i.item_id)
                     WHERE i.scope=%s AND i.status='candidate' AND i.item_id>%s AND o.origin_refs @> %s::jsonb
-                    AND NOT EXISTS(SELECT 1 FROM cj_memory_history_job j
-                        WHERE (j.scope,j.job_id,j.attempt_id)=(o.scope,o.job_id,o.attempt_id)
-                        AND convert_from(j.batch,'UTF8')::jsonb->>'version'=%s)
+                    AND NOT (o.job_id LIKE %s AND o.attempt_id LIKE %s)
                     ORDER BY i.item_id LIMIT 51''',
-                    (tx.scope,after_candidate_id,json.dumps([dict(conversation_id=conversation_id)]),LIO_BATCH))
+                    (tx.scope,after_candidate_id,json.dumps([dict(conversation_id=conversation_id)]),
+                     LIO_JOB_PREFIX+'%',LIO_ATTEMPT_PREFIX+'%'))
                 rows=tx.cur.fetchall();values=[]
                 for iid,jid,attempt in rows[:50]:
                     item=memory.detail(iid)
