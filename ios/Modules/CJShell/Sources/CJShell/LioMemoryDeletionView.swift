@@ -46,6 +46,7 @@ struct LioMemoryDeletionView: View {
                     Button(language.text("Delete memory", "删除记忆"), role: .destructive) {
                         perform(model.prepareSubmission(acknowledged: true))
                     }
+                    .accessibilityIdentifier("lio.memory.delete.confirm")
                 } else if model.original != nil {
                     status
                 } else if !inventoryLoading {

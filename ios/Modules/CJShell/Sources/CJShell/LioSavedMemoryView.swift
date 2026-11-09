@@ -116,9 +116,11 @@ private struct LioSavedMemoryDetail: View {
                           text: Binding(get: { self.draft ?? draft }, set: { self.draft = $0 }), axis: .vertical)
                     .lineLimit(3...8)
                     .disabled(saving)
+                    .accessibilityIdentifier("lio.memory.editor")
                 Button(language.text("Save", "保存")) { Task { await save(draft) } }
                     .disabled(saving || !(1...4096).contains(draft.unicodeScalars.count) ||
                               draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .accessibilityIdentifier("lio.memory.save")
                 Button(language.text("Cancel", "取消")) { self.draft = nil }
                     .disabled(saving)
             } else {
@@ -138,6 +140,7 @@ private struct LioSavedMemoryDetail: View {
                                 notice = nil
                                 draft = item.command.text
                             }
+                            .accessibilityIdentifier("lio.memory.edit")
                         }
                         if let model = host.erasurePresentation {
                             Button(language.text("Delete memory", "删除记忆"), role: .destructive) {
@@ -149,6 +152,7 @@ private struct LioSavedMemoryDetail: View {
                                 }
                             }
                             .disabled(model.state.isBusy || host.busy)
+                            .accessibilityIdentifier("lio.memory.delete")
                         }
                     } else {
                         Text(language.text("This memory is no longer available.", "这条记忆已不可用。"))

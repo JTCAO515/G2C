@@ -54,6 +54,34 @@ struct LioTripPlanTests {
         #expect(model.target == service.page.undoTarget)
     }
 
+    @Test func lateHistoryReadCannotReplaceTheEditedCardOrItsTarget() async throws {
+        let original = try page(stop: "Park", target: "first")
+        let updated = try page(stop: "Museum", target: "second")
+        let originalCard = try card("initial-plan", original)
+        let updatedCard = try card("updated-plan", updated)
+        let service = TripPlanningStub(original)
+        let model = LioTripPlan(client: service)
+        let (started, signal) = AsyncStream<CheckedContinuation<Void, Never>>.makeStream()
+        service.pauseNextRead = {
+            await withCheckedContinuation { continuation in
+                signal.yield(continuation)
+                signal.finish()
+            }
+        }
+        let loading = Task { await model.reload(for: originalCard) }
+        var reads = started.makeAsyncIterator()
+        let resume = await reads.next()
+
+        service.page = updated
+        await model.reload(for: updatedCard)
+        resume?.resume()
+        await loading.value
+
+        #expect(model.current(in: originalCard) == nil)
+        #expect(model.current(in: updatedCard) == updatedCard.itinerary)
+        #expect(model.target == updated.undoTarget)
+    }
+
     private func card(_ turnID: String, _ page: LioTripHistoryWire.Page) throws -> LioTripCard {
         let trip = try #require(page.current)
         return LioTripCard(turnID: Data(turnID.utf8), itinerary: LioItinerary(trip))
@@ -76,10 +104,17 @@ private final class TripPlanningStub: LioTripPlanning {
     var pending = false
     var writes: [LioTripHistoryWire.Target] = []
     var receiptReads = 0
+    var pauseNextRead: (@MainActor () async -> Void)?
 
     init(_ page: LioTripHistoryWire.Page) { self.page = page }
 
-    func history(before: String?) async throws -> LioTripHistoryWire.Page { page }
+    func history(before: String?) async throws -> LioTripHistoryWire.Page {
+        let result = page
+        let pause = pauseNextRead
+        pauseNextRead = nil
+        await pause?()
+        return result
+    }
     func hasPendingUndo() throws -> Bool { pending }
 
     func undo(_ target: LioTripHistoryWire.Target) async throws -> LioTripHistoryClient.UndoState {
