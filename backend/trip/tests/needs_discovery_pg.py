@@ -24,7 +24,7 @@ class NeedsDiscoveryChecks(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         Harness.setUpClass.__func__(cls)
-        cls.host=RegisteredHost(cls.auth/'needs-discovery',Path(CONNINFO),{s:(30,3,30000) for s in ('nd-discovery','nd-context','nd-stale','nd-bounds','nd-readonly','nd-unknown','nd-invalid','nd-late')})
+        cls.host=RegisteredHost(cls.auth/'needs-discovery',Path(CONNINFO),{s:(30,3,30000) for s in ('nd-discovery','nd-context','nd-stale','nd-bounds','nd-readonly','nd-unknown','nd-invalid','nd-late','nd-demo-days')})
         cls.env=dict(CJ_LOCAL_NEEDS_PROFILE='manual-v1',CJ_LOCAL_TRAVEL_CONTEXT='message-travel.1')
         cls.signer=ConfirmationSigner(b'synthetic-needs-discovery-signer-1234567')
         for subject in cls.host.subjects:dev_auth.activate_travel(Path(CONNINFO),subject,cls.host.profiles[subject][1],ABI)
@@ -43,6 +43,41 @@ class NeedsDiscoveryChecks(unittest.TestCase):
         return receipt,model,db
     def post(self,client,subject,path,raw):return client.post(path,content=raw,headers={**self.host.headers[subject],'Content-Type':'application/octet-stream'})
     def action(self,p,aid='original-accept',kind='accept'):return packed(dict(version='TRIP-needs-action.1',action_id=aid,kind=kind,proposal_id=p['proposal_id'],candidate_hash=p['candidate_hash']))
+
+    def test_demo_days_use_original_fixed_place_and_time_without_formal_write(self):
+        from cj_trip.operation import OperationContext
+        subject = 'nd-demo-days'
+        lobby = fixture.fixed('lobby','09:00','10:00',True)
+        lobby['start']['place'] = lobby['end']['place'] = fixture.known('酒店大堂')
+        museum = fixture.fixed('museum','11:00','12:00',False)
+        museum['start']['date'] = museum['end']['date'] = fixture.known('2026-11-03')
+        receipt = self.setup_source(subject,[museum,lobby])
+        def add_unscheduled(document):
+            unknown = dict(state='unknown')
+            event = {key:unknown for key in ('date','time','timezone','utc_offset')}
+            document['items'].append(dict(id='walk',text='散步',verification='pending',evidence=[],
+                schedule=dict(start=event,end=event),fixed=unknown,source_category='unknown',source_refs=[]))
+            document['proposed_subjects']['walk'] = ['self']
+        worker,_ = self.worker(subject,fixture.PlanModel(add_unscheduled))
+        worker.process()
+        with TestClient(self.needs_app(subject)) as client:
+            original = self.published(self.discover(client,subject,receipt))
+            self.assertNotIn('days',original)
+            # Select the new server-only seam while retaining the real protected HTTP host.
+            with patch.object(OperationContext,'discover_needs',OperationContext.discover_demo_needs):
+                result = self.published(self.discover(client,subject,receipt))
+                self.assertNotEqual(self.discover(client,'nd-discovery',receipt).status_code,200)
+            days = result.pop('days')
+            self.assertEqual(result,original)
+            self.assertEqual([day['date'] for day in days],['2026-11-02','2026-11-03',None])
+            self.assertEqual(days[0]['items'],[dict(item_id='lobby',label=lobby['description'],place='酒店大堂',
+                starts_at='2026-11-02T09:00',ends_at='2026-11-02T10:00',time_zone='Asia/Shanghai',source_ids=[],fixed=True)])
+            self.assertEqual(days[1]['items'][0]['place'],None)
+            self.assertEqual(days[2]['items'],[dict(item_id='walk',label='散步',place=None,starts_at=None,ends_at=None,
+                time_zone=None,source_ids=[],fixed=None)])
+            formal = client.get('/v4/trip-structured',params={'trip_id':original['proposal']['trip_id']},headers=self.host.headers[subject])
+            self.assertEqual(formal.status_code,200,formal.text)
+            self.assertIsNone(formal.json()['trip'])
 
     def test_original_http_receipt_discovers_source1_and_original_accept_reject_recovery(self):
         subject='nd-discovery';receipt,model,db=self.generate(subject)

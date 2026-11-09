@@ -84,6 +84,7 @@ class OperationContext:
     def scoped_result(self,result_id,encode):return self.__call('scoped_result',result_id,encode)
     def discover_needs(self,query,encode):return self.__call('discover_needs',query,encode)
     def discover_place_needs(self,query,encode):return self.__call('discover_place_needs',query,encode)
+    def discover_demo_needs(self,query,encode):return self.__call('discover_demo_needs',query,encode)
     def act_needs(self,request):return self.__call('act_needs',request)
     def act(self, action): return self.__call('act', action)
     def prepare_manual(self, edit): return self.__call('prepare_manual', edit)

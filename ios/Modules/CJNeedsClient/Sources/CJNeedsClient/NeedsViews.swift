@@ -388,7 +388,7 @@ private struct NeedsSelectableFieldText: UIViewRepresentable {
         return uiView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
     }
     static func dismantleUIView(_ view: UITextView, coordinator: ()) { view.text = nil; view.accessibilityLabel = nil }
-    private var category: UIContentSizeCategory { needsUIContentSize(size) }
+    private var category: UIContentSizeCategory { UIContentSizeCategory(size) }
 
 }
 #else
@@ -412,30 +412,13 @@ public struct NeedsFormLabel: UIViewRepresentable {
     }
     public func updateUIView(_ view: UILabel, context: Context) {
         view.text = text
-        view.font = UIFont.preferredFont(forTextStyle: .body, compatibleWith: UITraitCollection(preferredContentSizeCategory: needsUIContentSize(size)))
+        view.font = UIFont.preferredFont(forTextStyle: .body, compatibleWith: UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(size)))
     }
     public func sizeThatFits(_ proposal: ProposedViewSize, uiView: UILabel, context: Context) -> CGSize? {
         guard let width = proposal.width, width.isFinite, width > 0 else { return nil }
         return uiView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
     }
     public static func dismantleUIView(_ view: UILabel, coordinator: ()) { view.text = nil }
-}
-private func needsUIContentSize(_ size: DynamicTypeSize) -> UIContentSizeCategory {
-    switch size {
-    case .xSmall: .extraSmall
-    case .small: .small
-    case .medium: .medium
-    case .large: .large
-    case .xLarge: .extraLarge
-    case .xxLarge: .extraExtraLarge
-    case .xxxLarge: .extraExtraExtraLarge
-    case .accessibility1: .accessibilityMedium
-    case .accessibility2: .accessibilityLarge
-    case .accessibility3: .accessibilityExtraLarge
-    case .accessibility4: .accessibilityExtraExtraLarge
-    case .accessibility5: .accessibilityExtraExtraExtraLarge
-    @unknown default: .large
-    }
 }
 #else
 public struct NeedsFormLabel: View {
