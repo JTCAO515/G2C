@@ -110,6 +110,35 @@ def tls_context():
     return context
 
 
+def _chunk_texts(data):
+    """Delta texts of one external SSE chunk; any malformed shape is ProviderUnknown.
+
+    The request was already sent, so a bad chunk never becomes a definite failure.
+    Missing or null `choices`, `delta` and `content` stay allowed (usage-only chunks).
+    """
+    try:
+        value = json.loads(data, object_pairs_hook=reject_duplicates(ValueError, 'duplicate stream field'))
+    except (ValueError, RecursionError):
+        raise ProviderUnknown('malformed stream chunk') from None
+    if type(value) is not dict:
+        raise ProviderUnknown('malformed stream chunk')
+    choices = value.get('choices')
+    if choices is None:
+        choices = []
+    if type(choices) is not list:
+        raise ProviderUnknown('malformed stream chunk')
+    texts = []
+    for choice in choices:
+        delta = choice.get('delta') if type(choice) is dict else None
+        if type(choice) is not dict or (delta is not None and type(delta) is not dict):
+            raise ProviderUnknown('malformed stream chunk')
+        text = None if delta is None else delta.get('content')
+        if text is not None and type(text) is not str:
+            raise ProviderUnknown('malformed stream chunk')
+        texts.append(text or '')
+    return texts
+
+
 class DashScopeProvider:
     """OpenAI-compatible chat completions streaming (DashScope compatible mode)."""
 
@@ -143,12 +172,7 @@ class DashScopeProvider:
                         if data == '[DONE]':
                             done = True
                             break
-                        try:
-                            choices = json.loads(data).get('choices') or []
-                        except ValueError:
-                            raise ProviderUnknown('malformed stream chunk') from None
-                        for choice in choices:
-                            text = (choice.get('delta') or {}).get('content') or ''
+                        for text in _chunk_texts(data):
                             if text:
                                 produced += len(text)
                                 if produced > self.config.max_output_chars:

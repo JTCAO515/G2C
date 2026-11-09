@@ -4,7 +4,7 @@ from fastapi.responses import Response
 from starlette.concurrency import run_in_threadpool
 from .generated import UsageAttemptStatusResponse
 from .history_routes import _query
-from .message_routes import _error,_sanitized_read,_token
+from .message_routes import _error,_read_admission_error,_sanitized_read,_token
 from .usage_status_composition import UsageStatusConfiguration
 from .usage_status_projection import encode_response
 
@@ -38,8 +38,5 @@ def register_usage_status(app,configuration=None,dependencies=None):
             encoded=await run_in_threadpool(_sanitized_read,invoke)
             return Response(content=encoded,media_type='application/json')
         except modules['cj_auth.read_context'].ReadAdmissionFailure as exc:
-            auth=modules['cj_auth.interfaces']
-            if exc.status is auth.AdmissionStatus.DENIED:
-                return _error(request,401 if exc.reason is auth.AdmissionReason.IDENTITY_INVALID else 403,'ACCESS_DENIED','access','failed','do_not_retry')
-            return _error(request,503,'ACCESS_UNKNOWN','access','unknown','retry_safe_read')
+            return _read_admission_error(request,exc,modules['cj_auth.interfaces'])
         except Exception:return unavailable(request)

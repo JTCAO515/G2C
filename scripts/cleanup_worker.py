@@ -3,7 +3,7 @@
 Use the same explicit private PG/auth/quota/cleanup configuration as the local
 host. No production adapter, real provider or new key/account is provisioned.
 """
-import argparse,json,os,sys,time
+import argparse,json,os,time
 from pathlib import Path
 
 if os.environ.get('CJ_ENV')!='local':raise SystemExit('CJ_ENV=local is required')

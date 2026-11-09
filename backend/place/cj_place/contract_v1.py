@@ -8,8 +8,7 @@ import re
 
 from .gaode import _quantity,parse_response
 from .models import (CONTRACT_VERSION, Coordinate, Departure, Detail, Endpoint, FieldState,
-                     Observed, Outcome, Place, Result, Route, RouteQuery, Search, Source,
-                     aware, identifier, text_value)
+                     Observed, Outcome, Place, Route, RouteQuery, Search, aware, identifier, text_value)
 from cj_strict_json import reject_duplicates
 
 VERSION = 'PLACE@1.0'

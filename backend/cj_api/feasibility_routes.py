@@ -4,7 +4,7 @@ from fastapi.responses import Response
 from starlette.concurrency import run_in_threadpool
 from .generated import FeasibilityCurrentResponse
 from .history_routes import _query
-from .message_routes import _error,_sanitized_read,_token
+from .message_routes import _error,_read_admission_error,_sanitized_read,_token
 from .feasibility_composition import CandidateDependencies
 from .feasibility_projection import encode_response
 
@@ -33,10 +33,7 @@ def register_feasibility(app,dependencies=None):
             return reader.read(token,project)
         try:return Response(content=await run_in_threadpool(_sanitized_read,invoke),media_type='application/json')
         except modules['cj_auth.read_context'].ReadAdmissionFailure as exc:
-            auth=modules['cj_auth.interfaces']
-            if exc.status is auth.AdmissionStatus.DENIED:
-                return _error(request,401 if exc.reason is auth.AdmissionReason.IDENTITY_INVALID else 403,'ACCESS_DENIED','access','failed','do_not_retry')
-            return _error(request,503,'ACCESS_UNKNOWN','access','unknown','retry_safe_read')
+            return _read_admission_error(request,exc,modules['cj_auth.interfaces'])
         except modules['cj_feasibility.current_read'].ReadWithheld as exc:
             return unavailable(request,'FEASIBILITY_INPUT_INVALID' if exc.code=='EVALUATION_INPUT_INVALID' else 'FEASIBILITY_UNAVAILABLE')
         except Exception:return unavailable(request)

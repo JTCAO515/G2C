@@ -3,7 +3,7 @@ import json
 from contextlib import contextmanager
 from dataclasses import dataclass
 from .needs_action import NeedsAction
-from .domain import Conflict,Denied,ProposalDetail,packed
+from .domain import Conflict,Denied,ProposalDetail
 from cj_message.edit_reference import EditAuthority
 from cj_auth.interfaces import AdmissionStatus
 from cj_api.local_app import scope_for

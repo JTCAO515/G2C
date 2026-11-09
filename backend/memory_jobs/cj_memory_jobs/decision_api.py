@@ -10,7 +10,6 @@ from cj_trip.domain import Denied as TripDenied,Conflict as TripConflict
 from cj_message.domain import Unavailable as MessageUnavailable
 from cj_memory.domain import Unavailable as MemoryUnavailable,Conflict as MemoryConflict
 from .codec import InvalidInput,Conflict,Unavailable
-from .model_v2 import NoEligibleSource
 from .service import OperationWithheld
 
 

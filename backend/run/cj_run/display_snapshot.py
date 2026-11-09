@@ -157,7 +157,7 @@ class DisplaySnapshotReader:
                 raise SnapshotUnavailable('budget result requires version 2')
             command = json.loads(original.raw)
             requested = command['creation_intent'] == 'consider_trip' or version>=5 and command.get('modification_intent')=='propose_scoped_edit'
-            published = any(effect.startswith('trip_proposal:') for effect in state.effects)
+            published = state.trip_proposal_published
             if not requested and (published or state.draft_outcome is not None):
                 raise SnapshotUnavailable('draft evidence contradicts original message')
             outcome = ('not_requested' if not requested else

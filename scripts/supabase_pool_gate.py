@@ -6,7 +6,6 @@ This gate does not create Auth users, change roles, or activate a public backend
 """
 import argparse
 import base64
-from contextlib import contextmanager
 from datetime import date,datetime,timezone
 import fcntl
 import hashlib

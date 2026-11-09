@@ -5,7 +5,7 @@ import psycopg
 from psycopg.pq import TransactionStatus
 
 from .core import Conflict, Denied, Invalid, encode, hash_value, identifier, digest
-from .hooks import HookRequest, HookReceipt, make_receipt
+from .hooks import HookRequest
 from . import hooks, hooks_v1_1
 from cj_strict_json import reject_duplicates
 from .registry import freeze,freeze_controls

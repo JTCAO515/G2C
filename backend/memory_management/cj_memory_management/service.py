@@ -1,6 +1,5 @@
 """Trusted domain-only lifecycle entry. HTTP/AUTH composition is not wired here."""
 from cj_memory.domain import CommitUnknown, Conflict, InvalidInput, Unavailable
-from .domain import Action
 from .edit import Edit, parse_action
 from .postgres import Transaction
 

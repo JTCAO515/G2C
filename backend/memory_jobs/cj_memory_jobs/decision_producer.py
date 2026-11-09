@@ -4,7 +4,6 @@ from hashlib import sha256
 import base64,json
 
 from cj_message.domain import Command,Unavailable as MessageUnavailable
-from cj_message.source import SourceQuery
 from cj_trip.decision_source import DecisionQuery
 from .codec import Unavailable
 from .consent import EnqueueCommand

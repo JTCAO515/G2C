@@ -7,7 +7,7 @@ import re
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
-from .history_config import CursorBinding, CursorResyncRequired, CursorUnavailable, HistoryWireConfiguration
+from .history_config import CursorBinding, CursorResyncRequired, HistoryWireConfiguration
 from .message_routes import BodyError, _body_error, _error, _query_pairs, _read_octets, _token
 from .generated import (MessageReceipt, ConversationSummary, MessageHistoryItem, MessageDraftSnapshot,
     ConversationPageResponse, MessageHistoryResponse, MessageDraftReadResponse, MessageDraftSaveResponse)

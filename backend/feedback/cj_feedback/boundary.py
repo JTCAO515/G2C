@@ -4,7 +4,7 @@ import inspect
 import threading
 from cj_auth.admission import AdmissionChecker
 from cj_auth.interfaces import AdmissionStatus, TrustedPrincipal
-from .domain import Action, InvalidInput, Unavailable, CommitUnknown
+from .domain import InvalidInput, Unavailable, CommitUnknown
 from .postgres import Repository
 
 _active = ContextVar('feedback_operation', default=None)

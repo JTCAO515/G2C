@@ -1,8 +1,8 @@
 """Additive typed lifecycle inputs. Context is checked by B before Memory mutation."""
 from dataclasses import dataclass
 import json
-from cj_memory.domain import Command,Conflict,InvalidInput
-from cj_memory.typed import ContextRef,decode,packed,TypedCommand,travel_selection
+from cj_memory.domain import Conflict,InvalidInput
+from cj_memory.typed import decode,packed,TypedCommand,travel_selection
 from .domain import Action
 from .edit import Edit
 from cj_memory_withdrawal.stop_use import StopUse

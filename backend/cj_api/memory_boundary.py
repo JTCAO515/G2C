@@ -58,7 +58,6 @@ class MemoryBoundary:
     @retirement_read_operation()
     def invoke(self, token, kind, argument, project):
         from cj_auth.interfaces import AdmissionStatus, TrustedPrincipal
-        domain = self.modules['cj_memory.domain']
         command = self._command(kind, argument)
         last_fault = None
         captured = None
