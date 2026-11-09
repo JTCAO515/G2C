@@ -7,7 +7,7 @@ from cj_memory.domain import strict_object,Unavailable,unique_fields
 from cj_memory_jobs.postgres import encode
 from cj_memory_jobs.codec import encode_v2
 from cj_memory_jobs.publication_store import PublicationTransaction
-from cj_memory_jobs.publication_result import decode_result,VERSION_V2
+from cj_memory_jobs.publication_result import decode_result,original_result,VERSION_V2,VERSION_DEMO
 from cj_memory_jobs.model_v2 import origin_reference,reference as message_reference
 from cj_memory_jobs import decision_input
 from cj_message.domain import Command
@@ -56,11 +56,15 @@ def freeze_jobs(memory,association):
             if publication.get('version')=='MEMORY-EXTRACT@1' and row[6]==output:
                 pass  # Explicit legacy CollectionService completion, no Pub receipt.
             else:
-                if publication['version']=='MEMORY-PUBLICATION-result@3':
-                    if comparison['decision'] is None or base.pop('decision_source_sha256')!=comparison['decision']['source_sha256']:
-                        raise Unavailable('original decision publication proof differs')
-                    base['version']=VERSION_V2
-                decode_result(encode(base),row[0],output)
+                if publication['version']==VERSION_DEMO:
+                    if original_result(tx,ref['job_id'],ref['attempt_id'],expected_version=VERSION_DEMO)!=row[6]:
+                        raise Unavailable('original Demo publication proof differs')
+                else:
+                    if publication['version']=='MEMORY-PUBLICATION-result@3':
+                        if comparison['decision'] is None or base.pop('decision_source_sha256')!=comparison['decision']['source_sha256']:
+                            raise Unavailable('original decision publication proof differs')
+                        base['version']=VERSION_V2
+                    decode_result(encode(base),row[0],output)
                 value.update(publication_utf8=row[6].decode(),publication_sha256=sha256(row[6]).hexdigest())
         value.update(original_utf8=row[1].decode(),source_comparison=comparison,
                      model_output_sha256=None if output is None else sha256(output).hexdigest())

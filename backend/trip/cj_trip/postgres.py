@@ -91,6 +91,11 @@ class Repository:
         from .needs_discovery import PlaceNeedsDiscovery
         return PlaceNeedsDiscovery(self.needs_actions).read(self,query,encode)
 
+    def discover_demo_needs(self,query,encode):
+        if self.needs_actions is None:raise Denied('actual source-bound host required')
+        from .needs_discovery import DemoNeedsDiscovery
+        return DemoNeedsDiscovery(self.needs_actions).read(self,query,encode)
+
     def scoped_result(self,result_id,encode):
         from .scoped_result_read import read
         return read(self.scoped_actions,self,result_id,encode)
