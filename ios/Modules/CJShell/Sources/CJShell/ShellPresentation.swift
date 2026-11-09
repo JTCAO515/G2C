@@ -51,6 +51,21 @@ struct ShellActionButtonStyle: ButtonStyle {
     }
 }
 
+struct AssistantSendButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .frame(minWidth: 44, minHeight: 44)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 4)
+            .foregroundStyle(isEnabled ? Color(uiColor: .systemBackground) : Color.primary)
+            .background(isEnabled ? Color.primary : Color(uiColor: .tertiarySystemFill), in: Capsule())
+            .contentShape(Capsule())
+            .opacity(configuration.isPressed ? 0.75 : 1)
+    }
+}
+
 struct ShellCardHeading: View {
     let title: String
     let symbol: String

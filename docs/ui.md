@@ -2,6 +2,66 @@
 
 布局行为已确认，角色最终资源和实现参数未定；CJ-006 [#7](https://github.com/JTCAO515/G2C/issues/7)拥有 UI 契约，CJ-004 [#4](https://github.com/JTCAO515/G2C/issues/4)验证渲染候选，CJ-026 [#29](https://github.com/JTCAO515/G2C/issues/29)负责中英真机验收。这里“移除顶栏”指 App 整条顶栏，保留系统状态栏、安全区和系统交互。
 
+## Demo v2 · 打开就能问（#702）
+
+本节定义内部 Demo v2。邀请码和同意是首次使用的两步；同意后直接进入助手。服务端负责建立并沿用默认旅行上下文。需要更多信息时，在对话里追问。历史会话从助手菜单进入。下文保留的手工选择、原件排查和开发 profile 供 Debug 验收使用。
+
+```mermaid
+flowchart TD
+    invite["邀请码登录 / Sign in with an invite"] --> consent["内部演示同意 / Internal demo consent"]
+    consent --> examples["首屏示例 / Suggested questions"]
+    examples --> chat["直接提问 / Ask a question"]
+    chat --> reply["回答与来源 / Answer and sources"]
+    chat --> needs["需求卡 / Trip details"]
+    needs -->|"修改 / Edit"| chat
+    needs -->|"确认 / Confirm"| plan["按天行程候选 / Itinerary by day"]
+    plan -->|"我再改改 / Keep editing"| chat
+    plan -->|"采用 / Use this plan"| trips["行程 Tab / Trips"]
+    trips -->|"直接编辑 / Edit itinerary"| direct["核对并保存 / Review and save"]
+    trips -->|"问助手修改 / Edit with Assistant"| chat
+    chat --> revision["修改候选卡 / Proposed changes"]
+    revision -->|"采用 / Apply changes"| trips
+    reply --> memory["记忆确认标签 / Memory suggestion"]
+    memory -->|"记住 / Remember"| saved["记忆 Tab / Memory"]
+    memory -->|"不用 / No thanks"| chat
+```
+
+首次同意文案占位。中文「本次为内部演示。请使用虚构的旅行信息，勿填写个人信息。待 #225 定案后替换。」英文 “This is an internal demo. Please use fictional trip details and leave out personal information. Placeholder pending #225.” 主按钮「同意并继续 / Agree and continue」，次按钮「返回 / Back」。仅确认后进入对话。
+
+首屏保留可直接输入的「问点什么 / Ask anything」输入框。提供四个可编辑示例，点选把原文放进输入框，用户仍明确发送。
+
+| 简体中文 | English |
+| --- | --- |
+| 在上海怎么坐地铁？ | How do I take the metro in Shanghai? |
+| 帮我规划北京三天两晚的旅行。 | Plan a three-day trip to Beijing. |
+| 在成都住哪里方便逛老城区？ | Where should I stay to explore Chengdu’s old town? |
+| 我旅行时喜欢慢一点，也喜欢安静的酒店。 | I like taking trips slowly and staying in quiet hotels. |
+
+### 对话、行程与记忆
+
+- 「需求 / Trip details」显示日期、城市、人数、节奏与固定安排，缺项标「待确认 / To confirm」。修改回到可编辑内容，确认提交卡片所显示的准确需求。确认前不发起正式规划。
+- 「行程建议 / Suggested itinerary」按当地日期折叠。显示时段、地点、来源和锁定项，用「采用 / Use this plan」明确确认所显示版本。「我再改改 / Keep editing」将修改留在对话。只有原回执核实后，行程才显示为正式版本。
+- 「修改建议 / Proposed changes」把修改前后相邻呈现，并标出保留的锁定项。「采用 / Apply changes」提交准确差异。行程 Tab 按天显示当前正式版本和可展开的 MapKit 地点地图，可直接编辑或以「问助手修改 / Edit with Assistant」回到对话。时间、来源和未知字段按原记录保留。
+- 「记住这个偏好吗？ / Remember this preference?」在对应回答下显示可核对的原文。「记住 / Remember」明确确认，保存状态以原回执为准。「不用 / No thanks」丢弃候选。记忆 Tab 提供查看、编辑、停用和删除，保留现有账号与设置入口。
+- 运行状态随对应消息呈现，由服务端 RUN 事件驱动，保留原有顺序和终态，使用「正在查找地点 / Looking up places」等可理解的动作名称。来源引用标签按实际来源编号，例如「来源 1 / Source 1」，点开查看标题、原链接和时间。缺失来源时显示「暂无可核实来源 / No verified source available」。
+
+### 四个 Tab 的视觉与状态规范
+
+| 项 | 规则 |
+| --- | --- |
+| 颜色 | 使用 iOS 语义色。系统背景承载正文，次级背景承载卡片。用户气泡用淡强调色，助手气泡用次级背景。主按钮用实底及高对比文字，次按钮用轮廓，禁用态保留可读标签。失败和未知用图标与文字同时说明。 |
+| 字体 | 使用系统 Dynamic Type。页标题用 title2，卡片标题用 headline，内容与动作用 body，来源与时间用 footnote。中英文按钮允许换行，原回答和来源文字可选。 |
+| 间距 | 页边距 16 点，卡片内边距 16 点，组内 8–12 点，卡片间 16 点。使用 12–16 点圆角及至少 44 点触摸目标，保留安全区与键盘避让。 |
+| 图标 | 使用 SF Symbols。对话、地图、记忆和操作图标与可读标签配对。展开用箭头，锁定用锁，回执完成用勾，失败或未知用带说明的警示图标。 |
+| 空状态 | 助手显示示例和输入框。行程显示「还没有已采用的行程 / No saved trips yet」，并可去助手规划。记忆显示「还没有已保存的记忆 / No saved memories yet」，并说明可在对话中确认保存。插件保留真实可用性提示。 |
+| 加载 | 原消息保留可见。只读页面的实际请求可显示系统进度；消息下的工具进度只在收到对应服务端事件后显示。正在核对原动作时关闭重复确认按钮。 |
+| 网络失败 | 「网络暂不可用，请检查连接 / You’re offline. Check your connection.」保留草稿。已发出但无明确结果时引导查询原动作。 |
+| 每日额度 | 服务端明确拒绝后显示「今天的 40 个问题已用完，明天再试 / You’ve used today’s 40 questions. Try again tomorrow.」已有内容继续可读。 |
+| 结果未知 | 「暂时无法确认结果，查看原操作 / We can’t confirm the result yet. Check the original action.」仅核对同一动作，保留已收到正文和原输入。 |
+| 其他失败 | 「暂时无法完成，请稍后再试 / We couldn’t complete this. Try again later.」明确拒绝与结果未知分别显示；涉及写入先保留原回执和可恢复入口。 |
+
+两种语言共享布局和无障碍标识。按原件核对中英操作、长文字、键盘、来源、折叠状态和完整 AX 自动审计。真实服务和 TestFlight 体验分别在 #702 L2 和 L3 记录。
+
 ## 助手页面
 
 ```text
