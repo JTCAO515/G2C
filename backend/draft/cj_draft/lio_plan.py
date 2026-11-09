@@ -2,11 +2,13 @@
 import json
 
 from cj_agent.draft import DraftRejected, PROPOSAL_TTL_SECONDS, proposal_id_for
+from cj_feasibility.scoped_trip import check as check_scoped
 from cj_feasibility.trip_time_v2 import evaluate
+from cj_manual_edit.scoped import Request, preview, resolve
 from cj_needs.revision_lease import LeaseUnavailable
 from cj_trip.confirmation import ConfirmationSigner
-from cj_trip.domain import CommitUnknown, Conflict, Denied, Proposal, ProposalDetail
-from cj_trip.lio_history import PLAN_BASIS, TripHead, plan_action_id
+from cj_trip.domain import CommitUnknown, Conflict, Denied, Proposal, ProposalDetail, packed
+from cj_trip.lio_history import EDIT_BASIS, PLAN_BASIS, TripHead, edit_action_id, plan_action_id
 from cj_trip.postgres import Repository
 
 from .needs_context import ContextPublisher, ContextSource
@@ -39,6 +41,21 @@ class LioPlanPublisher(ContextPublisher):
         super().__init__(repository, LioContextSource(original.source, original_needs), original.clock)
         self.check_lio_original = check_lio_original
 
+    def build_plan(self, raw, capture):
+        content, candidate, report = super().build_plan(raw, capture)
+        snapshot, _ = capture.records()
+        declared = {item['item_id'] for item in snapshot.fields.get('fixed_items', ())}
+        context = self.source.contexts[capture.binding]
+        if context is not None:
+            declared.update(item['id'] for item in json.loads(context.trip.content)['items'])
+        document = json.loads(content)
+        for item in document['items']:
+            if item['id'] not in declared:
+                # Only a new system suggestion has an application-owned edit
+                # policy. Its canonical NEEDS/booking evidence stays unknown.
+                item['fixed'] = {'state': 'known', 'value': False}
+        return packed(document), candidate, report
+
     def publish_for_message(self, binding, original, current, reply, capture, *, before_publish=None):
         # B's registered Lio original is an additional fence. The original
         # message, NEEDS and publication leases are still required.
@@ -54,16 +71,54 @@ class LioPlanPublisher(ContextPublisher):
                             0 if trip is None else trip.version,
                             PLAN_BASIS,
                             int(self.clock()) + PROPOSAL_TTL_SECONDS, content)
+        return self._save(binding, original, expected, capture, candidate, proposal,
+                          plan_action_id(binding.run_id), before_publish)
+
+    def publish_edit_for_message(self, binding, original, current, request_raw, edit_raw, capture, *,
+                                 limits, before_publish):
+        """Save one exact replacement selected by B from the original Lio turn."""
+        self.source.check(binding, capture)
+        context = self.source.contexts[binding]
+        if current is None or current != original or capture.binding != binding or context is None:
+            raise DraftRejected('original Lio edit context required')
+        trip = context.trip
+        expected = TripHead.from_trip(trip)
+        self.require_lio(binding, original, expected)
         try:
-            return self._commit_plan(binding, original, expected, capture, candidate, proposal, before_publish)
+            request = Request.parse(request_raw)
+            if (request.text != json.loads(original.raw)['text'] or request.kind != 'items'
+                    or len(request.selected) != 1):
+                raise Conflict('edit requires one original item selection')
+            result = preview(resolve(trip, request), edit_raw)
+            candidate = result.candidate
+            if (candidate is None or candidate.edit.order is not None
+                    or len(candidate.edit.changes) != 1 or candidate.edit.changes[0][1] != 'text'):
+                raise Conflict('only a single selected replacement is supported')
+            replacement = json.loads(candidate.edit.changes[0][2])
+            if replacement not in request.text:
+                raise Conflict('replacement must come from the original message')
+            needs, report, _ = check_scoped(candidate.content, capture, json.loads(context.proposed),
+                                             result.scope.selected_ids, limits)
+            if not any(check.code == 'PROTECTED_SCOPE_UNCHANGED' and check.status == 'PASS'
+                       for check in report.checks):
+                raise Conflict('original Needs protection could not be verified')
+        except (Conflict, Denied, ValueError) as error:
+            raise DraftRejected('Lio Trip edit refused') from error
+        proposal = Proposal(proposal_id_for(binding.run_id), trip.trip_id, trip.version, EDIT_BASIS,
+                            int(self.clock()) + PROPOSAL_TTL_SECONDS, candidate.content)
+        return self._save(binding, original, expected, capture, needs, proposal,
+                          edit_action_id(binding.run_id), before_publish)
+
+    def _save(self, binding, original, expected, capture, candidate, proposal, action_id, before_publish):
+        try:
+            return self._commit(binding, original, expected, capture, candidate, proposal, action_id, before_publish)
         except CommitUnknown as error:
-            raise LeaseUnavailable('original Lio plan commit unknown; read the original receipt') from error
+            raise LeaseUnavailable('original Lio Trip commit unknown; read the original receipt') from error
         except (Conflict, Denied) as error:
             raise DraftRejected('Lio Trip publication refused') from error
 
-    def _commit_plan(self, binding, original, expected, capture, candidate, proposal, before_publish):
+    def _commit(self, binding, original, expected, capture, candidate, proposal, action_id, before_publish):
         repository = self.repository
-        action_id = plan_action_id(binding.run_id)
         action = pending = None
 
         def final(cur):
@@ -89,10 +144,10 @@ class LioPlanPublisher(ContextPublisher):
                 receipt, _ = existing
                 stored, digest, status = repository._proposal(cur, receipt.proposal_id)
                 if (receipt.kind != 'accept' or receipt.proposal_id != proposal.proposal_id
-                        or receipt.candidate_hash != digest or status != 'accepted' or stored.basis_version != PLAN_BASIS
+                        or receipt.candidate_hash != digest or status != 'accepted' or stored.basis_version != proposal.basis_version
                         or receipt.trip_id != proposal.trip_id or stored.content != proposal.content
                         or receipt.committed_version != proposal.expected_version + 1):
-                    raise Conflict('original Lio plan already differs')
+                    raise Conflict('original Lio Trip commit already differs')
                 return receipt
             self.source.check(binding, capture)
             self.check_trip_context(cur, binding, capture)

@@ -13,10 +13,15 @@ from .planning_context import read_current
 
 
 PLAN_BASIS = 'lio-plan.1'
+EDIT_BASIS = 'lio-edit.1'
 
 
 def plan_action_id(run_id):
     return 'lio-plan-' + run_id
+
+
+def edit_action_id(run_id):
+    return 'lio-edit-' + run_id
 
 
 @dataclass(frozen=True)
@@ -38,8 +43,16 @@ def current_head(repository, needs_scope, needs_id):
 
 
 def plan_receipt(repository, binding):
+    return _message_receipt(repository, binding, plan_action_id(binding.run_id), PLAN_BASIS)
+
+
+def edit_receipt(repository, binding):
+    return _message_receipt(repository, binding, edit_action_id(binding.run_id), EDIT_BASIS)
+
+
+def _message_receipt(repository, binding, action_id, basis):
     with repository.transaction() as cur:
-        found = repository._receipt(cur, plan_action_id(binding.run_id))
+        found = repository._receipt(cur, action_id)
         if found is None:
             return None
         receipt, _ = found
@@ -50,10 +63,10 @@ def plan_receipt(repository, binding):
                     (repository.scope, proposal.proposal_id))
         original = (binding.scope, binding.run_id, binding.conversation_id, binding.generation,
                     binding.message_id, binding.message_sequence)
-        if (cur.fetchone() != original or proposal.basis_version != PLAN_BASIS
+        if (cur.fetchone() != original or proposal.basis_version != basis
                 or status != 'accepted' or receipt.kind != 'accept' or receipt.candidate_hash != digest
                 or receipt.trip_id != proposal.trip_id or receipt.committed_version != proposal.expected_version + 1):
-            raise Denied('original Lio plan receipt association unavailable')
+            raise Denied('original Lio Trip receipt association unavailable')
         return receipt
 
 
