@@ -25,7 +25,7 @@ struct FeedbackReadableText: UIViewRepresentable {
         label.text = text
         let textStyle: UIFont.TextStyle = footnote ? .footnote : .body
         label.font = UIFont.preferredFont(forTextStyle:textStyle,
-            compatibleWith: UITraitCollection(preferredContentSizeCategory: feedbackTextCategory(size)))
+            compatibleWith: UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(size)))
     }
     func sizeThatFits(_ proposal: ProposedViewSize, uiView: UILabel, context: Context) -> CGSize? {
         guard let width = proposal.width, width.isFinite, width > 0 else { return nil }
@@ -33,25 +33,6 @@ struct FeedbackReadableText: UIViewRepresentable {
     }
     static func dismantleUIView(_ uiView: UILabel, coordinator: ()) { uiView.text = nil }
 }
-
-
-private func feedbackTextCategory(_ size: DynamicTypeSize) -> UIContentSizeCategory {
-        switch size {
-        case .xSmall: .extraSmall
-        case .small: .small
-        case .medium: .medium
-        case .large: .large
-        case .xLarge: .extraLarge
-        case .xxLarge: .extraExtraLarge
-        case .xxxLarge: .extraExtraExtraLarge
-        case .accessibility1: .accessibilityMedium
-        case .accessibility2: .accessibilityLarge
-        case .accessibility3: .accessibilityExtraLarge
-        case .accessibility4: .accessibilityExtraExtraLarge
-        case .accessibility5: .accessibilityExtraExtraExtraLarge
-        @unknown default: .large
-        }
-    }
 #else
 struct FeedbackReadableText: View {
     let text: String
