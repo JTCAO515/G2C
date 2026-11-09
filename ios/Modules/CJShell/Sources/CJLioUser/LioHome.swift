@@ -11,6 +11,7 @@ public struct LioHome<MenuContent: View>: View {
     @State private var menuOpen = false
     @State private var source: LioSource?
     @FocusState private var typing: Bool
+    @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(language: LioLanguage, service: LioService, isDemo: Bool,
@@ -70,6 +71,9 @@ public struct LioHome<MenuContent: View>: View {
         .sheet(item: $source) { selected in
             LioSourceSheet(source: selected, language: language)
         }
+        .task(id: scenePhase) {
+            if scenePhase == .active { await conversation.refreshTimeline() }
+        }
         .task(id: pending?.id) {
             if let pending { await conversation.receive(pending) }
         }
@@ -116,25 +120,25 @@ public struct LioHome<MenuContent: View>: View {
                 Text(language.text("Try a sample question.", "可以先试一个示例问题。"))
                     .font(.subheadline)
                     .foregroundStyle(Color.primary.opacity(0.78))
-                ForEach(Array(LioDemo.examples(language).enumerated()), id: \.offset) { index, example in
-                    Button {
-                        draft = example
-                        typing = true
-                    } label: {
-                        HStack(spacing: 12) {
-                            RunReadableText(text: example)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            Image(systemName: "arrow.up.left").accessibilityHidden(true)
-                        }
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 10)
-                        .frame(minHeight: 48)
-                        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
+            }
+            ForEach(Array(LioDemo.examples(language).enumerated()), id: \.offset) { index, example in
+                Button {
+                    draft = example
+                    typing = true
+                } label: {
+                    HStack(spacing: 12) {
+                        RunReadableText(text: example)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        Image(systemName: "arrow.up.left").accessibilityHidden(true)
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(example)
-                    .accessibilityIdentifier("lio.example.\(index)")
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .frame(minHeight: 48)
+                    .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
                 }
+                .buttonStyle(.plain)
+                .accessibilityLabel(example)
+                .accessibilityIdentifier("lio.example.\(index)")
             }
         }
     }
@@ -230,6 +234,7 @@ public struct LioHome<MenuContent: View>: View {
             case .places: language.text("Looking up places…", "正在找地点…")
             case .weather: language.text("Checking the weather…", "正在查天气…")
             case .directions: language.text("Looking for directions…", "正在找路线…")
+            case .travelInformation: language.text("Checking travel information…", "正在查旅行信息…")
             }
             statusLine(status)
         case .failed(let failure):

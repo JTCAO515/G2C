@@ -50,6 +50,12 @@ public enum LioTimelineWire {
         public let observedAt: String?
     }
 
+    public enum Activity: String, Sendable, Decodable {
+        case places = "checking_places"
+        case weather = "checking_weather"
+        case travelInformation = "checking_travel_information"
+    }
+
     public struct Message: Sendable, Equatable {
         public enum State: Equatable, Sendable {
             case waiting, answering, completed, dailyLimit
@@ -62,6 +68,7 @@ public enum LioTimelineWire {
         public let question: String
         public let answer: String
         public let state: State
+        public let activity: Activity?
         public let sources: [Source]
     }
 
@@ -111,14 +118,14 @@ public enum LioTimelineWire {
             }
             return Source(title: title, link: link, observedAt: item.observedAt)
         }
-        return Message(id: wire.messageID, question: wire.text, answer: wire.answer, state: state, sources: sources)
+        return Message(id: wire.messageID, question: wire.text, answer: wire.answer, state: state, activity: wire.activity, sources: sources)
     }
 
-    private static func validMessageID(_ id: String) -> Bool {
+    static func validMessageID(_ id: String) -> Bool {
         !id.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !id.utf8.contains(0) && id.utf8.count <= 256
     }
 
-    private static func validConversationID(_ id: String) -> Bool {
+    static func validConversationID(_ id: String) -> Bool {
         let prefix = "lio-dialogue-"
         return id.hasPrefix(prefix) && id.utf8.count == prefix.utf8.count + 32
             && id.utf8.dropFirst(prefix.utf8.count).allSatisfy { (48...57).contains($0) || (97...102).contains($0) }
@@ -148,8 +155,9 @@ public enum LioTimelineWire {
             let answer: String
             let status: Status
             let failure: Failure?
+            let activity: Activity?
             let sources: [Citation]
-            enum CodingKeys: String, CodingKey { case messageID = "message_id", text, answer, status, failure, sources }
+            enum CodingKeys: String, CodingKey { case messageID = "message_id", text, answer, status, failure, activity, sources }
         }
         let version: String
         let conversationID: String?
