@@ -1,6 +1,6 @@
 """Beta environment boundary. Persistent application secrets live only in 0600 env files."""
 import base64
-from dataclasses import dataclass,field
+from dataclasses import dataclass,field,replace
 from datetime import datetime,timezone
 import json
 import os
@@ -14,10 +14,11 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cj_api.aead_cursor import AeadCursorCodec
 from cj_api.history_config import CursorPolicy,HistoryWireConfiguration
 from cj_api.local_app import create_local_app,scope_for,ISSUER
-from cj_api.local_run_context import load_run_context
+from cj_api.local_run_context import LocalRunContext,load_run_context
 from cj_api.supabase_test_database import SupabaseTestDatabase
 from cj_strict_json import reject_duplicates
 from cj_trip.confirmation import ConfirmationSigner
+from cj_usage.authorization_budget import DEADLINE,DEMO_DEADLINE
 
 
 SECRET_FILES={
@@ -106,6 +107,19 @@ def _worker_assembly_pair(key,worker,assembly_subjects,error):
     return assembly_subjects
 
 
+def demo_periods(context, now):
+    current=context.current
+    meter=current.meter
+    if meter.period_end!=int(DEADLINE.timestamp()):
+        raise ValueError('original HK Demo Meter period required')
+    following=replace(context,current=replace(current,meter=replace(meter,
+        period_start=meter.period_end,period_end=int(DEMO_DEADLINE.timestamp()))),
+        history=(current,*context.history))
+    if meter.period_start<=now<meter.period_end:return context,following
+    if meter.period_end<=now<following.current.meter.period_end:return following,None
+    raise ValueError('active HK Demo Meter period required')
+
+
 @dataclass(repr=False)
 class Runtime:
     auth:Path
@@ -120,6 +134,7 @@ class Runtime:
     assembly_run_credential_subjects:frozenset=frozenset()
     assembly_model_stream_subjects:frozenset=frozenset()
     demo_subjects:frozenset=frozenset()
+    demo_next_context:LocalRunContext|None=None
     _database:SupabaseTestDatabase|None=field(default=None,init=False)
 
     @classmethod
@@ -207,10 +222,13 @@ class Runtime:
         context_path=root/'run.json'
         raw=os.environ['CJ_BETA_RUN_CONTEXT_JSON']
         context_path.write_text(raw)
-        context=load_run_context(context_path)
+        context=load_run_context(context_path,require_active=not demo_subjects)
         if context.version!='CJ-LOCAL-RUN@2':raise ValueError('registered_beta_run_context_required')
+        next_context=None
+        if demo_subjects:context,next_context=demo_periods(context,datetime.now(timezone.utc).timestamp())
         return cls(auth,context,context_path,descriptors,typed_memory,frozenset(subjects),memory_runtime,
-                   typed_message_subjects,assembly_subjects,assembly_run_credential_subjects,assembly_model_stream_subjects,demo_subjects)
+                   typed_message_subjects,assembly_subjects,assembly_run_credential_subjects,assembly_model_stream_subjects,
+                   demo_subjects,next_context)
 
     @property
     def planning_subjects(self):

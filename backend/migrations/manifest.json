@@ -392,8 +392,8 @@
       "name": "demo_invitation",
       "file": "backend/migrations/0049_demo_invitation.sql",
       "down": "backend/migrations/down/0049_demo_invitation.down.sql",
-      "sha256": "010740be5eb752e12490ce69c09fc3330bbe51661bc788f3cc158c6cdc4b802a",
-      "down_sha256": "b3718afffdd212980339398bb081c5ee2c815f9785346b84f20e40c442b83dbd"
+      "sha256": "b413422c94ecee91465ff9647d0734ce1fb267eb8d2cb6265390c4d73b250003",
+      "down_sha256": "76ce7640bf94177abc7f405537f88e37b5154a40b83bdfbdbc35926ca5748086"
     }
   ]
 }

@@ -29,7 +29,7 @@ from test_m4_real_services import sse,turn_sse,KEY,NOW
 def exercise(auth,conninfo):
     subjects=['m4-synthetic-'+v for v in ('ok','limit','unknown','malformed','late','permission','revoke','repeat','tail','tailbad','batch','batchfail','stop','guard-unknown','progress','run-commit-unknown','stream','stream-mixed')]
     assembly_pair=tuple('m4-synthetic-660-0123456789ab-'+lang for lang in ('zh','en'))
-    subjects.extend(assembly_pair)
+    subjects.extend((*assembly_pair,'m4-synthetic-stream-buffered-mixed','m4-synthetic-stream-buffered-late-mixed'))
     harness.dev_auth.init(auth,subjects)
     now=int(time.time());profiles={}
     for subject in subjects:
@@ -58,7 +58,8 @@ def exercise(auth,conninfo):
     for subject in subjects:
         budget=AuthorizationBudget(auth.parent/subject,clock=lambda:NOW)
         legacy_stream=subject.endswith(('stream','stream-mixed'))
-        incremental=legacy_stream or subject in assembly_pair
+        buffered='stream-buffered' in subject
+        incremental=legacy_stream or buffered or subject in assembly_pair
         mixed=subject.endswith('stream-mixed')
         paused,release=Event(),Event()
         prefix='Synthetic visible answer before the provider completes; '
@@ -100,8 +101,16 @@ def exercise(auth,conninfo):
                     second=dict(calls[0],index=1,id='call_second',function=dict(name='place_search',
                         arguments=json.dumps(dict(keyword='synthetic-two',city='北京',page=1,page_size=1))))
                     calls.append(second)
+                    if buffered:
+                        if subject.endswith('late-mixed'):
+                            preface={**first,'choices':[{'delta':{'content':'Speculative same-turn text must stay private'}}]}
+                            data.insert(0,'data: '+json.dumps(preface)+'\n\n')
+                            data[1]='data: '+json.dumps(first)+'\n'
+                            return httpx.Response(200,stream=httpx.ByteStream(''.join(data).encode()))
+                        first['choices'][0]['delta']['content']='Speculative same-turn text must stay private'
                     return httpx.Response(200,stream=httpx.ByteStream(('data: '+json.dumps(first)+'\n'+''.join(data[1:])).encode()))
                 assistant,*replies=body['messages'][-3:]
+                if buffered:assert assistant['content'] is None
                 assert [c['function']['name'] for c in assistant['tool_calls']]==['place_search','place_search']
                 assert [r['tool_call_id'] for r in replies]==[c['id'] for c in assistant['tool_calls']]
                 assert [json.loads(r['content'])['results'][0]['index'] for r in replies]==[0,1]
@@ -160,7 +169,8 @@ def exercise(auth,conninfo):
             return None,Writer()
         services=RealServices(model,KEY,frozenset(subjects))
         tools=RealTools(services,streaming_subject=subject if legacy_stream else None,
-                        assembly_streaming_subjects=frozenset(assembly_pair))
+                        assembly_streaming_subjects=frozenset(assembly_pair),
+                        buffered_streaming_subjects=frozenset({subject}) if buffered else frozenset())
         db=LocalDatabase(conninfo,run_context=profiles[subject][1])
         opened = []
         open_runtime = db._open_runtime_connection
@@ -182,9 +192,14 @@ def exercise(auth,conninfo):
                     try:
                         assert paused.wait(10)
                         assert budget.inspect()[-1]['state']=='INTENT'
-                        running=harness.expect(client.get('/v1/run-display',params=dict(message_id=subject),headers=headers[subject]))['snapshot']
-                        assert running['run_id']==receipt['run_id'] and running['status']=='running'
-                        assert 'Synthetic visible answer' in running['text'] and suffix not in running['text']
+                        if buffered:
+                            with db.connect(scope_for(ISSUER,subject)) as connection:
+                                assert connection.execute('SELECT status FROM cj_run_record WHERE run_id=%s',(receipt['run_id'],)).fetchone()==('running',)
+                                assert connection.execute("SELECT count(*) FROM cj_run_event WHERE run_id=%s AND (value::text LIKE '%%Synthetic visible answer%%' OR value::text LIKE '%%Speculative same-turn%%')",(receipt['run_id'],)).fetchone()==(0,)
+                        else:
+                            running=harness.expect(client.get('/v1/run-display',params=dict(message_id=subject),headers=headers[subject]))['snapshot']
+                            assert running['run_id']==receipt['run_id'] and running['status']=='running'
+                            assert 'Synthetic visible answer' in running['text'] and suffix not in running['text']
                     finally:release.set()
                     outcomes=original.result(timeout=15)
             elif subject.endswith('progress'):
@@ -443,6 +458,7 @@ def exercise(auth,conninfo):
                 assert [(r['kind'],r['state']) for r in budget.inspect()]==expected
                 display=harness.expect(client.get('/v1/run-display',params=dict(message_id=subject),headers=headers[subject]))['snapshot']
                 assert 'Synthetic visible answer' in display['text'] and (prefix+suffix in display['text']) is not mixed
+                if buffered:assert 'Speculative same-turn' not in display['text']
             elif subject.endswith('permission'):
                 assert outcomes[0].status=='failed' and model.calls==1 and len(tool_calls)==before+1
                 assert budget.inspect()[-1]['receipt']['provider_code']=='10012'

@@ -86,6 +86,8 @@ def run(runtime,mode,subject,control,operation,*,demo_invitation=None):
                 intent(operation/(subject+'.bootstrap.intent'),decision)
                 provision_budget_connection(connection,runtime.context,subject)
                 if demo:
+                    if runtime.demo_next_context is not None:
+                        provision_budget_connection(connection,runtime.demo_next_context,subject)
                     if connection.execute("""UPDATE public.cj_message_scope
                         SET demo_invite_digest=%s,demo_invite_expires_at=%s,demo_session_floor=0
                         WHERE scope=%s AND demo_invite_digest IS NULL""",(*demo_invitation,scope)).rowcount!=1:

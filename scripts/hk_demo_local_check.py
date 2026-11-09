@@ -22,7 +22,9 @@ from cj_api.local_app import ISSUER,LocalDatabase,create_local_app,scope_for
 from cj_api.local_run_context import load_run_context
 from cj_memory.typed_runtime import TypedRuntimeConfiguration
 from deploy.hk import checkpoint,demo_accounts,demo_login
-from deploy.hk.configuration import Runtime
+from deploy.hk.configuration import Runtime,demo_periods
+from cj_run.step_usage import ledger_scope_for
+from cj_usage.authorization_budget import DEADLINE,DEMO_DEADLINE
 import dev_auth
 import migrate
 import pg_suites
@@ -43,9 +45,12 @@ def exercise(root,conninfo):
     now=int(time.time())
     context_path=root/'meter.json'
     context_path.write_text(json.dumps(dict(version='CJ-LOCAL-RUN@2',current=dict(meter=dict(unit='provider_call',
-        budget=100,period_start=now-60,period_end=now+3600,max_steps=8,max_tools=2,max_output=60000,max_seconds=600),
+        budget=100,period_start=now-60,period_end=int(DEADLINE.timestamp()),max_steps=8,max_tools=2,max_output=60000,max_seconds=600),
         output_limits=dict(model=4000,tool=2000,memory=1000)),history=[])))
     context=load_run_context(context_path)
+    _,following=demo_periods(context,now)
+    assert demo_periods(context,int(DEADLINE.timestamp()))==(following,None)
+    assert following.history==(context.current,) and following.current.meter.period_end==int(DEMO_DEADLINE.timestamp())
     database=LocalDatabase(path,run_context=context,travel_context=True,needs_context=True)
     profile=dict(subjects=['self'],slots={'quiet.entrance':dict(kind='preference',collection_allowed=True,
         semantic_resolved=True)},extents=['long_term'],context_ids=[])
@@ -55,7 +60,7 @@ def exercise(root,conninfo):
     memory=TypedRuntimeConfiguration.from_bytes(json.dumps(dict(version='local-memory-run.2',collection=collection,
         selections={SUBJECT:dict(subject='self',slots=['quiet.entrance'],max_bytes=1000)})).encode())
     runtime=Runtime(auth,context,context_path,[],memory_runtime=memory,subjects=frozenset({SUBJECT}),
-        demo_subjects=frozenset({SUBJECT}))
+        demo_subjects=frozenset({SUBJECT}),demo_next_context=following)
     runtime._database=database
     control=root/'control';operation=root/'operation';operation.mkdir(mode=0o700)
     endpoint=root/'signer';endpoint.mkdir(mode=0o700)
@@ -120,13 +125,25 @@ def exercise(root,conninfo):
             assert replay.status_code==200 and replay.json()['receipt']==receipts[0]
             scope=scope_for(ISSUER,SUBJECT)
             with psycopg.connect(**conninfo) as db:
-                assert db.execute("SELECT demo_question_count FROM public.cj_message_scope WHERE scope=%s",(scope,)).fetchone()==(40,)
-                assert db.execute("SELECT count(*) FROM public.cj_message_receipt WHERE scope=%s",(scope,)).fetchone()==(40,)
+                assert db.execute("SELECT count(*) FROM public.cj_message_receipt WHERE scope=%s AND demo_question_day=(clock_timestamp() AT TIME ZONE 'Asia/Shanghai')::date",(scope,)).fetchone()==(40,)
                 assert db.execute("SELECT has_table_privilege('cj_m1_runtime','cj_message_context_profile','INSERT')").fetchone()==(False,)
-                db.execute("UPDATE public.cj_message_scope SET demo_question_day=demo_question_day-1 WHERE scope=%s",(scope,))
+                periods=[ledger_scope_for(scope,p.meter) for p in following.profiles]
+                assert db.execute('SELECT count(*) FROM public.cj_usage_ledger_candidate WHERE scope_id=ANY(%s)',(periods,)).fetchone()==(2,)
+                for label,sql,parameters in (
+                    ('invitation update','UPDATE public.cj_message_scope SET demo_revoked_at=clock_timestamp(),demo_session_floor=123 WHERE scope=%s',(scope,)),
+                    ('receipt day update','UPDATE public.cj_message_receipt SET demo_question_day=demo_question_day-1 WHERE scope=%s',(scope,)),
+                    ('invitation insert','INSERT INTO public.cj_message_scope(scope,demo_invite_digest,demo_invite_expires_at,demo_session_floor) VALUES (%s,%s,%s,0)',
+                        (scope_for(ISSUER,'m4-synthetic-demo-001122334455'),digest(NEW_CODE),expiry)),
+                ):
+                    try:
+                        with database.connect(parameters[0]) as runtime_connection:
+                            runtime_connection.execute(sql,parameters)
+                    except psycopg.errors.InsufficientPrivilege:pass
+                    else:raise AssertionError('runtime changed protected state: '+label)
+                db.execute("UPDATE public.cj_message_receipt SET demo_question_day=demo_question_day-1 WHERE scope=%s",(scope,))
             assert api.post('/v2/messages',content=command(41),headers=headers).status_code==200
             with psycopg.connect(**conninfo) as db:
-                assert db.execute("SELECT demo_question_count FROM public.cj_message_scope WHERE scope=%s",(scope,)).fetchone()==(1,)
+                assert db.execute("SELECT count(*) FROM public.cj_message_receipt WHERE scope=%s AND demo_question_day=(clock_timestamp() AT TIME ZONE 'Asia/Shanghai')::date",(scope,)).fetchone()==(1,)
     print('PASS Demo signed login/socket, renewal/revoke/rotate, original profile, 40/day, replay and Beijing day rollover')
 
 

@@ -89,7 +89,9 @@ def _run_worker(runtime):
         subject=next(s for s in runtime.assembly_subjects if s.endswith('-zh'))
         binding=(scope_for(ISSUER,subject),probe)
     tools=RealTools(services,streaming_subject=os.environ.get(MODEL_STREAM_SUBJECT),
-        assembly_streaming_subjects=runtime.assembly_model_stream_subjects,controlled_probe=binding)
+        assembly_streaming_subjects=runtime.assembly_model_stream_subjects,
+        buffered_streaming_subjects=(runtime.assembly_model_stream_subjects|runtime.demo_subjects
+                                     if runtime.demo_subjects else frozenset()),controlled_probe=binding)
     database=runtime.database()
     while True:
         component='deployment_gate';status='unavailable'

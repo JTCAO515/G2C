@@ -243,8 +243,11 @@ API 只读挂载 Unix socket 目录。公网 `POST /v1/demo-invite-sessions` 的
 `revoke <subject>` 立即拒绝原邀请码和会话；确认原 scope 无在途后，`rotate <subject>` 可登记
 新摘要与有效期，旧会话继续拒绝，每日计数保留。结果不明先 `inspect <subject>` 和原动作日志。
 MESSAGE 只对实际新接受的原件计数，每日北京时间 40 个；同原件回查和幂等重入沿用原回执。
-过旧服务期限后，实际模型和工具仅允许显式 Demo scope。已有 PG Meter 期间届满时，
-依原非重叠期间流程追加下一期并保留旧账本，再恢复新派发。
+Demo 及已启用流式的组装两主体使用 [STREAM@2](../../contracts/run/MODEL-TOOL-TURN-STREAM-V2.md)，
+可调用工具的轮次先收齐原回执。混合响应仅执行通过原门禁的工具，丢弃未核实的同轮正文。
+过旧服务期限后，实际模型和工具仅允许显式 Demo scope。首次开户同时在原 PG Meter 中准备
+12 月非重叠期间，保留原期间和唯一对外费用账本。北京时间 12 月 1 日确认无在途后重建
+API 与 worker；两者从同一原配置选到新期间。旧的非 Demo 待处理原件保持原状。
 
 ```sh
 uv run --locked python -B scripts/test.py

@@ -338,6 +338,7 @@ def run_once(database, model, auth_dir, *, memory_configuration=None,memory_conf
                 or type(tools_configuration) is not RealTools or tools_configuration.services is not real_services
                 or database.run_context.version!='CJ-LOCAL-RUN@2' or background_jobs is not None):
             raise ProviderFailed('explicit registered M4 real composition required')
+        pending_scopes=real_services.dispatch_scopes(pending_scopes)
         for scope in pending_scopes:real_services.require_scope(scope)
     account_checker_builder = None
     if formal_memory_configuration is None and not account_admission:
