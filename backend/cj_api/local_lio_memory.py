@@ -1,11 +1,26 @@
 """Compose Lio candidates with the host's existing synthetic Memory policy."""
 from datetime import datetime, timezone
+from hashlib import sha256
+import json
+import logging
 
+from psycopg import Error as DatabaseError
+
+from cj_agent.provider import ProviderFailed, ProviderUnknown
+from cj_memory.domain import CommitUnknown as MemoryCommitUnknown
 from cj_memory.postgres import Repository
-from cj_memory_jobs.codec import Unavailable
+from cj_memory_jobs.codec import Conflict, Unavailable
 from cj_memory_jobs.collection import CollectionService
-from cj_memory_jobs.extraction import CollectionPolicy
+from cj_memory_jobs.extraction import CollectionPolicy, CollectionUnavailable, InvalidExtraction
 from cj_memory_jobs.lio_candidates import LioCandidates
+from cj_memory_jobs.service import OperationWithheld
+from cj_message.domain import CommitUnknown as MessageCommitUnknown
+from cj_message.source import SourceQuery
+from cj_usage.background_exit import ModelInput
+from cj_usage.metered_exit import BudgetExceeded, BudgetUnknown
+
+
+_LOGGER = logging.getLogger(__name__)
 
 
 def lio_candidates(database, boundary, subjects, configuration):
@@ -33,3 +48,95 @@ def lio_candidates(database, boundary, subjects, configuration):
 
     service = CollectionService(boundary, repository, collection)
     return LioCandidates(service, subjects)
+
+
+class LioMemoryExtraction:
+    """One separately metered extraction on the admitted original Lio RUN."""
+
+    def __init__(self, database, candidates, credential):
+        self.database = database
+        self.candidates = candidates
+        self.credential = credential
+
+    def extract(self, worker, binding):
+        token = self.credential()
+        coordinates = dict(message_id=binding.message_id, run_id=binding.run_id)
+        options = dict(**coordinates, max_payload_bytes=32768)
+        try:
+            original = json.loads(self.candidates.prepare(token, **options))
+        except (Conflict, Unavailable, OperationWithheld, MemoryCommitUnknown, MessageCommitUnknown, DatabaseError) as error:
+            _record_hold('prepare', error)
+            return None
+        prepared = original['prepared_input_utf8']
+        if prepared is None:
+            # A consumed or uncertain original never yields model bytes again.
+            return None
+        prepared = prepared.encode('utf-8')
+        digest = sha256(prepared).hexdigest()
+        job, attempt = original['job_id'], original['attempt_id']
+        source = SourceQuery(**original['source'])
+
+        def hold(target):
+            try:
+                self._owned(token, lambda context: self.candidates.transition_original_in_context(
+                    context, token, job, attempt, target, **coordinates))
+            except (Conflict, Unavailable, OperationWithheld, MemoryCommitUnknown, MessageCommitUnknown, DatabaseError) as error:
+                _record_hold('metadata', error)
+
+        def source_bytes(context):
+            policy = self.candidates.processing_policy(context, token, job, attempt, prepared, digest, **options)
+            return context.with_enabled_source(source, policy, lambda snapshot: policy.with_input(snapshot, bytes))
+
+        try:
+            actual = self._owned(token, source_bytes)
+            payload = ModelInput.parse(actual)
+            messages = [dict(role=role, content=content) for role, content in payload.messages]
+            output = ''.join(worker._registered_stream(binding, 'memory.lio_extract.0', 'memory.lio_extract.1',
+                                                        (messages, payload.system, worker.provider))).encode('utf-8')
+            deadline = worker.budget_exit.prepare_publication(binding)
+        except (BudgetExceeded, ProviderFailed) as error:
+            _record_hold('model', error)
+            hold('failed')
+            return None
+        except (ProviderUnknown, BudgetUnknown, Unavailable, Conflict, OperationWithheld,
+                MemoryCommitUnknown, MessageCommitUnknown, DatabaseError) as error:
+            _record_hold('model', error)
+            hold('unknown')
+            return None
+
+        def publish():
+            # Completing the answer uses its original Memory snapshot. Candidate
+            # writes advance the Memory epoch and therefore happen after that check.
+            def check_answer():
+                (answer, _), = self.database.run_repository(binding.scope).lio_timeline((binding,))
+                if answer is None or answer.status != 'completed':
+                    raise Conflict('original Lio answer was not completed')
+                deadline()
+
+            def write(context):
+                policy = self.candidates.publication_policy(context, token, job, attempt, prepared, digest,
+                    output, sha256(output).hexdigest(), before_commit=check_answer, **options)
+                return context.with_enabled_source(source, policy, policy.apply_original_result)
+
+            try:
+                self._owned(token, write)
+            except (BudgetExceeded, InvalidExtraction, CollectionUnavailable, Conflict, Unavailable,
+                    OperationWithheld, MemoryCommitUnknown, MessageCommitUnknown, DatabaseError) as error:
+                _record_hold('publication', error)
+                try:
+                    receipt = self._owned(token, lambda context: self.candidates.query_publication_in_context(
+                        context, token, job, attempt, **coordinates))
+                except (Conflict, Unavailable, OperationWithheld, MemoryCommitUnknown, MessageCommitUnknown, DatabaseError) as read_error:
+                    _record_hold('receipt', read_error)
+                    return
+                if receipt == b'null':
+                    hold('unknown')
+
+        return publish
+
+    def _owned(self, token, operation):
+        return self.candidates.collection.boundary.with_history_context(token, operation)
+
+
+def _record_hold(stage, error):
+    _LOGGER.warning('lio_memory_withheld stage=%s error=%s', stage, type(error).__name__)

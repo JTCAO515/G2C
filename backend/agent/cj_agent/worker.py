@@ -102,7 +102,7 @@ class Outcome:
 
 
 class RunWorker:
-    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None, memory=None, message_context=None, tools=None, edit_publisher=None,edit_results=False,place_sources=None,memory_history=False,history_adapter=None,execution_lease=nullcontext,owned_transaction_lease=None,lio_locale=None,lio_planning=None,lio_edit=None,require_lio_confirmation=False):
+    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None, memory=None, message_context=None, tools=None, edit_publisher=None,edit_results=False,place_sources=None,memory_history=False,history_adapter=None,execution_lease=nullcontext,owned_transaction_lease=None,lio_locale=None,lio_planning=None,lio_edit=None,lio_memory=None,require_lio_confirmation=False):
         """`messages`: cj_message.domain.Service and `runs`: cj_run.core.Service, both bound to `scope`.
 
         `drafts`: optional cj_agent.draft.DraftPublisher for this user's TRIP scope; messages
@@ -127,6 +127,7 @@ class RunWorker:
         self.lio_locale = lio_locale
         self.lio_planning = lio_planning
         self.lio_edit = lio_edit
+        self.lio_memory = lio_memory
         self.require_lio_confirmation = require_lio_confirmation
 
     def process(self, limit=20):
@@ -396,6 +397,7 @@ class RunWorker:
                               lio_locale=self.lio_locale,
                               lio_planning=self.lio_planning,
                               lio_edit=self.lio_edit,
+                              lio_memory=self.lio_memory,
                               require_lio_confirmation=self.require_lio_confirmation,
                               runs=Service(OwnedRepository(), runs.valid))
             if self.edit_publisher is not None:
@@ -505,7 +507,11 @@ class RunWorker:
                 state = self._event(binding, state, 'text_delta', buffer)
             if self.drafts is not None and command['creation_intent'] == 'consider_trip':
                 state, proposal_id = self._draft(binding, state, text, stored)
+            publish_memory = (self.lio_memory.extract(self, binding)
+                              if locale is not None and self.lio_memory is not None else None)
             state = self._event(binding, state, 'completed')
+            if publish_memory is not None:
+                publish_memory()
         except BudgetExceeded:
             state = self._budget_rejection(binding,'answer')
         except ProviderFailed:
