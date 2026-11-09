@@ -97,12 +97,13 @@ class LioPlanPublisher(ContextPublisher):
             replacement = json.loads(candidate.edit.changes[0][2])
             if replacement not in request.text:
                 raise Conflict('replacement must come from the original message')
+            same_snapshot = json.loads(context.needs_source)['snapshot'] == json.loads(capture.raw)['snapshot']
             needs, report, _ = check_scoped(candidate.content, capture, json.loads(context.proposed),
-                                             result.scope.selected_ids, limits)
+                                            result.scope.selected_ids, limits, retain_adopted=same_snapshot)
             if not any(check.code == 'PROTECTED_SCOPE_UNCHANGED' and check.status == 'PASS'
                        for check in report.checks):
                 raise Conflict('original Needs protection could not be verified')
-        except (Conflict, Denied, ValueError) as error:
+        except (Conflict, Denied, ValueError, KeyError, TypeError) as error:
             raise DraftRejected('Lio Trip edit refused') from error
         proposal = Proposal(proposal_id_for(binding.run_id), trip.trip_id, trip.version, EDIT_BASIS,
                             int(self.clock()) + PROPOSAL_TTL_SECONDS, candidate.content)
