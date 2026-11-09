@@ -1,4 +1,6 @@
 import Foundation
+import CryptoKit
+import CJAPI
 import Testing
 @testable import CJShell
 
@@ -199,6 +201,76 @@ struct DemoV2DialogueTests {
         #expect(throws: DemoV2Dialogue.Failure.invalidAction) {
             try DemoV2Dialogue.Action(id: id, operation: .acceptTrip, event: card, receipt: receipt)
         }
+    }
+
+    @Test func planningV2UsesSameSelectorsAndManualCorrectionPatch() throws {
+        let message = try DemoV2Dialogue.Message(id: id, text: "计划 / Plan", language: .chinese,
+                                                destination: .initial, version: .planning)
+        let original = try DemoV2Dialogue.OriginalMessage(message)
+        let body = try #require(JSONSerialization.jsonObject(with: original.bytes) as? [String: Any])
+        #expect(body["version"] as? String == "DEMO-dialogue-message.2")
+        #expect(Set(body.keys) == ["version", "message_id", "text", "locale"])
+        let receipt = DemoV2Dialogue.Receipt(message_id: message.message_id, conversation_id: conversation,
+                                             run_id: "run", input_sha256: original.sha256)
+        let card = try event(kind: "needs_card", messageID: message.message_id, payload: [
+            "card_id": "needs", "version": 1, "status": "pending", "dates": ["start": "2026-11-10", "end": NSNull()],
+            "city": "北京", "party_size": NSNull(), "pace": "轻松", "fixed_items": NSNull()
+        ])
+        guard case .needs(let needs) = card.payload else { Issue.record("Expected a typed needs card"); return }
+        #expect(needs.dates?.start == "2026-11-10" && needs.dates?.end == nil)
+        #expect(needs.party_size == nil && needs.fixed_items == nil)
+        let changes = try JSONDecoder().decode(Components.Schemas.NeedsChanges.self,
+            from: Data(#"{"party_size":{"state":"known","value":2}}"#.utf8))
+        let correction = try DemoV2Dialogue.Action(id: id, operation: .correctNeeds, event: card, receipt: receipt, changes: changes)
+        let encoded = try JSONEncoder().encode(correction)
+        let payload = try #require(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        let patch = try #require(payload["changes"] as? [String: Any])
+        let party = try #require(patch["party_size"] as? [String: Any])
+        #expect(party["state"] as? String == "known" && party["value"] as? Int == 2)
+        #expect(throws: DemoV2Dialogue.Failure.invalidAction) {
+            try DemoV2Dialogue.Action(id: id, operation: .confirmNeeds, event: card, receipt: receipt, changes: changes)
+        }
+        #expect(throws: DemoV2Dialogue.Failure.invalidAction) {
+            try DemoV2Dialogue.Action(id: id, operation: .correctNeeds, event: card, receipt: receipt)
+        }
+
+        let digest = SHA256.hash(data: encoded).map { String(format: "%02x", $0) }.joined()
+        var reply: [String: Any] = [
+            "action_id": correction.action_id, "conversation_id": conversation, "card_id": "needs",
+            "version": 2, "operation": "correct_needs", "input_sha256": digest,
+            "message_id": NSNull(), "run_id": NSNull(), "card": NSNull()
+        ]
+        let corrected = try JSONDecoder().decode(DemoV2Dialogue.ActionReceipt.self, from: JSONSerialization.data(withJSONObject: reply))
+        try corrected.checkOriginal(correction, bytes: encoded)
+        reply["message_id"] = "unexpected"
+        reply["run_id"] = "unexpected"
+        let spuriousRun = try JSONDecoder().decode(DemoV2Dialogue.ActionReceipt.self, from: JSONSerialization.data(withJSONObject: reply))
+        #expect(throws: DemoV2Dialogue.Failure.invalidResponse) { try spuriousRun.checkOriginal(correction, bytes: encoded) }
+    }
+
+    @Test func confirmationReceiptBindsTheNewRunWithoutSubstitutingTheOldMessage() throws {
+        let original = try DemoV2Dialogue.OriginalMessage(.init(id: id, text: "Plan", language: .english,
+                                                                destination: .initial, version: .planning))
+        let receipt = DemoV2Dialogue.Receipt(message_id: original.command.message_id, conversation_id: conversation,
+                                             run_id: "run", input_sha256: original.sha256)
+        let needs = try event(kind: "needs_card", messageID: receipt.message_id, payload: [
+            "card_id": "needs", "version": 1, "status": "pending", "dates": NSNull(), "city": "Beijing",
+            "party_size": 2, "pace": "Relaxed", "fixed_items": NSNull()
+        ])
+        let confirmation = try DemoV2Dialogue.Action(id: id, operation: .confirmNeeds, event: needs, receipt: receipt)
+        let bytes = try JSONEncoder().encode(confirmation)
+        let digest = SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined()
+        let payload: [String: Any] = [
+            "action_id": confirmation.action_id, "conversation_id": conversation, "card_id": "needs",
+            "version": 2, "operation": "confirm_needs", "input_sha256": digest, "message_id": "planned", "run_id": "next-run",
+            "card": ["card_id": "needs", "version": 2, "status": "confirmed"]
+        ]
+        let response = try JSONDecoder().decode(DemoV2Dialogue.ActionReceipt.self, from: JSONSerialization.data(withJSONObject: payload))
+        let newRun = try #require(try response.checkOriginal(confirmation, bytes: bytes))
+        let planned = try event(kind: "answer_delta", messageID: "planned", runID: "next-run", payload: ["text": "Plan"])
+        try planned.checkBinding(newRun)
+        #expect(throws: DemoV2Dialogue.Failure.mismatchedOriginal) { try planned.checkOriginal(receipt) }
+        #expect(throws: DemoV2Dialogue.Failure.mismatchedOriginal) { try needs.checkBinding(newRun) }
     }
 
     private func event(kind: String, messageID: String = "message", runID: String = "run",

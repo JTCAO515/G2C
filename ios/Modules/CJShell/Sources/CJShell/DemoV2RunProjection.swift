@@ -16,7 +16,7 @@ struct DemoV2RunProjection {
         case .source(let value):
             if let index = sources.firstIndex(where: { $0.source_id == value.source_id }) { sources[index] = value }
             else { sources.append(value) }
-        case .card, .trip, .memory:
+        case .card, .needs, .trip, .memory:
             break
         }
     }

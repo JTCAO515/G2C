@@ -8,7 +8,7 @@ struct DemoV2EventStream {
         case invalidConfiguration, invalidFrame, invalidSequence, responseTooLarge, incompleteFrame
     }
 
-    private let receipt: DemoV2Dialogue.Receipt
+    private let binding: DemoV2Dialogue.EventBinding
     private let maximumWireBytes: Int
     private var wireBytes = 0
     private var line: [UInt8] = []
@@ -20,8 +20,12 @@ struct DemoV2EventStream {
     var lastEventID: String? { confirmedSequence.map { String($0) } }
 
     init(receipt: DemoV2Dialogue.Receipt, maximumWireBytes: Int, resumingAfter: Int64? = nil) throws {
+        try self.init(binding: receipt.eventBinding, maximumWireBytes: maximumWireBytes, resumingAfter: resumingAfter)
+    }
+
+    init(binding: DemoV2Dialogue.EventBinding, maximumWireBytes: Int, resumingAfter: Int64? = nil) throws {
         guard maximumWireBytes > 0, resumingAfter.map({ $0 >= 0 }) ?? true else { throw Failure.invalidConfiguration }
-        self.receipt = receipt
+        self.binding = binding
         self.maximumWireBytes = maximumWireBytes
         self.confirmedSequence = resumingAfter
     }
@@ -78,17 +82,19 @@ struct DemoV2EventStream {
     }
 
     private mutating func completeFrame() throws -> DemoV2Dialogue.Event {
-        guard let sequence, !dataLines.isEmpty else { throw Failure.invalidFrame }
+        guard let sequence, let eventName, !dataLines.isEmpty else { throw Failure.invalidFrame }
         if let previous = confirmedSequence {
-            guard previous < Int64.max, sequence == previous + 1 else { throw Failure.invalidSequence }
+            guard sequence > previous else { throw Failure.invalidSequence }
         }
         let data = Data(dataLines.joined(separator: "\n").utf8)
         try validateUnambiguousJSON(data)
         let event = try JSONDecoder().decode(DemoV2Dialogue.Event.self, from: data)
-        try event.checkOriginal(receipt)
+        try event.checkBinding(binding)
+        guard event.eventID == String(sequence) else { throw Failure.invalidSequence }
+        guard eventName == event.kind.rawValue else { throw Failure.invalidFrame }
         confirmedSequence = sequence
         self.sequence = nil
-        eventName = nil
+        self.eventName = nil
         dataLines.removeAll(keepingCapacity: true)
         return event
     }

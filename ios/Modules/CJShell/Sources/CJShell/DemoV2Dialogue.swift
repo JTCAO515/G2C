@@ -1,5 +1,6 @@
 import Foundation
 import CryptoKit
+import CJAPI
 
 /// Client fixture for #702. Live transport will use the frozen response envelopes
 /// and the existing session boundary when the endpoint is deployed.
@@ -14,17 +15,24 @@ enum DemoV2Dialogue {
         case newConversation
     }
 
+    enum MessageVersion: String {
+        case ordinary = "DEMO-dialogue-message.1"
+        case planning = "DEMO-dialogue-message.2"
+    }
+
     struct Message: Encodable {
-        let version = "DEMO-dialogue-message.1"
+        let version: String
         let message_id: String
         let text: String
         let locale: String
         let conversation_id: String?
         let new_conversation: Bool?
 
-        init(id: UUID, text: String, language: ShellLanguage, destination: Destination) throws {
+        init(id: UUID, text: String, language: ShellLanguage, destination: Destination,
+             version: MessageVersion = .ordinary) throws {
             guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
                   !text.utf8.contains(0), text.utf8.count <= 12_000 else { throw Failure.invalidMessage }
+            self.version = version.rawValue
             self.message_id = id.uuidString.lowercased()
             self.text = text
             self.locale = language == .chinese ? "zh" : "en"
@@ -105,11 +113,27 @@ enum DemoV2Dialogue {
         }
     }
 
+    struct EventBinding: Sendable {
+        let messageID: String
+        let conversationID: String
+        let runID: String
+
+        fileprivate init(messageID: String, conversationID: String, runID: String) {
+            self.messageID = messageID
+            self.conversationID = conversationID
+            self.runID = runID
+        }
+    }
+
     struct Receipt: Decodable {
         let message_id: String
         let conversation_id: String
         let run_id: String
         let input_sha256: String
+
+        var eventBinding: EventBinding {
+            .init(messageID: message_id, conversationID: conversation_id, runID: run_id)
+        }
 
         func checkOriginal(_ original: OriginalMessage) throws {
             let message = original.command
@@ -201,8 +225,9 @@ enum DemoV2Dialogue {
     /// The current fixture covers explicit choices whose payload has been
     /// agreed. The separate correct-needs changes body will follow B's schema.
     struct Action: Encodable {
-        enum Operation: String, Encodable {
+        enum Operation: String, Codable {
             case confirmNeeds = "confirm_needs"
+            case correctNeeds = "correct_needs"
             case acceptTrip = "accept_trip"
             case requestTripChanges = "request_trip_changes"
             case acceptEdit = "accept_edit"
@@ -211,7 +236,7 @@ enum DemoV2Dialogue {
 
             var requiredCard: Event.Kind {
                 switch self {
-                case .confirmNeeds: .needsCard
+                case .confirmNeeds, .correctNeeds: .needsCard
                 case .acceptTrip, .requestTripChanges: .tripCandidate
                 case .acceptEdit: .editCandidate
                 case .remember, .dismissMemory: .memoryCandidate
@@ -225,16 +250,62 @@ enum DemoV2Dialogue {
         let card_id: String
         let expected_version: Int
         let operation: Operation
+        let changes: Components.Schemas.NeedsChanges?
 
-        init(id: UUID, operation: Operation, event: Event, receipt: Receipt) throws {
-            try event.checkOriginal(receipt)
+        init(id: UUID, operation: Operation, event: Event, receipt: Receipt,
+             changes: Components.Schemas.NeedsChanges? = nil) throws {
+            try self.init(id: id, operation: operation, event: event, binding: receipt.eventBinding, changes: changes)
+        }
+
+        init(id: UUID, operation: Operation, event: Event, binding: EventBinding,
+             changes: Components.Schemas.NeedsChanges? = nil) throws {
+            try event.checkBinding(binding)
             guard event.kind == operation.requiredCard, let (cardID, revision) = event.cardReference,
-                  !cardID.isEmpty, revision > 0 else { throw Failure.invalidAction }
+                  !cardID.isEmpty, revision > 0, (operation == .correctNeeds) == (changes != nil) else { throw Failure.invalidAction }
+            if let changes {
+                let bytes = try JSONEncoder().encode(changes)
+                guard let values = try JSONSerialization.jsonObject(with: bytes) as? [String: Any], !values.isEmpty
+                else { throw Failure.invalidAction }
+            }
             self.action_id = id.uuidString.lowercased()
-            self.conversation_id = receipt.conversation_id
+            self.conversation_id = binding.conversationID
             self.card_id = cardID
             self.expected_version = revision
             self.operation = operation
+            self.changes = changes
+        }
+    }
+
+    struct ActionReceipt: Decodable {
+        let action_id: String
+        let conversation_id: String
+        let card_id: String
+        let version: Int
+        let operation: Action.Operation
+        let input_sha256: String
+        let message_id: String?
+        let run_id: String?
+        let card: Event.Card?
+
+        @discardableResult
+        func checkOriginal(_ action: Action, bytes: Data) throws -> EventBinding? {
+            let digest = SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined()
+            guard action_id == action.action_id, conversation_id == action.conversation_id,
+                  card_id == action.card_id, operation == action.operation, version >= action.expected_version,
+                  input_sha256 == digest, (message_id == nil) == (run_id == nil),
+                  message_id.map({ !$0.isEmpty }) ?? true, run_id.map({ !$0.isEmpty }) ?? true,
+                  card.map({ $0.card_id == card_id && $0.version == version }) ?? true
+            else { throw Failure.mismatchedOriginal }
+            switch operation {
+            case .confirmNeeds:
+                guard message_id != nil else { throw Failure.invalidResponse }
+            case .correctNeeds:
+                guard message_id == nil else { throw Failure.invalidResponse }
+            default:
+                break
+            }
+            guard let message_id, let run_id else { return nil }
+            return .init(messageID: message_id, conversationID: conversation_id, runID: run_id)
         }
     }
 
@@ -260,6 +331,7 @@ enum DemoV2Dialogue {
             case answer(Answer)
             case source(Source)
             case card(Card)
+            case needs(NeedsCard)
             case trip(TripCandidate)
             case memory(MemoryCandidate)
         }
@@ -273,6 +345,7 @@ enum DemoV2Dialogue {
             let status: String
             let stage: Stage
             let tool_kind: String?
+            let error_code: String?
         }
 
         struct Answer: Decodable { let text: String }
@@ -296,6 +369,30 @@ enum DemoV2Dialogue {
             let card_id: String
             let version: Int
             let status: String
+        }
+
+        struct NeedsCard: Decodable {
+            struct Dates: Decodable {
+                let start: String?
+                let end: String?
+            }
+
+            struct FixedItem: Decodable {
+                let item_id: String
+                let label: String
+                let starts_at: String?
+                let ends_at: String?
+                let time_zone: String?
+            }
+
+            let card_id: String
+            let version: Int
+            let status: String
+            let dates: Dates?
+            let city: String?
+            let party_size: Int?
+            let pace: String?
+            let fixed_items: [FixedItem]?
         }
 
         struct TripCandidate: Decodable {
@@ -363,7 +460,9 @@ enum DemoV2Dialogue {
                 payload = .trip(try box.decode(TripCandidate.self, forKey: .payload))
             case .memoryCandidate:
                 payload = .memory(try box.decode(MemoryCandidate.self, forKey: .payload))
-            case .needsCard, .editCandidate:
+            case .needsCard:
+                payload = .needs(try box.decode(NeedsCard.self, forKey: .payload))
+            case .editCandidate:
                 payload = .card(try box.decode(Card.self, forKey: .payload))
             }
         }
@@ -371,6 +470,7 @@ enum DemoV2Dialogue {
         var cardReference: (String, Int)? {
             switch payload {
             case .card(let value): (value.card_id, value.version)
+            case .needs(let value): (value.card_id, value.version)
             case .trip(let value): (value.card_id, value.version)
             case .memory(let value): (value.card_id, value.version)
             case .status, .answer, .source: nil
@@ -378,8 +478,12 @@ enum DemoV2Dialogue {
         }
 
         func checkOriginal(_ receipt: Receipt) throws {
-            guard !eventID.isEmpty, conversationID == receipt.conversation_id,
-                  messageID == receipt.message_id, runID == receipt.run_id
+            try checkBinding(receipt.eventBinding)
+        }
+
+        func checkBinding(_ binding: EventBinding) throws {
+            guard !eventID.isEmpty, conversationID == binding.conversationID,
+                  messageID == binding.messageID, runID == binding.runID
             else { throw Failure.mismatchedOriginal }
         }
     }
