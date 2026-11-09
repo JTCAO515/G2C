@@ -43,6 +43,8 @@ struct LioSavedTripTests {
         #expect(trip.days[1].stops.first?.time == nil)
         #expect(trip.days[1].stops.first?.fixed == nil)
         #expect(trip.days.allSatisfy { $0.stops.allSatisfy { $0.point == nil } })
+        #expect(trip.planningIntroduction(.english) == "I planned a 2-day trip and left some dates open.")
+        #expect(trip.planningIntroduction(.chinese) == "我安排了 2 天行程，有些日期可以之后再定。")
         #expect(model.turns.last?.itinerary == nil)
     }
 

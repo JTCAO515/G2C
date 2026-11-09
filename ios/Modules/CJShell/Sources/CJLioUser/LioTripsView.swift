@@ -11,7 +11,7 @@ struct LioItineraryCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            if let description = itinerary.description { RunReadableText(text: description) }
+            if let introduction = itinerary.planningIntroduction(language) { RunReadableText(text: introduction) }
             RunReadableText(text: itinerary.title, style: .headline)
                 .accessibilityAddTraits(.isHeader)
             ForEach(itinerary.days) { day in

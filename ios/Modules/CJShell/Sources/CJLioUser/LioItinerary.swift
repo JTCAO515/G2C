@@ -48,6 +48,20 @@ struct LioItinerary: Equatable, Identifiable, Sendable {
     let title: String
     let description: String?
     let days: [Day]
+
+    func planningIntroduction(_ language: LioLanguage) -> String? {
+        if let description { return description }
+        guard !days.isEmpty else { return nil }
+        let count = days.count
+        let dated = days.filter { $0.date != nil }.count
+        if dated == count {
+            return language.text("I planned a \(count)-day trip around the dates below.", "我按下面的日期安排了 \(count) 天行程。")
+        }
+        if dated == 0 {
+            return language.text("I planned a \(count)-day trip with the dates left open.", "我先安排了 \(count) 天行程，日期可以之后再定。")
+        }
+        return language.text("I planned a \(count)-day trip and left some dates open.", "我安排了 \(count) 天行程，有些日期可以之后再定。")
+    }
 }
 
 extension LioItinerary {
