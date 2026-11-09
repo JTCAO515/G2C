@@ -9,11 +9,11 @@ public struct LioHome<MenuContent: View>: View {
     private let isDemo: Bool
     private let menu: MenuContent
     private let tripLibrary: LioTripLibrary?
-    private let tripHistory: LioTripHistoryClient?
     private let memoryActions: LioMemoryActionsClient?
     private let savedMemory: AnyView?
     private let recordedMap: (@MainActor (StructuredTripDocument) -> AnyView)?
     @State private var conversation: LioConversation
+    @State private var tripPlan: LioTripPlan?
     @State private var draft = ""
     @State private var menuOpen = false
     @State private var source: LioSource?
@@ -27,6 +27,10 @@ public struct LioHome<MenuContent: View>: View {
     private struct Observation: Equatable {
         let active: Bool
         let request: Int
+    }
+    private struct TripObservation: Equatable {
+        let active: Bool
+        let card: LioTripCard?
     }
     private enum Tab { case chat, trips, memory }
     @FocusState private var typing: Bool
@@ -42,22 +46,31 @@ public struct LioHome<MenuContent: View>: View {
         self.isDemo = isDemo
         self.menu = menu()
         self.tripLibrary = tripLibrary
-        self.tripHistory = tripHistory
         self.memoryActions = memoryActions
         self.savedMemory = savedMemory
         self.recordedMap = recordedMap
         _conversation = State(initialValue: LioConversation(service: service))
+        _tripPlan = State(initialValue: tripHistory.map { LioTripPlan(client: $0) })
+    }
+
+    private var latestTripCard: LioTripCard? {
+        guard let turn = conversation.turns.last(where: { $0.itinerary != nil }),
+              let itinerary = turn.itinerary else { return nil }
+        return LioTripCard(turnID: turn.id, itinerary: itinerary)
     }
 
     public var body: some View {
         let pending = conversation.pending
         let canObserve = scenePhase == .active && pending == nil
+        let tripCard = latestTripCard
         TabView(selection: $tab) {
             chat
                 .tabItem { Label(language.text("Chat", "聊天"), systemImage: "bubble.left") }
                 .tag(Tab.chat)
             LioTripsView(itineraries: conversation.itineraries, language: language, library: tripLibrary,
-                         tripHistory: tripHistory, recordedMap: recordedMap) { tab = .chat }
+                         tripPlan: tripPlan, currentPlan: tripPlan?.current(for: tripCard),
+                         canUndo: canObserve && tripPlan?.requestedCard == tripCard,
+                         recordedMap: recordedMap) { tab = .chat }
                 .tabItem { Label(language.text("Trips", "行程"), systemImage: "suitcase") }
                 .tag(Tab.trips)
             if let savedMemory {
@@ -69,6 +82,12 @@ public struct LioHome<MenuContent: View>: View {
         .onChange(of: tab) { _, _ in typing = false }
         .task(id: Observation(active: canObserve, request: refreshRequest)) {
             if canObserve { await conversation.refreshTimeline() }
+        }
+        .task(id: TripObservation(active: canObserve, card: tripCard)) {
+            if canObserve { await tripPlan?.reload(for: tripCard) }
+        }
+        .task(id: tripPlan?.pending == true && scenePhase == .active) {
+            if scenePhase == .active, tripPlan?.pending == true { await tripPlan?.awaitUndo() }
         }
         .task(id: scenePhase) {
             guard scenePhase == .active, let memoryActions else { return }
@@ -359,7 +378,33 @@ public struct LioHome<MenuContent: View>: View {
             }
             messageStatus(turn)
             if let itinerary = turn.itinerary {
-                LioItineraryCard(itinerary: itinerary, language: language) { tab = .trips }
+                let card = LioTripCard(turnID: turn.id, itinerary: itinerary)
+                let isLatest = card == latestTripCard
+                let current = isLatest ? tripPlan?.current(in: card) : nil
+                LioItineraryCard(itinerary: current ?? itinerary, language: language) {
+                    tab = .trips
+                } actions: {
+                    if isLatest, let tripPlan {
+                        if current != nil, let target = tripPlan.target {
+                            Button(language.text("Undo", "撤销")) {
+                                Task {
+                                    guard latestTripCard == card, conversation.pending == nil else { return }
+                                    await tripPlan.undo(target)
+                                }
+                            }
+                            .buttonStyle(.bordered)
+                            .disabled(tripPlan.busy || tripPlan.pending || conversation.pending != nil || scenePhase != .active)
+                            .accessibilityIdentifier("lio.chat.trip.undo")
+                        }
+                        if tripPlan.pending {
+                            Text(language.text("Waiting for the trip to update…", "正在等行程更新…"))
+                                .font(.footnote)
+                        }
+                        if let notice = tripPlan.notice {
+                            Text(notice.text(language)).font(.footnote)
+                        }
+                    }
+                }
             }
             if let memoryActions {
                 ForEach(turn.memoryTags.filter { !handledTags.contains($0) }) { tag in

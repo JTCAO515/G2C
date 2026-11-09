@@ -5,10 +5,11 @@ import CJMessageHTTP
 import CJRunClient
 import CJTripClient
 
-struct LioItineraryCard: View {
+struct LioItineraryCard<Actions: View>: View {
     let itinerary: LioItinerary
     let language: LioLanguage
     let showTrips: () -> Void
+    @ViewBuilder let actions: () -> Actions
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -31,6 +32,7 @@ struct LioItineraryCard: View {
             }
             .buttonStyle(.bordered)
             .accessibilityIdentifier("lio.trip.show")
+            actions()
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -42,11 +44,12 @@ struct LioTripsView: View {
     let itineraries: [LioItinerary]
     let language: LioLanguage
     let library: LioTripLibrary?
-    let tripHistory: LioTripHistoryClient?
+    let tripPlan: LioTripPlan?
+    let currentPlan: LioItinerary?
+    let canUndo: Bool
     let recordedMap: (@MainActor (StructuredTripDocument) -> AnyView)?
     let openChat: () -> Void
     @State private var mapDay: LioItinerary.Day?
-    @State private var currentPlan: LioItinerary?
     @State private var saved: [StructuredTripSummary]?
     @State private var listUnavailable = false
     @State private var listAttempt = 0
@@ -110,19 +113,14 @@ struct LioTripsView: View {
             }
             .navigationTitle(language.text("Trips", "行程"))
             .toolbar {
-                if let tripHistory {
+                if let tripPlan {
                     ToolbarItem(placement: .topBarTrailing) {
                         NavigationLink(language.text("Previous plans", "此前的安排")) {
-                            LioTripHistoryView(client: tripHistory, language: language) { currentPlan = $0 }
+                            LioTripHistoryView(plan: tripPlan, language: language, canUndo: canUndo)
                         }
                         .accessibilityIdentifier("lio.trip.history")
                     }
                 }
-            }
-            .onChange(of: itineraries) { old, new in
-                guard let id = currentPlan?.id,
-                      old.first(where: { $0.id == id }) != new.first(where: { $0.id == id }) else { return }
-                currentPlan = nil
             }
             .sheet(item: $mapDay) { day in
                 LioDayMap(day: day, language: language)
