@@ -5,7 +5,7 @@ import CryptoKit
 /// and the existing session boundary when the endpoint is deployed.
 enum DemoV2Dialogue {
     enum Failure: Error, Equatable {
-        case invalidMessage, mismatchedOriginal, invalidResponse, invalidEvent, invalidSource
+        case invalidMessage, mismatchedOriginal, invalidResponse, invalidEvent, invalidSource, invalidAction
     }
 
     enum Destination {
@@ -198,6 +198,46 @@ enum DemoV2Dialogue {
             suffix.utf8.allSatisfy { (48...57).contains($0) || (97...102).contains($0) }
     }
 
+    /// The current fixture covers explicit choices whose payload has been
+    /// agreed. The separate correct-needs changes body will follow B's schema.
+    struct Action: Encodable {
+        enum Operation: String, Encodable {
+            case confirmNeeds = "confirm_needs"
+            case acceptTrip = "accept_trip"
+            case requestTripChanges = "request_trip_changes"
+            case acceptEdit = "accept_edit"
+            case remember
+            case dismissMemory = "dismiss_memory"
+
+            var requiredCard: Event.Kind {
+                switch self {
+                case .confirmNeeds: .needsCard
+                case .acceptTrip, .requestTripChanges: .tripCandidate
+                case .acceptEdit: .editCandidate
+                case .remember, .dismissMemory: .memoryCandidate
+                }
+            }
+        }
+
+        let version = "DEMO-dialogue-action.1"
+        let action_id: String
+        let conversation_id: String
+        let card_id: String
+        let expected_version: Int
+        let operation: Operation
+
+        init(id: UUID, operation: Operation, event: Event, receipt: Receipt) throws {
+            try event.checkOriginal(receipt)
+            guard event.kind == operation.requiredCard, let (cardID, revision) = event.cardReference,
+                  !cardID.isEmpty, revision > 0 else { throw Failure.invalidAction }
+            self.action_id = id.uuidString.lowercased()
+            self.conversation_id = receipt.conversation_id
+            self.card_id = cardID
+            self.expected_version = revision
+            self.operation = operation
+        }
+    }
+
     struct Event: Decodable {
         enum Kind: String, Decodable {
             case status, source
@@ -220,6 +260,8 @@ enum DemoV2Dialogue {
             case answer(Answer)
             case source(Source)
             case card(Card)
+            case trip(TripCandidate)
+            case memory(MemoryCandidate)
         }
 
         struct Status: Decodable {
@@ -242,7 +284,7 @@ enum DemoV2Dialogue {
             let state: String
 
             var openableURL: URL? {
-                guard state != "unknown", let url,
+                guard state == "verified", let url,
                       url.scheme?.lowercased() == "https", url.host != nil,
                       url.user == nil, url.password == nil else { return nil }
                 return url
@@ -254,6 +296,42 @@ enum DemoV2Dialogue {
             let card_id: String
             let version: Int
             let status: String
+        }
+
+        struct TripCandidate: Decodable {
+            struct Day: Decodable {
+                struct Item: Decodable {
+                    let item_id: String
+                    let label: String
+                    let place: String?
+                    let starts_at: String?
+                    let ends_at: String?
+                    let time_zone: String?
+                    let source_ids: [String]
+                    let fixed: Bool?
+                }
+
+                let date: String?
+                let items: [Item]
+            }
+
+            let card_id: String
+            let version: Int
+            let status: String
+            let proposal_id: String
+            let trip_id: String?
+            let expected_trip_version: Int?
+            let candidate_hash: String
+            let days: [Day]
+        }
+
+        struct MemoryCandidate: Decodable {
+            let card_id: String
+            let version: Int
+            let status: String
+            let candidate_id: String
+            let kind: String
+            let text: String
         }
 
         private enum CodingKeys: String, CodingKey {
@@ -281,8 +359,21 @@ enum DemoV2Dialogue {
                 let source = try box.decode(Source.self, forKey: .payload)
                 guard source.state != "unknown" || source.url == nil else { throw Failure.invalidSource }
                 payload = .source(source)
-            case .needsCard, .tripCandidate, .editCandidate, .memoryCandidate:
+            case .tripCandidate:
+                payload = .trip(try box.decode(TripCandidate.self, forKey: .payload))
+            case .memoryCandidate:
+                payload = .memory(try box.decode(MemoryCandidate.self, forKey: .payload))
+            case .needsCard, .editCandidate:
                 payload = .card(try box.decode(Card.self, forKey: .payload))
+            }
+        }
+
+        var cardReference: (String, Int)? {
+            switch payload {
+            case .card(let value): (value.card_id, value.version)
+            case .trip(let value): (value.card_id, value.version)
+            case .memory(let value): (value.card_id, value.version)
+            case .status, .answer, .source: nil
             }
         }
 

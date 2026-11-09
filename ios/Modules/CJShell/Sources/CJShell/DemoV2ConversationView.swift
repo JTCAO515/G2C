@@ -16,19 +16,22 @@ struct DemoV2Source: Identifiable {
     let id: String
     let title: String
     let details: String
+    var link: URL? = nil
 }
 
 struct DemoV2Day: Identifiable {
     let id: String
     let title: String
     let stops: [Stop]
+    var date: String? = nil
 
     struct Stop: Identifiable {
         let id: String
         let time: String
         let place: String
         let source: String
-        var locked = false
+        var locked: Bool? = false
+        var location: String? = nil
     }
 }
 
@@ -49,6 +52,32 @@ enum DemoV2CardAction {
     case confirmNeeds, editNeeds, adoptTrip, reviseTrip, applyChange, remember, dismissMemory
 }
 
+enum DemoV2DeliveryNotice: Equatable {
+    case offline, dailyLimit, unknown, notObserved, rejected
+
+    func text(_ language: ShellLanguage) -> String {
+        switch self {
+        case .offline:
+            language.text("You’re offline. Check your connection. Your draft is still here.",
+                          "网络暂不可用，请检查连接。草稿已保留。")
+        case .dailyLimit:
+            language.text("You’ve used today’s 40 questions. Try again tomorrow.",
+                          "今天的 40 个问题已用完，明天再试。")
+        case .unknown:
+            language.text("We can’t confirm the result yet. Check the original action.",
+                          "暂时无法确认结果，请核对原操作。")
+        case .notObserved:
+            language.text("The original receipt hasn’t appeared yet. You can check it again.",
+                          "暂未看到原回执，可以继续核对原操作。")
+        case .rejected:
+            language.text("We couldn’t complete this request. Review your draft and try again.",
+                          "暂时无法完成。请检查草稿后重试。")
+        }
+    }
+
+    var allowsOriginalCheck: Bool { self == .unknown || self == .notObserved }
+}
+
 struct DemoV2ConversationView: View {
     let language: ShellLanguage
     let messages: [DemoV2Message]
@@ -57,6 +86,8 @@ struct DemoV2ConversationView: View {
     let canSend: Bool
     let onSend: () -> Void
     let onAction: (String, DemoV2CardAction) -> Void
+    var deliveryNotice: DemoV2DeliveryNotice? = nil
+    var onCheckOriginal: (() -> Void)? = nil
 
     @State private var source: DemoV2Source?
     @FocusState private var composing: Bool
@@ -92,6 +123,12 @@ struct DemoV2ConversationView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         ShellCardHeading(title: selection.title, symbol: "doc.text")
                         RunSelectableText(text: selection.details)
+                        if let link = selection.link {
+                            Link(destination: link) {
+                                ShellActionLabel(title: language.text("Open original source", "打开原始来源"), symbol: "arrow.up.right.square")
+                            }
+                            .buttonStyle(ShellActionButtonStyle())
+                        }
                     }
                     .padding(16)
                 }
@@ -180,6 +217,24 @@ struct DemoV2ConversationView: View {
     }
 
     private var composer: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let notice = deliveryNotice {
+                VStack(alignment: .leading, spacing: 6) {
+                    RunReadableText(text: notice.text(language), style: .caption)
+                        .accessibilityIdentifier("demo.v2.delivery-notice")
+                    if notice.allowsOriginalCheck, let onCheckOriginal {
+                        action(language.text("Check original action", "核对原操作"), symbol: "magnifyingglass", perform: onCheckOriginal)
+                    }
+                }
+                .padding(.horizontal, 16)
+            }
+            composerRow
+        }
+        .padding(.vertical, 8)
+        .background(.background)
+    }
+
+    private var composerRow: some View {
         HStack(alignment: .bottom, spacing: 8) {
             TextField(language.text("Ask anything", "问点什么"), text: $draft, axis: .vertical)
                 .focused($composing)
@@ -204,8 +259,6 @@ struct DemoV2ConversationView: View {
             }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-        .background(.background)
     }
 
     private func decision(_ title: String, symbol: String, id: String, event: DemoV2CardAction,
@@ -220,6 +273,27 @@ struct DemoV2ConversationView: View {
     }
 }
 
+extension DemoV2Dialogue.Event.TripCandidate {
+    func displayedDays(language: ShellLanguage, sourceLabels: [String: String]) -> [DemoV2Day] {
+        days.enumerated().map { index, day in
+            let title = day.date == nil ? language.text("Date to confirm", "日期待确认")
+                : language.text("Day \(index + 1)", "第 \(index + 1) 天")
+            let stops = day.items.map { item in
+                let start = item.starts_at ?? language.text("Start unknown", "开始时间未知")
+                let end = item.ends_at ?? language.text("End unknown", "结束时间未知")
+                let zone = item.time_zone ?? language.text("Time zone unknown", "时区未知")
+                let names = item.source_ids.compactMap { sourceLabels[$0] }
+                let source = names.count == item.source_ids.count && !names.isEmpty ? names.joined(separator: " · ")
+                    : language.text("No verified source available", "暂无可核实来源")
+                return DemoV2Day.Stop(id: item.item_id, time: "\(start) – \(end) · \(zone)",
+                                      place: item.label, source: source, locked: item.fixed,
+                                      location: item.place ?? language.text("Place to confirm", "地点待确认"))
+            }
+            return DemoV2Day(id: day.date ?? "unknown-day-\(index)", title: title, stops: stops, date: day.date)
+        }
+    }
+}
+
 struct DemoV2DayCard: View {
     let day: DemoV2Day
     let language: ShellLanguage
@@ -230,16 +304,20 @@ struct DemoV2DayCard: View {
             Button {
                 expanded.toggle()
             } label: {
-                ShellActionLabel(title: day.title, symbol: "calendar",
+                ShellActionLabel(title: day.title, symbol: "calendar", detail: day.date,
                                  accessory: expanded ? "chevron.down" : "chevron.right")
             }
             .buttonStyle(ShellActionButtonStyle())
-            .accessibilityValue(expanded ? language.text("Expanded", "已展开") : language.text("Collapsed", "已折叠"))
+            .accessibilityLabel(day.title)
+            .accessibilityValue([expanded ? language.text("Expanded", "已展开") : language.text("Collapsed", "已折叠"), day.date]
+                .compactMap { $0 }.joined(separator: " · "))
             if expanded {
                 ForEach(day.stops) { stop in
                     VStack(alignment: .leading, spacing: 4) {
-                        ShellCardHeading(title: stop.place, symbol: stop.locked ? "lock" : "mappin")
-                        if stop.locked { Text(language.text("Fixed", "固定安排")).font(.footnote) }
+                        ShellCardHeading(title: stop.place, symbol: stop.locked == true ? "lock" : "mappin")
+                        if stop.locked == true { Text(language.text("Fixed", "固定安排")).font(.footnote) }
+                        if stop.locked == nil { Text(language.text("Fixed status unknown", "固定状态未知")).font(.footnote) }
+                        if let location = stop.location { RunReadableText(text: location) }
                         RunReadableText(text: stop.time)
                         RunReadableText(text: stop.source, style: .caption)
                     }
