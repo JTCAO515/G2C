@@ -12,7 +12,7 @@ import json
 import threading
 
 from cj_needs.contract_v1 import encode_snapshot,encode_revision,decode_snapshot,decode_revision
-from cj_needs.revision_lease import RevisionLease,LeaseUnavailable
+from cj_needs.revision_lease import LeaseUnavailable
 from cj_message.domain import Command
 from cj_message.needs_binding import needs_scope_for
 from cj_run.core import Denied

@@ -1,10 +1,9 @@
 """Local synthetic managed-namespace permission and RLS probe, never cloud."""
-import os,json,sys,tempfile
+import sys,tempfile
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'scripts'))
-import psycopg
 import pg_suites,migrate,supabase_m4
 
 

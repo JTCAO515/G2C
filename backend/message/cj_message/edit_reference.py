@@ -4,12 +4,11 @@ from contextvars import ContextVar
 from dataclasses import dataclass
 import hashlib,json,threading
 from cj_needs.revision_lease import LeaseUnavailable
-from cj_run.core import Denied,Event,advance,Conflict
+from cj_run.core import Denied,Event,advance
 from cj_run.postgres import CommitUnknown as RunCommitUnknown
 from cj_trip.domain import packed
 from .domain import Command,Stored,Unavailable,TravelAcceptance
 from .postgres import Transaction as MessageTransaction
-from .travel import Selection
 from .travel_reference import check_context,ContextConflict
 from .edit_protocol import EditConfiguration,EDIT_ABI,MEMORY_ABI,PUBLISHER_ABI,PROFILE
 from .edit_input import current_trip,validate_source
@@ -276,7 +275,7 @@ class EditAuthority:
                     ref,stored=self._current(tx,binding,trip=False)
                     if ref!=source.reference:raise Denied('captured origin changed')
                     if ref.command.modification_intent!='propose_scoped_edit':raise Denied('explicit modification intent required')
-                    published=any(effect.startswith('trip_proposal:') for effect in state.effects)
+                    published=state.trip_proposal_published
                     if (phase=='proposal' and (published or state.scoped_result is not None)) or (phase=='accept' and not published):
                         raise Denied('original proposal lifecycle cannot publish/accept')
                     lease=EditPublication(self,principal,binding,ref,stored,tx=rtx,stack=stack,deadline=deadline,source=source,_factory=_FACTORY)

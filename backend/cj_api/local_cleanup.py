@@ -1,6 +1,5 @@
 """Explicit local-only CLEANUP API composition. No cloud/key/account defaults."""
 from dataclasses import dataclass,asdict,replace
-from hashlib import sha256
 import json,os,stat,time
 from pathlib import Path
 import psycopg

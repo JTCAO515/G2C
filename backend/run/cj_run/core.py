@@ -93,6 +93,10 @@ class State:
         return next((event.value for event in self.events if event.kind == 'budget_denied'), 'none')
 
     @property
+    def trip_proposal_published(self):
+        return any(effect.startswith('trip_proposal:') for effect in self.effects)
+
+    @property
     def scoped_result(self):
         from .scoped_result import parse
         return next((parse(event.value) for event in self.events if event.kind=='result_committed'),None)
@@ -126,16 +130,16 @@ def advance(state: State, event: Event, valid: Callable[[Binding], bool]) -> Sta
     if state.scoped_result is not None and event.kind!='completed':
         raise Conflict('scoped result must complete its original RUN')
     if event.kind=='result_committed' and (state.draft_outcome is not None
-            or state.budget_exhausted_stage!='none' or any(e.startswith('trip_proposal:') for e in state.effects)):
+            or state.budget_exhausted_stage!='none' or state.trip_proposal_published):
         raise Conflict('scoped result contradicts original outcome')
     if event.kind == 'budget_denied':
         if (state.budget_exhausted_stage != 'none' or state.draft_outcome is not None
-                or any(effect.startswith('trip_proposal:') for effect in state.effects)):
+                or state.trip_proposal_published):
             raise Conflict('budget rejection contradicts recorded result')
     if event.kind == 'draft_outcome':
         if event.value == 'budget_exhausted' and state.budget_exhausted_stage != 'draft':
             raise Conflict('draft budget result requires original rejection')
-        if state.draft_outcome is not None or any(effect.startswith('trip_proposal:') for effect in state.effects):
+        if state.draft_outcome is not None or state.trip_proposal_published:
             raise Conflict('draft result already recorded')
     if event.kind == 'effect_committed' and event.value.startswith('trip_proposal:') and state.draft_outcome is not None:
         raise Conflict('draft failure already recorded')

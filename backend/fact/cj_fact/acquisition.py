@@ -13,7 +13,7 @@ from typing import AsyncIterator, Awaitable, Callable
 from urllib.parse import urljoin, urlsplit
 
 from .model import Document, aware
-from .policy import FactFailure, SourcePolicy, canonical_url, public_addresses
+from .policy import FactFailure, SourcePolicy, public_addresses
 from cj_strict_json import reject_duplicates
 
 

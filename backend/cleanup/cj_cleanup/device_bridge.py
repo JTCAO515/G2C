@@ -1,5 +1,5 @@
 """CLEANUP-DEVICE@1 original invocation bridge; no device filesystem code here."""
-import json,uuid
+import json
 from .core import Conflict,Denied,digest,encode
 
 VERSION='CLEANUP-DEVICE@1'

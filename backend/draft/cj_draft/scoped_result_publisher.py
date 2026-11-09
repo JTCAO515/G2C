@@ -8,7 +8,6 @@ from cj_trip.manual import ManualEdit,prepare as prepare_one
 from cj_trip.manual_needs import EditV2,prepare as prepare_two
 from cj_trip.domain import Conflict,Denied,packed
 from cj_agent.draft import DraftRejected
-from cj_feasibility.scoped_trip import check as check_constraints
 from .scoped_publisher import ScopedPublisher,local_configuration as candidate_configuration
 
 

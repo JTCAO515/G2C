@@ -72,6 +72,14 @@ async def _read_body(request,max_body_bytes):
         raise BodyError(503,'BODY_UNAVAILABLE') from exc
 
 
+def _read_admission_error(request, exc, auth):
+    """Public mapping of a protected-read ReadAdmissionFailure; `auth` is cj_auth.interfaces."""
+    if exc.status is auth.AdmissionStatus.DENIED:
+        return _error(request, 401 if exc.reason is auth.AdmissionReason.IDENTITY_INVALID else 403,
+                      'ACCESS_DENIED', 'access', 'failed', 'do_not_retry')
+    return _error(request, 503, 'ACCESS_UNKNOWN', 'access', 'unknown', 'retry_safe_read')
+
+
 def _body_error(request,exc):
     return _error(request,exc.status,exc.code,'input','failed','do_not_retry')
 

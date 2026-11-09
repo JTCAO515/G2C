@@ -16,7 +16,6 @@ from pathlib import Path
 import secrets
 import ssl
 import subprocess
-import sys
 import tempfile
 import time
 import uuid
