@@ -34,8 +34,16 @@ public struct DemoV2Preview: View {
     public var body: some View {
         Group {
             switch page {
-            case .invite, .consent:
+            case .invite:
                 NavigationStack { onboarding }
+            case .consent:
+                NavigationStack {
+                    VStack(spacing: 0) {
+                        previewBanner
+                        DemoV2ConsentView(language: language, canAgree: true,
+                                          onAgree: { page = .conversation }, onBack: { page = .invite })
+                    }
+                }
             case .conversation:
                 TabView(selection: $shell.selectedTab) {
                     NavigationStack {
@@ -115,31 +123,21 @@ public struct DemoV2Preview: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 previewBanner
-                if page == .invite {
-                    Text(language.text("Use the sample code DEMO.", "请输入示例邀请码 DEMO。"))
-                    TextField(language.text("Invitation code", "邀请码"), text: $invite)
-                        .textFieldStyle(.roundedBorder)
-                        .textInputAutocapitalization(.characters)
-                        .autocorrectionDisabled()
-                    button(language.text("Sign in", "登录"), symbol: "arrow.right", prominent: true) {
-                        invite = ""
-                        page = .consent
-                    }
-                    .disabled(invite != "DEMO")
-                } else {
-                    RunReadableText(text: language.text(
-                        "This is an internal demo. Please use fictional trip details and leave out personal information. Placeholder pending #225.",
-                        "本次为内部演示。请使用虚构的旅行信息，勿填写个人信息。待 #225 定案后替换。"))
-                    button(language.text("Agree and continue", "同意并继续"), symbol: "checkmark", prominent: true) {
-                        page = .conversation
-                    }
-                    button(language.text("Back", "返回"), symbol: "arrow.left") { page = .invite }
+                Text(language.text("Use the sample code DEMO.", "请输入示例邀请码 DEMO。"))
+                TextField(language.text("Invitation code", "邀请码"), text: $invite)
+                    .textFieldStyle(.roundedBorder)
+                    .textInputAutocapitalization(.characters)
+                    .autocorrectionDisabled()
+                button(language.text("Sign in", "登录"), symbol: "arrow.right", prominent: true) {
+                    invite = ""
+                    page = .consent
                 }
+                .disabled(invite != "DEMO")
             }
             .shellCard()
             .padding(16)
         }
-        .navigationTitle(page == .invite ? language.text("Sign in", "登录") : language.text("Internal demo consent", "内部演示同意"))
+        .navigationTitle(language.text("Sign in", "登录"))
         .toolbar { ToolbarItem(placement: .topBarTrailing) { languageMenu } }
     }
 
