@@ -9,6 +9,8 @@ public struct DemoV2Preview: View {
     @State private var invite = ""
     @State private var draft = ""
     @State private var messages: [DemoV2Message] = []
+    @State private var fixtureConversation: String?
+    @State private var newConversationRequested = false
     @State private var activeCard: DemoV2Message?
     @State private var trip: [DemoV2Day] = []
     @State private var memory: String?
@@ -37,12 +39,24 @@ public struct DemoV2Preview: View {
             case .conversation:
                 TabView(selection: $shell.selectedTab) {
                     NavigationStack {
-                        DemoV2ConversationView(language: language, messages: messages, activeCardID: activeCard?.id,
-                                               draft: $draft, canSend: !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-                                               onSend: send, onAction: handle)
+                        VStack(spacing: 0) {
+                            previewBanner
+                            DemoV2ConversationView(language: language, messages: messages, activeCardID: activeCard?.id,
+                                                   draft: $draft, canSend: !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                                                   onSend: send, onAction: handle)
+                        }
                             .navigationTitle(ShellTab.assistant.title(language))
                             .navigationBarTitleDisplayMode(.inline)
-                            .toolbar { ToolbarItem(placement: .topBarTrailing) { languageMenu } }
+                            .toolbar {
+                                ToolbarItem(placement: .topBarLeading) {
+                                    Menu {
+                                        Button(language.text("New chat", "新对话"), systemImage: "square.and.pencil", action: startNewChat)
+                                    } label: {
+                                        Label(language.text("Conversation", "对话"), systemImage: "ellipsis.circle")
+                                    }
+                                }
+                                ToolbarItem(placement: .topBarTrailing) { languageMenu }
+                            }
                     }
                     .tabItem { Label(ShellTab.assistant.title(language), systemImage: "bubble.left.and.bubble.right") }
                     .tag(ShellTab.assistant)
@@ -50,8 +64,12 @@ public struct DemoV2Preview: View {
                         .tabItem { Label(ShellTab.trips.title(language), systemImage: "map") }
                         .tag(ShellTab.trips)
                     NavigationStack {
-                        Text(language.text("Coming soon", "尚未开放"))
-                            .navigationTitle(ShellTab.plugins.title(language))
+                        VStack {
+                            previewBanner
+                            Text(language.text("Coming soon", "尚未开放"))
+                            Spacer()
+                        }
+                        .navigationTitle(ShellTab.plugins.title(language))
                     }
                     .tabItem { Label(ShellTab.plugins.title(language), systemImage: "square.grid.2x2") }
                     .tag(ShellTab.plugins)
@@ -60,13 +78,6 @@ public struct DemoV2Preview: View {
                         .tag(ShellTab.memory)
                 }
             }
-        }
-        .safeAreaInset(edge: .top, spacing: 0) {
-            Text(language.text("Local preview · scripted sample data", "本地预览 · 合成示例"))
-                .font(.caption.weight(.semibold))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 6)
-                .background(.background)
         }
         .environment(\.locale, Locale(identifier: language.rawValue))
         .sheet(item: $edit) { field in
@@ -93,9 +104,17 @@ public struct DemoV2Preview: View {
         }
     }
 
+    private var previewBanner: some View {
+        Text(language.text("Local preview · scripted sample data", "本地预览 · 合成示例"))
+            .font(.caption.weight(.semibold))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 6)
+    }
+
     private var onboarding: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
+                previewBanner
                 if page == .invite {
                     Text(language.text("Use the sample code DEMO.", "请输入示例邀请码 DEMO。"))
                     TextField(language.text("Invitation code", "邀请码"), text: $invite)
@@ -136,6 +155,7 @@ public struct DemoV2Preview: View {
     private var trips: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
+                previewBanner
                 if trip.isEmpty {
                     ShellCardHeading(title: language.text("No saved trips yet", "还没有已采用的行程"), symbol: "map")
                     button(language.text("Plan a trip", "去规划行程"), symbol: "bubble.left") { shell.selectedTab = .assistant }
@@ -162,6 +182,7 @@ public struct DemoV2Preview: View {
     private var memories: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
+                previewBanner
                 if let memory {
                     RunSelectableText(text: memory)
                     button(language.text("Edit preference", "编辑偏好"), symbol: "pencil") {
@@ -186,10 +207,23 @@ public struct DemoV2Preview: View {
         .navigationTitle(ShellTab.memory.title(language))
     }
 
+    private func startNewChat() {
+        messages.removeAll()
+        activeCard = nil
+        draft = ""
+        fixtureConversation = nil
+        newConversationRequested = true
+        editingNeeds = false
+        editingPlan = false
+    }
+
     private func send() {
-        let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
-        messages.append(.init(id: UUID().uuidString, fromUser: true, text: text))
+        guard let turn = try? PreviewTurn(text: draft, language: language, conversation: fixtureConversation,
+                                          newConversation: newConversationRequested) else { return }
+        fixtureConversation = turn.receipt.conversation_id
+        newConversationRequested = false
+        let text = turn.original.command.text
+        messages.append(.init(id: turn.receipt.message_id, fromUser: true, text: text))
         draft = ""
         let query = text.lowercased()
         if editingNeeds || query.contains("plan") || query.contains("规划") {
@@ -205,11 +239,34 @@ public struct DemoV2Preview: View {
         } else if query.contains("like") || query.contains("喜欢") {
             reply(language.text("I can take that into account when suggesting trips.", "我可以在推荐行程时考虑这个偏好。"),
                   card: .memory(text))
+        } else if query.contains("preference") || query.contains("sights per day") || query.contains("偏好") || query.contains("几个景点") {
+            reply(memoryPaused ? noSavedPreference : memory ?? noSavedPreference)
         } else {
-            reply(language.text("For the metro, check the station’s route map before boarding.", "乘地铁前，可以先看站内线路图。"),
-                  status: language.text("Sample run · checked transport information", "示例运行 · 已核对交通信息"),
-                  sources: [.init(id: "sample-transport", title: language.text("Source 1", "来源 1"),
-                                  details: language.text("Synthetic transport reference for this local preview.", "此条为本地预览的合成交通引用。"))])
+            showSampleReply(for: turn)
+        }
+    }
+
+    private var noSavedPreference: String {
+        language.text("There’s no active saved preference for this sample.", "这个示例没有启用中的已保存偏好。")
+    }
+
+    private func showSampleReply(for turn: PreviewTurn) {
+        do {
+            let status = try turn.event("status", payload: ["stage": "completed", "status": "completed"])
+            let answer = try turn.event("answer_delta", payload: [
+                "text": language.text("For the metro, check the station’s route map before boarding.", "乘地铁前，可以先看站内线路图。")
+            ])
+            let source = try turn.event("source", payload: [
+                "source_id": "sample-transport", "label": language.text("Source 1", "来源 1"), "state": "unknown"
+            ])
+            guard case .status(let state) = status.payload, state.stage == .completed,
+                  case .answer(let content) = answer.payload,
+                  case .source(let citation) = source.payload else { throw DemoV2Dialogue.Failure.invalidEvent }
+            reply(content.text, status: language.text("Sample run completed", "示例运行已完成"),
+                  sources: [.init(id: citation.source_id, title: citation.label,
+                                  details: language.text("This sample has no verified external source.", "此示例没有已核实的外部来源。"))])
+        } catch {
+            reply(language.text("The local fixture did not produce a readable result.", "本地样例没有产生可读取的结果。"))
         }
     }
 
@@ -291,6 +348,42 @@ public struct DemoV2Preview: View {
     private func button(_ title: String, symbol: String, prominent: Bool = false, action: @escaping () -> Void) -> some View {
         Button(action: action) { ShellActionLabel(title: title, symbol: symbol) }
             .buttonStyle(ShellActionButtonStyle(emphasized: prominent))
+    }
+}
+
+private struct PreviewTurn {
+    let original: DemoV2Dialogue.OriginalMessage
+    let receipt: DemoV2Dialogue.Receipt
+
+    init(text: String, language: ShellLanguage, conversation: String?, newConversation: Bool) throws {
+        let destination = newConversation ? .newConversation : conversation.map(DemoV2Dialogue.Destination.conversation) ?? .initial
+        let command = try DemoV2Dialogue.Message(id: UUID(), text: text, language: language, destination: destination)
+        let original = try DemoV2Dialogue.OriginalMessage(command)
+        self.original = original
+        let raw = try JSONSerialization.data(withJSONObject: [
+            "version": "DEMO-dialogue-receipt.1", "request_id": UUID().uuidString,
+            "receipt": [
+                "message_id": command.message_id,
+                "conversation_id": conversation ?? "demo-dialogue-" + UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased(),
+                "run_id": UUID().uuidString.lowercased(),
+                "input_sha256": original.sha256
+            ]
+        ])
+        guard case .accepted(let receipt) = try DemoV2Dialogue.response(
+            raw, status: 200, contentType: "application/json", original: original, operation: .submit
+        ) else { throw DemoV2Dialogue.Failure.invalidResponse }
+        self.receipt = receipt
+    }
+
+    func event(_ kind: String, payload: [String: String]) throws -> DemoV2Dialogue.Event {
+        let data = try JSONSerialization.data(withJSONObject: [
+            "version": "DEMO-dialogue-event.1", "event_id": UUID().uuidString.lowercased(),
+            "conversation_id": receipt.conversation_id, "message_id": receipt.message_id,
+            "run_id": receipt.run_id, "kind": kind, "payload": payload
+        ])
+        let event = try JSONDecoder().decode(DemoV2Dialogue.Event.self, from: data)
+        try event.checkOriginal(receipt)
+        return event
     }
 }
 #endif
