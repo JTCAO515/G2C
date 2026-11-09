@@ -107,7 +107,14 @@ def register_message_routes(app, boundary=None, max_body_bytes=None,formal_recei
 
     async def invoke(request, token, write, argument):
         try:
-            value = await run_in_threadpool(boundary.receive if write else boundary.query, token, argument)
+            if write:
+                from .local_account_admission_v2 import retirement_read_operation
+                def receive():
+                    with retirement_read_operation(purpose='legacy_message_preflight'):
+                        return boundary.receive(token, argument)
+                value = await run_in_threadpool(receive)
+            else:
+                value = await run_in_threadpool(boundary.query, token, argument)
             if not write:
                 if value is None:
                     return MessageReceiptQueryResponse.model_validate({

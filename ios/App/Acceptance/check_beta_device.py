@@ -1,7 +1,8 @@
-"""#498: prepare, then execute one existing-record beta device scenario.
+"""Prepare and run a beta device scenario on the authorized iPhone.
 
-No model/message/delete call is made by this harness. The App uses system TLS
-for the exact beta origin; only its separate XCTest control uses local pinning.
+Existing-record scenarios are read-only. The explicit #660 composition case
+drives the approved synthetic workflow, including account deletion. The App
+uses system TLS for beta; only its separate XCTest control uses local pinning.
 Tokens are requested from B after preparation and enter the App via one-use
 Caches input, never XCTest environment or generated source.
 """
@@ -12,6 +13,7 @@ import json
 import os
 from pathlib import Path
 import plistlib
+import re
 import secrets
 import subprocess
 import threading
@@ -22,10 +24,19 @@ from m4_device import LocalTLS, ROOT, configure_project
 from m4_native import DeviceNative, authenticated_control
 
 BUNDLE='space.go2china.beta.acceptance'
+COMPOSITION_BUNDLE='space.go2china.device-v4.acceptance'
+COMPOSITION='beta-internal-composition'
 CASE='beta-readonly-05'
 TEST='DevelopmentBetaUITests/testExistingAnswerRestoreAndOwnerIsolation'
 ENGLISH_DIAGNOSTIC='DevelopmentBetaUITests/testOriginalEnglishDiagnostic'
 CHINESE_RECOVERY='DevelopmentBetaUITests/testChineseRecoveryAndOwnerIsolation'
+SCENARIOS={
+    'full':(CASE,TEST),
+    'english-diagnostic':(CASE,ENGLISH_DIAGNOSTIC),
+    'chinese-recovery':(CASE,CHINESE_RECOVERY),
+    'general-feedback-recovery':('beta-general-feedback-recovery','DevelopmentBetaUITests/testGeneralFeedbackOriginalRecoveryOnly'),
+    'composition':(COMPOSITION,'DevelopmentBetaUITests/testInternalComposition'),
+}
 
 
 def product_hashes(build):
@@ -51,6 +62,50 @@ def operator_accounts(path):
     return value
 
 
+def feedback_original(path):
+    if path.is_symlink() or not path.is_file() or path.stat().st_uid!=os.getuid() or path.stat().st_mode&0o777!=0o600:
+        raise ValueError('Owned regular 0600 synthetic Feedback evidence required')
+    if path.stat().st_size > 1024:
+        raise ValueError('Feedback evidence exceeds the input boundary')
+    raw = path.read_bytes()
+    value = json.loads(raw)
+    if (not isinstance(value, dict) or set(value) != {'action_id', 'problem_sha256'}
+            or not all(isinstance(item, str) for item in value.values())
+            or not re.fullmatch(r'[A-F0-9]{8}(?:-[A-F0-9]{4}){3}-[A-F0-9]{12}', value['action_id'])
+            or not re.fullmatch(r'[a-f0-9]{64}', value['problem_sha256'])):
+        raise ValueError('Exact original Feedback action and SHA-256 required')
+    return value, hashlib.sha256(raw).hexdigest()
+
+
+def composition_input(path):
+    if (path.is_symlink() or not path.is_file() or path.stat().st_uid != os.getuid()
+            or path.stat().st_mode & 0o777 != 0o600 or path.resolve().is_relative_to(ROOT)
+            or path.stat().st_size > 262144):
+        raise ValueError('Private 0600 synthetic composition fixture required')
+    value = json.loads(path.read_bytes())
+    fields = {'language', 'account', 'subject', 'conversation_id', 'needs_id', 'travel_id',
+              'memory_profile', 'memory_subject', 'memory_slot'}
+    if (not isinstance(value, dict) or set(value) != fields
+            or any(not isinstance(value[key], str) for key in fields - {'memory_profile'})
+            or value['language'] not in ('zh-Hans', 'en') or value['account'] not in ('A', 'B')
+            or not re.fullmatch(r'm4-synthetic-660-[A-Za-z0-9-]{1,80}', value['subject'])
+            or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}', value['conversation_id'])
+            or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}', value['needs_id'])
+            or not re.fullmatch(r'[a-f0-9]{32}', value['travel_id'])):
+        raise ValueError('Invalid synthetic composition identity or selection')
+    policy = value['memory_profile']
+    if (not isinstance(policy, dict) or set(policy) != {'version', 'subjects', 'slots', 'extents'}
+            or policy['version'] != 'app-memory.2' or not isinstance(policy['subjects'], list)
+            or value['memory_subject'] not in policy['subjects'] or not isinstance(policy['slots'], dict)
+            or not isinstance(policy['extents'], list) or 'long_term' not in policy['extents']):
+        raise ValueError('Explicit Typed long-term memory choice required')
+    slot = policy['slots'].get(value['memory_slot'])
+    if not isinstance(slot, dict) or slot.get('collection_allowed') is not True:
+        raise ValueError('Explicit collectable Typed memory slot required')
+    value['memory_profile'] = json.dumps(policy, separators=(',', ':'))
+    return value
+
+
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--device',required=True);p.add_argument('--output',required=True,type=Path)
@@ -58,19 +113,25 @@ def main():
     modes.add_argument('--prepare-only',action='store_true');modes.add_argument('--prepared',type=Path)
     p.add_argument('--local-tls',type=Path);p.add_argument('--build-dir',type=Path);p.add_argument('--work-dir',type=Path)
     p.add_argument('--accounts-file',type=Path)
-    p.add_argument('--case',choices=['full','english-diagnostic','chinese-recovery'])
+    p.add_argument('--composition-input',type=Path,help='Private synthetic scope and language for one composition run')
+    p.add_argument('--feedback-original',type=Path,help='Synthetic original action and problem SHA-256; recovery preparation only')
+    p.add_argument('--case',choices=SCENARIOS)
     a=p.parse_args();os.umask(0o077)
+    if bool(a.feedback_original) != (a.prepare_only and a.case=='general-feedback-recovery'):
+        p.error('--feedback-original is required only when preparing general-feedback-recovery')
+    if bool(a.composition_input) != (not a.prepare_only and a.case=='composition'):
+        p.error('--composition-input is required only when executing the explicit composition case')
     if subprocess.check_output(['git','status','--porcelain'],cwd=ROOT):raise ValueError('Commit candidate before preparing or executing')
     head=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
     output=a.output.resolve()
     if output.is_relative_to(ROOT):raise ValueError('External evidence output required')
     output.mkdir(mode=0o700)
-    selected={'full':TEST,'english-diagnostic':ENGLISH_DIAGNOSTIC,'chinese-recovery':CHINESE_RECOVERY}[a.case or 'full']
+    case_id,selected=SCENARIOS[a.case or 'full']
     report=dict(status='RUNNING',head=head,layer='authorized physical iPhone / actual beta service; synthetic existing records',
         cases={selected:'UNRUN'},raw_native_bundle_shareable=False,build_inputs_shareable=False,
         unrun=['new messages/providers','Needs/Trip/typed Memory/cleanup cloud profiles','target-network quality','TestFlight'])
     def save():(output/'report.json').write_text(json.dumps(report,indent=2))
-    save();native=None;server=None;thread=None;accounts={};native_run_incomplete=False
+    save();native=None;server=None;thread=None;accounts={};fixture=None;native_run_incomplete=False
     try:
         if a.prepare_only:
             if not all([a.local_tls,a.build_dir,a.work_dir]) or a.accounts_file:p.error('Preparation needs local TLS/build/work paths, with no account input')
@@ -83,20 +144,40 @@ def main():
             module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
             builder=object.__new__(module.XCTestDriver);builder.directory=work;builder.write_project(0)
             source=(ROOT/'ios/App/Acceptance/DevelopmentBetaUITests.swift').read_text()
+            original_provenance = None
+            if a.feedback_original:
+                original, original_provenance = feedback_original(a.feedback_original)
+                source = source.replace('__FEEDBACK_ORIGINAL_ID__', original['action_id'])
+                source = source.replace('__FEEDBACK_ORIGINAL_PROBLEM_SHA__', original['problem_sha256'])
             control_token=secrets.token_urlsafe(32)
             server=ThreadingHTTPServer((tls.host,0),BaseHTTPRequestHandler)
             endpoint='https://'+tls.host+':'+str(server.server_port)
             (work/'G2CControl.swift').write_text(source.replace('__FIXTURE_URL__',endpoint))
             project=work/'G2CAcceptance.xcodeproj'
-            _,config,_=configure_project(project,tls,endpoint,control_token,bundle=BUNDLE,app_local_tls=False)
+            bundle = COMPOSITION_BUNDLE if case_id == COMPOSITION else BUNDLE
+            _,config,_=configure_project(project,tls,endpoint,control_token,bundle=bundle,app_local_tls=False,
+                offline_group='group.g2c.offline' if case_id == COMPOSITION else None)
             meta=dict(head=head,device=a.device,test=selected,work=str(work),build=str(build),tls=str(a.local_tls.resolve()),
                 endpoint=endpoint,certificate_sha256=hashlib.sha256(tls.public_der).hexdigest())
+            if original_provenance:
+                meta['feedback_original_sha256'] = original_provenance
         else:
             if not a.accounts_file or a.local_tls or a.build_dir or a.work_dir:p.error('Execution needs --prepared private metadata and --accounts-file only')
             meta=json.loads(a.prepared.read_text());work=Path(meta['work']);build=Path(meta['build'])
             if meta['head']!=head or meta['device']!=a.device:raise ValueError('Prepared head/device differs')
             if a.case is not None and meta['test']!=selected:raise ValueError('Prepared selected method differs')
             selected=meta['test'];report['cases']={selected:'UNRUN'}
+            allowed={test:case for case,test in SCENARIOS.values()}
+            if selected not in allowed:raise ValueError('Unknown prepared beta scenario')
+            case_id=allowed[selected]
+            if case_id==COMPOSITION:
+                if not a.composition_input:p.error('Explicit composition input is required')
+                fixture=composition_input(a.composition_input)
+            elif case_id!=CASE:
+                if a.case is None:p.error('Feedback recovery requires the explicit prepared --case')
+                provenance=meta.get('feedback_original_sha256')
+                if not isinstance(provenance,str) or not re.fullmatch(r'[a-f0-9]{64}',provenance):
+                    p.error('Prepared original Feedback evidence is missing')
             if product_hashes(build)!=meta['products']:raise ValueError('Prepared signed products changed')
             if project_hashes(work)!=meta['project_inputs']:raise ValueError('Prepared project/control inputs changed')
             tls=LocalTLS.load(Path(meta['tls']))
@@ -105,7 +186,17 @@ def main():
             if bootstrap['endpoint']!=meta['endpoint']:raise ValueError('Prepared control origin changed')
             control_token=bootstrap['token'];project=work/'G2CAcceptance.xcodeproj';config=work/'M4Device.xcconfig'
             accounts=operator_accounts(a.accounts_file)
-        native=DeviceNative(a.device,BUNDLE,project,config,build,ROOT,output,accounts,control_token,report,case_id=CASE)
+            if fixture is not None:
+                choice=fixture['account']
+                accounts={choice:accounts[choice]}
+        report['scenario']=case_id
+        report['app_write_scope']='authorized synthetic composition' if case_id == COMPOSITION else 'none: existing-record reads only'
+        if case_id == COMPOSITION:
+            report.update(layer='authorized physical iPhone / actual beta service; synthetic composition',
+                unrun=['B independent server receipt verification','target-network quality','TestFlight'])
+            if fixture is not None:report['language']=fixture['language']
+        bundle = COMPOSITION_BUNDLE if case_id == COMPOSITION else BUNDLE
+        native=DeviceNative(a.device,bundle,project,config,build,ROOT,output,accounts,control_token,report,case_id=case_id)
         env={k:v for k,v in os.environ.items() if not k.startswith(('G2C_DEV_','G2C_M4_','SIMCTL_CHILD_','PG','LIBPQ','CJ_LOCAL_'))}
         env['OS_ACTIVITY_MODE']='disable'
         if a.prepare_only:
@@ -119,8 +210,12 @@ def main():
         else:
             class Control(BaseHTTPRequestHandler):
                 def log_message(self,*args):pass
-                def do_GET(self):self.send_error(404)
-            handler=authenticated_control(Control,control_token,lambda _:native.stage(CASE),lambda:CASE)
+                def do_GET(self):
+                    if fixture is None or self.path != '/m4-composition':
+                        self.send_error(404)
+                        return
+                    self.send_response(200);self.end_headers();self.wfile.write(json.dumps(fixture).encode())
+            handler=authenticated_control(Control,control_token,lambda _:native.stage(case_id),lambda:case_id)
             origin=urlsplit(meta['endpoint'])
             if origin.scheme!='https' or origin.hostname!=tls.host or not origin.port:raise ValueError('Invalid prepared control origin')
             server=ThreadingHTTPServer((tls.host,origin.port),handler);tls.secure_http_server(server)
@@ -130,7 +225,7 @@ def main():
             native_run_incomplete=False
             native.scan('Debug')
             report.update(status='PARTIAL_PASS',cases={selected:'PASS'},token_key_scan='PASS',
-                provider_accounting='UNKNOWN: read-only UI scenario; server accounting requires separate evidence',
+                provider_accounting='UNKNOWN: server accounting requires separate evidence',
                 operator_account_file_cleanup='Mac handoff source remains owner-managed; App one-use input checked separately')
         if subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()!=head:raise ValueError('Candidate changed during acceptance')
     except BaseException as error:

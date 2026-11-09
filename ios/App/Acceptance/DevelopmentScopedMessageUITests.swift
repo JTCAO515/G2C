@@ -20,10 +20,15 @@ import UIKit
         let scoped_results:Bool?
         let largest_recovery:Bool?
         let map_points:[MapPoint]?
+        let device_language_phase:String?
+        let language_items:[LanguageItem]?
         let map_loading_failure:Bool?
         let device_host:String?
         let device_port:String?
         let amap:Bool?
+    }
+    private struct LanguageItem:Decodable {
+        let id, text, schedule: String
     }
     private struct MapPoint:Decodable {
         let id,provider_id,name_zh,state,snapshot_sha256:String
@@ -256,6 +261,50 @@ import UIKit
     }
     func testFormalPlaceMapEnglish() async throws { try await formalPlaceMap("testFormalPlaceMapEnglish",large:false) }
     func testFormalPlaceMapChineseLargest() async throws { try await formalPlaceMap("testFormalPlaceMapChineseLargest",large:true) }
+    func testFormalPlaceMapNonGCJ() async throws { try await formalPlaceMap("testFormalPlaceMapNonGCJ",large:false) }
+    #if G2C_M4_DEVICE_ACCEPTANCE
+    func testFormalPlaceMapDeviceLanguage() async throws {
+        let name = "testFormalPlaceMapDeviceLanguage"
+        let fixture = try await prepare(name)
+        let phase = try XCTUnwrap(fixture.device_language_phase)
+        let order = Locale.preferredLanguages
+        let primary = try XCTUnwrap(order.first)
+        XCTAssertEqual(order.count, 2)
+        XCTAssertTrue(primary.hasPrefix(phase == "zh" ? "zh" : "en"))
+        XCTAssertTrue(order[1].hasPrefix(phase == "zh" ? "en" : "zh"))
+        print("M4_LANGUAGE_ORDER", order.joined(separator: ","))
+        if phase == "restore-en" { return }
+        XCTAssertEqual(UIApplication.shared.preferredContentSizeCategory, .large)
+        let trip = try XCTUnwrap(fixture.formal_trips.first)
+        let points = try XCTUnwrap(fixture.map_points)
+        let items = try XCTUnwrap(fixture.language_items)
+        XCTAssertEqual(items.map(\.id), trip.item_ids)
+        XCTAssertEqual(points.count, 1)
+        XCTAssertTrue(items.contains { $0.text.contains("Booking not confirmed; travel time unknown.") })
+        defer { app?.terminate() }
+        mapViewport = true
+        try launch(fixture, language: "en", restore: phase == "zh")
+        tap("Trips")
+        tap("trips.timeline.open")
+        tap("timeline.refresh")
+        tap("timeline.trip." + trip.id)
+        text("timeline.record.id", contains: trip.id)
+        text("timeline.record.version", contains: String(trip.version))
+        text("timeline.record.title", contains: trip.title)
+        for point in points {
+            text("trip.map.identity." + point.id, contains: point.provider_id)
+            text("trip.map.name." + point.id, contains: point.name_zh)
+            text("trip.map.address." + point.id, contains: try XCTUnwrap(point.address_zh))
+        }
+        for item in items {
+            text("timeline.item." + item.id, contains: item.id + "\n" + item.text)
+            text("timeline.schedule." + item.id, contains: item.schedule)
+        }
+        _ = try await call("/map-source-proof", caseID: name)
+        capture(name + "-" + phase)
+        try audit(name + "-" + phase)
+    }
+    #endif
     func testFormalPlaceMapMissing() async throws { try await formalPlaceMap("testFormalPlaceMapMissing",large:false) }
     func testFormalPlaceMapUnavailable() async throws { try await formalPlaceMap("testFormalPlaceMapUnavailable",large:false) }
     func testFormalPlaceMapLateAccount() async throws {
@@ -286,12 +335,13 @@ import UIKit
                 text("trip.map.identity."+point.id,contains:point.provider_id)
                 text("trip.map.name."+point.id,contains:point.name_zh)
                 text("trip.map.address."+point.id,contains:point.address_zh ?? "UNKNOWN")
-                text("trip.map.coordinate."+point.id,contains:point.coordinate?.raw ?? "UNKNOWN")
+                text("trip.map.coordinate."+point.id,contains:point.coordinate.map { $0.raw + " · " + $0.crs } ?? "UNKNOWN")
             }
-            let located=points.filter { $0.coordinate != nil }
+            let located=points.filter { $0.coordinate?.crs == "GCJ-02" }
             if located.isEmpty {
                 XCTAssertFalse(app.buttons.matching(identifier:"trip.map.show").firstMatch.exists)
                 XCTAssertFalse(app.descendants(matching:.any).matching(identifier:"trip.map.canvas").firstMatch.exists)
+                XCTAssertEqual(app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.map.marker.")).count,0)
                 for point in points { text("trip.map.status."+point.id,contains:language=="en" ? "no marker" : "不画点") }
             } else {
                 tap("trip.map.show")

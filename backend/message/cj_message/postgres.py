@@ -34,16 +34,20 @@ class Repository:
         self.connect, self.scope, self.bind_needs = connect, scope, bind_needs
 
     @contextmanager
-    def transaction(self):
-        # Factory must yield a NEW non-autocommit DB-API connection at READ COMMITTED.
-        conn = self.connect()
+    def transaction(self, *, borrowed_connection=None, validate_connection=None):
+        # The trusted host can retain an idle connection for one execution.
+        # The repository still owns each transaction and discards a failed lease.
+        conn = self.connect() if borrowed_connection is None else borrowed_connection
         cur = None
         outcome = 'setup_failed'
+        cleanup_failed = False
 
         def cleanup(action, stage):
+            nonlocal cleanup_failed
             try:
                 action()
             except BaseException:
+                cleanup_failed = True
                 # Fixed diagnostics only: never exception text, SQL, scope or credentials.
                 # Even a failing logging handler cannot replace the primary outcome.
                 try:
@@ -61,6 +65,8 @@ class Repository:
                 bind_scope = getattr(conn, 'bind_scope', None)
                 if bind_scope is not None:
                     bind_scope(cur)
+                if validate_connection is not None:
+                    validate_connection(cur)
                 yield Transaction(cur, self.scope, bind_needs=self.bind_needs, local_run_mode=self.local_run_mode, registered_usage=self.registered_usage,travel_mode=self.travel_mode,travel_metadata=self.travel_metadata,trip_mode=self.trip_mode,trip_metadata=self.trip_metadata,edit_mode=self.edit_mode,edit_metadata=self.edit_metadata)
             except BaseException:
                 outcome = 'body_failed'
@@ -77,7 +83,8 @@ class Repository:
         finally:
             if cur is not None:
                 cleanup(cur.close, 'cursor_close')
-            cleanup(conn.close, 'connection_close')
+            if borrowed_connection is None or outcome != 'committed' or cleanup_failed:
+                cleanup(conn.close, 'connection_close')
 
 
 class Transaction:

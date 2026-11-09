@@ -15,8 +15,8 @@ from cj_usage.registered_exit import RegisteredExit, MODEL_REGISTRY
 from .local_app import ISSUER, AUDIENCE, KEY_ID, scope_for, InvitedSubjects
 
 
-def checker_factory_for(auth_dir):
-    invitations = InvitedSubjects(auth_dir / 'invited.json')
+def checker_factory_for(auth_dir, *, selected_subjects=None):
+    invitations = InvitedSubjects(auth_dir / 'invited.json', selected_subjects)
     verifier = PyJWTVerifier(
         JWTConfiguration(ISSUER, AUDIENCE, 'RS256', 0),
         StaticPublicKeys({KEY_ID: VerificationKey('RS256', (auth_dir / 'public.pem').read_bytes())}),
@@ -31,8 +31,8 @@ def checker_factory_for(auth_dir):
     return build
 
 
-def checker_for(auth_dir, *, account_retired=None):
-    return checker_factory_for(auth_dir)(account_retired)
+def checker_for(auth_dir, *, account_retired=None, selected_subjects=None):
+    return checker_factory_for(auth_dir, selected_subjects=selected_subjects)(account_retired)
 
 
 class LocalBudgetRouter:

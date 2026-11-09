@@ -7,12 +7,15 @@ is enabled; --real refuses before reading credentials. Interrupted work is queri
 by its original identity and never automatically resent.
 """
 import argparse
+from contextlib import closing, contextmanager, nullcontext
+from functools import cache
 import json
 import os
 from pathlib import Path
 import sys
 import logging
 import time
+from uuid import uuid4
 
 if os.environ.get('CJ_ENV') != 'local':
     raise SystemExit('CJ_ENV=local is required')
@@ -31,7 +34,23 @@ from cj_memory.runtime import RuntimeDenied, RuntimeUnknown
 from cj_memory.typed_runtime import TypedRuntimeConfiguration
 import dev_auth
 from cj_message.domain import Service as MessageService, Unavailable as MessageUnavailable, read_active_message
+from cj_message.edit_reference import profile as edit_profile
+from cj_message.travel_reference import profile as travel_profile
+from cj_message.trip_reference import profile as trip_profile
 from cj_run.core import Service as RunService, Denied
+
+
+HK_ASSEMBLY_PLAN_JSON = (
+    '\nReturn one JSON object for TRIP-model-plan.1 with exactly version, title, items, proposed_subjects. '
+    'Set version to "TRIP-model-plan.1". Each item has id, text, verification, evidence, schedule, '
+    'fixed, source_category, source_refs. schedule has start and end, each with date, time, timezone, '
+    'utc_offset observations. Use {"state":"unknown"} for unknown observations and UTC offsets. '
+    'For every original fixed_items entry keep its id (item_id), text (description), fixed (locked), '
+    'date, time, timezone and order. Set verification to "pending", evidence and source_refs to [], '
+    'source_category to "user_provided" for unchanged source text. New items have unknown fixed '
+    'and source_category "unknown". Map exactly their IDs to explicit original participant IDs '
+    'in proposed_subjects; use {} if no items are new. Do not invent source evidence or approval.'
+)
 
 
 def provider(real):
@@ -71,19 +90,23 @@ class InvitedProvider:
 
 
 def require_memory_configuration(database, scope, configuration):
-    typed=type(configuration) is TypedRuntimeConfiguration
-    travel=database.travel_profile(scope)
-    if travel and configuration is not None and not typed:
-        raise RuntimeDenied('travel execution requires explicit typed memory configuration')
     with database.connect(scope) as conn:
-        exists=conn.execute('SELECT 1 FROM cj_memory_scope WHERE scope=%s',(scope,)).fetchone() is not None
-    if database.trip_profile(scope) and (exists or configuration is not None):
+        with conn.cursor() as cursor:
+            _require_memory_configuration(cursor, scope, configuration, travel_profile(cursor, scope))
+
+
+def _require_memory_configuration(cursor, scope, configuration, travel):
+    if travel and configuration is not None and type(configuration) is not TypedRuntimeConfiguration:
+        raise RuntimeDenied('travel execution requires explicit typed memory configuration')
+    cursor.execute('SELECT 1 FROM cj_memory_scope WHERE scope=%s', (scope,))
+    exists = cursor.fetchone() is not None
+    if trip_profile(cursor, scope) and (exists or configuration is not None):
         raise RuntimeDenied('formal Trip MEMORY adapter is not installed')
     if exists and configuration is None:
         raise RuntimeDenied('existing memory requires explicit runtime configuration')
 
 
-def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,formal_memory_configuration=None,account_checker_builder=None):
+def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,formal_memory_configuration=None,account_checker_builder=None,run_credential=False,assembly_planning=False):
     if draft_profile not in (None,'needs-structured.1','needs-current-trip.1'):
         raise CompositionUnavailable('unknown explicit draft profile')
     if place_draft_configuration is not None:
@@ -93,34 +116,66 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
                 or place_draft_configuration.publisher is None or place_draft_configuration.publisher.abi!=PUBLISHER_ABI
                 or type(tools_configuration) is not LocalPlaceDraftTools or draft_profile is not None):
             raise CompositionUnavailable('explicit compatible PLACE-source tools and C producer required')
-    database.require_execution(scope)
-    editing=database.edit_profile(scope)
-    edit_config=None
-    if editing:
-        from cj_message.edit_reference import configured
-        edit_config=configured(database.edit_configuration)
-        from cj_api.edit_result_profile import profile as result_profile
-        with database.connect(scope) as connection:
-            with connection.cursor() as cursor:result_mode=result_profile(cursor,scope)
-        if result_mode!=database.edit_results:
-            raise CompositionUnavailable('explicit activated publisher2 profile/configuration required')
-        if memory_configuration is not None or tools_configuration is not None:
-            raise CompositionUnavailable('edit profile requires its negotiated memory/publisher only')
-    elif formal_memory_configuration is not None:
-        if (memory_configuration is not None or not database.trip_context or not database.travel_context
-                or not database.trip_profile(scope)):
-            raise CompositionUnavailable('explicit existing formal profile and sole C formal Memory configuration required')
-    else:require_memory_configuration(database, scope, memory_configuration)
-    if editing and formal_memory_configuration is not None:
-        raise CompositionUnavailable('formal discussion and scoped edit have separate C configurations')
-    if tools_configuration is not None and (database.run_context is None or database.run_context.version!='CJ-LOCAL-RUN@2'):
-        raise CompositionUnavailable('tools require the registered M2 exit')
-    messages = MessageService(database.message_repository(scope), new_run_id=lambda: None)
-    subject = scope.removeprefix('local:' + ISSUER + ':')
-    def token(subject=subject): return dev_auth.token(Path(auth_dir),subject,5)
-    memory_credential = token() if memory_configuration is not None or editing or formal_memory_configuration is not None else None
-    def memory_admit(credential=memory_credential, scope=scope):
-        decision = checker.check(credential)
+    reuse_preflight = (account_checker_builder is not None and memory_configuration is None
+                       and formal_memory_configuration is None)
+    with (closing(database.connect(scope)) if reuse_preflight else nullcontext()) as preflight_connection:
+        database.require_execution(scope, connection=preflight_connection)
+        edit_config = None
+        with database.scoped_cursor(scope, connection=preflight_connection) as cursor:
+            editing = edit_profile(cursor, scope)
+            if editing:
+                from cj_message.edit_reference import configured
+                from cj_api.edit_result_profile import profile as result_profile
+                edit_config = configured(database.edit_configuration)
+                if result_profile(cursor, scope) != database.edit_results:
+                    raise CompositionUnavailable('explicit activated publisher2 profile/configuration required')
+                if memory_configuration is not None or tools_configuration is not None:
+                    raise CompositionUnavailable('edit profile requires its negotiated memory/publisher only')
+            elif formal_memory_configuration is not None:
+                if (memory_configuration is not None or not database.trip_context or not database.travel_context
+                        or not trip_profile(cursor, scope)):
+                    raise CompositionUnavailable('explicit existing formal profile and sole C formal Memory configuration required')
+            else:
+                _require_memory_configuration(cursor, scope, memory_configuration, travel_profile(cursor, scope))
+        if editing and formal_memory_configuration is not None:
+            raise CompositionUnavailable('formal discussion and scoped edit have separate C configurations')
+        if tools_configuration is not None and (database.run_context is None or database.run_context.version!='CJ-LOCAL-RUN@2'):
+            raise CompositionUnavailable('tools require the registered M2 exit')
+        messages = MessageService(database.message_repository(scope), new_run_id=lambda: None)
+        subject = scope.removeprefix('local:' + ISSUER + ':')
+        def token(subject=subject): return dev_auth.token(Path(auth_dir),subject,5)
+        bootstrap_credential = token() if memory_configuration is not None or editing or formal_memory_configuration is not None else None
+        # Use a new transaction for the final live Travel profile check.
+        with database.scoped_cursor(scope, connection=preflight_connection) as cursor:
+            travel_enabled = travel_profile(cursor, scope)
+
+    issue_run_credential = None
+
+    @contextmanager
+    def lease_run_credential():
+        nonlocal issue_run_credential
+        from cj_api.local_account_admission_v2 import permit_retirement_read_lease,retirement_read_operation
+
+        @cache
+        def issue():
+            return dev_auth.token(Path(auth_dir), subject, 11, jti=str(uuid4()))
+
+        issue_run_credential = issue
+        try:
+            # Reuse only the physical connection: every retirement check still
+            # gets a fresh read-only transaction with the current scope/release.
+            with permit_retirement_read_lease(database,lambda:tools_configuration.services.require_scope(scope)), \
+                    retirement_read_operation(purpose='hk_worker_retirement'):
+                yield
+        finally:
+            issue_run_credential = None
+            issue.cache_clear()
+
+    def memory_credential():
+        return bootstrap_credential if issue_run_credential is None else issue_run_credential()
+
+    def memory_admit():
+        decision = checker.check(memory_credential())
         if decision.status is AdmissionStatus.UNKNOWN:
             raise RuntimeUnknown('memory admission unknown')
         if decision.status is not AdmissionStatus.ALLOWED or scope_for(
@@ -128,11 +183,12 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
             raise RuntimeDenied('memory admission denied')
         return decision.principal
     message_context=None
-    if database.travel_profile(scope) or type(memory_configuration) is TypedRuntimeConfiguration:
+    if travel_enabled or type(memory_configuration) is TypedRuntimeConfiguration:
         from cj_message.travel_reference import MessageContextAuthority
-        credential=memory_credential if type(memory_configuration) is TypedRuntimeConfiguration or formal_memory_configuration is not None else token()
+        uses_memory_credential = type(memory_configuration) is TypedRuntimeConfiguration or formal_memory_configuration is not None
+        travel_credential = None if uses_memory_credential else token()
         def travel_admit():
-            decision=checker.check(credential)
+            decision=checker.check(memory_credential() if uses_memory_credential else travel_credential)
             if decision.status is AdmissionStatus.UNKNOWN:
                 raise LeaseUnavailable('travel admission unknown')
             if (decision.status is not AdmissionStatus.ALLOWED
@@ -164,6 +220,19 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
         if last.status is AdmissionStatus.UNKNOWN: raise LeaseUnavailable('worker admission unknown')
         return original is True and last.status is AdmissionStatus.ALLOWED and last.principal==first.principal
 
+    execution_connection = None
+
+    @contextmanager
+    def lease_execution():
+        nonlocal execution_connection
+        connection = database.connect(scope)
+        execution_connection = connection
+        try:
+            yield
+        finally:
+            execution_connection = None
+            connection.close()
+
     def valid(binding):
         if message_context is not None:
             return message_context.valid(binding)
@@ -173,7 +242,7 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
         if binding.scope != scope:
             return False
         from cj_api.local_account_admission_v2 import retired_in_transaction
-        with database.execution_transaction(scope, binding) as tx:
+        with database.execution_transaction(scope, binding, connection=execution_connection) as tx:
             scoped_checker = account_checker_builder(retired_in_transaction(tx.cur, scope))
 
             def same_original():
@@ -190,6 +259,7 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
             return check_admitted_original(binding, scoped_checker, same_original)
 
     runs = RunService(database.run_repository(scope),valid=valid)
+    reuse_connections = account_checker_builder is not None and message_context is None
     place_sources=None
     if place_draft_configuration is not None:
         if editing or database.run_context is None or database.run_context.version!='CJ-LOCAL-RUN@2' or message_context is None:
@@ -201,11 +271,14 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
     elif draft_profile is None:
         drafts=DraftPublisher(database.trip_repository(scope))
     else:
-        if editing or tools_configuration is not None or database.run_context is None or database.run_context.version!='CJ-LOCAL-RUN@2' or message_context is None:
+        if (editing or tools_configuration is not None and not assembly_planning
+                or database.run_context is None or database.run_context.version!='CJ-LOCAL-RUN@2' or message_context is None):
             raise CompositionUnavailable('NEEDS draft profile requires registered M2/travel creation host')
         if draft_profile=='needs-structured.1':
             from cj_draft.needs_local import publisher
             drafts=publisher(database,checker,message_context,token,scope)
+            if assembly_planning:
+                drafts.system+=HK_ASSEMBLY_PLAN_JSON
         else:
             from cj_api.local_current_plan import publisher
             drafts=publisher(database,checker,message_context,token,scope)
@@ -226,16 +299,26 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
         memory=memory,edit_publisher=None if edit_config is None else edit_config.publisher,edit_results=database.edit_results,
         memory_history=history is not None,history_adapter=history,
         message_context=message_context,
+        execution_lease=lease_run_credential if run_credential else lease_execution if reuse_connections else nullcontext,
+        owned_transaction_lease=(lambda: database.lease_run_transactions(runs.repository)) if reuse_connections else None,
         tools=tools_configuration,place_sources=place_sources,
-        execution_guard=lambda binding:database.require_execution(binding.scope,binding),
-        needs_lease=needs_lease_for(database,checker,token),
+        execution_guard=lambda binding: database.require_execution(binding.scope, binding, connection=execution_connection),
+        needs_lease=needs_lease_for(database,checker,memory_credential if run_credential else token),
         budget_exit=(LocalBudgetRouter(database) if tools_configuration is None else
                      LocalBudgetRouter(database,registrations=tools_configuration.registrations)))
 
 
-def run_once(database, model, auth_dir, *, memory_configuration=None,memory_configuration_for_scope=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,background_jobs=None,formal_memory_configuration=None,real_services=None,account_admission=False):
+def run_once(database, model, auth_dir, *, memory_configuration=None,memory_configuration_for_scope=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,background_jobs=None,formal_memory_configuration=None,real_services=None,account_admission=False,hk_beta_b_run_credential=False,hk_assembly_scopes=frozenset(),hk_assembly_run_credential_scopes=frozenset()):
     if memory_configuration_for_scope is not None and (memory_configuration is not None or formal_memory_configuration is not None):
         raise ValueError('select one explicit Memory configuration source')
+    if hk_assembly_scopes and (real_services is None or not account_admission or draft_profile is not None
+            or place_draft_configuration is not None or memory_configuration_for_scope is None
+            or not database.travel_context or not database.needs_context):
+        raise CompositionUnavailable('explicit Hong Kong Typed planning composition required')
+    if hk_assembly_run_credential_scopes and (
+            hk_assembly_run_credential_scopes!=hk_assembly_scopes or database.run_context is None
+            or database.run_context.current.meter.max_seconds!=600):
+        raise CompositionUnavailable('explicit Hong Kong assembly credential pair and 600-second Meter required')
     if formal_memory_configuration is not None:
         from cj_api.local_formal_memory import configuration
         formal_memory_configuration=configuration(formal_memory_configuration)
@@ -266,15 +349,27 @@ def run_once(database, model, auth_dir, *, memory_configuration=None,memory_conf
         checker=account_checker_for(Path(auth_dir),database)
     results = []
     failure = None
+    run_credential_scopes=hk_assembly_run_credential_scopes
+    if hk_beta_b_run_credential:
+        run_credential_scopes=run_credential_scopes|{scope_for(ISSUER,'m4-synthetic-beta-b')}
     for scope in pending_scopes:
         # One scope's unreconciled run (for example an unresolved original quota
         # period) must not starve every later scope; it is still raised below.
         try:
             selected_memory=(memory_configuration if memory_configuration_for_scope is None
                              else memory_configuration_for_scope(scope))
+            assembly_planning=scope in hk_assembly_scopes
+            if assembly_planning and type(selected_memory) is not TypedRuntimeConfiguration:
+                raise CompositionUnavailable('assembly planning requires original Typed runtime')
+            run_credential = (scope in run_credential_scopes and account_checker_builder is not None
+                and type(selected_memory) is TypedRuntimeConfiguration
+                and database.run_context.current.meter.max_seconds == 600)
             results += _worker_for_scope(database,model,auth_dir,scope,checker,
-                                         memory_configuration=selected_memory,tools_configuration=tools_configuration,draft_profile=draft_profile,place_draft_configuration=place_draft_configuration,formal_memory_configuration=formal_memory_configuration,
-                                         account_checker_builder=account_checker_builder).process()
+                                         memory_configuration=selected_memory,tools_configuration=tools_configuration,
+                                         draft_profile='needs-structured.1' if assembly_planning else draft_profile,
+                                         place_draft_configuration=place_draft_configuration,formal_memory_configuration=formal_memory_configuration,
+                                         account_checker_builder=account_checker_builder,run_credential=run_credential,
+                                         assembly_planning=assembly_planning).process()
         except Exception as error:
             if failure is None: failure = error
     if background_jobs is not None:results+=background_jobs.run_once(model)

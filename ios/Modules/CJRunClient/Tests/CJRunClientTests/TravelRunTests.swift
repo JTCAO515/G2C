@@ -71,12 +71,12 @@ private actor TravelRunWire: ClientTransport {
     let wire = TravelRunWire()
     let model: RunDisplayModel
     var current = true
-    init(draft: Bool = true) throws {
+    init(draft: Bool = true, draftStatusVersion: RunDraftStatusVersion = .v1) throws {
         operation = try session.beginTrustedSDKSave()
         let endpoint = try MessageEndpoint(url:URL(string:"https://synthetic.invalid")!,maximumRequestBytes:65536,maximumResponseBytes:65536)
         let cancel = RunCancellationTransport(interceptedTransport:wire,endpoint:endpoint,travel:true,validate:{})
         model = try RunDisplayModel(endpoint:endpoint,maximumMessageIDBytes:16384,maximumTextBytes:10000,
-            credentials:{ _ in "synthetic-only" },transport:wire,cancellationTransport:cancel,readsDraftStatus:draft)
+            credentials:{ _ in "synthetic-only" },transport:wire,cancellationTransport:cancel,readsDraftStatus:draft,draftStatusVersion:draftStatusVersion)
         let source = try RunDisplaySource(receipt:travelReceipt(),travelReference:travelReference(),session:session,operation:operation,isCurrent:{ [weak self] in self?.current == true })
         #expect(model.select(source))
     }
@@ -84,8 +84,9 @@ private actor TravelRunWire: ClientTransport {
 }
 
 @MainActor struct TravelRunTests {
-    @Test func explicitTravelReadUsesOnlyTypedRoutesAndKeepsOriginalPayload() async throws {
-        let f = try TravelRunFixture();await f.read()
+    @Test(arguments: [RunDraftStatusVersion.v1, .v2])
+    func explicitTravelReadUsesOnlyTypedRoutesAndKeepsOriginalPayload(defaultDraftStatus: RunDraftStatusVersion) async throws {
+        let f = try TravelRunFixture(draftStatusVersion: defaultDraftStatus);await f.read()
         guard case .loaded(let answer) = f.model.state,case .loadedTravel(let draft) = f.model.draftStatus else { Issue.record("typed read missing");return }
         #expect(Data(answer.snapshot.text.utf8) == Data("原回答e\u{301}".utf8))
         guard case .travel(let reference) = draft.reference else { Issue.record("lost original reference");return }

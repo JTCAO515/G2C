@@ -66,9 +66,12 @@ class OperationContext:
         from .typed import parse_manual
         command = parse_manual(raw)
         self._state['operation_id'] = command.operation_id
-        self._state['writing'] = True
+
+        def mark_write():
+            self._state['writing'] = True
+
         try:
-            return self._service.save_manual_typed(raw, authority, self._state['principal'])
+            return self._service.save_manual_typed(raw, authority, self._state['principal'], mark_write=mark_write)
         finally:
             self._state['writing'] = False
 

@@ -4,6 +4,8 @@ from contextvars import ContextVar
 from dataclasses import asdict
 from threading import get_ident
 
+from psycopg.pq import TransactionStatus
+
 from cj_auth.interfaces import Fact
 from cj_cleanup.core import Scope,digest,encode
 from .composition import CompositionUnavailable
@@ -14,9 +16,10 @@ _retirement_lease = ContextVar('retirement_read_lease', default=None)
 
 
 class _RetirementReadLease:
-    def __init__(self, database, require_current):
+    def __init__(self, database, require_current, purpose):
         self.database = database
         self.require_current = require_current
+        self.purpose = purpose
         self.thread = get_ident()
         self.owner = None
         self.connection = None
@@ -36,6 +39,15 @@ class _RetirementReadLease:
             cursor.execute('SELECT public.cj_account_scope_current(%s)', (owner,))
             return _retirement_fact(cursor.fetchone())
 
+    def borrow(self, database, owner):
+        connection = self.connection
+        if (database is not self.database or get_ident() != self.thread or owner != self.owner
+                or connection is None or connection.closed
+                or connection.info.transaction_status != TransactionStatus.IDLE):
+            raise CompositionUnavailable('idle original request connection required')
+        self.require_current()
+        return connection
+
 
 @contextmanager
 def permit_retirement_read_lease(database, require_current):
@@ -48,13 +60,13 @@ def permit_retirement_read_lease(database, require_current):
 
 
 @contextmanager
-def retirement_read_operation():
+def retirement_read_operation(*, purpose=None):
     """Acquire and close the leased connection in the guarded worker thread."""
     permission = _retirement_permission.get()
     if permission is None:
         yield
         return
-    lease = _RetirementReadLease(*permission)
+    lease = _RetirementReadLease(*permission, purpose)
     token = _retirement_lease.set(lease)
     try:
         yield
@@ -62,6 +74,14 @@ def retirement_read_operation():
         _retirement_lease.reset(token)
         if lease.connection is not None:
             lease.connection.close()
+
+
+def request_scope_connection(database, scope, *, purpose):
+    """Borrow the already authenticated scope in the current synchronous operation."""
+    lease = _retirement_lease.get()
+    if lease is None or lease.purpose != purpose:
+        return None
+    return lease.borrow(database, scope)
 
 
 def subject_digest(principal):
@@ -105,6 +125,6 @@ def retired_in_transaction(cursor, scope):
     return retired
 
 
-def account_checker_for(auth_dir,database):
+def account_checker_for(auth_dir,database,*,selected_subjects=None):
     from .local_worker_context import checker_for
-    return checker_for(auth_dir,account_retired=retired_for(database))
+    return checker_for(auth_dir,account_retired=retired_for(database),selected_subjects=selected_subjects)

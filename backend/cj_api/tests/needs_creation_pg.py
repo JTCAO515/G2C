@@ -25,8 +25,86 @@ def fixed(key,start,end,locked):
     return dict(item_id=key,kind='appointment',description='explicit original '+key,applies_to=['self'],locked=known(locked),booking_status=known('booked'),start=event(start),end=event(end))
 
 
+def check_assembly_run_credential(auth,host,database,setup,pair):
+    from datetime import datetime,timedelta,timezone
+    from types import SimpleNamespace
+    import httpx
+    from cj_agent.provider import DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL
+    from cj_agent.worker import RunWorker
+    from cj_api.real_services import RealServices,RealTools
+    from cj_auth.admission import AdmissionChecker
+    from cj_draft.needs_publisher import SYSTEM
+    from cj_memory.typed_runtime import TypedRuntimeConfiguration
+    from cj_usage.authorization_budget import AuthorizationBudget
+    from test_m4_real_services import KEY,NOW,sse,turn_sse
+
+    profile=dict(subjects=['self'],slots={'pace':dict(kind='preference',collection_allowed=True,
+        semantic_resolved=True)},extents=['long_term'],context_ids=[])
+    collection=dict(version='local-memory-typed.1',collection=dict(version='local-memory-policy.1',
+        expires_at='2099-11-30T23:59:59+08:00',profiles=dict.fromkeys(pair,profile)),travel_contexts={s:[] for s in pair})
+    memory=TypedRuntimeConfiguration.from_bytes(packed(dict(version='local-memory-run.2',collection=collection,
+        selections={s:dict(subject='self',slots=['pace'],max_bytes=1000) for s in pair})))
+    scopes=frozenset(scope_for(ISSUER,s) for s in pair)
+    offset=0
+
+    class Clock(datetime):
+        @classmethod
+        def now(cls,tz=None):
+            return datetime.now(tz)+timedelta(seconds=offset)
+
+    def clock():return Clock.now(timezone.utc).timestamp()
+
+    initialize=AdmissionChecker.__init__
+    def checker(instance,verifier,access):
+        initialize(instance,verifier,access,clock=clock)
+
+    original_step=RunWorker._step
+    def after_draft_receipt(worker,binding,invoke,effect=None,*,draft=False):
+        nonlocal offset
+        if draft and effect is not None:offset=301
+        return original_step(worker,binding,invoke,effect,draft=draft)
+
+    for subject,enabled in zip(pair,(False,True)):
+        offset=0
+        original,_=setup(subject)
+        receipt=original['receipt']
+        def response(request):
+            body=json.loads(request.content)
+            if body.get('tools'):
+                wire=turn_sse(compact=True)
+                response_id=subject+'-answer'
+            else:
+                plan=''.join(NeedsPlanFakeProvider().stream(body['messages'][1:],system=SYSTEM))
+                wire=sse().replace(json.dumps('{"zh":"待核实。","en":"Needs verification."}'),json.dumps(plan))
+                response_id=subject+'-draft'
+            return httpx.Response(200,stream=httpx.ByteStream(wire.replace('chatcmpl-synthetic',response_id).encode()))
+        budget=AuthorizationBudget(auth.parent/(subject+'-budget'),clock=lambda:NOW)
+        model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),budget,transport=httpx.MockTransport(response))
+        services=RealServices(model,KEY,frozenset(pair))
+        db=database(subject)
+        options=dict(memory_configuration_for_scope=lambda _:memory,tools_configuration=RealTools(services),
+            real_services=services,account_admission=True,hk_assembly_scopes=scopes,
+            hk_assembly_run_credential_scopes=scopes if enabled else frozenset())
+        with patch('jwt.api_jwt.datetime',Clock),patch.object(AdmissionChecker,'__init__',checker), \
+                patch.object(dev_auth,'time',SimpleNamespace(time=clock)),patch.object(RunWorker,'_step',after_draft_receipt):
+            outcome,=run_worker.run_once(db,model,auth,**options)
+            assert run_worker.run_once(db,model,auth,**options)==[]
+        assert offset==301 and outcome.run_id==receipt['run_id']
+        assert (outcome.status,outcome.proposal_id)==(
+            ('completed','p-'+receipt['run_id']) if enabled else ('context_invalid',None))
+        attempts=budget.inspect()
+        assert [row['state'] for row in attempts]==['RECEIVED','RECEIVED']
+        ledger=host.ledger(subject)
+        assert all(ledger.attempts[row['attempt_id']].receipt is not None for row in attempts)
+        with db.connect(scope_for(ISSUER,subject)) as connection:
+            assert connection.execute('SELECT acknowledged FROM cj_message_delivery WHERE run_id=%s',
+                (receipt['run_id'],)).fetchone()==(True,)
+    print('PASS #674 opt-in original assembly draft publishes after 301s with its original Meter and ACK; default fails closed')
+
+
 def exercise(auth,conninfo):
-    subjects=['explicit','cli','legacy','stale','unknown','foreign']
+    pair=('m4-synthetic-660-0123456789ab-zh','m4-synthetic-660-0123456789ab-en')
+    subjects=['explicit','cli','legacy','stale','unknown','foreign',*pair]
     host=RegisteredHost(auth,conninfo,{s:(12,2,30000) for s in subjects})
     for s in subjects:dev_auth.activate_travel(conninfo,s,host.profiles[s][1],'MESSAGE-TRAVEL-CONSUMER@1')
     signer=load_confirmation_signer(auth);cfg=json.loads(conninfo.read_text())
@@ -67,6 +145,60 @@ def exercise(auth,conninfo):
     assert outcomes[0].status=='completed' and outcomes[0].proposal_id and model.calls==2
     trip=accept('explicit',outcomes[0])
     assert run_worker.run_once(database('explicit'),model,auth,draft_profile='needs-structured.1')==[] and model.calls==2
+    # Boot the hosted API on the private PG transport with the existing local cleanup login.
+    from cj_api.local_cleanup import Configuration,Runtime as LocalCleanup
+    from cj_memory.typed_local import TypedConfiguration
+    sys.path.insert(0,str(harness.ROOT))
+    from deploy.hk import configuration
+
+    selected=frozenset({'explicit'})
+    profile=dict(subjects=['self'],slots={'preference':dict(kind='preference',
+        collection_allowed=True,semantic_resolved=True)},extents=['long_term'],context_ids=[])
+    policy=TypedConfiguration.from_bytes(packed(dict(version='local-memory-typed.1',
+        collection=dict(version='local-memory-policy.1',expires_at='2099-11-30T23:59:59+08:00',
+            profiles={'explicit':profile}),travel_contexts={'explicit':[]})))
+    cleanup=Configuration({'fixture':b'c'*32},'fixture',3600,('business/message',),
+        harness.ROOT/'backend/storage-registry.json')
+    path,context=host.profiles['explicit']
+    db=database('explicit')
+    runtime=configuration.Runtime(auth,context,path,[],typed_memory=policy,
+        subjects=frozenset(host.subjects),typed_message_subjects=selected,assembly_subjects=selected)
+    env=dict(CJ_LOCAL_NEEDS_PROFILE='manual-v1',CJ_BETA_HISTORY_B64=base64.b64encode(b'h'*32).decode(),
+        CJ_BETA_CONFIRMATION_B64=base64.b64encode(b'c'*32).decode())
+    with patch.dict(os.environ,env),patch.object(configuration.Runtime,'database',return_value=db), \
+            patch.object(configuration,'assembly_cleanup',return_value=cleanup), \
+            patch('cj_api.supabase_cleanup.SupabaseCleanupRuntime',return_value=LocalCleanup(db,cleanup,scope_for)):
+        composed=runtime.app()
+    with TestClient(composed) as client:
+        headers={**host.headers['explicit'],'Content-Type':'application/octet-stream'}
+        foreign=host.headers['foreign']
+        stream=client.get('/v2/run-events',params={'message_id':'message-explicit'},headers=headers)
+        assert stream.status_code==200 and b'"status":"completed"' in stream.content
+        selection=dict(trip_id=trip['trip_id'])
+        harness.expect(client.get('/v5/trip-structured',params=selection,headers=foreign),503)
+        assert harness.expect(client.get('/v5/trip-structured',params=selection,headers=headers))['trip']==trip
+        body=packed(dict(version='TRIP-needs-edit.1',needs_reference=dict(id='visit',expected_version=1),
+            edit=dict(version='TRIP-manual-edit.2',request_id='assembly-edit',trip_id=trip['trip_id'],
+                expected_version=1,original_hash=trip['content_sha256'],title='Assembly title',changes=[],order=None)))
+        preparation=harness.expect(client.post('/v1/trip-needs-edits',content=body,headers=headers))['preparation']
+        body=packed(dict(version='TRIP-needs-save.1',action_id='assembly-save',
+            proposal_id=preparation['proposal_id'],candidate_hash=preparation['candidate_hash']))
+        receipt=harness.expect(client.post('/v1/trip-needs-saves',content=body,headers=headers))['receipt']
+        assert receipt['committed_version']==2
+        result=harness.expect(client.get('/v5/trip-structured',params=selection,headers=headers))['trip']
+        assert result['version']==2 and result['content']['title']=='Assembly title'
+        assert harness.expect(client.get('/v1/trip-needs-action-receipts',
+            params=dict(action_id='assembly-save'),headers=headers))['receipt']==receipt
+        harness.expect(client.post('/v1/trip-source-initializations',content=b'',headers=headers),404)
+        original=auth/'invited.json'
+        saved=original.read_bytes()
+        try:
+            original.write_text(json.dumps(sorted(set(host.subjects)-selected)))
+            harness.expect(client.get('/v5/trip-structured',params=selection,headers=headers),503)
+            harness.expect(client.get('/v1/memory-erasure-progress',params={'action_id':'assembly-erase'},headers=headers),403)
+            harness.expect(client.get('/v1/account-cleanup-preparations',params={'action_id':'assembly-cleanup'},headers=headers),403)
+        finally:
+            original.write_bytes(saved)
     # Actual CLI selects the source-compatible offline model; same source/B Meter.
     setup('cli')
     env=dict(os.environ,CJ_ENV='local')
@@ -108,6 +240,7 @@ def exercise(auth,conninfo):
         def stream(self,messages,system=None):self.calls+=1;raise ProviderUnknown('controlled outbound unknown');yield
     model=Unknown();assert run_worker.run_once(database('unknown'),model,auth,draft_profile='needs-structured.1')[0].status=='unknown' and model.calls==1
     assert run_worker.run_once(database('unknown'),model,auth,draft_profile='needs-structured.1')==[] and model.calls==1
+    check_assembly_run_credential(auth,host,database,setup,pair)
     print('PASS354 unpatched run_once+CLI explicit C publisher/source prompt, registered Meter, original C confirm/act/adopt, structured list/detail and NEEDS basis; legacy/currentness/UNKNOWN negatives')
     print('INITIALIZE503 retained only for actual protected legacy source; root C manual_origin.ManualOrigin._run rejects cj_local_run_protection/NEEDS binding, no C file or budget gate modified')
 

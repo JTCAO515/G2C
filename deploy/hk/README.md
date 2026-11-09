@@ -52,6 +52,13 @@ schema资产绑定原迁移hash并放进镜像；镜像标签和OCI revision均�
 API和worker都使用独立cj_m1_runtime登录，每次连接校验前后身份、TLS、RESET后scope。
 原ACCOUNT-ADMISSION@2在API和worker前台启用，不能重建退休账号。
 
+`CJ_BETA_DB_POOL_SIZE=4` 可在香港合成环境启用每进程有界的运行角色连接池，允许 1–8 条。
+省略时逐次新建连接。每次借用仍在 5432 session 模式核实际 TLS 与身份，执行 DISCARD ALL，
+并确认 scope 已清空。事务入口重新绑定 LOCAL scope，原签名 release 与撤权查询每次重新核对。
+跨事务持有的 worker advisory lock 使用独立物理连接。operator、cleanup 及备份角色不入运行连接池。
+失败事务和结果不明的写入沿原恢复规则，连接池不重放业务 SQL。移除设置并重启即可回到逐次连接。
+启用时日志记录物理连接 TLS 时长和 checkout 校验时长，记录不含 scope、凭据或业务内容。
+
 Caddy仅发布80/443、自动HTTPS并保留流式响应；应用端口不对主机外发布。
 `/health/live`仅进程存活；`/health/ready`核有效期、签名release、实际库identity/schema和15秒worker心跳。
 未就绪时所有业务读写503。worker按原RUN ID记录failed/unknown告警，并保留注册计量audit；不输出内容、key或URI。
@@ -149,6 +156,14 @@ RUN、Meter 与真实出口执行。未选择的主体仍用原路径；已有 M
 实际激活前须核对原主体、原 Travel/版本和执行身份，按 #495 处理授权范围外的操作；
 真实模型续答、回执与质量仍分别在 #30/#32 验证。移除 worker 配置不能恢复已有 Memory 主体的旧派发。
 
+`worker.env` 可另设 `CJ_BETA_MODEL_STREAM_SUBJECT` 为一个原已邀请合成主体，
+仅选择 [MODEL-TOOL-TURN-STREAM@1](../../contracts/run/MODEL-TOOL-TURN-STREAM-V1.md)。
+默认不设，其他主体继续使用原 v2。先暂停测试提交、核对原 delivery 已清空，
+再切换或移除该选项；同一原 UNKNOWN 只读核对。
+另获组装流式授权时，在同一个 0600 worker 文件设置
+`CJ_BETA_ASSEMBLY_MODEL_STREAM_SUBJECTS_JSON` 为与现有组装完全相同的中英主体数组。
+两主体的同一原模型轮按既有 profile 增量输出最后正文；单主体配置和默认 v2 选择继续生效。
+
 ## 已有 Memory 主体的 MESSAGE 激活
 
 先交付匹配主体的原 typed worker。对已有 Memory 的主体，旧 `activate-travel` 仍明确拒绝；
@@ -169,7 +184,47 @@ API 启动还必须读到该主体已激活的原 `message-travel.1` profile。
 并重启 API 保持 API-only；仅移除 allow-list 不会撤销已入队的原动作。
 不能删除 profile 回退旧 writer，实际未知原动作仍只读核对。
 
+## 可选的 #660 内测组装
+
+只给同一批 `m4-synthetic-660-<12位十六进制>-zh` 和 `-en` 开启。将两份可分别注销的合成主体加入
+原邀请、API Typed policy 和 MESSAGE allow-list，以及 worker 的同一 Typed policy/selection。
+`CJ_BETA_ASSEMBLY_SUBJECTS_JSON` 明确选择两份主体，`CJ_LOCAL_NEEDS_PROFILE` 沿用 `manual-v1`。
+在 API 0600 文件增加原受限 cleanup URI 和 32 字节 cleanup HMAC。worker 无需这两项。
+规划沿同一原 MESSAGE、Needs/Travel、RUN 和 Meter；Trip 采用、修改和正式读回仅对组装主体开放。
+仅在该组装对另获内部凭据授权后，在 0600 的 `worker.env` 配置
+`CJ_BETA_ASSEMBLY_RUN_CREDENTIAL_SUBJECTS_JSON`，值为同一对主体的 JSON 数组。
+默认关闭。启用要求现有 600 秒 Meter，每个原 RUN 最多一枚 11 分钟内部凭据，仍逐次检查撤权。
+暂停提交并确认无在途后，从 worker 文件移除该字段并重建 worker 可恢复原 5 分钟组装范围。
+Typed 保存、管理及既有 `/v1/memory-erasures` 不安装 V1 记忆写入。device-v4 使用同一认证身份，
+注销采用既有 cleanup 登录和原登记内容域，离线与客户端控制记录按原清理协议验收。
+
+在原 A/C 无在途且 API、worker 暂停的维护窗口，用同版镜像执行
+`python -m deploy.hk.assembly_profiles bootstrap|insert|inspect <subject>`。
+使用当前签名 release 和原 0600 operator/worker 配置，挂已有 release、CA、以及持久私有 `/operation`。
+先以原初始化入口建新合成主体的预算及 Typed 命名空间。`insert` 要求 canonical Typed 只读预检，
+原 profile 缺失才以已有 `postgres` 写一次。持久 intent 存在或结果不明时只能 `inspect`。
+配置切换前保留当前镜像与环境版本。回退先停提交并核原动作。已写的 profile、账本及 fence 保留。
+用原签名 API 预建每个主体的空会话、合成 Needs 和 Travel，再向 A 交 0600 范围和两小时凭据。
+
 ## 验证
+
+### 香港本机 PG17
+
+仅在已批准的 (b2) 切换使用 `CJ_BETA_DB_TARGET=hk-local` 和 `compose.local-pg.yaml`。PG 服务使用
+已审 operator 镜像，禁用网络，只在受控挂载的 Unix socket 接收 SCRAM 登录。API、worker、cleanup
+和 operator 各按原角色边界加载 0600 文件，原 Supabase TLS 配置作为归档保留。
+
+暂停 API/worker、确认 A/C 无在途及原账本锚点、暂停日备。原配置下以新 operator 镜像挂载空的私有
+`/local-pg` 并执行 `python -B -m deploy.hk.local_postgres stage`。它从已签名日备取基准，
+再取完整安全点、按原恢复顺序加载 fence，验证目标状态后冻结源的应用登录和默认读写。
+保留归档状态；任何不确定结果先核原件。只将新连接值分别安装到原 0600 角色文件，签名密钥与
+唯一 SQLite 挂载路径继续复用。切换到本机配置后启动 `postgres` 服务，再用同一 operator 运行
+`activate`、一次现有 OSS backup 和 `allow-writes`。前置 backup 要求当前 UTC 日尚未成功备份；
+只有新签名备份完整上送并核对行、序列和 fence 后，才启动 API/worker。
+
+发布前可撤掉目标 release 并核原 Supabase 快照，恢复源写入仍须另批。放行业务后只允许香港前滚，
+使用同一 lineage 最新签名安全点并重放 fence，无法核实最新 fence 时保留不可用状态。
+旧 `suspended.json` 和 `latest.json` 归档，保持原 Supabase 只读。
 
 ```sh
 uv run --locked python -B scripts/test.py

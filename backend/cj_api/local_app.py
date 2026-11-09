@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 from dataclasses import dataclass
 from collections.abc import Mapping
 from contextlib import contextmanager
+from functools import partial
 import json
 import os
 import re
@@ -16,6 +17,7 @@ from pathlib import Path
 import tempfile
 import stat
 import time
+from types import SimpleNamespace
 import uuid
 
 import psycopg
@@ -57,6 +59,15 @@ def _require_unbound(cursor):
                    "current_setting('cj.needs_runtime_abi',true), current_setting('cj.message_trip_abi',true), current_setting('cj.message_edit_abi',true), current_setting('cj.message_edit_result_abi',true)")
     if any(value not in (None, '') for value in cursor.fetchone()):
         raise CompositionUnavailable('database scope already present')
+
+
+def _require_runtime_role(executor):
+    role = executor.execute("SELECT rolsuper,rolbypassrls,rolcreatedb,rolcreaterole,rolreplication,"
+                            "EXISTS(SELECT 1 FROM pg_auth_members WHERE member=r.oid),"
+                            "EXISTS(SELECT 1 FROM pg_class WHERE relowner=r.oid) "
+                            "FROM pg_roles r WHERE rolname=current_user").fetchone()
+    if role != (False, False, False, False, False, False, False):
+        raise CompositionUnavailable('unsafe local runtime database role')
 
 
 class _ScopedConnection:
@@ -192,6 +203,9 @@ class LocalDatabase:
     def _open_runtime_connection(self):
         return psycopg.connect(**self.conninfo,autocommit=True)
 
+    def _open_dedicated_runtime_connection(self):
+        return self._open_runtime_connection()
+
     @property
     def edit_results(self):
         # C's actual factory creates its publisher with this database, then
@@ -204,21 +218,16 @@ class LocalDatabase:
         if passfile is not None:
             passfile.close()
 
-    def connect(self, scope, *, usage_profile=None):
+    def connect(self, scope, *, usage_profile=None, dedicated=False):
         if type(scope) is not str or not scope.startswith('local:' + ISSUER + ':') or not scope.removeprefix('local:' + ISSUER + ':'):
             raise CompositionUnavailable('verified local scope required')
-        conn = self._open_runtime_connection()
+        conn = self._open_dedicated_runtime_connection() if dedicated else self._open_runtime_connection()
         try:
             if conn.closed or conn.info.transaction_status != TransactionStatus.IDLE or conn.autocommit is not True:
                 raise CompositionUnavailable('fresh idle runtime connection required')
             with conn.cursor() as cursor:
                 _require_unbound(cursor)
-            role = conn.execute("SELECT rolsuper,rolbypassrls,rolcreatedb,rolcreaterole,rolreplication,"
-                                "EXISTS(SELECT 1 FROM pg_auth_members WHERE member=r.oid),"
-                                "EXISTS(SELECT 1 FROM pg_class WHERE relowner=r.oid) "
-                                "FROM pg_roles r WHERE rolname=current_user").fetchone()
-            if role != (False, False, False, False, False, False, False):
-                raise CompositionUnavailable('unsafe local runtime database role')
+            _require_runtime_role(conn)
             # No scope is installed at checkout. Repositories still receive IDLE;
             # their transaction entry installs LOCAL authority which PostgreSQL
             # removes on commit/rollback even when a physical connection survives.
@@ -238,23 +247,51 @@ class LocalDatabase:
     def require_budget_account(self, scope, *, profile=None):
         if self.run_context is None: return
         profile=self.run_context.current if profile is None else profile
-        account=ledger_scope_for(scope,profile.meter)
         with self.connect(scope,usage_profile=profile) as conn:
-            row=conn.execute('SELECT format_version,ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(account,)).fetchone()
-            if row is None or row[0]!=1 or decode_ledger(row[1]).config!=profile.meter:
-                raise CompositionUnavailable('original budget account unavailable or changed')
+            self._check_budget_account(conn, scope, profile)
+
+    def _check_budget_account(self, executor, scope, profile):
+        account = ledger_scope_for(scope, profile.meter)
+        row = executor.execute('SELECT format_version,ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',
+                               (account,)).fetchone()
+        if row is None or row[0] != 1 or decode_ledger(row[1]).config != profile.meter:
+            raise CompositionUnavailable('original budget account unavailable or changed')
 
     def provision(self, scope):
         """Trusted, idempotent scope provisioning for the local host only."""
         with self.connect(scope) as conn:
-            conn.execute('INSERT INTO cj_message_scope(scope) VALUES (%s) ON CONFLICT DO NOTHING', (scope,))
-            conn.execute('SELECT scope FROM cj_message_scope WHERE scope=%s FOR UPDATE',(scope,))
-            if self.run_context is None and conn.execute('SELECT 1 FROM cj_local_run_protection WHERE scope=%s',(scope,)).fetchone():
-                # Safe original history stays readable without creating new runtime
-                # state; writes/dispatch check protection inside their own scope lock.
-                return
-            conn.execute("INSERT INTO cj_run_scope(scope, epoch, active) VALUES (%s, '1', true) ON CONFLICT DO NOTHING", (scope,))
-            conn.execute('INSERT INTO cj_trip_scope(scope) VALUES (%s) ON CONFLICT DO NOTHING', (trip_scope_for(scope),))
+            self._provision_scope(conn, scope)
+
+    def _provision_scope(self, executor, scope):
+        executor.execute('INSERT INTO cj_message_scope(scope) VALUES (%s) ON CONFLICT DO NOTHING', (scope,))
+        executor.execute('SELECT scope FROM cj_message_scope WHERE scope=%s FOR UPDATE', (scope,))
+        if self.run_context is None and executor.execute('SELECT 1 FROM cj_local_run_protection WHERE scope=%s', (scope,)).fetchone():
+            # Keep the original history read path available without enabling runtime state.
+            return
+        executor.execute("INSERT INTO cj_run_scope(scope, epoch, active) VALUES (%s, '1', true) ON CONFLICT DO NOTHING", (scope,))
+        executor.execute('INSERT INTO cj_trip_scope(scope) VALUES (%s) ON CONFLICT DO NOTHING', (trip_scope_for(scope),))
+
+    @contextmanager
+    def scoped_cursor(self, scope, *, connection=None):
+        if connection is None:
+            with self.connect(scope) as owned, owned.cursor() as cursor:
+                yield cursor
+            return
+        if (connection._scope != scope or connection.closed
+                or connection.info.transaction_status != TransactionStatus.IDLE):
+            raise CompositionUnavailable('idle connection for the original scope required')
+        with connection.transaction(), connection.cursor() as cursor:
+            cursor.execute('SET TRANSACTION ISOLATION LEVEL READ COMMITTED')
+            connection.bind_scope(cursor)
+            self._check_execution_connection(cursor)
+            yield cursor
+
+    def prepare_legacy_message_scope(self, connection, scope):
+        # Preserve the budget read commit before provisioning and the separate MESSAGE writer.
+        with self.scoped_cursor(scope, connection=connection) as cursor:
+            self._check_budget_account(cursor, scope, self.run_context.current)
+        with self.scoped_cursor(scope, connection=connection) as cursor:
+            self._provision_scope(cursor, scope)
 
     def message_repository(self, scope):
         return MessageRepository(lambda: self.connect(scope), scope, bind_needs=self.run_context is not None,
@@ -279,14 +316,19 @@ class LocalDatabase:
             with conn.cursor() as cursor:
                 return profile(cursor,scope)
 
-    def require_execution(self, scope, binding=None):
-        with self.execution_transaction(scope, binding):
+    def require_execution(self, scope, binding=None, *, connection=None):
+        with self.execution_transaction(scope, binding, connection=connection):
             pass
 
     @contextmanager
-    def execution_transaction(self, scope, binding=None):
+    def execution_transaction(self, scope, binding=None, *, connection=None):
         """Hold the original MESSAGE lock while its caller checks execution authority."""
-        with self.message_repository(scope).transaction() as tx:
+        if connection is not None and (connection._scope != scope or connection.closed
+                or connection.info.transaction_status != TransactionStatus.IDLE):
+            raise CompositionUnavailable('idle execution connection for the original scope required')
+        with self.message_repository(scope).transaction(borrowed_connection=connection) as tx:
+            if connection is not None:
+                self._check_execution_connection(tx.cur)
             tx.lock_scope()
             tx.local_execution(None if binding is None else binding.message_id,
                                None if binding is None else binding.run_id)
@@ -302,13 +344,36 @@ class LocalDatabase:
                 raise CompositionUnavailable('formal Trip execution requires explicit compatible configuration')
             yield tx
 
+    def _check_execution_connection(self, cursor):
+        _require_runtime_role(cursor)
+
     def trip_repository(self, scope):
         return TripRepository(lambda: self.connect(scope), trip_scope_for(scope), confirm=local_confirmation)
 
-    def run_repository(self, scope, *, usage_profile=None):
+    def run_repository(self, scope, *, usage_profile=None, connect_worker=None):
         connect = (lambda: self.connect(scope)) if usage_profile is None else (lambda: self.connect(scope,usage_profile=usage_profile))
         return RunRepository(connect, scope, expires_at=datetime.now(timezone.utc) + RUN_RETENTION,
-                             statement_timeout_ms=10000, lock_timeout_ms=5000)
+                             statement_timeout_ms=10000, lock_timeout_ms=5000,
+                             connect_worker=connect_worker)
+
+    @contextmanager
+    def lease_run_transactions(self, repository):
+        connection = repository.connect()
+
+        def transaction():
+            if connection.closed:
+                # An independent check or recovery can still use the normal path.
+                # The failed transaction itself is never rerun here.
+                return repository.transaction()
+            if connection.info.transaction_status != TransactionStatus.IDLE:
+                raise CompositionUnavailable('idle original RUN connection required')
+            return repository.transaction(borrowed_connection=connection,
+                                          validate_connection=self._check_execution_connection)
+
+        try:
+            yield transaction
+        finally:
+            connection.close()
 
 
 def local_confirmation(scope, action, proposal):
@@ -323,11 +388,13 @@ def local_confirmation(scope, action, proposal):
 class InvitedSubjects:
     """Server-owned invite list (auth_dir/invited.json); token claims never grant access."""
 
-    def __init__(self, path):
+    def __init__(self, path, selected_subjects=None):
         self.path = Path(path)
+        self.selected_subjects = selected_subjects
 
     def evaluate(self, principal):
-        invited = principal.subject in json.loads(self.path.read_text())
+        invited = (principal.subject in json.loads(self.path.read_text())
+                   and (self.selected_subjects is None or principal.subject in self.selected_subjects))
         return CJAccessFacts(principal, Fact.YES, Fact.YES, Fact.YES if invited else Fact.NO)
 
 
@@ -340,7 +407,7 @@ def trip_configuration(value):
 def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, history_configuration=None,
                      memory_configuration=None, run_context=None, travel_context=False, needs_profile=None, trip_context=False,edit_configuration=None,
                      cleanup_configuration=None,formal_memory_configuration=None,database=None,account_admission=False,message_subjects=None,
-                     existing_display_reads=False):
+                     existing_display_reads=False,cleanup_subjects=None):
     if os.environ.get('CJ_ENV') != 'local':
         raise CompositionUnavailable('CJ_ENV must explicitly be local')
     auth_dir = Path(auth_dir)
@@ -386,20 +453,39 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
         elif type(cleanup_configuration) is SupabaseCleanupConfiguration and type(database) is SupabaseTestDatabase:
             cleanup_runtime=SupabaseCleanupRuntime(database,cleanup_configuration,scope_for)
         else:raise CompositionUnavailable('matching explicit cleanup host configuration required')
-        access=AccountRevocationAccess(base_access,cleanup_runtime.retired)
+        if not account_admission:
+            access=AccountRevocationAccess(base_access,cleanup_runtime.retired)
+
+    from .local_account_admission_v2 import request_scope_connection
 
     def message_repository(principal, *, provision=True):
         if message_subjects is not None and principal.subject not in message_subjects:
             raise CompositionUnavailable('MESSAGE consumer unavailable for this API-only subject')
         scope = scope_for(principal.issuer, principal.subject)
-        database.require_budget_account(scope)
-        if provision:
-            database.provision(scope)
+        connection = (request_scope_connection(database, scope, purpose='legacy_message_preflight')
+                      if provision and database.run_context is not None else None)
+        if connection is not None:
+            database.prepare_legacy_message_scope(connection, scope)
+        else:
+            database.require_budget_account(scope)
+            if provision:
+                database.provision(scope)
         return database.message_repository(scope)
+
+    def display_message_repository(principal):
+        repository = message_repository(principal, provision=False)
+        connection = request_scope_connection(database, repository.scope, purpose='sse_snapshot')
+        if connection is None:
+            return repository
+        return SimpleNamespace(
+            scope=repository.scope,
+            transaction=partial(repository.transaction, borrowed_connection=connection,
+                                validate_connection=database._check_execution_connection),
+        )
 
     display_boundary = None
     if existing_display_reads:
-        if not account_admission or cleanup_runtime is not None:
+        if not account_admission or (cleanup_runtime is not None and cleanup_subjects is None):
             raise CompositionUnavailable('existing display reads require runtime retirement checks')
         from cj_auth.admission import AdmissionChecker
         from cj_auth.jwt_adapter import PyJWTVerifier
@@ -411,8 +497,7 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
         def display_checker(tx, scope):
             return AdmissionChecker(verifier, AccountRevocationAccess(base_access, retired_in_transaction(tx.cur, scope)))
 
-        display_boundary = Boundary(AdmissionChecker(verifier, access),
-                                    lambda principal: message_repository(principal, provision=False), None,
+        display_boundary = Boundary(AdmissionChecker(verifier, access), display_message_repository, None,
                                     checker_in_transaction=display_checker)
 
     def travel_repository(principal):
@@ -428,7 +513,15 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
     def run_repository(principal, scope):
         if scope != scope_for(principal.issuer, principal.subject):
             raise CompositionUnavailable('scope mismatch')
-        return database.run_repository(scope)
+        repository = database.run_repository(scope)
+        connection = request_scope_connection(database, scope, purpose='sse_snapshot')
+        if connection is None:
+            return repository
+        return SimpleNamespace(
+            scope=scope,
+            recover=partial(repository.recover, borrowed_connection=connection,
+                            validate_connection=database._check_execution_connection),
+        )
 
     def feedback_resolver(principal):
         scope=scope_for(principal.issuer,principal.subject)
@@ -528,7 +621,8 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
             resolve_run=run_repository,configuration=RunDisplayWireConfiguration(256,200000,400000))
         register_scoped_result_routes(app,reader,history_configuration)
     from .account_cleanup_routes import register_account_cleanup_routes
-    register_account_cleanup_routes(app,None if cleanup_runtime is None else cleanup_runtime.gateway(config,keys,base_access))
+    cleanup_access=base_access if cleanup_subjects is None else InvitedSubjects(auth_dir/'invited.json',cleanup_subjects)
+    register_account_cleanup_routes(app,None if cleanup_runtime is None else cleanup_runtime.gateway(config,keys,cleanup_access))
     return app
 
 

@@ -20,10 +20,10 @@ import psycopg
 from psycopg import sql
 
 import migrate
-from cj_api.supabase_test_database import decode_uri,pin_ca,prepare_owned_session
+from cj_api.supabase_test_database import decode_uri,decode_hk_socket_uri,pin_ca,prepare_hk_socket_session,prepare_owned_session
 from cj_strict_json import reject_duplicates
 from deploy import recovery as local
-from .configuration import authorization,decoded
+from .configuration import authorization,decoded,local_database_target
 from . import staging
 
 
@@ -62,6 +62,13 @@ def lock(control):
 @contextmanager
 def operator():
     authorization()
+    if local_database_target():
+        config=decode_hk_socket_uri(os.environ['CJ_SUPABASE_OPERATOR_URI'],'cj')
+        with psycopg.connect(**config,autocommit=True,prepare_threshold=None) as connection:
+            prepare_hk_socket_session(connection,'cj')
+            connection.execute("SET TIME ZONE 'UTC'")
+            yield connection,config
+        return
     with pin_ca(os.environ['CJ_SUPABASE_CA_FILE']) as ca:
         config=dict(decode_uri(os.environ['CJ_SUPABASE_OPERATOR_URI'],operator=True),sslrootcert=ca.name)
         with psycopg.connect(**config,autocommit=True,prepare_threshold=None) as connection:

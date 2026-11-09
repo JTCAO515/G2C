@@ -20,17 +20,24 @@ VERSION='TRIP-structured-read.1'
 
 
 def create_local_structured_read_app(*,conninfo_path,auth_dir,run_context,max_response_bytes=1_000_000):
+    app=create_app()
+    database=LocalDatabase(conninfo_path,run_context=run_context,travel_context=True,needs_context=True)
+    register_local_structured_read_routes(app,database=database,auth_dir=auth_dir,max_response_bytes=max_response_bytes)
+    return app
+
+
+def register_local_structured_read_routes(app,*,database,auth_dir,max_response_bytes=1_000_000,selected_subjects=None):
+    run_context=database.run_context
     if os.environ.get('CJ_ENV')!='local' or run_context is None or type(max_response_bytes) is not int or max_response_bytes<1:
         raise CompositionUnavailable('explicit local structured read host required')
-    database=LocalDatabase(conninfo_path,run_context=run_context,travel_context=True,needs_context=True)
     def resolve(principal):
         owner=scope_for(principal.issuer,principal.subject);scope=trip_scope_for(owner)
         # Existing Trip host provisioning; no formal record/Proposal is created.
         with database.connect(owner) as conn:
             conn.execute('INSERT INTO cj_trip_scope(scope) VALUES(%s) ON CONFLICT DO NOTHING',(scope,))
         return lambda:database.connect(owner),scope
-    boundary=Boundary(account_checker_for(Path(auth_dir),database),resolve,structured=True)
-    app=create_app()
+    checker=account_checker_for(Path(auth_dir),database,selected_subjects=selected_subjects)
+    boundary=Boundary(checker,resolve,structured=True)
 
     def structured(trip):
         content=json.loads(trip.content);version=content.get('content_version')

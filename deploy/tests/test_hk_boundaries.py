@@ -37,6 +37,26 @@ def test_trial_and_explicit_environment_fail_closed(monkeypatch):
     with pytest.raises(ValueError):configuration.authorization()
 
 
+def test_hk_pg_business_gate_requires_signed_forward_only_backup(tmp_path,monkeypatch):
+    from deploy.hk import local_postgres
+    key=Ed25519PrivateKey.generate()
+    private=key.private_bytes(serialization.Encoding.Raw,serialization.PrivateFormat.Raw,serialization.NoEncryption())
+    public=key.public_key().public_bytes(serialization.Encoding.Raw,serialization.PublicFormat.Raw)
+    monkeypatch.setenv('CJ_BETA_RECOVERY_PRIVATE_B64',base64.b64encode(private).decode())
+    monkeypatch.setenv('CJ_BETA_RECOVERY_PUBLIC_B64',base64.b64encode(public).decode())
+    monkeypatch.delenv('CJ_BETA_DB_TARGET',raising=False)
+    local_postgres.require_serving(tmp_path)
+    monkeypatch.setenv('CJ_BETA_DB_TARGET','hk-local')
+    with pytest.raises(FileNotFoundError):local_postgres.require_serving(tmp_path)
+    marker=tmp_path/local_postgres.STATE
+    checkpoint.atomic(marker,dict(version='g2c-hk-local.1',state='BACKUP_REQUIRED'))
+    with pytest.raises(ValueError,match='manual backup gate'):local_postgres.require_serving(tmp_path)
+    checkpoint.atomic(marker,dict(version='g2c-hk-local.1',state='FORWARD_ONLY'))
+    local_postgres.require_serving(tmp_path)
+    value=json.loads(marker.read_bytes());value['value']['state']='BACKUP_REQUIRED';marker.write_text(json.dumps(value))
+    with pytest.raises(ValueError,match='signature'):local_postgres.require_serving(tmp_path)
+
+
 def test_shared_budget_transfer_keeps_unknown_and_fences_stale_instances(tmp_path,monkeypatch):
     monkeypatch.setattr(transfer,'MAC_ROOT',tmp_path/'mac')
     monkeypatch.setattr(transfer,'HK_ROOT',tmp_path/'hk')
@@ -200,13 +220,15 @@ def test_typed_policy_is_optional_and_api_file_only(tmp_path):
 
 def test_typed_run_policy_requires_original_worker_file_and_mandatory_keys(tmp_path):
     name=configuration.MEMORY_RUN_POLICY
+    credential=configuration.ASSEMBLY_RUN_CREDENTIAL_SUBJECTS
+    streaming=configuration.ASSEMBLY_MODEL_STREAM_SUBJECTS
     required={k:'synthetic-value' for k in configuration.SECRET_FILES['worker']['worker']}
     path=tmp_path/'worker.env'
-    for values,accepted in ((required,True),({**required,name:'synthetic-policy'},True),
+    for values,accepted in ((required,True),({**required,name:'synthetic-policy',credential:'[]',streaming:'[]'},True),
                             ({name:'synthetic-policy'},False),({**required,configuration.TYPED_POLICY:'wrong-role'},False)):
         path.write_text('\n'.join(k+'='+v for k,v in values.items())+'\n');path.chmod(0o600)
         with patch.dict(os.environ):
-            for key in {*required,name,configuration.TYPED_POLICY}:os.environ.pop(key,None)
+            for key in {*required,name,credential,streaming,configuration.TYPED_POLICY}:os.environ.pop(key,None)
             if accepted:
                 configuration.load_secret_environment('worker',root=tmp_path)
                 assert all(os.environ[k]==v for k,v in values.items())
@@ -216,11 +238,12 @@ def test_typed_run_policy_requires_original_worker_file_and_mandatory_keys(tmp_p
                 with pytest.raises(ValueError):configuration.load_secret_environment('worker',root=tmp_path)
                 assert all(key not in os.environ for key in values)
     api={k:'synthetic-value' for k in configuration.SECRET_FILES['api']['api']}
-    (tmp_path/'api.env').write_text('\n'.join(k+'='+v for k,v in {**api,name:'wrong-role'}.items())+'\n')
-    (tmp_path/'api.env').chmod(0o600)
-    with patch.dict(os.environ):
-        for key in {*api,name}:os.environ.pop(key,None)
-        with pytest.raises(ValueError):configuration.load_secret_environment('api',root=tmp_path)
+    for worker_only in (name,credential,streaming):
+        (tmp_path/'api.env').write_text('\n'.join(k+'='+v for k,v in {**api,worker_only:'wrong-role'}.items())+'\n')
+        (tmp_path/'api.env').chmod(0o600)
+        with patch.dict(os.environ):
+            for key in {*api,worker_only}:os.environ.pop(key,None)
+            with pytest.raises(ValueError):configuration.load_secret_environment('api',root=tmp_path)
 
 
 def test_worker_typed_runtime_invites_role_and_database_capability(tmp_path,monkeypatch):
@@ -276,6 +299,41 @@ def test_worker_typed_runtime_invites_role_and_database_capability(tmp_path,monk
         with patch.object(configuration,'SupabaseTestDatabase') as database:
             runtime.database();assert database.call_args.kwargs['travel_context'] is False
     finally:runtime.close()
+
+    pair=['m4-synthetic-660-0123456789ab-'+language for language in ('zh','en')]
+    monkeypatch.setenv('CJ_BETA_SUBJECTS_JSON',json.dumps([who,*pair]))
+    monkeypatch.setenv(configuration.ASSEMBLY_SUBJECTS,json.dumps(pair))
+    for subject in pair:
+        collection['collection']['profiles'][subject]=profile
+        collection['travel_contexts'][subject]=[]
+        policy['selections'][subject]=policy['selections'][who]
+    choose(policy)
+    runtime=configuration.Runtime.load(tmp_path/'assembly-default',worker=True)
+    try:assert runtime.assembly_run_credential_subjects==runtime.assembly_model_stream_subjects==frozenset()
+    finally:runtime.close()
+    name=configuration.ASSEMBLY_RUN_CREDENTIAL_SUBJECTS
+    for invalid in ([],pair[:1],[pair[0],pair[0]],[who,pair[1]],[*pair,who]):
+        monkeypatch.setenv(name,json.dumps(invalid))
+        with pytest.raises(ValueError,match='assembly_run_credential_pair'):
+            configuration.Runtime.load(tmp_path/'invalid-credential-pair',worker=True)
+    monkeypatch.setenv(name,json.dumps(pair[::-1]))
+    with pytest.raises(ValueError,match='assembly_run_credential_pair'):
+        configuration.Runtime.load(tmp_path/'wrong-credential-role')
+    runtime=configuration.Runtime.load(tmp_path/'approved-credential-pair',worker=True)
+    try:assert runtime.assembly_run_credential_subjects==frozenset(pair)
+    finally:runtime.close()
+    name=configuration.ASSEMBLY_MODEL_STREAM_SUBJECTS
+    for invalid in ([],pair[:1],[pair[0],pair[0]],[who,pair[1]],[*pair,who]):
+        monkeypatch.setenv(name,json.dumps(invalid))
+        with pytest.raises(ValueError,match='assembly_model_stream_pair'):
+            configuration.Runtime.load(tmp_path/'invalid-stream-pair',worker=True)
+    monkeypatch.setenv(name,json.dumps(pair))
+    runtime=configuration.Runtime.load(tmp_path/'approved-stream-pair',worker=True)
+    try:assert runtime.assembly_model_stream_subjects==frozenset(pair)
+    finally:runtime.close()
+    monkeypatch.delenv(configuration.ASSEMBLY_RUN_CREDENTIAL_SUBJECTS)
+    with pytest.raises(ValueError,match='assembly_model_stream_pair'):
+        configuration.Runtime.load(tmp_path/'wrong-stream-role')
 
 
 def test_api_typed_message_subjects_require_private_policy_and_role(tmp_path,monkeypatch):

@@ -9,7 +9,7 @@ owner or scope from request data. Recovery rules (ADR-0003):
 - a delivery is acknowledged only after RUN holds a terminal status.
 """
 from dataclasses import dataclass
-from contextlib import contextmanager, ExitStack
+from contextlib import contextmanager, ExitStack, nullcontext
 import json
 
 # The worker must be ready (or fail startup) before accepting any work (#176).
@@ -102,7 +102,7 @@ class Outcome:
 
 
 class RunWorker:
-    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None, memory=None, message_context=None, tools=None, edit_publisher=None,edit_results=False,place_sources=None,memory_history=False,history_adapter=None):
+    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None, memory=None, message_context=None, tools=None, edit_publisher=None,edit_results=False,place_sources=None,memory_history=False,history_adapter=None,execution_lease=nullcontext,owned_transaction_lease=None):
         """`messages`: cj_message.domain.Service and `runs`: cj_run.core.Service, both bound to `scope`.
 
         `drafts`: optional cj_agent.draft.DraftPublisher for this user's TRIP scope; messages
@@ -112,6 +112,8 @@ class RunWorker:
         self.needs_lease = needs_lease
         self.budget_exit = budget_exit
         self.execution_guard = execution_guard
+        self.execution_lease = execution_lease
+        self.owned_transaction_lease = owned_transaction_lease
         self.memory = memory
         self.memory_history=memory_history
         self.history_adapter=history_adapter
@@ -130,7 +132,8 @@ class RunWorker:
             if receipt.conversation_id in blocked:
                 outcomes.append(Outcome(receipt.message_id, receipt.run_id, 'waiting'))
                 continue
-            outcome = self._one(receipt)
+            with self.execution_lease():
+                outcome = self._one(receipt)
             if outcome.status == 'waiting':
                 blocked.add(receipt.conversation_id)
             outcomes.append(outcome)
@@ -355,13 +358,17 @@ class RunWorker:
         if self.execution_guard is not None:
             self.execution_guard(binding)
         messages, runs, provider, drafts = self.messages, self.runs, self.provider, self.drafts
-        with runs.repository.worker_lease(binding) as check:
+        with runs.repository.worker_lease(binding) as check, ExitStack() as leases:
             if check is None:
                 return Outcome(receipt.message_id, receipt.run_id, 'waiting')
+            transaction = runs.repository.transaction
+            if self.owned_transaction_lease is not None:
+                transaction = leases.enter_context(self.owned_transaction_lease())
+
             class OwnedRepository:
                 @contextmanager
                 def transaction(self):
-                    with runs.repository.transaction() as tx:
+                    with transaction() as tx:
                         check()
                         yield tx
                         check()

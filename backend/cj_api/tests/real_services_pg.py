@@ -1,8 +1,10 @@
 """Real PG/RUN/Meter with native HTTP fixtures; no live key/network/cost."""
 import asyncio,json,os,time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from contextlib import contextmanager
 from datetime import datetime,timezone
+from threading import Event
 from unittest.mock import patch
 
 import httpx
@@ -21,11 +23,13 @@ from cj_run.step_usage import ledger_scope_for
 import local_history_pg as harness
 import local_run_context as operator
 import run_worker
-from test_m4_real_services import turn_sse,KEY,NOW
+from test_m4_real_services import sse,turn_sse,KEY,NOW
 
 
 def exercise(auth,conninfo):
-    subjects=['m4-synthetic-'+v for v in ('ok','limit','unknown','malformed','late','permission','revoke','repeat','tail','tailbad','batch','batchfail','stop','guard-unknown')]
+    subjects=['m4-synthetic-'+v for v in ('ok','limit','unknown','malformed','late','permission','revoke','repeat','tail','tailbad','batch','batchfail','stop','guard-unknown','progress','run-commit-unknown','stream','stream-mixed')]
+    assembly_pair=tuple('m4-synthetic-660-0123456789ab-'+lang for lang in ('zh','en'))
+    subjects.extend(assembly_pair)
     harness.dev_auth.init(auth,subjects)
     now=int(time.time());profiles={}
     for subject in subjects:
@@ -53,10 +57,55 @@ def exercise(auth,conninfo):
         return harness.expect(client.post('/v1/messages',content=raw,headers={**headers[s],'Content-Type':'application/octet-stream'}))['receipt']
     for subject in subjects:
         budget=AuthorizationBudget(auth.parent/subject,clock=lambda:NOW)
+        legacy_stream=subject.endswith(('stream','stream-mixed'))
+        incremental=legacy_stream or subject in assembly_pair
+        mixed=subject.endswith('stream-mixed')
+        paused,release=Event(),Event()
+        prefix='Synthetic visible answer before the provider completes; '
+        suffix='the final fragment follows.'
+
+        class PausedAnswer(httpx.SyncByteStream):
+            def __iter__(self):
+                body=sse(tool=mixed).splitlines(keepends=True)
+                if mixed:
+                    first=json.loads(body[0][6:])
+                    first['choices'][0]['delta']={'content':prefix}
+                else:
+                    first=json.loads(body[0][6:])
+                    first['id']='chatcmpl-synthetic-answer'
+                    first['choices'][0]['delta']={'content':prefix}
+                yield ('data: '+json.dumps(first)+'\n\n').encode()
+                paused.set()
+                if not release.wait(12):raise TimeoutError('synthetic partial response release expired')
+                if mixed:
+                    yield ''.join(body).encode()
+                else:
+                    first['choices'][0]['delta']={'content':suffix}
+                    yield ('data: '+json.dumps(first)+'\n\n').encode()
+                    yield ''.join(body[2:]).replace('chatcmpl-synthetic','chatcmpl-synthetic-answer').encode()
+
         def response(request):
             model_calls.append(subject)
-            if subject.endswith('unknown'):raise httpx.ReadTimeout('synthetic unknown')
+            if subject.endswith('unknown') and not subject.endswith('run-commit-unknown'):
+                raise httpx.ReadTimeout('synthetic unknown')
             body=json.loads(request.content)
+            if incremental:
+                assert body['tool_choice']=='auto' and body['parallel_tool_calls']
+                assert 'response_format' not in body
+                if mixed:return httpx.Response(200,stream=PausedAnswer())
+                if body['messages'][-1]['role']!='tool':
+                    data=sse(tool=True).splitlines(keepends=True)
+                    first=json.loads(data[0][6:])
+                    calls=first['choices'][0]['delta']['tool_calls']
+                    second=dict(calls[0],index=1,id='call_second',function=dict(name='place_search',
+                        arguments=json.dumps(dict(keyword='synthetic-two',city='北京',page=1,page_size=1))))
+                    calls.append(second)
+                    return httpx.Response(200,stream=httpx.ByteStream(('data: '+json.dumps(first)+'\n'+''.join(data[1:])).encode()))
+                assistant,*replies=body['messages'][-3:]
+                assert [c['function']['name'] for c in assistant['tool_calls']]==['place_search','place_search']
+                assert [r['tool_call_id'] for r in replies]==[c['id'] for c in assistant['tool_calls']]
+                assert [json.loads(r['content'])['results'][0]['index'] for r in replies]==[0,1]
+                return httpx.Response(200,stream=PausedAnswer())
             assert body['tool_choice']=={'type':'function','function':{'name':M4_TURN_FUNCTION_V2}}
             assert 'response_format' not in body
             follow=any(m['role']=='tool' and 'tool_call_id' in m for m in body['messages'])
@@ -100,7 +149,7 @@ def exercise(auth,conninfo):
             return httpx.Response(200,stream=httpx.ByteStream(payload.encode()))
         model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),budget,transport=httpx.MockTransport(response))
         writes=[]
-        if subject.endswith('late'):model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),budget)
+        if subject.endswith(('late','progress')):model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),budget)
         class Writer:
             def __init__(self):self.transport=self
             def write(self,raw):writes.append(raw)
@@ -109,7 +158,9 @@ def exercise(auth,conninfo):
         async def handshake(*args,**kwargs):
             await asyncio.sleep(1.1)
             return None,Writer()
-        services=RealServices(model,KEY,frozenset(subjects));tools=RealTools(services)
+        services=RealServices(model,KEY,frozenset(subjects))
+        tools=RealTools(services,streaming_subject=subject if legacy_stream else None,
+                        assembly_streaming_subjects=frozenset(assembly_pair))
         db=LocalDatabase(conninfo,run_context=profiles[subject][1])
         opened = []
         open_runtime = db._open_runtime_connection
@@ -124,6 +175,48 @@ def exercise(auth,conninfo):
             if subject.endswith('late'):
                 with patch('cj_agent.provider.asyncio.open_connection',handshake):
                     outcomes=run_worker.run_once(db,model,auth,tools_configuration=tools,real_services=services,account_admission=True)
+            elif incremental:
+                with ThreadPoolExecutor(max_workers=1) as pool:
+                    original=pool.submit(run_worker.run_once,db,model,auth,tools_configuration=tools,
+                                         real_services=services,account_admission=True)
+                    try:
+                        assert paused.wait(10)
+                        assert budget.inspect()[-1]['state']=='INTENT'
+                        running=harness.expect(client.get('/v1/run-display',params=dict(message_id=subject),headers=headers[subject]))['snapshot']
+                        assert running['run_id']==receipt['run_id'] and running['status']=='running'
+                        assert 'Synthetic visible answer' in running['text'] and suffix not in running['text']
+                    finally:release.set()
+                    outcomes=original.result(timeout=15)
+            elif subject.endswith('progress'):
+                sent,release=Event(),Event()
+                body=turn_sse(compact=True).replace('"finish_reason": "tool_calls"','"finish_reason": "stop"').encode()
+                response_bytes=(b'HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nContent-Length: '+
+                                str(len(body)).encode()+b'\r\n\r\n'+body)
+
+                class PausedReader:
+                    async def read(self, size):
+                        if not await asyncio.to_thread(release.wait,15):
+                            raise TimeoutError('synthetic response release expired')
+                        return response_bytes
+
+                class SentWriter(Writer):
+                    async def drain(self):
+                        sent.set()
+
+                async def paused_handshake(*args,**kwargs):
+                    return PausedReader(),SentWriter()
+
+                with patch('cj_agent.provider.asyncio.open_connection',paused_handshake),ThreadPoolExecutor(max_workers=1) as pool:
+                    original=pool.submit(run_worker.run_once,db,model,auth,tools_configuration=tools,
+                                         real_services=services,account_admission=True)
+                    try:
+                        assert sent.wait(10)
+                        assert budget.inspect()[0]['state']=='INTENT'
+                        running=harness.expect(client.get('/v1/run-display',params=dict(message_id=subject),headers=headers[subject]))
+                        assert running['snapshot']['status']=='running' and running['snapshot']['text']==''
+                    finally:
+                        release.set()
+                    outcomes=original.result(timeout=15)
             elif subject.endswith('guard-unknown'):
                 from cj_api.local_account_admission_v2 import retired_in_transaction
                 original_chunks = model._chunks
@@ -166,7 +259,7 @@ def exercise(auth,conninfo):
                         pass
                     else:
                         raise AssertionError('lost commit acknowledgement must remain unknown')
-                assert lost and len(model_calls) == before_models
+                assert lost and scoped_connection.closed and len(model_calls) == before_models
                 original_attempts = budget.inspect()
                 assert [(row['kind'], row['state']) for row in original_attempts] == [('model','INTENT')]
                 with db.connect(scope_for(ISSUER,subject)) as connection:
@@ -177,9 +270,91 @@ def exercise(auth,conninfo):
                 outcomes = run_worker.run_once(db,model,auth,tools_configuration=tools,real_services=services,account_admission=True)
                 assert [(outcome.run_id, outcome.status) for outcome in outcomes] == [(receipt['run_id'],'unknown')]
                 assert budget.inspect() == original_attempts and len(model_calls) == before_models
+            elif subject.endswith('run-commit-unknown'):
+                from cj_run.postgres import CommitUnknown as RunCommitUnknown, Transaction
+                publication_connection = None
+                original_put = Transaction.put
+                original_commit = psycopg.Connection.commit
+
+                def capture_publication(tx, state):
+                    nonlocal publication_connection
+                    original_put(tx, state)
+                    if state.events[-1].kind == 'text_delta':
+                        publication_connection = tx.cur.connection
+
+                def commit_without_ack(connection):
+                    original_commit(connection)
+                    if connection is publication_connection:
+                        raise psycopg.OperationalError('synthetic RUN publication commit acknowledgement lost')
+
+                with patch.object(Transaction,'put',capture_publication),patch.object(psycopg.Connection,'commit',commit_without_ack):
+                    try:
+                        run_worker.run_once(db,model,auth,tools_configuration=tools,real_services=services,account_admission=True)
+                    except RunCommitUnknown:
+                        pass
+                    else:
+                        raise AssertionError('lost RUN commit acknowledgement must remain unknown')
+                assert publication_connection is not None and publication_connection.closed
+                original_attempts = budget.inspect()
+                assert model.calls==1 and len(tool_calls)==before+1
+                assert [(row['kind'],row['state']) for row in original_attempts]==[
+                    ('model','RECEIVED'),('place','RECEIVED')]
+                with db.connect(scope_for(ISSUER,subject)) as connection:
+                    assert connection.execute('SELECT status FROM cj_run_record WHERE run_id=%s',
+                                              (receipt['run_id'],)).fetchone()==('running',)
+                outcomes=run_worker.run_once(db,model,auth,tools_configuration=tools,real_services=services,account_admission=True)
+            elif subject.endswith('ok'):
+                from cj_api.composition import CompositionUnavailable
+                from cj_run.core import Service as RunService
+
+                scope = scope_for(ISSUER, subject)
+                scoped_cursor = db.scoped_cursor
+                retained = []
+
+                @contextmanager
+                def retain_fixture_scope(scope, *, connection=None):
+                    assert connection is not None
+                    retained.append(connection)
+                    with scoped_cursor(scope, connection=connection) as cursor:
+                        yield cursor
+                        cursor.execute("SELECT set_config('cj.usage_scope', 'stale-fixture-scope', false)")
+
+                with patch.object(db, 'scoped_cursor', retain_fixture_scope):
+                    try:
+                        run_worker.run_once(db,model,auth,tools_configuration=tools,real_services=services,account_admission=True)
+                    except CompositionUnavailable:
+                        pass
+                    else:
+                        raise AssertionError('retained scope must stop the original before RUN creation')
+                assert retained and retained[0].closed and not budget.inspect() and model.calls == 0
+                with db.connect(scope) as connection:
+                    assert connection.execute('SELECT status FROM cj_run_record WHERE run_id=%s',
+                                              (receipt['run_id'],)).fetchone() is None
+                    assert connection.execute('SELECT acknowledged FROM cj_message_delivery WHERE run_id=%s',
+                                              (receipt['run_id'],)).fetchone() == (False,)
+
+                opened.clear()
+                stages = []
+                accept, apply = RunService.accept, RunService.apply
+
+                def observe_accept(service, binding):
+                    state = accept(service, binding)
+                    stages.append((state.status, len(opened)))
+                    return state
+
+                def observe_apply(service, event):
+                    state = apply(service, event)
+                    if event.kind == 'started':
+                        stages.append(('started', len(opened)))
+                    return state
+
+                with patch.object(RunService, 'accept', observe_accept), patch.object(RunService, 'apply', observe_apply):
+                    outcomes=run_worker.run_once(db,model,auth,tools_configuration=tools,real_services=services,account_admission=True)
+                assert stages == [('queued', len(subjects) + 5), ('started', len(subjects) + 7)], stages
+                print('PASS original queued/started scope checkouts, retained scope refused before RUN and Meter')
             else:outcomes=run_worker.run_once(db,model,auth,tools_configuration=tools,real_services=services,account_admission=True)
             if subject.endswith('ok'):
-                assert len(opened) <= 110, f'excessive worker database checkouts: {len(opened)}'
+                assert len(opened) <= 50, f'excessive worker database checkouts: {len(opened)}'
             if subject.endswith(('ok','stop')):
                 assert outcomes[0].status=='completed',(outcomes,budget.inspect(),model.calls,len(tool_calls))
                 assert model.calls==2 and len(tool_calls)==before+1
@@ -194,12 +369,16 @@ def exercise(auth,conninfo):
                                                 run_context=profiles[subject][1], account_admission=True,
                                                 existing_display_reads=True)
                     query = dict(message_id=subject)
+                    legacy_stream = client.get('/v1/run-events',params=query,headers=headers[subject])
                     before_display = len(opened)
                     with TestClient(read_app) as reader, patch.object(
                             db, 'provision', side_effect=AssertionError('existing display must not provision')):
                         exact = harness.expect(reader.get('/v1/run-display', params=query, headers=headers[subject]))
                         assert exact['snapshot'] == display['snapshot']
                         assert len(opened) - before_display <= 12
+                        protected_stream = reader.get('/v1/run-events',params=query,headers=headers[subject])
+                        assert protected_stream.status_code == legacy_stream.status_code == 200
+                        assert protected_stream.content == legacy_stream.content
                         harness.expect(reader.get('/v1/run-display', params=query, headers=headers[subjects[1]]),503)
                         original_read = message_domain.read_active_message
                         invitations = auth/'invited.json'
@@ -242,12 +421,28 @@ def exercise(auth,conninfo):
                     assert display['snapshot']['text_state']=='complete' and 'Needs verification.' in display['snapshot']['text']
             elif subject.endswith('limit'):
                 assert outcomes[0].status=='failed' and model.calls==1 and len(tool_calls)==before
+            elif subject.endswith('run-commit-unknown'):
+                assert [(outcome.run_id,outcome.status) for outcome in outcomes]==[(receipt['run_id'],'unknown')]
+                assert model.calls==1 and len(tool_calls)==before+1 and budget.inspect()==original_attempts
+                with db.connect(scope_for(ISSUER,subject)) as connection:
+                    assert connection.execute('SELECT acknowledged FROM cj_message_delivery WHERE run_id=%s',
+                                              (receipt['run_id'],)).fetchone()==(True,)
             elif subject.endswith(('unknown','malformed')):
                 assert outcomes[0].status=='unknown' and model.calls==1 and len(tool_calls)==before
                 assert budget.inspect()[0]['state']==('INTENT' if subject.endswith('unknown') else 'RECEIVED')
             elif subject.endswith('late'):
                 assert outcomes[0].status=='failed' and model.calls==1 and len(tool_calls)==before and not writes
                 assert budget.inspect()[0]['state']=='INTENT'
+            elif subject.endswith('progress'):
+                assert outcomes[0].status=='completed' and model.calls==len(writes)==1 and len(tool_calls)==before
+                assert budget.inspect()[0]['state']=='RECEIVED'
+            elif incremental:
+                assert [(outcome.run_id,outcome.status) for outcome in outcomes]==[(receipt['run_id'],'unknown' if mixed else 'completed')]
+                assert model.calls==(1 if mixed else 2) and len(tool_calls)==before+(0 if mixed else 2)
+                expected=[('model','INTENT')] if mixed else [('model','RECEIVED'),('place','RECEIVED'),('place','RECEIVED'),('model','RECEIVED')]
+                assert [(r['kind'],r['state']) for r in budget.inspect()]==expected
+                display=harness.expect(client.get('/v1/run-display',params=dict(message_id=subject),headers=headers[subject]))['snapshot']
+                assert 'Synthetic visible answer' in display['text'] and (prefix+suffix in display['text']) is not mixed
             elif subject.endswith('permission'):
                 assert outcomes[0].status=='failed' and model.calls==1 and len(tool_calls)==before+1
                 assert budget.inspect()[-1]['receipt']['provider_code']=='10012'
@@ -262,6 +457,10 @@ def exercise(auth,conninfo):
             assert operations and len({attempt for _,attempt in operations})==len(operations)
             ledger=decode(conn.execute('SELECT ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(account,)).fetchone()[0])
             assert ledger.attempts
+            if incremental:
+                assert all((attempt.receipt is None)==mixed for attempt in ledger.attempts.values())
+                assert conn.execute('SELECT acknowledged FROM cj_message_delivery WHERE run_id=%s',
+                                    (receipt['run_id'],)).fetchone()==(True,)
     print('PASS signed API -> registered native model/tool/model -> real PG/RUN/Meter, live receipt references, owner isolation, limit/revocation-before-tool, UNKNOWN original read/no resend; HTTP fixtures only')
 
 

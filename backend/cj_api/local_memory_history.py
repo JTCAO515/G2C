@@ -75,7 +75,7 @@ class OriginalDecisions:
         self.boundary=TripBoundary(account_checker_for(auth_dir,database),resolve,structured=True)
 
     def _digest(self,binding,query):
-        try:return read_original_digest(self.boundary,self.credential,self.principal(),binding.scope,query).decode('ascii')
+        try:return read_original_digest(self.boundary,self.credential(),self.principal(),binding.scope,query).decode('ascii')
         except (TripDenied,TripConflict,ValueError) as error:raise RuntimeDenied('original model decision unavailable') from error
         except (OperationWithheld,CommitUnknown,DatabaseError) as error:raise RuntimeUnknown('original model decision uncertain') from error
 
@@ -113,7 +113,7 @@ class OriginalDecisions:
                 if actual is None or actual.version!=trip['version'] or json.loads(actual.content)!=trip['content']:
                     raise TripDenied('original Trip model bytes differ')
                 return sha256(actual.content).hexdigest().encode('ascii')
-            try:content_sha=self.boundary.with_operation(self.credential,read).decode('ascii')
+            try:content_sha=self.boundary.with_operation(self.credential(),read).decode('ascii')
             except (TripDenied,TripConflict,ValueError) as error:raise RuntimeDenied('original Trip model context unavailable') from error
             except (OperationWithheld,CommitUnknown,DatabaseError) as error:raise RuntimeUnknown('original Trip model context uncertain') from error
             digests.append(self._digest(binding,DecisionQuery(trip['trip_id'],trip['version'],content_sha)))

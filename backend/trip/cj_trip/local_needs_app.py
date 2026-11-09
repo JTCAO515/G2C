@@ -28,10 +28,19 @@ from .domain import Conflict,Denied,identifier
 
 
 def create_local_needs_app(*,conninfo_path,auth_dir,run_context,confirmation_signer,max_response_bytes=1_000_000):
+    app=create_app()
+    database=LocalDatabase(conninfo_path,run_context=run_context,travel_context=True,needs_context=True)
+    register_local_needs_routes(app,database=database,auth_dir=auth_dir,
+        confirmation_signer=confirmation_signer,max_response_bytes=max_response_bytes)
+    return app
+
+
+def register_local_needs_routes(app,*,database,auth_dir,confirmation_signer,max_response_bytes=1_000_000,
+                                planning_only=False,selected_subjects=None):
+    run_context=database.run_context
     if os.environ.get('CJ_ENV')!='local' or type(confirmation_signer) is not ConfirmationSigner or run_context is None or type(max_response_bytes) is not int or max_response_bytes<1:
         raise CompositionUnavailable('explicit local source-bound Trip host required')
-    database=LocalDatabase(conninfo_path,run_context=run_context,travel_context=True,needs_context=True)
-    checker=account_checker_for(Path(auth_dir),database)
+    checker=account_checker_for(Path(auth_dir),database,selected_subjects=selected_subjects)
     def resolve(principal):
         owner=scope_for(principal.issuer,principal.subject)
         return lambda:database.connect(owner),trip_scope_for(owner)
@@ -56,7 +65,6 @@ def create_local_needs_app(*,conninfo_path,auth_dir,run_context,confirmation_sig
                 if repository.needs_actions is not service or repository.needs_edits is not edits or repository.source_initializations is not initializations:raise Denied('source action binding changed')
             return repository,principal,guard
     boundary=NeedsBoundary(checker,resolve,confirmation_signer,structured=True)
-    app=create_app()
     def query(request,key):
         values=list(request.query_params.multi_items())
         if len(values)!=1 or values[0][0]!=key:raise ValueError('exact query required')
@@ -154,6 +162,9 @@ def create_local_needs_app(*,conninfo_path,auth_dir,run_context,confirmation_sig
     async def edit_query(request:Request):return await read(request,'preparation','request_id')
     @app.post('/v1/trip-needs-saves')
     async def edit_save(request:Request):return await edit_write(request,'save')
+    if planning_only:
+        return
+
     @app.post('/v1/trip-source-initializations')
     async def source_prepare(request:Request):return await edit_write(request,'source_prepare')
     @app.get('/v1/trip-source-initializations')

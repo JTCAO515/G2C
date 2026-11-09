@@ -5,12 +5,17 @@ from datetime import datetime
 import hashlib
 import json
 import logging
+from psycopg.errors import LockNotAvailable
 from .core import Binding, State, Event, Cursor, Conflict, Denied, ResyncRequired, WorkerOwnershipLost, advance, page
 from .usage_binding import UsageBinding
 
 
 class RecoveryReadUnavailable(Exception):
     """Strict read cleanup failed; no recovered value may be published."""
+
+
+class RunScopeBusy(LockNotAvailable):
+    """The RUN scope lock statement timed out before any RUN state was read."""
 
 
 class CommitUnknown(Exception):
@@ -33,7 +38,7 @@ class JobCursor:
 
 
 class Repository:
-    def __init__(self, connect, scope, *, expires_at, statement_timeout_ms, lock_timeout_ms):
+    def __init__(self, connect, scope, *, expires_at, statement_timeout_ms, lock_timeout_ms, connect_worker=None):
         if connect is None or type(scope) is not str or not scope.strip():
             raise ValueError('trusted scope and connection factory required')
         if not isinstance(expires_at, datetime) or expires_at.tzinfo is None or expires_at.utcoffset() is None:
@@ -42,6 +47,7 @@ class Repository:
             if type(n) is not int or not 1 <= n <= 2147483647:
                 raise ValueError('explicit positive timeout required')
         self.connect, self.scope, self.expires_at = connect, scope, expires_at
+        self.connect_worker = connect_worker
         self.statement_timeout_ms, self.lock_timeout_ms = statement_timeout_ms, lock_timeout_ms
 
     def snapshot_optional(self,binding):
@@ -62,7 +68,8 @@ class Repository:
         unsigned = int.from_bytes(hashlib.sha256(raw).digest()[:8], 'big')
         key = unsigned if unsigned < 1 << 63 else unsigned - (1 << 64)
         high, low = unsigned >> 32, unsigned & 0xffffffff
-        conn = self.connect()
+        connect = self.connect if self.connect_worker is None else self.connect_worker
+        conn = connect()
         cur = None; acquired = False; active = False; failed = False
         def budget():
             cur.execute("SELECT set_config('statement_timeout',%s,true), set_config('lock_timeout',%s,true)",
@@ -128,8 +135,9 @@ class Repository:
                 try: logging.getLogger(__name__).warning('run_worker_lease_cleanup_failed')
                 except BaseException: pass
 
-    def transaction(self, *, require_clean_close=False):
-        return self._transaction(require_clean_close=require_clean_close,scope_lock=True)
+    def transaction(self, *, require_clean_close=False, borrowed_connection=None, validate_connection=None):
+        return self._transaction(require_clean_close=require_clean_close,scope_lock=True,
+                                 borrowed_connection=borrowed_connection,validate_connection=validate_connection)
 
     def job_transaction(self, *, require_clean_close=False,background_protocol=None):
         # Job rows have their own locks/physical lease. Taking the shared RUN
@@ -137,8 +145,9 @@ class Repository:
         return self._transaction(require_clean_close=require_clean_close,scope_lock=False,background_protocol=background_protocol)
 
     @contextmanager
-    def _transaction(self, *, require_clean_close,scope_lock,background_protocol=None):
-        conn = self.connect()
+    def _transaction(self, *, require_clean_close,scope_lock,background_protocol=None,
+                     borrowed_connection=None,validate_connection=None):
+        conn = self.connect() if borrowed_connection is None else borrowed_connection
         cur = None
         outcome = 'setup_failed'
         cleanup_error = None
@@ -164,11 +173,18 @@ class Repository:
                 bind_scope = getattr(conn, 'bind_scope', None)
                 if bind_scope is not None:
                     bind_scope(cur)
+                if validate_connection is not None:
+                    validate_connection(cur)
                 if background_protocol is not None:
                     cur.execute("SELECT set_config('cj.background_protocol',%s,true)",(background_protocol,))
                 cur.execute("SELECT set_config('statement_timeout',%s,true), set_config('lock_timeout',%s,true)",
                             (str(self.statement_timeout_ms), str(self.lock_timeout_ms)))
-                cur.execute('SELECT epoch,active FROM cj_run_scope WHERE scope=%s'+(' FOR UPDATE' if scope_lock else ''), (self.scope,))
+                try:
+                    cur.execute('SELECT epoch,active FROM cj_run_scope WHERE scope=%s'+(' FOR UPDATE' if scope_lock else ''), (self.scope,))
+                except LockNotAvailable as error:
+                    if scope_lock:
+                        raise RunScopeBusy(*error.args) from error
+                    raise
                 row = cur.fetchone()
                 if row is None or row[1] is not True:
                     raise Denied('scope unavailable')
@@ -187,15 +203,20 @@ class Repository:
         finally:
             if cur is not None:
                 cleanup(cur.close, 'cursor_close')
-            cleanup(conn.close, 'connection_close')
+            if borrowed_connection is None or outcome != 'committed' or cleanup_error is not None:
+                cleanup(conn.close, 'connection_close')
         if require_clean_close and cleanup_error is not None:
             if not isinstance(cleanup_error, Exception):
                 raise cleanup_error
             raise RecoveryReadUnavailable('RUN read cleanup failed') from None
 
-    def recover(self, binding, *, require_clean_close=False):
+    def recover(self, binding, *, require_clean_close=False, borrowed_connection=None, validate_connection=None):
         """Deterministic original-run read, never a worker execution authorization."""
-        transaction = (self.transaction(require_clean_close=True) if require_clean_close else self.transaction())
+        if borrowed_connection is not None:
+            transaction = self.transaction(require_clean_close=require_clean_close, borrowed_connection=borrowed_connection,
+                                           validate_connection=validate_connection)
+        else:
+            transaction = self.transaction(require_clean_close=True) if require_clean_close else self.transaction()
         with transaction as tx:
             state = tx.get(binding)
             result = Recovery(state, Cursor(binding, tx.epoch, state.sequence, 0),

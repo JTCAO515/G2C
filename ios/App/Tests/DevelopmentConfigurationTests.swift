@@ -8,6 +8,92 @@ private func token(subject: String = "fixture", signature: String = "synthetic")
     return "synthetic.\(payload).\(signature)"
 }
 
+struct DevelopmentBetaCompositionTests {
+    private static let endpoint = "https://api-beta.go2china.space"
+    private static let profile = [
+        "G2C_M4_BETA_COMPOSITION": "internal-v1", "G2C_M4_BETA_API": "1",
+        "G2C_DEV_API_BASE_URL": endpoint, "G2C_DEV_ACCOUNT_MODE": "1",
+        "G2C_DEV_CLEANUP_PROFILE": "device-v4", "G2C_DEV_OFFLINE_TRIP": "last-sync-v1",
+        "G2C_DEV_TRIP_MANUAL_PROFILE": "manual-v1", "G2C_DEV_FEEDBACK_PROFILE": "feedback-v1",
+        "G2C_DEV_NEEDS_PROFILE": "manual-v1", "G2C_DEV_NEEDS_ID": "needs-fixture",
+        "G2C_DEV_TRAVEL_PROFILE": #"{"version":"app-travel.1","travel_ids":["0123456789abcdef0123456789abcdef"]}"#,
+        "G2C_DEV_TYPED_MEMORY_PROFILE": #"{"version":"app-memory.2","subjects":["traveler"],"slots":{"food":{"kind":"preference","collection_allowed":true,"semantic_resolved":true}},"extents":["long_term","current"]}"#,
+        "G2C_DEV_TYPED_MEMORY_URL": endpoint, "G2C_DEV_MEMORY_ERASURE_URL": endpoint,
+    ]
+
+    @Test func compositionRequiresAnExplicitDeviceBuildAndEveryCapability() throws {
+        #expect(try DevelopmentBetaComposition.read([:]) == nil)
+        #if DEBUG && G2C_M4_DEVICE_ACCEPTANCE
+        let composition = try #require(try DevelopmentBetaComposition.read(Self.profile))
+        #expect(composition.endpoint.absoluteString == Self.endpoint)
+        #expect(composition.typedMemory.memoryEndpoint == composition.endpoint)
+        #expect(composition.typedMemory.travel.travel_ids == ["0123456789abcdef0123456789abcdef"])
+        #expect(composition.needs.needsID == "needs-fixture")
+        #expect(composition.offline.trusted)
+        for key in Self.profile.keys where key != DevelopmentBetaComposition.setting {
+            var incomplete = Self.profile
+            incomplete.removeValue(forKey: key)
+            #expect(throws: (any Error).self, "missing \(key)") { try DevelopmentBetaComposition.read(incomplete) }
+        }
+        #elseif DEBUG
+        #expect(throws: DevelopmentBetaComposition.Failure.invalidConfiguration) {
+            try DevelopmentBetaComposition.read(Self.profile)
+        }
+        #else
+        #expect(try DevelopmentBetaComposition.read(Self.profile) == nil)
+        #endif
+    }
+
+    #if DEBUG && G2C_M4_DEVICE_ACCEPTANCE
+    @Test func compositionRejectsCompetingWritersAndNonBetaEndpoints() throws {
+        let conflicts = [
+            "G2C_DEV_MESSAGE_PROFILE": "needs-planning-v1", "G2C_DEV_PROPOSAL_ID": "old-proposal",
+            "G2C_DEV_MEMORY_PROFILE": "{}", "G2C_DEV_MEMORY_MANAGEMENT_URL": Self.endpoint,
+            "G2C_DEV_MEMORY_CANDIDATE_URL": Self.endpoint, "G2C_DEV_MEMORY_HISTORY_PROFILE": "history-v1",
+            "G2C_DEV_NEEDS_PREVIEW": "synthetic-needs-v1", "G2C_DEV_PLACE_TOOLS": "synthetic-v1",
+            "G2C_DEV_FACT_TOOLS": "synthetic-fact-v1", "G2C_M4_LOCAL_HOST": "192.168.1.2",
+            "G2C_DEV_API_BASE_URL": "https://api-beta.go2china.space.evil.invalid",
+            "G2C_DEV_MEMORY_ERASURE_URL": "https://go2china.space",
+        ]
+        for (key, value) in conflicts {
+            var input = Self.profile
+            input[key] = value
+            #expect(throws: DevelopmentBetaComposition.Failure.invalidConfiguration, "conflict \(key)") {
+                try DevelopmentBetaComposition.read(input)
+            }
+        }
+        var typedHost = Self.profile
+        typedHost["G2C_DEV_TYPED_MEMORY_URL"] = "https://api-beta.go2china.space:444"
+        #expect(throws: DevelopmentTypedMemoryProfile.ConfigurationFailure.incompleteMode) {
+            try DevelopmentBetaComposition.read(typedHost)
+        }
+    }
+
+    @Test func compositionRequiresTheAccountAndRetirementBoundary() throws {
+        let bypasses = [
+            "G2C_M4_BETA_COMPOSITION": "true", "G2C_DEV_ACCOUNT_MODE": "0", "G2C_DEV_CLEANUP_PROFILE": "device-v3",
+            "G2C_DEV_TOKEN": try token(), "G2C_DEV_ACCOUNTS": "{\"injected\":\"token\"}",
+            "G2C_DEV_OFFLINE_WALL_OFFSET": "0", "G2C_DEV_OFFLINE_UPTIME_OFFSET": "0", "G2C_DEV_OFFLINE_TIME_TRUSTED": "1",
+        ]
+        for (key, value) in bypasses {
+            var input = Self.profile
+            input[key] = value
+            #expect(throws: DevelopmentBetaComposition.Failure.invalidConfiguration, "bypass \(key)") {
+                try DevelopmentBetaComposition.read(input)
+            }
+        }
+        let composition = try #require(try DevelopmentBetaComposition.read(Self.profile))
+        let owner = try #require(DevelopmentSessionConfiguration.restoring(endpoint: composition.endpoint,
+            token: token(subject: "owner"), proposalID: nil, approvedLocalHost: nil, approvedBetaAPI: true))
+        let other = try #require(DevelopmentSessionConfiguration.restoring(endpoint: composition.endpoint,
+            token: token(subject: "other"), proposalID: nil, approvedLocalHost: nil, approvedBetaAPI: true))
+        #expect(owner.environmentID == other.environmentID)
+        #expect(owner.accountID != other.accountID)
+        #expect(owner.proposalID == nil && other.proposalID == nil)
+    }
+    #endif
+}
+
 struct DevelopmentConfigurationTests {
     @Test func betaServiceRequiresTheExplicitDebugChoiceAndKeepsItsRestoreScope() throws {
         #if DEBUG

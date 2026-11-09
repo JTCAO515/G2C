@@ -119,15 +119,26 @@ import Observation
     private let lifetime: DevelopmentLifetime
     private let keys: ScopedMessageKeyProvider
 
-    init(configuration: DevelopmentSessionConfiguration, shell: ShellState, lease: DevelopmentSessionLease? = nil, offline: OfflineTripController? = nil, memoryExtensionsAllowed: Bool = false) throws {
+    init(configuration: DevelopmentSessionConfiguration, shell: ShellState, lease: DevelopmentSessionLease? = nil,
+         offline: OfflineTripController? = nil, memoryExtensionsAllowed: Bool = false,
+         betaComposition: DevelopmentBetaComposition? = nil) throws {
         let environment = ProcessInfo.processInfo.environment
+        if let betaComposition {
+            guard lease != nil, memoryExtensionsAllowed, configuration.endpoint == betaComposition.endpoint else {
+                throw DevelopmentBetaComposition.Failure.invalidConfiguration
+            }
+        } else if environment[DevelopmentBetaComposition.setting] != nil {
+            throw DevelopmentBetaComposition.Failure.invalidConfiguration
+        }
         let historyProfile = try DevelopmentMemoryHistoryProfile.read(environment)
         guard historyProfile == nil || lease != nil else { throw MemoryFailure.unconfigured }
-        let feedbackProfile = try DevelopmentFeedbackProfile.read(environment)
+        let feedbackProfile = try betaComposition?.feedback ?? DevelopmentFeedbackProfile.read(environment)
         let messageProfile=try DevelopmentMessageProfile.read(environment)
-        let typedMode = try DevelopmentTypedMode.read(environment,messageProfile:messageProfile)
+        let typedMode = try betaComposition?.typedMemory ?? DevelopmentTypedMode.read(environment,messageProfile:messageProfile)
         let erasureEndpoint: URL?
-        if environment["G2C_DEV_MEMORY_ERASURE_URL"] != nil {
+        if let betaComposition {
+            erasureEndpoint = betaComposition.endpoint
+        } else if environment["G2C_DEV_MEMORY_ERASURE_URL"] != nil {
             guard memoryExtensionsAllowed, lease != nil, typedMode != nil,
                   let endpoint = DevelopmentSessionConfiguration.readEndpoint(environment, key: "G2C_DEV_MEMORY_ERASURE_URL") else { throw MemoryFailure.unconfigured }
             erasureEndpoint = endpoint
@@ -138,12 +149,12 @@ import Observation
                   let endpoint = DevelopmentSessionConfiguration.readEndpoint(environment, key: "G2C_DEV_MEMORY_CANDIDATE_URL") else { throw MemoryFailure.unconfigured }
             candidateEndpoint = endpoint
         } else { candidateEndpoint = nil }
-        let needsProfile = try DevelopmentNeedsProfile.read(environment)
-        let tripEditingProfile = try DevelopmentTripEditingProfile.read(environment)
+        let needsProfile = try betaComposition?.needs ?? DevelopmentNeedsProfile.read(environment)
+        let tripEditingProfile = try betaComposition?.manualEditing ?? DevelopmentTripEditingProfile.read(environment)
         let tripDiscussions=messageProfile == .discussion,scopedEdits=messageProfile == .edit || messageProfile == .editResults
         let scopedResults=messageProfile == .editResults
-        let needsPlanning=messageProfile == .planning
-        let travelProfile=try needsPlanning ? DevelopmentTravelProfile.read(environment) : typedMode?.travel
+        let needsPlanning = betaComposition != nil || messageProfile == .planning
+        let travelProfile = try messageProfile == .planning ? DevelopmentTravelProfile.read(environment) : typedMode?.travel
         let answerProfile=try DevelopmentSessionConfiguration.toolAnswerProfile(environment)
         try messageProfile?.validate(typed:typedMode,needs:needsProfile,answer:answerProfile,
             travel:travelProfile,legacyProposal:configuration.proposalID != nil)
@@ -914,6 +925,7 @@ import Observation
     private let endpoint: URL
     private let approvedLocalHost: String?
     private let approvedBetaAPI: Bool
+    private let betaComposition: DevelopmentBetaComposition?
     private let proposalID: String?
     private let tokens: [String: String]
     private let persistence: KeychainSessionStore
@@ -936,7 +948,7 @@ import Observation
                 if self.cleanupWorkflow?.holdsBusinessFence != true {
                     self.trip = try DevelopmentTripHost(configuration: configuration, shell: self.shell,
                         lease: DevelopmentSessionLease(session: session, operation: operation), offline: self.offline,
-                        memoryExtensionsAllowed: self.cleanupWorkflow?.version == .v4)
+                        memoryExtensionsAllowed: self.cleanupWorkflow?.version == .v4, betaComposition: self.betaComposition)
                 }
                 if self.cleanupEnabled, let workflow = self.cleanupWorkflow {
                     Task { await workflow.enrollOnline() }
@@ -954,9 +966,10 @@ import Observation
     }()
 
     init(environment: [String: String], shell: ShellState) throws {
-        _ = try DevelopmentTripEditingProfile.read(environment)
+        let composition = try DevelopmentBetaComposition.read(environment)
+        if composition == nil { _ = try DevelopmentTripEditingProfile.read(environment) }
         guard environment["G2C_DEV_ACCOUNT_MODE"] == "1",
-              let endpoint = DevelopmentSessionConfiguration.readEndpoint(environment) else { throw SessionFailure.invalidConfiguration }
+              let endpoint = composition?.endpoint ?? DevelopmentSessionConfiguration.readEndpoint(environment) else { throw SessionFailure.invalidConfiguration }
         let tokens = try DevelopmentAccountInput.read(environment)
         let applicationID = try DevelopmentKeychainIdentity.read()
         let cleanupProfile = environment["G2C_DEV_CLEANUP_PROFILE"]
@@ -966,13 +979,14 @@ import Observation
         self.shell = shell; self.endpoint = endpoint; self.tokens = tokens
         approvedLocalHost = environment["G2C_M4_LOCAL_HOST"] // Already matched by readEndpoint above.
         approvedBetaAPI = environment["G2C_M4_BETA_API"] == "1" // Same immutable, validated endpoint choice.
+        betaComposition = composition
         proposalID = environment["G2C_DEV_PROPOSAL_ID"]
         let scope = try KeychainSessionScope(namespace: SessionNamespace(
             environment: DevelopmentSessionConfiguration.environmentNamespace(endpoint), slot: "M1.Development.Active"),
             applicationIdentifier: applicationID)
         let sdkStore = KeychainSessionStore(scope: scope, protection: .whenUnlockedThisDeviceOnly)
         persistence = sdkStore
-        if let profile = try DevelopmentOfflineProfile.read(environment) {
+        if let profile = try composition?.offline ?? DevelopmentOfflineProfile.read(environment) {
             let files = FileManager.default
             let support = try files.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
             // Resolve the OS-supplied container alias before adding App-owned

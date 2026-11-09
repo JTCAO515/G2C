@@ -1,6 +1,6 @@
 """Beta environment boundary. Persistent application secrets live only in 0600 env files."""
 import base64
-from dataclasses import dataclass
+from dataclasses import dataclass,field
 from datetime import datetime,timezone
 import json
 import os
@@ -33,14 +33,22 @@ SECRET_FILES={
 TYPED_POLICY='CJ_BETA_TYPED_MEMORY_POLICY_B64'
 MEMORY_RUN_POLICY='CJ_BETA_MEMORY_RUN_POLICY_B64'
 TYPED_MESSAGE_SUBJECTS='CJ_BETA_TYPED_MESSAGE_SUBJECTS_JSON'
+MODEL_STREAM_SUBJECT='CJ_BETA_MODEL_STREAM_SUBJECT'
+ASSEMBLY_SUBJECTS='CJ_BETA_ASSEMBLY_SUBJECTS_JSON'
+ASSEMBLY_RUN_CREDENTIAL_SUBJECTS='CJ_BETA_ASSEMBLY_RUN_CREDENTIAL_SUBJECTS_JSON'
+ASSEMBLY_MODEL_STREAM_SUBJECTS='CJ_BETA_ASSEMBLY_MODEL_STREAM_SUBJECTS_JSON'
+ASSEMBLY_PROBE_MESSAGE='CJ_BETA_ASSEMBLY_PROBE_MESSAGE_ID'
+ASSEMBLY_CLEANUP={'CJ_SUPABASE_CLEANUP_URI','CJ_BETA_CLEANUP_B64'}
 
 
 def load_secret_environment(role,*,root=Path('/run/secrets')):
     """Docker receives only paths; secret bytes enter this process, not Config.Env."""
     expected=SECRET_FILES[role];values={}
     for file,names in expected.items():
-        optional=({TYPED_POLICY,TYPED_MESSAGE_SUBJECTS} if role=='api' and file=='api' else
-                  {MEMORY_RUN_POLICY} if role=='worker' and file=='worker' else set())
+        optional=({TYPED_POLICY,TYPED_MESSAGE_SUBJECTS}|ASSEMBLY_CLEANUP if role=='api' and file=='api' else
+                  {MEMORY_RUN_POLICY,MODEL_STREAM_SUBJECT,ASSEMBLY_RUN_CREDENTIAL_SUBJECTS,ASSEMBLY_MODEL_STREAM_SUBJECTS,
+                   ASSEMBLY_PROBE_MESSAGE}
+                  if role=='worker' and file=='worker' else set())
         allowed=names|optional
         if any(name in os.environ for name in allowed):raise ValueError('persistent_container_secret_environment_refused')
         descriptor=os.open(Path(root)/(file+'.env'),os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK)
@@ -78,6 +86,23 @@ def authorization():
         raise ValueError('trial_or_database_authorization_expired')
 
 
+def local_database_target():
+    target=os.environ.get('CJ_BETA_DB_TARGET','supabase')
+    if target not in ('supabase','hk-local'):
+        raise ValueError('explicit beta database target required')
+    return target=='hk-local'
+
+
+def _worker_assembly_pair(key,worker,assembly_subjects,error):
+    if key not in os.environ:return frozenset()
+    selected=json.loads(os.environ[key])
+    if (not worker or not assembly_subjects or type(selected) is not list or len(selected)!=2
+            or any(type(subject) is not str for subject in selected)
+            or frozenset(selected)!=assembly_subjects):
+        raise ValueError(error)
+    return assembly_subjects
+
+
 @dataclass(repr=False)
 class Runtime:
     auth:Path
@@ -88,6 +113,10 @@ class Runtime:
     subjects:frozenset=frozenset()
     memory_runtime:object=None
     typed_message_subjects:frozenset=frozenset()
+    assembly_subjects:frozenset=frozenset()
+    assembly_run_credential_subjects:frozenset=frozenset()
+    assembly_model_stream_subjects:frozenset=frozenset()
+    _database:SupabaseTestDatabase|None=field(default=None,init=False)
 
     @classmethod
     def load(cls,root,*,worker=False):
@@ -98,6 +127,22 @@ class Runtime:
                 or any(type(s) is not str or re.fullmatch('m4-synthetic-[a-z0-9-]{1,80}',s) is None for s in subjects)
                 or len(set(subjects))!=len(subjects)):
             raise ValueError('explicit_unique_beta_synthetic_subjects_required')
+        assembly_subjects=frozenset()
+        if ASSEMBLY_SUBJECTS in os.environ:
+            selected=json.loads(os.environ[ASSEMBLY_SUBJECTS])
+            if (type(selected) is not list or len(selected)!=2
+                    or any(type(s) is not str or re.fullmatch(r'm4-synthetic-660-[a-f0-9]{12}-(zh|en)',s) is None
+                           for s in selected)
+                    or not frozenset(selected)<=frozenset(subjects)):
+                raise ValueError('explicit_invited_bilingual_assembly_pair_required')
+            zh,en=sorted(selected,reverse=True)
+            if not zh.endswith('-zh') or not en.endswith('-en') or zh[:-2]!=en[:-2]:
+                raise ValueError('explicit_invited_bilingual_assembly_pair_required')
+            assembly_subjects=frozenset(selected)
+        assembly_run_credential_subjects=_worker_assembly_pair(ASSEMBLY_RUN_CREDENTIAL_SUBJECTS,worker,
+            assembly_subjects,'explicit_worker_assembly_run_credential_pair_required')
+        assembly_model_stream_subjects=_worker_assembly_pair(ASSEMBLY_MODEL_STREAM_SUBJECTS,worker,
+            assembly_subjects,'explicit_worker_assembly_model_stream_pair_required')
         typed_memory=None
         if TYPED_POLICY in os.environ:
             if worker:raise ValueError('typed_memory_policy_is_API_only')
@@ -114,6 +159,9 @@ class Runtime:
             if (selected!=frozenset(memory_runtime.collection.collection.profiles)
                     or not selected<=frozenset(subjects)):
                 raise ValueError('explicit_memory_run_selection_for_beta_invites_required')
+        if worker and assembly_subjects and (memory_runtime is None
+                or not assembly_subjects<=frozenset(memory_runtime.selections)):
+            raise ValueError('assembly_requires_canonical_typed_worker')
         typed_message_subjects=frozenset()
         if TYPED_MESSAGE_SUBJECTS in os.environ:
             if worker:raise ValueError('typed_message_subjects_are_API_only')
@@ -148,7 +196,8 @@ class Runtime:
         context_path.write_text(raw)
         context=load_run_context(context_path)
         if context.version!='CJ-LOCAL-RUN@2':raise ValueError('registered_beta_run_context_required')
-        return cls(auth,context,context_path,descriptors,typed_memory,frozenset(subjects),memory_runtime,typed_message_subjects)
+        return cls(auth,context,context_path,descriptors,typed_memory,frozenset(subjects),memory_runtime,
+                   typed_message_subjects,assembly_subjects,assembly_run_credential_subjects,assembly_model_stream_subjects)
 
     def memory_configuration_for_scope(self,scope):
         if self.memory_runtime is not None and scope in {
@@ -158,8 +207,17 @@ class Runtime:
 
     def database(self):
         authorization()
-        return SupabaseTestDatabase(os.environ['CJ_SUPABASE_RUNTIME_URI'],os.environ['CJ_SUPABASE_CA_FILE'],run_context=self.context,
-            travel_context=self.typed_memory is not None or self.memory_runtime is not None,transaction_guard=runtime_transaction)
+        if self._database is None:
+            size=os.environ.get('CJ_BETA_DB_POOL_SIZE')
+            if size is not None and re.fullmatch('[1-8]',size) is None:
+                raise ValueError('bounded_beta_runtime_pool_required')
+            local=local_database_target()
+            ca=None if local else os.environ['CJ_SUPABASE_CA_FILE']
+            self._database=SupabaseTestDatabase(os.environ['CJ_SUPABASE_RUNTIME_URI'],ca,run_context=self.context,
+                travel_context=self.typed_memory is not None or self.memory_runtime is not None,
+                needs_context=bool(self.assembly_subjects),transaction_guard=runtime_transaction,
+                pool_size=None if size is None else int(size),local_socket=local)
+        return self._database
 
     def app(self):
         import time
@@ -178,29 +236,55 @@ class Runtime:
                 raise ValueError('original_typed_message_travel_profile_required')
         message_subjects=(None if self.typed_memory is None else
                           self.subjects-(frozenset(self.typed_memory.collection.profiles)-self.typed_message_subjects))
+        needs_profile=os.environ.get('CJ_LOCAL_NEEDS_PROFILE')
+        signer=ConfirmationSigner(decoded('CJ_BETA_CONFIRMATION_B64',length=32))
+        cleanup=None
+        if self.assembly_subjects:
+            if not self.assembly_subjects<=self.typed_message_subjects or needs_profile!='manual-v1':
+                raise ValueError('assembly_requires_original_typed_message_and_manual_needs')
+            cleanup=assembly_cleanup(database)
+        elif ASSEMBLY_CLEANUP & os.environ.keys():
+            raise ValueError('cleanup_requires_explicit_assembly_pair')
         app=create_local_app(conninfo_path=None,auth_dir=self.auth,database=database,run_context=self.context,
-            confirmation_signer=ConfirmationSigner(decoded('CJ_BETA_CONFIRMATION_B64',length=32)),history_configuration=history,
-            account_admission=True,needs_profile=os.environ.get('CJ_LOCAL_NEEDS_PROFILE'),message_subjects=message_subjects,
-            existing_display_reads=True)
+            confirmation_signer=signer,history_configuration=history,
+            account_admission=True,needs_profile=needs_profile,message_subjects=message_subjects,
+            existing_display_reads=True,cleanup_configuration=cleanup,
+            cleanup_subjects=self.assembly_subjects or None)
         if self.typed_memory is not None:
-            from cj_api.local_account_admission_v2 import permit_retirement_read_lease
-            from cj_api.supabase_test_database import current_authorization,require_environment
             from cj_memory.typed_api import register_typed_routes
             register_typed_routes(app,database=database,auth_dir=self.auth,configuration=self.typed_memory)
+        if self.assembly_subjects:
+            from cj_trip.local_needs_app import register_local_needs_routes
+            from cj_trip.local_manual_app import register_local_manual_routes
+            from cj_trip.local_structured_read import register_local_structured_read_routes
+            register_local_needs_routes(app,database=database,auth_dir=self.auth,confirmation_signer=signer,
+                planning_only=True,selected_subjects=self.assembly_subjects)
+            register_local_manual_routes(app,database=database,auth_dir=self.auth,confirmation_signer=signer,
+                editing_only=True,selected_subjects=self.assembly_subjects)
+            register_local_structured_read_routes(app,database=database,auth_dir=self.auth,
+                selected_subjects=self.assembly_subjects)
+            register_assembly_erasure(app,database,self.auth,cleanup,self.assembly_subjects)
 
-            def require_current():
-                current_authorization()
-                require_environment()
+        from cj_api.local_account_admission_v2 import permit_retirement_read_lease
+        from cj_api.supabase_test_database import current_authorization,require_environment
 
-            @app.middleware('http')
-            async def typed_list_retirement_lease(request,call_next):
-                if request.method=='GET' and request.url.path=='/v2/memories':
-                    with permit_retirement_read_lease(database,require_current):
-                        return await call_next(request)
-                return await call_next(request)
+        def require_current():
+            current_authorization()
+            require_environment()
+
+        @app.middleware('http')
+        async def retirement_lease(request,call_next):
+            path=request.url.path
+            if ((request.method=='POST' and path in ('/v1/messages','/v2/messages'))
+                    or (request.method=='GET' and (path in ('/v1/run-events','/v2/run-events')
+                        or self.typed_memory is not None and path=='/v2/memories'))):
+                with permit_retirement_read_lease(database,require_current):
+                    return await call_next(request)
+            return await call_next(request)
         return app
 
     def close(self):
+        if self._database is not None:self._database.close()
         for fd in self.descriptors:os.close(fd)
         self.descriptors.clear()
 
@@ -216,5 +300,48 @@ def cleanup_transaction(cursor,runtime_database):
     # while the separately approved runtime login checks the signed DB identity.
     # Cleanup writes still use only the independent cleanup login and its RLS.
     cursor.execute('SELECT pg_advisory_xact_lock_shared(%s)',(checkpoint.RELEASE_LOCK,))
-    with runtime_database._open_runtime_connection() as runtime:
+    with runtime_database._open_dedicated_runtime_connection() as runtime:
         checkpoint.require_release(runtime,Path(os.environ['CJ_DEPLOY_CONTROL']))
+
+
+def assembly_cleanup(database):
+    from cj_api.local_cleanup import Configuration
+    from cj_api.supabase_cleanup import SupabaseCleanupConfiguration
+    from cj_cleanup.device_v4 import TARGETS
+    from cj_memory_withdrawal.account_cleanup import account_hooks
+
+    key_id='hk-beta-assembly'
+    inventory=('business/message','business/usage','business/memory-authoritative','business/trip-authoritative',
+        'business/needs-current-planning','business/feedback-private-actions','business/cleanup-metadata',
+        'business/memory-management-actions','checkpoints/run','memory-derived',*TARGETS,'external-processing')
+    config=Configuration({key_id:decoded('CJ_BETA_CLEANUP_B64',length=32)},key_id,3600,inventory,
+        Path(__file__).resolve().parents[2]/'backend/storage-registry.json',extra_hooks=account_hooks,control_records=True)
+    local=local_database_target()
+    ca=None if local else Path(os.environ['CJ_SUPABASE_CA_FILE'])
+    return SupabaseCleanupConfiguration(config,os.environ['CJ_SUPABASE_CLEANUP_URI'],ca,
+        lambda cursor:cleanup_transaction(cursor,database),local_socket=local)
+
+
+def register_assembly_erasure(app,database,auth_dir,configuration,subjects):
+    import uuid
+    from cj_api.local_account_admission_v2 import account_checker_for
+    from cj_api.supabase_cleanup import SupabaseCleanupRuntime
+    from cj_cleanup.memory_payloads import hold_payloads,hooks
+    from cj_memory.postgres import Repository
+    from cj_memory_jobs.service import Service
+    from cj_memory_withdrawal.erasure_api import register
+    from cj_memory_withdrawal.erasure_driver_v2 import ErasureServiceV2
+    from cj_message.auth_boundary import Boundary
+
+    checker=account_checker_for(auth_dir,database,selected_subjects=subjects)
+    boundary=Boundary(checker,lambda principal:database.message_repository(scope_for(principal.issuer,principal.subject)),
+        lambda:uuid.uuid4().hex)
+
+    def repository(principal,scope):
+        return Repository(lambda:database.connect(scope),scope,typed_context=True,
+            transaction_binder=lambda connection,cursor:connection.bind_scope(cursor))
+
+    cleanup=SupabaseCleanupRuntime(database,configuration,scope_for)
+    service=ErasureServiceV2(Service(boundary,repository),cleanup,hooks,hold_payloads=hold_payloads,
+        max_sources=1000,max_jobs=1000,max_association_bytes=1_000_000)
+    register(app,service)
