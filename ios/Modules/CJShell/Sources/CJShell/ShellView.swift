@@ -23,9 +23,10 @@ public struct ShellView: View {
     @State private var memoryCandidateContainerHost: MemoryCandidateContainerHost
     @State private var typedMemoryContainerHost: TypedMemoryContainerHost?
     @State private var offlineTripController: OfflineTripController?
+    @State private var demoV2Assistant: DemoV2LiveAssistantModel?
     @Environment(\.scenePhase) private var scenePhase
 
-    public init(state: ShellState, accountHost: AccountHost? = nil, messageHost: AssistantMessageHost? = nil, serverHistoryHost: ServerHistoryHost? = nil, memoryContainerHost: MemoryContainerHost? = nil, typedMemoryContainerHost: TypedMemoryContainerHost? = nil, tripContainerHost: TripContainerHost? = nil, structuredTripHost: StructuredTripHost? = nil, needsContainerHost: NeedsContainerHost? = nil, answerFeedbackHost: FeedbackContainerHost? = nil, generalFeedbackHost: FeedbackContainerHost? = nil, runContainerHost: RunContainerHost? = nil, usageContainerHost: UsageContainerHost? = nil, originalUsageContainerHost: OriginalUsageContainerHost? = nil, developmentAccountHost: DevelopmentAccountHost? = nil, offlineTripController: OfflineTripController? = nil, memoryHistoryContainerHost: MemoryHistoryContainerHost? = nil, memoryCandidateContainerHost: MemoryCandidateContainerHost? = nil) {
+    public init(state: ShellState, accountHost: AccountHost? = nil, messageHost: AssistantMessageHost? = nil, serverHistoryHost: ServerHistoryHost? = nil, memoryContainerHost: MemoryContainerHost? = nil, typedMemoryContainerHost: TypedMemoryContainerHost? = nil, tripContainerHost: TripContainerHost? = nil, structuredTripHost: StructuredTripHost? = nil, needsContainerHost: NeedsContainerHost? = nil, answerFeedbackHost: FeedbackContainerHost? = nil, generalFeedbackHost: FeedbackContainerHost? = nil, runContainerHost: RunContainerHost? = nil, usageContainerHost: UsageContainerHost? = nil, originalUsageContainerHost: OriginalUsageContainerHost? = nil, developmentAccountHost: DevelopmentAccountHost? = nil, offlineTripController: OfflineTripController? = nil, memoryHistoryContainerHost: MemoryHistoryContainerHost? = nil, memoryCandidateContainerHost: MemoryCandidateContainerHost? = nil, demoV2Assistant: DemoV2LiveAssistantModel? = nil) {
         if let accountHost { precondition(accountHost.belongs(to: state), "AccountHost must own the same ShellState") }
         if let developmentAccountHost { precondition(developmentAccountHost.belongs(to: state)) }
         if let messageHost { precondition(messageHost.belongs(to: state), "Message host must own the same ShellState") }
@@ -43,6 +44,8 @@ public struct ShellView: View {
         if let usageContainerHost { precondition(usageContainerHost.belongs(to: state)) }
         if let originalUsageContainerHost { precondition(originalUsageContainerHost.belongs(to: state)) }
         self._offlineTripController = State(initialValue: offlineTripController)
+        if let demoV2Assistant { precondition(demoV2Assistant.belongs(to: state)) }
+        self._demoV2Assistant = State(initialValue: demoV2Assistant)
         self.state = state
         self._accountHost = State(initialValue: accountHost ?? AccountHost(shell: state))
         self._developmentAccountHost = State(initialValue: developmentAccountHost)
@@ -65,7 +68,16 @@ public struct ShellView: View {
 
     public var body: some View {
         TabView(selection: $state.selectedTab) {
-            NavigationStack { AssistantShell(state: state, messageHost: messageHost, serverHistoryHost: serverHistoryHost, candidateHost: memoryCandidateContainerHost, needsHost: needsContainerHost, feedbackHost: answerFeedbackHost, runHost: runContainerHost, usageHost: originalUsageContainerHost, bodyText: state.assistantBody) }
+            NavigationStack {
+                if let demoV2Assistant {
+                    DemoV2LiveAssistant(model: demoV2Assistant, language: state.language)
+                } else {
+                    AssistantShell(state: state, messageHost: messageHost, serverHistoryHost: serverHistoryHost,
+                                   candidateHost: memoryCandidateContainerHost, needsHost: needsContainerHost,
+                                   feedbackHost: answerFeedbackHost, runHost: runContainerHost,
+                                   usageHost: originalUsageContainerHost, bodyText: state.assistantBody)
+                }
+            }
                 .tabItem { Label(ShellTab.assistant.title(state.language), systemImage: "bubble.left.and.bubble.right") }
                 .tag(ShellTab.assistant)
             Group {

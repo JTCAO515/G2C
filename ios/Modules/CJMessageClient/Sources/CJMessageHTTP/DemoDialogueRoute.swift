@@ -39,6 +39,7 @@ enum DemoDialogueRoute {
     struct Original {
         let messageID: String
         let conversationID: String?
+        let text: String
     }
 
     @discardableResult
@@ -67,7 +68,7 @@ enum DemoDialogueRoute {
                 throw MessageHTTPFailure.invalidConfiguration
             }
         }
-        return Original(messageID: id, conversationID: value["conversation_id"] as? String)
+        return Original(messageID: id, conversationID: value["conversation_id"] as? String, text: text)
     }
 
     static func validEventCursor(_ value: String) -> Bool {

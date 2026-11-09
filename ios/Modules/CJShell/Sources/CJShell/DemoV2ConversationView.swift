@@ -53,7 +53,7 @@ enum DemoV2CardAction {
 }
 
 enum DemoV2DeliveryNotice: Equatable {
-    case offline, dailyLimit, unknown, notObserved, rejected
+    case offline, dailyLimit, unknown, notObserved, rejected, accessDenied, answerInterrupted
 
     func text(_ language: ShellLanguage) -> String {
         switch self {
@@ -72,10 +72,21 @@ enum DemoV2DeliveryNotice: Equatable {
         case .rejected:
             language.text("We couldn’t complete this request. Review your draft and try again.",
                           "暂时无法完成。请检查草稿后重试。")
+        case .accessDenied:
+            language.text("Your session needs verification. Sign in again to continue.",
+                          "当前会话需重新验证，请重新登录后继续。")
+        case .answerInterrupted:
+            language.text("The answer stopped arriving. Continue reading the original.",
+                          "回答暂时中断，可以继续读取原回答。")
         }
     }
 
-    var allowsOriginalCheck: Bool { self == .unknown || self == .notObserved }
+    var allowsOriginalCheck: Bool { self == .unknown || self == .notObserved || self == .answerInterrupted }
+
+    func actionTitle(_ language: ShellLanguage) -> String {
+        self == .answerInterrupted ? language.text("Continue original answer", "继续读取原回答")
+            : language.text("Check original action", "核对原操作")
+    }
 }
 
 struct DemoV2ConversationView: View {
@@ -223,7 +234,7 @@ struct DemoV2ConversationView: View {
                     RunReadableText(text: notice.text(language), style: .caption)
                         .accessibilityIdentifier("demo.v2.delivery-notice")
                     if notice.allowsOriginalCheck, let onCheckOriginal {
-                        action(language.text("Check original action", "核对原操作"), symbol: "magnifyingglass", perform: onCheckOriginal)
+                        action(notice.actionTitle(language), symbol: "magnifyingglass", perform: onCheckOriginal)
                     }
                 }
                 .padding(.horizontal, 16)

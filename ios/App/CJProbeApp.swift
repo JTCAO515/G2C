@@ -58,6 +58,10 @@ struct CJProbeApp: App {
                !ProcessInfo.processInfo.environment.keys.contains(where: { $0.hasPrefix("G2C_DEV_") }),
                development == nil, developmentAccounts == nil, !developmentFailed {
                 DemoV2Preview(shell: shell)
+            } else if ProcessInfo.processInfo.arguments.contains("--demo-v2-live-fixture"),
+                      !ProcessInfo.processInfo.environment.keys.contains(where: { $0.hasPrefix("G2C_DEV_") }),
+                      development == nil, developmentAccounts == nil, !developmentFailed {
+                DemoV2LiveFixture(shell: shell)
             } else {
                 developmentShell
             }

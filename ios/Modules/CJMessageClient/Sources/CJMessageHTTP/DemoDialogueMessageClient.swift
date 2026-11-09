@@ -85,6 +85,14 @@ public enum DemoDialogueMessageOutcome: Sendable {
         }
     }
 
+    public func originalText(messageID: String, lease: Lease) throws -> String {
+        try recovery.validateScope(scope, lease: lease)
+        guard let record = try recovery.action(messageID: messageID, lease: lease) else { throw RecoveryError.queryOnly }
+        let original = try DemoDialogueRoute.validateOriginal(record.originalUTF8)
+        guard Data(original.messageID.utf8) == Data(messageID.utf8) else { throw RecoveryError.receiptMismatch }
+        return original.text
+    }
+
     private func bearer(_ lease: Lease) async throws -> String {
         try recovery.validateScope(scope, lease: lease)
         let bearer = try await credentials.bearer(for: scope, lease: lease)

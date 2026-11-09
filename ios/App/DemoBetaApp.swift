@@ -127,7 +127,8 @@ struct DemoBetaRootView: View {
                   tripContainerHost: root.trip?.trips, structuredTripHost: root.trip?.structuredTrips,
                   needsContainerHost: root.trip?.needs?.host, answerFeedbackHost: root.trip?.feedback?.answer,
                   generalFeedbackHost: root.trip?.feedback?.general, runContainerHost: root.trip?.messages.runs,
-                  developmentAccountHost: root.accounts, offlineTripController: root.offline)
+                  developmentAccountHost: root.accounts, offlineTripController: root.offline,
+                  demoV2Assistant: root.trip?.messages.demoV2Assistant)
             .environment(\.accountCleanupHost, root.cleanup)
             .id(root.trip?.id)
     }

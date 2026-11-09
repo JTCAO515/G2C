@@ -822,8 +822,7 @@ private var developmentHostEnvironment: [String: String] {
     let runs: RunContainerHost
     let travelSelection: TravelSelectionModel?
     #if G2C_DEMO_BETA
-    let demoDialogue: DemoDialogueMessageClient
-    let demoDialogueLease: Lease
+    let demoV2Assistant: DemoV2LiveAssistantModel
     #endif
     private let lifetime: DevelopmentMessageLifetime
     private let keyAdapter: ExistingMessageKeyAdapter
@@ -880,6 +879,13 @@ private var developmentHostEnvironment: [String: String] {
         let demoDialogue = try DemoDialogueMessageClient(
             recovery: recovery, scope: scope, endpoint: dialogueEndpoint, credentials: credentials,
             validateSession: { try lifetime.validate() })
+        let dialogueEventEndpoint = try MessageEndpoint(url: configuration.endpoint, maximumRequestBytes: 16_384,
+                                                        maximumResponseBytes: 1_000_000)
+        let demoEvents = try DemoDialogueEventsClient(
+            recovery: recovery, scope: scope, endpoint: dialogueEventEndpoint, credentials: credentials,
+            validateSession: { try lifetime.validate() })
+        demoV2Assistant = DemoV2LiveAssistantModel(shell: shell, messages: demoDialogue, events: demoEvents,
+                                                   lease: lease, isCurrentSession: { lifetime.current })
         #endif
         let betaRead = configuration.endpoint.host == "api-beta.go2china.space"
         let runReads = try NoRedirectTransport(requestTimeout: betaRead ? 30 : 15, resourceTimeout: 150)
@@ -939,14 +945,13 @@ private var developmentHostEnvironment: [String: String] {
         self.lifetime = lifetime; self.keyAdapter = keyAdapter
         self.messages = messages; self.history = history; self.runs = runs
         travelSelection = selectedTravel
-        #if G2C_DEMO_BETA
-        self.demoDialogue = demoDialogue
-        demoDialogueLease = lease
-        #endif
     }
 
     func invalidate() {
         lifetime.active = false
+        #if G2C_DEMO_BETA
+        demoV2Assistant.invalidate()
+        #endif
         travelSelection?.invalidate()
         runs.invalidate(); history.invalidate(); messages.invalidate(); keyAdapter.invalidate()
     }

@@ -1,6 +1,7 @@
 import Foundation
 import CryptoKit
 import CJAPI
+import CJMessageHTTP
 
 /// Client fixture for #702. Live transport will use the frozen response envelopes
 /// and the existing session boundary when the endpoint is deployed.
@@ -117,6 +118,10 @@ enum DemoV2Dialogue {
         let messageID: String
         let conversationID: String
         let runID: String
+
+        init(verified receipt: DemoDialogueMessageReceipt) {
+            self.init(messageID: receipt.messageID, conversationID: receipt.conversationID, runID: receipt.runID)
+        }
 
         fileprivate init(messageID: String, conversationID: String, runID: String) {
             self.messageID = messageID
