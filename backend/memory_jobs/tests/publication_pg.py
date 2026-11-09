@@ -533,6 +533,101 @@ def exercise(conninfo,auth):
         print('PASS C collection uses runtime-only ACCOUNT-ADMISSION@2: actual original retirement denies the same token before canonical erasure; other owner allowed and lookup failure UNKNOWN, without fallback')
 
 
+def exercise_demo_candidates(conninfo, auth):
+    from cj_memory_jobs.codec import Unavailable
+    from cj_memory_jobs.demo_candidates import DemoCandidates
+
+    actors = ('demo-alice', 'demo-bob')
+    dev_auth.init(auth, actors)
+    tokens = {actor:dev_auth.token(auth,actor,30) for actor in actors}
+    slots = frozenset({'travel.pace', 'seating'})
+    extraction = CollectionPolicy(frozenset({'self'}),slots,4,500,lambda entry:True,lambda entry,rows:True)
+    memory_policy = ManualPolicy(extraction.subjects,slots,frozenset({'long_term'}),frozenset(),
+        datetime.now(timezone.utc)+timedelta(hours=1),lambda command,raw:True,lambda command,raw:True)
+    app = create_collection_app(conninfo_path=conninfo,auth_dir=auth,
+        resolve_collection=lambda principal:(extraction,memory_policy,lambda entry:(None,None)))
+    host = app.state.memory_history
+    service = host.service
+    demo = DemoCandidates(service,frozenset(actors))
+    other_demo = DemoCandidates(service,frozenset({'demo-bob'}))
+    owner = tokens['demo-alice']
+    headers = {'Authorization':'Bearer '+owner,'Content-Type':'application/octet-stream'}
+    digest = lambda raw:hashlib.sha256(raw).hexdigest()
+    chat = 'demo-candidate-chat'
+    with TestClient(app) as client:
+        def post(path, value):
+            response = client.post(path,content=json.dumps(value,ensure_ascii=False).encode(),headers=headers)
+            assert response.status_code == 200,(response.status_code,response.text)
+            return response.json()
+        head = client.put('/v1/conversations',params={'conversation_id':chat},headers=headers).json()
+        other = client.put('/v1/conversations',params={'conversation_id':chat},
+            headers={'Authorization':'Bearer '+tokens['demo-bob']})
+        assert other.status_code == 200,(other.status_code,other.text)
+        post('/v3/memory-history-actions',dict(version='MEMORY-HISTORY@1',action_id='demo-enable',operation='enable',
+            conversation_id=chat,expected_generation=head['generation'],expected_epoch=0,expected_source_version=0))
+
+        def current(receipt, *, token=owner, run=None, service=demo):
+            return json.loads(host.boundary.with_history_context(token,lambda context:service.current(
+                context,token,receipt['message_id'],run or receipt['run_id'])))
+
+        def collect(index, slot, text):
+            mid,jid,aid = f'demo-message-{index}',f'demo-job-{index}',f'demo-attempt-{index}'
+            receipt = post('/v1/messages',dict(version='MESSAGE-send.1',conversation_id=chat,message_id=mid,
+                text=text,trip_id=None,creation_intent='none',expected_generation=head['generation'],expected_sequence=index))['receipt']
+            source = dict(conversation_id=chat,generation=head['generation'],epoch=0,after=index,through=index+1,
+                          source_version=1,withdrawal_epoch=1,mode='incremental')
+            post('/internal/v1/memory-history/jobs',dict(version='MEMORY-JOBS@1',job_id=jid,attempt_id=aid,source=source))
+            service.transition(owner,jid,aid,'inflight')
+            prepared = service.prepare_model_input_v2(owner,jid,aid,max_payload_bytes=8192)
+            message, = json.loads(json.loads(prepared)['messages'][0]['content'])['messages']
+            result = json.dumps(dict(version='MEMORY-EXTRACT@2',entries=[dict(subject='self',slot=slot,kind='preference',
+                text=text,extent='long_term',occurred_at='date unknown',evidence=[dict(ref=message['ref'],quote=text)])]),
+                ensure_ascii=False).encode()
+            bound = dict(message_id=mid,run_id=receipt['run_id'],max_payload_bytes=8192)
+            def publish(context):
+                processing = demo.processing_policy(context,owner,jid,aid,prepared,digest(prepared),**bound)
+                assert context.with_enabled_source(SourceQuery(**source),processing,
+                    lambda snapshot:processing.with_input(snapshot,lambda raw:digest(raw).encode())) == digest(prepared).encode()
+                policy = demo.publication_policy(context,owner,jid,aid,prepared,digest(prepared),
+                    result,digest(result),before_commit=lambda:None,**bound)
+                return context.with_enabled_source(SourceQuery(**source),policy,policy.apply_original_result)
+            original = json.loads(host.boundary.with_history_context(owner,publish))
+            candidate, = original['receipts']
+            assert candidate['status'] == 'candidate'
+            return receipt
+
+        first = collect(0,'travel.pace','I prefer no more than two sights a day')
+        second = collect(1,'seating','I usually prefer window seats')
+        first_read,second_read = current(first),current(second)
+        first_card, = first_read['candidates']
+        second_card, = second_read['candidates']
+        assert first_card['slot'] == 'travel.pace' and second_card['slot'] == 'seating'
+        for token,run in ((tokens['demo-bob'],None),(owner,second['run_id'])):
+            try:current(first,token=token,run=run)
+            except Unavailable:pass
+            else:raise AssertionError('other Demo owner or wrong RUN retrieved the candidate')
+        try:current(first,service=other_demo)
+        except Unavailable:pass
+        else:raise AssertionError('unselected owner retrieved a Demo candidate')
+        with host.database.connect(scope_for(ISSUER,'demo-alice')) as conn:
+            assert conn.execute('SELECT status FROM cj_memory_item ORDER BY status').fetchall() == [('candidate',),('candidate',)]
+        for index,receipt in enumerate((first,second)):
+            projected = current(receipt)
+            candidate, = projected['candidates']
+            action = dict(version='MEMORY-CANDIDATE@1',action_id=f'demo-user-choice-{index}',**candidate['review'],
+                candidate_id=candidate['candidate_id'],expected_candidate_version=candidate['version'],
+                expected_memory_epoch=projected['memory_epoch'],operation='confirm' if index == 0 else 'reject')
+            if index == 0:
+                action.update({key:candidate[key] for key in ('kind','text','extent','context','occurred_at')})
+            original = post('/v3/memory-candidate-actions',action)['result']
+            assert post('/v3/memory-candidate-actions',action)['result'] == original
+            assert original['receipt']['status'] == ('active' if index == 0 else 'rejected')
+            assert current(receipt)['candidates'] == []
+        with host.database.connect(scope_for(ISSUER,'demo-alice')) as conn:
+            assert conn.execute("SELECT slot FROM cj_memory_item WHERE status='active'").fetchall() == [('travel.pace',)]
+        print('PASS actual Demo single-source input fence, candidate-only direct statements, exact MESSAGE/RUN read, explicit confirm and dismiss')
+
+
 if __name__=='__main__':
     with patch.dict(os.environ,{'CJ_ENV':'local'}),tempfile.TemporaryDirectory(prefix='g2c-pub-auth-') as temp:
         with pg_suites.cluster('publication_candidate',port=55510,role='cj_pub_init',socket=f'/tmp/cj-pub-{os.getpid()}') as config:
@@ -554,3 +649,4 @@ if __name__=='__main__':
                 conn.execute((ROOT/publication['file']).read_text())
                 conn.execute((ROOT/decision['file']).read_text())
             print('PASS nonempty down refusal; post-erasure empty publication rollback preserves the existing opaque erasure fence')
+            exercise_demo_candidates(path,Path(temp)/'demo-auth')
