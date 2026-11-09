@@ -1,0 +1,18 @@
+{
+  "asset": "Lio",
+  "source": "JT 2026-11-09 会话上传",
+  "files": {
+    "lio-avatar-head-1024.png": {
+      "bytes": 902731,
+      "sha256": "d01f32aefb3d18d45395073c5f72b989177567ed5ae7bf03080afe0758d5e2f7",
+      "width": 1024,
+      "height": 1024
+    },
+    "lio-turnaround-original.webp": {
+      "bytes": 351758,
+      "sha256": "d947af3b72f9799e80c5cfb4c42c67b891b18d0020d64818e737430240fe80a9",
+      "width": 1774,
+      "height": 887
+    }
+  }
+}
