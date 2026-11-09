@@ -212,27 +212,22 @@ public struct DemoV2Preview: View {
     }
 
     private var trips: some View {
-        ScrollView {
+        let afternoon = trip.lazy.flatMap(\.stops).first(where: { $0.id == "gallery" && $0.locked == false })
+        return ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 previewBanner
-                if trip.isEmpty {
-                    ShellCardHeading(title: language.text("No saved trips yet", "还没有已采用的行程"), symbol: "map")
-                    button(language.text("Plan a trip", "去规划行程"), symbol: "bubble.left") { shell.selectedTab = .assistant }
-                } else {
-                    ForEach(trip) { DemoV2DayCard(day: $0, language: language) }
-                    if let afternoon = trip.lazy.flatMap(\.stops).first(where: { $0.id == "gallery" && $0.locked == false }) {
-                        button(language.text("Edit itinerary", "直接编辑"), symbol: "pencil") {
-                            editText = afternoon.place
-                            edit = .afternoon
-                        }
-                    }
-                    button(language.text("Edit with Assistant", "问助手修改"), symbol: "bubble.left") {
-                        shell.selectedTab = .assistant
-                        draft = language.text("Change the second afternoon to a walk.", "把第二天下午换成散步。")
-                    }
-                }
+                DemoV2TripsView(language: language, days: trip, onPlan: { shell.selectedTab = .assistant },
+                               onEdit: afternoon.map { stop in
+                                   {
+                                       editText = stop.place
+                                       edit = .afternoon
+                                   }
+                               },
+                               onAsk: {
+                                   shell.selectedTab = .assistant
+                                   draft = language.text("Change the second afternoon to a walk.", "把第二天下午换成散步。")
+                               })
             }
-            .shellCard()
             .padding(16)
         }
         .navigationTitle(ShellTab.trips.title(language))
