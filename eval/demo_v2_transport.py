@@ -8,14 +8,15 @@ import time
 import httpx
 
 from demo_v2_evidence import (
-    DialogueObservation, MAX_CAPTURE_BYTES, MAX_EVENT_BYTES, _object,
+    DialogueObservation, MAX_CAPTURE_BYTES, MAX_EVENT_BYTES, MESSAGE_VERSIONS, _object,
     original_action_receipt, original_receipt,
 )
 
 
 BASE = 'https://api-beta.go2china.space'
 ROUTES = {
-    'DEMO-dialogue-message.1': ('/v1/demo-dialogue/messages', 'message_id', original_receipt, 16_384),
+    **{version: ('/v1/demo-dialogue/messages', 'message_id', original_receipt, 16_384)
+       for version in MESSAGE_VERSIONS},
     'DEMO-dialogue-action.1': ('/v1/demo-dialogue/actions', 'action_id', original_action_receipt, 32_768),
 }
 

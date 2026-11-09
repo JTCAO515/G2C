@@ -22,8 +22,8 @@ def encode(value):
     return json.dumps(value, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
 
 
-def message():
-    return encode(dict(version='DEMO-dialogue-message.1', message_id=ORIGINAL['message_id'],
+def message(version='DEMO-dialogue-message.1'):
+    return encode(dict(version=version, message_id=ORIGINAL['message_id'],
                        text='合成问题', locale='zh'))
 
 
@@ -31,8 +31,9 @@ def envelope(receipt, version='DEMO-dialogue-receipt.1'):
     return httpx.Response(200, json=dict(version=version, request_id='original-request', receipt=receipt))
 
 
-def test_timeout_only_queries_same_message_and_preserves_exact_intent(tmp_path):
-    raw = message()
+@pytest.mark.parametrize('version', ['DEMO-dialogue-message.1', 'DEMO-dialogue-message.2'])
+def test_timeout_only_queries_same_message_and_preserves_exact_intent(tmp_path, version):
+    raw = message(version)
     directory = tmp_path / ORIGINAL['message_id']
     receipt = dict(ORIGINAL, input_sha256=sha256(raw).hexdigest())
     calls = []

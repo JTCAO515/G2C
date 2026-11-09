@@ -8,6 +8,7 @@ from cj_strict_json import reject_duplicates
 
 
 ORIGINAL_KEYS = ('message_id', 'conversation_id', 'run_id')
+MESSAGE_VERSIONS = ('DEMO-dialogue-message.1', 'DEMO-dialogue-message.2')
 CARD_KINDS = {'needs_card', 'trip_candidate', 'edit_candidate', 'memory_candidate'}
 PROGRESS_STAGES = {'queued', 'running', 'tool'}
 TERMINAL_STAGES = {'completed', 'failed', 'cancelled', 'context_invalid', 'unknown'}
@@ -28,7 +29,7 @@ def original_receipt(submission, response):
     if len(submission) > 16_384 or len(response) > 65_536:
         raise ValueError('message evidence exceeds bound')
     request, envelope = _object(submission), _object(response)
-    if (request.get('version') != 'DEMO-dialogue-message.1' or
+    if (request.get('version') not in MESSAGE_VERSIONS or
             envelope.get('version') != 'DEMO-dialogue-receipt.1' or
             not isinstance(envelope.get('request_id'), str) or not envelope['request_id'] or
             'receipt' not in envelope):
