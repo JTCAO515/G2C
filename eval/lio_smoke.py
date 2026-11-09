@@ -10,6 +10,7 @@ CHAT = re.compile(r'lio-dialogue-[0-9a-f]{32}')
 SEND = '/v1/lio/messages'
 TIMELINE = '/v1/lio/timeline'
 TERMINAL = frozenset({'completed', 'failed'})
+ACTIVITIES = (None, 'checking_places', 'checking_weather', 'checking_travel_information')
 
 
 def _conversation(value):
@@ -66,9 +67,10 @@ def _observation(raw, original, conversation):
     if len(matches) != 1:
         raise ValueError('timeline repeated the original message')
     item = matches[0]
-    if (set(item) != {'message_id', 'text', 'answer', 'status', 'failure', 'sources', 'trip', 'memory'}
+    if (set(item) != {'message_id', 'text', 'answer', 'status', 'failure', 'activity', 'sources', 'trip', 'memory'}
             or item['text'] != original['text'] or not isinstance(item['answer'], str)
             or item['status'] not in ('sending', 'answering', 'completed', 'failed')
+            or item['activity'] not in ACTIVITIES
             or not isinstance(item['sources'], list)):
         raise ValueError('timeline changed or malformed the original message')
     return found_conversation, item

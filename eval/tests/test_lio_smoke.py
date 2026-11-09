@@ -15,14 +15,14 @@ ORIGINAL = {'version': 'LIO-message.1', 'message_id': 'lio-smoke-001',
 RAW = json.dumps(ORIGINAL).encode()
 
 
-def page(status, answer='', *, text=ORIGINAL['text']):
+def page(status, answer='', *, text=ORIGINAL['text'], activity=None):
     row = dict(message_id=ORIGINAL['message_id'], text=text, answer=answer, status=status,
-               failure=None, sources=[], trip=None, memory=None)
+               failure=None, activity=activity, sources=[], trip=None, memory=None)
     return dict(version='LIO-timeline.1', conversation_id=CHAT, messages=[row], next_before=None)
 
 
 def test_records_first_worker_progress_first_body_and_completion(tmp_path):
-    reads = iter((page('sending'), page('answering'), page('answering', 'Weather'),
+    reads = iter((page('sending'), page('answering', activity='checking_weather'), page('answering', 'Weather'),
                   page('completed', 'Weather forecast')))
     calls = []
     def handle(request):
@@ -45,6 +45,7 @@ def test_records_first_worker_progress_first_body_and_completion(tmp_path):
     assert result['first_body_seconds'] == 4
     assert result['complete_seconds'] == 5
     assert (directory / 'intent.utf8').read_bytes() == RAW
+    assert json.loads((directory / 'timeline-002.response').read_bytes())['messages'][0]['activity'] == 'checking_weather'
     assert json.loads((directory / 'timeline-004.response').read_bytes()) == page('completed', 'Weather forecast')
 
 
