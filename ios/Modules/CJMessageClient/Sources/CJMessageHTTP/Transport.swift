@@ -142,12 +142,12 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         let validate: @MainActor @Sendable () throws -> Void
     }
     private enum MessageWire {
-        case legacy, travel, discussion, edit
+        case legacy, travel, discussion, edit, demoDialogue
         var path: String {
-            switch self { case .legacy: "/v1/messages"; case .travel: "/v2/messages"; case .discussion: "/v3/messages"; case .edit: "/v4/messages" }
+            switch self { case .legacy: "/v1/messages"; case .travel: "/v2/messages"; case .discussion: "/v3/messages"; case .edit: "/v4/messages"; case .demoDialogue: DemoDialogueRoute.path }
         }
         var operation: String {
-            switch self { case .legacy: Operations.receiveMessage.id; case .travel: Operations.receiveMessageV2.id; case .discussion: "receiveTripDiscussionV3"; case .edit: "receiveTripEditV4" }
+            switch self { case .legacy: Operations.receiveMessage.id; case .travel: Operations.receiveMessageV2.id; case .discussion: "receiveTripDiscussionV3"; case .edit: "receiveTripEditV4"; case .demoDialogue: DemoDialogueRoute.submit }
         }
     }
     private struct MessageCapability: Sendable {
@@ -213,6 +213,15 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     public static func developmentTripEdits(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
         resourceTimeout: TimeInterval, validate: @escaping @MainActor @Sendable () throws -> Void) throws -> NoRedirectTransport {
         try developmentMessageTransport(endpoint:endpoint,requestTimeout:requestTimeout,resourceTimeout:resourceTimeout,wire:.edit,validate:validate)
+    }
+
+    /// The additive route is available only to the signed internal Beta at its
+    /// fixed origin. The host validator must capture its current session lease.
+    public static func demoDialogueMessages(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
+        resourceTimeout: TimeInterval, validate: @escaping @MainActor @Sendable () throws -> Void) throws -> NoRedirectTransport {
+        guard endpoint.allowsDemoBetaActivation else { throw MessageHTTPFailure.productionActivationUnavailable }
+        return try NoRedirectTransport(requestTimeout: requestTimeout, resourceTimeout: resourceTimeout,
+            preview: nil, messages: MessageCapability(endpoint: endpoint, validate: validate, wire: .demoDialogue))
     }
 
     private static func developmentMessageTransport(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
@@ -534,6 +543,21 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         messages = MessageCapability(endpoint: messageEndpoint, validate: validateMessage, wire: .legacy)
     }
 
+    /// Local fixture seam; this never creates a live URLSession.
+    init(interceptedTransport: any ClientTransport, demoDialogueEndpoint: MessageEndpoint,
+         validateDemoDialogue: @escaping @MainActor @Sendable () throws -> Void) {
+        deviceVersion = .v3
+        memoryProjection = nil
+        memoryErasure = nil
+        deviceCompletion = nil
+        deviceCleanup = nil
+        memoryCandidates = nil
+        accountCleanup = nil
+        memoryHistory = nil; feedback = nil; tripEditing = nil; needs = nil; typedMemory = nil
+        session = nil; transport = interceptedTransport; preview = nil; memory = nil; memoryManagement = nil
+        messages = MessageCapability(endpoint: demoDialogueEndpoint, validate: validateDemoDialogue, wire: .demoDialogue)
+    }
+
     /// Non-network typed MESSAGE transport seam for module boundary tests.
     init(interceptedTransport: any ClientTransport,travelMessageEndpoint: MessageEndpoint,
          validateMessage: @escaping @MainActor @Sendable () throws -> Void) {
@@ -721,6 +745,17 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
 
     deinit { session?.invalidateAndCancel() }
     public func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
+        if let messages, messages.wire == .demoDialogue {
+            guard baseURL == messages.endpoint.url,
+                  DemoDialogueRoute.accepts(request, hasBody: body != nil, operationID: operationID) else {
+                throw MessageHTTPFailure.productionActivationUnavailable
+            }
+            if let body {
+                return try await sendLocalWrite(request, body: body, baseURL: baseURL, operationID: operationID,
+                                                capability: messages.boundary, messageWire: .demoDialogue)
+            }
+            return try await sendLocalRead(request, baseURL: baseURL, operationID: operationID, capability: messages.boundary)
+        }
         if let memoryProjection {
             guard baseURL == memoryProjection.endpoint.url,
                   LocalMemoryCandidateProjectionRoute.accepts(request, hasBody: body != nil, operationID: operationID) else {
@@ -937,12 +972,16 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         let media = request.headerFields.filter { $0.name == .contentType }
         guard media.count == 1, media.first?.value == "application/octet-stream" else { throw MessageHTTPFailure.invalidConfiguration }
         try Task.checkCancellation()
-        let bytes = try await Data(collecting: body, upTo: capability.endpoint.maximumRequestBytes)
+        let limit = messageWire == .demoDialogue
+            ? min(capability.endpoint.maximumRequestBytes, DemoDialogueRoute.maximumRequestBytes)
+            : capability.endpoint.maximumRequestBytes
+        let bytes = try await Data(collecting: body, upTo: limit)
         switch messageWire {
         case .legacy: _ = try OriginalMessageSend(raw: bytes, maximumBytes: capability.endpoint.maximumRequestBytes)
         case .travel: _ = try OriginalTravelMessageSend(raw: bytes, maximumBytes: capability.endpoint.maximumRequestBytes)
         case .discussion: _ = try OriginalTripDiscussion(raw: bytes, maximumBytes: capability.endpoint.maximumRequestBytes)
         case .edit: _ = try OriginalTripEdit(raw: bytes, maximumBytes: capability.endpoint.maximumRequestBytes)
+        case .demoDialogue: try DemoDialogueRoute.validateOriginal(bytes)
         case nil: break
         }
         try await capability.validate()
