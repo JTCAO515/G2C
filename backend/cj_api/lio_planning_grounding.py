@@ -20,19 +20,25 @@ ISO = r'(?<!\d)\d{4}-\d{2}-\d{2}(?!\d)'
 SPAN = re.compile(rf'({ISO})\s*(?:to\b|through\b|到|至|–|—)\s*({ISO})', re.I)
 TRIP_DATES = re.compile(rf'^(?:(?:Travel|Trip dates?)\s*(?:from\s*)?|(?:日期|行程日期)\s*[:：]?\s*|'
                         rf'(?:Beijing|北京)\s*[,，：:]\s*)?(?:{ISO})\s*(?:to\b|through\b|到|至|–|—)', re.I)
-DATES_UNDECIDED = re.compile(r'\b(?:dates? (?:are|is) undecided|travel dates? (?:are|is) unknown)\b|日期(?:未定|待定)', re.I)
+DATES_UNDECIDED = re.compile(
+    r'\b(?:dates? (?:are|is) undecided|travel dates? (?:are|is) unknown)\b|'
+    r'\b(?:suggest|recommend|choose|pick|help me decide)\b[^.?!]{0,32}\bdates?\b|'
+    r'日期(?:未定|待定)|(?:推荐|建议|帮我选)[^。！？]{0,12}日期', re.I)
 DURATION = re.compile(rf'({NUMBER})\s*(?:-?\s*days?\b|天)', re.I)
 START = re.compile(r'\b(?:starting|beginning|from)\s+(tomorrow|today)\b|从?(明天|今天|后天)(?:开始|起)', re.I)
 PARTY = re.compile(rf'\bfor\s+({NUMBER})\s+(?:people|persons?)\b|({NUMBER})\s*(?:个人|人)', re.I)
-DESTINATION = re.compile(r'\b(?:itinerary|trip|visit|days?)\s+(?:in|to)\s+Beijing\b|'
+DESTINATION = re.compile(r'\b(?:itinerary|trip|days?)\s+(?:in|to)\s+Beijing\b|'
                          r'\bBeijing\s+(?:itinerary|trip|visit)\b|'
                          r'(?:去|到|在)北京|北京(?:\s*[，,：:]|[一二两三四五六七八九十\d]+天|游|行程)', re.I)
+PRIMARY_DESTINATION = re.compile(r'\b(?:itinerary|trip|days?)\s+(?:in|to)\s+([A-Za-z]+)\b', re.I)
 OTHER_DESTINATION = re.compile(r'\bfrom\s+Beijing\s+to\b|从北京(?:去|到)', re.I)
 CITY_REPLY = re.compile(r'^(?:Beijing|北京)(?=$|[,，：:]|\s+(?:\d{4}-|from\b|从|明天|今天))', re.I)
 FIXED = re.compile(r'已经定好|固定安排|已锁定|已预订|已订|不可更改|不能改|'
                    r'\b(?:is fixed|already set|already booked|have (?:actually )?booked|'
                    r'has booked|is booked|must keep|cannot be changed)\b', re.I)
-NEGATED = re.compile(r"\b(?:not|never|cancel|without|if|whether|maybe|might)\b|n['’]t\b|还没|没有|未订|不再|不要|取消|如果|可能|不确定", re.I)
+NEGATED = re.compile(
+    r"\b(?:not|never|cancel|without|if|whether|maybe|might|suppose|assuming|in case|hypothetically)\b"
+    r"|n['’]t\b|还没|没有|未订|不再|不要|取消|如果|可能|不确定|假如|假设|要是|倘若", re.I)
 OTHER = re.compile(r'孩子|女儿|儿子|母亲|父亲|同伴|家人|\b(?:daughter|son|mother|father|friend|guest)\b', re.I)
 CLOCK = r'(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?'
 RANGE = re.compile(rf'{CLOCK}\s*(?:[-–—到至]|\bto\b)\s*{CLOCK}', re.I)
@@ -57,11 +63,14 @@ def stated_city(turns, city):
     if city.casefold() not in ('beijing', '北京'):
         return any(city in clause and PLAN_REQUEST.match(clause) and not NEGATED.search(clause)
                    for turn in turns for clause in _clauses(turn))
-    planned = any(city in clause and PLAN_REQUEST.match(clause) and DESTINATION.search(clause)
-                  and not (NEGATED.search(clause) or OTHER_DESTINATION.search(clause))
-                  for turn in turns for clause in _clauses(turn))
-    if planned:
-        return True
+    for turn in turns:
+        for clause in _clauses(turn):
+            if (city not in clause or not PLAN_REQUEST.match(clause) or not DESTINATION.search(clause)
+                    or NEGATED.search(clause) or OTHER_DESTINATION.search(clause)):
+                continue
+            primary = PRIMARY_DESTINATION.search(clause)
+            if primary is None or primary[1].casefold() == 'beijing':
+                return True
     return len(turns) > 1 and any(city in clause and CITY_REPLY.match(clause) and not NEGATED.search(clause)
                                  for clause in _clauses(turns[-1]))
 
@@ -79,7 +88,12 @@ def _day_span(turns, today):
             try:
                 explicit = tuple(SPAN.finditer(clause))
                 for match in explicit:
-                    spans.add((date.fromisoformat(match[1]), date.fromisoformat(match[2])))
+                    prefix = clause[:match.start()].strip()
+                    scoped = TRIP_DATES.match(clause) is not None or re.search(
+                        rf'(?:Beijing(?:\s+for\s+(?:{NUMBER})\s+people)?\s+from|'
+                        r'北京\s*(?:从|在)?|(?:trip|itinerary)\s+dates?\s*[:：]?)$', prefix, re.I)
+                    if scoped:
+                        spans.add((date.fromisoformat(match[1]), date.fromisoformat(match[2])))
                 if explicit:
                     continue
                 start, duration = START.search(clause), DURATION.search(clause)
@@ -119,7 +133,7 @@ def _fixed_item(clause, first, zone, party, *, reply=''):
     details = f'{clause}\n{reply}' if reply else clause
     if NEGATED.search(details) or OTHER.search(details) or zone is None:
         return None
-    ranges = {match.groups() for match in RANGE.finditer(details)}
+    ranges = {match.groups() for match in RANGE.finditer(re.sub(ISO, ' ', details))}
     try:
         dates = {date.fromisoformat(value) for value in re.findall(ISO, details)}
     except ValueError:
