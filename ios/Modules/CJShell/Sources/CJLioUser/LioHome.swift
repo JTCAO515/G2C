@@ -11,6 +11,7 @@ public struct LioHome<MenuContent: View>: View {
     private let tripLibrary: LioTripLibrary?
     private let tripHistory: LioTripHistoryClient?
     private let memoryActions: LioMemoryActionsClient?
+    private let savedMemory: AnyView?
     private let recordedMap: (@MainActor (StructuredTripDocument) -> AnyView)?
     @State private var conversation: LioConversation
     @State private var draft = ""
@@ -27,7 +28,7 @@ public struct LioHome<MenuContent: View>: View {
         let active: Bool
         let request: Int
     }
-    private enum Tab { case chat, trips }
+    private enum Tab { case chat, trips, memory }
     @FocusState private var typing: Bool
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -35,6 +36,7 @@ public struct LioHome<MenuContent: View>: View {
     public init(language: LioLanguage, service: LioService, isDemo: Bool, tripLibrary: LioTripLibrary? = nil,
                 tripHistory: LioTripHistoryClient? = nil,
                 memoryActions: LioMemoryActionsClient? = nil,
+                savedMemory: AnyView? = nil,
                 recordedMap: (@MainActor (StructuredTripDocument) -> AnyView)? = nil, @ViewBuilder menu: () -> MenuContent) {
         self.language = language
         self.isDemo = isDemo
@@ -42,6 +44,7 @@ public struct LioHome<MenuContent: View>: View {
         self.tripLibrary = tripLibrary
         self.tripHistory = tripHistory
         self.memoryActions = memoryActions
+        self.savedMemory = savedMemory
         self.recordedMap = recordedMap
         _conversation = State(initialValue: LioConversation(service: service))
     }
@@ -57,6 +60,11 @@ public struct LioHome<MenuContent: View>: View {
                          tripHistory: tripHistory, recordedMap: recordedMap) { tab = .chat }
                 .tabItem { Label(language.text("Trips", "行程"), systemImage: "suitcase") }
                 .tag(Tab.trips)
+            if let savedMemory {
+                savedMemory
+                    .tabItem { Label(language.text("Memory", "记忆"), systemImage: "bookmark") }
+                    .tag(Tab.memory)
+            }
         }
         .onChange(of: tab) { _, _ in typing = false }
         .task(id: Observation(active: canObserve, request: refreshRequest)) {
