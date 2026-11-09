@@ -42,12 +42,12 @@ public final class RunCancellationTransport: ClientTransport, Sendable {
     }
     private static func local(endpoint: MessageEndpoint,mode: WireMode,
         validate: @escaping @MainActor @Sendable () throws -> Void) throws -> RunCancellationTransport {
-        #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
-        guard endpoint.allowsDevelopmentActivation else { throw RunDisplayFailure.invalidConfiguration }
-        return try RunCancellationTransport(endpoint:endpoint,mode:mode,validate:validate)
-        #else
-        throw RunDisplayFailure.invalidConfiguration
+        #if !(DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE)))
+        guard endpoint.allowsDemoBetaActivation else { throw RunDisplayFailure.invalidConfiguration }
         #endif
+        if endpoint.allowsDemoBetaActivation, mode != .travel { throw RunDisplayFailure.invalidConfiguration }
+        guard endpoint.allowsDevelopmentActivation || endpoint.allowsDemoBetaActivation else { throw RunDisplayFailure.invalidConfiguration }
+        return try RunCancellationTransport(endpoint:endpoint,mode:mode,validate:validate)
     }
 
     private init(endpoint: MessageEndpoint, mode: WireMode, validate: @escaping @MainActor @Sendable () throws -> Void) throws {

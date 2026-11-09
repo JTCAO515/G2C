@@ -18,6 +18,19 @@ struct M4LocalEndpointTests {
         }
     }
 
+    @Test func signedDemoBetaOnlyAdmitsTheExactOrigin() throws {
+        let fixed = try #require(URL(string: "https://api-beta.go2china.space"))
+        #expect(MessageEndpoint.isDemoBetaEndpoint(fixed, bundleIdentifier: "space.go2china.app", signedMarker: true))
+        #expect(!MessageEndpoint.isDemoBetaEndpoint(fixed, bundleIdentifier: "space.go2china.app", signedMarker: false))
+        #expect(!MessageEndpoint.isDemoBetaEndpoint(fixed, bundleIdentifier: "space.go2china.foundation.local", signedMarker: true))
+        for raw in ["http://api-beta.go2china.space", "https://api-beta.go2china.space:443",
+                    "https://api-beta.go2china.space/", "https://api-beta.go2china.space/v1",
+                    "https://api-beta.go2china.space.evil.invalid", "https://api-beta.go2china.space?mode=1"] {
+            let url = try #require(URL(string: raw))
+            #expect(!MessageEndpoint.isDemoBetaEndpoint(url, bundleIdentifier: "space.go2china.app", signedMarker: true))
+        }
+    }
+
     @Test func betaActivationStillRequiresTheBuildFlagAndCallerCapability() throws {
         let url=URL(string:"https://api-beta.go2china.space")!
         let endpoint=try MessageEndpoint(url:url,maximumRequestBytes:128,maximumResponseBytes:128,allowLoopbackHTTP:true)
