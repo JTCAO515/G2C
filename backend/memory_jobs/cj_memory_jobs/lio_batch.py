@@ -8,6 +8,8 @@ from .codec import InvalidInput, decode_v2, encode_v2
 
 
 VERSION = 'CJ020-lio.1'
+JOB_PREFIX = 'lio-message-v1:'
+ATTEMPT_PREFIX = 'lio-message-attempt-v1:'
 
 
 def _canonical(value):
@@ -42,16 +44,16 @@ def stream_key(source):
     return sha256(_canonical(dict(version=VERSION, source=asdict(source)))).hexdigest()
 
 
-def job_ids(source, message):
+def job_ids(scope, message):
     receipt = message.receipt
     # Versions and timeouts never mint a replacement of the same original.
-    identity = sha256(_canonical([source.cursor.scope, receipt.conversation_id, receipt.generation,
+    identity = sha256(_canonical([scope, receipt.conversation_id, receipt.generation,
                                    receipt.message_id, receipt.run_id])).hexdigest()
-    return 'lio-message-v1:' + identity, 'lio-message-attempt-v1:' + identity
+    return JOB_PREFIX + identity, ATTEMPT_PREFIX + identity
 
 
 def original_input(source, message):
-    job_id, attempt_id = job_ids(source, message)
+    job_id, attempt_id = job_ids(source.cursor.scope, message)
     cursor = source.cursor
     # The original enqueue proof keeps the existing cleanup reader's grammar.
     # Lio isolation lives in the batch version, stream, and original job IDs.

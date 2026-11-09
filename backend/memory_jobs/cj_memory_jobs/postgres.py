@@ -164,7 +164,7 @@ class Transaction:
                 raise Unavailable('original accepted decision differs from batch')
         elif version==lio_batch.VERSION:
             source, rows, mode = lio_batch.decode_batch(batch)
-            if (job_id, attempt_id) != lio_batch.job_ids(source, rows[0]) or original != lio_batch.original_input(source, rows[0]):
+            if (job_id, attempt_id) != lio_batch.job_ids(source.cursor.scope, rows[0]) or original != lio_batch.original_input(source, rows[0]):
                 raise Unavailable('stored original Lio job differs')
         else:
             source, rows, mode = decode_v2(batch)
@@ -202,7 +202,7 @@ class Transaction:
         return self._enqueue_batch(source,rows,mode,job_id,attempt_id,original,encoded(source,rows,mode,decision))
 
     def enqueue_lio(self, source, message):
-        job_id, attempt_id = lio_batch.job_ids(source, message)
+        job_id, attempt_id = lio_batch.job_ids(source.cursor.scope, message)
         batch = lio_batch.encode_batch(source, (message,), 'incremental')
         return self._enqueue_batch(source, (message,), 'incremental', job_id, attempt_id,
                                    lio_batch.original_input(source, message), batch, lio=True)
@@ -220,6 +220,8 @@ class Transaction:
             if (stored[0].job_id,stored[0].attempt_id,stored[1],stored[2]) != (job_id,attempt_id,original,batch):
                 raise Conflict('original history task differs')
             return stored[0]
+        if not lio and (job_id.startswith(lio_batch.JOB_PREFIX) or attempt_id.startswith(lio_batch.ATTEMPT_PREFIX)):
+            raise Conflict('Lio job identity is reserved for original Lio intake')
         self.cur.execute('''SELECT 1 FROM cj_memory_erasure_fence WHERE scope_digest=%s
             AND ((kind='job_id' AND reference_sha256=%s) OR (kind='attempt_id' AND reference_sha256=%s)) LIMIT 1''',
             (self.scope_digest,sha256(job_id.encode()).hexdigest(),sha256(attempt_id.encode()).hexdigest()))

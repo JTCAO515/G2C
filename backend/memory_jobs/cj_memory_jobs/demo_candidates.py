@@ -76,6 +76,9 @@ class DemoCandidates:
         tx.require_live()
         return True
 
+    def _projection_job(self, scope, stored):
+        return None, None
+
     def processing_policy(self, context, token, job_id, attempt_id, original_input,
                           prepared_input_sha256, *, message_id, run_id, max_payload_bytes):
         stored, (repository, principal, guard) = self._binding(context, token, message_id, run_id)
@@ -111,6 +114,7 @@ class DemoCandidates:
     def current(self, context, token, message_id, run_id, after_candidate_id=''):
         """Only the current candidates from this protected original MESSAGE/RUN."""
         stored, (repository, _, guard) = self._binding(context, token, message_id, run_id)
+        job, attempt = self._projection_job(repository.scope, stored)
         with repository.transaction() as memory:
             tx = PublicationTransaction(memory)
             if not self._projection_available(tx):
@@ -122,12 +126,10 @@ class DemoCandidates:
                 WHERE i.scope=%s AND i.status='candidate' AND i.extent='long_term'
                 AND i.item_id>%s AND o.origin_refs = %s::jsonb
                 AND s.authorized AND s.active AND NOT s.confirmed AND s.expires_at>clock_timestamp()
-                AND (%s::text IS NULL OR EXISTS(
-                    SELECT 1 FROM cj_memory_history_job j WHERE (j.scope,j.job_id,j.attempt_id)=(o.scope,o.job_id,o.attempt_id)
-                    AND convert_from(j.batch,'UTF8')::jsonb->>'version'=%s))
+                AND (%s::text IS NULL OR (o.job_id,o.attempt_id)=(%s,%s))
                 ORDER BY i.item_id LIMIT 51''',
                 (tx.scope, after_candidate_id, json.dumps([origin_reference(stored)]),
-                 self.job_batch_version, self.job_batch_version))
+                 job, job, attempt))
             rows = tx.cur.fetchall()
             values = []
             for item_id, job_id, attempt_id in rows[:50]:

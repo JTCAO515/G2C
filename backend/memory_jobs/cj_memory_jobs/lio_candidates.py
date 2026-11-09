@@ -48,6 +48,9 @@ class LioCandidates(DemoCandidates):
     def _query_message(self, context, message_id):
         return context.query_lio_message(message_id)
 
+    def _projection_job(self, scope, stored):
+        return lio_batch.job_ids(scope, stored)
+
     def _projection_available(self, tx):
         tx.cur.execute('SELECT erased FROM cj_memory_history_fence WHERE scope_digest=%s',
                        (tx.scope_digest,))
@@ -78,7 +81,7 @@ class LioCandidates(DemoCandidates):
                     raise Conflict('original Lio turn differs')
                 source = SourceV2(snapshot.cursor, snapshot.source_version, snapshot.withdrawal_epoch)
                 message = snapshot.messages[0]
-                identities = lio_batch.job_ids(source, message)
+                identities = lio_batch.job_ids(source.cursor.scope, message)
                 tx = policy.transaction
                 status = tx.enqueue_lio(source, message)
                 prepared = None
