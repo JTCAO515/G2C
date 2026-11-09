@@ -56,16 +56,16 @@ class NeedsPlanChecks(Harness):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.host=RegisteredHost(cls.auth/'plans',Path(CONNINFO),{s:(12,2,30000) for s in ('valid','overlap','locked','changed','publish-first','new-item','foreign','missing-context')})
+        cls.host=RegisteredHost(cls.auth/'plans',Path(CONNINFO),{s:(12,2,30000) for s in ('valid','overlap','locked','changed','publish-first','new-item','foreign','missing-context','bad-schema','one-item','no-authority')})
         cls.env=dict(CJ_LOCAL_NEEDS_PROFILE='manual-v1',CJ_LOCAL_TRAVEL_CONTEXT='message-travel.1')
         for subject in cls.host.subjects:
             dev_auth.activate_travel(Path(CONNINFO),subject,cls.host.profiles[subject][1],ABI)
 
-    def setup_source(self,subject):
+    def setup_source(self,subject,items=None):
         host=self.host
         with patch.dict(os.environ,self.env),host.api(subject) as client:
             raw=json.dumps(dict(action_id='source-'+subject,needs_id='visit',expected_version=0,
-                source=dict(kind='manual',text='用户明确来源 / checked'),changes=dict(fixed_items=[
+                source=dict(kind='manual',text='用户明确来源 / checked'),changes=dict(fixed_items=items if items is not None else [
                     fixed('a','09:00','10:00',True),fixed('b','11:00','12:00',False)]))).encode()
             saved=client.post('/v1/needs-actions',content=raw,headers={**host.headers[subject],'Content-Type':'application/octet-stream'})
             self.assertEqual(saved.status_code,200,saved.text)
@@ -127,11 +127,20 @@ class NeedsPlanChecks(Harness):
         with self.assertRaises(LeaseUnavailable):worker.drafts.source.check(capture.binding,capture)
 
     def test_conflicting_or_locked_model_result_has_zero_candidate(self):
-        for subject,change in [('overlap',lambda d:d['items'][1]['schedule'].update(start=dict(date=known('2026-11-02'),time=known('09:30'),timezone=known('Asia/Shanghai'),utc_offset=dict(state='unknown')))),
-                               ('locked',lambda d:d['items'][0].update(text='changed locked source'))]:
+        for subject,change,diagnostic in [
+            ('overlap',lambda d:d['items'][1]['schedule'].update(start=dict(date=known('2026-11-02'),time=known('09:30'),timezone=known('Asia/Shanghai'),utc_offset=dict(state='unknown'))), 'stage=source'),
+            ('locked',lambda d:d['items'][0].update(text='changed locked source'), 'stage=source'),
+            ('bad-schema',lambda d:d['items'][0]['schedule']['start'].update(time=known('secret-invalid-time')), 'field=items[0].schedule.start.time'),
+        ]:
             with self.subTest(subject=subject):
                 self.setup_source(subject);worker,db=self.worker(subject,PlanModel(change))
-                outcome=worker.process()[0]
+                with self.assertLogs('cj_draft.needs_publisher',level='WARNING') as captured:
+                    outcome=worker.process()[0]
+                self.assertEqual(len(captured.output),1)
+                self.assertIn(diagnostic,captured.output[0])
+                self.assertNotIn('secret-invalid-time',captured.output[0])
+                self.assertNotIn('changed locked source',captured.output[0])
+                self.assertEqual(outcome.status,'completed')
                 self.assertIsNone(outcome.proposal_id)
                 scope=scope_for(ISSUER,subject)
                 with db.connect(scope) as conn:
@@ -139,6 +148,44 @@ class NeedsPlanChecks(Harness):
                     self.assertEqual(conn.execute('SELECT count(*) FROM cj_trip_needs_basis').fetchone()[0],0)
                     self.assertEqual(conn.execute('SELECT count(*) FROM cj_trip_record').fetchone()[0],0)
                     self.assertEqual(conn.execute("SELECT count(*) FROM cj_run_event WHERE kind='effect_committed'").fetchone()[0],0)
+
+    def test_single_locked_needs_candidate_publishes_without_formal_write(self):
+        from cj_draft.needs_context import publisher as context_publisher
+        subject='one-item'
+        original=fixed('lobby-meeting','09:00','10:00',True)
+        self.setup_source(subject,[original])
+        worker,db=self.worker(subject,PlanModel())
+        scope=scope_for(ISSUER,subject)
+        worker.drafts=context_publisher(db,checker_for(self.host.auth),worker.message_context,
+            lambda:self.host.headers[subject]['Authorization'][7:],scope)
+        outcome=worker.process()[0]
+        self.assertEqual(outcome.status,'completed')
+        self.assertIsNotNone(outcome.proposal_id)
+        repo=Repository(lambda:db.connect(scope),trip_scope_for(scope),structured=True)
+        items=json.loads(repo.proposal_detail(outcome.proposal_id).proposal.content)['items']
+        self.assertEqual([i['id'] for i in items],['lobby-meeting'])
+        self.assertEqual(items[0]['fixed'],original['locked'])
+        self.assertEqual(items[0]['schedule']['start']['time'],original['start']['time'])
+        with db.connect(scope) as conn:
+            self.assertEqual(conn.execute('SELECT count(*) FROM cj_trip_record').fetchone()[0],0)
+
+    def test_missing_final_guard_is_classified_and_does_not_publish(self):
+        subject='no-authority'
+        self.setup_source(subject)
+        worker,db=self.worker(subject,PlanModel())
+        publish=worker.drafts.publish_for_message
+        def without_final_guard(*args,**kwargs):
+            return publish(*args,before_publish=None)
+        worker.drafts.publish_for_message=without_final_guard
+        with self.assertLogs('cj_draft.needs_publisher',level='WARNING') as captured:
+            outcome=worker.process()[0]
+        self.assertEqual(len(captured.output),1)
+        self.assertIn('stage=authority field=publication',captured.output[0])
+        self.assertEqual(outcome.status,'completed')
+        self.assertIsNone(outcome.proposal_id)
+        with db.connect(scope_for(ISSUER,subject)) as conn:
+            self.assertEqual(conn.execute('SELECT count(*) FROM cj_trip_proposal').fetchone()[0],0)
+            self.assertEqual(conn.execute('SELECT count(*) FROM cj_trip_needs_basis').fetchone()[0],0)
     def test_new_activity_is_proposed_not_user_confirmed_or_supplier_verified(self):
         self.setup_source('new-item')
         def add(document):

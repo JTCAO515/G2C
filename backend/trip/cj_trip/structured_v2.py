@@ -1,7 +1,7 @@
 """structured.2 retains explicit NEEDS minute precision without adding seconds."""
 from datetime import time
 import re
-from .structured import _document,_date,_zone,_offset,_text,observation
+from .structured import _document,_event,_text
 
 VERSION='structured.2'
 
@@ -14,10 +14,7 @@ def _time(value):
 
 
 def event(value):
-    if type(value) is not dict or set(value)!={'date','time','timezone','utc_offset'}:
-        raise ValueError('explicit event observations required')
-    for field,check in (('date',_date),('time',_time),('timezone',_zone),('utc_offset',_offset)):
-        observation(value[field],check)
+    _event(value,_time)
 
 
 def validate_document(document):return _document(document,VERSION,event)

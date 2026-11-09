@@ -1,7 +1,7 @@
 from copy import deepcopy
 import pytest
 from test_structured import document
-from cj_trip.structured import validate_document as old
+from cj_trip.structured import FieldRejected,validate_document as old
 from cj_trip.structured_v2 import validate_document as new
 from cj_trip.domain import Proposal,packed
 
@@ -22,3 +22,12 @@ def test_new_still_rejects_text_time_extra_owner_duplicate_id():
                    lambda d:d['items'][0]['schedule']['start'].update(time={'state':'known','value':'tomorrow'})):
         value=document();value['content_version']='structured.2';mutate(value)
         with pytest.raises(ValueError):new(value)
+
+
+def test_missing_nested_field_is_reported_without_repeating_untrusted_keys():
+    value=document();value['content_version']='structured.2'
+    start=value['items'][0]['schedule']['start']
+    start['untrusted-value']=start.pop('utc_offset')
+    with pytest.raises(FieldRejected) as rejected:new(value)
+    assert rejected.value.field=='items[0].schedule.start.utc_offset'
+    assert rejected.value.rule=='required field missing'
