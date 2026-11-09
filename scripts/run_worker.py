@@ -52,6 +52,11 @@ HK_ASSEMBLY_PLAN_JSON = (
     'and source_category "unknown". Map exactly their IDs to explicit original participant IDs '
     'in proposed_subjects; use {} if no items are new. Do not invent source evidence or approval.'
 )
+HK_DEMO_CURRENT_TRIP_JSON = (
+    '\nWhen current_trip is present, use its content as the existing plan. Copy every fixed item '
+    'from that plan exactly, including its schedule, evidence and source fields. Keep the original '
+    'item IDs and put only new item IDs in proposed_subjects.'
+)
 
 
 def provider(real):
@@ -107,7 +112,7 @@ def _require_memory_configuration(cursor, scope, configuration, travel):
         raise RuntimeDenied('existing memory requires explicit runtime configuration')
 
 
-def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,formal_memory_configuration=None,account_checker_builder=None,run_credential=False,assembly_planning=False):
+def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,formal_memory_configuration=None,account_checker_builder=None,run_credential=False,assembly_planning=False,demo_planning=False):
     if draft_profile not in (None,'needs-structured.1','needs-current-trip.1'):
         raise CompositionUnavailable('unknown explicit draft profile')
     if place_draft_configuration is not None:
@@ -276,10 +281,15 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
                 or database.run_context is None or database.run_context.version!='CJ-LOCAL-RUN@2' or message_context is None):
             raise CompositionUnavailable('NEEDS draft profile requires registered M2/travel creation host')
         if draft_profile=='needs-structured.1':
-            from cj_draft.needs_local import publisher
+            if demo_planning:
+                from cj_draft.needs_context import publisher
+            else:
+                from cj_draft.needs_local import publisher
             drafts=publisher(database,checker,message_context,token,scope)
             if assembly_planning:
                 drafts.system+=HK_ASSEMBLY_PLAN_JSON
+            if demo_planning:
+                drafts.system+=HK_DEMO_CURRENT_TRIP_JSON
         else:
             from cj_api.local_current_plan import publisher
             drafts=publisher(database,checker,message_context,token,scope)
@@ -372,7 +382,7 @@ def run_once(database, model, auth_dir, *, memory_configuration=None,memory_conf
                                          draft_profile='needs-structured.1' if assembly_planning else draft_profile,
                                          place_draft_configuration=place_draft_configuration,formal_memory_configuration=formal_memory_configuration,
                                          account_checker_builder=account_checker_builder,run_credential=run_credential,
-                                         assembly_planning=assembly_planning).process()
+                                         assembly_planning=assembly_planning,demo_planning=scope in hk_demo_scopes).process()
         except Exception as error:
             if failure is None: failure = error
     if background_jobs is not None:results+=background_jobs.run_once(model)
