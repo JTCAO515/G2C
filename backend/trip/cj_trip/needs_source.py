@@ -44,14 +44,18 @@ class NeedsSourceAuthority:
         self._captures={}
         self._active=ContextVar('trip_needs_publication',default=None)
 
+    def _needs_reference(self,binding,stored):
+        command=Command.parse_v2(stored.raw)
+        if command.needs_reference is None:raise Denied('explicit original NEEDS reference required')
+        needs_id,revision=command.needs_reference
+        return needs_id,revision,None
+
     def capture(self,binding):
         token=self.token_supplier()
         with self.message_context.hold_for_effect(binding) as lease:
             principal=self.message_context.admit()
             stored=lease.original_message()
-            command=Command.parse_v2(stored.raw)
-            if command.needs_reference is None:raise Denied('explicit original NEEDS reference required')
-            needs_id,revision=command.needs_reference
+            needs_id,revision,original_hash=self._needs_reference(binding,stored)
             reference=lease.reference.public_value()
             def project(operation,context):
                 identity=lambda value:(value.issuer,value.subject,value.audience)
@@ -61,6 +65,8 @@ class NeedsSourceAuthority:
                     raise Denied('original source namespace mismatch')
                 snapshot=operation.detail(needs_id)
                 if snapshot is None or snapshot.version!=revision:raise Denied('original NEEDS revision changed')
+                digest=sha256(snapshot.content).hexdigest()
+                if original_hash is not None and digest!=original_hash:raise Denied('original NEEDS content changed')
                 if not 1<=revision<=self.max_revisions:raise Denied('source revision bound exceeded')
                 revisions=[];consumed=len(snapshot.content)
                 for version in range(1,revision+1):
@@ -74,7 +80,7 @@ class NeedsSourceAuthority:
                 if report.status=='INVALID':raise Denied('original source history invalid')
                 raw=packed(dict(version='TRIP-NEEDS-SOURCE@1',reference=reference,
                     needs_scope=operation.metadata.scope,needs_id=needs_id,revision=revision,
-                    content_sha256=sha256(snapshot.content).hexdigest(),
+                    content_sha256=digest,
                     snapshot=base64.b64encode(encode_snapshot(snapshot)).decode(),
                     revisions=[base64.b64encode(encode_revision(r)).decode() for r in revisions]))
                 if len(raw)>self.max_bytes:raise Denied('source envelope bound exceeded')
