@@ -821,6 +821,10 @@ private var developmentHostEnvironment: [String: String] {
     let history: ServerHistoryHost
     let runs: RunContainerHost
     let travelSelection: TravelSelectionModel?
+    #if G2C_DEMO_BETA
+    let demoDialogue: DemoDialogueMessageClient
+    let demoDialogueLease: Lease
+    #endif
     private let lifetime: DevelopmentMessageLifetime
     private let keyAdapter: ExistingMessageKeyAdapter
 
@@ -870,6 +874,13 @@ private var developmentHostEnvironment: [String: String] {
             transport = try NoRedirectTransport.developmentMessages(endpoint:endpoint,requestTimeout:10,resourceTimeout:20,validate:{try lifetime.validate()})
         }
         let credentials = DevelopmentMessageCredentials(token: configuration.token, scope: scope, lease: lease, lifetime: lifetime)
+        #if G2C_DEMO_BETA
+        let dialogueEndpoint = try MessageEndpoint(url: configuration.endpoint, maximumRequestBytes: 16_384,
+                                                   maximumResponseBytes: 65_536)
+        let demoDialogue = try DemoDialogueMessageClient(
+            recovery: recovery, scope: scope, endpoint: dialogueEndpoint, credentials: credentials,
+            validateSession: { try lifetime.validate() })
+        #endif
         let betaRead = configuration.endpoint.host == "api-beta.go2china.space"
         let runReads = try NoRedirectTransport(requestTimeout: betaRead ? 30 : 15, resourceTimeout: 150)
         let client = MessageHTTPClient(recovery: recovery, scope: scope, endpoint: endpoint,
@@ -928,6 +939,10 @@ private var developmentHostEnvironment: [String: String] {
         self.lifetime = lifetime; self.keyAdapter = keyAdapter
         self.messages = messages; self.history = history; self.runs = runs
         travelSelection = selectedTravel
+        #if G2C_DEMO_BETA
+        self.demoDialogue = demoDialogue
+        demoDialogueLease = lease
+        #endif
     }
 
     func invalidate() {

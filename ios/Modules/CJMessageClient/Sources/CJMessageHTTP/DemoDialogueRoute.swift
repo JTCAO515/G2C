@@ -29,7 +29,13 @@ enum DemoDialogueRoute {
         return validID(value)
     }
 
-    static func validateOriginal(_ raw: Data) throws {
+    struct Original {
+        let messageID: String
+        let conversationID: String?
+    }
+
+    @discardableResult
+    static func validateOriginal(_ raw: Data) throws -> Original {
         guard raw.count <= maximumRequestBytes else { throw MessageHTTPFailure.invalidConfiguration }
         try validateUnambiguousJSON(raw)
         guard let value = try JSONSerialization.jsonObject(with: raw) as? [String: Any] else {
@@ -50,10 +56,17 @@ enum DemoDialogueRoute {
                   flag.boolValue, value["conversation_id"] == nil else { throw MessageHTTPFailure.invalidConfiguration }
         }
         if let conversation = value["conversation_id"] {
-            guard let id = conversation as? String, id.hasPrefix("demo-dialogue-"),
-                  id.utf8.count == 46, id.utf8.dropFirst(14).allSatisfy({ (48...57).contains($0) || (97...102).contains($0) })
-            else { throw MessageHTTPFailure.invalidConfiguration }
+            guard let id = conversation as? String, validConversationID(id) else {
+                throw MessageHTTPFailure.invalidConfiguration
+            }
         }
+        return Original(messageID: id, conversationID: value["conversation_id"] as? String)
+    }
+
+    static func validConversationID(_ id: String) -> Bool {
+        let prefix = "demo-dialogue-"
+        return id.hasPrefix(prefix) && id.utf8.count == prefix.utf8.count + 32 &&
+            id.utf8.dropFirst(prefix.utf8.count).allSatisfy { (48...57).contains($0) || (97...102).contains($0) }
     }
 
     private static func validID(_ id: String) -> Bool {
