@@ -386,6 +386,14 @@
       "down": "backend/migrations/down/0048_deployment_schema_read.down.sql",
       "sha256": "3bf76317811eab5c23760ccf1ea510a0e6efc6e6e9b3d96e91d6ffc19a90b33a",
       "down_sha256": "03d3541b913fbbf7c3a05af46f6d24f7554174676f217ea487c1bbb617f42a32"
+    },
+    {
+      "version": 49,
+      "name": "demo_invitation",
+      "file": "backend/migrations/0049_demo_invitation.sql",
+      "down": "backend/migrations/down/0049_demo_invitation.down.sql",
+      "sha256": "010740be5eb752e12490ce69c09fc3330bbe51661bc788f3cc158c6cdc4b802a",
+      "down_sha256": "b3718afffdd212980339398bb081c5ee2c815f9785346b84f20e40c442b83dbd"
     }
   ]
 }

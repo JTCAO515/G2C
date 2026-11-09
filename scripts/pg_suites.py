@@ -647,7 +647,7 @@ GROUPS.update(hk_typed_memory=group_hk_typed_memory)
 
 
 def group_hk_typed_worker():
-    return script('backend/cj_api/tests/hk_typed_worker_pg.py')
+    return script('backend/cj_api/tests/hk_typed_worker_pg.py') or script('scripts/hk_demo_local_check.py')
 
 
 GROUPS.update(hk_typed_worker=group_hk_typed_worker)

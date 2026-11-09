@@ -5,14 +5,16 @@ from urllib.parse import parse_qsl
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
+from psycopg import Error as DatabaseError
 from starlette.concurrency import run_in_threadpool
 from .generated import (ErrorResponse, MessageReceipt, MessageReceiveResponse,
                         MessageReceiptQueryResponse, MessageSendStatusResponse, MessageHead)
 
 
-def _error(request, status, code, category, outcome, recovery):
+def _error(request, status, code, category, outcome, recovery, *,
+           message_en='Request unavailable',message_zh='请求不可用'):
     body = ErrorResponse.model_validate({'request_id':request.state.request_id, 'error':{
-        'code':code, 'category':category, 'message_en':'Request unavailable', 'message_zh':'请求不可用',
+        'code':code, 'category':category, 'message_en':message_en, 'message_zh':message_zh,
         'outcome':outcome, 'recovery':recovery}})
     return JSONResponse(body.model_dump(mode='json'), status_code=status)
 
@@ -154,6 +156,12 @@ def register_message_routes(app, boundary=None, max_body_bytes=None,formal_recei
             return _error(request, status, 'ACCESS_DENIED', 'access', 'failed', 'do_not_retry')
         if isinstance(exc, CommitUnknown):
             return _error(request, 503, 'MESSAGE_OUTCOME_UNKNOWN', 'dependency', 'unknown', 'reconcile_original')
+        if write and isinstance(exc,DatabaseError):
+            if exc.sqlstate=='P5D01':
+                return _error(request,429,'DEMO_DAILY_LIMIT','input','failed','do_not_retry',
+                    message_en='Daily limit of 40 questions reached',message_zh='今日已达到 40 个问题')
+            if exc.sqlstate=='P5D02':
+                return _error(request,403,'ACCESS_DENIED','access','failed','do_not_retry')
         if isinstance(exc, InvalidInput):
             return _error(request, 400, 'INVALID_INPUT', 'input', 'failed', 'do_not_retry')
         if isinstance(exc, InputConflict):

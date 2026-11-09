@@ -20,9 +20,11 @@ services:
   api:
     volumes:
       - /srv/g2c-beta/local-pg-socket:/run/g2c-pg:ro
+      - /srv/g2c-beta/demo-auth-socket:/run/g2c-demo:ro
   worker:
     volumes:
       - /srv/g2c-beta/local-pg-socket:/run/g2c-pg:ro
+      - /srv/g2c-beta/demo-auth-socket:/run/g2c-demo
   migrate:
     volumes:
       - /srv/g2c-beta/local-pg-socket:/run/g2c-pg:ro

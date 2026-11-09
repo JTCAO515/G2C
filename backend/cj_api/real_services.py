@@ -137,12 +137,14 @@ class RealServices:
     model:MeteredDashScopeProvider
     amap_key:str
     subjects:frozenset
+    demo_subjects:frozenset=frozenset()
 
     def __post_init__(self):
         if (type(self.model) is not MeteredDashScopeProvider or type(self.amap_key) is not str
                 or re.fullmatch(r'[A-Za-z0-9_-]{16,256}',self.amap_key) is None
                 or type(self.subjects) is not frozenset or not self.subjects
-                or any(type(s) is not str or re.fullmatch(r'm4-synthetic-[a-z0-9-]{1,80}',s) is None for s in self.subjects)):
+                or any(type(s) is not str or re.fullmatch(r'm4-synthetic-[a-z0-9-]{1,80}',s) is None for s in self.subjects)
+                or type(self.demo_subjects) is not frozenset or not self.demo_subjects<=self.subjects):
             raise ValueError('explicit M4 synthetic real service configuration required')
 
     def require_scope(self,scope):
@@ -150,9 +152,12 @@ class RealServices:
         if scope not in {scope_for(ISSUER,s) for s in self.subjects}:
             raise BudgetUnknown('M4 synthetic subject not admitted')
         self.model.authorization.check_date()
+        if self.demo_subjects and self.model.authorization.clock()>=DEADLINE and scope not in {
+                scope_for(ISSUER,s) for s in self.demo_subjects}:
+            raise BudgetUnknown('only Demo subjects authorized after original expiry')
 
     @classmethod
-    def from_environment(cls,auth_dir,*,authorization_guard=None):
+    def from_environment(cls,auth_dir,*,authorization_guard=None,demo_subjects=frozenset()):
         # Keys enter via explicit files or environment; never run security from a
         # request/worker. The Mac operator exports Keychain values privately.
         def secret(name):
@@ -166,10 +171,10 @@ class RealServices:
         if os.environ.get('CJ_M4_SYNTHETIC_ONLY')!='1':raise ValueError('M4 synthetic-only activation required')
         subjects=frozenset(json.loads((Path(auth_dir)/'invited.json').read_text()))
         root=Path.home()/'.local/share/g2c/m4-real-services'
-        budget=AuthorizationBudget(root,authorization_guard=authorization_guard)
+        budget=AuthorizationBudget(root,authorization_guard=authorization_guard,demo=bool(demo_subjects))
         model=MeteredDashScopeProvider(DashScopeConfig(
             M4_BASE,M4_MODEL,secret('CJ_MODEL_API_KEY'),max_output_tokens=M4_REAL_OUTPUT_TOKENS),budget)
-        return cls(model,secret('CJ_AMAP_WEB_KEY'),subjects)
+        return cls(model,secret('CJ_AMAP_WEB_KEY'),subjects,demo_subjects)
 
 
 class RealTools:

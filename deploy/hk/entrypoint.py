@@ -68,10 +68,16 @@ def worker_pulse():
 
 
 def worker(runtime):
+    from .demo_login import signing_socket
+    with signing_socket(runtime):
+        _run_worker(runtime)
+
+
+def _run_worker(runtime):
     # Missing transferred journal is a configuration failure, never a new quota.
     if not (Path.home()/'.local/share/g2c/m4-real-services/m4-outflows.sqlite').is_file():
         raise ValueError('original_shared_authorization_journal_required')
-    services=RealServices.from_environment(runtime.auth,authorization_guard=authorization)
+    services=RealServices.from_environment(runtime.auth,authorization_guard=authorization,demo_subjects=runtime.demo_subjects)
     with services.model.authorization.connect() as journal:services.model.authorization.require_producer(journal)
     probe=os.environ.get(ASSEMBLY_PROBE_MESSAGE)
     binding=None
@@ -95,6 +101,7 @@ def worker(runtime):
                 outcomes=run_worker.run_once(database,services.model,runtime.auth,tools_configuration=tools,real_services=services,account_admission=True,
                     hk_beta_b_run_credential=True,
                     hk_assembly_scopes=frozenset(scope_for(ISSUER,subject) for subject in runtime.assembly_subjects),
+                    hk_demo_scopes=frozenset(scope_for(ISSUER,subject) for subject in runtime.demo_subjects),
                     hk_assembly_run_credential_scopes=frozenset(
                         scope_for(ISSUER,subject) for subject in runtime.assembly_run_credential_subjects),
                     memory_configuration_for_scope=None if runtime.memory_runtime is None else runtime.memory_configuration_for_scope)

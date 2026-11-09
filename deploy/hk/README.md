@@ -226,6 +226,26 @@ Typed 保存、管理及既有 `/v1/memory-erasures` 不安装 V1 记忆写入�
 使用同一 lineage 最新签名安全点并重放 fence，无法核实最新 fence 时保留不可用状态。
 旧 `suspended.json` 和 `latest.json` 归档，保持原 Supabase 只读。
 
+### Demo 邀请码
+
+按 #685 指定的代号配置 `CJ_BETA_DEMO_SUBJECTS_JSON`，至多十个
+`m4-synthetic-demo-<12位代号>`，同时纳入原邀请、Typed API 策略和 worker 记忆选择。
+创建 UID10001 所有的 0700 `/srv/g2c-beta/demo-auth-socket`，worker 保留原签名私钥，
+API 只读挂载 Unix socket 目录。公网 `POST /v1/demo-invite-sessions` 的接口见 #685。
+
+迁移前暂停 API/worker 并核对原队列及签名 release。原 operator 用新镜像运行
+`python -B -m deploy.hk.demo_schema`，一次追加 0049 并保留原 fence，建立新的本地签名备份基准。
+用已挂载原 operator 和 worker 0600 文件的 operator 容器运行
+`python -B -m deploy.hk.demo_accounts bootstrap <subject> --digest <sha256> --expires-at <RFC3339>`，
+再运行 `insert <subject>` 做原 canonical Typed 预检和单次 profile 激活。
+邀请码原文只在开发 Mac 的 0600 文件，服务端仅保存摘要。
+
+`revoke <subject>` 立即拒绝原邀请码和会话；确认原 scope 无在途后，`rotate <subject>` 可登记
+新摘要与有效期，旧会话继续拒绝，每日计数保留。结果不明先 `inspect <subject>` 和原动作日志。
+MESSAGE 只对实际新接受的原件计数，每日北京时间 40 个；同原件回查和幂等重入沿用原回执。
+过旧服务期限后，实际模型和工具仅允许显式 Demo scope。已有 PG Meter 期间届满时，
+依原非重叠期间流程追加下一期并保留旧账本，再恢复新派发。
+
 ```sh
 uv run --locked python -B scripts/test.py
 CJ_PG_BINDIR=/path/to/pg17/bin CJ_PG17_BINDIR=/path/to/pg17/bin uv run --locked python -B scripts/pg_suites.py
