@@ -46,22 +46,38 @@ class _CandidateResult(_OriginalMessage, ResultSourcePolicyV3):
 
 class DemoCandidates:
     """Use only from the trusted internal assembly with an explicit subject roster."""
+    job_batch_version = None
+
     def __init__(self, collection, selected_subjects):
         if not isinstance(selected_subjects, frozenset) or not selected_subjects:
             raise ValueError('explicit internal Demo subjects required')
         self.collection = collection
         self.selected_subjects = selected_subjects
 
-    def _binding(self, context, token, message_id, run_id):
+    def _lookup(self, context, message_id, run_id):
         if context.principal.subject not in self.selected_subjects:
             raise Unavailable('Demo candidate scope unavailable')
-        stored = context.query_message(message_id)
+        stored = self._query_message(context, message_id)
         if stored is None or stored.receipt.run_id != run_id:
             raise Unavailable('original Demo message unavailable')
         head = context.send_status(stored.receipt.conversation_id).head
         if head is None or head.generation != stored.receipt.generation:
             raise Unavailable('original Demo conversation unavailable')
+        return stored, head
+
+    def _query_message(self, context, message_id):
+        return context.query_message(message_id)
+
+    def _binding(self, context, token, message_id, run_id):
+        stored, _ = self._lookup(context, message_id, run_id)
         return stored, self.collection._binding(context, token)
+
+    def _projection_available(self, tx):
+        tx.require_live()
+        return True
+
+    def _projection_job(self, scope, stored):
+        return None, None
 
     def processing_policy(self, context, token, job_id, attempt_id, original_input,
                           prepared_input_sha256, *, message_id, run_id, max_payload_bytes):
@@ -84,9 +100,12 @@ class DemoCandidates:
         stored, (repository, _, guard) = self._binding(context, token, message_id, run_id)
         with repository.transaction() as memory:
             tx = PublicationTransaction(memory)
-            tx.require_live()
+            if not self._projection_available(tx):
+                guard('demo_publication_absent')
+                return b'null'
             row, _ = tx.output(job_id, attempt_id)
-            if len(row[4]) != 1 or row[4][0].receipt != stored.receipt:
+            if (len(row[4]) != 1 or row[4][0].receipt != stored.receipt
+                    or self.job_batch_version is not None and json.loads(row[2])['version'] != self.job_batch_version):
                 raise Unavailable('original Demo publication message differs')
             result = original_result(tx, job_id, attempt_id, expected_version=VERSION_DEMO)
             guard('demo_publication_receipt')
@@ -95,17 +114,22 @@ class DemoCandidates:
     def current(self, context, token, message_id, run_id, after_candidate_id=''):
         """Only the current candidates from this protected original MESSAGE/RUN."""
         stored, (repository, _, guard) = self._binding(context, token, message_id, run_id)
+        job, attempt = self._projection_job(repository.scope, stored)
         with repository.transaction() as memory:
             tx = PublicationTransaction(memory)
-            tx.require_live()
+            if not self._projection_available(tx):
+                guard('demo_candidates_absent')
+                return None
             tx.cur.execute('''SELECT i.item_id,o.job_id,o.attempt_id FROM cj_memory_item i
                 JOIN cj_memory_history_origin o ON (o.scope,o.source_id,o.item_id)=(i.scope,i.source_id,i.item_id)
                 JOIN cj_memory_source s ON (s.scope,s.source_id,s.version)=(i.scope,i.source_id,i.source_version)
                 WHERE i.scope=%s AND i.status='candidate' AND i.extent='long_term'
                 AND i.item_id>%s AND o.origin_refs = %s::jsonb
                 AND s.authorized AND s.active AND NOT s.confirmed AND s.expires_at>clock_timestamp()
+                AND (%s::text IS NULL OR (o.job_id,o.attempt_id)=(%s,%s))
                 ORDER BY i.item_id LIMIT 51''',
-                (tx.scope, after_candidate_id, json.dumps([origin_reference(stored)])))
+                (tx.scope, after_candidate_id, json.dumps([origin_reference(stored)]),
+                 job, job, attempt))
             rows = tx.cur.fetchall()
             values = []
             for item_id, job_id, attempt_id in rows[:50]:
