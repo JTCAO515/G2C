@@ -410,6 +410,14 @@
       "down": "backend/migrations/down/0051_demo_needs_cards.down.sql",
       "sha256": "4d22d705074f03aa8e6dce4f2b121d8931b766f57b0631069db9b820a8e9a4c5",
       "down_sha256": "2d1967999ef0f519f6f17a074af0012e5757250fc36d1381d399924822728a05"
+    },
+    {
+      "version": 52,
+      "name": "demo_trip_adoption",
+      "file": "backend/migrations/0052_demo_trip_adoption.sql",
+      "down": "backend/migrations/down/0052_demo_trip_adoption.down.sql",
+      "sha256": "6a58dec6b6adaf6debdb6bb582943f95411ff28229b0dd09c16c381e3aac26d2",
+      "down_sha256": "9400c21673bb84e2969f90a3152d428387492dc71af0c192993b4e00422cbac0"
     }
   ]
 }

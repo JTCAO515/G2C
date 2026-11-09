@@ -1,5 +1,5 @@
 {
-  "version": "1.28.0",
+  "version": "1.29.0",
   "stores": [
     {
       "id": "business",
@@ -19,6 +19,7 @@
             "cj_message_chat",
             "cj_message_receipt",
             "cj_demo_needs_card",
+            "cj_demo_trip_adoption",
             "cj_message_delivery",
             "cj_message_draft",
             "cj_travel_context",
@@ -43,6 +44,7 @@
           "sensitive_fields": [
             "raw_input bytes",
             "draft original_utf8",
+            "Demo Trip adoption intent digest, original MESSAGE and canonical proposal association; cascades on account erasure",
             "Demo needs card original fields, corrections and action digests; cascades from original MESSAGE on account erasure",
             "conversation/message/run IDs and receipts",
             "delivery state/history metadata",

@@ -20,7 +20,7 @@ import psycopg
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.serialization import Encoding,NoEncryption,PrivateFormat,PublicFormat
 from fastapi.testclient import TestClient
-from cj_api.local_app import ISSUER,LocalDatabase,create_local_app,scope_for
+from cj_api.local_app import ISSUER,LocalDatabase,create_local_app,load_confirmation_signer,scope_for
 from cj_api.local_worker_context import checker_for
 from cj_agent.provider import FakeProvider
 from cj_api.local_run_context import load_run_context
@@ -249,6 +249,46 @@ def check_planning(api, headers, foreign, database, auth, memory, conninfo):
             (scope,'confirm_needs')).fetchone()==(2,)
         assert db.execute('SELECT count(*) FROM cj_trip_record WHERE scope=%s',
             (trip_scope_for(scope),)).fetchone()==(0,)
+    from cj_api.demo_dialogue_trip import DialogueTripCards
+    from cj_message.domain import CommitUnknown
+
+    adoption=dict(version='DEMO-dialogue-action.1',action_id='demo-trip-adopt',
+        conversation_id=original['conversation_id'],card_id=trip_card['card_id'],
+        expected_version=trip_card['version'],operation='accept_trip')
+    post(actions,dict(adoption,expected_version=2),400)
+    post(actions,dict(adoption,action_id='foreign-trip-adopt'),503,bearer=foreign)
+    canonical_adopt=DialogueTripCards.adopt
+    invocations=[]
+
+    def commit_then_lose(instance,token,intent):
+        invocations.append(intent.trip_action_id)
+        canonical_adopt(instance,token,intent)
+        raise CommitUnknown('synthetic committed adoption ACK loss')
+
+    with patch.object(DialogueTripCards,'adopt',autospec=True,side_effect=commit_then_lose):
+        post(actions,adoption,503)
+        accepted=api.get(actions,params={'action_id':'demo-trip-adopt'},headers=headers).json()['receipt']
+        assert accepted['committed_version']==1 and accepted['trip_id']==trip_card['trip_id']
+        assert post(actions,adoption)['receipt']==accepted and len(invocations)==1
+    assert api.get(actions,params={'action_id':'demo-trip-adopt'},headers=foreign).json()['receipt'] is None
+    post(actions,dict(adoption,card_id='p-'+'0'*36),409)
+    with psycopg.connect(**conninfo) as db:
+        assert db.execute('SELECT version FROM cj_trip_record WHERE scope=%s AND trip_id=%s',
+                          (trip_scope_for(scope),accepted['trip_id'])).fetchone()==(1,)
+        assert db.execute('SELECT count(*) FROM cj_trip_receipt WHERE scope=%s AND proposal_id=%s',
+                          (trip_scope_for(scope),trip_card['proposal_id'])).fetchone()==(1,)
+        try:
+            with db.transaction():
+                migrate.down(db,migrate.load(),51)
+        except psycopg.errors.RaiseException as exc:
+            assert 'demo Trip adoption originals must be preserved' in str(exc)
+        else:
+            raise AssertionError('migration down erased original Trip adoption')
+    terminal_cursor=rows[-1]['event_id']
+    resumed=api.get(events,params={'message_id':next_message['message_id']},
+        headers={**headers,'Last-Event-ID':terminal_cursor})
+    assert resumed.status_code==200 and resumed.text==''
+    print('PASS explicit C Trip adoption, real original receipt, committed ACK loss readback and no second invocation')
     print('PASS signed needs card, correction/replay, failed enqueue rollback, typed and text confirmation, original planning outbox and protected pending Trip')
 
 
@@ -300,7 +340,7 @@ def exercise(root,conninfo):
         local_run_context.provision_budget(path,context,other)
         dev_auth.activate_travel(path,other,context,ABI)
         app=create_local_app(conninfo_path=None,auth_dir=auth,run_context=context,database=database,account_admission=True,
-            demo_dialogue_subjects=frozenset({SUBJECT,other}))
+            confirmation_signer=load_confirmation_signer(auth),demo_dialogue_subjects=frozenset({SUBJECT,other}))
         demo_login.register_demo_login(app)
         with demo_login.signing_socket(runtime),TestClient(app) as api:
             def login(code,consent=True):
@@ -459,11 +499,12 @@ if __name__=='__main__':
         with pg_suites.cluster('demo',port=55649,role='cj_demo_init',root=root/'pg',socket=root/'s') as conninfo:
             with psycopg.connect(**conninfo,autocommit=True) as connection:
                 migrations=migrate.load();migrate.up(connection,migrations,migrations[-1]['version'])
-            with patch.object(migrate,'load',return_value=migrations[:50]):
-                with pg_suites.cluster('old-blueprint',port=55651,role='cj_demo_blueprint',
-                        root=root/'old-blueprint',socket=root/'old-blueprint-s') as previous:
-                    with psycopg.connect(**previous,autocommit=True) as connection:
-                        migrate.up(connection,migrations,50)
-                    verify_upgrade(root/'upgrade-50',previous,50)
-            verify_upgrade(root/'upgrade-51',conninfo,51)
+            for target in (50,51):
+                with patch.object(migrate,'load',return_value=migrations[:target]):
+                    with pg_suites.cluster('old-blueprint',port=55651,role='cj_demo_blueprint',
+                            root=root/f'old-blueprint-{target}',socket=root/'old-blueprint-s') as previous:
+                        with psycopg.connect(**previous,autocommit=True) as connection:
+                            migrate.up(connection,migrations,target)
+                        verify_upgrade(root/f'upgrade-{target}',previous,target)
+            verify_upgrade(root/'upgrade-52',conninfo,52)
             exercise(root,conninfo)

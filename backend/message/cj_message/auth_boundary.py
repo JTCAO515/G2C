@@ -337,13 +337,21 @@ class Boundary:
         from .demo_dialogue import query
         return query(self._service(token), message_id)
 
-    def act_dialogue(self, token, raw):
-        from .demo_needs_cards import act
-        return act(self._service(token), raw)
+    def act_dialogue(self, token, raw, trip_cards):
+        from .demo_needs_cards import Action, act
+        from .demo_trip_adoption import act as adopt
+        action=Action.parse(raw)
+        service=self._service(token)
+        if action.operation=='accept_trip':
+            return adopt(service,token,action,trip_cards)
+        return act(service,action)
 
-    def query_dialogue_action(self, token, action_id):
+    def query_dialogue_action(self, token, action_id, trip_cards):
         from .demo_needs_cards import query
-        return query(self._service(token), action_id)
+        from .demo_trip_adoption import query as query_trip
+        service=self._service(token)
+        receipt=query(service,action_id)
+        return receipt if receipt is not None else query_trip(service,token,action_id,trip_cards)
 
     def send_status_v2(self, token, conversation_id, message_id=None):
         return self._service(token).send_status_v2(conversation_id,message_id)

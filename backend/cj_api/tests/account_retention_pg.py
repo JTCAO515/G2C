@@ -121,6 +121,9 @@ def main(root,conninfo):
                               (account,'retained-message')).fetchone()
             conn.execute("INSERT INTO cj_demo_needs_card(scope,origin_message_id,origin_run_id,card_id,version,fields) "
                          "VALUES(%s,%s,%s,%s,1,%s)",(account,'retained-message',run,'needs-'+'a'*32,b'{}'))
+            conn.execute("INSERT INTO cj_demo_trip_adoption(scope,action_id,original_message_id,proposal_id,"
+                         "candidate_hash,input_sha256) VALUES(%s,%s,%s,%s,%s,%s)",
+                         (account,'fixture-trip-adoption','retained-message','p-fixture','a'*64,'b'*64))
     host2.create('real-b-domain-erasure',digest(b'explicit local B domain proof'),'account',plan)
     # The real API creates this prepared operation before confirmation.
     with store.transaction('real-b-domain-erasure') as cur:
@@ -140,6 +143,8 @@ def main(root,conninfo):
         assert conn.execute('SELECT count(*) FROM cj_message_receipt WHERE scope=%s',(owner,)).fetchone()[0]==0
         assert conn.execute('SELECT count(*) FROM cj_demo_needs_card WHERE scope=%s',(owner,)).fetchone()==(0,)
         assert conn.execute('SELECT count(*) FROM cj_demo_needs_card WHERE scope=%s',(other,)).fetchone()==(1,)
+        assert conn.execute('SELECT count(*) FROM cj_demo_trip_adoption WHERE scope=%s',(owner,)).fetchone()==(0,)
+        assert conn.execute('SELECT count(*) FROM cj_demo_trip_adoption WHERE scope=%s',(other,)).fetchone()==(1,)
         assert conn.execute('SELECT count(*) FROM cj_run_record WHERE scope=%s',(owner,)).fetchone()[0]==0
         assert conn.execute('SELECT count(*) FROM cj_usage_ledger_candidate WHERE scope_id=%s',(ledger_scope_for(owner,context.current.meter),)).fetchone()[0]==0
         assert conn.execute('SELECT count(*) FROM cj_usage_ledger_candidate WHERE scope_id=%s',(old_owner_ledger,)).fetchone()[0]==0

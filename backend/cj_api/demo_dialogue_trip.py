@@ -7,6 +7,7 @@ from cj_draft.needs_local import publisher
 from cj_message.travel_reference import MessageContextAuthority
 from cj_trip.auth_boundary import Boundary
 from cj_trip.domain import Denied, packed
+from cj_trip.needs_action import NeedsAction
 from cj_trip.needs_action_store import NeedsActions
 from cj_trip.scoped_discovery import DiscoveryQuery
 
@@ -15,7 +16,7 @@ from .local_app import scope_for
 
 
 class DialogueTripCards(Boundary):
-    def __init__(self, database, auth_dir, selected_subjects):
+    def __init__(self, database, auth_dir, selected_subjects, confirmation_signer):
         self.database=database
         checker=account_checker_for(auth_dir,database,selected_subjects=selected_subjects)
 
@@ -23,7 +24,7 @@ class DialogueTripCards(Boundary):
             owner=scope_for(principal.issuer,principal.subject)
             return lambda:database.connect(owner),trip_scope_for(owner)
 
-        super().__init__(checker,resolve,structured=True)
+        super().__init__(checker,resolve,confirmation_signer,structured=True)
 
     def _bind(self, token):
         repository,principal,guard=super()._bind(token)
@@ -67,3 +68,22 @@ class DialogueTripCards(Boundary):
         encoded=self.with_operation(token,lambda context:context.discover_demo_needs(query,project))
         value=json.loads(encoded)
         return value['card'],value['sources']
+
+
+    @staticmethod
+    def _adoption_receipt(value):
+        if value is None:
+            return b'null'
+        return packed(dict(kind=value.kind,proposal_id=value.proposal_id,candidate_hash=value.candidate_hash,
+                           trip_id=value.trip_id,committed_version=value.committed_version))
+
+    def adopt(self, token, intent):
+        request=NeedsAction.parse(packed(dict(version='TRIP-needs-action.1',action_id=intent.trip_action_id,
+            kind='accept',proposal_id=intent.proposal_id,candidate_hash=intent.candidate_hash)))
+        response=self.with_operation(token,lambda context:self._adoption_receipt(context.act_needs(request)))
+        return json.loads(response)
+
+    def original_adoption(self, token, intent):
+        response=self.with_operation(token,
+            lambda context:self._adoption_receipt(context.query_action(intent.trip_action_id)))
+        return json.loads(response)

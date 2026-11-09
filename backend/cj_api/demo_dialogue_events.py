@@ -93,6 +93,8 @@ def _read(boundary, resolve_run_repository, trip_cards, token, mid, after):
         state = repository.snapshot_optional(binding)
         if state is None:
             page = _project(binding,state,after)
+        elif state.status in TERMINAL and after==state.sequence*RUN_EVENT_STRIDE:
+            page = EventPage((),True,True,False)
         else:
             needs=(ctx.query_dialogue_needs(binding.message_id,binding.run_id)
                    if 'demo_needs_card' in state.effects else None)

@@ -81,14 +81,16 @@ class Action:
             operation = value.get('operation')
             if operation == 'correct_needs':
                 fields.add('changes')
-            elif operation != 'confirm_needs':
+            elif operation not in ('confirm_needs','accept_trip'):
                 raise InvalidInput('unsupported dialogue action')
             if set(value) != fields:
                 raise InvalidInput('invalid dialogue action fields')
             conversation, card, version = value['conversation_id'], value['card_id'], value['expected_version']
+            pattern=CARD if operation!='accept_trip' else re.compile(r'p-[0-9a-f-]{36}')
             if (type(conversation) is not str or not CHAT_PATTERN.fullmatch(conversation)
-                    or type(card) is not str or not CARD.fullmatch(card)
-                    or type(version) is not int or not 1 <= version < 64):
+                    or type(card) is not str or not pattern.fullmatch(card)
+                    or type(version) is not int or not 1 <= version < 64
+                    or operation=='accept_trip' and version!=1):
                 raise InvalidInput('invalid dialogue action identity')
             changes = value.get('changes')
             if operation == 'correct_needs':
@@ -168,8 +170,8 @@ def _confirm(service, tx, card, conversation, chat, action, command=None):
                    operation=action.operation,result_message_id=queued.message_id), queued
 
 
-def act(service, raw):
-    action = Action.parse(raw)
+def act(service, action):
+    from .demo_trip_adoption import find as find_adoption
     with service.repository.transaction() as tx:
         tx.lock_scope()
         old = _lookup(tx,action.id)
@@ -177,6 +179,8 @@ def act(service, raw):
             if old.input_sha256 != action.digest:
                 raise InputConflict()
             return _receipt(tx,old)
+        if find_adoption(tx,action.id) is not None:
+            raise InputConflict()
         chat = tx.chat(action.conversation)
         row = tx.cur.execute('SELECT '+_COLUMNS+' FROM cj_demo_needs_card '
                              'WHERE scope=%s AND card_id=%s ORDER BY version DESC LIMIT 1',
@@ -232,6 +236,9 @@ def confirm_text(service, tx, command, conversation, chat):
         raise SequenceConflict('needs card has no remaining revisions')
     action = Action('speech-'+_identity(tx.scope,command.id),conversation,card.id,card.version,
                     'confirm_needs',command.input_sha256)
+    from .demo_trip_adoption import find as find_adoption
+    if find_adoption(tx,action.id) is not None:
+        raise InputConflict()
     updated, queued = _confirm(service,tx,card,conversation,chat,action,command)
     _insert(tx.cur,tx.scope,updated)
     return queued

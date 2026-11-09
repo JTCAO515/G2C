@@ -71,7 +71,7 @@ def register_demo_dialogue_routes(app, boundary, resolve_run_repository, trip_ca
                 return message_failure(request,exc,True)
             return _body_error(request,exc)
         try:
-            receipt = await run_in_threadpool(boundary.act_dialogue,token,raw)
+            receipt = await run_in_threadpool(boundary.act_dialogue,token,raw,trip_cards)
             return action_response(request,receipt)
         except Exception as exc:
             return message_failure(request,exc,True)
@@ -86,7 +86,7 @@ def register_demo_dialogue_routes(app, boundary, resolve_run_repository, trip_ca
         except (ValueError,UnicodeError):
             return _error(request,400,'INVALID_INPUT','input','failed','do_not_retry')
         try:
-            receipt = await run_in_threadpool(boundary.query_dialogue_action,token,aid)
+            receipt = await run_in_threadpool(boundary.query_dialogue_action,token,aid,trip_cards)
             return action_response(request,receipt)
         except Exception as exc:
             return message_failure(request,exc,False)
