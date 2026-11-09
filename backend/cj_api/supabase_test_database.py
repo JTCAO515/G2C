@@ -25,6 +25,7 @@ from .composition import CompositionUnavailable
 from .local_app import LocalDatabase,_require_unbound
 
 REF='sajkhvjpllldfyfryalx'
+SUPABASE_TEST_SCHEMA=48
 HOST='aws-0-ap-southeast-1.pooler.supabase.com'
 CA_SHA='807025ad50d4ed219d2c9c7d299c004f824eb00cf7f65afef607d07b72e6cafa'
 HK_SOCKET='/run/g2c-pg'

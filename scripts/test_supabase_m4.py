@@ -1,9 +1,17 @@
 import json
 import uuid
+from pathlib import Path
 import httpx
 import pytest
 
 import supabase_m4 as subject
+
+
+def test_merged_local_only_migration_is_refused_before_supabase_access(monkeypatch):
+    manifest=Path(__file__).resolve().parents[1]/'backend/migrations/manifest.json'
+    monkeypatch.setattr(subject.subprocess,'check_output',lambda *args,**kwargs:manifest.read_bytes())
+    with pytest.raises(subject.TestUnavailable,match='local_only_migration_chain'):
+        subject.migrate_test(object(),apply=True)
 
 
 def journal(tmp_path,monkeypatch):

@@ -12,7 +12,7 @@ sys.path.insert(0,str(ROOT/'scripts'))
 import migrate,pg_suites
 import supabase_pool_gate as gate
 from cj_api.local_app import ISSUER,scope_for
-from cj_api.supabase_test_database import SupabaseTestDatabase,require_identity
+from cj_api.supabase_test_database import SUPABASE_TEST_SCHEMA,SupabaseTestDatabase,require_identity
 from cj_api.composition import CompositionUnavailable
 from cj_run.core import Binding
 
@@ -83,7 +83,7 @@ def main():
         with pg_suites.cluster('pool_target',port=55884,role='cj_pool_target_init',root=root/'target',socket=root/'s') as config:
             if not str(config['host']).startswith('/'):raise ValueError('private_Unix_fixture_required')
             with psycopg.connect(**config,autocommit=True) as conn:
-                migrate.up(conn,migrate.load(),48)
+                migrate.up(conn,migrate.load(),SUPABASE_TEST_SCHEMA)
                 for table in gate.TABLES:
                     for row in data[table]:gate.insert(conn,table,row,query)
             with psycopg.connect(**dict(config,user='cj_m1_runtime'),autocommit=True) as conn:
