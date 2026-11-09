@@ -16,9 +16,9 @@ class LioTripCards:
 
         self.boundary = Boundary(checker, resolve, structured=True)
 
-    def read(self, token, binding):
+    def read(self, token, binding, *, edit=False):
         def original(context):
-            receipt = context.lio_plan_receipt(binding)
+            receipt = context.lio_edit_receipt(binding) if edit else context.lio_plan_receipt(binding)
             if receipt is None:
                 return b'null'
             revisions = context.lio_revisions(receipt.trip_id, before=receipt.committed_version + 1, limit=1)

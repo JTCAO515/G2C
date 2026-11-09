@@ -269,15 +269,18 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
                 before = source['current_trip']
                 title = 'Beijing walk' if before is None else 'Beijing walks'
                 if before is None:
-                    def at(clock):
-                        return dict(date=dict(state='known', value='2026-11-11'),
+                    def at(day, clock):
+                        return dict(date=dict(state='known', value=day),
                                     time=dict(state='known', value=clock),
                                     timezone=dict(state='known', value='Asia/Shanghai'),
                                     utc_offset=dict(state='unknown'))
                     items = [dict(id='park', text='Park walk', verification='pending', evidence=[],
-                                  schedule=dict(start=at('09:00'), end=at('10:00')),
+                                  schedule=dict(start=at('2026-11-11','09:00'), end=at('2026-11-11','10:00')),
+                                  fixed=dict(state='unknown'), source_category='unknown', source_refs=[]),
+                             dict(id='museum', text='Museum visit', verification='pending', evidence=[],
+                                  schedule=dict(start=at('2026-11-12','13:00'), end=at('2026-11-12','14:00')),
                                   fixed=dict(state='unknown'), source_category='unknown', source_refs=[])]
-                    subjects = {'park':['party']}
+                    subjects = {'park':['party'],'museum':['party']}
                 else:
                     items = before['content']['items']
                     subjects = {}
@@ -394,19 +397,19 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     saved = api.get(timeline, headers=owner).json()['messages'][-1]
     assert saved['status'] == 'completed' and saved['answer'] == 'I saved your itinerary.', saved
     assert saved['trip']['title'] == 'Beijing walk'
-    assert saved['trip']['days'][0]['items'][0]['fixed'] is None
+    assert saved['trip']['days'][0]['items'][0]['fixed'] is False
     first_version = api.get('/v1/lio/trip', headers=owner).json()
     assert first_version['current'] == saved['trip']
     assert first_version['history'] == [] and first_version['undo_target'] is None
 
-    commit_plan = LioPlanPublisher._commit_plan
+    commit_plan = LioPlanPublisher._commit
     def lose_save_ack(publisher, *args):
         commit_plan(publisher, *args)
         raise TripCommitUnknown()
 
     change = original('lio-save-without-ack', request, 'en')
     assert api.post(messages, content=change, headers=owner).status_code == 200
-    with patch.object(LioPlanPublisher, '_commit_plan', lose_save_ack):
+    with patch.object(LioPlanPublisher, '_commit', lose_save_ack):
         assert [outcome.status for outcome in worker.process()] == ['unknown']
     cards = api.get(timeline, headers=owner).json()['messages'][-2:]
     assert cards[0] == saved
@@ -416,6 +419,7 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     assert api.post(messages, content=change, headers=owner).status_code == 200
     assert worker.process() == []
     check_lio_undo(api, owner, headers, cards)
+    check_lio_conversational_edit(api, owner, worker, original, model, conninfo, scope)
     withdrawals = ('Do not save it.', "Please don't save it yet.", 'Show me a draft without saving.',
                    "Please don't save this itinerary to my account.", 'I do not want this itinerary saved.',
                    'Can you show me before saving?', '请不要把行程保存到我的账户。')
@@ -482,6 +486,49 @@ def check_lio_undo(api, owner, foreign, cards):
     assert api.post(undo, headers=owner, content=json.dumps(
         dict(command, version='LIO-trip-undo.1', target=after['undo_target'])).encode()).status_code == 409
     print('PASS signed Lio current/history, undo original receipt recovery, replay, stale target, and isolation')
+
+
+def check_lio_conversational_edit(api, owner, worker, original, model, conninfo, scope):
+    from cj_draft.lio_plan import LioPlanPublisher
+    from cj_trip.domain import CommitUnknown
+
+    path = '/v1/lio/trip'
+    timeline = '/v1/lio/timeline'
+    before = api.get(path, headers=owner).json()['current']
+    raw = original('lio-edit-original', '把第二天下午换成天坛。', 'zh')
+    accepted = api.post('/v1/lio/messages', headers=owner, content=raw)
+    assert accepted.status_code == 200
+    commit = LioPlanPublisher._commit
+
+    def lose_edit_ack(publisher, *args):
+        commit(publisher, *args)
+        raise CommitUnknown('synthetic lost edit response')
+
+    calls = model.calls
+    with patch.object(LioPlanPublisher, '_commit', lose_edit_ack):
+        assert [outcome.status for outcome in worker.process()] == ['unknown']
+    assert model.calls == calls
+    observed = api.get(timeline, headers=owner).json()['messages'][-1]
+    after = api.get(path, headers=owner).json()
+    assert observed['status'] == 'completed' and observed['trip'] == after['current']
+    assert after['current']['trip_id'] == before['trip_id']
+    assert after['current']['days'][0] == before['days'][0]
+    old_stop, = before['days'][1]['items']
+    updated_stop, = after['current']['days'][1]['items']
+    assert updated_stop == dict(old_stop, label='天坛')
+    assert api.post('/v1/lio/messages', headers=owner, content=raw).json() == accepted.json()
+    assert worker.process() == []
+    with psycopg.connect(**conninfo) as db:
+        assert db.execute(
+            'SELECT count(*) FROM cj_run_metered_operation o JOIN cj_message_receipt m '
+            'ON (o.scope,o.run_id)=(m.scope,m.run_id) WHERE m.scope=%s AND m.message_id=%s',
+            (scope, 'lio-edit-original')).fetchone() == (0,)
+    undo = dict(version='LIO-trip-undo.1', action_id='lio-edit-undo', target=after['undo_target'])
+    assert api.post(path + '/undo', headers=owner, content=json.dumps(undo).encode()).json()['committed'] is True
+    restored = api.get(path, headers=owner).json()
+    assert restored['current'] == before and restored['history'][0] == after['current']
+    assert api.get(timeline, headers=owner).json()['messages'][-1]['trip'] == after['current']
+    print('PASS signed Lio day-two replacement, no model operation, original edit receipt recovery, and undo')
 
 
 def exercise(root,conninfo):

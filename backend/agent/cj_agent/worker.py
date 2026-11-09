@@ -102,7 +102,7 @@ class Outcome:
 
 
 class RunWorker:
-    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None, memory=None, message_context=None, tools=None, edit_publisher=None,edit_results=False,place_sources=None,memory_history=False,history_adapter=None,execution_lease=nullcontext,owned_transaction_lease=None,lio_locale=None,lio_planning=None,require_lio_confirmation=False):
+    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None, memory=None, message_context=None, tools=None, edit_publisher=None,edit_results=False,place_sources=None,memory_history=False,history_adapter=None,execution_lease=nullcontext,owned_transaction_lease=None,lio_locale=None,lio_planning=None,lio_edit=None,require_lio_confirmation=False):
         """`messages`: cj_message.domain.Service and `runs`: cj_run.core.Service, both bound to `scope`.
 
         `drafts`: optional cj_agent.draft.DraftPublisher for this user's TRIP scope; messages
@@ -126,6 +126,7 @@ class RunWorker:
         self.place_sources=place_sources
         self.lio_locale = lio_locale
         self.lio_planning = lio_planning
+        self.lio_edit = lio_edit
         self.require_lio_confirmation = require_lio_confirmation
 
     def process(self, limit=20):
@@ -180,7 +181,7 @@ class RunWorker:
             raise _Stopped(state)
         return state
 
-    def _step(self, binding, invoke, effect=None, *, draft=False):
+    def _step(self, binding, invoke, effect=None, *, draft=False, publication_deadline=None):
         """Serialize this worker's actual step start/publication against cancellation.
 
         This does not enable Service.dispatch or create a new execution authority.
@@ -197,9 +198,10 @@ class RunWorker:
                         raise _Stopped(state)
                     if state.status != 'running':
                         raise Conflict('step requires original running state')
-                    deadline=(self.budget_exit.prepare_publication(binding)
-                              if self.message_context is not None and draft and effect is not None
-                              and self.budget_exit is not None else None)
+                    deadline = publication_deadline
+                    if (deadline is None and self.message_context is not None and draft and effect is not None
+                            and self.budget_exit is not None):
+                        deadline = self.budget_exit.prepare_publication(binding)
                     context=(leases.enter_context(self.message_context.hold_for_effect(binding,source_lock=effect is not None))
                              if self.message_context is not None else None)
                     if self.runs.valid(binding) is not True:
@@ -393,6 +395,7 @@ class RunWorker:
                               tools=self.tools,edit_publisher=self.edit_publisher,edit_results=self.edit_results,place_sources=self.place_sources,
                               lio_locale=self.lio_locale,
                               lio_planning=self.lio_planning,
+                              lio_edit=self.lio_edit,
                               require_lio_confirmation=self.require_lio_confirmation,
                               runs=Service(OwnedRepository(), runs.valid))
             if self.edit_publisher is not None:
@@ -444,12 +447,15 @@ class RunWorker:
         if state.status == 'running':
             # Interrupted by a crash or restart: the provider may have billed or answered.
             return self._finish(receipt, self._event(binding, state, 'unknown'))
-        result_deadline=self.budget_exit.prepare_result_publication(self.runs,binding) if self.edit_results else None
+        lio_original = self.messages.query(receipt.message_id) if locale is not None and self.lio_edit else None
+        lio_replacement = lio_original is not None and self.lio_edit.matches(json.loads(lio_original.raw)['text'])
+        result_deadline = (self.budget_exit.prepare_result_publication(self.runs, binding)
+                           if self.edit_results or lio_replacement else None)
         try:
             state = self._event(binding, state, 'started')
         except Conflict:
             return Outcome(receipt.message_id, receipt.run_id, 'waiting')
-        stored = self.messages.query(receipt.message_id)
+        stored = lio_original if lio_original is not None else self.messages.query(receipt.message_id)
         command = json.loads(stored.raw)
         text = command['text']
         if self.memory is not None:
@@ -471,6 +477,9 @@ class RunWorker:
         try:
             from cj_message.lio_context import LioCitation, LioToolProgress, answer_prompt
 
+            if lio_replacement:
+                edited = self.lio_edit.execute(self, binding, state, stored, text, locale, result_deadline)
+                return self._finish(receipt, edited)
             if locale is not None and self.lio_planning is not None:
                 planning = self.lio_planning.execute(self, binding, state, text, locale)
                 if planning is not None:

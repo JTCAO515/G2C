@@ -8,7 +8,7 @@ from starlette.concurrency import run_in_threadpool
 from cj_message.demo_dialogue import LIO_CHAT_PATTERN, message_id
 from cj_message.domain import InvalidInput
 from cj_message.lio_context import SOURCE_EFFECT, TOOL_EFFECT
-from cj_message.lio_plan_needs import BOUND_EFFECT
+from cj_message.lio_plan_needs import BOUND_EFFECT, EDIT_BOUND_EFFECT
 from cj_run.core import Binding
 from cj_run.display_snapshot import SnapshotTooLarge
 
@@ -68,8 +68,12 @@ def _timeline(boundary, resolve_runs, trip_cards, token, conversation_id, before
                                 item.message_id, item.run_id, item.sequence) for item in page.messages]
             snapshots = repository.lio_timeline(bindings)
             for item, binding, (state, expired) in zip(page.messages, bindings, snapshots, strict=True):
-                trip = (trip_cards.read(token, binding)
-                        if state is not None and BOUND_EFFECT in state.effects else None)
+                trip = None
+                if state is not None:
+                    if EDIT_BOUND_EFFECT in state.effects:
+                        trip = trip_cards.read(token, binding, edit=True)
+                    elif BOUND_EFFECT in state.effects:
+                        trip = trip_cards.read(token, binding)
                 messages.append(_message(item, state, expired=expired, trip=trip))
         response = _json(dict(version=TIMELINE_VERSION, conversation_id=page.conversation_id,
                               messages=messages, next_before=page.next_before))

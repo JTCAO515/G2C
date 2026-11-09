@@ -10,6 +10,7 @@ from .needs_binding import capture_revision, needs_scope_for
 
 
 BOUND_EFFECT = 'lio_plan_needs_bound'
+EDIT_BOUND_EFFECT = 'lio_edit_needs_bound'
 
 
 def _origin_args(binding):
@@ -31,19 +32,30 @@ def original_needs(cursor, binding):
         'AND m.run_id=%s AND m.sequence=%s AND m.demo_dialogue_protocol=%s '
         'AND b.needs_scope=%s AND b.needs_id=%s '
         'AND EXISTS(SELECT 1 FROM cj_run_event e WHERE (e.scope,e.run_id)=(m.scope,m.run_id) '
-        'AND e.kind=%s AND e.value=%s)',
+        'AND e.kind=%s AND e.value IN (%s,%s))',
         (*_origin_args(binding), needs_scope_for(binding.scope), lio_needs_id(binding.scope, binding.conversation_id),
-         'effect_committed', BOUND_EFFECT)).fetchone()
+         'effect_committed', BOUND_EFFECT, EDIT_BOUND_EFFECT)).fetchone()
 
 
-def attach(cursor, binding, original, fields, references):
-    """Write within the original RUN transaction while its MESSAGE lease is held."""
+def _require_original(cursor, binding, original):
     origin = cursor.execute(
         'SELECT input_sha256 FROM cj_message_receipt WHERE scope=%s AND conversation_id=%s '
         'AND generation=%s AND message_id=%s AND run_id=%s AND sequence=%s '
         'AND demo_dialogue_protocol=%s', _origin_args(binding)).fetchone()
     if origin != (original.receipt.input_sha256,):
         raise Unavailable('original Lio planning authority unavailable')
+
+
+def attach_existing(cursor, binding, original):
+    """Bind a replacement to the unchanged, current Lio NEEDS revision."""
+    _require_original(cursor, binding, original)
+    capture_revision(cursor, binding.scope, binding.message_id, binding.run_id,
+                     lio_needs_id(binding.scope, binding.conversation_id), None)
+
+
+def attach(cursor, binding, original, fields, references):
+    """Write within the original RUN transaction while its MESSAGE lease is held."""
+    _require_original(cursor, binding, original)
     scope = needs_scope_for(binding.scope)
     needs_id = lio_needs_id(binding.scope, binding.conversation_id)
     cursor.execute("SELECT set_config('cj.needs_runtime_abi','NEEDS-MANUAL-RUNTIME@1',true)")

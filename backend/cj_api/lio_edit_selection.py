@@ -34,6 +34,11 @@ class LioEditSelection:
     candidate: Preview | None = None
 
 
+def match_edit(text):
+    utterance = text.strip()
+    return _CHINESE_EDIT.fullmatch(utterance) or _ENGLISH_EDIT.fullmatch(utterance)
+
+
 def _ordinal(value):
     return int(value) if value.isascii() and value.isdigit() else _ORDINALS[value.lower()]
 
@@ -90,8 +95,7 @@ def _select(items, target):
 
 def select_lio_edit(trip, text, locale, request_id):
     """Return an exact provisional change. This does not authorize publication."""
-    utterance = text.strip()
-    match = _CHINESE_EDIT.fullmatch(utterance) or _ENGLISH_EDIT.fullmatch(utterance)
+    match = match_edit(text)
     if match is None:
         return None
     target = match['target'].strip()

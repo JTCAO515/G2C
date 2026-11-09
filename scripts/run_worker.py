@@ -308,13 +308,16 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
         history=HistoryMemory(memory,OriginalHistory(messages,decisions))
     lio_locale = None
     lio_planning = None
+    lio_edit = None
     if demo_planning:
         from functools import partial
         from cj_message.lio_context import locale_for
         lio_locale = partial(locale_for, database)
         if lio_confirmation is not None:
+            from cj_api.local_lio_edit import LioEdit
             from cj_api.local_lio_planning import LioPlanning, LioPlanSave
             lio_planning = LioPlanning(database, LioPlanSave(database, drafts, lio_confirmation))
+            lio_edit = LioEdit(drafts, lio_confirmation)
     return RunWorker(scope=scope, messages=messages, runs=runs, provider=model, drafts=drafts,
         memory=memory,edit_publisher=None if edit_config is None else edit_config.publisher,edit_results=database.edit_results,
         memory_history=history is not None,history_adapter=history,
@@ -323,6 +326,7 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
         owned_transaction_lease=(lambda: database.lease_run_transactions(runs.repository)) if reuse_connections else None,
         tools=tools_configuration,place_sources=place_sources,lio_locale=lio_locale,
         lio_planning=lio_planning,
+        lio_edit=lio_edit,
         require_lio_confirmation=require_lio_confirmation,
         execution_guard=lambda binding: database.require_execution(binding.scope, binding, connection=execution_connection),
         needs_lease=needs_lease_for(database,checker,memory_credential if run_credential else token),
