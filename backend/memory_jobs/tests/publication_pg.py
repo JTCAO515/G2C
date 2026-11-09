@@ -662,6 +662,132 @@ def exercise_demo_candidates(conninfo, auth):
         print('PASS original Demo Pub4 proof is frozen unchanged and the removed item leaves canonical context')
 
 
+def exercise_lio_candidates(conninfo, auth):
+    from cj_api.local_account_admission_v2 import subject_digest
+    from cj_memory_jobs.codec import Unavailable
+    from cj_memory_jobs.lio_candidates import LioCandidates
+    from cj_memory_jobs.postgres import encode
+    from cj_memory_jobs.publication_result import VERSION_DEMO
+    from cj_memory_withdrawal.erasure_command import ErasureCommand
+    from cj_memory_withdrawal.erasure_store import freeze
+    from cj_message.auth_boundary import HistoryReadContext
+    from cj_message.travel import ABI
+
+    sys.path.insert(0, str(ROOT/'backend/cj_api/tests'))
+    from registered_host_support import RegisteredHost
+
+    actors = ('lio-alice', 'lio-bob')
+    registered = RegisteredHost(auth, Path(conninfo), {actor:(12,2,30000) for actor in actors})
+    run_context = registered.profiles[actors[0]][1]
+    for actor in actors:
+        dev_auth.activate_travel(Path(conninfo), actor, run_context, ABI, auth_dir=auth)
+    slots = frozenset({'travel.pace'})
+    extraction = CollectionPolicy(frozenset({'self'}),slots,4,500,lambda entry:True,lambda entry,rows:True)
+    memory_policy = ManualPolicy(extraction.subjects,slots,frozenset({'long_term'}),frozenset(),
+        datetime.now(timezone.utc)+timedelta(hours=1),lambda command,raw:True,lambda command,raw:True)
+    app = create_collection_app(conninfo_path=conninfo,auth_dir=auth,run_context=run_context,
+        resolve_collection=lambda principal:(extraction,memory_policy,lambda entry:(None,None)))
+    host = app.state.memory_history
+    service = host.service
+    lio = LioCandidates(service, frozenset(actors))
+    headers = {**registered.headers[actors[0]], 'Content-Type':'application/octet-stream'}
+    token = headers['Authorization'][7:]
+    other = registered.headers[actors[1]]['Authorization'][7:]
+    selected = 'lio-middle'
+    digest = lambda raw:hashlib.sha256(raw).hexdigest()
+
+    def original(context, mid):
+        # Stand-in only for B's LIO marker lookup. Travel, owner, original bytes
+        # and active generation are still checked by the signed repository.
+        if mid == selected:
+            travel = context.query_travel_message(mid)
+            return travel.stored if travel is not None else None
+        return None
+
+    with patch.object(HistoryReadContext,'query_lio_message',original,create=True),TestClient(app) as client:
+        chat='lio-private-pub4'
+        head=client.put('/v1/conversations',params={'conversation_id':chat},headers=headers)
+        assert head.status_code==200,head.text
+        for index,(mid,text) in enumerate((('lio-before','Tell me about a park.'),
+                (selected,'I always like a slow travel pace.'),('lio-after','What is the weather?'))):
+            command=dict(version='MESSAGE-send.2',message_id=mid,text=text,conversation_id=chat,trip_id=None,
+                         creation_intent='none',expected_generation=head.json()['generation'],
+                         expected_sequence=index,travel_context=None,needs_reference=None)
+            response=client.post('/v2/messages',content=json.dumps(command).encode(),headers=headers)
+            assert response.status_code==200,response.text
+            if mid==selected:
+                receipt=response.json()['receipt']
+
+        def current():
+            return service.boundary.with_history_context(token,lambda context:
+                lio.current(context,token,selected,receipt['run_id']))
+
+        assert current() is None
+        prepared=json.loads(lio.prepare(token,selected,receipt['run_id'],max_payload_bytes=8192))
+        jid,aid=prepared['job_id'],prepared['attempt_id']
+        query=SourceQuery(**prepared['source'])
+        assert (query.after,query.through,prepared['state'])==(1,2,'inflight')
+        raw=prepared['prepared_input_utf8'].encode()
+        turn,=json.loads(json.loads(raw)['messages'][0]['content'])['messages']
+        assert turn['text']=='I always like a slow travel pace.'
+        assert json.loads(lio.prepare(token,selected,receipt['run_id'],max_payload_bytes=8192))['prepared_input_utf8'] is None
+        for subject,run in ((other,receipt['run_id']),(token,'other-run')):
+            try:lio.prepare(subject,selected,run,max_payload_bytes=8192)
+            except Unavailable:pass
+            else:raise AssertionError('foreign owner or wrong original RUN scheduled')
+
+        model=encode(dict(version='MEMORY-EXTRACT@2',entries=[dict(subject='self',slot='travel.pace',
+            kind='preference',text=turn['text'],extent='long_term',occurred_at='date unknown',
+            evidence=[dict(ref=turn['ref'],quote=turn['text'])])]))
+        params=dict(message_id=selected,run_id=receipt['run_id'],max_payload_bytes=8192)
+
+        def publish(context):
+            processing=lio.processing_policy(context,token,jid,aid,raw,digest(raw),**params)
+            assert context.with_enabled_source(query,processing,
+                lambda snapshot:processing.with_input(snapshot,lambda original:digest(original).encode()))==digest(raw).encode()
+            result=lio.publication_policy(context,token,jid,aid,raw,digest(raw),model,digest(model),
+                before_commit=lambda:None,**params)
+            return context.with_enabled_source(query,result,result.apply_original_result)
+
+        result=service.boundary.with_history_context(token,publish)
+        assert json.loads(result)['version']==VERSION_DEMO
+        assert [row['status'] for row in json.loads(result)['receipts']]==['candidate']
+        assert service.boundary.with_history_context(token,lambda context:
+            lio.query_publication_in_context(context,token,jid,aid,message_id=selected,run_id=receipt['run_id']))==result
+        projected=json.loads(current())
+        card,=projected['candidates']
+        assert json.loads(service.current_conversation_candidates(token,chat,''))['candidates']==[]
+        try:service.query_original(token,jid,aid)
+        except Unavailable:pass
+        else:raise AssertionError('old job reader consumed a Lio job')
+        with host.database.connect(scope_for(ISSUER,actors[0])) as conn:
+            assert conn.execute('SELECT status FROM cj_memory_item').fetchall()==[('candidate',)]
+            assert conn.execute('SELECT count(*) FROM cj_memory_history_consent').fetchone()==(0,)
+
+        choice=encode(dict(version='MEMORY-CANDIDATE@1',action_id='remember-lio-middle',**card['review'],
+            candidate_id=card['candidate_id'],expected_candidate_version=card['version'],
+            expected_memory_epoch=projected['memory_epoch'],operation='confirm',
+            **{key:card[key] for key in ('kind','text','extent','context','occurred_at')}))
+        accepted=service.apply_candidate(token,choice)
+        assert json.loads(accepted)['receipt']['status']=='active' and service.apply_candidate(token,choice)==accepted
+        assert json.loads(current())['candidates']==[]
+
+        def erase(context):
+            repository,principal,guard=service._binding(context,token)
+            with repository.transaction() as memory:
+                active,=memory.effective('self',None)
+                assert active.command.item_id==card['candidate_id']
+                original=ErasureCommand.parse(encode(dict(version='MEMORY-ERASURE@1',action_id='erase-lio-middle',
+                    item_id=active.command.item_id,expected_version=active.version,derived_range='owned_trip_derived_scope')))
+                freeze(memory,original,subject_digest(principal),max_sources=1000,max_jobs=1000,max_bytes=1_000_000)
+                assert memory.effective('self',None)==[]
+                guard('lio_erasure')
+                return b'null'
+        service.boundary.with_history_context(token,erase)
+        assert json.loads(current())['candidates']==[]
+        print('PASS Lio protected middle Travel message, isolated queue, candidate-only Pub4, explicit save and erasure')
+
+
 if __name__=='__main__':
     with patch.dict(os.environ,{'CJ_ENV':'local'}),tempfile.TemporaryDirectory(prefix='g2c-pub-auth-') as temp:
         with pg_suites.cluster('publication_candidate',port=55510,role='cj_pub_init',socket=f'/tmp/cj-pub-{os.getpid()}') as config:
@@ -684,3 +810,4 @@ if __name__=='__main__':
                 conn.execute((ROOT/decision['file']).read_text())
             print('PASS nonempty down refusal; post-erasure empty publication rollback preserves the existing opaque erasure fence')
             exercise_demo_candidates(path,Path(temp)/'demo-auth')
+            exercise_lio_candidates(path,Path(temp)/'lio-auth')
