@@ -1,6 +1,6 @@
 """Beta environment boundary. Persistent application secrets live only in 0600 env files."""
 import base64
-from dataclasses import dataclass,field
+from dataclasses import dataclass,field,replace
 from datetime import datetime,timezone
 import json
 import os
@@ -14,10 +14,11 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cj_api.aead_cursor import AeadCursorCodec
 from cj_api.history_config import CursorPolicy,HistoryWireConfiguration
 from cj_api.local_app import create_local_app,scope_for,ISSUER
-from cj_api.local_run_context import load_run_context
+from cj_api.local_run_context import LocalRunContext,load_run_context
 from cj_api.supabase_test_database import SupabaseTestDatabase
 from cj_strict_json import reject_duplicates
 from cj_trip.confirmation import ConfirmationSigner
+from cj_usage.authorization_budget import DEADLINE,DEMO_DEADLINE
 
 
 SECRET_FILES={
@@ -38,6 +39,7 @@ ASSEMBLY_SUBJECTS='CJ_BETA_ASSEMBLY_SUBJECTS_JSON'
 ASSEMBLY_RUN_CREDENTIAL_SUBJECTS='CJ_BETA_ASSEMBLY_RUN_CREDENTIAL_SUBJECTS_JSON'
 ASSEMBLY_MODEL_STREAM_SUBJECTS='CJ_BETA_ASSEMBLY_MODEL_STREAM_SUBJECTS_JSON'
 ASSEMBLY_PROBE_MESSAGE='CJ_BETA_ASSEMBLY_PROBE_MESSAGE_ID'
+DEMO_SUBJECTS='CJ_BETA_DEMO_SUBJECTS_JSON'
 ASSEMBLY_CLEANUP={'CJ_SUPABASE_CLEANUP_URI','CJ_BETA_CLEANUP_B64'}
 
 
@@ -82,7 +84,9 @@ def authorization():
         raise ValueError('explicit_hk_beta_synthetic_activation_required')
     try:end=datetime.fromisoformat(os.environ['CJ_TRIAL_VALID_UNTIL'])
     except (KeyError,ValueError):raise ValueError('verified_trial_expiry_required') from None
-    if end.tzinfo is None or datetime.now(timezone.utc)>=min(end,datetime(2026,11,30,16,tzinfo=timezone.utc)):
+    from cj_api.supabase_test_database import hk_demo_enabled
+    cutoff=datetime(2026,12,31,16,tzinfo=timezone.utc) if hk_demo_enabled() else datetime(2026,11,30,16,tzinfo=timezone.utc)
+    if end.tzinfo is None or datetime.now(timezone.utc)>=min(end,cutoff):
         raise ValueError('trial_or_database_authorization_expired')
 
 
@@ -103,6 +107,19 @@ def _worker_assembly_pair(key,worker,assembly_subjects,error):
     return assembly_subjects
 
 
+def demo_periods(context, now):
+    current=context.current
+    meter=current.meter
+    if meter.period_end!=int(DEADLINE.timestamp()):
+        raise ValueError('original HK Demo Meter period required')
+    following=replace(context,current=replace(current,meter=replace(meter,
+        period_start=meter.period_end,period_end=int(DEMO_DEADLINE.timestamp()))),
+        history=(current,*context.history))
+    if meter.period_start<=now<meter.period_end:return context,following
+    if meter.period_end<=now<following.current.meter.period_end:return following,None
+    raise ValueError('active HK Demo Meter period required')
+
+
 @dataclass(repr=False)
 class Runtime:
     auth:Path
@@ -116,6 +133,8 @@ class Runtime:
     assembly_subjects:frozenset=frozenset()
     assembly_run_credential_subjects:frozenset=frozenset()
     assembly_model_stream_subjects:frozenset=frozenset()
+    demo_subjects:frozenset=frozenset()
+    demo_next_context:LocalRunContext|None=None
     _database:SupabaseTestDatabase|None=field(default=None,init=False)
 
     @classmethod
@@ -127,6 +146,14 @@ class Runtime:
                 or any(type(s) is not str or re.fullmatch('m4-synthetic-[a-z0-9-]{1,80}',s) is None for s in subjects)
                 or len(set(subjects))!=len(subjects)):
             raise ValueError('explicit_unique_beta_synthetic_subjects_required')
+        demo=json.loads(os.environ.get(DEMO_SUBJECTS,'[]'))
+        if (type(demo) is not list or len(demo)>10
+                or any(type(s) is not str or re.fullmatch(r'm4-synthetic-demo-[a-z0-9]{12}',s) is None for s in demo)
+                or len(set(demo))!=len(demo)
+                or set(demo)!={s for s in subjects if s.startswith('m4-synthetic-demo-')}
+                or demo and not local_database_target()):
+            raise ValueError('explicit HK local demo invitation subjects required')
+        demo_subjects=frozenset(demo)
         assembly_subjects=frozenset()
         if ASSEMBLY_SUBJECTS in os.environ:
             selected=json.loads(os.environ[ASSEMBLY_SUBJECTS])
@@ -159,8 +186,9 @@ class Runtime:
             if (selected!=frozenset(memory_runtime.collection.collection.profiles)
                     or not selected<=frozenset(subjects)):
                 raise ValueError('explicit_memory_run_selection_for_beta_invites_required')
-        if worker and assembly_subjects and (memory_runtime is None
-                or not assembly_subjects<=frozenset(memory_runtime.selections)):
+        planning=assembly_subjects|demo_subjects
+        if worker and planning and (memory_runtime is None
+                or not planning<=frozenset(memory_runtime.selections)):
             raise ValueError('assembly_requires_canonical_typed_worker')
         typed_message_subjects=frozenset()
         if TYPED_MESSAGE_SUBJECTS in os.environ:
@@ -194,10 +222,17 @@ class Runtime:
         context_path=root/'run.json'
         raw=os.environ['CJ_BETA_RUN_CONTEXT_JSON']
         context_path.write_text(raw)
-        context=load_run_context(context_path)
+        context=load_run_context(context_path,require_active=not demo_subjects)
         if context.version!='CJ-LOCAL-RUN@2':raise ValueError('registered_beta_run_context_required')
+        next_context=None
+        if demo_subjects:context,next_context=demo_periods(context,datetime.now(timezone.utc).timestamp())
         return cls(auth,context,context_path,descriptors,typed_memory,frozenset(subjects),memory_runtime,
-                   typed_message_subjects,assembly_subjects,assembly_run_credential_subjects,assembly_model_stream_subjects)
+                   typed_message_subjects,assembly_subjects,assembly_run_credential_subjects,assembly_model_stream_subjects,
+                   demo_subjects,next_context)
+
+    @property
+    def planning_subjects(self):
+        return self.assembly_subjects|self.demo_subjects
 
     def memory_configuration_for_scope(self,scope):
         if self.memory_runtime is not None and scope in {
@@ -215,7 +250,7 @@ class Runtime:
             ca=None if local else os.environ['CJ_SUPABASE_CA_FILE']
             self._database=SupabaseTestDatabase(os.environ['CJ_SUPABASE_RUNTIME_URI'],ca,run_context=self.context,
                 travel_context=self.typed_memory is not None or self.memory_runtime is not None,
-                needs_context=bool(self.assembly_subjects),transaction_guard=runtime_transaction,
+                needs_context=bool(self.planning_subjects),transaction_guard=runtime_transaction,
                 pool_size=None if size is None else int(size),local_socket=local)
         return self._database
 
@@ -232,6 +267,11 @@ class Runtime:
             if existing and (self.typed_memory is None or subject not in self.typed_memory.collection.profiles):
                 raise ValueError('existing_beta_memory_requires_explicit_policy')
         for subject in self.typed_message_subjects:
+            if subject in self.demo_subjects:
+                scope=scope_for(ISSUER,subject)
+                with database.connect(scope) as connection:
+                    if connection.execute('SELECT public.cj_account_scope_current(%s)',(scope,)).fetchone()==(False,):
+                        continue
             if not database.travel_profile(scope_for(ISSUER,subject)):
                 raise ValueError('original_typed_message_travel_profile_required')
         message_subjects=(None if self.typed_memory is None else
@@ -239,8 +279,9 @@ class Runtime:
         needs_profile=os.environ.get('CJ_LOCAL_NEEDS_PROFILE')
         signer=ConfirmationSigner(decoded('CJ_BETA_CONFIRMATION_B64',length=32))
         cleanup=None
-        if self.assembly_subjects:
-            if not self.assembly_subjects<=self.typed_message_subjects or needs_profile!='manual-v1':
+        planning=self.planning_subjects
+        if planning:
+            if not planning<=self.typed_message_subjects or needs_profile!='manual-v1':
                 raise ValueError('assembly_requires_original_typed_message_and_manual_needs')
             cleanup=assembly_cleanup(database)
         elif ASSEMBLY_CLEANUP & os.environ.keys():
@@ -249,27 +290,30 @@ class Runtime:
             confirmation_signer=signer,history_configuration=history,
             account_admission=True,needs_profile=needs_profile,message_subjects=message_subjects,
             existing_display_reads=True,cleanup_configuration=cleanup,
-            cleanup_subjects=self.assembly_subjects or None)
+            cleanup_subjects=planning or None)
         if self.typed_memory is not None:
             from cj_memory.typed_api import register_typed_routes
             register_typed_routes(app,database=database,auth_dir=self.auth,configuration=self.typed_memory)
-        if self.assembly_subjects:
+        if planning:
             from cj_trip.local_needs_app import register_local_needs_routes
             from cj_trip.local_manual_app import register_local_manual_routes
             from cj_trip.local_structured_read import register_local_structured_read_routes
             register_local_needs_routes(app,database=database,auth_dir=self.auth,confirmation_signer=signer,
-                planning_only=True,selected_subjects=self.assembly_subjects)
+                planning_only=True,selected_subjects=planning)
             register_local_manual_routes(app,database=database,auth_dir=self.auth,confirmation_signer=signer,
-                editing_only=True,selected_subjects=self.assembly_subjects)
+                editing_only=True,selected_subjects=planning)
             register_local_structured_read_routes(app,database=database,auth_dir=self.auth,
-                selected_subjects=self.assembly_subjects)
-            register_assembly_erasure(app,database,self.auth,cleanup,self.assembly_subjects)
+                selected_subjects=planning)
+            register_assembly_erasure(app,database,self.auth,cleanup,planning)
+        if self.demo_subjects:
+            from .demo_login import register_demo_login
+            register_demo_login(app)
 
         from cj_api.local_account_admission_v2 import permit_retirement_read_lease
         from cj_api.supabase_test_database import current_authorization,require_environment
 
         def require_current():
-            current_authorization()
+            current_authorization(local_socket=local_database_target())
             require_environment()
 
         @app.middleware('http')

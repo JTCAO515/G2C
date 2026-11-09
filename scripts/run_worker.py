@@ -42,6 +42,7 @@ from cj_run.core import Service as RunService, Denied
 
 HK_ASSEMBLY_PLAN_JSON = (
     '\nReturn one JSON object for TRIP-model-plan.1 with exactly version, title, items, proposed_subjects. '
+    'The title is a nonempty plain-text JSON string of at most 120 characters, for example "已保存行程"; never an object or array. '
     'Set version to "TRIP-model-plan.1". Each item has id, text, verification, evidence, schedule, '
     'fixed, source_category, source_refs. schedule has start and end, each with date, time, timezone, '
     'utc_offset observations. Use {"state":"unknown"} for unknown observations and UTC offsets. '
@@ -308,10 +309,11 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
                      LocalBudgetRouter(database,registrations=tools_configuration.registrations)))
 
 
-def run_once(database, model, auth_dir, *, memory_configuration=None,memory_configuration_for_scope=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,background_jobs=None,formal_memory_configuration=None,real_services=None,account_admission=False,hk_beta_b_run_credential=False,hk_assembly_scopes=frozenset(),hk_assembly_run_credential_scopes=frozenset()):
+def run_once(database, model, auth_dir, *, memory_configuration=None,memory_configuration_for_scope=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,background_jobs=None,formal_memory_configuration=None,real_services=None,account_admission=False,hk_beta_b_run_credential=False,hk_assembly_scopes=frozenset(),hk_assembly_run_credential_scopes=frozenset(),hk_demo_scopes=frozenset()):
     if memory_configuration_for_scope is not None and (memory_configuration is not None or formal_memory_configuration is not None):
         raise ValueError('select one explicit Memory configuration source')
-    if hk_assembly_scopes and (real_services is None or not account_admission or draft_profile is not None
+    planning_scopes=hk_assembly_scopes|hk_demo_scopes
+    if planning_scopes and (real_services is None or not account_admission or draft_profile is not None
             or place_draft_configuration is not None or memory_configuration_for_scope is None
             or not database.travel_context or not database.needs_context):
         raise CompositionUnavailable('explicit Hong Kong Typed planning composition required')
@@ -336,6 +338,7 @@ def run_once(database, model, auth_dir, *, memory_configuration=None,memory_conf
                 or type(tools_configuration) is not RealTools or tools_configuration.services is not real_services
                 or database.run_context.version!='CJ-LOCAL-RUN@2' or background_jobs is not None):
             raise ProviderFailed('explicit registered M4 real composition required')
+        pending_scopes=real_services.dispatch_scopes(pending_scopes)
         for scope in pending_scopes:real_services.require_scope(scope)
     account_checker_builder = None
     if formal_memory_configuration is None and not account_admission:
@@ -358,7 +361,7 @@ def run_once(database, model, auth_dir, *, memory_configuration=None,memory_conf
         try:
             selected_memory=(memory_configuration if memory_configuration_for_scope is None
                              else memory_configuration_for_scope(scope))
-            assembly_planning=scope in hk_assembly_scopes
+            assembly_planning=scope in planning_scopes
             if assembly_planning and type(selected_memory) is not TypedRuntimeConfiguration:
                 raise CompositionUnavailable('assembly planning requires original Typed runtime')
             run_credential = (scope in run_credential_scopes and account_checker_builder is not None

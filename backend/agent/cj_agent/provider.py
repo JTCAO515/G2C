@@ -198,6 +198,7 @@ M4_NATIVE_TURN_PROFILE='model-tool-turn-function.1'
 M4_TURN_FUNCTION='m4_tool_turn'
 M4_NATIVE_TURN_PROFILE_V2='model-tool-turn-function.2'
 M4_NATIVE_TURN_STREAM='MODEL-TOOL-TURN-STREAM@1'
+M4_NATIVE_TURN_BUFFERED='MODEL-TOOL-TURN-STREAM@2'
 # Publish one early fragment; further synchronous RUN writes would pause reads
 # of the same provider stream before terminal usage can arrive.
 _M4_STREAM_FIRST_CHARS=24
@@ -447,10 +448,12 @@ class MeteredDashScopeProvider:
                native_turn_profile=None,final_answer=False):
         from cj_usage.authorization_budget import canonical
         native_tools=tools or []
-        incremental=native_turn_profile==M4_NATIVE_TURN_STREAM
+        buffered=native_turn_profile==M4_NATIVE_TURN_BUFFERED
+        incremental=native_turn_profile in (M4_NATIVE_TURN_STREAM,M4_NATIVE_TURN_BUFFERED)
+        stream_text=incremental and (not buffered or final_answer)
         proxy=native_turn_profile in (M4_NATIVE_TURN_PROFILE,M4_NATIVE_TURN_PROFILE_V2)
         compact=native_turn_profile==M4_NATIVE_TURN_PROFILE_V2
-        if (native_turn_profile not in (None,M4_NATIVE_TURN_PROFILE,M4_NATIVE_TURN_PROFILE_V2,M4_NATIVE_TURN_STREAM)
+        if (native_turn_profile not in (None,M4_NATIVE_TURN_PROFILE,M4_NATIVE_TURN_PROFILE_V2,M4_NATIVE_TURN_STREAM,M4_NATIVE_TURN_BUFFERED)
                 or (proxy or incremental) and (not native_tools or tool_choice is not None)
                 or final_answer and not (proxy or incremental)):
             raise ProviderFailed('explicit native turn transport required')
@@ -581,13 +584,13 @@ class MeteredDashScopeProvider:
                         tool_calls=delta.get('tool_calls',[])
                         if incremental:
                             if type(tool_calls) is not list or len(tool_calls)>4:raise ProviderUnknown('M4 tool stream invalid')
-                            if tool_calls and (texts or text or final_answer) or text and calls:
+                            if tool_calls and final_answer or not buffered and (tool_calls and (texts or text) or text and calls):
                                 raise _M4Rejection('mixed_stream_turn','M4 streaming model turn mixed text and tool')
                         if text:
                             if type(text) is not str:raise ProviderUnknown('M4 stream content invalid')
                             texts.append(text)
                             if self.config.api_key in ''.join(texts):raise ProviderUnknown('M4 model secret echo rejected')
-                            if incremental or not native_tools and system is None:
+                            if stream_text or not native_tools and system is None:
                                 pending+=text
                                 keep=len(self.config.api_key)-1
                                 stop=len(pending)-keep
@@ -675,7 +678,7 @@ class MeteredDashScopeProvider:
                         if not re.fullmatch(r'[A-Za-z0-9_-]{1,128}',call['id']):raise ProviderUnknown('native tool identity unavailable')
                         native_calls.append(dict(id=call['id'],type='function',function=dict(name=call['name'],arguments=call['arguments'])))
                     if len({c['id'] for c in native_calls})!=len(native_calls):raise ProviderUnknown('native tool identity duplicated')
-                    assistant=dict(role='assistant',content=''.join(texts) or None,tool_calls=native_calls)
+                    assistant=dict(role='assistant',content=None if buffered else ''.join(texts) or None,tool_calls=native_calls)
                     if self.config.api_key in json.dumps(assistant,ensure_ascii=False):raise ProviderUnknown('native tool identity secret echo rejected')
                 metadata=dict(model_id=M4_MODEL,endpoint=M4_BASE,region='cn-beijing',usage=usage,
                               receipt_sha256=hashlib.sha256(next(iter(response_ids)).encode()).hexdigest(),actual_cost_cny='UNKNOWN')
@@ -691,6 +694,7 @@ class MeteredDashScopeProvider:
                 if native_reply is not None and native_tools and (not incremental or calls):native_reply['assistant']=assistant
                 if incremental:
                     if calls:yield encoded
+                    elif not stream_text:yield ''.join(texts)
                     elif pending:yield pending
                 elif native_tools:yield encoded
                 elif system is not None:yield ''.join(texts)

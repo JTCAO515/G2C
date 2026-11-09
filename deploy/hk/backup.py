@@ -9,6 +9,7 @@ import psycopg
 
 from .configuration import authorization,load_secret_environment
 from . import checkpoint,oss_backup
+from .demo_schema import daily_base
 
 
 def check_release():
@@ -42,7 +43,7 @@ def run():
                     raise ValueError('original_checkpoint_unknown')
                 with checkpoint.operator() as (connection,_):checkpoint.require_release(connection,control)
             else:
-                checkpoint.export(package,control,base=None if state['previous'] is None else root/state['previous'])
+                checkpoint.export(package,control,base=daily_base(control,root,state['previous']))
             state['state']='EXPORTED';checkpoint.atomic(path,state)
         if state['state']=='EXPORTED':
             result=oss_backup.upload_package(package,root/'upload-journal')

@@ -7,6 +7,7 @@ resetting one transaction-mode backend cannot reset all future borrowed backends
 from datetime import datetime
 import logging
 import os
+import json
 from pathlib import Path
 import re
 import tempfile
@@ -24,15 +25,22 @@ from .composition import CompositionUnavailable
 from .local_app import LocalDatabase,_require_unbound
 
 REF='sajkhvjpllldfyfryalx'
+SUPABASE_TEST_SCHEMA=48
 HOST='aws-0-ap-southeast-1.pooler.supabase.com'
 CA_SHA='807025ad50d4ed219d2c9c7d299c004f824eb00cf7f65afef607d07b72e6cafa'
 HK_SOCKET='/run/g2c-pg'
 DEADLINE=datetime(2026,12,1,tzinfo=ZoneInfo('Asia/Shanghai'))
+DEMO_DEADLINE=datetime(2027,1,1,tzinfo=ZoneInfo('Asia/Shanghai'))
 _timing_log=logging.getLogger('cj_usage.audit')
 
 
-def current_authorization():
-    if datetime.now(ZoneInfo('Asia/Shanghai'))>=DEADLINE:
+def hk_demo_enabled():
+    return os.environ.get('CJ_BETA_DB_TARGET')=='hk-local' and bool(json.loads(os.environ.get('CJ_BETA_DEMO_SUBJECTS_JSON','[]')))
+
+
+def current_authorization(*,local_socket=False):
+    deadline=DEMO_DEADLINE if local_socket and hk_demo_enabled() else DEADLINE
+    if datetime.now(ZoneInfo('Asia/Shanghai'))>=deadline:
         raise CompositionUnavailable('Supabase synthetic test authorization expired')
 
 
@@ -51,7 +59,7 @@ def decode_cleanup_uri(uri):
 
 
 def decode_hk_socket_uri(uri,role):
-    current_authorization();require_environment()
+    current_authorization(local_socket=True);require_environment()
     if type(uri) is not str or not uri.startswith('postgresql://'):
         raise CompositionUnavailable('explicit HK socket URI required')
     try:config=conninfo_to_dict(uri)
@@ -99,7 +107,7 @@ def prepare_owned_session(connection,role):
 
 
 def require_hk_socket_identity(connection,role):
-    current_authorization();require_environment()
+    current_authorization(local_socket=True);require_environment()
     if connection.execute("SELECT current_user,session_user,inet_server_addr(),current_setting('listen_addresses')").fetchone()!=(role,role,None,''):
         raise CompositionUnavailable('independent HK socket login without TCP required')
 
@@ -252,7 +260,7 @@ class SupabaseTestDatabase(LocalDatabase):
     def _open_runtime_connection(self):
         if self._pool is None:
             return self._open_dedicated_runtime_connection()
-        current_authorization();require_environment()
+        current_authorization(local_socket=self._local_socket);require_environment()
         started=monotonic()
         try:
             connection = self._pool.getconn()
@@ -271,7 +279,7 @@ class SupabaseTestDatabase(LocalDatabase):
             raise
 
     def _open_dedicated_runtime_connection(self):
-        current_authorization();require_environment()
+        current_authorization(local_socket=self._local_socket);require_environment()
         started=monotonic()
         connect=psycopg.connect if self._pool is None else _TimedConnection.connect
         conn=connect(**self.conninfo,autocommit=True,prepare_threshold=None)
@@ -279,7 +287,7 @@ class SupabaseTestDatabase(LocalDatabase):
             # Reset only our owned session, with actual login/TLS checked before
             # and after. Persistent targets never resolve through pg_temp.
             self._prepare_session(conn)
-            current_authorization();require_environment()
+            current_authorization(local_socket=self._local_socket);require_environment()
             if self._pool is not None:
                 _timing_log.info('M4_DB_CHECKOUT_TIMING pid=%d pooled=false elapsed_ms=%.3f',
                                  conn.info.backend_pid,(monotonic()-started)*1000)

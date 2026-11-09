@@ -49,10 +49,10 @@ def typed_preflight(runtime,subject,scope,*,provision=False):
     runtime.memory_runtime.bind_readonly(database,scope,subject,admit,message_context=authority)
 
 
-def intent(path):
+def intent(path,decision='JT #495/6717962974 assembly subject'):
     descriptor=os.open(path,os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o600)
     with os.fdopen(descriptor,'wb') as output:
-        output.write(b'JT #495/6717962974 assembly subject\n')
+        output.write((decision+'\n').encode('ascii'))
         output.flush()
         os.fsync(output.fileno())
     directory=os.open(path.parent,os.O_RDONLY|os.O_DIRECTORY)
@@ -60,9 +60,13 @@ def intent(path):
     finally:os.close(directory)
 
 
-def run(runtime,mode,subject,control,operation):
-    if subject not in runtime.assembly_subjects:
+def run(runtime,mode,subject,control,operation,*,demo_invitation=None):
+    if subject not in runtime.planning_subjects:
         raise ValueError('explicit_assembly_subject_required')
+    demo=subject in runtime.demo_subjects
+    if (demo and mode=='bootstrap')!=(demo_invitation is not None):
+        raise ValueError('explicit_demo_bootstrap_invitation_required')
+    decision='JT #495/6730538594 demo subject' if demo else 'JT #495/6717962974 assembly subject'
     scope=scope_for(ISSUER,subject)
     with checkpoint.lock(control):
         with checkpoint.operator() as (connection,_),connection.transaction():
@@ -79,12 +83,19 @@ def run(runtime,mode,subject,control,operation):
             if mode=='bootstrap':
                 if namespace:
                     raise ValueError('bootstrap_original_namespace_exists_inspect_only')
-                intent(operation/(subject+'.bootstrap.intent'))
+                intent(operation/(subject+'.bootstrap.intent'),decision)
                 provision_budget_connection(connection,runtime.context,subject)
+                if demo:
+                    if runtime.demo_next_context is not None:
+                        provision_budget_connection(connection,runtime.demo_next_context,subject)
+                    if connection.execute("""UPDATE public.cj_message_scope
+                        SET demo_invite_digest=%s,demo_invite_expires_at=%s,demo_session_floor=0
+                        WHERE scope=%s AND demo_invite_digest IS NULL""",(*demo_invitation,scope)).rowcount!=1:
+                        raise ValueError('original demo invitation scope unavailable')
             else:
                 if not namespace:
                     raise ValueError('original_namespace_required')
-                intent(operation/(subject+'.profile.intent'))
+                intent(operation/(subject+'.profile.intent'),decision)
                 result=connection.execute(
                     'INSERT INTO public.cj_message_context_profile(scope,version) VALUES (%s,%s)',(scope,PROFILE))
                 if result.rowcount!=1:

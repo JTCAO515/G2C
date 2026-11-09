@@ -43,6 +43,7 @@ AMAP_ENDPOINTS={
 M1_ESTIMATED=1294*MODEL_INPUT_PRICE+129*MODEL_OUTPUT_PRICE
 M1_UNRESOLVED_CNY=MODEL_M1_HOLD_CNY-8
 DEADLINE=datetime(2026,12,1,tzinfo=ZoneInfo('Asia/Shanghai'))
+DEMO_DEADLINE=datetime(2027,1,1,tzinfo=ZoneInfo('Asia/Shanghai'))
 MAC_PRODUCER='codex-mac'
 HK_PRODUCER='hk-beta-47.83.147.176'
 HK_JOURNAL_ROOT=Path('/home/cj/.local/share/g2c/m4-real-services')
@@ -116,9 +117,12 @@ def save_anchor(value):
 
 
 class AuthorizationBudget:
-    def __init__(self,root,*,clock=lambda:datetime.now(ZoneInfo('Asia/Shanghai')),authorization_guard=None):
+    def __init__(self,root,*,clock=lambda:datetime.now(ZoneInfo('Asia/Shanghai')),authorization_guard=None,demo=False):
         self.root=Path(root);self.clock=clock;self.authorization_guard=authorization_guard
         self.producer=os.environ.get('CJ_M4_BUDGET_PRODUCER',MAC_PRODUCER)
+        if demo and (self.producer!=HK_PRODUCER or authorization_guard is None):
+            raise BudgetUnknown('explicit HK Demo authorization guard required')
+        self.deadline=DEMO_DEADLINE if demo else DEADLINE
         if self.producer not in (MAC_PRODUCER,HK_PRODUCER):raise BudgetUnknown('explicit M4 producer required')
         if self.producer==HK_PRODUCER and (self.root!=HK_JOURNAL_ROOT or not (self.root/'m4-outflows.sqlite').is_file() or not HK_ANCHOR.is_file()):
             raise BudgetUnknown('existing_unique_HK_journal_and_control_required')
@@ -143,7 +147,7 @@ class AuthorizationBudget:
 
     def check_date(self):
         now=self.clock()
-        if now.tzinfo is None or now>=DEADLINE:raise BudgetUnknown('M4 authorization expired')
+        if now.tzinfo is None or now>=self.deadline:raise BudgetUnknown('M4 authorization expired')
         if self.authorization_guard is not None:self.authorization_guard()
 
     def require_producer(self,db):

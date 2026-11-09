@@ -1,9 +1,24 @@
 import json
 import uuid
+from pathlib import Path
 import httpx
 import pytest
 
 import supabase_m4 as subject
+
+
+def test_merged_local_only_migration_is_refused_before_supabase_access(monkeypatch):
+    manifest=Path(__file__).resolve().parents[1]/'backend/migrations/manifest.json'
+    monkeypatch.setattr(subject.subprocess,'check_output',lambda *args,**kwargs:manifest.read_bytes())
+    with pytest.raises(subject.TestUnavailable,match='local_only_migration_chain'):
+        subject.migrate_test(object(),apply=True)
+
+
+@pytest.fixture
+def authorized_supabase_chain(monkeypatch):
+    import migrate
+    chain=[entry for entry in migrate.load() if entry['version']<=subject.SUPABASE_TEST_SCHEMA]
+    monkeypatch.setattr(migrate,'load',lambda:chain)
 
 
 def journal(tmp_path,monkeypatch):
@@ -131,7 +146,7 @@ def test_ca_bundle_copies_only_the_fingerprinted_certificate(tmp_path,monkeypatc
         assert len(loaded)==1 and loaded[0].fingerprint(hashes.SHA256())==trusted.fingerprint(hashes.SHA256())
 
 
-def test_refused_namespace_cannot_be_adopted_on_second_call(tmp_path,monkeypatch):
+def test_refused_namespace_cannot_be_adopted_on_second_call(tmp_path,monkeypatch,authorized_supabase_chain):
     from contextlib import nullcontext
     import migrate
     root=subject.Path(subject.__file__).resolve().parents[1]
@@ -152,7 +167,7 @@ def test_refused_namespace_cannot_be_adopted_on_second_call(tmp_path,monkeypatch
     assert not entered and not (subject.SCHEMA_STATE/'state.json').exists()
 
 
-def test_admitted_marker_with_empty_ledger_revalidates_namespace(tmp_path,monkeypatch):
+def test_admitted_marker_with_empty_ledger_revalidates_namespace(tmp_path,monkeypatch,authorized_supabase_chain):
     from contextlib import nullcontext
     import migrate,hashlib
     root=subject.Path(subject.__file__).resolve().parents[1];manifest=(root/'backend/migrations/manifest.json').read_bytes()
@@ -175,7 +190,7 @@ def test_admitted_marker_with_empty_ledger_revalidates_namespace(tmp_path,monkey
     assert checks==[True]
 
 
-def test_expiry_after_lock_stops_migration_before_connection(tmp_path,monkeypatch):
+def test_expiry_after_lock_stops_migration_before_connection(tmp_path,monkeypatch,authorized_supabase_chain):
     from datetime import datetime
     from zoneinfo import ZoneInfo
     root=subject.Path(subject.__file__).resolve().parents[1];manifest=(root/'backend/migrations/manifest.json').read_bytes()

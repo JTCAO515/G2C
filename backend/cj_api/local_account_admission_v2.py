@@ -24,7 +24,7 @@ class _RetirementReadLease:
         self.owner = None
         self.connection = None
 
-    def read(self, owner):
+    def read(self, owner,issued_at):
         if get_ident() != self.thread or self.owner not in (None, owner):
             raise CompositionUnavailable('retirement read scope changed')
         self.require_current()
@@ -36,8 +36,7 @@ class _RetirementReadLease:
         with self.connection.transaction(), self.connection.cursor() as cursor:
             cursor.execute('SET TRANSACTION ISOLATION LEVEL READ COMMITTED READ ONLY')
             self.connection.bind_scope(cursor)
-            cursor.execute('SELECT public.cj_account_scope_current(%s)', (owner,))
-            return _retirement_fact(cursor.fetchone())
+            return _current_account(cursor,owner,issued_at)
 
     def borrow(self, database, owner):
         connection = self.connection
@@ -99,10 +98,9 @@ def retired_for(database):
         owner=scope_for(principal.issuer,principal.subject)
         lease = _retirement_lease.get()
         if lease is not None and lease.database is database:
-            return lease.read(owner)
+            return lease.read(owner,principal.issued_at)
         with database.connect(owner) as conn:
-            row=conn.execute('SELECT public.cj_account_scope_current(%s)',(owner,)).fetchone()
-        return _retirement_fact(row)
+            return _current_account(conn,owner,principal.issued_at)
     return retired
 
 
@@ -112,6 +110,21 @@ def _retirement_fact(row):
     return Fact.NO if row[0] else Fact.YES
 
 
+def _current_account(connection,scope,issued_at):
+    if scope.startswith('local:https://local.g2c.invalid:m4-synthetic-demo-'):
+        row=connection.execute("""SELECT public.cj_account_scope_current(%s) AND EXISTS (
+            SELECT 1 FROM public.cj_message_scope WHERE scope=%s
+            AND demo_invite_expires_at>clock_timestamp() AND demo_revoked_at IS NULL
+            AND demo_session_floor<=%s)""",(scope,scope,issued_at)).fetchone()
+    else:
+        from .supabase_test_database import current_authorization,hk_demo_enabled
+        if hk_demo_enabled():
+            try:current_authorization()
+            except CompositionUnavailable:return Fact.YES
+        row=connection.execute('SELECT public.cj_account_scope_current(%s)',(scope,)).fetchone()
+    return _retirement_fact(row)
+
+
 def retired_in_transaction(cursor, scope):
     """Check fresh retirement state on the same locked, bound MESSAGE transaction."""
     from .local_app import scope_for
@@ -119,8 +132,7 @@ def retired_in_transaction(cursor, scope):
     def retired(principal):
         if scope_for(principal.issuer, principal.subject) != scope:
             raise CompositionUnavailable('account retirement scope changed')
-        cursor.execute('SELECT public.cj_account_scope_current(%s)', (scope,))
-        return _retirement_fact(cursor.fetchone())
+        return _current_account(cursor,scope,principal.issued_at)
 
     return retired
 

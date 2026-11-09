@@ -28,7 +28,7 @@ from cj_fact.live_source import _Excerpts,_weather_exchange,weather,public_page
 from cj_fact.contract_v1 import decode_query as fact_query
 from cj_fact.policy import FactFailure
 from cj_run.tool_turn import parse_turn
-from cj_usage.authorization_budget import AuthorizationBudget,DEADLINE
+from cj_usage.authorization_budget import AuthorizationBudget,DEADLINE,DEMO_DEADLINE
 from cj_usage.metered_exit import BudgetUnknown
 
 
@@ -943,6 +943,23 @@ class Boundaries(unittest.TestCase):
         with self.assertRaises(ProviderUnknown):self.invoke(self.provider(sse()),guard=lambda:False)
         self.assertEqual(self.sent,[])
         self.assertEqual(self.budget.inspect()[0]['state'],'INTENT')
+
+    def test_demo_pending_scope_filter_keeps_legacy_original_untouched_after_expiry(self):
+        from cj_api.local_app import ISSUER,scope_for
+        demo='m4-synthetic-demo-0123456789ab'
+        legacy='m4-synthetic-beta-b'
+        current=RealServices(self.provider(sse()),KEY,frozenset({demo,legacy}),frozenset({demo}))
+        scopes=[scope_for(ISSUER,subject) for subject in (legacy,demo)]
+        self.budget.deadline=DEMO_DEADLINE
+        self.assertEqual(current.dispatch_scopes(scopes),scopes)
+        self.budget.clock=lambda:DEADLINE
+        self.assertEqual(current.dispatch_scopes(scopes),scopes[1:])
+        current.require_scope(scopes[1])
+        with self.assertRaises(BudgetUnknown):current.require_scope(scopes[0])
+        self.budget.clock=lambda:DEMO_DEADLINE
+        with self.assertRaises(BudgetUnknown):current.require_scope(scopes[1])
+        self.assertEqual(self.budget.inspect(),[])
+
     @patch.dict('cj_usage.authorization_budget.LIMITS',{'model':(387,1)})
     def test_expiry_and_combined_model_ceiling(self):
         # Preserve the historical 400-stop fixture; current defaults are below.

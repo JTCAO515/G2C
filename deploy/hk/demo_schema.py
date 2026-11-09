@@ -1,0 +1,67 @@
+"""One reviewed additive local PG upgrade, followed by a new signed backup base."""
+import os
+from pathlib import Path
+import sys
+
+import psycopg
+
+import migrate
+from . import checkpoint,local_postgres
+from .configuration import load_secret_environment,local_database_target
+
+ANCHOR='demo-schema49'
+MARKER='demo-schema49.json'
+
+
+def upgrade(control,backups):
+    if not local_database_target():raise ValueError('HK local Demo upgrade required')
+    local_postgres.require_serving(control)
+    expected=checkpoint.versions()
+    if expected!=list(range(1,50)):raise ValueError('exact Demo migration chain required')
+    marker=control/MARKER
+    destination=backups/ANCHOR
+    with checkpoint.lock(control),checkpoint.operator() as (db,_),db.transaction():
+        db.execute('SELECT pg_advisory_xact_lock(%s)',(checkpoint.RELEASE_LOCK,))
+        release=checkpoint.verified(control/'release.json')
+        if (marker.exists() or destination.exists() or release.get('version')!='g2c-beta-release.1'
+                or checkpoint.identity(db)!=(release['instance'],release['lineage'])
+                or migrate.applied(db)!=expected[:-1]):
+            raise ValueError('reconcile original Demo schema action before retry')
+        if db.execute("SELECT (SELECT count(*) FROM cj_message_delivery WHERE NOT acknowledged),"
+                "(SELECT count(*) FROM cj_run_record WHERE status IN ('queued','running'))").fetchone()!=(0,0):
+            raise ValueError('original application work still in flight')
+        before=checkpoint.local.fence_state(db)
+        checkpoint.atomic(marker,dict(state='INTENT',lineage=release['lineage'],original_fences=before))
+        migrate.up(db,migrate.load(),49)
+    manifest=checkpoint.export(destination,control)
+    if manifest['fences']!=before or manifest['lineage']!=release['lineage']:
+        raise ValueError('Demo upgrade fence state changed')
+    checkpoint.atomic(marker,dict(state='COMPLETE',lineage=manifest['lineage'],
+        dump_sha256=manifest['dump_sha256'],original_fences=before))
+    print('PASS exact additive 49 with original deletion fences and new signed local backup base')
+
+
+def daily_base(control,root,previous):
+    if previous is None:return None
+    regular=root/previous
+    prior=checkpoint.verified(regular/'manifest.json')
+    if prior['schema']==checkpoint.versions():return regular
+    marker=checkpoint.verified(control/MARKER)
+    base=root/ANCHOR
+    manifest=checkpoint.verified(base/'manifest.json')
+    if (not local_database_target() or marker['state']!='COMPLETE'
+            or prior['lineage']!=manifest['lineage'] or marker['lineage']!=manifest['lineage']
+            or manifest['schema']!=checkpoint.versions() or marker['dump_sha256']!=manifest['dump_sha256']
+            or any(not set(prior['fences'][name])<=set(rows) for name,rows in manifest['fences'].items())):
+        raise ValueError('original signed Demo backup base required')
+    return base
+
+
+if __name__=='__main__':
+    try:
+        if sys.argv[1:]:raise ValueError('explicit Demo schema upgrade required')
+        load_secret_environment('recovery')
+        upgrade(Path(os.environ['CJ_DEPLOY_CONTROL']),Path('/backups'))
+    except (OSError,ValueError,KeyError,psycopg.Error):
+        print('ALERT Demo schema upgrade unavailable; reconcile original state',file=sys.stderr)
+        raise SystemExit(1) from None

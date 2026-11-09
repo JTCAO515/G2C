@@ -18,7 +18,7 @@ from types import MappingProxyType
 
 from cj_agent.provider import (
     DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,M4_REAL_OUTPUT_TOKENS,
-    M4_NATIVE_TURN_PROFILE_V2,M4_NATIVE_TURN_STREAM,ProviderUnknown,ProviderFailed,
+    M4_NATIVE_TURN_PROFILE_V2,M4_NATIVE_TURN_STREAM,M4_NATIVE_TURN_BUFFERED,ProviderUnknown,ProviderFailed,
 )
 from cj_fact.contract_v1 import decode_query as fact_query
 from cj_fact.live_source import NOTICE_URL,WEATHER_URL,public_page,weather
@@ -137,12 +137,14 @@ class RealServices:
     model:MeteredDashScopeProvider
     amap_key:str
     subjects:frozenset
+    demo_subjects:frozenset=frozenset()
 
     def __post_init__(self):
         if (type(self.model) is not MeteredDashScopeProvider or type(self.amap_key) is not str
                 or re.fullmatch(r'[A-Za-z0-9_-]{16,256}',self.amap_key) is None
                 or type(self.subjects) is not frozenset or not self.subjects
-                or any(type(s) is not str or re.fullmatch(r'm4-synthetic-[a-z0-9-]{1,80}',s) is None for s in self.subjects)):
+                or any(type(s) is not str or re.fullmatch(r'm4-synthetic-[a-z0-9-]{1,80}',s) is None for s in self.subjects)
+                or type(self.demo_subjects) is not frozenset or not self.demo_subjects<=self.subjects):
             raise ValueError('explicit M4 synthetic real service configuration required')
 
     def require_scope(self,scope):
@@ -150,9 +152,19 @@ class RealServices:
         if scope not in {scope_for(ISSUER,s) for s in self.subjects}:
             raise BudgetUnknown('M4 synthetic subject not admitted')
         self.model.authorization.check_date()
+        if self.demo_subjects and self.model.authorization.clock()>=DEADLINE and scope not in {
+                scope_for(ISSUER,s) for s in self.demo_subjects}:
+            raise BudgetUnknown('only Demo subjects authorized after original expiry')
+
+    def dispatch_scopes(self,scopes):
+        if not self.demo_subjects or self.model.authorization.clock()<DEADLINE:
+            return scopes
+        from .local_app import ISSUER,scope_for
+        eligible={scope_for(ISSUER,subject) for subject in self.demo_subjects}
+        return [scope for scope in scopes if scope in eligible]
 
     @classmethod
-    def from_environment(cls,auth_dir,*,authorization_guard=None):
+    def from_environment(cls,auth_dir,*,authorization_guard=None,demo_subjects=frozenset()):
         # Keys enter via explicit files or environment; never run security from a
         # request/worker. The Mac operator exports Keychain values privately.
         def secret(name):
@@ -166,15 +178,15 @@ class RealServices:
         if os.environ.get('CJ_M4_SYNTHETIC_ONLY')!='1':raise ValueError('M4 synthetic-only activation required')
         subjects=frozenset(json.loads((Path(auth_dir)/'invited.json').read_text()))
         root=Path.home()/'.local/share/g2c/m4-real-services'
-        budget=AuthorizationBudget(root,authorization_guard=authorization_guard)
+        budget=AuthorizationBudget(root,authorization_guard=authorization_guard,demo=bool(demo_subjects))
         model=MeteredDashScopeProvider(DashScopeConfig(
             M4_BASE,M4_MODEL,secret('CJ_MODEL_API_KEY'),max_output_tokens=M4_REAL_OUTPUT_TOKENS),budget)
-        return cls(model,secret('CJ_AMAP_WEB_KEY'),subjects)
+        return cls(model,secret('CJ_AMAP_WEB_KEY'),subjects,demo_subjects)
 
 
 class RealTools:
     def __init__(self,services,*,allowed_native=NATIVE_TOOLS,coordinate_routes=True,streaming_subject=None,
-                 assembly_streaming_subjects=frozenset(),controlled_probe=None):
+                 assembly_streaming_subjects=frozenset(),buffered_streaming_subjects=frozenset(),controlled_probe=None):
         if type(coordinate_routes) is not bool:raise ValueError('explicit_coordinate_route_profile_required')
         self.services=services;self.coordinate_routes=coordinate_routes
         from .local_app import ISSUER,scope_for
@@ -186,6 +198,9 @@ class RealTools:
         subjects=assembly_streaming_subjects
         if streaming_subject is not None:subjects=subjects|{streaming_subject}
         self.streaming_scopes=frozenset(scope_for(ISSUER,subject) for subject in subjects)
+        if type(buffered_streaming_subjects) is not frozenset or not buffered_streaming_subjects<=services.subjects:
+            raise ValueError('explicit invited buffered streaming subjects required')
+        self.buffered_streaming_scopes=frozenset(scope_for(ISSUER,subject) for subject in buffered_streaming_subjects)
         self.controlled_probe=controlled_probe
         if type(allowed_native) is not frozenset or not allowed_native or not allowed_native<=NATIVE_TOOLS:
             raise ValueError('explicit code-owned native tool subset required')
@@ -260,7 +275,7 @@ class RealTools:
                             config=Config(ORIGIN,8192,65536,20,60)
                             request=prepare(config,query,request_ref,datetime.now(timezone.utc),basic=True,coordinate_only=coordinate_route)
                             if checked() is not True:raise BudgetUnknown('original live tool authority invalid')
-                            result=asyncio.run(fetch_candidate(config,request,ProviderCredentials(self.services.amap_key,DEADLINE),before_send=checked,basic=True,**({'coordinate_only':True} if coordinate_route else {})))
+                            result=asyncio.run(fetch_candidate(config,request,ProviderCredentials(self.services.amap_key,budget.deadline),before_send=checked,basic=True,**({'coordinate_only':True} if coordinate_route else {})))
                             if result.state!='received':raise BudgetUnknown('original live PLACE outcome unknown')
                             parsed=parse_response(config,request,result.response,now=datetime.now(timezone.utc),basic=True,coordinate_only=coordinate_route)
                             raw=encode_result(parsed,evidence_kind='live_provider')
@@ -285,8 +300,10 @@ class RealTools:
         self.services.require_scope(binding.scope)
         messages=list(messages);seen=set()
         chinese=any('一'<=c<='鿿' for c in messages[-1]['content'])
-        incremental=binding.scope in self.streaming_scopes
-        profile=M4_NATIVE_TURN_STREAM if incremental else M4_NATIVE_TURN_PROFILE_V2
+        if binding.scope in self.buffered_streaming_scopes:profile=M4_NATIVE_TURN_BUFFERED
+        elif binding.scope in self.streaming_scopes:profile=M4_NATIVE_TURN_STREAM
+        else:profile=M4_NATIVE_TURN_PROFILE_V2
+        incremental=profile!=M4_NATIVE_TURN_PROFILE_V2
         # The single approved cutover probe reserves the sixth model slot for
         # its original structured draft. Every other original keeps eight turns.
         controlled=self.controlled_probe is not None and (binding.scope,binding.message_id)==self.controlled_probe
@@ -303,9 +320,8 @@ class RealTools:
                     for chunk in chunks:
                         if 'assistant' in native_reply:raw=chunk
                         elif chunk:yield chunk
-                # An answer already streamed to the original RUN. Tool data
-                # is emitted once by the producer and can dispatch only after
-                # the generator has settled the original Meter receipt.
+                # Answer text goes to the original RUN. The producer emits
+                # tool data only after settling the original Meter receipt.
                 if raw is None:return
             else:raw=''.join(chunks)
             try:turn=parse_turn(raw.encode(),self.names)

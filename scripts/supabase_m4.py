@@ -28,6 +28,7 @@ import httpx
 import jwt
 import psycopg
 from psycopg.conninfo import conninfo_to_dict
+from cj_api.supabase_test_database import SUPABASE_TEST_SCHEMA
 from cj_strict_json import reject_duplicates
 
 REF='sajkhvjpllldfyfryalx'
@@ -353,6 +354,7 @@ def migrate_test(db,*,apply):
     main_manifest=subprocess.check_output(['git','show','origin/main:backend/migrations/manifest.json'],cwd=root)
     if manifest!=main_manifest:raise TestUnavailable('unmerged_domain_schema_not_allowed')
     chain=migrate.load();top=chain[-1]['version'];digest=hashlib.sha256(manifest).hexdigest()
+    if top!=SUPABASE_TEST_SCHEMA:raise TestUnavailable('local_only_migration_chain_not_allowed_for_supabase')
     if not apply:return dict(status='PLAN_ONLY',migration_versions=top,manifest_sha256=digest)
     SCHEMA_STATE.mkdir(parents=True,exist_ok=True,mode=0o700)
     with (SCHEMA_STATE/'operator.lock').open('a') as lock:
