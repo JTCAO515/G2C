@@ -754,6 +754,13 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
                 return try await sendLocalWrite(request, body: body, baseURL: baseURL, operationID: operationID,
                                                 capability: messages.boundary, messageWire: .demoDialogue)
             }
+            if operationID == DemoDialogueRoute.eventStream {
+                try await messages.validate(); try Task.checkCancellation()
+                let (response, stream) = try await transport.send(request, body: nil, baseURL: baseURL, operationID: operationID)
+                try await messages.validate(); try Task.checkCancellation()
+                guard !(300..<400).contains(response.status.code) else { throw MessageHTTPFailure.redirectRejected }
+                return (response, stream)
+            }
             return try await sendLocalRead(request, baseURL: baseURL, operationID: operationID, capability: messages.boundary)
         }
         if let memoryProjection {

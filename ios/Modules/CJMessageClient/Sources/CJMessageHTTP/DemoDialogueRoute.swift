@@ -7,6 +7,8 @@ enum DemoDialogueRoute {
     static let path = "/v1/demo-dialogue/messages"
     static let submit = "submitDemoDialogueMessageV1"
     static let original = "readDemoDialogueMessageV1"
+    static let eventStream = "readDemoDialogueEventsV1"
+    static let eventsPath = "/v1/demo-dialogue/events"
     static let maximumRequestBytes = 16_384
 
     static func accepts(_ request: HTTPRequest, hasBody: Bool, operationID: String) -> Bool {
@@ -20,13 +22,18 @@ enum DemoDialogueRoute {
         if request.method == .post {
             return hasBody && operationID == submit && path == Self.path
         }
-        guard request.method == .get, !hasBody, operationID == original,
-              let components = URLComponents(string: path), components.percentEncodedPath == Self.path,
+        guard request.method == .get, !hasBody, [original, eventStream].contains(operationID),
+              let components = URLComponents(string: path),
+              components.percentEncodedPath == (operationID == original ? Self.path : eventsPath),
               components.scheme == nil, components.host == nil, components.fragment == nil,
               let encoded = components.percentEncodedQuery, !encoded.contains("+"), components.string == path,
               let query = components.queryItems, query.count == 1, query[0].name == "message_id",
-              let value = query[0].value else { return false }
-        return validID(value)
+              let value = query[0].value, validID(value) else { return false }
+        let cursors = request.headerFields.filter { $0.name.canonicalName == "last-event-id" }
+        if operationID == original { return cursors.isEmpty }
+        let accept = request.headerFields.filter { $0.name == .accept }
+        guard accept.count == 1, accept.first?.value == "text/event-stream", cursors.count <= 1 else { return false }
+        return cursors.first.map { validEventCursor($0.value) } ?? true
     }
 
     struct Original {
@@ -61,6 +68,12 @@ enum DemoDialogueRoute {
             }
         }
         return Original(messageID: id, conversationID: value["conversation_id"] as? String)
+    }
+
+    static func validEventCursor(_ value: String) -> Bool {
+        guard !value.isEmpty, value.utf8.allSatisfy({ (48...57).contains($0) }),
+              let cursor = Int64(value), cursor >= 0 else { return false }
+        return String(cursor) == value
     }
 
     static func validConversationID(_ id: String) -> Bool {
