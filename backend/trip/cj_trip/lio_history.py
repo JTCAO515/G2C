@@ -158,40 +158,54 @@ def undo(repository, request):
         current = _current_for_undo(repository, cur, request)
         active = current_origin(cur, repository, current)
     captured = source.capture(active['needs_id'], active['needs_version'])
-    action = pending = None
-    with source.hold(captured) as check:
-        def final(cur):
-            check()
-            repository._final_action_eligibility(cur, action, pending)
-
-        with repository.transaction(before_commit=final) as cur:
-            receipt = NeedsActions._previous(repository, cur, request)
-            if receipt is not None:
-                return receipt
-            current = _current_for_undo(repository, cur, request)
-            previous = _revision(repository, cur, current.trip_id, current.version - 1)
-            origin = current_origin(cur, repository, previous)
-            if (active['needs_scope'], active['needs_id']) != (origin['needs_scope'], origin['needs_id']):
-                raise Conflict('undo would restore a different Needs identity')
-            NeedsEdits._selected(cur, repository, current, active)
-            _protect_fixed(current, previous)
-            if active['needs_version'] != origin['needs_version']:
-                _check_newer_needs(captured, origin)
-            cur.execute('SELECT EXTRACT(EPOCH FROM clock_timestamp())')
-            proposal = Proposal('lio-undo-' + sha256(request.raw).hexdigest(), current.trip_id,
-                                current.version, 'lio-undo.1', int(cur.fetchone()[0]) + 300, previous.content)
-            digest = repository._publish_in_tx(cur, proposal)
-            source_input = active['source']
-            cur.execute('INSERT INTO cj_trip_needs_basis(scope,proposal_id,message_scope,run_id,needs_scope,needs_id,'
-                        'needs_version,source_input,source_sha256,proposed_input) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',
-                        (repository.scope, proposal.proposal_id, active['message_scope'], active['run_id'],
-                         active['needs_scope'], active['needs_id'], active['needs_version'],
-                         source_input, sha256(source_input).hexdigest(), origin['proposed']))
-            action = repository.confirm.issue(repository.scope, ProposalDetail(proposal, digest, 'pending'),
-                action_id=request.action_id, kind='accept', candidate_hash=digest).action
-            receipt, pending = repository._act_in_tx(cur, action)
-            cur.execute('INSERT INTO cj_trip_needs_action VALUES(%s,%s,%s,%s,%s)',
-                        (repository.scope, request.action_id, proposal.proposal_id, request.raw, action.raw()))
-            cur.execute('UPDATE cj_trip_needs_current SET trip_version=%s WHERE scope=%s AND needs_scope=%s AND needs_id=%s',
-                        (receipt.committed_version, repository.scope, active['needs_scope'], active['needs_id']))
+    committed = False
+    try:
+        with source.hold(captured) as check:
+            receipt = _append_undo(repository, request, active, captured, check)
+            committed = True
             return receipt
+    except BaseException as error:
+        if committed:
+            # A source or identity check can fail while the lease unwinds after
+            # the Trip commit. The caller must reconcile the original action.
+            error.commit_possible = True
+        raise
+
+
+def _append_undo(repository, request, active, captured, check):
+    action = pending = None
+    def final(cur):
+        check()
+        repository._final_action_eligibility(cur, action, pending)
+
+    with repository.transaction(before_commit=final) as cur:
+        receipt = NeedsActions._previous(repository, cur, request)
+        if receipt is not None:
+            return receipt
+        current = _current_for_undo(repository, cur, request)
+        previous = _revision(repository, cur, current.trip_id, current.version - 1)
+        origin = current_origin(cur, repository, previous)
+        if (active['needs_scope'], active['needs_id']) != (origin['needs_scope'], origin['needs_id']):
+            raise Conflict('undo would restore a different Needs identity')
+        NeedsEdits._selected(cur, repository, current, active)
+        _protect_fixed(current, previous)
+        if active['needs_version'] != origin['needs_version']:
+            _check_newer_needs(captured, origin)
+        cur.execute('SELECT EXTRACT(EPOCH FROM clock_timestamp())')
+        proposal = Proposal('lio-undo-' + sha256(request.raw).hexdigest(), current.trip_id,
+                            current.version, 'lio-undo.1', int(cur.fetchone()[0]) + 300, previous.content)
+        digest = repository._publish_in_tx(cur, proposal)
+        source_input = active['source']
+        cur.execute('INSERT INTO cj_trip_needs_basis(scope,proposal_id,message_scope,run_id,needs_scope,needs_id,'
+                    'needs_version,source_input,source_sha256,proposed_input) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',
+                    (repository.scope, proposal.proposal_id, active['message_scope'], active['run_id'],
+                     active['needs_scope'], active['needs_id'], active['needs_version'],
+                     source_input, sha256(source_input).hexdigest(), origin['proposed']))
+        action = repository.confirm.issue(repository.scope, ProposalDetail(proposal, digest, 'pending'),
+            action_id=request.action_id, kind='accept', candidate_hash=digest).action
+        receipt, pending = repository._act_in_tx(cur, action)
+        cur.execute('INSERT INTO cj_trip_needs_action VALUES(%s,%s,%s,%s,%s)',
+                    (repository.scope, request.action_id, proposal.proposal_id, request.raw, action.raw()))
+        cur.execute('UPDATE cj_trip_needs_current SET trip_version=%s WHERE scope=%s AND needs_scope=%s AND needs_id=%s',
+                    (receipt.committed_version, repository.scope, active['needs_scope'], active['needs_id']))
+        return receipt

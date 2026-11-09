@@ -57,7 +57,9 @@ class HKChecks(unittest.TestCase):
 
     def test_minimal_subset_reuses_B_factory_and_keys_do_not_reach_child(self):
         class OfflineBudget:
-            def __init__(self,root,*,authorization_guard):self.guard=authorization_guard
+            def __init__(self,root,*,authorization_guard,demo):
+                self.guard=authorization_guard
+                self.demo=demo
             def begin(self,*args):raise AssertionError('no real outflow')
         with tempfile.TemporaryDirectory() as folder:
             secret=Path(folder)/'c-eval.env';secret.write_text('CJ_MODEL_API_KEY=synthetic-model-key\nCJ_AMAP_WEB_KEY=synthetic-amap-key-0000\n');secret.chmod(0o600)
@@ -69,6 +71,7 @@ class HKChecks(unittest.TestCase):
                 self.assertIs(type(services),RealServices)
                 self.assertEqual(services.subjects,frozenset(('m4-synthetic-c-unit',)))
                 self.assertIs(services.model.authorization.guard,guard)
+                self.assertIs(services.model.authorization.demo,False)
                 self.assertFalse(hk.KEYS.intersection(os.environ))
                 code='import os; print(int(any(k in os.environ for k in ("CJ_MODEL_API_KEY","CJ_AMAP_WEB_KEY"))))'
                 self.assertEqual(subprocess.check_output([sys.executable,'-c',code],text=True).strip(),'0')

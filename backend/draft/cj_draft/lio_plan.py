@@ -67,8 +67,9 @@ class LioPlanPublisher(ContextPublisher):
         def final(cur):
             self.source.check(binding, capture)
             self.require_lio(binding, original, expected)
-            repository._final_action_eligibility(cur, action, pending)
-            before_publish()
+            # B runs its original source guards first and the original budget
+            # deadline last. The Trip DB clock check belongs between them.
+            before_publish(check_trip=lambda: repository._final_action_eligibility(cur, action, pending))
 
         with repository.transaction(before_commit=final) as cur:
             existing = repository._receipt(cur, action_id)

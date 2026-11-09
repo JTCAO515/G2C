@@ -488,6 +488,7 @@ class NeedsActionChecks(unittest.TestCase):
     def test_lio_planner_saves_two_versions_with_the_original_source_and_receipts(self):
         from dataclasses import replace
         from hashlib import sha256
+        from time import sleep
         from cj_api.local_needs import protected_reader
         from cj_api.local_worker_context import checker_for
         from cj_draft.lio_plan import LioPlanPublisher
@@ -513,9 +514,18 @@ class NeedsActionChecks(unittest.TestCase):
                            (binding.scope,binding.message_id,binding.run_id))
             return cursor.fetchone()
 
-        def wrap(publisher):
+        class FixtureLioPublisher(LioPlanPublisher):
+            def publish_for_message(self,*args,before_publish):
+                def final(*,check_trip):
+                    before_publish()
+                    if args[0].message_id == 'lio-expired':
+                        sleep(2.05)
+                    check_trip()
+                return super().publish_for_message(*args,before_publish=final)
+
+        def wrap(publisher,signer=None):
             # Isolated stand-in for the still separate B-owned Lio admission.
-            return LioPlanPublisher(publisher,self.signer,original_needs,lambda binding,original,expected:
+            return FixtureLioPublisher(publisher,signer or self.signer,original_needs,lambda binding,original,expected:
                                     binding.message_id in admitted and admitted[binding.message_id] == expected
                                     and original.receipt.run_id == binding.run_id)
 
@@ -554,6 +564,11 @@ class NeedsActionChecks(unittest.TestCase):
         self.assertEqual(repository.lio_plan_receipt(binding),saved)
         with self.assertRaises(Denied):
             repository.lio_plan_receipt(replace(binding,message_id='another-message'))
+        admitted['lio-expired']=TripHead.from_trip(updated)
+        expiring=ConfirmationSigner(self.signer.key,lifetime_seconds=2)
+        with self.assertRaisesRegex(Denied,'confirmation expired or changed before commit'):
+            self.replan(subject,'lio-expired',wrap_publisher=lambda publisher:wrap(publisher,expiring),needs_version=2)
+        self.assertEqual(repository.detail(saved.trip_id),updated)
         admitted['lio-stale']=TripHead.from_trip(original)
         stale=self.replan(subject,'lio-stale',expect_proposal=False,wrap_publisher=wrap,needs_version=2)
         self.assertEqual(stale.status,'unknown')
@@ -569,16 +584,19 @@ class NeedsActionChecks(unittest.TestCase):
         self.assertEqual(repository.detail(saved.trip_id).content,original.content)
 
     def test_lio_undo_appends_original_bytes_and_keeps_the_accepted_history(self):
+        from contextlib import contextmanager
         from dataclasses import asdict
         from hashlib import sha256
         from cj_agent.draft import trip_scope_for
         from cj_api.local_needs import protected_reader
         from cj_api.local_worker_context import checker_for
+        from cj_needs.domain import Denied as NeedsDenied
         from cj_trip.auth_boundary import Boundary
         from cj_trip.current_needs_source import CurrentNeedsSource
         from cj_trip.domain import Conflict, Denied
         from cj_trip.lio_history import Undo
         from cj_trip.needs_edit_store import NeedsEdits
+        from cj_trip.operation import OperationWithheld
 
         subject='lio-history'
         app,outcome,db=self.plan(subject)
@@ -624,7 +642,20 @@ class NeedsActionChecks(unittest.TestCase):
 
         def apply(operation):
             return packed(asdict(operation.undo_lio(request)))
-        receipt=boundary.with_operation(token,apply)
+        hold=CurrentNeedsSource.hold
+
+        @contextmanager
+        def lose_source_after_commit(current_source,captured):
+            with hold(current_source,captured) as check:
+                yield check
+                raise NeedsDenied('synthetic loss after committed undo')
+
+        with patch.object(CurrentNeedsSource,'hold',lose_source_after_commit):
+            with self.assertRaises(OperationWithheld) as withheld:
+                boundary.with_operation(token,apply)
+        self.assertEqual(withheld.exception.action_id,request.action_id)
+        self.assertTrue(withheld.exception.commit_possible)
+        receipt=boundary.with_operation(token,lambda op:packed(asdict(op.lio_undo_receipt(request))))
         self.assertEqual(json.loads(receipt)['committed_version'],3)
         self.assertEqual(boundary.with_operation(token,apply),receipt)
         self.assertEqual(boundary.with_operation(token,lambda op:packed(asdict(op.lio_undo_receipt(request)))),receipt)
