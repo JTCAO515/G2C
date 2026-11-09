@@ -1,5 +1,6 @@
 """Private PostgreSQL and real JWT/Unix socket; no external model or account."""
 import base64
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from datetime import datetime,timedelta,timezone
 import hashlib
@@ -19,15 +20,20 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.serialization import Encoding,NoEncryption,PrivateFormat,PublicFormat
 from fastapi.testclient import TestClient
 from cj_api.local_app import ISSUER,LocalDatabase,create_local_app,scope_for
+from cj_api.local_worker_context import checker_for
+from cj_agent.provider import FakeProvider
 from cj_api.local_run_context import load_run_context
 from cj_memory.typed_runtime import TypedRuntimeConfiguration
-from deploy.hk import checkpoint,demo_accounts,demo_login
+from cj_message.travel import ABI
+from deploy.hk import checkpoint,demo_accounts,demo_login,demo_schema,schema,staging
 from deploy.hk.configuration import Runtime,demo_periods
 from cj_run.step_usage import ledger_scope_for
 from cj_usage.authorization_budget import DEADLINE,DEMO_DEADLINE
 import dev_auth
+import local_run_context
 import migrate
 import pg_suites
+import run_worker
 
 SUBJECT='m4-synthetic-demo-0123456789ab'
 CODE='D1-0123456789ab.'+'x'*22
@@ -37,9 +43,55 @@ NEW_CODE='D1-0123456789ab.'+'y'*22
 def digest(code):return hashlib.sha256(code.encode('ascii')).hexdigest()
 
 
+def verify_upgrade(root, blueprint):
+    schema_root=root/'schema'
+    schema.generate(blueprint,schema_root)
+    control=root/'upgrade-control'
+    backups=root/'upgrade-backups'
+    backups.mkdir(mode=0o700)
+    prior=backups/'previous'
+    prior.mkdir(mode=0o700)
+    key=Ed25519PrivateKey.generate()
+    env=dict(CJ_DEPLOY_TARGET='hk-beta',CJ_M4_SYNTHETIC_ONLY='1',CJ_BETA_DB_TARGET='hk-local',
+        CJ_TRIAL_VALID_UNTIL='2026-12-31T16:00:00+00:00',
+        CJ_BETA_RECOVERY_PRIVATE_B64=base64.b64encode(key.private_bytes(Encoding.Raw,PrivateFormat.Raw,NoEncryption())).decode(),
+        CJ_BETA_RECOVERY_PUBLIC_B64=base64.b64encode(key.public_key().public_bytes(Encoding.Raw,PublicFormat.Raw)).decode())
+    with pg_suites.cluster('demo-upgrade',port=55650,role='cj_demo_upgrade',root=root/'old',socket=root/'old-s') as config:
+        with psycopg.connect(**config,autocommit=True) as db:
+            migrate.up(db,migrate.load(),49)
+            original=checkpoint.local.fence_state(db)
+
+        @contextmanager
+        def operator():
+            with psycopg.connect(**config,autocommit=True) as db:
+                yield db,config
+
+        with patch.dict(os.environ,env),patch.object(checkpoint,'operator',operator),                patch.object(staging,'PG17',pg_suites.bindir()):
+            with patch.object(checkpoint,'versions',return_value=list(range(1,50))):
+                checkpoint.bootstrap(control,lambda _:None)
+            old=checkpoint.verified(control/'release.json')
+            checkpoint.atomic(control/'b2.json',dict(version='g2c-hk-local.1',state='FORWARD_ONLY'))
+            checkpoint.atomic(prior/'manifest.json',dict(schema=list(range(1,50)),
+                lineage=old['lineage'],fences=original))
+            demo_schema.upgrade(control,backups,target=50,schema_root=schema_root)
+            base=demo_schema.daily_base(control,backups,'previous')
+            assert base==backups/'demo-schema50'
+            result=checkpoint.verified(base/'manifest.json')
+            assert result['fences']==original and result['lineage']==old['lineage']
+            with operator() as (db,_):
+                checkpoint.require_release(db,control)
+            try:
+                demo_schema.upgrade(control,backups,target=50,schema_root=schema_root)
+            except ValueError as exc:
+                assert 'reconcile original' in str(exc)
+            else:
+                raise AssertionError('schema upgrade accepted a second application')
+
+
 def exercise(root,conninfo):
     auth=root/'auth'
-    dev_auth.init(auth,[SUBJECT])
+    other='other-dialogue-owner'
+    dev_auth.init(auth,[SUBJECT,other,'invited-outside-dialogue'])
     path=root/'conn.json'
     path.write_text(json.dumps(conninfo))
     now=int(time.time())
@@ -81,7 +133,10 @@ def exercise(root,conninfo):
         assert demo_accounts.manage(runtime,'bootstrap',SUBJECT,control,operation,(digest(CODE),expiry))=='bootstrapped'
         assert demo_accounts.manage(runtime,'insert',SUBJECT,control,operation)=='activated'
         assert demo_accounts.manage(runtime,'insert',SUBJECT,control,operation)=='existing'
-        app=create_local_app(conninfo_path=None,auth_dir=auth,run_context=context,database=database,account_admission=True)
+        local_run_context.provision_budget(path,context,other)
+        dev_auth.activate_travel(path,other,context,ABI)
+        app=create_local_app(conninfo_path=None,auth_dir=auth,run_context=context,database=database,account_admission=True,
+            demo_dialogue_subjects=frozenset({SUBJECT,other}))
         demo_login.register_demo_login(app)
         with demo_login.signing_socket(runtime),TestClient(app) as api:
             def login(code,consent=True):
@@ -97,9 +152,69 @@ def exercise(root,conninfo):
             with patch.object(dev_auth,'time',SimpleNamespace(time=lambda:time.time()-7202)):
                 expired=dev_auth.token(auth,SUBJECT,120)
             assert api.put('/v1/conversations',params=params,headers={**old,'Authorization':'Bearer '+expired}).status_code==401
+            route='/v1/demo-dialogue/messages'
+            def dialogue(mid, **extra):
+                return json.dumps(dict(version='DEMO-dialogue-message.1',message_id=mid,text='虚构北京行程',
+                                       locale='zh',**extra),ensure_ascii=False).encode()
+            assert api.post(route,content=dialogue('outside'),headers={
+                **old,'Authorization':'Bearer '+dev_auth.token(auth,'invited-outside-dialogue',30)}).status_code==403
+            assert api.post(route,content=dialogue('invalid',new_conversation=True,
+                conversation_id='demo-dialogue-'+'0'*32),headers=old).status_code==400
+            assert api.post(route,content=dialogue('client-owner',owner='forged'),headers=old).status_code==400
+            first_raw=dialogue('first')
+            with ThreadPoolExecutor(max_workers=3) as pool:
+                responses=list(pool.map(lambda raw: api.post(route,content=raw,headers=old),
+                    (first_raw,first_raw,dialogue('second'))))
+            assert all(response.status_code==200 for response in responses),[(r.status_code,r.text) for r in responses]
+            first, replay, second=(response.json()['receipt'] for response in responses)
+            assert first==replay and first['input_sha256']==hashlib.sha256(first_raw).hexdigest()
+            assert first['run_id']!=second['run_id'] and first['conversation_id']==second['conversation_id']
+            lookup=api.get(route,params={'message_id':'first'},headers=old)
+            assert lookup.status_code==200 and lookup.json()['receipt']==first
+            foreign={**old,'Authorization':'Bearer '+dev_auth.token(auth,other,30)}
+            assert api.get(route,params={'message_id':'first'},headers=foreign).json()['receipt'] is None
+            assert api.post(route,content=dialogue('foreign-resume',
+                conversation_id=first['conversation_id']),headers=foreign).status_code==503
+            conflict=api.post(route,content=first_raw+b' ',headers=old)
+            assert conflict.status_code==409 and conflict.json()['error']['code']=='INPUT_CONFLICT'
+            new=api.post(route,content=dialogue('new',new_conversation=True),headers=old)
+            assert new.status_code==200 and new.json()['receipt']['conversation_id']!=first['conversation_id']
+            resumed=api.post(route,content=dialogue('continued',
+                conversation_id=new.json()['receipt']['conversation_id']),headers=old)
+            assert resumed.status_code==200 and resumed.json()['receipt']['conversation_id']==new.json()['receipt']['conversation_id']
+            with psycopg.connect(**conninfo) as db:
+                rows=db.execute("""SELECT f.context_id,f.context_version,r.demo_dialogue_input_sha256,r.input_sha256,
+                    r.raw_input,d.acknowledged FROM cj_message_receipt r
+                    JOIN cj_message_travel_reference f USING(scope,message_id,run_id)
+                    JOIN cj_message_delivery d USING(scope,message_id,run_id)
+                    WHERE r.scope=%s AND r.demo_dialogue_locale='zh'""",(scope_for(ISSUER,SUBJECT),)).fetchall()
+                assert len(rows)==4 and len({row[0] for row in rows})==1
+                assert all(version==1 and sha==hashlib.sha256(bytes(raw)).hexdigest()
+                    and outer!=sha and not ack and json.loads(raw)['version']=='MESSAGE-send.2'
+                    for _,version,outer,sha,raw,ack in rows)
+                assert db.execute("SELECT count(*) FROM cj_travel_context_action WHERE scope=%s AND context_id=%s",
+                    (scope_for(ISSUER,SUBJECT),rows[0][0])).fetchone()==(1,)
+                try:
+                    with db.transaction():
+                        migrate.down(db,migrate.load(),49)
+                except psycopg.errors.RaiseException as exc:
+                    assert 'demo dialogue originals must be preserved' in str(exc)
+                else:
+                    raise AssertionError('migration down erased original dialogue evidence')
+            model=FakeProvider()
+            worker=run_worker._worker_for_scope(database,model,auth,scope_for(ISSUER,SUBJECT),
+                checker_for(auth),memory_configuration=memory)
+            outcomes=worker.process()
+            assert len(outcomes)==4 and all(outcome.status=='completed' for outcome in outcomes)
+            assert model.calls==4
+            with psycopg.connect(**conninfo) as db:
+                assert db.execute('SELECT count(*) FROM cj_message_delivery WHERE scope=%s AND acknowledged',
+                    (scope_for(ISSUER,SUBJECT),)).fetchone()==(4,)
             assert login(CODE).status_code==200
             assert demo_accounts.manage(runtime,'revoke',SUBJECT,control,operation)=='revoked'
             assert login(CODE).status_code==401
+            assert api.get(route,params={'message_id':'first'},headers=old).status_code==403
+            assert api.post(route,content=dialogue('revoked'),headers=old).status_code==403
             assert api.put('/v1/conversations',params=params,headers=old).status_code==403
             assert demo_accounts.manage(runtime,'rotate',SUBJECT,control,operation,(digest(NEW_CODE),expiry))=='active'
             time.sleep(1.05)
@@ -115,11 +230,11 @@ def exercise(root,conninfo):
                     message_id='demo-'+str(number),text='Fictional trip',trip_id=None,creation_intent='none',
                     expected_generation=generation,expected_sequence=number-1,travel_context=None,needs_reference=None)).encode()
             receipts=[]
-            for number in range(1,41):
+            for number in range(1,37):
                 response=api.post('/v2/messages',content=command(number),headers=headers)
                 assert response.status_code==200,(number,response.status_code,response.text)
                 receipts.append(response.json()['receipt'])
-            limited=api.post('/v2/messages',content=command(41),headers=headers)
+            limited=api.post(route,content=dialogue('daily-limit'),headers=headers)
             assert limited.status_code==429 and limited.json()['error']['code']=='DEMO_DAILY_LIMIT',limited.text
             replay=api.post('/v2/messages',content=command(1),headers=headers)
             assert replay.status_code==200 and replay.json()['receipt']==receipts[0]
@@ -141,10 +256,10 @@ def exercise(root,conninfo):
                     except psycopg.errors.InsufficientPrivilege:pass
                     else:raise AssertionError('runtime changed protected state: '+label)
                 db.execute("UPDATE public.cj_message_receipt SET demo_question_day=demo_question_day-1 WHERE scope=%s",(scope,))
-            assert api.post('/v2/messages',content=command(41),headers=headers).status_code==200
+            assert api.post('/v2/messages',content=command(37),headers=headers).status_code==200
             with psycopg.connect(**conninfo) as db:
                 assert db.execute("SELECT count(*) FROM public.cj_message_receipt WHERE scope=%s AND demo_question_day=(clock_timestamp() AT TIME ZONE 'Asia/Shanghai')::date",(scope,)).fetchone()==(1,)
-    print('PASS Demo signed login/socket, renewal/revoke/rotate, original profile, 40/day, replay and Beijing day rollover')
+    print('PASS signed zero-setup dialogue, concurrent original replay, default Travel, no downgrade, revoke, 40/day, migration data protection and Beijing day rollover')
 
 
 if __name__=='__main__':
@@ -153,4 +268,5 @@ if __name__=='__main__':
         with pg_suites.cluster('demo',port=55649,role='cj_demo_init',root=root/'pg',socket=root/'s') as conninfo:
             with psycopg.connect(**conninfo,autocommit=True) as connection:
                 migrations=migrate.load();migrate.up(connection,migrations,migrations[-1]['version'])
+            verify_upgrade(root,conninfo)
             exercise(root,conninfo)

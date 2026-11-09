@@ -249,38 +249,47 @@ class Service:
                     raise InputConflict()
                 receipt = old.receipt
             else:
-                chat = tx.chat(command.conversation_id)
-                if (chat.generation, chat.last_sequence) != (command.expected_generation, command.expected_sequence):
-                    raise SequenceConflict()
-                if travel:
-                    from .travel_reference import require_producer
-                    if formal:
-                        if formal_producer is None:
-                            from .trip_reference import require_producer as require_trip
-                            source=require_trip(tx,command)
-                        else:source=formal_producer.require(tx,command)
-                    else:
-                        require_producer(tx,command)
-                receipt = Receipt(command.message_id, command.conversation_id,
-                                  chat.generation, chat.last_sequence + 1,
-                                  self.new_run_id(), hashlib.sha256(raw).hexdigest())
-                stored=Stored(raw,receipt)
-                if travel:
-                    from .travel_reference import insert_reference
-                    tx.insert(stored,command=command)
-                    if formal:
-                        from .trip_reference import insert_reference as insert_trip
-                        insert_trip(tx,stored,command,source)
-                    else:
-                        insert_reference(tx,stored,command)
-                else:
-                    tx.insert(stored)
-                tx.enqueue(receipt)
+                receipt = self.accept_new(tx, command, travel=travel, formal=formal,
+                                          formal_producer=formal_producer)
             if travel:
                 from .travel_reference import read_reference
                 reference=read_reference(tx,Stored(raw,receipt))
         # Only leave the transaction with a receipt after commit has succeeded.
         return TravelAcceptance(receipt,reference) if travel else receipt
+
+    def accept_new(self, tx, command, *, travel, formal=False, formal_producer=None, dialogue=None):
+        """Accept an already parsed command under the original MESSAGE scope lock."""
+        chat = tx.chat(command.conversation_id)
+        if (chat.generation, chat.last_sequence) != (command.expected_generation, command.expected_sequence):
+            raise SequenceConflict()
+        if travel:
+            from .travel_reference import require_producer
+            if formal:
+                if formal_producer is None:
+                    from .trip_reference import require_producer as require_trip
+                    source = require_trip(tx, command)
+                else:
+                    source = formal_producer.require(tx, command)
+            else:
+                require_producer(tx, command)
+        receipt = Receipt(command.message_id, command.conversation_id, chat.generation,
+                          chat.last_sequence + 1, self.new_run_id(), hashlib.sha256(command.raw).hexdigest())
+        stored = Stored(command.raw, receipt)
+        if travel:
+            from .travel_reference import insert_reference
+            if dialogue is None:
+                tx.insert(stored, command=command)
+            else:
+                tx.insert(stored, command=command, dialogue=dialogue)
+            if formal:
+                from .trip_reference import insert_reference as insert_trip
+                insert_trip(tx, stored, command, source)
+            else:
+                insert_reference(tx, stored, command)
+        else:
+            tx.insert(stored)
+        tx.enqueue(receipt)
+        return receipt
 
     def open_conversation(self, conversation_id):
         """Idempotently create an active chat for this scope; never reactivates an inactive one."""

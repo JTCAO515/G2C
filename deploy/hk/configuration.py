@@ -290,7 +290,7 @@ class Runtime:
             confirmation_signer=signer,history_configuration=history,
             account_admission=True,needs_profile=needs_profile,message_subjects=message_subjects,
             existing_display_reads=True,cleanup_configuration=cleanup,
-            cleanup_subjects=planning or None)
+            cleanup_subjects=planning or None,demo_dialogue_subjects=planning or None)
         if self.typed_memory is not None:
             from cj_memory.typed_api import register_typed_routes
             register_typed_routes(app,database=database,auth_dir=self.auth,configuration=self.typed_memory)

@@ -104,38 +104,42 @@ class Service:
     def apply(self, raw):
         action = Action.parse(raw)
         with self._transaction() as tx:
-            old = self._original(tx, action.action_id)
-            if old is not None:
-                if old[0] != raw:
-                    raise InputConflict()
-                return old[1]
-            if action.operation == 'create':
-                context = Context(uuid.uuid4().hex, 1, True)
-            else:
-                ref = action.travel_context
-                tx.cur.execute('SELECT version,active FROM cj_travel_context '
-                    'WHERE scope=%s AND context_id=%s FOR UPDATE', (tx.scope, ref.id))
-                row = tx.cur.fetchone()
-                if row is None:
-                    raise Unavailable('travel context unavailable')
-                if not row[1] or row[0] != ref.expected_version or row[0] == 9223372036854775807:
-                    raise SequenceConflict('travel context version conflict')
-                context = Context(ref.id, row[0] + 1, action.operation == 'advance')
-            receipt = ActionReceipt.build(action, context)
-            tx.cur.execute('INSERT INTO cj_travel_context_action '
-                '(scope,action_id,operation,context_id,expected_version,result_version,result_active,original_input,original_receipt) '
-                'VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s)',
-                (tx.scope, action.action_id, action.operation, context.id,
-                 None if action.travel_context is None else action.travel_context.expected_version,
-                 context.version, context.active, raw, receipt.raw))
-            if action.operation == 'create':
-                tx.cur.execute('INSERT INTO cj_travel_context(scope,context_id,version,active,head_action_id) '
-                    'VALUES(%s,%s,%s,%s,%s)',
-                    (tx.scope, context.id, context.version, context.active, action.action_id))
-            else:
-                tx.cur.execute('UPDATE cj_travel_context SET version=%s,active=%s,head_action_id=%s '
-                    'WHERE scope=%s AND context_id=%s',
-                    (context.version, context.active, action.action_id, tx.scope, context.id))
+            return self.apply_locked(tx, action)
+
+    def apply_locked(self, tx, action, *, creation_id=None):
+        """Apply a validated action in an existing owner-locked Travel transaction."""
+        old = self._original(tx, action.action_id)
+        if old is not None:
+            if old[0] != action.raw:
+                raise InputConflict()
+            return old[1]
+        if action.operation == 'create':
+            context = Context(creation_id or uuid.uuid4().hex, 1, True)
+        else:
+            ref = action.travel_context
+            tx.cur.execute('SELECT version,active FROM cj_travel_context '
+                'WHERE scope=%s AND context_id=%s FOR UPDATE', (tx.scope, ref.id))
+            row = tx.cur.fetchone()
+            if row is None:
+                raise Unavailable('travel context unavailable')
+            if not row[1] or row[0] != ref.expected_version or row[0] == 9223372036854775807:
+                raise SequenceConflict('travel context version conflict')
+            context = Context(ref.id, row[0] + 1, action.operation == 'advance')
+        receipt = ActionReceipt.build(action, context)
+        tx.cur.execute('INSERT INTO cj_travel_context_action '
+            '(scope,action_id,operation,context_id,expected_version,result_version,result_active,original_input,original_receipt) '
+            'VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s)',
+            (tx.scope, action.action_id, action.operation, context.id,
+             None if action.travel_context is None else action.travel_context.expected_version,
+             context.version, context.active, action.raw, receipt.raw))
+        if action.operation == 'create':
+            tx.cur.execute('INSERT INTO cj_travel_context(scope,context_id,version,active,head_action_id) '
+                'VALUES(%s,%s,%s,%s,%s)',
+                (tx.scope, context.id, context.version, context.active, action.action_id))
+        else:
+            tx.cur.execute('UPDATE cj_travel_context SET version=%s,active=%s,head_action_id=%s '
+                'WHERE scope=%s AND context_id=%s',
+                (context.version, context.active, action.action_id, tx.scope, context.id))
         return receipt.raw
 
     def _original(self, tx, action_id):

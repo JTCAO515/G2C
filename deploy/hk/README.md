@@ -235,6 +235,8 @@ API 只读挂载 Unix socket 目录。公网 `POST /v1/demo-invite-sessions` 的
 
 迁移前暂停 API/worker 并核对原队列及签名 release。原 operator 用新镜像运行
 `python -B -m deploy.hk.demo_schema`，一次追加 0049 并保留原 fence，建立新的本地签名备份基准。
+已在 0049 的 Demo v2 主机只追加 0050，使用 `python -B -m deploy.hk.demo_schema --target 50`。
+日备在新签名基准核实后续接。发现原升级标记时先只读核同，不能重复执行。
 用已挂载原 operator 和 worker 0600 文件的 operator 容器运行
 `python -B -m deploy.hk.demo_accounts bootstrap <subject> --digest <sha256> --expires-at <RFC3339>`，
 再运行 `insert <subject>` 做原 canonical Typed 预检和单次 profile 激活。
