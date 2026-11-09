@@ -1,5 +1,7 @@
 """Save a scoped Lio replacement through C's original Travel-run publisher."""
+from base64 import b64decode
 from datetime import date, datetime, time
+import json
 from zoneinfo import ZoneInfo
 
 from psycopg import Error as DatabaseError
@@ -11,6 +13,7 @@ from cj_feasibility.solver import Limits
 from cj_message.domain import Unavailable
 from cj_message.lio_plan_needs import EDIT_BOUND_EFFECT, attach_existing, lio_needs_id, original_needs
 from cj_message.needs_binding import needs_scope_for
+from cj_needs.contract_v1 import decode_snapshot
 from cj_run.postgres import CommitUnknown
 from cj_trip.domain import Denied
 from cj_trip.lio_history import TripHead
@@ -39,12 +42,19 @@ class LioEdit:
             raise ProviderUnknown('original Lio itinerary unavailable') from error
         if context is None:
             return _answer(worker, binding, state, locale, '请先让我帮你安排一个行程。', 'Ask me to plan an itinerary first.')
-        selection = select_lio_edit(context.trip, text, locale, 'lio-edit-' + binding.run_id)
+        try:
+            source = json.loads(context.needs_source)
+            snapshot = decode_snapshot(b64decode(source['snapshot'], validate=True))
+            arrival = snapshot.fields.get('arrival', {}).get('date')
+            starts_on = date.fromisoformat(arrival['value']) if arrival and arrival['state'] == 'known' else None
+        except (KeyError, ValueError) as error:
+            raise ProviderUnknown('original Lio itinerary calendar unavailable') from error
+        selection = select_lio_edit(context.trip, text, locale, 'lio-edit-' + binding.run_id, starts_on=starts_on)
         if selection.status == 'protected':
             return _answer(worker, binding, state, locale, '这项安排暂时不能改。', "I can't change this stop.")
         if selection.candidate is None:
-            return _answer(worker, binding, state, locale, '你想换掉哪一项安排？',
-                           'Which stop would you like to replace?')
+            return _answer(worker, binding, state, locale, '请带上具体日期或地点名，再说一次你想怎么改。',
+                           "Could you repeat the change with the exact date or the stop's name?")
 
         state = _bind_current(worker, binding, state)
         head = TripHead.from_trip(context.trip)

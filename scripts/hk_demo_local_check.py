@@ -89,7 +89,7 @@ def verify_upgrade(root, blueprint, target):
                 raise AssertionError('schema upgrade accepted a second application')
 
 
-def lio_fixture_model():
+def lio_fixture_model(*, empty_first_day=False):
     from cj_api.local_lio_planning import SYSTEM
     from cj_draft.needs_publisher import SYSTEM as PLAN_SYSTEM
 
@@ -106,7 +106,8 @@ def lio_fixture_model():
                     assert messages[1]['content'] == '北京，2026-11-11 到 2026-11-12'
                 if '2026-11-11' in messages[-1]['content']:
                     city = '北京' if '北京' in messages[-1]['content'] else 'Beijing'
-                    for edge, day in (('arrival','2026-11-11'), ('departure','2026-11-12')):
+                    end = '2026-11-13' if empty_first_day else '2026-11-12'
+                    for edge, day in (('arrival','2026-11-11'), ('departure',end)):
                         fields[edge] = dict(date=dict(state='known', value=day), time=dict(state='missing'),
                                             timezone=dict(state='missing'), place=dict(state='missing'))
                 yield json.dumps(dict(city=city, continues_trip=True, extraction=dict(
@@ -123,11 +124,14 @@ def lio_fixture_model():
                                     time=dict(state='known', value=clock),
                                     timezone=dict(state='known', value='Asia/Shanghai'),
                                     utc_offset=dict(state='unknown'))
+                    park_day = '2026-11-12' if empty_first_day else '2026-11-11'
+                    museum_day = '2026-11-13' if empty_first_day else '2026-11-12'
+                    park_hour = ('13:00','14:00') if empty_first_day else ('09:00','10:00')
                     items = [dict(id='park', text='Park walk', verification='pending', evidence=[],
-                                  schedule=dict(start=at('2026-11-11','09:00'), end=at('2026-11-11','10:00')),
+                                  schedule=dict(start=at(park_day,park_hour[0]), end=at(park_day,park_hour[1])),
                                   fixed=dict(state='unknown'), source_category='unknown', source_refs=[]),
                              dict(id='museum', text='Museum visit', verification='pending', evidence=[],
-                                  schedule=dict(start=at('2026-11-12','13:00'), end=at('2026-11-12','14:00')),
+                                  schedule=dict(start=at(museum_day,'13:00'), end=at(museum_day,'14:00')),
                                   fixed=dict(state='unknown'), source_category='unknown', source_refs=[])]
                     subjects = {'park':['party'],'museum':['party']}
                 else:
@@ -873,16 +877,28 @@ def check_lio_retirement(root, database, auth, conninfo, context, memory, clean_
     clean, unsettled = scope_for(ISSUER,clean_actor), scope_for(ISSUER,unsettled_actor)
     clean_headers, unsettled_headers = actor_headers(clean_actor), actor_headers(unsettled_actor)
     with TestClient(app) as api:
-        model, _ = lio_fixture_model()
+        model, _ = lio_fixture_model(empty_first_day=True)
         worker = run_worker._worker_for_scope(database,model,auth,clean,checker_for(auth),
             memory_configuration=memory,draft_profile='needs-structured.1',demo_planning=True,lio_confirmation=signer)
         assert send(api,clean_headers,'lio-clean-plan',
-                    'Plan a trip to Beijing from 2026-11-11 to 2026-11-12 for our party.').status_code == 200
+                    'Plan a trip to Beijing from 2026-11-11 to 2026-11-13 for our party.').status_code == 200
         assert [outcome.status for outcome in worker.process()] == ['completed']
-        assert send(api,clean_headers,'lio-clean-edit','Replace the afternoon of day 2 with Temple of Heaven.').status_code == 200
-        assert [outcome.status for outcome in worker.process()] == ['completed']
+        before = api.get('/v1/lio/trip',headers=clean_headers).json()
+        assert [day['date'] for day in before['current']['days']] == ['2026-11-12','2026-11-13']
+        assert send(api,clean_headers,'lio-clean-edit-relative',
+                    'Replace the afternoon of day 2 with Temple of Heaven.').status_code == 200
+        calls = model.calls
+        assert [outcome.status for outcome in worker.process()] == ['completed'] and model.calls == calls
+        clarified = api.get('/v1/lio/timeline',headers=clean_headers).json()['messages'][-1]
+        assert clarified['trip'] is None and 'exact date' in clarified['answer']
+        assert api.get('/v1/lio/trip',headers=clean_headers).json() == before
+        assert send(api,clean_headers,'lio-clean-edit',
+                    'Replace the afternoon of 2026-11-12 with Temple of Heaven.').status_code == 200
+        assert [outcome.status for outcome in worker.process()] == ['completed'] and model.calls == calls
         trip = api.get('/v1/lio/trip',headers=clean_headers).json()
-        assert trip['current']['days'][1]['items'][0]['label'] == 'Temple of Heaven'
+        assert trip['current']['days'][0]['items'][0]['label'] == 'Temple of Heaven'
+        assert trip['current']['days'][1] == before['current']['days'][1]
+        print('PASS signed Lio sparse itinerary asks for a date and replaces only the named date')
         assert api.post('/v1/lio/trip/undo',headers=clean_headers,content=encode(dict(
             version='LIO-trip-undo.1',action_id='lio-clean-undo',target=trip['undo_target']))).json()['committed'] is True
         assert all(footprint(clean).values()), footprint(clean)

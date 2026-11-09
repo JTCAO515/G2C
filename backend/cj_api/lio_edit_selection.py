@@ -1,6 +1,6 @@
 """Resolve an explicit Lio replacement against the current structured itinerary."""
 from dataclasses import dataclass
-from datetime import time
+from datetime import date, time
 from hashlib import sha256
 import json
 import re
@@ -19,6 +19,9 @@ _ENGLISH_SLOT = re.compile(r'(?:the\s+)?(?:day\s+([1-9][0-9]?)|(?:the\s+)?(first
                            r'(?:\s+in\s+the)?\s+(morning|afternoon|evening)', re.I)
 _ENGLISH_PERIOD_FIRST = re.compile(r'(?:the\s+)?(morning|afternoon|evening)\s+of\s+'
                                    r'(?:day\s+([1-9][0-9]?)|(?:the\s+)?(first|second|third)\s+day)', re.I)
+_DATED_SLOT = re.compile(r'([0-9]{4}-[0-9]{2}-[0-9]{2})\s*(上午|下午|晚上|morning|afternoon|evening)', re.I)
+_ENGLISH_DATED_SLOT = re.compile(r'(?:the\s+)?(morning|afternoon|evening)\s+(?:of|on)\s+'
+                                 r'([0-9]{4}-[0-9]{2}-[0-9]{2})', re.I)
 _ORDINALS = {**dict(zip('一二三四五六七八九十', range(1, 11), strict=True)),
              'first': 1, 'second': 2, 'third': 3}
 _PERIODS = {
@@ -60,19 +63,39 @@ def _known(observation):
     return observation['value'] if observation['state'] == 'known' else None
 
 
-def _select(items, target):
-    slot = _slot(target)
-    if slot is None:
+def _dated_slot(target):
+    dated = _DATED_SLOT.fullmatch(target)
+    if dated:
+        return dated[1], _PERIODS[dated[2].lower()]
+    english = _ENGLISH_DATED_SLOT.fullmatch(target)
+    if english:
+        return english[2], _PERIODS[english[1].lower()]
+    return None
+
+
+def _select(items, target, starts_on):
+    relative = _slot(target)
+    dated = _dated_slot(target) if relative is None else None
+    if relative is None and dated is None:
         return [item for item in items if item['text'].casefold() == target.casefold()]
 
-    ordinal, (lower, upper) = slot
     dates = [_known(item['schedule']['start']['date']) for item in items]
     if None in dates:
         return []
-    days = sorted(set(dates))
-    if ordinal > len(days):
-        return []
-    day = days[ordinal - 1]
+    if relative is not None:
+        ordinal, (lower, upper) = relative
+        displayed_dates = sorted(set(dates))
+        if starts_on is None or ordinal > len(displayed_dates):
+            return []
+        day = displayed_dates[ordinal - 1]
+        # A day with no stops is absent from the current card. A relative edit
+        # must select the same date in the trip calendar and in that card.
+        if (date.fromisoformat(day) - starts_on).days != ordinal - 1:
+            return []
+    else:
+        day, (lower, upper) = dated
+        if day not in dates:
+            return []
     selected = []
     for item, item_date in zip(items, dates, strict=True):
         start = item['schedule']['start']
@@ -93,7 +116,7 @@ def _select(items, target):
     return selected
 
 
-def select_lio_edit(trip, text, locale, request_id):
+def select_lio_edit(trip, text, locale, request_id, *, starts_on):
     """Return an exact provisional change. This does not authorize publication."""
     match = match_edit(text)
     if match is None:
@@ -103,7 +126,7 @@ def select_lio_edit(trip, text, locale, request_id):
     if trip is None or not target or not replacement or re.search(r'[;；]|(?:并且|然后|\band then\b)', replacement, re.I):
         return LioEditSelection('clarify')
     document = json.loads(trip.content)
-    selected = _select(document['items'], target)
+    selected = _select(document['items'], target, starts_on)
     if len(selected) != 1 or selected[0]['text'] == replacement:
         return LioEditSelection('clarify')
     item = selected[0]

@@ -1,3 +1,4 @@
+from datetime import date
 import json
 
 import pytest
@@ -42,7 +43,7 @@ def itinerary(fixed=None, *, overlap=False):
 ])
 def test_edit_preserves_everything_outside_the_selected_stop(text, locale, replacement):
     trip, original = itinerary()
-    result = select_lio_edit(trip, text, locale, 'original-edit')
+    result = select_lio_edit(trip, text, locale, 'original-edit', starts_on=date(2026,11,11))
     assert result.status == 'preview'
     assert result.candidate.affected_ids == ('afternoon',)
     assert result.candidate.can_publish is False
@@ -53,11 +54,23 @@ def test_edit_preserves_everything_outside_the_selected_stop(text, locale, repla
 @pytest.mark.parametrize('fixed', [known(True), dict(state='unknown')])
 def test_locked_and_unknown_items_are_protected(fixed):
     trip, _ = itinerary(fixed)
-    result = select_lio_edit(trip, '把第二天下午换成天坛', 'zh', 'original-edit')
+    result = select_lio_edit(trip, '把第二天下午换成天坛', 'zh', 'original-edit', starts_on=date(2026,11,11))
     assert result.status == 'protected' and result.candidate is None
 
 
 def test_ambiguous_interval_and_non_edit_leave_no_candidate():
     trip, _ = itinerary(overlap=True)
-    assert select_lio_edit(trip, '把第二天下午换成天坛', 'zh', 'original-edit').status == 'clarify'
-    assert select_lio_edit(trip, '不要把第二天下午换成天坛', 'zh', 'original-edit') is None
+    assert select_lio_edit(trip, '把第二天下午换成天坛', 'zh', 'original-edit', starts_on=date(2026,11,11)).status == 'clarify'
+    assert select_lio_edit(trip, '不要把第二天下午换成天坛', 'zh', 'original-edit', starts_on=date(2026,11,11)) is None
+
+def test_missing_calendar_day_does_not_shift_an_edit_to_another_date():
+    trip, _ = itinerary()
+    # The stored Needs departure window starts on the 10th. The card starts
+    # on the 11th because the 10th has no stops.
+    starts_on = date(2026,11,10)
+    relative = select_lio_edit(trip, '把第二天下午换成天坛', 'zh', 'original-edit', starts_on=starts_on)
+    assert relative.status == 'clarify' and relative.candidate is None
+    for text, locale in (('把2026-11-11下午换成天坛', 'zh'),
+                         ('Replace the afternoon of 2026-11-11 with Temple of Heaven.', 'en')):
+        exact = select_lio_edit(trip, text, locale, 'original-edit', starts_on=starts_on)
+        assert exact.candidate.affected_ids == ('first',)
