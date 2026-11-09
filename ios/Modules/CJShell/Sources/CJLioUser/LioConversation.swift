@@ -175,11 +175,18 @@ final class LioConversation {
             let page = try await earlier(cursor)
             guard !Task.isCancelled, nextBefore == cursor,
                   let boundary = turns.firstIndex(where: { $0.id == Data(cursor.utf8) }) else { return nil }
-            let known = Set(turns.map(\.id))
-            let older = page.turns.filter { !known.contains($0.id) }
-            turns.insert(contentsOf: older.map { makeTurn($0) }, at: boundary)
+            var insertion = boundary
+            var firstInserted: Data?
+            for row in page.turns.reversed() {
+                if let existing = turns.firstIndex(where: { $0.id == row.id }) {
+                    insertion = existing
+                } else {
+                    turns.insert(makeTurn(row), at: insertion)
+                    firstInserted = row.id
+                }
+            }
             nextBefore = page.nextBefore
-            return older.first?.id
+            return firstInserted
         } catch is CancellationError {
             return nil
         } catch {
