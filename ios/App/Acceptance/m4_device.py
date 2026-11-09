@@ -147,14 +147,14 @@ def configure_project(project, tls, control_url, control_token, amap=False,
     text = text.replace(bundle + '.control', 'space.go2china.m4.device.control')
     text = text.replace('GENERATE_INFOPLIST_FILE = YES;',
         'GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_NSLocalNetworkUsageDescription = "M4 synthetic-data test control on the development Mac";')
-    # The acceptance project has no Production configuration. Its only product
+    # The acceptance project has no Beta or Production configuration. Its only product
     # identities are the isolated Debug/Release acceptance IDs (or Debug AMap).
-    for first, release, production in (('12', '13', '16'), ('14', '15', '17')):
+    for first, release, product in (('12', '13', '1[68]'), ('14', '15', '1[79]')):
         prefix = '0000000000000000000000'
         permitted = [prefix + first] + ([prefix + release] if include_release else [])
         text = re.sub(r'buildConfigurations = \(' + prefix + first + r'[^)]*\)',
                       'buildConfigurations = (' + ', '.join(permitted) + ')', text)
-        text = re.sub(r'^' + prefix + production + r' = \{isa = XCBuildConfiguration;[^\n]*\n', '', text, flags=re.MULTILINE)
+        text = re.sub(r'^' + prefix + product + r' = \{isa = XCBuildConfiguration;[^\n]*\n', '', text, flags=re.MULTILINE)
     # The simulator entitlement is never reused as a device signing identity.
     text = re.sub(r'"CODE_SIGN_ENTITLEMENTS\[sdk=iphonesimulator\*\]"\s*=\s*[^;]+;', '', text)
     device_entitlements = project.parent/'M4Device.entitlements'
