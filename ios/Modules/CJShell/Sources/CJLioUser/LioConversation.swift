@@ -44,6 +44,7 @@ enum LioEvent: Sendable {
     case activity(LioActivity)
     case text(String)
     case source(LioSource)
+    case savedItinerary(LioItinerary)
     case finished
     case failed(LioFailure)
 }
@@ -75,6 +76,7 @@ struct LioTurn: Identifiable {
     var status: Status = .thinking
     var answer = ""
     var sources: [LioSource] = []
+    var itinerary: LioItinerary?
     var fromTimeline = false
     var id: Data { question.id }
 }
@@ -83,6 +85,13 @@ struct LioTurn: Identifiable {
 final class LioConversation {
     private let service: LioService
     private(set) var turns: [LioTurn] = []
+    var itineraries: [LioItinerary] {
+        var seen: Set<String> = []
+        return Array(turns.reversed().compactMap { turn -> LioItinerary? in
+            guard let trip = turn.itinerary, seen.insert(trip.id).inserted else { return nil }
+            return trip
+        }.reversed())
+    }
     private(set) var pending: LioQuestion?
     private(set) var nextBefore: String?
     private(set) var loadingEarlier = false
@@ -143,6 +152,8 @@ final class LioConversation {
                 if !turns[index].sources.contains(where: { $0.id == source.id }) {
                     turns[index].sources.append(source)
                 }
+            case .savedItinerary(let itinerary):
+                turns[index].itinerary = itinerary
             case .finished:
                 turns[index].status = .finished
                 return
@@ -199,6 +210,6 @@ final class LioConversation {
     private func makeTurn(_ row: LioTimelineTurn, question: LioQuestion? = nil) -> LioTurn {
         let question = question ?? LioQuestion(messageID: row.messageID, text: row.text, language: .english)
         return LioTurn(question: question, status: row.status, answer: row.answer,
-                       sources: row.sources, fromTimeline: true)
+                       sources: row.sources, itinerary: row.itinerary, fromTimeline: true)
     }
 }

@@ -56,6 +56,31 @@ public enum LioTimelineWire {
         case travelInformation = "checking_travel_information"
     }
 
+    public struct SavedTrip: Decodable, Sendable, Equatable {
+        public struct Day: Decodable, Sendable, Equatable {
+            public struct Item: Decodable, Sendable, Equatable {
+                public let id: String
+                public let label: String
+                public let startTime: String?
+                public let endTime: String?
+                public let fixed: Bool?
+
+                enum CodingKeys: String, CodingKey {
+                    case id = "item_id", label, startTime = "start_time", endTime = "end_time", fixed
+                }
+            }
+
+            public let date: String?
+            public let items: [Item]
+        }
+
+        public let id: String
+        public let title: String
+        public let days: [Day]
+
+        enum CodingKeys: String, CodingKey { case id = "trip_id", title, days }
+    }
+
     public struct Message: Sendable, Equatable {
         public enum State: Equatable, Sendable {
             case waiting, answering, completed, dailyLimit
@@ -70,6 +95,7 @@ public enum LioTimelineWire {
         public let state: State
         public let activity: Activity?
         public let sources: [Source]
+        public let trip: SavedTrip?
     }
 
     public struct Page: Sendable, Equatable {
@@ -118,7 +144,17 @@ public enum LioTimelineWire {
             }
             return Source(title: title, link: link, observedAt: item.observedAt)
         }
-        return Message(id: wire.messageID, question: wire.text, answer: wire.answer, state: state, activity: wire.activity, sources: sources)
+        if let trip = wire.trip {
+            let items = trip.days.flatMap(\.items)
+            guard state == .completed, validMessageID(trip.id),
+                  !trip.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                  items.allSatisfy({ validMessageID($0.id) }),
+                  Set(items.map(\.id)).count == items.count else {
+                throw MessageHTTPFailure.invalidResponse
+            }
+        }
+        return Message(id: wire.messageID, question: wire.text, answer: wire.answer, state: state,
+                       activity: wire.activity, sources: sources, trip: wire.trip)
     }
 
     static func validMessageID(_ id: String) -> Bool {
@@ -157,7 +193,8 @@ public enum LioTimelineWire {
             let failure: Failure?
             let activity: Activity?
             let sources: [Citation]
-            enum CodingKeys: String, CodingKey { case messageID = "message_id", text, answer, status, failure, activity, sources }
+            let trip: SavedTrip?
+            enum CodingKeys: String, CodingKey { case messageID = "message_id", text, answer, status, failure, activity, sources, trip }
         }
         let version: String
         let conversationID: String?

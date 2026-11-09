@@ -8,6 +8,7 @@ struct LioTimelineTurn: Sendable {
     let answer: String
     let status: LioTurn.Status
     let sources: [LioSource]
+    let itinerary: LioItinerary?
 
     var isActive: Bool {
         switch status {
@@ -20,6 +21,7 @@ struct LioTimelineTurn: Sendable {
         messageID = message.id
         text = message.question
         answer = message.answer
+        itinerary = message.trip.map(LioItinerary.init)
         sources = message.sources.enumerated().map { index, source in
             LioSource(id: "\(message.id).\(index)", title: source.title, url: source.link)
         }

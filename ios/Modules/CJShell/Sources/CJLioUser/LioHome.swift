@@ -10,6 +10,8 @@ public struct LioHome<MenuContent: View>: View {
     @State private var draft = ""
     @State private var menuOpen = false
     @State private var source: LioSource?
+    @State private var tab = Tab.chat
+    private enum Tab { case chat, trips }
     @FocusState private var typing: Bool
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -25,6 +27,24 @@ public struct LioHome<MenuContent: View>: View {
     public var body: some View {
         let pending = conversation.pending
         let canObserve = scenePhase == .active && pending == nil
+        TabView(selection: $tab) {
+            chat
+                .tabItem { Label(language.text("Chat", "聊天"), systemImage: "bubble.left") }
+                .tag(Tab.chat)
+            LioTripsView(itineraries: conversation.itineraries, language: language) { tab = .chat }
+                .tabItem { Label(language.text("Trips", "行程"), systemImage: "suitcase") }
+                .tag(Tab.trips)
+        }
+        .onChange(of: tab) { _, _ in typing = false }
+        .task(id: canObserve) {
+            if canObserve { await conversation.refreshTimeline() }
+        }
+        .task(id: pending?.id) {
+            if let pending { await conversation.receive(pending) }
+        }
+    }
+
+    private var chat: some View {
         ScrollViewReader { scroll in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 22) {
@@ -87,12 +107,6 @@ public struct LioHome<MenuContent: View>: View {
         }
         .sheet(item: $source) { selected in
             LioSourceSheet(source: selected, language: language)
-        }
-        .task(id: canObserve) {
-            if canObserve { await conversation.refreshTimeline() }
-        }
-        .task(id: pending?.id) {
-            if let pending { await conversation.receive(pending) }
         }
     }
 
@@ -226,6 +240,9 @@ public struct LioHome<MenuContent: View>: View {
                     .accessibilityIdentifier("lio.answer")
             }
             messageStatus(turn)
+            if let itinerary = turn.itinerary {
+                LioItineraryCard(itinerary: itinerary, language: language) { tab = .trips }
+            }
             ForEach(turn.sources) { item in
                 Button { source = item } label: {
                     Label(item.title, systemImage: "link")
