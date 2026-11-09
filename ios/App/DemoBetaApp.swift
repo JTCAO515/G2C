@@ -71,8 +71,8 @@ private struct LioAccountDeletion: View {
             Button(language.text("Done", "完成")) { root.finishDemoCleanup() }
                 .accessibilityIdentifier("demo.cleanup.done")
         } else if value.unavailable || value.unknown {
-            Text(language.text("We don’t know if deletion has finished yet. Keep this device connected.",
-                               "暂时还不清楚注销是否完成，请保持联网。"))
+            Text(language.text("Account deletion information is temporarily unavailable. Keep this device connected.",
+                               "暂时无法显示注销信息，请保持联网。"))
         } else if value.businessStopped {
             Text(language.text("You can’t use this account on this device while cleanup continues.",
                                "清理期间，暂时无法在本机使用此账号。"))
