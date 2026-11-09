@@ -44,7 +44,8 @@ NEW_CODE='D1-0123456789ab.'+'y'*22
 def digest(code):return hashlib.sha256(code.encode('ascii')).hexdigest()
 
 
-def verify_upgrade(root, blueprint):
+def verify_upgrade(root, blueprint, target):
+    root.mkdir(mode=0o700)
     schema_root=root/'schema'
     schema.generate(blueprint,schema_root)
     control=root/'upgrade-control'
@@ -59,7 +60,7 @@ def verify_upgrade(root, blueprint):
         CJ_BETA_RECOVERY_PUBLIC_B64=base64.b64encode(key.public_key().public_bytes(Encoding.Raw,PublicFormat.Raw)).decode())
     with pg_suites.cluster('demo-upgrade',port=55650,role='cj_demo_upgrade',root=root/'old',socket=root/'old-s') as config:
         with psycopg.connect(**config,autocommit=True) as db:
-            migrate.up(db,migrate.load(),49)
+            migrate.up(db,migrate.load(),target-1)
             original=checkpoint.local.fence_state(db)
 
         @contextmanager
@@ -68,25 +69,165 @@ def verify_upgrade(root, blueprint):
                 yield db,config
 
         with patch.dict(os.environ,env),patch.object(checkpoint,'operator',operator),                patch.object(staging,'PG17',pg_suites.bindir()):
-            with patch.object(checkpoint,'versions',return_value=list(range(1,50))):
+            with patch.object(checkpoint,'versions',return_value=list(range(1,target))):
                 checkpoint.bootstrap(control,lambda _:None)
             old=checkpoint.verified(control/'release.json')
             checkpoint.atomic(control/'b2.json',dict(version='g2c-hk-local.1',state='FORWARD_ONLY'))
-            checkpoint.atomic(prior/'manifest.json',dict(schema=list(range(1,50)),
+            checkpoint.atomic(prior/'manifest.json',dict(schema=list(range(1,target)),
                 lineage=old['lineage'],fences=original))
-            demo_schema.upgrade(control,backups,target=50,schema_root=schema_root)
+            demo_schema.upgrade(control,backups,target=target,schema_root=schema_root)
             base=demo_schema.daily_base(control,backups,'previous')
-            assert base==backups/'demo-schema50'
+            assert base==backups/f'demo-schema{target}'
             result=checkpoint.verified(base/'manifest.json')
             assert result['fences']==original and result['lineage']==old['lineage']
             with operator() as (db,_):
                 checkpoint.require_release(db,control)
             try:
-                demo_schema.upgrade(control,backups,target=50,schema_root=schema_root)
+                demo_schema.upgrade(control,backups,target=target,schema_root=schema_root)
             except ValueError as exc:
                 assert 'reconcile original' in str(exc)
             else:
                 raise AssertionError('schema upgrade accepted a second application')
+
+
+def check_planning(api, headers, foreign, database, auth, memory, conninfo):
+    from cj_api.local_needs_preview import DIALOGUE_SYSTEM
+    from cj_draft.needs_publisher import SYSTEM
+    from cj_message.needs_binding import needs_scope_for
+    from cj_agent.draft import trip_scope_for
+
+    def known(value):
+        return dict(state='known',value=value)
+
+    def event(day, clock=None):
+        return dict(date=known(day),time=known(clock) if clock else dict(state='missing'),
+                    timezone=known('Asia/Shanghai'),place=known('酒店大堂'))
+
+    item=dict(item_id='lobby',kind='appointment',description='酒店大堂集合',applies_to=['party'],
+              locked=known(True),booking_status=dict(state='unknown'),
+              start=event('2026-11-10','09:00'),end=event('2026-11-10','10:00'))
+    extracted=dict(party_size=known(2),pace=known('轻松'),arrival=event('2026-11-10'),
+                   departure=event('2026-11-11'),fixed_items=[item])
+
+    class PlanModel(FakeProvider):
+        def stream(self,messages,system=None):
+            if system and system.startswith(DIALOGUE_SYSTEM):
+                self.calls+=1
+                assert len(messages)==1 and messages[0]['role']=='user'
+                text=messages[0]['content']
+                city='Beijing' if 'Beijing' in text else '北京'
+                yield json.dumps(dict(city=city,extraction=dict(version='NEEDS-extraction.1',
+                    fields=extracted,unresolved=[],long_term_requests=[])),ensure_ascii=False)
+            elif system and system.startswith(SYSTEM):
+                self.calls+=1
+                source=json.loads(messages[-1]['content'])
+                assert source['fields']['fixed_items']==[item]
+                schedule={edge:{key:item[edge][key] for key in ('date','time','timezone')}
+                          for edge in ('start','end')}
+                for value in schedule.values():
+                    value['utc_offset']=dict(state='unknown')
+                yield json.dumps(dict(version='TRIP-model-plan.1',title='Synthetic confirmed plan',items=[
+                    dict(id=item['item_id'],text=item['description'],verification='pending',evidence=[],
+                         schedule=schedule,fixed=item['locked'],source_category='user_provided',source_refs=[])],
+                    proposed_subjects={}),ensure_ascii=False)
+            else:
+                yield from super().stream(messages,system=system)
+
+    scope=scope_for(ISSUER,SUBJECT)
+    worker_model=PlanModel()
+    worker=run_worker._worker_for_scope(database,worker_model,auth,scope,checker_for(auth),
+        memory_configuration=memory,draft_profile='needs-structured.1',assembly_planning=True,demo_planning=True)
+    messages='/v1/demo-dialogue/messages'
+    actions='/v1/demo-dialogue/actions'
+    events='/v1/demo-dialogue/events'
+
+    def post(route, payload, code=200, bearer=headers):
+        response=api.post(route,content=json.dumps(payload,ensure_ascii=False).encode(),headers=bearer)
+        assert response.status_code==code,(response.status_code,response.text)
+        return response.json()
+
+    def send(mid,text,locale='en',**extra):
+        return post(messages,dict(version='DEMO-dialogue-message.1',message_id=mid,text=text,
+                                  locale=locale,**extra))['receipt']
+
+    def preview_card(receipt):
+        response=api.get(events,params={'message_id':receipt['message_id']},headers=headers)
+        assert response.status_code==200,response.text
+        data=[json.loads(line[6:]) for line in response.text.splitlines() if line.startswith('data: ')]
+        assert all(event['run_id']==receipt['run_id'] and event['event_id'].isdigit() for event in data)
+        return next(event['payload'] for event in data if event['kind']=='needs_card')
+
+    original=send('need-first','Could you plan a relaxed two-day Beijing visit for two people?')
+    result,=worker.process()
+    assert result.status=='completed' and result.proposal_id is None and worker_model.calls==1,result
+    card=preview_card(original)
+    assert card==dict(card_id=card['card_id'],version=1,status='pending',
+        dates=dict(start='2026-11-10',end='2026-11-11'),city='Beijing',party_size=2,pace='轻松',
+        fixed_items=[dict(item_id='lobby',label='酒店大堂集合',starts_at='2026-11-10T09:00',
+                          ends_at='2026-11-10T10:00',time_zone='Asia/Shanghai')])
+    with psycopg.connect(**conninfo) as db:
+        assert db.execute('SELECT count(*) FROM cj_needs_record WHERE scope=%s AND needs_id=%s',
+            (needs_scope_for(scope),card['card_id'])).fetchone()==(0,)
+        assert db.execute('SELECT count(*) FROM cj_trip_proposal WHERE scope=%s',
+            (trip_scope_for(scope),)).fetchone()==(0,)
+        try:
+            with db.transaction():
+                migrate.down(db,migrate.load(),50)
+        except psycopg.errors.RaiseException as exc:
+            assert 'demo needs card originals must be preserved' in str(exc)
+        else:
+            raise AssertionError('migration down erased original needs cards')
+    action=dict(version='DEMO-dialogue-action.1',action_id='edit-people',
+        conversation_id=original['conversation_id'],card_id=card['card_id'],expected_version=1,
+        operation='correct_needs',changes=dict(party_size=known(3)))
+    corrected=post(actions,action)['receipt']
+    assert corrected['card']['party_size']==3 and corrected['version']==2 and corrected['run_id'] is None
+    assert post(actions,action)['receipt']==corrected
+    post(actions,dict(action,changes=dict(party_size=known(4))),409)
+    assert api.get(actions,params={'action_id':'edit-people'},headers=foreign).json()['receipt'] is None
+    post(actions,dict(action,action_id='foreign-correction'),503,bearer=foreign)
+    assert preview_card(original)==card
+    confirm={key:value for key,value in action.items() if key!='changes'}
+    confirm.update(action_id='needs-confirm',operation='confirm_needs')
+    post(actions,confirm,409)
+    confirm['expected_version']=2
+    from cj_message import demo_needs_cards
+    with patch.object(demo_needs_cards,'enqueue_dialogue',side_effect=RuntimeError('synthetic enqueue failure')):
+        post(actions,dict(confirm,action_id='fault-before-enqueue'),503)
+    with psycopg.connect(**conninfo) as db:
+        assert db.execute('SELECT count(*) FROM cj_needs_record WHERE scope=%s AND needs_id=%s',
+            (needs_scope_for(scope),card['card_id'])).fetchone()==(0,)
+    confirmed=post(actions,confirm)['receipt']
+    assert confirmed['card']['status']=='confirmed' and confirmed['version']==3
+    assert post(actions,confirm)['receipt']==confirmed
+    assert api.get(actions,params={'action_id':'needs-confirm'},headers=headers).json()['receipt']==confirmed
+    next_message=api.get(messages,params={'message_id':confirmed['message_id']},headers=headers).json()['receipt']
+    assert next_message['run_id']==confirmed['run_id'] and next_message['conversation_id']==original['conversation_id']
+    result,=worker.process()
+    assert result.status=='completed' and result.proposal_id and result.run_id==confirmed['run_id'],result
+    with psycopg.connect(**conninfo) as db:
+        fields=db.execute('SELECT content FROM cj_needs_record WHERE scope=%s AND needs_id=%s',
+            (needs_scope_for(scope),card['card_id'])).fetchone()[0]
+        assert json.loads(fields)['party_size']==known(3)
+        assert db.execute('SELECT status FROM cj_trip_proposal WHERE scope=%s AND proposal_id=%s',
+            (trip_scope_for(scope),result.proposal_id)).fetchone()==('pending',)
+        assert db.execute('SELECT count(*) FROM cj_trip_record WHERE scope=%s',
+            (trip_scope_for(scope),)).fetchone()==(0,)
+
+    zh=send('need-zh','帮我们两个人规划从明天开始的北京两天游，节奏轻松。','zh',new_conversation=True)
+    assert worker.process()[0].status=='completed'
+    zh_card=preview_card(zh)
+    assert zh_card['city']=='北京'
+    spoken=send('spoken-confirm','可以','zh',conversation_id=zh['conversation_id'])
+    assert send('spoken-confirm','可以','zh',conversation_id=zh['conversation_id'])==spoken
+    result,=worker.process()
+    assert result.status=='completed' and result.proposal_id and result.run_id==spoken['run_id'],result
+    with psycopg.connect(**conninfo) as db:
+        assert db.execute('SELECT count(*) FROM cj_demo_needs_card WHERE scope=%s AND operation=%s',
+            (scope,'confirm_needs')).fetchone()==(2,)
+        assert db.execute('SELECT count(*) FROM cj_trip_record WHERE scope=%s',
+            (trip_scope_for(scope),)).fetchone()==(0,)
+    print('PASS signed needs card, correction/replay, failed enqueue rollback, typed and text confirmation, original planning outbox and protected pending Trip')
 
 
 def exercise(root,conninfo):
@@ -236,6 +377,7 @@ def exercise(root,conninfo):
             with psycopg.connect(**conninfo) as db:
                 assert db.execute('SELECT count(*) FROM cj_message_delivery WHERE scope=%s AND acknowledged',
                     (scope_for(ISSUER,SUBJECT),)).fetchone()==(4,)
+            check_planning(api,old,foreign,database,auth,memory,conninfo)
             assert login(CODE).status_code==200
             assert demo_accounts.manage(runtime,'revoke',SUBJECT,control,operation)=='revoked'
             assert login(CODE).status_code==401
@@ -257,7 +399,7 @@ def exercise(root,conninfo):
                     message_id='demo-'+str(number),text='Fictional trip',trip_id=None,creation_intent='none',
                     expected_generation=generation,expected_sequence=number-1,travel_context=None,needs_reference=None)).encode()
             receipts=[]
-            for number in range(1,37):
+            for number in range(1,33):
                 response=api.post('/v2/messages',content=command(number),headers=headers)
                 assert response.status_code==200,(number,response.status_code,response.text)
                 receipts.append(response.json()['receipt'])
@@ -283,7 +425,7 @@ def exercise(root,conninfo):
                     except psycopg.errors.InsufficientPrivilege:pass
                     else:raise AssertionError('runtime changed protected state: '+label)
                 db.execute("UPDATE public.cj_message_receipt SET demo_question_day=demo_question_day-1 WHERE scope=%s",(scope,))
-            assert api.post('/v2/messages',content=command(37),headers=headers).status_code==200
+            assert api.post('/v2/messages',content=command(33),headers=headers).status_code==200
             with psycopg.connect(**conninfo) as db:
                 assert db.execute("SELECT count(*) FROM public.cj_message_receipt WHERE scope=%s AND demo_question_day=(clock_timestamp() AT TIME ZONE 'Asia/Shanghai')::date",(scope,)).fetchone()==(1,)
     print('PASS signed zero-setup dialogue, concurrent original replay, default Travel, no downgrade, revoke, 40/day, migration data protection and Beijing day rollover')
@@ -295,5 +437,11 @@ if __name__=='__main__':
         with pg_suites.cluster('demo',port=55649,role='cj_demo_init',root=root/'pg',socket=root/'s') as conninfo:
             with psycopg.connect(**conninfo,autocommit=True) as connection:
                 migrations=migrate.load();migrate.up(connection,migrations,migrations[-1]['version'])
-            verify_upgrade(root,conninfo)
+            with patch.object(migrate,'load',return_value=migrations[:50]):
+                with pg_suites.cluster('old-blueprint',port=55651,role='cj_demo_blueprint',
+                        root=root/'old-blueprint',socket=root/'old-blueprint-s') as previous:
+                    with psycopg.connect(**previous,autocommit=True) as connection:
+                        migrate.up(connection,migrations,50)
+                    verify_upgrade(root/'upgrade-50',previous,50)
+            verify_upgrade(root/'upgrade-51',conninfo,51)
             exercise(root,conninfo)

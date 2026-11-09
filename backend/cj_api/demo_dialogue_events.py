@@ -29,7 +29,7 @@ class EventPage:
     more: bool
 
 
-def _project(binding, state, after):
+def _project(binding, state, after, *, needs=None):
     frames = []
     cursor_known = after == 0
     more = False
@@ -43,7 +43,7 @@ def _project(binding, state, after):
         if len(frames) == 128:
             more = True
             return
-        event = dict(version=EVENT_VERSION, event_id=event_id, conversation_id=binding.conversation_id,
+        event = dict(version=EVENT_VERSION, event_id=str(event_id), conversation_id=binding.conversation_id,
                      message_id=binding.message_id, run_id=binding.run_id, kind=kind, payload=payload)
         frames.append((event_id, _sse(kind, event, event_id)))
 
@@ -55,6 +55,10 @@ def _project(binding, state, after):
             index = event.sequence + 1
             if event.kind == 'text_delta':
                 add(index, 'answer_delta', dict(text=event.value))
+            elif event.kind == 'effect_committed' and event.value == 'demo_needs_card':
+                if needs is None:
+                    raise SnapshotUnavailable('original needs card missing')
+                add(index, 'needs_card', needs)
             elif event.kind == 'started' or event.kind in TERMINAL:
                 status = 'running' if event.kind == 'started' else event.kind
                 payload = dict(status=status, stage=status)
@@ -81,7 +85,11 @@ def _read(boundary, resolve_run_repository, token, mid, after):
         if repository.scope != ctx.scope:
             raise SnapshotUnavailable('dialogue RUN scope mismatch')
         state = repository.snapshot_optional(binding)
-        page = _project(binding, state, after)
+        if state is not None and 'demo_needs_card' in state.effects:
+            needs = ctx.query_dialogue_needs(binding.message_id,binding.run_id)
+            page = _project(binding, state, after, needs=needs)
+        else:
+            page = _project(binding, state, after)
         final = repository.snapshot_optional(binding)
         if ctx.query_dialogue_message(mid) != source:
             raise SnapshotChanged('dialogue source changed')

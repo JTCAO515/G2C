@@ -102,7 +102,7 @@ class Outcome:
 
 
 class RunWorker:
-    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None, memory=None, message_context=None, tools=None, edit_publisher=None,edit_results=False,place_sources=None,memory_history=False,history_adapter=None,execution_lease=nullcontext,owned_transaction_lease=None):
+    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None, memory=None, message_context=None, tools=None, edit_publisher=None,edit_results=False,place_sources=None,memory_history=False,history_adapter=None,execution_lease=nullcontext,owned_transaction_lease=None,dialogue_preview=None):
         """`messages`: cj_message.domain.Service and `runs`: cj_run.core.Service, both bound to `scope`.
 
         `drafts`: optional cj_agent.draft.DraftPublisher for this user's TRIP scope; messages
@@ -124,6 +124,7 @@ class RunWorker:
         self.edit_results=edit_results
         self.tools=tools
         self.place_sources=place_sources
+        self.dialogue_preview=dialogue_preview
 
     def process(self, limit=20):
         outcomes = []
@@ -143,13 +144,13 @@ class RunWorker:
         return Binding(self.scope, receipt.conversation_id, receipt.generation,
                        receipt.message_id, receipt.run_id, receipt.sequence)
 
-    def _event(self, binding, state, kind, value=''):
+    def _event(self, binding, state, kind, value='', *, mutation=None):
         sequence = state.sequence + 1
         try:
             event = Event(binding, sequence, f'{binding.run_id}:{sequence}', kind, value)
             memory_effect=self.memory_run is not None and kind in {'text_delta','completed','draft_outcome'}
             travel_effect=self.message_context is not None and kind in {'started','text_delta','completed','effect_committed'}
-            if not memory_effect and not travel_effect:
+            if not memory_effect and not travel_effect and mutation is None:
                 return self.runs.apply(event)
             with ExitStack() as leases:
                 with self.runs.repository.transaction() as tx:
@@ -161,6 +162,7 @@ class RunWorker:
                         raise Conflict('state changed during memory publication')
                     if context is not None:context.check(binding)
                     if check_memory is not None:check_memory()
+                    if mutation is not None:mutation(tx.cur)
                     tx.put(updated)
             return updated
         except Conflict:
@@ -378,6 +380,7 @@ class RunWorker:
                               memory=self.memory,memory_history=self.memory_history,history_adapter=self.history_adapter,
                               message_context=self.message_context,
                               tools=self.tools,edit_publisher=self.edit_publisher,edit_results=self.edit_results,place_sources=self.place_sources,
+                              dialogue_preview=self.dialogue_preview,
                               runs=Service(OwnedRepository(), runs.valid))
             if self.edit_publisher is not None:
                 with self.message_context.worker_repository(owned.runs.repository):
@@ -450,6 +453,11 @@ class RunWorker:
         proposal_id = None
         buffer = ''
         try:
+            if self.dialogue_preview is not None and command['creation_intent']=='none':
+                locale = self.dialogue_preview.locale(binding,text)
+                if locale is not None:
+                    state = self.dialogue_preview.execute(self,binding,state,text,locale)
+                    return self._finish(receipt,state)
             inputs = ([{'role': 'user', 'content': text}] if self.memory_run is None
                       else self.memory_run.messages(text))
             if self.message_context is not None:

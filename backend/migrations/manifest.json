@@ -402,6 +402,14 @@
       "down": "backend/migrations/down/0050_demo_dialogue.down.sql",
       "sha256": "e338efae815efb7bc2f017798b0cb089c68e0d16574faf0d092adba8092f39a2",
       "down_sha256": "c38fb01b8611311df5e33cc629b04ea1f75ab6f0f4c07153062a4f5183ae1160"
+    },
+    {
+      "version": 51,
+      "name": "demo_needs_cards",
+      "file": "backend/migrations/0051_demo_needs_cards.sql",
+      "down": "backend/migrations/down/0051_demo_needs_cards.down.sql",
+      "sha256": "d877610fb6ab99479915af1ced41a17ea71dd04148daf4eb316fdaa9f8f5df5e",
+      "down_sha256": "2bea9b3d24bee8eda55ec9ff536f9b8e64835d80fc2b46d8e5cd287acf2e3390"
     }
   ]
 }

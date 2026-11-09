@@ -207,7 +207,7 @@ class RealTools:
         self.names=allowed_native
         self.native_tools=[t for t in TOOLS if t['function']['name'] in allowed_native]
         model=Registration('model',self._model_input)
-        self.registrations=MappingProxyType({'model.answer':model,'model.draft':model,'model.tool_turn':model,
+        self.registrations=MappingProxyType({'model.answer':model,'model.draft':model,'model.tool_turn':model,'model.needs_preview':model,
             **{'tool.'+name:Registration('tool',lambda argument,name=name:self._tool_input(name,argument)) for name in {NATIVE_REGISTRATION[n] for n in allowed_native}}})
 
     def _model_input(self,argument):

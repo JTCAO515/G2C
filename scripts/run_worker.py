@@ -306,13 +306,17 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
         from cj_api.local_memory_history import HistoryMemory,OriginalHistory,OriginalDecisions
         decisions=OriginalDecisions(database,Path(auth_dir),memory_credential,memory_admit,message_context)
         history=HistoryMemory(memory,OriginalHistory(messages,decisions))
+    dialogue_preview = None
+    if assembly_planning or demo_planning:
+        from cj_api.local_needs_preview import DialogueNeedsPreview
+        dialogue_preview = DialogueNeedsPreview(database)
     return RunWorker(scope=scope, messages=messages, runs=runs, provider=model, drafts=drafts,
         memory=memory,edit_publisher=None if edit_config is None else edit_config.publisher,edit_results=database.edit_results,
         memory_history=history is not None,history_adapter=history,
         message_context=message_context,
         execution_lease=lease_run_credential if run_credential else lease_execution if reuse_connections else nullcontext,
         owned_transaction_lease=(lambda: database.lease_run_transactions(runs.repository)) if reuse_connections else None,
-        tools=tools_configuration,place_sources=place_sources,
+        tools=tools_configuration,place_sources=place_sources,dialogue_preview=dialogue_preview,
         execution_guard=lambda binding: database.require_execution(binding.scope, binding, connection=execution_connection),
         needs_lease=needs_lease_for(database,checker,memory_credential if run_credential else token),
         budget_exit=(LocalBudgetRouter(database) if tools_configuration is None else

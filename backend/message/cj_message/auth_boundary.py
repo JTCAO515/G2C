@@ -99,6 +99,14 @@ class HistoryReadContext:
         self._check()
         return result
 
+    def query_dialogue_needs(self, message_id, run_id):
+        from .demo_needs_cards import read_initial
+        self._check()
+        with self._service.repository.transaction() as tx:
+            value=read_initial(tx,message_id,run_id)
+        self._check()
+        return value
+
     def query_edit_message(self,message_id,*,require_active=True):
         self._check()
         if type(message_id) is not str or not message_id.strip():raise InvalidInput('message ID required')
@@ -328,6 +336,14 @@ class Boundary:
     def query_dialogue(self, token, message_id):
         from .demo_dialogue import query
         return query(self._service(token), message_id)
+
+    def act_dialogue(self, token, raw):
+        from .demo_needs_cards import act
+        return act(self._service(token), raw)
+
+    def query_dialogue_action(self, token, action_id):
+        from .demo_needs_cards import query
+        return query(self._service(token), action_id)
 
     def send_status_v2(self, token, conversation_id, message_id=None):
         return self._service(token).send_status_v2(conversation_id,message_id)

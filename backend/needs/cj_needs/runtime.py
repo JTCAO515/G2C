@@ -1,6 +1,6 @@
 """Local runtime uses the existing NEEDS fence, SQL writer and immutable history."""
 from .domain import Denied
-from .postgres import Repository
+from .postgres import Repository, apply_on_cursor
 
 
 class RuntimeRepository(Repository):
@@ -36,3 +36,11 @@ class RuntimeRepository(Repository):
 
 class ReadOnlyRuntimeRepository(RuntimeRepository):
     read_only = True
+
+
+def apply_dialogue_confirmation(cursor, scope, command):
+    """Write a confirmed manual NEEDS revision in the guarded MESSAGE transaction."""
+    cursor.execute("SELECT set_config('cj.needs_runtime_abi','NEEDS-MANUAL-RUNTIME@1',true)")
+    cursor.execute('SELECT pg_catalog.pg_advisory_xact_lock(public.cj_needs_fence_key(%s))', (scope,))
+    cursor.execute('INSERT INTO cj_needs_scope(scope) VALUES(%s) ON CONFLICT DO NOTHING', (scope,))
+    return apply_on_cursor(cursor, scope, command)

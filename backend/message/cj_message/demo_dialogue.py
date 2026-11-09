@@ -128,14 +128,24 @@ def receive(service, raw):
             if original is None:
                 raise Unavailable('dialogue conversation unavailable')
 
-        tx.cur.execute("SELECT set_config('cj.message_context_abi',%s,true)", (ABI,))
-        selection = _travel(tx, service.repository)
-        inner = Command.parse_v2(_json(dict(version='MESSAGE-send.2', conversation_id=conversation,
-            message_id=command.id, text=command.text, trip_id=None, creation_intent='none',
-            expected_generation=chat.generation, expected_sequence=chat.last_sequence,
-            travel_context=selection, needs_reference=None)))
-        receipt = service.accept_new(tx, inner, travel=True, dialogue=command)
-        return DialogueReceipt(receipt.message_id, receipt.conversation_id, receipt.run_id, command.input_sha256)
+        if not command.new_conversation and command.text.strip().casefold() in ('可以', 'yes'):
+            from .demo_needs_cards import confirm_text
+            confirmed = confirm_text(service, tx, command, conversation, chat)
+            if confirmed is not None:
+                return confirmed
+        return enqueue_dialogue(service, tx, command, conversation, chat)
+
+
+def enqueue_dialogue(service, tx, command, conversation, chat, *, needs=None):
+    tx.cur.execute("SELECT set_config('cj.message_context_abi',%s,true)", (ABI,))
+    selection = _travel(tx, service.repository)
+    inner = Command.parse_v2(_json(dict(version='MESSAGE-send.2', conversation_id=conversation,
+        message_id=command.id, text=command.text, trip_id=None,
+        creation_intent='consider_trip' if needs is not None else 'none',
+        expected_generation=chat.generation, expected_sequence=chat.last_sequence,
+        travel_context=selection, needs_reference=needs)))
+    receipt = service.accept_new(tx, inner, travel=True, dialogue=command)
+    return DialogueReceipt(receipt.message_id, receipt.conversation_id, receipt.run_id, command.input_sha256)
 
 
 def query(service, mid):
