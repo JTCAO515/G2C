@@ -20,9 +20,9 @@ def _needs_id(binding):
 
 
 def original_needs(cursor, binding):
-    """Return (NEEDS id, version) only for a committed Lio planning registration."""
+    """Return (NEEDS id, version, digest) for a committed Lio planning registration."""
     return cursor.execute(
-        'SELECT b.needs_id,b.needs_version FROM cj_message_receipt m '
+        'SELECT b.needs_id,b.needs_version,b.content_sha256 FROM cj_message_receipt m '
         'JOIN cj_message_needs_binding b ON (b.message_scope,b.message_id,b.run_id)='
         '(m.scope,m.message_id,m.run_id) '
         'WHERE m.scope=%s AND m.conversation_id=%s AND m.generation=%s AND m.message_id=%s '

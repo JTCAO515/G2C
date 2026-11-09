@@ -8,9 +8,11 @@ from zoneinfo import ZoneInfo
 
 from psycopg import Error as DatabaseError
 from cj_agent.provider import ProviderUnknown
+from cj_draft.lio_plan import LioPlanPublisher
 from cj_message.demo_dialogue import LIO_VERSION
 from cj_message.domain import Command, Unavailable
-from cj_message.lio_plan_needs import BOUND_EFFECT, attach
+from cj_message.lio_plan_needs import BOUND_EFFECT, attach, original_needs
+from cj_message.needs_binding import needs_scope_for
 from cj_needs.domain import InvalidInput, decode, exact
 from cj_needs.preview import encode, preview
 from cj_run.postgres import CommitUnknown
@@ -88,6 +90,41 @@ class LioPlanning:
             return clarify(worker, binding, state, details.clarification)
         state = register(worker, binding, state, details)
         return self.plan_and_save(worker, binding, state, details, locale)
+
+
+class LioPlanSave:
+    def __init__(self, database, context_publisher, confirmation):
+        self.database = database
+        self.context_publisher = context_publisher
+        self.confirmation = confirmation
+
+    def __call__(self, worker, binding, state, details, locale):
+        original = worker.messages.query(binding.message_id)
+        with self.database.connect(binding.scope) as connection:
+            with connection.cursor() as cursor:
+                reference = original_needs(cursor, binding)
+        if reference is None:
+            raise ProviderUnknown('original Lio planning registration unavailable')
+        head = self.context_publisher.repository.lio_current_trip(
+            needs_scope_for(binding.scope), reference[0])
+
+        def check_original(candidate, stored, expected):
+            return (candidate == binding and expected == head and stored == original
+                    and worker.message_context.active_original(binding) == original)
+
+        publisher = LioPlanPublisher(self.context_publisher, self.confirmation,
+                                     original_needs, check_original)
+        previous = worker.drafts
+        worker.drafts = publisher
+        try:
+            text = json.loads(original.raw)['text']
+            state, committed = worker._draft(binding, state, text, original)
+        finally:
+            worker.drafts = previous
+        if committed is not None:
+            answer = '行程已经保存好了。' if locale == 'zh' else 'I saved your itinerary.'
+            state = worker._event(binding, state, 'text_delta', answer)
+        return worker._event(binding, state, 'completed')
 
 
 def planning_texts(database, binding, text):

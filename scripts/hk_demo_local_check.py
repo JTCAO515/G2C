@@ -91,10 +91,14 @@ def verify_upgrade(root, blueprint, target):
 
 def check_lio(api, database, auth, other, headers, conninfo):
     from cj_api.local_lio_planning import LioPlanning, SYSTEM
+    from cj_draft.lio_plan import LioPlanPublisher
+    from cj_draft.needs_publisher import SYSTEM as PLAN_SYSTEM
     from cj_message import demo_dialogue
     from cj_message.domain import CommitUnknown
     from cj_message.lio_plan_needs import original_needs
     from cj_run.core import Binding, ResyncRequired
+    from cj_trip.confirmation import ConfirmationSigner
+    from cj_trip.domain import CommitUnknown as TripCommitUnknown
 
     messages = '/v1/lio/messages'
     timeline = '/v1/lio/timeline'
@@ -148,13 +152,34 @@ def check_lio(api, database, auth, other, headers, conninfo):
                 if len(messages) == 2:
                     assert messages[0]['content'] == '帮我规划旅行'
                     assert messages[1]['content'] == '北京，2026-11-11 到 2026-11-12'
-                    city = '北京'
+                if '2026-11-11' in messages[-1]['content']:
+                    city = '北京' if '北京' in messages[-1]['content'] else 'Beijing'
                     for edge, day in (('arrival','2026-11-11'), ('departure','2026-11-12')):
                         fields[edge] = dict(date=dict(state='known', value=day), time=dict(state='missing'),
                                             timezone=dict(state='missing'), place=dict(state='missing'))
                 yield json.dumps(dict(city=city, continues_trip=True, extraction=dict(
                     version='NEEDS-extraction.1', fields=fields, unresolved=[], long_term_requests=[])),
                     ensure_ascii=False)
+                return
+            if system.startswith(PLAN_SYSTEM):
+                source = json.loads(messages[-1]['content'])
+                before = source['current_trip']
+                title = 'Beijing walk' if before is None else 'Beijing walks'
+                if before is None:
+                    def at(clock):
+                        return dict(date=dict(state='known', value='2026-11-11'),
+                                    time=dict(state='known', value=clock),
+                                    timezone=dict(state='known', value='Asia/Shanghai'),
+                                    utc_offset=dict(state='unknown'))
+                    items = [dict(id='park', text='Park walk', verification='pending', evidence=[],
+                                  schedule=dict(start=at('09:00'), end=at('10:00')),
+                                  fixed=dict(state='unknown'), source_category='unknown', source_refs=[])]
+                    subjects = {'park':['party']}
+                else:
+                    items = before['content']['items']
+                    subjects = {}
+                yield json.dumps(dict(version='TRIP-model-plan.1', title=title, items=items,
+                                      proposed_subjects=subjects))
                 return
             if messages[-1]['content'] == 'Synthetic lost model outcome':
                 raise ProviderUnknown()
@@ -203,7 +228,8 @@ def check_lio(api, database, auth, other, headers, conninfo):
     def validate_intake(worker, plan, state, details, locale):
         with database.connect(scope) as connection:
             with connection.cursor() as cursor:
-                needs_id, revision = original_needs(cursor, plan)
+                needs_id, revision, digest = original_needs(cursor, plan)
+                assert len(digest) == 64
                 assert original_needs(cursor, binding) is None
                 seen.append((needs_id, revision, details.city, locale))
         # This tests the B admission and intake boundary in isolation.
@@ -225,6 +251,34 @@ def check_lio(api, database, auth, other, headers, conninfo):
     assert (unavailable['status'], unavailable['failure'], unavailable['trip']) == ('failed', 'unavailable', None)
     assert api.post(messages, content=reply, headers=owner).status_code == 200
     assert worker.process() == [] and len(seen) == 1
+
+    confirmation = ConfirmationSigner((auth/'trip-confirmation.key').read_bytes())
+    worker = run_worker._worker_for_scope(database, model, auth, scope, checker_for(auth),
+                                         draft_profile='needs-structured.1', demo_planning=True,
+                                         lio_confirmation=confirmation)
+    request = 'Plan a trip to Beijing from 2026-11-11 to 2026-11-12 for our party.'
+    assert api.post(messages, content=original('lio-save', request, 'en'), headers=owner).status_code == 200
+    assert [outcome.status for outcome in worker.process()] == ['completed']
+    saved = api.get(timeline, headers=owner).json()['messages'][-1]
+    assert saved['status'] == 'completed' and saved['answer'] == 'I saved your itinerary.', saved
+    assert saved['trip']['title'] == 'Beijing walk'
+
+    commit_plan = LioPlanPublisher._commit_plan
+    def lose_save_ack(publisher, *args):
+        commit_plan(publisher, *args)
+        raise TripCommitUnknown()
+
+    change = original('lio-save-without-ack', request, 'en')
+    assert api.post(messages, content=change, headers=owner).status_code == 200
+    with patch.object(LioPlanPublisher, '_commit_plan', lose_save_ack):
+        assert [outcome.status for outcome in worker.process()] == ['unknown']
+    cards = api.get(timeline, headers=owner).json()['messages'][-2:]
+    assert cards[0] == saved
+    assert cards[1]['status'] == 'completed' and cards[1]['failure'] is None, cards[1]
+    assert cards[1]['trip']['trip_id'] == saved['trip']['trip_id']
+    assert cards[1]['trip']['title'] == 'Beijing walks'
+    assert api.post(messages, content=change, headers=owner).status_code == 200
+    assert worker.process() == []
     with psycopg.connect(**conninfo) as db:
         try:
             with db.transaction():

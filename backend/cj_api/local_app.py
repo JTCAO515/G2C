@@ -621,6 +621,7 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
         from cj_message.auth_boundary import Boundary
         from .demo_dialogue_routes import register_demo_dialogue_routes
         from .lio_dialogue_routes import register_lio_dialogue_routes
+        from .lio_trip_cards import LioTripCards
         from .local_account_admission_v2 import retired_for, retired_in_transaction
 
         invited = InvitedSubjects(auth_dir/'invited.json', demo_dialogue_subjects)
@@ -636,7 +637,8 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
         dialogue_boundary = Boundary(checker, dialogue_repository, lambda: str(uuid.uuid4()),
                                      checker_in_transaction=dialogue_checker)
         register_demo_dialogue_routes(app, dialogue_boundary)
-        register_lio_dialogue_routes(app, dialogue_boundary, database.run_repository)
+        register_lio_dialogue_routes(app, dialogue_boundary, database.run_repository,
+                                     LioTripCards(database, checker))
     if database.edit_results:
         from .run_display_composition import build_run_display_reader
         from .scoped_result_routes import register_scoped_result_routes
