@@ -146,6 +146,13 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     separate_clauses, _ = grounded_fields(
         ('Plan a trip to Shanghai from 2026-12-01 to 2026-12-03. Plan a Beijing itinerary.',), 'Beijing', today)
     assert separate_clauses['arrival']['date']['state'] == 'missing'
+    attributed_dates, _ = grounded_fields((
+        'Plan a Beijing itinerary. Trip dates from 2026-12-01 to 2026-12-03 are for Shanghai only.',
+    ), 'Beijing', today)
+    assert attributed_dates['arrival']['date']['state'] == 'missing'
+    affirmed_dates, _ = grounded_fields(
+        ('Plan a trip to Beijing from 2026-12-01 to 2026-12-03 and save it to my account.',), 'Beijing', today)
+    assert affirmed_dates['arrival']['date']['value'] == '2026-12-01'
     unrelated, _ = grounded_fields(
         ('Plan a trip to Beijing starting tomorrow, but we have a 7 day Shanghai trip later.',), 'Beijing', today)
     assert unrelated['departure']['date']['state'] == 'missing'
@@ -405,7 +412,10 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     assert cards[1]['trip']['title'] == 'Beijing walks'
     assert api.post(messages, content=change, headers=owner).status_code == 200
     assert worker.process() == []
-    for i, withdrawal in enumerate(('Do not save it.', "Please don't save it yet.", 'Show me a draft without saving.')):
+    withdrawals = ('Do not save it.', "Please don't save it yet.", 'Show me a draft without saving.',
+                   "Please don't save this itinerary to my account.", 'I do not want this itinerary saved.',
+                   'Can you show me before saving?', '请不要把行程保存到我的账户。')
+    for i, withdrawal in enumerate(withdrawals):
         assert api.post(messages, headers=owner, content=original(
             f'lio-withdrawal-{i}', 'Plan a trip to Beijing from 2026-12-01 to 2026-12-03. ' + withdrawal, 'en')).status_code == 200
         calls = model.calls

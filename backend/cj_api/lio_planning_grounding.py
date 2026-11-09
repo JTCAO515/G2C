@@ -18,8 +18,10 @@ PLAN_REQUEST = re.compile(
 )
 ISO = r'(?<!\d)\d{4}-\d{2}-\d{2}(?!\d)'
 SPAN = re.compile(rf'({ISO})\s*(?:to\b|through\b|到|至|–|—)\s*({ISO})', re.I)
-TRIP_DATES = re.compile(rf'^(?:(?:Travel|Trip dates?)\s*(?:from\s*)?|(?:日期|行程日期)\s*[:：]?\s*|'
-                        rf'(?:Beijing|北京)\s*[,，：:]\s*(?:from\s*|从\s*)?)?(?:{ISO})\s*(?:to\b|through\b|到|至|–|—)', re.I)
+SPAN_TAIL = re.compile(rf'\s*(?:for\s+(?:our party|(?:{NUMBER})\s+people)|[,，]\s*(?:{NUMBER})个人)?\s*', re.I)
+TRIP_DATES = re.compile(r'(?:(?:Travel|Trip dates?)\s*(?:from\s*)?|(?:日期|行程日期)\s*[:：]?\s*|'
+                        r'(?:Beijing|北京)\s*[,，：:]\s*(?:from\s*|从\s*)?)?'
+                        + SPAN.pattern + SPAN_TAIL.pattern, re.I)
 DATES_UNDECIDED = re.compile(
     r'\b(?:dates? (?:are|is) undecided|travel dates? (?:are|is) unknown)\b|'
     r'\b(?:suggest|recommend|choose|pick|help me decide)\b[^.?!]{0,32}\bdates?\b|'
@@ -36,14 +38,22 @@ ADJACENT_DURATION = re.compile(rf'\s*[,，]?\s*(?:for\s+({NUMBER})\s+days?\b|(?:
 DESTINATION_NEUTRAL = re.compile(r'^(?:please\s+)?(?:plan|make|build|create)\s+(?:a\s+|an\s+)?(?:trip|itinerary)'
                                  r'|^(?:请|帮我|给我)?\s*规划(?:一趟|一次|一个|一份)?(?:旅行|行程)', re.I)
 WITHDRAWAL = re.compile(
-    r"^(?:never mind|forget it|cancel (?:the |this |my )?(?:trip|plan|itinerary))\b|"
-    r"\b(?:don't|don’t|do not|never) (?:automatically )?(?:save|store)"
-    r"(?: anything| it| this| (?:this|the|my) (?:trip|plan|itinerary))?"
-    r"(?=\s*(?:$|[,，]|yet\b|until\b|for now\b|right now\b))|"
-    r"\b(?:without saving|hold off on saving|wait before saving)\b|"
-    r'^(?:算了|不用规划了)(?:$|[，, ])|(?:先别|不要|不用)保存(?:这个|这份|我的)?(?:行程|规划)?$',
+    r'^(?:never mind|forget it|cancel (?:the |this |my )?(?:trip|plan|itinerary))\b|'
+    r'\b(?:wait for my (?:approval|confirmation)|(?:only after|once) I (?:approve|confirm))\b|'
+    r'^(?:算了|不用规划了)(?:$|[，, ])|等我(?:确认|同意|批准)',
     re.I,
 )
+SAVE_LANGUAGE = re.compile(r'\b(?:sav(?:e|es|ed|ing)|stor(?:e|es|ed|ing)|persist(?:s|ed|ing)?|'
+                           r'publish(?:es|ed|ing)?|writ(?:e|es|ing)\b[^.!?]{0,24}\bdown)\b'
+                           r'|保存|存入|存下|存到|记录|写入|发布', re.I)
+NONPERSISTENT_SAVE = re.compile(r'\bsav(?:e|ing)\s+(?:time|money)\b', re.I)
+SAVE_ASSENT = re.compile(
+    r'(?:please\s+)?(?:save|store)\s+(?:it|this|(?:this|the|my)\s+(?:trip|plan|itinerary))'
+    r'(?:\s+(?:to|in)\s+(?:my account|my trips|the trips tab))?'
+    r'|(?:请\s*)?(?:把(?:这份|这个|我的)?行程)?保存(?:这份行程|这个行程|行程|到行程页)?',
+    re.I,
+)
+SAVE_JOIN = re.compile(r'\s+(?:and|then)\s+|[，,]?\s*(?:并|然后)', re.I)
 PARTY = re.compile(rf'\bfor\s+({NUMBER})\s+(?:people|persons?)\b|({NUMBER})\s*(?:个人|人)', re.I)
 DESTINATION = re.compile(r'\b(?:itinerary|trip|days?)\s+(?:in|to)\s+Beijing\b|'
                          r'\bBeijing\s+(?:itinerary|trip|visit)\b|'
@@ -77,8 +87,25 @@ def _number(value):
     return int(value) if value.isascii() and value.isdigit() else NUMBERS[value.lower()]
 
 
+def _planning_without_assent(clause):
+    for separator in SAVE_JOIN.finditer(clause):
+        plan = clause[:separator.start()]
+        if (PLAN_REQUEST.match(plan) and not NEGATED.search(plan)
+                and not SAVE_LANGUAGE.search(NONPERSISTENT_SAVE.sub('', plan))
+                and SAVE_ASSENT.fullmatch(clause[separator.end():])):
+            return plan
+    return None
+
+
 def planning_withdrawn(text):
-    return any(WITHDRAWAL.search(clause) for clause in _clauses(text))
+    for clause in _clauses(text):
+        if WITHDRAWAL.search(clause):
+            return True
+        if not SAVE_LANGUAGE.search(NONPERSISTENT_SAVE.sub('', clause)):
+            continue
+        if not SAVE_ASSENT.fullmatch(clause) and _planning_without_assent(clause) is None:
+            return True
+    return False
 
 
 def _relative_span(word, duration, today):
@@ -134,6 +161,7 @@ def _compatible_turns(turns, city):
     for turn in turns:
         compatible = []
         for clause in _clauses(turn):
+            clause = _planning_without_assent(clause) or clause
             named = stated_city((clause,), city)
             if PLAN_REQUEST.match(clause) and not named and not DESTINATION_NEUTRAL.fullmatch(clause):
                 retained.clear()
@@ -176,13 +204,15 @@ def _day_span(turns, today):
         for clause in _clauses(turn):
             if NEGATED.search(clause) or FIXED.search(clause):
                 continue
-            if not (PLAN_REQUEST.match(clause) or TRIP_DATES.match(clause)):
+            date_reply = TRIP_DATES.fullmatch(clause)
+            if not (PLAN_REQUEST.match(clause) or date_reply):
                 continue
             try:
                 explicit = tuple(SPAN.finditer(clause))
                 for match in explicit:
-                    scoped = (TRIP_DATES.match(clause) is not None
-                              or _timing_follows_destination(clause, match.start(), absolute=True))
+                    scoped = date_reply is not None or (
+                        _timing_follows_destination(clause, match.start(), absolute=True)
+                        and SPAN_TAIL.fullmatch(clause[match.end():]) is not None)
                     if scoped:
                         spans.add((date.fromisoformat(match[1]), date.fromisoformat(match[2])))
                 if explicit:
