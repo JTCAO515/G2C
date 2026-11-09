@@ -49,7 +49,21 @@ def main():
     (output / "G2CControl.swift").write_text(tests.replace("__LIO_RECORDED_TRIP_FIXTURE__", recorded_trip_fixture()))
     project = output / "G2CAcceptance.xcodeproj"
     settings = project / "project.pbxproj"
-    settings.write_text(settings.read_text().replace("space.go2china.foundation.local", "space.go2china.lio.acceptance"))
+    app_source = ROOT / "ios/App/CJProbeApp.swift"
+    generated_source = output / app_source.name
+    preview = 'if canPreviewLio, ProcessInfo.processInfo.arguments.contains("--lio-onboarding-preview") {'
+    journey = ('if canPreviewLio, ProcessInfo.processInfo.arguments.contains("--lio-journey-acceptance") {\n'
+               '                LioJourneyFixture(shell: shell)\n'
+               '            } else ' + preview)
+    app = app_source.read_text()
+    if app.count(preview) != 1:
+        raise ValueError("Expected a single synthetic preview entry")
+    fixtures = ("LioJourneyFixture.swift", "LioMemoryJourneyFixture.swift")
+    generated_source.write_text(app.replace(preview, journey)
+                                .replace("import CJLioUser\n", "@testable import CJLioUser\n")
+                                + "\n" + "\n".join((HERE / name).read_text() for name in fixtures))
+    settings.write_text(settings.read_text().replace("space.go2china.foundation.local", "space.go2china.lio.acceptance")
+                        .replace(json.dumps(str(app_source)), json.dumps(str(generated_source))))
     result = output / "lio-home.xcresult"
     env = {key: value for key, value in os.environ.items() if not key.startswith(("G2C_DEV_", "SIMCTL_CHILD_"))}
     command = [
@@ -64,7 +78,7 @@ def main():
         subprocess.run(command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=600)
     summary = subprocess.check_output(["xcrun", "xcresulttool", "get", "test-results", "summary", "--path", str(result)])
     (output / "summary.json").write_bytes(summary)
-    assert json.loads(summary)["passedTests"] == 5, summary
+    assert json.loads(summary)["passedTests"] == 9, summary
 
 
 if __name__ == "__main__":
