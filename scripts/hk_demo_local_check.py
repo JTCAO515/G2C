@@ -89,7 +89,7 @@ def verify_upgrade(root, blueprint, target):
                 raise AssertionError('schema upgrade accepted a second application')
 
 
-def check_lio(api, database, auth, other, headers, conninfo):
+def check_lio(api, database, auth, other, headers, conninfo, memory):
     from cj_api.local_lio_planning import LioPlanning, SYSTEM
     from cj_draft.lio_plan import LioPlanPublisher
     from cj_draft.needs_publisher import SYSTEM as PLAN_SYSTEM
@@ -100,6 +100,29 @@ def check_lio(api, database, auth, other, headers, conninfo):
     from cj_run.core import Binding, ResyncRequired
     from cj_trip.confirmation import ConfirmationSigner
     from cj_trip.domain import CommitUnknown as TripCommitUnknown
+    from cj_api.lio_planning_grounding import grounded_fields
+    from datetime import date
+    from deploy.hk import entrypoint
+
+    with (patch.object(entrypoint,'heartbeat',return_value=auth.parent/'test-worker.json'),
+          patch.object(entrypoint,'authorization'), patch.object(entrypoint,'control'),
+          patch.object(entrypoint.local_postgres,'require_serving'),
+          patch.object(entrypoint.checkpoint,'require_release')):
+        entrypoint._publish_worker_state('worker','ready',False)
+        assert entrypoint.ready(database) is None
+        assert entrypoint.ready(database,require_lio=True) == 'lio_unavailable'
+        entrypoint._publish_worker_state('worker','ready',True)
+        assert entrypoint.ready(database,require_lio=True) is None
+
+    fixed_words = 'The hotel meetup from 9 to 10 a.m. on the first day is fixed'
+    sample = f'Plan three days in Beijing for two people starting tomorrow. {fixed_words}.'
+    grounded, missing = grounded_fields(sample, 'Beijing', {'fixed_items': [
+        dict(description=fixed_words), dict(description='Hotel Fabricated is booked')]}, date(2026, 11, 9))
+    assert not missing and len(grounded['fixed_items']) == 1
+    assert grounded['arrival']['date']['value'] == '2026-11-10'
+    assert grounded['departure']['date']['value'] == '2026-11-12'
+    assert grounded['fixed_items'][0]['start']['time']['value'] == '09:00'
+    assert grounded['fixed_items'][0]['booking_status'] == {'state':'unknown'}
 
     messages = '/v1/lio/messages'
     timeline = '/v1/lio/timeline'
@@ -187,6 +210,9 @@ def check_lio(api, database, auth, other, headers, conninfo):
             yield '北京有许多适合散步的公园。' if system.endswith('Reply in Chinese.') else 'Beijing has many parks for walking.'
 
     model = LioModel()
+    deferred = run_worker._worker_for_scope(database, model, auth, scope, checker_for(auth),
+                                           demo_planning=True, require_lio_confirmation=True)
+    assert [outcome.status for outcome in deferred.process()] == ['waiting'] and model.calls == 0
     worker = run_worker._worker_for_scope(database, model, auth, scope, checker_for(auth),
                                          demo_planning=True)
     assert [outcome.status for outcome in worker.process()] == ['completed', 'completed']
@@ -261,6 +287,8 @@ def check_lio(api, database, auth, other, headers, conninfo):
         # An unavailable save must never look like a completed trip.
         raise ProviderFailed('synthetic C save unavailable')
 
+    worker = run_worker._worker_for_scope(database, model, auth, scope, checker_for(auth),
+                                         memory_configuration=memory, demo_planning=True)
     worker.lio_planning = LioPlanning(database, validate_intake)
     assert api.post(messages, content=original('lio-plan-ask', '帮我规划旅行', 'zh'),
                     headers=owner).status_code == 200
@@ -279,7 +307,7 @@ def check_lio(api, database, auth, other, headers, conninfo):
 
     confirmation = ConfirmationSigner((auth/'trip-confirmation.key').read_bytes())
     worker = run_worker._worker_for_scope(database, model, auth, scope, checker_for(auth),
-                                         draft_profile='needs-structured.1', demo_planning=True,
+                                         memory_configuration=memory, draft_profile='needs-structured.1', demo_planning=True,
                                          lio_confirmation=confirmation)
     request = 'Plan a trip to Beijing from 2026-11-11 to 2026-11-12 for our party.'
     assert api.post(messages, content=original('lio-save', request, 'en'), headers=owner).status_code == 200
@@ -335,10 +363,11 @@ def exercise(root,conninfo):
     profile=dict(subjects=['self'],slots={'quiet.entrance':dict(kind='preference',collection_allowed=True,
         semantic_resolved=True)},extents=['long_term'],context_ids=[])
     collection=dict(version='local-memory-typed.1',collection=dict(version='local-memory-policy.1',
-        expires_at=(datetime.now(timezone.utc)+timedelta(hours=2)).isoformat(),profiles={SUBJECT:profile}),
-        travel_contexts={SUBJECT:[]})
+        expires_at=(datetime.now(timezone.utc)+timedelta(hours=2)).isoformat(),profiles={SUBJECT:profile,other:profile}),
+        travel_contexts={SUBJECT:[],other:[]})
     memory=TypedRuntimeConfiguration.from_bytes(json.dumps(dict(version='local-memory-run.2',collection=collection,
-        selections={SUBJECT:dict(subject='self',slots=['quiet.entrance'],max_bytes=1000)})).encode())
+        selections={subject:dict(subject='self',slots=['quiet.entrance'],max_bytes=1000)
+                    for subject in (SUBJECT,other)})).encode())
     runtime=Runtime(auth,context,context_path,[],memory_runtime=memory,subjects=frozenset({SUBJECT}),
         demo_subjects=frozenset({SUBJECT}),demo_next_context=following)
     runtime._database=database
@@ -438,7 +467,7 @@ def exercise(root,conninfo):
             with psycopg.connect(**conninfo) as db:
                 assert db.execute('SELECT count(*) FROM cj_message_delivery WHERE scope=%s AND acknowledged',
                     (scope_for(ISSUER,SUBJECT),)).fetchone()==(4,)
-            check_lio(api, database, auth, other, old, conninfo)
+            check_lio(api, database, auth, other, old, conninfo, memory)
             assert login(CODE).status_code==200
             assert demo_accounts.manage(runtime,'revoke',SUBJECT,control,operation)=='revoked'
             assert login(CODE).status_code==401

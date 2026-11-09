@@ -211,7 +211,8 @@ class RealTools:
             **{'tool.'+name:Registration('tool',lambda argument,name=name:self._tool_input(name,argument)) for name in {NATIVE_REGISTRATION[n] for n in allowed_native}}})
 
     def _model_input(self,argument):
-        if type(argument) is ModelInput:
+        native_turn = type(argument) is ModelInput
+        if native_turn:
             messages,system,provider=argument.messages,argument.system,argument.provider
             native_reply=argument.native_reply
             final_answer=argument.final_answer
@@ -223,8 +224,8 @@ class RealTools:
         if (provider.original if wrapped else provider) is not self.services.model:
             raise BudgetUnknown('M4 model registration mismatch')
         raw=canonical(dict(messages=messages,system=system,endpoint=M4_BASE,model=M4_MODEL,synthetic_only=True,
-                           native_tools=self.native_tools if system==TOOL_SYSTEM else None,
-                           **({'native_turn_profile':turn_profile,'external_tools_disabled':final_answer} if system==TOOL_SYSTEM else {})))
+                           native_tools=self.native_tools if native_turn else None,
+                           **({'native_turn_profile':turn_profile,'external_tools_disabled':final_answer} if native_turn else {})))
         inputs=json.loads(raw);metadata={}
         def bind(operation,guard):
             self.services.require_scope(operation.binding.scope)
@@ -365,7 +366,11 @@ class RealTools:
                 data=json.loads(result)
                 if name=='place' and data.get('provider_code')=='10012':
                     raise ProviderFailed('place service permission denied; operator action required')
-                source=data.get('source',{}).get('endpoint') if name=='place' else data['source_url']
+                if name == 'place':
+                    place_source = data.get('source')
+                    source = place_source['endpoint'] if place_source is not None else None
+                else:
+                    source = data['source_url']
                 if source and lio_locale is None:
                     yield ('来源：' if chinese else 'Source: ')+source+'\n'
                 elif source:
@@ -374,7 +379,11 @@ class RealTools:
                         'weather': ('高德天气', 'Amap Weather'),
                         'fact': ('国家移民管理局', 'National Immigration Administration'),
                     }[name]
-                    observed_at = data['source']['received_at'] if name == 'place' else data['retrieved_at']
+                    if name == 'place':
+                        received = place_source['received_at']
+                        observed_at = received['iso8601'] if received is not None else None
+                    else:
+                        observed_at = data['retrieved_at']
                     yield LioCitation(key, title_zh if chinese else title_en, source, observed_at)
                 results.append(dict(index=index,name=call.name,tool=name,result=data))
             if incremental:

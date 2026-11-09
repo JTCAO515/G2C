@@ -558,6 +558,14 @@ class Boundaries(unittest.TestCase):
         self.assertEqual(declared['native_turn_profile'],M4_NATIVE_TURN_PROFILE_V2)
         self.assertNotIn('answer_format_profile',declared)
         self.assertEqual(declared['native_tools'],tools.native_tools)
+        from cj_message.lio_context import answer_prompt
+        lio = tools._model_input(ModelInput(
+            [dict(role='user',content='Synthetic Lio question')], TOOL_SYSTEM + ' ' + answer_prompt('en'),
+            provider, {}))
+        lio_input = json.loads(lio.original_bytes)
+        self.assertEqual(lio_input['native_turn_profile'], M4_NATIVE_TURN_PROFILE_V2)
+        self.assertEqual(lio_input['native_tools'], tools.native_tools)
+        self.assertIn('You are Lio', lio_input['system'])
         ordinary=tools._model_input(([dict(role='user',content='Synthetic draft')],'existing structured system',provider))
         self.assertNotIn('answer_format_profile',json.loads(ordinary.original_bytes))
 
@@ -573,6 +581,40 @@ class Boundaries(unittest.TestCase):
         self.assertEqual(reply['assistant']['tool_calls'][0]['id'],'call_synthetic')
         self.assertEqual(receipt['usage']['total_tokens'],50)
         self.assertEqual(len(self.sent),1)
+
+    def test_lio_place_timestamp_uses_the_display_wire_type(self):
+        from cj_api.local_app import ISSUER,scope_for
+        from cj_message.lio_context import LioCitation
+
+        provider = self.provider(sse())
+        subject = 'm4-synthetic-one'
+        tools = RealTools(RealServices(provider,KEY,frozenset({subject})))
+        binding = SimpleNamespace(scope=scope_for(ISSUER,subject), run_id='synthetic-lio')
+        request = dict(name='place_search',arguments=dict(keyword='park',city='北京',page=1,page_size=1))
+
+        class Worker:
+            def _model_history(self, *args):
+                pass
+
+            def _registered_stream(self, binding, key, registration, argument, *, progress=None):
+                if registration == 'tool.place':
+                    yield progress
+                    yield json.dumps(dict(source=dict(endpoint='https://restapi.amap.com/v3/place/text',
+                        received_at=dict(iso8601='2026-11-09T12:00:00+00:00',fold=0))))
+                elif key == 'model.tool_turn.0':
+                    argument.native_reply['assistant'] = dict(tool_calls=[dict(id='synthetic-place')])
+                    yield json.dumps(dict(version='MODEL-tool-turn.1',kind='tool',answer=None,calls=[request]))
+                else:
+                    yield json.dumps(dict(version='MODEL-tool-turn.1',kind='answer',
+                        answer=dict(zh='附近有公园。',en='There is a park nearby.'),calls=[]))
+
+        worker = Worker()
+        worker.provider = provider
+        chunks = list(tools.answer(worker,binding,[dict(role='user',content='Find a park')],lio_locale='en'))
+        citation, = [chunk for chunk in chunks if isinstance(chunk,LioCitation)]
+        self.assertEqual(citation.observed_at,'2026-11-09T12:00:00+00:00')
+        self.assertEqual(chunks[-1],'There is a park nearby.')
+        self.assertEqual(self.sent,[])
 
     def test_complete_named_function_with_stop_keeps_the_original_receipt(self):
         marker='G2C_SYNTHETIC_D1_OK'
