@@ -45,6 +45,31 @@ def original_receipt(submission, response):
     return receipt
 
 
+def original_action_receipt(submission, response):
+    """Bind an action receipt without treating its queued RUN as completed."""
+    if len(submission) > 32_768 or len(response) > 65_536:
+        raise ValueError('action evidence exceeds bound')
+    request, envelope = _object(submission), _object(response)
+    if (request.get('version') != 'DEMO-dialogue-action.1' or
+            envelope.get('version') != 'DEMO-dialogue-action-receipt.1' or
+            not isinstance(envelope.get('request_id'), str) or not envelope['request_id'] or
+            'receipt' not in envelope):
+        raise ValueError('original dialogue action receipt required')
+    receipt = envelope['receipt']
+    if receipt is None:
+        return None
+    identity = ('action_id', 'conversation_id', 'card_id', 'operation')
+    if (not isinstance(receipt, dict) or
+            any(not isinstance(receipt.get(key), str) or not receipt[key] or
+                receipt[key] != request.get(key) for key in identity) or
+            receipt.get('input_sha256') != sha256(submission).hexdigest()):
+        raise ValueError('dialogue action receipt differs from original submission')
+    child = (receipt.get('message_id'), receipt.get('run_id'))
+    if child != (None, None) and not all(isinstance(value, str) and value for value in child):
+        raise ValueError('queued action RUN needs its original MESSAGE')
+    return receipt
+
+
 class DialogueObservation:
     """Capture one RUN across read-only SSE reconnects without grading the scene."""
 
@@ -126,7 +151,7 @@ class DialogueObservation:
                             'seconds': elapsed_seconds, 'payload_sha256': digest})
         return True
 
-    def read_segment(self, lines, elapsed):
+    def read_segment(self, lines, elapsed, *, append=None):
         """Consume the three-field B SSE frames; return an unfinished frame at EOF."""
         fields = {}
         for line in lines:
@@ -137,8 +162,10 @@ class DialogueObservation:
                 if fields:
                     if set(fields) != {b'id', b'event', b'data'}:
                         raise ValueError('incomplete dialogue SSE frame')
-                    self.record(fields[b'id'].decode('ascii'), fields[b'data'], elapsed(),
-                                event_name=fields[b'event'].decode('ascii'))
+                    accepted = self.record(fields[b'id'].decode('ascii'), fields[b'data'], elapsed(),
+                                           event_name=fields[b'event'].decode('ascii'))
+                    if accepted and append is not None:
+                        append(self.events[-1])
                     fields.clear()
                 continue
             if line.startswith(b':'):
