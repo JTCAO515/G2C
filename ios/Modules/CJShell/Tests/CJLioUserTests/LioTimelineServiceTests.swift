@@ -81,6 +81,30 @@ struct LioTimelineServiceTests {
         #expect(await fixture.sent.map(\.messageID) == [question.messageID])
     }
 
+    @Test func reconnectAfterTheSendWindowRecoversTheAnswerWithoutAnotherWrite() async throws {
+        let fixture = TimelineFixture(loseResponse: true)
+        await fixture.disconnect()
+        let service = LioService.timeline(
+            send: { try await fixture.submit($0) }, read: { try await fixture.read($0) },
+            pollInterval: .milliseconds(10), observationWindow: .milliseconds(2),
+            recoveryInterval: .milliseconds(1))
+        let model = LioConversation(service: service)
+        model.send("Metro?", language: .english)
+        let question = try #require(model.pending)
+
+        await model.receive(question)
+        #expect(model.turns.last?.status == .failed(.waiting))
+        #expect(model.pending == nil)
+
+        // A foreground read must survive beyond its own short observation window.
+        await fixture.reconnectAfterReads(4)
+        await model.refreshTimeline()
+
+        #expect(model.turns.last?.status == .finished)
+        #expect(model.turns.last?.answer == "Take the metro.")
+        #expect(await fixture.sent.map(\.messageID) == [question.messageID])
+    }
+
     private func service(_ fixture: TimelineFixture) -> LioService {
         .timeline(send: { try await fixture.submit($0) }, read: { try await fixture.read($0) },
                   pollInterval: .milliseconds(1), observationWindow: .seconds(2))
@@ -94,11 +118,16 @@ private actor TimelineFixture {
     private(set) var sent: [LioTimelineWire.Send] = []
     private var accepted: [LioTimelineWire.Send] = []
     private var readCount = 0
+    private var readsUntilConnection: Int?
 
     init(loseResponse: Bool = false, firstNotSent: Bool = false) {
         self.loseResponse = loseResponse
         self.firstNotSent = firstNotSent
     }
+
+    func disconnect() { readsUntilConnection = .max }
+
+    func reconnectAfterReads(_ count: Int) { readsUntilConnection = count }
 
     func restore(_ send: LioTimelineWire.Send) {
         accepted.append(send)
@@ -114,6 +143,10 @@ private actor TimelineFixture {
     }
 
     func read(_ expected: String?) throws -> LioTimelineWire.Page {
+        if let readsUntilConnection, readsUntilConnection > 0 {
+            self.readsUntilConnection = readsUntilConnection - 1
+            throw URLError(.notConnectedToInternet)
+        }
         readCount += 1
         var rows: [[String: Any]] = [
             ["message_id": "previous", "text": "Hi", "answer": "Hello", "status": "completed", "sources": []]

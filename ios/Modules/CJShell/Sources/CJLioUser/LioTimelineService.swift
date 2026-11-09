@@ -60,13 +60,14 @@ extension LioService {
         send: @escaping @Sendable (LioTimelineWire.Send) async throws -> SendResult,
         read: @escaping @Sendable (String?) async throws -> LioTimelineWire.Page,
         pollInterval: Duration = .seconds(2),
-        observationWindow: Duration = .seconds(90)
+        observationWindow: Duration = .seconds(90),
+        recoveryInterval: Duration = .seconds(15)
     ) -> LioService {
         let session = LioTimelineSession(send: send, read: read)
-        let observe: @Sendable ([Data]) -> AsyncStream<[LioTimelineTurn]> = { waiting in
-            session.observe(waiting: waiting, interval: pollInterval, window: observationWindow)
-        }
-        return LioService(updates: observe) { question in
+        return LioService(updates: { waiting in
+            session.observe(waiting: waiting, interval: pollInterval, window: observationWindow,
+                            recoveryInterval: waiting.isEmpty ? nil : recoveryInterval)
+        }) { question in
             AsyncStream { continuation in
                 let task = Task {
                     defer { continuation.finish() }
@@ -76,7 +77,8 @@ extension LioService {
                         case .notSent: continuation.yield(.failed(.notSent)); return
                         case .accepted, .uncertain: break
                         }
-                        for await timeline in observe([question.id]) {
+                        for await timeline in session.observe(waiting: [question.id], interval: pollInterval,
+                                                                window: observationWindow) {
                             try Task.checkCancellation()
                             continuation.yield(.snapshot(timeline))
                             if let status = timeline.first(where: { $0.id == question.id })?.status {
@@ -147,7 +149,8 @@ private actor LioTimelineSession {
         }
     }
 
-    nonisolated func observe(waiting: [Data], interval: Duration, window: Duration) -> AsyncStream<[LioTimelineTurn]> {
+    nonisolated func observe(waiting: [Data], interval: Duration, window: Duration,
+                             recoveryInterval: Duration? = nil) -> AsyncStream<[LioTimelineTurn]> {
         AsyncStream { continuation in
             let task = Task {
                 defer { continuation.finish() }
@@ -169,12 +172,20 @@ private actor LioTimelineSession {
                         // A failed observation grants no further send.
                         knownActive = false
                     }
+                    let withinWindow = clock.now < deadline
+                    guard knownActive || withinWindow || recoveryInterval != nil else { return }
+                    let delay = if knownActive || withinWindow {
+                        interval
+                    } else {
+                        // The foreground observer keeps only read access after the send task ends.
+                        recoveryInterval ?? interval
+                    }
                     do {
-                        try await clock.sleep(for: interval)
+                        try await clock.sleep(for: delay)
                     } catch {
                         return
                     }
-                } while knownActive || clock.now < deadline
+                } while !Task.isCancelled
             }
             continuation.onTermination = { _ in task.cancel() }
         }

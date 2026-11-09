@@ -24,6 +24,7 @@ public struct LioHome<MenuContent: View>: View {
 
     public var body: some View {
         let pending = conversation.pending
+        let canObserve = scenePhase == .active && pending == nil
         ScrollViewReader { scroll in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 22) {
@@ -71,8 +72,8 @@ public struct LioHome<MenuContent: View>: View {
         .sheet(item: $source) { selected in
             LioSourceSheet(source: selected, language: language)
         }
-        .task(id: scenePhase) {
-            if scenePhase == .active { await conversation.refreshTimeline() }
+        .task(id: canObserve) {
+            if canObserve { await conversation.refreshTimeline() }
         }
         .task(id: pending?.id) {
             if let pending { await conversation.receive(pending) }
