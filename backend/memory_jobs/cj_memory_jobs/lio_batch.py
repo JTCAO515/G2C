@@ -52,6 +52,11 @@ def job_ids(source, message):
 
 def original_input(source, message):
     job_id, attempt_id = job_ids(source, message)
-    return _canonical(dict(version='MEMORY-LIO-JOB@1', job_id=job_id, attempt_id=attempt_id,
-                           source=asdict(source), message_id=message.receipt.message_id,
-                           run_id=message.receipt.run_id))
+    cursor = source.cursor
+    # The original enqueue proof keeps the existing cleanup reader's grammar.
+    # Lio isolation lives in the batch version, stream, and original job IDs.
+    query = dict(conversation_id=cursor.conversation_id, generation=cursor.generation,
+                 epoch=cursor.epoch, after=cursor.after, through=cursor.through,
+                 source_version=source.source_version, withdrawal_epoch=source.withdrawal_epoch,
+                 mode='incremental')
+    return _canonical(dict(version='MEMORY-JOBS@1', job_id=job_id, attempt_id=attempt_id, source=query))
