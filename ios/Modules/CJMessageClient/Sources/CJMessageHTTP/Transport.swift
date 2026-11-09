@@ -198,7 +198,6 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     }
 
     func readLio(conversationID: String?, before: String?, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
-        guard let messages, messages.wire == .lio else { throw MessageHTTPFailure.productionActivationUnavailable }
         var query: [URLQueryItem] = []
         if let conversationID {
             guard LioTimelineWire.validConversationID(conversationID) else { throw MessageHTTPFailure.invalidConfiguration }
@@ -208,18 +207,46 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
             guard LioTimelineWire.validMessageID(before) else { throw MessageHTTPFailure.invalidConfiguration }
             query.append(URLQueryItem(name: "before", value: before))
         }
+        return try await lioRead(path: "/v1/lio/timeline", query: query, operation: "readLioTimelineV1", bearer: bearer)
+    }
+
+    func readLioTrip(before: String?, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
+        if let before, !LioTripHistoryWire.validCursor(before) { throw MessageHTTPFailure.invalidConfiguration }
+        let query = before.map { [URLQueryItem(name: "before", value: $0)] } ?? []
+        return try await lioRead(path: "/v1/lio/trip", query: query, operation: "readLioTripHistoryV1", bearer: bearer)
+    }
+
+    func sendLioUndo(_ undo: LioTripHistoryWire.Undo, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
+        guard let messages, messages.wire == .lio else { throw MessageHTTPFailure.productionActivationUnavailable }
+        var request = HTTPRequest(method: .post, scheme: nil, authority: nil, path: "/v1/lio/trip/undo")
+        request.headerFields[.authorization] = "Bearer " + bearer
+        request.headerFields[.contentType] = "application/octet-stream"
+        request.headerFields[.accept] = "application/json"
+        return try await sendLocalWrite(request, body: HTTPBody(undo.originalUTF8),
+            baseURL: messages.endpoint.url, operationID: "undoLioTripV1",
+            capability: messages.boundary, messageWire: nil)
+    }
+
+    func readLioUndo(_ undo: LioTripHistoryWire.Undo, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
+        try await lioRead(path: "/v1/lio/trip/undo", query: [
+            URLQueryItem(name: "action_id", value: undo.actionID),
+            URLQueryItem(name: "target", value: undo.target)
+        ], operation: "readLioTripUndoV1", bearer: bearer)
+    }
+
+    private func lioRead(path: String, query: [URLQueryItem], operation: String, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
+        guard let messages, messages.wire == .lio else { throw MessageHTTPFailure.productionActivationUnavailable }
         var components = URLComponents()
-        components.path = "/v1/lio/timeline"
+        components.path = path
         if !query.isEmpty {
             components.queryItems = query
             components.percentEncodedQuery = components.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
         }
-        guard let path = components.string else { throw MessageHTTPFailure.invalidConfiguration }
-        var request = HTTPRequest(method: .get, scheme: nil, authority: nil, path: path)
+        guard let route = components.string else { throw MessageHTTPFailure.invalidConfiguration }
+        var request = HTTPRequest(method: .get, scheme: nil, authority: nil, path: route)
         request.headerFields[.authorization] = "Bearer " + bearer
         request.headerFields[.accept] = "application/json"
-        return try await sendLocalRead(request, baseURL: messages.endpoint.url,
-            operationID: "readLioTimelineV1", capability: messages.boundary)
+        return try await sendLocalRead(request, baseURL: messages.endpoint.url, operationID: operation, capability: messages.boundary)
     }
 
     /// Explicit capability for ONE producer-defined readonly computation, never a caller

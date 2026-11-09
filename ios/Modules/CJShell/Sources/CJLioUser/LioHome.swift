@@ -1,5 +1,6 @@
 #if os(iOS)
 import SwiftUI
+import CJMessageHTTP
 import CJRunClient
 import CJTripClient
 
@@ -8,6 +9,7 @@ public struct LioHome<MenuContent: View>: View {
     private let isDemo: Bool
     private let menu: MenuContent
     private let tripLibrary: LioTripLibrary?
+    private let tripHistory: LioTripHistoryClient?
     private let recordedMap: (@MainActor (StructuredTripDocument) -> AnyView)?
     @State private var conversation: LioConversation
     @State private var draft = ""
@@ -20,11 +22,13 @@ public struct LioHome<MenuContent: View>: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(language: LioLanguage, service: LioService, isDemo: Bool, tripLibrary: LioTripLibrary? = nil,
+                tripHistory: LioTripHistoryClient? = nil,
                 recordedMap: (@MainActor (StructuredTripDocument) -> AnyView)? = nil, @ViewBuilder menu: () -> MenuContent) {
         self.language = language
         self.isDemo = isDemo
         self.menu = menu()
         self.tripLibrary = tripLibrary
+        self.tripHistory = tripHistory
         self.recordedMap = recordedMap
         _conversation = State(initialValue: LioConversation(service: service))
     }
@@ -36,7 +40,8 @@ public struct LioHome<MenuContent: View>: View {
             chat
                 .tabItem { Label(language.text("Chat", "聊天"), systemImage: "bubble.left") }
                 .tag(Tab.chat)
-            LioTripsView(itineraries: conversation.itineraries, language: language, library: tripLibrary, recordedMap: recordedMap) { tab = .chat }
+            LioTripsView(itineraries: conversation.itineraries, language: language, library: tripLibrary,
+                         tripHistory: tripHistory, recordedMap: recordedMap) { tab = .chat }
                 .tabItem { Label(language.text("Trips", "行程"), systemImage: "suitcase") }
                 .tag(Tab.trips)
         }

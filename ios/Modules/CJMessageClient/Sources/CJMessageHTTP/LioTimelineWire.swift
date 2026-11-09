@@ -145,16 +145,20 @@ public enum LioTimelineWire {
             return Source(title: title, link: link, observedAt: item.observedAt)
         }
         if let trip = wire.trip {
-            let items = trip.days.flatMap(\.items)
-            guard state == .completed, validMessageID(trip.id),
-                  !trip.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-                  items.allSatisfy({ validMessageID($0.id) }),
-                  Set(items.map(\.id)).count == items.count else {
+            guard state == .completed, validSavedTrip(trip) else {
                 throw MessageHTTPFailure.invalidResponse
             }
         }
         return Message(id: wire.messageID, question: wire.text, answer: wire.answer, state: state,
                        activity: wire.activity, sources: sources, trip: wire.trip)
+    }
+
+    static func validSavedTrip(_ trip: SavedTrip) -> Bool {
+        let items = trip.days.flatMap(\.items)
+        return validMessageID(trip.id)
+            && !trip.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && items.allSatisfy { validMessageID($0.id) }
+            && Set(items.map(\.id)).count == items.count
     }
 
     static func validMessageID(_ id: String) -> Bool {

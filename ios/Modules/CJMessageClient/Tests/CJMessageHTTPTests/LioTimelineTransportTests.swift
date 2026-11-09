@@ -41,6 +41,29 @@ struct LioTimelineTransportTests {
         #expect(await exit.calls.isEmpty)
     }
 
+    @Test func tripHistoryAndUndoUseOnlyTheirSignedRoutes() async throws {
+        let endpoint = try endpoint()
+        let exit = LioExit()
+        let transport = try NoRedirectTransport(interceptedTransport: exit, messageEndpoint: endpoint,
+                                                validateMessage: {}, lio: true)
+        let page = try LioTripHistoryWire.decodePage(Data("""
+            {"version":"LIO-trip-history.1","current":{"trip_id":"trip","title":"Trip","days":[]},
+             "history":[{"trip_id":"trip","title":"Earlier trip","days":[]}],
+             "undo_target":"fixture_target","next_before":null}
+            """.utf8))
+        let undo = try LioTripHistoryWire.Undo(target: #require(page.undoTarget))
+
+        _ = try await transport.readLioTrip(before: "2", bearer: "fixture")
+        _ = try await transport.sendLioUndo(undo, bearer: "fixture")
+        _ = try await transport.readLioUndo(undo, bearer: "fixture")
+
+        let calls = await exit.calls
+        #expect(calls.map(\.method) == [.get, .post, .get])
+        #expect(calls.map(\.path) == ["/v1/lio/trip?before=2", "/v1/lio/trip/undo",
+                                    "/v1/lio/trip/undo?action_id=\(undo.actionID)&target=fixture_target"])
+        #expect(calls.map(\.body) == [nil, undo.originalUTF8, nil])
+    }
+
     private func endpoint() throws -> MessageEndpoint {
         try MessageEndpoint(url: #require(URL(string: "https://synthetic.invalid")),
                             maximumRequestBytes: 16_384, maximumResponseBytes: 4_500_000)

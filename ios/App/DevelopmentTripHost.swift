@@ -851,6 +851,7 @@ private var developmentHostEnvironment: [String: String] {
     let travelSelection: TravelSelectionModel?
     #if G2C_DEMO_BETA
     let lio: LioService
+    let lioTripHistory: LioTripHistoryClient
     #endif
     private let lifetime: DevelopmentMessageLifetime
     private let keyAdapter: ExistingMessageKeyAdapter
@@ -907,6 +908,7 @@ private var developmentHostEnvironment: [String: String] {
         let lioClient = try LioTimelineHTTP(endpoint: lioEndpoint, scope: scope, lease: lease,
                                            credentials: credentials, validate: { try lifetime.validate() })
         lio = .signedTimeline(lioClient)
+        lioTripHistory = LioTripHistoryClient(timeline: lioClient, recovery: recovery, scope: scope, lease: lease)
         #endif
         let betaRead = configuration.endpoint.host == "api-beta.go2china.space"
         let runReads = try NoRedirectTransport(requestTimeout: betaRead ? 30 : 15, resourceTimeout: 150)

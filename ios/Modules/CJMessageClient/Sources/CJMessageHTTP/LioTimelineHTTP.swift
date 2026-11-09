@@ -62,6 +62,41 @@ public final class LioTimelineHTTP {
         return page
     }
 
+    func tripHistory(before: String?) async throws -> LioTripHistoryWire.Page {
+        let token = try await bearer()
+        let (response, body) = try await transport.readLioTrip(before: before, bearer: token)
+        guard response.status.code == 200 else { throw MessageHTTPFailure.invalidResponse }
+        let bytes = try await json(response, body, limit: 4_500_000)
+        return try LioTripHistoryWire.decodePage(bytes, before: before)
+    }
+
+    func submitUndo(_ undo: LioTripHistoryWire.Undo) async throws -> LioTripHistoryClient.SubmissionResult {
+        let token = try await bearer()
+        let (response, body) = try await transport.sendLioUndo(undo, bearer: token)
+        let bytes = try await json(response, body, limit: 65_536)
+        switch response.status.code {
+        case 200:
+            guard try undo.committed(bytes) else { throw MessageHTTPFailure.exchangeUnknown }
+            return .committed(bytes)
+        case 409:
+            try validateUnambiguousJSON(bytes)
+            guard try JSONDecoder().decode(Failure.self, from: bytes).failure == "unavailable" else {
+                throw MessageHTTPFailure.exchangeUnknown
+            }
+            return .conflict(bytes)
+        default:
+            throw MessageHTTPFailure.exchangeUnknown
+        }
+    }
+
+    func readUndo(_ undo: LioTripHistoryWire.Undo) async throws -> Data? {
+        let token = try await bearer()
+        let (response, body) = try await transport.readLioUndo(undo, bearer: token)
+        guard response.status.code == 200 else { throw MessageHTTPFailure.exchangeUnknown }
+        let bytes = try await json(response, body, limit: 65_536)
+        return try undo.committed(bytes) ? bytes : nil
+    }
+
     private func bearer() async throws -> String {
         guard let token = try await credentials.bearer(for: scope, lease: lease),
               !token.isEmpty, !token.contains(","), !token.contains(where: \.isWhitespace) else {

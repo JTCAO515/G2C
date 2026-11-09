@@ -1,6 +1,7 @@
 #if os(iOS)
 import MapKit
 import SwiftUI
+import CJMessageHTTP
 import CJRunClient
 import CJTripClient
 
@@ -41,17 +42,24 @@ struct LioTripsView: View {
     let itineraries: [LioItinerary]
     let language: LioLanguage
     let library: LioTripLibrary?
+    let tripHistory: LioTripHistoryClient?
     let recordedMap: (@MainActor (StructuredTripDocument) -> AnyView)?
     let openChat: () -> Void
     @State private var mapDay: LioItinerary.Day?
+    @State private var currentPlan: LioItinerary?
     @State private var saved: [StructuredTripSummary]?
     @State private var listUnavailable = false
     @State private var listAttempt = 0
 
+    private var shownItineraries: [LioItinerary] {
+        guard let currentPlan else { return itineraries }
+        return [currentPlan] + itineraries.filter { $0.id != currentPlan.id }
+    }
+
     var body: some View {
         NavigationStack {
             Group {
-                if itineraries.isEmpty && library != nil && saved == nil {
+                if shownItineraries.isEmpty && library != nil && saved == nil {
                     if listUnavailable {
                         ContentUnavailableView {
                             Label(language.text("Trips unavailable", "暂时无法显示行程"), systemImage: "suitcase")
@@ -61,7 +69,7 @@ struct LioTripsView: View {
                     } else {
                         ProgressView()
                     }
-                } else if itineraries.isEmpty && (saved?.isEmpty ?? true) {
+                } else if shownItineraries.isEmpty && (saved?.isEmpty ?? true) {
                     ContentUnavailableView {
                         Label(language.text("No trips yet", "还没有行程"), systemImage: "suitcase")
                     } description: {
@@ -72,7 +80,7 @@ struct LioTripsView: View {
                     }
                 } else {
                     List {
-                        ForEach(itineraries) { itinerary in
+                        ForEach(shownItineraries) { itinerary in
                             Section(itinerary.title) {
                                 LioTripDays(itinerary: itinerary, language: language) { mapDay = $0 }
                                 if let library {
@@ -89,7 +97,7 @@ struct LioTripsView: View {
                             }
                         }
                         if let library, let saved {
-                            let visible = Set(itineraries.map(\.id))
+                            let visible = Set(shownItineraries.map(\.id))
                             ForEach(saved.filter { !visible.contains($0.tripID) }, id: \.tripID) { trip in
                                 NavigationLink(trip.title) {
                                     LioTripDetail(tripID: trip.tripID, title: trip.title, library: library, language: language, recordedMap: recordedMap)
@@ -101,6 +109,21 @@ struct LioTripsView: View {
                 }
             }
             .navigationTitle(language.text("Trips", "行程"))
+            .toolbar {
+                if let tripHistory {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        NavigationLink(language.text("Previous plans", "此前的安排")) {
+                            LioTripHistoryView(client: tripHistory, language: language) { currentPlan = $0 }
+                        }
+                        .accessibilityIdentifier("lio.trip.history")
+                    }
+                }
+            }
+            .onChange(of: itineraries) { old, new in
+                guard let id = currentPlan?.id,
+                      old.first(where: { $0.id == id }) != new.first(where: { $0.id == id }) else { return }
+                currentPlan = nil
+            }
             .sheet(item: $mapDay) { day in
                 LioDayMap(day: day, language: language)
             }
@@ -169,7 +192,7 @@ private struct LioTripDetail: View {
     }
 }
 
-private struct LioTripDays: View {
+struct LioTripDays: View {
     let itinerary: LioItinerary
     let language: LioLanguage
     let showMap: (LioItinerary.Day) -> Void
