@@ -14,8 +14,11 @@ final class ScopedTransport: ClientTransport, Sendable {
     private let validate: @MainActor @Sendable () throws -> Void
     private let profile:TripCandidateTransportProfile
     init(endpoint: MessageEndpoint,profile:TripCandidateTransportProfile = .scoped, validate: @escaping @MainActor @Sendable () throws -> Void) throws {
-        #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
-        guard endpoint.allowsDevelopmentActivation else { throw PreviewFailure.unavailable }
+        #if !(DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE)))
+        guard endpoint.allowsDemoBetaActivation else { throw PreviewFailure.unavailable }
+        #endif
+        if endpoint.allowsDemoBetaActivation, profile != .needsPlanning { throw PreviewFailure.unavailable }
+        guard endpoint.allowsDevelopmentActivation || endpoint.allowsDemoBetaActivation else { throw PreviewFailure.unavailable }
         self.endpoint = endpoint.url; self.validate = validate;self.profile=profile
         let configuration = URLSessionConfiguration.ephemeral
         configuration.httpCookieStorage = nil; configuration.urlCache = nil; configuration.urlCredentialStorage = nil
@@ -27,9 +30,6 @@ final class ScopedTransport: ClientTransport, Sendable {
         #endif
         session = URLSession(configuration: configuration, delegate: delegate, delegateQueue: nil)
         transport = URLSessionTransport(configuration: .init(session: session))
-        #else
-        throw PreviewFailure.unavailable
-        #endif
     }
     deinit { session.invalidateAndCancel() }
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {

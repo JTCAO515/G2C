@@ -39,6 +39,53 @@ import CJSession
             verify: { await checks.check($0) }, activate: { _, _, _ in activate() }, invalidate: {})
     }
 
+    @Test func demoExchangeSavesOnlyAfterVerificationAndRevocationClearsTheSlot() async throws {
+        let shell = try makeShell(), store = DevelopmentStore(), checks = DevelopmentChecks()
+        let material = try SessionMaterial(trustedSDKBytes: Data("synthetic-invite-session".utf8))
+        let host = DevelopmentAccountHost(shell: shell, choices: [], persistence: store, demoMode: true,
+            material: { _ in throw SessionFailure.invalidConfiguration }, verify: { await checks.check($0) },
+            activate: { _, _, _ in }, invalidate: {})
+        host.signIn { material }
+        await wait { checks.replies.count == 1 }
+        #expect(store.value == nil && shell.messageBindingBlocked)
+        checks.replies[0].resume(returning: .accepted(account: "demo"))
+        await wait { host.state == .signedIn("demo") }
+        #expect(store.value?.withBytes { $0 } == material.withBytes { $0 })
+        let recheck = Task { await host.recheckDemoSession() }
+        await wait { checks.replies.count == 2 }
+        checks.replies[1].resume(returning: .serverRejected)
+        await recheck.value
+        #expect(host.state == .rejected && store.value == nil && store.blocked && shell.messageBindingBlocked)
+    }
+
+    @Test func demoRestoreRetiresAnExpiredSessionAndKeepsTheExpiryNotice() async throws {
+        let shell = try makeShell(), store = DevelopmentStore(), checks = DevelopmentChecks()
+        store.value = try SessionMaterial(trustedSDKBytes: Data("synthetic-expired-session".utf8))
+        let host = DevelopmentAccountHost(shell: shell, choices: [], persistence: store, demoMode: true,
+            material: { _ in throw SessionFailure.invalidConfiguration }, verify: { await checks.check($0) },
+            activate: { _, _, _ in Issue.record("An expired session must not activate") }, invalidate: {})
+        host.restore()
+        await wait { checks.replies.count == 1 }
+        checks.replies[0].resume(returning: .expired)
+        await wait { host.state == .expired }
+        #expect(store.value == nil && store.blocked && shell.messageBindingBlocked)
+    }
+
+    @Test func demoExchangeReturningAfterSignOutCannotVerifyOrSave() async throws {
+        let shell = try makeShell(), store = DevelopmentStore(), checks = DevelopmentChecks()
+        let material = try SessionMaterial(trustedSDKBytes: Data("synthetic-invite-session".utf8))
+        var pending: CheckedContinuation<SessionMaterial, Never>?
+        let host = DevelopmentAccountHost(shell: shell, choices: [], persistence: store, demoMode: true,
+            material: { _ in throw SessionFailure.invalidConfiguration }, verify: { await checks.check($0) },
+            activate: { _, _, _ in Issue.record("A late exchange must not activate") }, invalidate: {})
+        host.signIn { await withCheckedContinuation { pending = $0 } }
+        await wait { pending != nil }
+        host.signOut()
+        try #require(pending).resume(returning: material)
+        for _ in 0..<30 { await Task.yield() }
+        #expect(host.state == .signedOut && store.value == nil && checks.replies.isEmpty && shell.messageBindingBlocked)
+    }
+
     @Test func lateLoginCannotReplaceSwitchedIdentityOrRevivePrivateUI() async throws {
         let shell = try makeShell(), store = DevelopmentStore(), checks = DevelopmentChecks()
         var activations = 0

@@ -67,7 +67,10 @@ fileprivate enum DeviceCleanupWorkKind: Equatable { case registration, registrat
     public init(development endpoint: MessageEndpoint, lifetime: AccountCleanupLifetime, securePersistence: any SessionPersistence,
         session: SessionLifecycle, sessionOperation: SessionOperation, credentials: @escaping @MainActor () async throws -> String?,
         requestTimeout: TimeInterval, resourceTimeout: TimeInterval, version: CleanupDeviceVersion = .v3) throws {
-        #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
+        #if !(DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE)))
+        guard endpoint.allowsDemoBetaActivation else { throw MessageHTTPFailure.productionActivationUnavailable }
+        #endif
+        if endpoint.allowsDemoBetaActivation, version != .v4 { throw CleanupFailure.unavailable }
         try Self.configuration(endpoint, requestTimeout, resourceTimeout)
         self.endpoint = endpoint; self.lifetime = lifetime
         journal = try DeviceCleanupJournal(persistence: securePersistence, scope: lifetime.scope, newVersion: version)
@@ -78,13 +81,12 @@ fileprivate enum DeviceCleanupWorkKind: Equatable { case registration, registrat
             return try NoRedirectTransport.developmentDeviceCleanup(endpoint: endpoint, requestTimeout: requestTimeout, resourceTimeout: resourceTimeout, validate: validate, version: wire)
         }
         try checkLifetime(ordinary: true)
-        #else
-        throw MessageHTTPFailure.productionActivationUnavailable
-        #endif
     }
     public init(developmentOriginalDevice endpoint: MessageEndpoint, lifetime: AccountCleanupLifetime, securePersistence: any SessionPersistence,
         requestTimeout: TimeInterval, resourceTimeout: TimeInterval) throws {
-        #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
+        #if !(DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE)))
+        guard endpoint.allowsDemoBetaActivation else { throw MessageHTTPFailure.productionActivationUnavailable }
+        #endif
         try Self.configuration(endpoint, requestTimeout, resourceTimeout)
         self.endpoint = endpoint; self.lifetime = lifetime; ordinary = nil
         journal = try DeviceCleanupJournal(persistence: securePersistence, scope: lifetime.scope)
@@ -95,9 +97,6 @@ fileprivate enum DeviceCleanupWorkKind: Equatable { case registration, registrat
             return try NoRedirectTransport.developmentDeviceCleanup(endpoint: endpoint, requestTimeout: requestTimeout, resourceTimeout: resourceTimeout, validate: validate, version: wire)
         }
         try checkLifetime(ordinary: false)
-        #else
-        throw MessageHTTPFailure.productionActivationUnavailable
-        #endif
     }
     init(endpoint: MessageEndpoint, lifetime: AccountCleanupLifetime, securePersistence: any SessionPersistence,
         session: SessionLifecycle? = nil, sessionOperation: SessionOperation? = nil, credentials: (@MainActor () async throws -> String?)? = nil,
@@ -114,7 +113,7 @@ fileprivate enum DeviceCleanupWorkKind: Equatable { case registration, registrat
         try checkLifetime(ordinary: ordinary != nil)
     }
     private static func configuration(_ endpoint: MessageEndpoint, _ request: TimeInterval, _ resource: TimeInterval) throws {
-        guard endpoint.allowsDevelopmentActivation,
+        guard endpoint.allowsDevelopmentActivation || endpoint.allowsDemoBetaActivation,
               endpoint.maximumRequestBytes <= 16384, endpoint.maximumResponseBytes <= 65536,
               request > 0, request.isFinite, resource > 0, resource.isFinite else { throw CleanupFailure.unavailable }
     }
