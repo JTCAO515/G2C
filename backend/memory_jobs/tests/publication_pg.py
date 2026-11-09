@@ -665,6 +665,7 @@ def exercise_demo_candidates(conninfo, auth):
 def exercise_lio_candidates(conninfo, auth):
     from cj_api.local_account_admission_v2 import subject_digest
     from cj_memory_jobs.codec import Unavailable
+    from cj_memory_jobs.consent import EnqueueCommand
     from cj_memory_jobs.lio_candidates import LioCandidates
     from cj_memory_jobs.postgres import encode
     from cj_memory_jobs.publication_result import VERSION_DEMO
@@ -763,6 +764,8 @@ def exercise_lio_candidates(conninfo, auth):
         with host.database.connect(scope_for(ISSUER,actors[0])) as conn:
             assert conn.execute('SELECT status FROM cj_memory_item').fetchall()==[('candidate',)]
             assert conn.execute('SELECT count(*) FROM cj_memory_history_consent').fetchone()==(0,)
+            original,=conn.execute('SELECT original_input FROM cj_memory_history_job WHERE job_id=%s',(jid,)).fetchone()
+            assert EnqueueCommand.parse(bytes(original)).query==query
 
         choice=encode(dict(version='MEMORY-CANDIDATE@1',action_id='remember-lio-middle',**card['review'],
             candidate_id=card['candidate_id'],expected_candidate_version=card['version'],
