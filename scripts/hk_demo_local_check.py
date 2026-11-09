@@ -204,7 +204,6 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     messages = '/v1/lio/messages'
     timeline = '/v1/lio/timeline'
     scope = scope_for(ISSUER, other)
-    database.provision(scope)
     owner = {**headers, 'Authorization': 'Bearer ' + dev_auth.token(auth, other, 300)}
     legacy_only = {**headers, 'Authorization': 'Bearer ' + dev_auth.token(auth, 'legacy-dialogue-only', 300)}
     assert api.get(timeline, headers=legacy_only).status_code == 403
@@ -217,10 +216,14 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
 
     raw = original('lio-first', '北京有哪些公园？', 'zh')
     assert api.post('/v1/demo-dialogue/messages', content=raw, headers=owner).status_code == 400
+    foreign_chat = original('lio-invalid-first', 'Hello', 'en', conversation_id='lio-dialogue-'+'0'*32)
+    assert api.post(messages, content=foreign_chat, headers=owner).status_code == 400
+    with psycopg.connect(**conninfo) as db:
+        assert db.execute('SELECT 1 FROM cj_run_scope WHERE scope=%s', (scope,)).fetchone() is None
     receive = demo_dialogue._receive
 
-    def lose_commit_ack(service, command):
-        receive(service, command)
+    def lose_commit_ack(service, command, *, prepare_scope):
+        receive(service, command, prepare_scope=prepare_scope)
         raise CommitUnknown()
 
     with patch.object(demo_dialogue, '_receive', side_effect=lose_commit_ack):
@@ -394,16 +397,17 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     saved = api.get(timeline, headers=owner).json()['messages'][-1]
     assert saved['status'] == 'completed' and saved['answer'] == 'I saved your itinerary.', saved
     assert saved['trip']['title'] == 'Beijing walk'
-    assert saved['trip']['days'][0]['items'][0]['fixed'] is None
+    # PR725 makes a newly generated suggestion editable.
+    assert saved['trip']['days'][0]['items'][0]['fixed'] is False
 
-    commit_plan = LioPlanPublisher._commit_plan
+    commit_plan = LioPlanPublisher._commit
     def lose_save_ack(publisher, *args):
         commit_plan(publisher, *args)
         raise TripCommitUnknown()
 
     change = original('lio-save-without-ack', request, 'en')
     assert api.post(messages, content=change, headers=owner).status_code == 200
-    with patch.object(LioPlanPublisher, '_commit_plan', lose_save_ack):
+    with patch.object(LioPlanPublisher, '_commit', lose_save_ack):
         assert [outcome.status for outcome in worker.process()] == ['unknown']
     cards = api.get(timeline, headers=owner).json()['messages'][-2:]
     assert cards[0] == saved

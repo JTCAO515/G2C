@@ -16,6 +16,7 @@ class TimelineMessage:
     run_id: str
     sequence: int
     text: str
+    locale: str
 
 
 @dataclass(frozen=True)
@@ -47,12 +48,12 @@ def read(service, conversation_id, before):
                 raise InvalidInput('invalid timeline cursor')
             sequence = cursor[0]
         rows = tx.cur.execute(
-            'SELECT message_id,run_id,sequence,raw_input,input_sha256 FROM cj_message_receipt '
+            'SELECT message_id,run_id,sequence,raw_input,input_sha256,demo_dialogue_locale FROM cj_message_receipt '
             'WHERE scope=%s AND conversation_id=%s AND generation=%s AND demo_dialogue_protocol=%s '
             'AND (%s::bigint IS NULL OR sequence<%s) ORDER BY sequence DESC LIMIT %s',
             (*params, sequence, sequence, PAGE_SIZE + 1)).fetchall()
         messages = []
-        for mid, run_id, position, raw_input, digest in reversed(rows[:PAGE_SIZE]):
+        for mid, run_id, position, raw_input, digest, locale in reversed(rows[:PAGE_SIZE]):
             raw = bytes(raw_input)
             try:
                 command = Command.parse_original(raw)
@@ -61,6 +62,6 @@ def read(service, conversation_id, before):
             if ((command.message_id, command.conversation_id) != (mid, conversation)
                     or hashlib.sha256(raw).hexdigest() != digest):
                 raise Unavailable('original dialogue binding changed')
-            messages.append(TimelineMessage(mid, run_id, position, json.loads(command.raw)['text']))
+            messages.append(TimelineMessage(mid, run_id, position, json.loads(command.raw)['text'], locale))
         return TimelinePage(conversation, head.generation, tuple(messages),
                             messages[0].message_id if len(rows) > PAGE_SIZE else None)

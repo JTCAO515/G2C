@@ -647,7 +647,7 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
         if lio_dialogue_subjects:
             lio_boundary, lio_checker = dialogue_binding(lio_dialogue_subjects)
             register_lio_dialogue_routes(app, lio_boundary, database.run_repository,
-                                         LioTripCards(database, lio_checker))
+                                         LioTripCards(database, lio_checker), prepare_scope=database._provision_scope)
     if database.edit_results:
         from .run_display_composition import build_run_display_reader
         from .scoped_result_routes import register_scoped_result_routes

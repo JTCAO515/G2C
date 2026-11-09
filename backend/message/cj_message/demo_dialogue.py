@@ -111,10 +111,10 @@ def receive(service, raw):
     return _receive(service, DialogueMessage.parse(raw))
 
 
-def receive_lio(service, raw):
+def receive_lio(service, raw, *, prepare_scope):
     command = DialogueMessage.parse(raw, lio=True)
     try:
-        return _receive(service, command)
+        return _receive(service, command, prepare_scope=prepare_scope)
     except CommitUnknown:
         original = query(service, command.id, lio=True)
         if original is None:
@@ -124,9 +124,11 @@ def receive_lio(service, raw):
         return original
 
 
-def _receive(service, command):
+def _receive(service, command, *, prepare_scope=None):
     with service.repository.transaction() as tx:
         tx.lock_scope()
+        if prepare_scope is not None:
+            prepare_scope(tx.cur, tx.scope)
         stored = tx.find(command.id)
         if stored is not None:
             digest = _original_digest(tx, command.id)

@@ -7,7 +7,7 @@ from starlette.concurrency import run_in_threadpool
 
 from cj_message.demo_dialogue import LIO_CHAT_PATTERN, message_id
 from cj_message.domain import InvalidInput
-from cj_message.lio_context import SOURCE_EFFECT, TOOL_EFFECT
+from cj_message.lio_context import SOURCE_EFFECT, TOOL_EFFECT, display_answer
 from cj_message.lio_plan_needs import BOUND_EFFECT
 from cj_run.core import Binding
 from cj_run.display_snapshot import SnapshotTooLarge
@@ -54,8 +54,13 @@ def _message(item, state, *, expired=False, trip=None):
                                     observed_at=citation['observed_at']))
             elif status == 'answering' and effect.startswith(TOOL_EFFECT):
                 activity = json.loads(effect.removeprefix(TOOL_EFFECT))['activity']
-    return dict(message_id=item.message_id, text=item.text, answer=state.text if state else '',
-                status=status, failure=failure, activity=activity, sources=sources, trip=trip, memory=None)
+    answer = display_answer(state.text, item.locale) if state is not None else ''
+    if answer is None:
+        if status == 'completed' and trip is None:
+            status, failure = 'failed', 'unavailable'
+        answer = ''
+    return dict(message_id=item.message_id, text=item.text, answer=answer, status=status,
+                failure=failure, activity=activity, sources=sources, trip=trip, memory=None)
 
 
 def _timeline(boundary, resolve_runs, trip_cards, token, conversation_id, before):
@@ -82,7 +87,7 @@ def _timeline(boundary, resolve_runs, trip_cards, token, conversation_id, before
     return boundary.with_history_context(token, project)
 
 
-def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards):
+def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, prepare_scope):
     @app.post('/v1/lio/messages')
     async def send(request: Request):
         token = _token(request)
@@ -92,7 +97,7 @@ def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards):
             return _failure(400)
         try:
             raw = await _read_body(request, 16384)
-            receipt = await run_in_threadpool(boundary.receive_lio, token, raw)
+            receipt = await run_in_threadpool(boundary.receive_lio, token, raw, prepare_scope=prepare_scope)
         except BodyError as exc:
             return _failure(exc.status)
         except Exception as exc:
