@@ -6,6 +6,7 @@ public struct LioHome<MenuContent: View>: View {
     private let language: LioLanguage
     private let isDemo: Bool
     private let menu: MenuContent
+    private let tripLibrary: LioTripLibrary?
     @State private var conversation: LioConversation
     @State private var draft = ""
     @State private var menuOpen = false
@@ -16,11 +17,12 @@ public struct LioHome<MenuContent: View>: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    public init(language: LioLanguage, service: LioService, isDemo: Bool,
+    public init(language: LioLanguage, service: LioService, isDemo: Bool, tripLibrary: LioTripLibrary? = nil,
                 @ViewBuilder menu: () -> MenuContent) {
         self.language = language
         self.isDemo = isDemo
         self.menu = menu()
+        self.tripLibrary = tripLibrary
         _conversation = State(initialValue: LioConversation(service: service))
     }
 
@@ -31,7 +33,7 @@ public struct LioHome<MenuContent: View>: View {
             chat
                 .tabItem { Label(language.text("Chat", "聊天"), systemImage: "bubble.left") }
                 .tag(Tab.chat)
-            LioTripsView(itineraries: conversation.itineraries, language: language) { tab = .chat }
+            LioTripsView(itineraries: conversation.itineraries, language: language, library: tripLibrary) { tab = .chat }
                 .tabItem { Label(language.text("Trips", "行程"), systemImage: "suitcase") }
                 .tag(Tab.trips)
         }

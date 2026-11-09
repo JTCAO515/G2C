@@ -1,4 +1,5 @@
 import CJMessageHTTP
+import CJTripClient
 import Foundation
 import Testing
 @testable import CJLioUser
@@ -44,4 +45,26 @@ struct LioSavedTripTests {
         #expect(trip.days.allSatisfy { $0.stops.allSatisfy { $0.point == nil } })
         #expect(model.turns.last?.itinerary == nil)
     }
+
+    @Test func persistedTripCanBeShownWithoutAChatMessage() throws {
+        let trace = "B35279D6-8B42-466D-A55D-8A16B64BB270"
+        let content = """
+            {"content_version":"structured.1","items":[{"evidence":[],"fixed":{"state":"unknown"},"id":"item-1","schedule":{"end":{"date":{"state":"unknown"},"time":{"state":"unknown"},"timezone":{"state":"unknown"},"utc_offset":{"state":"unknown"}},"start":{"date":{"state":"unknown"},"time":{"state":"unknown"},"timezone":{"state":"unknown"},"utc_offset":{"state":"unknown"}}},"source_category":"user_provided","source_refs":[],"text":"Tomorrow 09:00 is free text only","verification":"pending"}],"sources":[],"title":"明确标题 / explicit title"}
+            """
+        let data = Data("""
+            {"version":"TRIP-structured-read.1","request_id":"\(trace)","trip":{"trip_id":"trip:1","version":1,
+              "content_sha256":"61414a3ce8a395cfe416242284fc254443ae6368ba84d931bf5f38cb0fed9e41","content":\(content)}}
+            """.utf8)
+        let saved = try StructuredTripReadV1.detail(data, requestID: trace)
+        let record = try #require(saved)
+        let itinerary = LioItinerary(record)
+        let stop = try #require(itinerary.days.first?.stops.first)
+
+        #expect(itinerary.id == "trip:1")
+        #expect(itinerary.title == "明确标题 / explicit title")
+        #expect(itinerary.days.first?.datePending == true)
+        #expect(stop.name.contains("Tomorrow 09:00"))
+        #expect(stop.time == nil && stop.endTime == nil && stop.fixed == nil && stop.point == nil)
+    }
+
 }

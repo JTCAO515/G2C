@@ -1,4 +1,5 @@
 import CJMessageHTTP
+import CJTripClient
 import Foundation
 
 struct LioItinerary: Equatable, Identifiable, Sendable {
@@ -14,14 +15,17 @@ struct LioItinerary: Equatable, Identifiable, Sendable {
         let point: Point?
         let fixed: Bool?
         let endTime: String?
+        let endDate: String?
 
-        init(id: String, name: String, time: String?, point: Point?, fixed: Bool?, endTime: String? = nil) {
+        init(id: String, name: String, time: String?, point: Point?, fixed: Bool?,
+             endTime: String? = nil, endDate: String? = nil) {
             self.id = id
             self.name = name
             self.time = time
             self.point = point
             self.fixed = fixed
             self.endTime = endTime
+            self.endDate = endDate
         }
     }
 
@@ -55,5 +59,45 @@ extension LioItinerary {
                      point: nil, fixed: item.fixed, endTime: item.endTime)
             }, date: day.date, datePending: day.date == nil)
         })
+    }
+}
+
+
+public struct LioTripLibrary {
+    let list: @MainActor () async throws -> [StructuredTripSummary]
+    let detail: @MainActor (String) async throws -> StructuredTripRecord?
+
+    public init(list: @escaping @MainActor () async throws -> [StructuredTripSummary],
+                detail: @escaping @MainActor (String) async throws -> StructuredTripRecord?) {
+        self.list = list
+        self.detail = detail
+    }
+}
+
+extension LioItinerary {
+    init(_ saved: StructuredTripRecord) {
+        var stopsByDate: [String?: [Stop]] = [:]
+        for item in saved.document.items {
+            let startDate = item.start.date.lioValue
+            let endDate = item.end.date.lioValue
+            stopsByDate[startDate, default: []].append(
+                Stop(id: item.id, name: item.text, time: item.start.time.lioValue,
+                     point: nil, fixed: item.fixed.lioValue, endTime: item.end.time.lioValue,
+                     endDate: endDate == startDate ? nil : endDate)
+            )
+        }
+        var dates: [String?] = stopsByDate.keys.compactMap { $0 }.sorted().map(Optional.some)
+        if stopsByDate.keys.contains(nil) { dates.append(nil) }
+        self.init(id: saved.tripID, title: saved.document.title, description: nil,
+                  days: dates.enumerated().map { index, date in
+            Day(number: index + 1, stops: stopsByDate[date, default: []], date: date, datePending: date == nil)
+        })
+    }
+}
+
+private extension TripObservation {
+    var lioValue: Value? {
+        if case .known(let value) = self { return value }
+        return nil
     }
 }
