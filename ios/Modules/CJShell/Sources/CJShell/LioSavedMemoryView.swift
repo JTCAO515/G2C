@@ -8,6 +8,8 @@ public struct LioSavedMemoryView: View {
     @State private var surface: TypedMemorySurface?
     @State private var path: [Data] = []
     @State private var reload = 0
+    @State private var deletion: LioMemoryDeletionRoute?
+    @State private var stoppedMemory = false
 
     public init(host: TypedMemoryContainerHost, language: ShellLanguage) {
         self.host = host
@@ -41,13 +43,17 @@ public struct LioSavedMemoryView: View {
                         }
                     }
                 }
+                if let model = host.erasurePresentation, model.original != nil || !model.originals.isEmpty {
+                    Button(language.text("Memory deletions", "记忆删除记录")) { deletion = .history }
+                        .disabled(model.state.isBusy)
+                }
             }
             .navigationTitle(language.text("Memory", "记忆"))
             .refreshable { await host.loadItems(surface: surface) }
             .navigationDestination(for: Data.self) { id in
                 if let surface {
                     LioSavedMemoryDetail(host: host, surface: surface, itemID: String(decoding: id, as: UTF8.self),
-                                         language: language)
+                                         language: language) { deletion = .memory(id) }
                 }
             }
         }
@@ -65,7 +71,26 @@ public struct LioSavedMemoryView: View {
         .task(id: reload) {
             guard path.isEmpty, let surface else { return }
             await host.loadItems(surface: surface)
+            if deletion == nil, path.isEmpty, let model = host.erasurePresentation, model.original == nil,
+               let work = model.prepareOriginals() {
+                await model.perform(work)
+            }
         }
+        .sheet(item: $deletion, onDismiss: closeDeletion) { route in
+            if let model = host.erasurePresentation {
+                LioMemoryDeletionView(host: host, model: model, route: route, language: language) {
+                    stoppedMemory = true
+                }
+            }
+        }
+    }
+
+    private func closeDeletion() {
+        guard stoppedMemory || host.erasurePresentation?.knownStopped == true else { return }
+        stoppedMemory = false
+        surface = host.enterSurface()
+        path.removeAll()
+        reload += 1
     }
 }
 
@@ -79,6 +104,7 @@ private struct LioSavedMemoryDetail: View {
     let surface: TypedMemorySurface
     let itemID: String
     let language: ShellLanguage
+    let showDeletion: () -> Void
     @State private var draft: String?
     @State private var saving = false
     @State private var notice: String?
@@ -112,6 +138,17 @@ private struct LioSavedMemoryDetail: View {
                                 notice = nil
                                 draft = item.command.text
                             }
+                        }
+                        if let model = host.erasurePresentation {
+                            Button(language.text("Delete memory", "删除记忆"), role: .destructive) {
+                                do {
+                                    try host.prepareErasure(surface: surface)
+                                    showDeletion()
+                                } catch {
+                                    notice = language.text("Couldn’t open memory deletion.", "暂时无法删除这条记忆。")
+                                }
+                            }
+                            .disabled(model.state.isBusy || host.busy)
                         }
                     } else {
                         Text(language.text("This memory is no longer available.", "这条记忆已不可用。"))

@@ -19,6 +19,7 @@ struct LioCopyTests {
             shell.appendingPathComponent("Sources/CJShell/DemoV2ConsentView.swift"),
             shell.appendingPathComponent("Sources/CJShell/LioRecordedTripMap.swift"),
             shell.appendingPathComponent("Sources/CJShell/LioSavedMemoryView.swift"),
+            shell.appendingPathComponent("Sources/CJShell/LioMemoryDeletionView.swift"),
             ios.appendingPathComponent("App/DemoBetaApp.swift"),
             ios.appendingPathComponent("App/CJProbeApp.swift")
         ]
