@@ -14,19 +14,23 @@ struct TravelSelectionView: View {
     var body: some View {
         List {
             Section {
-                RunReadableText(text:requiresTravel ? language.text("Choose an independent travel memory context. This request requires one; it is never inferred from a formal Trip.","请明确选择独立的旅行记忆上下文。此请求必须绑定，不会从正式行程推断。") : language.text("Choose a travel to use its temporary memory, or choose no travel to use long-term memory only.", "选择旅行以使用对应的临时记忆，或明确选择不绑定旅行，仅使用长期记忆。"))
-                status
-                if selectionFailed {
-                    RunReadableText(text:language.text("The selection could not be verified. No message has been sent.", "无法核实本次选择，尚未发送消息。"))
-                        .accessibilityIdentifier("travel.selection.error")
-                }
+                VStack(alignment: .leading, spacing: 8) {
+                    RunReadableText(text:requiresTravel ? language.text("Choose an independent travel memory context. This request requires one; it is never inferred from a formal Trip.","请明确选择独立的旅行记忆上下文。此请求必须绑定，不会从正式行程推断。") : language.text("Choose a travel to use its temporary memory, or choose no travel to use long-term memory only.", "选择旅行以使用对应的临时记忆，或明确选择不绑定旅行，仅使用长期记忆。"))
+                    status
+                    if selectionFailed {
+                        RunReadableText(text:language.text("The selection could not be verified. No message has been sent.", "无法核实本次选择，尚未发送消息。"))
+                            .accessibilityIdentifier("travel.selection.error")
+                    }
+                }.assistantCard()
+                    .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
+                    .listRowBackground(Color.clear)
                 if !requiresTravel { Button {
                     do { try model.selectNone();selectionFailed = false }
                     catch { selectionFailed = true }
                 } label: {
                     RunReadableText(text:language.text("No travel · long-term memory only", "不绑定旅行 · 仅长期记忆"))
                         .frame(maxWidth:.infinity,minHeight:44,alignment:.leading).contentShape(Rectangle())
-                }.buttonStyle(ShellReadableButtonStyle()).accessibilityIdentifier("travel.selection.none") }
+                }.buttonStyle(AssistantOptionButtonStyle()).accessibilityIdentifier("travel.selection.none") }
             } header: { ShellSectionHeading(title:language.text("Memory context", "记忆上下文")) }
             Section {
                 ForEach(model.ids,id:\.self) { id in
@@ -36,7 +40,7 @@ struct TravelSelectionView: View {
                     } label: {
                         RunReadableText(text:language.text("Travel ", "旅行 ") + id)
                             .frame(maxWidth:.infinity,minHeight:44,alignment:.leading).contentShape(Rectangle())
-                    }.buttonStyle(ShellReadableButtonStyle()).accessibilityIdentifier("travel.selection." + id)
+                    }.buttonStyle(AssistantOptionButtonStyle()).accessibilityIdentifier("travel.selection." + id)
                 }
             } header: { ShellSectionHeading(title:language.text("Travel choices", "可选旅行")) }
         }.navigationTitle(language.text("Travel context", "旅行上下文"))

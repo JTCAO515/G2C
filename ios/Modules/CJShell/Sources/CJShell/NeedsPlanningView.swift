@@ -20,7 +20,7 @@ struct NeedsPlanningView:View {
                 if let candidate=read.value.candidate {
                     detail(candidate,discovery:read.value)
                     let choose=candidate.status=="pending" && candidate.expiresAt>Int64(Date().timeIntervalSince1970) && !host.busy && host.actionID==nil
-                    command("planning.accept",language.text("Accept this exact new plan","采用这份确切的新规划"),disabled:!choose) {
+                    command("planning.accept",language.text("Accept this exact new plan","采用这份确切的新规划"),disabled:!choose, prominent:true) {
                         if let work=host.prepareDecision(.accept,read:read) { Task { await work() } }
                     }
                     command("planning.reject",language.text("Reject this planning candidate","拒绝这份规划候选"),disabled:!choose) {
@@ -55,7 +55,7 @@ struct NeedsPlanningView:View {
                 }
             }
             RunReadableText(text:language.text("Reads never plan again. UNKNOWN keeps the original action for read-only reconciliation.","读取不会重新规划。UNKNOWN 保留原动作，仅只读核对。"),style:.caption)
-        }.accessibilityElement(children:.contain).accessibilityIdentifier("planning.candidate")
+        }.assistantCard().accessibilityElement(children:.contain).accessibilityIdentifier("planning.candidate")
             .onChange(of:originalMessageID) { _,_ in host.clearSelection() }
     }
     private func detail(_ candidate:NeedsPlanningCandidate,discovery:NeedsPlanningDiscovery) -> some View {
@@ -73,9 +73,14 @@ struct NeedsPlanningView:View {
             StructuredTripDocumentView(document:candidate.content,language:language,prefix:"planning.proposal")
         }
     }
-    private func command(_ id:String,_ title:String,disabled:Bool,action:@escaping()->Void) -> some View {
-        Button(action:action) { RunReadableText(text:title).frame(maxWidth:.infinity,minHeight:44,alignment:.leading).contentShape(Rectangle()) }
-            .buttonStyle(ShellReadableButtonStyle()).disabled(disabled).accessibilityIdentifier(id)
+    private func command(_ id: String, _ title: String, disabled: Bool, prominent: Bool = false,
+                         action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            RunReadableText(text: title, style: prominent ? .headline : .body)
+        }
+        .buttonStyle(AssistantOptionButtonStyle(emphasized: prominent))
+        .disabled(disabled)
+        .accessibilityIdentifier(id)
     }
     private func state(_ value:ScopedDiscoveryState) -> String {
         switch value {

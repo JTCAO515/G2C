@@ -33,7 +33,7 @@ struct RunContainerView: View {
                 Button { _ = host.selectAcceptedMessage(from:messages) } label: {
                     RunReadableText(text:language.text("Use selected accepted message", "使用已选中的已接受消息"))
                         .frame(maxWidth:.infinity,minHeight:44,alignment:.leading).contentShape(Rectangle())
-                }.disabled(model.cancellationState == .stopping).accessibilityIdentifier("run.selectOriginal")
+                }.buttonStyle(AssistantOptionButtonStyle()).disabled(model.cancellationState == .stopping).accessibilityIdentifier("run.selectOriginal")
                 if host.sourceUnavailable {
                     Text(language.text("No current accepted message receipt is available. Select an original message in recovery first.", "没有可用的当前已接受消息回执，请先在恢复列表中选择原消息。"))
                         .font(.footnote)
@@ -45,7 +45,7 @@ struct RunContainerView: View {
                         } label: {
                             RunReadableText(text:language.text("Read complete sources", "读取完整来源"))
                                 .frame(maxWidth:.infinity,minHeight:44,alignment:.leading).contentShape(Rectangle())
-                        }.buttonStyle(ShellReadableButtonStyle()).accessibilityIdentifier("fact.sources.open")
+                        }.buttonStyle(AssistantOptionButtonStyle()).accessibilityIdentifier("fact.sources.open")
                 }
                 // Public view prepares opaque original read work synchronously before Task.
                 RunDisplayView(model:model,language:language == .english ? .english : .chinese,showAnswerText:host.answerFormat == .plainText && !host.hidesScopedEditReply)
@@ -73,7 +73,7 @@ struct RunContainerView: View {
                         Button(action: openNeeds) {
                             RunReadableText(text: language.text("Review unconfirmed requirements", "审阅未确认的需求"))
                                 .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
-                        }.buttonStyle(ShellReadableButtonStyle()).accessibilityIdentifier("needs.preview.open")
+                        }.buttonStyle(AssistantOptionButtonStyle()).accessibilityIdentifier("needs.preview.open")
                     }
                 }
                 if host.isSynthetic { Text(language.text("Synthetic test data", "合成测试数据")).font(.caption) }
