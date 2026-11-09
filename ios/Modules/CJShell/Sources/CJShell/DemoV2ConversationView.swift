@@ -273,6 +273,27 @@ struct DemoV2ConversationView: View {
     }
 }
 
+extension DemoV2Dialogue.Event.NeedsCard {
+    func displayedDetails(language: ShellLanguage) -> [DemoV2Card.Detail] {
+        let unknown = language.text("To confirm", "待确认")
+        let dateText = dates.map { "\($0.start ?? unknown) – \($0.end ?? unknown)" } ?? unknown
+        let fixedText = fixed_items.map { items in
+            if items.isEmpty { return language.text("No fixed plans supplied", "尚未提供固定安排") }
+            return items.map { item in
+                [item.label, item.starts_at ?? unknown, item.ends_at ?? unknown, item.time_zone ?? unknown]
+                    .joined(separator: " · ")
+            }.joined(separator: "\n")
+        } ?? unknown
+        return [
+            .init(id: "dates", label: language.text("Dates", "日期"), value: dateText),
+            .init(id: "city", label: language.text("City", "城市"), value: city ?? unknown),
+            .init(id: "party", label: language.text("Travelers", "人数"), value: party_size.map { String($0) } ?? unknown),
+            .init(id: "pace", label: language.text("Pace", "节奏"), value: pace ?? unknown),
+            .init(id: "fixed", label: language.text("Fixed plans", "固定安排"), value: fixedText)
+        ]
+    }
+}
+
 extension DemoV2Dialogue.Event.TripCandidate {
     func displayedDays(language: ShellLanguage, sourceLabels: [String: String]) -> [DemoV2Day] {
         days.enumerated().map { index, day in

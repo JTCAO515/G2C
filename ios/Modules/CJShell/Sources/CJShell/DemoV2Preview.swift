@@ -328,8 +328,7 @@ public struct DemoV2Preview: View {
         if editingNeeds || query.contains("plan") || query.contains("规划") {
             needsCorrection = editingNeeds ? text : nil
             editingNeeds = false
-            reply(language.text("Here’s what I understood. Check the details before I suggest a plan.", "这是我理解的需求，请核对后再生成行程建议。"),
-                  card: .needs(details))
+            showSampleNeeds(for: turn)
         } else if editingPlan || (!trip.isEmpty && (query.contains("change") || query.contains("换成"))) {
             editingPlan = false
             reply("", card: .changes(before: language.text("14:00 · Visit a gallery", "14:00 · 参观展馆"),
@@ -348,7 +347,7 @@ public struct DemoV2Preview: View {
     private func makeOriginal() throws -> DemoV2Dialogue.OriginalMessage {
         let destination = newConversationRequested ? .newConversation
             : fixtureConversation.map(DemoV2Dialogue.Destination.conversation) ?? .initial
-        return try .init(.init(id: UUID(), text: draft, language: language, destination: destination))
+        return try .init(.init(id: UUID(), text: draft, language: language, destination: destination, version: .planning))
     }
 
     private func checkOriginal() {
@@ -432,18 +431,28 @@ public struct DemoV2Preview: View {
         trip[index] = .init(id: day.id, title: day.title, stops: stops, date: day.date)
     }
 
-    private var details: [DemoV2Card.Detail] {
-        var result: [DemoV2Card.Detail] = [
-            .init(id: "date", label: language.text("Dates", "日期"), value: language.text("3 days · dates to confirm", "三天 · 待确认具体日期")),
-            .init(id: "city", label: language.text("City", "城市"), value: language.text("Beijing", "北京")),
-            .init(id: "party", label: language.text("Travelers", "人数"), value: language.text("To confirm", "待确认")),
-            .init(id: "pace", label: language.text("Pace", "节奏"), value: language.text("Relaxed", "轻松")),
-            .init(id: "fixed", label: language.text("Fixed plans", "固定安排"), value: language.text("09:00 meeting on day 2", "第二天 09:00 集合"))
-        ]
-        if let needsCorrection {
-            result.append(.init(id: "correction", label: language.text("Your correction", "你的修改"), value: needsCorrection))
+    private func showSampleNeeds(for turn: PreviewTurn) {
+        do {
+            let event = try turn.event("needs_card", payload: [
+                "card_id": "sample-needs-card", "version": 1, "status": "pending",
+                "dates": ["start": "2026-11-10", "end": "2026-11-12"],
+                "city": language.text("Beijing", "北京"), "party_size": NSNull(),
+                "pace": language.text("Relaxed", "轻松"),
+                "fixed_items": [[
+                    "item_id": "meeting", "label": language.text("Hotel lobby meeting", "酒店大堂集合"),
+                    "starts_at": "2026-11-11T09:00", "ends_at": "2026-11-11T10:00", "time_zone": "Asia/Shanghai"
+                ]]
+            ])
+            guard case .needs(let needs) = event.payload else { throw DemoV2Dialogue.Failure.invalidEvent }
+            var details = needs.displayedDetails(language: language)
+            if let needsCorrection {
+                details.append(.init(id: "correction", label: language.text("Your correction", "你的修改"), value: needsCorrection))
+            }
+            reply(language.text("Here’s what I understood. Check the details before I suggest a plan.", "这是我理解的需求，请核对后再生成行程建议。"),
+                  card: .needs(details))
+        } catch {
+            reply(language.text("The local trip details couldn’t be read.", "无法读取本地需求样例。"))
         }
-        return result
     }
 
     private func showSampleTrip() {

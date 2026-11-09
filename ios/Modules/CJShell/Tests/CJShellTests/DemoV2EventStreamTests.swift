@@ -8,11 +8,11 @@ struct DemoV2EventStreamTests {
 
     @Test func fragmentedUTF8AndKeepaliveOnlyAdvanceOnCompleteEvents() throws {
         var stream = try DemoV2EventStream(receipt: receipt, maximumWireBytes: 2048)
-        let raw = Data((": keepalive\r\n\r\n" + frame(1, text: "北京 🧳") + frame(2, text: " 继续")).utf8)
+        let raw = Data((": keepalive\r\n\r\n" + frame(1, text: "北京 🧳") + frame(64, text: " 继续")).utf8)
         var events: [DemoV2Dialogue.Event] = []
         for byte in raw { events += try stream.append(Data([byte])) }
-        #expect(events.map(\.eventID) == ["event-1", "event-2"])
-        #expect(stream.lastEventID == "2")
+        #expect(events.map(\.eventID) == ["1", "64"])
+        #expect(stream.lastEventID == "64")
         guard case .answer(let first) = events[0].payload else { Issue.record("Expected an answer delta"); return }
         #expect(first.text == "北京 🧳")
         try stream.finish()
@@ -24,8 +24,14 @@ struct DemoV2EventStreamTests {
         #expect(throws: DemoV2Dialogue.Failure.mismatchedOriginal) { try stream.append(Data(mixed.utf8)) }
         #expect(stream.lastEventID == "2")
         #expect(throws: DemoV2EventStream.Failure.invalidSequence) {
-            try stream.append(Data(frame(4, text: "skip").utf8))
+            try stream.append(Data(frame(1, text: "older").utf8))
         }
+        let mismatched = frame(3, text: "different event ID").replacingOccurrences(of: "\"event_id\":\"3\"", with: "\"event_id\":\"7\"")
+        #expect(throws: DemoV2EventStream.Failure.invalidSequence) { try stream.append(Data(mismatched.utf8)) }
+        #expect(stream.lastEventID == "2")
+        let mismatchedName = frame(3, text: "next").replacingOccurrences(of: "event: answer_delta", with: "event: status")
+        #expect(throws: DemoV2EventStream.Failure.invalidFrame) { try stream.append(Data(mismatchedName.utf8)) }
+        #expect(stream.lastEventID == "2")
         let original = try stream.append(Data(frame(3, text: "next").utf8))
         #expect(original.count == 1 && stream.lastEventID == "3")
         #expect(throws: DemoV2EventStream.Failure.invalidSequence) {
@@ -43,8 +49,8 @@ struct DemoV2EventStreamTests {
     private func frame(_ seq: Int, text: String, run: String = "r") -> String {
         """
         id: \(seq)
-        event: dialogue
-        data: {"version":"DEMO-dialogue-event.1","event_id":"event-\(seq)","conversation_id":"\(receipt.conversation_id)","message_id":"m","run_id":"\(run)","kind":"answer_delta","payload":{"text":"\(text)"}}
+        event: answer_delta
+        data: {"version":"DEMO-dialogue-event.1","event_id":"\(seq)","conversation_id":"\(receipt.conversation_id)","message_id":"m","run_id":"\(run)","kind":"answer_delta","payload":{"text":"\(text)"}}
 
 
         """
