@@ -58,10 +58,10 @@ Sign in to the Beta with the invite code. Use the prompts for your language and 
 
    **E04**　Draft a brief itinerary from the saved fictional needs. Keep the locked morning meeting in the hotel lobby on its original date and time. Show me the candidate and wait for my confirmation before saving.
 3. 预期原 RUN 完成并能读回同源正式候选，固定项、时间和 Needs 版本核同。在用户确认前正式 Trip 写入为 0。
-4. 明确采用候选。预期同一采用动作读回正式 Trip v1，原固定项保持。然后手动把标题改为「北京演示行程」或 “Beijing Demo Itinerary”，明确保存。预期读回 v2，只有标题改变，固定项和原时钟保留。
+4. 明确采用候选。预期同一采用动作读回正式 Trip v1，原固定项保持。然后手动把标题改为「北京演示行程」或 “Beijing Demo Itinerary”。若候选已用该标题，改用「北京演示行程（修订）」或 “Beijing Demo Itinerary (Revised)”。明确保存，预期读回 v2，只有标题改变，固定项和原时钟保留。
 5. 候选缺失、原动作回执未知或任何固定项被改动时，保留原请求，只读核对。采用或修改的写入需要各自原回执。
 
-**English walkthrough**　Select the fictional Needs with the locked hotel lobby meeting from 09:00 to 10:00 Beijing time. Ask for the draft, then adopt it explicitly. Edit only the title to “Beijing Demo Itinerary” and save. Expect a candidate before adoption, a v1 trip after adoption, then v2 with the new title and the same meeting.
+**English walkthrough**　Select the fictional Needs with the locked hotel lobby meeting from 09:00 to 10:00 Beijing time. Ask for the draft, then adopt it explicitly. Edit only the title to “Beijing Demo Itinerary” and save. If the candidate already has that title, use “Beijing Demo Itinerary (Revised)”. Expect a candidate before adoption, a v1 trip after adoption, then v2 with the new title and the same meeting.
 
 **失败 / FAIL**　原 RUN 明确结束仍无候选、锁定项被改动、确认前正式写入，或采用及修改的回执、版本和内容不一致。原回执无法确认时记 UNKNOWN。 A missing candidate at terminal completion, a changed locked meeting, a write before confirmation or an inconsistent receipt or trip version fails the scene.
 
@@ -69,7 +69,7 @@ Sign in to the Beta with the invite code. Use the prompts for your language and 
 
 1. 在 Typed 记忆界面，用本场景授权的合成 slot 明确保存一条虚构偏好。**Z05**「在演示中我偏好慢节奏，每天最多两个景点。」 **E05** “For this demo, I prefer a slow pace and at most two sights a day.” 预期保存回执绑定当前身份和原记忆项。
 2. 新开会话。**Z05**「按我刚保存的演示偏好，给我建议一天安排几个景点。不要保存行程。」 **E05** “Using the demo preference I just saved, suggest how many sights to schedule in a day. Do not save a trip.” 预期实际 Typed 回读或原模型输入证明用到了该偏好，正文遵守数量约束，无新 Trip。
-3. 明确停止使用该条合成记忆，再新开会话。**Z05**「你现在能使用我先前保存的演示偏好吗？无法读取就直接说明，不要写入。」 **E05** “Can you use the demo preference I saved earlier? Say so if you cannot access it. Do not save anything.” 预期同项停止使用回执可读，撤回值没有进入下一次模型上下文。正文是否复述不单独作为证明。
+3. 明确停止使用该条合成记忆，再新开会话。**Z05**「你还能读取我在这次演示中刚停止使用的那条景点节奏偏好吗？无法读取就直接说明，不要写入。」 **E05** “Can you still read the sightseeing-pace preference I just stopped using in this demo? Say so if you cannot access it. Do not save anything.” 预期同项停止使用回执可读，撤回值没有进入下一次模型上下文。正文是否复述不单独作为证明。
 
 **English walkthrough**　Save the preference explicitly in the assigned Typed memory slot. Recall it from a new conversation, stop using the original item, and ask again in another fresh conversation. Verify the save and stop-use receipts and the original model context for the two recalls.
 
