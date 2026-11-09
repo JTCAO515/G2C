@@ -16,7 +16,7 @@ from cj_needs.domain import InvalidInput, decode, exact
 from cj_needs.preview import encode, preview
 from cj_run.postgres import CommitUnknown
 
-from .lio_planning_grounding import PLAN_REQUEST, grounded_fields, stated_city
+from .lio_planning_grounding import PLAN_REQUEST, grounded_fields, planning_withdrawn, stated_city
 
 
 ASK_MORE = 'lio_planning_needs_details'
@@ -78,6 +78,10 @@ class LioPlanning:
         inputs = planning_texts(self.database, binding, text)
         if inputs is None:
             return None
+        if planning_withdrawn(text):
+            answer = '好，先不保存行程。' if locale == 'zh' else "Okay, I won't save an itinerary."
+            state = worker._event(binding, state, 'text_delta', answer)
+            return worker._event(binding, state, 'completed')
         texts, references = inputs
         details = extract(worker, binding, locale, texts, references)
         if details is None:
