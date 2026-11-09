@@ -184,12 +184,20 @@ final class LioConversation {
         defer { loadingEarlier = false }
         do {
             let page = try await earlier(cursor)
-            guard !Task.isCancelled, nextBefore == cursor else { return nil }
-            let known = Set(turns.map(\.id))
-            let older = page.turns.filter { !known.contains($0.id) }
-            turns.insert(contentsOf: older.map { makeTurn($0) }, at: 0)
+            guard !Task.isCancelled, nextBefore == cursor,
+                  let boundary = turns.firstIndex(where: { $0.id == Data(cursor.utf8) }) else { return nil }
+            var insertion = boundary
+            var firstInserted: Data?
+            for row in page.turns.reversed() {
+                if let existing = turns.firstIndex(where: { $0.id == row.id }) {
+                    insertion = existing
+                } else {
+                    turns.insert(makeTurn(row), at: insertion)
+                    firstInserted = row.id
+                }
+            }
             nextBefore = page.nextBefore
-            return older.first?.id
+            return firstInserted
         } catch is CancellationError {
             return nil
         } catch {
@@ -203,7 +211,10 @@ final class LioConversation {
         let existing = Dictionary(uniqueKeysWithValues: turns.map { ($0.id, $0.question) })
         let previous = turns.filter { $0.fromTimeline && !visibleIDs.contains($0.id) }
         let local = turns.filter { !$0.fromTimeline && !visibleIDs.contains($0.id) }
-        if previous.isEmpty { nextBefore = page.nextBefore }
+        let overlaps = turns.contains { $0.fromTimeline && visibleIDs.contains($0.id) }
+        if previous.isEmpty || (!visibleIDs.isEmpty && !overlaps) {
+            nextBefore = page.nextBefore
+        }
         turns = previous + page.turns.map { makeTurn($0, question: existing[$0.id]) } + local
     }
 

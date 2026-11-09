@@ -47,28 +47,16 @@ public struct LioHome<MenuContent: View>: View {
     }
 
     private var chat: some View {
-        ScrollViewReader { scroll in
+        let earlierID = conversation.nextBefore.map { Data($0.utf8) }
+        return ScrollViewReader { scroll in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 22) {
                     if conversation.turns.isEmpty { examples }
-                    if conversation.nextBefore != nil {
-                        Button(language.text("Earlier messages", "更早的消息")) {
-                            Task {
-                                if let id = await conversation.loadEarlier() {
-                                    scroll.scrollTo(id, anchor: .top)
-                                }
-                            }
-                        }
-                        .disabled(conversation.loadingEarlier)
-                        .accessibilityIdentifier("lio.earlier")
-                        if conversation.loadingEarlier { ProgressView() }
-                        if conversation.earlierUnavailable {
-                            Text(language.text("Couldn’t show earlier messages. Try again.", "暂时看不到更早的消息，请再试一次。"))
-                                .font(.footnote)
-                        }
-                    }
                     ForEach(conversation.turns) { turn in
-                        turnView(turn)
+                        VStack(alignment: .leading, spacing: 22) {
+                            if turn.id == earlierID { earlierMessages(scroll) }
+                            turnView(turn)
+                        }
                     }
                     Color.clear.frame(height: 1).id("lio.bottom")
                 }
@@ -109,6 +97,25 @@ public struct LioHome<MenuContent: View>: View {
         }
         .sheet(item: $source) { selected in
             LioSourceSheet(source: selected, language: language)
+        }
+    }
+
+    private func earlierMessages(_ scroll: ScrollViewProxy) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Button(language.text("Earlier messages", "更早的消息")) {
+                Task {
+                    if let id = await conversation.loadEarlier() {
+                        scroll.scrollTo(id, anchor: .top)
+                    }
+                }
+            }
+            .disabled(conversation.loadingEarlier)
+            .accessibilityIdentifier("lio.earlier")
+            if conversation.loadingEarlier { ProgressView() }
+            if conversation.earlierUnavailable {
+                Text(language.text("Couldn’t show earlier messages. Try again.", "暂时看不到更早的消息，请再试一次。"))
+                    .font(.footnote)
+            }
         }
     }
 

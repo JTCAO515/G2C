@@ -125,6 +125,53 @@ struct LioTimelineServiceTests {
         #expect(await fixture.sent.isEmpty)
     }
 
+    @Test func fillsTheGapWhenAnotherDeviceAddsAWholePage() async throws {
+        let fixture = TimelineFixture()
+        for index in 1...20 {
+            await fixture.restore(try LioTimelineWire.Send(messageID: "message-\(index)", text: "Metro?", locale: .english))
+        }
+        let model = LioConversation(service: service(fixture))
+        await model.refreshTimeline()
+        #expect(model.nextBefore == "message-1")
+
+        for index in 21...60 {
+            await fixture.restore(try LioTimelineWire.Send(messageID: "message-\(index)", text: "Metro?", locale: .english))
+        }
+        await model.refreshTimeline()
+        #expect(model.nextBefore == "message-41")
+
+        let inserted = await model.loadEarlier()
+
+        #expect(inserted == Data("message-21".utf8))
+        #expect(model.turns.map { $0.question.messageID } == (1...60).map { "message-\($0)" })
+        #expect(await fixture.olderRequests == ["message-41"])
+        #expect(await fixture.sent.isEmpty)
+    }
+
+    @Test func insertsHistoryBeforeKnownRowsWhenAnOlderPagePartlyOverlaps() async throws {
+        let fixture = TimelineFixture()
+        for index in 1...120 {
+            await fixture.restore(try LioTimelineWire.Send(messageID: "message-\(index)", text: "Metro?", locale: .english))
+        }
+        let model = LioConversation(service: service(fixture))
+        await model.refreshTimeline()
+        #expect(model.nextBefore == "message-101")
+
+        for index in 121...145 {
+            await fixture.restore(try LioTimelineWire.Send(messageID: "message-\(index)", text: "Metro?", locale: .english))
+        }
+        await model.refreshTimeline()
+        #expect(model.nextBefore == "message-126")
+
+        _ = await model.loadEarlier()
+        let firstNew = await model.loadEarlier()
+
+        #expect(firstNew == Data("message-86".utf8))
+        #expect(model.turns.map { $0.question.messageID } == (86...145).map { "message-\($0)" })
+        #expect(await fixture.olderRequests == ["message-126", "message-106"])
+        #expect(await fixture.sent.isEmpty)
+    }
+
     private func service(_ fixture: TimelineFixture) -> LioService {
         .timeline(send: { try await fixture.submit($0) }, read: { try await fixture.read($0, before: $1) },
                   pollInterval: .milliseconds(1), observationWindow: .seconds(2))
