@@ -518,6 +518,8 @@ class NeedsActionChecks(unittest.TestCase):
             def publish_for_message(self,*args,before_publish):
                 def final(*,check_trip):
                     before_publish()
+                    if args[0].message_id == 'lio-omit-trip-check':
+                        return
                     if args[0].message_id == 'lio-expired':
                         sleep(2.05)
                     check_trip()
@@ -566,8 +568,19 @@ class NeedsActionChecks(unittest.TestCase):
             repository.lio_plan_receipt(replace(binding,message_id='another-message'))
         admitted['lio-expired']=TripHead.from_trip(updated)
         expiring=ConfirmationSigner(self.signer.key,lifetime_seconds=2)
-        with self.assertRaisesRegex(Denied,'confirmation expired or changed before commit'):
-            self.replan(subject,'lio-expired',wrap_publisher=lambda publisher:wrap(publisher,expiring),needs_version=2)
+        expired=self.replan(subject,'lio-expired',expect_proposal=False,
+                             wrap_publisher=lambda publisher:wrap(publisher,expiring),needs_version=2)
+        self.assertEqual(expired.status,'completed')
+        expired_message=worker.messages.query('lio-expired')
+        expired_state=db.run_repository(owner).snapshot_optional(worker._binding(expired_message.receipt))
+        self.assertEqual(expired_state.draft_outcome,'validation_failed')
+        self.assertIsNone(repository.query_action(plan_action_id(expired.run_id)))
+        self.assertEqual(repository.detail(saved.trip_id),updated)
+        admitted['lio-omit-trip-check']=TripHead.from_trip(updated)
+        omitted=self.replan(subject,'lio-omit-trip-check',expect_proposal=False,
+                            wrap_publisher=wrap,needs_version=2)
+        self.assertEqual(omitted.status,'unknown')
+        self.assertIsNone(repository.query_action(plan_action_id(omitted.run_id)))
         self.assertEqual(repository.detail(saved.trip_id),updated)
         admitted['lio-stale']=TripHead.from_trip(original)
         stale=self.replan(subject,'lio-stale',expect_proposal=False,wrap_publisher=wrap,needs_version=2)

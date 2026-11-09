@@ -5,7 +5,7 @@ from cj_agent.draft import DraftRejected, PROPOSAL_TTL_SECONDS, proposal_id_for
 from cj_feasibility.trip_time_v2 import evaluate
 from cj_needs.revision_lease import LeaseUnavailable
 from cj_trip.confirmation import ConfirmationSigner
-from cj_trip.domain import CommitUnknown, Conflict, Proposal, ProposalDetail
+from cj_trip.domain import CommitUnknown, Conflict, Denied, Proposal, ProposalDetail
 from cj_trip.lio_history import PLAN_BASIS, TripHead, plan_action_id
 from cj_trip.postgres import Repository
 
@@ -58,6 +58,8 @@ class LioPlanPublisher(ContextPublisher):
             return self._commit_plan(binding, original, expected, capture, candidate, proposal, before_publish)
         except CommitUnknown as error:
             raise LeaseUnavailable('original Lio plan commit unknown; read the original receipt') from error
+        except (Conflict, Denied) as error:
+            raise DraftRejected('Lio Trip publication refused') from error
 
     def _commit_plan(self, binding, original, expected, capture, candidate, proposal, before_publish):
         repository = self.repository
@@ -69,7 +71,17 @@ class LioPlanPublisher(ContextPublisher):
             self.require_lio(binding, original, expected)
             # B runs its original source guards first and the original budget
             # deadline last. The Trip DB clock check belongs between them.
-            before_publish(check_trip=lambda: repository._final_action_eligibility(cur, action, pending))
+            trip_checked = False
+
+            def check_trip():
+                nonlocal trip_checked
+                trip_checked = False
+                repository._final_action_eligibility(cur, action, pending)
+                trip_checked = True
+
+            before_publish(check_trip=check_trip)
+            if not trip_checked:
+                raise LeaseUnavailable('Lio final Trip confirmation check required')
 
         with repository.transaction(before_commit=final) as cur:
             existing = repository._receipt(cur, action_id)
