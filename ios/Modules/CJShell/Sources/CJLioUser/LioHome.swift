@@ -10,12 +10,23 @@ public struct LioHome<MenuContent: View>: View {
     private let menu: MenuContent
     private let tripLibrary: LioTripLibrary?
     private let tripHistory: LioTripHistoryClient?
+    private let memoryActions: LioMemoryActionsClient?
     private let recordedMap: (@MainActor (StructuredTripDocument) -> AnyView)?
     @State private var conversation: LioConversation
     @State private var draft = ""
     @State private var menuOpen = false
     @State private var source: LioSource?
     @State private var tab = Tab.chat
+    @State private var memoryBusy = false
+    @State private var memoryPending = false
+    @State private var memoryNotice: String?
+    @State private var activeMemory: LioMemoryWire.Tag?
+    @State private var handledTags: Set<LioMemoryWire.Tag> = []
+    @State private var refreshRequest = 0
+    private struct Observation: Equatable {
+        let active: Bool
+        let request: Int
+    }
     private enum Tab { case chat, trips }
     @FocusState private var typing: Bool
     @Environment(\.scenePhase) private var scenePhase
@@ -23,12 +34,14 @@ public struct LioHome<MenuContent: View>: View {
 
     public init(language: LioLanguage, service: LioService, isDemo: Bool, tripLibrary: LioTripLibrary? = nil,
                 tripHistory: LioTripHistoryClient? = nil,
+                memoryActions: LioMemoryActionsClient? = nil,
                 recordedMap: (@MainActor (StructuredTripDocument) -> AnyView)? = nil, @ViewBuilder menu: () -> MenuContent) {
         self.language = language
         self.isDemo = isDemo
         self.menu = menu()
         self.tripLibrary = tripLibrary
         self.tripHistory = tripHistory
+        self.memoryActions = memoryActions
         self.recordedMap = recordedMap
         _conversation = State(initialValue: LioConversation(service: service))
     }
@@ -46,8 +59,20 @@ public struct LioHome<MenuContent: View>: View {
                 .tag(Tab.trips)
         }
         .onChange(of: tab) { _, _ in typing = false }
-        .task(id: canObserve) {
+        .task(id: Observation(active: canObserve, request: refreshRequest)) {
             if canObserve { await conversation.refreshTimeline() }
+        }
+        .task(id: scenePhase) {
+            guard scenePhase == .active, let memoryActions else { return }
+            do {
+                memoryPending = try memoryActions.hasPendingChoice()
+            } catch {
+                memoryNotice = language.text("Couldn’t show your saved choice.", "暂时无法显示你的选择。")
+            }
+        }
+        .task(id: memoryPending && scenePhase == .active) {
+            guard memoryPending, scenePhase == .active, let memoryActions else { return }
+            await awaitMemoryChoice(memoryActions)
         }
         .task(id: pending?.id) {
             if let pending { await conversation.receive(pending) }
@@ -65,6 +90,12 @@ public struct LioHome<MenuContent: View>: View {
                             if turn.id == earlierID { earlierMessages(scroll) }
                             turnView(turn)
                         }
+                    }
+                    if let memoryNotice { Text(memoryNotice).font(.footnote) }
+                    if memoryPending {
+                        Text(language.text("Waiting to save your choice…", "正在等待保存你的选择…"))
+                            .font(.footnote)
+                            .accessibilityIdentifier("lio.memory.waiting")
                     }
                     Color.clear.frame(height: 1).id("lio.bottom")
                 }
@@ -226,6 +257,68 @@ public struct LioHome<MenuContent: View>: View {
         .background(Color(uiColor: .systemBackground))
     }
 
+    private func chooseMemory(_ choice: LioMemoryWire.Choice, tag: LioMemoryWire.Tag,
+                              client: LioMemoryActionsClient) async {
+        guard !memoryBusy, !memoryPending, !handledTags.contains(tag) else { return }
+        memoryBusy = true
+        defer { memoryBusy = false }
+        memoryNotice = nil
+        do {
+            if try client.hasPendingChoice() {
+                memoryPending = true
+                return
+            }
+            activeMemory = tag
+            finishMemoryChoice(try await client.choose(choice, tag: tag))
+        } catch is CancellationError {
+            return
+        } catch {
+            memoryNotice = language.text("Couldn’t save your choice right now.", "暂时无法保存你的选择。")
+        }
+    }
+
+    private func awaitMemoryChoice(_ client: LioMemoryActionsClient) async {
+        while !Task.isCancelled {
+            do {
+                guard let state = try await client.reconcileChoice() else {
+                    memoryPending = false
+                    return
+                }
+                if state != .pending {
+                    finishMemoryChoice(state)
+                    return
+                }
+            } catch is CancellationError {
+                return
+            } catch {
+                memoryNotice = language.text("Couldn’t show your saved choice.", "暂时无法显示你的选择。")
+            }
+            do {
+                try await Task.sleep(for: .seconds(5))
+            } catch {
+                return
+            }
+        }
+    }
+
+    private func finishMemoryChoice(_ state: LioMemoryActionsClient.State) {
+        switch state {
+        case .pending:
+            memoryPending = true
+            return
+        case .remembered:
+            memoryNotice = language.text("Remembered", "已记住")
+        case .dismissed:
+            memoryNotice = nil
+        case .changed:
+            memoryNotice = language.text("That suggestion changed.", "这条建议已有变化。")
+        }
+        if let activeMemory { handledTags.insert(activeMemory) }
+        activeMemory = nil
+        memoryPending = false
+        refreshRequest += 1
+    }
+
     private func turnView(_ turn: LioTurn) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 4) {
@@ -259,6 +352,27 @@ public struct LioHome<MenuContent: View>: View {
             messageStatus(turn)
             if let itinerary = turn.itinerary {
                 LioItineraryCard(itinerary: itinerary, language: language) { tab = .trips }
+            }
+            if let memoryActions {
+                ForEach(turn.memoryTags.filter { !handledTags.contains($0) }) { tag in
+                    VStack(alignment: .leading, spacing: 4) {
+                        RunReadableText(text: language.text("Remember: \(tag.text)?", "记住：\(tag.text)？"))
+                        HStack {
+                            Button(language.text("Remember", "记住")) {
+                                Task { await chooseMemory(.remember, tag: tag, client: memoryActions) }
+                            }
+                            .buttonStyle(.bordered)
+                            .accessibilityIdentifier("lio.memory.remember")
+                            Button(language.text("Dismiss", "不用")) {
+                                Task { await chooseMemory(.dismiss, tag: tag, client: memoryActions) }
+                            }
+                            .buttonStyle(.borderless)
+                            .accessibilityIdentifier("lio.memory.dismiss")
+                        }
+                        .disabled(memoryBusy || memoryPending)
+                    }
+                    .padding(.vertical, 4)
+                }
             }
             ForEach(turn.sources) { item in
                 Button { source = item } label: {

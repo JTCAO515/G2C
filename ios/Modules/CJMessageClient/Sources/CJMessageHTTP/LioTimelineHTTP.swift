@@ -97,6 +97,30 @@ public final class LioTimelineHTTP {
         return try undo.committed(bytes) ? bytes : nil
     }
 
+    func submitMemoryChoice(_ action: LioMemoryWire.Action) async throws -> LioMemoryActionsClient.SubmissionResult {
+        let token = try await bearer()
+        let (response, body) = try await transport.sendLioMemoryChoice(action, bearer: token)
+        let bytes = try await json(response, body, limit: 65_536)
+        switch response.status.code {
+        case 200: return .receipt(bytes)
+        case 409:
+            try validateUnambiguousJSON(bytes)
+            guard try JSONDecoder().decode(Failure.self, from: bytes).failure == "unavailable" else {
+                throw MessageHTTPFailure.exchangeUnknown
+            }
+            return .conflict(bytes)
+        default:
+            throw MessageHTTPFailure.exchangeUnknown
+        }
+    }
+
+    func readMemoryChoice(_ action: LioMemoryWire.Action) async throws -> Data {
+        let token = try await bearer()
+        let (response, body) = try await transport.readLioMemoryChoice(action, bearer: token)
+        guard response.status.code == 200 else { throw MessageHTTPFailure.exchangeUnknown }
+        return try await json(response, body, limit: 65_536)
+    }
+
     private func bearer() async throws -> String {
         guard let token = try await credentials.bearer(for: scope, lease: lease),
               !token.isEmpty, !token.contains(","), !token.contains(where: \.isWhitespace) else {

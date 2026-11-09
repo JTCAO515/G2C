@@ -234,6 +234,26 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         ], operation: "readLioTripUndoV1", bearer: bearer)
     }
 
+    func sendLioMemoryChoice(_ action: LioMemoryWire.Action, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
+        try await lioMemoryRequest(action, bearer: bearer, path: "/v1/lio/memory/actions", operation: "chooseLioMemoryV1")
+    }
+
+    /// The B endpoint only observes the existing action. Its POST body keeps the target out of the URL.
+    func readLioMemoryChoice(_ action: LioMemoryWire.Action, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
+        try await lioMemoryRequest(action, bearer: bearer, path: "/v1/lio/memory/receipt", operation: "readLioMemoryChoiceV1")
+    }
+
+    private func lioMemoryRequest(_ action: LioMemoryWire.Action, bearer: String, path: String,
+                                  operation: String) async throws -> (HTTPResponse, HTTPBody?) {
+        guard let messages, messages.wire == .lio else { throw MessageHTTPFailure.productionActivationUnavailable }
+        var request = HTTPRequest(method: .post, scheme: nil, authority: nil, path: path)
+        request.headerFields[.authorization] = "Bearer " + bearer
+        request.headerFields[.contentType] = "application/octet-stream"
+        request.headerFields[.accept] = "application/json"
+        return try await sendLocalWrite(request, body: HTTPBody(action.originalUTF8), baseURL: messages.endpoint.url,
+                                        operationID: operation, capability: messages.boundary, messageWire: nil)
+    }
+
     private func lioRead(path: String, query: [URLQueryItem], operation: String, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
         guard let messages, messages.wire == .lio else { throw MessageHTTPFailure.productionActivationUnavailable }
         var components = URLComponents()
