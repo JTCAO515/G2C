@@ -34,10 +34,12 @@ def _runtime_gate(database, runtime):
     local_postgres.require_serving(control())
     with database._open_runtime_connection() as connection:
         release=checkpoint.require_release(connection,control())
-    if runtime is not None and runtime.demo_subjects and local_database_target():
+    if runtime is not None and local_database_target():
         marker=checkpoint.verified(control()/'demo-schema52.json')
         if (marker['state']!='COMPLETE' or marker['lineage']!=release['lineage']
-                or runtime.context.current.meter.budget!=demo_quota.APPROVED_BUDGET):
+                or runtime.context.current.meter.budget!=demo_quota.APPROVED_BUDGET
+                or marker['quota_policy_sha256']!=demo_quota.policy_digest(runtime.context_path.read_text(),
+                    demo_quota.APPROVED_BUDGET)):
             raise ValueError('HK Demo quota cutover incomplete')
 
 

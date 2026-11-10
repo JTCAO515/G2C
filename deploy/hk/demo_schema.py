@@ -24,13 +24,26 @@ def _require_idle(db):
 def _complete(marker,manifest,intent):
     if manifest['fences']!=intent['original_fences'] or manifest['lineage']!=intent['lineage']:
         raise ValueError('Demo upgrade fence state changed')
-    checkpoint.atomic(marker,dict(state='COMPLETE',lineage=manifest['lineage'],
-        dump_sha256=manifest['dump_sha256'],original_fences=intent['original_fences']))
+    complete=dict(state='COMPLETE',lineage=manifest['lineage'],
+        dump_sha256=manifest['dump_sha256'],original_fences=intent['original_fences'])
+    if 'quota_policy_sha256' in intent:
+        complete['quota_policy_sha256']=intent['quota_policy_sha256']
+    checkpoint.atomic(marker,complete)
 
 
 def _preserve_unpublished(path):
     path.rename(path.with_name(f'{path.name}.unpublished-{uuid4().hex}'))
     checkpoint.local.sync_directory(path.parent)
+
+
+def _original_latest(control):
+    path=control/'latest.json'
+    return checkpoint.verified(path) if path.exists() else None
+
+
+def _migrate_quota_schema(db):
+    migrate.up(db,migrate.load(),52)
+    db.execute('INSERT INTO public.cj_demo_quota_upgrade VALUES (true)')
 
 
 def _resume_publication(db,control,destination,intent,release,instance):
@@ -46,9 +59,7 @@ def _resume_publication(db,control,destination,intent,release,instance):
     previous=intent['original_checkpoint']
     desired=dict(version='g2c-beta-latest.1',dump_sha256=digest,lineage=lineage,consumed=False)
     actual=checkpoint.verified(latest) if latest.exists() else None
-    if actual is None and previous!='fresh':
-        raise ValueError('original quota latest checkpoint unavailable')
-    if actual not in (None,desired,dict(desired,dump_sha256=previous)):
+    if actual not in (desired,intent['original_latest']):
         raise ValueError('original quota latest checkpoint mismatch')
     if (release['instance'],release['checkpoint'])==(instance,digest):
         if actual!=desired:
@@ -91,12 +102,25 @@ def upgrade(control,backups,*,target=49,schema_root=None):
         _require_idle(db)
         intent=dict(state='INTENT',lineage=release['lineage'],original_fences=checkpoint.local.fence_state(db))
         if target==52:
+            latest=_original_latest(control)
+            if latest is None:
+                if release['checkpoint']!='fresh':
+                    raise ValueError('original quota latest checkpoint unavailable')
+            elif (latest['version']!='g2c-beta-latest.1' or latest['lineage']!=release['lineage']
+                  or latest['dump_sha256']!=release['checkpoint'] or type(latest['consumed']) is not bool):
+                raise ValueError('original quota latest checkpoint mismatch')
             current_count,next_count=demo_quota.upgrade(db)
-            intent.update(original_instance=release['instance'],original_checkpoint=release['checkpoint'])
+            policy,roster=demo_quota.original_policy()
+            intent.update(original_instance=release['instance'],original_checkpoint=release['checkpoint'],
+                          original_latest=latest,quota_policy_sha256=policy,quota_roster_sha256=roster)
+            pending=marker.with_suffix('.tmp')
+            if pending.exists():
+                _preserve_unpublished(pending)
         checkpoint.atomic(marker,intent)
-        migrate.up(db,migrate.load(),target)
         if target==52:
-            db.execute('INSERT INTO public.cj_demo_quota_upgrade VALUES (true)')
+            _migrate_quota_schema(db)
+        else:
+            migrate.up(db,migrate.load(),target)
     manifest=checkpoint.export(destination,control,schema_root=schema_root)
     _complete(marker,manifest,intent)
     if target==52:
@@ -105,7 +129,7 @@ def upgrade(control,backups,*,target=49,schema_root=None):
 
 
 def resume_quota(control,backups,*,schema_root=None):
-    """Finish the original schema-52 backup after a proven committed quota update."""
+    """Continue the original quota intent with the exact original policy and release."""
     if not local_database_target() or checkpoint.versions()!=list(range(1,53)):
         raise ValueError('exact HK quota schema required')
     local_postgres.require_serving(control)
@@ -117,16 +141,26 @@ def resume_quota(control,backups,*,schema_root=None):
         intent=checkpoint.verified(marker)
         release=checkpoint.verified(control/'release.json')
         instance,lineage=checkpoint.identity(db)
+        applied=migrate.applied(db)
+        expected=checkpoint.versions()
         if (intent['state']!='INTENT' or release['version']!='g2c-beta-release.1'
                 or release['lineage']!=lineage or lineage!=intent['lineage']
-                or migrate.applied(db)!=checkpoint.versions()
                 or checkpoint.local.fence_state(db)!=intent['original_fences']
-                or db.execute('SELECT singleton FROM public.cj_demo_quota_upgrade').fetchall()!=[(True,)]):
+                or demo_quota.original_policy()!=(intent['quota_policy_sha256'],intent['quota_roster_sha256'])):
             raise ValueError('original quota upgrade state unavailable')
         _require_idle(db)
-        demo_quota.verify_applied(db)
-        if (instance,release['instance'],release['checkpoint'])!=(
-                intent['original_instance'],intent['original_instance'],intent['original_checkpoint']):
+        original_release=(instance,release['instance'],release['checkpoint'])==(
+            intent['original_instance'],intent['original_instance'],intent['original_checkpoint'])
+        if applied==expected[:-1]:
+            if not original_release or destination.exists() or _original_latest(control)!=intent['original_latest']:
+                raise ValueError('original rolled-back quota state unavailable')
+            demo_quota.upgrade(db,resume=True)
+            _migrate_quota_schema(db)
+        elif applied==expected and db.execute('SELECT singleton FROM public.cj_demo_quota_upgrade').fetchall()==[(True,)]:
+            demo_quota.verify_applied(db)
+        else:
+            raise ValueError('original quota schema unavailable')
+        if not original_release:
             manifest=_resume_publication(db,control,destination,intent,release,instance)
             pending=marker.with_suffix('.tmp')
             if pending.exists():

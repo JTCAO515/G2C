@@ -26,7 +26,7 @@ from cj_api.local_run_context import load_run_context
 from cj_memory.typed_runtime import TypedRuntimeConfiguration
 from cj_message.travel import ABI
 from deploy.hk import checkpoint,demo_accounts,demo_login,demo_quota,demo_schema,entrypoint,schema,staging
-from deploy.hk.configuration import Runtime,demo_periods
+from deploy.hk.configuration import Runtime,beta_subjects,demo_periods
 from cj_run.step_usage import ledger_scope_for
 from cj_usage.authorization_budget import DEADLINE,DEMO_DEADLINE
 import dev_auth
@@ -113,9 +113,21 @@ def check_quota_resume(control,backups,operator,conninfo,schema_root):
     destination=backups/'demo-schema52'
     marker=control/'demo-schema52.json'
     database=SimpleNamespace(_open_runtime_connection=lambda:psycopg.connect(**conninfo))
+    release=checkpoint.verified(control/'release.json')
+    prior_latest=dict(version='g2c-beta-latest.1',dump_sha256='a'*64,lineage=release['lineage'],consumed=True)
+    checkpoint.atomic(control/'latest.json',prior_latest)
+    checkpoint.atomic(control/'release.json',dict(release,checkpoint=prior_latest['dump_sha256']),public=True)
 
-    def gate(budget, *, ready):
-        runtime=SimpleNamespace(demo_subjects={SUBJECT},
+    def gate(budget, *, ready, changed_roster=False, changed_policy=False):
+        subjects,demo=beta_subjects()
+        raw=json.loads(os.environ['CJ_BETA_RUN_CONTEXT_JSON'])
+        raw['current']['meter']['budget']=budget
+        if changed_policy:
+            raw['current']['meter']['max_steps']+=1
+        context_path=control.parent/'runtime-quota.json'
+        context_path.write_text(json.dumps(raw))
+        runtime=SimpleNamespace(subjects=set(subjects)-demo if changed_roster else subjects,
+            demo_subjects=frozenset() if changed_roster else demo,context_path=context_path,
             context=SimpleNamespace(current=SimpleNamespace(meter=SimpleNamespace(budget=budget))))
         try:
             entrypoint._runtime_gate(database,runtime)
@@ -129,15 +141,30 @@ def check_quota_resume(control,backups,operator,conninfo,schema_root):
         (path/'database.dump').write_bytes(b'partial fixture')
         raise OSError('synthetic export interruption')
 
-    with patch.object(checkpoint,'export',side_effect=fail_export):
+    marker.with_suffix('.tmp').write_bytes(b'partial intent fixture')
+    with patch.object(demo_schema,'_migrate_quota_schema',side_effect=OSError('synthetic transaction rollback')):
         try:
             demo_schema.upgrade(control,backups,target=52,schema_root=schema_root)
+        except OSError as exc:
+            assert str(exc)=='synthetic transaction rollback'
+        else:
+            raise AssertionError('synthetic transaction rollback was hidden')
+    assert checkpoint.verified(marker)['state']=='INTENT'
+    with operator() as (db,_):
+        assert migrate.applied(db)[-1]==51
+    initial_tmp,=control.glob('demo-schema52.tmp.unpublished-*')
+    assert initial_tmp.read_bytes()==b'partial intent fixture'
+
+    with patch.object(checkpoint,'export',side_effect=fail_export):
+        try:
+            demo_schema.resume_quota(control,backups,schema_root=schema_root)
         except OSError as exc:
             assert str(exc)=='synthetic export interruption'
         else:
             raise AssertionError('synthetic export interruption was hidden')
     assert checkpoint.verified(marker)['state']=='INTENT'
     gate(800,ready=False)
+    gate(800,ready=False,changed_roster=True)
     with operator() as (db,_):
         try:
             with db.transaction():
@@ -148,19 +175,23 @@ def check_quota_resume(control,backups,operator,conninfo,schema_root):
             raise AssertionError('applied quota transition was downgraded')
 
     atomic=checkpoint.atomic
-    def interrupt_release(path,value,**kwargs):
-        if path.name=='release.json':
-            path.with_suffix('.tmp').write_bytes(b'partial release fixture')
-            raise OSError('synthetic release interruption')
-        atomic(path,value,**kwargs)
+    for name in ('latest','release'):
+        def interrupt_publication(path,value,**kwargs):
+            if path.name==f'{name}.json':
+                path.with_suffix('.tmp').write_bytes(name.encode('ascii'))
+                raise OSError(f'synthetic {name} interruption')
+            atomic(path,value,**kwargs)
 
-    with patch.object(checkpoint,'atomic',side_effect=interrupt_release):
-        try:
-            demo_schema.resume_quota(control,backups,schema_root=schema_root)
-        except OSError as exc:
-            assert str(exc)=='synthetic release interruption'
-        else:
-            raise AssertionError('synthetic release interruption was hidden')
+        with patch.object(checkpoint,'atomic',side_effect=interrupt_publication):
+            try:
+                demo_schema.resume_quota(control,backups,schema_root=schema_root)
+            except OSError as exc:
+                assert str(exc)==f'synthetic {name} interruption'
+            else:
+                raise AssertionError('synthetic publication interruption was hidden')
+        if name=='latest':
+            assert checkpoint.verified(control/'latest.json')==prior_latest
+        gate(800,ready=False)
     preserved,=backups.glob('demo-schema52.unpublished-*')
     assert (preserved/'database.dump').read_bytes()==b'partial fixture'
     assert (destination/'manifest.json').exists() and checkpoint.verified(marker)['state']=='INTENT'
@@ -173,14 +204,17 @@ def check_quota_resume(control,backups,operator,conninfo,schema_root):
         else:
             raise AssertionError('synthetic marker interruption was hidden')
     release_tmp,=control.glob('release.tmp.unpublished-*')
-    assert release_tmp.read_bytes()==b'partial release fixture'
+    latest_tmp,=control.glob('latest.tmp.unpublished-*')
+    assert release_tmp.read_bytes()==b'release' and latest_tmp.read_bytes()==b'latest'
     marker.with_suffix('.tmp').write_bytes(b'partial marker fixture')
     with patch.object(checkpoint,'export',side_effect=AssertionError('a published backup was repeated')):
         demo_schema.resume_quota(control,backups,schema_root=schema_root)
-    marker_tmp,=control.glob('demo-schema52.tmp.unpublished-*')
-    assert marker_tmp.read_bytes()==b'partial marker fixture'
+    assert {p.read_bytes() for p in control.glob('demo-schema52.tmp.unpublished-*')}=={
+        b'partial marker fixture',b'partial intent fixture'}
     gate(80,ready=False)
     gate(800,ready=True)
+    gate(800,ready=True,changed_roster=True)
+    gate(800,ready=False,changed_policy=True)
     print('PASS original quota recovery, readied only with matching 800 configuration and no downgrade')
 
 

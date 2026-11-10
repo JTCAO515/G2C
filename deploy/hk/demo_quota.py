@@ -1,5 +1,7 @@
 """Raise the approved HK synthetic quotas without replacing any Meter ledger."""
 from dataclasses import replace
+from hashlib import sha256
+import json
 import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -17,14 +19,31 @@ PREVIOUS_BUDGET = 80
 APPROVED_BUDGET = 800
 
 
-def _existing_ledgers(db, budget):
+def policy_digest(raw, budget):
+    value = json.loads(raw)
+    meter = value['current']['meter']
+    if meter['budget'] != budget:
+        raise ValueError('explicit HK synthetic quota configuration required')
+    meter['budget'] = APPROVED_BUDGET
+    return sha256(json.dumps(value, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+
+
+def original_policy():
+    subjects, demo = beta_subjects()
+    roster = json.dumps([sorted(subjects), sorted(demo)], separators=(',', ':')).encode()
+    return (policy_digest(os.environ['CJ_BETA_RUN_CONTEXT_JSON'], PREVIOUS_BUDGET),
+            sha256(roster).hexdigest())
+
+
+def _existing_ledgers(db, budget, *, resume):
     authorization()
     subjects, demo = beta_subjects()
     with TemporaryDirectory(prefix='g2c-demo-quota-') as directory:
         path = Path(directory) / 'run.json'
         path.write_text(os.environ['CJ_BETA_RUN_CONTEXT_JSON'])
         original = load_run_context(path, require_active=False)
-    current, following = demo_periods(original, time.time())
+    now = original.current.meter.period_start if resume else time.time()
+    current, following = demo_periods(original, now)
     if (not demo or following is None or current.version != 'CJ-LOCAL-RUN@2'
             or current.current.meter.budget != PREVIOUS_BUDGET):
         raise ValueError('explicit original HK synthetic quota window required')
@@ -42,8 +61,8 @@ def _existing_ledgers(db, budget):
     return keys, len(subjects), len(demo)
 
 
-def upgrade(db):
-    keys, current, following = _existing_ledgers(db, PREVIOUS_BUDGET)
+def upgrade(db, *, resume=False):
+    keys, current, following = _existing_ledgers(db, PREVIOUS_BUDGET, resume=resume)
     db.execute("UPDATE cj_usage_ledger_candidate SET revision=revision+1,"
                "ledger=jsonb_set(ledger,'{config,budget}',to_jsonb(%s::bigint),false) "
                "WHERE scope_id=ANY(%s)", (APPROVED_BUDGET, keys))
@@ -51,4 +70,4 @@ def upgrade(db):
 
 
 def verify_applied(db):
-    _existing_ledgers(db, APPROVED_BUDGET)
+    _existing_ledgers(db, APPROVED_BUDGET, resume=True)
