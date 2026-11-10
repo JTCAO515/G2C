@@ -33,4 +33,11 @@ struct LioReplyMarkdownTests {
         #expect(LioReplyMarkdown.render("This is **UN**KNOWN") == nil)
         #expect(LioReplyMarkdown.render("[Open](https://api-beta.go2china.space/v2/memories)") == nil)
     }
+
+    @Test func cannotOpenAlternateSpellingsOfServiceHosts() throws {
+        #expect(LioReplyMarkdown.render("[Forecast](https://api-beta.go2china.space./)") == nil)
+        let answer = try #require(LioReplyMarkdown.render("[Forecast](https://api-beta.go2china%2Espace./)"))
+        #expect(String(answer.characters) == "Forecast")
+        #expect(answer.runs.allSatisfy { $0.link == nil })
+    }
 }
