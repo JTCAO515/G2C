@@ -75,6 +75,37 @@ import XCTest
         XCTAssertTrue(app.navigationBars[day].waitForExistence(timeout: 8))
     }
 
+    func testLongReplyFollowsUntilTheReaderScrollsAway() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-scroll-acceptance", "-cj.ui.language.v1", "en"]
+        app.launch()
+        defer { app.terminate() }
+
+        let sample = app.buttons["lio.example.0"]
+        XCTAssertTrue(sample.waitForExistence(timeout: 12))
+        sample.tap()
+        app.buttons["lio.send"].tap()
+
+        let source = app.buttons["lio.source"]
+        let advance = app.buttons["Next section"]
+        let answers = app.staticTexts.matching(identifier: "lio.answer")
+        XCTAssertTrue(source.waitForExistence(timeout: 8))
+        XCTAssertTrue(source.isHittable)
+        advance.tap()
+        let long = answers.containing(NSPredicate(format: "label CONTAINS %@", "Long section.")).firstMatch
+        XCTAssertTrue(long.waitForExistence(timeout: 8))
+        XCTAssertTrue(source.isHittable)
+        XCTAssertFalse(app.buttons["lio.send"].isEnabled)
+
+        app.scrollViews.firstMatch.swipeDown()
+        XCTAssertFalse(source.isHittable)
+        advance.tap()
+        let finished = answers.containing(NSPredicate(format: "label CONTAINS %@", "End of the reply.")).firstMatch
+        XCTAssertTrue(finished.waitForExistence(timeout: 8))
+        XCTAssertFalse(source.isHittable)
+    }
+
     private func exercise(_ language: String, question: String, source title: String) throws {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
