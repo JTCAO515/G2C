@@ -27,10 +27,12 @@ class ContextPublisher(NeedsDraftPublisher):
             needs_id=before.needs_id,revision=before.version,fields=before.fields,
             current_trip=None if context is None else dict(trip_id=context.trip.trip_id,version=context.trip.version,
                 content=json.loads(context.trip.content),proposed_fields=json.loads(context.proposed))),ensure_ascii=False,separators=(',',':')))]
+    def _model_plan(self,raw,context):
+        return parse_model(raw)
     def build_plan(self,raw,capture):
         context=self.source.contexts.get(capture.binding)
         if context is None:return build_original(raw,capture)
-        value=parse_model(raw);document=dict(content_version='structured.2',title=value['title'],items=value['items'],sources=[])
+        value=self._model_plan(raw,context);document=dict(content_version='structured.2',title=value['title'],items=value['items'],sources=[])
         from cj_feasibility.trip_time_v2 import evaluate
         time_report=evaluate(packed(document))
         if time_report.status=='CONFLICT':
