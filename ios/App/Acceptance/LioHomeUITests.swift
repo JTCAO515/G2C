@@ -4,6 +4,154 @@ import XCTest
     func testEnglish() throws { try exercise("en", question: "How do I take the metro in Shanghai?", source: "Source") }
     func testChinese() throws { try exercise("zh-Hans", question: "在上海怎么坐地铁？", source: "来源") }
 
+    func testJourneyEnglish() throws { try exerciseJourney("en") }
+    func testJourneyChinese() throws { try exerciseJourney("zh-Hans") }
+
+    private func exerciseJourney(_ language: String) throws {
+        continueAfterFailure = false
+        let chinese = language == "zh-Hans"
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-journey-acceptance", "-cj.ui.language.v1", language]
+        app.launch()
+        defer { app.terminate() }
+
+        let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+        let send = app.buttons["lio.send"]
+        let chat = app.tabBars.buttons[chinese ? "聊天" : "Chat"]
+        let trips = app.tabBars.buttons[chinese ? "行程" : "Trips"]
+        func reply(_ text: String) {
+            XCTAssertTrue(app.staticTexts[text].waitForExistence(timeout: 10), app.debugDescription)
+        }
+        func ask(_ text: String) {
+            composer.tap()
+            composer.typeText(text)
+            XCTAssertTrue(send.isEnabled)
+            send.tap()
+        }
+        func reveal(_ control: XCUIElement) {
+            for _ in 0..<4 {
+                if control.isHittable { return }
+                app.swipeUp()
+            }
+            XCTAssertTrue(control.isHittable, app.debugDescription)
+        }
+
+        let metro = app.buttons["lio.example.0"]
+        XCTAssertTrue(metro.waitForExistence(timeout: 12))
+        metro.tap()
+        XCTAssertFalse(app.staticTexts["lio.question"].exists)
+        send.tap()
+        XCTAssertTrue(app.staticTexts[chinese ? "正在查旅行信息…" : "Checking travel information…"]
+            .waitForExistence(timeout: 3))
+        reply(chinese ? "跟着地铁线路指示牌走。" : "Follow the signs for your metro line.")
+        let source = app.buttons["lio.source"]
+        XCTAssertTrue(source.waitForExistence(timeout: 6))
+        source.tap()
+        let sourceTitle = chinese ? "来源" : "Source"
+        XCTAssertTrue(app.navigationBars[sourceTitle].waitForExistence(timeout: 6))
+        app.navigationBars[sourceTitle].buttons[chinese ? "完成" : "Done"].tap()
+
+        ask(chinese ? "帮我规划北京两天" : "Plan two days in Beijing")
+        reply(chinese ? "你想慢慢逛吗？" : "Would you like a slower pace?")
+        XCTAssertFalse(app.buttons["lio.trip.show"].exists)
+        ask(chinese ? "慢一点" : "Take it slow")
+        reply(chinese ? "北京行程已保存。" : "I saved your Beijing trip.")
+        let show = app.buttons["lio.trip.show"]
+        reveal(show)
+        show.tap()
+        let hotel = chinese ? "酒店入住" : "Hotel check-in"
+        let park = chinese ? "公园散步" : "Park walk"
+        let museum = chinese ? "美术馆" : "Art museum"
+        reply(hotel)
+        reply(park)
+        chat.tap()
+
+        ask(chinese ? "把第二天下午换成美术馆" : "Change the second day to the art museum")
+        reply(chinese ? "第二天下午已经改好了。" : "I changed the second afternoon.")
+        let undo = app.buttons["lio.chat.trip.undo"]
+        XCTAssertTrue(undo.waitForExistence(timeout: 10), app.debugDescription)
+        trips.tap()
+        reply(hotel)
+        reply(museum)
+        XCTAssertFalse(app.staticTexts[park].exists)
+        chat.tap()
+        reveal(undo)
+        undo.tap()
+        trips.tap()
+        reply(park)
+        reply(hotel)
+        XCTAssertFalse(app.staticTexts[museum].exists)
+        let previous = app.buttons["lio.trip.history"]
+        XCTAssertTrue(previous.waitForExistence(timeout: 6))
+        previous.tap()
+        XCTAssertTrue(app.buttons["lio.trip.undo"].waitForExistence(timeout: 6))
+        chat.tap()
+
+        ask(chinese ? "我喜欢安静的酒店" : "I prefer quiet hotels")
+        let remember = app.buttons["lio.memory.remember"]
+        XCTAssertTrue(remember.waitForExistence(timeout: 10))
+        let remembered = app.staticTexts[chinese ? "已记住" : "Remembered"]
+        XCTAssertFalse(remembered.exists)
+        reveal(remember)
+        remember.tap()
+        XCTAssertTrue(remembered.waitForExistence(timeout: 10))
+        XCTAssertFalse(remember.exists)
+        ask(chinese ? "我适合住哪种酒店" : "What kind of hotel suits me?")
+        reply(chinese ? "你喜欢安静的酒店。" : "You like quiet hotels.")
+
+        let memory = app.tabBars.buttons[chinese ? "记忆" : "Memory"]
+        memory.tap()
+        let preference = chinese ? "你喜欢安静的酒店" : "You like quiet hotels"
+        let editedPreference = chinese ? "你喜欢安静且靠近地铁的酒店" : "You like quiet hotels near the metro"
+        let otherPreference = chinese ? "你偏好靠过道的座位" : "You prefer an aisle seat"
+        reply(otherPreference)
+        let saved = app.buttons[preference]
+        XCTAssertTrue(saved.waitForExistence(timeout: 8), app.debugDescription)
+        saved.tap()
+        let edit = app.buttons["lio.memory.edit"]
+        XCTAssertTrue(edit.waitForExistence(timeout: 8), app.debugDescription)
+        edit.tap()
+        let editor = app.descendants(matching: .any).matching(identifier: "lio.memory.editor").firstMatch
+        XCTAssertTrue(editor.waitForExistence(timeout: 8))
+        editor.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.2)).tap()
+        editor.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: preference.count) + editedPreference)
+        XCTAssertEqual(editor.value as? String, editedPreference)
+        let save = app.buttons["lio.memory.save"]
+        reveal(save)
+        save.tap()
+        reply(editedPreference)
+        reply(chinese ? "已保存。" : "Saved.")
+
+        let delete = app.buttons["lio.memory.delete"]
+        let confirm = app.buttons["lio.memory.delete.confirm"]
+        let deletionTitle = chinese ? "删除记忆" : "Delete memory"
+        let done = app.navigationBars[deletionTitle].buttons[chinese ? "完成" : "Done"]
+        reveal(delete)
+        delete.tap()
+        XCTAssertTrue(confirm.waitForExistence(timeout: 8), app.debugDescription)
+        let range = app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@",
+            chinese ? "聊天和已保存行程会保留" : "Your chats and saved trips stay")).firstMatch
+        XCTAssertTrue(range.exists)
+        done.tap()
+        reply(editedPreference)
+        reveal(delete)
+        delete.tap()
+        XCTAssertTrue(confirm.waitForExistence(timeout: 8))
+        reveal(confirm)
+        confirm.tap()
+        XCTAssertTrue(app.staticTexts[chinese ? "Lio 已停止使用这条记忆。" : "Lio has stopped using this memory."]
+            .waitForExistence(timeout: 25), app.debugDescription)
+        reply(chinese ? "线上清理已完成。" : "Online cleanup is complete.")
+        reply(chinese ? "本机已清理这条记忆的保存和编辑记录。"
+                      : "This device’s records of saving and editing this memory were cleared.")
+        done.tap()
+        reply(otherPreference)
+        XCTAssertFalse(app.buttons[editedPreference].exists)
+        chat.tap()
+        ask(chinese ? "再说说我适合住哪种酒店" : "Remind me what kind of hotel suits me")
+        reply(chinese ? "你喜欢什么样的酒店？" : "Tell me what kind of hotel you like.")
+    }
+
     func testTripEnglish() throws {
         try exerciseTrip("en", clarification: "For three days in Beijing", trips: "Trips", day: "Day 1", fixed: "Hotel check-in")
     }
@@ -73,6 +221,37 @@ import XCTest
         XCTAssertTrue(app.staticTexts[fixed].exists)
         app.buttons["lio.trip.map.1"].tap()
         XCTAssertTrue(app.navigationBars[day].waitForExistence(timeout: 8))
+    }
+
+    func testLongReplyFollowsUntilTheReaderScrollsAway() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-scroll-acceptance", "-cj.ui.language.v1", "en"]
+        app.launch()
+        defer { app.terminate() }
+
+        let sample = app.buttons["lio.example.0"]
+        XCTAssertTrue(sample.waitForExistence(timeout: 12))
+        sample.tap()
+        app.buttons["lio.send"].tap()
+
+        let source = app.buttons["lio.source"]
+        let advance = app.buttons["Next section"]
+        let answers = app.staticTexts.matching(identifier: "lio.answer")
+        XCTAssertTrue(source.waitForExistence(timeout: 8))
+        XCTAssertTrue(source.isHittable)
+        advance.tap()
+        let long = answers.containing(NSPredicate(format: "label CONTAINS %@", "Long section.")).firstMatch
+        XCTAssertTrue(long.waitForExistence(timeout: 8))
+        XCTAssertTrue(source.isHittable)
+        XCTAssertFalse(app.buttons["lio.send"].isEnabled)
+
+        app.scrollViews.firstMatch.swipeDown()
+        XCTAssertFalse(source.isHittable)
+        advance.tap()
+        let finished = answers.containing(NSPredicate(format: "label CONTAINS %@", "End of the reply.")).firstMatch
+        XCTAssertTrue(finished.waitForExistence(timeout: 8))
+        XCTAssertFalse(source.isHittable)
     }
 
     private func exercise(_ language: String, question: String, source title: String) throws {

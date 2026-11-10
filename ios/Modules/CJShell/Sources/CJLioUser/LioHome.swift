@@ -17,6 +17,7 @@ public struct LioHome<MenuContent: View>: View {
     @State private var draft = ""
     @State private var menuOpen = false
     @State private var source: LioSource?
+    @State private var followsAnswer = true
     @State private var tab = Tab.chat
     @State private var memoryBusy = false
     @State private var memoryPending = false
@@ -107,6 +108,8 @@ public struct LioHome<MenuContent: View>: View {
     }
 
     private var chat: some View {
+        let pending = conversation.pending
+        let latest = conversation.turns.last
         let earlierID = conversation.nextBefore.map { Data($0.utf8) }
         return ScrollViewReader { scroll in
             ScrollView {
@@ -133,12 +136,19 @@ public struct LioHome<MenuContent: View>: View {
                 .frame(maxWidth: .infinity)
             }
             .scrollDismissesKeyboard(.interactively)
-            .onChange(of: conversation.turns.last?.id) { _, _ in
+            .simultaneousGesture(DragGesture(minimumDistance: 12).onChanged { _ in
+                followsAnswer = false
+            })
+            .onChange(of: latest?.id) { _, _ in
+                guard followsAnswer else { return }
                 if reduceMotion { scroll.scrollTo("lio.bottom", anchor: .bottom) }
                 else { withAnimation(.easeOut(duration: 0.22)) { scroll.scrollTo("lio.bottom", anchor: .bottom) } }
             }
-            .onChange(of: conversation.turns.last?.status) { _, status in
-                if status == .finished { scroll.scrollTo("lio.bottom", anchor: .bottom) }
+            .onChange(of: latest?.answer) { _, _ in
+                if followsAnswer, let pending, latest?.id == pending.id { scroll.scrollTo("lio.bottom", anchor: .bottom) }
+            }
+            .onChange(of: latest?.status) { _, status in
+                if followsAnswer && status == .finished { scroll.scrollTo("lio.bottom", anchor: .bottom) }
             }
         }
         .background(Color(uiColor: .systemBackground))
@@ -169,6 +179,7 @@ public struct LioHome<MenuContent: View>: View {
     private func earlierMessages(_ scroll: ScrollViewProxy) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Button(language.text("Earlier messages", "更早的消息")) {
+                followsAnswer = false
                 Task {
                     if let id = await conversation.loadEarlier() {
                         scroll.scrollTo(id, anchor: .top)
@@ -259,6 +270,7 @@ public struct LioHome<MenuContent: View>: View {
                 .focused($typing)
                 .accessibilityIdentifier("lio.composer")
             Button {
+                followsAnswer = true
                 conversation.send(draft, language: language)
                 draft = ""
                 typing = false
@@ -352,6 +364,7 @@ public struct LioHome<MenuContent: View>: View {
                 Spacer(minLength: 32)
                 if turn.status == .failed(.notSent) {
                     Button {
+                        if turn.id == conversation.turns.last?.id { followsAnswer = true }
                         conversation.resend(turn.id)
                     } label: {
                         Image(systemName: "exclamationmark.circle.fill")
@@ -470,7 +483,10 @@ public struct LioHome<MenuContent: View>: View {
                 .foregroundStyle(Color.primary.opacity(0.78))
                 .accessibilityIdentifier("lio.failure")
             if failure == .unfinished {
-                Button(language.text("Ask again", "重新问")) { conversation.askAgain(turn.id) }
+                Button(language.text("Ask again", "重新问")) {
+                    followsAnswer = true
+                    conversation.askAgain(turn.id)
+                }
                     .buttonStyle(.bordered)
                     .controlSize(.large)
                     .disabled(conversation.pending != nil)
