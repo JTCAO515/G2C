@@ -40,7 +40,8 @@ private struct JourneyClients {
         let language = shell.language.lio
         let backend = JourneyMemoryBackend(language: language)
         let service = JourneyScenario(language: language, memoryBackend: backend)
-        let scope = try StorageScope(environment: "synthetic", account: UUID().uuidString)
+        let environment = UUID(), account = UUID()
+        let scope = try StorageScope(environment: environment.uuidString, account: account.uuidString)
         let recovery = MessageRecovery(storage: JourneyStorage())
         let lease = try recovery.activate(scope)
         conversation = LioService.timeline(send: { try await service.submit($0) }, read: { id, _ in
@@ -53,7 +54,8 @@ private struct JourneyClients {
         memory = LioMemoryActionsClient(recovery: recovery, scope: scope, lease: lease,
             submit: { try await service.submitMemory($0) },
             readReceipt: { try await service.readMemory($0) })
-        savedMemory = try journeyMemoryHost(shell: shell, backend: backend, recovery: recovery, scope: scope, lease: lease)
+        savedMemory = try journeyMemoryHost(shell: shell, backend: backend, recovery: recovery, scope: scope, lease: lease,
+                                            environment: environment, account: account, lioChoices: memory)
     }
 }
 
@@ -104,9 +106,12 @@ private actor JourneyScenario {
         } else if text.contains("prefer") || text.contains("喜欢") {
             row["answer"] = language.text("Quiet hotels sound good.", "安静的酒店很不错。")
             if await memoryBackend.rememberedPreference() == nil {
+                let preference = language.text("You like quiet hotels.", "你喜欢安静的酒店。")
+                let target = try json(["candidate_id": "quiet-hotel", "text": preference]).base64EncodedString()
+                    .replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_")
+                    .replacingOccurrences(of: "=", with: "")
                 row["memory"] = ["tags": [
-                    ["id": "quiet-hotel", "kind": "preference", "target": "quiet_hotel",
-                     "text": language.text("You like quiet hotels.", "你喜欢安静的酒店。")],
+                    ["id": "quiet-hotel", "kind": "preference", "target": target, "text": preference],
                     ["id": "technical-tag", "kind": "preference", "target": "technical_tag",
                      "text": language.text("Review the request ID", "核实这次操作")]
                 ]]

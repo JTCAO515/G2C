@@ -64,6 +64,16 @@ public enum LioMemoryWire {
 
         func matches(_ tag: Tag) -> Bool { target == tag.target }
 
+        func erasureItemID() throws -> String {
+            let base64 = target.replacingOccurrences(of: "-", with: "+").replacingOccurrences(of: "_", with: "/")
+            let padding = String(repeating: "=", count: (4 - base64.utf8.count % 4) % 4)
+            guard let bytes = Data(base64Encoded: base64 + padding) else { throw MessageHTTPFailure.invalidConfiguration }
+            try validateUnambiguousJSON(bytes)
+            let identity = try JSONDecoder().decode(TargetIdentity.self, from: bytes)
+            guard LioTimelineWire.validMessageID(identity.itemID) else { throw MessageHTTPFailure.invalidConfiguration }
+            return identity.itemID
+        }
+
         func outcome(_ data: Data) throws -> LioMemoryActionsClient.State {
             guard data.count <= 65_536 else { throw MessageHTTPFailure.invalidResponse }
             try validateUnambiguousJSON(data)
@@ -78,6 +88,11 @@ public enum LioMemoryWire {
             default: throw MessageHTTPFailure.invalidResponse
             }
         }
+    }
+
+    private struct TargetIdentity: Decodable {
+        let itemID: String
+        enum CodingKeys: String, CodingKey { case itemID = "candidate_id" }
     }
 
     private struct Request: Codable {

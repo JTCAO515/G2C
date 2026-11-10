@@ -17,6 +17,7 @@ public final class LioMemoryActionsClient {
     private let submit: @MainActor (LioMemoryWire.Action) async throws -> SubmissionResult
     private let readReceipt: @MainActor (LioMemoryWire.Action) async throws -> Data
     private var working = false
+    private var erasedItems = Set<Data>()
 
     public convenience init(timeline: LioTimelineHTTP, recovery: MessageRecovery, scope: StorageScope, lease: Lease) {
         self.init(recovery: recovery, scope: scope, lease: lease,
@@ -39,6 +40,7 @@ public final class LioMemoryActionsClient {
     }
 
     public func choose(_ choice: LioMemoryWire.Choice, tag: LioMemoryWire.Tag) async throws -> State {
+        if erasedItems.contains(Data(tag.id.utf8)) { return .changed }
         guard !working, try pending() == nil else { return .pending }
         if let prior = try observedChoice(for: tag) { return prior }
         working = true
@@ -62,6 +64,22 @@ public final class LioMemoryActionsClient {
             try recovery.observeSubmissionRejection(submission.operation, httpStatus: 409, responseUTF8: proof)
             return .changed
         }
+    }
+
+    public func clearErasedItem(_ itemID: String, environment: UUID, account: UUID) throws {
+        guard scope.environment.utf8.elementsEqual(environment.uuidString.utf8),
+              scope.account.utf8.elementsEqual(account.uuidString.utf8) else { throw RecoveryError.inactive }
+        let rows = try actions()
+        erasedItems.insert(Data(itemID.utf8))
+        guard !working else { throw RecoveryError.queryOnly }
+        working = true
+        defer { working = false }
+        let matching = try rows.compactMap { row -> String? in
+            let original = try record(row)
+            let action = try LioMemoryWire.Action(originalUTF8: original.originalUTF8, expectedActionID: row.messageID)
+            return try action.erasureItemID().utf8.elementsEqual(itemID.utf8) ? row.messageID : nil
+        }
+        try recovery.eraseActionOriginals(messageIDs: matching, lease: lease)
     }
 
     public func reconcileChoice() async throws -> State? {
