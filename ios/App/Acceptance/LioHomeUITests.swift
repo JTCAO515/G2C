@@ -608,8 +608,12 @@ import XCTest
         XCTAssertTrue(app.buttons["lio.send"].isEnabled)
         app.buttons["lio.send"].tap()
 
-        XCTAssertTrue(app.staticTexts["lio.question"].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.staticTexts["lio.answer"].waitForExistence(timeout: 8))
+        let sentQuestion = app.staticTexts["lio.question"]
+        let answer = app.staticTexts["lio.answer"]
+        XCTAssertTrue(sentQuestion.waitForExistence(timeout: 8))
+        XCTAssertTrue(answer.waitForExistence(timeout: 8))
+        XCTAssertLessThan(answer.frame.minX, sentQuestion.frame.minX)
+        XCTAssertGreaterThanOrEqual(answer.frame.minY, sentQuestion.frame.maxY)
         let source = app.buttons["lio.source"]
         XCTAssertTrue(source.waitForExistence(timeout: 8))
         XCTAssertTrue(source.isHittable)
