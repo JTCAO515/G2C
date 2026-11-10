@@ -49,7 +49,7 @@ def load_secret_environment(role,*,root=Path('/run/secrets')):
     for file,names in expected.items():
         optional=({TYPED_POLICY,TYPED_MESSAGE_SUBJECTS}|ASSEMBLY_CLEANUP if role=='api' and file=='api' else
                   {MEMORY_RUN_POLICY,MODEL_STREAM_SUBJECT,ASSEMBLY_RUN_CREDENTIAL_SUBJECTS,ASSEMBLY_MODEL_STREAM_SUBJECTS,
-                   ASSEMBLY_PROBE_MESSAGE}
+                   ASSEMBLY_PROBE_MESSAGE,'CJ_BETA_CONFIRMATION_B64'}
                   if role=='worker' and file=='worker' else set())
         allowed=names|optional
         if any(name in os.environ for name in allowed):raise ValueError('persistent_container_secret_environment_refused')
@@ -286,11 +286,21 @@ class Runtime:
             cleanup=assembly_cleanup(database)
         elif ASSEMBLY_CLEANUP & os.environ.keys():
             raise ValueError('cleanup_requires_explicit_assembly_pair')
+        lio_memory_factory=None
+        if self.demo_subjects:
+            from cj_api.lio_memory_routes import LioMemoryCards
+            from cj_api.local_lio_memory import lio_candidates
+
+            def lio_memory_factory(boundary):
+                candidates=lio_candidates(database,boundary,self.demo_subjects,self.typed_memory)
+                return LioMemoryCards(candidates.collection,candidates.current)
+
         app=create_local_app(conninfo_path=None,auth_dir=self.auth,database=database,run_context=self.context,
             confirmation_signer=signer,history_configuration=history,
             account_admission=True,needs_profile=needs_profile,message_subjects=message_subjects,
             existing_display_reads=True,cleanup_configuration=cleanup,
-            cleanup_subjects=planning or None,demo_dialogue_subjects=planning or None)
+            cleanup_subjects=planning or None,demo_dialogue_subjects=planning or None,
+            lio_dialogue_subjects=self.demo_subjects or None,lio_memory_factory=lio_memory_factory)
         if self.typed_memory is not None:
             from cj_memory.typed_api import register_typed_routes
             register_typed_routes(app,database=database,auth_dir=self.auth,configuration=self.typed_memory)

@@ -19,8 +19,9 @@ import run_worker
 from cj_api.composition import CompositionUnavailable
 from cj_api.local_app import ISSUER,scope_for
 from cj_api.real_services import RealServices,RealTools
+from cj_trip.confirmation import ConfirmationSigner
 from local_run_context import provision_budget_connection
-from .configuration import ASSEMBLY_PROBE_MESSAGE,MODEL_STREAM_SUBJECT,Runtime,authorization,load_secret_environment,local_database_target
+from .configuration import ASSEMBLY_PROBE_MESSAGE,MODEL_STREAM_SUBJECT,Runtime,authorization,decoded,load_secret_environment,local_database_target
 from . import checkpoint,local_postgres
 
 
@@ -93,6 +94,9 @@ def _run_worker(runtime):
         buffered_streaming_subjects=(runtime.assembly_model_stream_subjects|runtime.demo_subjects
                                      if runtime.demo_subjects else frozenset()),controlled_probe=binding)
     database=runtime.database()
+    lio_confirmation = None
+    if runtime.demo_subjects and 'CJ_BETA_CONFIRMATION_B64' in os.environ:
+        lio_confirmation = ConfirmationSigner(decoded('CJ_BETA_CONFIRMATION_B64', length=32))
     while True:
         component='deployment_gate';status='unavailable'
         try:
@@ -104,6 +108,7 @@ def _run_worker(runtime):
                     hk_beta_b_run_credential=True,
                     hk_assembly_scopes=frozenset(scope_for(ISSUER,subject) for subject in runtime.assembly_subjects),
                     hk_demo_scopes=frozenset(scope_for(ISSUER,subject) for subject in runtime.demo_subjects),
+                    lio_confirmation=lio_confirmation,
                     hk_assembly_run_credential_scopes=frozenset(
                         scope_for(ISSUER,subject) for subject in runtime.assembly_run_credential_subjects),
                     memory_configuration_for_scope=None if runtime.memory_runtime is None else runtime.memory_configuration_for_scope)

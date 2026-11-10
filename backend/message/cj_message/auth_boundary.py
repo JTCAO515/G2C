@@ -92,6 +92,21 @@ class HistoryReadContext:
         self._check()
         return result
 
+    def lio_timeline(self, conversation_id, before):
+        from .lio_timeline import read
+        self._check()
+        result = read(self._service, conversation_id, before)
+        self._check()
+        return result
+
+    def query_lio_message(self, message_id):
+        from .demo_dialogue import message_id as validated_message_id
+        from .lio_timeline import original
+        self._check()
+        result = original(self._service, validated_message_id(message_id))
+        self._check()
+        return result
+
     def query_edit_message(self,message_id,*,require_active=True):
         self._check()
         if type(message_id) is not str or not message_id.strip():raise InvalidInput('message ID required')
@@ -317,6 +332,10 @@ class Boundary:
     def receive_dialogue(self, token, raw):
         from .demo_dialogue import receive
         return receive(self._service(token), raw)
+
+    def receive_lio(self, token, raw, *, prepare_scope):
+        from .demo_dialogue import receive_lio
+        return receive_lio(self._service(token), raw, prepare_scope=prepare_scope)
 
     def query_dialogue(self, token, message_id):
         from .demo_dialogue import query

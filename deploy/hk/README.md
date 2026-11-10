@@ -236,6 +236,11 @@ API 只读挂载 Unix socket 目录。公网 `POST /v1/demo-invite-sessions` 的
 迁移前暂停 API/worker 并核对原队列及签名 release。原 operator 用新镜像运行
 `python -B -m deploy.hk.demo_schema`，一次追加 0049 并保留原 fence，建立新的本地签名备份基准。
 已在 0049 的 Demo v2 主机只追加 0050，使用 `python -B -m deploy.hk.demo_schema --target 50`。
+Lio 的本机追加迁移使用 `python -B -m deploy.hk.demo_schema --target 51`，沿用相同的原队列、
+签名基准和删除 fence 检查。香港 worker 在获准接入现有 Trip 签名凭据后启用 Lio 规划保存。
+该配置只从 worker 的 0600 秘密文件读取 `CJ_BETA_CONFIRMATION_B64`。缺少配置时，现役 Demo
+和 Lio 纯问答及时间线读取继续提供服务，规划保存保持关闭。
+发布前在主机内核对两份受限秘密文件中的 Trip 签名凭据一致，只记录核对结果。
 日备在新签名基准核实后续接。发现原升级标记时先只读核同，不能重复执行。
 用已挂载原 operator 和 worker 0600 文件的 operator 容器运行
 `python -B -m deploy.hk.demo_accounts bootstrap <subject> --digest <sha256> --expires-at <RFC3339>`，

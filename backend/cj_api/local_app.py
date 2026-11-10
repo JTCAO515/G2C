@@ -407,7 +407,8 @@ def trip_configuration(value):
 def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, history_configuration=None,
                      memory_configuration=None, run_context=None, travel_context=False, needs_profile=None, trip_context=False,edit_configuration=None,
                      cleanup_configuration=None,formal_memory_configuration=None,database=None,account_admission=False,message_subjects=None,
-                     existing_display_reads=False,cleanup_subjects=None,demo_dialogue_subjects=None):
+                     existing_display_reads=False,cleanup_subjects=None,demo_dialogue_subjects=None,
+                     lio_dialogue_subjects=None,lio_memory_factory=None):
     if os.environ.get('CJ_ENV') != 'local':
         raise CompositionUnavailable('CJ_ENV must explicitly be local')
     auth_dir = Path(auth_dir)
@@ -613,6 +614,8 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
                                                  max_private_response_bytes=1_000_000),
         resolve_trip=trip, trip_confirmation_validator=local_confirmation if confirmation_signer is None else None,
         trip_confirmation_signer=confirmation_signer)
+    if lio_dialogue_subjects and (not demo_dialogue_subjects or not lio_dialogue_subjects <= demo_dialogue_subjects):
+        raise CompositionUnavailable('Lio subjects must belong to the admitted Demo scope')
     if demo_dialogue_subjects:
         if not account_admission or not database.travel_context or database.run_context is None:
             raise CompositionUnavailable('Demo dialogue requires original Travel and account admission')
@@ -620,21 +623,39 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
         from cj_auth.jwt_adapter import PyJWTVerifier
         from cj_message.auth_boundary import Boundary
         from .demo_dialogue_routes import register_demo_dialogue_routes
+        from .lio_dialogue_routes import register_lio_dialogue_routes
+        from .lio_trip_cards import LioTripCards
         from .local_account_admission_v2 import retired_for, retired_in_transaction
 
-        invited = InvitedSubjects(auth_dir/'invited.json', demo_dialogue_subjects)
         verifier = PyJWTVerifier(config, keys)
-        checker = AdmissionChecker(verifier, AccountRevocationAccess(invited, retired_for(database)))
 
         def dialogue_repository(principal):
             return database.message_repository(scope_for(principal.issuer, principal.subject))
 
-        def dialogue_checker(tx, scope):
-            return AdmissionChecker(verifier, AccountRevocationAccess(invited, retired_in_transaction(tx.cur, scope)))
+        def dialogue_binding(subjects):
+            invited = InvitedSubjects(auth_dir/'invited.json', subjects)
+            checker = AdmissionChecker(verifier, AccountRevocationAccess(invited, retired_for(database)))
 
-        dialogue_boundary = Boundary(checker, dialogue_repository, lambda: str(uuid.uuid4()),
-                                     checker_in_transaction=dialogue_checker)
+            def current_checker(tx, scope):
+                return AdmissionChecker(verifier, AccountRevocationAccess(invited, retired_in_transaction(tx.cur, scope)))
+
+            return Boundary(checker, dialogue_repository, lambda: str(uuid.uuid4()),
+                            checker_in_transaction=current_checker), checker
+
+        dialogue_boundary, _ = dialogue_binding(demo_dialogue_subjects)
         register_demo_dialogue_routes(app, dialogue_boundary)
+        if lio_dialogue_subjects:
+            lio_boundary, lio_checker = dialogue_binding(lio_dialogue_subjects)
+            memory_cards = lio_memory_factory(lio_boundary) if lio_memory_factory is not None else None
+            register_lio_dialogue_routes(app, lio_boundary, database.run_repository,
+                                         LioTripCards(database, lio_checker), prepare_scope=database._provision_scope,
+                                         memory_cards=memory_cards)
+            if memory_cards is not None:
+                from .lio_memory_routes import register_lio_memory_routes
+                register_lio_memory_routes(app, memory_cards)
+            if confirmation_signer is not None:
+                from .lio_trip_routes import LioTripBoundary, register_lio_trip_routes
+                register_lio_trip_routes(app, LioTripBoundary(database, lio_checker, confirmation_signer))
     if database.edit_results:
         from .run_display_composition import build_run_display_reader
         from .scoped_result_routes import register_scoped_result_routes
