@@ -39,7 +39,7 @@ private struct LioScrollFixture: View {
                 output.onTermination = { _ in task.cancel() }
             }
         }, isDemo: true) {
-            LioLanguagePicker(shell: shell)
+            LioMenuSettings(shell: shell)
         }
         .overlay(alignment: .topTrailing) {
             Button("Next section") { sections.continuation.yield(()) }
