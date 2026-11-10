@@ -14,9 +14,9 @@ public struct LioHome<MenuContent: View>: View {
     private let savedMemory: AnyView?
     private let recordedMap: (@MainActor (StructuredTripDocument) -> AnyView)?
     @State private var conversation: LioConversation
-    @State private var tripPlan: LioTripPlan?
+    @State private var defaultTripPlan: LioTripPlan?
+    @State private var selectedChat: LioChatSession?
     @State private var draft = ""
-    @State private var chatID: Data?
     @State private var chatDrafts: [Data: String] = [:]
     @State private var menuOpen = false
     @State private var source: LioSource?
@@ -35,6 +35,7 @@ public struct LioHome<MenuContent: View>: View {
     private struct TripObservation: Equatable {
         let active: Bool
         let card: LioTripCard?
+        let plan: ObjectIdentifier?
     }
     private enum Tab { case chat, trips, memory }
     @FocusState private var typing: Bool
@@ -56,8 +57,14 @@ public struct LioHome<MenuContent: View>: View {
         self.savedMemory = savedMemory
         self.recordedMap = recordedMap
         _conversation = State(initialValue: LioConversation(service: service))
-        _chatID = State(initialValue: chatLibrary?.currentID)
-        _tripPlan = State(initialValue: tripHistory.map { LioTripPlan(client: $0) })
+        _defaultTripPlan = State(initialValue: tripHistory.map { LioTripPlan(client: $0) })
+    }
+
+    private var chatID: Data? { selectedChat?.id ?? chatLibrary?.currentID }
+
+    private var tripPlan: LioTripPlan? {
+        if chatID == chatLibrary?.currentID { return defaultTripPlan }
+        return selectedChat?.trips?.plan
     }
 
     private var latestTripCard: LioTripCard? {
@@ -71,6 +78,7 @@ public struct LioHome<MenuContent: View>: View {
         let pending = conversation.pending
         let canObserve = scenePhase == .active && pending == nil
         let tripCard = latestTripCard
+        let tripPlan = tripPlan
         TabView(selection: $tab) {
             chat
                 .tabItem { Label(language.text("Chat", "聊天"), systemImage: "bubble.left") }
@@ -91,7 +99,7 @@ public struct LioHome<MenuContent: View>: View {
         .task(id: Observation(active: canObserve, request: refreshRequest)) {
             if canObserve { await currentConversation.refreshTimeline() }
         }
-        .task(id: TripObservation(active: canObserve, card: tripCard)) {
+        .task(id: TripObservation(active: canObserve, card: tripCard, plan: tripPlan.map(ObjectIdentifier.init))) {
             if canObserve { await tripPlan?.reload(for: tripCard) }
         }
         .task(id: tripPlan?.pending == true && scenePhase == .active) {
@@ -211,7 +219,7 @@ public struct LioHome<MenuContent: View>: View {
         guard canSwitchChat else { return }
         if chat.id != chatID {
             if let chatID { chatDrafts[chatID] = draft }
-            chatID = chat.id
+            selectedChat = chat
             conversation = LioConversation(service: chat.service)
             draft = chatDrafts.removeValue(forKey: chat.id) ?? ""
             source = nil
