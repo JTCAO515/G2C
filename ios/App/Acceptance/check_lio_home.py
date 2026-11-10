@@ -15,6 +15,7 @@ def main():
     parser.add_argument("--simulator", required=True)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--build-dir", required=True, type=Path)
+    parser.add_argument("--case", action="append", help="Run only the named test method (repeatable)")
     args = parser.parse_args()
     output, build = args.output.resolve(), args.build_dir.resolve()
     if output.is_relative_to(ROOT) or build.is_relative_to(ROOT):
@@ -36,33 +37,38 @@ def main():
     preview = "                LioHome(language: shell.language.lio, service: .demo, isDemo: true) { LioLanguagePicker(shell: shell) }"
     if app.count(preview) != 1:
         raise ValueError("Expected a single sample preview")
-    scroll_fixture = (
+    fixture_routes = (
         '                if ProcessInfo.processInfo.arguments.contains("--lio-scroll-acceptance") {\n'
         '                    LioScrollFixture(shell: shell)\n'
+        '                } else if ProcessInfo.processInfo.arguments.contains("--lio-timeline-acceptance") {\n'
+        '                    LioTimelineFixture(shell: shell)\n'
         '                } else {\n'
         f'    {preview}\n'
         '                }'
     )
-    generated_source.write_text(app.replace(preview, scroll_fixture)
+    fixtures = ("LioScrollFixture.swift", "LioTimelineFixture.swift")
+    generated_source.write_text(app.replace(preview, fixture_routes)
                                 .replace("import CJLioUser\n", "@testable import CJLioUser\n")
-                                + "\n" + (HERE / "LioScrollFixture.swift").read_text())
+                                + "\n" + "\n".join((HERE / name).read_text() for name in fixtures))
     settings.write_text(settings.read_text().replace("space.go2china.foundation.local", "space.go2china.lio.acceptance")
                         .replace(json.dumps(str(app_source)), json.dumps(str(generated_source))))
     result = output / "lio-home.xcresult"
     env = {key: value for key, value in os.environ.items() if not key.startswith(("G2C_DEV_", "SIMCTL_CHILD_"))}
+    suite = "G2CControl/LioHomeUITests"
+    selectors = [f"-only-testing:{suite}/{case}" for case in args.case] if args.case else [f"-only-testing:{suite}"]
     command = [
         "xcodebuild", "-project", str(project), "-scheme", "G2CControl",
         "-destination", f"platform=iOS Simulator,id={args.simulator}",
         "-derivedDataPath", str(build), "-resultBundlePath", str(result),
         "-onlyUsePackageVersionsFromResolvedFile", "-parallel-testing-enabled", "NO",
         "ARCHS=arm64", "ONLY_ACTIVE_ARCH=YES", "CODE_SIGNING_ALLOWED=YES", "CODE_SIGN_IDENTITY=-",
-        "-only-testing:G2CControl/LioHomeUITests", "test",
+        *selectors, "test",
     ]
     with (output / "lio-home.log").open("w") as log:
         subprocess.run(command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=600)
     summary = subprocess.check_output(["xcrun", "xcresulttool", "get", "test-results", "summary", "--path", str(result)])
     (output / "summary.json").write_bytes(summary)
-    assert json.loads(summary)["passedTests"] == 4, summary
+    assert json.loads(summary)["passedTests"] == (len(args.case) if args.case else 5), summary
 
 
 if __name__ == "__main__":

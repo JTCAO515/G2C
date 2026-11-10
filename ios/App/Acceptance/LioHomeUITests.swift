@@ -4,6 +4,59 @@ import XCTest
     func testEnglish() throws { try exercise("en", question: "How do I take the metro in Shanghai?", source: "Source") }
     func testChinese() throws { try exercise("zh-Hans", question: "在上海怎么坐地铁？", source: "来源") }
 
+    func testTimelinePrefixAndForegroundReadKeepTheSameQuestion() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-timeline-acceptance", "-cj.ui.language.v1", "zh-Hans"]
+        app.launch()
+        defer { app.terminate() }
+
+        let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+        let answer = app.staticTexts["lio.answer"]
+        let step = app.buttons["Next timeline state"]
+        let readCount = app.staticTexts["lio.fixture.read-count"]
+        XCTAssertTrue(composer.waitForExistence(timeout: 12))
+        composer.tap()
+        composer.typeText("北京明天天气")
+        app.buttons["lio.send"].tap()
+        XCTAssertTrue(app.staticTexts["lio.question"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label BEGINSWITH %@", "思考中")).firstMatch.exists)
+
+        step.tap()
+        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label BEGINSWITH %@", "正在查天气"))
+            .firstMatch.waitForExistence(timeout: 8))
+        XCTAssertFalse(answer.exists)
+
+        step.tap()
+        XCTAssertTrue(answer.waitForExistence(timeout: 8))
+        XCTAssertEqual(answer.label, "北京明天")
+        XCTAssertFalse(app.buttons["lio.source"].exists)
+
+        step.tap()
+        let source = app.buttons["lio.source"]
+        XCTAssertTrue(source.waitForExistence(timeout: 8))
+        XCTAssertEqual(answer.label, "北京明天有小雨。")
+        source.tap()
+        XCTAssertTrue(app.navigationBars["来源"].waitForExistence(timeout: 8))
+        let openSource = app.descendants(matching: .any).matching(identifier: "打开来源").firstMatch
+        XCTAssertTrue(openSource.waitForExistence(timeout: 8), app.debugDescription)
+        XCTAssertTrue(openSource.isHittable, app.debugDescription)
+        XCTAssertFalse(app.staticTexts["这条来源没有链接。"].exists)
+        app.navigationBars["来源"].buttons["完成"].tap()
+
+        let before = try XCTUnwrap(Int(readCount.label))
+        XCUIDevice.shared.press(.home)
+        app.activate()
+        let reread = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "label != %@", String(before)), object: readCount
+        )
+        XCTAssertEqual(XCTWaiter.wait(for: [reread], timeout: 8), .completed)
+        XCTAssertGreaterThan(try XCTUnwrap(Int(readCount.label)), before)
+        XCTAssertEqual(app.staticTexts.matching(identifier: "lio.question").count, 1)
+        XCTAssertEqual(answer.label, "北京明天有小雨。")
+        XCTAssertEqual(app.staticTexts["lio.fixture.send-count"].label, "1")
+    }
+
     func testUnsafeReplyIsWithheldWithoutHidingTheAttribution() {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
