@@ -3,7 +3,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from cj_draft.lio_plan import LIO_REPLAN_DELTA, LIO_REPLAN_SOURCE, LioPlanPublisher
+from cj_draft.lio_plan import LIO_REPLAN_DELTA, LioPlanPublisher
 from cj_draft.needs_context import ContextPublisher
 from cj_needs.domain import Command, Revision, Snapshot
 from cj_trip.domain import Trip, packed
@@ -113,13 +113,16 @@ def test_lio_replan_retains_saved_fixed_state_of_an_adopted_suggestion():
 
     raw, _, _ = publisher.build_plan(draft([saved]), capture)
     assert json.loads(raw)['items'] == [saved]
-    with pytest.raises(SourceRejected, match='changed adopted fixed intent'):
-        publisher.build_plan(draft([dict(saved, fixed=unknown)]), capture)
-    with pytest.raises(SourceRejected, match='removed adopted current Trip item'):
-        publisher.build_plan(draft([dict(saved, id='replacement')]), capture)
+    for invalid in (dict(saved, fixed=unknown), dict(saved, id='replacement'),
+                    dict(saved, text='Model substituted an adopted stop')):
+        with pytest.raises(SourceRejected, match='legacy Lio replan changed retained Trip items'):
+            publisher.build_plan(draft([invalid]), capture)
 
     source = json.loads(publisher.model_messages('original', 'replan', capture, [])[-1]['content'])
-    assert source['version'] == LIO_REPLAN_SOURCE and source['response_version'] == LIO_REPLAN_DELTA
+    legacy = ContextPublisher.__new__(ContextPublisher)
+    legacy.source = publisher.source
+    assert publisher.model_messages('original', 'replan', capture, []) == legacy.model_messages('original', 'replan', capture, [])
+    assert source['version'] == 'TRIP-source-input.2'
     assert source['current_trip']['content']['items'] == [saved]
     raw, _, _ = publisher.build_plan(draft([], version=LIO_REPLAN_DELTA), capture)
     assert json.loads(raw)['items'] == [saved]

@@ -21,15 +21,12 @@ class ContextSource(NeedsSourceAuthority):
 
 
 class ContextPublisher(NeedsDraftPublisher):
-    def _model_source(self,binding,capture):
+    def model_messages(self,binding,text,capture,messages):
         before,_=capture.records();context=self.source.contexts.get(binding)
-        return dict(version='TRIP-source-input.2',
+        return list(messages)+[dict(role='system',content=json.dumps(dict(version='TRIP-source-input.2',
             needs_id=before.needs_id,revision=before.version,fields=before.fields,
             current_trip=None if context is None else dict(trip_id=context.trip.trip_id,version=context.trip.version,
-                content=json.loads(context.trip.content),proposed_fields=json.loads(context.proposed)))
-    def model_messages(self,binding,text,capture,messages):
-        return list(messages)+[dict(role='system',content=json.dumps(self._model_source(binding,capture),
-            ensure_ascii=False,separators=(',',':')))]
+                content=json.loads(context.trip.content),proposed_fields=json.loads(context.proposed))),ensure_ascii=False,separators=(',',':')))]
     def _model_plan(self,raw,context):
         return parse_model(raw)
     def build_plan(self,raw,capture):
