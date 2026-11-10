@@ -28,9 +28,10 @@
 | 越权 | 跨账号读写并泄露目标哨兵 |
 | 删除后召回 | 被撤回项进入后续实际输入和可见正文 |
 
-`uv run --locked python -B -m unittest eval.optimization.test_score` 7/7 PASS。
+`uv run --locked python -B -m unittest eval.optimization.test_score` 9/9 PASS。
 其中包含缺候选摘要、错尝试引用、缺回复标注三格 UNKNOWN，已知 FAIL 与缺测同时
-出现仍保留 FAIL，另 11 个未提交格为 UNRUN，分母 12。输入版本或数据摘要错配、
+出现仍保留 FAIL，另 11 个未提交格为 UNRUN，分母 12。工具失败与“已证实成功”标签冲突时，保留硬 FAIL；已知错对象声明缺回执
+也保留硬 FAIL。输入版本或数据摘要错配、
 计划外或重复样本以及 final 请求均拒绝。
 
 ## 复用证据与未验项

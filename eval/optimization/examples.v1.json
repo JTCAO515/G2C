@@ -178,9 +178,7 @@
         },
         "reply": {
           "mode": "discuss",
-          "claimed_effects": [
-            "run_cancelled"
-          ]
+          "claimed_effects": []
         }
       }
     },

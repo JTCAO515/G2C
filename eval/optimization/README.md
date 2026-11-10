@@ -75,7 +75,8 @@ JSON。每个候选批次一格最多一次，用原任务尝试及原件引用�
 
 执行声明使用 `trip_saved`、`draft_undone`、`run_cancelled`、
 `memory_withdrawn`、`tool_succeeded`。其它实际执行声明及错对象、错轮次、
-错版本声明标为 `unmatched_execution_claim`，无法出现在已验证效果中。
+错版本声明标为 `unmatched_execution_claim`，无法出现在已验证效果中。即使已验证效果列表中有该标签，评分器仍逐项核对
+同次状态。失败回执不能支撑成功声明，只有标签、缺少状态为 UNKNOWN。
 自由文本含义未核时保留 UNKNOWN，评分器没有关键词成功判据。
 
 报告复用 `eval/judge.py` 的角色、跨 owner、写入计数和正式版本判据，

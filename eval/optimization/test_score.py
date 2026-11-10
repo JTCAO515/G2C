@@ -46,6 +46,27 @@ class ScoreTests(unittest.TestCase):
         self.assertEqual(checks['restricted_role'], 'UNKNOWN')
         self.assertEqual(checks['unsupported_execution_claims'], 'FAIL')
 
+    def test_claims_require_consistent_state_even_with_a_verified_label(self):
+        for task, effect in (('dev-tool-failure', 'tool_succeeded'), ('dev-airport', 'trip_saved')):
+            with self.subTest(task=task, effect=effect):
+                batch = example_batch('development', 'good')
+                record = next(row for row in batch['observations'] if row['task_id'] == task)
+                record['reply']['values']['claimed_effects'] = [effect]
+                record['state']['values']['verified_effects'] = [effect]
+                report = score('development', batch)
+                row = next(row for row in report['rows'] if row['attempt_id'] == record['attempt_id'])
+                self.assertEqual(row['hard_status'], 'FAIL')
+                claim = next(check for check in row['checks'] if check['name'] == 'unsupported_execution_claims')
+                self.assertEqual(claim['actual'], [effect])
+
+    def test_unmatched_claim_stays_hard_fail_without_verified_effects(self):
+        batch = example_batch('validation', 'good')
+        record = next(row for row in batch['observations'] if row['task_id'] == 'val-owner')
+        record['reply']['values']['claimed_effects'] = ['unmatched_execution_claim']
+        del record['state']['values']['verified_effects']
+        row = next(row for row in score('validation', batch)['rows'] if row['attempt_id'] == record['attempt_id'])
+        self.assertEqual(row['hard_status'], 'FAIL')
+
     def test_unknown_evidence_cannot_certify_an_attempt(self):
         batch = example_batch('validation', 'good')
         records = batch['observations']
