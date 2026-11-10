@@ -1,4 +1,5 @@
 """Code-owned local tool registrations. No caller authority or real provider."""
+from cj_strict_json import compact
 from dataclasses import dataclass
 import base64
 import json
@@ -32,9 +33,8 @@ class LocalTools:
         self.place=LocalPlaceProducer(Config(ORIGIN,4096,16384,5,60))
         def place_input(argument):
             query=decode_query(argument.original_query)
-            original=json.dumps(dict(version='PLACE-tool-input.1',request_ref=argument.request_ref,
-                original_query_base64=base64.b64encode(argument.original_query).decode('ascii')),
-                separators=(',',':')).encode('utf8')
+            original=compact(dict(version='PLACE-tool-input.1',request_ref=argument.request_ref,
+                original_query_base64=base64.b64encode(argument.original_query).decode('ascii')), ensure_ascii=True, allow_nan=True)
             def materialize():
                 invoke=self.place.prepare_call(query,argument.request_ref)
                 def stream():

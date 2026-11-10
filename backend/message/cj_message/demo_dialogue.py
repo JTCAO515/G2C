@@ -1,4 +1,5 @@
 """Zero-setup admission using the original MESSAGE outbox and Travel authority."""
+from cj_strict_json import compact
 from dataclasses import dataclass
 import hashlib
 import json
@@ -66,7 +67,7 @@ def _identity(scope, purpose):
 
 
 def _json(value):
-    return json.dumps(value, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
+    return compact(value, allow_nan=True)
 
 
 def _original_digest(tx, mid):

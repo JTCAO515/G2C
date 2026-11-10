@@ -1,4 +1,5 @@
 """Code-owned registrations over the single accounting engine."""
+from cj_strict_json import compact
 from dataclasses import dataclass
 import json
 from types import MappingProxyType
@@ -34,8 +35,7 @@ def _model_input(argument):
     if not isinstance(provider,FakeProvider):
         raise BudgetUnknown('registered model adapter permits only FakeProvider')
     try:
-        raw=json.dumps({'messages':messages,'system':system},ensure_ascii=False,
-                       separators=(',',':'),allow_nan=False).encode('utf-8')
+        raw=compact({'messages':messages,'system':system})
     except UnicodeError:
         raise BudgetUnknown('registered model input encoding unavailable') from None
     inputs=json.loads(raw)

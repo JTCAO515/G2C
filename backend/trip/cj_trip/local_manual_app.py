@@ -1,4 +1,5 @@
 """Explicit local structured/manual host; original AUTH, Proposal and act only."""
+from cj_strict_json import compact
 import json
 import os
 from pathlib import Path
@@ -96,7 +97,7 @@ def register_local_manual_routes(app,*,database,auth_dir,confirmation_signer,max
             else:
                 document=json.loads(value.content);validate_document(document)
                 body['trip']=dict(trip_id=value.trip_id,version=value.version,content=document)
-        encoded=json.dumps(body,ensure_ascii=False,separators=(',',':'),allow_nan=False).encode()
+        encoded=compact(body)
         if len(encoded)>max_response_bytes:raise ValueError('private response bound exceeded')
         return encoded
 

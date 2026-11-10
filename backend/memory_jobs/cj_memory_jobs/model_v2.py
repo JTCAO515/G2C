@@ -1,4 +1,5 @@
 """Versioned model data: current exclusions precede dispatch and publication."""
+from cj_strict_json import compact
 from hashlib import sha256
 import json
 
@@ -87,10 +88,9 @@ def prepared(tx,snapshot,policy,mode,*,max_payload_bytes):
         end_ref=None if mode=='incremental' else snapshot.end.end_id,
         omitted_count=len(snapshot.messages)-len(messages),
         messages=[dict(ref=reference(tx.scope,m),text=m.text) for m in messages])
-    raw=json.dumps(value,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode('utf-8')
+    raw=compact(value, sort_keys=True, allow_nan=True)
     if len(raw)>max_payload_bytes:raise Unavailable('filtered model source exceeds explicit payload bound')
-    result=json.dumps(dict(system=SYSTEM,messages=[dict(role='user',content=raw.decode('utf-8'))]),
-                      ensure_ascii=False,sort_keys=True,separators=(',',':')).encode('utf-8')
+    result=compact(dict(system=SYSTEM,messages=[dict(role='user',content=raw.decode('utf-8'))]), sort_keys=True, allow_nan=True)
     return result,len(messages)
 
 

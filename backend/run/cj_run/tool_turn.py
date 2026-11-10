@@ -1,4 +1,5 @@
 """MODEL-TOOL-TURN@1: untrusted model data, never owner/budget authority."""
+from cj_strict_json import compact
 from dataclasses import dataclass
 import json
 from cj_strict_json import reject_duplicates
@@ -40,6 +41,6 @@ def parse_turn(raw:bytes,allowed_tools):
                 or type(call['name']) is not str or call['name'] not in allowed_tools
                 or type(call['arguments']) is not dict):
             raise ValueError('unregistered_tool')
-        original=json.dumps(call['arguments'],ensure_ascii=False,separators=(',',':'),allow_nan=False).encode('utf8')
+        original=compact(call['arguments'])
         calls.append(ToolCall(call['name'],original))
     return ToolTurn(None,None,tuple(calls))

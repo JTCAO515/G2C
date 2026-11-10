@@ -1,6 +1,6 @@
 """Task-private PostgreSQL adapter; only a trusted Boundary may expose its results."""
+from cj_strict_json import compact
 from contextlib import contextmanager
-import json
 import logging
 from .domain import (Command, CommitUnknown, Conflict, Denied, Receipt, Revision,
                      Snapshot, identifier, validate_fields)
@@ -88,7 +88,7 @@ class Repository:
             fields = current.fields if current else {}
             fields.update(obj['changes'])
             validate_fields(fields, complete=True)
-            content = json.dumps(fields, ensure_ascii=False, separators=(',', ':'), allow_nan=False).encode('utf-8')
+            content = compact(fields)
             # Bound cumulative growth as well as each command.
             if len(content) > 131072: raise ValueError('needs record too large')
             version += 1

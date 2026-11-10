@@ -1,4 +1,5 @@
 """Executable synthetic consumer of the actual public NEEDS object contract."""
+from cj_strict_json import compact
 from dataclasses import asdict
 import json
 from pathlib import Path
@@ -17,7 +18,7 @@ def synthetic_history(patches):
         command = Command(raw)
         fields.update(command.data['changes'])
         validate_fields(fields, complete=True)
-        content = json.dumps(fields, ensure_ascii=False, separators=(',', ':')).encode()
+        content = compact(fields, allow_nan=True)
         revisions.append(Revision('synthetic-demo', version, command.action_id, raw, content))
     return Snapshot('synthetic-demo', len(revisions), content), tuple(revisions)
 

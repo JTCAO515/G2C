@@ -1,4 +1,5 @@
 """Appended source-bound manual.2 HTTP host, original operation/Signer/act only."""
+from cj_strict_json import compact
 import json,os
 from pathlib import Path
 from fastapi import Request
@@ -56,7 +57,7 @@ def create_local_place_manual_app(*,conninfo_path,auth_dir,run_context,confirmat
                         if value['proposal'] is not None:
                             detail=value['proposal'];p=detail.proposal
                             value=dict(value,proposal=dict(proposal_id=p.proposal_id,trip_id=p.trip_id,expected_version=p.expected_version,candidate_hash=detail.candidate_hash,status=detail.status,expires_at=p.expires_at,content=json.loads(p.content)))
-                        raw=json.dumps(dict(version='TRIP-needs-discovery.2',request_id=request.state.request_id,discovery=value),ensure_ascii=False,separators=(',',':'),allow_nan=False).encode()
+                        raw=compact(dict(version='TRIP-needs-discovery.2',request_id=request.state.request_id,discovery=value))
                         if len(raw)>max_response_bytes:raise Denied('bounded private response required')
                         return raw
                     return ctx.discover_place_needs(value,project_discovery)
@@ -73,7 +74,7 @@ def create_local_place_manual_app(*,conninfo_path,auth_dir,run_context,confirmat
                         p=prepared.detail.proposal
                         result['preparation']=dict(proposal_id=p.proposal_id,trip_id=p.trip_id,expected_version=p.expected_version,candidate_hash=prepared.detail.candidate_hash,
                             status=prepared.detail.status,content=json.loads(p.content),diff=json.loads(prepared.diff))
-                raw=json.dumps(result,ensure_ascii=False,separators=(',',':'),allow_nan=False).encode()
+                raw=compact(result)
                 if len(raw)>max_response_bytes:raise Denied('bounded private response required')
                 return raw
             return boundary.with_operation(token,project)

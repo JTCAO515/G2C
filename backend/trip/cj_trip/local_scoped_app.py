@@ -1,4 +1,5 @@
 """Local scoped diff/explicit action API; canonical AUTH and original act only."""
+from cj_strict_json import compact
 import json,os
 from fastapi import Request
 from fastapi.responses import Response
@@ -35,7 +36,7 @@ def create_local_scoped_app(*,database,configuration,max_response_bytes=4_000_00
             candidate_hash=detail.candidate_hash,status=detail.status,expires_at=p.expires_at,content=json.loads(p.content),
             scope=json.loads(rows[0]),diff=json.loads(rows[1]),feasibility=json.loads(rows[2]))
     def encode(result):
-        raw=json.dumps(result,ensure_ascii=False,separators=(',',':'),allow_nan=False).encode()
+        raw=compact(result)
         if len(raw)>max_response_bytes:raise Denied('bounded private response required')
         return raw
     async def invoke(request,kind,arg):
