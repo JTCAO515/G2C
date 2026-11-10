@@ -90,7 +90,7 @@ def verify_upgrade(root, blueprint, target):
 
 
 def lio_fixture_model(*, empty_first_day=False):
-    from cj_api.local_lio_planning import SYSTEM
+    from cj_api.local_lio_planning import COMPACT_DRAFT, SYSTEM
     from cj_draft.needs_publisher import SYSTEM as PLAN_SYSTEM
 
     prompts = []
@@ -115,6 +115,7 @@ def lio_fixture_model(*, empty_first_day=False):
                     ensure_ascii=False)
                 return
             if system.startswith(PLAN_SYSTEM):
+                assert system.endswith(COMPACT_DRAFT)
                 source = json.loads(messages[-1]['content'])
                 before = source['current_trip']
                 title = 'Beijing walk' if before is None else 'Beijing walks'

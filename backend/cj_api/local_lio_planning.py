@@ -26,6 +26,12 @@ ASK_MORE = 'lio_planning_needs_details'
 MAX_CLARIFICATIONS = 4
 BEIJING = re.compile(r'北京|\bBeijing\b', re.I)
 _LOGGER = logging.getLogger(__name__)
+COMPACT_DRAFT = (
+    ' For this Lio draft, retain every required fixed and existing item. '
+    'Cover each requested date with its retained items or one concise new afternoon stop '
+    'when the date has no retained item. Add no other stops. Use a short title and short new stop labels. '
+    'Return only the compact JSON object.'
+)
 SYSTEM = (
     'Extract only information provided by the traveler for this trip. Return JSON with exactly '
     'city (an exact substring of the user text or null), continues_trip (boolean), and extraction. '
@@ -127,6 +133,7 @@ class LioPlanSave:
 
         publisher = LioPlanPublisher(self.context_publisher, self.confirmation,
                                      original_needs, check_original)
+        publisher.system += COMPACT_DRAFT
         previous = worker.drafts
         worker.drafts = publisher
         try:
