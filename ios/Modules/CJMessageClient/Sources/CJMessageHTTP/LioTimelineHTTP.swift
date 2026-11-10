@@ -12,31 +12,121 @@ public final class LioTimelineHTTP {
         case notSent, dailyLimit
     }
 
+    public struct SavedChat: Sendable, Equatable {
+        public let id: String
+        public let title: String
+    }
+
     private let scope: StorageScope
     private let lease: Lease
     private let credentials: any MessageCredentialsProvider
     private let transport: NoRedirectTransport
     private let connectivity: LioConnectivity?
+    private let firstChatRecovery: MessageRecovery?
 
     public convenience init(endpoint: MessageEndpoint, scope: StorageScope, lease: Lease,
                             credentials: any MessageCredentialsProvider,
+                            firstChatRecovery: MessageRecovery? = nil,
                             validate: @escaping @MainActor @Sendable () throws -> Void) throws {
         let transport = try NoRedirectTransport.lioTimeline(endpoint: endpoint, validate: validate)
-        self.init(scope: scope, lease: lease, credentials: credentials, transport: transport, monitorNetwork: true)
+        self.init(scope: scope, lease: lease, credentials: credentials, transport: transport,
+                  monitorNetwork: true, firstChatRecovery: firstChatRecovery)
     }
 
     init(scope: StorageScope, lease: Lease, credentials: any MessageCredentialsProvider,
-         transport: NoRedirectTransport, monitorNetwork: Bool = false) {
+         transport: NoRedirectTransport, monitorNetwork: Bool = false,
+         firstChatRecovery: MessageRecovery? = nil) {
         self.scope = scope
         self.lease = lease
         self.credentials = credentials
         self.transport = transport
+        self.firstChatRecovery = firstChatRecovery
         connectivity = monitorNetwork ? LioConnectivity() : nil
     }
 
     public func submit(_ original: LioTimelineWire.Send) async throws -> Acceptance {
+        if original.startsNewChat, firstChatRecovery == nil {
+            throw MessageHTTPFailure.productionActivationUnavailable
+        }
         let token = try await bearer()
         if connectivity?.offline == true { return .notSent }
+        if original.startsNewChat, let firstChatRecovery {
+            return try await submitFirst(original, bearer: token, recovery: firstChatRecovery)
+        }
+        return try await exchange(original, bearer: token).acceptance
+    }
+
+    /// The first accepted original and its verified receipt are stored by
+    /// account in the existing encrypted action journal.
+    public func savedChats() throws -> [SavedChat] {
+        guard let firstChatRecovery else { throw MessageHTTPFailure.productionActivationUnavailable }
+        let chats = try recordedFirstActions(in: firstChatRecovery).compactMap { entry -> SavedChat? in
+            guard entry.record.phase == .accepted else { return nil }
+            guard let receipt = entry.record.receipt else { throw RecoveryError.receiptMismatch }
+            return SavedChat(id: try entry.original.confirm(receipt), title: entry.title)
+        }
+        guard Set(chats.map { Data($0.id.utf8) }).count == chats.count else {
+            throw RecoveryError.invalidSnapshot
+        }
+        return chats.sorted { $0.id.utf8.lexicographicallyPrecedes($1.id.utf8) }
+    }
+
+    private func submitFirst(_ original: LioTimelineWire.Send, bearer token: String,
+                             recovery: MessageRecovery) async throws -> Acceptance {
+        let previous = try recordedFirstActions(in: recovery)
+        guard !previous.contains(where: { $0.record.phase != .accepted && $0.record.phase != .notAccepted }) else {
+            throw RecoveryError.queryOnly
+        }
+        try recovery.stage(messageID: original.messageID, originalUTF8: original.originalUTF8, lease: lease)
+        let submission = try recovery.beginSubmission(messageID: original.messageID, lease: lease)
+        let outcome: SendOutcome
+        do {
+            outcome = try await exchange(original, bearer: token)
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            try recovery.observeUnknown(submission.operation)
+            throw error
+        }
+        switch outcome {
+        case .accepted(_, let receipt):
+            guard let record = try recovery.action(messageID: original.messageID, lease: lease) else {
+                throw RecoveryError.receiptMismatch
+            }
+            try recovery.observeReceipt(submission.operation, messageID: original.messageID,
+                                        inputSHA256: record.inputSHA256, receipt: receipt)
+        case .dailyLimit(let proof):
+            try recovery.observeSubmissionRejection(submission.operation, httpStatus: 429, responseUTF8: proof)
+        }
+        return outcome.acceptance
+    }
+
+    private func recordedFirstActions(in recovery: MessageRecovery) throws -> [(record: ActionRecord, original: LioTimelineWire.Send, title: String)] {
+        let projection = try recovery.localProjection(scope: scope, lease: lease)
+        return try projection.actions.compactMap { item in
+            guard let record = try recovery.action(messageID: item.messageID, lease: lease) else {
+                throw RecoveryError.invalidSnapshot
+            }
+            guard let parsed = try LioTimelineWire.Send.recordedFirst(record.originalUTF8, messageID: record.messageID) else {
+                return nil
+            }
+            return (record, parsed.original, parsed.title)
+        }
+    }
+
+    private enum SendOutcome {
+        case accepted(String, Data)
+        case dailyLimit(Data)
+
+        var acceptance: Acceptance {
+            switch self {
+            case .accepted(let id, _): .accepted(conversationID: id)
+            case .dailyLimit: .dailyLimit
+            }
+        }
+    }
+
+    private func exchange(_ original: LioTimelineWire.Send, bearer token: String) async throws -> SendOutcome {
         let (response, body) = try await transport.sendLio(original, bearer: token)
         let bytes = try await json(response, body, limit: 65_536)
         if response.status.code == 429 {
@@ -44,10 +134,10 @@ public final class LioTimelineHTTP {
             guard try JSONDecoder().decode(Failure.self, from: bytes).failure == "quota" else {
                 throw MessageHTTPFailure.invalidResponse
             }
-            return .dailyLimit
+            return .dailyLimit(bytes)
         }
         guard response.status.code == 200 else { throw MessageHTTPFailure.exchangeUnknown }
-        return .accepted(conversationID: try original.confirm(bytes))
+        return .accepted(try original.confirm(bytes), bytes)
     }
 
     public func timeline(conversationID: String? = nil, before: String? = nil,

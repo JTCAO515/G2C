@@ -14,6 +14,7 @@ public enum LioTimelineWire {
         public let conversationID: String?
         public let originalUTF8: Data
         let version: Version
+        let startsNewChat: Bool
 
         public init(messageID: String, text: String, locale: Locale, conversationID: String? = nil) throws {
             try Self.validate(messageID, text, conversationID)
@@ -26,6 +27,7 @@ public enum LioTimelineWire {
             self.conversationID = conversationID
             originalUTF8 = bytes
             version = .v1
+            startsNewChat = false
         }
 
         public init(messageID: String, text: String, locale: Locale, destination: V2Destination) throws {
@@ -37,13 +39,39 @@ public enum LioTimelineWire {
             case .existing(let id): (conversationID, newConversation) = (id, nil)
             }
             try Self.validate(messageID, text, conversationID)
-            let bytes = try JSONEncoder().encode(V2Question(messageID: messageID, text: text, locale: locale.rawValue,
+            let bytes = try JSONEncoder().encode(V2Question(version: "LIO-message.2", messageID: messageID, text: text, locale: locale.rawValue,
                                                             conversationID: conversationID, newConversation: newConversation))
             guard bytes.count <= 16_384 else { throw MessageHTTPFailure.invalidConfiguration }
             self.messageID = messageID
             self.conversationID = conversationID
             originalUTF8 = bytes
             version = .v2
+            startsNewChat = newConversation == true
+        }
+
+        /// Other actions share the encrypted journal. Only first-chat originals
+        /// carry this marker; once recognized, decode and bind the complete bytes.
+        static func recordedFirst(_ bytes: Data, messageID: String) throws -> (original: Send, title: String)? {
+            let decoder = JSONDecoder()
+            guard let marker = try? decoder.decode(FirstMarker.self, from: bytes),
+                  marker.version == "LIO-message.2", marker.newConversation == true else { return nil }
+            guard bytes.count <= 16_384 else { throw MessageHTTPFailure.invalidConfiguration }
+            try validateUnambiguousJSON(bytes)
+            let recorded = try decoder.decode(V2Question.self, from: bytes)
+            guard recorded.messageID.utf8.elementsEqual(messageID.utf8),
+                  recorded.conversationID == nil, Locale(rawValue: recorded.locale) != nil else {
+                throw MessageHTTPFailure.invalidConfiguration
+            }
+            try validate(messageID, recorded.text, nil)
+            return (Send(firstMessageID: messageID, bytes: bytes), recorded.text)
+        }
+
+        private init(firstMessageID: String, bytes: Data) {
+            messageID = firstMessageID
+            conversationID = nil
+            originalUTF8 = bytes
+            version = .v2
+            startsNewChat = true
         }
 
         private static func validate(_ messageID: String, _ text: String, _ conversationID: String?) throws {
@@ -55,8 +83,14 @@ public enum LioTimelineWire {
             }
         }
 
-        private struct V2Question: Encodable {
-            let version = "LIO-message.2"
+        private struct FirstMarker: Decodable {
+            let version: String
+            let newConversation: Bool?
+            enum CodingKeys: String, CodingKey { case version, newConversation = "new_conversation" }
+        }
+
+        private struct V2Question: Codable {
+            let version: String
             let messageID: String
             let text: String
             let locale: String
