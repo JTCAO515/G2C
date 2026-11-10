@@ -9,8 +9,9 @@ import OpenAPIRuntime
 
 @MainActor
 private func journeyMemoryHost(shell: ShellState, backend: JourneyMemoryBackend, recovery: MessageRecovery,
-                               scope: StorageScope, lease: Lease) throws -> TypedMemoryContainerHost {
-    let binding = MemoryBinding(environment: UUID(), account: UUID(), generation: UUID(), selection: UUID())
+                               scope: StorageScope, lease: Lease, environment: UUID, account: UUID,
+                               lioChoices: LioMemoryActionsClient) throws -> TypedMemoryContainerHost {
+    let binding = MemoryBinding(environment: environment, account: account, generation: UUID(), selection: UUID())
     let namespace = MessageKeyNamespace(environment: binding.environment, account: binding.account, purpose: .localMemoryPendingV1)
     let key = SymmetricKey(size: .bits256)
     let keyID = UUID()
@@ -43,9 +44,16 @@ private func journeyMemoryHost(shell: ShellState, backend: JourneyMemoryBackend,
     let erasure = MemoryErasureClient(endpoint: memoryEndpoint, credentials: { _ in "SYNTHETIC" },
                                       currentBinding: { binding }, session: session, sessionOperation: operation,
                                       pendingStore: erasureStore, interceptedTransport: backend)
+    let cleanup = MemoryItemLocalCleanup(manual: manual, management: management, typed: typed,
+                                         clearAdditionalOriginals: { binding, itemID in
+        try lioChoices.clearErasedItem(itemID, environment: binding.environment, account: binding.account)
+        guard try recovery.localProjection(scope: scope, lease: lease).actions.allSatisfy({
+            !$0.messageID.hasPrefix("lio-memory-")
+        }) else { throw RecoveryError.persistenceUnknown }
+    })
     return try TypedMemoryContainerHost(shell: shell, client: reader, binding: binding, pageSize: 20,
                                         options: [], travel: travel, currentBinding: { binding }, erasureClient: erasure,
-                                        itemCleanup: MemoryItemLocalCleanup(manual: manual, management: management, typed: typed))
+                                        itemCleanup: cleanup)
 }
 
 @MainActor
