@@ -108,8 +108,6 @@ OTHER = re.compile(r'孩子|女儿|儿子|母亲|父亲|同伴|家人|\b(?:daugh
 CLOCK = r'(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?'
 RANGE = re.compile(rf'{CLOCK}\s*(?:[-–—到至]|\bto\b)\s*{CLOCK}', re.I)
 CLAUSE_BREAK = re.compile(r'[!。！；;\n]+|(?<=[?？])\s*|\.(?=\s+[A-Z])|，(?=\s*(?:第[一二三四五六七八九十\d]+天|酒店集合))')
-FIXED_REPLY = re.compile(r'^(?:全体|大家|本人|我参加|第[一二三四五六七八九十\d]+天|'
-                         r'(?:for (?:everyone|our party|both of us)|on (?:the first day|\d{4}-))\b)', re.I)
 FIXED_PARTY_REPLY = re.compile(r'全体(?:参加)?|大家(?:参加)?|本人|我参加|for (?:everyone|our party|both of us)', re.I)
 EN_FIXED_EVENT = (
     r'(?:(?:the|my|our|a|an)\s+)?'
@@ -199,13 +197,13 @@ def _date_scope_disputed(turn, city):
     return False
 
 
-def _declared_duration(turns, city=None):
+def _declared_durations(turns, city):
     durations = set()
     for turn in turns:
-        if _date_scope_disputed(turn, city):
+        if _date_scope_disputed(turn.text, city):
             durations.clear()
             continue
-        for original in _clauses(turn):
+        for original in _clauses(turn.text):
             clause = _date_declaration(original)
             if clause is None or not PLAN_REQUEST.match(clause) or NEGATED.search(clause):
                 continue
@@ -217,7 +215,7 @@ def _declared_duration(turns, city=None):
                 after_destination = ADJACENT_DURATION.match(clause, primary.end())
                 if after_destination is not None:
                     durations.add(_number(after_destination[1] or after_destination[2]))
-    return durations.pop() if len(durations) == 1 else None
+    return durations
 
 
 def _known(value):
@@ -246,6 +244,13 @@ def stated_city(turns, city):
 class PlanningTurn:
     text: str
     question_day: date
+
+
+@dataclass(frozen=True)
+class GroundedPlanning:
+    fields: dict
+    missing_fixed: bool
+    conflicting_party: bool
 
 
 def _compatible_turns(turns, city):
@@ -284,13 +289,17 @@ def _timing_follows_destination(clause, position, *, absolute):
 
 
 def _day_span(turns, city):
+    durations = _declared_durations(turns, city)
+    if len(durations) > 1:
+        return None, None
+    declared_days = next(iter(durations), None)
     if len(turns) > 1:
         latest = turns[-1]
         reply = RELATIVE_REPLY.fullmatch(latest.text.strip().rstrip('.。！!'))
         if reply is not None:
             count = reply[2] or reply[4]
-            duration = _number(count) if count else _declared_duration(tuple(turn.text for turn in turns[:-1]), city)
-            if not duration:
+            duration = _number(count) if count else declared_days
+            if not duration or declared_days is not None and duration != declared_days:
                 return None, None
             return _relative_span(reply[1] or reply[3], duration, latest.question_day)
     for turn in reversed(turns):
@@ -311,7 +320,10 @@ def _day_span(turns, city):
                         _timing_follows_destination(clause, match.start(), absolute=True)
                         and SPAN_TAIL.fullmatch(clause[match.end():]) is not None)
                     if scoped:
-                        spans.add((date.fromisoformat(match[1]), date.fromisoformat(match[2])))
+                        first, last = date.fromisoformat(match[1]), date.fromisoformat(match[2])
+                        if declared_days is not None and (last - first).days + 1 != declared_days:
+                            return None, None
+                        spans.add((first, last))
                 if explicit:
                     continue
                 start = START.search(clause)
@@ -321,14 +333,16 @@ def _day_span(turns, city):
                 if ZH_RELATIVE.search(clause):
                     if not ZH_RELATIVE_TAIL.fullmatch(tail):
                         continue
-                    duration = _declared_duration((clause,))
+                    duration = declared_days
                 elif _timing_follows_destination(clause, start.start(), absolute=False):
                     suffix = ADJACENT_DURATION.match(clause, start.end())
                     if not SPAN_TAIL.fullmatch(clause[suffix.end():] if suffix else tail):
                         continue
-                    duration = _number(suffix[1] or suffix[2]) if suffix else _declared_duration((clause,))
+                    duration = _number(suffix[1] or suffix[2]) if suffix else declared_days
                 else:
                     continue
+                if declared_days is not None and duration != declared_days:
+                    return None, None
                 if duration:
                     spans.add(_relative_span(start[1] or start[2], duration, turn.question_day))
             except ValueError:
@@ -342,11 +356,19 @@ def _day_span(turns, city):
     return None, None
 
 
+def _fixed_shape(clause):
+    return ' '.join(RANGE.sub(' @time ', re.sub(ISO, ' @date ', clause)).split())
+
+
+def _fixed_details(normalized):
+    return (FIXED_PARTY_REPLY.fullmatch(normalized) or EN_FIXED_DETAILS.fullmatch(normalized)
+            or ZH_FIXED_DETAILS.fullmatch(normalized))
+
+
 def _fixed_authority_clause(clause):
-    normalized = ' '.join(RANGE.sub(' @time ', re.sub(ISO, ' @date ', clause)).split())
-    return any(pattern.fullmatch(normalized) for pattern in (
-        FIXED_PARTY_REPLY, EN_FIXED_DECLARATION, EN_FIXED_DETAILS, ZH_FIXED_DECLARATION, ZH_FIXED_DETAILS,
-    ))
+    normalized = _fixed_shape(clause)
+    return (_fixed_details(normalized) or EN_FIXED_DECLARATION.fullmatch(normalized)
+            or ZH_FIXED_DECLARATION.fullmatch(normalized))
 
 
 def _timed_plan_authorized(clause, city, today):
@@ -365,20 +387,28 @@ def _timed_plan_authorized(clause, city, today):
     return OPEN_PLAN.fullmatch(clause[:start.start()].rstrip(' ,，')) is not None
 
 
+def _timing_reply(clause):
+    return RELATIVE_REPLY.fullmatch(clause) or TRIP_DATES.fullmatch(clause)
+
+
 def planning_authority_complete(turns, city, *, has_fixed):
     """A grounded date does not authorize an unexplained instruction in the same turn."""
     # Historical details may be dropped when the city changes. The latest
     # original must still be evaluated in full, even before its new destination.
     latest = turns[-1]
     latest_text = '\n'.join(_planning_without_assent(clause) or clause for clause in _clauses(latest.text))
-    for turn in (*_compatible_turns(turns[:-1], city), PlanningTurn(latest_text, latest.question_day)):
+    current = PlanningTurn(latest_text, latest.question_day)
+    latest_timing = any(_timing_reply(clause) for clause in map(_date_declaration, _clauses(latest_text))
+                        if clause is not None)
+    for turn in (*_compatible_turns(turns[:-1], city), current):
         for original in _clauses(turn.text):
             clause = _date_declaration(original)
             if clause is None:
+                if turn is not current and latest_timing and _timing_reply(original[:-1].rstrip()):
+                    continue
                 return False
             if (clause.casefold() in ('北京', 'beijing') or OPEN_PLAN.fullmatch(clause)
-                    or SAVE_ASSENT.fullmatch(clause) or RELATIVE_REPLY.fullmatch(clause)
-                    or TRIP_DATES.fullmatch(clause)):
+                    or SAVE_ASSENT.fullmatch(clause) or _timing_reply(clause)):
                 continue
             if city.casefold() in ('北京', 'beijing') and (EN_CONFIRMED_DATE_SCOPE.fullmatch(clause)
                     or ZH_CONFIRMED_DATE_SCOPE.fullmatch(clause)):
@@ -411,7 +441,14 @@ def _fixed_item(clause, first, zone, party, *, reply=''):
     details = f'{clause}\n{reply}' if reply else clause
     if NEGATED.search(details) or OTHER.search(details) or zone is None:
         return None
-    ranges = {match.groups() for match in RANGE.finditer(re.sub(ISO, ' ', details))}
+    ranges = set()
+    for match in RANGE.finditer(re.sub(ISO, ' ', details)):
+        start_h, start_m, start_meridiem, end_h, end_m, end_meridiem = match.groups()
+        start = _clock(start_h, start_m, start_meridiem or end_meridiem)
+        end = _clock(end_h, end_m, end_meridiem or start_meridiem)
+        if not start or not end or end <= start:
+            return None
+        ranges.add((start, end))
     try:
         dates = {date.fromisoformat(value) for value in re.findall(ISO, details)}
     except ValueError:
@@ -421,14 +458,14 @@ def _fixed_item(clause, first, zone, party, *, reply=''):
     if len(ranges) != 1 or len(dates) != 1:
         return None
     day = dates.pop()
-    start_h, start_m, start_meridiem, end_h, end_m, end_meridiem = ranges.pop()
-    start = _clock(start_h, start_m, start_meridiem or end_meridiem)
-    end = _clock(end_h, end_m, end_meridiem or start_meridiem)
-    if not start or not end or end <= start:
+    start, end = ranges.pop()
+    party_explicit = re.search(r'全体|大家|\b(?:for our party|for everyone|for both of us|we have tickets?)\b', details, re.I)
+    self_explicit = re.search(r'本人|我参加|\b(?:for myself|for me only|only me)\b', details, re.I)
+    if party_explicit and self_explicit:
         return None
-    if re.search(r'全体|大家|\b(?:for our party|for everyone|for both of us|we have tickets?)\b', details, re.I):
+    if party_explicit:
         subject = 'party'
-    elif re.search(r'本人|我参加|\b(?:for myself|for me only|only me)\b', details, re.I):
+    elif self_explicit:
         subject = 'self'
     elif party is not None and not re.search(r'我的|他的|她的|\b(?:my|your|their|his|her)\b', clause, re.I):
         subject = 'party'
@@ -444,21 +481,23 @@ def grounded_fields(turns, city):
     turns = _compatible_turns(turns, city)
     clauses = tuple(clause for turn in turns for clause in _clauses(turn.text))
     first, last = _day_span(turns, city)
-    parties = {_number(match[1] or match[2]) for clause in clauses
-               if PLAN_REQUEST.match(clause) and not NEGATED.search(clause)
+    parties = {_number(match[1] or match[2]) for clause in map(_date_declaration, clauses)
+               if clause is not None and (PLAN_REQUEST.match(clause) or TRIP_DATES.fullmatch(clause))
+               and not NEGATED.search(clause)
                for match in PARTY.finditer(clause)}
-    party = parties.pop() if len(parties) == 1 else None
+    party = next(iter(parties)) if len(parties) == 1 else None
     zone = 'Asia/Shanghai' if city and city.casefold() in ('北京', 'beijing') else None
     fixed_clauses = tuple(dict.fromkeys(clause for clause in clauses if FIXED.search(clause)))
-    fixed_items = [_fixed_item(clause, first, zone, party) for clause in fixed_clauses]
-    if len(turns) > 1 and fixed_items.count(None) == 1:
-        reply = turns[-1].text.strip()
-        if FIXED_REPLY.match(reply) and not FIXED.search(reply):
-            index = fixed_items.index(None)
-            fixed_items[index] = _fixed_item(fixed_clauses[index], first, zone, party, reply=reply)
+    fixed_details = tuple(clause for clause in clauses if _fixed_details(_fixed_shape(clause)))
+    if fixed_details:
+        # A stand-alone detail can qualify only one unambiguously identified event.
+        fixed_items = ([_fixed_item(fixed_clauses[0], first, zone, party, reply='\n'.join(fixed_details))]
+                       if len(fixed_clauses) == 1 else [None])
+    else:
+        fixed_items = [_fixed_item(clause, first, zone, party) for clause in fixed_clauses]
     result = dict(arrival=_event(first, zone=zone, place=city), departure=_event(last, zone=zone))
     if party:
         result['party_size'] = _known(party)
     if fixed_items and all(item is not None for item in fixed_items):
         result['fixed_items'] = fixed_items
-    return result, None in fixed_items
+    return GroundedPlanning(result, None in fixed_items, len(parties) > 1)

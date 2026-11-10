@@ -185,10 +185,11 @@ def extract(worker, binding, locale, turns, references):
             city = None
         value = json.loads(preview(encode(envelope['extraction']), message_id=binding.message_id,
                                    run_id=binding.run_id, source_text=source))
-        fields, missing_fixed = grounded_fields(turns, city)
+        grounded = grounded_fields(turns, city)
     except (InvalidInput, UnicodeError) as exc:
         raise ProviderUnknown('Lio planning details unavailable') from exc
     questions = []
+    fields = grounded.fields
     if city is None:
         questions.append('想去哪座城市？' if locale == 'zh' else 'Which city would you like to visit?')
     elif city.casefold() not in ('北京', 'beijing'):
@@ -200,7 +201,10 @@ def extract(worker, binding, locale, turns, references):
                          else 'When would you like to start, and how many days do you have?')
     questions.extend(q['text_zh' if locale == 'zh' else 'text_en'] for q in value['questions']
                      if q['field'] == 'fixed_items')
-    if missing_fixed:
+    if grounded.conflicting_party:
+        questions.append('人数有两种说法。请把出行人数和日期一起重新告诉我。' if locale == 'zh'
+                         else 'I have different group sizes. Please restate your travel dates and how many people are going.')
+    if grounded.missing_fixed:
         questions.append('哪项安排需要保留？请告诉我谁参加、哪天以及开始和结束时间。' if locale == 'zh'
                          else 'Which arrangement should I keep? Please share who is going, the day, and the start and end times.')
     if not questions and not planning_authority_complete(turns, city, has_fixed=bool(fields.get('fixed_items'))):
