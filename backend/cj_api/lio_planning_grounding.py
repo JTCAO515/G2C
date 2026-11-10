@@ -72,7 +72,7 @@ OPEN_PLAN = re.compile(
     rf'(?:help (?:me|us) (?:to )?)?(?:plan|build|create|organize|put together|draft|make)\s+'
     rf'(?:(?:a\s+|an\s+)?(?:(?:{NUMBER})-day\s+)?(?:Beijing\s+)?(?:trip|itinerary|visit)'
     rf'(?:\s+(?:in|to)\s+Beijing)?|(?:{NUMBER})\s+days?\s+in\s+Beijing)'
-    rf'(?:\s+for\s+(?:our party|(?:{NUMBER})\s+people))?'
+    rf'(?:\s+for\s+(?:our party|(?:{NUMBER})\s+(?:people|days?)))?'
     rf'|(?:请|麻烦)?(?:(?:帮|给|为)(?:我们|我))?\s*(?:(?:为|给)(?:{NUMBER})个人)?\s*(?:规划|安排|设计|做)\s*'
     rf'(?:一下|一个|一份|一趟|一次)?\s*(?:(?:{NUMBER})天的?)?(?:(?:去|到|在)?北京)?\s*'
     rf'(?:(?:{NUMBER})天)?(?:旅行|行程|日游|游|旅游|攻略)'

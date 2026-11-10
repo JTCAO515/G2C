@@ -122,6 +122,8 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     one_turn, _ = grounded_fields(
         ('Plan a trip to Beijing for three days starting tomorrow.',), 'Beijing', today)
     assert one_turn['departure']['date']['value'] == '2026-11-12'
+    assert planning_authority_complete(('Plan a trip to Beijing for three days starting tomorrow.',),
+                                       'Beijing', today, has_fixed=False)
     changed_city, _ = grounded_fields(
         ('Plan a trip to Shanghai from 2026-12-01 to 2026-12-03.',
          'Beijing, from 2026-12-11 to 2026-12-13.'), 'Beijing', today)
