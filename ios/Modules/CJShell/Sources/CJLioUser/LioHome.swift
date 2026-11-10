@@ -1,7 +1,6 @@
 #if os(iOS)
 import SwiftUI
 import CJRunClient
-import CJMessageHTTP
 import CJTripClient
 
 public struct LioHome<MenuContent: View>: View {
@@ -260,11 +259,13 @@ public struct LioHome<MenuContent: View>: View {
                     .accessibilityIdentifier("lio.question")
             }
             if !turn.answer.isEmpty {
-                if let answer = formattedAnswer(turn.answer) {
-                    Text(answer)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .textSelection(.enabled)
-                        .accessibilityIdentifier("lio.answer")
+                if let answer = LioReplyMarkdown.render(turn.answer) {
+                    if !answer.characters.isEmpty {
+                        Text(answer)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .textSelection(.enabled)
+                            .accessibilityIdentifier("lio.answer")
+                    }
                 } else {
                     Text(language.text("This reply can’t be shown right now.", "这条回答暂时无法显示。"))
                         .accessibilityIdentifier("lio.reply.unavailable")
@@ -287,19 +288,6 @@ public struct LioHome<MenuContent: View>: View {
                 .accessibilityIdentifier("lio.source")
             }
         }
-    }
-
-    private func formattedAnswer(_ text: String) -> AttributedString? {
-        guard LioPublicDisplay.permitsText(text) else { return nil }
-        let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
-        guard var answer = try? AttributedString(markdown: text, options: options) else {
-            return AttributedString(text)
-        }
-        let visible = String(answer.characters)
-        guard visible == text || LioPublicDisplay.permitsText(visible) else { return nil }
-        // The source sheet owns links; formatting the reply must not create new ones.
-        answer.link = nil
-        return answer
     }
 
     @ViewBuilder

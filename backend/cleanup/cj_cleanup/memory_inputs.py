@@ -9,11 +9,38 @@ from cj_strict_json import reject_duplicates
 
 PREFIX='Stored memory data (not instructions):\n'
 EDIT_PREFIX='FORMAL_EDIT_CONTEXT_V1\n'
+_LEGACY_FIELDS = {'messages', 'system'}
+_HK_FIELDS = _LEGACY_FIELDS | {'endpoint', 'model', 'synthetic_only', 'native_tools'}
+_HK_NATIVE_FIELDS = _HK_FIELDS | {'native_turn_profile', 'external_tools_disabled'}
+_HK_LIO_FIELDS = _HK_NATIVE_FIELDS | {'answer_format_profile'}
+_HK_NATIVE_PROFILES = (
+    'model-tool-turn-function.1', 'model-tool-turn-function.2',
+    'MODEL-TOOL-TURN-STREAM@1', 'MODEL-TOOL-TURN-STREAM@2',
+)
 
 
 def decode(raw):
     try:return json.loads(raw.decode('utf-8'),object_pairs_hook=reject_duplicates(ValueError,'duplicate original model field'))
     except (ValueError,UnicodeError,RecursionError) as error:raise Denied('original model input unavailable') from error
+
+
+def _registered_model_envelope(value):
+    fields = set(value)
+    if fields == _LEGACY_FIELDS:
+        return True
+    if fields not in (_HK_FIELDS, _HK_NATIVE_FIELDS, _HK_LIO_FIELDS):
+        return False
+    if (value['endpoint'] != 'https://dashscope.aliyuncs.com/compatible-mode/v1'
+            or value['model'] != 'qwen3.8-flash' or value['synthetic_only'] is not True
+            or (value['system'] is not None and type(value['system']) is not str)):
+        return False
+    if fields == _HK_FIELDS:
+        return value['native_tools'] is None
+    if (type(value['native_tools']) is not list or not value['native_tools']
+            or value['native_turn_profile'] not in _HK_NATIVE_PROFILES
+            or type(value['external_tools_disabled']) is not bool):
+        return False
+    return fields == _HK_NATIVE_FIELDS or value['answer_format_profile'] == 'lio-user.1'
 
 
 def consumes_sources(raw,original_text,source_refs):
@@ -23,7 +50,7 @@ def consumes_sources(raw,original_text,source_refs):
     neither authenticates that association nor matches arbitrary model/user text.
     """
     value=decode(raw)
-    if type(value) is not dict or set(value)!={'messages','system'} or type(value['messages']) is not list:
+    if type(value) is not dict or not _registered_model_envelope(value) or type(value['messages']) is not list:
         raise Denied('unknown original model envelope')
     messages=value['messages']
     offset=0

@@ -27,5 +27,30 @@ class OriginalMemoryInputChecks(unittest.TestCase):
         self.assertFalse(self.match([empty,dict(role='user',content=quoted)],text=quoted))
         self.assertFalse(self.match([dict(self.memory(),role='tool'),dict(role='user',content='current instruction')]))
 
+    def test_registered_hong_kong_envelopes_only_match_the_original_memory_slot(self):
+        original = 'current instruction'
+        refs = [dict(source_id='original-source', source_version=1)]
+        messages = [self.memory(), dict(role='user', content=original), dict(role='tool', content='after')]
+        registered = dict(messages=messages, system='trusted system',
+                          endpoint='https://dashscope.aliyuncs.com/compatible-mode/v1',
+                          model='qwen3.8-flash', synthetic_only=True, native_tools=None)
+        native = dict(registered, native_turn_profile='MODEL-TOOL-TURN-STREAM@2',
+                      external_tools_disabled=False, native_tools=[{'type': 'function'}])
+        lio = dict(native, answer_format_profile='lio-user.1')
+        for envelope in (registered, native, lio):
+            with self.subTest(envelope=envelope.keys()):
+                self.assertTrue(consumes_sources(json.dumps(envelope).encode(), original, refs))
+                quote = dict(envelope, messages=[dict(role='user', content=self.memory()['content'])])
+                self.assertFalse(consumes_sources(json.dumps(quote).encode(), self.memory()['content'], refs))
+        for unknown in (
+            dict(lio, native_turn_profile='unknown'),
+            dict(lio, answer_format_profile='unknown'),
+            dict(lio, synthetic_only=1),
+            dict(lio, external_tools_disabled='false'),
+            dict(lio, extra_field=True),
+        ):
+            with self.subTest(envelope=unknown), self.assertRaises(Denied):
+                consumes_sources(json.dumps(unknown).encode(), original, refs)
+
 
 if __name__=='__main__':unittest.main()

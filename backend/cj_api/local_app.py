@@ -268,11 +268,8 @@ class LocalDatabase:
         if self.run_context is None and executor.execute('SELECT 1 FROM cj_local_run_protection WHERE scope=%s', (scope,)).fetchone():
             # Keep the original history read path available without enabling runtime state.
             return
-        self._provision_run_scope(executor, scope)
-        executor.execute('INSERT INTO cj_trip_scope(scope) VALUES (%s) ON CONFLICT DO NOTHING', (trip_scope_for(scope),))
-
-    def _provision_run_scope(self, executor, scope):
         executor.execute("INSERT INTO cj_run_scope(scope, epoch, active) VALUES (%s, '1', true) ON CONFLICT DO NOTHING", (scope,))
+        executor.execute('INSERT INTO cj_trip_scope(scope) VALUES (%s) ON CONFLICT DO NOTHING', (trip_scope_for(scope),))
 
     @contextmanager
     def scoped_cursor(self, scope, *, connection=None):
@@ -411,7 +408,7 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
                      memory_configuration=None, run_context=None, travel_context=False, needs_profile=None, trip_context=False,edit_configuration=None,
                      cleanup_configuration=None,formal_memory_configuration=None,database=None,account_admission=False,message_subjects=None,
                      existing_display_reads=False,cleanup_subjects=None,demo_dialogue_subjects=None,
-                     lio_dialogue_subjects=None):
+                     lio_dialogue_subjects=None,lio_memory_factory=None):
     if os.environ.get('CJ_ENV') != 'local':
         raise CompositionUnavailable('CJ_ENV must explicitly be local')
     auth_dir = Path(auth_dir)
@@ -627,6 +624,7 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
         from cj_message.auth_boundary import Boundary
         from .demo_dialogue_routes import register_demo_dialogue_routes
         from .lio_dialogue_routes import register_lio_dialogue_routes
+        from .lio_trip_cards import LioTripCards
         from .local_account_admission_v2 import retired_for, retired_in_transaction
 
         verifier = PyJWTVerifier(config, keys)
@@ -642,14 +640,22 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
                 return AdmissionChecker(verifier, AccountRevocationAccess(invited, retired_in_transaction(tx.cur, scope)))
 
             return Boundary(checker, dialogue_repository, lambda: str(uuid.uuid4()),
-                            checker_in_transaction=current_checker)
+                            checker_in_transaction=current_checker), checker
 
-        dialogue_boundary = dialogue_binding(demo_dialogue_subjects)
+        dialogue_boundary, _ = dialogue_binding(demo_dialogue_subjects)
         register_demo_dialogue_routes(app, dialogue_boundary)
         if lio_dialogue_subjects:
-            lio_boundary = dialogue_binding(lio_dialogue_subjects)
+            lio_boundary, lio_checker = dialogue_binding(lio_dialogue_subjects)
+            memory_cards = lio_memory_factory(lio_boundary) if lio_memory_factory is not None else None
             register_lio_dialogue_routes(app, lio_boundary, database.run_repository,
-                                         prepare_scope=database._provision_run_scope)
+                                         LioTripCards(database, lio_checker), prepare_scope=database._provision_scope,
+                                         memory_cards=memory_cards)
+            if memory_cards is not None:
+                from .lio_memory_routes import register_lio_memory_routes
+                register_lio_memory_routes(app, memory_cards)
+            if confirmation_signer is not None:
+                from .lio_trip_routes import LioTripBoundary, register_lio_trip_routes
+                register_lio_trip_routes(app, LioTripBoundary(database, lio_checker, confirmation_signer))
     if database.edit_results:
         from .run_display_composition import build_run_display_reader
         from .scoped_result_routes import register_scoped_result_routes
