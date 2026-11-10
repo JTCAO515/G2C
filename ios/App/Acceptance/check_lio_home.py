@@ -1,5 +1,6 @@
 """Drive the actual Lio App in a simulator with sample replies only."""
 import argparse
+import base64
 import importlib.util
 import json
 import os
@@ -10,12 +11,29 @@ ROOT = Path(__file__).resolve().parents[3]
 HERE = Path(__file__).resolve().parent
 
 
+
+def recorded_trip_fixture():
+    path = ROOT / "ios/Modules/CJTripClient/Tests/CJTripClientTests/Fixtures/STRUCTURED-V1.json"
+    source = next(row for row in json.loads(path.read_text()) if row["name"] == "sources")
+    content = json.loads(base64.b64decode(source["canonical_utf8_base64"]))
+    trace = "B35279D6-8B42-466D-A55D-8A16B64BB270"
+    envelope = {"version": "TRIP-structured-read.1", "request_id": trace}
+    saved = {"trip_id": "trip:lio-map-demo", "version": 1, "content_sha256": source["sha256"]}
+    detail = {**envelope, "trip": {**saved, "content": content}}
+    listing = {**envelope, "trips": [{**saved, "title": content["title"], "content_version": content["content_version"]}],
+               "next_after": None}
+
+    def encoded(value):
+        return base64.b64encode(json.dumps(value, separators=(",", ":")).encode()).decode()
+
+    return encoded({"trace": trace, "list": encoded(listing), "detail": encoded(detail)})
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--simulator", required=True)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--build-dir", required=True, type=Path)
-    parser.add_argument("--case", action="append", help="Run only the named test method (repeatable)")
+    parser.add_argument("--case", action="append", help="Run just this XCTest method. May be repeated.")
     args = parser.parse_args()
     output, build = args.output.resolve(), args.build_dir.resolve()
     if output.is_relative_to(ROOT) or build.is_relative_to(ROOT):
@@ -28,23 +46,22 @@ def main():
     builder = object.__new__(module.XCTestDriver)
     builder.directory = output
     builder.write_project(0)
-    (output / "G2CControl.swift").write_text((HERE / "LioHomeUITests.swift").read_text())
+    tests = (HERE / "LioHomeUITests.swift").read_text()
+    (output / "G2CControl.swift").write_text(tests.replace("__LIO_RECORDED_TRIP_FIXTURE__", recorded_trip_fixture()))
     project = output / "G2CAcceptance.xcodeproj"
     settings = project / "project.pbxproj"
     app_source = ROOT / "ios/App/CJProbeApp.swift"
     generated_source = output / app_source.name
     app = app_source.read_text()
-    preview = "                LioHome(language: shell.language.lio, service: .demo, isDemo: true) { LioLanguagePicker(shell: shell) }"
+    preview = '        if let encoded = ProcessInfo.processInfo.environment["G2C_LIO_PREVIEW_TRIP"] {'
     if app.count(preview) != 1:
         raise ValueError("Expected a single sample preview")
     fixture_routes = (
-        '                if ProcessInfo.processInfo.arguments.contains("--lio-scroll-acceptance") {\n'
-        '                    LioScrollFixture(shell: shell)\n'
-        '                } else if ProcessInfo.processInfo.arguments.contains("--lio-timeline-acceptance") {\n'
-        '                    LioTimelineFixture(shell: shell, exerciseResend: ProcessInfo.processInfo.arguments.contains("--lio-resend-acceptance"))\n'
-        '                } else {\n'
-        f'    {preview}\n'
-        '                }'
+        '        if ProcessInfo.processInfo.arguments.contains("--lio-scroll-acceptance") {\n'
+        '            LioScrollFixture(shell: shell)\n'
+        '        } else if ProcessInfo.processInfo.arguments.contains("--lio-timeline-acceptance") {\n'
+        '            LioTimelineFixture(shell: shell, exerciseResend: ProcessInfo.processInfo.arguments.contains("--lio-resend-acceptance"))\n'
+        '        } else ' + preview.lstrip()
     )
     fixtures = ("LioScrollFixture.swift", "LioTimelineFixture.swift")
     generated_source.write_text(app.replace(preview, fixture_routes)
@@ -68,7 +85,7 @@ def main():
         subprocess.run(command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=600)
     summary = subprocess.check_output(["xcrun", "xcresulttool", "get", "test-results", "summary", "--path", str(result)])
     (output / "summary.json").write_bytes(summary)
-    assert json.loads(summary)["passedTests"] == (len(args.case) if args.case else 7), summary
+    assert json.loads(summary)["passedTests"] == (len(args.case) if args.case else 11), summary
 
 
 if __name__ == "__main__":

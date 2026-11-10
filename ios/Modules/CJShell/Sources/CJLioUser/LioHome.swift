@@ -1,34 +1,62 @@
 #if os(iOS)
 import SwiftUI
 import CJRunClient
+import CJTripClient
 
 public struct LioHome<MenuContent: View>: View {
     private let language: LioLanguage
     private let isDemo: Bool
     private let menu: MenuContent
+    private let tripLibrary: LioTripLibrary?
+    private let recordedMap: (@MainActor (StructuredTripDocument) -> AnyView)?
     @State private var conversation: LioConversation
     @State private var draft = ""
     @State private var menuOpen = false
     @State private var source: LioSource?
     @State private var followsAnswer = true
+    @State private var tab = Tab.chat
+    @State private var tripPath: [LioTripRoute] = []
+    private enum Tab { case chat, trips }
     @FocusState private var typing: Bool
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    public init(language: LioLanguage, service: LioService, isDemo: Bool,
-                @ViewBuilder menu: () -> MenuContent) {
+    public init(language: LioLanguage, service: LioService, isDemo: Bool, tripLibrary: LioTripLibrary? = nil,
+                recordedMap: (@MainActor (StructuredTripDocument) -> AnyView)? = nil, @ViewBuilder menu: () -> MenuContent) {
         self.language = language
         self.isDemo = isDemo
         self.menu = menu()
+        self.tripLibrary = tripLibrary
+        self.recordedMap = recordedMap
         _conversation = State(initialValue: LioConversation(service: service))
     }
 
     public var body: some View {
         let pending = conversation.pending
+        let canObserve = scenePhase == .active && pending == nil
+        TabView(selection: $tab) {
+            chat
+                .tabItem { Label(language.text("Chat", "聊天"), systemImage: "bubble.left") }
+                .tag(Tab.chat)
+            LioTripsView(itineraries: conversation.itineraries, language: language, library: tripLibrary,
+                         recordedMap: recordedMap, path: $tripPath) { tab = .chat }
+                .tabItem { Label(language.text("Trips", "行程"), systemImage: "suitcase") }
+                .tag(Tab.trips)
+        }
+        .onChange(of: tab) { _, _ in typing = false }
+        .task(id: canObserve) {
+            if canObserve { await conversation.refreshTimeline() }
+        }
+        .task(id: pending?.id) {
+            if let pending { await conversation.receive(pending) }
+        }
+    }
+
+    private var chat: some View {
+        let pending = conversation.pending
         let latest = conversation.turns.last
         let earlierID = conversation.nextBefore.map { Data($0.utf8) }
-        let canObserve = scenePhase == .active && pending == nil
-        ScrollViewReader { scroll in
+        return ScrollViewReader { scroll in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 22) {
                     if conversation.turns.isEmpty { examples }
@@ -84,12 +112,6 @@ public struct LioHome<MenuContent: View>: View {
         }
         .sheet(item: $source) { selected in
             LioSourceSheet(source: selected, language: language)
-        }
-        .task(id: canObserve) {
-            if canObserve { await conversation.refreshTimeline() }
-        }
-        .task(id: pending?.id) {
-            if let pending { await conversation.receive(pending) }
         }
     }
 
@@ -252,6 +274,12 @@ public struct LioHome<MenuContent: View>: View {
                 }
             }
             messageStatus(turn)
+            if let itinerary = turn.itinerary {
+                LioItineraryCard(itinerary: itinerary, language: language) {
+                    if tripLibrary != nil { tripPath = [LioTripRoute(id: itinerary.id, visit: UUID())] }
+                    tab = .trips
+                }
+            }
             ForEach(turn.sources) { item in
                 Button { source = item } label: {
                     Label(item.title, systemImage: "link")

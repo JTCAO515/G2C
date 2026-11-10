@@ -28,6 +28,7 @@ struct LioCopyTests {
         #expect(!userFiles.isEmpty)
         let files = userFiles + [
             shell.appendingPathComponent("Sources/CJShell/DemoV2ConsentView.swift"),
+            shell.appendingPathComponent("Sources/CJShell/LioRecordedTripMap.swift"),
             ios.appendingPathComponent("App/DemoBetaApp.swift"),
             ios.appendingPathComponent("App/CJProbeApp.swift")
         ]
