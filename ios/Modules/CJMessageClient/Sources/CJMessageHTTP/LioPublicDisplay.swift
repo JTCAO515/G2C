@@ -1,0 +1,40 @@
+import Foundation
+
+/// A display check only. Original timeline data and its state remain intact.
+public enum LioPublicDisplay {
+    private static let serviceDetails = #"运行|投递|上下文|回执|候选|版本号|核实|对账|读取|查询|确认结果|原(?:请求|操作|动作|字节)|(?:高德天气|后台|服务)接口|(?<![A-Za-z])(?:RUN|UNKNOWN|Needs|(?i:backend|payload|idempotency|scope|reconciliation|request\s+id|(?:signed|operation|request)\s+receipt|original\s+(?:request|action|operation)))(?![A-Za-z])"#
+    private static let serviceURL = #"(?i:https?://(?:restapi\.amap\.com|api(?:-beta)?\.go2china\.space)(?:\.|%2e)?)(?=[/:?#\s)>，。]|$)"#
+    private static let serviceHosts: Set<String> = ["restapi.amap.com", "api-beta.go2china.space", "api.go2china.space"]
+
+    public static func permitsText(_ text: String) -> Bool {
+        guard text.range(of: serviceDetails, options: .regularExpression) == nil,
+              text.range(of: serviceURL, options: .regularExpression) == nil else { return false }
+        return !text.matches(of: /(?i:https?):\/\/[^\s\/?#<>()\[\]{}"'，]+/).contains { match in
+            guard let url = URL(string: String(match.output)), let host = normalizedHost(url) else { return false }
+            return serviceHosts.contains(host)
+        }
+    }
+
+    public static func permitsSource(_ url: URL) -> Bool {
+        guard let host = normalizedHost(url) else { return false }
+        return !serviceHosts.contains(host)
+    }
+
+    private static func normalizedHost(_ url: URL) -> String? {
+        guard let decoded = url.host, !decoded.isEmpty else { return nil }
+        let ascii: String
+        if decoded.utf8.allSatisfy({ $0 < 128 }) {
+            ascii = decoded
+        } else {
+            // URL.host can expose decoded Unicode from a percent-encoded host.
+            // Set the host separately so Foundation applies IDNA before comparison.
+            var components = URLComponents()
+            components.scheme = "https"
+            components.host = decoded
+            guard let host = components.url?.host, host.utf8.allSatisfy({ $0 < 128 }) else { return nil }
+            ascii = host
+        }
+        let host = ascii.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: "."))
+        return host.isEmpty ? nil : host
+    }
+}
