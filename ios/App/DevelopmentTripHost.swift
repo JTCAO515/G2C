@@ -862,7 +862,7 @@ private var developmentHostEnvironment: [String: String] {
     let travelSelection: TravelSelectionModel?
     #if G2C_DEMO_BETA
     let lio: LioService
-    let lioChats: LioChatLibrary?
+    let lioChats: LioChatLibrary
     let lioTripHistory: LioTripHistoryClient
     let lioMemoryActions: LioMemoryActionsClient
     #endif
@@ -918,25 +918,16 @@ private var developmentHostEnvironment: [String: String] {
         #if G2C_DEMO_BETA
         let lioEndpoint = try MessageEndpoint(url: configuration.endpoint, maximumRequestBytes: LioMemoryWire.maximumRequestBytes,
                                               maximumResponseBytes: 4_500_000)
-        #if G2C_LIO_CONVERSATIONS_V2
-        let firstChatRecovery: MessageRecovery? = recovery
-        #else
-        let firstChatRecovery: MessageRecovery? = nil
-        #endif
         let lioClient = try LioTimelineHTTP(endpoint: lioEndpoint, scope: scope, lease: lease,
-                                           credentials: credentials, firstChatRecovery: firstChatRecovery,
+                                           credentials: credentials, firstChatRecovery: recovery,
                                            validate: { try lifetime.validate() })
         let lioService = LioService.signedTimeline(lioClient)
         lio = lioService
-        #if G2C_LIO_CONVERSATIONS_V2
         lioChats = .signed(client: lioClient, defaultService: lioService, language: { shell.language.lio },
                            tripHistory: { conversationID in
             LioTripHistoryClient(timeline: lioClient, recovery: recovery, scope: scope, lease: lease,
                                  conversationID: conversationID)
         })
-        #else
-        lioChats = nil
-        #endif
         lioTripHistory = LioTripHistoryClient(timeline: lioClient, recovery: recovery, scope: scope, lease: lease)
         lioMemoryActions = LioMemoryActionsClient(timeline: lioClient, recovery: recovery, scope: scope, lease: lease)
         #endif
