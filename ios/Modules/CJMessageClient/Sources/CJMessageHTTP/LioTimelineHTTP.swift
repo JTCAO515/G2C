@@ -63,12 +63,12 @@ public final class LioTimelineHTTP {
         return page
     }
 
-    func tripHistory(before: String?) async throws -> LioTripHistoryWire.Page {
+    func tripHistory(before: String?, conversationID: String? = nil) async throws -> LioTripHistoryWire.Page {
         let token = try await bearer()
-        let (response, body) = try await transport.readLioTrip(before: before, bearer: token)
+        let (response, body) = try await transport.readLioTrip(before: before, bearer: token, conversationID: conversationID)
         guard response.status.code == 200 else { throw MessageHTTPFailure.invalidResponse }
         let bytes = try await json(response, body, limit: 4_500_000)
-        return try LioTripHistoryWire.decodePage(bytes, before: before)
+        return try LioTripHistoryWire.decodePage(bytes, before: before, conversationID: conversationID)
     }
 
     func submitUndo(_ undo: LioTripHistoryWire.Undo) async throws -> LioTripHistoryClient.SubmissionResult {

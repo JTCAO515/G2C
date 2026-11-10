@@ -27,7 +27,7 @@ private struct LioChatHistoryFixture: View {
 
     var body: some View {
         LioHome(language: shell.language.lio, service: original.service, isDemo: true,
-                chatLibrary: LioChatLibrary(currentID: "fixture-original", history: { chats }, create: {
+                chatLibrary: LioChatLibrary(currentID: "fixture-original", history: { chats }, newChat: {
             let chat = LioChatSession(id: "fixture-new-\(chats.count)", title: "New conversation", service: .demo)
             chats.insert(chat, at: 0)
             return chat

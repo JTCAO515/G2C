@@ -12,18 +12,18 @@ public struct LioChatSession: Identifiable, Sendable {
     }
 }
 
-/// Supplies conversation-scoped services for the current account. The signed
-/// adapter must settle the original creation before reporting its outcome.
+/// Supplies conversation-scoped services for the current account. Starting a
+/// blank chat is local. The signed service creates it with the first send.
 public struct LioChatLibrary {
     let currentID: Data
     let history: @MainActor () async throws -> [LioChatSession]
-    let create: @MainActor () async throws -> LioChatSession
+    let newChat: @MainActor () -> LioChatSession
 
     public init(currentID: String,
                 history: @escaping @MainActor () async throws -> [LioChatSession],
-                create: @escaping @MainActor () async throws -> LioChatSession) {
+                newChat: @escaping @MainActor () -> LioChatSession) {
         self.currentID = Data(currentID.utf8)
         self.history = history
-        self.create = create
+        self.newChat = newChat
     }
 }

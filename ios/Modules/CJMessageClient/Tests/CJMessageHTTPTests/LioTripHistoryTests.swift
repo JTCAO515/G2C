@@ -53,6 +53,48 @@ struct LioTripHistoryTests {
         #expect(throws: MessageHTTPFailure.invalidResponse) { try LioTripHistoryWire.decodePage(data) }
     }
 
+    @Test func v2UndoStaysWithItsOriginalConversation() async throws {
+        let conversation = "lio-dialogue-0123456789abcdef0123456789abcdef"
+        let other = "lio-dialogue-00000000000000000000000000000000"
+        let data = Data(String(decoding: historyJSON(historyTripID: "trip:synthetic"), as: UTF8.self)
+            .replacingOccurrences(of: "\"LIO-trip-history.1\"", with: "\"LIO-trip-history.2\",\"conversation_id\":\"\(conversation)\"").utf8)
+        let page = try LioTripHistoryWire.decodePage(data, conversationID: conversation)
+        #expect(throws: MessageHTTPFailure.invalidResponse) { try LioTripHistoryWire.decodePage(data, conversationID: other) }
+        let target = try #require(page.undoTarget)
+        let scope = try StorageScope(environment: "synthetic", account: UUID().uuidString)
+        let recovery = MessageRecovery(storage: UndoFixtureStore())
+        let lease = try recovery.activate(scope)
+        var written: [Data] = []
+        var queried: [Data] = []
+        let original = LioTripHistoryClient(recovery: recovery, scope: scope, lease: lease, conversationID: conversation,
+            readHistory: { _ in page }, submit: { undo in
+                written.append(undo.originalUTF8)
+                throw URLError(.networkConnectionLost)
+            }, readReceipt: { undo in
+                queried.append(undo.originalUTF8)
+                let wrong = Data("""
+                    {"version":"LIO-trip-undo-receipt.2","action_id":"\(undo.actionID)","conversation_id":"\(other)","committed":true}
+                    """.utf8)
+                #expect(throws: MessageHTTPFailure.invalidResponse) { try undo.committed(wrong) }
+                return Data("""
+                    {"version":"LIO-trip-undo-receipt.2","action_id":"\(undo.actionID)","conversation_id":"\(conversation)","committed":true}
+                    """.utf8)
+            })
+        let alternate = LioTripHistoryClient(recovery: recovery, scope: scope, lease: lease, conversationID: other,
+            readHistory: { _ in page }, submit: { _ in Issue.record("Wrong conversation submitted"); return .conflict(Data()) },
+            readReceipt: { _ in Issue.record("Wrong conversation reconciled"); return nil })
+
+        await #expect(throws: MessageHTTPFailure.invalidConfiguration) { _ = try await alternate.undo(target) }
+        #expect(try await original.undo(target) == .pending)
+        #expect(try !alternate.hasPendingUndo())
+        #expect(try await alternate.reconcileUndo() == nil)
+        #expect(try await original.reconcileUndo() == .committed)
+        #expect(written.count == 1 && queried == written)
+        let bytes = try #require(written.first)
+        let payload = try #require(JSONSerialization.jsonObject(with: bytes) as? [String: String])
+        #expect(payload["conversation_id"] == conversation && payload["version"] == "LIO-trip-undo.2")
+    }
+
     @Test func aRefusedTargetDoesNotAuthorizeAnAutomaticNewUndo() async throws {
         let page = try history()
         let target = try #require(page.undoTarget)

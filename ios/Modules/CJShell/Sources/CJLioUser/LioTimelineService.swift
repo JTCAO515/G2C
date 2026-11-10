@@ -45,6 +45,12 @@ struct LioTimelineTurn: Sendable {
 struct LioTimelinePage: Sendable {
     let turns: [LioTimelineTurn]
     let nextBefore: String?
+    static let empty = Self(turns: [], nextBefore: nil)
+
+    private init(turns: [LioTimelineTurn], nextBefore: String?) {
+        self.turns = turns
+        self.nextBefore = nextBefore
+    }
 
     init(_ page: LioTimelineWire.Page) {
         turns = page.messages.map(LioTimelineTurn.init)
@@ -72,6 +78,19 @@ extension LioService {
         })
     }
 
+    public static func signedConversation(_ client: LioTimelineHTTP, destination: LioTimelineWire.V2Destination,
+                                          didCreate: @escaping @Sendable (String) async -> Void) -> LioService {
+        timeline(send: { original in
+            switch try await client.submit(original) {
+            case .accepted(let id): .accepted(conversationID: id)
+            case .notSent: .notSent
+            case .dailyLimit: .dailyLimit
+            }
+        }, read: { id, before in
+            try await client.timeline(conversationID: id, before: before, version: .v2)
+        }, destination: destination, didCreate: didCreate)
+    }
+
     enum SendResult: Sendable {
         case accepted(conversationID: String)
         case notSent, dailyLimit, uncertain
@@ -82,11 +101,13 @@ extension LioService {
     static func timeline(
         send: @escaping @Sendable (LioTimelineWire.Send) async throws -> SendResult,
         read: @escaping @Sendable (String?, String?) async throws -> LioTimelineWire.Page,
+        destination: LioTimelineWire.V2Destination? = nil,
+        didCreate: @escaping @Sendable (String) async -> Void = { _ in },
         pollInterval: Duration = .seconds(2),
         observationWindow: Duration = .seconds(90),
         recoveryInterval: Duration = .seconds(15)
     ) -> LioService {
-        let session = LioTimelineSession(send: send, read: read)
+        let session = LioTimelineSession(send: send, read: read, destination: destination, didCreate: didCreate)
         return LioService(updates: { waiting in
             session.observe(waiting: waiting, interval: pollInterval, window: observationWindow,
                             recoveryInterval: waiting.isEmpty ? nil : recoveryInterval)
@@ -130,7 +151,10 @@ extension LioService {
 private actor LioTimelineSession {
     let send: @Sendable (LioTimelineWire.Send) async throws -> LioService.SendResult
     let read: @Sendable (String?, String?) async throws -> LioTimelineWire.Page
+    let destination: LioTimelineWire.V2Destination?
+    let didCreate: @Sendable (String) async -> Void
     private var conversationID: String?
+    private var firstOriginal: LioTimelineWire.Send?
     private enum Submission {
         case attempted
         case notSent(LioTimelineWire.Send)
@@ -139,12 +163,21 @@ private actor LioTimelineSession {
     private var submissions: [Data: Submission] = [:]
 
     init(send: @escaping @Sendable (LioTimelineWire.Send) async throws -> LioService.SendResult,
-         read: @escaping @Sendable (String?, String?) async throws -> LioTimelineWire.Page) {
+         read: @escaping @Sendable (String?, String?) async throws -> LioTimelineWire.Page,
+         destination: LioTimelineWire.V2Destination?, didCreate: @escaping @Sendable (String) async -> Void) {
         self.send = send
         self.read = read
+        self.destination = destination
+        self.didCreate = didCreate
+        if case .some(.existing(let id)) = destination { conversationID = id }
     }
 
     func submit(_ question: LioQuestion) async throws -> LioService.SendResult {
+        if let firstOriginal, !firstOriginal.messageID.utf8.elementsEqual(question.messageID.utf8) {
+            // The first send has no confirmed conversation ID. Do not send
+            // another first message or attach it to the default conversation.
+            return .uncertain
+        }
         let original: LioTimelineWire.Send
         switch (question.isResend, submissions[question.id]) {
         case (true, .notSent(let retry)):
@@ -152,19 +185,30 @@ private actor LioTimelineSession {
         case (false, .notSent):
             return .notSent
         case (false, nil):
-            original = try LioTimelineWire.Send(messageID: question.messageID, text: question.text,
-                                                locale: question.language == .english ? .english : .chinese,
-                                                conversationID: conversationID)
+            let locale: LioTimelineWire.Locale = question.language == .english ? .english : .chinese
+            if let destination {
+                original = try LioTimelineWire.Send(messageID: question.messageID, text: question.text, locale: locale,
+                                                    destination: conversationID.map(LioTimelineWire.V2Destination.existing) ?? destination)
+            } else {
+                original = try LioTimelineWire.Send(messageID: question.messageID, text: question.text,
+                                                    locale: locale, conversationID: conversationID)
+            }
         default:
             return .uncertain
         }
+        if case .some(.newChat) = destination, conversationID == nil { firstOriginal = original }
         submissions[question.id] = .attempted
         do {
             let outcome = try await send(original)
             switch outcome {
-            case .accepted(let id): conversationID = id
+            case .accepted(let id):
+                let created = firstOriginal != nil
+                conversationID = id
+                firstOriginal = nil
+                if created { await didCreate(id) }
             case .notSent: submissions[question.id] = .notSent(original)
-            case .dailyLimit, .uncertain: break
+            case .dailyLimit: firstOriginal = nil
+            case .uncertain: break
             }
             return outcome
         } catch is CancellationError {
@@ -245,6 +289,7 @@ private actor LioTimelineSession {
     }
 
     func page(before: String? = nil) async throws -> LioTimelinePage {
+        if case .some(.newChat) = destination, conversationID == nil { return .empty }
         let page = try await read(conversationID, before)
         try Task.checkCancellation()
         if let id = page.conversationID { conversationID = id }

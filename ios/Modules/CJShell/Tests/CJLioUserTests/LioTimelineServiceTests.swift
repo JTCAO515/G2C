@@ -95,6 +95,51 @@ struct LioTimelineServiceTests {
         #expect(await fixture.sent.map(\.messageID) == [question.messageID])
     }
 
+    @Test func blankV2ConversationBecomesScopedOnlyAfterTheFirstReceipt() async throws {
+        let fixture = TimelineFixture()
+        let service = LioService.timeline(
+            send: { try await fixture.submit($0) }, read: { try await fixture.read($0, before: $1, version: .v2) },
+            destination: .newChat, didCreate: { await fixture.recordCreated($0) },
+            pollInterval: .milliseconds(1), observationWindow: .seconds(2))
+        let model = LioConversation(service: service)
+        await model.refreshTimeline()
+        #expect(model.turns.isEmpty)
+        #expect(await fixture.v2Reads.isEmpty)
+        model.send("First question", language: .english)
+        await model.receive(try #require(model.pending))
+        model.send("Next question", language: .english)
+        await model.receive(try #require(model.pending))
+
+        let sent = await fixture.sent
+        try #require(sent.count == 2)
+        let first = try #require(JSONSerialization.jsonObject(with: sent[0].originalUTF8) as? [String: Any])
+        let second = try #require(JSONSerialization.jsonObject(with: sent[1].originalUTF8) as? [String: Any])
+        #expect(first["new_conversation"] as? Bool == true && first["conversation_id"] == nil)
+        #expect(second["conversation_id"] as? String == fixture.conversationID && second["new_conversation"] == nil)
+        #expect(await fixture.v2Reads.allSatisfy { $0 == fixture.conversationID })
+        #expect(await fixture.created == [fixture.conversationID])
+        #expect(model.turns.count == 2 && model.turns.allSatisfy { $0.status == .finished })
+    }
+
+    @Test func uncertainFirstV2SendNeverReadsDefaultOrCreatesAnotherConversation() async throws {
+        let fixture = TimelineFixture(loseResponse: true)
+        let service = LioService.timeline(
+            send: { try await fixture.submit($0) }, read: { try await fixture.read($0, before: $1, version: .v2) },
+            destination: .newChat, didCreate: { await fixture.recordCreated($0) },
+            pollInterval: .milliseconds(1), observationWindow: .milliseconds(3))
+        let model = LioConversation(service: service)
+        model.send("First question", language: .english)
+        let first = try #require(model.pending)
+        await model.receive(first)
+        #expect(model.turns.last?.status == .failed(.waiting))
+        model.send("Another question", language: .english)
+        await model.receive(try #require(model.pending))
+
+        #expect(await fixture.sent.map(\.messageID) == [first.messageID])
+        #expect(await fixture.v2Reads.isEmpty)
+        #expect(await fixture.created.isEmpty)
+    }
+
     @Test func reconnectAfterTheSendWindowRecoversTheAnswerWithoutAnotherWrite() async throws {
         let fixture = TimelineFixture(loseResponse: true)
         await fixture.disconnect()
@@ -263,6 +308,8 @@ private actor TimelineFixture {
     let firstAnswerNeedsOlderReads: Int
     private(set) var olderRequests: [String] = []
     private(set) var sent: [LioTimelineWire.Send] = []
+    private(set) var v2Reads: [String?] = []
+    private(set) var created: [String] = []
     private var accepted: [LioTimelineWire.Send] = []
     private var readCount = 0
     private var readsUntilConnection: Int?
@@ -283,6 +330,8 @@ private actor TimelineFixture {
         accepted.append(send)
     }
 
+    func recordCreated(_ id: String) { created.append(id) }
+
     func submit(_ send: LioTimelineWire.Send) throws -> LioService.SendResult {
         sent.append(send)
         if firstNotSent, sent.count == 1 { return .notSent }
@@ -292,18 +341,19 @@ private actor TimelineFixture {
         return .accepted(conversationID: conversationID)
     }
 
-    func read(_ expected: String?, before: String?) throws -> LioTimelineWire.Page {
+    func read(_ expected: String?, before: String?, version: LioTimelineWire.Version = .v1) throws -> LioTimelineWire.Page {
         if let readsUntilConnection, readsUntilConnection > 0 {
             self.readsUntilConnection = readsUntilConnection - 1
             throw URLError(.notConnectedToInternet)
         }
         readCount += 1
-        var rows: [[String: Any]] = [
+        if version == .v2 { v2Reads.append(expected) }
+        var rows: [[String: Any]] = version == .v1 ? [
             ["message_id": "previous", "text": "Hi", "answer": "Hello", "status": "completed", "sources": []]
-        ]
+        ] : []
         for send in accepted {
-            let payload = try #require(JSONSerialization.jsonObject(with: send.originalUTF8) as? [String: String])
-            let text = try #require(payload["text"])
+            let payload = try #require(JSONSerialization.jsonObject(with: send.originalUTF8) as? [String: Any])
+            let text = try #require(payload["text"] as? String)
             if serviceLimit {
                 rows.append(["message_id": send.messageID, "text": text, "answer": "",
                              "status": "failed", "failure": "quota", "sources": []])
@@ -328,8 +378,8 @@ private actor TimelineFixture {
         let visible = Array(rows.suffix(20))
         let cursor: Any = rows.count > visible.count ? try #require(visible.first?["message_id"]) : NSNull()
         let data = try JSONSerialization.data(withJSONObject: [
-            "version": "LIO-timeline.1", "conversation_id": conversationID, "messages": visible, "next_before": cursor
+            "version": "LIO-timeline.\(version.rawValue)", "conversation_id": conversationID, "messages": visible, "next_before": cursor
         ])
-        return try LioTimelineWire.decodePage(data, for: expected)
+        return try LioTimelineWire.decodePage(data, for: expected, version: version)
     }
 }

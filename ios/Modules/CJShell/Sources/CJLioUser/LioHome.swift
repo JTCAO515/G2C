@@ -18,8 +18,6 @@ public struct LioHome<MenuContent: View>: View {
     @State private var draft = ""
     @State private var chatID: Data?
     @State private var chatDrafts: [Data: String] = [:]
-    @State private var openingChat = false
-    @State private var chatUnavailable = false
     @State private var menuOpen = false
     @State private var source: LioSource?
     @State private var followsAnswer = true
@@ -172,11 +170,12 @@ public struct LioHome<MenuContent: View>: View {
                     if let chatLibrary {
                         Section {
                             Button {
-                                Task { await createChat(in: chatLibrary) }
+                                guard canSwitchChat else { return }
+                                switchChat(chatLibrary.newChat())
                             } label: {
                                 Label(language.text("New chat", "新对话"), systemImage: "square.and.pencil")
                             }
-                            .disabled(openingChat || !canSwitchChat)
+                            .disabled(!canSwitchChat)
                             .accessibilityIdentifier("lio.chat.new")
                             NavigationLink {
                                 LioChatHistoryView(library: chatLibrary, language: language, currentID: chatID,
@@ -184,13 +183,7 @@ public struct LioHome<MenuContent: View>: View {
                             } label: {
                                 Label(language.text("Chat history", "历史对话"), systemImage: "clock")
                             }
-                            .disabled(openingChat)
                             .accessibilityIdentifier("lio.chat.history")
-                            if openingChat {
-                                ProgressView(language.text("Opening chat…", "正在打开对话…"))
-                            } else if chatUnavailable {
-                                Text(language.text("Couldn’t open a new chat.", "暂时无法打开新对话。"))
-                            }
                         }
                     }
                     menu
@@ -200,11 +193,9 @@ public struct LioHome<MenuContent: View>: View {
                 .toolbar {
                     ToolbarItem(placement: .confirmationAction) {
                         Button(language.text("Done", "完成")) { menuOpen = false }
-                            .disabled(openingChat)
                     }
                 }
             }
-            .interactiveDismissDisabled(openingChat)
         }
         .sheet(item: $source) { selected in
             LioSourceSheet(source: selected, language: language)
@@ -214,22 +205,6 @@ public struct LioHome<MenuContent: View>: View {
     private var canSwitchChat: Bool {
         scenePhase == .active && conversation.pending == nil && !memoryBusy && !memoryPending
             && tripPlan?.busy != true && tripPlan?.pending != true
-    }
-
-    private func createChat(in library: LioChatLibrary) async {
-        guard canSwitchChat, !openingChat else { return }
-        openingChat = true
-        chatUnavailable = false
-        defer { openingChat = false }
-        do {
-            let chat = try await library.create()
-            try Task.checkCancellation()
-            switchChat(chat)
-        } catch is CancellationError {
-            return
-        } catch {
-            chatUnavailable = true
-        }
     }
 
     private func switchChat(_ chat: LioChatSession) {
