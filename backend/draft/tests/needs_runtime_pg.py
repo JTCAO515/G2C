@@ -28,6 +28,8 @@ from cj_draft.needs_local import publisher
 from cj_draft.needs_publisher import SYSTEM
 import dev_auth
 
+PLAN_SYSTEMS = (SYSTEM, LioPlanPublisher.system)
+
 
 def known(value):return dict(state='known',value=value)
 def event(clock):return dict(date=known('2026-11-02'),time=known(clock),timezone=known('Asia/Shanghai'),place=dict(state='unknown'))
@@ -38,7 +40,7 @@ def fixed(key,start,end,locked):return dict(item_id=key,kind='appointment',descr
 class PlanModel(FakeProvider):
     def __init__(self,change=None):super().__init__();self.change=change;self.source_seen=False
     def stream(self,messages,system=None):
-        if system not in (SYSTEM, LioPlanPublisher.system):
+        if system not in PLAN_SYSTEMS:
             yield from super().stream(messages,system);return
         self.calls+=1;self.source_seen=True
         source=json.loads(messages[-1]['content']);items=[]
