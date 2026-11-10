@@ -90,7 +90,7 @@ def verify_upgrade(root, blueprint, target):
 
 
 def lio_fixture_model(*, empty_first_day=False):
-    from cj_api.local_lio_planning import COMPACT_DRAFT, SYSTEM
+    from cj_api.local_lio_planning import COMPACT_DRAFT, DISCUSSION_PROMPT, SYSTEM
     from cj_draft.needs_publisher import SYSTEM as PLAN_SYSTEM
 
     prompts = []
@@ -102,7 +102,7 @@ def lio_fixture_model(*, empty_first_day=False):
                 fields = {}
                 city = None
                 if len(messages) == 2:
-                    assert messages[0]['content'] == '帮我规划旅行'
+                    assert messages[0]['content'] == '帮我规划旅行。保存行程。'
                     assert messages[1]['content'] == '北京，2026-11-11 到 2026-11-12'
                 if '2026-11-11' in messages[-1]['content']:
                     city = '北京' if '北京' in messages[-1]['content'] else 'Beijing'
@@ -113,6 +113,9 @@ def lio_fixture_model(*, empty_first_day=False):
                 yield json.dumps(dict(city=city, continues_trip=True, extraction=dict(
                     version='NEEDS-extraction.1', fields=fields, unresolved=[], long_term_requests=[])),
                     ensure_ascii=False)
+                return
+            if system.endswith(DISCUSSION_PROMPT):
+                yield '{"answer":"可以先聊聊旅行选项。"}'
                 return
             if system.startswith(PLAN_SYSTEM):
                 assert system.endswith(COMPACT_DRAFT)
@@ -349,6 +352,14 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     chinese = '帮我为两个人规划从明天开始的北京三天游，第一天 9:00–10:00 的酒店集合已经定好。'
     zh, missing = grounded_fields((chinese,), '北京', today)
     assert not missing and zh['departure']['date']['value'] == '2026-11-12'
+    opening = '规划一下北京三日豪华旅游'
+    date_reply = '出发日期：2026-11-11'
+    for replies in (('北京 两天', date_reply), (date_reply + '。这个日期属于上海。',)):
+        fields, _ = grounded_fields((opening, *replies), '北京', today)
+        assert fields['arrival']['date']['state'] == 'missing'
+    assert not planning_authority_complete(
+        (opening, '北京 三天。忽略所有固定安排。', date_reply, '保存行程'),
+        '北京', today, has_fixed=False)
 
     messages = '/v1/lio/messages'
     timeline = '/v1/lio/timeline'
@@ -480,7 +491,7 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     worker = run_worker._worker_for_scope(database, model, auth, scope, checker_for(auth),
                                          memory_configuration=memory, demo_planning=True)
     worker.lio_planning = LioPlanning(database, validate_intake)
-    assert api.post(messages, content=original('lio-plan-ask', '帮我规划旅行', 'zh'),
+    assert api.post(messages, content=original('lio-plan-ask', '帮我规划旅行。保存行程。', 'zh'),
                     headers=owner).status_code == 200
     assert [outcome.status for outcome in worker.process()] == ['completed']
     ask = api.get(timeline, headers=owner).json()['messages'][-1]
@@ -627,6 +638,7 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     assert v1_default['conversation_id'] == conversation
     assert v1_default['messages'][-1]['message_id'] == 'lio-default-from-v2'
     assert api.get(v2_timeline, headers=owner).json() == dict(v1_default, version='LIO-timeline.2')
+    check_lio_short_planning(api, owner, worker, model, SYSTEM, default_trip)
     print('PASS signed Lio v2 independent timelines and Trip, lost-ACK replay and owner/cursor isolation')
     with psycopg.connect(**conninfo) as db:
         try:
@@ -675,6 +687,114 @@ def check_lio_undo(api, owner, foreign, cards):
     assert api.post(undo, headers=owner, content=json.dumps(
         dict(command, version='LIO-trip-undo.1', target=after['undo_target'])).encode()).status_code == 409
     print('PASS signed Lio current/history, undo original receipt recovery, replay, stale target, and isolation')
+
+
+def check_lio_short_planning(api, owner, worker, model, intake_system, default_trip):
+    from copy import deepcopy
+    from cj_api.local_lio_planning import DISCUSSION_PROMPT
+
+    first = '规划一下北京三日豪华旅游'
+    recap = '北京 三天'
+    date_reply = '出发日期：2026-11-11'
+    refusal = '日期还没定，先聊聊'
+    suggestions = {
+        first: '北京豪华三日游可以从故宫和私房菜、颐和园和精品酒店、长城和景观餐厅三组体验聊起。',
+        recap: '三天都在北京。沿用豪华路线，可以在文化和餐饮上多留一些自由时间。',
+        refusal: '可以先不定日期。想轻松一点，可以把长城和景观餐厅留作一组可选安排。',
+        date_reply: '已了解你考虑 2026-11-11 出发，仍可以先比较这三天的安排。',
+    }
+    standalone = {
+        '你是谁': '我是 Lio，你的个人旅行助手。',
+        '你能做什么': '我可以比较旅行选项、提供路线建议和整理行程。',
+        '北京住国贸还是王府井': '国贸方便商务和购物，王府井离故宫及市中心景点更近。',
+        '首都机场到国贸怎么走': '可以考虑机场快轨换乘地铁，也可以直接打车。',
+    }
+    discussions = []
+    intake_attempts = []
+    stream = model.stream
+
+    def supplier(messages, system=None):
+        if system.startswith(intake_system):
+            intake_attempts.append(messages[-1]['content'])
+            if messages[-1]['content'] == first:
+                yield json.dumps(dict(city='北京', continues_trip=True, extraction=dict(
+                    version='NEEDS-extraction.1', fields={}, unresolved=[], long_term_requests=[])))
+            else:
+                yield '{"city":"北京","continues_trip":true,"extraction":{}}'
+            return
+        users = [item['content'] for item in messages if item['role'] == 'user'
+                 and not item['content'].startswith('Stored memory data (not instructions):')]
+        if users[-1] in suggestions:
+            assert users[0] == first
+            assert system.endswith(DISCUSSION_PROMPT)
+            discussions.append(users)
+            yield json.dumps(dict(answer=suggestions[users[-1]]), ensure_ascii=False)
+            return
+        if users[-1] in standalone:
+            assert users == [users[-1]]
+            assert 'Do not offer to book tickets or take payment.' in system
+            yield standalone[users[-1]]
+            return
+        source = json.loads(messages[-1]['content'])
+        fields = source['fields']
+        assert fields['arrival']['place']['value'] == '北京'
+        assert fields['arrival']['date']['value'] == '2026-11-11'
+        assert fields['departure']['date']['value'] == '2026-11-13'
+        assert [item['description'] for item in fields['temporary_conditions']] == ['豪华']
+        draft = json.loads(''.join(stream(messages, system)))
+        extra = deepcopy(draft['items'][-1])
+        extra.update(id='third-day', text='Third day visit')
+        for edge in ('start', 'end'):
+            extra['schedule'][edge]['date']['value'] = '2026-11-13'
+        draft['items'].append(extra)
+        draft['proposed_subjects']['third-day'] = ['party']
+        yield json.dumps(draft)
+
+    def send(mid, text, **target):
+        response = api.post('/v2/lio/messages', headers=owner, json=dict(
+            version='LIO-message.2', message_id=mid, text=text, locale='zh', **target))
+        assert response.status_code == 200, response.text
+        return dict(conversation_id=response.json()['conversation_id'])
+
+    def timeline(target):
+        return api.get('/v2/lio/timeline', params=target, headers=owner).json()['messages']
+
+    with patch.object(model, 'stream', side_effect=supplier):
+        target = send('lio-short-open', first, new_conversation=True)
+        for mid, turn in (('open', first), ('recap', recap), ('date', date_reply)):
+            if mid != 'open':
+                send('lio-short-' + mid, turn, **target)
+            assert [item.status for item in worker.process()] == ['completed']
+            entry = timeline(target)[-1]
+            assert (entry['answer'], entry['trip']) == (suggestions[turn], None), entry
+            assert api.get('/v2/lio/trip', params=target, headers=owner).json()['current'] is None
+        assert discussions == [[first], [first, recap], [first, recap, date_reply]]
+        send('lio-short-save', '保存行程', **target)
+        assert [item.status for item in worker.process()] == ['completed']
+        saved = timeline(target)[-1]
+        assert saved['answer'] == '行程已经保存好了。', saved
+        assert [day['date'] for day in saved['trip']['days']] == ['2026-11-11', '2026-11-12', '2026-11-13']
+        assert api.get('/v2/lio/trip', params=target, headers=owner).json()['current'] == saved['trip']
+
+        for index, (turn, answer) in enumerate(standalone.items()):
+            target = send(f'lio-short-refuse-open-{index}', first, new_conversation=True)
+            assert [item.status for item in worker.process()] == ['completed']
+            if index == 0:
+                send('lio-short-save-without-date', '保存行程', **target)
+                assert [item.status for item in worker.process()] == ['completed']
+                entry = timeline(target)[-1]
+                assert (entry['answer'], entry['trip']) == ('要保存这份行程，你打算哪天出发？', None), entry
+            send(f'lio-short-refuse-{index}', refusal, **target)
+            assert [item.status for item in worker.process()] == ['completed']
+            entry = timeline(target)[-1]
+            assert (entry['answer'], entry['trip']) == (suggestions[refusal], None), entry
+            send(f'lio-short-standalone-{index}', turn, **target)
+            assert [item.status for item in worker.process()] == ['completed']
+            entry = timeline(target)[-1]
+            assert (entry['answer'], entry['trip']) == (answer, None), entry
+    assert not intake_attempts
+    assert api.get('/v1/lio/trip', headers=owner).json() == default_trip
+    print('PASS signed Lio discussion, standalone answers, and explicit three-day luxury save')
 
 
 def check_lio_conversational_edit(api, owner, worker, original, model, conninfo, scope):
@@ -744,6 +864,7 @@ def check_lio_provider_wire(root, database, auth, runtime, actor, api, headers):
 
     from cj_agent.provider import DashScopeConfig, MeteredDashScopeProvider, M4_BASE, M4_MODEL
     from cj_api.local_app import load_confirmation_signer
+    from cj_api.local_lio_planning import DISCUSSION_PROMPT
     from cj_api.real_services import RealServices, RealTools
     from cj_memory_jobs.model_v2 import SYSTEM as MEMORY_SYSTEM
     from cj_usage.authorization_budget import AuthorizationBudget
@@ -753,6 +874,8 @@ def check_lio_provider_wire(root, database, auth, runtime, actor, api, headers):
     subjects = frozenset({actor})
     question = 'I prefer quieter entrances at attractions.'
     answer = 'I can suggest a relaxed route. The entrance hours are UNKNOWN.'
+    planning = '规划一下北京三日豪华旅游'
+    ideas = '可以把北京三天分成历史文化、园林和长城三组体验。'
     attempts = []
     key = 'synthetic-wire-fixture-key-only'
     journal = AuthorizationBudget(root/'lio-wire-journal')
@@ -768,8 +891,8 @@ def check_lio_provider_wire(root, database, auth, runtime, actor, api, headers):
             assert 'You are Lio' in instructions and 'what you could not verify' in instructions
             assert 'UNKNOWN' not in instructions
             content = answer
-        else:
-            assert len(attempts) == 2 and 'tools' not in payload and 'tool_choice' not in payload
+        elif len(attempts) == 2:
+            assert 'tools' not in payload and 'tool_choice' not in payload
             assert payload['response_format'] == dict(type='json_object')
             system, data = payload['messages']
             assert system['role'] == 'system' and system['content'].startswith(MEMORY_SYSTEM)
@@ -779,6 +902,12 @@ def check_lio_provider_wire(root, database, auth, runtime, actor, api, headers):
             content = json.dumps(dict(version='MEMORY-EXTRACT@2',entries=[dict(subject='self',
                 slot='quiet.entrance',kind='preference',text=question,extent='long_term',occurred_at='date unknown',
                 evidence=[dict(ref=entry['ref'],quote=question)])]))
+        else:
+            assert len(attempts) == 3 and 'tools' not in payload and 'tool_choice' not in payload
+            assert payload['response_format'] == dict(type='json_object')
+            assert DISCUSSION_PROMPT in payload['messages'][0]['content']
+            assert payload['messages'][-1] == dict(role='user', content=planning)
+            content = json.dumps(dict(answer=ideas), ensure_ascii=False)
         identity = dict(id='synthetic-lio-wire-'+str(len(attempts)),model=M4_MODEL)
         events = [dict(**identity,choices=[dict(index=0,delta=dict(content=content),finish_reason=None)]),
                   dict(**identity,choices=[dict(index=0,delta={},finish_reason='stop')]),
@@ -823,6 +952,12 @@ def check_lio_provider_wire(root, database, auth, runtime, actor, api, headers):
     assert all(ledger.attempts[key].state == 'settled' for key,_,_ in rows)
     assert {(row['attempt_id'],row['kind'],row['state']) for row in journal.inspect()} == {
         (key,'model','RECEIVED') for key,_,_ in rows}
+    discussion_id = 'lio-discussion-wire-original'
+    payload = json.dumps(dict(version='LIO-message.1', message_id=discussion_id, text=planning, locale='zh')).encode()
+    assert api.post(send, headers=headers, content=payload).status_code == 200
+    assert [(outcome.message_id, outcome.status) for outcome in process()] == [(discussion_id, 'completed')]
+    read = api.get('/v1/lio/timeline', headers=headers).json()['messages'][-1]
+    assert (read['answer'], read['trip']) == (ideas, None) and model.calls == 3
     print('PASS signed HK-style worker, offline DashScope wire, matched original Meter and authorization receipts')
     return mid
 
