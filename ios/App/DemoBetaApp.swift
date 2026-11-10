@@ -142,6 +142,7 @@ private struct LioAccountDeletion: View {
 private struct DemoInviteView: View {
     let shell: ShellState
     let accounts: DevelopmentAccountHost
+    @State private var triedRestore = false
     private var language: ShellLanguage { shell.language }
 
     var body: some View {
@@ -153,12 +154,14 @@ private struct DemoInviteView: View {
 
     private func signIn(_ code: String) {
         guard accounts.state != .checking else { return }
+        triedRestore = false
         let starter: DemoStarterLanguage = language == .chinese ? .zh : .en
         accounts.signIn { try await DemoInviteClient.exchange(code: code, consent: true, language: starter) }
     }
 
     private func restore() {
         guard accounts.state != .checking else { return }
+        triedRestore = true
         accounts.restore()
     }
 
@@ -169,6 +172,8 @@ private struct DemoInviteView: View {
         case .rejected: language.text("We couldn’t sign you in. Ask your demo organizer for access.", "暂时无法登录，请联系演示组织者。")
         case .networkUnknown: language.text("We couldn’t sign you in. Check your connection and try again.", "暂时无法登录，请检查网络后重试。")
         case .storageUnavailable: language.text("Sign-in is temporarily unavailable.", "暂时无法登录。")
+        case .signedOut where triedRestore:
+            language.text("Enter an invitation code to sign in.", "请输入邀请码登录。")
         case .paused, .signedOut, .signedIn: nil
         }
     }
