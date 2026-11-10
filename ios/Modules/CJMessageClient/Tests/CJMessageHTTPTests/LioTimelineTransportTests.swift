@@ -41,6 +41,39 @@ struct LioTimelineTransportTests {
         #expect(await exit.calls.isEmpty)
     }
 
+    @Test func v2UsesOnlyTheSignedConversationRoutes() async throws {
+        let endpoint = try endpoint()
+        let exit = LioExit()
+        let transport = try NoRedirectTransport(interceptedTransport: exit, messageEndpoint: endpoint,
+                                                validateMessage: {}, lio: true)
+        let original = try LioTimelineWire.Send(messageID: "one", text: "你好", locale: .chinese, destination: .newChat)
+        let conversation = "lio-dialogue-0123456789abcdef0123456789abcdef"
+        await #expect(throws: MessageHTTPFailure.productionActivationUnavailable) {
+            _ = try await transport.send(HTTPRequest(method: .get, scheme: nil, authority: nil, path: "/v2/lio/timeline"),
+                                         body: nil, baseURL: endpoint.url, operationID: "readLioTimelineV2")
+        }
+        _ = try await transport.sendLio(original, bearer: "fixture")
+        _ = try await transport.readLio(conversationID: conversation, before: "one+a&b", bearer: "fixture", version: .v2)
+        let page = try LioTripHistoryWire.decodePage(Data("""
+            {"version":"LIO-trip-history.2","conversation_id":"\(conversation)",
+             "current":{"trip_id":"trip","title":"Trip","days":[]},
+             "history":[{"trip_id":"trip","title":"Earlier trip","days":[]}],
+             "undo_target":"fixture_target","next_before":null}
+            """.utf8), conversationID: conversation)
+        let undo = try LioTripHistoryWire.Undo(target: #require(page.undoTarget))
+        _ = try await transport.readLioTrip(before: "2", bearer: "fixture", conversationID: conversation)
+        _ = try await transport.sendLioUndo(undo, bearer: "fixture")
+        _ = try await transport.readLioUndo(undo, bearer: "fixture")
+        let calls = await exit.calls
+        #expect(calls.map(\.method) == [.post, .get, .get, .post, .get])
+        #expect(calls.map(\.path) == [
+            "/v2/lio/messages", "/v2/lio/timeline?conversation_id=\(conversation)&before=one%2Ba%26b",
+            "/v2/lio/trip?conversation_id=\(conversation)&before=2", "/v2/lio/trip/undo",
+            "/v2/lio/trip/undo?action_id=\(undo.actionID)&target=fixture_target&conversation_id=\(conversation)"
+        ])
+        #expect(calls.map(\.body) == [original.originalUTF8, nil, nil, undo.originalUTF8, nil])
+    }
+
     @Test func tripHistoryAndUndoUseOnlyTheirSignedRoutes() async throws {
         let endpoint = try endpoint()
         let exit = LioExit()

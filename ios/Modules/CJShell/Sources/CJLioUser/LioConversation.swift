@@ -32,6 +32,8 @@ enum LioActivity: Equatable, Sendable {
 enum LioFailure: Equatable, Sendable {
     /// The service can prove the question wasn't sent; keep its identity.
     case notSent
+    /// The service rejected this question before accepting it.
+    case invalidInput
     case dailyLimit
     /// The service confirmed that this question finished without an answer.
     case unfinished

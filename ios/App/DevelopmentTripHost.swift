@@ -862,6 +862,7 @@ private var developmentHostEnvironment: [String: String] {
     let travelSelection: TravelSelectionModel?
     #if G2C_DEMO_BETA
     let lio: LioService
+    let lioChats: LioChatLibrary
     let lioTripHistory: LioTripHistoryClient
     let lioMemoryActions: LioMemoryActionsClient
     #endif
@@ -918,8 +919,15 @@ private var developmentHostEnvironment: [String: String] {
         let lioEndpoint = try MessageEndpoint(url: configuration.endpoint, maximumRequestBytes: LioMemoryWire.maximumRequestBytes,
                                               maximumResponseBytes: 4_500_000)
         let lioClient = try LioTimelineHTTP(endpoint: lioEndpoint, scope: scope, lease: lease,
-                                           credentials: credentials, validate: { try lifetime.validate() })
-        lio = .signedTimeline(lioClient)
+                                           credentials: credentials, firstChatRecovery: recovery,
+                                           validate: { try lifetime.validate() })
+        let lioService = LioService.signedTimeline(lioClient)
+        lio = lioService
+        lioChats = .signed(client: lioClient, defaultService: lioService, language: { shell.language.lio },
+                           tripHistory: { conversationID in
+            LioTripHistoryClient(timeline: lioClient, recovery: recovery, scope: scope, lease: lease,
+                                 conversationID: conversationID)
+        })
         lioTripHistory = LioTripHistoryClient(timeline: lioClient, recovery: recovery, scope: scope, lease: lease)
         lioMemoryActions = LioMemoryActionsClient(timeline: lioClient, recovery: recovery, scope: scope, lease: lease)
         #endif
