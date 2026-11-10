@@ -11,7 +11,7 @@ from fees import usage
 
 SCENES = tuple(f'{prefix}{index:02d}' for prefix in ('Z', 'E') for index in range(1, 6))
 LIO_PHASE_SCENES = {
-    1: ('Z01', 'Z02', 'E01', 'E02'),
+    1: ('Z01', 'Z02', 'Z06', 'E01', 'E02', 'E06'),
     2: ('Z03', 'E03'),
     3: ('Z04', 'Z05', 'E04', 'E05'),
     4: SCENES,

@@ -51,6 +51,18 @@ def test_lio_stage_uses_its_fixed_denominator_and_reports_the_latest_attempt_sep
         summarize(rows, lio_phase=1)
 
 
+def test_lio_stage_one_counts_bilingual_fact_questions_without_changing_legacy_plan():
+    rows = [
+        attempt('Z06', 1, 'PASS', [original('fact-zh')], []),
+        attempt('E06', 1, 'UNKNOWN', [original('fact-en')], None),
+    ]
+    report = summarize(rows, lio_phase=1)
+    assert list(report['scenes']) == ['Z01', 'Z02', 'Z06', 'E01', 'E02', 'E06']
+    assert report['languages']['zh']['success_rate'] == 1 / 3
+    assert report['languages']['en']['outcomes'] == dict(PASS=0, FAIL=0, UNKNOWN=1, UNRUN=2)
+    assert len(summarize([])['scenes']) == 10
+
+
 def test_missing_and_unresolved_meter_remain_unknown_with_known_subtotals():
     completed = dict(attempt_id='model-received', run_id='question', kind='model', state='RECEIVED',
                      receipt=dict(model_id='qwen3.8-flash', region='cn-beijing',
