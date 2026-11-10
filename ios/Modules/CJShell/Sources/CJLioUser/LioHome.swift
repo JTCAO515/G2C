@@ -380,8 +380,8 @@ public struct LioHome<MenuContent: View>: View {
                     .accessibilityIdentifier("lio.question")
             }
             if !turn.answer.isEmpty {
-                if LioPublicDisplay.permitsText(turn.answer) {
-                    Text(turn.answer)
+                if let answer = formattedAnswer(turn.answer) {
+                    Text(answer)
                         .fixedSize(horizontal: false, vertical: true)
                         .textSelection(.enabled)
                         .accessibilityIdentifier("lio.answer")
@@ -454,6 +454,19 @@ public struct LioHome<MenuContent: View>: View {
                 .accessibilityIdentifier("lio.source")
             }
         }
+    }
+
+    private func formattedAnswer(_ text: String) -> AttributedString? {
+        guard LioPublicDisplay.permitsText(text) else { return nil }
+        let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
+        guard var answer = try? AttributedString(markdown: text, options: options) else {
+            return AttributedString(text)
+        }
+        let visible = String(answer.characters)
+        guard visible == text || LioPublicDisplay.permitsText(visible) else { return nil }
+        // The source sheet owns links; formatting the reply must not create new ones.
+        answer.link = nil
+        return answer
     }
 
     @ViewBuilder
