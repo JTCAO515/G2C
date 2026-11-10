@@ -15,6 +15,7 @@ public struct LioHome<MenuContent: View>: View {
     @State private var source: LioSource?
     @State private var followsAnswer = true
     @State private var tab = Tab.chat
+    @State private var tripPath: [Data] = []
     private enum Tab { case chat, trips }
     @FocusState private var typing: Bool
     @Environment(\.scenePhase) private var scenePhase
@@ -37,7 +38,8 @@ public struct LioHome<MenuContent: View>: View {
             chat
                 .tabItem { Label(language.text("Chat", "聊天"), systemImage: "bubble.left") }
                 .tag(Tab.chat)
-            LioTripsView(itineraries: conversation.itineraries, language: language, library: tripLibrary, recordedMap: recordedMap) { tab = .chat }
+            LioTripsView(itineraries: conversation.itineraries, language: language, library: tripLibrary,
+                         recordedMap: recordedMap, path: $tripPath) { tab = .chat }
                 .tabItem { Label(language.text("Trips", "行程"), systemImage: "suitcase") }
                 .tag(Tab.trips)
         }
@@ -273,7 +275,10 @@ public struct LioHome<MenuContent: View>: View {
             }
             messageStatus(turn)
             if let itinerary = turn.itinerary {
-                LioItineraryCard(itinerary: itinerary, language: language) { tab = .trips }
+                LioItineraryCard(itinerary: itinerary, language: language) {
+                    if tripLibrary != nil { tripPath = [Data(itinerary.id.utf8)] }
+                    tab = .trips
+                }
             }
             ForEach(turn.sources) { item in
                 Button { source = item } label: {

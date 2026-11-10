@@ -5,12 +5,20 @@ import Observation
 
 private struct LioTimelineFixture: View {
     let shell: ShellState
+    let tripLibrary: LioTripLibrary?
     @State private var server: TimelineAcceptanceServer
     @State private var service: LioService
 
     init(shell: ShellState, exerciseResend: Bool) {
         self.shell = shell
-        let server = TimelineAcceptanceServer(exerciseResend: exerciseResend)
+        let historicalTrip = ProcessInfo.processInfo.arguments.contains("--lio-stale-trip-acceptance")
+        if historicalTrip {
+            let fixture = ProcessInfo.processInfo.environment["G2C_LIO_PREVIEW_TRIP"]!
+            tripLibrary = try! LioPreviewTripFixture.library(fixture)
+        } else {
+            tripLibrary = nil
+        }
+        let server = TimelineAcceptanceServer(exerciseResend: exerciseResend, historicalTrip: historicalTrip)
         _server = State(initialValue: server)
         _service = State(initialValue: LioService.timeline(
             send: { try await server.submit($0) },
@@ -20,7 +28,7 @@ private struct LioTimelineFixture: View {
     }
 
     var body: some View {
-        LioHome(language: shell.language.lio, service: service, isDemo: true) {
+        LioHome(language: shell.language.lio, service: service, isDemo: true, tripLibrary: tripLibrary) {
             LioLanguagePicker(shell: shell)
         }
         .overlay(alignment: .topTrailing) {
@@ -39,13 +47,18 @@ private final class TimelineAcceptanceServer {
     private enum Step: Int { case sending, weather, prefix, finished }
     private let conversationID = "lio-dialogue-0123456789abcdef0123456789abcdef"
     private let exerciseResend: Bool
+    private let historicalTrip: Bool
     private var step = Step.sending
     private var sent: (id: String, question: String)?
     private var unsent: LioTimelineWire.Send?
     private(set) var reads = 0
     private(set) var sends = 0
 
-    init(exerciseResend: Bool) { self.exerciseResend = exerciseResend }
+    init(exerciseResend: Bool, historicalTrip: Bool) {
+        self.exerciseResend = exerciseResend
+        self.historicalTrip = historicalTrip
+        if historicalTrip { step = .finished }
+    }
 
     func advance() {
         if let next = Step(rawValue: step.rawValue + 1) { step = next }
@@ -82,6 +95,13 @@ private final class TimelineAcceptanceServer {
                 row["status"] = "completed"
                 row["answer"] = "**北京明天**[有小雨](https://weather.example.org/model-link)。"
                 row["sources"] = [["title": "演示天气预报", "url": "https://weather.example.org/beijing"]]
+                if historicalTrip {
+                    row["trip"] = ["trip_id": "trip:lio-map-demo", "title": "Earlier plan", "days": [
+                        ["date": "2026-11-11", "items": [
+                            ["item_id": "old-stop", "label": "Earlier stop", "fixed": false]
+                        ]]
+                    ]]
+                }
             }
             messages = [row]
         }

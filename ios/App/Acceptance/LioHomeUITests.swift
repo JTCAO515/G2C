@@ -39,6 +39,29 @@ import XCTest
         XCTAssertTrue(schedule.exists)
     }
 
+    func testHistoricalChatCardOpensTheCurrentSavedTrip() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-timeline-acceptance", "--lio-stale-trip-acceptance",
+                               "-cj.ui.language.v1", "en"]
+        app.launchEnvironment = ["G2C_LIO_PREVIEW_TRIP": "__LIO_RECORDED_TRIP_FIXTURE__"]
+        app.launch()
+        defer { app.terminate() }
+
+        let example = app.buttons["lio.example.0"]
+        XCTAssertTrue(example.waitForExistence(timeout: 12))
+        example.tap()
+        app.buttons["lio.send"].tap()
+        let viewTrip = app.buttons["lio.trip.show"]
+        XCTAssertTrue(viewTrip.waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Earlier plan"].exists)
+        viewTrip.tap()
+        XCTAssertTrue(app.navigationBars["Draft"].waitForExistence(timeout: 8), app.debugDescription)
+        XCTAssertTrue(app.staticTexts["Date to be decided"].exists)
+        XCTAssertFalse(app.staticTexts["Earlier plan"].exists)
+        XCTAssertFalse(app.staticTexts["Earlier stop"].exists)
+    }
+
     private func exerciseTrip(_ language: String, clarification: String, trips: String, day: String, fixed: String) throws {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
