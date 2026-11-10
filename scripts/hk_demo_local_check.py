@@ -21,7 +21,7 @@ from cryptography.hazmat.primitives.serialization import Encoding,NoEncryption,P
 from fastapi.testclient import TestClient
 from cj_api.local_app import ISSUER,LocalDatabase,create_local_app,scope_for
 from cj_api.local_worker_context import checker_for
-from cj_agent.provider import FakeProvider
+from cj_agent.provider import FakeProvider, ProviderFailed, ProviderUnknown
 from cj_api.local_run_context import load_run_context
 from cj_memory.typed_runtime import TypedRuntimeConfiguration
 from cj_message.travel import ABI
@@ -43,7 +43,8 @@ NEW_CODE='D1-0123456789ab.'+'y'*22
 def digest(code):return hashlib.sha256(code.encode('ascii')).hexdigest()
 
 
-def verify_upgrade(root, blueprint):
+def verify_upgrade(root, blueprint, target):
+    root.mkdir(mode=0o700)
     schema_root=root/'schema'
     schema.generate(blueprint,schema_root)
     control=root/'upgrade-control'
@@ -58,7 +59,7 @@ def verify_upgrade(root, blueprint):
         CJ_BETA_RECOVERY_PUBLIC_B64=base64.b64encode(key.public_key().public_bytes(Encoding.Raw,PublicFormat.Raw)).decode())
     with pg_suites.cluster('demo-upgrade',port=55650,role='cj_demo_upgrade',root=root/'old',socket=root/'old-s') as config:
         with psycopg.connect(**config,autocommit=True) as db:
-            migrate.up(db,migrate.load(),49)
+            migrate.up(db,migrate.load(),target-1)
             original=checkpoint.local.fence_state(db)
 
         @contextmanager
@@ -67,31 +68,176 @@ def verify_upgrade(root, blueprint):
                 yield db,config
 
         with patch.dict(os.environ,env),patch.object(checkpoint,'operator',operator),                patch.object(staging,'PG17',pg_suites.bindir()):
-            with patch.object(checkpoint,'versions',return_value=list(range(1,50))):
+            with patch.object(checkpoint,'versions',return_value=list(range(1,target))):
                 checkpoint.bootstrap(control,lambda _:None)
             old=checkpoint.verified(control/'release.json')
             checkpoint.atomic(control/'b2.json',dict(version='g2c-hk-local.1',state='FORWARD_ONLY'))
-            checkpoint.atomic(prior/'manifest.json',dict(schema=list(range(1,50)),
+            checkpoint.atomic(prior/'manifest.json',dict(schema=list(range(1,target)),
                 lineage=old['lineage'],fences=original))
-            demo_schema.upgrade(control,backups,target=50,schema_root=schema_root)
+            demo_schema.upgrade(control,backups,target=target,schema_root=schema_root)
             base=demo_schema.daily_base(control,backups,'previous')
-            assert base==backups/'demo-schema50'
+            assert base==backups/f'demo-schema{target}'
             result=checkpoint.verified(base/'manifest.json')
             assert result['fences']==original and result['lineage']==old['lineage']
             with operator() as (db,_):
                 checkpoint.require_release(db,control)
             try:
-                demo_schema.upgrade(control,backups,target=50,schema_root=schema_root)
+                demo_schema.upgrade(control,backups,target=target,schema_root=schema_root)
             except ValueError as exc:
                 assert 'reconcile original' in str(exc)
             else:
                 raise AssertionError('schema upgrade accepted a second application')
 
 
+def check_lio(api, database, auth, other, headers, conninfo, memory):
+    from cj_message import demo_dialogue
+    from cj_message.domain import CommitUnknown
+    from cj_message.lio_context import LioCitation, LioToolProgress
+    from cj_run.core import Binding, ResyncRequired
+
+    messages = '/v1/lio/messages'
+    timeline = '/v1/lio/timeline'
+    scope = scope_for(ISSUER, other)
+    owner = {**headers, 'Authorization': 'Bearer ' + dev_auth.token(auth, other, 300)}
+    legacy_only = {**headers, 'Authorization': 'Bearer ' + dev_auth.token(auth, 'legacy-dialogue-only', 300)}
+    assert api.get(timeline, headers=legacy_only).status_code == 403
+    assert api.get(timeline, headers=owner).json() == dict(
+        version='LIO-timeline.1', conversation_id=None, messages=[], next_before=None)
+
+    def original(mid, text, locale, **extra):
+        return json.dumps(dict(version='LIO-message.1', message_id=mid, text=text,
+                               locale=locale, **extra), ensure_ascii=False).encode()
+
+    raw = original('lio-first', '北京有哪些公园？', 'zh')
+    assert api.post('/v1/demo-dialogue/messages', content=raw, headers=owner).status_code == 400
+    foreign_chat = original('lio-invalid-first', 'Hello', 'en', conversation_id='lio-dialogue-'+'0'*32)
+    assert api.post(messages, content=foreign_chat, headers=owner).status_code == 400
+    with psycopg.connect(**conninfo) as db:
+        assert db.execute('SELECT 1 FROM cj_run_scope WHERE scope=%s', (scope,)).fetchone() is None
+    receive = demo_dialogue._receive
+
+    def lose_commit_ack(service, command, *, prepare_scope):
+        receive(service, command, prepare_scope=prepare_scope)
+        raise CommitUnknown()
+
+    with patch.object(demo_dialogue, '_receive', side_effect=lose_commit_ack):
+        first = api.post(messages, content=raw, headers=owner)
+    assert first.status_code == 200, first.text
+    assert api.post(messages, content=raw, headers=owner).json() == first.json()
+    assert api.get('/v1/demo-dialogue/messages', params=dict(message_id='lio-first'),
+                   headers=owner).json()['receipt'] is None
+    assert api.post(messages, content=raw+b' ', headers=owner).status_code == 409
+    assert set(first.json()) == {'version', 'message_id', 'conversation_id'}
+    conversation = first.json()['conversation_id']
+    assert api.get(timeline, params=dict(conversation_id=conversation), headers=headers).status_code == 400
+    assert api.get(timeline, headers=headers).json()['messages'] == []
+    assert api.post(messages, content=original('lio-owner-check','Hello','en',
+        conversation_id=conversation), headers=headers).status_code == 400
+    second = api.post(messages, content=original('lio-second','What should I see in Beijing?','en',
+        conversation_id=conversation), headers=owner)
+    assert second.status_code == 200 and second.json()['conversation_id'] == conversation
+    pending_response = api.get(timeline, headers=owner)
+    assert pending_response.status_code == 200, pending_response.text
+    pending = pending_response.json()['messages']
+    assert [entry['status'] for entry in pending] == ['sending', 'sending']
+    assert [entry['message_id'] for entry in pending] == ['lio-first', 'lio-second']
+    prompts = []
+    class LioModel(FakeProvider):
+        def stream(self, messages, system=None):
+            self.calls += 1
+            prompts.append(system)
+            if messages[-1]['content'] == 'Synthetic lost model outcome':
+                raise ProviderUnknown()
+            yield '北京有许多适合散步的公园。' if system.endswith('Reply in Chinese.') else 'Beijing has many parks for walking.'
+
+    model = LioModel()
+    worker = run_worker._worker_for_scope(database, model, auth, scope, checker_for(auth),
+                                         demo_planning=True)
+    assert [outcome.status for outcome in worker.process()] == ['completed', 'completed']
+    ready = api.get(timeline, headers=owner).json()['messages']
+    assert [entry['status'] for entry in ready] == ['completed', 'completed']
+    assert model.calls == 2 and all(entry['answer'] and entry['failure'] is None for entry in ready)
+    assert prompts[0].endswith('Reply in Chinese.') and prompts[1].endswith('Reply in English.')
+    assert all(prompt.startswith('You are Lio, a lion-dance mascot') for prompt in prompts)
+    assert all(set(entry) == {'message_id','text','answer','status','failure','activity','sources','trip','memory'} for entry in ready)
+    assert api.get(timeline, params=dict(before='lio-second'), headers=owner).json()['messages'] == ready[:1]
+    assert api.get(timeline, params=dict(before='first'), headers=owner).status_code == 400
+    unknown = original('lio-unknown', 'Synthetic lost model outcome', 'en')
+    accepted = api.post(messages, content=unknown, headers=owner)
+    assert accepted.status_code == 200
+    assert [outcome.status for outcome in worker.process()] == ['unknown']
+    for _ in range(2):
+        failed = api.get(timeline, headers=owner).json()['messages'][-1]
+        assert (failed['status'], failed['failure']) == ('failed', 'unavailable')
+    assert api.post(messages, content=unknown, headers=owner).json() == accepted.json()
+    assert worker.process() == [] and model.calls == 3
+    assert api.post(messages, content=original('lio-followup', 'Any nearby museums?', 'en'),
+                    headers=owner).status_code == 200
+    assert [outcome.status for outcome in worker.process()] == ['completed']
+    assert model.calls == 4
+
+    class ObservedTools:
+        def answer(self, worker, binding, messages, *, lio_locale):
+            assert lio_locale == 'en'
+            yield LioToolProgress('tool.0.0', 'checking_places')
+            with database.run_repository(scope).transaction():
+                response = api.get(timeline, headers=owner)
+                assert response.status_code == 200, response.text
+                active = response.json()['messages'][-1]
+                assert (active['status'], active['activity']) == ('answering', 'checking_places')
+            yield LioToolProgress('tool.0.0', None)
+            yield LioCitation('tool.0.0', 'Synthetic place evidence',
+                              'https://example.test/place', '2026-11-09T12:00:00+00:00')
+            yield 'There is a park nearby.'
+
+    worker.tools = ObservedTools()
+    assert api.post(messages, content=original('lio-with-source', 'Find a park nearby', 'en'),
+                    headers=owner).status_code == 200
+    assert [outcome.status for outcome in worker.process()] == ['completed']
+    sourced = api.get(timeline, headers=owner).json()['messages'][-1]
+    assert sourced['activity'] is None and sourced['sources'] == [dict(
+        title='Synthetic place evidence', url='https://example.test/place',
+        observed_at='2026-11-09T12:00:00+00:00')]
+    worker.tools = None
+    with psycopg.connect(**conninfo) as db:
+        generation, run_id, sequence = db.execute(
+            'UPDATE cj_run_record SET expires_at=clock_timestamp()-interval \'1 second\' '
+            'WHERE scope=%s AND message_id=%s RETURNING generation,run_id,message_sequence',
+            (scope, 'lio-first')).fetchone()
+    binding = Binding(scope, conversation, generation, 'lio-first', run_id, sequence)
+    try:
+        database.run_repository(scope).snapshot_optional(binding)
+    except ResyncRequired:
+        pass
+    else:
+        raise AssertionError('retained display relaxed the original operational recovery deadline')
+    assert api.get(timeline, headers=owner).json()['messages'][0] == ready[0]
+
+    planning_question = original('lio-question-no-write',
+        'Plan a trip to Beijing from 2026-11-11 to 2026-11-12.', 'en')
+    assert api.post(messages, content=planning_question, headers=owner).status_code == 200
+    assert [outcome.status for outcome in worker.process()] == ['completed']
+    final = api.get(timeline, headers=owner).json()['messages']
+    assert all(row['trip'] is None and row['memory'] is None for row in final)
+    from cj_agent.draft import trip_scope_for
+    with psycopg.connect(**conninfo) as db:
+        assert db.execute('SELECT 1 FROM cj_trip_scope WHERE scope=%s', (trip_scope_for(scope),)).fetchone() is None
+
+    with psycopg.connect(**conninfo) as db:
+        try:
+            with db.transaction():
+                migrate.down(db, migrate.load(), 50)
+        except psycopg.errors.RaiseException as exc:
+            assert 'Lio dialogue originals must be preserved' in str(exc)
+        else:
+            raise AssertionError('migration down erased Lio originals')
+    print('PASS signed Lio timeline, bilingual one-chat replay, ACK recovery, and retained display')
+
+
 def exercise(root,conninfo):
     auth=root/'auth'
     other='other-dialogue-owner'
-    dev_auth.init(auth,[SUBJECT,other,'invited-outside-dialogue'])
+    dev_auth.init(auth,[SUBJECT,other,'invited-outside-dialogue','legacy-dialogue-only'])
     path=root/'conn.json'
     path.write_text(json.dumps(conninfo))
     now=int(time.time())
@@ -107,10 +253,11 @@ def exercise(root,conninfo):
     profile=dict(subjects=['self'],slots={'quiet.entrance':dict(kind='preference',collection_allowed=True,
         semantic_resolved=True)},extents=['long_term'],context_ids=[])
     collection=dict(version='local-memory-typed.1',collection=dict(version='local-memory-policy.1',
-        expires_at=(datetime.now(timezone.utc)+timedelta(hours=2)).isoformat(),profiles={SUBJECT:profile}),
-        travel_contexts={SUBJECT:[]})
+        expires_at=(datetime.now(timezone.utc)+timedelta(hours=2)).isoformat(),profiles={SUBJECT:profile,other:profile}),
+        travel_contexts={SUBJECT:[],other:[]})
     memory=TypedRuntimeConfiguration.from_bytes(json.dumps(dict(version='local-memory-run.2',collection=collection,
-        selections={SUBJECT:dict(subject='self',slots=['quiet.entrance'],max_bytes=1000)})).encode())
+        selections={subject:dict(subject='self',slots=['quiet.entrance'],max_bytes=1000)
+                    for subject in (SUBJECT,other)})).encode())
     runtime=Runtime(auth,context,context_path,[],memory_runtime=memory,subjects=frozenset({SUBJECT}),
         demo_subjects=frozenset({SUBJECT}),demo_next_context=following)
     runtime._database=database
@@ -136,7 +283,8 @@ def exercise(root,conninfo):
         local_run_context.provision_budget(path,context,other)
         dev_auth.activate_travel(path,other,context,ABI)
         app=create_local_app(conninfo_path=None,auth_dir=auth,run_context=context,database=database,account_admission=True,
-            demo_dialogue_subjects=frozenset({SUBJECT,other}))
+            demo_dialogue_subjects=frozenset({SUBJECT,other,'legacy-dialogue-only'}),
+            lio_dialogue_subjects=frozenset({SUBJECT,other}))
         demo_login.register_demo_login(app)
         with demo_login.signing_socket(runtime),TestClient(app) as api:
             def login(code,consent=True):
@@ -210,6 +358,7 @@ def exercise(root,conninfo):
             with psycopg.connect(**conninfo) as db:
                 assert db.execute('SELECT count(*) FROM cj_message_delivery WHERE scope=%s AND acknowledged',
                     (scope_for(ISSUER,SUBJECT),)).fetchone()==(4,)
+            check_lio(api, database, auth, other, old, conninfo, memory)
             assert login(CODE).status_code==200
             assert demo_accounts.manage(runtime,'revoke',SUBJECT,control,operation)=='revoked'
             assert login(CODE).status_code==401
@@ -236,6 +385,9 @@ def exercise(root,conninfo):
                 receipts.append(response.json()['receipt'])
             limited=api.post(route,content=dialogue('daily-limit'),headers=headers)
             assert limited.status_code==429 and limited.json()['error']['code']=='DEMO_DAILY_LIMIT',limited.text
+            lio_limited=api.post('/v1/lio/messages',content=dialogue('lio-limit').replace(
+                b'DEMO-dialogue-message.1', b'LIO-message.1'),headers=headers)
+            assert lio_limited.status_code==429 and lio_limited.json()=={'failure':'quota'}
             replay=api.post('/v2/messages',content=command(1),headers=headers)
             assert replay.status_code==200 and replay.json()['receipt']==receipts[0]
             scope=scope_for(ISSUER,SUBJECT)
@@ -268,5 +420,11 @@ if __name__=='__main__':
         with pg_suites.cluster('demo',port=55649,role='cj_demo_init',root=root/'pg',socket=root/'s') as conninfo:
             with psycopg.connect(**conninfo,autocommit=True) as connection:
                 migrations=migrate.load();migrate.up(connection,migrations,migrations[-1]['version'])
-            verify_upgrade(root,conninfo)
+            with patch.object(migrate,'load',return_value=migrations[:50]):
+                with pg_suites.cluster('old-blueprint',port=55651,role='cj_demo_blueprint',
+                        root=root/'old-blueprint',socket=root/'old-blueprint-s') as previous:
+                    with psycopg.connect(**previous,autocommit=True) as connection:
+                        migrate.up(connection,migrations,50)
+                    verify_upgrade(root/'upgrade-50',previous,50)
+            verify_upgrade(root/'upgrade-51',conninfo,51)
             exercise(root,conninfo)

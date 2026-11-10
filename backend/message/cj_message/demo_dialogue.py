@@ -5,13 +5,15 @@ import json
 import re
 import uuid
 
-from .domain import Command, InputConflict, InvalidInput, Unavailable, unique_fields
+from .domain import Command, CommitUnknown, InputConflict, InvalidInput, Unavailable, unique_fields
 from .travel import ABI, Action, Service as TravelService
 
 
 MESSAGE_VERSION = 'DEMO-dialogue-message.1'
+LIO_VERSION = 'LIO-message.1'
 RECEIPT_VERSION = 'DEMO-dialogue-receipt.1'
 CHAT_PATTERN = re.compile(r'demo-dialogue-[0-9a-f]{32}')
+LIO_CHAT_PATTERN = re.compile(r'lio-dialogue-[0-9a-f]{32}')
 
 
 def message_id(value):
@@ -29,15 +31,18 @@ class DialogueMessage:
     conversation_id: str | None
     new_conversation: bool
     input_sha256: str
+    protocol: str = MESSAGE_VERSION
 
     @classmethod
-    def parse(cls, raw):
+    def parse(cls, raw, *, lio=False):
         try:
             value = json.loads(raw.decode('utf-8'), object_pairs_hook=unique_fields)
             required = {'version', 'message_id', 'text', 'locale'}
+            version = LIO_VERSION if lio else MESSAGE_VERSION
+            optional = {'conversation_id'} if lio else {'conversation_id', 'new_conversation'}
             if (type(value) is not dict or not required <= value.keys()
-                    or value.keys() - required - {'conversation_id', 'new_conversation'}
-                    or value['version'] != MESSAGE_VERSION or value['locale'] not in ('zh', 'en')
+                    or value.keys() - required - optional
+                    or value['version'] != version or value['locale'] not in ('zh', 'en')
                     or ('new_conversation' in value and (value['new_conversation'] is not True
                                                        or 'conversation_id' in value))):
                 raise InvalidInput('invalid dialogue message fields')
@@ -45,10 +50,11 @@ class DialogueMessage:
             if type(text) is not str or not text.strip() or '\x00' in text or len(text.encode('utf-8')) > 12000:
                 raise InvalidInput('invalid dialogue text')
             conversation = value.get('conversation_id')
-            if 'conversation_id' in value and (type(conversation) is not str or not CHAT_PATTERN.fullmatch(conversation)):
+            pattern = LIO_CHAT_PATTERN if lio else CHAT_PATTERN
+            if 'conversation_id' in value and (type(conversation) is not str or not pattern.fullmatch(conversation)):
                 raise InvalidInput('invalid dialogue conversation identifier')
             return cls(message_id(value['message_id']), text, value['locale'], conversation,
-                       value.get('new_conversation', False), hashlib.sha256(raw).hexdigest())
+                       value.get('new_conversation', False), hashlib.sha256(raw).hexdigest(), value['version'])
         except (UnicodeError, ValueError) as exc:
             raise InvalidInput('invalid dialogue message') from exc
 
@@ -63,6 +69,10 @@ class DialogueReceipt:
 
 def _identity(scope, purpose):
     return hashlib.sha256(f'{purpose}\x00{scope}'.encode()).hexdigest()[:32]
+
+
+def lio_conversation(scope):
+    return 'lio-dialogue-' + _identity(scope, 'lio-default')
 
 
 def _json(value):
@@ -98,9 +108,27 @@ def _travel(tx, repository):
 
 
 def receive(service, raw):
-    command = DialogueMessage.parse(raw)
+    return _receive(service, DialogueMessage.parse(raw))
+
+
+def receive_lio(service, raw, *, prepare_scope):
+    command = DialogueMessage.parse(raw, lio=True)
+    try:
+        return _receive(service, command, prepare_scope=prepare_scope)
+    except CommitUnknown:
+        original = query(service, command.id, lio=True)
+        if original is None:
+            raise
+        if original.input_sha256 != command.input_sha256:
+            raise InputConflict()
+        return original
+
+
+def _receive(service, command, *, prepare_scope=None):
     with service.repository.transaction() as tx:
         tx.lock_scope()
+        if prepare_scope is not None:
+            prepare_scope(tx.cur, tx.scope)
         stored = tx.find(command.id)
         if stored is not None:
             digest = _original_digest(tx, command.id)
@@ -110,7 +138,12 @@ def receive(service, raw):
             return _receipt(stored, digest)
 
         conversation = command.conversation_id
-        if conversation is None:
+        if command.protocol == LIO_VERSION:
+            default = lio_conversation(tx.scope)
+            if conversation is not None and conversation != default:
+                raise InvalidInput('invalid Lio conversation identifier')
+            conversation = default
+        elif conversation is None:
             purpose = 'new:' + command.id if command.new_conversation else 'default:' + command.locale
             conversation = 'demo-dialogue-' + _identity(tx.scope, purpose)
         chat = tx.active_head(conversation)
@@ -137,12 +170,14 @@ def receive(service, raw):
         return DialogueReceipt(receipt.message_id, receipt.conversation_id, receipt.run_id, command.input_sha256)
 
 
-def query(service, mid):
+def query(service, mid, *, lio=False):
     with service.repository.transaction() as tx:
         tx.lock_scope()
         digest = _original_digest(tx, mid)
         if digest is None:
             return None
         stored = tx.find(mid)
+        if (LIO_CHAT_PATTERN.fullmatch(stored.receipt.conversation_id) is not None) != lio:
+            return None
         tx.chat(stored.receipt.conversation_id, stored.receipt.generation)
         return _receipt(stored, digest)
