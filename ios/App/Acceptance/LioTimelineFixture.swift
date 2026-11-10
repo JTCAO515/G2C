@@ -14,7 +14,13 @@ private struct LioTimelineFixture: View {
         let historicalTrip = ProcessInfo.processInfo.arguments.contains("--lio-stale-trip-acceptance")
         if historicalTrip {
             let fixture = ProcessInfo.processInfo.environment["G2C_LIO_PREVIEW_TRIP"]!
-            tripLibrary = try! LioPreviewTripFixture.library(fixture)
+            let library = try! LioPreviewTripFixture.library(fixture)
+            var opens = 0
+            tripLibrary = LioTripLibrary(list: library.list, detail: { id in
+                opens += 1
+                if opens == 1 { return try await library.detail(id) }
+                throw URLError(.networkConnectionLost)
+            })
         } else {
             tripLibrary = nil
         }

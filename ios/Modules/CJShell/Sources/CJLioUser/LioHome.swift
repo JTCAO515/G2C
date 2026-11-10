@@ -15,7 +15,7 @@ public struct LioHome<MenuContent: View>: View {
     @State private var source: LioSource?
     @State private var followsAnswer = true
     @State private var tab = Tab.chat
-    @State private var tripPath: [Data] = []
+    @State private var tripPath: [LioTripRoute] = []
     private enum Tab { case chat, trips }
     @FocusState private var typing: Bool
     @Environment(\.scenePhase) private var scenePhase
@@ -276,7 +276,7 @@ public struct LioHome<MenuContent: View>: View {
             messageStatus(turn)
             if let itinerary = turn.itinerary {
                 LioItineraryCard(itinerary: itinerary, language: language) {
-                    if tripLibrary != nil { tripPath = [Data(itinerary.id.utf8)] }
+                    if tripLibrary != nil { tripPath = [LioTripRoute(id: itinerary.id, visit: UUID())] }
                     tab = .trips
                 }
             }

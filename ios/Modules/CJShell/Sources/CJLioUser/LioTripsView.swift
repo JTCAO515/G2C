@@ -37,12 +37,22 @@ struct LioItineraryCard: View {
     }
 }
 
+struct LioTripRoute: Hashable {
+    let tripID: Data
+    let visit: UUID?
+
+    init(id: String, visit: UUID? = nil) {
+        tripID = Data(id.utf8)
+        self.visit = visit
+    }
+}
+
 struct LioTripsView: View {
     let itineraries: [LioItinerary]
     let language: LioLanguage
     let library: LioTripLibrary?
     let recordedMap: (@MainActor (StructuredTripDocument) -> AnyView)?
-    @Binding var path: [Data]
+    @Binding var path: [LioTripRoute]
     let openChat: () -> Void
     @State private var mapDay: LioItinerary.Day?
     @State private var saved: [StructuredTripSummary]?
@@ -64,7 +74,7 @@ struct LioTripsView: View {
                             emptyTrips
                         } else {
                             List(saved, id: \.tripID) { trip in
-                                NavigationLink(trip.title, value: Data(trip.tripID.utf8))
+                                NavigationLink(trip.title, value: LioTripRoute(id: trip.tripID))
                             }
                             .listStyle(.insetGrouped)
                         }
@@ -85,10 +95,11 @@ struct LioTripsView: View {
                 }
             }
             .navigationTitle(language.text("Trips", "行程"))
-            .navigationDestination(for: Data.self) { id in
+            .navigationDestination(for: LioTripRoute.self) { route in
                 if let library {
-                    LioTripDetail(tripID: String(decoding: id, as: UTF8.self), library: library,
+                    LioTripDetail(tripID: String(decoding: route.tripID, as: UTF8.self), library: library,
                                   language: language, recordedMap: recordedMap)
+                        .id(route)
                 }
             }
             .sheet(item: $mapDay) { day in
@@ -155,6 +166,7 @@ private struct LioTripDetail: View {
             LioDayMap(day: day, language: language)
         }
         .task(id: attempt) {
+            record = nil
             unavailable = false
             do {
                 let value = try await library.detail(tripID)
@@ -164,6 +176,7 @@ private struct LioTripDetail: View {
             } catch is CancellationError {
                 return
             } catch {
+                guard !Task.isCancelled else { return }
                 unavailable = true
             }
         }
