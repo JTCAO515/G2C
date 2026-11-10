@@ -23,9 +23,12 @@ from cj_agent.provider import FakeProvider
 from cj_message.travel import ABI
 from cj_trip.postgres import Repository
 from cj_agent.draft import trip_scope_for
+from cj_draft.lio_plan import LioPlanPublisher
 from cj_draft.needs_local import publisher
 from cj_draft.needs_publisher import SYSTEM
 import dev_auth
+
+PLAN_SYSTEMS = (SYSTEM, LioPlanPublisher.system)
 
 
 def known(value):return dict(state='known',value=value)
@@ -37,7 +40,7 @@ def fixed(key,start,end,locked):return dict(item_id=key,kind='appointment',descr
 class PlanModel(FakeProvider):
     def __init__(self,change=None):super().__init__();self.change=change;self.source_seen=False
     def stream(self,messages,system=None):
-        if system!=SYSTEM:
+        if system not in PLAN_SYSTEMS:
             yield from super().stream(messages,system);return
         self.calls+=1;self.source_seen=True
         source=json.loads(messages[-1]['content']);items=[]
