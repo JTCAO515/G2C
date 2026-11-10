@@ -45,6 +45,12 @@ class FConsumerTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertEqual(result['report']['accepted'], 0)
         self.assertEqual(result['rejections'][0]['reason'], 'schema_invalid')
+        self.assertEqual(result['rejections'][0]['missing_fields'], ['source'])
+        row = deepcopy(examples()[0])
+        del row['run']['answer_state']
+        result, code = self.check_rows([row])
+        self.assertEqual(code, 1)
+        self.assertEqual(result['rejections'][0]['missing_fields'], ['run.answer_state'])
 
     def test_wrong_tool_receipt_rejected_by_f(self):
         row = next(deepcopy(row) for row in examples() if any(
@@ -58,6 +64,11 @@ class FConsumerTests(unittest.TestCase):
     def test_unknown_version_and_mismatched_input_pin(self):
         result, code = self.check_rows(examples(), version='invented-v2')
         self.assertEqual((code, result['code']), (2, 'UNKNOWN_DATA_VERSION'))
+        row = deepcopy(examples()[0])
+        row['version'] = 'invented-v2'
+        result, code = self.check_rows([row])
+        self.assertEqual(code, 1)
+        self.assertEqual(result['rejections'][0]['version_code'], 'UNKNOWN_ROW_DATA_VERSION')
         result, code = self.check_rows(examples(), expected_hash='0' * 64)
         self.assertEqual((code, result['code']), (1, 'INPUT_SHA256_MISMATCH'))
         result, code = self.check_rows([])

@@ -54,6 +54,24 @@ def check_dataset(path, version, input_sha256):
     complete = {split: sum(row['run']['status'] == 'completed' and
                            row['run']['answer_state'] == 'complete' for row in rows)
                 for split, rows in output.items()}
+    diagnostics = []
+    lines = raw.splitlines()
+    for rejected_row in rejected:
+        item = {'line': rejected_row['line'], 'reason': rejected_row['reason']}
+        if item['reason'] == 'schema_invalid':
+            # F has rejected this external row: enrich diagnostics only, never
+            # revalidate established domain objects or change F admission.
+            row = f.load(lines[item['line'] - 1])
+            missing = set()
+            for error in f.VALIDATOR.iter_errors(row):
+                if error.validator == 'required' and isinstance(error.instance, dict):
+                    missing.update('.'.join(map(str, (*error.absolute_path, key)))
+                                   for key in error.validator_value if key not in error.instance)
+            if missing:
+                item['missing_fields'] = sorted(missing)
+            if isinstance(row, dict) and 'version' in row and row['version'] != VERSION:
+                item['version_code'] = 'UNKNOWN_ROW_DATA_VERSION'
+        diagnostics.append(item)
     # Keep every F row/group, including partial/none terminal controls. These
     # counts are a preparation report, not selection/export of a training set.
     return {**result, 'status': report['status'], 'f_reviewed_head': F_HEAD,
@@ -63,5 +81,4 @@ def check_dataset(path, version, input_sha256):
             'complete_answer_counts': complete,
             'control_only_counts': {split: len(rows) - complete[split]
                                     for split, rows in output.items()},
-            'rejections': [{'line': item['line'], 'reason': item['reason']}
-                           for item in rejected]}, 1 if rejected else 0
+            'rejections': diagnostics}, 1 if rejected else 0

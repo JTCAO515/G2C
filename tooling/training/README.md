@@ -66,7 +66,7 @@ uv run --locked python -B tooling/training/check_f_dataset.py -v
 ```
 
 - `config` 报告缺少 model、model_revision、template、agent_template、dataset、val_dataset、output_dir，并拒绝全 token loss、自动重拆数据、宽松丢坏行和外发日志等设置。退出 1；报告不是训练许可。
-- `dataset` 只认识 F 的 `G2C-dataset.1`，固定 [PR782 已独立检查的源码 8bbdf6a9](https://github.com/JTCAO515/G2C/pull/782)：schema hash `2b5107224be5385042812e7d41cc3203d999cba8c755dd4748482c87d8ff8052`，converter hash `941f67a75f73f23f0f5ca3a0cc71f7fc384fe55f04c774349255d024af6d91c8`，工具定义摘要 `94856980dc1c073ce441f4c6cd1905bb7036a4cb2085d8c1280e39f58fcb435b`。未知版本、缺输入 pin、未交 F 环境或源码变化均退出 **2 / UNRUN**；输入 hash 不匹配、F 拒绝坏行退出 **1 / FAIL**。直接调用 F `convert` 的同一读入边界，不复制其 schema 或逐行校验。F 的实际合成正例 22 条、17 条负例及 `run.answer_state=none|partial|complete` 是接口控制，不是正式训练集。
+- `dataset` 只认识 F 的 `G2C-dataset.1`，固定 [PR782 已独立检查的源码 8bbdf6a9](https://github.com/JTCAO515/G2C/pull/782)：schema hash `2b5107224be5385042812e7d41cc3203d999cba8c755dd4748482c87d8ff8052`，converter hash `941f67a75f73f23f0f5ca3a0cc71f7fc384fe55f04c774349255d024af6d91c8`，工具定义摘要 `94856980dc1c073ce441f4c6cd1905bb7036a4cb2085d8c1280e39f58fcb435b`。未知版本、缺输入 pin、未交 F 环境或源码变化均退出 **2 / UNRUN**；输入 hash 不匹配、F 拒绝坏行退出 **1 / FAIL**。直接调用 F `convert` 的同一读入边界，不复制其 schema 或重复校验有效行。F 的实际合成正例 22 条、17 条负例及 `run.answer_state=none|partial|complete` 是接口控制，不是正式训练集。
 - `swift-jsonl` 是与 F 无关的**上游目标格式局部检查**，仅支持纯文本 OpenAI `messages` / `tools` 格式；不是 canonical dataset validator 或 F 转换器。逐行检查必需字段、工具名称及参数 JSON Schema、重复 call ID、调用与结果关联、缺回执和最终答复；坏行报行号与稳定原因码，退出 1，禁止回显内容。该子集拒绝参数 schema 的 `$ref`/`$dynamicRef`（避免外取）及消息的 loss 覆盖（避免工具结果被监督）。它不证明工具真实执行、来源权威、拆分或 D 质检通过。无错误时 scope 内 PASS，但 `training_readiness` 始终 UNRUN。
 
 [官方数据格式及 OpenAI 归一化](https://github.com/modelscope/ms-swift/blob/ad818a2cdfafaf4305ac40c4acd892a211978bc2/docs/source_en/Customization/Custom-dataset.md) 与 [Agent 语义](https://github.com/modelscope/ms-swift/blob/ad818a2cdfafaf4305ac40c4acd892a211978bc2/docs/source_en/Instruction/Agent-support.md) 已核。调用 ID 需在归一化前核对；不能仅检查序列化后的文本。
@@ -77,6 +77,8 @@ uv run --locked python -B tooling/training/check_f_dataset.py -v
 2. source kind/ID/revision、trajectory/tool hash、任务/旅行/中英改写身份和去重已交；合成控制的 prompt/model/adapter 版本可明确 null，不编造教师版本。正式教师数据与真实用户来源尚未获准。
 3. F 发布 manifest、schema/tools/source/artifact hash、11 组、train18/validation2/public-test2、拒绝与去重报告已交。G 消费测试保留 F 的分组/用途与全部行，仅报告 complete 答复及 none/partial 控制的数量，不生成训练文件、不丢弃轨迹；真正 SFT 导出及逐 token mask 留给获准模型阶段。
 4. D/R 已对 F 的固定合成接口独立核对（见 PR782 评论）；正式数据 release、D 独立**语义质量**报告、模型 revision/许可/tokenizer 和获准算力仍缺，不从合成结构 PASS 推导训练许可。
+
+F 已拒绝的 `schema_invalid` 行另附同一 F validator 的直接必需字段路径（如 `source`、`run.answer_state`），以及 `UNKNOWN_ROW_DATA_VERSION` 行版本码；只补诊断，不改变 F 准入，不回显字段值或重新校验已建立的有效对象。复杂 union 错误仍保留原 schema_invalid，不猜缺项。
 
 后续训练目标导出仍须固定整个 F manifest/输入与产物 hash，记录来源样本与 group/split/hash，保留 F 原分组，test 不进入训练或调参。终态轨迹不能静默丢弃，明确列为不适合当前 SFT 的样本并计数，不把失败转成功。正式教师数据不因合成小样 PASS 自动获准。F 新版源码/schema/tools 变化时当前 pin 明确 UNRUN，复核后有意更新；不自动回退或适配未知版本。
 
