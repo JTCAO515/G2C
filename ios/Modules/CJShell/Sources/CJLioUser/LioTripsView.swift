@@ -40,6 +40,16 @@ struct LioItineraryCard<Actions: View>: View {
     }
 }
 
+struct LioTripRoute: Hashable {
+    let tripID: Data
+    let visit: UUID?
+
+    init(id: String, visit: UUID? = nil) {
+        tripID = Data(id.utf8)
+        self.visit = visit
+    }
+}
+
 struct LioTripsView: View {
     let itineraries: [LioItinerary]
     let language: LioLanguage
@@ -48,6 +58,7 @@ struct LioTripsView: View {
     let currentPlan: LioItinerary?
     let canUndo: Bool
     let recordedMap: (@MainActor (StructuredTripDocument) -> AnyView)?
+    @Binding var path: [LioTripRoute]
     let openChat: () -> Void
     @State private var mapDay: LioItinerary.Day?
     @State private var saved: [StructuredTripSummary]?
@@ -60,51 +71,34 @@ struct LioTripsView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             Group {
-                if shownItineraries.isEmpty && library != nil && saved == nil {
+                if library != nil {
                     if listUnavailable {
                         ContentUnavailableView {
                             Label(language.text("Trips unavailable", "暂时无法显示行程"), systemImage: "suitcase")
                         } actions: {
                             Button(language.text("Try again", "再试一次")) { listAttempt += 1 }
                         }
+                    } else if let saved {
+                        if saved.isEmpty {
+                            emptyTrips
+                        } else {
+                            List(saved, id: \.tripID) { trip in
+                                NavigationLink(trip.title, value: LioTripRoute(id: trip.tripID))
+                            }
+                            .listStyle(.insetGrouped)
+                        }
                     } else {
                         ProgressView()
                     }
-                } else if shownItineraries.isEmpty && (saved?.isEmpty ?? true) {
-                    ContentUnavailableView {
-                        Label(language.text("No trips yet", "还没有行程"), systemImage: "suitcase")
-                    } description: {
-                        Text(language.text("Tell Lio where you’d like to go.", "告诉 Lio 你想去哪儿。"))
-                    } actions: {
-                        Button(language.text("Chat with Lio", "和 Lio 聊聊"), action: openChat)
-                            .buttonStyle(.bordered)
-                    }
+                } else if shownItineraries.isEmpty {
+                    emptyTrips
                 } else {
                     List {
                         ForEach(shownItineraries) { itinerary in
                             Section(itinerary.title) {
                                 LioTripDays(itinerary: itinerary, language: language) { mapDay = $0 }
-                                if let library {
-                                    NavigationLink(language.text("Trip details", "行程详情")) {
-                                        LioTripDetail(tripID: itinerary.id, title: itinerary.title, library: library,
-                                                      language: language, recordedMap: recordedMap)
-                                    }
-                                }
-                            }
-                        }
-                        if listUnavailable {
-                            Button(language.text("Couldn’t show all trips. Try again.", "暂时无法显示全部行程，点此再试。")) {
-                                listAttempt += 1
-                            }
-                        }
-                        if let library, let saved {
-                            let visible = Set(shownItineraries.map(\.id))
-                            ForEach(saved.filter { !visible.contains($0.tripID) }, id: \.tripID) { trip in
-                                NavigationLink(trip.title) {
-                                    LioTripDetail(tripID: trip.tripID, title: trip.title, library: library, language: language, recordedMap: recordedMap)
-                                }
                             }
                         }
                     }
@@ -112,6 +106,13 @@ struct LioTripsView: View {
                 }
             }
             .navigationTitle(language.text("Trips", "行程"))
+            .navigationDestination(for: LioTripRoute.self) { route in
+                if let library {
+                    LioTripDetail(tripID: String(decoding: route.tripID, as: UTF8.self), library: library,
+                                  language: language, recordedMap: recordedMap)
+                        .id(route)
+                }
+            }
             .toolbar {
                 if let tripPlan {
                     ToolbarItem(placement: .topBarTrailing) {
@@ -128,6 +129,7 @@ struct LioTripsView: View {
             .task(id: listAttempt) {
                 guard let library else { return }
                 listUnavailable = false
+                saved = nil
                 do {
                     let summaries = try await library.list()
                     try Task.checkCancellation()
@@ -140,11 +142,21 @@ struct LioTripsView: View {
             }
         }
     }
+
+    private var emptyTrips: some View {
+        ContentUnavailableView {
+            Label(language.text("No trips yet", "还没有行程"), systemImage: "suitcase")
+        } description: {
+            Text(language.text("Tell Lio where you’d like to go.", "告诉 Lio 你想去哪儿。"))
+        } actions: {
+            Button(language.text("Chat with Lio", "和 Lio 聊聊"), action: openChat)
+                .buttonStyle(.bordered)
+        }
+    }
 }
 
 private struct LioTripDetail: View {
     let tripID: String
-    let title: String
     let library: LioTripLibrary
     let language: LioLanguage
     let recordedMap: (@MainActor (StructuredTripDocument) -> AnyView)?
@@ -170,11 +182,12 @@ private struct LioTripDetail: View {
                 ProgressView()
             }
         }
-        .navigationTitle(title)
+        .navigationTitle(record?.document.title ?? language.text("Trip details", "行程详情"))
         .sheet(item: $mapDay) { day in
             LioDayMap(day: day, language: language)
         }
         .task(id: attempt) {
+            record = nil
             unavailable = false
             do {
                 let value = try await library.detail(tripID)
@@ -184,6 +197,7 @@ private struct LioTripDetail: View {
             } catch is CancellationError {
                 return
             } catch {
+                guard !Task.isCancelled else { return }
                 unavailable = true
             }
         }
