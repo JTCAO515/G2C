@@ -1,6 +1,6 @@
 """Explicit local NEEDS factory; existing AUTH and producer public lifetime only."""
 from dataclasses import dataclass
-from .composition import CompositionUnavailable,_internal_modules
+from .composition import CompositionUnavailable,_internal_modules,_strict_admission_checker
 
 @dataclass(frozen=True)
 class NeedsWireConfiguration:
@@ -15,10 +15,8 @@ def build_needs_boundary(*,environment,jwt_configuration,verification_keys,acces
                          repository_factory=None):
     if environment!='local' or None in (resolve,verification_keys,access_provider):
         raise CompositionUnavailable('Explicit local NEEDS AUTH and trusted resolver required')
-    modules=_internal_modules('needs');auth=modules['cj_auth.jwt_adapter']
-    if not isinstance(jwt_configuration,auth.JWTConfiguration) or jwt_configuration.profile is not auth.JWTProfile.STRICT_V1:
-        raise CompositionUnavailable('Fixed strict AUTH profile required')
-    checker=modules['cj_auth.admission'].AdmissionChecker(auth.PyJWTVerifier(jwt_configuration,verification_keys),access_provider)
+    modules=_internal_modules('needs')
+    checker=_strict_admission_checker(modules,jwt_configuration,verification_keys,access_provider)
     factory=modules['cj_needs.postgres'].Repository if repository_factory is None else repository_factory
     return modules['cj_needs.boundary'].Boundary(checker,resolve,repository_factory=factory),modules
 

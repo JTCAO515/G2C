@@ -57,6 +57,16 @@ def _internal_modules(set_name='composition'):
     return loaded
 
 
+def _strict_admission_checker(modules, jwt_configuration, verification_keys, access_provider):
+    """The fixed STRICT_V1 verifier and admission checker shared by the local wire boundaries."""
+    auth = modules['cj_auth.jwt_adapter']
+    if (not isinstance(jwt_configuration, auth.JWTConfiguration)
+            or jwt_configuration.profile is not auth.JWTProfile.STRICT_V1):
+        raise CompositionUnavailable('Fixed strict AUTH profile required')
+    return modules['cj_auth.admission'].AdmissionChecker(
+        auth.PyJWTVerifier(jwt_configuration, verification_keys), access_provider)
+
+
 def build_message_boundary(*, environment, jwt_configuration, verification_keys,
                            access_provider, resolve_repository, new_run_id, resolve_travel_repository=None):
     """Host-provided dependencies only; caller request fields cannot configure this.

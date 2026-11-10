@@ -71,7 +71,6 @@ class RegisteredExit(MeteredExitCore):
         are never resumed through this path, so a lost clock cannot be reset.
         """
         from cj_run.step_usage import ledger_scope_for
-        from .metered_exit import BudgetExceeded
         try:OperationStore(runs,self.config).bind_period_without_operation(binding)
         except (OriginalStepOnly,RunCommitUnknown,DatabaseError):
             raise BudgetUnknown('original zero-model period unavailable') from None
@@ -80,12 +79,8 @@ class RegisteredExit(MeteredExitCore):
             with meter.repo.transaction() as ledger:previous=ledger.last_clock
         except (CommitUnknown,RepositoryUnavailable,CorruptLedger,DatabaseError,Blocked):
             raise BudgetUnknown('original result clock unavailable') from None
-        started=previous=self._now(previous)
-        def check():
-            nonlocal previous
-            previous=self._now(previous)
-            if previous-started>=self.config.max_seconds:raise BudgetExceeded('draft')
-        return check
+        started=self._now(previous)
+        return self._deadline(started,started)
 
     def prepare_operation(self,runs,binding,operation_key,registration_id,argument,*,stage):
         try: registration=self.registrations[registration_id]

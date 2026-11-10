@@ -2,7 +2,7 @@
 from pathlib import Path
 import uuid
 
-from cj_api.local_app import LocalDatabase,create_local_app,scope_for
+from cj_api.local_app import LocalDatabase,create_local_app,scope_for,trip_resolver
 from cj_api.local_account_admission_v2 import account_checker_for
 from cj_api.message_source_routes import register_message_source_routes
 from cj_memory.postgres import Repository
@@ -39,16 +39,12 @@ def _collection_app(conninfo_path,auth_dir,resolve_collection,run_context,*,deci
     if decisions:
         from cj_trip.auth_boundary import Boundary as TripBoundary
         from cj_trip.decision_lease import DecisionAuthority
-        from cj_agent.draft import trip_scope_for
         from .decision_service import DecisionCollectionService
         if automatic:
             from .automatic_service import AutomaticDecisionCollectionService
             service_type=AutomaticDecisionCollectionService
         else:service_type=DecisionCollectionService
-        def trip_resolve(principal):
-            owner=scope_for(principal.issuer,principal.subject)
-            return lambda:database.connect(owner),trip_scope_for(owner)
-        trip=TripBoundary(boundary.checker,trip_resolve,structured=True)
+        trip=TripBoundary(boundary.checker,trip_resolver(database),structured=True)
         service=service_type(boundary,resolve,resolve_collection,
             resolve_decision_authority=lambda token:DecisionAuthority(trip,token))
     else:service=CollectionService(boundary,resolve,resolve_collection)

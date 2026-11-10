@@ -6,13 +6,12 @@ from fastapi import Request
 from fastapi.responses import Response
 from starlette.concurrency import run_in_threadpool
 from cj_api.app import create_app
-from cj_api.local_app import LocalDatabase,scope_for
+from cj_api.local_app import LocalDatabase,scope_for,trip_resolver
 from cj_api.local_account_admission_v2 import account_checker_for
 from cj_api.composition import CompositionUnavailable
 from cj_api.message_routes import BodyError,_body_error,_error,_read_octets,_token
 from cj_auth.interfaces import AdmissionStatus
 from cj_message.travel_reference import MessageContextAuthority
-from cj_agent.draft import trip_scope_for
 from cj_draft.needs_local import publisher
 from .auth_boundary import Boundary
 from .confirmation import ConfirmationSigner
@@ -41,9 +40,7 @@ def register_local_needs_routes(app,*,database,auth_dir,confirmation_signer,max_
     if os.environ.get('CJ_ENV')!='local' or type(confirmation_signer) is not ConfirmationSigner or run_context is None or type(max_response_bytes) is not int or max_response_bytes<1:
         raise CompositionUnavailable('explicit local source-bound Trip host required')
     checker=account_checker_for(Path(auth_dir),database,selected_subjects=selected_subjects)
-    def resolve(principal):
-        owner=scope_for(principal.issuer,principal.subject)
-        return lambda:database.connect(owner),trip_scope_for(owner)
+    resolve=trip_resolver(database)
     class NeedsBoundary(Boundary):
         def _bind(self,token):
             repository,principal,check=super()._bind(token)

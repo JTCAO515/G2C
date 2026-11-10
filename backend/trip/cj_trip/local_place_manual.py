@@ -5,7 +5,7 @@ from fastapi import Request
 from fastapi.responses import Response
 from starlette.concurrency import run_in_threadpool
 from cj_api.app import create_app
-from cj_api.local_app import LocalDatabase,scope_for
+from cj_api.local_app import LocalDatabase,scope_for,trip_resolver
 from cj_api.local_account_admission_v2 import account_checker_for
 from cj_api.local_needs import protected_reader
 from cj_api.message_routes import _token,_error
@@ -15,7 +15,6 @@ from .current_needs_source import CurrentNeedsSource
 from .manual_needs_v2 import NeedsEditV2,NeedsSaveV2,NeedsEditsV2
 from .domain import Conflict,Denied,identifier
 from .scoped_discovery import parse_discovery_query
-from cj_agent.draft import trip_scope_for
 
 
 def create_local_place_manual_app(*,conninfo_path,auth_dir,run_context,confirmation_signer,max_response_bytes=1_000_000):
@@ -24,9 +23,7 @@ def create_local_place_manual_app(*,conninfo_path,auth_dir,run_context,confirmat
             or type(max_response_bytes) is not int or max_response_bytes<1):raise CompositionUnavailable('explicit local source-bound manual host required')
     database=LocalDatabase(conninfo_path,run_context=run_context,travel_context=True,needs_context=True)
     checker=account_checker_for(Path(auth_dir),database)
-    def resolve(principal):
-        owner=scope_for(principal.issuer,principal.subject)
-        return lambda:database.connect(owner),trip_scope_for(owner)
+    resolve=trip_resolver(database)
     class PlaceManualBoundary(Boundary):
         def _bind(self,token):
             repository,principal,guard=super()._bind(token)

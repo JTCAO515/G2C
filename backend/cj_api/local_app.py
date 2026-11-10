@@ -51,6 +51,22 @@ def scope_for(issuer, subject):
     return f'local:{issuer}:{subject}'
 
 
+def trip_resolver(database):
+    """TRIP boundary resolver: the principal's own connection and derived Trip scope."""
+    def resolve(principal):
+        owner = scope_for(principal.issuer, principal.subject)
+        return lambda: database.connect(owner), trip_scope_for(owner)
+    return resolve
+
+
+def needs_lease_resolver(database):
+    """NEEDS revision lease resolver: connection, owner scope and derived NEEDS scope."""
+    def resolve(principal):
+        owner = scope_for(principal.issuer, principal.subject)
+        return lambda: database.connect(owner), owner, needs_scope_for(owner)
+    return resolve
+
+
 def _require_unbound(cursor):
     """Reject any M1 authority GUC; never overwrite retained session authority."""
     cursor.execute("SELECT current_setting('cj.message_scope',true), current_setting('cj.trip_scope',true), "
