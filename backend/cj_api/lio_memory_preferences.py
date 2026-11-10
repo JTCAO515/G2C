@@ -27,7 +27,7 @@ _FORMS = {
         r'(?:budget[- ]friendly|moderate[- ]budget|luxury) trips?|'
         r'(?:a )?budget (?:of )?(?:about |around |under )?[0-9]{1,5} (?:yuan|CNY|RMB|USD) (?:per|a) day',
         r'(?:经济实惠|中等预算|高预算)(?:的)?(?:旅行|行程)|旅行预算(?:通常|一般)?(?:为|是)?每天[0-9]{1,5}元',
-        extra=r'I usually budget [0-9]{1,5} (?:yuan|CNY|RMB|USD) (?:per|a) day when I travel',
+        extra=r'I usually budget [0-9]{1,5} (?:yuan|CNY|RMB|USD) (?:per|a) day',
     ),
     'lodging.style': _forms(
         r'(?:staying (?:at|in) )?(?:budget|boutique|central|quiet|upscale|family-friendly) hotels?',
@@ -76,6 +76,7 @@ def supported_preference(entry, original):
     if value is None or any(_value(form, evidence.quote) != value for evidence in entry.evidence):
         return False
     statements = [part.strip() for part in re.split(r'(?<=[.!。！])\s+|[。！]', original) if part.strip()]
-    return (any(_value(form, statement) == value for statement in statements)
+    values = {_value(form, statement) for statement in statements} - {None}
+    return (values == {value}
             and all(any(_value(allowed, statement) is not None for allowed in _FORMS.values())
                     for statement in statements))

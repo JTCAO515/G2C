@@ -142,7 +142,7 @@ _EN_POSSESSIVE_WEATHER = re.compile(
 _TRANSIT_POLICY = re.compile(
     r'过境免签|免签过境|visa[ -]free transit|transit (?:without a visa|visa exemption|policy)', re.I)
 _TRANSIT_TOPIC = re.compile(r'过境|转机|\b(?:transit|layover|stopover)\b', re.I)
-_TRANSIT_VISA = re.compile(r'签证|免签|\b(?:visa[ -]free|without a visa|visa exemption)\b', re.I)
+_TRANSIT_VISA = re.compile(r'签证|免签|\bvisa\b', re.I)
 _TRANSIT_ELIGIBILITY = re.compile(
     r'适用|符合|资格|可以吗|能用吗|\b(?:qualify|eligib\w*|apply|applies)\b', re.I)
 _TRANSIT_SECTION = re.compile(r'^[IVX]+\.\s+')

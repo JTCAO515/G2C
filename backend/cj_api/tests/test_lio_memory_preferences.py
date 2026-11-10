@@ -15,6 +15,7 @@ class LioMemoryPreferenceTest(unittest.TestCase):
             ('travel.pace', 'I always prefer a slower travel pace.'),
             ('travel.pace', '我平时喜欢慢节奏旅行。'),
             ('travel.budget', 'I prefer a budget of around 400 yuan per day.'),
+            ('travel.budget', 'I usually budget 500 yuan per day when I travel.'),
             ('travel.budget', '旅行预算通常是每天400元。'),
             ('lodging.style', 'I prefer staying in central hotels.'),
             ('lodging.style', '我通常喜欢住精品酒店。'),
@@ -48,6 +49,7 @@ class LioMemoryPreferenceTest(unittest.TestCase):
         self.assertTrue(supported_preference(candidate, text + ' I like museums.'))
         for original in ('I never said I prefer a slow travel pace.',
                          text + ' I have asthma.',
+                         text + ' I prefer a fast travel pace.',
                          'I prefer a slow travel pace because of my asthma.',
                          'I prefer a fast travel pace.'):
             with self.subTest(original=original):

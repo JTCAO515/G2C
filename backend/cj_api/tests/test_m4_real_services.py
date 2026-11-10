@@ -915,6 +915,8 @@ class Boundaries(unittest.TestCase):
         self.assertFalse(_lio_transit_request([*history, dict(role='user', content='What is the weather?')]))
         for question in ('How long can I stay in China visa-free during transit?',
                          'Can I stay in Beijing for 240 hours without a visa during a layover?',
+                         'Can I get a 240-hour visa waiver on my layover?',
+                         'Do I need a visa for my layover in Beijing?',
                          '在北京转机需要签证吗？'):
             with self.subTest(question=question):
                 self.assertTrue(_lio_transit_request([dict(role='user', content=question)]))
