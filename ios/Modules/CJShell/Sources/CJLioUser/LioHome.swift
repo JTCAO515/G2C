@@ -539,6 +539,8 @@ public struct LioHome<MenuContent: View>: View {
                                             "今天的 40 个问题已用完，明天再来聊吧。")
             case .unfinished: language.text("I couldn’t finish this one.", "这次没答完。")
             case .waiting: language.text("I don’t have an answer for this yet.", "这条消息暂时还没有回答。")
+            case .unavailable where turn.fromTimeline:
+                language.text("I couldn’t complete this request.", "这次没能完成你的请求。")
             case .unavailable: language.text("Chat isn’t available right now.", "现在暂时不能聊天。")
             }
             Text(message)

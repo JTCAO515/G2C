@@ -413,6 +413,28 @@ import XCTest
         XCTAssertFalse(app.buttons["lio.askAgain"].exists)
     }
 
+    func testAcceptedFailureDescribesOnlyTheCurrentRequest() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        for language in ["en", "zh-Hans"] {
+            app.launchArguments = ["--lio-preview", "--lio-timeline-acceptance", "--lio-accepted-failure-acceptance",
+                                   "-cj.ui.language.v1", language]
+            app.launch()
+            defer { app.terminate() }
+
+            let example = app.buttons["lio.example.1"]
+            XCTAssertTrue(example.waitForExistence(timeout: 12))
+            example.tap()
+            app.buttons["lio.send"].tap()
+            let failure = app.staticTexts["lio.failure"]
+            XCTAssertTrue(failure.waitForExistence(timeout: 8))
+            XCTAssertEqual(failure.label, language == "en" ? "I couldn’t complete this request." : "这次没能完成你的请求。")
+            XCTAssertEqual(app.staticTexts["lio.fixture.send-count"].label, "1")
+            XCTAssertFalse(app.buttons["lio.resend"].exists)
+            XCTAssertFalse(app.buttons["lio.askAgain"].exists)
+        }
+    }
+
     func testTimelinePrefixAndForegroundReadKeepTheSameQuestion() throws {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")

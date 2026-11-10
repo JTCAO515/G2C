@@ -24,7 +24,9 @@ private struct LioTimelineFixture: View {
         } else {
             tripLibrary = nil
         }
-        let server = TimelineAcceptanceServer(exerciseResend: exerciseResend, historicalTrip: historicalTrip)
+        let acceptedFailure = ProcessInfo.processInfo.arguments.contains("--lio-accepted-failure-acceptance")
+        let server = TimelineAcceptanceServer(exerciseResend: exerciseResend, historicalTrip: historicalTrip,
+                                              acceptedFailure: acceptedFailure)
         _server = State(initialValue: server)
         _service = State(initialValue: LioService.timeline(
             send: { try await server.submit($0) },
@@ -54,16 +56,18 @@ private final class TimelineAcceptanceServer {
     private let conversationID = "lio-dialogue-0123456789abcdef0123456789abcdef"
     private let exerciseResend: Bool
     private let historicalTrip: Bool
+    private let acceptedFailure: Bool
     private var step = Step.sending
     private var sent: (id: String, question: String)?
     private var unsent: LioTimelineWire.Send?
     private(set) var reads = 0
     private(set) var sends = 0
 
-    init(exerciseResend: Bool, historicalTrip: Bool) {
+    init(exerciseResend: Bool, historicalTrip: Bool, acceptedFailure: Bool) {
         self.exerciseResend = exerciseResend
         self.historicalTrip = historicalTrip
-        if historicalTrip { step = .finished }
+        self.acceptedFailure = acceptedFailure
+        if historicalTrip || acceptedFailure { step = .finished }
     }
 
     func advance() {
@@ -98,6 +102,11 @@ private final class TimelineAcceptanceServer {
             case .weather: row["activity"] = "checking_weather"
             case .prefix: row["answer"] = "北京明天"
             case .finished:
+                if acceptedFailure {
+                    row["status"] = "failed"
+                    row["failure"] = "unavailable"
+                    break
+                }
                 row["status"] = "completed"
                 row["answer"] = "**北京明天**[有小雨](https://weather.example.org/model-link)。"
                 row["sources"] = [["title": "演示天气预报", "url": "https://weather.example.org/beijing"]]
