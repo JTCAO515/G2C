@@ -8,12 +8,15 @@ from cj_trip.needs_plan import build
 from cj_trip.structured import FieldRejected
 from cj_agent.draft import Draft,DraftRejected,proposal_id_for,trip_scope_for,PROPOSAL_TTL_SECONDS
 
-SYSTEM=(
-    'Return one compact JSON object for TRIP-model-plan.1 with exactly version, title, items, proposed_subjects. '
-    'Set version to "TRIP-model-plan.1". Each item has exactly id, text, verification, evidence, '
+PLAN_ITEM_SCHEMA = (
+    'Each item has exactly id, text, verification, evidence, '
     'schedule, fixed, source_category, source_refs. Set verification to "pending" and evidence and source_refs to []. '
     'Schedule has start and end, each with date, time, timezone, utc_offset. Use observation objects, '
     'for example {"state":"known","value":"09:00"} or {"state":"unknown"}. '
+)
+SYSTEM=(
+    'Return one compact JSON object for TRIP-model-plan.1 with exactly version, title, items, proposed_subjects. '
+    'Set version to "TRIP-model-plan.1". ' + PLAN_ITEM_SCHEMA +
     'Copy each original fixed or unselected item once, in original order, preserving ID, description, schedule and '
     'locked as fixed. Unchanged Needs text uses "user_provided"; keep unchanged current Trip source classification. '
     'Keep original observed offsets only with the unchanged current Trip event; otherwise use unknown for utc_offset. '

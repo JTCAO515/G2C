@@ -15,10 +15,26 @@ from cj_trip.postgres import Repository
 from cj_trip.structured import FieldRejected, SourceRejected
 
 from .needs_context import ContextPublisher, ContextSource
+from .needs_publisher import PLAN_ITEM_SCHEMA
 
 
 LIO_REPLAN_DELTA = 'TRIP-lio-replan-delta.1'
 LIO_REPLAN_DELTA_V2 = 'TRIP-lio-replan-delta.2'
+FIXED_SOURCE_TEXT = (
+    'Copy the description of a required fixed NEEDS item verbatim as text and set source_category to "user_provided". '
+)
+INITIAL_SYSTEM = ContextPublisher.system + ' Use a short title. ' + FIXED_SOURCE_TEXT
+REPLAN_SYSTEM = (
+    f'Return one compact JSON object for {LIO_REPLAN_DELTA_V2} with exactly version, items and proposed_subjects. '
+    f'Set version to "{LIO_REPLAN_DELTA_V2}". Omit title. '
+    'The server retains the saved title and every item in current_trip.content.items in saved order. '
+    'Do not return any of those items or IDs. Return only new suggestions and newly declared fixed NEEDS items '
+    'absent from the saved Trip. If the saved Trip already covers the request, return items:[] and proposed_subjects:{}. '
+    + PLAN_ITEM_SCHEMA + FIXED_SOURCE_TEXT +
+    'Keep utc_offset unknown. New suggestions use fixed {"state":"unknown"} and source_category "unknown". '
+    'Map exactly the new suggestion IDs to their explicit participant lists in proposed_subjects. '
+    'Use concise labels in the question language, with no explanation outside the object and no invented evidence.'
+)
 
 
 class LioContextSource(ContextSource):
@@ -40,24 +56,19 @@ class LioContextSource(ContextSource):
 
 
 class LioPlanPublisher(ContextPublisher):
-    system = ContextPublisher.system + (
-        f' When current_trip is present in TRIP-source-input.2, use response version {LIO_REPLAN_DELTA_V2} '
-        'instead of TRIP-model-plan.1. In that mode, return exactly version, items and proposed_subjects. '
-        'Omit title. The server retains the saved title and every item in current_trip.content.items in saved '
-        'order. Do not return any of those items or IDs. Return only new suggestions and any newly '
-        'declared fixed NEEDS items absent from the saved Trip. Return items:[] and proposed_subjects:{} when '
-        'the saved Trip already covers the request. In either format, copy the description of a required fixed '
-        'NEEDS item absent from the current Trip verbatim as text and set source_category to "user_provided". '
-        'Concise labels in the question language apply only to new suggestions.'
-    )
-
-    def __init__(self, original, confirmation, original_needs, check_lio_original):
+    def __init__(self, original, confirmation, original_needs, check_lio_original, *, draft_guidance=''):
         if type(confirmation) is not ConfirmationSigner:
             raise ValueError('Lio planning requires the original Trip signer')
         repository = Repository(original.repository.connect, original.repository.scope,
                                 confirmation, structured=True)
         super().__init__(repository, LioContextSource(original.source, original_needs), original.clock)
         self.check_lio_original = check_lio_original
+        self.draft_guidance = draft_guidance
+
+    def model_messages(self, binding, text, capture, messages):
+        system = INITIAL_SYSTEM if self.source.contexts[binding] is None else REPLAN_SYSTEM
+        self.system = system + self.draft_guidance
+        return super().model_messages(binding, text, capture, messages)
 
     def _model_plan(self, raw, context):
         value = parse_model(raw, versions=(MODEL_VERSION, LIO_REPLAN_DELTA, LIO_REPLAN_DELTA_V2),
