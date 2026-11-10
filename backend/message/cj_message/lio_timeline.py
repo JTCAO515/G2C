@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import hashlib
 import json
 
-from .demo_dialogue import LIO_VERSION, lio_conversation
+from .demo_dialogue import LIO_VERSION, admitted_dialogue, lio_conversation
 from .domain import Command, InvalidInput, Unavailable
 from .travel_reference import read_reference
 
@@ -31,25 +31,30 @@ class TimelinePage:
 def original(service, message_id):
     with service.repository.transaction() as tx:
         tx.lock_scope()
-        conversation = lio_conversation(tx.scope)
         row = tx.cur.execute(
-            'SELECT generation FROM cj_message_receipt WHERE scope=%s AND conversation_id=%s '
+            'SELECT conversation_id,generation FROM cj_message_receipt WHERE scope=%s '
             'AND message_id=%s AND demo_dialogue_protocol=%s',
-            (tx.scope, conversation, message_id, LIO_VERSION)).fetchone()
+            (tx.scope, message_id, LIO_VERSION)).fetchone()
         if row is None:
             return None
-        tx.chat(conversation, row[0])
+        tx.chat(*row)
         stored = tx.find(message_id)
         read_reference(tx, stored)
         return stored
 
 
-def read(service, conversation_id, before):
+def read(service, conversation_id, before, *, multiple=False):
     with service.repository.transaction() as tx:
         conversation = lio_conversation(tx.scope)
         if conversation_id is not None and conversation_id != conversation:
-            raise InvalidInput('invalid Lio conversation identifier')
-        head = tx.active_head(conversation)
+            if not multiple:
+                raise InvalidInput('invalid Lio conversation identifier')
+            conversation = conversation_id
+            head = tx.active_head(conversation)
+            if head is None or not admitted_dialogue(tx, conversation, head.generation, lio=True):
+                raise InvalidInput('invalid Lio conversation identifier')
+        else:
+            head = tx.active_head(conversation)
         if head is None:
             if before is not None:
                 raise InvalidInput('invalid timeline cursor')

@@ -556,6 +556,78 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     assert [outcome.status for outcome in worker.process()] == ['completed'] and model.calls == calls
     canceled = api.get(timeline, headers=owner).json()['messages'][-1]
     assert canceled['trip'] is None and '不保存' in canceled['answer']
+
+    default_trip = api.get('/v1/lio/trip', headers=owner).json()
+    v2_send, v2_timeline, v2_trip = '/v2/lio/messages', '/v2/lio/timeline', '/v2/lio/trip'
+
+    def v2_original(mid, text, **fields):
+        return json.dumps(dict(version='LIO-message.2', message_id=mid, text=text, locale='en', **fields)).encode()
+
+    new_plan = v2_original('lio-new-plan', request, new_conversation=True)
+    lookup = dict(message_id='lio-new-plan', input_sha256=hashlib.sha256(new_plan).hexdigest())
+    no_receipt = dict(version='LIO-message-lookup.2', receipt=None)
+    assert api.get(v2_send, params=lookup, headers=owner).json() == no_receipt
+    assert api.post(messages, content=new_plan, headers=owner).status_code == 400
+    assert api.post(v2_send, content=raw, headers=owner).status_code == 400
+    with patch.object(demo_dialogue, '_receive', side_effect=lose_commit_ack):
+        created = api.post(v2_send, content=new_plan, headers=owner)
+    assert created.status_code == 200, created.text
+    new_chat = created.json()['conversation_id']
+    assert new_chat != conversation and created.json()['version'] == 'LIO-message-receipt.2'
+    assert api.get(v2_send, params=lookup, headers=owner).json() == dict(
+        version='LIO-message-lookup.2', receipt=created.json())
+    assert api.get(v2_send, params=lookup, headers=headers).json() == no_receipt
+    assert api.get(v2_send, params=dict(lookup, input_sha256='0'*64), headers=owner).status_code == 409
+    assert api.get(v2_send, params=dict(lookup, input_sha256='invalid'), headers=owner).status_code == 400
+    assert api.post(v2_send, content=new_plan, headers=owner).json() == created.json()
+    assert api.post(v2_send, content=new_plan + b' ', headers=owner).status_code == 409
+    assert api.post(v2_send, content=v2_original('lio-new-invalid', request, new_conversation=True,
+        conversation_id=new_chat), headers=owner).status_code == 400
+    assert api.get(timeline, params=dict(conversation_id=new_chat), headers=owner).status_code == 400
+    assert api.get(v2_timeline, params=dict(conversation_id=new_chat), headers=headers).status_code == 400
+    assert api.post(v2_send, content=v2_original('lio-new-foreign', request, conversation_id=new_chat),
+                    headers=headers).status_code == 400
+    assert api.get(v2_timeline, params=dict(conversation_id=new_chat, before='lio-save'),
+                   headers=owner).status_code == 400
+    assert [outcome.status for outcome in worker.process()] == ['completed']
+    new_card = api.get(v2_timeline, params=dict(conversation_id=new_chat), headers=owner).json()
+    assert new_card['version'] == 'LIO-timeline.2'
+    first_new, = new_card['messages']
+    assert first_new['message_id'] == 'lio-new-plan' and first_new['trip'] is not None, first_new
+    assert first_new['trip']['trip_id'] != default_trip['current']['trip_id']
+    params = dict(conversation_id=new_chat)
+    new_history = api.get(v2_trip, params=params, headers=owner).json()
+    assert new_history['version'] == 'LIO-trip-history.2' and new_history['conversation_id'] == new_chat
+    assert new_history['current'] == first_new['trip'] and not new_history['history']
+    assert api.get(v2_trip, params=params, headers=headers).json()['current'] is None
+    edit = v2_original('lio-new-edit', 'Replace the second afternoon with Temple of Heaven.', conversation_id=new_chat)
+    assert api.post(v2_send, content=edit, headers=owner).status_code == 200
+    assert [outcome.status for outcome in worker.process()] == ['completed']
+    changed = api.get(v2_trip, params=params, headers=owner).json()
+    assert changed['current'] != new_history['current'] and changed['history'][0] == new_history['current']
+    undo = dict(version='LIO-trip-undo.2', action_id='lio-new-undo',
+                conversation_id=new_chat, target=changed['undo_target'])
+    assert api.post(v2_trip + '/undo', headers=owner, content=json.dumps(
+        dict(undo, conversation_id=conversation)).encode()).status_code == 403
+    applied = api.post(v2_trip + '/undo', headers=owner, content=json.dumps(undo).encode()).json()
+    assert applied == dict(version='LIO-trip-undo-receipt.2', action_id=undo['action_id'],
+                           committed=True, conversation_id=new_chat)
+    query = {key: value for key, value in undo.items() if key != 'version'}
+    assert api.get(v2_trip + '/undo', params=query, headers=owner).json() == applied
+    assert api.get(v2_trip + '/undo', params=dict(query, conversation_id=conversation),
+                   headers=owner).status_code == 403
+    legacy_query = {key: value for key, value in query.items() if key != 'conversation_id'}
+    assert api.get('/v1/lio/trip/undo', params=legacy_query, headers=owner).json()['committed'] is False
+    assert api.get(v2_trip, params=params, headers=owner).json()['current'] == new_history['current']
+    assert api.get('/v1/lio/trip', headers=owner).json() == default_trip
+    default_message = v2_original('lio-default-from-v2', 'What can I see in Beijing?')
+    assert api.post(v2_send, content=default_message, headers=owner).json()['conversation_id'] == conversation
+    assert [outcome.status for outcome in worker.process()] == ['completed']
+    v1_default = api.get(timeline, headers=owner).json()
+    assert v1_default['conversation_id'] == conversation
+    assert v1_default['messages'][-1]['message_id'] == 'lio-default-from-v2'
+    assert api.get(v2_timeline, headers=owner).json() == dict(v1_default, version='LIO-timeline.2')
+    print('PASS signed Lio v2 independent timelines and Trip, lost-ACK replay and owner/cursor isolation')
     with psycopg.connect(**conninfo) as db:
         try:
             with db.transaction():
@@ -679,7 +751,7 @@ def check_lio_provider_wire(root, database, auth, runtime, actor, api, headers):
 
     scope = scope_for(ISSUER,actor)
     subjects = frozenset({actor})
-    question = 'I always prefer a slower travel pace.'
+    question = 'I prefer quieter entrances at attractions.'
     answer = 'I can suggest a relaxed route. The entrance hours are UNKNOWN.'
     attempts = []
     key = 'synthetic-wire-fixture-key-only'
@@ -705,7 +777,7 @@ def check_lio_provider_wire(root, database, auth, runtime, actor, api, headers):
             entry, = json.loads(data['content'])['messages']
             assert entry['text'] == question
             content = json.dumps(dict(version='MEMORY-EXTRACT@2',entries=[dict(subject='self',
-                slot='travel.pace',kind='preference',text=question,extent='long_term',occurred_at='date unknown',
+                slot='quiet.entrance',kind='preference',text=question,extent='long_term',occurred_at='date unknown',
                 evidence=[dict(ref=entry['ref'],quote=question)])]))
         identity = dict(id='synthetic-lio-wire-'+str(len(attempts)),model=M4_MODEL)
         events = [dict(**identity,choices=[dict(index=0,delta=dict(content=content),finish_reason=None)]),
@@ -803,6 +875,7 @@ def check_lio_memory(root, database, auth, path, context, foreign, actor, unknow
     from cj_api.lio_memory_routes import LioMemoryCards, _decode_target, _encode_target
     from cj_api.local_lio_memory import lio_candidates
     from cj_memory.domain import CommitUnknown as MemoryCommitUnknown
+    from cj_memory.typed_api import register_typed_routes
     from cj_memory.typed_runtime import TypedRuntimeConfiguration
     from cj_memory_jobs.publication_result import VERSION_DEMO
     from cj_memory_jobs.service import OperationWithheld
@@ -860,6 +933,7 @@ def check_lio_memory(root, database, auth, path, context, foreign, actor, unknow
     app = create_local_app(conninfo_path=None,auth_dir=auth,run_context=context,database=database,
         account_admission=True,demo_dialogue_subjects=selected,lio_dialogue_subjects=selected,
         lio_memory_factory=memory_host)
+    register_typed_routes(app, database=database, auth_dir=auth, configuration=runtime.collection)
     service = candidates.collection
     with TestClient(app) as api:
         mid = 'lio-memory-original'
@@ -996,8 +1070,42 @@ def check_lio_memory(root, database, auth, path, context, foreign, actor, unknow
             ledger = decode_ledger(db.execute('SELECT ledger FROM cj_usage_ledger_candidate').fetchone()[0])
             assert ledger.attempts[attempt].state == 'unknown'
         consumer = check_lio_provider_wire(root,database,auth,runtime,actor,api,owner)
+        recall = 'lio-new-memory-recall'
+        def new_memory_question(mid):
+            return api.post('/v2/lio/messages', headers=owner, content=encoded(dict(
+                version='LIO-message.2', message_id=mid, text='What travel preference do I have?',
+                locale='en', new_conversation=True)))
+
+        def answer_input(db, mid):
+            raw, = db.execute(
+                "SELECT o.input_bytes FROM cj_run_metered_operation o JOIN cj_message_receipt m USING(scope,run_id) "
+                "WHERE m.message_id=%s AND o.kind='model'", (mid,)).fetchone()
+            return raw
+
+        new_chat = new_memory_question(recall).json()['conversation_id']
+        assert new_chat != api.get(timeline, headers=owner).json()['conversation_id']
+        assert [outcome.status for outcome in worker.process()] == ['completed']
+        chosen = _decode_target(remember['target'])
+        with database.connect(scope) as db:
+            assert quiet.encode() in bytes(answer_input(db, recall))
+            version, source_version = db.execute(
+                'SELECT version,source_version FROM cj_memory_item WHERE item_id=%s',
+                (chosen['candidate_id'],)).fetchone()
+        updated = 'I prefer quiet entrances to museums.'
+        edit = dict(version='MEMORY-management.2', action_id='lio-edit-cross-chat-memory',
+                    operation='edit', item_id=chosen['candidate_id'], expected_version=version,
+                    expected_source_version=source_version, context=None, text=updated)
+        changed = api.post('/v2/memory-management-actions', headers=owner, content=encoded(edit))
+        assert changed.status_code == 200, changed.text
+        edited_recall = 'lio-new-memory-after-edit'
+        edited_chat = new_memory_question(edited_recall).json()['conversation_id']
+        assert edited_chat != new_chat
+        assert [outcome.status for outcome in worker.process()] == ['completed']
+        with database.connect(scope) as db:
+            edited_input = bytes(answer_input(db, edited_recall))
+            assert updated.encode() in edited_input and quiet.encode() not in edited_input
         check_lio_item_erasure(root,database,auth,path,context,scope,owner,
-            _decode_target(remember['target']),_decode_target(dismiss['target']),consumer,quiet)
+            chosen,_decode_target(dismiss['target']),consumer,quiet)
         after_erase = 'lio-after-item-erasure'
         assert api.post('/v1/lio/messages',headers=owner,content=encoded(dict(
             version='LIO-message.1',message_id=after_erase,text='What should I see near the metro?',locale='en'))).status_code == 200
@@ -1008,6 +1116,39 @@ def check_lio_memory(root, database, auth, path, context, foreign, actor, unknow
                 WHERE m.message_id=%s AND o.kind='model'""",(after_erase,)).fetchone()
             assert quiet.encode() not in bytes(original_after_erase)
         print('PASS signed Lio item erasure clears Pub4 and recalled Meter payloads, preserves ledger and sibling, and stops recall')
+        post_delete = 'lio-new-memory-after-erasure'
+        assert new_memory_question(post_delete).json()['conversation_id'] != new_chat
+        assert [outcome.status for outcome in worker.process()] == ['completed']
+        with database.connect(scope) as db:
+            assert answer_input(db, recall) is None
+            assert answer_input(db, edited_recall) is None
+            remaining_input = bytes(answer_input(db, post_delete))
+            assert quiet.encode() not in remaining_input and updated.encode() not in remaining_input
+        print('PASS signed Lio v2 recalls saved Memory across conversations and preserves the erasure fence')
+
+        direct_id = 'lio-direct-pilot-pace'
+        direct_text = '请记住，我旅行时喜欢慢节奏。'
+        assert api.post('/v1/lio/messages', headers=owner, content=encoded(dict(
+            version='LIO-message.1', message_id=direct_id, text=direct_text, locale='zh'))).status_code == 200
+        assert [outcome.status for outcome in worker.process()] == ['completed']
+        received = api.get(timeline, headers=owner)
+        assert received.status_code == 200, received.text
+        direct_turn, = [row for row in received.json()['messages'] if row['message_id'] == direct_id]
+        tag, = direct_turn['memory']['tags']
+        assert tag['text'] == '我旅行时喜欢慢节奏。'
+        with database.connect(scope) as db:
+            assert db.execute('SELECT status FROM cj_memory_item WHERE item_id=%s', (tag['id'],)).fetchone() == ('candidate',)
+            assert db.execute(
+                "SELECT count(*) FROM cj_run_metered_operation o JOIN cj_message_receipt m USING(scope,run_id) "
+                "WHERE m.message_id=%s AND o.kind='memory'", (direct_id,)).fetchone() == (0,)
+        direct_choice = dict(version='LIO-memory-action.1', action_id='remember-direct-pace',
+                             operation='remember', target=tag['target'])
+        assert api.post(actions, headers=owner, content=encoded(direct_choice)).json()['status'] == 'remembered'
+        assert api.post(receipts, headers=owner, content=encoded(direct_choice)).json()['status'] == 'remembered'
+        with database.connect(scope) as db:
+            assert db.execute('SELECT status FROM cj_memory_item WHERE item_id=%s', (tag['id'],)).fetchone() == ('active',)
+        assert direct_text not in model_inputs
+        print('PASS signed exact pilot preference uses original quote, zero external extraction and explicit confirmation')
     print('PASS signed Lio Meter and middle-turn Pub4, explicit remember/dismiss, stale choice, isolation, ACK recovery and original UNKNOWN')
     return app, remember
 

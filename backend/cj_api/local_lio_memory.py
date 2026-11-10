@@ -16,12 +16,15 @@ from cj_memory_jobs.codec import Conflict, Unavailable
 from cj_memory_jobs.collection import CollectionService
 from cj_memory_jobs.extraction import CollectionPolicy, CollectionUnavailable, InvalidExtraction
 from cj_memory_jobs.lio_candidates import LioCandidates
+from cj_memory_jobs.model_v2 import OUTPUT_VERSION
+from cj_memory_jobs.postgres import encode
 from cj_memory_jobs.service import OperationWithheld
 from cj_message.domain import CommitUnknown as MessageCommitUnknown
 from cj_message.source import SourceQuery
 from cj_usage.background_exit import ModelInput
 from cj_usage.metered_exit import BudgetExceeded, BudgetUnknown
-from .lio_memory_preferences import PREFERENCE_SLOTS, allows_pilot_preference_write, supported_preference
+from .lio_memory_preferences import (PREFERENCE_SLOTS, allows_pilot_preference_write,
+                                     explicit_pilot_preference, supported_preference)
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -70,6 +73,21 @@ def lio_candidates(database, boundary, subjects, configuration):
     return LioCandidates(service, subjects, original_allows=supported_preference)
 
 
+def _local_preference_result(payload):
+    (_, content), = payload.messages
+    data = json.loads(content)
+    source, = data['messages']
+    preference = explicit_pilot_preference(source['text'], data['slots'])
+    if preference is None:
+        return None
+    slot, statement = preference
+    if len(statement.encode('utf-8')) > data['max_text_bytes']:
+        return None
+    return encode(dict(version=OUTPUT_VERSION, entries=[dict(subject='self', slot=slot,
+        kind='preference', text=statement, extent='long_term', occurred_at='date unknown',
+        evidence=[dict(ref=source['ref'], quote=statement)])]))
+
+
 class LioMemoryExtraction:
     """One separately metered extraction on the admitted original Lio RUN."""
 
@@ -110,9 +128,13 @@ class LioMemoryExtraction:
         try:
             actual = self._owned(token, source_bytes)
             payload = ModelInput.parse(actual)
-            messages = [dict(role=role, content=content) for role, content in payload.messages]
-            output = ''.join(worker._registered_stream(binding, 'memory.lio_extract.0', 'memory.lio_extract.1',
-                                                        (messages, payload.system, worker.provider))).encode('utf-8')
+            # A uniquely supported explicit statement already provides its own
+            # exact value and evidence. It needs no external extraction call.
+            output = _local_preference_result(payload)
+            if output is None:
+                messages = [dict(role=role, content=content) for role, content in payload.messages]
+                output = ''.join(worker._registered_stream(binding, 'memory.lio_extract.0', 'memory.lio_extract.1',
+                                                            (messages, payload.system, worker.provider))).encode('utf-8')
             deadline = worker.budget_exit.prepare_publication(binding)
         except (BudgetExceeded, ProviderFailed) as error:
             _record_hold('model', error)
