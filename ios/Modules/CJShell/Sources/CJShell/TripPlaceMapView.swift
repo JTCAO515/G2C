@@ -112,19 +112,22 @@ private final class RecordedPlaceAnnotation: NSObject, MKAnnotation {
     }
 }
 
-private struct RecordedPlaceMap: UIViewRepresentable {
+struct RecordedPlaceMap: UIViewRepresentable {
     let places: [TripPlaceProjection]
     let language: ShellLanguage
     let failed: () -> Void
+    var showsSourceDetails = true
     func makeUIView(context: Context) -> RecordedMapCanvas { RecordedMapCanvas() }
-    func updateUIView(_ map: RecordedMapCanvas, context: Context) { map.configure(places:places,language:language,failed:failed) }
+    func updateUIView(_ map: RecordedMapCanvas, context: Context) {
+        map.configure(places: places, language: language, failed: failed, showsSourceDetails: showsSourceDetails)
+    }
     static func dismantleUIView(_ map: RecordedMapCanvas, coordinator: ()) { map.retire() }
 }
 
 /// A read-only native MapKit image with accessible original-source markers.
 /// MapKit supplies the image and projection; no image cropping, persistence,
 /// source reconstruction, location access or custom CRS transform is performed.
-private final class RecordedMapCanvas: UIView {
+final class RecordedMapCanvas: UIView {
     private let imageView = UIImageView()
     private var markers: [UIButton] = []
     private var annotations: [RecordedPlaceAnnotation] = []
@@ -133,6 +136,7 @@ private final class RecordedMapCanvas: UIView {
     private var size: CGSize = .zero
     private var failed: (() -> Void)?
     private var retired = false
+    private var showsSourceDetails = true
     private var zoomFactor = 1.0
     private let zoomIn = UIButton(type:.system)
     private let zoomOut = UIButton(type:.system)
@@ -155,10 +159,15 @@ private final class RecordedMapCanvas: UIView {
         }
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) is unavailable") }
-    func configure(places:[TripPlaceProjection],language:ShellLanguage,failed:@escaping ()->Void) {
-        let next=places.map { $0.id+":"+$0.snapshotSHA256 }.joined(separator:"|")+language.rawValue
+    func configure(places: [TripPlaceProjection], language: ShellLanguage, failed: @escaping () -> Void,
+                   showsSourceDetails: Bool) {
+        let next = places.map { $0.id + ":" + $0.snapshotSHA256 }.joined(separator: "|")
+            + language.rawValue + String(showsSourceDetails)
         guard signature != next else { return }
-        retired=false;signature=next;self.failed=failed
+        retired = false
+        signature = next
+        self.failed = failed
+        self.showsSourceDetails = showsSourceDetails
         zoomFactor=1
         zoomIn.accessibilityLabel=language.text("Zoom in","放大地图")
         zoomOut.accessibilityLabel=language.text("Zoom out","缩小地图")
@@ -215,7 +224,10 @@ private final class RecordedMapCanvas: UIView {
                 button.frame=CGRect(x:point.x-22,y:point.y-22,width:44,height:44)
                 button.accessibilityIdentifier="trip.map.marker."+annotation.place.id
                 button.accessibilityLabel=annotation.place.nameZH
-                button.accessibilityValue=[annotation.place.providerID,annotation.place.rawCoordinate!,"GCJ-02",String(annotation.coordinate.longitude)+","+String(annotation.coordinate.latitude)].joined(separator:"|")
+                if self.showsSourceDetails {
+                    button.accessibilityValue = [annotation.place.providerID, annotation.place.rawCoordinate!, "GCJ-02",
+                        String(annotation.coordinate.longitude) + "," + String(annotation.coordinate.latitude)].joined(separator: "|")
+                }
                 button.addAction(UIAction { [weak button] _ in button?.isSelected.toggle() },for:.touchUpInside)
                 self.addSubview(button);self.markers.append(button)
             }
