@@ -6,7 +6,7 @@ import sys
 import psycopg
 
 import migrate
-from . import checkpoint,local_postgres
+from . import checkpoint,demo_quota,local_postgres
 from .configuration import load_secret_environment,local_database_target
 
 
@@ -18,7 +18,7 @@ def upgrade(control,backups,*,target=49,schema_root=None):
     if not local_database_target():raise ValueError('HK local Demo upgrade required')
     local_postgres.require_serving(control)
     expected=checkpoint.versions()
-    if target not in (49,50,51) or expected!=list(range(1,target+1)):
+    if target not in (49,50,51,52) or expected!=list(range(1,target+1)):
         raise ValueError('exact Demo migration chain required')
     anchor=schema_anchor(target)
     marker=control/(anchor+'.json')
@@ -34,6 +34,8 @@ def upgrade(control,backups,*,target=49,schema_root=None):
                 "(SELECT count(*) FROM cj_run_record WHERE status IN ('queued','running'))").fetchone()!=(0,0):
             raise ValueError('original application work still in flight')
         before=checkpoint.local.fence_state(db)
+        if target==52:
+            current_count,next_count=demo_quota.upgrade(db)
         checkpoint.atomic(marker,dict(state='INTENT',lineage=release['lineage'],original_fences=before))
         migrate.up(db,migrate.load(),target)
     manifest=checkpoint.export(destination,control,schema_root=schema_root)
@@ -41,6 +43,8 @@ def upgrade(control,backups,*,target=49,schema_root=None):
         raise ValueError('Demo upgrade fence state changed')
     checkpoint.atomic(marker,dict(state='COMPLETE',lineage=manifest['lineage'],
         dump_sha256=manifest['dump_sha256'],original_fences=before))
+    if target==52:
+        print(f'Quota raised for {current_count} current and {next_count} next-period ledgers')
     print(f'PASS exact additive {target} with original deletion fences and new signed local backup base')
 
 
@@ -65,7 +69,8 @@ def daily_base(control,root,previous):
 if __name__=='__main__':
     try:
         arguments=sys.argv[1:]
-        if arguments not in ([],['--target','50'],['--target','51']):raise ValueError('explicit Demo schema upgrade required')
+        if arguments not in ([],['--target','50'],['--target','51'],['--target','52']):
+            raise ValueError('explicit Demo schema upgrade required')
         load_secret_environment('recovery')
         upgrade(Path(os.environ['CJ_DEPLOY_CONTROL']),Path('/backups'),target=int(arguments[1]) if arguments else 49)
     except (OSError,ValueError,KeyError,psycopg.Error):

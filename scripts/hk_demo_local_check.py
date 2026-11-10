@@ -25,7 +25,7 @@ from cj_agent.provider import FakeProvider, ProviderFailed, ProviderUnknown
 from cj_api.local_run_context import load_run_context
 from cj_memory.typed_runtime import TypedRuntimeConfiguration
 from cj_message.travel import ABI
-from deploy.hk import checkpoint,demo_accounts,demo_login,demo_schema,schema,staging
+from deploy.hk import checkpoint,demo_accounts,demo_login,demo_quota,demo_schema,schema,staging
 from deploy.hk.configuration import Runtime,demo_periods
 from cj_run.step_usage import ledger_scope_for
 from cj_usage.authorization_budget import DEADLINE,DEMO_DEADLINE
@@ -43,6 +43,72 @@ NEW_CODE='D1-0123456789ab.'+'y'*22
 def digest(code):return hashlib.sha256(code.encode('ascii')).hexdigest()
 
 
+def quota_fixture(root,env):
+    """Seed old owner ledgers, including a held original, under the real operator."""
+    from cj_usage.codec import decode, encode
+    from cj_usage.core import Attempt, Blocked, Command, Meter, Run
+    from cj_usage.postgres import PostgresRepository
+
+    now=int(time.time())
+    other='m4-synthetic-local-quota-control'
+    context_path=root/'quota-context.json'
+    raw=json.dumps(dict(version='CJ-LOCAL-RUN@2',current=dict(meter=dict(unit='provider_call',budget=80,
+        period_start=now-60,period_end=int(DEADLINE.timestamp()),max_steps=8,max_tools=2,max_output=60000,max_seconds=600),
+        output_limits=dict(model=4000,tool=2000,memory=1000)),history=[]))
+    context_path.write_text(raw)
+    context=load_run_context(context_path)
+    _,following=demo_periods(context,now)
+    env.update(CJ_BETA_RUN_CONTEXT_JSON=raw,CJ_BETA_SUBJECTS_JSON=json.dumps([SUBJECT,other]),
+               CJ_BETA_DEMO_SUBJECTS_JSON=json.dumps([SUBJECT]))
+    keys=[ledger_scope_for(scope_for(ISSUER,subject),period.current.meter)
+          for period,subjects in ((context,(SUBJECT,other)),(following,(SUBJECT,)))
+          for subject in subjects]
+
+    def initialize(db):
+        for subject in (SUBJECT,other):
+            local_run_context.provision_budget_connection(db,context,subject)
+        local_run_context.provision_budget_connection(db,following,SUBJECT)
+        original=decode(db.execute('SELECT ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(keys[0],)).fetchone()[0])
+        original.attempts['original-attempt']=Attempt(
+            Command('original-attempt','original-operation','original-run','model','a'*64,80,100),state='unknown')
+        original.runs['original-run']=Run(now,steps=1)
+        original.last_clock=now
+        assert Meter.exposure(original)==80
+        db.execute('UPDATE cj_usage_ledger_candidate SET revision=3,ledger=%s::jsonb WHERE scope_id=%s',
+                   (encode(original),keys[0]))
+
+    def snapshot(db):
+        return db.execute('SELECT scope_id,revision,ledger FROM cj_usage_ledger_candidate '
+                          'WHERE scope_id=ANY(%s) ORDER BY scope_id',(keys,)).fetchall()
+
+    def negative(db):
+        prior=snapshot(db)
+        try:
+            with db.transaction():
+                db.execute('DELETE FROM cj_usage_ledger_candidate WHERE scope_id=%s',(keys[-1],))
+                demo_quota.upgrade(db)
+        except ValueError as exc:
+            assert 'original HK synthetic quota ledger unavailable' in str(exc)
+        else:
+            raise AssertionError('missing ledger was provisioned by quota upgrade')
+        assert snapshot(db)==prior
+
+    def reserve_after_upgrade(conninfo):
+        repository=PostgresRepository(lambda:psycopg.connect(**conninfo),keys[0])
+        with repository.transaction() as ledger:
+            assert Meter.exposure(ledger)==80
+            meter=Meter(repository,ledger.config,time.time)
+        meter.reserve(Command('new-attempt','new-operation','new-run','model','b'*64,720,100))
+        try:
+            meter.reserve(Command('over-cap','over-operation','new-run','model','c'*64,1,100))
+        except Blocked as exc:
+            assert exc.reason=='limit_exceeded'
+        else:
+            raise AssertionError('quota upgrade exceeded 800 provider calls')
+
+    return initialize,snapshot,negative,reserve_after_upgrade
+
+
 def verify_upgrade(root, blueprint, target):
     root.mkdir(mode=0o700)
     schema_root=root/'schema'
@@ -57,6 +123,8 @@ def verify_upgrade(root, blueprint, target):
         CJ_TRIAL_VALID_UNTIL='2026-12-31T16:00:00+00:00',
         CJ_BETA_RECOVERY_PRIVATE_B64=base64.b64encode(key.private_bytes(Encoding.Raw,PrivateFormat.Raw,NoEncryption())).decode(),
         CJ_BETA_RECOVERY_PUBLIC_B64=base64.b64encode(key.public_key().public_bytes(Encoding.Raw,PublicFormat.Raw)).decode())
+    initialize,snapshot,negative,reserve_after_upgrade=(
+        quota_fixture(root,env) if target==52 else (lambda _:None,None,None,None))
     with pg_suites.cluster('demo-upgrade',port=55650,role='cj_demo_upgrade',root=root/'old',socket=root/'old-s') as config:
         with psycopg.connect(**config,autocommit=True) as db:
             migrate.up(db,migrate.load(),target-1)
@@ -69,7 +137,11 @@ def verify_upgrade(root, blueprint, target):
 
         with patch.dict(os.environ,env),patch.object(checkpoint,'operator',operator),                patch.object(staging,'PG17',pg_suites.bindir()):
             with patch.object(checkpoint,'versions',return_value=list(range(1,target))):
-                checkpoint.bootstrap(control,lambda _:None)
+                checkpoint.bootstrap(control,initialize)
+            if target==52:
+                with operator() as (db,_):
+                    negative(db)
+                    prior_quota=snapshot(db)
             old=checkpoint.verified(control/'release.json')
             checkpoint.atomic(control/'b2.json',dict(version='g2c-hk-local.1',state='FORWARD_ONLY'))
             checkpoint.atomic(prior/'manifest.json',dict(schema=list(range(1,target)),
@@ -81,6 +153,14 @@ def verify_upgrade(root, blueprint, target):
             assert result['fences']==original and result['lineage']==old['lineage']
             with operator() as (db,_):
                 checkpoint.require_release(db,control)
+                if target==52:
+                    raised=snapshot(db)
+                    for key,revision,ledger in prior_quota:
+                        ledger['config']['budget']=800
+                        assert (key,revision+1,ledger) in raised
+                    assert len(raised)==len(prior_quota)==3
+            if target==52:
+                reserve_after_upgrade(config)
             try:
                 demo_schema.upgrade(control,backups,target=target,schema_root=schema_root)
             except ValueError as exc:
@@ -1513,7 +1593,7 @@ def exercise(root,conninfo):
     now=int(time.time())
     context_path=root/'meter.json'
     context_path.write_text(json.dumps(dict(version='CJ-LOCAL-RUN@2',current=dict(meter=dict(unit='provider_call',
-        budget=100,period_start=now-60,period_end=int(DEADLINE.timestamp()),max_steps=8,max_tools=2,max_output=60000,max_seconds=600),
+        budget=800,period_start=now-60,period_end=int(DEADLINE.timestamp()),max_steps=8,max_tools=2,max_output=60000,max_seconds=600),
         output_limits=dict(model=4000,tool=2000,memory=1000)),history=[])))
     context=load_run_context(context_path)
     _,following=demo_periods(context,now)
@@ -1658,7 +1738,7 @@ def exercise(root,conninfo):
                     message_id='demo-'+str(number),text='Fictional trip',trip_id=None,creation_intent='none',
                     expected_generation=generation,expected_sequence=number-1,travel_context=None,needs_reference=None)).encode()
             receipts=[]
-            for number in range(1,37):
+            for number in range(1,397):
                 response=api.post('/v2/messages',content=command(number),headers=headers)
                 assert response.status_code==200,(number,response.status_code,response.text)
                 receipts.append(response.json()['receipt'])
@@ -1671,7 +1751,14 @@ def exercise(root,conninfo):
             assert replay.status_code==200 and replay.json()['receipt']==receipts[0]
             scope=scope_for(ISSUER,SUBJECT)
             with psycopg.connect(**conninfo) as db:
-                assert db.execute("SELECT count(*) FROM public.cj_message_receipt WHERE scope=%s AND demo_question_day=(clock_timestamp() AT TIME ZONE 'Asia/Shanghai')::date",(scope,)).fetchone()==(40,)
+                assert db.execute("SELECT count(*) FROM public.cj_message_receipt WHERE scope=%s AND demo_question_day=(clock_timestamp() AT TIME ZONE 'Asia/Shanghai')::date",(scope,)).fetchone()==(400,)
+                try:
+                    with db.transaction():
+                        migrate.down(db,migrate.load(),51)
+                except psycopg.errors.RaiseException as exc:
+                    assert 'Demo quota rollback would invalidate admitted originals' in str(exc)
+                else:
+                    raise AssertionError('quota downgrade ignored admitted originals')
                 assert db.execute("SELECT has_table_privilege('cj_m1_runtime','cj_message_context_profile','INSERT')").fetchone()==(False,)
                 periods=[ledger_scope_for(scope,p.meter) for p in following.profiles]
                 assert db.execute('SELECT count(*) FROM public.cj_usage_ledger_candidate WHERE scope_id=ANY(%s)',(periods,)).fetchone()==(2,)
@@ -1687,10 +1774,10 @@ def exercise(root,conninfo):
                     except psycopg.errors.InsufficientPrivilege:pass
                     else:raise AssertionError('runtime changed protected state: '+label)
                 db.execute("UPDATE public.cj_message_receipt SET demo_question_day=demo_question_day-1 WHERE scope=%s",(scope,))
-            assert api.post('/v2/messages',content=command(37),headers=headers).status_code==200
+            assert api.post('/v2/messages',content=command(397),headers=headers).status_code==200
             with psycopg.connect(**conninfo) as db:
                 assert db.execute("SELECT count(*) FROM public.cj_message_receipt WHERE scope=%s AND demo_question_day=(clock_timestamp() AT TIME ZONE 'Asia/Shanghai')::date",(scope,)).fetchone()==(1,)
-    print('PASS signed zero-setup dialogue, concurrent original replay, default Travel, no downgrade, revoke, 40/day, migration data protection and Beijing day rollover')
+    print('PASS signed zero-setup dialogue, concurrent original replay, default Travel, no downgrade, revoke, 400/day, migration data protection and Beijing day rollover')
 
 
 if __name__=='__main__':
@@ -1699,11 +1786,12 @@ if __name__=='__main__':
         with pg_suites.cluster('demo',port=55649,role='cj_demo_init',root=root/'pg',socket=root/'s') as conninfo:
             with psycopg.connect(**conninfo,autocommit=True) as connection:
                 migrations=migrate.load();migrate.up(connection,migrations,migrations[-1]['version'])
-            with patch.object(migrate,'load',return_value=migrations[:50]):
-                with pg_suites.cluster('old-blueprint',port=55651,role='cj_demo_blueprint',
-                        root=root/'old-blueprint',socket=root/'old-blueprint-s') as previous:
-                    with psycopg.connect(**previous,autocommit=True) as connection:
-                        migrate.up(connection,migrations,50)
-                    verify_upgrade(root/'upgrade-50',previous,50)
-            verify_upgrade(root/'upgrade-51',conninfo,51)
+            for version in (50,51):
+                with patch.object(migrate,'load',return_value=migrations[:version]):
+                    with pg_suites.cluster('old-blueprint',port=55651,role='cj_demo_blueprint',
+                            root=root/'old-blueprint',socket=root/'old-blueprint-s') as previous:
+                        with psycopg.connect(**previous,autocommit=True) as connection:
+                            migrate.up(connection,migrations,version)
+                        verify_upgrade(root/f'upgrade-{version}',previous,version)
+            verify_upgrade(root/'upgrade-52',conninfo,52)
             exercise(root,conninfo)
