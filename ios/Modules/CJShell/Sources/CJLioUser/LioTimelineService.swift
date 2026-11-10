@@ -45,6 +45,13 @@ struct LioTimelinePage: Sendable {
         turns = page.messages.map(LioTimelineTurn.init)
         nextBefore = page.nextBefore
     }
+
+    init(latest: Self, earlier: [Self]) {
+        var seen = Set<Data>()
+        let ordered = earlier.reversed().flatMap(\.turns) + latest.turns
+        turns = Array(ordered.reversed().filter { seen.insert($0.id).inserted }.reversed())
+        nextBefore = earlier.isEmpty ? latest.nextBefore : earlier.last?.nextBefore
+    }
 }
 
 extension LioService {
@@ -169,13 +176,41 @@ private actor LioTimelineSession {
                 defer { continuation.finish() }
                 let clock = ContinuousClock()
                 let deadline = clock.now.advanced(by: window)
+                let waitingIDs = Set(waiting)
+                var boundary: String?
+                var earlier: [(before: String, page: LioTimelinePage)] = []
+                var nextRefresh = 0
                 var knownActive = false
                 repeat {
                     do {
                         try Task.checkCancellation()
-                        let timeline = try await page()
+                        let latest = try await page()
+                        if !waitingIDs.isEmpty {
+                            if boundary != latest.nextBefore {
+                                boundary = latest.nextBefore
+                                earlier.removeAll()
+                            }
+                            let seen = Set(latest.turns.map(\.id) + earlier.flatMap { $0.page.turns.map(\.id) })
+                            let cursor = earlier.isEmpty ? latest.nextBefore : earlier.last?.page.nextBefore
+                            if !waitingIDs.isSubset(of: seen), let cursor {
+                                // Follow at most one older page on each read cycle.
+                                earlier.append((cursor, try await page(before: cursor)))
+                            } else {
+                                let active = earlier.indices.filter { index in
+                                    earlier[index].page.turns.contains { $0.isActive && waitingIDs.contains($0.id) }
+                                }
+                                if !active.isEmpty {
+                                    let index = active[nextRefresh % active.count]
+                                    nextRefresh += 1
+                                    let cursor = earlier[index].before
+                                    earlier[index].page = try await page(before: cursor)
+                                }
+                            }
+                        }
+                        let timeline = earlier.isEmpty ? latest : LioTimelinePage(latest: latest, earlier: earlier.map(\.page))
                         continuation.yield(timeline)
-                        knownActive = timeline.turns.contains(where: \.isActive)
+                        knownActive = latest.turns.contains(where: \.isActive)
+                            || earlier.contains { $0.page.turns.contains { $0.isActive && waitingIDs.contains($0.id) } }
                         if !knownActive && waiting.allSatisfy({ id in timeline.turns.contains { $0.id == id } }) {
                             return
                         }
