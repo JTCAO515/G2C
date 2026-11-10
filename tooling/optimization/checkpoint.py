@@ -29,6 +29,27 @@ def atomic_json(path: Path, value):
         os.close(descriptor)
 
 
+def load_checkpoint(path):
+    envelope = read_json(path)
+    state = envelope["state"]
+    if envelope["sha256"] != digest(state):
+        raise ValueError("checkpoint checksum mismatch")
+    return state
+
+
+def verify_artifacts(directory, state):
+    for candidate_id, expected_hash in state["candidates"].items():
+        if len(candidate_id) != 64 or any(c not in "0123456789abcdef" for c in candidate_id):
+            raise ValueError("invalid candidate ID in checkpoint")
+        record = read_json(directory / ("candidate-" + candidate_id + ".json"))
+        if digest(record) != expected_hash:
+            raise ValueError("candidate artifact checksum mismatch")
+    if "selection_sha256" in state:
+        selection = read_json(directory / "candidate.json")
+        if digest(selection) != state["selection_sha256"]:
+            raise ValueError("selection artifact checksum mismatch")
+
+
 @contextmanager
 def exclusive(directory):
     directory.mkdir(parents=True, exist_ok=True)
@@ -48,10 +69,7 @@ class Journal:
         self.started = time.monotonic()
         self.manifest = manifest
         if resume:
-            envelope = read_json(self.path)
-            self.state = envelope["state"]
-            if envelope["sha256"] != digest(self.state):
-                raise ValueError("checkpoint checksum mismatch")
+            self.state = load_checkpoint(self.path)
             if self.state["manifest"] != manifest or self.state["version"] != "G2C-offline-checkpoint.1":
                 raise ValueError("resume source, environment or parameters changed")
             for index, op in enumerate(self.state["operations"]):
@@ -69,7 +87,7 @@ class Journal:
             self.elapsed = 0
             self.state = {"version": "G2C-offline-checkpoint.1", "run_id": str(uuid.uuid4()),
                           "created_at": timestamp(), "manifest": manifest, "active_seconds": 0,
-                          "status": "READY", "operations": [], "events": []}
+                          "status": "READY", "operations": [], "events": [], "candidates": {}}
             self.save()
 
     def note(self, status, reason):
@@ -88,7 +106,7 @@ class Journal:
     def unresolved(self):
         return [op["attempt_id"] for op in self.state["operations"] if op["outcome"] in {"PENDING", "UNKNOWN"}]
 
-    def action(self, kind, request, invoke):
+    def action(self, kind, request, invoke, validate=None):
         index = self.cursor
         self.cursor += 1
         operations = self.state["operations"]
@@ -100,7 +118,7 @@ class Journal:
                 raise KnownFailure(op["error"])
             if op["outcome"] != "COMPLETED":
                 raise Halt("original attempt unresolved; read-only reconciliation required")
-            return json.loads(canonical(op["result"]))
+            return self.validated(op, validate)
         if self.unresolved():
             raise Halt("original attempt unresolved; no further dispatch")
         if (self.directory / "STOP").exists():
@@ -126,6 +144,18 @@ class Journal:
             op.update(outcome="UNKNOWN", error=type(error).__name__, finished_at=timestamp())
             self.save()
             raise
-        op.update(outcome="COMPLETED", result=json.loads(canonical(result)), finished_at=timestamp())
+        op.update(outcome="COMPLETED", result=json.loads(canonical(result)), result_sha256=digest(result),
+                  finished_at=timestamp())
         self.save()
-        return result
+        return self.validated(op, validate)
+
+    def validated(self, op, validate):
+        value = json.loads(canonical(op["result"]))
+        if validate is None:
+            return value
+        try:
+            return validate(value, op["attempt_id"])
+        except ValueError as error:
+            op.update(outcome="FAIL", error="InvalidResponse", validation_error=str(error))
+            self.save()
+            raise KnownFailure("InvalidResponse") from None

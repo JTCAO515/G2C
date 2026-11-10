@@ -188,13 +188,58 @@ run(Path(sys.argv[1]))
             with self.subTest(value=value):
                 directory = Path(self.temp.name) / str(len(list(Path(self.temp.name).iterdir())))
                 args = {"side_effect": value} if value is TimeoutError else {"return_value": value}
+                expected = "UNKNOWN" if value is TimeoutError else "FAILED"
                 with patch.object(FakeCalls, "propose", **args):
-                    self.assertEqual(run(directory)["status"], "UNKNOWN")
+                    self.assertEqual(run(directory)["status"], expected)
                 state = read_json(directory / "checkpoint.json")["state"]
-                self.assertEqual(state["status"], "UNKNOWN")
+                self.assertEqual(state["status"], expected)
                 self.assertEqual(state["operations"][-1]["kind"], "reflection")
+                if value is not TimeoutError:
+                    op = state["operations"][-1]
+                    self.assertEqual(op["outcome"], "FAIL")
+                    self.assertEqual(op["result"], value)
+                    self.assertEqual(op["result_sha256"], digest(value))
+                    self.assertIn("selected Fake text slots", op["validation_error"])
                 with patch.object(FakeCalls, "propose", side_effect=AssertionError("resent")):
-                    self.assertEqual(run(directory, resume=True)["status"], "UNKNOWN")
+                    self.assertEqual(run(directory, resume=True)["status"], expected)
+
+    def test_completed_artifact_damage_or_loss_rejected_before_dispatch(self):
+        for target in ("candidate.json", "selected_candidate", "missing_candidate"):
+            with self.subTest(target=target):
+                directory = Path(self.temp.name) / target.replace(".", "-")
+                run(directory)
+                selection = read_json(directory / "candidate.json")
+                path = directory / ("candidate.json" if target == "candidate.json" else selection["candidate_file"])
+                if target == "missing_candidate":
+                    path.unlink()
+                else:
+                    path.write_text("{bad json")
+                with patch.object(FakeCalls, "call", side_effect=AssertionError("resent")):
+                    with self.assertRaises((ValueError, FileNotFoundError)):
+                        run(directory, resume=True)
+
+    def test_stopped_corrupt_candidate_blocks_selection_publication(self):
+        original = FakeCalls.score
+        count = 0
+
+        def stop_last(fake, *args, **kwargs):
+            nonlocal count
+            count += 1
+            result = original(fake, *args, **kwargs)
+            if count == 20:
+                (self.directory / "STOP").touch()
+            return result
+
+        with patch.object(FakeCalls, "score", stop_last):
+            self.assertEqual(run(self.directory)["status"], "STOPPED")
+        path = self.directory / ("candidate-" + digest(TARGETS) + ".json")
+        record = read_json(path)
+        record["fragment_sha256"][SLOTS[0]] = "wrong"
+        atomic_json(path, record)
+        with patch.object(FakeCalls, "call", side_effect=AssertionError("resent")):
+            with self.assertRaises(ValueError):
+                run(self.directory, resume=True, clear_stop=True)
+        self.assertFalse((self.directory / "candidate.json").exists())
 
     def test_scope_and_score_boundaries(self):
         for key in ("identity", "permissions", "save_condition", "metering", "scorer", "threshold"):

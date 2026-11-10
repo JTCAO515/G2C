@@ -65,6 +65,10 @@ class Halt(BaseException):
     """Control-flow stop; bypass GEPA's catch-Exception reflection retry."""
 
 
+class RejectedResult(Halt):
+    """A definite rejection of a recorded response, with no automatic retry."""
+
+
 class TaskCaller(Protocol):
     def call(self, task: dict, candidate: dict[str, str], *, attempt_id: str, timeout: float) -> dict: ...
 

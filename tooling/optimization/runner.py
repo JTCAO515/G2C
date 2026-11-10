@@ -10,9 +10,10 @@ import subprocess
 import gepa
 from gepa.core.adapter import EvaluationBatch
 
-from .checkpoint import Journal, atomic_json, exclusive
+from .checkpoint import Journal, atomic_json, exclusive, verify_artifacts
 from .contracts import (FakeCalls, Halt, KnownFailure, Limits, SEED, SLOTS, TASKS, TARGETS,
-                        VERSION, Reflector, Scorer, TaskCaller, digest, fragments, observation, score_result)
+                        VERSION, Reflector, RejectedResult, Scorer, TaskCaller, digest, fragments, observation,
+                        read_json, score_result)
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -44,12 +45,17 @@ class Adapter:
         candidate = fragments(value)
         candidate_id = digest(candidate)
         path = self.journal.directory / ("candidate-" + candidate_id + ".json")
-        if not path.exists():
-            atomic_json(path, {"version": VERSION, "candidate_id": candidate_id, "fragments": candidate,
-                               "fragment_sha256": {k: hashlib.sha256(v.encode()).hexdigest() for k, v in candidate.items()},
-                               "parent_candidate_id": parent, "run_id": self.journal.state["run_id"],
-                               "provenance": self.journal.manifest, "runtime_eligible": False,
-                               "promotion": "UNRUN", "evidence": "FAKE_ONLY"})
+        if candidate_id not in self.journal.state["candidates"]:
+            record = {"version": VERSION, "candidate_id": candidate_id, "fragments": candidate,
+                      "fragment_sha256": {k: hashlib.sha256(v.encode()).hexdigest() for k, v in candidate.items()},
+                      "parent_candidate_id": parent, "run_id": self.journal.state["run_id"],
+                      "provenance": self.journal.manifest, "runtime_eligible": False,
+                      "promotion": "UNRUN", "evidence": "FAKE_ONLY"}
+            if path.exists() and read_json(path) != record:
+                raise ValueError("unregistered candidate artifact differs from replay")
+            atomic_json(path, record)
+            self.journal.state["candidates"][candidate_id] = digest(record)
+            self.journal.save()
         return candidate
 
     def evaluate(self, batch, candidate, capture_traces=False):
@@ -58,15 +64,16 @@ class Adapter:
         for task in batch:
             request = {"task": task, "candidate": candidate, "candidate_id": digest(candidate)}
             try:
-                value = self.journal.action("task", request, lambda aid, timeout: observation(
-                    self.task.call(task, candidate, attempt_id=aid, timeout=timeout), task, aid))
+                value = self.journal.action("task", request,
+                    lambda aid, timeout: self.task.call(task, candidate, attempt_id=aid, timeout=timeout),
+                    lambda value, aid: observation(value, task, aid))
             except KnownFailure:
                 result = {"version": "fake-score.1", "status": "FAIL", "score": 0,
                           "feedback": "Definite task failure; original attempt retained."}
             else:
                 result = self.journal.action("score", {"task": task, "observation": value},
-                    lambda aid, timeout: score_result(self.scorer.score(task, value, attempt_id=aid, timeout=timeout)))
-                result = score_result(result)
+                    lambda aid, timeout: self.scorer.score(task, value, attempt_id=aid, timeout=timeout),
+                    lambda value, aid: score_result(value))
             outputs.append({"task": task, "assessment": result})
             scores.append(result["score"])
         return EvaluationBatch(outputs=outputs, scores=scores, trajectories=outputs if capture_traces else None)
@@ -79,13 +86,13 @@ class Adapter:
     def propose_new_texts(self, candidate, reflective_dataset, components_to_update):
         request = {"candidate": candidate, "feedback": reflective_dataset, "components": components_to_update}
         try:
-            texts = self.journal.action("reflection", request, lambda aid, timeout: fragments(
-                self.reflector.propose(candidate, reflective_dataset, components_to_update,
-                                       attempt_id=aid, timeout=timeout), components_to_update))
+            texts = self.journal.action("reflection", request,
+                lambda aid, timeout: self.reflector.propose(candidate, reflective_dataset, components_to_update,
+                                                          attempt_id=aid, timeout=timeout),
+                lambda value, aid: fragments(value, components_to_update))
         except Exception as error:
             # GEPA 0.1.4 retries ordinary reflection exceptions, even with raise_on_exception=True.
-            raise Halt("reflection stopped: " + type(error).__name__) from None
-        texts = fragments(texts, components_to_update)
+            raise RejectedResult("reflection stopped: " + type(error).__name__) from None
         self.candidate({**candidate, **texts}, digest(candidate))
         return texts
 
@@ -95,6 +102,7 @@ def run(directory, limits=Limits(), *, resume=False, clear_stop=False):
     directory = Path(directory)
     with exclusive(directory):
         journal = Journal(directory, manifest(limits), resume=resume)
+        verify_artifacts(directory, journal.state)
         if journal.unresolved():
             journal.note("UNKNOWN", "original attempt unresolved; no dispatch")
             return journal.state
@@ -129,13 +137,18 @@ def run(directory, limits=Limits(), *, resume=False, clear_stop=False):
                 raise Halt("stop before offline selection publication")
             best = fragments(result.best_candidate)
             adapter.candidate(best)
-            atomic_json(directory / "candidate.json", {
+            verify_artifacts(directory, journal.state)
+            selection = {
                 "version": "G2C-offline-selection.1", "candidate_id": digest(best), "fragments": best,
                 "candidate_file": "candidate-" + digest(best) + ".json",
                 "run_id": journal.state["run_id"], "provenance": journal.manifest,
                 "synthetic_score": result.val_aggregate_scores[result.best_idx],
-                "runtime_eligible": False, "promotion": "UNRUN", "evidence": "FAKE_ONLY"})
+                "runtime_eligible": False, "promotion": "UNRUN", "evidence": "FAKE_ONLY"}
+            atomic_json(directory / "candidate.json", selection)
+            journal.state["selection_sha256"] = digest(selection)
             journal.note("COMPLETED", "Fake GEPA selection complete")
+        except RejectedResult as error:
+            journal.note("UNKNOWN" if journal.unresolved() else "FAILED", str(error))
         except Halt as error:
             journal.note("UNKNOWN" if journal.unresolved() else "STOPPED", str(error))
         except BaseException as error:
