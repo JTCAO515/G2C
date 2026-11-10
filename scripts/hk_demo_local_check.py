@@ -283,8 +283,7 @@ def verify_upgrade(root, blueprint, target):
 
 def lio_fixture_model(*, empty_first_day=False):
     from cj_api.local_lio_planning import COMPACT_DRAFT, DISCUSSION_PROMPT, SYSTEM
-    from cj_draft.lio_plan import LIO_REPLAN_DELTA_V2
-    from cj_draft.needs_publisher import SYSTEM as PLAN_SYSTEM
+    from cj_draft.lio_plan import COMPACT_INITIAL_PLAN, LIO_REPLAN_DELTA_V3
 
     prompts = []
     class LioModel(FakeProvider):
@@ -314,28 +313,23 @@ def lio_fixture_model(*, empty_first_day=False):
                 source = json.loads(messages[-1]['content'])
                 before = source['current_trip']
                 if before is None:
-                    assert system.startswith(PLAN_SYSTEM) and LIO_REPLAN_DELTA_V2 not in system
-                    def at(day, clock):
-                        return dict(date=dict(state='known', value=day),
-                                    time=dict(state='known', value=clock),
-                                    timezone=dict(state='known', value='Asia/Shanghai'),
-                                    utc_offset=dict(state='unknown'))
+                    assert COMPACT_INITIAL_PLAN in system and LIO_REPLAN_DELTA_V3 not in system
+                    assert 'TRIP-model-plan.1' not in system
                     park_day = '2026-11-12' if empty_first_day else '2026-11-11'
                     museum_day = '2026-11-13' if empty_first_day else '2026-11-12'
                     park_hour = ('13:00','14:00') if empty_first_day else ('09:00','10:00')
-                    items = [dict(id='park', text='Park walk', verification='pending', evidence=[],
-                                  schedule=dict(start=at(park_day,park_hour[0]), end=at(park_day,park_hour[1])),
-                                  fixed=dict(state='unknown'), source_category='unknown', source_refs=[]),
-                             dict(id='museum', text='Museum visit', verification='pending', evidence=[],
-                                  schedule=dict(start=at(museum_day,'13:00'), end=at(museum_day,'14:00')),
-                                  fixed=dict(state='unknown'), source_category='unknown', source_refs=[])]
+                    items = [dict(id='park', text='Park walk', date=park_day,
+                                  start_time=park_hour[0],end_time=park_hour[1],timezone='Asia/Shanghai'),
+                             dict(id='museum', text='Museum visit', date=museum_day,
+                                  start_time='13:00',end_time='14:00',timezone='Asia/Shanghai')]
                     subjects = {'park':['party'],'museum':['party']}
                 else:
-                    assert LIO_REPLAN_DELTA_V2 in system and 'TRIP-model-plan.1' not in system
+                    assert LIO_REPLAN_DELTA_V3 in system and COMPACT_INITIAL_PLAN not in system
+                    assert 'TRIP-model-plan.1' not in system
                     assert 'Copy each original fixed or unselected item once' not in system
-                    yield json.dumps(dict(version=LIO_REPLAN_DELTA_V2, items=[], proposed_subjects={}))
+                    yield json.dumps(dict(version=LIO_REPLAN_DELTA_V3, items=[], proposed_subjects={}))
                     return
-                yield json.dumps(dict(version='TRIP-model-plan.1', title='Beijing walk', items=items,
+                yield json.dumps(dict(version=COMPACT_INITIAL_PLAN, title='Beijing walk', items=items,
                                       proposed_subjects=subjects))
                 return
             if messages[-1]['content'] == 'Synthetic lost model outcome':
@@ -776,7 +770,9 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     def v2_original(mid, text, **fields):
         return json.dumps(dict(version='LIO-message.2', message_id=mid, text=text, locale='en', **fields)).encode()
 
-    new_plan = v2_original('lio-new-plan', request, new_conversation=True)
+    fixed_label = 'The hotel meetup from 8 to 9 a.m. on the first day is fixed'
+    fixed_request = request.replace('for our party', 'for two people') + f' {fixed_label}.'
+    new_plan = v2_original('lio-new-plan', fixed_request, new_conversation=True)
     lookup = dict(message_id='lio-new-plan', input_sha256=hashlib.sha256(new_plan).hexdigest())
     no_receipt = dict(version='LIO-message-lookup.2', receipt=None)
     assert api.get(v2_send, params=lookup, headers=owner).json() == no_receipt
@@ -808,6 +804,8 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     first_new, = new_card['messages']
     assert first_new['message_id'] == 'lio-new-plan' and first_new['trip'] is not None, first_new
     assert first_new['trip']['trip_id'] != default_trip['current']['trip_id']
+    fixed, = [item for item in first_new['trip']['days'][0]['items'] if item['fixed']]
+    assert (fixed['label'], fixed['start_time'], fixed['end_time']) == (fixed_label, '08:00', '09:00')
     params = dict(conversation_id=new_chat)
     new_history = api.get(v2_trip, params=params, headers=owner).json()
     assert new_history['version'] == 'LIO-trip-history.2' and new_history['conversation_id'] == new_chat
@@ -818,6 +816,7 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     assert [outcome.status for outcome in worker.process()] == ['completed']
     changed = api.get(v2_trip, params=params, headers=owner).json()
     assert changed['current'] != new_history['current'] and changed['history'][0] == new_history['current']
+    assert changed['current']['days'][0] == new_history['current']['days'][0]
     undo = dict(version='LIO-trip-undo.2', action_id='lio-new-undo',
                 conversation_id=new_chat, target=changed['undo_target'])
     assert api.post(v2_trip + '/undo', headers=owner, content=json.dumps(
@@ -891,7 +890,6 @@ def check_lio_undo(api, owner, foreign, cards):
 
 
 def check_lio_short_planning(api, database, auth, actor, headers):
-    from copy import deepcopy
     from cj_api.local_app import load_confirmation_signer
     from cj_api.local_lio_planning import ASK_MORE, DISCUSSION_PROMPT, SYSTEM, clarify
 
@@ -960,10 +958,7 @@ def check_lio_short_planning(api, database, auth, actor, headers):
         assert fields['departure']['date']['value'] == '2026-11-13'
         assert [item['description'] for item in fields['temporary_conditions']] == ['豪华']
         draft = json.loads(''.join(stream(messages, system)))
-        extra = deepcopy(draft['items'][-1])
-        extra.update(id='third-day', text='Third day visit')
-        for edge in ('start', 'end'):
-            extra['schedule'][edge]['date']['value'] = '2026-11-13'
+        extra = dict(draft['items'][-1],id='third-day',text='Third day visit',date='2026-11-13')
         draft['items'].append(extra)
         draft['proposed_subjects']['third-day'] = ['party']
         yield json.dumps(draft)
