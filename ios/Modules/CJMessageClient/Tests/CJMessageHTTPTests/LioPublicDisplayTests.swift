@@ -33,6 +33,8 @@ struct LioPublicDisplayTests {
         "See https://a'bc@api-beta.go2china.space/",
         "See https://a(b)@api.go2china.space",
         "See \"https://api-beta.go2china.space\".",
+        "See (https://%61pi-beta.go2china.space).Forecast",
+        "See (https://ap%C2%ADi.go2china.space).Forecast",
         "https://weather.com.cn)[Forecast](https://%EF%BD%81pi-beta.go2china.space%E3%80%82/)"
     ])
     func findsServiceHostsInsideTextPunctuation(_ text: String) {

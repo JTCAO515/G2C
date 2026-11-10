@@ -17,10 +17,16 @@ public enum LioPublicDisplay {
             // Continue after the scheme so adjacent URLs can still be found.
             next = scheme.upperBound
             let authority = text[next...].prefix { !$0.isWhitespace && !"/?#<>，".contains($0) }
-            let candidate = (String(text[scheme]) + String(authority)).trimmingCharacters(in: urlWrapping)
-            if let url = URL(string: candidate), let host = normalizedHost(url), serviceHosts.contains(host) {
-                return false
+            func containsServiceHost(_ authority: Substring) -> Bool {
+                let candidate = (String(text[scheme]) + String(authority)).trimmingCharacters(in: urlWrapping)
+                guard let url = URL(string: candidate), let host = normalizedHost(url) else { return false }
+                return serviceHosts.contains(host)
             }
+            if containsServiceHost(authority) { return false }
+            // Also check the original prose boundary. A closing parenthesis or
+            // quote can be followed immediately by text that is not part of the URL.
+            let wrapped = authority.prefix { !"()[]{}\"'".contains($0) }
+            if wrapped.endIndex != authority.endIndex, containsServiceHost(wrapped) { return false }
         }
         return true
     }

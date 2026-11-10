@@ -45,6 +45,10 @@ struct LioReplyMarkdownTests {
         #expect(LioReplyMarkdown.render("See \(address)") == nil)
     }
 
+    @Test func withholdsAnEncodedServiceAddressBeforeAdjacentPunctuation() {
+        #expect(LioReplyMarkdown.render("See (https://user:example@%61pi-beta.go2china.space).Forecast") == nil)
+    }
+
     @Test func continuesAnOrderedItemAfterItsNestedList() throws {
         let answer = try #require(LioReplyMarkdown.render("""
             1. Outer
