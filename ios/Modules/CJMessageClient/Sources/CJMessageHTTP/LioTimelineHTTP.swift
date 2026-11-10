@@ -9,7 +9,7 @@ import OpenAPIRuntime
 public final class LioTimelineHTTP {
     public enum Acceptance: Sendable {
         case accepted(conversationID: String)
-        case notSent, dailyLimit
+        case notSent, dailyLimit, rejected
     }
 
     public struct SavedChat: Sendable, Equatable {
@@ -162,8 +162,8 @@ public final class LioTimelineHTTP {
             }
             try recovery.observeReceipt(submission.operation, messageID: original.messageID,
                                         inputSHA256: record.inputSHA256, receipt: receipt)
-        case .dailyLimit(let proof):
-            try recovery.observeSubmissionRejection(submission.operation, httpStatus: 429, responseUTF8: proof)
+        case .rejected(let status, let proof):
+            try recovery.observeSubmissionRejection(submission.operation, httpStatus: status, responseUTF8: proof)
         }
         return outcome.acceptance
     }
@@ -183,12 +183,12 @@ public final class LioTimelineHTTP {
 
     private enum SendOutcome {
         case accepted(String, Data)
-        case dailyLimit(Data)
+        case rejected(Int, Data)
 
         var acceptance: Acceptance {
             switch self {
             case .accepted(let id, _): .accepted(conversationID: id)
-            case .dailyLimit: .dailyLimit
+            case .rejected(let status, _): status == 429 ? .dailyLimit : .rejected
             }
         }
     }
@@ -196,14 +196,18 @@ public final class LioTimelineHTTP {
     private func exchange(_ original: LioTimelineWire.Send, bearer token: String) async throws -> SendOutcome {
         let (response, body) = try await transport.sendLio(original, bearer: token)
         let bytes = try await json(response, body, limit: 65_536)
-        if response.status.code == 429 {
+        let status = response.status.code
+        // The v2 route uses 400 for invalid input before acceptance. Access
+        // failures can also come from reconciling an earlier uncertain commit.
+        if status == 429 || (status == 400 && original.startsNewChat) {
             try validateUnambiguousJSON(bytes)
-            guard try JSONDecoder().decode(Failure.self, from: bytes).failure == "quota" else {
+            let expected = status == 429 ? "quota" : "unavailable"
+            guard try JSONDecoder().decode(Failure.self, from: bytes).failure == expected else {
                 throw MessageHTTPFailure.invalidResponse
             }
-            return .dailyLimit(bytes)
+            return .rejected(status, bytes)
         }
-        guard response.status.code == 200 else { throw MessageHTTPFailure.exchangeUnknown }
+        guard status == 200 else { throw MessageHTTPFailure.exchangeUnknown }
         return .accepted(try original.confirm(bytes), bytes)
     }
 

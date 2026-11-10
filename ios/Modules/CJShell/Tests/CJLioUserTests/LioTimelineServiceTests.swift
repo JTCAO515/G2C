@@ -121,6 +121,29 @@ struct LioTimelineServiceTests {
         #expect(model.turns.count == 2 && model.turns.allSatisfy { $0.status == .finished })
     }
 
+    @Test func rejectedFirstV2SendAllowsAnotherQuestionInTheBlankChat() async throws {
+        let fixture = TimelineFixture(firstRejected: true)
+        let service = LioService.timeline(
+            send: { try await fixture.submit($0) }, read: { try await fixture.read($0, before: $1, version: .v2) },
+            destination: .newChat, didCreate: { await fixture.recordCreated($0) },
+            pollInterval: .milliseconds(1), observationWindow: .seconds(2))
+        let model = LioConversation(service: service)
+        model.send("First question", language: .english)
+        let first = try #require(model.pending)
+        await model.receive(first)
+        #expect(model.turns.last?.status == .failed(.invalidInput))
+        #expect(await fixture.v2Reads.isEmpty)
+
+        model.send("Another question", language: .english)
+        let next = try #require(model.pending)
+        await model.receive(next)
+        #expect(model.turns.first(where: { $0.id == next.id })?.status == .finished)
+        #expect(model.turns.first(where: { $0.id == first.id })?.status == .failed(.invalidInput))
+        #expect(await fixture.sent.map(\.messageID) == [first.messageID, next.messageID])
+        #expect(await fixture.v2Reads.allSatisfy { $0 == fixture.conversationID })
+        #expect(await fixture.created == [fixture.conversationID])
+    }
+
     @Test func uncertainFirstV2SendNeverReadsDefaultOrCreatesAnotherConversation() async throws {
         let fixture = TimelineFixture(loseResponse: true)
         let service = LioService.timeline(
@@ -313,6 +336,7 @@ private actor TimelineFixture {
     let conversationID = "lio-dialogue-0123456789abcdef0123456789abcdef"
     let loseResponse: Bool
     let firstNotSent: Bool
+    let firstRejected: Bool
     let serviceLimit: Bool
     let firstAnswerNeedsOlderReads: Int
     private(set) var olderRequests: [String] = []
@@ -324,10 +348,11 @@ private actor TimelineFixture {
     private var readsUntilConnection: Int?
     private var firstReceiptVisible = false
 
-    init(loseResponse: Bool = false, firstNotSent: Bool = false, serviceLimit: Bool = false,
+    init(loseResponse: Bool = false, firstNotSent: Bool = false, firstRejected: Bool = false, serviceLimit: Bool = false,
          firstAnswerNeedsOlderReads: Int = 0) {
         self.loseResponse = loseResponse
         self.firstNotSent = firstNotSent
+        self.firstRejected = firstRejected
         self.serviceLimit = serviceLimit
         self.firstAnswerNeedsOlderReads = firstAnswerNeedsOlderReads
     }
@@ -352,6 +377,7 @@ private actor TimelineFixture {
     func submit(_ send: LioTimelineWire.Send) throws -> LioService.SendResult {
         sent.append(send)
         if firstNotSent, sent.count == 1 { return .notSent }
+        if firstRejected, sent.count == 1 { return .rejected }
         accepted.append(send)
         readCount = 0
         if loseResponse { throw URLError(.networkConnectionLost) }

@@ -40,7 +40,9 @@ private struct ChatHistoryClients {
         let endpoint = try MessageEndpoint(url: URL(string: "https://synthetic.invalid")!,
                                            maximumRequestBytes: 16_384, maximumResponseBytes: 65_536)
         let locale: LioTimelineWire.Locale = shell.language == .chinese ? .chinese : .english
-        let transport = try NoRedirectTransport(interceptedTransport: ChatHistoryTransport(locale: locale), messageEndpoint: endpoint,
+        let rejectsFirst = ProcessInfo.processInfo.arguments.contains("--lio-chat-first-refusal-acceptance")
+        let scenario = ChatHistoryTransport(locale: locale, rejectsFirst: rejectsFirst)
+        let transport = try NoRedirectTransport(interceptedTransport: scenario, messageEndpoint: endpoint,
                                                 validateMessage: {}, lio: true)
         let client = LioTimelineHTTP(scope: scope, lease: lease, credentials: JourneyCredentials(),
                                      transport: transport, firstChatRecovery: recovery)
@@ -56,10 +58,15 @@ private actor ChatHistoryTransport: ClientTransport {
     private let originalID = "lio-dialogue-0123456789abcdef0123456789abcdef"
     private let newID = "lio-dialogue-abcdef0123456789abcdef0123456789"
     private let locale: LioTimelineWire.Locale
+    private let rejectsFirst: Bool
+    private var refusedMessageID: String?
     private var first: (id: String, text: String, digest: String)?
     private var receiptRead = false
 
-    init(locale: LioTimelineWire.Locale) { self.locale = locale }
+    init(locale: LioTimelineWire.Locale, rejectsFirst: Bool) {
+        self.locale = locale
+        self.rejectsFirst = rejectsFirst
+    }
 
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
         guard request.headerFields[.authorization] == "Bearer SYNTHETIC",
@@ -83,6 +90,11 @@ private actor ChatHistoryTransport: ClientTransport {
                   fields["locale"] as? String == locale.rawValue,
                   fields["conversation_id"] == nil, let id = fields["message_id"] as? String,
                   let question = fields["text"] as? String else { throw MessageHTTPFailure.invalidConfiguration }
+            if rejectsFirst, refusedMessageID == nil {
+                refusedMessageID = id
+                return try response(["failure": "unavailable"], status: .badRequest)
+            }
+            guard id != refusedMessageID else { throw MessageHTTPFailure.invalidConfiguration }
             first = (id, question, SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined())
             throw URLError(.networkConnectionLost)
         case (.get, "/v2/lio/messages"):
@@ -111,8 +123,8 @@ private actor ChatHistoryTransport: ClientTransport {
                                     "status": "completed", "sources": []]]])
     }
 
-    private func response(_ value: [String: Any]) throws -> (HTTPResponse, HTTPBody?) {
-        var reply = HTTPResponse(status: .ok)
+    private func response(_ value: [String: Any], status: HTTPResponse.Status = .ok) throws -> (HTTPResponse, HTTPBody?) {
+        var reply = HTTPResponse(status: status)
         reply.headerFields[.contentType] = "application/json"
         return (reply, HTTPBody(try JSONSerialization.data(withJSONObject: value)))
     }

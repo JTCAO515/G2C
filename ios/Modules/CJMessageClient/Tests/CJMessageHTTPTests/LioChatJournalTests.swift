@@ -73,6 +73,56 @@ struct LioChatJournalTests {
         #expect(await exit.lookupDigests == Array(repeating: recorded.inputSHA256, count: 3))
     }
 
+    @Test func definitiveFirstRefusalDoesNotBlockAnotherChatAfterReopen() async throws {
+        let store = ChatJournalStore()
+        let scope = try StorageScope(environment: "synthetic", account: UUID().uuidString)
+        let recovery = MessageRecovery(storage: store)
+        let lease = try recovery.activate(scope)
+        let exit = ChatJournalExit(firstResponseStatus: 400)
+        let client = try makeClient(scope, lease, recovery: recovery, exit: exit)
+        let first = try LioTimelineWire.Send(messageID: "refused-chat", text: "\u{001C}",
+                                             locale: .english, destination: .newChat)
+        guard case .rejected = try await client.submit(first) else {
+            Issue.record("A validation refusal was not recognized")
+            return
+        }
+        #expect(try recovery.action(messageID: first.messageID, lease: lease)?.phase == .notAccepted)
+        #expect(try recovery.submissionRejection(messageID: first.messageID, lease: lease)?.httpStatus == 400)
+        #expect(try client.savedChats().isEmpty)
+        recovery.invalidate()
+
+        let restored = MessageRecovery(storage: store)
+        let restoredLease = try restored.activate(scope)
+        let reopened = try makeClient(scope, restoredLease, recovery: restored, exit: exit)
+        let next = try LioTimelineWire.Send(messageID: "second-chat", text: "Shanghai trip",
+                                            locale: .english, destination: .newChat)
+        guard case .accepted(let id) = try await reopened.submit(next) else {
+            Issue.record("A separate new chat was blocked")
+            return
+        }
+        #expect(try reopened.savedChats().map(\.id) == [id])
+        #expect(await exit.originals == [first.originalUTF8, next.originalUTF8])
+        #expect(await exit.lookupDigests.isEmpty)
+    }
+
+    @Test(arguments: [401, 403, 409, 503])
+    func uncertainFirstHTTPResponseStillBlocksAnotherChat(_ status: Int) async throws {
+        let recovery = MessageRecovery(storage: ChatJournalStore())
+        let scope = try StorageScope(environment: "synthetic", account: UUID().uuidString)
+        let lease = try recovery.activate(scope)
+        let exit = ChatJournalExit(firstResponseStatus: status)
+        let client = try makeClient(scope, lease, recovery: recovery, exit: exit)
+        let first = try LioTimelineWire.Send(messageID: "lost-chat", text: "Beijing trip",
+                                             locale: .english, destination: .newChat)
+        await #expect(throws: MessageHTTPFailure.exchangeUnknown) { _ = try await client.submit(first) }
+        #expect(try await client.reconcileFirstChat() == nil)
+        #expect(try recovery.action(messageID: first.messageID, lease: lease)?.phase == .notObserved)
+        let next = try LioTimelineWire.Send(messageID: "second-chat", text: "Shanghai trip",
+                                            locale: .english, destination: .newChat)
+        await #expect(throws: RecoveryError.queryOnly) { _ = try await client.submit(next) }
+        #expect(await exit.originals == [first.originalUTF8])
+    }
+
     private func makeClient(_ scope: StorageScope, _ lease: Lease, recovery: MessageRecovery,
                             exit: ChatJournalExit) throws -> LioTimelineHTTP {
         let endpoint = try MessageEndpoint(url: #require(URL(string: "https://synthetic.invalid")),
@@ -101,11 +151,15 @@ private final class ChatJournalStore: SecureMessageStorage {
 private actor ChatJournalExit: ClientTransport {
     static let conversationID = "lio-dialogue-0123456789abcdef0123456789abcdef"
     let losesReceipt: Bool
+    let firstResponseStatus: Int?
     private(set) var originals: [Data] = []
     private(set) var lookupDigests: [String] = []
     private var lookupReplyID: String?
 
-    init(losesReceipt: Bool = false) { self.losesReceipt = losesReceipt }
+    init(losesReceipt: Bool = false, firstResponseStatus: Int? = nil) {
+        self.losesReceipt = losesReceipt
+        self.firstResponseStatus = firstResponseStatus
+    }
 
     func setLookupReply(messageID: String) { lookupReplyID = messageID }
 
@@ -126,6 +180,10 @@ private actor ChatJournalExit: ClientTransport {
         let body = try #require(body)
         let bytes = try await Data(collecting: body, upTo: 16_384)
         originals.append(bytes)
+        if originals.count == 1, let firstResponseStatus {
+            response.status = .init(code: firstResponseStatus)
+            return (response, HTTPBody(#"{"failure":"unavailable"}"#))
+        }
         if losesReceipt { throw URLError(.networkConnectionLost) }
         let fields = try #require(JSONSerialization.jsonObject(with: bytes) as? [String: Any])
         let id = try #require(fields["message_id"] as? String)

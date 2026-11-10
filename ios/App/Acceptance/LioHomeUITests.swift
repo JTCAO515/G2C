@@ -15,6 +15,36 @@ import XCTest
         exerciseChatHistory("zh-Hans")
     }
 
+    func testNewChatCanAcceptAnotherMessageAfterAnInputRefusal() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-chat-history-acceptance", "--lio-chat-first-refusal-acceptance",
+                               "-cj.ui.language.v1", "zh-Hans"]
+        app.launch()
+        defer { app.terminate() }
+
+        let menu = app.buttons["lio.menu"]
+        XCTAssertTrue(menu.waitForExistence(timeout: 12))
+        menu.tap()
+        app.buttons["lio.chat.new"].tap()
+        let example = app.buttons["lio.example.0"]
+        XCTAssertTrue(example.waitForExistence(timeout: 8))
+        example.tap()
+        let send = app.buttons["lio.send"]
+        send.tap()
+        let failure = app.staticTexts["lio.failure"]
+        XCTAssertTrue(failure.waitForExistence(timeout: 8), app.debugDescription)
+        XCTAssertEqual(failure.label, "这条消息没发出去，请换个说法再试。")
+        XCTAssertFalse(app.buttons["lio.resend"].exists)
+        XCTAssertFalse(app.staticTexts["A separate reply."].exists)
+
+        let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+        composer.tap()
+        composer.typeText("A fresh question")
+        send.tap()
+        XCTAssertTrue(app.staticTexts["A separate reply."].waitForExistence(timeout: 12), app.debugDescription)
+    }
+
     private func exerciseChatHistory(_ language: String) {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
