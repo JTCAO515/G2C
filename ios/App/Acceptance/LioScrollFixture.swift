@@ -11,6 +11,8 @@ private struct LioScrollFixture: View {
             " 查**询**后，暂时没有预报。"
         } else if arguments.contains("--lio-display-guard-host") {
             " [Forecast](https://%EF%BD%81pi-beta.go2china.space%E3%80%82/)"
+        } else if arguments.contains("--lio-display-guard-wrapped-host") {
+            " 请看（https://%61pi-beta.go2china.space）天气"
         } else if arguments.contains("--lio-display-guard") {
             " 我查询了高德天气接口，暂时没有预报。"
         } else {

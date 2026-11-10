@@ -25,7 +25,7 @@ public enum LioPublicDisplay {
             if containsServiceHost(authority) { return false }
             // Also check the original prose boundary. A closing parenthesis or
             // quote can be followed immediately by text that is not part of the URL.
-            let wrapped = authority.prefix { !"()[]{}\"'".contains($0) }
+            let wrapped = authority.prefix { !"()（）[]{}\"'".contains($0) }
             if wrapped.endIndex != authority.endIndex, containsServiceHost(wrapped) { return false }
         }
         return true
