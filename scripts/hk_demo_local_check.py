@@ -474,7 +474,9 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     assert not seen
     reply = original('lio-plan-detail', '北京，2026-11-11 到 2026-11-12', 'zh')
     assert api.post(messages, content=reply, headers=owner).status_code == 200
+    calls = model.calls
     assert [outcome.status for outcome in worker.process()] == ['failed']
+    assert model.calls == calls + 1
     assert len(seen) == 1 and seen[0][1:] == (1, '北京', 'zh')
     unavailable = api.get(timeline, headers=owner).json()['messages'][-1]
     assert (unavailable['status'], unavailable['failure'], unavailable['trip']) == ('failed', 'unavailable', None)

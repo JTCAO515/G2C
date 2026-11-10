@@ -92,7 +92,9 @@ class LioPlanning:
             state = worker._event(binding, state, 'text_delta', answer)
             return worker._event(binding, state, 'completed')
         turns, references = inputs
-        details = explicit_plan(turns, references)
+        # Continuations still register every prior message with the guarded
+        # intake before publishing a draft.
+        details = None if references else explicit_plan(turns[0])
         if details is None:
             details = extract(worker, binding, locale, turns, references)
         if details is None:
@@ -169,20 +171,19 @@ def planning_texts(database, binding, current):
     return (*reversed(turns), current), tuple(reversed(references))
 
 
-def explicit_plan(turns, references):
-    """Use only a complete and unambiguous plan grounded in the original turns."""
-    texts = tuple(turn.text for turn in turns)
-    city = next((match[0] for text in reversed(texts) for match in BEIJING.finditer(text)
-                 if stated_city(texts, match[0])), None)
+def explicit_plan(turn):
+    """Use only a complete and unambiguous plan in one original message."""
+    city = next((match[0] for match in BEIJING.finditer(turn.text)
+                 if stated_city((turn.text,), match[0])), None)
     if city is None:
         return None
-    grounded = grounded_fields(turns, city)
+    grounded = grounded_fields((turn,), city)
     fields = grounded.fields
     if (grounded.missing_fixed or grounded.conflicting_party
             or any(fields[edge]['date']['state'] != 'known' for edge in ('arrival', 'departure'))
-            or not planning_authority_complete(turns, city, has_fixed=bool(fields.get('fixed_items')))):
+            or not planning_authority_complete((turn,), city, has_fixed=bool(fields.get('fixed_items')))):
         return None
-    return PlanningDetails(city, fields, None, references)
+    return PlanningDetails(city, fields, None, ())
 
 
 def extract(worker, binding, locale, turns, references):
