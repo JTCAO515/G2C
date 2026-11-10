@@ -1,5 +1,5 @@
 """Offline M4 boundaries; HTTP fixtures are not real provider evidence."""
-from datetime import datetime,timezone
+from datetime import date,datetime,timezone
 import asyncio
 import gzip
 import hashlib
@@ -594,9 +594,11 @@ class Boundaries(unittest.TestCase):
         chinese = TimelineMessage('message','run',1,'开放了吗？', 'zh')
         self.assertEqual(_message(english,completed('The hours are UNKNOWN.'))['answer'],
                          'The hours are not yet verified.')
-        self.assertEqual(_message(chinese,completed('开放时间：UNKNOWN。'))['answer'],'开放时间：尚未核实。')
+        self.assertEqual(_message(chinese,completed('开放时间：UNKNOWN。'))['answer'],'开放时间：暂未确认。')
         self.assertEqual(_message(english,completed('You can run in the park.'))['answer'],
                          'You can run in the park.')
+        self.assertEqual(_message(chinese,completed('请查询并核实 https://restapi.amap.com/v3/weather/weatherInfo。'))['answer'],
+                         '请查看并确认 服务方。')
         for item, answer in ((english,'The RUN receipt contains your run_id.'),
                              (chinese,'我核对了消息投递和原回执。')):
             with self.subTest(locale=item.locale):
@@ -638,6 +640,69 @@ class Boundaries(unittest.TestCase):
             list(stream)
         self.assertEqual((receipt,native_reply,self.budget.inspect()[-1]['state']),({},{},'INTENT'))
 
+    def test_lio_weather_clock_and_missing_forecast_project_only_public_evidence(self):
+        from cj_api.local_app import ISSUER, scope_for
+        from cj_message.lio_context import LioCitation
+
+        provider = self.provider(sse())
+        subject = 'm4-synthetic-one'
+        tools = RealTools(RealServices(provider, KEY, frozenset({subject})))
+        binding = SimpleNamespace(scope=scope_for(ISSUER, subject), run_id='synthetic-weather')
+        request = dict(name='weather', arguments=dict(start_date='2026-08-14', end_date='2026-08-15'))
+
+        class MidnightChina(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return datetime(2026, 11, 10, 17, tzinfo=timezone.utc).astimezone(tz)
+
+        class Worker:
+            def _model_history(self, *args):
+                pass
+
+            def _registered_stream(self, binding, key, registration, argument, *, progress=None):
+                if registration == 'tool.weather':
+                    canonical, _ = argument
+                    assert json.loads(canonical)['dates'] == dict(start='2026-11-11',end='2026-11-11')
+                    yield progress
+                    yield json.dumps(dict(source_url='https://restapi.amap.com/v3/weather/weatherInfo',
+                        retrieved_at='2026-11-09T17:00:00+00:00', forecasts=[], provider_reporttime='UNKNOWN'))
+                elif key == 'model.tool_turn.0':
+                    assert 'today is 2026-11-10 and tomorrow is 2026-11-11' in argument.system
+                    argument.native_reply['assistant'] = dict(tool_calls=[dict(id='synthetic-weather')])
+                    yield json.dumps(dict(version='MODEL-tool-turn.1',kind='tool',answer=None,calls=[request]))
+                else:
+                    raw = argument.messages[-1]['content']
+                    assert 'restapi.amap.com' not in raw and 'UNKNOWN' not in raw
+                    result = json.loads(raw)['results'][0]['result']
+                    assert result['forecasts'] == [] and result['source']['url'] is None
+                    assert result['dates'] == dict(start='2026-11-11',end='2026-11-11')
+                    assert result['note'] == '目前没有所问日期的预报。'
+                    yield json.dumps(dict(version='MODEL-tool-turn.1',kind='answer',
+                        answer=dict(zh='目前没有明天的预报。',en='Tomorrow’s forecast is unavailable.'),calls=[]))
+
+        worker = Worker()
+        worker.provider = provider
+        with patch('cj_api.real_services.datetime',MidnightChina):
+            chunks = list(tools.answer(worker,binding,[dict(role='user',content='北京明天天气怎么样请给出来源')],
+                lio_locale='zh',lio_question_day=date(2026,11,10)))
+        source, = [chunk for chunk in chunks if isinstance(chunk,LioCitation)]
+        self.assertEqual((source.title,source.url,source.observed_at),('高德天气',None,'2026-11-09T17:00:00+00:00'))
+        self.assertEqual(chunks[-1],'目前没有明天的预报。')
+
+    def test_lio_weather_date_only_overrides_unambiguous_single_day_questions(self):
+        from cj_api.real_services import _lio_weather_day
+
+        today = date(2026, 11, 10)
+        for question in ('What’s tomorrow’s weather in Beijing?',
+                         '请问明天北京天气怎么样？请给出来源链接。'):
+            with self.subTest(question=question):
+                self.assertEqual(_lio_weather_day(question, today), date(2026, 11, 11))
+        for question in ('Compare today’s and tomorrow’s weather in Beijing.',
+                         'What’s the weather in Beijing on November 18?',
+                         '请问明天北京天气怎么样？再比较后天的预报。'):
+            with self.subTest(question=question):
+                self.assertIsNone(_lio_weather_day(question, today))
+
     def test_lio_place_timestamp_uses_the_display_wire_type(self):
         from cj_api.local_app import ISSUER,scope_for
         from cj_message.lio_context import LioCitation
@@ -657,11 +722,14 @@ class Boundaries(unittest.TestCase):
                     yield progress
                     yield json.dumps(dict(source=dict(endpoint='https://restapi.amap.com/v3/place/text',
                         received_at=dict(iso8601='2026-11-09T12:00:00+00:00',fold=0)),
-                        places=[dict(coordinate=dict(state='present',value=dict(raw='116.4,39.9')))]))
+                        places=[dict(coordinate=dict(state='present',value=dict(raw='116.4,39.9')))],
+                        query=dict(kind='Search'), outcome='found', routes=[]))
                 elif key == 'model.tool_turn.0':
                     argument.native_reply['assistant'] = dict(tool_calls=[dict(id='synthetic-place')])
                     yield json.dumps(dict(version='MODEL-tool-turn.1',kind='tool',answer=None,calls=[request]))
                 else:
+                    model_evidence = argument.messages[-1]['content']
+                    assert 'restapi.amap.com' not in model_evidence and 'https://uri.amap.com/marker?' in model_evidence
                     yield json.dumps(dict(version='MODEL-tool-turn.1',kind='answer',
                         answer=dict(zh='附近有公园。',en='There is a park nearby.'),calls=[]))
 

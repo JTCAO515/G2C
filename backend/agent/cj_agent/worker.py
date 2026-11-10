@@ -102,7 +102,7 @@ class Outcome:
 
 
 class RunWorker:
-    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None, memory=None, message_context=None, tools=None, edit_publisher=None,edit_results=False,place_sources=None,memory_history=False,history_adapter=None,execution_lease=nullcontext,owned_transaction_lease=None,lio_locale=None,lio_planning=None):
+    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None, memory=None, message_context=None, tools=None, edit_publisher=None,edit_results=False,place_sources=None,memory_history=False,history_adapter=None,execution_lease=nullcontext,owned_transaction_lease=None,lio_original=None,lio_planning=None):
         """`messages`: cj_message.domain.Service and `runs`: cj_run.core.Service, both bound to `scope`.
 
         `drafts`: optional cj_agent.draft.DraftPublisher for this user's TRIP scope; messages
@@ -124,7 +124,7 @@ class RunWorker:
         self.edit_results=edit_results
         self.tools=tools
         self.place_sources=place_sources
-        self.lio_locale = lio_locale
+        self.lio_original = lio_original
         self.lio_planning = lio_planning
 
     def process(self, limit=20):
@@ -390,7 +390,7 @@ class RunWorker:
                               memory=self.memory,memory_history=self.memory_history,history_adapter=self.history_adapter,
                               message_context=self.message_context,
                               tools=self.tools,edit_publisher=self.edit_publisher,edit_results=self.edit_results,place_sources=self.place_sources,
-                              lio_locale=self.lio_locale,
+                              lio_original=self.lio_original,
                               lio_planning=self.lio_planning,
                               runs=Service(OwnedRepository(), runs.valid))
             if self.edit_publisher is not None:
@@ -431,7 +431,8 @@ class RunWorker:
             raise
 
     def _execute(self, receipt, binding):
-        locale = self.lio_locale(binding) if self.lio_locale is not None else None
+        original = self.lio_original(binding) if self.lio_original is not None else None
+        locale = original.locale if original is not None else None
         state = self.runs.accept(binding)
         if self.budget_exit is not None:
             self.budget_exit = self.budget_exit.for_run(binding,state)
@@ -480,7 +481,7 @@ class RunWorker:
             elif self.tools is None:
                 chunks = self._stream(binding, inputs, system=answer_prompt(locale), answer=True)
             else:
-                chunks = self.tools.answer(self, binding, inputs, lio_locale=locale)
+                chunks = self.tools.answer(self, binding, inputs, lio_locale=locale, lio_question_day=original.question_day)
             for chunk in chunks:
                 if isinstance(chunk, (LioCitation, LioToolProgress)):
                     state = self._event(binding, state, 'effect_committed', chunk.effect())
