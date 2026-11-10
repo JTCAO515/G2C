@@ -15,7 +15,7 @@ private struct LioChatHistoryFixture: View {
             switch clients {
             case .success(let clients):
                 LioHome(language: shell.language.lio, service: clients.original, isDemo: false,
-                        chatLibrary: clients.library) { LioLanguagePicker(shell: shell) }
+                        chatLibrary: clients.library) { LioMenuSettings(shell: shell) }
             case .failure(let error):
                 Text("Synthetic chat setup failed: \(String(reflecting: error))")
             case nil:

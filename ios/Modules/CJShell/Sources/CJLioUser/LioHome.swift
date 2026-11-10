@@ -45,6 +45,7 @@ public struct LioHome<MenuContent: View>: View {
     @FocusState private var typing: Bool
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     public init(language: LioLanguage, service: LioService, isDemo: Bool, chatLibrary: LioChatLibrary? = nil,
                 tripLibrary: LioTripLibrary? = nil,
@@ -186,7 +187,20 @@ public struct LioHome<MenuContent: View>: View {
             }
         }
         .background(Color(uiColor: .systemBackground))
-        .overlay(alignment: .top) { floatingControls }
+        .overlay(alignment: .top) {
+            floatingControls
+                .background {
+                    Color(uiColor: .systemBackground)
+                        .overlay(alignment: .bottom) {
+                            LinearGradient(colors: [Color(uiColor: .systemBackground), .clear],
+                                           startPoint: .top, endPoint: .bottom)
+                                .frame(height: 12)
+                                .offset(y: 12)
+                        }
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
+                }
+        }
         .safeAreaInset(edge: .bottom, spacing: 0) { composer }
         .sheet(isPresented: $menuOpen) {
             NavigationStack {
@@ -300,13 +314,22 @@ public struct LioHome<MenuContent: View>: View {
     }
 
     private var openingMessage: some View {
-        Text(language.text("Hi, I’m Lio, your personal travel agent. How can I help?",
-                           "你好，我是 Lio，你的个人旅行助手。有什么可以帮你？"))
+        replyBubble(Text(language.text("Hi, I’m Lio, your personal travel agent. How can I help?",
+                                       "你好，我是 Lio，你的个人旅行助手。有什么可以帮你？")))
+            .accessibilityIdentifier("lio.opening")
+    }
+
+    private func replyBubble(_ content: Text) -> some View {
+        content
+            .font(.body)
+            .lineSpacing(3)
             .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 19))
-            .accessibilityIdentifier("lio.opening")
+            .padding(.vertical, 12)
+            .background(Color(uiColor: .secondarySystemBackground),
+                        in: UnevenRoundedRectangle(topLeadingRadius: 7, bottomLeadingRadius: 20,
+                                                   bottomTrailingRadius: 20, topTrailingRadius: 20))
+            .padding(.trailing, dynamicTypeSize.isAccessibilitySize ? 0 : 22)
     }
 
     private var examples: some View {
@@ -440,7 +463,7 @@ public struct LioHome<MenuContent: View>: View {
     private func turnView(_ turn: LioTurn) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 4) {
-                Spacer(minLength: 32)
+                Spacer(minLength: dynamicTypeSize.isAccessibilitySize ? 12 : 32)
                 if turn.status == .failed(.notSent) {
                     Button {
                         if turn.id == conversation.turns.last?.id { followsAnswer = true }
@@ -458,24 +481,30 @@ public struct LioHome<MenuContent: View>: View {
                 Text(turn.question.text)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
-                    .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 19))
+                    .background(Color.accentColor.opacity(0.14),
+                                in: UnevenRoundedRectangle(topLeadingRadius: 20, bottomLeadingRadius: 20,
+                                                           bottomTrailingRadius: 20, topTrailingRadius: 7))
                     .textSelection(.enabled)
                     .accessibilityIdentifier("lio.question")
             }
             if !turn.answer.isEmpty {
                 if let answer = LioReplyMarkdown.render(turn.answer) {
                     if !answer.characters.isEmpty {
-                        Text(answer)
-                            .fixedSize(horizontal: false, vertical: true)
+                        replyBubble(Text(answer))
                             .textSelection(.enabled)
                             .accessibilityIdentifier("lio.answer")
                     }
                 } else {
-                    Text(language.text("This reply can’t be shown right now.", "这条回答暂时无法显示。"))
+                    replyBubble(Text(language.text("This reply can’t be shown right now.", "这条回答暂时无法显示。")))
                         .accessibilityIdentifier("lio.reply.unavailable")
                 }
             }
             messageStatus(turn)
+            if let memoryActions {
+                ForEach(turn.memoryTags.filter { !handledTags.contains($0) }) { tag in
+                    memorySuggestion(tag, client: memoryActions)
+                }
+            }
             if let itinerary = turn.itinerary {
                 let card = LioTripCard(turnID: turn.id, itinerary: itinerary)
                 let isLatest = card == latestTripCard
@@ -506,29 +535,6 @@ public struct LioHome<MenuContent: View>: View {
                     }
                 }
             }
-            if let memoryActions {
-                ForEach(turn.memoryTags.filter { !handledTags.contains($0) }) { tag in
-                    let text = tag.text.trimmingCharacters(in: .whitespacesAndNewlines)
-                    let preference = text.last.map { ".。!?！？".contains($0) } == true ? String(text.dropLast()) : text
-                    VStack(alignment: .leading, spacing: 4) {
-                        RunReadableText(text: language.text("Remember: \(preference)?", "记住：\(preference)？"))
-                        HStack {
-                            Button(language.text("Remember", "记住")) {
-                                Task { await chooseMemory(.remember, tag: tag, client: memoryActions) }
-                            }
-                            .buttonStyle(.bordered)
-                            .accessibilityIdentifier("lio.memory.remember")
-                            Button(language.text("Dismiss", "不用")) {
-                                Task { await chooseMemory(.dismiss, tag: tag, client: memoryActions) }
-                            }
-                            .buttonStyle(.borderless)
-                            .accessibilityIdentifier("lio.memory.dismiss")
-                        }
-                        .disabled(memoryBusy || memoryPending)
-                    }
-                    .padding(.vertical, 4)
-                }
-            }
             ForEach(turn.sources) { item in
                 Button { source = item } label: {
                     Label(item.title, systemImage: "link")
@@ -542,6 +548,39 @@ public struct LioHome<MenuContent: View>: View {
                 .accessibilityIdentifier("lio.source")
             }
         }
+    }
+
+    private func memorySuggestion(_ tag: LioMemoryWire.Tag, client: LioMemoryActionsClient) -> some View {
+        let text = tag.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let preference = text.last.map { ".。!?！？".contains($0) } == true ? String(text.dropLast()) : text
+        let actions = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4))
+            : AnyLayout(HStackLayout(spacing: 10))
+        return VStack(alignment: .leading, spacing: 6) {
+            Label {
+                RunReadableText(text: language.text("Remember: \(preference)?", "记住：\(preference)？"))
+            } icon: {
+                Image(systemName: "bookmark").accessibilityHidden(true)
+            }
+            .font(.subheadline.weight(.semibold))
+            actions {
+                Button(language.text("Remember", "记住")) {
+                    Task { await chooseMemory(.remember, tag: tag, client: client) }
+                }
+                .buttonStyle(.borderedProminent)
+                .accessibilityIdentifier("lio.memory.remember")
+                Button(language.text("Dismiss", "不用")) {
+                    Task { await chooseMemory(.dismiss, tag: tag, client: client) }
+                }
+                .buttonStyle(.borderless)
+                .accessibilityIdentifier("lio.memory.dismiss")
+            }
+            .controlSize(.large)
+            .disabled(memoryBusy || memoryPending)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
     }
 
     @ViewBuilder

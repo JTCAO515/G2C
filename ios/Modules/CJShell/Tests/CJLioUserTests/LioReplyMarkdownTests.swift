@@ -15,12 +15,30 @@ struct LioReplyMarkdownTests {
             """))
         #expect(String(answer.characters) == "明天的天气\n\nA sunny day. Forecast\n3. Bring water\n4. Wear a hat\n  • A light hat is fine")
         let heading = try #require(answer.runs.first)
-        #expect(heading.font != nil)
+        #expect(heading.font == Font.title3.weight(.semibold))
         let strong = try #require(answer.runs.first { $0.inlinePresentationIntent?.contains(.stronglyEmphasized) == true })
         #expect(String(answer[strong.range].characters) == "sunny")
         let link = try #require(answer.runs.first { $0.link != nil })
         #expect(String(answer[link.range].characters) == "Forecast")
         #expect(link.link == URL(string: "https://weather.com.cn/"))
+    }
+
+    @Test func givesStandaloneTitlesHierarchyWithoutEnlargingInlineEmphasisOrListItems() throws {
+        let answer = try #require(LioReplyMarkdown.render("""
+            # A quieter trip
+
+            **Where to stay**
+
+            Look for a **quiet room**.
+
+            第一天：颐和园
+
+            - **东宫门**
+            """))
+        let headings = answer.runs.filter { $0.font != nil }
+        #expect(headings.map { String(answer[$0.range].characters) } == ["A quieter trip", "Where to stay", "第一天：颐和园"])
+        #expect(headings.map(\.font) == [Font.title2.weight(.semibold), Font.title3.weight(.semibold), Font.title3.weight(.semibold)])
+        #expect(String(answer.characters).hasSuffix("• 东宫门"))
     }
 
     @Test func keepsPlainStreamingPrefixAndFiltersUnsafeContent() throws {
