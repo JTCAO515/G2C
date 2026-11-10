@@ -3,7 +3,7 @@ from copy import deepcopy
 import json
 from cj_trip.domain import packed,Denied,Conflict
 from cj_needs.revision_lease import LeaseUnavailable
-from cj_trip.planning_context import read_current,current_in_tx,protect_model
+from cj_trip.planning_context import AdoptedTripConflict,read_current,current_in_tx,protect_model
 from cj_trip.needs_source import NeedsSourceAuthority
 from cj_trip.needs_plan import build as build_original,parse_model,_build
 from cj_trip.structured import SourceRejected
@@ -37,6 +37,7 @@ class ContextPublisher(NeedsDraftPublisher):
             conflict=next(c for c in time_report.checks if c.status=='CONFLICT')
             raise SourceRejected(conflict.evidence[0].path,conflict.code)
         try:protect_model(context.trip,document)
+        except AdoptedTripConflict as error:raise SourceRejected('items',error.rule) from None
         except Conflict:raise SourceRejected('items','adopted Trip fixed and selected scope required') from None
         before,_=capture.records();source_items={item['item_id']:item for item in before.fields.get('fixed_items',[])}
         # Local Trip fixed intent is checked above and retained in Trip content;

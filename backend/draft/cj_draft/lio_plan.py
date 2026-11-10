@@ -36,9 +36,11 @@ class LioContextSource(ContextSource):
 
 class LioPlanPublisher(ContextPublisher):
     system = ContextPublisher.system + (
-        ' Copy each retained Trip item\'s text and source_category verbatim. For each required fixed NEEDS '
-        'item absent from the current Trip, copy its description verbatim as text and set source_category '
-        'to "user_provided". Do not translate, shorten, or rephrase retained text. '
+        ' Copy every item object in current_trip.content.items exactly once and in its existing order. '
+        'Keep its ID, text, schedule, fixed observation, and source_category verbatim. '
+        'current_trip.proposed_fields describes source history. Use current_trip.content.items for the saved '
+        'values, including known false fixed observations. For each required fixed NEEDS item absent from the '
+        'current Trip, copy its description verbatim as text and set source_category to "user_provided". '
         'Concise labels in the question language apply only to new suggestions.'
     )
 
