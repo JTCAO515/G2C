@@ -563,8 +563,10 @@ public struct LioHome<MenuContent: View>: View {
                                          "消息没发出去。检查网络后，点感叹号重发。")
             case .invalidInput: language.text("This message couldn’t be sent. Please try a different message.",
                                               "这条消息没发出去，请换个说法再试。")
-            case .dailyLimit: language.text("You’ve used today’s 40 questions. Try again tomorrow.",
-                                            "今天的 40 个问题已用完，明天再来聊吧。")
+            case .dailyLimit: language.text("You’ve used all your questions for today. Try again tomorrow.",
+                                            "今天的问题额度已用完，明天再来聊吧。")
+            case .serviceLimit: language.text("There’s no chat allowance available right now.",
+                                              "暂时没有可用的聊天额度。")
             case .unfinished: language.text("I couldn’t finish this one.", "这次没答完。")
             case .waiting: language.text("I don’t have an answer for this yet.", "这条消息暂时还没有回答。")
             case .unavailable where turn.fromTimeline:
