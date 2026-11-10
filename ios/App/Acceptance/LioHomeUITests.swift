@@ -90,6 +90,7 @@ import XCTest
         ask(chinese ? "我喜欢安静的酒店" : "I prefer quiet hotels")
         let remember = app.buttons["lio.memory.remember"]
         XCTAssertTrue(remember.waitForExistence(timeout: 10))
+        XCTAssertEqual(app.buttons.matching(identifier: "lio.memory.remember").count, 1)
         let remembered = app.staticTexts[chinese ? "已记住" : "Remembered"]
         XCTAssertFalse(remembered.exists)
         reveal(remember)
@@ -221,6 +222,26 @@ import XCTest
         XCTAssertTrue(app.staticTexts[fixed].exists)
         app.buttons["lio.trip.map.1"].tap()
         XCTAssertTrue(app.navigationBars[day].waitForExistence(timeout: 8))
+    }
+
+    func testUnsafeReplyIsWithheldWithoutHidingTheAttribution() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-scroll-acceptance", "--lio-display-guard", "-cj.ui.language.v1", "zh-Hans"]
+        app.launch()
+        defer { app.terminate() }
+
+        let sample = app.buttons["lio.example.0"]
+        XCTAssertTrue(sample.waitForExistence(timeout: 12))
+        sample.tap()
+        app.buttons["lio.send"].tap()
+        XCTAssertTrue(app.staticTexts["lio.answer"].waitForExistence(timeout: 8))
+        app.buttons["Next section"].tap()
+        let withheld = app.staticTexts["lio.reply.unavailable"]
+        XCTAssertTrue(withheld.waitForExistence(timeout: 8))
+        XCTAssertEqual(withheld.label, "这条回答暂时无法显示。")
+        XCTAssertFalse(app.staticTexts["lio.answer"].exists)
+        XCTAssertTrue(app.buttons["lio.source"].exists)
     }
 
     func testLongReplyFollowsUntilTheReaderScrollsAway() {

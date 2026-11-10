@@ -102,7 +102,7 @@ class Outcome:
 
 
 class RunWorker:
-    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None, memory=None, message_context=None, tools=None, edit_publisher=None,edit_results=False,place_sources=None,memory_history=False,history_adapter=None,execution_lease=nullcontext,owned_transaction_lease=None):
+    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None, memory=None, message_context=None, tools=None, edit_publisher=None,edit_results=False,place_sources=None,memory_history=False,history_adapter=None,execution_lease=nullcontext,owned_transaction_lease=None,lio_locale=None):
         """`messages`: cj_message.domain.Service and `runs`: cj_run.core.Service, both bound to `scope`.
 
         `drafts`: optional cj_agent.draft.DraftPublisher for this user's TRIP scope; messages
@@ -124,6 +124,7 @@ class RunWorker:
         self.edit_results=edit_results
         self.tools=tools
         self.place_sources=place_sources
+        self.lio_locale = lio_locale
 
     def process(self, limit=20):
         outcomes = []
@@ -255,22 +256,25 @@ class RunWorker:
             raise
         return state, result
 
-    def _stream(self, binding, messages, system=None):
+    def _stream(self, binding, messages, system=None, *, answer=False):
         self._model_history(binding,messages,system)
+        draft = system is not None and not answer
         prepared = None
         if self.budget_exit is not None:
-            prepared = self.budget_exit.prepare(self.runs,binding,'draft' if system is not None else 'answer',
+            prepared = self.budget_exit.prepare(self.runs,binding,'draft' if draft else 'answer',
                                                 messages,system,self.provider)
         def source():
             return (self.budget_exit.stream(prepared) if prepared is not None else
                     self.provider.stream(messages) if system is None else self.provider.stream(messages,system=system))
-        yield from self._stream_source(binding,source,draft=system is not None)
+        yield from self._stream_source(binding,source,draft=draft)
 
-    def _registered_stream(self,binding,key,registration,argument):
+    def _registered_stream(self,binding,key,registration,argument,*,progress=None):
         if self.memory_history and registration in ('model.answer','model.draft'):
             messages,system,_=argument
             self._model_history(binding,messages,system)
         prepared=self.budget_exit.prepare_operation(self.runs,binding,key,registration,argument,stage='answer')
+        if progress is not None:
+            yield progress
         yield from self._stream_source(binding,lambda:self.budget_exit.stream(prepared),draft=False)
 
     def _model_history(self,binding,messages,system):
@@ -378,6 +382,7 @@ class RunWorker:
                               memory=self.memory,memory_history=self.memory_history,history_adapter=self.history_adapter,
                               message_context=self.message_context,
                               tools=self.tools,edit_publisher=self.edit_publisher,edit_results=self.edit_results,place_sources=self.place_sources,
+                              lio_locale=self.lio_locale,
                               runs=Service(OwnedRepository(), runs.valid))
             if self.edit_publisher is not None:
                 with self.message_context.worker_repository(owned.runs.repository):
@@ -417,6 +422,7 @@ class RunWorker:
             raise
 
     def _execute(self, receipt, binding):
+        locale = self.lio_locale(binding) if self.lio_locale is not None else None
         state = self.runs.accept(binding)
         if self.budget_exit is not None:
             self.budget_exit = self.budget_exit.for_run(binding,state)
@@ -450,12 +456,22 @@ class RunWorker:
         proposal_id = None
         buffer = ''
         try:
+            from cj_message.lio_context import LioCitation, LioToolProgress, answer_prompt
+
             inputs = ([{'role': 'user', 'content': text}] if self.memory_run is None
                       else self.memory_run.messages(text))
             if self.message_context is not None:
                 inputs=self.message_context.answer_messages(binding,inputs)
-            chunks=self._stream(binding,inputs) if self.tools is None else self.tools.answer(self,binding,inputs)
+            if locale is None:
+                chunks = self._stream(binding, inputs) if self.tools is None else self.tools.answer(self, binding, inputs)
+            elif self.tools is None:
+                chunks = self._stream(binding, inputs, system=answer_prompt(locale), answer=True)
+            else:
+                chunks = self.tools.answer(self, binding, inputs, lio_locale=locale)
             for chunk in chunks:
+                if isinstance(chunk, (LioCitation, LioToolProgress)):
+                    state = self._event(binding, state, 'effect_committed', chunk.effect())
+                    continue
                 buffer += chunk
                 if len(buffer) >= FLUSH_CHARS:
                     state, buffer = self._event(binding, state, 'text_delta', buffer), ''

@@ -2,6 +2,7 @@
 import SwiftUI
 import CJMessageHTTP
 import CJRunClient
+import CJMessageHTTP
 import CJTripClient
 
 public struct LioHome<MenuContent: View>: View {
@@ -384,10 +385,15 @@ public struct LioHome<MenuContent: View>: View {
                     .accessibilityIdentifier("lio.question")
             }
             if !turn.answer.isEmpty {
-                Text(turn.answer)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .textSelection(.enabled)
-                    .accessibilityIdentifier("lio.answer")
+                if LioPublicDisplay.permitsText(turn.answer) {
+                    Text(turn.answer)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .textSelection(.enabled)
+                        .accessibilityIdentifier("lio.answer")
+                } else {
+                    Text(language.text("This reply can’t be shown right now.", "这条回答暂时无法显示。"))
+                        .accessibilityIdentifier("lio.reply.unavailable")
+                }
             }
             messageStatus(turn)
             if let itinerary = turn.itinerary {

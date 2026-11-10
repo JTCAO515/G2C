@@ -104,8 +104,12 @@ private actor JourneyScenario {
         } else if text.contains("prefer") || text.contains("喜欢") {
             row["answer"] = language.text("Quiet hotels sound good.", "安静的酒店很不错。")
             if await memoryBackend.rememberedPreference() == nil {
-                row["memory"] = ["tags": [["id": "quiet-hotel", "kind": "preference", "target": "quiet_hotel",
-                                           "text": language.text("You like quiet hotels", "你喜欢安静的酒店")]]]
+                row["memory"] = ["tags": [
+                    ["id": "quiet-hotel", "kind": "preference", "target": "quiet_hotel",
+                     "text": language.text("You like quiet hotels", "你喜欢安静的酒店")],
+                    ["id": "technical-tag", "kind": "preference", "target": "technical_tag",
+                     "text": language.text("Review the request ID", "核实这次操作")]
+                ]]
             }
         } else {
             let preference = await memoryBackend.rememberedPreference()
