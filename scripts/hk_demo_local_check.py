@@ -610,7 +610,13 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
                    headers=owner).status_code == 403
     assert api.get(v2_trip, params=params, headers=owner).json()['current'] == new_history['current']
     assert api.get('/v1/lio/trip', headers=owner).json() == default_trip
-    assert api.get(timeline, headers=owner).json()['conversation_id'] == conversation
+    default_message = v2_original('lio-default-from-v2', 'What can I see in Beijing?')
+    assert api.post(v2_send, content=default_message, headers=owner).json()['conversation_id'] == conversation
+    assert [outcome.status for outcome in worker.process()] == ['completed']
+    v1_default = api.get(timeline, headers=owner).json()
+    assert v1_default['conversation_id'] == conversation
+    assert v1_default['messages'][-1]['message_id'] == 'lio-default-from-v2'
+    assert api.get(v2_timeline, headers=owner).json() == dict(v1_default, version='LIO-timeline.2')
     print('PASS signed Lio v2 independent timelines and Trip, lost-ACK replay and owner/cursor isolation')
     with psycopg.connect(**conninfo) as db:
         try:
