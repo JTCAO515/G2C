@@ -110,3 +110,58 @@ class LioMemoryPreferenceTest(unittest.TestCase):
             with self.subTest(text=text):
                 self.assertIsNone(explicit_pilot_preference(text, slots))
         self.assertIsNone(explicit_pilot_preference('I prefer a slow pace.', {'quiet.entrance'}))
+
+    def test_luxury_travel_statements_keep_the_original_quote(self):
+        for text in (
+            'I prefer luxury travel experiences',
+            'I prefer luxury travel experience.',
+            'I usually enjoy luxurious trips.',
+            'I like upscale travel.',
+            'I prefer a luxury vacation.',
+            'Please remember that I prefer luxury travel experiences.',
+            '我喜欢豪华旅行体验。',
+            '我更喜欢奢华的旅行体验。',
+            '我通常偏好高端旅游。',
+            '请记住，我喜欢豪华旅行。',
+        ):
+            with self.subTest(text=text):
+                slot, quote = explicit_pilot_preference(text, {'travel.budget'})
+                self.assertEqual(slot, 'travel.budget')
+                self.assertIn(quote, text)
+                self.assertTrue(supported_preference(entry(slot, quote), text))
+        self.assertIsNone(explicit_pilot_preference('I prefer luxury travel experiences', {'travel.pace'}))
+
+    def test_luxury_context_and_negation_do_not_authorize_a_preference(self):
+        for text in (
+            'I do not prefer luxury travel experiences.',
+            'I never said I prefer luxury travel experiences.',
+            'My friend prefers luxury travel experiences.',
+            'Do you prefer luxury travel experiences?',
+            'I prefer luxury travel experiences?',
+            'Recommend luxury travel experiences.',
+            'I used to prefer luxury travel experiences.',
+            'I prefer luxury travel experiences for this trip only.',
+            'I prefer luxury travel experiences because of my health condition.',
+            'I prefer luxury travel experiences. I am Catholic.',
+            'I prefer luxury travel experiences. I prefer budget-friendly trips.',
+            '"I prefer luxury travel experiences"',
+            '我不喜欢豪华旅行体验。',
+            '我没有说过我喜欢豪华旅行体验。',
+            '我的朋友喜欢豪华旅行体验。',
+            '你喜欢豪华旅行体验吗？',
+            '我喜欢豪华旅行体验？',
+            '请推荐豪华旅行体验。',
+            '我以前喜欢豪华旅行体验。',
+            '我这次喜欢豪华旅行体验。',
+            '我喜欢豪华旅行体验，因为我有胃病。',
+            '我喜欢豪华旅行体验。我有胃病。',
+            '我喜欢豪华旅行体验。我喜欢经济实惠旅行。',
+            '“我喜欢豪华旅行体验”',
+        ):
+            with self.subTest(text=text):
+                self.assertIsNone(explicit_pilot_preference(text, {'travel.budget'}))
+                self.assertFalse(supported_preference(entry('travel.budget', text), text))
+                self.assertFalse(supported_preference(
+                    entry('travel.budget', 'luxury travel experiences'), text))
+                self.assertFalse(supported_preference(
+                    entry('travel.budget', '豪华旅行体验'), text))

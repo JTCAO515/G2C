@@ -1,0 +1,9 @@
+# Preparation only: CPython 3.12.14, macOS arm64. See README before other platforms.
+ms-swift==4.6.0
+torch==2.8.0
+transformers==4.57.6
+datasets==4.8.4
+peft==0.18.1
+trl==0.29.1
+accelerate==1.12.0
+jsonschema==4.26.0
