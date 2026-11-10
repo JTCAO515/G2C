@@ -25,5 +25,5 @@ B 生成的新建议可在现有 `structured.2` 中用已绑定行程日期、�
 | 输入 | 通过条件 |
 |---|---|
 | 中英三日新规划 | 第二天唯一新建议有同日的起止时刻，均落在 12:00–18:00，Trip 卡与已保存版本一致。第一天酒店集合仍为 09:00–10:00。 |
-| 「把第二天下午换成颐和园，其他不变」／“Change the afternoon of the second day to the Summer Palace and keep everything else.” | 仅唯一匹配项的名称改变，原日期和起止、其他项、锁定项字节一致。仅新增一个版本。撤销新增版本并恢复原规划内容。 |
+| 「把第二天下午换成颐和园，保留其他安排」／“Change the afternoon of the second day to the Summer Palace and keep the other plans.” | 仅唯一匹配项的名称改变，原日期和起止、其他项、锁定项字节一致。仅新增一个版本。撤销新增版本并恢复原规划内容。 |
 | 同日有未知时间、跨时段、多个匹配项或命中锁定项 | 向用户澄清或拒绝，零 Trip 写入。保留旧负例。 |
