@@ -10,6 +10,7 @@ from cj_message.source import SourceQuery
 from . import lio_batch, model_v2
 from .codec import Conflict, SourceV2
 from .demo_candidates import DemoCandidates, _CandidateInput, _CandidateResult
+from .extraction import CollectionUnavailable
 from .postgres import encode
 from .publication_store import PublicationTransaction
 from .service import OperationWithheld
@@ -38,12 +39,26 @@ class _Input(_LioSource, _CandidateInput):
 
 
 class _Result(_LioSource, _CandidateResult):
-    pass
+    def __init__(self, *args, original_allows, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.original_allows = original_allows
+
+    def _entries(self, raw, messages, policy):
+        entries = super()._entries(raw, messages, policy)
+        if self.original_allows is not None:
+            original, = messages
+            if any(not self.original_allows(item.entry, original.text) for item in entries):
+                raise CollectionUnavailable('original Lio preference unavailable')
+        return entries
 
 
 class LioCandidates(DemoCandidates):
     """Explicit deployment wiring only; no consent for broader history."""
     job_batch_version = lio_batch.VERSION
+
+    def __init__(self, collection, selected_subjects, *, original_allows=None):
+        super().__init__(collection, selected_subjects)
+        self.original_allows = original_allows
 
     def _query_message(self, context, message_id):
         return context.query_lio_message(message_id)
@@ -122,7 +137,7 @@ class LioCandidates(DemoCandidates):
                        prepared_input_sha256, extraction, max_payload_bytes=max_payload_bytes,
                        model_output=model_output, model_output_sha256=model_output_sha256,
                        memory_policy=memory, before_commit=before_commit,
-                       original=stored.receipt, lio_query=query)
+                       original=stored.receipt, lio_query=query, original_allows=self.original_allows)
 
     def transition_original_in_context(self, context, token, job_id, attempt_id, target, *,
                                        message_id, run_id):
