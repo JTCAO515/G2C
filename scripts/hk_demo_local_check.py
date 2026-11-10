@@ -679,7 +679,7 @@ def check_lio_provider_wire(root, database, auth, runtime, actor, api, headers):
 
     scope = scope_for(ISSUER,actor)
     subjects = frozenset({actor})
-    question = 'I always prefer a slower travel pace.'
+    question = 'I prefer quieter entrances at attractions.'
     answer = 'I can suggest a relaxed route. The entrance hours are UNKNOWN.'
     attempts = []
     key = 'synthetic-wire-fixture-key-only'
@@ -705,7 +705,7 @@ def check_lio_provider_wire(root, database, auth, runtime, actor, api, headers):
             entry, = json.loads(data['content'])['messages']
             assert entry['text'] == question
             content = json.dumps(dict(version='MEMORY-EXTRACT@2',entries=[dict(subject='self',
-                slot='travel.pace',kind='preference',text=question,extent='long_term',occurred_at='date unknown',
+                slot='quiet.entrance',kind='preference',text=question,extent='long_term',occurred_at='date unknown',
                 evidence=[dict(ref=entry['ref'],quote=question)])]))
         identity = dict(id='synthetic-lio-wire-'+str(len(attempts)),model=M4_MODEL)
         events = [dict(**identity,choices=[dict(index=0,delta=dict(content=content),finish_reason=None)]),
