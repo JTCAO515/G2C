@@ -67,6 +67,7 @@ class LioMemoryPreferenceTest(unittest.TestCase):
         for original, quote, text in [
             ('我喜欢慢节奏。', '我喜欢慢节奏', '慢节奏旅行'),
             ('请记住，我喜欢慢节奏旅行。', '我喜欢慢节奏旅行', '慢节奏'),
+            ('请记住，我旅行时喜欢慢节奏。', '我旅行时喜欢慢节奏', '慢节奏'),
             ('Please remember that I prefer a slow pace when I travel.',
              'I prefer a slow pace when I travel.', 'slow pace'),
         ]:

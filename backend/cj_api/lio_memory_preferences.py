@@ -3,7 +3,7 @@ import re
 
 
 _EN = r"(?:I (?:(?:usually|always|generally) )?(?:prefer|like|enjoy) |prefers? )?"
-_ZH = r'(?:我(?:平时|通常|一般|一直)?(?:更)?(?:喜欢|偏爱|偏好|习惯|更爱))?'
+_ZH = r'(?:我(?:旅行时|旅游时)?(?:平时|通常|一般|一直)?(?:更)?(?:喜欢|偏爱|偏好|习惯|更爱))?'
 _INTEREST_EN = r'(?:art|museums?|architecture|history|nature|scenic walks|food markets|local food)'
 _INTEREST_ZH = r'(?:博物馆|美术馆|艺术|建筑|历史|自然风景|城市漫步|美食|菜市场)'
 _REMEMBER = re.compile(r'^(?:请(?:帮我)?记住[，、：:\s]*|(?:please )?remember(?: that)?[,:\s]+)', re.I)
