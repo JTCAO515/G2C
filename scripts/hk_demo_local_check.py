@@ -606,6 +606,10 @@ def check_lio_conversational_edit(api, owner, worker, original, model, conninfo,
     for mid, text, locale in (
         ('lio-edit-qualified-en', 'Replace the afternoon of day 2 with Temple of Heaven only if it is open.', 'en'),
         ('lio-edit-qualified-zh', '把第二天下午换成颐和园，不过先别改。', 'zh'),
+        ('lio-edit-deferred-en', 'Replace the afternoon of day 2 with Temple of Heaven—do not apply this change yet.', 'en'),
+        ('lio-edit-deferred-zh', '把第二天下午换成颐和园但先缓一缓。', 'zh'),
+        ('lio-edit-options-en', 'Replace the afternoon of day 2 with Temple of Heaven or Summer Palace.', 'en'),
+        ('lio-edit-options-zh', '把第二天下午换成颐和园或者天坛。', 'zh'),
     ):
         calls = model.calls
         assert api.post('/v1/lio/messages', headers=owner, content=original(mid, text, locale)).status_code == 200

@@ -41,6 +41,7 @@ def itinerary(fixed=None, *, overlap=False):
     ('Could you replace the afternoon of day 2 with the Temple of Heaven?', 'en', 'the Temple of Heaven'),
     ('Replace the afternoon of day 2 with the Temple of Heaven, and keep the other plans.', 'en', 'the Temple of Heaven'),
     ('把第二天下午换成天坛，保留其他安排。', 'zh', '天坛'),
+    ('把第二天下午换成颐和园（北门）。', 'zh', '颐和园（北门）'),
     ('把什刹海改成天坛', 'zh', '天坛'),
 ])
 def test_edit_preserves_everything_outside_the_selected_stop(text, locale, replacement):
@@ -71,6 +72,10 @@ def test_ambiguous_interval_and_non_edit_leave_no_candidate():
     ('Replace the afternoon of day 2 with Temple of Heaven only if it is open.', 'en'),
     ('把第二天下午换成颐和园，不过先别改。', 'zh'),
     ('把第二天下午换成颐和园，如果还开放。', 'zh'),
+    ('Replace the afternoon of day 2 with Temple of Heaven—do not apply this change yet.', 'en'),
+    ('Replace the afternoon of day 2 with Temple of Heaven or Summer Palace.', 'en'),
+    ('把第二天下午换成颐和园但先缓一缓。', 'zh'),
+    ('把第二天下午换成颐和园或者天坛。', 'zh'),
 ])
 def test_qualified_replacements_need_clarification(text, locale):
     trip, _ = itinerary()
