@@ -10,9 +10,12 @@ public enum LioLanguage: Sendable {
 }
 
 struct LioQuestion: Identifiable, Equatable, Sendable {
-    let id: UUID
+    let messageID: String
     let text: String
     let language: LioLanguage
+    var isResend = false
+
+    var id: Data { Data(messageID.utf8) }
 }
 
 struct LioSource: Identifiable, Equatable, Sendable {
@@ -22,7 +25,7 @@ struct LioSource: Identifiable, Equatable, Sendable {
 }
 
 enum LioActivity: Equatable, Sendable {
-    case places, weather, directions
+    case places, weather, directions, travelInformation
 }
 
 enum LioFailure: Equatable, Sendable {
@@ -37,6 +40,7 @@ enum LioFailure: Equatable, Sendable {
 }
 
 enum LioEvent: Sendable {
+    case snapshot(LioTimelinePage)
     case activity(LioActivity)
     case text(String)
     case source(LioSource)
@@ -45,7 +49,17 @@ enum LioEvent: Sendable {
 }
 
 public struct LioService: Sendable {
+    let updates: (@Sendable ([Data]) -> AsyncStream<LioTimelinePage>)?
+    let earlier: (@Sendable (String) async throws -> LioTimelinePage)?
     let events: @Sendable (LioQuestion) -> AsyncStream<LioEvent>
+
+    init(updates: (@Sendable ([Data]) -> AsyncStream<LioTimelinePage>)? = nil,
+         earlier: (@Sendable (String) async throws -> LioTimelinePage)? = nil,
+         events: @escaping @Sendable (LioQuestion) -> AsyncStream<LioEvent>) {
+        self.updates = updates
+        self.earlier = earlier
+        self.events = events
+    }
 
     public static let unavailable = LioService { _ in
         AsyncStream { $0.yield(.failed(.unavailable)); $0.finish() }
@@ -53,7 +67,7 @@ public struct LioService: Sendable {
 }
 
 struct LioTurn: Identifiable {
-    enum Status: Equatable {
+    enum Status: Equatable, Sendable {
         case thinking, working(LioActivity), answering, finished, failed(LioFailure)
     }
 
@@ -61,7 +75,16 @@ struct LioTurn: Identifiable {
     var status: Status = .thinking
     var answer = ""
     var sources: [LioSource] = []
-    var id: UUID { question.id }
+    var fromTimeline = false
+    var id: Data { question.id }
+
+    var hasTimelineResult: Bool {
+        guard fromTimeline else { return false }
+        return switch status {
+        case .finished, .failed(.dailyLimit), .failed(.unavailable): true
+        default: false
+        }
+    }
 }
 
 @MainActor @Observable
@@ -69,38 +92,56 @@ final class LioConversation {
     private let service: LioService
     private(set) var turns: [LioTurn] = []
     private(set) var pending: LioQuestion?
+    private(set) var nextBefore: String?
+    private(set) var loadingEarlier = false
+    private(set) var earlierUnavailable = false
+    private var sendGeneration = 0
+    private var receiving = false
 
     init(service: LioService) { self.service = service }
 
     func send(_ text: String, language: LioLanguage) {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty, pending == nil else { return }
-        let question = LioQuestion(id: UUID(), text: text, language: language)
+        let question = LioQuestion(messageID: UUID().uuidString, text: text, language: language)
         turns.append(LioTurn(question: question))
+        sendGeneration += 1
         pending = question
     }
 
-    func resend(_ id: UUID) {
+    func resend(_ id: Data) {
         guard pending == nil,
               let index = turns.firstIndex(where: { $0.id == id }),
               turns[index].status == .failed(.notSent) else { return }
         turns[index].status = .thinking
-        pending = turns[index].question
+        sendGeneration += 1
+        var question = turns[index].question
+        question.isResend = true
+        pending = question
     }
 
-    func askAgain(_ id: UUID) {
+    func askAgain(_ id: Data) {
         guard let turn = turns.first(where: { $0.id == id }),
               turn.status == .failed(.unfinished) else { return }
         send(turn.question.text, language: turn.question.language)
     }
 
     func receive(_ question: LioQuestion) async {
-        guard pending?.id == question.id,
-              let index = turns.firstIndex(where: { $0.id == question.id }) else { return }
-        defer { pending = nil }
+        guard pending == question, !receiving else { return }
+        receiving = true
+        defer {
+            receiving = false
+            pending = nil
+        }
         for await event in service.events(question) {
             guard !Task.isCancelled else { break }
+            if case .snapshot(let timeline) = event {
+                display(timeline)
+                continue
+            }
+            guard let index = turns.firstIndex(where: { $0.id == question.id }) else { break }
             switch event {
+            case .snapshot: break
             case .activity(let activity):
                 if turns[index].answer.isEmpty { turns[index].status = .working(activity) }
             case .text(let text):
@@ -114,10 +155,86 @@ final class LioConversation {
                 turns[index].status = .finished
                 return
             case .failed(let failure):
-                turns[index].status = .failed(failure)
+                if failure != .waiting || !turns[index].hasTimelineResult {
+                    turns[index].status = .failed(failure)
+                }
                 return
             }
         }
-        turns[index].status = .failed(.waiting)
+        if let index = turns.firstIndex(where: { $0.id == question.id }), !turns[index].hasTimelineResult {
+            turns[index].status = .failed(.waiting)
+        }
+    }
+
+    func refreshTimeline() async {
+        guard pending == nil, let updates = service.updates else { return }
+        let generation = sendGeneration
+        let waiting = turns.filter { $0.status == .failed(.waiting) }.map(\.id)
+        for await timeline in updates(waiting) {
+            guard !Task.isCancelled, generation == sendGeneration, pending == nil else { return }
+            display(timeline)
+            if !waiting.isEmpty && !timeline.turns.contains(where: \.isActive)
+                && waiting.allSatisfy({ id in turns.contains { $0.id == id && $0.hasTimelineResult } }) {
+                return
+            }
+        }
+    }
+
+    func loadEarlier() async -> Data? {
+        guard let cursor = nextBefore, let earlier = service.earlier, !loadingEarlier else { return nil }
+        loadingEarlier = true
+        earlierUnavailable = false
+        defer { loadingEarlier = false }
+        do {
+            let page = try await earlier(cursor)
+            guard !Task.isCancelled, nextBefore == cursor,
+                  let boundary = turns.firstIndex(where: { $0.id == Data(cursor.utf8) }) else { return nil }
+            var insertion = boundary
+            var firstInserted: Data?
+            for row in page.turns.reversed() {
+                if let existing = turns.firstIndex(where: { $0.id == row.id }) {
+                    let turn = turns[existing]
+                    if turn.fromTimeline {
+                        if !turn.hasTimelineResult {
+                            turns[existing] = makeTurn(row, question: turn.question)
+                        }
+                        insertion = existing
+                    } else {
+                        turns.remove(at: existing)
+                        if existing < insertion { insertion -= 1 }
+                        turns.insert(makeTurn(row, question: turn.question), at: insertion)
+                        firstInserted = row.id
+                    }
+                } else {
+                    turns.insert(makeTurn(row), at: insertion)
+                    firstInserted = row.id
+                }
+            }
+            nextBefore = page.nextBefore
+            return firstInserted
+        } catch is CancellationError {
+            return nil
+        } catch {
+            earlierUnavailable = true
+            return nil
+        }
+    }
+
+    private func display(_ page: LioTimelinePage) {
+        let visibleIDs = Set(page.turns.map(\.id))
+        let existing = Dictionary(uniqueKeysWithValues: turns.map { ($0.id, $0.question) })
+        let previous = turns.filter { $0.fromTimeline && !visibleIDs.contains($0.id) }
+        let local = turns.filter { !$0.fromTimeline && !visibleIDs.contains($0.id) }
+        let overlaps = turns.contains { $0.fromTimeline && visibleIDs.contains($0.id) }
+        if previous.isEmpty || (!visibleIDs.isEmpty && !overlaps) {
+            nextBefore = page.nextBefore
+        }
+        turns = previous + page.turns.map { makeTurn($0, question: existing[$0.id]) } + local
+    }
+
+    private func makeTurn(_ row: LioTimelineTurn, question: LioQuestion? = nil) -> LioTurn {
+        let question = question ?? LioQuestion(messageID: row.messageID, text: row.text, language: .english)
+        return LioTurn(question: question, status: row.status, answer: row.answer,
+                       sources: row.sources, fromTimeline: true)
     }
 }
