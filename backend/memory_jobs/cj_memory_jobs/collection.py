@@ -12,6 +12,7 @@ from .postgres import encode
 from .publication_store import PublicationTransaction
 from .service import Service,OperationWithheld
 from .source_policy import SourcePolicy
+from .lio_batch import JOB_PREFIX as LIO_JOB_PREFIX, ATTEMPT_PREFIX as LIO_ATTEMPT_PREFIX
 
 
 def _candidate(item):
@@ -119,8 +120,11 @@ class CollectionService(Service):
                 tx.cur.execute('''SELECT DISTINCT o.job_id,o.attempt_id FROM cj_memory_history_origin o
                     JOIN cj_memory_item i ON (i.scope,i.source_id,i.item_id)=(o.scope,o.source_id,o.item_id)
                     WHERE o.scope=%s AND i.status='candidate' AND o.job_id>%s
-                      AND o.origin_refs @> %s::jsonb ORDER BY o.job_id LIMIT 51''',
-                    (tx.scope,after_job_id,json.dumps([dict(conversation_id=conversation_id)])))
+                    AND o.origin_refs @> %s::jsonb
+                    AND NOT (o.job_id LIKE %s AND o.attempt_id LIKE %s)
+                    ORDER BY o.job_id LIMIT 51''',
+                    (tx.scope,after_job_id,json.dumps([dict(conversation_id=conversation_id)]),
+                     LIO_JOB_PREFIX+'%',LIO_ATTEMPT_PREFIX+'%'))
                 rows=tx.cur.fetchall()
                 value=dict(conversation_id=conversation_id,
                     jobs=[dict(job_id=job,attempt_id=attempt) for job,attempt in rows[:50]],
@@ -145,7 +149,10 @@ class CollectionService(Service):
                 tx.cur.execute('''SELECT i.item_id,o.job_id,o.attempt_id FROM cj_memory_item i
                     JOIN cj_memory_history_origin o ON (o.scope,o.source_id,o.item_id)=(i.scope,i.source_id,i.item_id)
                     WHERE i.scope=%s AND i.status='candidate' AND i.item_id>%s AND o.origin_refs @> %s::jsonb
-                    ORDER BY i.item_id LIMIT 51''',(tx.scope,after_candidate_id,json.dumps([dict(conversation_id=conversation_id)])))
+                    AND NOT (o.job_id LIKE %s AND o.attempt_id LIKE %s)
+                    ORDER BY i.item_id LIMIT 51''',
+                    (tx.scope,after_candidate_id,json.dumps([dict(conversation_id=conversation_id)]),
+                     LIO_JOB_PREFIX+'%',LIO_ATTEMPT_PREFIX+'%'))
                 rows=tx.cur.fetchall();values=[]
                 for iid,jid,attempt in rows[:50]:
                     item=memory.detail(iid)
@@ -225,6 +232,7 @@ class CollectionService(Service):
         repository,_,guard=self._binding(context,token)
         with repository.transaction() as memory:
             tx=PublicationTransaction(memory);tx.require_live()
+            tx.legacy_job(job_id,attempt_id)
             result=tx.transition(job_id,attempt_id,target).encode()
             guard('original_transition')
         return result
@@ -308,6 +316,7 @@ class CollectionService(Service):
             repository,principal,guard=self._binding(context,token)
             with repository.transaction() as memory:
                 tx=PublicationTransaction(memory);tx.require_live()
+                tx.legacy_job(job_id,attempt_id)
                 row,raw=tx.output(job_id,attempt_id)
                 if row[0].state!='completed' or raw is None:
                     raise Unavailable('collection result unavailable')

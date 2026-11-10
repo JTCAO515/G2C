@@ -25,7 +25,7 @@ class NeedsActionChecks(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         Harness.setUpClass.__func__(cls)
-        cls.host=RegisteredHost(cls.auth/'needs-actions',Path(CONNINFO),{s:(12,2,30000) for s in ('accept','reject','stale','manual','fault-rollback','fault-ack','adopted','switch','manual-writer','manual-save','save-rollback','save-ack','schema','publish-replay','saved-offset','new-offset','malformed-model','edit-during-model','scoped-preview')})
+        cls.host=RegisteredHost(cls.auth/'needs-actions',Path(CONNINFO),{s:(12,2,30000) for s in ('accept','reject','stale','manual','fault-rollback','fault-ack','adopted','switch','manual-writer','manual-save','save-rollback','save-ack','schema','publish-replay','saved-offset','new-offset','malformed-model','edit-during-model','scoped-preview','lio-history','lio-plan','lio-edit')})
         cls.env=dict(CJ_LOCAL_NEEDS_PROFILE='manual-v1',CJ_LOCAL_TRAVEL_CONTEXT='message-travel.1')
         cls.signer=ConfirmationSigner(b'synthetic-source-action-key-1234567890')
         for subject in cls.host.subjects:
@@ -69,12 +69,13 @@ class NeedsActionChecks(unittest.TestCase):
         return client.post('/v1/trip-needs-saves',content=raw,
             headers={**self.host.headers[subject],'Content-Type':'application/octet-stream'})
 
-    def replan(self,subject,key,change=None,expect_proposal=True):
+    def replan(self,subject,key,change=None,expect_proposal=True,wrap_publisher=None,needs_version=1,
+               text='continue original trip'):
         with patch.dict(__import__('os').environ,self.env),self.host.api(subject) as client:
             chat=client.put('/v1/conversations',params={'conversation_id':key},headers=self.host.headers[subject]).json()
-            raw=json.dumps(dict(version='MESSAGE-send.2',conversation_id=key,message_id=key,text='continue original trip',trip_id=None,
+            raw=json.dumps(dict(version='MESSAGE-send.2',conversation_id=key,message_id=key,text=text,trip_id=None,
                 creation_intent='consider_trip',expected_generation=chat['generation'],expected_sequence=0,travel_context=None,
-                needs_reference=dict(id='visit',expected_version=1))).encode()
+                needs_reference=dict(id='visit',expected_version=needs_version))).encode()
             response=client.post('/v2/messages',content=raw,headers={**self.host.headers[subject],'Content-Type':'application/octet-stream'})
             self.assertEqual(response.status_code,200,response.text)
         from cj_agent.provider import FakeProvider
@@ -92,6 +93,8 @@ class NeedsActionChecks(unittest.TestCase):
         worker,db=self.worker(subject,OriginalContextModel())
         worker.drafts=publisher(db,checker_for(self.host.auth),worker.message_context,
             lambda:self.host.headers[subject]['Authorization'][7:],scope_for(ISSUER,subject))
+        if wrap_publisher is not None:
+            worker.drafts=wrap_publisher(worker.drafts)
         result=worker.process()[0]
         if expect_proposal:self.assertIsNotNone(result.proposal_id)
         else:self.assertIsNone(result.proposal_id)
@@ -482,6 +485,330 @@ class NeedsActionChecks(unittest.TestCase):
                     else:
                         self.assertEqual(result.json()['receipt']['committed_version'],1)
                         self.assertEqual(self.post(client,subject,raw).json()['receipt'],result.json()['receipt'])
+
+    def test_lio_planner_saves_two_versions_with_the_original_source_and_receipts(self):
+        from dataclasses import replace
+        from hashlib import sha256
+        from time import sleep
+        from cj_api.local_needs import protected_reader
+        from cj_api.local_worker_context import checker_for
+        from cj_draft.lio_plan import LioPlanPublisher
+        from cj_draft.needs_context import publisher
+        from cj_message.needs_binding import needs_scope_for
+        from cj_run.core import Binding
+        from cj_trip.current_needs_source import CurrentNeedsSource
+        from cj_trip.domain import Denied
+        from cj_trip.lio_history import plan_action_id, TripHead, Undo
+        from cj_trip.needs_edit_store import NeedsEdits
+
+        subject='lio-plan'
+        owner=scope_for(ISSUER,subject)
+        needs_scope=needs_scope_for(owner)
+        message=self.setup_source(subject)
+        admitted={message['message_id']:None}
+        binding=Binding(owner,message['conversation_id'],message['generation'],message['message_id'],
+                        message['run_id'],message['sequence'])
+
+        def original_needs(cursor,binding):
+            cursor.execute('SELECT needs_id,needs_version,content_sha256 FROM cj_message_needs_binding '
+                           'WHERE message_scope=%s AND message_id=%s AND run_id=%s',
+                           (binding.scope,binding.message_id,binding.run_id))
+            return cursor.fetchone()
+
+        class FixtureLioPublisher(LioPlanPublisher):
+            def publish_for_message(self,*args,before_publish):
+                def final(*,check_trip):
+                    before_publish()
+                    if args[0].message_id == 'lio-omit-trip-check':
+                        return
+                    if args[0].message_id == 'lio-expired':
+                        sleep(2.05)
+                    check_trip()
+                return super().publish_for_message(*args,before_publish=final)
+
+        def wrap(publisher,signer=None):
+            # Isolated stand-in for the still separate B-owned Lio admission.
+            return FixtureLioPublisher(publisher,signer or self.signer,original_needs,lambda binding,original,expected:
+                                    binding.message_id in admitted and admitted[binding.message_id] == expected
+                                    and original.receipt.run_id == binding.run_id)
+
+        worker,db=self.worker(subject,source_fixture.PlanModel())
+        worker.drafts=wrap(publisher(db,checker_for(self.host.auth),worker.message_context,
+                                    lambda:self.host.headers[subject]['Authorization'][7:],owner))
+        repository=worker.drafts.repository
+        self.assertIsNone(repository.lio_current_trip(needs_scope,'visit'))
+        self.assertIsNone(repository.lio_plan_receipt(binding))
+        first=worker.process()[0]
+        self.assertEqual(first.status,'completed')
+        saved=repository.lio_plan_receipt(binding)
+        self.assertEqual(saved.committed_version,1)
+        original=repository.detail(saved.trip_id)
+        self.assertEqual(repository.proposal_detail(first.proposal_id).status,'accepted')
+
+        with patch.dict(__import__('os').environ,self.env),self.host.api(subject) as client:
+            source=json.dumps(dict(action_id='source-restated',needs_id='visit',expected_version=1,
+                source=dict(kind='manual',text='restated exact commitments'),
+                changes=dict(fixed_items=[source_fixture.fixed('a','09:00','10:00',True),
+                                          source_fixture.fixed('b','11:00','12:00',False)]))).encode()
+            response=client.post('/v1/needs-actions',content=source,
+                headers={**self.host.headers[subject],'Content-Type':'application/octet-stream'})
+            self.assertEqual(response.status_code,200,response.text)
+        admitted['lio-replan']=TripHead.from_trip(original)
+        second=self.replan(subject,'lio-replan',lambda plan:plan.update(title='Updated trip'),
+                           wrap_publisher=wrap,needs_version=2)
+        saved_again=repository.query_action(plan_action_id(second.run_id))
+        self.assertEqual((saved_again.trip_id,saved_again.committed_version),(saved.trip_id,2))
+        updated=repository.detail(saved.trip_id)
+        self.assertEqual(json.loads(updated.content)['title'],'Updated trip')
+        self.assertEqual(json.loads(original.content)['items'],json.loads(updated.content)['items'])
+        self.assertEqual(len(repository.list_trips()),1)
+        self.assertEqual(repository.lio_current_trip(needs_scope,'visit'),
+                         TripHead(saved.trip_id,2,sha256(updated.content).hexdigest()))
+        self.assertEqual(repository.lio_plan_receipt(binding),saved)
+        with self.assertRaises(Denied):
+            repository.lio_plan_receipt(replace(binding,message_id='another-message'))
+        admitted['lio-expired']=TripHead.from_trip(updated)
+        expiring=ConfirmationSigner(self.signer.key,lifetime_seconds=2)
+        expired=self.replan(subject,'lio-expired',expect_proposal=False,
+                             wrap_publisher=lambda publisher:wrap(publisher,expiring),needs_version=2)
+        self.assertEqual(expired.status,'completed')
+        expired_message=worker.messages.query('lio-expired')
+        expired_state=db.run_repository(owner).snapshot_optional(worker._binding(expired_message.receipt))
+        self.assertEqual(expired_state.draft_outcome,'validation_failed')
+        self.assertIsNone(repository.query_action(plan_action_id(expired.run_id)))
+        self.assertEqual(repository.detail(saved.trip_id),updated)
+        admitted['lio-omit-trip-check']=TripHead.from_trip(updated)
+        omitted=self.replan(subject,'lio-omit-trip-check',expect_proposal=False,
+                            wrap_publisher=wrap,needs_version=2)
+        self.assertEqual(omitted.status,'unknown')
+        self.assertIsNone(repository.query_action(plan_action_id(omitted.run_id)))
+        self.assertEqual(repository.detail(saved.trip_id),updated)
+        admitted['lio-stale']=TripHead.from_trip(original)
+        stale=self.replan(subject,'lio-stale',expect_proposal=False,wrap_publisher=wrap,needs_version=2)
+        self.assertEqual(stale.status,'unknown')
+        self.assertIsNone(repository.query_action(plan_action_id(stale.run_id)))
+        self.assertEqual(repository.detail(saved.trip_id),updated)
+
+        checker=checker_for(self.host.auth)
+        token=self.host.headers[subject]['Authorization'][7:]
+        repository.needs_edits=NeedsEdits(CurrentNeedsSource(db,checker,token,protected_reader(db,checker)))
+        request=Undo.parse(packed(dict(version='TRIP-lio-undo.1',action_id='undo-lio-replan',
+            trip_id=saved.trip_id,expected_version=2,original_hash=sha256(updated.content).hexdigest())))
+        self.assertEqual(repository.undo_lio(request).committed_version,3)
+        self.assertEqual(repository.detail(saved.trip_id).content,original.content)
+
+    def test_lio_travel_message_saves_one_replacement_and_can_undo_it(self):
+        from copy import deepcopy
+        from datetime import datetime, timezone
+        from hashlib import sha256
+        from cj_api.local_needs import protected_reader
+        from cj_api.local_worker_context import checker_for
+        from cj_draft.lio_plan import LioPlanPublisher
+        from cj_draft.needs_context import publisher
+        from cj_feasibility.solver import Limits
+        from cj_trip.current_needs_source import CurrentNeedsSource
+        from cj_trip.lio_history import TripHead, Undo, edit_action_id
+        from cj_trip.needs_edit_store import NeedsEdits
+
+        subject='lio-edit'
+        owner=scope_for(ISSUER,subject)
+        first=self.setup_source(subject)
+        admitted={first['message_id']:None}
+        limits=Limits(datetime(2026,11,1,tzinfo=timezone.utc),7*86400,1,10_000_000,60,120,128,.05,.05,100)
+
+        def generated(plan):
+            plan['items'][1].update(text='Accepted lunch override',source_category='unknown')
+            item=deepcopy(plan['items'][1])
+            item.update(id='generated',text='Jingshan Park',fixed=dict(state='unknown'),source_category='unknown')
+            item['schedule']['start']['time']=dict(state='known',value='13:00')
+            item['schedule']['end']['time']=dict(state='known',value='14:00')
+            plan['items'].append(item)
+            plan['proposed_subjects']['generated']=['self']
+
+        def original_needs(cursor,binding):
+            return cursor.execute('SELECT needs_id,needs_version,content_sha256 FROM cj_message_needs_binding '
+                'WHERE message_scope=%s AND message_id=%s AND run_id=%s',
+                (binding.scope,binding.message_id,binding.run_id)).fetchone()
+
+        class FixturePublisher(LioPlanPublisher):
+            def publish_for_message(self,binding,original,current,reply,capture,*,before_publish):
+                def final(*,check_trip):
+                    before_publish()
+                    check_trip()
+                if binding.message_id==first['message_id']:
+                    return super().publish_for_message(binding,original,current,reply,capture,before_publish=final)
+                trip=self.source.contexts[binding].trip
+                item='a' if binding.message_id=='lio-edit-locked' else 'generated'
+                identity=dict(request_id=binding.message_id,trip_id=trip.trip_id,expected_version=trip.version,
+                              original_hash=sha256(trip.content).hexdigest())
+                request=packed(dict(identity,version='TRIP-scoped-request.1',text=json.loads(original.raw)['text'],
+                                    language='en',selection=dict(kind='items',item_ids=[item])))
+                change=packed(dict(identity,version='TRIP-manual-edit.2',title=None,order=None,
+                                   changes=[dict(item_id=item,field='text',value='Summer Palace')]))
+                return self.publish_edit_for_message(binding,original,current,request,change,capture,
+                                                     limits=limits,before_publish=final)
+
+        def wrap(base):
+            return FixturePublisher(base,self.signer,original_needs,lambda binding,original,expected:
+                binding.message_id in admitted and admitted[binding.message_id]==expected
+                and original.receipt.run_id==binding.run_id)
+
+        worker,db=self.worker(subject,source_fixture.PlanModel(generated))
+        checker=checker_for(self.host.auth)
+        token=self.host.headers[subject]['Authorization'][7:]
+        worker.drafts=wrap(publisher(db,checker,worker.message_context,lambda:token,owner))
+        self.assertEqual(worker.process()[0].status,'completed')
+        repository=worker.drafts.repository
+        original,=repository.list_trips()
+        before=json.loads(original.content)
+        self.assertEqual(before['items'][-1]['fixed'],dict(state='known',value=False))
+        self.assertEqual(before['items'][-1]['verification'],'pending')
+        self.assertEqual(before['items'][0]['fixed'],dict(state='known',value=True))
+        self.assertEqual(before['items'][1]['text'],'Accepted lunch override')
+
+        admitted['lio-edit-locked']=TripHead.from_trip(original)
+        locked=self.replan(subject,'lio-edit-locked',expect_proposal=False,wrap_publisher=wrap,
+                           text='Replace the original a with Summer Palace')
+        self.assertIsNone(repository.query_action(edit_action_id(locked.run_id)))
+        self.assertEqual(repository.detail(original.trip_id),original)
+
+        admitted['lio-edit-replace']=TripHead.from_trip(original)
+        result=self.replan(subject,'lio-edit-replace',wrap_publisher=wrap,
+                           text='Replace Jingshan Park with Summer Palace')
+        stored=worker.messages.query('lio-edit-replace')
+        binding=worker._binding(stored.receipt)
+        receipt=repository.lio_edit_receipt(binding)
+        self.assertEqual((receipt.proposal_id,receipt.trip_id,receipt.committed_version),
+                         (result.proposal_id,original.trip_id,2))
+        self.assertIsNone(repository.lio_plan_receipt(binding))
+        edited=repository.detail(original.trip_id)
+        after=json.loads(edited.content)
+        before['items'][-1]['text']='Summer Palace'
+        self.assertEqual(after,before)
+
+        repository.needs_edits=NeedsEdits(CurrentNeedsSource(db,checker,token,protected_reader(db,checker)))
+        action=Undo.parse(packed(dict(version='TRIP-lio-undo.1',action_id='undo-lio-edit',
+            trip_id=original.trip_id,expected_version=2,original_hash=sha256(edited.content).hexdigest())))
+        self.assertEqual(repository.undo_lio(action).committed_version,3)
+        restored=repository.detail(original.trip_id)
+        self.assertEqual(restored.content,original.content)
+        self.assertEqual(repository.lio_edit_receipt(binding),receipt)
+
+        with patch.dict(__import__('os').environ,self.env),self.host.api(subject) as client:
+            source=json.dumps(dict(action_id='edit-source-restated',needs_id='visit',expected_version=1,
+                source=dict(kind='manual',text='restated commitments'),
+                changes=dict(fixed_items=[source_fixture.fixed('a','09:00','10:00',True),
+                                          source_fixture.fixed('b','11:00','12:00',False)]))).encode()
+            response=client.post('/v1/needs-actions',content=source,
+                headers={**self.host.headers[subject],'Content-Type':'application/octet-stream'})
+            self.assertEqual(response.status_code,200,response.text)
+        admitted['lio-edit-new-source']=TripHead.from_trip(restored)
+        newer=self.replan(subject,'lio-edit-new-source',expect_proposal=False,wrap_publisher=wrap,
+                          needs_version=2,text='Replace Jingshan Park with Summer Palace')
+        self.assertIsNone(repository.query_action(edit_action_id(newer.run_id)))
+        self.assertEqual(repository.detail(original.trip_id),restored)
+
+    def test_lio_undo_appends_original_bytes_and_keeps_the_accepted_history(self):
+        from contextlib import contextmanager
+        from dataclasses import asdict
+        from hashlib import sha256
+        from cj_agent.draft import trip_scope_for
+        from cj_api.local_needs import protected_reader
+        from cj_api.local_worker_context import checker_for
+        from cj_needs.domain import Denied as NeedsDenied
+        from cj_trip.auth_boundary import Boundary
+        from cj_trip.current_needs_source import CurrentNeedsSource
+        from cj_trip.domain import Conflict, Denied
+        from cj_trip.lio_history import Undo
+        from cj_trip.needs_edit_store import NeedsEdits
+        from cj_trip.operation import OperationWithheld
+
+        subject='lio-history'
+        app,outcome,db=self.plan(subject)
+        with TestClient(app) as client:
+            adopted=self.post(client,subject,self.action(subject,outcome,'accept'))
+            self.assertEqual(adopted.status_code,200,adopted.text)
+            trip_id=adopted.json()['receipt']['trip_id']
+            params={'trip_id':trip_id}
+            headers=self.host.headers[subject]
+            original=client.get('/v4/trip-structured',params=params,headers=headers).json()['trip']
+            prepared=self.prepare_request(client,subject,self.edit_request(subject,original,'before-undo'))
+            saved=self.save_request(client,subject,prepared,'original-edit')
+            self.assertEqual(saved.status_code,200,saved.text)
+            edited=client.get('/v4/trip-structured',params=params,headers=headers).json()['trip']
+
+        checker=checker_for(self.host.auth)
+        def resolve(principal):
+            scope=scope_for(principal.issuer,principal.subject)
+            return lambda:db.connect(scope),trip_scope_for(scope)
+
+        class SourceBoundary(Boundary):
+            def _bind(self, token):
+                repository,principal,guard=super()._bind(token)
+                source=CurrentNeedsSource(db,checker,token,protected_reader(db,checker))
+                repository.needs_edits=NeedsEdits(source)
+                return repository,principal,guard
+
+        boundary=SourceBoundary(checker,resolve,self.signer,structured=True)
+        token=headers['Authorization'][7:]
+        repository=boundary._repository(token)
+        command=dict(version='TRIP-lio-undo.1',action_id='lio-undo',trip_id=trip_id,expected_version=2,
+                     original_hash=sha256(packed(edited['content'])).hexdigest())
+        request=Undo.parse(packed(command))
+
+        changed=Undo.parse(packed(dict(command,original_hash='0'*64)))
+        with self.assertRaises(Conflict):
+            repository.undo_lio(changed)
+        foreign=boundary._repository(self.host.headers['scoped-preview']['Authorization'][7:])
+        with self.assertRaises(Denied):
+            foreign.lio_revisions(trip_id,None,10)
+        with self.assertRaises(Denied):
+            foreign.undo_lio(request)
+
+        def apply(operation):
+            return packed(asdict(operation.undo_lio(request)))
+        hold=CurrentNeedsSource.hold
+
+        @contextmanager
+        def lose_source_after_commit(current_source,captured):
+            with hold(current_source,captured) as check:
+                yield check
+                raise NeedsDenied('synthetic loss after committed undo')
+
+        with patch.object(CurrentNeedsSource,'hold',lose_source_after_commit):
+            with self.assertRaises(OperationWithheld) as withheld:
+                boundary.with_operation(token,apply)
+        self.assertEqual(withheld.exception.action_id,request.action_id)
+        self.assertTrue(withheld.exception.commit_possible)
+        receipt=boundary.with_operation(token,lambda op:packed(asdict(op.lio_undo_receipt(request))))
+        self.assertEqual(json.loads(receipt)['committed_version'],3)
+        self.assertEqual(boundary.with_operation(token,apply),receipt)
+        self.assertEqual(boundary.with_operation(token,lambda op:packed(asdict(op.lio_undo_receipt(request)))),receipt)
+        with self.assertRaises(Conflict):
+            repository.undo_lio(changed)
+        self.assertEqual(packed(asdict(repository.query_action(request.action_id))),receipt)
+        history=repository.lio_revisions(trip_id,None,10)
+        self.assertEqual([(trip.version,trip.content) for trip in history],
+                         [(3,packed(original['content'])),(2,packed(edited['content'])),(1,packed(original['content']))])
+        self.assertEqual(repository.lio_revisions(trip_id,3,1),history[1:2])
+
+        with TestClient(app) as client:
+            restored=client.get('/v4/trip-structured',params=params,headers=headers).json()['trip']
+            self.assertEqual(restored['content'],original['content'])
+            prepared=self.prepare_request(client,subject,self.edit_request(subject,restored,'after-undo','next edit'))
+            self.assertEqual(self.save_request(client,subject,prepared,'after-undo-save').json()['receipt']['committed_version'],4)
+            after=client.get('/v4/trip-structured',params=params,headers=headers).json()['trip']
+            lock=json.loads(self.edit_request(subject,after,'lock-after-undo'))
+            lock['edit']['changes']=[dict(item_id='b',field='fixed',value=dict(state='known',value=True))]
+            prepared=self.prepare_request(client,subject,packed(lock))
+            self.assertEqual(self.save_request(client,subject,prepared,'lock-after-undo-save').json()['receipt']['committed_version'],5)
+        locked=repository.detail(trip_id)
+        forbidden=Undo.parse(packed(dict(command,action_id='undo-lock',expected_version=5,
+                                        original_hash=sha256(locked.content).hexdigest())))
+        with self.assertRaisesRegex(Conflict,'fixed Trip item'):
+            repository.undo_lio(forbidden)
+        self.assertEqual(repository.detail(trip_id),locked)
+        self.assertIsNone(repository.query_action(forbidden.action_id))
 
     def test_adopted_model_intent_lock_is_retained_by_next_real_planning(self):
         from copy import deepcopy
