@@ -63,7 +63,11 @@ client-observed connection error maps to `network`. Server failures use
 `quota` or `unavailable`. A lost model result retains its original terminal
 status internally and is never dispatched again by a timeline read.
 
-In the pure question-and-answer stage, both attachment fields are null.
+A saved trip has `trip_id`, `title`, and `days`. Each day has a calendar
+`date` or null and an `items` array. Each item has `item_id`, `label`,
+`start_time`, `end_time`, and `fixed`. Unspecified times and lock states are null. A card
+reflects the saved version associated with the message. A verified save
+receipt can complete the display even when the final reply was lost.
 
 Retained answers remain visible after the operational recovery window expires.
 Reading a retained answer neither renews that window nor authorizes execution.

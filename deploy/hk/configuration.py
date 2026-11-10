@@ -49,7 +49,7 @@ def load_secret_environment(role,*,root=Path('/run/secrets')):
     for file,names in expected.items():
         optional=({TYPED_POLICY,TYPED_MESSAGE_SUBJECTS}|ASSEMBLY_CLEANUP if role=='api' and file=='api' else
                   {MEMORY_RUN_POLICY,MODEL_STREAM_SUBJECT,ASSEMBLY_RUN_CREDENTIAL_SUBJECTS,ASSEMBLY_MODEL_STREAM_SUBJECTS,
-                   ASSEMBLY_PROBE_MESSAGE}
+                   ASSEMBLY_PROBE_MESSAGE,'CJ_BETA_CONFIRMATION_B64'}
                   if role=='worker' and file=='worker' else set())
         allowed=names|optional
         if any(name in os.environ for name in allowed):raise ValueError('persistent_container_secret_environment_refused')
