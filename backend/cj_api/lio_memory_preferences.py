@@ -24,9 +24,11 @@ _FORMS = {
         r'每天(?:只|最多)(?:一|两|二|三|[1-3])个景点',
     ),
     'travel.budget': _forms(
-        r'(?:budget[- ]friendly|moderate[- ]budget|luxury) trips?|'
+        r'(?:budget[- ]friendly|moderate[- ]budget) trips?|'
+        r'(?:a |an )?(?:luxury|luxurious|upscale) (?:trips?|travel(?: experiences?)?|vacations?|holidays?)|'
         r'(?:a )?budget (?:of )?(?:about |around |under )?[0-9]{1,5} (?:yuan|CNY|RMB|USD) (?:per|a) day',
-        r'(?:经济实惠|中等预算|高预算)(?:的)?(?:旅行|行程)|旅行预算(?:通常|一般)?(?:为|是)?每天[0-9]{1,5}元',
+        r'(?:经济实惠|中等预算|高预算|豪华|奢华|高端)(?:的)?(?:旅行|行程|旅游)(?:体验)?|'
+        r'旅行预算(?:通常|一般)?(?:为|是)?每天[0-9]{1,5}元',
         extra=r'I usually budget [0-9]{1,5} (?:yuan|CNY|RMB|USD) (?:per|a) day',
     ),
     'lodging.style': _forms(
