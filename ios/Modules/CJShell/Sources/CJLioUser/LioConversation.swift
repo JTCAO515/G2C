@@ -182,7 +182,12 @@ final class LioConversation {
     func refreshTimeline() async {
         guard pending == nil, let updates = service.updates else { return }
         let generation = sendGeneration
-        let waiting = turns.filter { $0.status == .failed(.waiting) }.map(\.id)
+        let waiting = turns.compactMap { turn -> Data? in
+            switch turn.status {
+            case .thinking, .working, .answering, .failed(.waiting): turn.id
+            default: nil
+            }
+        }
         for await timeline in updates(waiting) {
             guard !Task.isCancelled, generation == sendGeneration, pending == nil else { return }
             display(timeline)
