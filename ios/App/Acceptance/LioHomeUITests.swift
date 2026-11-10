@@ -96,6 +96,7 @@ import XCTest
 
     func testMarkdownCannotExposeServiceTerms() {
         exerciseWithheldReply("--lio-display-guard-markdown")
+        exerciseWithheldReply("--lio-display-guard-host")
     }
 
     private func exerciseWithheldReply(_ fixture: String) {
