@@ -3,6 +3,9 @@ import Foundation
 import Darwin
 import CryptoKit
 import CJShell
+#if G2C_DEMO_BETA
+import CJLioUser
+#endif
 import CJTripClient
 import CJManualPreviewClient
 import CJMessageHTTP
@@ -821,6 +824,9 @@ private var developmentHostEnvironment: [String: String] {
     let history: ServerHistoryHost
     let runs: RunContainerHost
     let travelSelection: TravelSelectionModel?
+    #if G2C_DEMO_BETA
+    let lio: LioService
+    #endif
     private let lifetime: DevelopmentMessageLifetime
     private let keyAdapter: ExistingMessageKeyAdapter
 
@@ -870,6 +876,13 @@ private var developmentHostEnvironment: [String: String] {
             transport = try NoRedirectTransport.developmentMessages(endpoint:endpoint,requestTimeout:10,resourceTimeout:20,validate:{try lifetime.validate()})
         }
         let credentials = DevelopmentMessageCredentials(token: configuration.token, scope: scope, lease: lease, lifetime: lifetime)
+        #if G2C_DEMO_BETA
+        let lioEndpoint = try MessageEndpoint(url: configuration.endpoint, maximumRequestBytes: 16_384,
+                                              maximumResponseBytes: 4_500_000)
+        let lioClient = try LioTimelineHTTP(endpoint: lioEndpoint, scope: scope, lease: lease,
+                                           credentials: credentials, validate: { try lifetime.validate() })
+        lio = .signedTimeline(lioClient)
+        #endif
         let betaRead = configuration.endpoint.host == "api-beta.go2china.space"
         let runReads = try NoRedirectTransport(requestTimeout: betaRead ? 30 : 15, resourceTimeout: 150)
         let client = MessageHTTPClient(recovery: recovery, scope: scope, endpoint: endpoint,

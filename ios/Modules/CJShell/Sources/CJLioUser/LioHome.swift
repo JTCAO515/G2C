@@ -10,7 +10,9 @@ public struct LioHome<MenuContent: View>: View {
     @State private var draft = ""
     @State private var menuOpen = false
     @State private var source: LioSource?
+    @State private var followsAnswer = true
     @FocusState private var typing: Bool
+    @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(language: LioLanguage, service: LioService, isDemo: Bool,
@@ -23,12 +25,18 @@ public struct LioHome<MenuContent: View>: View {
 
     public var body: some View {
         let pending = conversation.pending
+        let latest = conversation.turns.last
+        let earlierID = conversation.nextBefore.map { Data($0.utf8) }
+        let canObserve = scenePhase == .active && pending == nil
         ScrollViewReader { scroll in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 22) {
                     if conversation.turns.isEmpty { examples }
                     ForEach(conversation.turns) { turn in
-                        turnView(turn)
+                        VStack(alignment: .leading, spacing: 22) {
+                            if turn.id == earlierID { earlierMessages(scroll) }
+                            turnView(turn)
+                        }
                     }
                     Color.clear.frame(height: 1).id("lio.bottom")
                 }
@@ -39,12 +47,19 @@ public struct LioHome<MenuContent: View>: View {
                 .frame(maxWidth: .infinity)
             }
             .scrollDismissesKeyboard(.interactively)
-            .onChange(of: conversation.turns.count) { _, _ in
+            .simultaneousGesture(DragGesture(minimumDistance: 12).onChanged { _ in
+                followsAnswer = false
+            })
+            .onChange(of: latest?.id) { _, _ in
+                guard followsAnswer else { return }
                 if reduceMotion { scroll.scrollTo("lio.bottom", anchor: .bottom) }
                 else { withAnimation(.easeOut(duration: 0.22)) { scroll.scrollTo("lio.bottom", anchor: .bottom) } }
             }
-            .onChange(of: conversation.turns.last?.status) { _, status in
-                if status == .finished { scroll.scrollTo("lio.bottom", anchor: .bottom) }
+            .onChange(of: latest?.answer) { _, _ in
+                if followsAnswer, let pending, latest?.id == pending.id { scroll.scrollTo("lio.bottom", anchor: .bottom) }
+            }
+            .onChange(of: latest?.status) { _, status in
+                if followsAnswer && status == .finished { scroll.scrollTo("lio.bottom", anchor: .bottom) }
             }
         }
         .background(Color(uiColor: .systemBackground))
@@ -70,8 +85,31 @@ public struct LioHome<MenuContent: View>: View {
         .sheet(item: $source) { selected in
             LioSourceSheet(source: selected, language: language)
         }
+        .task(id: canObserve) {
+            if canObserve { await conversation.refreshTimeline() }
+        }
         .task(id: pending?.id) {
             if let pending { await conversation.receive(pending) }
+        }
+    }
+
+    private func earlierMessages(_ scroll: ScrollViewProxy) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Button(language.text("Earlier messages", "更早的消息")) {
+                followsAnswer = false
+                Task {
+                    if let id = await conversation.loadEarlier() {
+                        scroll.scrollTo(id, anchor: .top)
+                    }
+                }
+            }
+            .disabled(conversation.loadingEarlier)
+            .accessibilityIdentifier("lio.earlier")
+            if conversation.loadingEarlier { ProgressView() }
+            if conversation.earlierUnavailable {
+                Text(language.text("Couldn’t show earlier messages. Try again.", "暂时看不到更早的消息，请再试一次。"))
+                    .font(.footnote)
+            }
         }
     }
 
@@ -116,25 +154,25 @@ public struct LioHome<MenuContent: View>: View {
                 Text(language.text("Try a sample question.", "可以先试一个示例问题。"))
                     .font(.subheadline)
                     .foregroundStyle(Color.primary.opacity(0.78))
-                ForEach(Array(LioDemo.examples(language).enumerated()), id: \.offset) { index, example in
-                    Button {
-                        draft = example
-                        typing = true
-                    } label: {
-                        HStack(spacing: 12) {
-                            RunReadableText(text: example)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            Image(systemName: "arrow.up.left").accessibilityHidden(true)
-                        }
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 10)
-                        .frame(minHeight: 48)
-                        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
+            }
+            ForEach(Array(LioDemo.examples(language).enumerated()), id: \.offset) { index, example in
+                Button {
+                    draft = example
+                    typing = true
+                } label: {
+                    HStack(spacing: 12) {
+                        RunReadableText(text: example)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        Image(systemName: "arrow.up.left").accessibilityHidden(true)
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(example)
-                    .accessibilityIdentifier("lio.example.\(index)")
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .frame(minHeight: 48)
+                    .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
                 }
+                .buttonStyle(.plain)
+                .accessibilityLabel(example)
+                .accessibilityIdentifier("lio.example.\(index)")
             }
         }
     }
@@ -149,6 +187,7 @@ public struct LioHome<MenuContent: View>: View {
                 .focused($typing)
                 .accessibilityIdentifier("lio.composer")
             Button {
+                followsAnswer = true
                 conversation.send(draft, language: language)
                 draft = ""
                 typing = false
@@ -180,6 +219,7 @@ public struct LioHome<MenuContent: View>: View {
                 Spacer(minLength: 32)
                 if turn.status == .failed(.notSent) {
                     Button {
+                        if turn.id == conversation.turns.last?.id { followsAnswer = true }
                         conversation.resend(turn.id)
                     } label: {
                         Image(systemName: "exclamationmark.circle.fill")
@@ -199,10 +239,17 @@ public struct LioHome<MenuContent: View>: View {
                     .accessibilityIdentifier("lio.question")
             }
             if !turn.answer.isEmpty {
-                Text(turn.answer)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .textSelection(.enabled)
-                    .accessibilityIdentifier("lio.answer")
+                if let answer = LioReplyMarkdown.render(turn.answer) {
+                    if !answer.characters.isEmpty {
+                        Text(answer)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .textSelection(.enabled)
+                            .accessibilityIdentifier("lio.answer")
+                    }
+                } else {
+                    Text(language.text("This reply can’t be shown right now.", "这条回答暂时无法显示。"))
+                        .accessibilityIdentifier("lio.reply.unavailable")
+                }
             }
             messageStatus(turn)
             ForEach(turn.sources) { item in
@@ -230,6 +277,7 @@ public struct LioHome<MenuContent: View>: View {
             case .places: language.text("Looking up places…", "正在找地点…")
             case .weather: language.text("Checking the weather…", "正在查天气…")
             case .directions: language.text("Looking for directions…", "正在找路线…")
+            case .travelInformation: language.text("Checking travel information…", "正在查旅行信息…")
             }
             statusLine(status)
         case .failed(let failure):
@@ -247,7 +295,10 @@ public struct LioHome<MenuContent: View>: View {
                 .foregroundStyle(Color.primary.opacity(0.78))
                 .accessibilityIdentifier("lio.failure")
             if failure == .unfinished {
-                Button(language.text("Ask again", "重新问")) { conversation.askAgain(turn.id) }
+                Button(language.text("Ask again", "重新问")) {
+                    followsAnswer = true
+                    conversation.askAgain(turn.id)
+                }
                     .buttonStyle(.bordered)
                     .controlSize(.large)
                     .disabled(conversation.pending != nil)
