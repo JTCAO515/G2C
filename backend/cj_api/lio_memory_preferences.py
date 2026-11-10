@@ -53,6 +53,7 @@ _FORMS = {
 }
 
 PREFERENCE_SLOTS = frozenset(_FORMS)
+_EXISTING_SLOTS = frozenset({'diet.spicy', 'quiet.entrance'})
 
 
 def _value(form, text):
@@ -65,6 +66,14 @@ def _value(form, text):
     if value.startswith(('慢节奏', '快节奏')):
         return value[:3]
     return value.removeprefix('a ')
+
+
+def allows_pilot_preference_write(command):
+    if command.slot in _EXISTING_SLOTS:
+        return True
+    form = _FORMS.get(command.slot)
+    return (form is not None and command.kind == 'preference'
+            and _value(form, command.text) is not None)
 
 
 def supported_preference(entry, original):

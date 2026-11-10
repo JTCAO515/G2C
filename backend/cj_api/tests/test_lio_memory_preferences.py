@@ -1,6 +1,12 @@
+from datetime import datetime, timezone
+from types import SimpleNamespace
 import unittest
 
 from cj_api.lio_memory_preferences import supported_preference
+from cj_api.local_lio_memory import pilot_write_configuration
+from cj_memory.domain import Unavailable
+from cj_memory.local import LocalMemoryConfiguration, LocalMemoryProfile, SlotPolicy
+from cj_memory.typed_local import TypedConfiguration
 from cj_memory_jobs.extraction import Entry, Evidence
 
 
@@ -66,3 +72,23 @@ class LioMemoryPreferenceTest(unittest.TestCase):
         ]:
             with self.subTest(original=original):
                 self.assertTrue(supported_preference(entry('travel.pace', text, quote=quote), original))
+
+    def test_typed_write_policy_applies_only_to_demo_and_new_slots(self):
+        preference = SlotPolicy('preference', True, True)
+        profile = LocalMemoryProfile(frozenset({'self'}),
+                                     {'travel.pace': preference, 'quiet.entrance': preference},
+                                     frozenset({'long_term'}), frozenset(),
+                                     datetime.max.replace(tzinfo=timezone.utc))
+        configuration = TypedConfiguration(LocalMemoryConfiguration({'demo': profile, 'other': profile}),
+                                           {'demo': frozenset(), 'other': frozenset()})
+        pilot = pilot_write_configuration(configuration, frozenset({'demo'}))
+
+        def command(slot, text):
+            return SimpleNamespace(slot=slot, text=text, kind='preference', subject='self', extent='long_term')
+
+        sensitive = command('travel.pace', 'I prefer a slow pace because I have asthma.')
+        with self.assertRaises(Unavailable):
+            pilot.policy('demo').evaluate(sensitive, b'')
+        self.assertTrue(pilot.policy('demo').evaluate(command('travel.pace', 'I prefer a slow pace.'), b''))
+        self.assertTrue(pilot.policy('demo').evaluate(command('quiet.entrance', 'Use a different quiet entrance.'), b''))
+        self.assertIs(pilot.collection.profiles['other'], profile)
