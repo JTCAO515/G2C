@@ -18,7 +18,7 @@ def upgrade(control,backups,*,target=49,schema_root=None):
     if not local_database_target():raise ValueError('HK local Demo upgrade required')
     local_postgres.require_serving(control)
     expected=checkpoint.versions()
-    if target not in (49,50) or expected!=list(range(1,target+1)):
+    if target not in (49,50,51) or expected!=list(range(1,target+1)):
         raise ValueError('exact Demo migration chain required')
     anchor=schema_anchor(target)
     marker=control/(anchor+'.json')
@@ -65,9 +65,9 @@ def daily_base(control,root,previous):
 if __name__=='__main__':
     try:
         arguments=sys.argv[1:]
-        if arguments not in ([],['--target','50']):raise ValueError('explicit Demo schema upgrade required')
+        if arguments not in ([],['--target','50'],['--target','51']):raise ValueError('explicit Demo schema upgrade required')
         load_secret_environment('recovery')
-        upgrade(Path(os.environ['CJ_DEPLOY_CONTROL']),Path('/backups'),target=50 if arguments else 49)
+        upgrade(Path(os.environ['CJ_DEPLOY_CONTROL']),Path('/backups'),target=int(arguments[1]) if arguments else 49)
     except (OSError,ValueError,KeyError,psycopg.Error):
         print('ALERT Demo schema upgrade unavailable; reconcile original state',file=sys.stderr)
         raise SystemExit(1) from None
