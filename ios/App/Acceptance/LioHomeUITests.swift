@@ -23,9 +23,17 @@ import XCTest
         let example = app.buttons["lio.example.0"]
         XCTAssertTrue(example.waitForExistence(timeout: 8))
         XCTAssertFalse(oldReply.exists)
+        XCTAssertFalse(app.staticTexts["lio.question"].exists)
         example.tap()
-        let draft = "How do I take the metro in Shanghai?"
-        XCTAssertEqual(composer.value as? String, draft)
+        let firstQuestion = "How do I take the metro in Shanghai?"
+        XCTAssertEqual(composer.value as? String, firstQuestion)
+        app.buttons["lio.send"].tap()
+        let newReply = app.staticTexts["A separate reply."]
+        XCTAssertTrue(newReply.waitForExistence(timeout: 12), app.debugDescription)
+        XCTAssertFalse(oldReply.exists)
+        composer.tap()
+        let draft = "A follow up draft"
+        composer.typeText(draft)
 
         func openHistory(_ title: String) {
             menu.tap()
@@ -35,13 +43,13 @@ import XCTest
             XCTAssertTrue(row.waitForExistence(timeout: 8))
             row.tap()
         }
-        openHistory("Earlier conversation")
+        openHistory("First conversation")
         XCTAssertTrue(oldReply.waitForExistence(timeout: 8))
+        XCTAssertFalse(newReply.exists)
         XCTAssertNotEqual(composer.value as? String, draft)
-        openHistory("New conversation")
-        XCTAssertTrue(example.waitForExistence(timeout: 8))
+        openHistory(firstQuestion)
+        XCTAssertTrue(newReply.waitForExistence(timeout: 8))
         XCTAssertFalse(oldReply.exists)
-        XCTAssertFalse(app.staticTexts["lio.question"].exists)
         XCTAssertEqual(composer.value as? String, draft)
     }
 
@@ -261,6 +269,36 @@ import XCTest
         map.tap()
         XCTAssertTrue(app.staticTexts["Map unavailable"].waitForExistence(timeout: 8))
         XCTAssertTrue(schedule.exists)
+    }
+
+    func testHistoricalChatCardOpensTheCurrentSavedTrip() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-timeline-acceptance", "--lio-stale-trip-acceptance",
+                               "-cj.ui.language.v1", "en"]
+        app.launchEnvironment = ["G2C_LIO_PREVIEW_TRIP": "__LIO_RECORDED_TRIP_FIXTURE__"]
+        app.launch()
+        defer { app.terminate() }
+
+        let example = app.buttons["lio.example.0"]
+        XCTAssertTrue(example.waitForExistence(timeout: 12))
+        example.tap()
+        app.buttons["lio.send"].tap()
+        let viewTrip = app.buttons["lio.trip.show"]
+        XCTAssertTrue(viewTrip.waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Earlier plan"].exists)
+        viewTrip.tap()
+        XCTAssertTrue(app.navigationBars["Draft"].waitForExistence(timeout: 8), app.debugDescription)
+        XCTAssertTrue(app.staticTexts["Date to be decided"].exists)
+        XCTAssertFalse(app.staticTexts["Earlier plan"].exists)
+        XCTAssertFalse(app.staticTexts["Earlier stop"].exists)
+
+        app.tabBars.buttons["Chat"].tap()
+        XCTAssertTrue(viewTrip.waitForExistence(timeout: 8))
+        viewTrip.tap()
+        XCTAssertTrue(app.staticTexts["Trip unavailable"].waitForExistence(timeout: 8), app.debugDescription)
+        XCTAssertFalse(app.staticTexts["Date to be decided"].exists)
+        XCTAssertFalse(app.staticTexts["Earlier stop"].exists)
     }
 
     private func exerciseTrip(_ language: String, clarification: String, trips: String, day: String, fixed: String) throws {
