@@ -433,7 +433,7 @@ import XCTest
         XCTAssertEqual(app.staticTexts["lio.fixture.send-count"].label, "1")
 
         resend.tap()
-        let quota = app.staticTexts.containing(NSPredicate(format: "label == %@", "今天的 40 个问题已用完，明天再来聊吧。"))
+        let quota = app.staticTexts.containing(NSPredicate(format: "label == %@", "今天的问题额度已用完，明天再来聊吧。"))
             .firstMatch
         XCTAssertTrue(quota.waitForExistence(timeout: 8))
         XCTAssertEqual(questions.count, 1)
