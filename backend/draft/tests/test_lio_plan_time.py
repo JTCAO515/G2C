@@ -75,6 +75,7 @@ def test_lio_retains_only_verbatim_fixed_source():
     capture = SimpleNamespace(binding='original', records=lambda: (snapshot, (revision,)))
     publisher = LioPlanPublisher.__new__(LioPlanPublisher)
     publisher.source = SimpleNamespace(contexts={'original': None})
+    publisher.draft_guidance = ' Use the requested time periods.'
 
     def draft(item):
         return packed(dict(version=MODEL_VERSION, title='Beijing', items=[item], proposed_subjects={}))
@@ -83,6 +84,9 @@ def test_lio_retains_only_verbatim_fixed_source():
     assert json.loads(raw)['items'] == [model_stop]
     source = json.loads(publisher.model_messages('original', description, capture, [])[-1]['content'])
     assert source['version'] == 'TRIP-source-input.2' and 'response_version' not in source
+    assert MODEL_VERSION in publisher.system and LIO_REPLAN_DELTA not in publisher.system
+    assert 'Use a short title.' in publisher.system
+    assert publisher.system.endswith(publisher.draft_guidance)
     with pytest.raises(FieldRejected, match='TRIP-model-plan.1 required'):
         publisher.build_plan(packed(dict(version=LIO_REPLAN_DELTA, title='Beijing', items=[], proposed_subjects={})), capture)
     for invalid in (dict(model_stop, source_category='unknown'), dict(model_stop, text='Hotel meetup')):
@@ -107,6 +111,7 @@ def test_lio_replan_retains_saved_fixed_state_of_an_adopted_suggestion():
     trip = Trip('beijing', 7, packed(dict(content_version='structured.2', title='Beijing', items=[saved], sources=[])))
     publisher = LioPlanPublisher.__new__(LioPlanPublisher)
     publisher.source = SimpleNamespace(contexts={'original': SimpleNamespace(trip=trip, proposed=proposed)})
+    publisher.draft_guidance = ' Use the requested time periods.'
 
     def draft(items, *, version=MODEL_VERSION, subjects=None):
         return packed(dict(version=version, title='Replanned Beijing', items=items, proposed_subjects=subjects or {}))
@@ -124,6 +129,10 @@ def test_lio_replan_retains_saved_fixed_state_of_an_adopted_suggestion():
     assert publisher.model_messages('original', 'replan', capture, []) == legacy.model_messages('original', 'replan', capture, [])
     assert source['version'] == 'TRIP-source-input.2'
     assert source['current_trip']['content']['items'] == [saved]
+    assert 'TRIP-lio-replan-delta.2' in publisher.system and MODEL_VERSION not in publisher.system
+    assert 'Copy each original fixed or unselected item' not in publisher.system
+    assert 'Omit title.' in publisher.system and 'Use a short title.' not in publisher.system
+    assert publisher.system.endswith(publisher.draft_guidance)
     raw, _, _ = publisher.build_plan(draft([], version=LIO_REPLAN_DELTA), capture)
     assert json.loads(raw)['items'] == [saved]
     assert json.loads(raw)['title'] == 'Replanned Beijing'

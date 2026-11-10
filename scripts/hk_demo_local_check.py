@@ -310,13 +310,11 @@ def lio_fixture_model(*, empty_first_day=False):
             if system.endswith(DISCUSSION_PROMPT):
                 yield '{"answer":"可以先聊聊旅行选项。"}'
                 return
-            if system.startswith(PLAN_SYSTEM):
-                assert system.endswith(COMPACT_DRAFT)
-                assert 'Only when current_trip in TRIP-source-input.2 is null, use a short title.' in system
-                assert 'Use a short title and short new stop labels.' not in system
+            if system.endswith(COMPACT_DRAFT):
                 source = json.loads(messages[-1]['content'])
                 before = source['current_trip']
                 if before is None:
+                    assert system.startswith(PLAN_SYSTEM) and LIO_REPLAN_DELTA_V2 not in system
                     def at(day, clock):
                         return dict(date=dict(state='known', value=day),
                                     time=dict(state='known', value=clock),
@@ -333,7 +331,8 @@ def lio_fixture_model(*, empty_first_day=False):
                                   fixed=dict(state='unknown'), source_category='unknown', source_refs=[])]
                     subjects = {'park':['party'],'museum':['party']}
                 else:
-                    assert 'Omit title.' in system and LIO_REPLAN_DELTA_V2 in system
+                    assert LIO_REPLAN_DELTA_V2 in system and 'TRIP-model-plan.1' not in system
+                    assert 'Copy each original fixed or unselected item once' not in system
                     yield json.dumps(dict(version=LIO_REPLAN_DELTA_V2, items=[], proposed_subjects={}))
                     return
                 yield json.dumps(dict(version='TRIP-model-plan.1', title='Beijing walk', items=items,
