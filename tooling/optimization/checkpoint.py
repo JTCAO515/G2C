@@ -156,6 +156,11 @@ class Journal:
         try:
             return validate(value, op["attempt_id"])
         except ValueError as error:
-            op.update(outcome="FAIL", error="InvalidResponse", validation_error=str(error))
+            # An unbound task/score receipt cannot prove the original action's outcome.
+            # A returned reflection text can instead be definitively rejected as text.
+            outcome = "FAIL" if op["kind"] == "reflection" else "UNKNOWN"
+            op.update(outcome=outcome, error="InvalidResponse", validation_error=str(error))
             self.save()
+            if outcome == "UNKNOWN":
+                raise Halt("unbound or invalid " + op["kind"] + " receipt") from None
             raise KnownFailure("InvalidResponse") from None

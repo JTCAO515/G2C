@@ -61,7 +61,8 @@ uv run --project tooling/optimization --locked python -B -m tooling.optimization
 原子替换并 fsync 目录。系统文件锁保证同一目录单 writer，进程退出自动释放。
 SIGKILL 留下 PENDING 时，恢复将其变成 UNKNOWN，并在任何调用前停止。
 未知结果、无效回执与反思异常不自动重试；保留原 ID，待未来 B 提供只读核原动作接口。
-可序列化回执先持久保存原 JSON 与摘要，再校验格式；无效提议保留原内容、FAIL 与拒绝原因。
+可序列化回执先持久保存原 JSON 与摘要，再校验格式；无效反思提议保留原内容、FAIL 与拒绝原因。
+无效或错绑的任务/评分回执保留 UNKNOWN、原内容与原因，立即停止，不按确定任务失败继续搜索。
 非 JSON 响应或无回执异常保留 UNKNOWN，不凭异常推断未执行。
 确定失败单列 FAIL；任务明确失败以零分及失败轨迹参与 Fake 反馈，不伪装成成功调用。
 缺评分证据 UNKNOWN/UNRUN 会停止选择，不能当作零分或 PASS。

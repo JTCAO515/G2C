@@ -254,6 +254,29 @@ run(Path(sys.argv[1]))
             with self.assertRaises(ValueError):
                 score_result({"version": "fake-score.1", "status": "PASS", "score": score, "feedback": ""})
 
+    def test_invalid_task_or_score_receipt_stays_unknown_and_stops_dispatch(self):
+        bad = {"call": {"version": "fake-observation.1", "task_id": "fake-en",
+                        "attempt_id": "wrong-attempt", "matched_slots": 3},
+               "score": {"version": "wrong-version", "status": "PASS", "score": 1, "feedback": ""}}
+        for method, response in bad.items():
+            with self.subTest(method=method):
+                directory = Path(self.temp.name) / method
+                with patch.object(FakeCalls, method, return_value=response):
+                    state = run(directory, Limits(task_calls=2))
+                self.assertEqual(state["status"], "UNKNOWN")
+                op = state["operations"][-1]
+                self.assertEqual(op["outcome"], "UNKNOWN")
+                self.assertEqual(op["result"], response)
+                self.assertEqual(op["result_sha256"], digest(response))
+                self.assertEqual(op["error"], "InvalidResponse")
+                self.assertTrue(op["validation_error"])
+                self.assertEqual(len(state["operations"]), 1 if method == "call" else 2)
+                self.assertFalse((directory / "candidate.json").exists())
+                with patch.object(FakeCalls, "call", side_effect=AssertionError("resent")):
+                    resumed = run(directory, Limits(task_calls=2), resume=True)
+                self.assertEqual(resumed["status"], "UNKNOWN")
+                self.assertEqual(len(resumed["operations"]), len(state["operations"]))
+
     def test_resume_rejects_changed_manifest_corruption_and_divergence(self):
         self.directory.mkdir()
         fixed = manifest(Limits())
