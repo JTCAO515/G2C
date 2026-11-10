@@ -5,15 +5,15 @@ struct LioCopyTests {
     // Scan Swift string literals on the entire app-owned user surface, including
     // both languages, accessibility labels, invite and consent. Do not inspect
     // traveller text or server answer content. Never pass raw statuses to views.
-    private let banned = #"原|运行|投递|上下文|回执|候选|版本号|核实|对账|读取|查询|确认结果|(?<![A-Za-z])(?:run|needs|unknown|scope|receipt|delivery|context|candidate|query|reconcil(?:e|iation)|backend|payload|idempotenc(?:y|e)|(?:version|request)\s+(?:number|id)|original\s+(?:request|action|operation)|(?:check|read|verify)\s+(?:the\s+)?result)(?![A-Za-z])"#
+    private let banned = #"原|运行|投递|上下文|回执|候选|版本号|核实|对账|读取|查询|确认结果|待\s*#\d+|(?<![A-Za-z])(?:run|needs|unknown|scope|receipt|delivery|context|candidate|query|reconcil(?:e|iation)|backend|payload|idempotenc(?:y|e)|(?:version|request)\s+(?:number|id)|original\s+(?:request|action|operation)|(?:check|read|verify)\s+(?:the\s+)?result|pending\s+#\d+)(?![A-Za-z])"#
 
     @Test func vocabularyCatchesTechnicalCopyInBothLanguages() throws {
         let vocabulary = try NSRegularExpression(pattern: banned, options: [.caseInsensitive])
-        for copy in ["查看原操作", "读取结果", "RUN", "REQUEST ID", "original  action",
+        for copy in ["查看原操作", "读取结果", "待 #225 定案后替换", "Placeholder pending #225.", "RUN", "REQUEST ID", "original  action",
                      "Verify the result", "Reconciliation", "Backend", "Payload"] {
             #expect(vocabulary.firstMatch(in: copy, range: NSRange(copy.startIndex..., in: copy)) != nil, "\(copy)")
         }
-        for copy in ["Go for a runaround", "Open your saved trip", "Ask again", "查看已保存的行程", "这次没答完"] {
+        for copy in ["Go for a runaround", "Open your saved trip", "Ask again", "Meet at gate #4", "查看已保存的行程", "这次没答完"] {
             #expect(vocabulary.firstMatch(in: copy, range: NSRange(copy.startIndex..., in: copy)) == nil, "\(copy)")
         }
     }
