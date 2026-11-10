@@ -9,6 +9,7 @@ struct LioTimelineTurn: Sendable {
     let status: LioTurn.Status
     let sources: [LioSource]
     let itinerary: LioItinerary?
+    let memoryTags: [LioMemoryWire.Tag]
 
     var isActive: Bool {
         switch status {
@@ -22,6 +23,8 @@ struct LioTimelineTurn: Sendable {
         text = message.question
         answer = message.answer
         itinerary = message.trip.map(LioItinerary.init)
+        // A choice is available only when its description is safe to show.
+        memoryTags = message.memoryTags.filter { LioPublicDisplay.permitsText($0.text) }
         sources = message.sources.enumerated().compactMap { index, source in
             guard LioPublicDisplay.permitsText(source.title) else { return nil }
             let url = source.link.flatMap { LioPublicDisplay.permitsSource($0) ? $0 : nil }

@@ -1,14 +1,17 @@
 import Foundation
 
-/// Item-specific encrypted manual/edit originals only. Other memories, history
+/// Item-specific encrypted choice, manual and edit originals. Other memories, history
 /// consent, erasure recovery metadata and shared keys remain intact. The Root
 /// retires its content writers before requesting this operation.
 @MainActor public final class MemoryItemLocalCleanup {
     private let manual: MemoryPendingStore
     private let management: MemoryManagementPendingStore
     private let typed: TypedMemoryPendingStore
-    public init(manual: MemoryPendingStore, management: MemoryManagementPendingStore, typed: TypedMemoryPendingStore) {
+    private let clearAdditionalOriginals: (@MainActor (MemoryBinding, String) throws -> Void)?
+    public init(manual: MemoryPendingStore, management: MemoryManagementPendingStore, typed: TypedMemoryPendingStore,
+                clearAdditionalOriginals: (@MainActor (MemoryBinding, String) throws -> Void)? = nil) {
         self.manual = manual; self.management = management; self.typed = typed
+        self.clearAdditionalOriginals = clearAdditionalOriginals
     }
     private struct Step {
         let validate: () throws -> Void
@@ -57,5 +60,13 @@ import Foundation
         try authorization.validateFinal()
         for step in steps { try step.validate() }
         for step in steps { try step.perform() }
+        if let clearAdditionalOriginals {
+            try authorization.validate()
+            try validateCurrent()
+            try authorization.validateFinal()
+            try clearAdditionalOriginals(authorization.binding, itemID)
+            try authorization.validateFinal()
+            try validateCurrent()
+        }
     }
 }

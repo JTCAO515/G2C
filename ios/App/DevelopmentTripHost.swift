@@ -312,9 +312,17 @@ private var developmentHostEnvironment: [String: String] {
         #endif
         if let typedMode {
             guard let travel = messages.travelSelection else { throw MemoryFailure.unconfigured }
+            #if G2C_DEMO_BETA
+            let clearLioChoices: (@MainActor (MemoryBinding, String) throws -> Void)? = { [actions = messages.lioMemoryActions] binding, itemID in
+                try actions.clearErasedItem(itemID, environment: binding.environment, account: binding.account)
+            }
+            #else
+            let clearLioChoices: (@MainActor (MemoryBinding, String) throws -> Void)? = nil
+            #endif
             typedMemory = try DevelopmentTypedMemoryHost(configuration:configuration,mode:typedMode,shell:shell,
                 session:lifetime.session,operation:lifetime.operation,travel:travel,messages:messages.messages,
-                isCurrent:{lifetime.current != nil}, erasureEndpoint: erasureEndpoint, candidateEndpoint: candidateEndpoint)
+                isCurrent:{lifetime.current != nil}, erasureEndpoint: erasureEndpoint, candidateEndpoint: candidateEndpoint,
+                clearAdditionalOriginals: clearLioChoices)
         } else { typedMemory = nil }
         if tripEditingProfile != nil {
             let needsHost = needs?.host
@@ -654,7 +662,8 @@ private var developmentHostEnvironment: [String: String] {
     private let candidates: DevelopmentMemoryCandidateComponents?
     init(configuration: DevelopmentSessionConfiguration,mode: DevelopmentTypedMode,shell: ShellState,
          session: SessionLifecycle,operation: SessionOperation,travel: TravelSelectionModel,messages: AssistantMessageHost,
-         isCurrent: @escaping @MainActor () -> Bool, erasureEndpoint: URL? = nil, candidateEndpoint: URL? = nil) throws {
+         isCurrent: @escaping @MainActor () -> Bool, erasureEndpoint: URL? = nil, candidateEndpoint: URL? = nil,
+         clearAdditionalOriginals: (@MainActor (MemoryBinding, String) throws -> Void)? = nil) throws {
         let binding = MemoryBinding(environment:configuration.environmentID,account:configuration.accountID,generation:UUID(),selection:UUID())
         let generation = shell.generation
         let namespace = MessageKeyNamespace(environment:binding.environment,account:binding.account,purpose:.localMemoryPendingV1)
@@ -718,7 +727,7 @@ private var developmentHostEnvironment: [String: String] {
         if let erasureEndpoint {
             erasure = try DevelopmentMemoryErasureComponents(configuration: configuration, endpointURL: erasureEndpoint, binding: binding,
                 legacyRoot: legacyRoot, key: key, keys: keys, manual: oldStore, management: oldManagement, typed: store,
-                session: session, operation: operation, current: current)
+                session: session, operation: operation, current: current, clearAdditionalOriginals: clearAdditionalOriginals)
         } else { erasure = nil }
         host = try TypedMemoryContainerHost(shell:shell,client:client,binding:binding,pageSize:20,options:options,travel:travel,legacy:legacy,currentBinding:current, erasureClient: erasure?.client, itemCleanup: erasure?.cleanup)
         if let candidateEndpoint {
@@ -740,7 +749,8 @@ private var developmentHostEnvironment: [String: String] {
         legacyRoot: URL, key: MessageEncryptionKey, keys: ScopedMessageKeyProvider,
         manual: MemoryPendingStore, management: MemoryManagementPendingStore, typed: TypedMemoryPendingStore,
         session: SessionLifecycle, operation: SessionOperation,
-        current: @escaping @MainActor () -> MemoryBinding?) throws {
+        current: @escaping @MainActor () -> MemoryBinding?,
+        clearAdditionalOriginals: (@MainActor (MemoryBinding, String) throws -> Void)? = nil) throws {
         let files = FileManager.default
         let support = try files.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
         let expected = support.appendingPathComponent("G2CDevelopmentMemory", isDirectory: true)
@@ -765,7 +775,8 @@ private var developmentHostEnvironment: [String: String] {
             return configuration.token
         }, currentBinding: current, session: session, sessionOperation: operation, pendingStore: store,
             requestTimeout: 10, resourceTimeout: 20)
-        cleanup = MemoryItemLocalCleanup(manual: manual, management: management, typed: typed)
+        cleanup = MemoryItemLocalCleanup(manual: manual, management: management, typed: typed,
+                                         clearAdditionalOriginals: clearAdditionalOriginals)
     }
     func invalidate() { client.invalidate() }
 }
@@ -851,6 +862,8 @@ private var developmentHostEnvironment: [String: String] {
     let travelSelection: TravelSelectionModel?
     #if G2C_DEMO_BETA
     let lio: LioService
+    let lioTripHistory: LioTripHistoryClient
+    let lioMemoryActions: LioMemoryActionsClient
     #endif
     private let lifetime: DevelopmentMessageLifetime
     private let keyAdapter: ExistingMessageKeyAdapter
@@ -902,11 +915,13 @@ private var developmentHostEnvironment: [String: String] {
         }
         let credentials = DevelopmentMessageCredentials(token: configuration.token, scope: scope, lease: lease, lifetime: lifetime)
         #if G2C_DEMO_BETA
-        let lioEndpoint = try MessageEndpoint(url: configuration.endpoint, maximumRequestBytes: 16_384,
+        let lioEndpoint = try MessageEndpoint(url: configuration.endpoint, maximumRequestBytes: LioMemoryWire.maximumRequestBytes,
                                               maximumResponseBytes: 4_500_000)
         let lioClient = try LioTimelineHTTP(endpoint: lioEndpoint, scope: scope, lease: lease,
                                            credentials: credentials, validate: { try lifetime.validate() })
         lio = .signedTimeline(lioClient)
+        lioTripHistory = LioTripHistoryClient(timeline: lioClient, recovery: recovery, scope: scope, lease: lease)
+        lioMemoryActions = LioMemoryActionsClient(timeline: lioClient, recovery: recovery, scope: scope, lease: lease)
         #endif
         let betaRead = configuration.endpoint.host == "api-beta.go2china.space"
         let runReads = try NoRedirectTransport(requestTimeout: betaRead ? 30 : 15, resourceTimeout: 150)

@@ -41,6 +41,49 @@ struct LioTimelineTransportTests {
         #expect(await exit.calls.isEmpty)
     }
 
+    @Test func tripHistoryAndUndoUseOnlyTheirSignedRoutes() async throws {
+        let endpoint = try endpoint()
+        let exit = LioExit()
+        let transport = try NoRedirectTransport(interceptedTransport: exit, messageEndpoint: endpoint,
+                                                validateMessage: {}, lio: true)
+        let page = try LioTripHistoryWire.decodePage(Data("""
+            {"version":"LIO-trip-history.1","current":{"trip_id":"trip","title":"Trip","days":[]},
+             "history":[{"trip_id":"trip","title":"Earlier trip","days":[]}],
+             "undo_target":"fixture_target","next_before":null}
+            """.utf8))
+        let undo = try LioTripHistoryWire.Undo(target: #require(page.undoTarget))
+
+        _ = try await transport.readLioTrip(before: "2", bearer: "fixture")
+        _ = try await transport.sendLioUndo(undo, bearer: "fixture")
+        _ = try await transport.readLioUndo(undo, bearer: "fixture")
+
+        let calls = await exit.calls
+        #expect(calls.map(\.method) == [.get, .post, .get])
+        #expect(calls.map(\.path) == ["/v1/lio/trip?before=2", "/v1/lio/trip/undo",
+                                    "/v1/lio/trip/undo?action_id=\(undo.actionID)&target=fixture_target"])
+        #expect(calls.map(\.body) == [nil, undo.originalUTF8, nil])
+    }
+
+    @Test func memoryDecisionAndReadbackKeepTheSameBodyAndNeverUseTheURLForTheTarget() async throws {
+        let exit = LioExit()
+        let memoryEndpoint = try MessageEndpoint(url: #require(URL(string: "https://synthetic.invalid")),
+            maximumRequestBytes: LioMemoryWire.maximumRequestBytes, maximumResponseBytes: 4_500_000)
+        let transport = try NoRedirectTransport(interceptedTransport: exit, messageEndpoint: memoryEndpoint,
+                                                validateMessage: {}, lio: true)
+        let tag = try JSONDecoder().decode(LioMemoryWire.Tag.self, from: Data("""
+            {"id":"fixture","kind":"preference","text":"Likes museums","target":"fixture_target"}
+            """.utf8))
+        let action = try LioMemoryWire.Action(choice: .remember, tag: tag)
+
+        _ = try await transport.sendLioMemoryChoice(action, bearer: "fixture")
+        _ = try await transport.readLioMemoryChoice(action, bearer: "fixture")
+
+        let calls = await exit.calls
+        #expect(calls.map(\.method) == [.post, .post])
+        #expect(calls.map(\.path) == ["/v1/lio/memory/actions", "/v1/lio/memory/receipt"])
+        #expect(calls.map(\.body) == [action.originalUTF8, action.originalUTF8])
+    }
+
     private func endpoint() throws -> MessageEndpoint {
         try MessageEndpoint(url: #require(URL(string: "https://synthetic.invalid")),
                             maximumRequestBytes: 16_384, maximumResponseBytes: 4_500_000)

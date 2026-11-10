@@ -96,6 +96,7 @@ public enum LioTimelineWire {
         public let activity: Activity?
         public let sources: [Source]
         public let trip: SavedTrip?
+        public let memoryTags: [LioMemoryWire.Tag]
     }
 
     public struct Page: Sendable, Equatable {
@@ -146,16 +147,24 @@ public enum LioTimelineWire {
             return Source(title: title, link: link, observedAt: item.observedAt)
         }
         if let trip = wire.trip {
-            let items = trip.days.flatMap(\.items)
-            guard state == .completed, validMessageID(trip.id),
-                  !trip.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-                  items.allSatisfy({ validMessageID($0.id) }),
-                  Set(items.map(\.id)).count == items.count else {
+            guard state == .completed, validSavedTrip(trip) else {
                 throw MessageHTTPFailure.invalidResponse
             }
         }
+        let tags = state == .completed ? wire.memory?.tags ?? [] : []
+        guard tags.allSatisfy(\.isValid), Set(tags.map(\.id)).count == tags.count else {
+            throw MessageHTTPFailure.invalidResponse
+        }
         return Message(id: wire.messageID, question: wire.text, answer: wire.answer, state: state,
-                       activity: wire.activity, sources: sources, trip: wire.trip)
+                       activity: wire.activity, sources: sources, trip: wire.trip, memoryTags: tags)
+    }
+
+    static func validSavedTrip(_ trip: SavedTrip) -> Bool {
+        let items = trip.days.flatMap(\.items)
+        return validMessageID(trip.id)
+            && !trip.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && items.allSatisfy { validMessageID($0.id) }
+            && Set(items.map(\.id)).count == items.count
     }
 
     static func validMessageID(_ id: String) -> Bool {
@@ -195,7 +204,9 @@ public enum LioTimelineWire {
             let activity: Activity?
             let sources: [Citation]
             let trip: SavedTrip?
-            enum CodingKeys: String, CodingKey { case messageID = "message_id", text, answer, status, failure, activity, sources, trip }
+            let memory: Memory?
+            struct Memory: Decodable { let tags: [LioMemoryWire.Tag] }
+            enum CodingKeys: String, CodingKey { case messageID = "message_id", text, answer, status, failure, activity, sources, trip, memory }
         }
         let version: String
         let conversationID: String?

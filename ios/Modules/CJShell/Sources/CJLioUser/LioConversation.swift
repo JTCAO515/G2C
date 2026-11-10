@@ -1,3 +1,4 @@
+import CJMessageHTTP
 import Foundation
 import Observation
 
@@ -77,6 +78,7 @@ struct LioTurn: Identifiable {
     var answer = ""
     var sources: [LioSource] = []
     var itinerary: LioItinerary?
+    var memoryTags: [LioMemoryWire.Tag] = []
     var fromTimeline = false
     var id: Data { question.id }
 
@@ -251,6 +253,6 @@ final class LioConversation {
     private func makeTurn(_ row: LioTimelineTurn, question: LioQuestion? = nil) -> LioTurn {
         let question = question ?? LioQuestion(messageID: row.messageID, text: row.text, language: .english)
         return LioTurn(question: question, status: row.status, answer: row.answer,
-                       sources: row.sources, itinerary: row.itinerary, fromTimeline: true)
+                       sources: row.sources, itinerary: row.itinerary, memoryTags: row.memoryTags, fromTimeline: true)
     }
 }

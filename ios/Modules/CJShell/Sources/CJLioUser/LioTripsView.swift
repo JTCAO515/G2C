@@ -1,13 +1,15 @@
 #if os(iOS)
 import MapKit
 import SwiftUI
+import CJMessageHTTP
 import CJRunClient
 import CJTripClient
 
-struct LioItineraryCard: View {
+struct LioItineraryCard<Actions: View>: View {
     let itinerary: LioItinerary
     let language: LioLanguage
     let showTrips: () -> Void
+    @ViewBuilder let actions: () -> Actions
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -30,6 +32,7 @@ struct LioItineraryCard: View {
             }
             .buttonStyle(.bordered)
             .accessibilityIdentifier("lio.trip.show")
+            actions()
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -51,6 +54,9 @@ struct LioTripsView: View {
     let itineraries: [LioItinerary]
     let language: LioLanguage
     let library: LioTripLibrary?
+    let tripPlan: LioTripPlan?
+    let currentPlan: LioItinerary?
+    let canUndo: Bool
     let recordedMap: (@MainActor (StructuredTripDocument) -> AnyView)?
     @Binding var path: [LioTripRoute]
     let openChat: () -> Void
@@ -58,6 +64,11 @@ struct LioTripsView: View {
     @State private var saved: [StructuredTripSummary]?
     @State private var listUnavailable = false
     @State private var listAttempt = 0
+
+    private var shownItineraries: [LioItinerary] {
+        guard let currentPlan else { return itineraries }
+        return [currentPlan] + itineraries.filter { $0.id != currentPlan.id }
+    }
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -81,11 +92,11 @@ struct LioTripsView: View {
                     } else {
                         ProgressView()
                     }
-                } else if itineraries.isEmpty {
+                } else if shownItineraries.isEmpty {
                     emptyTrips
                 } else {
                     List {
-                        ForEach(itineraries) { itinerary in
+                        ForEach(shownItineraries) { itinerary in
                             Section(itinerary.title) {
                                 LioTripDays(itinerary: itinerary, language: language) { mapDay = $0 }
                             }
@@ -100,6 +111,16 @@ struct LioTripsView: View {
                     LioTripDetail(tripID: String(decoding: route.tripID, as: UTF8.self), library: library,
                                   language: language, recordedMap: recordedMap)
                         .id(route)
+                }
+            }
+            .toolbar {
+                if let tripPlan {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        NavigationLink(language.text("Previous plans", "此前的安排")) {
+                            LioTripHistoryView(plan: tripPlan, language: language, canUndo: canUndo)
+                        }
+                        .accessibilityIdentifier("lio.trip.history")
+                    }
                 }
             }
             .sheet(item: $mapDay) { day in
@@ -183,7 +204,7 @@ private struct LioTripDetail: View {
     }
 }
 
-private struct LioTripDays: View {
+struct LioTripDays: View {
     let itinerary: LioItinerary
     let language: LioLanguage
     let showMap: (LioItinerary.Day) -> Void

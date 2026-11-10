@@ -509,6 +509,27 @@ public struct Submission: Sendable {
         return snapshot.submissionRejections[Self.key(messageID)]
     }
 
+    /// Remove exact local action records after a trusted item-erasure caller
+    /// has verified the stop and retired any writers for those records.
+    public func eraseActionOriginals(messageIDs: [String], lease: Lease) throws {
+        try check(lease)
+        var next = mutationSnapshot
+        let keys = messageIDs.map(Self.key)
+        for key in keys {
+            next.actions.removeValue(forKey: key)
+            next.submissionRejections.removeValue(forKey: key)
+        }
+        if next.submissionRejections.isEmpty { next.version = next.conversationOpens.isEmpty ? 1 : 2 }
+        if next != mutationSnapshot { try persist(next) }
+        guard keys.allSatisfy({ snapshot.actions[$0] == nil && snapshot.submissionRejections[$0] == nil }) else {
+            throw RecoveryError.persistenceUnknown
+        }
+        for key in keys {
+            fresh.removeValue(forKey: key)
+            operations.removeValue(forKey: key)
+        }
+    }
+
     public func observeResyncRequired(_ operation: Operation) throws {
         guard operation.isQuery else { throw RecoveryError.invalidInput }
         try complete(operation, phase: .resyncRequired, receipt: nil)
