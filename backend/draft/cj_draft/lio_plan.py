@@ -1,4 +1,5 @@
 """Source-bound planning save for an explicitly admitted Lio publication."""
+from datetime import time
 import json
 
 from cj_agent.draft import DraftRejected, PROPOSAL_TTL_SECONDS, proposal_id_for
@@ -10,6 +11,7 @@ from cj_trip.confirmation import ConfirmationSigner
 from cj_trip.domain import CommitUnknown, Conflict, Denied, Proposal, ProposalDetail, packed
 from cj_trip.lio_history import EDIT_BASIS, PLAN_BASIS, TripHead, edit_action_id, plan_action_id
 from cj_trip.postgres import Repository
+from cj_trip.structured import SourceRejected
 
 from .needs_context import ContextPublisher, ContextSource
 
@@ -49,8 +51,14 @@ class LioPlanPublisher(ContextPublisher):
         if context is not None:
             declared.update(item['id'] for item in json.loads(context.trip.content)['items'])
         document = json.loads(content)
-        for item in document['items']:
+        for index, item in enumerate(document['items']):
             if item['id'] not in declared:
+                start, end = item['schedule']['start'], item['schedule']['end']
+                if (start['date']['state'] != 'known' or start['date'] != end['date']
+                        or start['timezone']['state'] != 'known' or start['timezone'] != end['timezone']
+                        or start['time']['state'] != 'known' or end['time']['state'] != 'known'
+                        or time.fromisoformat(start['time']['value']) >= time.fromisoformat(end['time']['value'])):
+                    raise SourceRejected(f'items[{index}].schedule', 'new Lio stop requires a same-day planned interval')
                 # Only a new system suggestion has an application-owned edit
                 # policy. Its canonical NEEDS/booking evidence stays unknown.
                 item['fixed'] = {'state': 'known', 'value': False}
