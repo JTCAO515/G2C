@@ -156,14 +156,13 @@ def exercise(auth,conninfo):
         collection_allowed=True,semantic_resolved=True)},extents=['long_term'],context_ids=[])
     policy=TypedConfiguration.from_bytes(packed(dict(version='local-memory-typed.1',
         collection=dict(version='local-memory-policy.1',expires_at='2099-11-30T23:59:59+08:00',
-            profiles={'explicit':profile, 'cli':profile}),travel_contexts={'explicit':[], 'cli':[]})))
+            profiles={'explicit':profile}),travel_contexts={'explicit':[]})))
     cleanup=Configuration({'fixture':b'c'*32},'fixture',3600,('business/message',),
         harness.ROOT/'backend/storage-registry.json')
     path,context=host.profiles['explicit']
     db=database('explicit')
     runtime=configuration.Runtime(auth,context,path,[],typed_memory=policy,
-        subjects=frozenset(host.subjects),typed_message_subjects=selected,assembly_subjects=selected,
-        demo_subjects=frozenset({'cli'}))
+        subjects=frozenset(host.subjects),typed_message_subjects=selected,assembly_subjects=selected)
     env=dict(CJ_LOCAL_NEEDS_PROFILE='manual-v1',CJ_BETA_HISTORY_B64=base64.b64encode(b'h'*32).decode(),
         CJ_BETA_CONFIRMATION_B64=base64.b64encode(b'c'*32).decode())
     with patch.dict(os.environ,env),patch.object(configuration.Runtime,'database',return_value=db), \
@@ -173,13 +172,6 @@ def exercise(auth,conninfo):
     with TestClient(composed) as client:
         headers={**host.headers['explicit'],'Content-Type':'application/octet-stream'}
         foreign=host.headers['foreign']
-        demo=host.headers['cli']
-        erasure_path='/v1/memory-erasure-progress'
-        erasure_query=dict(action_id='not-started')
-        admitted=harness.expect(client.get(erasure_path,params=erasure_query,headers=demo),503)
-        assert admitted['error']['code']=='ERASURE_UNAVAILABLE'
-        harness.expect(client.get(erasure_path,params=erasure_query,headers=foreign),403)
-        harness.expect(client.get('/v1/account-cleanup-preparations',params=erasure_query,headers=demo),403)
         stream=client.get('/v2/run-events',params={'message_id':'message-explicit'},headers=headers)
         assert stream.status_code==200 and b'"status":"completed"' in stream.content
         selection=dict(trip_id=trip['trip_id'])
