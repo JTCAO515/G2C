@@ -39,7 +39,8 @@ private struct ChatHistoryClients {
         let lease = try recovery.activate(scope)
         let endpoint = try MessageEndpoint(url: URL(string: "https://synthetic.invalid")!,
                                            maximumRequestBytes: 16_384, maximumResponseBytes: 65_536)
-        let transport = try NoRedirectTransport(interceptedTransport: ChatHistoryTransport(), messageEndpoint: endpoint,
+        let locale: LioTimelineWire.Locale = shell.language == .chinese ? .chinese : .english
+        let transport = try NoRedirectTransport(interceptedTransport: ChatHistoryTransport(locale: locale), messageEndpoint: endpoint,
                                                 validateMessage: {}, lio: true)
         let client = LioTimelineHTTP(scope: scope, lease: lease, credentials: JourneyCredentials(),
                                      transport: transport, firstChatRecovery: recovery)
@@ -54,8 +55,11 @@ private struct ChatHistoryClients {
 private actor ChatHistoryTransport: ClientTransport {
     private let originalID = "lio-dialogue-0123456789abcdef0123456789abcdef"
     private let newID = "lio-dialogue-abcdef0123456789abcdef0123456789"
+    private let locale: LioTimelineWire.Locale
     private var first: (id: String, text: String, digest: String)?
     private var receiptRead = false
+
+    init(locale: LioTimelineWire.Locale) { self.locale = locale }
 
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
         guard request.headerFields[.authorization] == "Bearer SYNTHETIC",
@@ -76,6 +80,7 @@ private actor ChatHistoryTransport: ClientTransport {
             let bytes = try await Data(collecting: body, upTo: 16_384)
             guard let fields = try JSONSerialization.jsonObject(with: bytes) as? [String: Any],
                   fields["version"] as? String == "LIO-message.2", fields["new_conversation"] as? Bool == true,
+                  fields["locale"] as? String == locale.rawValue,
                   fields["conversation_id"] == nil, let id = fields["message_id"] as? String,
                   let question = fields["text"] as? String else { throw MessageHTTPFailure.invalidConfiguration }
             first = (id, question, SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined())
