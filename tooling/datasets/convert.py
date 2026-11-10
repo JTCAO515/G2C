@@ -140,7 +140,7 @@ def validate(row):
             require(source is None or source['evidence_kind'] == 'synthetic', 'result_source_not_synthetic')
             require(source is None or source['request_ref'] == operation_id, 'result_receipt_association')
             expected = dict(results=[dict(index=call_index, name=name, tool='place', result=value)])
-            require(call_id not in results or results[call_id] == expected, 'actual_result_mismatch')
+            require(call_id not in results or canonical(results[call_id]) == canonical(expected), 'actual_result_mismatch')
         else:
             require(call_id not in results, 'fabricated_result_for_unreceived_call')
         executions[call_id] = execution
@@ -153,11 +153,21 @@ def validate(row):
             batch_ids = {call['id'] for call in message['tool_calls']}
             visible = batch_ids & set(results)
             require(not visible or visible == batch_ids, 'partial_visible_tool_batch')
+            stopped = False
+            for call in message['tool_calls']:
+                status = executions[call['id']]['status']
+                require(not stopped or status == 'not_started', 'execution_after_batch_stop')
+                if status != 'received':
+                    stopped = True
     require(not pending or row['run']['status'] in ('failed', 'unknown', 'cancelled', 'context_invalid'),
             'completed_with_unresolved_calls')
     require(not pending or messages[-1]['role'] in ('assistant', 'tool'), 'invalid_terminal_messages')
     require(row['run']['status'] != 'completed' or messages[-1]['role'] == 'assistant' and
             'tool_calls' not in messages[-1], 'completed_answer_missing')
+    has_text = messages[-1]['role'] == 'assistant' and 'tool_calls' not in messages[-1]
+    answer_state = row['run']['answer_state']
+    require((answer_state != 'none') == has_text, 'answer_visibility_state')
+    require((answer_state == 'complete') == (row['run']['status'] == 'completed'), 'answer_terminal_state')
     require(not any(e['status'] == 'failed' for e in executions.values()) or row['run']['status'] == 'failed',
             'failed_execution_run_mismatch')
     require(not any(e['status'] == 'unknown' for e in executions.values()) or row['run']['status'] == 'unknown',
@@ -220,6 +230,9 @@ def convert(raw, seed=VERSION):
         try:
             require(0 < len(line) <= 1048576, 'input_line_size')
             row = load(line)
+            # A JSON escape may represent a lone surrogate. Reject before saving source
+            # metadata or leaving the per-line error boundary for grouping/hashing.
+            canonical(row).encode('utf8')
             source.update({k: row[k] for k in ('sample_id', 'source') if type(row) is dict and k in row})
             valid.append((validate(row), source))
         except (ValueError, TypeError, UnicodeError, RecursionError, ProviderUnknown, FactFailure) as error:

@@ -35,7 +35,7 @@ F [#768](https://github.com/JTCAO515/G2C/issues/768)，父专题
 - `source` 保存合成来源 ID 与修订；`versions` 固定 B 轨迹版本与工具摘要。
   合成数据没有模型/提示词/适配器版本时显式 null（未知），不伪造真实版本。
 - `messages` 是 B 模型实际可见消息；不把 `executions`、回执、PASS 字段放进模型回答。
-  `run` 记录最后执行状态及其证据引用，`executions` 记录实际工具动作和原件。
+  `run` 记录最后执行状态、answer_state（none/partial/complete）及其证据引用，`executions` 记录实际工具动作和原件。
 - received 只表示收到结果，不等于查询成功：`no_results`、`rate_limited` 等仍由
   原结果 outcome 表达。`result.state=unknown,value=null` 表示没有确定原结果；
   failed 必须保留错误码，不能用空结果代替。原 PLACE 的 unknown、missing、
@@ -43,7 +43,7 @@ F [#768](https://github.com/JTCAO515/G2C/issues/768)，父专题
 - 每个工具动作关联原 supplier call、任务 attempt、RUN、B 原 op
   `op-sha256(run_id + NUL + tool.round.index)`，证据字段必须一致。
   批次前项 received、后项 unknown 时，前项实际结果可存在执行证据里，但 B 消息里
-  还没有任何该批工具结果。取消/未知任务不能补一个模型完成回答或重放动作。
+  还没有任何该批工具结果。非 completed RUN 不得标注 complete 答案；原流已发布的部分正文可显式标 partial，不能补成完成回答或重放动作。
 - 用户说“取消”后助手正常确认的 RUN 为 completed；真正 RUN cancelled 控制保留
   原工具提议和 not_started 证据，不添加取消之后的完成回答。
 
@@ -109,3 +109,5 @@ D #761 固定判据。再由 Claude 拆教师生成及独立质检 Goal，明确
 D 独立抽检和 R 复核；失败/未知隔离，发布固定数据版本后才交 G。
 教师自己的评分、成功声明或生成完成都不是正确性证据。v1 明确拒绝 teacher 来源，
 以后接入必须新增已审校验/准入，不能仅改来源标签使其通过。真实用户数据仍无默认授权。
+
+默认 `scripts/test.py` 尚未登记此目录（共享文件不在 F 本轮写权内）；本轮由 F 与 D/R 显式运行上述套件，后续由入口 owner 接入 CI，不把默认 CI 绿冒充已执行该套件。

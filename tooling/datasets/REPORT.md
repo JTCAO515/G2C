@@ -7,14 +7,14 @@
 
 | 验收框 | 本地状态 | 证据 / 限制 |
 |---|---|---|
-| L0 单一 schema、消息/调用/实际结果/动作/来源/版本 | PASS | schema.v1.json + 原 B/C codec；20 条原消息与结果字符串往返不变 |
-| L1 完整任务分组、旅行/中英不跨组、重复转换 | PASS | 10 旅行家族、20 样本；train 16 / validation 2 / test 2；传递关联、跨旅行重复、冲突 ID、重排和双次输出摘要检查 |
-| L1 五类行为及坏格式/错回执拒绝 | PASS | 直接答/澄清/改口/取消/工具失败；补空结果、结果未知、部分批次已收到但模型不可见；14 负例全部拒绝、来源与原因保留 |
+| L0 单一 schema、消息/调用/实际结果/动作/来源/版本 | PASS | schema.v1.json + 原 B/C codec；22 条原消息与结果字符串往返不变 |
+| L1 完整任务分组、旅行/中英不跨组、重复转换 | PASS | 11 旅行家族、22 样本；train 18 / validation 2 / test 2；传递关联、跨旅行重复、冲突 ID、重排和双次输出摘要检查 |
+| L1 五类行为及坏格式/错回执拒绝 | PASS | 直接答/澄清/改口/取消/工具失败；补空结果、结果未知、部分批次已收到但模型不可见；17 负例全部拒绝、来源与原因保留 |
 | L0 版本化 manifest 与独立检查 | PASS / UNRUN | manifest 本地重复生成 PASS；独立 C/D/R 的最终结果记录在固定 head PR 评论，本文不自授独立通过 |
 
 命令：`uv run --locked python -B -m unittest tooling.datasets.test_convert -v`，
-12/12 PASS。`python3 -B scripts/handoff.py check` PASS，`git diff --check` PASS。
-正常转换退出 0，负例转换按设计退出 2、0 接受 / 14 拒绝。JSON 逐项结果见
+16/16 PASS。`python3 -B scripts/handoff.py check` PASS，`git diff --check` PASS。
+正常转换退出 0，负例转换按设计退出 2、0 接受 / 17 拒绝。JSON 逐项结果见
 重建输出的 `quality.json`、`rejected.json` 与 `lineage.json`。
 
 负例包括未知字段、坏 JSON/重复 key、错 call/attempt/RUN/op、失败伪报完成、
@@ -34,3 +34,5 @@
 weather/FACT/Lio 成功结果导出 UNKNOWN；正式训练集语义质量 UNKNOWN；真实用户
 日志、真实模型/工具调用、GPU、教师批量生成、tokenization/loss mask、训练、
 模型质量、真实服务/真机与最终验收 UNRUN。资源费用为 0。
+
+独立审查发现并修复：批次终止后仍执行后项、Python bool/int 相等导致可见结果类型失真、孤立代理字符中断拒绝报告、非 completed RUN 与完成答案混淆。定向回归覆盖原复现；历史旧 head 未批准。默认 CI 未登记该目录为 P2 后续项，当前由独立质检显式实跑，未越权改共享入口。

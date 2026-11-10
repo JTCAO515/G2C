@@ -20,13 +20,13 @@ class DatasetTests(unittest.TestCase):
         self.assertEqual(negative, batch(negative_examples(examples())) +
                          b'{"version":"G2C-dataset.1","version":"duplicate"}\n{broken json\n')
         output, lineage, rejected, groups, report = convert(positive)
-        self.assertEqual((report['accepted'], report['rejected']), (20, 0))
+        self.assertEqual((report['accepted'], report['rejected']), (22, 0))
         self.assertTrue(all(output[s] for s in output))
-        self.assertEqual(len(groups), 10)
-        self.assertEqual(len(lineage), 20)
+        self.assertEqual(len(groups), 11)
+        self.assertEqual(len(lineage), 22)
         self.assertEqual(rejected, [])
         result = convert(negative)
-        self.assertEqual((result[-1]['accepted'], result[-1]['rejected']), (0, 14))
+        self.assertEqual((result[-1]['accepted'], result[-1]['rejected']), (0, 17))
         self.assertEqual(result[-1]['status'], 'FAIL')
 
     def test_transitive_family_task_and_rewrite_links_precede_split(self):
@@ -124,6 +124,70 @@ class DatasetTests(unittest.TestCase):
         row = next(r for r in examples() if r['scenario'] == 'tool_failure')
         row['messages'][1]['tool_calls'][0]['id'] = 'contains spaces'
         self.assertEqual(convert(batch([row]))[2][0]['reason'], 'schema_invalid')
+
+    def test_json_boolean_and_integer_are_not_interchangeable_in_results(self):
+        for field in ('index', 'provider_count'):
+            row = next(r for r in examples() if r['task_id'] == 'f768-empty')
+            value = load(row['messages'][2]['content'])
+            if field == 'index':
+                value['results'][0]['index'] = False
+            else:
+                value['results'][0]['result']['provider_count'] = False
+            row['messages'][2]['content'] = canonical(value)
+            self.assertEqual(convert(batch([row]))[2][0]['reason'], 'actual_result_mismatch')
+
+    def test_lone_surrogate_is_rejected_without_aborting_or_echoing_source(self):
+        for location in ('content', 'source_id'):
+            row = examples()[0]
+            if location == 'content':
+                row['messages'][0]['content'] = '\ud800'
+            else:
+                row['source']['source_id'] = '\ud800'
+            raw = (json.dumps(row, ensure_ascii=True) + '\n').encode() + batch([examples()[1]])
+            result = convert(raw)
+            self.assertEqual((result[-1]['accepted'], result[-1]['rejected']), (1, 1))
+            canonical(result[2]).encode('utf8')
+            with tempfile.TemporaryDirectory() as directory:
+                source = Path(directory) / 'bad-and-good.jsonl'
+                source.write_bytes(raw)
+                report = write_release(source, Path(directory) / 'release', VERSION)
+                self.assertEqual((report['accepted'], report['rejected']), (1, 1))
+                rejected = load((Path(directory) / 'release/rejected.json').read_bytes())
+                self.assertEqual(rejected[0]['line'], 1)
+                self.assertNotIn('source', rejected[0])
+
+    def test_non_completed_run_never_claims_complete_answer(self):
+        for status in ('unknown', 'failed', 'cancelled', 'context_invalid'):
+            row = examples()[0]
+            row['run']['status'] = status
+            self.assertEqual(convert(batch([row]))[2][0]['reason'], 'answer_terminal_state')
+            row['run']['answer_state'] = 'partial'
+            self.assertEqual(convert(batch([row]))[-1]['accepted'], 1)
+
+    def test_interrupted_batch_forbids_later_execution_in_call_order(self):
+        row = partial_failure('en')
+        first, second = row['executions']
+        # The original batch is received then unknown. Reverse the proposal order,
+        # keeping the sidecar order unchanged and matching each recalculated op.
+        row['messages'][1]['tool_calls'].reverse()
+        for execution, index in ((first, 1), (second, 0)):
+            operation_id = 'op-' + sha((row['run']['run_id'] + '\0tool.0.' + str(index)).encode())
+            execution['operation_id'] = operation_id
+            execution['evidence']['operation_id'] = operation_id
+            if execution['status'] == 'received':
+                value = load(execution['result']['value'])
+                value['source']['request_ref'] = operation_id
+                execution['result']['value'] = canonical(value)
+        result = convert(batch([row]))
+        self.assertEqual(result[2][0]['reason'], 'execution_after_batch_stop')
+        second.update(status='not_started')
+        second['evidence']['status'] = 'not_started'
+        first.update(status='unknown', result=dict(state='unknown', value=None))
+        first['evidence']['status'] = 'unknown'
+        # The first proposal is not_started, so the second may not have executed either.
+        self.assertEqual(convert(batch([row]))[2][0]['reason'], 'execution_after_batch_stop')
+        first['status'] = first['evidence']['status'] = 'not_started'
+        self.assertEqual(convert(batch([row]))[-1]['accepted'], 1)
 
     def test_manifest_digests_reproducibility_and_no_overwrite(self):
         with tempfile.TemporaryDirectory() as directory:

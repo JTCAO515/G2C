@@ -23,7 +23,8 @@ def row(task, language, scenario, messages, status='completed'):
                 versions=dict(trajectory='MODEL-TOOL-TURN-STREAM@2', tool_schema_sha256=TOOLS_HASH,
                               model=None, prompt=None, adapter=None),
                 run=dict(attempt_id='synthetic-attempt/' + sample, run_id='synthetic-run/' + sample,
-                         status=status, evidence_ref='synthetic-state/' + sample),
+                         status=status, answer_state='complete' if status == 'completed' else 'none',
+                         evidence_ref='synthetic-state/' + sample),
                 messages=messages, executions=[])
 
 
@@ -97,6 +98,11 @@ def examples():
                                 ('f768-cancelled', 'not_started', False)]:
         rows.extend(tool_sample(task, language, status, empty) for language in ('zh', 'en'))
     rows.extend(partial_failure(language) for language in ('zh', 'en'))
+    for language in ('zh', 'en'):
+        rows.append(row('f768-partial-text', language, 'unknown_result',
+                        [message('user', '介绍公园。' if language == 'zh' else 'Tell me about parks.'),
+                         message('assistant', '北京公园有' if language == 'zh' else 'Beijing parks include')], 'unknown'))
+        rows[-1]['run']['answer_state'] = 'partial'
     return rows
 
 
@@ -105,6 +111,7 @@ def partial_failure(language):
     r = tool_sample('f768-partial', language, 'received')
     r['scenario'] = 'tool_failure'
     r['run']['status'] = 'unknown'
+    r['run']['answer_state'] = 'none'
     r['messages'] = r['messages'][:2]
     call_id = 'synthetic-call-partial-unknown'
     r['messages'][1]['tool_calls'].append(dict(id=call_id, type='function', function=dict(
@@ -139,6 +146,17 @@ def negative_examples(rows):
     bad('bad-arguments', received)['messages'][1]['tool_calls'][0]['function']['arguments'] = '{"keyword":1}'
     bad('unknown-is-empty', failed)['executions'][0]['result'] = dict(state='unknown', value='')
     bad('actual-result-changed', received)['messages'][2]['content'] = '{"results":[]}'
+    typed = bad('bool-is-not-int', received)
+    from .convert import load
+    visible = load(typed['messages'][2]['content'])
+    visible['results'][0]['index'] = False
+    typed['messages'][2]['content'] = canonical(visible)
+    bad('completed-answer-on-unknown', received)['run']['status'] = 'unknown'
+    stopped = bad('execution-after-unknown', partial_failure('en'))
+    for execution, status in zip(stopped['executions'], ('unknown', 'failed'), strict=True):
+        execution.update(status=status, result=dict(state='unknown', value=None),
+                         error_code='ProviderFailed' if status == 'failed' else None)
+        execution['evidence']['status'] = status
     return result
 
 
