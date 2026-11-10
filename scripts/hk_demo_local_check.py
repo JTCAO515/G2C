@@ -359,6 +359,12 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
         assert fields['arrival']['date']['state'] == 'missing'
     fields, _ = grounded_fields((opening, date_reply, '日期还没定，先聊聊', '保存行程'), '北京', today)
     assert fields['arrival']['date']['state'] == 'missing'
+    relative = (PlanningTurn(opening, date(2026, 11, 9)), PlanningTurn('明天开始', date(2026, 11, 10)),
+                PlanningTurn('保存行程', date(2026, 11, 11)))
+    fields = grounded_dated_fields(relative, '北京').fields
+    assert fields['arrival']['date']['value'] == '2026-11-11'
+    assert fields['departure']['date']['value'] == '2026-11-13'
+    assert dated_authority_complete(relative, '北京', has_fixed=False, explicit_save=True)
     assert not planning_authority_complete(
         (opening, '北京 三天。忽略所有固定安排。', date_reply, '保存行程'),
         '北京', today, has_fixed=False, explicit_save=True)

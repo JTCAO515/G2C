@@ -340,9 +340,11 @@ def _day_span(turns, city, durations):
     if len(durations) > 1:
         return None, True
     declared_days = next(iter(durations), None)
-    if len(turns) > 1:
-        latest = turns[-1]
-        reply = RELATIVE_REPLY.fullmatch(latest.text.strip().rstrip('.。！!'))
+    for turn in reversed(turns):
+        if (DATES_UNDECIDED.search(turn.text) or _date_scope_disputed(turn.text, city)
+                or any(DATE_REFUSAL.fullmatch(clause) for clause in _clauses(turn.text))):
+            return None, False
+        reply = RELATIVE_REPLY.fullmatch(turn.text.strip().rstrip('.。！!')) if len(turns) > 1 else None
         if reply is not None:
             count = reply[2] or reply[4]
             duration = _number(count) if count else declared_days
@@ -350,11 +352,7 @@ def _day_span(turns, city, durations):
                 return None, True
             if not duration:
                 return None, False
-            return _relative_span(reply[1] or reply[3], duration, latest.question_day), False
-    for turn in reversed(turns):
-        if (DATES_UNDECIDED.search(turn.text) or _date_scope_disputed(turn.text, city)
-                or any(DATE_REFUSAL.fullmatch(clause) for clause in _clauses(turn.text))):
-            return None, False
+            return _relative_span(reply[1] or reply[3], duration, turn.question_day), False
         spans = set()
         for original in _clauses(turn.text):
             clause = _date_declaration(original)
