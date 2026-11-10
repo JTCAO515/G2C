@@ -20,12 +20,15 @@ _KEEP_OTHER_STOPS = re.compile(
     r'(?:,\s*(?:and\s+)?|\s+and\s+)keep\s+(?:the\s+)?'
     r'(?:other (?:plans|stops|arrangements)|rest)(?:\s+(?:unchanged|the same))?$', re.I)
 _STOP_LABEL = re.compile(r"[^\W_]+(?:[ '’&·()（）-]+[^\W_]+)*[)）]?")
+_ALTERNATIVES = re.compile(
+    r'\b(?:and|or|plus)\b|或|还是|以及|和(?:另外|另一个)|'
+    r'(?:园|宫|坛|馆|院|寺|庙|门|山|桥|湖|海|街|楼|站|城|井|景区|广场)(?:和|与|及|跟|加)', re.I)
 _QUALIFIED_REPLACEMENT = re.compile(
     r'然后|并且|如果|除非|只有|不过|但是|但(?=先|请|还|暂|别|不|只)|先别|暂不|'
-    r'缓一缓|等等|稍后|之后再|再决定|等(?:我|确认)|或者|或是|还是|'
-    r'\b(?:unless|provided|otherwise|but|then|until|wait|or|later|yet|perhaps|instead)\b|'
+    r'缓一缓|等等|稍后|之后再|再决定|等(?:我|确认)|先(?:问|确认|征求|看|考虑|试)|'
+    r'\b(?:unless|provided|otherwise|but|then|until|wait|later|yet|perhaps|instead)\b|'
     r'\bonly\s+(?:after|when|once)\b|'
-    r'\band\s+(?:change|replace|swap|remove|add|move|cancel|do|wait|keep)\b', re.I)
+    r'\b(?:after|before|when|once)\s+(?:I|we|you|they|it|approval|approved|confirmation|confirmed)\b', re.I)
 _CHINESE_SLOT = re.compile(r'第([一二三四五六七八九十]|[1-9][0-9]?)天\s*(上午|下午|晚上)')
 _ENGLISH_SLOT = re.compile(r'(?:the\s+)?(?:day\s+([1-9][0-9]?)|(?:the\s+)?(first|second|third)\s+day)'
                            r'(?:\s+in\s+the)?\s+(morning|afternoon|evening)', re.I)
@@ -52,6 +55,15 @@ class LioEditSelection:
 def match_edit(text):
     utterance = text.strip()
     return _CHINESE_EDIT.fullmatch(utterance) or _ENGLISH_EDIT.fullmatch(utterance)
+
+
+def _replacement_label(raw):
+    label = raw.strip().rstrip('。.!！?？').rstrip()
+    label = _KEEP_OTHER_STOPS.sub('', label).rstrip()
+    if (len(label) > 80 or _STOP_LABEL.fullmatch(label) is None or NEGATED.search(label)
+            or _QUALIFIED_REPLACEMENT.search(label) or _ALTERNATIVES.search(label)):
+        return None
+    return label
 
 
 def _ordinal(value):
@@ -134,10 +146,8 @@ def select_lio_edit(trip, text, locale, request_id, *, starts_on):
     if match is None:
         return None
     target = match['target'].strip()
-    replacement = match['replacement'].strip().rstrip('。.!！?？').rstrip()
-    replacement = _KEEP_OTHER_STOPS.sub('', replacement).rstrip()
-    if (trip is None or not target or len(replacement) > 80 or _STOP_LABEL.fullmatch(replacement) is None
-            or NEGATED.search(replacement) or _QUALIFIED_REPLACEMENT.search(replacement)):
+    replacement = _replacement_label(match['replacement'])
+    if trip is None or not target or replacement is None:
         return LioEditSelection('clarify')
     document = json.loads(trip.content)
     selected = _select(document['items'], target, starts_on)

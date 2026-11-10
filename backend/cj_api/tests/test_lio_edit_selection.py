@@ -76,6 +76,10 @@ def test_ambiguous_interval_and_non_edit_leave_no_candidate():
     ('Replace the afternoon of day 2 with Temple of Heaven or Summer Palace.', 'en'),
     ('把第二天下午换成颐和园但先缓一缓。', 'zh'),
     ('把第二天下午换成颐和园或者天坛。', 'zh'),
+    ('把第二天下午换成颐和园或天坛。', 'zh'),
+    ('把第二天下午换成故宫和天坛。', 'zh'),
+    ('把第二天下午换成颐和园先问问我。', 'zh'),
+    ('Replace the afternoon of day 2 with Temple of Heaven and Summer Palace.', 'en'),
 ])
 def test_qualified_replacements_need_clarification(text, locale):
     trip, _ = itinerary()
