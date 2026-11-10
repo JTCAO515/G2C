@@ -109,6 +109,30 @@ def test_missing_calendar_day_does_not_shift_an_edit_to_another_date():
 
 
 class LioRelativeDayTest(unittest.TestCase):
+    def test_named_edit_keeps_to_inside_the_title(self):
+        _, items = itinerary()
+        title = 'Afternoon visit to Summer Palace'
+        items[2]['text'] = title
+        text = 'Replace Afternoon visit to Summer Palace with Jingshan Park and keep the other plans.'
+
+        def select(stops, request=text):
+            trip = Trip('trip-test', 2, packed(dict(
+                content_version='structured.2', title='Beijing', items=stops, sources=[])))
+            return select_lio_edit(trip, request, 'en', 'named-edit', starts_on=date(2026, 11, 11))
+
+        result = select(items)
+        self.assertEqual(result.status, 'preview')
+        self.assertEqual(result.candidate.affected_ids, ('afternoon',))
+        self.assertEqual(json.loads(result.candidate.candidate.content)['items'],
+                         [dict(item, text='Jingshan Park') if item['id'] == 'afternoon' else item for item in items])
+        self.assertEqual(select(items, f'Change {title} to “Walk to Jingshan Park”.').status, 'preview')
+        adjacent = [dict(item, text='What to look for') if item['id'] == 'afternoon' else item for item in items]
+        self.assertEqual(select(adjacent, 'Replace What to look for with Jingshan Park.').status, 'preview')
+        self.assertEqual(select([dict(item, text=title) if item['id'] == 'evening' else item for item in items]).status,
+                         'clarify')
+        self.assertEqual(select([dict(item, fixed=known(True)) if item['id'] == 'afternoon' else item for item in items]).status,
+                         'protected')
+
     def test_last_evening_uses_the_actual_last_calendar_day(self):
         trip, _ = itinerary()
         dates = dict(starts_on=date(2026, 11, 11), ends_on=date(2026, 11, 12))
