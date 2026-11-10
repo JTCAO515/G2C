@@ -1,5 +1,12 @@
 # LIO-trip-history.1 and LIO-trip-undo.1
 
+For a conversation edit, send one replacement for a specific stop or
+day and time in the current itinerary through `LIO-message.1`. The Beijing
+Demo recognizes exact names such as Temple of Heaven and Summer Palace.
+For a different place, put one label in quotes. The quoted text is the
+stop's literal label. Additional conditions or multiple unquoted choices
+return a clarification and leave the itinerary untouched.
+
 The signed internal-beta Lio subject can read its selected itinerary with
 `GET /v1/lio/trip`. The response contains `version: "LIO-trip-history.1"`,
 `current`, `history`, `undo_target`, and `next_before`. Itinerary cards use

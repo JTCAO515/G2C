@@ -7,7 +7,6 @@ import re
 
 from cj_manual_edit.scoped import Preview, Request, preview, resolve
 from cj_trip.domain import Conflict, packed
-from .lio_planning_grounding import NEGATED
 
 
 _CHINESE_EDIT = re.compile(r'^(?:请|能不能|可以)?\s*把\s*(?P<target>.+?)\s*(?:换成|改成|替换成)\s*(?P<replacement>.+)$')
@@ -20,15 +19,14 @@ _KEEP_OTHER_STOPS = re.compile(
     r'(?:,\s*(?:and\s+)?|\s+and\s+)keep\s+(?:the\s+)?'
     r'(?:other (?:plans|stops|arrangements)|rest)(?:\s+(?:unchanged|the same))?$', re.I)
 _STOP_LABEL = re.compile(r"[^\W_]+(?:[ '’&·()（）-]+[^\W_]+)*[)）]?")
-_ALTERNATIVES = re.compile(
-    r'\b(?:and|or|plus)\b|或|还是|以及|和(?:另外|另一个)|'
-    r'(?:园|宫|坛|馆|院|寺|庙|门|山|桥|湖|海|街|楼|站|城|井|景区|广场)(?:和|与|及|跟|加)', re.I)
-_QUALIFIED_REPLACEMENT = re.compile(
-    r'然后|并且|如果|除非|只有|不过|但是|但(?=先|请|还|暂|别|不|只)|先别|暂不|'
-    r'缓一缓|等等|稍后|之后再|再决定|等(?:我|确认)|先(?:问|确认|征求|看|考虑|试)|'
-    r'\b(?:unless|provided|otherwise|but|then|until|wait|later|yet|perhaps|instead)\b|'
-    r'\bonly\s+(?:after|when|once)\b|'
-    r'\b(?:after|before|when|once)\s+(?:I|we|you|they|it|approval|approved|confirmation|confirmed)\b', re.I)
+_STOP_QUOTES = {'"': '"', '“': '”', '「': '」'}
+# Explicit aliases for the admitted Beijing Demo. Other names can be supplied
+# as one quoted label, without surrounding instructions.
+_DEMO_STOP_NAMES = frozenset({
+    '天坛', '颐和园', '故宫', '景山公园',
+    'temple of heaven', 'the temple of heaven', 'summer palace', 'the summer palace',
+    'forbidden city', 'the forbidden city', 'palace museum', 'the palace museum', 'jingshan park',
+})
 _CHINESE_SLOT = re.compile(r'第([一二三四五六七八九十]|[1-9][0-9]?)天\s*(上午|下午|晚上)')
 _ENGLISH_SLOT = re.compile(r'(?:the\s+)?(?:day\s+([1-9][0-9]?)|(?:the\s+)?(first|second|third)\s+day)'
                            r'(?:\s+in\s+the)?\s+(morning|afternoon|evening)', re.I)
@@ -60,10 +58,12 @@ def match_edit(text):
 def _replacement_label(raw):
     label = raw.strip().rstrip('。.!！?？').rstrip()
     label = _KEEP_OTHER_STOPS.sub('', label).rstrip()
-    if (len(label) > 80 or _STOP_LABEL.fullmatch(label) is None or NEGATED.search(label)
-            or _QUALIFIED_REPLACEMENT.search(label) or _ALTERNATIVES.search(label)):
+    quoted = len(label) > 2 and _STOP_QUOTES.get(label[0]) == label[-1]
+    if quoted:
+        label = label[1:-1].strip()
+    if len(label) > 80 or _STOP_LABEL.fullmatch(label) is None:
         return None
-    return label
+    return label if quoted or label.casefold() in _DEMO_STOP_NAMES else None
 
 
 def _ordinal(value):

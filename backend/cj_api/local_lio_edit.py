@@ -53,8 +53,9 @@ class LioEdit:
         if selection.status == 'protected':
             return _answer(worker, binding, state, locale, '这项安排暂时不能改。', "I can't change this stop.")
         if selection.candidate is None:
-            return _answer(worker, binding, state, locale, '请带上具体日期或地点名，再说一次你想怎么改。',
-                           "Could you repeat the change with the exact date or the stop's name?")
+            return _answer(worker, binding, state, locale,
+                           '请给出具体日期或原地点名，并用引号注明要换成的一个地点。',
+                           'Please use the exact date or original stop name, and put one replacement place in quotes.')
 
         state = _bind_current(worker, binding, state)
         head = TripHead.from_trip(context.trip)
