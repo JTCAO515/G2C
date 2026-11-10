@@ -250,14 +250,17 @@ Lio 的本机追加迁移使用 `python -B -m deploy.hk.demo_schema --target 51`
 `revoke <subject>` 立即拒绝原邀请码和会话；确认原 scope 无在途后，`rotate <subject>` 可登记
 新摘要与有效期，旧会话继续拒绝，每日计数保留。结果不明先 `inspect <subject>` 和原动作日志。
 MESSAGE 只对实际新接受的原件计数。0052 将北京时间每日上限从 40 提至 400。
-同原件回查和幂等重入沿用原回执。任一合成账号单日已受理超过 40 条后，0052 拒绝降级。
+同原件回查和幂等重入沿用原回执。香港额度迁移已经提交，或任一合成账号单日已受理超过 40 条时，0052 拒绝降级。
 已应用 0051 的香港内测主机可在原 API/worker 暂停后，用新 operator 镜像运行
 `python -B -m deploy.hk.demo_schema --target 52`。该操作读取原 80 次配置，
 在同一事务中提升现有香港合成名单的当期账本和 Demo 次期账本至 800 次，
 并追加 0052。原尝试、保留、回执及周期边界保留。只有签名备份基准完成后，
 才将暂存的 `CJ_BETA_RUN_CONTEXT_JSON.current.meter.budget=800` 和同源 API/worker 切入。
 共享费用、调用次数和外部服务停点沿用现有门禁。事务前失败可恢复旧服务。
-已应用 0052 后按原签名标记核同并完成切换，保留账本和已受理原件。
+已提交 0052 时，用新 operator 运行
+`python -B -m deploy.hk.demo_schema --resume-quota` 续结原签名备份，保留未发布的备份尝试。
+已轮换 identity 时，先核对原签名备份与活库行集、序列和 fence，再补发同一 release。
+API/worker 只在签名标记完成且运行配置为 800 后就绪。
 Demo 及已启用流式的组装两主体使用 [STREAM@2](../../contracts/run/MODEL-TOOL-TURN-STREAM-V2.md)，
 可调用工具的轮次先收齐原回执。混合响应仅执行通过原门禁的工具，丢弃未核实的同轮正文。
 过旧服务期限后，实际模型和工具仅允许显式 Demo scope。首次开户同时在原 PG Meter 中准备

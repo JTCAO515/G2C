@@ -2,16 +2,74 @@
 import os
 from pathlib import Path
 import sys
+from uuid import uuid4
 
 import psycopg
 
 import migrate
-from . import checkpoint,demo_quota,local_postgres
+from . import checkpoint,demo_quota,local_postgres,staging
 from .configuration import load_secret_environment,local_database_target
 
 
 def schema_anchor(target):
     return f'demo-schema{target}'
+
+
+def _require_idle(db):
+    if db.execute("SELECT (SELECT count(*) FROM cj_message_delivery WHERE NOT acknowledged),"
+                  "(SELECT count(*) FROM cj_run_record WHERE status IN ('queued','running'))").fetchone()!=(0,0):
+        raise ValueError('original application work still in flight')
+
+
+def _complete(marker,manifest,intent):
+    if manifest['fences']!=intent['original_fences'] or manifest['lineage']!=intent['lineage']:
+        raise ValueError('Demo upgrade fence state changed')
+    checkpoint.atomic(marker,dict(state='COMPLETE',lineage=manifest['lineage'],
+        dump_sha256=manifest['dump_sha256'],original_fences=intent['original_fences']))
+
+
+def _preserve_unpublished(path):
+    path.rename(path.with_name(f'{path.name}.unpublished-{uuid4().hex}'))
+    checkpoint.local.sync_directory(path.parent)
+
+
+def _resume_publication(db,control,destination,intent,release,instance):
+    manifest=checkpoint.verified(destination/'manifest.json')
+    digest=manifest['dump_sha256']
+    lineage=intent['lineage']
+    if (manifest['version']!='g2c-beta-data-checkpoint.1'
+            or manifest['schema']!=checkpoint.versions() or manifest['archived_instance']!=intent['original_instance']
+            or manifest['lineage']!=lineage or manifest['fences']!=intent['original_fences']
+            or checkpoint.local.checksum(destination/'database.dump')!=digest):
+        raise ValueError('original quota backup mismatch')
+    latest=control/'latest.json'
+    previous=intent['original_checkpoint']
+    desired=dict(version='g2c-beta-latest.1',dump_sha256=digest,lineage=lineage,consumed=False)
+    actual=checkpoint.verified(latest) if latest.exists() else None
+    if actual is None and previous!='fresh':
+        raise ValueError('original quota latest checkpoint unavailable')
+    if actual not in (None,desired,dict(desired,dump_sha256=previous)):
+        raise ValueError('original quota latest checkpoint mismatch')
+    if (release['instance'],release['checkpoint'])==(instance,digest):
+        if actual!=desired:
+            raise ValueError('original quota backup publication incomplete')
+    elif ((release['instance'],release['checkpoint'])==(intent['original_instance'],previous)
+          and instance!=intent['original_instance']):
+        # The original export rotated the database identity before publishing
+        # its release. Reconcile that exact signed archive against the live data.
+        if (manifest['tables']!=migrate.inventory(db) or staging.state(db,manifest['tables'])!=manifest['row_state']
+                or staging.sequence_state(db,staging.sequence_names(db))!=manifest['sequences']):
+            raise ValueError('original quota database differs from signed backup')
+        for path in (latest,control/'release.json'):
+            pending=path.with_suffix('.tmp')
+            if pending.exists():
+                _preserve_unpublished(pending)
+        checkpoint.atomic(latest,desired)
+        checkpoint.atomic(control/'release.json',
+            dict(version='g2c-beta-release.1',instance=instance,lineage=lineage,checkpoint=digest),public=True)
+    else:
+        raise ValueError('original quota release identity unavailable')
+    return manifest
 
 
 def upgrade(control,backups,*,target=49,schema_root=None):
@@ -30,22 +88,57 @@ def upgrade(control,backups,*,target=49,schema_root=None):
                 or checkpoint.identity(db)!=(release['instance'],release['lineage'])
                 or migrate.applied(db)!=expected[:-1]):
             raise ValueError('reconcile original Demo schema action before retry')
-        if db.execute("SELECT (SELECT count(*) FROM cj_message_delivery WHERE NOT acknowledged),"
-                "(SELECT count(*) FROM cj_run_record WHERE status IN ('queued','running'))").fetchone()!=(0,0):
-            raise ValueError('original application work still in flight')
-        before=checkpoint.local.fence_state(db)
+        _require_idle(db)
+        intent=dict(state='INTENT',lineage=release['lineage'],original_fences=checkpoint.local.fence_state(db))
         if target==52:
             current_count,next_count=demo_quota.upgrade(db)
-        checkpoint.atomic(marker,dict(state='INTENT',lineage=release['lineage'],original_fences=before))
+            intent.update(original_instance=release['instance'],original_checkpoint=release['checkpoint'])
+        checkpoint.atomic(marker,intent)
         migrate.up(db,migrate.load(),target)
+        if target==52:
+            db.execute('INSERT INTO public.cj_demo_quota_upgrade VALUES (true)')
     manifest=checkpoint.export(destination,control,schema_root=schema_root)
-    if manifest['fences']!=before or manifest['lineage']!=release['lineage']:
-        raise ValueError('Demo upgrade fence state changed')
-    checkpoint.atomic(marker,dict(state='COMPLETE',lineage=manifest['lineage'],
-        dump_sha256=manifest['dump_sha256'],original_fences=before))
+    _complete(marker,manifest,intent)
     if target==52:
         print(f'Quota raised for {current_count} current and {next_count} next-period ledgers')
     print(f'PASS exact additive {target} with original deletion fences and new signed local backup base')
+
+
+def resume_quota(control,backups,*,schema_root=None):
+    """Finish the original schema-52 backup after a proven committed quota update."""
+    if not local_database_target() or checkpoint.versions()!=list(range(1,53)):
+        raise ValueError('exact HK quota schema required')
+    local_postgres.require_serving(control)
+    marker=control/'demo-schema52.json'
+    destination=backups/'demo-schema52'
+    with checkpoint.lock(control),checkpoint.operator() as (db,_),db.transaction():
+        db.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ')
+        db.execute('SELECT pg_advisory_xact_lock(%s)',(checkpoint.RELEASE_LOCK,))
+        intent=checkpoint.verified(marker)
+        release=checkpoint.verified(control/'release.json')
+        instance,lineage=checkpoint.identity(db)
+        if (intent['state']!='INTENT' or release['version']!='g2c-beta-release.1'
+                or release['lineage']!=lineage or lineage!=intent['lineage']
+                or migrate.applied(db)!=checkpoint.versions()
+                or checkpoint.local.fence_state(db)!=intent['original_fences']
+                or db.execute('SELECT singleton FROM public.cj_demo_quota_upgrade').fetchall()!=[(True,)]):
+            raise ValueError('original quota upgrade state unavailable')
+        _require_idle(db)
+        demo_quota.verify_applied(db)
+        if (instance,release['instance'],release['checkpoint'])!=(
+                intent['original_instance'],intent['original_instance'],intent['original_checkpoint']):
+            manifest=_resume_publication(db,control,destination,intent,release,instance)
+            pending=marker.with_suffix('.tmp')
+            if pending.exists():
+                _preserve_unpublished(pending)
+            _complete(marker,manifest,intent)
+            return
+        if destination.exists():
+            # The original release still names the old instance and checkpoint.
+            # Keep the unpublished attempt and create a fresh backup of the same committed state.
+            _preserve_unpublished(destination)
+    manifest=checkpoint.export(destination,control,schema_root=schema_root)
+    _complete(marker,manifest,intent)
 
 
 def daily_base(control,root,previous):
@@ -69,10 +162,15 @@ def daily_base(control,root,previous):
 if __name__=='__main__':
     try:
         arguments=sys.argv[1:]
-        if arguments not in ([],['--target','50'],['--target','51'],['--target','52']):
+        if arguments not in ([],['--target','50'],['--target','51'],['--target','52'],['--resume-quota']):
             raise ValueError('explicit Demo schema upgrade required')
         load_secret_environment('recovery')
-        upgrade(Path(os.environ['CJ_DEPLOY_CONTROL']),Path('/backups'),target=int(arguments[1]) if arguments else 49)
+        control=Path(os.environ['CJ_DEPLOY_CONTROL'])
+        if arguments==['--resume-quota']:
+            resume_quota(control,Path('/backups'))
+            print('PASS original HK quota backup resumed')
+        else:
+            upgrade(control,Path('/backups'),target=int(arguments[1]) if arguments else 49)
     except (OSError,ValueError,KeyError,psycopg.Error):
         print('ALERT Demo schema upgrade unavailable; reconcile original state',file=sys.stderr)
         raise SystemExit(1) from None

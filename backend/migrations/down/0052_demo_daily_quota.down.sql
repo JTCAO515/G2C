@@ -1,5 +1,9 @@
 DO $$
 BEGIN
+    LOCK TABLE public.cj_demo_quota_upgrade, public.cj_message_receipt IN SHARE MODE;
+    IF EXISTS (SELECT 1 FROM public.cj_demo_quota_upgrade) THEN
+        RAISE EXCEPTION 'Applied HK quota upgrade requires forward recovery';
+    END IF;
     IF EXISTS (
         SELECT 1 FROM public.cj_message_receipt
         WHERE demo_question_day IS NOT NULL
@@ -9,6 +13,8 @@ BEGIN
         RAISE EXCEPTION 'Demo quota rollback would invalidate admitted originals';
     END IF;
 END $$;
+
+DROP TABLE public.cj_demo_quota_upgrade;
 
 CREATE OR REPLACE FUNCTION public.cj_demo_accept_question() RETURNS trigger
  LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog,public,pg_temp AS $$

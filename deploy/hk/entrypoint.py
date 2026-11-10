@@ -22,18 +22,28 @@ from cj_api.real_services import RealServices,RealTools
 from cj_trip.confirmation import ConfirmationSigner
 from local_run_context import provision_budget_connection
 from .configuration import ASSEMBLY_PROBE_MESSAGE,MODEL_STREAM_SUBJECT,Runtime,authorization,decoded,load_secret_environment,local_database_target
-from . import checkpoint,local_postgres
+from . import checkpoint,demo_quota,local_postgres
 
 
 def control():return Path(os.environ['CJ_DEPLOY_CONTROL'])
 def heartbeat():return Path(os.environ['CJ_DEPLOY_HEARTBEAT'])/'worker.json'
 
 
-def ready(database):
+def _runtime_gate(database, runtime):
+    authorization()
+    local_postgres.require_serving(control())
+    with database._open_runtime_connection() as connection:
+        release=checkpoint.require_release(connection,control())
+    if runtime is not None and runtime.demo_subjects and local_database_target():
+        marker=checkpoint.verified(control()/'demo-schema52.json')
+        if (marker['state']!='COMPLETE' or marker['lineage']!=release['lineage']
+                or runtime.context.current.meter.budget!=demo_quota.APPROVED_BUDGET):
+            raise ValueError('HK Demo quota cutover incomplete')
+
+
+def ready(database, runtime=None):
     try:
-        authorization()
-        local_postgres.require_serving(control())
-        with database._open_runtime_connection() as connection:checkpoint.require_release(connection,control())
+        _runtime_gate(database,runtime)
         state=json.loads(heartbeat().read_bytes())
         if set(state)!={'at','component','status'} or not 0<=time.time()-state['at']<15:return 'worker_heartbeat_stale'
         return None if state['status']=='ready' else state['component']+'_unavailable'
@@ -46,7 +56,7 @@ def api(runtime):
     @app.middleware('http')
     async def deployment_gate(request,call_next):
         if request.url.path=='/health/live':return JSONResponse({'status':'alive'})
-        reason=await run_in_threadpool(ready,database)
+        reason=await run_in_threadpool(ready,database,runtime)
         if request.url.path=='/health/ready':
             return JSONResponse({'status':'ready' if reason is None else 'unavailable','component':reason},status_code=200 if reason is None else 503)
         if reason is not None:return JSONResponse({'error':'deployment_unavailable'},status_code=503)
@@ -100,9 +110,7 @@ def _run_worker(runtime):
     while True:
         component='deployment_gate';status='unavailable'
         try:
-            authorization()
-            local_postgres.require_serving(control())
-            with database._open_runtime_connection() as connection:checkpoint.require_release(connection,control())
+            _runtime_gate(database,runtime)
             with worker_pulse():
                 outcomes=run_worker.run_once(database,services.model,runtime.auth,tools_configuration=tools,real_services=services,account_admission=True,
                     hk_beta_b_run_credential=True,

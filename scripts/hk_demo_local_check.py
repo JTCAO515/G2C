@@ -25,7 +25,7 @@ from cj_agent.provider import FakeProvider, ProviderFailed, ProviderUnknown
 from cj_api.local_run_context import load_run_context
 from cj_memory.typed_runtime import TypedRuntimeConfiguration
 from cj_message.travel import ABI
-from deploy.hk import checkpoint,demo_accounts,demo_login,demo_quota,demo_schema,schema,staging
+from deploy.hk import checkpoint,demo_accounts,demo_login,demo_quota,demo_schema,entrypoint,schema,staging
 from deploy.hk.configuration import Runtime,demo_periods
 from cj_run.step_usage import ledger_scope_for
 from cj_usage.authorization_budget import DEADLINE,DEMO_DEADLINE
@@ -109,6 +109,81 @@ def quota_fixture(root,env):
     return initialize,snapshot,negative,reserve_after_upgrade
 
 
+def check_quota_resume(control,backups,operator,conninfo,schema_root):
+    destination=backups/'demo-schema52'
+    marker=control/'demo-schema52.json'
+    database=SimpleNamespace(_open_runtime_connection=lambda:psycopg.connect(**conninfo))
+
+    def gate(budget, *, ready):
+        runtime=SimpleNamespace(demo_subjects={SUBJECT},
+            context=SimpleNamespace(current=SimpleNamespace(meter=SimpleNamespace(budget=budget))))
+        try:
+            entrypoint._runtime_gate(database,runtime)
+        except ValueError as exc:
+            assert not ready and str(exc) in ('HK Demo quota cutover incomplete','beta_database_not_released')
+        else:
+            assert ready
+
+    def fail_export(path,*args,**kwargs):
+        path.mkdir(mode=0o700)
+        (path/'database.dump').write_bytes(b'partial fixture')
+        raise OSError('synthetic export interruption')
+
+    with patch.object(checkpoint,'export',side_effect=fail_export):
+        try:
+            demo_schema.upgrade(control,backups,target=52,schema_root=schema_root)
+        except OSError as exc:
+            assert str(exc)=='synthetic export interruption'
+        else:
+            raise AssertionError('synthetic export interruption was hidden')
+    assert checkpoint.verified(marker)['state']=='INTENT'
+    gate(800,ready=False)
+    with operator() as (db,_):
+        try:
+            with db.transaction():
+                migrate.down(db,migrate.load(),51)
+        except psycopg.errors.RaiseException as exc:
+            assert 'Applied HK quota upgrade requires forward recovery' in str(exc)
+        else:
+            raise AssertionError('applied quota transition was downgraded')
+
+    atomic=checkpoint.atomic
+    def interrupt_release(path,value,**kwargs):
+        if path.name=='release.json':
+            path.with_suffix('.tmp').write_bytes(b'partial release fixture')
+            raise OSError('synthetic release interruption')
+        atomic(path,value,**kwargs)
+
+    with patch.object(checkpoint,'atomic',side_effect=interrupt_release):
+        try:
+            demo_schema.resume_quota(control,backups,schema_root=schema_root)
+        except OSError as exc:
+            assert str(exc)=='synthetic release interruption'
+        else:
+            raise AssertionError('synthetic release interruption was hidden')
+    preserved,=backups.glob('demo-schema52.unpublished-*')
+    assert (preserved/'database.dump').read_bytes()==b'partial fixture'
+    assert (destination/'manifest.json').exists() and checkpoint.verified(marker)['state']=='INTENT'
+    gate(800,ready=False)
+    with patch.object(demo_schema,'_complete',side_effect=OSError('synthetic marker interruption')):
+        try:
+            demo_schema.resume_quota(control,backups,schema_root=schema_root)
+        except OSError as exc:
+            assert str(exc)=='synthetic marker interruption'
+        else:
+            raise AssertionError('synthetic marker interruption was hidden')
+    release_tmp,=control.glob('release.tmp.unpublished-*')
+    assert release_tmp.read_bytes()==b'partial release fixture'
+    marker.with_suffix('.tmp').write_bytes(b'partial marker fixture')
+    with patch.object(checkpoint,'export',side_effect=AssertionError('a published backup was repeated')):
+        demo_schema.resume_quota(control,backups,schema_root=schema_root)
+    marker_tmp,=control.glob('demo-schema52.tmp.unpublished-*')
+    assert marker_tmp.read_bytes()==b'partial marker fixture'
+    gate(80,ready=False)
+    gate(800,ready=True)
+    print('PASS original quota recovery, readied only with matching 800 configuration and no downgrade')
+
+
 def verify_upgrade(root, blueprint, target):
     root.mkdir(mode=0o700)
     schema_root=root/'schema'
@@ -119,7 +194,7 @@ def verify_upgrade(root, blueprint, target):
     prior=backups/'previous'
     prior.mkdir(mode=0o700)
     key=Ed25519PrivateKey.generate()
-    env=dict(CJ_DEPLOY_TARGET='hk-beta',CJ_M4_SYNTHETIC_ONLY='1',CJ_BETA_DB_TARGET='hk-local',
+    env=dict(CJ_DEPLOY_TARGET='hk-beta',CJ_M4_SYNTHETIC_ONLY='1',CJ_BETA_DB_TARGET='hk-local',CJ_DEPLOY_CONTROL=str(control),
         CJ_TRIAL_VALID_UNTIL='2026-12-31T16:00:00+00:00',
         CJ_BETA_RECOVERY_PRIVATE_B64=base64.b64encode(key.private_bytes(Encoding.Raw,PrivateFormat.Raw,NoEncryption())).decode(),
         CJ_BETA_RECOVERY_PUBLIC_B64=base64.b64encode(key.public_key().public_bytes(Encoding.Raw,PublicFormat.Raw)).decode())
@@ -146,7 +221,10 @@ def verify_upgrade(root, blueprint, target):
             checkpoint.atomic(control/'b2.json',dict(version='g2c-hk-local.1',state='FORWARD_ONLY'))
             checkpoint.atomic(prior/'manifest.json',dict(schema=list(range(1,target)),
                 lineage=old['lineage'],fences=original))
-            demo_schema.upgrade(control,backups,target=target,schema_root=schema_root)
+            if target==52:
+                check_quota_resume(control,backups,operator,config,schema_root)
+            else:
+                demo_schema.upgrade(control,backups,target=target,schema_root=schema_root)
             base=demo_schema.daily_base(control,backups,'previous')
             assert base==backups/f'demo-schema{target}'
             result=checkpoint.verified(base/'manifest.json')

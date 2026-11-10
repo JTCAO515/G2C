@@ -1,4 +1,11 @@
--- Local Demo only. Preserve the existing owner lock, invite checks and original counts.
+-- local runtime only. Preserve the existing owner lock, invite checks and original counts.
+CREATE TABLE public.cj_demo_quota_upgrade (
+    singleton boolean PRIMARY KEY CHECK (singleton)
+);
+ALTER TABLE public.cj_demo_quota_upgrade ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.cj_demo_quota_upgrade FORCE ROW LEVEL SECURITY;
+REVOKE ALL ON public.cj_demo_quota_upgrade FROM PUBLIC;
+
 CREATE OR REPLACE FUNCTION public.cj_demo_accept_question() RETURNS trigger
  LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog,public,pg_temp AS $$
 BEGIN

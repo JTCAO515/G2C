@@ -416,8 +416,8 @@
       "name": "demo_daily_quota",
       "file": "backend/migrations/0052_demo_daily_quota.sql",
       "down": "backend/migrations/down/0052_demo_daily_quota.down.sql",
-      "sha256": "978042187f9576ee27eecfc81f3ee0320076e82825a7bc00d98f2071826b30e9",
-      "down_sha256": "12a1e85b1b3635b5babfa4ba30cb0f674e6fa0b992291bb5ca25486516d703ce"
+      "sha256": "6d8318cd42596341c1bb83a0303489f71738d036efa8bd194be8df9474d5db5d",
+      "down_sha256": "776b914206204d761107e127734a60c60096143923e04ef83af23815ec757bc0"
     }
   ]
 }
