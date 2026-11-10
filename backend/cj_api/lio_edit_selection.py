@@ -14,7 +14,7 @@ _ENGLISH_EDIT = re.compile(
     r'^(?:please\s+|(?:could|can|would) you\s+)?(?:change|replace|swap)\s+(?P<target>.+?)'
     r'\s+(?:to|with|for)\s+(?P<replacement>.+)$', re.I,
 )
-_ENGLISH_SEPARATOR = re.compile(r'\s+(?:to|with|for)\s+', re.I)
+_ENGLISH_SEPARATOR = re.compile(r'\s+(?:to|with|for)(?=\s)', re.I)
 _KEEP_OTHER_STOPS = re.compile(
     r'(?:[，,]\s*)?保留(?:其他|其余)安排$|'
     r'(?:,\s*(?:and\s+)?|\s+and\s+)keep\s+(?:the\s+)?'

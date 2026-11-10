@@ -126,6 +126,8 @@ class LioRelativeDayTest(unittest.TestCase):
         self.assertEqual(json.loads(result.candidate.candidate.content)['items'],
                          [dict(item, text='Jingshan Park') if item['id'] == 'afternoon' else item for item in items])
         self.assertEqual(select(items, f'Change {title} to “Walk to Jingshan Park”.').status, 'preview')
+        adjacent = [dict(item, text='What to look for') if item['id'] == 'afternoon' else item for item in items]
+        self.assertEqual(select(adjacent, 'Replace What to look for with Jingshan Park.').status, 'preview')
         self.assertEqual(select([dict(item, text=title) if item['id'] == 'evening' else item for item in items]).status,
                          'clarify')
         self.assertEqual(select([dict(item, fixed=known(True)) if item['id'] == 'afternoon' else item for item in items]).status,
