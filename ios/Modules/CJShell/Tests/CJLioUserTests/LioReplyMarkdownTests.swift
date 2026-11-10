@@ -40,4 +40,15 @@ struct LioReplyMarkdownTests {
         #expect(String(answer.characters) == "Forecast")
         #expect(answer.runs.allSatisfy { $0.link == nil })
     }
+
+    @Test func continuesAnOrderedItemAfterItsNestedList() throws {
+        let answer = try #require(LioReplyMarkdown.render("""
+            1. Outer
+               - Inner
+
+               Continued
+            2. Next
+            """))
+        #expect(String(answer.characters) == "1. Outer\n  • Inner\n  Continued\n2. Next")
+    }
 }

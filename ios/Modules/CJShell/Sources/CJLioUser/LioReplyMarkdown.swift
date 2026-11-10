@@ -12,7 +12,7 @@ enum LioReplyMarkdown {
         // fonts for block attributes explicitly, keeping one selectable reply.
         var answer = AttributedString()
         var lastBlock: Int?
-        var lastListItem: Int?
+        var startedListItems: Set<Int> = []
         for run in parsed.runs {
             let components = run.presentationIntent?.components ?? []
             let block = components.first
@@ -27,7 +27,7 @@ enum LioReplyMarkdown {
                 }
                 if let item, case .listItem(let ordinal) = item.kind {
                     let indent = String(repeating: "  ", count: items.count - 1)
-                    if item.identity != lastListItem {
+                    if startedListItems.insert(item.identity).inserted {
                         let list = components.drop(while: { $0.identity != item.identity }).dropFirst().first
                         if case .orderedList? = list?.kind {
                             answer += AttributedString(indent + "\(ordinal). ")
@@ -39,7 +39,6 @@ enum LioReplyMarkdown {
                     }
                 }
                 lastBlock = block?.identity
-                lastListItem = item?.identity
             }
 
             var text = AttributedString(parsed[run.range])
