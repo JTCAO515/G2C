@@ -533,6 +533,8 @@ public struct LioHome<MenuContent: View>: View {
             let message = switch failure {
             case .notSent: language.text("Message couldn’t be sent. Check your connection and tap to try again.",
                                          "消息没发出去。检查网络后，点感叹号重发。")
+            case .invalidInput: language.text("This message couldn’t be sent. Please try a different message.",
+                                              "这条消息没发出去，请换个说法再试。")
             case .dailyLimit: language.text("You’ve used today’s 40 questions. Try again tomorrow.",
                                             "今天的 40 个问题已用完，明天再来聊吧。")
             case .unfinished: language.text("I couldn’t finish this one.", "这次没答完。")

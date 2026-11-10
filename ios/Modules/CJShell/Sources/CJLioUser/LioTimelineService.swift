@@ -72,6 +72,7 @@ extension LioService {
             case .accepted(let id): .accepted(conversationID: id)
             case .notSent: .notSent
             case .dailyLimit: .dailyLimit
+            case .rejected: .rejected
             }
         }, read: { id, before in
             try await client.timeline(conversationID: id, before: before)
@@ -85,6 +86,7 @@ extension LioService {
             case .accepted(let id): .accepted(conversationID: id)
             case .notSent: .notSent
             case .dailyLimit: .dailyLimit
+            case .rejected: .rejected
             }
         }, read: { id, before in
             try await client.timeline(conversationID: id, before: before, version: .v2)
@@ -95,7 +97,7 @@ extension LioService {
 
     enum SendResult: Sendable {
         case accepted(conversationID: String)
-        case notSent, dailyLimit, uncertain
+        case notSent, dailyLimit, rejected, uncertain
     }
 
     /// A scoped transport supplies definitive send outcomes and read-only pages.
@@ -125,6 +127,7 @@ extension LioService {
                         switch try await session.submit(question) {
                         case .dailyLimit: continuation.yield(.failed(.dailyLimit)); return
                         case .notSent: continuation.yield(.failed(.notSent)); return
+                        case .rejected: continuation.yield(.failed(.invalidInput)); return
                         case .accepted, .uncertain: break
                         }
                         for await timeline in session.observe(waiting: [question.id], interval: pollInterval,
@@ -215,7 +218,7 @@ private actor LioTimelineSession {
                 firstOriginal = nil
                 if created { await didCreate(id) }
             case .notSent: submissions[question.id] = .notSent(original)
-            case .dailyLimit: firstOriginal = nil
+            case .dailyLimit, .rejected: firstOriginal = nil
             case .uncertain: break
             }
             return outcome

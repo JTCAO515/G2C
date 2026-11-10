@@ -8,9 +8,48 @@ import XCTest
     func testInvitationChinese() throws { try exerciseInvitation("zh-Hans") }
 
     func testNewChatAndHistoryKeepMessagesAndDraftsSeparate() {
+        exerciseChatHistory("en")
+    }
+
+    func testChineseNewChatKeepsHistoryAndDraftsSeparate() {
+        exerciseChatHistory("zh-Hans")
+    }
+
+    func testNewChatCanAcceptAnotherMessageAfterAnInputRefusal() {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
-        app.launchArguments = ["--lio-preview", "--lio-chat-history-acceptance", "-cj.ui.language.v1", "en"]
+        app.launchArguments = ["--lio-preview", "--lio-chat-history-acceptance", "--lio-chat-first-refusal-acceptance",
+                               "-cj.ui.language.v1", "zh-Hans"]
+        app.launch()
+        defer { app.terminate() }
+
+        let menu = app.buttons["lio.menu"]
+        XCTAssertTrue(menu.waitForExistence(timeout: 12))
+        menu.tap()
+        app.buttons["lio.chat.new"].tap()
+        let example = app.buttons["lio.example.0"]
+        XCTAssertTrue(example.waitForExistence(timeout: 8))
+        example.tap()
+        let send = app.buttons["lio.send"]
+        send.tap()
+        let failure = app.staticTexts["lio.failure"]
+        XCTAssertTrue(failure.waitForExistence(timeout: 8), app.debugDescription)
+        XCTAssertEqual(failure.label, "这条消息没发出去，请换个说法再试。")
+        XCTAssertFalse(app.buttons["lio.resend"].exists)
+        XCTAssertFalse(app.staticTexts["A separate reply."].exists)
+
+        let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+        composer.tap()
+        composer.typeText("A fresh question")
+        send.tap()
+        XCTAssertTrue(app.staticTexts["A separate reply."].waitForExistence(timeout: 12), app.debugDescription)
+    }
+
+    private func exerciseChatHistory(_ language: String) {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        let chinese = language == "zh-Hans"
+        app.launchArguments = ["--lio-preview", "--lio-chat-history-acceptance", "-cj.ui.language.v1", language]
         app.launch()
         defer { app.terminate() }
 
@@ -19,13 +58,15 @@ import XCTest
         let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
         XCTAssertTrue(oldReply.waitForExistence(timeout: 8))
         menu.tap()
-        app.buttons["lio.chat.new"].tap()
+        let newChat = app.buttons["lio.chat.new"]
+        XCTAssertEqual(newChat.label, chinese ? "新对话" : "New chat")
+        newChat.tap()
         let example = app.buttons["lio.example.0"]
         XCTAssertTrue(example.waitForExistence(timeout: 8))
         XCTAssertFalse(oldReply.exists)
         XCTAssertFalse(app.staticTexts["lio.question"].exists)
         example.tap()
-        let firstQuestion = "How do I take the metro in Shanghai?"
+        let firstQuestion = chinese ? "在上海怎么坐地铁？" : "How do I take the metro in Shanghai?"
         XCTAssertEqual(composer.value as? String, firstQuestion)
         app.buttons["lio.send"].tap()
         let newReply = app.staticTexts["A separate reply."]
@@ -37,13 +78,15 @@ import XCTest
 
         func openHistory(_ title: String) {
             menu.tap()
-            app.buttons["lio.chat.history"].tap()
+            let history = app.buttons["lio.chat.history"]
+            XCTAssertEqual(history.label, chinese ? "历史对话" : "Chat history")
+            history.tap()
             let row = app.buttons.matching(identifier: "lio.chat.history.row")
                 .matching(NSPredicate(format: "label CONTAINS %@", title)).firstMatch
             XCTAssertTrue(row.waitForExistence(timeout: 8))
             row.tap()
         }
-        openHistory("First conversation")
+        openHistory(chinese ? "最早的对话" : "First conversation")
         XCTAssertTrue(oldReply.waitForExistence(timeout: 8))
         XCTAssertFalse(newReply.exists)
         XCTAssertNotEqual(composer.value as? String, draft)
