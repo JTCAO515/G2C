@@ -148,7 +148,7 @@ def lio_fixture_model(*, empty_first_day=False):
 
 
 def check_lio(api, database, auth, other, headers, conninfo, memory):
-    from cj_api.local_lio_planning import LioPlanning
+    from cj_api.local_lio_planning import LioPlanning, SYSTEM
     from cj_draft.lio_plan import LioPlanPublisher
     from cj_message import demo_dialogue
     from cj_message.domain import CommitUnknown
