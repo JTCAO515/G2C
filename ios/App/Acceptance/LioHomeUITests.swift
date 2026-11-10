@@ -209,6 +209,13 @@ import XCTest
         XCTAssertTrue(app.staticTexts["Date to be decided"].exists)
         XCTAssertFalse(app.staticTexts["Earlier plan"].exists)
         XCTAssertFalse(app.staticTexts["Earlier stop"].exists)
+
+        app.tabBars.buttons["Chat"].tap()
+        XCTAssertTrue(viewTrip.waitForExistence(timeout: 8))
+        viewTrip.tap()
+        XCTAssertTrue(app.staticTexts["Trip unavailable"].waitForExistence(timeout: 8), app.debugDescription)
+        XCTAssertFalse(app.staticTexts["Date to be decided"].exists)
+        XCTAssertFalse(app.staticTexts["Earlier stop"].exists)
     }
 
     private func exerciseTrip(_ language: String, clarification: String, trips: String, day: String, fixed: String) throws {

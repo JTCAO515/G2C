@@ -19,7 +19,7 @@ public struct LioHome<MenuContent: View>: View {
     @State private var source: LioSource?
     @State private var followsAnswer = true
     @State private var tab = Tab.chat
-    @State private var tripPath: [Data] = []
+    @State private var tripPath: [LioTripRoute] = []
     @State private var memoryBusy = false
     @State private var memoryPending = false
     @State private var memoryNotice: String?
@@ -403,7 +403,7 @@ public struct LioHome<MenuContent: View>: View {
                 let isLatest = card == latestTripCard
                 let current = isLatest ? tripPlan?.current(in: card) : nil
                 LioItineraryCard(itinerary: current ?? itinerary, language: language) {
-                    if tripLibrary != nil { tripPath = [Data(itinerary.id.utf8)] }
+                    if tripLibrary != nil { tripPath = [LioTripRoute(id: itinerary.id, visit: UUID())] }
                     tab = .trips
                 } actions: {
                     if isLatest, let tripPlan {
