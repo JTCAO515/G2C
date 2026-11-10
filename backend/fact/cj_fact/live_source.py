@@ -23,7 +23,7 @@ from .policy import FactFailure,SourcePolicy,public_addresses
 from cj_strict_json import reject_duplicates
 from cj_place.https_transport import _read_response,_WireFailure
 
-NOTICE_URL='https://en.nia.gov.cn/'
+NOTICE_URL='https://en.nia.gov.cn/n147418/n147463/c183412/content.html'
 WEATHER_URL='https://restapi.amap.com/v3/weather/weatherInfo'
 PAGE_POLICY=SourcePolicy(('https://en.nia.gov.cn',),262144,1024,0,20,24,16384)
 PAGE_FAILURE_CODES=frozenset(('invalid_dns_answer','non_public_dns_answer',

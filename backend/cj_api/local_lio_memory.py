@@ -1,13 +1,16 @@
 """Compose Lio candidates with the host's existing synthetic Memory policy."""
+from dataclasses import replace
 from datetime import datetime, timezone
 from hashlib import sha256
 import json
 import logging
+from types import MappingProxyType
 
 from psycopg import Error as DatabaseError
 
 from cj_agent.provider import ProviderFailed, ProviderUnknown
 from cj_memory.domain import CommitUnknown as MemoryCommitUnknown
+from cj_memory.local import LocalMemoryProfile
 from cj_memory.postgres import Repository
 from cj_memory_jobs.codec import Conflict, Unavailable
 from cj_memory_jobs.collection import CollectionService
@@ -18,9 +21,26 @@ from cj_message.domain import CommitUnknown as MessageCommitUnknown
 from cj_message.source import SourceQuery
 from cj_usage.background_exit import ModelInput
 from cj_usage.metered_exit import BudgetExceeded, BudgetUnknown
+from .lio_memory_preferences import PREFERENCE_SLOTS, allows_pilot_preference_write, supported_preference
 
 
 _LOGGER = logging.getLogger(__name__)
+
+
+class _PilotMemoryProfile(LocalMemoryProfile):
+    def content_allowed(self, command, original):
+        return (super().content_allowed(command, original)
+                and allows_pilot_preference_write(command))
+
+
+def pilot_write_configuration(configuration, subjects):
+    profiles = dict(configuration.collection.profiles)
+    for subject in subjects:
+        profile = profiles[subject]
+        profiles[subject] = _PilotMemoryProfile(profile.subjects, profile.slots, profile.extents,
+                                               profile.context_ids, profile.expires_at)
+    collection = replace(configuration.collection, profiles=MappingProxyType(profiles))
+    return replace(configuration, collection=collection)
 
 
 def lio_candidates(database, boundary, subjects, configuration):
@@ -34,12 +54,12 @@ def lio_candidates(database, boundary, subjects, configuration):
         profile = configuration.collection.profiles[principal.subject]
         allowed_subjects = profile.subjects & {'self'}
         slots = frozenset(name for name, slot in profile.slots.items()
-                          if slot.collection_allowed and slot.kind in ('fact', 'preference'))
+                          if name in PREFERENCE_SLOTS and slot.collection_allowed and slot.kind == 'preference')
         if not allowed_subjects or not slots or 'long_term' not in profile.extents or profile.expires_at <= datetime.now(timezone.utc):
             raise Unavailable('Lio memory collection unavailable')
 
         def allowed(entry):
-            return entry.extent == 'long_term' and entry.kind == profile.slots[entry.slot].kind
+            return entry.extent == 'long_term'
 
         # This channel produces candidates only. An explicit action is the sole
         # authority for promoting an item, even when the quote is verbatim.
@@ -47,7 +67,7 @@ def lio_candidates(database, boundary, subjects, configuration):
         return extraction, configuration.policy(principal.subject), lambda entry: (None, None)
 
     service = CollectionService(boundary, repository, collection)
-    return LioCandidates(service, subjects)
+    return LioCandidates(service, subjects, original_allows=supported_preference)
 
 
 class LioMemoryExtraction:
