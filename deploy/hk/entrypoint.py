@@ -29,22 +29,14 @@ def control():return Path(os.environ['CJ_DEPLOY_CONTROL'])
 def heartbeat():return Path(os.environ['CJ_DEPLOY_HEARTBEAT'])/'worker.json'
 
 
-def ready(database, *, require_lio=False):
+def ready(database):
     try:
         authorization()
         local_postgres.require_serving(control())
         with database._open_runtime_connection() as connection:checkpoint.require_release(connection,control())
         state=json.loads(heartbeat().read_bytes())
-        fields = {'at','component','status'}
-        if (set(state) not in (fields, fields | {'lio_ready'})
-                or type(state.get('lio_ready', False)) is not bool
-                or not 0<=time.time()-state['at']<15):
-            return 'worker_heartbeat_stale'
-        if state['status'] != 'ready':
-            return state['component']+'_unavailable'
-        if require_lio and not state.get('lio_ready', False):
-            return 'lio_unavailable'
-        return None
+        if set(state)!={'at','component','status'} or not 0<=time.time()-state['at']<15:return 'worker_heartbeat_stale'
+        return None if state['status']=='ready' else state['component']+'_unavailable'
     except psycopg.Error:return 'database_unavailable'
     except (OSError,ValueError,KeyError,TypeError,CompositionUnavailable):return 'deployment_gate_unavailable'
 
@@ -54,33 +46,22 @@ def api(runtime):
     @app.middleware('http')
     async def deployment_gate(request,call_next):
         if request.url.path=='/health/live':return JSONResponse({'status':'alive'})
-        lio = request.url.path.startswith('/v1/lio/')
-        reason=await run_in_threadpool(ready,database,require_lio=lio)
+        reason=await run_in_threadpool(ready,database)
         if request.url.path=='/health/ready':
             return JSONResponse({'status':'ready' if reason is None else 'unavailable','component':reason},status_code=200 if reason is None else 503)
-        if reason is not None:
-            if lio:
-                return JSONResponse({'failure':'unavailable'},status_code=503,headers={'Cache-Control':'no-store'})
-            return JSONResponse({'error':'deployment_unavailable'},status_code=503)
+        if reason is not None:return JSONResponse({'error':'deployment_unavailable'},status_code=503)
         return await call_next(request)
     import uvicorn
     uvicorn.run(app,host='0.0.0.0',port=8765,access_log=False)
 
 
-def _publish_worker_state(component, status, lio_ready):
-    path=heartbeat();temporary=path.with_suffix('.tmp')
-    state = dict(at=time.time(),component=component,status=status)
-    if lio_ready:
-        state['lio_ready'] = True
-    temporary.write_text(json.dumps(state));temporary.replace(path)
-
-
 @contextmanager
-def worker_pulse(*, lio_ready=False):
+def worker_pulse():
     stop=threading.Event()
     def pulse():
         while not stop.is_set():
-            _publish_worker_state('worker', 'ready', lio_ready)
+            path=heartbeat();temporary=path.with_suffix('.tmp')
+            temporary.write_text(json.dumps(dict(at=time.time(),component='worker',status='ready')));temporary.replace(path)
             stop.wait(3)
     thread=threading.Thread(target=pulse,name='g2c-worker-pulse',daemon=True);thread.start()
     try:yield
@@ -116,15 +97,13 @@ def _run_worker(runtime):
     lio_confirmation = None
     if runtime.demo_subjects and 'CJ_BETA_CONFIRMATION_B64' in os.environ:
         lio_confirmation = ConfirmationSigner(decoded('CJ_BETA_CONFIRMATION_B64', length=32))
-    lio_ready = lio_confirmation is not None
-    _publish_worker_state('deployment_gate', 'unavailable', False)
     while True:
         component='deployment_gate';status='unavailable'
         try:
             authorization()
             local_postgres.require_serving(control())
             with database._open_runtime_connection() as connection:checkpoint.require_release(connection,control())
-            with worker_pulse(lio_ready=lio_ready):
+            with worker_pulse():
                 outcomes=run_worker.run_once(database,services.model,runtime.auth,tools_configuration=tools,real_services=services,account_admission=True,
                     hk_beta_b_run_credential=True,
                     hk_assembly_scopes=frozenset(scope_for(ISSUER,subject) for subject in runtime.assembly_subjects),
@@ -140,7 +119,8 @@ def _run_worker(runtime):
         except psycopg.Error:component='database'
         except (OSError,ValueError,CompositionUnavailable):pass
         if status!='ready':print('ALERT '+component+'_unavailable',file=sys.stderr,flush=True)
-        _publish_worker_state(component, status, lio_ready and status == 'ready')
+        path=heartbeat();temporary=path.with_suffix('.tmp')
+        temporary.write_text(json.dumps(dict(at=time.time(),component=component,status=status)));temporary.replace(path)
         time.sleep(1)
 
 

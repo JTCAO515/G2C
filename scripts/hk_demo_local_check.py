@@ -102,18 +102,6 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     from cj_trip.domain import CommitUnknown as TripCommitUnknown
     from cj_api.lio_planning_grounding import grounded_fields, stated_city
     from datetime import date
-    from deploy.hk import entrypoint
-
-    with (patch.object(entrypoint,'heartbeat',return_value=auth.parent/'test-worker.json'),
-          patch.object(entrypoint,'authorization'), patch.object(entrypoint,'control'),
-          patch.object(entrypoint.local_postgres,'require_serving'),
-          patch.object(entrypoint.checkpoint,'require_release')):
-        entrypoint._publish_worker_state('worker','ready',False)
-        assert entrypoint.ready(database) is None
-        assert entrypoint.ready(database,require_lio=True) == 'lio_unavailable'
-        entrypoint._publish_worker_state('worker','ready',True)
-        assert entrypoint.ready(database,require_lio=True) is None
-
     fixed_words = 'The hotel meetup from 9 to 10 a.m. on the first day is fixed'
     sample = f'Plan three days in Beijing for two people starting tomorrow. {fixed_words}.'
     today = date(2026, 11, 9)
@@ -175,6 +163,18 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     assert not stated_city(('Plan a trip to Shanghai with a short visit to Beijing.',), 'Beijing')
     assert not stated_city(('帮我规划上海行程，途经北京，从 2026-11-11 到 2026-11-12',
                             '2026-11-11 到 2026-11-12'), '北京')
+    for turns, city in (
+        (('Plan a trip to Beijing starting tomorrow for three days, but those dates are for Shanghai only.',), 'Beijing'),
+        (('帮我规划从明天开始的北京三天行程，但明天是上海的出发日。',), '北京'),
+        (('Plan a three-day trip to Beijing.', 'Starting tomorrow?'), 'Beijing'),
+        (('Plan a Beijing itinerary.', 'Travel from 2026-11-11 to 2026-11-12?'), 'Beijing'),
+    ):
+        tentative, _ = grounded_fields(turns, city, today)
+        assert tentative['arrival']['date']['state'] == 'missing', turns
+        assert tentative['departure']['date']['state'] == 'missing', turns
+    polite, _ = grounded_fields(('Could you plan a trip to Beijing starting tomorrow for three days?',),
+                                'Beijing', today)
+    assert polite['departure']['date']['value'] == '2026-11-12'
     meetings, _ = grounded_fields(('The trip dates are undecided. The meeting is from 2026-11-11 to 2026-11-12.',),
                                    'Beijing', today)
     assert meetings['arrival']['date']['state'] == 'missing'
@@ -292,9 +292,6 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
             yield '北京有许多适合散步的公园。' if system.endswith('Reply in Chinese.') else 'Beijing has many parks for walking.'
 
     model = LioModel()
-    deferred = run_worker._worker_for_scope(database, model, auth, scope, checker_for(auth),
-                                           demo_planning=True, require_lio_confirmation=True)
-    assert [outcome.status for outcome in deferred.process()] == ['waiting','waiting'] and model.calls == 0
     worker = run_worker._worker_for_scope(database, model, auth, scope, checker_for(auth),
                                          demo_planning=True)
     assert [outcome.status for outcome in worker.process()] == ['completed', 'completed']
@@ -357,6 +354,12 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
         raise AssertionError('retained display relaxed the original operational recovery deadline')
     assert api.get(timeline, headers=owner).json()['messages'][0] == ready[0]
 
+    no_signer = original('lio-no-signer', 'Plan a trip to Beijing from 2026-11-11 to 2026-11-12.', 'en')
+    assert api.post(messages, content=no_signer, headers=owner).status_code == 200
+    assert [outcome.status for outcome in worker.process()] == ['completed']
+    no_save = api.get(timeline, headers=owner).json()['messages'][-1]
+    assert no_save['status'] == 'completed' and no_save['answer'] and no_save['trip'] is None
+
     seen = []
     def validate_intake(worker, plan, state, details, locale):
         with database.connect(scope) as connection:
@@ -418,7 +421,8 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     assert worker.process() == []
     withdrawals = ('Do not save it.', "Please don't save it yet.", 'Show me a draft without saving.',
                    "Please don't save this itinerary to my account.", 'I do not want this itinerary saved.',
-                   'Can you show me before saving?', '请不要把行程保存到我的账户。')
+                   'Can you show me before saving?', 'Cancel it.', 'Please leave it as a draft.',
+                   '请不要把行程保存到我的账户。')
     for i, withdrawal in enumerate(withdrawals):
         assert api.post(messages, headers=owner, content=original(
             f'lio-withdrawal-{i}', 'Plan a trip to Beijing from 2026-12-01 to 2026-12-03. ' + withdrawal, 'en')).status_code == 200

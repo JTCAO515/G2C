@@ -38,7 +38,8 @@ ADJACENT_DURATION = re.compile(rf'\s*[,，]?\s*(?:for\s+({NUMBER})\s+days?\b|(?:
 DESTINATION_NEUTRAL = re.compile(r'^(?:please\s+)?(?:plan|make|build|create)\s+(?:a\s+|an\s+)?(?:trip|itinerary)'
                                  r'|^(?:请|帮我|给我)?\s*规划(?:一趟|一次|一个|一份)?(?:旅行|行程)', re.I)
 WITHDRAWAL = re.compile(
-    r'^(?:never mind|forget it|cancel (?:the |this |my )?(?:trip|plan|itinerary))\b|'
+    r'^(?:please\s+)?(?:never mind|forget it|cancel (?:it|(?:the |this |my )?(?:trip|plan|itinerary)))\b|'
+    r'\b(?:keep|leave)\s+(?:it|(?:the |this |my )?(?:trip|plan|itinerary))\s+(?:as\s+)?(?:a\s+)?draft\b|'
     r'\b(?:wait for my (?:approval|confirmation)|(?:only after|once) I (?:approve|confirm))\b|'
     r'^(?:算了|不用规划了)(?:$|[，, ])|等我(?:确认|同意|批准)',
     re.I,
@@ -62,6 +63,8 @@ PRIMARY_DESTINATION = re.compile(r'\b(?:itinerary|trip|days?)\s+(?:in|to)\s+([A-
 NAMED_BEIJING = re.compile(r'\bBeijing\s+(?:itinerary|trip|visit)\b', re.I)
 ZH_DIRECT = re.compile(rf'(?:规划|安排|设计|做)\s*(?:一下|一个|一份)?\s*(?:(?:{NUMBER})天的?)?(?:去|到|在)?北京')
 ZH_RELATIVE = re.compile(r'(?:规划|安排|设计|做)\s*从?(?:明天|今天|后天)(?:开始|起)的?北京')
+ZH_RELATIVE_TAIL = re.compile(rf'\s*的?北京\s*(?:{NUMBER})天(?:游|行程|旅行)\s*(?:[,，]\s*(?:{NUMBER})个人)?\s*')
+POLITE_PLAN_QUESTION = re.compile(r'^(?:can|could|would) you\s+', re.I)
 TRIP_PARTY_GAP = rf'\s*(?:for\s+(?:{NUMBER})\s+people\s+)?'
 OTHER_DESTINATION = re.compile(r'\bfrom\s+Beijing\s+to\b|从北京(?:去|到)', re.I)
 CITY_REPLY = re.compile(r'^(?:Beijing|北京)(?=$|[,，：:]|\s+(?:\d{4}-|from\b|从|明天|今天))', re.I)
@@ -74,7 +77,7 @@ NEGATED = re.compile(
 OTHER = re.compile(r'孩子|女儿|儿子|母亲|父亲|同伴|家人|\b(?:daughter|son|mother|father|friend|guest)\b', re.I)
 CLOCK = r'(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?'
 RANGE = re.compile(rf'{CLOCK}\s*(?:[-–—到至]|\bto\b)\s*{CLOCK}', re.I)
-CLAUSE_BREAK = re.compile(r'[!?。；;\n]+|\.(?=\s+[A-Z])|，(?=\s*(?:第[一二三四五六七八九十\d]+天|酒店集合))')
+CLAUSE_BREAK = re.compile(r'[!。！；;\n]+|(?<=[?？])\s*|\.(?=\s+[A-Z])|，(?=\s*(?:第[一二三四五六七八九十\d]+天|酒店集合))')
 FIXED_REPLY = re.compile(r'^(?:全体|大家|本人|我参加|第[一二三四五六七八九十\d]+天|'
                          r'(?:for (?:everyone|our party|both of us)|on (?:the first day|\d{4}-))\b)', re.I)
 
@@ -114,11 +117,20 @@ def _relative_span(word, duration, today):
     return first, first + timedelta(days=duration-1)
 
 
+def _date_declaration(clause):
+    if not clause.endswith(('?', '？')):
+        return clause
+    if POLITE_PLAN_QUESTION.match(clause) and PLAN_REQUEST.match(clause):
+        return clause[:-1].rstrip()
+    return None
+
+
 def _declared_duration(turns):
     durations = set()
     for turn in turns:
-        for clause in _clauses(turn):
-            if not PLAN_REQUEST.match(clause) or NEGATED.search(clause):
+        for original in _clauses(turn):
+            clause = _date_declaration(original)
+            if clause is None or not PLAN_REQUEST.match(clause) or NEGATED.search(clause):
                 continue
             primary = PRIMARY_DESTINATION.search(clause)
             for match in EARLIER_DURATION.finditer(clause):
@@ -201,8 +213,9 @@ def _day_span(turns, today):
         if DATES_UNDECIDED.search(turn):
             return None, None
         spans = set()
-        for clause in _clauses(turn):
-            if NEGATED.search(clause) or FIXED.search(clause):
+        for original in _clauses(turn):
+            clause = _date_declaration(original)
+            if clause is None or NEGATED.search(clause) or FIXED.search(clause):
                 continue
             date_reply = TRIP_DATES.fullmatch(clause)
             if not (PLAN_REQUEST.match(clause) or date_reply):
@@ -218,12 +231,22 @@ def _day_span(turns, today):
                 if explicit:
                     continue
                 start = START.search(clause)
-                if start and (_timing_follows_destination(clause, start.start(), absolute=False)
-                              or ZH_RELATIVE.search(clause)):
+                if start is None:
+                    continue
+                tail = clause[start.end():]
+                if ZH_RELATIVE.search(clause):
+                    if not ZH_RELATIVE_TAIL.fullmatch(tail):
+                        continue
+                    duration = _declared_duration((clause,))
+                elif _timing_follows_destination(clause, start.start(), absolute=False):
                     suffix = ADJACENT_DURATION.match(clause, start.end())
+                    if not SPAN_TAIL.fullmatch(clause[suffix.end():] if suffix else tail):
+                        continue
                     duration = _number(suffix[1] or suffix[2]) if suffix else _declared_duration((clause,))
-                    if duration:
-                        spans.add(_relative_span(start[1] or start[2], duration, today))
+                else:
+                    continue
+                if duration:
+                    spans.add(_relative_span(start[1] or start[2], duration, today))
             except ValueError:
                 return None, None
         if spans:

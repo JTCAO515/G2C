@@ -102,7 +102,7 @@ class Outcome:
 
 
 class RunWorker:
-    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None, memory=None, message_context=None, tools=None, edit_publisher=None,edit_results=False,place_sources=None,memory_history=False,history_adapter=None,execution_lease=nullcontext,owned_transaction_lease=None,lio_locale=None,lio_planning=None,require_lio_confirmation=False):
+    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None, memory=None, message_context=None, tools=None, edit_publisher=None,edit_results=False,place_sources=None,memory_history=False,history_adapter=None,execution_lease=nullcontext,owned_transaction_lease=None,lio_locale=None,lio_planning=None):
         """`messages`: cj_message.domain.Service and `runs`: cj_run.core.Service, both bound to `scope`.
 
         `drafts`: optional cj_agent.draft.DraftPublisher for this user's TRIP scope; messages
@@ -126,7 +126,6 @@ class RunWorker:
         self.place_sources=place_sources
         self.lio_locale = lio_locale
         self.lio_planning = lio_planning
-        self.require_lio_confirmation = require_lio_confirmation
 
     def process(self, limit=20):
         outcomes = []
@@ -393,7 +392,6 @@ class RunWorker:
                               tools=self.tools,edit_publisher=self.edit_publisher,edit_results=self.edit_results,place_sources=self.place_sources,
                               lio_locale=self.lio_locale,
                               lio_planning=self.lio_planning,
-                              require_lio_confirmation=self.require_lio_confirmation,
                               runs=Service(OwnedRepository(), runs.valid))
             if self.edit_publisher is not None:
                 with self.message_context.worker_repository(owned.runs.repository):
@@ -434,8 +432,6 @@ class RunWorker:
 
     def _execute(self, receipt, binding):
         locale = self.lio_locale(binding) if self.lio_locale is not None else None
-        if locale is not None and self.require_lio_confirmation and self.lio_planning is None:
-            return Outcome(receipt.message_id, receipt.run_id, 'waiting')
         state = self.runs.accept(binding)
         if self.budget_exit is not None:
             self.budget_exit = self.budget_exit.for_run(binding,state)
