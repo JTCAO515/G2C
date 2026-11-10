@@ -469,7 +469,7 @@ class RunWorker:
             from cj_message.lio_context import LioCitation, LioToolProgress, answer_prompt
 
             if locale is not None and self.lio_planning is not None:
-                planning = self.lio_planning.execute(self, binding, state, text, locale)
+                planning = self.lio_planning.execute(self, binding, state, text, original)
                 if planning is not None:
                     return self._finish(receipt, planning)
             inputs = ([{'role': 'user', 'content': text}] if self.memory_run is None

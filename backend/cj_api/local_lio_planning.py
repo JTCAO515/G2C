@@ -16,7 +16,7 @@ from cj_needs.domain import InvalidInput, decode, exact
 from cj_needs.preview import encode, preview
 from cj_run.postgres import CommitUnknown
 
-from .lio_planning_grounding import (PLAN_REQUEST, grounded_fields, planning_authority_complete,
+from .lio_planning_grounding import (PLAN_REQUEST, PlanningTurn, grounded_fields, planning_authority_complete,
     planning_withdrawn, stated_city)
 
 
@@ -75,16 +75,18 @@ class LioPlanning:
         self.database = database
         self.plan_and_save = plan_and_save
 
-    def execute(self, worker, binding, state, text, locale):
-        inputs = planning_texts(self.database, binding, text)
+    def execute(self, worker, binding, state, text, original):
+        today = original.question_day or datetime.now(ZoneInfo('Asia/Shanghai')).date()
+        inputs = planning_texts(self.database, binding, PlanningTurn(text, today))
         if inputs is None:
             return None
+        locale = original.locale
         if planning_withdrawn(text):
             answer = '好，先不保存行程。' if locale == 'zh' else "Okay, I won't save an itinerary."
             state = worker._event(binding, state, 'text_delta', answer)
             return worker._event(binding, state, 'completed')
-        texts, references = inputs
-        details = extract(worker, binding, locale, texts, references)
+        turns, references = inputs
+        details = extract(worker, binding, locale, turns, references)
         if details is None:
             return None
         if details.clarification is not None:
@@ -128,12 +130,12 @@ class LioPlanSave:
         return worker._event(binding, state, 'completed')
 
 
-def planning_texts(database, binding, text):
-    if PLAN_REQUEST.match(text):
-        return (text,), ()
+def planning_texts(database, binding, current):
+    if PLAN_REQUEST.match(current.text):
+        return (current,), ()
     with database.connect(binding.scope) as connection:
         prior = connection.execute(
-            'SELECT m.message_id,m.sequence,m.raw_input,m.input_sha256, EXISTS(SELECT 1 FROM cj_run_event e '
+            'SELECT m.message_id,m.sequence,m.raw_input,m.input_sha256,m.demo_question_day, EXISTS(SELECT 1 FROM cj_run_event e '
             'JOIN cj_run_record r ON (r.scope,r.run_id)=(e.scope,e.run_id) '
             'WHERE (e.scope,e.run_id)=(m.scope,m.run_id) AND r.status=%s '
             'AND e.kind=%s AND e.value=%s) FROM cj_message_receipt m '
@@ -142,27 +144,28 @@ def planning_texts(database, binding, text):
             'ORDER BY m.sequence DESC LIMIT %s',
             ('completed', 'effect_committed', ASK_MORE, binding.scope, binding.conversation_id,
              binding.generation, LIO_VERSION, binding.message_sequence, MAX_CLARIFICATIONS)).fetchall()
-    texts = []
+    turns = []
     references = []
-    for message_id, sequence, raw, digest, awaiting_details in prior:
+    for message_id, sequence, raw, digest, question_day, awaiting_details in prior:
         if not awaiting_details:
             break
         command = Command.parse_original(bytes(raw))
         if ((command.conversation_id, command.message_id) != (binding.conversation_id, message_id)
                 or sha256(command.raw).hexdigest() != digest):
             raise Unavailable('original Lio request changed')
-        texts.append(json.loads(command.raw)['text'])
+        turns.append(PlanningTurn(json.loads(command.raw)['text'], question_day or current.question_day))
         references.append(dict(conversation_id=binding.conversation_id, generation=binding.generation,
                                message_id=message_id, sequence=sequence, input_sha256=digest))
-    if not texts:
+    if not turns:
         return None
-    return (*reversed(texts), text), tuple(reversed(references))
+    return (*reversed(turns), current), tuple(reversed(references))
 
 
-def extract(worker, binding, locale, texts, references):
+def extract(worker, binding, locale, turns, references):
+    texts = tuple(turn.text for turn in turns)
     source = '\n'.join(texts)
-    today = datetime.now(ZoneInfo('Asia/Shanghai')).date()
-    system = SYSTEM + f' The local date in China is {today}. Resolve explicitly stated relative days.'
+    days = ', '.join(turn.question_day.isoformat() for turn in turns)
+    system = SYSTEM + f' Local dates in China for the user messages, in order: {days}. Resolve explicitly stated relative days.'
     messages = [{'role': 'user', 'content': text} for text in texts]
     raw = ''.join(worker._registered_stream(
         binding, 'model.lio_intake.0', 'model.answer', (messages, system, worker.provider),
@@ -182,7 +185,7 @@ def extract(worker, binding, locale, texts, references):
             city = None
         value = json.loads(preview(encode(envelope['extraction']), message_id=binding.message_id,
                                    run_id=binding.run_id, source_text=source))
-        fields, missing_fixed = grounded_fields(texts, city, today)
+        fields, missing_fixed = grounded_fields(turns, city)
     except (InvalidInput, UnicodeError) as exc:
         raise ProviderUnknown('Lio planning details unavailable') from exc
     questions = []
@@ -200,7 +203,7 @@ def extract(worker, binding, locale, texts, references):
     if missing_fixed:
         questions.append('哪项安排需要保留？请告诉我谁参加、哪天以及开始和结束时间。' if locale == 'zh'
                          else 'Which arrangement should I keep? Please share who is going, the day, and the start and end times.')
-    if not questions and not planning_authority_complete(texts, city, today, has_fixed=bool(fields.get('fixed_items'))):
+    if not questions and not planning_authority_complete(turns, city, has_fixed=bool(fields.get('fixed_items'))):
         questions.append('还有些安排我没理解。请告诉我这趟北京行程要用哪些信息。' if locale == 'zh'
                          else 'I’m not sure how to use part of your request. What should I include in the Beijing itinerary?')
     return PlanningDetails(city, fields, ' '.join(questions) if questions else None, references)

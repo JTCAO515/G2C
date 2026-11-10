@@ -100,8 +100,19 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     from cj_run.core import Binding, ResyncRequired
     from cj_trip.confirmation import ConfirmationSigner
     from cj_trip.domain import CommitUnknown as TripCommitUnknown
-    from cj_api.lio_planning_grounding import grounded_fields, planning_authority_complete, stated_city
+    from cj_api.lio_planning_grounding import (
+        PlanningTurn, grounded_fields as grounded_dated_fields,
+        planning_authority_complete as dated_authority_complete, stated_city,
+    )
     from datetime import date
+
+    def grounded_fields(turns, city, day):
+        return grounded_dated_fields(tuple(PlanningTurn(text, day) for text in turns), city)
+
+    def planning_authority_complete(turns, city, day, *, has_fixed):
+        return dated_authority_complete(tuple(PlanningTurn(text, day) for text in turns),
+                                        city, has_fixed=has_fixed)
+
     fixed_words = 'The hotel meetup from 9 to 10 a.m. on the first day is fixed'
     sample = f'Plan three days in Beijing for two people starting tomorrow. {fixed_words}.'
     today = date(2026, 11, 9)
@@ -225,6 +236,19 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     filled, missing = grounded_fields(('Plan a trip to Beijing from 2026-11-11 to 2026-11-12. The hotel meetup is fixed.',
         'For everyone, on the first day from 09:00 to 10:00.'), 'Beijing', today)
     assert not missing and filled['fixed_items'][0]['applies_to'] == ['party']
+    first_day, reply_day = date(2026, 11, 9), date(2026, 11, 10)
+    midnight, missing = grounded_dated_fields((
+        PlanningTurn('Plan three days in Beijing for two people starting tomorrow. The hotel meetup is fixed.', first_day),
+        PlanningTurn('For everyone, on the first day from 09:00 to 10:00.', reply_day),
+    ), 'Beijing')
+    assert not missing and midnight['arrival']['date']['value'] == '2026-11-10'
+    assert midnight['departure']['date']['value'] == '2026-11-12'
+    assert midnight['fixed_items'][0]['start']['date']['value'] == '2026-11-10'
+    clarified, _ = grounded_dated_fields((
+        PlanningTurn('Plan a three-day trip to Beijing.', first_day),
+        PlanningTurn('Starting tomorrow.', reply_day),
+    ), 'Beijing')
+    assert clarified['arrival']['date']['value'] == '2026-11-11'
     dated, missing = grounded_fields(('Plan a trip to Beijing from 2026-11-11 to 2026-11-12. The hotel meetup is fixed.',
         'For everyone, on 2026-11-12 from 09:00 to 10:00.'), 'Beijing', today)
     assert not missing and dated['fixed_items'][0]['start']['date']['value'] == '2026-11-12'

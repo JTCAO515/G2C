@@ -1,4 +1,5 @@
 """Derive authoritative itinerary inputs from explicit, bounded declarations."""
+from dataclasses import dataclass
 from datetime import date, timedelta
 from hashlib import sha256
 import re
@@ -241,6 +242,12 @@ def stated_city(turns, city):
                                  for clause in _clauses(turns[-1]))
 
 
+@dataclass(frozen=True)
+class PlanningTurn:
+    text: str
+    question_day: date
+
+
 def _compatible_turns(turns, city):
     if city is None:
         return turns
@@ -248,7 +255,7 @@ def _compatible_turns(turns, city):
     waiting_for_city = False
     for turn in turns:
         compatible = []
-        for clause in _clauses(turn):
+        for clause in _clauses(turn.text):
             clause = _planning_without_assent(clause) or clause
             named = stated_city((clause,), city)
             if PLAN_REQUEST.match(clause) and not named and not DESTINATION_NEUTRAL.fullmatch(clause):
@@ -261,7 +268,7 @@ def _compatible_turns(turns, city):
             if not waiting_for_city:
                 compatible.append(clause)
         if compatible:
-            retained.append('\n'.join(compatible))
+            retained.append(PlanningTurn('\n'.join(compatible), turn.question_day))
     return tuple(retained)
 
 
@@ -276,20 +283,21 @@ def _timing_follows_destination(clause, position, *, absolute):
     return re.fullmatch(expected, gap, re.I) is not None
 
 
-def _day_span(turns, today, city):
+def _day_span(turns, city):
     if len(turns) > 1:
-        reply = RELATIVE_REPLY.fullmatch(turns[-1].strip().rstrip('.。！!'))
+        latest = turns[-1]
+        reply = RELATIVE_REPLY.fullmatch(latest.text.strip().rstrip('.。！!'))
         if reply is not None:
             count = reply[2] or reply[4]
-            duration = _number(count) if count else _declared_duration(turns[:-1], city)
+            duration = _number(count) if count else _declared_duration(tuple(turn.text for turn in turns[:-1]), city)
             if not duration:
                 return None, None
-            return _relative_span(reply[1] or reply[3], duration, today)
+            return _relative_span(reply[1] or reply[3], duration, latest.question_day)
     for turn in reversed(turns):
-        if DATES_UNDECIDED.search(turn) or _date_scope_disputed(turn, city):
+        if DATES_UNDECIDED.search(turn.text) or _date_scope_disputed(turn.text, city):
             return None, None
         spans = set()
-        for original in _clauses(turn):
+        for original in _clauses(turn.text):
             clause = _date_declaration(original)
             if clause is None or NEGATED.search(clause) or FIXED.search(clause):
                 continue
@@ -322,7 +330,7 @@ def _day_span(turns, today, city):
                 else:
                     continue
                 if duration:
-                    spans.add(_relative_span(start[1] or start[2], duration, today))
+                    spans.add(_relative_span(start[1] or start[2], duration, turn.question_day))
             except ValueError:
                 return None, None
         if spans:
@@ -342,7 +350,7 @@ def _fixed_authority_clause(clause):
 
 
 def _timed_plan_authorized(clause, city, today):
-    if _day_span((clause,), today, city)[0] is None:
+    if _day_span((PlanningTurn(clause, today),), city)[0] is None:
         return False
     span = SPAN.search(clause)
     if span is not None:
@@ -357,13 +365,14 @@ def _timed_plan_authorized(clause, city, today):
     return OPEN_PLAN.fullmatch(clause[:start.start()].rstrip(' ,，')) is not None
 
 
-def planning_authority_complete(turns, city, today, *, has_fixed):
+def planning_authority_complete(turns, city, *, has_fixed):
     """A grounded date does not authorize an unexplained instruction in the same turn."""
     # Historical details may be dropped when the city changes. The latest
     # original must still be evaluated in full, even before its new destination.
-    latest = '\n'.join(_planning_without_assent(clause) or clause for clause in _clauses(turns[-1]))
-    for turn in (*_compatible_turns(turns[:-1], city), latest):
-        for original in _clauses(turn):
+    latest = turns[-1]
+    latest_text = '\n'.join(_planning_without_assent(clause) or clause for clause in _clauses(latest.text))
+    for turn in (*_compatible_turns(turns[:-1], city), PlanningTurn(latest_text, latest.question_day)):
+        for original in _clauses(turn.text):
             clause = _date_declaration(original)
             if clause is None:
                 return False
@@ -376,7 +385,7 @@ def planning_authority_complete(turns, city, today, *, has_fixed):
                 continue
             if has_fixed and _fixed_authority_clause(clause):
                 continue
-            if PLAN_REQUEST.match(clause) and _timed_plan_authorized(clause, city, today):
+            if PLAN_REQUEST.match(clause) and _timed_plan_authorized(clause, city, turn.question_day):
                 continue
             return False
     return True
@@ -431,10 +440,10 @@ def _fixed_item(clause, first, zone, party, *, reply=''):
                 end=_event(day, time=end, zone=zone))
 
 
-def grounded_fields(turns, city, today):
+def grounded_fields(turns, city):
     turns = _compatible_turns(turns, city)
-    clauses = tuple(clause for turn in turns for clause in _clauses(turn))
-    first, last = _day_span(turns, today, city)
+    clauses = tuple(clause for turn in turns for clause in _clauses(turn.text))
+    first, last = _day_span(turns, city)
     parties = {_number(match[1] or match[2]) for clause in clauses
                if PLAN_REQUEST.match(clause) and not NEGATED.search(clause)
                for match in PARTY.finditer(clause)}
@@ -443,7 +452,7 @@ def grounded_fields(turns, city, today):
     fixed_clauses = tuple(dict.fromkeys(clause for clause in clauses if FIXED.search(clause)))
     fixed_items = [_fixed_item(clause, first, zone, party) for clause in fixed_clauses]
     if len(turns) > 1 and fixed_items.count(None) == 1:
-        reply = turns[-1].strip()
+        reply = turns[-1].text.strip()
         if FIXED_REPLY.match(reply) and not FIXED.search(reply):
             index = fixed_items.index(None)
             fixed_items[index] = _fixed_item(fixed_clauses[index], first, zone, party, reply=reply)
