@@ -29,6 +29,16 @@ struct LioPublicDisplayTests {
         #expect(!LioPublicDisplay.permitsSource(url))
     }
 
+    @Test(arguments: [
+        "See https://a'bc@api-beta.go2china.space/",
+        "See https://a(b)@api.go2china.space",
+        "See \"https://api-beta.go2china.space\".",
+        "https://weather.com.cn)[Forecast](https://%EF%BD%81pi-beta.go2china.space%E3%80%82/)"
+    ])
+    func findsServiceHostsInsideTextPunctuation(_ text: String) {
+        #expect(!LioPublicDisplay.permitsText(text))
+    }
+
     @Test func preservesTravelLanguageAndPublicAttribution() throws {
         #expect(LioPublicDisplay.permitsText("草原夜间偏凉。"))
         #expect(LioPublicDisplay.permitsText("Trains run frequently. Your itinerary needs a little more time."))
