@@ -202,11 +202,16 @@ def extract(worker, binding, locale, turns, references):
     questions.extend(q['text_zh' if locale == 'zh' else 'text_en'] for q in value['questions']
                      if q['field'] == 'fixed_items')
     if grounded.conflicting_party:
-        questions.append('人数有两种说法。请把出行人数和日期一起重新告诉我。' if locale == 'zh'
-                         else 'I have different group sizes. Please restate your travel dates and how many people are going.')
+        questions.append('出行人数有两种说法。' if locale == 'zh' else 'I have different group sizes.')
     if grounded.missing_fixed:
         questions.append('哪项安排需要保留？请告诉我谁参加、哪天以及开始和结束时间。' if locale == 'zh'
                          else 'Which arrangement should I keep? Please share who is going, the day, and the start and end times.')
+    if grounded.restart_needed:
+        questions.append(
+            '请另发一条完整的消息，以「帮我规划……」开头，把目的地、日期、天数、人数和要保留的安排一起告诉我。'
+            if locale == 'zh' else
+            'Please start a fresh planning request with “Plan a trip to…” and include the destination, dates, number of days, '
+            'group size, and anything that must stay fixed in that message.')
     if not questions and not planning_authority_complete(turns, city, has_fixed=bool(fields.get('fixed_items'))):
         questions.append('还有些安排我没理解。请告诉我这趟北京行程要用哪些信息。' if locale == 'zh'
                          else 'I’m not sure how to use part of your request. What should I include in the Beijing itinerary?')
