@@ -8,7 +8,6 @@ from hashlib import sha256
 from psycopg import Error as DatabaseError
 
 from cj_memory.runtime import RuntimeDenied,RuntimeUnknown
-from cj_message.demo_dialogue import lio_conversation
 from cj_message.domain import Command
 from cj_message.lio_plan_needs import original_needs
 from cj_message.needs_binding import needs_scope_for
@@ -120,7 +119,7 @@ class OriginalDecisions:
             if set(value)!={'version','needs_id','revision','fields','current_trip'}:
                 raise RuntimeDenied('original NEEDS model source differs')
             reference = command.needs_reference
-            if reference is None and binding.conversation_id == lio_conversation(binding.scope):
+            if reference is None:
                 reference = self._lio_reference(binding, value['fields'])
             if reference != (value['needs_id'],value['revision']):
                 raise RuntimeDenied('original NEEDS model source differs')

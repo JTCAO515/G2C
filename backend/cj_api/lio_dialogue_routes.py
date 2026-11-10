@@ -5,7 +5,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
 
-from cj_message.demo_dialogue import LIO_CHAT_PATTERN, message_id
+from cj_message.demo_dialogue import LIO_CHAT_PATTERN, LIO_VERSION, LIO_VERSION_V2, message_id
 from cj_message.domain import InvalidInput
 from cj_message.lio_context import SOURCE_EFFECT, TOOL_EFFECT, display_answer
 from cj_message.lio_plan_needs import BOUND_EFFECT, EDIT_BOUND_EFFECT
@@ -72,9 +72,9 @@ def _message(item, state, *, expired=False, trip=None, memory=None):
                 failure=failure, activity=activity, sources=sources, trip=trip, memory=memory)
 
 
-def _timeline(boundary, resolve_runs, trip_cards, memory_cards, token, conversation_id, before):
+def _timeline(boundary, resolve_runs, trip_cards, memory_cards, token, conversation_id, before, multiple=False):
     def project(context):
-        page = context.lio_timeline(conversation_id, before)
+        page = context.lio_timeline(conversation_id, before, multiple=multiple)
         messages = []
         if page.messages:
             repository = resolve_runs(context.scope)
@@ -91,11 +91,12 @@ def _timeline(boundary, resolve_runs, trip_cards, memory_cards, token, conversat
                 memory = (memory_cards.project(context, token, item.message_id, binding.run_id)
                           if memory_cards is not None and state is not None and state.status == 'completed' else None)
                 messages.append(_message(item, state, expired=expired, trip=trip, memory=memory))
-        response = _json(dict(version=TIMELINE_VERSION, conversation_id=page.conversation_id,
+        version = 'LIO-timeline.2' if multiple else TIMELINE_VERSION
+        response = _json(dict(version=version, conversation_id=page.conversation_id,
                               messages=messages, next_before=page.next_before))
         if len(response.body) > 4_500_000:
             raise SnapshotTooLarge('Lio timeline exceeds response bound')
-        if context.lio_timeline(conversation_id, before) != page:
+        if context.lio_timeline(conversation_id, before, multiple=multiple) != page:
             return _failure(503)
         return response
 
@@ -103,8 +104,7 @@ def _timeline(boundary, resolve_runs, trip_cards, memory_cards, token, conversat
 
 
 def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, prepare_scope, memory_cards=None):
-    @app.post('/v1/lio/messages')
-    async def send(request: Request):
+    async def send(request, version, receipt_version):
         token = _token(request)
         if token is None:
             return _failure(401)
@@ -112,16 +112,16 @@ def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, pre
             return _failure(400)
         try:
             raw = await _read_body(request, 16384)
-            receipt = await run_in_threadpool(boundary.receive_lio, token, raw, prepare_scope=prepare_scope)
+            receipt = await run_in_threadpool(boundary.receive_lio, token, raw, prepare_scope=prepare_scope,
+                                              version=version)
         except BodyError as exc:
             return _failure(exc.status)
         except Exception as exc:
             return _failure(message_failure(request, exc, True).status_code)
-        return _json(dict(version=RECEIPT_VERSION, message_id=receipt.message_id,
+        return _json(dict(version=receipt_version, message_id=receipt.message_id,
                           conversation_id=receipt.conversation_id))
 
-    @app.get('/v1/lio/timeline')
-    async def timeline(request: Request):
+    async def timeline(request, multiple):
         token = _token(request)
         if token is None:
             return _failure(401)
@@ -135,6 +135,22 @@ def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, pre
             return _failure(400)
         try:
             return await run_in_threadpool(_timeline, boundary, resolve_runs, trip_cards, memory_cards, token,
-                                           conversation, before)
+                                           conversation, before, multiple)
         except Exception as exc:
             return _failure(message_failure(request, exc, False).status_code)
+
+    @app.post('/v1/lio/messages')
+    async def send_default(request: Request):
+        return await send(request, LIO_VERSION, RECEIPT_VERSION)
+
+    @app.post('/v2/lio/messages')
+    async def send_conversation(request: Request):
+        return await send(request, LIO_VERSION_V2, 'LIO-message-receipt.2')
+
+    @app.get('/v1/lio/timeline')
+    async def timeline_default(request: Request):
+        return await timeline(request, False)
+
+    @app.get('/v2/lio/timeline')
+    async def timeline_conversation(request: Request):
+        return await timeline(request, True)
