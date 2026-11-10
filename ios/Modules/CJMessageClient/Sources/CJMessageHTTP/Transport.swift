@@ -214,6 +214,14 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
                                  operation: "readLioTimelineV\(version.rawValue)", bearer: bearer)
     }
 
+    func readLioFirstReceipt(_ original: LioTimelineWire.Send, inputSHA256: String,
+                             bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
+        try await lioRead(path: "/v2/lio/messages", query: [
+            URLQueryItem(name: "message_id", value: original.messageID),
+            URLQueryItem(name: "input_sha256", value: inputSHA256)
+        ], operation: "readLioMessageV2", bearer: bearer)
+    }
+
     func readLioTrip(before: String?, bearer: String, conversationID: String? = nil) async throws -> (HTTPResponse, HTTPBody?) {
         if let before, !LioTripHistoryWire.validCursor(before) { throw MessageHTTPFailure.invalidConfiguration }
         var query: [URLQueryItem] = []

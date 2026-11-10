@@ -118,6 +118,17 @@ public enum LioTimelineWire {
             }
             return reply.conversationID
         }
+
+        func confirmLookup(_ response: Data) throws -> (id: String, receipt: Data)? {
+            try validateUnambiguousJSON(response)
+            guard let lookup = try JSONSerialization.jsonObject(with: response) as? [String: Any],
+                  lookup["version"] as? String == "LIO-message-lookup.2",
+                  let value = lookup["receipt"] else { throw MessageHTTPFailure.invalidResponse }
+            if value is NSNull { return nil }
+            guard let receipt = value as? [String: Any] else { throw MessageHTTPFailure.invalidResponse }
+            let bytes = try JSONSerialization.data(withJSONObject: receipt)
+            return (try confirm(bytes), bytes)
+        }
     }
 
     public struct Source: Sendable, Equatable {

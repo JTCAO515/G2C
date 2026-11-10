@@ -918,9 +918,8 @@ private var developmentHostEnvironment: [String: String] {
         let lioService = LioService.signedTimeline(lioClient)
         lio = lioService
         #if G2C_LIO_CONVERSATIONS_V2
-        lioChats = .signed(client: lioClient, defaultService: lioService, defaultTitle: {
-            shell.language.text("Original conversation", "最早的对话")
-        }, tripHistory: { conversationID in
+        lioChats = .signed(client: lioClient, defaultService: lioService, language: { shell.language.lio },
+                           tripHistory: { conversationID in
             LioTripHistoryClient(timeline: lioClient, recovery: recovery, scope: scope, lease: lease,
                                  conversationID: conversationID)
         })

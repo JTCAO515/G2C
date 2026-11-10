@@ -125,8 +125,9 @@ struct LioTimelineServiceTests {
         let fixture = TimelineFixture(loseResponse: true)
         let service = LioService.timeline(
             send: { try await fixture.submit($0) }, read: { try await fixture.read($0, before: $1, version: .v2) },
-            destination: .newChat, didCreate: { await fixture.recordCreated($0) },
-            pollInterval: .milliseconds(1), observationWindow: .milliseconds(3))
+            destination: .newChat, recoverFirst: { await fixture.lookupFirst($0) },
+            didCreate: { await fixture.recordCreated($0) }, pollInterval: .milliseconds(1),
+            observationWindow: .milliseconds(3), recoveryInterval: .milliseconds(1))
         let model = LioConversation(service: service)
         model.send("First question", language: .english)
         let first = try #require(model.pending)
@@ -138,6 +139,14 @@ struct LioTimelineServiceTests {
         #expect(await fixture.sent.map(\.messageID) == [first.messageID])
         #expect(await fixture.v2Reads.isEmpty)
         #expect(await fixture.created.isEmpty)
+
+        await fixture.publishFirstReceipt()
+        await model.refreshTimeline()
+
+        #expect(await fixture.sent.map(\.messageID) == [first.messageID])
+        #expect(await fixture.v2Reads.allSatisfy { $0 == fixture.conversationID })
+        #expect(await fixture.created == [fixture.conversationID])
+        #expect(model.turns.first?.status == .finished)
     }
 
     @Test func reconnectAfterTheSendWindowRecoversTheAnswerWithoutAnotherWrite() async throws {
@@ -313,6 +322,7 @@ private actor TimelineFixture {
     private var accepted: [LioTimelineWire.Send] = []
     private var readCount = 0
     private var readsUntilConnection: Int?
+    private var firstReceiptVisible = false
 
     init(loseResponse: Bool = false, firstNotSent: Bool = false, serviceLimit: Bool = false,
          firstAnswerNeedsOlderReads: Int = 0) {
@@ -331,6 +341,13 @@ private actor TimelineFixture {
     }
 
     func recordCreated(_ id: String) { created.append(id) }
+
+    func publishFirstReceipt() { firstReceiptVisible = true }
+
+    func lookupFirst(_ id: String) -> String? {
+        guard firstReceiptVisible, accepted.first?.messageID == id else { return nil }
+        return conversationID
+    }
 
     func submit(_ send: LioTimelineWire.Send) throws -> LioService.SendResult {
         sent.append(send)

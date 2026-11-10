@@ -44,12 +44,13 @@ public struct LioChatLibrary {
 
     @MainActor
     public static func signed(client: LioTimelineHTTP, defaultService: LioService,
-                              defaultTitle: @escaping @MainActor () -> String,
+                              language: @escaping @MainActor () -> LioLanguage,
                               tripHistory: @escaping @MainActor (String) -> LioTripHistoryClient) -> Self {
         let sessions = LioSignedChatSessions(client: client, tripHistory: tripHistory)
         let defaultID = "lio-original"
         return Self(currentID: defaultID, history: {
-            try sessions.history() + [LioChatSession(id: defaultID, title: defaultTitle(), service: defaultService)]
+            let title = language().text("First conversation", "最早的对话")
+            return try await sessions.history() + [LioChatSession(id: defaultID, title: title, service: defaultService)]
         }, newChat: { sessions.newChat() })
     }
 }
@@ -65,8 +66,9 @@ private final class LioSignedChatSessions {
         self.tripHistory = tripHistory
     }
 
-    func history() throws -> [LioChatSession] {
-        try client.savedChats().map { saved in
+    func history() async throws -> [LioChatSession] {
+        _ = try await client.reconcileFirstChat()
+        return try client.savedChats().map { saved in
             let service = LioService.signedConversation(client, destination: .existing(saved.id)) { _ in }
             let trips = LioChatTrips(plan: LioTripPlan(client: tripHistory(saved.id)))
             return LioChatSession(id: localIDs[Data(saved.id.utf8)] ?? saved.id, title: saved.title,

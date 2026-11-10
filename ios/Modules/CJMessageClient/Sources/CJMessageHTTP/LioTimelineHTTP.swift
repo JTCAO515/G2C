@@ -23,6 +23,7 @@ public final class LioTimelineHTTP {
     private let transport: NoRedirectTransport
     private let connectivity: LioConnectivity?
     private let firstChatRecovery: MessageRecovery?
+    private var firstChatInFlight = false
 
     public convenience init(endpoint: MessageEndpoint, scope: StorageScope, lease: Lease,
                             credentials: any MessageCredentialsProvider,
@@ -71,12 +72,78 @@ public final class LioTimelineHTTP {
         return chats.sorted { $0.id.utf8.lexicographicallyPrecedes($1.id.utf8) }
     }
 
+    /// Only a signed lookup of the recorded ID and exact digest may resolve a lost first receipt.
+    public func reconcileFirstChat(messageID: String? = nil) async throws -> String? {
+        guard let firstChatRecovery else { throw MessageHTTPFailure.productionActivationUnavailable }
+        guard !firstChatInFlight else { return nil }
+        let records = try recordedFirstActions(in: firstChatRecovery)
+        if let messageID, let entry = records.first(where: { $0.record.messageID.utf8.elementsEqual(messageID.utf8) }),
+           entry.record.phase == .accepted {
+            guard let receipt = entry.record.receipt else { throw RecoveryError.receiptMismatch }
+            return try entry.original.confirm(receipt)
+        }
+        let pending = records.filter { $0.record.phase == .queryRequired || $0.record.phase == .notObserved }
+        guard pending.count <= 1 else { throw RecoveryError.invalidSnapshot }
+        guard let entry = pending.first,
+              messageID.map({ entry.record.messageID.utf8.elementsEqual($0.utf8) }) ?? true else { return nil }
+        firstChatInFlight = true
+        defer { firstChatInFlight = false }
+        let token = try await bearer()
+        let operation = try firstChatRecovery.beginQuery(messageID: entry.record.messageID, lease: lease)
+        let result: FirstChatLookup
+        do {
+            result = try await readFirstChat(entry.original, inputSHA256: entry.record.inputSHA256, bearer: token)
+            try Task.checkCancellation()
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            try firstChatRecovery.observeUnknown(operation)
+            throw error
+        }
+        switch result {
+        case .missing:
+            try firstChatRecovery.observeNotObserved(operation)
+            return nil
+        case .conflict:
+            try firstChatRecovery.observeIntegrityError(operation)
+            return nil
+        case .confirmed(let id, let receipt):
+            try firstChatRecovery.observeReceipt(operation, messageID: entry.record.messageID,
+                                                inputSHA256: entry.record.inputSHA256, receipt: receipt)
+            return id
+        }
+    }
+
+    private enum FirstChatLookup { case missing, conflict, confirmed(String, Data) }
+
+    private func readFirstChat(_ original: LioTimelineWire.Send, inputSHA256: String,
+                               bearer: String) async throws -> FirstChatLookup {
+        let (response, body) = try await transport.readLioFirstReceipt(original, inputSHA256: inputSHA256, bearer: bearer)
+        let bytes = try await json(response, body, limit: 65_536)
+        switch response.status.code {
+        case 200:
+            guard let result = try original.confirmLookup(bytes) else { return .missing }
+            return .confirmed(result.id, result.receipt)
+        case 409:
+            try validateUnambiguousJSON(bytes)
+            guard try JSONDecoder().decode(Failure.self, from: bytes).failure == "unavailable" else {
+                throw MessageHTTPFailure.invalidResponse
+            }
+            return .conflict
+        default:
+            throw MessageHTTPFailure.exchangeUnknown
+        }
+    }
+
     private func submitFirst(_ original: LioTimelineWire.Send, bearer token: String,
                              recovery: MessageRecovery) async throws -> Acceptance {
+        guard !firstChatInFlight else { throw RecoveryError.queryOnly }
         let previous = try recordedFirstActions(in: recovery)
         guard !previous.contains(where: { $0.record.phase != .accepted && $0.record.phase != .notAccepted }) else {
             throw RecoveryError.queryOnly
         }
+        firstChatInFlight = true
+        defer { firstChatInFlight = false }
         try recovery.stage(messageID: original.messageID, originalUTF8: original.originalUTF8, lease: lease)
         let submission = try recovery.beginSubmission(messageID: original.messageID, lease: lease)
         let outcome: SendOutcome
