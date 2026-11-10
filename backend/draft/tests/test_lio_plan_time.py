@@ -6,7 +6,7 @@ import pytest
 from cj_draft.lio_plan import LioPlanPublisher
 from cj_draft.needs_context import ContextPublisher
 from cj_needs.domain import Command, Revision, Snapshot
-from cj_trip.domain import packed
+from cj_trip.domain import Trip, packed
 from cj_trip.needs_plan import MODEL_VERSION
 from cj_trip.structured import SourceRejected
 
@@ -84,3 +84,32 @@ def test_lio_retains_only_verbatim_fixed_source():
     for invalid in (dict(model_stop, source_category='unknown'), dict(model_stop, text='Hotel meetup')):
         with pytest.raises(SourceRejected, match='source association'):
             publisher.build_plan(draft(invalid), capture)
+
+
+def test_lio_replan_retains_saved_fixed_state_of_an_adopted_suggestion():
+    unknown = {'state': 'unknown'}
+    saved = dict(stop('adopted', known('14:00'), known('17:00')), text='Afternoon visit to Summer Palace',
+                 fixed=known(False), verification='pending', evidence=[], source_category='unknown', source_refs=[])
+    schedule = {edge: {key: event[key] for key in ('date', 'time', 'timezone')} | {'place': unknown}
+                for edge, event in saved['schedule'].items()}
+    proposed = packed({'fixed_items': [dict(item_id=saved['id'], kind='intent', description=saved['text'],
+                                          applies_to=['self'], locked=unknown, booking_status=unknown, **schedule)]})
+    fields = {'party_size': known(2)}
+    command = Command(packed(dict(action_id='declare', needs_id='need', expected_version=0, changes=fields,
+                                  source=dict(kind='manual', text='A plan for two people.'))))
+    snapshot = Snapshot('need', 1, packed(fields))
+    revision = Revision('need', 1, command.action_id, command.raw, snapshot.content)
+    capture = SimpleNamespace(binding='original', records=lambda: (snapshot, (revision,)))
+    trip = Trip('beijing', 7, packed(dict(content_version='structured.2', title='Beijing', items=[saved], sources=[])))
+    publisher = LioPlanPublisher.__new__(LioPlanPublisher)
+    publisher.source = SimpleNamespace(contexts={'original': SimpleNamespace(trip=trip, proposed=proposed)})
+
+    def draft(items):
+        return packed(dict(version=MODEL_VERSION, title='Replanned Beijing', items=items, proposed_subjects={}))
+
+    raw, _, _ = publisher.build_plan(draft([saved]), capture)
+    assert json.loads(raw)['items'] == [saved]
+    with pytest.raises(SourceRejected, match='changed adopted fixed intent'):
+        publisher.build_plan(draft([dict(saved, fixed=unknown)]), capture)
+    with pytest.raises(SourceRejected, match='removed adopted current Trip item'):
+        publisher.build_plan(draft([dict(saved, id='replacement')]), capture)
