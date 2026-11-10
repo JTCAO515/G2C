@@ -8,9 +8,9 @@ private struct LioTimelineFixture: View {
     @State private var server: TimelineAcceptanceServer
     @State private var service: LioService
 
-    init(shell: ShellState) {
+    init(shell: ShellState, exerciseResend: Bool) {
         self.shell = shell
-        let server = TimelineAcceptanceServer()
+        let server = TimelineAcceptanceServer(exerciseResend: exerciseResend)
         _server = State(initialValue: server)
         _service = State(initialValue: LioService.timeline(
             send: { try await server.submit($0) },
@@ -38,10 +38,14 @@ private struct LioTimelineFixture: View {
 private final class TimelineAcceptanceServer {
     private enum Step: Int { case sending, weather, prefix, finished }
     private let conversationID = "lio-dialogue-0123456789abcdef0123456789abcdef"
+    private let exerciseResend: Bool
     private var step = Step.sending
     private var sent: (id: String, question: String)?
+    private var unsent: LioTimelineWire.Send?
     private(set) var reads = 0
     private(set) var sends = 0
+
+    init(exerciseResend: Bool) { self.exerciseResend = exerciseResend }
 
     func advance() {
         if let next = Step(rawValue: step.rawValue + 1) { step = next }
@@ -49,6 +53,15 @@ private final class TimelineAcceptanceServer {
 
     func submit(_ request: LioTimelineWire.Send) throws -> LioService.SendResult {
         sends += 1
+        if exerciseResend {
+            if sends == 1 {
+                unsent = request
+                return .notSent
+            }
+            guard sends == 2, let unsent, unsent.messageID == request.messageID,
+                  unsent.originalUTF8 == request.originalUTF8 else { throw MessageHTTPFailure.invalidConfiguration }
+            return .dailyLimit
+        }
         let body = try JSONDecoder().decode([String: String].self, from: request.originalUTF8)
         guard sent == nil, let question = body["text"] else { throw MessageHTTPFailure.invalidConfiguration }
         sent = (request.messageID, question)

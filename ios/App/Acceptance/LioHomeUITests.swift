@@ -4,6 +4,39 @@ import XCTest
     func testEnglish() throws { try exercise("en", question: "How do I take the metro in Shanghai?", source: "Source") }
     func testChinese() throws { try exercise("zh-Hans", question: "在上海怎么坐地铁？", source: "来源") }
 
+    func testResendUsesTheSameQuestionAndQuotaStopsRetry() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-timeline-acceptance", "--lio-resend-acceptance",
+                               "-cj.ui.language.v1", "zh-Hans"]
+        app.launch()
+        defer { app.terminate() }
+
+        let sample = app.buttons["lio.example.0"]
+        XCTAssertTrue(sample.waitForExistence(timeout: 12))
+        sample.tap()
+        app.buttons["lio.send"].tap()
+
+        let failure = app.staticTexts["lio.failure"]
+        let resend = app.buttons["lio.resend"]
+        let questions = app.staticTexts.matching(identifier: "lio.question")
+        XCTAssertTrue(resend.waitForExistence(timeout: 8))
+        XCTAssertTrue(resend.isHittable)
+        XCTAssertEqual(failure.label, "消息没发出去。检查网络后，点感叹号重发。")
+        XCTAssertEqual(questions.count, 1)
+        XCTAssertEqual(app.staticTexts["lio.fixture.send-count"].label, "1")
+
+        resend.tap()
+        let quota = app.staticTexts.containing(NSPredicate(format: "label == %@", "今天的 40 个问题已用完，明天再来聊吧。"))
+            .firstMatch
+        XCTAssertTrue(quota.waitForExistence(timeout: 8))
+        XCTAssertEqual(questions.count, 1)
+        XCTAssertEqual(questions.firstMatch.label, "在上海怎么坐地铁？")
+        XCTAssertEqual(app.staticTexts["lio.fixture.send-count"].label, "2")
+        XCTAssertFalse(resend.exists)
+        XCTAssertFalse(app.buttons["lio.askAgain"].exists)
+    }
+
     func testTimelinePrefixAndForegroundReadKeepTheSameQuestion() throws {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")

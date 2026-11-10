@@ -41,7 +41,7 @@ def main():
         '                if ProcessInfo.processInfo.arguments.contains("--lio-scroll-acceptance") {\n'
         '                    LioScrollFixture(shell: shell)\n'
         '                } else if ProcessInfo.processInfo.arguments.contains("--lio-timeline-acceptance") {\n'
-        '                    LioTimelineFixture(shell: shell)\n'
+        '                    LioTimelineFixture(shell: shell, exerciseResend: ProcessInfo.processInfo.arguments.contains("--lio-resend-acceptance"))\n'
         '                } else {\n'
         f'    {preview}\n'
         '                }'
@@ -68,7 +68,7 @@ def main():
         subprocess.run(command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=600)
     summary = subprocess.check_output(["xcrun", "xcresulttool", "get", "test-results", "summary", "--path", str(result)])
     (output / "summary.json").write_bytes(summary)
-    assert json.loads(summary)["passedTests"] == (len(args.case) if args.case else 5), summary
+    assert json.loads(summary)["passedTests"] == (len(args.case) if args.case else 6), summary
 
 
 if __name__ == "__main__":
