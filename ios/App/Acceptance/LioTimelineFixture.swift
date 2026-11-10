@@ -37,7 +37,7 @@ private struct LioTimelineFixture: View {
 
     var body: some View {
         LioHome(language: shell.language.lio, service: service, isDemo: true, tripLibrary: tripLibrary) {
-            LioLanguagePicker(shell: shell)
+            LioMenuSettings(shell: shell)
         }
         .overlay(alignment: .topTrailing) {
             VStack {

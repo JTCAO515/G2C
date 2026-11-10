@@ -7,6 +7,57 @@ import XCTest
     func testInvitationEnglish() throws { try exerciseInvitation("en") }
     func testInvitationChinese() throws { try exerciseInvitation("zh-Hans") }
 
+    func testAppearanceBelowLanguagePersistsInBothLanguages() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        for language in ["en", "zh-Hans"] {
+            let chinese = language == "zh-Hans"
+            let dark = chinese ? "深色" : "Dark"
+            let light = chinese ? "浅色" : "Light"
+            let system = chinese ? "跟随系统" : "System"
+            let done = chinese ? "完成" : "Done"
+            app.launchArguments = ["--lio-preview", "-cj.ui.language.v1", language]
+            app.launch()
+            XCTAssertTrue(app.buttons["lio.menu"].waitForExistence(timeout: 12))
+            app.buttons["lio.menu"].tap()
+            let appearance = app.buttons["lio.appearance"]
+            let languagePicker = app.buttons["lio.language"]
+            XCTAssertTrue(appearance.waitForExistence(timeout: 8))
+            XCTAssertGreaterThan(appearance.frame.minY, languagePicker.frame.minY)
+            appearance.tap()
+            app.buttons[dark].tap()
+            XCTAssertTrue(appearance.label.contains(dark), appearance.debugDescription)
+            app.buttons[done].tap()
+            let darkCapture = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+            darkCapture.name = "Lio-dark-" + language
+            darkCapture.lifetime = .keepAlways
+            add(darkCapture)
+
+            app.terminate()
+            app.launch()
+            XCTAssertTrue(app.buttons["lio.menu"].waitForExistence(timeout: 12))
+            app.buttons["lio.menu"].tap()
+            XCTAssertTrue(appearance.label.contains(dark), appearance.debugDescription)
+            let menuCapture = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+            menuCapture.name = "Lio-appearance-menu-" + language
+            menuCapture.lifetime = .keepAlways
+            add(menuCapture)
+            appearance.tap()
+            app.buttons[light].tap()
+            XCTAssertTrue(appearance.label.contains(light), appearance.debugDescription)
+            app.buttons[done].tap()
+            let lightCapture = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+            lightCapture.name = "Lio-light-" + language
+            lightCapture.lifetime = .keepAlways
+            add(lightCapture)
+            app.buttons["lio.menu"].tap()
+            appearance.tap()
+            app.buttons[system].tap()
+            XCTAssertTrue(appearance.label.contains(system), appearance.debugDescription)
+            app.terminate()
+        }
+    }
+
     func testOpeningGreetingReturnsAfterBackgroundWithoutResettingTheChat() {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")

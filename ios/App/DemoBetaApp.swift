@@ -20,7 +20,7 @@ struct DemoBetaRootView: View {
                         recordedMap: { document in
                     AnyView(LioRecordedTripMap(document: document, language: shell.language))
                 }) {
-                    LioLanguagePicker(shell: shell)
+                    LioMenuSettings(shell: shell)
                     NavigationLink(shell.language.text("Delete account", "注销账号")) {
                         LioAccountDeletion(shell: shell, root: root)
                     }

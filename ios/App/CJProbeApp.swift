@@ -11,6 +11,9 @@ import CJTripClient
 @main
 struct CJProbeApp: App {
     @State private var shell: ShellState
+    #if G2C_LIO_APP
+    @AppStorage(LioAppearance.preferenceKey) private var appearance = LioAppearance.system
+    #endif
     #if G2C_DEMO_BETA
     @State private var demo: DevelopmentAccountRoot?
     #endif
@@ -54,31 +57,36 @@ struct CJProbeApp: App {
 
     var body: some Scene {
         WindowGroup {
-            #if G2C_DEMO_BETA
-            if let demo { DemoBetaRootView(shell: shell, root: demo) }
-            else { Text(shell.language.text("Lio is temporarily unavailable.", "暂时打不开 Lio。")) }
-            #elseif DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
-            #if targetEnvironment(simulator)
-            #if G2C_LIO_APP
-            if canPreviewLio, ProcessInfo.processInfo.arguments.contains("--lio-onboarding-preview") {
-                LioOnboardingPreview(shell: shell)
-            } else if canPreviewLio, ProcessInfo.processInfo.arguments.contains("--lio-preview") {
-                lioPreview
-            } else {
+            Group {
+                #if G2C_DEMO_BETA
+                if let demo { DemoBetaRootView(shell: shell, root: demo) }
+                else { Text(shell.language.text("Lio is temporarily unavailable.", "暂时打不开 Lio。")) }
+                #elseif DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
+                #if targetEnvironment(simulator)
+                #if G2C_LIO_APP
+                if canPreviewLio, ProcessInfo.processInfo.arguments.contains("--lio-onboarding-preview") {
+                    LioOnboardingPreview(shell: shell)
+                } else if canPreviewLio, ProcessInfo.processInfo.arguments.contains("--lio-preview") {
+                    lioPreview
+                } else {
+                    debugPreviewOrShell
+                }
+                #else
                 debugPreviewOrShell
+                #endif
+                #else
+                developmentShell
+                #endif
+                #elseif DEBUG || !G2C_LIO_APP
+                // The generated acceptance projects keep the disconnected shell
+                // to exercise their existing Release negative cases.
+                ShellView(state: shell)
+                #else
+                LioHome(language: shell.language.lio, service: .unavailable, isDemo: false) { LioMenuSettings(shell: shell) }
+                #endif
             }
-            #else
-            debugPreviewOrShell
-            #endif
-            #else
-            developmentShell
-            #endif
-            #elseif DEBUG || !G2C_LIO_APP
-            // The generated acceptance projects keep the disconnected shell
-            // to exercise their existing Release negative cases.
-            ShellView(state: shell)
-            #else
-            LioHome(language: shell.language.lio, service: .unavailable, isDemo: false) { LioLanguagePicker(shell: shell) }
+            #if G2C_LIO_APP
+            .preferredColorScheme(appearance.colorScheme)
             #endif
         }
     }
@@ -96,12 +104,12 @@ struct CJProbeApp: App {
                 LioHome(language: shell.language.lio, service: .demo, isDemo: true, tripLibrary: library,
                         recordedMap: { document in
                     AnyView(LioRecordedTripMap(document: document, language: shell.language))
-                }) { LioLanguagePicker(shell: shell) }
+                }) { LioMenuSettings(shell: shell) }
             case .failure:
                 Text(shell.language.text("Sample trip unavailable.", "示例行程暂不可用。"))
             }
         } else {
-            LioHome(language: shell.language.lio, service: .demo, isDemo: true) { LioLanguagePicker(shell: shell) }
+            LioHome(language: shell.language.lio, service: .demo, isDemo: true) { LioMenuSettings(shell: shell) }
         }
     }
     #endif
@@ -171,6 +179,16 @@ struct LioLanguagePicker: View {
             Text("English").tag(ShellLanguage.english)
             Text("简体中文").tag(ShellLanguage.chinese)
         }
+        .accessibilityIdentifier("lio.language")
+    }
+}
+
+struct LioMenuSettings: View {
+    let shell: ShellState
+
+    var body: some View {
+        LioLanguagePicker(shell: shell)
+        LioAppearancePicker(language: shell.language.lio)
     }
 }
 #endif
@@ -202,7 +220,7 @@ private struct LioOnboardingPreview: View {
 
     var body: some View {
         if admitted {
-            LioHome(language: shell.language.lio, service: .demo, isDemo: true) { LioLanguagePicker(shell: shell) }
+            LioHome(language: shell.language.lio, service: .demo, isDemo: true) { LioMenuSettings(shell: shell) }
         } else {
             LioInvitationView(language: shell.language.lio, isBusy: false, notice: nil,
                               onInvite: { _ in admitted = true }, onRestore: { admitted = true }) {

@@ -14,7 +14,7 @@ private struct LioJourneyFixture: View {
                 LioHome(language: shell.language.lio, service: clients.conversation, isDemo: false,
                         tripHistory: clients.trips, memoryActions: clients.memory,
                         savedMemory: AnyView(LioSavedMemoryView(host: clients.savedMemory, language: shell.language))) {
-                    LioLanguagePicker(shell: shell)
+                    LioMenuSettings(shell: shell)
                 }
             case .failure(let error):
                 Text("Synthetic journey setup failed: \(String(reflecting: error))")
