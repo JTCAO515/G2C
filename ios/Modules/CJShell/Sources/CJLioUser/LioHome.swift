@@ -199,12 +199,7 @@ public struct LioHome<MenuContent: View>: View {
     private var floatingControls: some View {
         ZStack(alignment: .leading) {
             HStack(spacing: 8) {
-                Image("LioAvatar", bundle: .module)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 34, height: 34)
-                    .clipShape(Circle())
-                    .accessibilityHidden(true)
+                LioPortrait(size: 34)
                 Text("Lio").font(.headline)
             }
             .padding(6)
@@ -263,7 +258,7 @@ public struct LioHome<MenuContent: View>: View {
     private var composer: some View {
         let placeholder = language.text("Start chatting", "开始聊天")
         let canSend = !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && conversation.pending == nil
-        return HStack(alignment: .bottom, spacing: 10) {
+        return HStack(alignment: .center, spacing: 10) {
             TextField(placeholder, text: $draft, prompt: Text(placeholder).foregroundStyle(Color.primary.opacity(0.78)), axis: .vertical)
                 .lineLimit(1...5)
                 .frame(minHeight: 44)
@@ -498,7 +493,13 @@ public struct LioHome<MenuContent: View>: View {
     }
 
     private func statusLine(_ title: String) -> some View {
-        Label(title, systemImage: "ellipsis.bubble")
+        Label {
+            Text(title)
+        } icon: {
+            Image(systemName: "ellipsis.bubble")
+                .symbolEffect(.pulse, options: .repeating, isActive: !reduceMotion)
+                .accessibilityHidden(true)
+        }
             .font(.footnote)
             .foregroundStyle(Color.primary.opacity(0.78))
             .accessibilityIdentifier("lio.progress")
