@@ -5,6 +5,7 @@ import json
 
 from .demo_dialogue import LIO_VERSION, lio_conversation
 from .domain import Command, InvalidInput, Unavailable
+from .travel_reference import read_reference
 
 
 PAGE_SIZE = 20
@@ -25,6 +26,22 @@ class TimelinePage:
     generation: str | None
     messages: tuple[TimelineMessage, ...]
     next_before: str | None
+
+
+def original(service, message_id):
+    with service.repository.transaction() as tx:
+        tx.lock_scope()
+        conversation = lio_conversation(tx.scope)
+        row = tx.cur.execute(
+            'SELECT generation FROM cj_message_receipt WHERE scope=%s AND conversation_id=%s '
+            'AND message_id=%s AND demo_dialogue_protocol=%s',
+            (tx.scope, conversation, message_id, LIO_VERSION)).fetchone()
+        if row is None:
+            return None
+        tx.chat(conversation, row[0])
+        stored = tx.find(message_id)
+        read_reference(tx, stored)
+        return stored
 
 
 def read(service, conversation_id, before):
