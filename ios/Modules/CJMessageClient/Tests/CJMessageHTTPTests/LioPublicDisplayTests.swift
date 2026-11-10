@@ -16,7 +16,12 @@ struct LioPublicDisplayTests {
     @Test(arguments: [
         "https://api-beta.go2china.space./v1/lio/timeline",
         "https://API.GO2CHINA.SPACE%2E/",
-        "https://restapi.amap.com./"
+        "https://restapi.amap.com./",
+        "https://api-beta.go2china.space%E3%80%82/",
+        "https://api-beta.go2china.space%EF%BC%8E/",
+        "https://api-beta.go2china%E3%80%82space/",
+        "https://%EF%BD%81pi-beta.go2china.space/",
+        "https://ap%C2%ADi.go2china.space/"
     ])
     func withholdsRootQualifiedServiceAddresses(_ address: String) throws {
         let url = try #require(URL(string: address))
@@ -31,6 +36,8 @@ struct LioPublicDisplayTests {
         #expect(LioPublicDisplay.permitsText("暂时没有可用的天气预报。"))
         #expect(LioPublicDisplay.permitsSource(try #require(URL(string: "https://weather.com.cn/"))))
         #expect(LioPublicDisplay.permitsSource(try #require(URL(string: "https://weather.com.cn./"))))
+        #expect(LioPublicDisplay.permitsSource(try #require(URL(string: "https://ma%C3%B1ana.example/"))))
+        #expect(LioPublicDisplay.permitsText("Open https://ma%C3%B1ana.example/ for more."))
         #expect(!LioPublicDisplay.permitsSource(try #require(URL(string: "https://restapi.amap.com/v3/weather/weatherInfo"))))
         #expect(!LioPublicDisplay.permitsSource(try #require(URL(string: "https://api-beta.go2china.space/v1/lio/timeline"))))
     }
