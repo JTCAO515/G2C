@@ -14,6 +14,15 @@ _ENGLISH_EDIT = re.compile(
     r'^(?:please\s+|(?:could|can|would) you\s+)?(?:change|replace|swap)\s+(?P<target>.+?)'
     r'\s+(?:to|with|for)\s+(?P<replacement>.+)$', re.I,
 )
+_KEEP_OTHER_STOPS = re.compile(
+    r'(?:[，,]\s*)?保留(?:其他|其余)安排$|'
+    r'(?:,\s*(?:and\s+)?|\s+and\s+)keep\s+(?:the\s+)?'
+    r'(?:other (?:plans|stops|arrangements)|rest)(?:\s+(?:unchanged|the same))?$', re.I)
+_QUALIFIED_REPLACEMENT = re.compile(
+    r'[，,;；。.!！?？\r\n]|然后|并且|如果|除非|只有|不过|先别|暂不|不要|'
+    r'\b(?:if|unless|provided|otherwise|but|then|until|wait|cancel)\b|'
+    r'\bonly\s+(?:after|when|once)\b|'
+    r'\band\s+(?:change|replace|swap|remove|add|move|cancel|do|wait|keep)\b', re.I)
 _CHINESE_SLOT = re.compile(r'第([一二三四五六七八九十]|[1-9][0-9]?)天\s*(上午|下午|晚上)')
 _ENGLISH_SLOT = re.compile(r'(?:the\s+)?(?:day\s+([1-9][0-9]?)|(?:the\s+)?(first|second|third)\s+day)'
                            r'(?:\s+in\s+the)?\s+(morning|afternoon|evening)', re.I)
@@ -123,7 +132,8 @@ def select_lio_edit(trip, text, locale, request_id, *, starts_on):
         return None
     target = match['target'].strip()
     replacement = match['replacement'].strip().rstrip('。.!！?？').rstrip()
-    if trip is None or not target or not replacement or re.search(r'[;；]|(?:并且|然后|\band then\b)', replacement, re.I):
+    replacement = _KEEP_OTHER_STOPS.sub('', replacement).rstrip()
+    if trip is None or not target or not replacement or _QUALIFIED_REPLACEMENT.search(replacement):
         return LioEditSelection('clarify')
     document = json.loads(trip.content)
     selected = _select(document['items'], target, starts_on)

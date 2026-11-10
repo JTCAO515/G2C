@@ -39,6 +39,8 @@ def itinerary(fixed=None, *, overlap=False):
 @pytest.mark.parametrize('text,locale,replacement', [
     ('把第二天下午换成天坛。', 'zh', '天坛'),
     ('Could you replace the afternoon of day 2 with the Temple of Heaven?', 'en', 'the Temple of Heaven'),
+    ('Replace the afternoon of day 2 with the Temple of Heaven, and keep the other plans.', 'en', 'the Temple of Heaven'),
+    ('把第二天下午换成天坛，保留其他安排。', 'zh', '天坛'),
     ('把什刹海改成天坛', 'zh', '天坛'),
 ])
 def test_edit_preserves_everything_outside_the_selected_stop(text, locale, replacement):
@@ -62,6 +64,18 @@ def test_ambiguous_interval_and_non_edit_leave_no_candidate():
     trip, _ = itinerary(overlap=True)
     assert select_lio_edit(trip, '把第二天下午换成天坛', 'zh', 'original-edit', starts_on=date(2026,11,11)).status == 'clarify'
     assert select_lio_edit(trip, '不要把第二天下午换成天坛', 'zh', 'original-edit', starts_on=date(2026,11,11)) is None
+
+
+@pytest.mark.parametrize('text,locale', [
+    ('Replace the afternoon of day 2 with Temple of Heaven, but do not change anything yet.', 'en'),
+    ('Replace the afternoon of day 2 with Temple of Heaven only if it is open.', 'en'),
+    ('把第二天下午换成颐和园，不过先别改。', 'zh'),
+    ('把第二天下午换成颐和园，如果还开放。', 'zh'),
+])
+def test_qualified_replacements_need_clarification(text, locale):
+    trip, _ = itinerary()
+    result = select_lio_edit(trip, text, locale, 'original-edit', starts_on=date(2026,11,11))
+    assert result.status == 'clarify' and result.candidate is None
 
 def test_missing_calendar_day_does_not_shift_an_edit_to_another_date():
     trip, _ = itinerary()

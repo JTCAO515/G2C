@@ -8,9 +8,11 @@ import re
 from fastapi import Request
 from starlette.concurrency import run_in_threadpool
 
+from cj_memory.typed import TypedCommand
 from cj_memory_jobs.candidate import CandidateAction
 from cj_memory_jobs.codec import Conflict, Unavailable, job_identity
 from cj_memory_jobs.postgres import encode
+from cj_memory_jobs.publication_store import PublicationTransaction
 from cj_memory_jobs.service import OperationWithheld
 from cj_message.auth_boundary import AccessBlocked, IdentityChanged
 from cj_message.demo_dialogue import message_id
@@ -86,24 +88,56 @@ class LioMemoryCards:
         tags = list(_tags(json.loads(projected), mid))
         return dict(tags=tags) if tags else None
 
+    def _decision_exists(self, token, internal_id, original, target):
+        def query(context):
+            repository, _, guard = self.collection._binding(context, token)
+            with repository.transaction() as memory:
+                tx = PublicationTransaction(memory)
+                tx.require_live()
+                old = tx.decision(internal_id)
+                if old is not None:
+                    if old[0] != original:
+                        raise Conflict('original Lio memory choice changed')
+                    # C retains the previous approved source and its origin, even
+                    # when the candidate was dismissed or a new source confirmed.
+                    proof = tx.cur.execute(
+                        """SELECT s.approved_input,o.origin_refs
+                        FROM cj_memory_history_candidate_action a
+                        JOIN cj_memory_source s ON (s.scope,s.source_id)=(a.scope,a.previous_source_id)
+                        JOIN cj_memory_history_origin o ON (o.scope,o.source_id,o.item_id,o.job_id,o.attempt_id)
+                            =(a.scope,a.previous_source_id,a.candidate_id,a.job_id,a.attempt_id)
+                        WHERE a.scope=%s AND a.action_id=%s""",
+                        (tx.scope, internal_id)).fetchone()
+                    if proof is None:
+                        raise Unavailable('original Lio memory choice proof unavailable')
+                    raw, origins = proof
+                    reviewed = TypedCommand.parse(bytes(raw))
+                    if ({ref['message_id'] for ref in origins} != {target['message_id']}
+                            or (reviewed.kind, reviewed.text, reviewed.occurred_at)
+                            != tuple(target[key] for key in _REVIEW_CONTENT)):
+                        raise Conflict('original Lio memory suggestion changed')
+                guard('candidate_receipt')
+                return old is not None
+
+        return self.collection.boundary.with_history_context(token, query)
+
     def decide(self, token, request, *, read_only=False):
         action_id, operation, encoded = request['action_id'], request['operation'], request['target']
         target = _decode_target(encoded)
         internal_id, original = _action(action_id, operation, target)
-        receipt = json.loads(self.collection.query_candidate_action(token, internal_id))
-        if receipt is None and not read_only:
+        decided = self._decision_exists(token, internal_id, original, target)
+        if not decided and not read_only:
             current = self.collection.boundary.with_history_context(
                 token, lambda context: self.project(context, token, target['message_id']))
             if current is None or not any(tag['target'] == encoded for tag in current['tags']):
                 raise Conflict('original Lio memory suggestion changed')
             try:
-                receipt = json.loads(self.collection.apply_candidate(token, original))
+                self.collection.apply_candidate(token, original)
             except OperationWithheld:
-                receipt = json.loads(self.collection.query_candidate_action(token, internal_id))
+                pass  # Reconcile the original through the same read-only proof.
+            decided = self._decision_exists(token, internal_id, original, target)
         status = 'pending'
-        if receipt is not None:
-            if receipt['input_sha256'] != sha256(original).hexdigest():
-                raise Conflict('original Lio memory choice changed')
+        if decided:
             status = 'remembered' if operation == 'remember' else 'dismissed'
         return dict(version='LIO-memory-action-receipt.1', action_id=action_id, status=status)
 

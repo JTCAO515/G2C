@@ -603,7 +603,16 @@ def check_lio_conversational_edit(api, owner, worker, original, model, conninfo,
     path = '/v1/lio/trip'
     timeline = '/v1/lio/timeline'
     before = api.get(path, headers=owner).json()['current']
-    raw = original('lio-edit-original', '把第二天下午换成天坛。', 'zh')
+    for mid, text, locale in (
+        ('lio-edit-qualified-en', 'Replace the afternoon of day 2 with Temple of Heaven only if it is open.', 'en'),
+        ('lio-edit-qualified-zh', '把第二天下午换成颐和园，不过先别改。', 'zh'),
+    ):
+        calls = model.calls
+        assert api.post('/v1/lio/messages', headers=owner, content=original(mid, text, locale)).status_code == 200
+        assert [outcome.status for outcome in worker.process()] == ['completed'] and model.calls == calls
+        assert api.get(timeline, headers=owner).json()['messages'][-1]['trip'] is None
+        assert api.get(path, headers=owner).json()['current'] == before
+    raw = original('lio-edit-original', '把第二天下午换成天坛，保留其他安排。', 'zh')
     accepted = api.post('/v1/lio/messages', headers=owner, content=raw)
     assert accepted.status_code == 200
     commit = LioPlanPublisher._commit
@@ -724,6 +733,51 @@ def check_lio_provider_wire(root, database, auth, runtime, actor, api, headers):
     assert {(row['attempt_id'],row['kind'],row['state']) for row in journal.inspect()} == {
         (key,'model','RECEIVED') for key,_,_ in rows}
     print('PASS signed HK-style worker, offline DashScope wire, matched original Meter and authorization receipts')
+    return mid
+
+
+def check_lio_item_erasure(root, database, auth, path, context, scope, headers, chosen, sibling, consumer, preference):
+    from cj_api.local_cleanup import Configuration
+    from cj_cleanup.core import encode
+    from cj_cleanup.memory_payloads import hooks, hold_payloads
+    from cj_memory_withdrawal.erasure_app import create_erasure_app_v2
+    from cj_memory_withdrawal.erasure_service import ORDER
+    from memory_withdrawal.tests.memory_test_inventory import write_inventory
+
+    def input_for(db, mid, kind):
+        return db.execute(
+            """SELECT o.attempt_id,o.command_bytes,o.input_bytes FROM cj_run_metered_operation o
+            JOIN cj_message_receipt m USING (scope,run_id) WHERE m.message_id=%s AND o.kind=%s""",
+            (mid,kind)).fetchone()
+
+    with database.connect(scope) as db:
+        version, = db.execute('SELECT version FROM cj_memory_item WHERE item_id=%s',
+                              (chosen['candidate_id'],)).fetchone()
+        sibling_before = db.execute('SELECT status,version,original_input FROM cj_memory_item WHERE item_id=%s',
+                                    (sibling['candidate_id'],)).fetchone()
+        original = input_for(db,chosen['message_id'],'memory')
+        recalled = input_for(db,consumer,'model')
+        ledger, = db.execute('SELECT ledger FROM cj_usage_ledger_candidate').fetchone()
+    assert original[2] is not None and preference.encode() in bytes(recalled[2])
+
+    inventory = root/'lio-item-erasure-registry.json'
+    write_inventory(inventory,'private-lio-pub4-erasure')
+    config = Configuration({'local':b'lio-pub4-fixture-erasure-key-0001'},'local',3600,ORDER,inventory)
+    erasure = create_erasure_app_v2(conninfo_path=path,auth_dir=auth,resolve_collection=lambda _:None,
+        cleanup_configuration=config,resolve_backend_hooks=hooks,hold_payloads=hold_payloads,run_context=context)
+    raw = encode(dict(version='MEMORY-ERASURE@1',action_id='lio-delete-original',
+        item_id=chosen['candidate_id'],expected_version=version,derived_range='owned_trip_derived_scope'))
+    with TestClient(erasure) as client:
+        result = client.post('/v1/memory-erasures',content=raw,headers=headers)
+        assert result.status_code == 200 and result.json()['result']['online_status'] == 'complete', result.text
+        assert client.post('/v1/memory-erasures',content=raw,headers=headers).json()['result'] == result.json()['result']
+    with database.connect(scope) as db:
+        assert input_for(db,chosen['message_id'],'memory') == (*original[:2],None)
+        assert input_for(db,consumer,'model') == (*recalled[:2],None)
+        assert db.execute('SELECT ledger FROM cj_usage_ledger_candidate').fetchone() == (ledger,)
+        assert db.execute('SELECT 1 FROM cj_memory_item WHERE item_id=%s',(chosen['candidate_id'],)).fetchone() is None
+        assert db.execute('SELECT status,version,original_input FROM cj_memory_item WHERE item_id=%s',
+                          (sibling['candidate_id'],)).fetchone() == sibling_before
 
 
 def check_lio_memory(root, database, auth, path, context, foreign, actor, unknown_actor):
@@ -871,11 +925,26 @@ def check_lio_memory(root, database, auth, path, context, foreign, actor, unknow
             assert writer.call_count == 1
         assert api.post(receipts,headers=owner,content=encoded(remember)).json() == saved.json()
         assert api.post(receipts,headers=owner,content=encoded(dict(remember,operation='dismiss'))).status_code == 409
+        changed_message = dict(_decode_target(remember['target']),message_id='lio-before-memory')
+        for endpoint in (actions,receipts):
+            assert api.post(endpoint,headers=owner,content=encoded(
+                dict(remember,target=_encode_target(changed_message)))).status_code == 409
         assert api.post(actions,headers=owner,content=encoded(reject)).status_code == 409
         refreshed, = displayed()['tags']
         assert refreshed['text'] == pace
-        assert api.post(actions,headers=owner,content=encoded(
-            dict(reject,target=refreshed['target']))).json()['status'] == 'dismissed'
+        dismiss = dict(reject,target=refreshed['target'])
+        dismissed = api.post(actions,headers=owner,content=encoded(dismiss))
+        assert dismissed.status_code == 200 and dismissed.json()['status'] == 'dismissed'
+        assert api.post(receipts,headers=owner,content=encoded(dismiss)).json() == dismissed.json()
+        assert api.post(actions,headers=owner,content=encoded(dismiss)).json() == dismissed.json()
+        for key,value in (
+            ('message_id','lio-after-memory'), ('kind','fact'),
+            ('text','Forged preference'), ('occurred_at','another date'),
+        ):
+            tampered = dict(_decode_target(dismiss['target']),**{key:value})
+            for endpoint in (actions,receipts):
+                assert api.post(endpoint,headers=owner,content=encoded(
+                    dict(dismiss,target=_encode_target(tampered)))).status_code == 409
         assert displayed() is None
         with database.connect(scope) as db:
             assert db.execute('SELECT status FROM cj_memory_item ORDER BY status').fetchall() == [('active',),('withdrawn',)]
@@ -907,7 +976,19 @@ def check_lio_memory(root, database, auth, path, context, foreign, actor, unknow
                                   (unknown_original.run_id,)).fetchone()
             ledger = decode_ledger(db.execute('SELECT ledger FROM cj_usage_ledger_candidate').fetchone()[0])
             assert ledger.attempts[attempt].state == 'unknown'
-        check_lio_provider_wire(root,database,auth,runtime,actor,api,owner)
+        consumer = check_lio_provider_wire(root,database,auth,runtime,actor,api,owner)
+        check_lio_item_erasure(root,database,auth,path,context,scope,owner,
+            _decode_target(remember['target']),_decode_target(dismiss['target']),consumer,quiet)
+        after_erase = 'lio-after-item-erasure'
+        assert api.post('/v1/lio/messages',headers=owner,content=encoded(dict(
+            version='LIO-message.1',message_id=after_erase,text='What should I see near the metro?',locale='en'))).status_code == 200
+        assert [outcome.status for outcome in worker.process()] == ['completed']
+        with database.connect(scope) as db:
+            original_after_erase, = db.execute(
+                """SELECT o.input_bytes FROM cj_run_metered_operation o JOIN cj_message_receipt m USING(scope,run_id)
+                WHERE m.message_id=%s AND o.kind='model'""",(after_erase,)).fetchone()
+            assert quiet.encode() not in bytes(original_after_erase)
+        print('PASS signed Lio item erasure clears Pub4 and recalled Meter payloads, preserves ledger and sibling, and stops recall')
     print('PASS signed Lio Meter and middle-turn Pub4, explicit remember/dismiss, stale choice, isolation, ACK recovery and original UNKNOWN')
     return app, remember
 
