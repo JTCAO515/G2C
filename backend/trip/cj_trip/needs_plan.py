@@ -30,11 +30,10 @@ def parse_model(raw, *, versions=(MODEL_VERSION,), source_title_versions=()):
 
 
 def build(raw,capture):
-    return _build(raw,capture,{})
+    return _build_model(parse_model(raw),capture,{})
 
 
-def _build(raw,capture,adopted):
-    model=parse_model(raw)
+def _build_model(model,capture,adopted):
     document=dict(content_version='structured.2',title=model['title'],items=model['items'],sources=[])
     validate_document(document)
     before,revisions=capture.records()

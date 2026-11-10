@@ -3,7 +3,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from cj_draft.lio_plan import LIO_REPLAN_DELTA, LioPlanPublisher
+from cj_draft.lio_plan import COMPACT_INITIAL_PLAN, LIO_REPLAN_DELTA, LIO_REPLAN_DELTA_V3, LioPlanPublisher
 from cj_draft.needs_context import ContextPublisher
 from cj_needs.domain import Command, Revision, Snapshot
 from cj_trip.domain import Trip, packed
@@ -84,14 +84,47 @@ def test_lio_retains_only_verbatim_fixed_source():
     assert json.loads(raw)['items'] == [model_stop]
     source = json.loads(publisher.model_messages('original', description, capture, [])[-1]['content'])
     assert source['version'] == 'TRIP-source-input.2' and 'response_version' not in source
-    assert MODEL_VERSION in publisher.system and LIO_REPLAN_DELTA not in publisher.system
+    assert COMPACT_INITIAL_PLAN in publisher.system and LIO_REPLAN_DELTA not in publisher.system
+    assert MODEL_VERSION not in publisher.system
     assert 'Use a short title.' in publisher.system
     assert publisher.system.endswith(publisher.draft_guidance)
-    with pytest.raises(FieldRejected, match='TRIP-model-plan.1 required'):
+    with pytest.raises(FieldRejected, match='TRIP-model-plan.1 or TRIP-lio-first-plan.1 required'):
         publisher.build_plan(packed(dict(version=LIO_REPLAN_DELTA, title='Beijing', items=[], proposed_subjects={})), capture)
     for invalid in (dict(model_stop, source_category='unknown'), dict(model_stop, text='Hotel meetup')):
         with pytest.raises(SourceRejected, match='source association'):
             publisher.build_plan(draft(invalid), capture)
+
+    walk = dict(id='walk', text='Walk in Jingshan Park', date='2026-11-13',
+                start_time='14:00', end_time='15:00', timezone='Asia/Shanghai')
+    initial = dict(version=COMPACT_INITIAL_PLAN, title='Beijing', items=[walk],
+                   proposed_subjects={'walk': ['self']})
+    compact, candidate, _ = publisher.build_plan(packed(initial), capture)
+    restored, suggestion = json.loads(compact)['items']
+    assert restored == model_stop
+    assert suggestion['fixed'] == known(False) and suggestion['source_category'] == 'unknown'
+    assert suggestion['schedule']['start'] == dict(date=known('2026-11-13'), time=known('14:00'),
+                                                  timezone=known('Asia/Shanghai'), utc_offset={'state':'unknown'})
+    for item, rule in ((dict(walk, source_category='user_provided'), 'exact compact suggestion fields'),
+                       (dict(walk, id='fixed'), 'duplicate global item ID')):
+        with pytest.raises(FieldRejected, match=rule):
+            publisher.build_plan(packed(dict(initial, items=[item])), capture)
+    with pytest.raises(FieldRejected):
+        publisher.build_plan(packed(dict(initial, items=[dict(walk, end_time='14:00')])), capture)
+
+    adopted = Trip('beijing', 1, packed(dict(content_version='structured.2', title='Beijing',
+                                           items=[suggestion], sources=[])))
+    publisher.source.contexts['original'] = SimpleNamespace(trip=adopted, proposed=candidate.content)
+    compact_delta = dict(version=LIO_REPLAN_DELTA_V3, items=[], proposed_subjects={})
+    raw, _, _ = publisher.build_plan(packed(compact_delta), capture)
+    assert json.loads(raw)['items'] == [suggestion, model_stop]
+    new_stop = dict(walk, id='museum', text='Visit the National Museum', date='2026-11-14')
+    raw, _, _ = publisher.build_plan(packed(dict(compact_delta, items=[new_stop],
+                                                 proposed_subjects={'museum':['self']})), capture)
+    replanned = json.loads(raw)
+    assert replanned['title'] == 'Beijing' and replanned['items'][:2] == [suggestion, model_stop]
+    assert replanned['items'][2]['id'] == 'museum'
+    with pytest.raises(FieldRejected, match='exact model plan fields required'):
+        publisher.build_plan(packed(dict(compact_delta, title='Replacement title')), capture)
 
 
 def test_lio_replan_retains_saved_fixed_state_of_an_adopted_suggestion():
@@ -129,7 +162,7 @@ def test_lio_replan_retains_saved_fixed_state_of_an_adopted_suggestion():
     assert publisher.model_messages('original', 'replan', capture, []) == legacy.model_messages('original', 'replan', capture, [])
     assert source['version'] == 'TRIP-source-input.2'
     assert source['current_trip']['content']['items'] == [saved]
-    assert 'TRIP-lio-replan-delta.2' in publisher.system and MODEL_VERSION not in publisher.system
+    assert LIO_REPLAN_DELTA_V3 in publisher.system and MODEL_VERSION not in publisher.system
     assert 'Copy each original fixed or unselected item' not in publisher.system
     assert 'Omit title.' in publisher.system and 'Use a short title.' not in publisher.system
     assert publisher.system.endswith(publisher.draft_guidance)
@@ -145,6 +178,8 @@ def test_lio_replan_retains_saved_fixed_state_of_an_adopted_suggestion():
     delta_with_saved_title = 'TRIP-lio-replan-delta.2'
     payload = dict(version=delta_with_saved_title, items=[], proposed_subjects={})
     raw, _, _ = publisher.build_plan(packed(payload), capture)
+    assert raw == trip.content
+    raw, _, _ = publisher.build_plan(packed(dict(payload, version=LIO_REPLAN_DELTA_V3)), capture)
     assert raw == trip.content
     with pytest.raises(FieldRejected, match='exact model plan fields required'):
         publisher.build_plan(packed(dict(payload, title='Model title override')), capture)
