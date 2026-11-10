@@ -34,7 +34,6 @@ struct LioTimelineTurn: Sendable {
         case (.answering, .travelInformation): status = .working(.travelInformation)
         case (.answering, nil): status = message.answer.isEmpty ? .thinking : .answering
         case (.completed, _): status = .finished
-        case (.dailyLimit, _): status = .failed(.dailyLimit)
         case (.unavailable, _): status = .failed(.unavailable)
         }
     }

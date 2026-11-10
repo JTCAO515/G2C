@@ -83,7 +83,7 @@ public enum LioTimelineWire {
 
     public struct Message: Sendable, Equatable {
         public enum State: Equatable, Sendable {
-            case waiting, answering, completed, dailyLimit
+            case waiting, answering, completed
             /// The current wire does not distinguish definitive failure from
             /// a lost result. This does not authorize a new write.
             case unavailable
@@ -132,8 +132,9 @@ public enum LioTimelineWire {
         case (.sending, nil): state = .waiting
         case (.answering, nil): state = .answering
         case (.completed, nil): state = .completed
-        case (.failed, .some(.quota)): state = .dailyLimit
-        case (.failed, .some(.unavailable)): state = .unavailable
+        // A failed row can carry a service limit after the send was accepted.
+        // Only the send endpoint can establish the user's daily question cap.
+        case (.failed, .some(.quota)), (.failed, .some(.unavailable)): state = .unavailable
         default: throw MessageHTTPFailure.invalidResponse
         }
         let sources = wire.sources.compactMap { item -> Source? in
