@@ -27,12 +27,21 @@ DEPARTURE_REPLY = re.compile(rf'(?:出发日期?\s*[:：]\s*({ISO})|(?:从\s*)?(
 ZH_SHORT_TRIP = re.compile(
     rf'(?:请\s*)?(?:帮我\s*)?规划\s*(?:一下\s*)?北京\s*({NUMBER})\s*[日天]\s*(豪华)?\s*(?:旅游|旅行)')
 ZH_DURATION_REPLY = re.compile(rf'北京\s*[,，]?\s*({NUMBER})\s*[日天]')
+DATE_REFUSAL = re.compile(
+    r'(?:日期(?:还没定|未定|待定|先不定|先不说|暂不提供)|(?:先不|不想)(?:说|提供)日期)'
+    r'(?:\s*[,，]\s*(?:先|继续)聊聊)?'
+    r'|(?:my |our )?dates? (?:are|is) (?:still )?undecided'
+    r"|(?:I|we) (?:don't|do not) (?:have|want to share) (?:the )?dates(?: yet)?", re.I)
 DISCUSSION_REPLY = re.compile(
-    r'(?:日期(?:还没定|未定|待定|先不定|先不说|暂不提供)|(?:先不|不想)(?:说|提供)日期|'
-    r'(?:先|继续)聊聊|(?:这趟|这个|这份)(?:旅行|行程)|'
-    r'第[一二三四五六七八九十\d]+天|(?:the |this )?(?:trip|itinerary)\b|day\s+\d+\b|'
-    r'(?:my |our )?dates? (?:are|is) (?:still )?undecided\b|'
-    r"(?:I|we) (?:don't|do not) (?:have|want to share) (?:the )?dates\b)", re.I)
+    r'(?:(?:先|继续)聊聊|(?:这趟|这个|这份)(?:旅行|行程)|'
+    r'第[一二三四五六七八九十\d]+天|(?:the |this )?(?:trip|itinerary)\b|day\s+\d+\b)', re.I)
+DISCUSSION_DETAIL = re.compile(rf'(?:{ISO}|\d{{1,2}}月\d{{1,2}}日|'
+                               rf'Beijing(?:\s*,\s*|\s+(?:for\s+)?)(?:{NUMBER})\s+days?)', re.I)
+STANDALONE_QUESTION = re.compile(
+    r'(?:你是谁|你能做什么|你有什么能力|(?:你的)?能力范围(?:是什么)?|'
+    r'(?:在?北京\s*)?住[^。！？!?，,；;\n]{1,30}还是[^。！？!?，,；;\n]{1,30}|'
+    r'(?:从)?[^。！？!?，,；;\n]{1,30}到[^。！？!?，,；;\n]{1,30}怎么走|'
+    r'who are you|what can you do)[?？]?', re.I)
 DATES_UNDECIDED = re.compile(
     r'\b(?:dates? (?:are|is) undecided|travel dates? (?:are|is) unknown)\b|'
     r'\b(?:suggest|recommend|choose|pick|help me decide)\b[^.?!]{0,32}\bdates?\b|'
@@ -182,8 +191,15 @@ def requests_save(text):
 
 def discussion_reply(text):
     return any(CITY_REPLY.fullmatch(clause) or ZH_DURATION_REPLY.fullmatch(clause)
-               or _timing_reply(clause) or DISCUSSION_REPLY.match(clause)
+               or _timing_reply(clause, allow_departure=True) or DATE_REFUSAL.fullmatch(clause.rstrip('?？'))
+               or DISCUSSION_REPLY.match(clause) or DISCUSSION_DETAIL.fullmatch(clause)
                for clause in _clauses(text))
+
+
+def standalone_question(text):
+    return (STANDALONE_QUESTION.fullmatch(text.strip()) is not None
+            and not (PLAN_REQUEST.match(text) or NEGATED.search(text) or FIXED.search(text)
+                     or planning_withdrawn(text)))
 
 
 def _relative_span(word, duration, today):
@@ -336,7 +352,8 @@ def _day_span(turns, city, durations):
                 return None, False
             return _relative_span(reply[1] or reply[3], duration, latest.question_day), False
     for turn in reversed(turns):
-        if DATES_UNDECIDED.search(turn.text) or _date_scope_disputed(turn.text, city):
+        if (DATES_UNDECIDED.search(turn.text) or _date_scope_disputed(turn.text, city)
+                or any(DATE_REFUSAL.fullmatch(clause) for clause in _clauses(turn.text))):
             return None, False
         spans = set()
         for original in _clauses(turn.text):
@@ -429,29 +446,35 @@ def _timed_plan_authorized(clause, city, today):
     return OPEN_PLAN.fullmatch(clause[:start.start()].rstrip(' ,，')) is not None
 
 
-def _timing_reply(clause):
-    return RELATIVE_REPLY.fullmatch(clause) or TRIP_DATES.fullmatch(clause) or DEPARTURE_REPLY.fullmatch(clause)
+def _timing_reply(clause, *, allow_departure=False):
+    return (RELATIVE_REPLY.fullmatch(clause) or TRIP_DATES.fullmatch(clause)
+            or (allow_departure and DEPARTURE_REPLY.fullmatch(clause)))
 
 
-def planning_authority_complete(turns, city, *, has_fixed):
+def planning_authority_complete(turns, city, *, has_fixed, explicit_save=False):
     """A grounded date does not authorize an unexplained instruction in the same turn."""
     # Historical details may be dropped when the city changes. The latest
     # original must still be evaluated in full, even before its new destination.
     latest = turns[-1]
     latest_text = '\n'.join(_planning_without_assent(clause) or clause for clause in _clauses(latest.text))
     current = PlanningTurn(latest_text, latest.question_day)
-    latest_timing = any(_timing_reply(clause) for clause in map(_date_declaration, _clauses(latest_text))
+    latest_timing = any(_timing_reply(clause, allow_departure=explicit_save)
+                        for clause in map(_date_declaration, _clauses(latest_text))
                         if clause is not None)
     for turn in (*_compatible_turns(turns[:-1], city), current):
         for original in _clauses(turn.text):
             clause = _date_declaration(original)
             if clause is None:
-                if turn is not current and latest_timing and _timing_reply(original[:-1].rstrip()):
+                if turn is not current and latest_timing and _timing_reply(
+                        original[:-1].rstrip(), allow_departure=explicit_save):
                     continue
                 return False
             if (clause.casefold() in ('北京', 'beijing') or OPEN_PLAN.fullmatch(clause)
-                    or ZH_SHORT_TRIP.fullmatch(clause) or ZH_DURATION_REPLY.fullmatch(clause)
-                    or SAVE_ASSENT.fullmatch(clause) or _timing_reply(clause)):
+                    or SAVE_ASSENT.fullmatch(clause) or _timing_reply(clause, allow_departure=explicit_save)):
+                continue
+            if explicit_save and (ZH_SHORT_TRIP.fullmatch(clause) or ZH_DURATION_REPLY.fullmatch(clause)):
+                continue
+            if explicit_save and turn is not current and DATE_REFUSAL.fullmatch(clause):
                 continue
             if city.casefold() in ('北京', 'beijing') and (EN_CONFIRMED_DATE_SCOPE.fullmatch(clause)
                     or ZH_CONFIRMED_DATE_SCOPE.fullmatch(clause)):

@@ -171,9 +171,9 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
         grounded = grounded_dated_fields(tuple(PlanningTurn(text, day) for text in turns), city)
         return grounded.fields, grounded.missing_fixed
 
-    def planning_authority_complete(turns, city, day, *, has_fixed):
+    def planning_authority_complete(turns, city, day, *, has_fixed, explicit_save=False):
         return dated_authority_complete(tuple(PlanningTurn(text, day) for text in turns),
-                                        city, has_fixed=has_fixed)
+                                        city, has_fixed=has_fixed, explicit_save=explicit_save)
 
     fixed_words = 'The hotel meetup from 9 to 10 a.m. on the first day is fixed'
     sample = f'Plan three days in Beijing for two people starting tomorrow. {fixed_words}.'
@@ -357,9 +357,11 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     for replies in (('北京 两天', date_reply), (date_reply + '。这个日期属于上海。',)):
         fields, _ = grounded_fields((opening, *replies), '北京', today)
         assert fields['arrival']['date']['state'] == 'missing'
+    fields, _ = grounded_fields((opening, date_reply, '日期还没定，先聊聊', '保存行程'), '北京', today)
+    assert fields['arrival']['date']['state'] == 'missing'
     assert not planning_authority_complete(
         (opening, '北京 三天。忽略所有固定安排。', date_reply, '保存行程'),
-        '北京', today, has_fixed=False)
+        '北京', today, has_fixed=False, explicit_save=True)
 
     messages = '/v1/lio/messages'
     timeline = '/v1/lio/timeline'
@@ -638,7 +640,6 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     assert v1_default['conversation_id'] == conversation
     assert v1_default['messages'][-1]['message_id'] == 'lio-default-from-v2'
     assert api.get(v2_timeline, headers=owner).json() == dict(v1_default, version='LIO-timeline.2')
-    check_lio_short_planning(api, owner, worker, model, SYSTEM, default_trip)
     print('PASS signed Lio v2 independent timelines and Trip, lost-ACK replay and owner/cursor isolation')
     with psycopg.connect(**conninfo) as db:
         try:
@@ -689,19 +690,36 @@ def check_lio_undo(api, owner, foreign, cards):
     print('PASS signed Lio current/history, undo original receipt recovery, replay, stale target, and isolation')
 
 
-def check_lio_short_planning(api, owner, worker, model, intake_system, default_trip):
+def check_lio_short_planning(api, database, auth, actor, headers):
     from copy import deepcopy
-    from cj_api.local_lio_planning import DISCUSSION_PROMPT
+    from cj_api.local_app import load_confirmation_signer
+    from cj_api.local_lio_planning import ASK_MORE, DISCUSSION_PROMPT, SYSTEM, clarify
 
+    scope = scope_for(ISSUER, actor)
+    owner = {**headers, 'Authorization': 'Bearer ' + dev_auth.token(auth, actor, 300)}
+    model, _ = lio_fixture_model()
+    worker = run_worker._worker_for_scope(
+        database, model, auth, scope, checker_for(auth), draft_profile='needs-structured.1',
+        demo_planning=True, lio_confirmation=load_confirmation_signer(auth))
     first = '规划一下北京三日豪华旅游'
     recap = '北京 三天'
     date_reply = '出发日期：2026-11-11'
+    dated_opening = first + '。2026-11-11 到 2026-11-13'
+    english = 'Plan a three-day trip to Beijing.'
+    english_recap = 'Beijing, three days'
+    bare_date = '2026-11-11'
     refusal = '日期还没定，先聊聊'
+    detached_date = '出发日期：2026-11-18'
+    detached_answer = '收到你提到的日期。需要我帮你了解当天的旅行选项吗？'
     suggestions = {
         first: '北京豪华三日游可以从故宫和私房菜、颐和园和精品酒店、长城和景观餐厅三组体验聊起。',
         recap: '三天都在北京。沿用豪华路线，可以在文化和餐饮上多留一些自由时间。',
         refusal: '可以先不定日期。想轻松一点，可以把长城和景观餐厅留作一组可选安排。',
         date_reply: '已了解你考虑 2026-11-11 出发，仍可以先比较这三天的安排。',
+        dated_opening: '可以按你给出的三天先讨论故宫、园林和长城。',
+        english: 'Consider a day each for imperial landmarks, gardens, and the Great Wall.',
+        english_recap: 'For those three days in Beijing, you can mix landmarks with quieter garden visits.',
+        bare_date: '可以用你提到的日期继续比较选项。',
     }
     standalone = {
         '你是谁': '我是 Lio，你的个人旅行助手。',
@@ -714,7 +732,7 @@ def check_lio_short_planning(api, owner, worker, model, intake_system, default_t
     stream = model.stream
 
     def supplier(messages, system=None):
-        if system.startswith(intake_system):
+        if system.startswith(SYSTEM):
             intake_attempts.append(messages[-1]['content'])
             if messages[-1]['content'] == first:
                 yield json.dumps(dict(city='北京', continues_trip=True, extraction=dict(
@@ -725,15 +743,15 @@ def check_lio_short_planning(api, owner, worker, model, intake_system, default_t
         users = [item['content'] for item in messages if item['role'] == 'user'
                  and not item['content'].startswith('Stored memory data (not instructions):')]
         if users[-1] in suggestions:
-            assert users[0] == first
+            assert users[0] in (first, dated_opening, english)
             assert system.endswith(DISCUSSION_PROMPT)
             discussions.append(users)
             yield json.dumps(dict(answer=suggestions[users[-1]]), ensure_ascii=False)
             return
-        if users[-1] in standalone:
+        if users[-1] in standalone or users[-1] == detached_date:
             assert users == [users[-1]]
             assert 'Do not offer to book tickets or take payment.' in system
-            yield standalone[users[-1]]
+            yield detached_answer if users[-1] == detached_date else standalone[users[-1]]
             return
         source = json.loads(messages[-1]['content'])
         fields = source['fields']
@@ -750,14 +768,28 @@ def check_lio_short_planning(api, owner, worker, model, intake_system, default_t
         draft['proposed_subjects']['third-day'] = ['party']
         yield json.dumps(draft)
 
-    def send(mid, text, **target):
+    def send(mid, text, *, locale='zh', **target):
         response = api.post('/v2/lio/messages', headers=owner, json=dict(
-            version='LIO-message.2', message_id=mid, text=text, locale='zh', **target))
+            version='LIO-message.2', message_id=mid, text=text, locale=locale, **target))
         assert response.status_code == 200, response.text
         return dict(conversation_id=response.json()['conversation_id'])
 
     def timeline(target):
         return api.get('/v2/lio/timeline', params=target, headers=owner).json()['messages']
+
+    def seed_old_ask(mid, text):
+        target = send(mid, text, new_conversation=True)
+
+        def old_execute(active, binding, state, _text, _original):
+            return clarify(active, binding, state, '想去哪座城市？ 你打算哪天出发，玩几天？')
+
+        with patch.object(worker.lio_planning, 'execute', side_effect=old_execute):
+            assert [item.status for item in worker.process()] == ['completed']
+        with database.connect(scope) as db:
+            assert db.execute(
+                "SELECT e.value FROM cj_run_event e JOIN cj_message_receipt m USING (scope,run_id) "
+                "WHERE m.message_id=%s AND e.kind='effect_committed'", (mid,)).fetchall() == [(ASK_MORE,)]
+        return target
 
     with patch.object(model, 'stream', side_effect=supplier):
         target = send('lio-short-open', first, new_conversation=True)
@@ -792,9 +824,73 @@ def check_lio_short_planning(api, owner, worker, model, intake_system, default_t
             assert [item.status for item in worker.process()] == ['completed']
             entry = timeline(target)[-1]
             assert (entry['answer'], entry['trip']) == (answer, None), entry
+
+        for mid, opening, reply, locale in (('lio-dated-discussion', dated_opening, bare_date, 'zh'),
+                                            ('lio-english-discussion', english, english_recap, 'en')):
+            target = send(mid, opening, locale=locale, new_conversation=True)
+            assert [item.status for item in worker.process()] == ['completed']
+            entry = timeline(target)[-1]
+            assert (entry['answer'], entry['trip']) == (suggestions[opening], None), entry
+            send(mid + '-reply', reply, locale=locale, **target)
+            assert [item.status for item in worker.process()] == ['completed']
+            entry = timeline(target)[-1]
+            assert (entry['answer'], entry['trip']) == (suggestions[reply], None), entry
+            assert discussions[-1] == [opening, reply]
+
+        upgraded = seed_old_ask('lio-old-ask-for-recap', first)
+        send('lio-old-recap', recap, **upgraded)
+        assert [item.status for item in worker.process()] == ['completed']
+        entry = timeline(upgraded)[-1]
+        assert (entry['answer'], entry['trip']) == (suggestions[recap], None), entry
+        assert discussions[-1] == [first, recap]
+        assert api.get('/v2/lio/timeline', params=upgraded, headers=headers).status_code == 400
+        hotel = '北京住国贸还是王府井'
+        upgraded = seed_old_ask('lio-old-ask-for-hotel', first)
+        send('lio-old-hotel', hotel, **upgraded)
+        assert [item.status for item in worker.process()] == ['completed']
+        entry = timeline(upgraded)[-1]
+        assert (entry['answer'], entry['trip']) == (standalone[hotel], None), entry
+        send('lio-old-resume-after-hotel', recap, **upgraded)
+        assert [item.status for item in worker.process()] == ['completed']
+        assert timeline(upgraded)[-1]['answer'] == suggestions[recap]
+        assert discussions[-1] == [first, recap]
+
+        upgraded = seed_old_ask('lio-old-dated', dated_opening)
+        send('lio-old-dated-save', '保存行程', **upgraded)
+        assert [item.status for item in worker.process()] == ['completed']
+        entry = timeline(upgraded)[-1]
+        assert [day['date'] for day in entry['trip']['days']] == ['2026-11-11', '2026-11-12', '2026-11-13']
+        assert api.get('/v2/lio/trip', params=upgraded, headers=owner).json()['current'] == entry['trip']
+
+        target = send('lio-reconsider-open', first, new_conversation=True)
+        assert [item.status for item in worker.process()] == ['completed']
+        for mid, turn in (('refusal', refusal), ('date', date_reply)):
+            send('lio-reconsider-' + mid, turn, **target)
+            assert [item.status for item in worker.process()] == ['completed']
+            assert timeline(target)[-1]['trip'] is None
+        send('lio-reconsider-save', '保存行程', **target)
+        assert [item.status for item in worker.process()] == ['completed']
+        assert [day['date'] for day in timeline(target)[-1]['trip']['days']] == [
+            '2026-11-11', '2026-11-12', '2026-11-13']
+        send('lio-date-after-saved', detached_date, **target)
+        assert [item.status for item in worker.process()] == ['completed']
+        entry = timeline(target)[-1]
+        assert (entry['answer'], entry['trip']) == (detached_answer, None), entry
+
+        target = send('lio-cancel-open', first, new_conversation=True)
+        assert [item.status for item in worker.process()] == ['completed']
+        for mid, turn in (('save', '保存行程'), ('cancel', '取消吧')):
+            send('lio-pending-' + mid, turn, **target)
+            assert [item.status for item in worker.process()] == ['completed']
+            assert timeline(target)[-1]['trip'] is None
+        send('lio-date-after-cancel', detached_date, **target)
+        assert [item.status for item in worker.process()] == ['completed']
+        entry = timeline(target)[-1]
+        assert (entry['answer'], entry['trip']) == (detached_answer, None), entry
     assert not intake_attempts
-    assert api.get('/v1/lio/trip', headers=owner).json() == default_trip
-    print('PASS signed Lio discussion, standalone answers, and explicit three-day luxury save')
+    default_trip = api.get('/v1/lio/trip', headers=owner).json()
+    assert default_trip['current'] is None and not default_trip['history']
+    print('PASS signed Lio discussion, legacy ASK_MORE upgrade, independent answers, and explicit three-day luxury save')
 
 
 def check_lio_conversational_edit(api, owner, worker, original, model, conninfo, scope):
@@ -1404,7 +1500,8 @@ def exercise(root,conninfo):
     auth=root/'auth'
     other='other-dialogue-owner'
     memory_actor='m4-synthetic-lio-memory'
-    dev_auth.init(auth,[SUBJECT,other,'invited-outside-dialogue','legacy-dialogue-only',memory_actor])
+    planning_actor='m4-synthetic-lio-planning'
+    dev_auth.init(auth,[SUBJECT,other,'invited-outside-dialogue','legacy-dialogue-only',memory_actor,planning_actor])
     path=root/'conn.json'
     path.write_text(json.dumps(conninfo))
     now=int(time.time())
@@ -1450,11 +1547,13 @@ def exercise(root,conninfo):
         assert demo_accounts.manage(runtime,'insert',SUBJECT,control,operation)=='existing'
         local_run_context.provision_budget(path,context,other)
         dev_auth.activate_travel(path,other,context,ABI)
+        local_run_context.provision_budget(path,context,planning_actor)
+        dev_auth.activate_travel(path,planning_actor,context,ABI)
         from cj_api.local_app import load_confirmation_signer
         app=create_local_app(conninfo_path=None,auth_dir=auth,run_context=context,database=database,account_admission=True,
             confirmation_signer=load_confirmation_signer(auth),
-            demo_dialogue_subjects=frozenset({SUBJECT,other,'legacy-dialogue-only'}),
-            lio_dialogue_subjects=frozenset({SUBJECT,other}))
+            demo_dialogue_subjects=frozenset({SUBJECT,other,'legacy-dialogue-only',planning_actor}),
+            lio_dialogue_subjects=frozenset({SUBJECT,other,planning_actor}))
         demo_login.register_demo_login(app)
         with demo_login.signing_socket(runtime),TestClient(app) as api:
             def login(code,consent=True):
@@ -1529,6 +1628,7 @@ def exercise(root,conninfo):
                 assert db.execute('SELECT count(*) FROM cj_message_delivery WHERE scope=%s AND acknowledged',
                     (scope_for(ISSUER,SUBJECT),)).fetchone()==(4,)
             check_lio(api, database, auth, other, old, conninfo, memory)
+            check_lio_short_planning(api, database, auth, planning_actor, old)
             memory_app, memory_choice = check_lio_memory(root, database, auth, path, context, old, memory_actor, other)
             check_lio_retirement(root, database, auth, conninfo, context, memory, memory_actor, other,
                                  memory_app, memory_choice)

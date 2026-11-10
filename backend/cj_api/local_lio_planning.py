@@ -20,7 +20,7 @@ from cj_needs.preview import encode, preview
 from cj_run.postgres import CommitUnknown
 
 from .lio_planning_grounding import (PLAN_REQUEST, PlanningTurn, discussion_reply, grounded_fields,
-    planning_authority_complete, planning_withdrawn, requests_save, stated_city)
+    planning_authority_complete, planning_withdrawn, requests_save, standalone_question, stated_city)
 
 
 ASK_MORE = 'lio_planning_needs_details'
@@ -126,6 +126,8 @@ class LioPlanning:
         self.plan_and_save = plan_and_save
 
     def execute(self, worker, binding, state, text, original):
+        if standalone_question(text):
+            return None
         today = original.question_day or datetime.now(ZoneInfo('Asia/Shanghai')).date()
         inputs = planning_texts(self.database, binding, PlanningTurn(text, today))
         if inputs is None:
@@ -136,14 +138,16 @@ class LioPlanning:
             state = worker._event(binding, state, 'text_delta', answer)
             return worker._event(binding, state, 'completed')
         turns, references, markers = inputs
-        has_discussion = DISCUSSION in markers
         save = requests_save(text)
+        prior_save = any(requests_save(turn.text) for turn in turns[:-1])
+        # Legacy ASK_MORE alone did not distinguish discussion from a requested save.
+        has_discussion = bool(markers) and (DISCUSSION in markers or not prior_save)
         if has_discussion and not save:
             if not discussion_reply(text):
                 return None
-            if markers[-1] == DISCUSSION:
+            if markers[-1] == DISCUSSION or not prior_save:
                 return discuss(worker, binding, state, locale, turns, references)
-        details = (explicit_plan(turns, references, ask_date_in=locale if save else None)
+        details = (explicit_plan(turns, references, explicit_save=save or prior_save, ask_date_in=locale if save else None)
                    if not references or has_discussion else None)
         if details is None:
             if not save and (not references or has_discussion):
@@ -198,35 +202,44 @@ def planning_texts(database, binding, current):
         return (current,), (), ()
     with database.connect(binding.scope) as connection:
         prior = connection.execute(
-            'SELECT m.message_id,m.sequence,m.raw_input,m.input_sha256,m.demo_question_day, (SELECT e.value FROM cj_run_event e '
-            'JOIN cj_run_record r ON (r.scope,r.run_id)=(e.scope,e.run_id) '
-            'WHERE (e.scope,e.run_id)=(m.scope,m.run_id) AND r.status=%s '
+            'SELECT m.message_id,m.sequence,m.raw_input,m.input_sha256,m.demo_question_day,r.status, '
+            '(SELECT e.value FROM cj_run_event e WHERE (e.scope,e.run_id)=(m.scope,m.run_id) '
             'AND e.kind=%s AND e.value IN (%s,%s) LIMIT 1) FROM cj_message_receipt m '
+            'LEFT JOIN cj_run_record r USING (scope,run_id) '
             'WHERE m.scope=%s AND m.conversation_id=%s AND m.generation=%s '
             'AND m.demo_dialogue_protocol=%s AND m.sequence<%s '
             'ORDER BY m.sequence DESC LIMIT %s',
-            ('completed', 'effect_committed', ASK_MORE, DISCUSSION, binding.scope, binding.conversation_id,
+            ('effect_committed', ASK_MORE, DISCUSSION, binding.scope, binding.conversation_id,
              binding.generation, LIO_VERSION, binding.message_sequence, MAX_CLARIFICATIONS)).fetchall()
     turns = []
     references = []
     markers = []
-    for message_id, sequence, raw, digest, question_day, marker in prior:
-        if marker is None:
+    for message_id, sequence, raw, digest, question_day, status, marker in prior:
+        if status != 'completed':
             break
         command = Command.parse_original(bytes(raw))
         if ((command.conversation_id, command.message_id) != (binding.conversation_id, message_id)
                 or sha256(command.raw).hexdigest() != digest):
             raise Unavailable('original Lio request changed')
-        turns.append(PlanningTurn(json.loads(command.raw)['text'], question_day or current.question_day))
+        text = json.loads(command.raw)['text']
+        if marker is None:
+            # Independent answers neither end the current discussion nor become
+            # inputs to a later signed itinerary.
+            if standalone_question(text):
+                continue
+            break
+        turns.append(PlanningTurn(text, question_day or current.question_day))
         markers.append(marker)
         references.append(dict(conversation_id=binding.conversation_id, generation=binding.generation,
                                message_id=message_id, sequence=sequence, input_sha256=digest))
+        if PLAN_REQUEST.match(text):
+            break
     if not turns:
         return None
     return (*reversed(turns), current), tuple(reversed(references)), tuple(reversed(markers))
 
 
-def explicit_plan(turns, references, *, ask_date_in=None):
+def explicit_plan(turns, references, *, explicit_save, ask_date_in=None):
     """Use only complete, unambiguous declarations in original messages."""
     texts = tuple(turn.text for turn in turns)
     city = next((match[0] for text in texts for match in BEIJING.finditer(text)
@@ -237,7 +250,8 @@ def explicit_plan(turns, references, *, ask_date_in=None):
     fields = grounded.fields
     if (grounded.missing_fixed or grounded.conflicting_party
             or grounded.restart_needed
-            or not planning_authority_complete(turns, city, has_fixed=bool(fields.get('fixed_items')))):
+            or not planning_authority_complete(turns, city, has_fixed=bool(fields.get('fixed_items')),
+                                               explicit_save=explicit_save)):
         return None
     if any(fields[edge]['date']['state'] != 'known' for edge in ('arrival', 'departure')):
         if ask_date_in is None or not grounded.duration:
@@ -302,7 +316,9 @@ def extract(worker, binding, locale, turns, references):
             if locale == 'zh' else
             'Please start a fresh planning request with “Plan a trip to…” and include the destination, dates, number of days, '
             'group size, and anything that must stay fixed in that message.')
-    if not questions and not planning_authority_complete(turns, city, has_fixed=bool(fields.get('fixed_items'))):
+    if not questions and not planning_authority_complete(
+            turns, city, has_fixed=bool(fields.get('fixed_items')),
+            explicit_save=any(requests_save(turn.text) for turn in turns)):
         questions.append('还有些安排我没理解。请告诉我这趟北京行程要用哪些信息。' if locale == 'zh'
                          else 'I’m not sure how to use part of your request. What should I include in the Beijing itinerary?')
     return PlanningDetails(city, fields, ' '.join(questions) if questions else None, references)
