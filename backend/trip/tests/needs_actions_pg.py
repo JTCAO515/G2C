@@ -79,12 +79,11 @@ class NeedsActionChecks(unittest.TestCase):
             response=client.post('/v2/messages',content=raw,headers={**self.host.headers[subject],'Content-Type':'application/octet-stream'})
             self.assertEqual(response.status_code,200,response.text)
         from cj_agent.provider import FakeProvider
-        from cj_draft.needs_publisher import SYSTEM
         from cj_draft.needs_context import publisher
         from cj_api.local_worker_context import checker_for
         class OriginalContextModel(FakeProvider):
             def stream(self,messages,system=None):
-                if system!=SYSTEM:
+                if system not in source_fixture.PLAN_SYSTEMS:
                     yield from super().stream(messages,system);return
                 self.calls+=1;source=json.loads(messages[-1]['content']);content=source['current_trip']['content']
                 value=dict(version='TRIP-model-plan.1',title=content['title'],items=content['items'],proposed_subjects={})

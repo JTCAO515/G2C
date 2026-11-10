@@ -47,9 +47,12 @@ class LioEdit:
             snapshot = decode_snapshot(b64decode(source['snapshot'], validate=True))
             arrival = snapshot.fields.get('arrival', {}).get('date')
             starts_on = date.fromisoformat(arrival['value']) if arrival and arrival['state'] == 'known' else None
+            departure = snapshot.fields.get('departure', {}).get('date')
+            ends_on = date.fromisoformat(departure['value']) if departure and departure['state'] == 'known' else None
         except (KeyError, ValueError) as error:
             raise ProviderUnknown('original Lio itinerary calendar unavailable') from error
-        selection = select_lio_edit(context.trip, text, locale, 'lio-edit-' + binding.run_id, starts_on=starts_on)
+        selection = select_lio_edit(context.trip, text, locale, 'lio-edit-' + binding.run_id,
+                                    starts_on=starts_on, ends_on=ends_on)
         if selection.status == 'protected':
             return _answer(worker, binding, state, locale, '这项安排暂时不能改。', "I can't change this stop.")
         if selection.candidate is None:
