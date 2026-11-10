@@ -7,6 +7,44 @@ import XCTest
     func testInvitationEnglish() throws { try exerciseInvitation("en") }
     func testInvitationChinese() throws { try exerciseInvitation("zh-Hans") }
 
+    func testNewChatAndHistoryKeepMessagesAndDraftsSeparate() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-chat-history-acceptance", "-cj.ui.language.v1", "en"]
+        app.launch()
+        defer { app.terminate() }
+
+        let menu = app.buttons["lio.menu"]
+        let oldReply = app.staticTexts["An earlier reply."]
+        let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+        XCTAssertTrue(oldReply.waitForExistence(timeout: 8))
+        menu.tap()
+        app.buttons["lio.chat.new"].tap()
+        let example = app.buttons["lio.example.0"]
+        XCTAssertTrue(example.waitForExistence(timeout: 8))
+        XCTAssertFalse(oldReply.exists)
+        example.tap()
+        let draft = "How do I take the metro in Shanghai?"
+        XCTAssertEqual(composer.value as? String, draft)
+
+        func openHistory(_ title: String) {
+            menu.tap()
+            app.buttons["lio.chat.history"].tap()
+            let row = app.buttons.matching(identifier: "lio.chat.history.row")
+                .matching(NSPredicate(format: "label CONTAINS %@", title)).firstMatch
+            XCTAssertTrue(row.waitForExistence(timeout: 8))
+            row.tap()
+        }
+        openHistory("Earlier conversation")
+        XCTAssertTrue(oldReply.waitForExistence(timeout: 8))
+        XCTAssertNotEqual(composer.value as? String, draft)
+        openHistory("New conversation")
+        XCTAssertTrue(example.waitForExistence(timeout: 8))
+        XCTAssertFalse(oldReply.exists)
+        XCTAssertFalse(app.staticTexts["lio.question"].exists)
+        XCTAssertEqual(composer.value as? String, draft)
+    }
+
     private func exerciseInvitation(_ language: String) throws {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")

@@ -59,13 +59,16 @@ def main():
     fixture_routes = (
         '        if ProcessInfo.processInfo.arguments.contains("--lio-scroll-acceptance") {\n'
         '            LioScrollFixture(shell: shell)\n'
+        '        } else if ProcessInfo.processInfo.arguments.contains("--lio-chat-history-acceptance") {\n'
+        '            LioChatHistoryFixture(shell: shell)\n'
         '        } else if ProcessInfo.processInfo.arguments.contains("--lio-journey-acceptance") {\n'
         '            LioJourneyFixture(shell: shell)\n'
         '        } else if ProcessInfo.processInfo.arguments.contains("--lio-timeline-acceptance") {\n'
         '            LioTimelineFixture(shell: shell, exerciseResend: ProcessInfo.processInfo.arguments.contains("--lio-resend-acceptance"))\n'
         '        } else ' + preview.lstrip()
     )
-    fixtures = ("LioScrollFixture.swift", "LioTimelineFixture.swift", "LioJourneyFixture.swift", "LioMemoryJourneyFixture.swift")
+    fixtures = ("LioScrollFixture.swift", "LioTimelineFixture.swift", "LioJourneyFixture.swift",
+                "LioMemoryJourneyFixture.swift", "LioChatHistoryFixture.swift")
     generated_source.write_text(app.replace(preview, fixture_routes)
                                 .replace("import CJLioUser\n", "@testable import CJLioUser\n")
                                 + "\n" + "\n".join((HERE / name).read_text() for name in fixtures))
@@ -87,7 +90,7 @@ def main():
         subprocess.run(command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=600)
     summary = subprocess.check_output(["xcrun", "xcresulttool", "get", "test-results", "summary", "--path", str(result)])
     (output / "summary.json").write_bytes(summary)
-    assert json.loads(summary)["passedTests"] == (len(args.case) if args.case else 14), summary
+    assert json.loads(summary)["passedTests"] == (len(args.case) if args.case else 15), summary
 
 
 if __name__ == "__main__":

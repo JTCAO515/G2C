@@ -8,6 +8,7 @@ public struct LioHome<MenuContent: View>: View {
     private let language: LioLanguage
     private let isDemo: Bool
     private let menu: MenuContent
+    private let chatLibrary: LioChatLibrary?
     private let tripLibrary: LioTripLibrary?
     private let memoryActions: LioMemoryActionsClient?
     private let savedMemory: AnyView?
@@ -15,6 +16,10 @@ public struct LioHome<MenuContent: View>: View {
     @State private var conversation: LioConversation
     @State private var tripPlan: LioTripPlan?
     @State private var draft = ""
+    @State private var chatID: Data?
+    @State private var chatDrafts: [Data: String] = [:]
+    @State private var openingChat = false
+    @State private var chatUnavailable = false
     @State private var menuOpen = false
     @State private var source: LioSource?
     @State private var followsAnswer = true
@@ -38,7 +43,8 @@ public struct LioHome<MenuContent: View>: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    public init(language: LioLanguage, service: LioService, isDemo: Bool, tripLibrary: LioTripLibrary? = nil,
+    public init(language: LioLanguage, service: LioService, isDemo: Bool, chatLibrary: LioChatLibrary? = nil,
+                tripLibrary: LioTripLibrary? = nil,
                 tripHistory: LioTripHistoryClient? = nil,
                 memoryActions: LioMemoryActionsClient? = nil,
                 savedMemory: AnyView? = nil,
@@ -46,11 +52,13 @@ public struct LioHome<MenuContent: View>: View {
         self.language = language
         self.isDemo = isDemo
         self.menu = menu()
+        self.chatLibrary = chatLibrary
         self.tripLibrary = tripLibrary
         self.memoryActions = memoryActions
         self.savedMemory = savedMemory
         self.recordedMap = recordedMap
         _conversation = State(initialValue: LioConversation(service: service))
+        _chatID = State(initialValue: chatLibrary?.currentID)
         _tripPlan = State(initialValue: tripHistory.map { LioTripPlan(client: $0) })
     }
 
@@ -61,6 +69,7 @@ public struct LioHome<MenuContent: View>: View {
     }
 
     public var body: some View {
+        let currentConversation = conversation
         let pending = conversation.pending
         let canObserve = scenePhase == .active && pending == nil
         let tripCard = latestTripCard
@@ -82,7 +91,7 @@ public struct LioHome<MenuContent: View>: View {
         }
         .onChange(of: tab) { _, _ in typing = false }
         .task(id: Observation(active: canObserve, request: refreshRequest)) {
-            if canObserve { await conversation.refreshTimeline() }
+            if canObserve { await currentConversation.refreshTimeline() }
         }
         .task(id: TripObservation(active: canObserve, card: tripCard)) {
             if canObserve { await tripPlan?.reload(for: tripCard) }
@@ -160,6 +169,30 @@ public struct LioHome<MenuContent: View>: View {
                     if isDemo {
                         Text(language.text("Sample replies only", "仅提供演示回答"))
                     }
+                    if let chatLibrary {
+                        Section {
+                            Button {
+                                Task { await createChat(in: chatLibrary) }
+                            } label: {
+                                Label(language.text("New chat", "新对话"), systemImage: "square.and.pencil")
+                            }
+                            .disabled(openingChat || !canSwitchChat)
+                            .accessibilityIdentifier("lio.chat.new")
+                            NavigationLink {
+                                LioChatHistoryView(library: chatLibrary, language: language, currentID: chatID,
+                                                   canSwitch: canSwitchChat, select: switchChat)
+                            } label: {
+                                Label(language.text("Chat history", "历史对话"), systemImage: "clock")
+                            }
+                            .disabled(openingChat)
+                            .accessibilityIdentifier("lio.chat.history")
+                            if openingChat {
+                                ProgressView(language.text("Opening chat…", "正在打开对话…"))
+                            } else if chatUnavailable {
+                                Text(language.text("Couldn’t open a new chat.", "暂时无法打开新对话。"))
+                            }
+                        }
+                    }
                     menu
                 }
                 .navigationTitle(language.text("Menu", "菜单"))
@@ -167,13 +200,51 @@ public struct LioHome<MenuContent: View>: View {
                 .toolbar {
                     ToolbarItem(placement: .confirmationAction) {
                         Button(language.text("Done", "完成")) { menuOpen = false }
+                            .disabled(openingChat)
                     }
                 }
             }
+            .interactiveDismissDisabled(openingChat)
         }
         .sheet(item: $source) { selected in
             LioSourceSheet(source: selected, language: language)
         }
+    }
+
+    private var canSwitchChat: Bool {
+        scenePhase == .active && conversation.pending == nil && !memoryBusy && !memoryPending
+            && tripPlan?.busy != true && tripPlan?.pending != true
+    }
+
+    private func createChat(in library: LioChatLibrary) async {
+        guard canSwitchChat, !openingChat else { return }
+        openingChat = true
+        chatUnavailable = false
+        defer { openingChat = false }
+        do {
+            let chat = try await library.create()
+            try Task.checkCancellation()
+            switchChat(chat)
+        } catch is CancellationError {
+            return
+        } catch {
+            chatUnavailable = true
+        }
+    }
+
+    private func switchChat(_ chat: LioChatSession) {
+        guard canSwitchChat else { return }
+        if chat.id != chatID {
+            if let chatID { chatDrafts[chatID] = draft }
+            chatID = chat.id
+            conversation = LioConversation(service: chat.service)
+            draft = chatDrafts.removeValue(forKey: chat.id) ?? ""
+            source = nil
+            memoryNotice = nil
+            followsAnswer = true
+            refreshRequest += 1
+        }
+        menuOpen = false
     }
 
     private func earlierMessages(_ scroll: ScrollViewProxy) -> some View {
