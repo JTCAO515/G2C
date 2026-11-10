@@ -80,7 +80,7 @@ private final class TimelineAcceptanceServer {
             case .prefix: row["answer"] = "北京明天"
             case .finished:
                 row["status"] = "completed"
-                row["answer"] = "北京明天有小雨。"
+                row["answer"] = "**北京明天**[有小雨](https://weather.example.org/model-link)。"
                 row["sources"] = [["title": "演示天气预报", "url": "https://weather.example.org/beijing"]]
             }
             messages = [row]

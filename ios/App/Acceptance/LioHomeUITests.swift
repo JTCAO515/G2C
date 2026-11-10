@@ -91,9 +91,17 @@ import XCTest
     }
 
     func testUnsafeReplyIsWithheldWithoutHidingTheAttribution() {
+        exerciseWithheldReply("--lio-display-guard")
+    }
+
+    func testMarkdownCannotExposeServiceTerms() {
+        exerciseWithheldReply("--lio-display-guard-markdown")
+    }
+
+    private func exerciseWithheldReply(_ fixture: String) {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
-        app.launchArguments = ["--lio-preview", "--lio-scroll-acceptance", "--lio-display-guard", "-cj.ui.language.v1", "zh-Hans"]
+        app.launchArguments = ["--lio-preview", "--lio-scroll-acceptance", fixture, "-cj.ui.language.v1", "zh-Hans"]
         app.launch()
         defer { app.terminate() }
 
