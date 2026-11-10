@@ -40,6 +40,7 @@ public enum DevelopmentAccountState: Equatable, Sendable {
     @ObservationIgnored private var request = UUID()
     @ObservationIgnored private var task: Task<Void, Never>?
     @ObservationIgnored private var active: (SessionMaterial, SessionOperation)?
+    @ObservationIgnored private var resuming: (material: SessionMaterial, operation: SessionOperation, generation: ShellGeneration)?
 
     public init(shell: ShellState, choices: [DevelopmentAccountChoice], persistence: any SessionPersistence, demoMode: Bool = false,
                 material: @escaping (String) throws -> SessionMaterial,
@@ -62,6 +63,7 @@ public enum DevelopmentAccountState: Equatable, Sendable {
     private func begin(cancelTask: Bool = true, cleanup: Bool = false) -> (UUID, ShellGeneration)? {
         let id = UUID(); request = id
         active = nil
+        resuming = nil
         let old = task; task = nil; if cancelTask { old?.cancel() }
         guard request == id else { return nil }
         let generation = cleanup ? shell.retireBusinessForCleanup() : shell.invalidateIdentity()
@@ -213,7 +215,11 @@ public enum DevelopmentAccountState: Equatable, Sendable {
     /// Backgrounding fences visible data; it never clears the Keychain credential.
     public func suspend() {
         guard active != nil || state == .checking else { return }
-        let previous = active
+        // A second background can interrupt verification of an already active
+        // session. Initial sign-in and explicit restore never populate resuming.
+        let previous: (SessionMaterial, SessionOperation)? = active ?? resuming.flatMap { candidate in
+            candidate.generation == shell.generation ? (candidate.material, candidate.operation) : nil
+        }
         guard begin() != nil else { return }
         if let previous, session.isCurrent(previous.1) {
             active = previous
@@ -225,6 +231,7 @@ public enum DevelopmentAccountState: Equatable, Sendable {
     public func resume() {
         guard state == .paused, let previous = active, session.isCurrent(previous.1),
               let (id, generation) = begin() else { return }
+        resuming = (previous.0, previous.1, generation)
         start(previous.0, operation: previous.1, id: id, generation: generation, save: false)
     }
 
@@ -272,7 +279,10 @@ public enum DevelopmentAccountState: Equatable, Sendable {
                 self.session.noteNetworkUnknown()
                 self.state = .networkUnknown
             }
-            if self.request == id { self.task = nil }
+            if self.request == id {
+                self.task = nil
+                self.resuming = nil
+            }
         }
     }
 }

@@ -71,6 +71,34 @@ import CJSession
         #expect(store.value == nil && store.blocked && shell.messageBindingBlocked)
     }
 
+    @Test func demoResumeSurvivesAnotherBackgroundDuringVerification() async throws {
+        let shell = try makeShell(), store = DevelopmentStore(), checks = DevelopmentChecks()
+        let material = try SessionMaterial(trustedSDKBytes: Data("synthetic-active-session".utf8))
+        var activations = 0
+        let host = DevelopmentAccountHost(shell: shell, choices: [], persistence: store, demoMode: true,
+            material: { _ in throw SessionFailure.invalidConfiguration }, verify: { await checks.check($0) },
+            activate: { _, _, _ in activations += 1 }, invalidate: {})
+        host.signIn { material }
+        await wait { checks.replies.count == 1 }
+        try #require(checks.replies.first).resume(returning: .accepted(account: "demo"))
+        await wait { host.state == .signedIn("demo") }
+
+        host.suspend()
+        host.resume()
+        await wait { checks.replies.count == 2 }
+        let stale = try #require(checks.replies.dropFirst().first)
+        #expect(host.state == .checking && shell.messageBindingBlocked)
+        host.suspend()
+        #expect(host.state == .paused && shell.messageBindingBlocked)
+        host.resume()
+        stale.resume(returning: .expired)
+        await wait { checks.replies.count == 3 }
+        #expect(host.state == .checking && activations == 1 && store.clears == 0)
+        try #require(checks.replies.dropFirst(2).first).resume(returning: .accepted(account: "demo"))
+        await wait { host.state == .signedIn("demo") }
+        #expect(activations == 2 && store.loads == 0 && store.clears == 0)
+    }
+
     @Test func demoExchangeReturningAfterSignOutCannotVerifyOrSave() async throws {
         let shell = try makeShell(), store = DevelopmentStore(), checks = DevelopmentChecks()
         let material = try SessionMaterial(trustedSDKBytes: Data("synthetic-invite-session".utf8))
