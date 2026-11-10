@@ -303,7 +303,11 @@ class Runtime:
             lio_dialogue_subjects=self.demo_subjects or None,lio_memory_factory=lio_memory_factory)
         if self.typed_memory is not None:
             from cj_memory.typed_api import register_typed_routes
-            register_typed_routes(app,database=database,auth_dir=self.auth,configuration=self.typed_memory)
+            typed_memory=self.typed_memory
+            if self.demo_subjects:
+                from cj_api.local_lio_memory import pilot_write_configuration
+                typed_memory=pilot_write_configuration(typed_memory,self.demo_subjects)
+            register_typed_routes(app,database=database,auth_dir=self.auth,configuration=typed_memory)
         if planning:
             from cj_trip.local_needs_app import register_local_needs_routes
             from cj_trip.local_manual_app import register_local_manual_routes
