@@ -474,7 +474,9 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     assert not seen
     reply = original('lio-plan-detail', '北京，2026-11-11 到 2026-11-12', 'zh')
     assert api.post(messages, content=reply, headers=owner).status_code == 200
+    calls = model.calls
     assert [outcome.status for outcome in worker.process()] == ['failed']
+    assert model.calls == calls + 1
     assert len(seen) == 1 and seen[0][1:] == (1, '北京', 'zh')
     unavailable = api.get(timeline, headers=owner).json()['messages'][-1]
     assert (unavailable['status'], unavailable['failure'], unavailable['trip']) == ('failed', 'unavailable', None)
@@ -487,7 +489,13 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
                                          lio_confirmation=confirmation)
     request = 'Plan a trip to Beijing from 2026-11-11 to 2026-11-12 for our party.'
     assert api.post(messages, content=original('lio-save', request, 'en'), headers=owner).status_code == 200
-    assert [outcome.status for outcome in worker.process()] == ['completed']
+    stream = model.stream
+    def unavailable_intake(messages, system=None):
+        if system.startswith(SYSTEM):
+            raise AssertionError('complete explicit plan must not dispatch the intake model')
+        yield from stream(messages, system)
+    with patch.object(model, 'stream', side_effect=unavailable_intake):
+        assert [outcome.status for outcome in worker.process()] == ['completed']
     saved = api.get(timeline, headers=owner).json()['messages'][-1]
     assert saved['status'] == 'completed' and saved['answer'] == 'I saved your itinerary.', saved
     assert saved['trip']['title'] == 'Beijing walk'
