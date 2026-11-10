@@ -13,14 +13,17 @@ from cj_strict_json import reject_duplicates
 MODEL_VERSION='TRIP-model-plan.1'
 
 
-def parse_model(raw, *, versions=(MODEL_VERSION,)):
+def parse_model(raw, *, versions=(MODEL_VERSION,), source_title_versions=()):
     if type(raw) is not bytes or not 0<len(raw)<=1_000_000:
         raise FieldRejected('plan','bounded plan bytes required')
     try:
         model=json.loads(raw,object_pairs_hook=reject_duplicates(ValueError,'duplicate plan field'))
     except (ValueError,RecursionError):
         raise FieldRejected('plan','strict JSON object without duplicate fields required') from None
-    _fields(model,{'version','title','items','proposed_subjects'},'plan','exact model plan fields required')
+    fields={'version','title','items','proposed_subjects'}
+    if type(model) is dict and model.get('version') in source_title_versions:
+        fields.remove('title')
+    _fields(model,fields,'plan','exact model plan fields required')
     if model['version'] not in versions:
         raise FieldRejected('version',' or '.join(versions)+' required')
     return model

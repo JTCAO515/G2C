@@ -126,6 +126,19 @@ def test_lio_replan_retains_saved_fixed_state_of_an_adopted_suggestion():
     assert source['current_trip']['content']['items'] == [saved]
     raw, _, _ = publisher.build_plan(draft([], version=LIO_REPLAN_DELTA), capture)
     assert json.loads(raw)['items'] == [saved]
+    assert json.loads(raw)['title'] == 'Replanned Beijing'
+    for bad_title in (' ', 'x' * 121):
+        invalid = packed(dict(version=LIO_REPLAN_DELTA, title=bad_title, items=[], proposed_subjects={}))
+        with pytest.raises(FieldRejected) as rejected:
+            publisher.build_plan(invalid, capture)
+        assert rejected.value.field == 'title' and rejected.value.rule == 'bounded explicit title'
+
+    delta_with_saved_title = 'TRIP-lio-replan-delta.2'
+    payload = dict(version=delta_with_saved_title, items=[], proposed_subjects={})
+    raw, _, _ = publisher.build_plan(packed(payload), capture)
+    assert raw == trip.content
+    with pytest.raises(FieldRejected, match='exact model plan fields required'):
+        publisher.build_plan(packed(dict(payload, title='Model title override')), capture)
     new = dict(saved, id='new', text='Evening walk', fixed=unknown,
                schedule=stop('new', known('18:00'), known('19:00'))['schedule'])
     raw, _, _ = publisher.build_plan(draft([new], version=LIO_REPLAN_DELTA, subjects={'new': ['self']}), capture)

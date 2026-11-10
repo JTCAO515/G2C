@@ -18,6 +18,7 @@ from .needs_context import ContextPublisher, ContextSource
 
 
 LIO_REPLAN_DELTA = 'TRIP-lio-replan-delta.1'
+LIO_REPLAN_DELTA_V2 = 'TRIP-lio-replan-delta.2'
 
 
 class LioContextSource(ContextSource):
@@ -40,9 +41,10 @@ class LioContextSource(ContextSource):
 
 class LioPlanPublisher(ContextPublisher):
     system = ContextPublisher.system + (
-        f' When current_trip is present in TRIP-source-input.2, use response version {LIO_REPLAN_DELTA} '
-        'instead of TRIP-model-plan.1. In that mode, the server retains every item in current_trip.content.items '
-        'in saved order. Do not return any of those items or IDs. Return only new suggestions and any newly '
+        f' When current_trip is present in TRIP-source-input.2, use response version {LIO_REPLAN_DELTA_V2} '
+        'instead of TRIP-model-plan.1. In that mode, return exactly version, items and proposed_subjects. '
+        'Omit title. The server retains the saved title and every item in current_trip.content.items in saved '
+        'order. Do not return any of those items or IDs. Return only new suggestions and any newly '
         'declared fixed NEEDS items absent from the saved Trip. Return items:[] and proposed_subjects:{} when '
         'the saved Trip already covers the request. In either format, copy the description of a required fixed '
         'NEEDS item absent from the current Trip verbatim as text and set source_category to "user_provided". '
@@ -58,7 +60,8 @@ class LioPlanPublisher(ContextPublisher):
         self.check_lio_original = check_lio_original
 
     def _model_plan(self, raw, context):
-        value = parse_model(raw, versions=(MODEL_VERSION, LIO_REPLAN_DELTA))
+        value = parse_model(raw, versions=(MODEL_VERSION, LIO_REPLAN_DELTA, LIO_REPLAN_DELTA_V2),
+                            source_title_versions=(LIO_REPLAN_DELTA_V2,))
         if type(value['items']) is not list:
             raise FieldRejected('items', 'Lio replan items must be a list')
         retained = json.loads(context.trip.content)
@@ -73,7 +76,8 @@ class LioPlanPublisher(ContextPublisher):
             return value
         # Reuse the existing structured.2 and source checks on the composed
         # candidate. A model ID matching a retained ID fails as a duplicate.
-        return dict(value, version=MODEL_VERSION, items=retained['items'] + value['items'])
+        title = retained['title'] if value['version'] == LIO_REPLAN_DELTA_V2 else value['title']
+        return dict(value, version=MODEL_VERSION, title=title, items=retained['items'] + value['items'])
 
     def build_plan(self, raw, capture):
         content, candidate, report = super().build_plan(raw, capture)
