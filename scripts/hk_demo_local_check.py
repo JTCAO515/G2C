@@ -189,6 +189,14 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     for tail in (', but please put this on hold.', ', but those are Shanghai dates only.'):
         assert not planning_authority_complete((sample[:-1] + tail,), 'Beijing', today, has_fixed=True)
     assert planning_authority_complete((sample,), 'Beijing', today, has_fixed=True)
+    for qualifier in ('Those dates still need approval and are for Beijing.',
+                      'Those dates are tentative but are for Beijing.'):
+        assert not planning_authority_complete((
+            'Plan a trip to Beijing from 2026-11-11 to 2026-11-12. ' + qualifier,
+        ), 'Beijing', today, has_fixed=False)
+    for timed in ('Plan only a preview of the trip to Beijing from 2026-11-11 to 2026-11-12.',
+                  'Plan an unsaved trip to Beijing from 2026-11-11 to 2026-11-12.'):
+        assert not planning_authority_complete((timed,), 'Beijing', today, has_fixed=False)
     for prefix in ('Those are Shanghai dates only, and ', 'This is just a hypothetical and '):
         joined = 'Plan a trip to Beijing from 2026-11-11 to 2026-11-12 for two people. ' + prefix + fixed_words + '.'
         assert not planning_authority_complete((joined,), 'Beijing', today, has_fixed=True)

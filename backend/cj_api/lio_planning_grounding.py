@@ -45,7 +45,7 @@ WITHDRAWAL = re.compile(
     r'算了|不用规划了|取消吧|取消(?:这次|这份|这个)?(?:规划|行程|计划)|等我(?:确认|同意|批准)',
     re.I,
 )
-DRAFT_REQUEST = re.compile(r'^(?:please\s+|(?:can|could|would) you\s+)?draft\b|(?:只要|先给|先看|看看)[^。！？]{0,12}(?:草稿|预览)', re.I)
+DRAFT_REQUEST = re.compile(r'^(?:please\s+|(?:can|could|would) you\s+)?(?:help (?:me|us) (?:to )?)?draft\b|(?:只要|先给|先看|看看)[^。！？]{0,12}(?:草稿|预览)', re.I)
 SAVE_LANGUAGE = re.compile(r'\b(?:sav(?:e|es|ed|ing)|stor(?:e|es|ed|ing)|persist(?:s|ed|ing)?|'
                            r'publish(?:es|ed|ing)?|writ(?:e|es|ing)\b[^.!?]{0,24}\bdown)\b'
                            r'|保存|存入|存下|存到|记录|写入|发布', re.I)
@@ -73,11 +73,18 @@ OPEN_PLAN = re.compile(
     rf'(?:(?:a\s+|an\s+)?(?:(?:{NUMBER})-day\s+)?(?:Beijing\s+)?(?:trip|itinerary|visit)'
     rf'(?:\s+(?:in|to)\s+Beijing)?|(?:{NUMBER})\s+days?\s+in\s+Beijing)'
     rf'(?:\s+for\s+(?:our party|(?:{NUMBER})\s+people))?'
-    rf'|(?:请|麻烦)?(?:(?:帮|给|为)(?:我们|我))?\s*(?:规划|安排|设计|做)\s*'
+    rf'|(?:请|麻烦)?(?:(?:帮|给|为)(?:我们|我))?\s*(?:(?:为|给)(?:{NUMBER})个人)?\s*(?:规划|安排|设计|做)\s*'
     rf'(?:一下|一个|一份|一趟|一次)?\s*(?:(?:{NUMBER})天的?)?(?:(?:去|到|在)?北京)?\s*'
     rf'(?:(?:{NUMBER})天)?(?:旅行|行程|日游|游|旅游|攻略)'
     rf'|(?:请|麻烦)?(?:帮我|给我|帮我们)?\s*规划(?:一趟|一次|一个|一份)?(?:旅行|行程)', re.I)
 
+EN_CONFIRMED_DATE_SCOPE = re.compile(
+    r'(?:trip dates?|travel dates?|(?:those|these|the|that)\s+(?:dates?|days?|departure(?: date| day)?|start(?: date| day)?))'
+    r'\s+(?:(?:are|is|were)\s+(?:only\s+)?for|apply(?:\s+only)?\s+to|belong(?:s)?\s+to)'
+    r'\s+(?:Beijing|北京)(?:\s+only)?',re.I)
+ZH_CONFIRMED_DATE_SCOPE = re.compile(
+    r'(?:日期|这些日期|那些日期|这几天|明天|今天|后天|出发日)'
+    r'(?:(?:只用于|仅用于|只适用于|仅限|适用于|属于)北京|是北京的(?:出发日|出发日期|旅行日期|行程|旅行|计划))')
 EN_DATE_SCOPE = re.compile(
     r'\b(?:trip dates?|travel dates?|(?:those|these|the|that)\s+(?:dates?|days?|departure(?: date| day)?|start(?: date| day)?))'
     r'\b[^.!?]{0,96}?(?:\b(?:(?:are|is|were|was)\s+(?:not\s+)?(?:only\s+)?for|'
@@ -334,6 +341,22 @@ def _fixed_authority_clause(clause):
     ))
 
 
+def _timed_plan_authorized(clause, city, today):
+    if _day_span((clause,), today, city)[0] is None:
+        return False
+    span = SPAN.search(clause)
+    if span is not None:
+        prefix = re.sub(r'(?:\bfrom|从|在)\s*$', '', clause[:span.start()], flags=re.I).rstrip(' ,，')
+        return OPEN_PLAN.fullmatch(prefix) is not None
+    start = START.search(clause)
+    if start is None:
+        return False
+    if ZH_RELATIVE.search(clause):
+        remaining = clause[:start.start()] + clause[start.end():].lstrip('的 ')
+        return OPEN_PLAN.fullmatch(remaining) is not None
+    return OPEN_PLAN.fullmatch(clause[:start.start()].rstrip(' ,，')) is not None
+
+
 def planning_authority_complete(turns, city, today, *, has_fixed):
     """A grounded date does not authorize an unexplained instruction in the same turn."""
     # Historical details may be dropped when the city changes. The latest
@@ -348,11 +371,12 @@ def planning_authority_complete(turns, city, today, *, has_fixed):
                     or SAVE_ASSENT.fullmatch(clause) or RELATIVE_REPLY.fullmatch(clause)
                     or TRIP_DATES.fullmatch(clause)):
                 continue
-            if (EN_DATE_SCOPE.fullmatch(clause) or ZH_DATE_SCOPE.fullmatch(clause)) and not _date_scope_disputed(clause, city):
+            if city.casefold() in ('北京', 'beijing') and (EN_CONFIRMED_DATE_SCOPE.fullmatch(clause)
+                    or ZH_CONFIRMED_DATE_SCOPE.fullmatch(clause)):
                 continue
             if has_fixed and _fixed_authority_clause(clause):
                 continue
-            if PLAN_REQUEST.match(clause) and _day_span((clause,), today, city)[0] is not None:
+            if PLAN_REQUEST.match(clause) and _timed_plan_authorized(clause, city, today):
                 continue
             return False
     return True
