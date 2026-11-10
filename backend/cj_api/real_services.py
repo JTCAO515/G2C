@@ -128,16 +128,23 @@ def canonical_tool(name,raw):
 
 _ZH_RELATIVE_WEATHER = re.compile(
     r'(?:请)?(?:问|查|看看)?(?:北京)?(?P<day>今天|明天)(?:北京|在北京|的北京)?(?:的)?天气(?:预报)?'
-    r'(?:怎么样|如何|好吗)?[？?，,。\s]*(?:请(?:给出|给我|附上)(?:来源|出处|链接))?[？?。\s]*')
+    r'(?:怎么样|如何|好吗)?[？?，,。\s]*(?:请(?:给出|给我|附上)(?:来源(?:链接)?|出处|链接))?[？?。\s]*')
+_EN_WEATHER_OPENING = r"(?:please\s+)?(?:(?:what(?:['’]s| is)|how(?:['’]s| is)|check)\s+)?(?:the\s+)?"
+_EN_WEATHER_SOURCE = r'[?.\s]*(?:please\s+(?:include|give)\s+(?:the\s+)?source(?:\s+link)?[.\s]*)?'
 _EN_RELATIVE_WEATHER = re.compile(
-    r"(?:please\s+)?(?:(?:what(?:'s| is)|how(?:'s| is)|check)\s+)?(?:the\s+)?"
+    _EN_WEATHER_OPENING +
     r'(?:Beijing\s+)?(?:weather(?: forecast)?|forecast)\s+'
     r'(?:(?:in|for)\s+Beijing\s+)?(?:for\s+)?(?P<day>today|tomorrow)'
-    r'(?:\s+in\s+Beijing)?[?.\s]*(?:please\s+(?:include|give)\s+(?:the\s+)?source[.\s]*)?',re.I)
+    r'(?:\s+in\s+Beijing)?' + _EN_WEATHER_SOURCE, re.I)
+_EN_POSSESSIVE_WEATHER = re.compile(
+    _EN_WEATHER_OPENING + r"(?P<day>today|tomorrow)['’]s\s+(?:weather(?: forecast)?|forecast)"
+    r'(?:\s+in\s+Beijing)?' + _EN_WEATHER_SOURCE, re.I)
 
 
 def _lio_weather_day(text, today):
-    match = _ZH_RELATIVE_WEATHER.fullmatch(text.strip()) or _EN_RELATIVE_WEATHER.fullmatch(text.strip())
+    text = text.strip()
+    match = (_ZH_RELATIVE_WEATHER.fullmatch(text) or _EN_RELATIVE_WEATHER.fullmatch(text)
+             or _EN_POSSESSIVE_WEATHER.fullmatch(text))
     if match is None:
         return None
     return today + timedelta(days=1) if match['day'].casefold() in ('明天','tomorrow') else today

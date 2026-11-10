@@ -689,6 +689,20 @@ class Boundaries(unittest.TestCase):
         self.assertEqual((source.title,source.url,source.observed_at),('高德天气',None,'2026-11-09T17:00:00+00:00'))
         self.assertEqual(chunks[-1],'目前没有明天的预报。')
 
+    def test_lio_weather_date_only_overrides_unambiguous_single_day_questions(self):
+        from cj_api.real_services import _lio_weather_day
+
+        today = date(2026, 11, 10)
+        for question in ('What’s tomorrow’s weather in Beijing?',
+                         '请问明天北京天气怎么样？请给出来源链接。'):
+            with self.subTest(question=question):
+                self.assertEqual(_lio_weather_day(question, today), date(2026, 11, 11))
+        for question in ('Compare today’s and tomorrow’s weather in Beijing.',
+                         'What’s the weather in Beijing on November 18?',
+                         '请问明天北京天气怎么样？再比较后天的预报。'):
+            with self.subTest(question=question):
+                self.assertIsNone(_lio_weather_day(question, today))
+
     def test_lio_place_timestamp_uses_the_display_wire_type(self):
         from cj_api.local_app import ISSUER,scope_for
         from cj_message.lio_context import LioCitation
