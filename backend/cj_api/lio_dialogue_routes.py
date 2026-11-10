@@ -18,6 +18,7 @@ from .message_routes import BodyError, _read_body, _token, message_failure
 
 TIMELINE_VERSION = 'LIO-timeline.1'
 RECEIPT_VERSION = 'LIO-message-receipt.1'
+BEIJING_PUBLIC_FORECAST = 'https://www.weather.com.cn/weather/101010100.shtml'
 
 
 def _json(value, status=200):
@@ -45,6 +46,7 @@ def _message(item, state, *, expired=False, trip=None, memory=None):
         failure = ('quota' if state.budget_exhausted_stage != 'none'
                    else 'unavailable')
     sources = []
+    amap_weather = False
     activity = None
     if state is not None:
         for effect in state.effects:
@@ -52,8 +54,15 @@ def _message(item, state, *, expired=False, trip=None, memory=None):
                 citation = json.loads(effect.removeprefix(SOURCE_EFFECT))
                 sources.append(dict(title=citation['title'], url=citation['url'],
                                     observed_at=citation['observed_at']))
+                amap_weather |= citation['title'] in ('高德天气', 'Amap Weather') and citation['url'] is None
             elif status == 'answering' and effect.startswith(TOOL_EFFECT):
                 activity = json.loads(effect.removeprefix(TOOL_EFFECT))['activity']
+    if amap_weather:
+        # The registered forecast is Amap's. This live Beijing forecast is a
+        # separate public reference with no recorded observation in this turn.
+        title = ('中国天气网 · 北京当前预报（参考）' if item.locale == 'zh'
+                 else 'Weather China · Current Beijing forecast (reference)')
+        sources.append(dict(title=title, url=BEIJING_PUBLIC_FORECAST, observed_at=None))
     answer = display_answer(state.text, item.locale) if state is not None else ''
     if answer is None:
         if status == 'completed' and trip is None:

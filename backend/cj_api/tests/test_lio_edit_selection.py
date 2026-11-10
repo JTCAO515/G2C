@@ -1,5 +1,6 @@
 from datetime import date
 import json
+import unittest
 
 import pytest
 
@@ -39,6 +40,7 @@ def itinerary(fixed=None, *, overlap=False):
 @pytest.mark.parametrize('text,locale,replacement', [
     ('把第二天下午换成天坛。', 'zh', '天坛'),
     ('Could you replace the afternoon of day 2 with the Temple of Heaven?', 'en', 'the Temple of Heaven'),
+    ('Replace the second afternoon with Temple of Heaven.', 'en', 'Temple of Heaven'),
     ('Replace the afternoon of day 2 with the Temple of Heaven, and keep the other plans.', 'en', 'the Temple of Heaven'),
     ('把第二天下午换成天坛，保留其他安排。', 'zh', '天坛'),
     ('把第二天下午换成「颐和园（北门）」。', 'zh', '颐和园（北门）'),
@@ -104,3 +106,20 @@ def test_missing_calendar_day_does_not_shift_an_edit_to_another_date():
                          ('Replace the afternoon of 2026-11-11 with Temple of Heaven.', 'en')):
         exact = select_lio_edit(trip, text, locale, 'original-edit', starts_on=starts_on)
         assert exact.candidate.affected_ids == ('first',)
+
+
+class LioRelativeDayTest(unittest.TestCase):
+    def test_last_evening_uses_the_actual_last_calendar_day(self):
+        trip, _ = itinerary()
+        dates = dict(starts_on=date(2026, 11, 11), ends_on=date(2026, 11, 12))
+        for text, locale in (
+            ('把最后一天晚上换成天坛。', 'zh'),
+            ('Replace the last evening with Temple of Heaven.', 'en'),
+            ('Replace the evening of the final day with Temple of Heaven.', 'en'),
+        ):
+            with self.subTest(text=text):
+                selected = select_lio_edit(trip, text, locale, 'last', **dates)
+                self.assertEqual(selected.candidate.affected_ids, ('evening',))
+                missing = select_lio_edit(trip, text, locale, 'missing', **dict(dates, ends_on=date(2026, 11, 13)))
+                self.assertEqual(missing.status, 'clarify')
+                self.assertIsNone(missing.candidate)

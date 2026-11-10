@@ -139,6 +139,28 @@ _EN_RELATIVE_WEATHER = re.compile(
 _EN_POSSESSIVE_WEATHER = re.compile(
     _EN_WEATHER_OPENING + r"(?P<day>today|tomorrow)['’]s\s+(?:weather(?: forecast)?|forecast)"
     r'(?:\s+in\s+Beijing)?' + _EN_WEATHER_SOURCE, re.I)
+_TRANSIT_POLICY = re.compile(
+    r'过境免签|免签过境|visa[ -]free transit|transit (?:without a visa|visa exemption|policy)', re.I)
+_TRANSIT_TOPIC = re.compile(r'过境|转机|\b(?:transit|layover|stopover)\b', re.I)
+_TRANSIT_VISA = re.compile(r'签证|免签|\bvisa\b', re.I)
+_TRANSIT_ELIGIBILITY = re.compile(
+    r'适用|符合|资格|可以吗|能用吗|\b(?:qualify|eligib\w*|apply|applies)\b', re.I)
+_TRANSIT_SECTION = re.compile(r'^[IVX]+\.\s+')
+_TRANSIT_DURATION = re.compile(r'\b(?:10 days|240 hours)\b', re.I)
+
+
+def _asks_transit_policy(text):
+    return bool(_TRANSIT_POLICY.search(text) or (_TRANSIT_TOPIC.search(text) and _TRANSIT_VISA.search(text)))
+
+
+def _lio_transit_request(messages):
+    question = messages[-1]['content']
+    if _asks_transit_policy(question):
+        return True
+    if not _TRANSIT_ELIGIBILITY.search(question):
+        return False
+    previous = next((row['content'] for row in reversed(messages[:-1]) if row['role'] == 'user'), '')
+    return _asks_transit_policy(previous)
 
 
 def _lio_weather_day(text, today):
@@ -175,8 +197,28 @@ def _lio_tool_result(name, data, source, chinese, arguments):
         report_time = data['provider_reporttime']
         return dict(forecasts=data['forecasts'], report_time=report_time if report_time != 'UNKNOWN' else None,
                     dates=json.loads(arguments)['dates'], note=note, source=source)
-    return dict(excerpts=data['excerpts'], source=source,
-                note='此页面没有确认个人资格。' if chinese else 'The page does not confirm individual eligibility.')
+    excerpts = data['excerpts']
+    policy = []
+    for excerpt in excerpts:
+        content = excerpt['text']
+        if '240-Hour Visa-Free Transit Policy' in content:
+            policy = [excerpt]
+        elif policy:
+            if _TRANSIT_SECTION.match(content):
+                break
+            policy.append(excerpt)
+            if _TRANSIT_DURATION.search(content):
+                return dict(excerpts=policy, source=source)
+    return dict(excerpts=[], source=source)
+
+
+def _lio_transit_answer(chinese, evidence):
+    if not evidence:
+        return ('我暂未取得可核对的官方政策正文，个人资格仍需核实。' if chinese
+                else 'I could not verify the official policy text. Individual eligibility still needs checking.')
+    return ('移民局的说明列出了 240 小时过境免签。请查看来源，按护照、入境口岸和后续行程确认个人资格。'
+            if chinese else 'The NIA guidance describes 240-hour visa-free transit. Check the source for your '
+            'passport, entry port and onward itinerary to confirm eligibility.')
 
 
 def _receipt(metadata):
@@ -366,6 +408,7 @@ class RealTools:
         messages=list(messages);seen=set()
         system = TOOL_SYSTEM
         weather_day = None
+        transit_request = False
         if lio_locale is None:
             chinese=any('一'<=c<='鿿' for c in messages[-1]['content'])
         else:
@@ -377,6 +420,9 @@ class RealTools:
             tomorrow = today + timedelta(days=1)
             system += f' In Beijing, today is {today.isoformat()} and tomorrow is {tomorrow.isoformat()}.'
             system += ' Use Beijing calendar dates for weather. Only cite links supplied as public sources.'
+            transit_request = _lio_transit_request(messages)
+            if transit_request:
+                system += ' For current visa-free transit policy use the official entry notice before making policy claims.'
         if binding.scope in self.buffered_streaming_scopes:profile=M4_NATIVE_TURN_BUFFERED
         elif binding.scope in self.streaming_scopes:profile=M4_NATIVE_TURN_STREAM
         else:profile=M4_NATIVE_TURN_PROFILE_V2
@@ -385,6 +431,7 @@ class RealTools:
         # its original structured draft. Every other original keeps eight turns.
         controlled=self.controlled_probe is not None and (binding.scope,binding.message_id)==self.controlled_probe
         turns=5 if controlled else 8
+        transit_evidence = False
         for round_index in range(turns):
             worker._model_history(binding,messages,system)
             native_reply={}
@@ -394,18 +441,27 @@ class RealTools:
                     lio_answer=lio_locale is not None))
             if incremental:
                 raw=None
+                saw_answer = False
                 with closing(chunks):
                     for chunk in chunks:
                         if 'assistant' in native_reply:raw=chunk
-                        elif chunk:yield chunk
+                        elif chunk:
+                            if transit_request or transit_evidence:
+                                saw_answer = True
+                            else:
+                                yield chunk
                 # Answer text goes to the original RUN. The producer emits
                 # tool data only after settling the original Meter receipt.
-                if raw is None:return
+                if raw is None:
+                    if saw_answer:
+                        yield _lio_transit_answer(chinese, transit_evidence)
+                    return
             else:raw=''.join(chunks)
             try:turn=parse_turn(raw.encode(),self.names)
             except ValueError:raise ProviderUnknown('live model tool turn unavailable') from None
             if not turn.calls:
-                yield turn.answer_zh if chinese else turn.answer_en
+                answer = turn.answer_zh if chinese else turn.answer_en
+                yield _lio_transit_answer(chinese, transit_evidence) if transit_request or transit_evidence else answer
                 return
             if len(seen)+len(turn.calls)>MAX_TOOLS_PER_RUN:
                 raise ProviderFailed('M4 per-run tool limit reached')
@@ -458,7 +514,16 @@ class RealTools:
                         received = place_source['received_at']
                         observed_at = received['iso8601'] if received is not None else None
                         places = data['places']
-                        if len(places) == 1 and (point := places[0]['coordinate']['value']) is not None:
+                        if data['routes']:
+                            route = data['query']
+                            public_url = 'https://uri.amap.com/navigation?' + urlencode({
+                                'from': route['origin']['coordinate']['raw'],
+                                'to': route['destination']['coordinate']['raw'],
+                                'mode': {'walking': 'walk', 'driving': 'car'}[route['mode']],
+                                'callnative': 0,
+                            })
+                            title_zh, title_en = '高德地图路线', 'Amap directions'
+                        elif len(places) == 1 and (point := places[0]['coordinate']['value']) is not None:
                             public_url = 'https://uri.amap.com/marker?' + urlencode({'position': point['raw']})
                     else:
                         observed_at = data['retrieved_at']
@@ -466,6 +531,11 @@ class RealTools:
                     public_source = dict(title=title, url=public_url, observed_at=observed_at)
                     yield LioCitation(key, title, public_url, observed_at)
                 model_result = data if lio_locale is None else _lio_tool_result(name, data, public_source, chinese, arguments)
+                if name == 'fact' and lio_locale is not None:
+                    if not model_result['excerpts']:
+                        yield _lio_transit_answer(chinese, False)
+                        return
+                    transit_evidence = True
                 results.append(dict(index=index,name=call.name,tool=name,result=model_result))
             if incremental:
                 for supplier_call,result in zip(assistant['tool_calls'],results,strict=True):
