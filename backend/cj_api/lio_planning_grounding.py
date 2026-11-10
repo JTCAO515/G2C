@@ -251,6 +251,7 @@ class GroundedPlanning:
     fields: dict
     missing_fixed: bool
     conflicting_party: bool
+    restart_needed: bool
 
 
 def _compatible_turns(turns, city):
@@ -291,7 +292,7 @@ def _timing_follows_destination(clause, position, *, absolute):
 def _day_span(turns, city):
     durations = _declared_durations(turns, city)
     if len(durations) > 1:
-        return None, None
+        return None, True
     declared_days = next(iter(durations), None)
     if len(turns) > 1:
         latest = turns[-1]
@@ -299,12 +300,14 @@ def _day_span(turns, city):
         if reply is not None:
             count = reply[2] or reply[4]
             duration = _number(count) if count else declared_days
-            if not duration or declared_days is not None and duration != declared_days:
-                return None, None
-            return _relative_span(reply[1] or reply[3], duration, latest.question_day)
+            if declared_days is not None and duration != declared_days:
+                return None, True
+            if not duration:
+                return None, False
+            return _relative_span(reply[1] or reply[3], duration, latest.question_day), False
     for turn in reversed(turns):
         if DATES_UNDECIDED.search(turn.text) or _date_scope_disputed(turn.text, city):
-            return None, None
+            return None, False
         spans = set()
         for original in _clauses(turn.text):
             clause = _date_declaration(original)
@@ -322,7 +325,7 @@ def _day_span(turns, city):
                     if scoped:
                         first, last = date.fromisoformat(match[1]), date.fromisoformat(match[2])
                         if declared_days is not None and (last - first).days + 1 != declared_days:
-                            return None, None
+                            return None, True
                         spans.add((first, last))
                 if explicit:
                     continue
@@ -342,18 +345,18 @@ def _day_span(turns, city):
                 else:
                     continue
                 if declared_days is not None and duration != declared_days:
-                    return None, None
+                    return None, True
                 if duration:
                     spans.add(_relative_span(start[1] or start[2], duration, turn.question_day))
             except ValueError:
-                return None, None
+                return None, False
         if spans:
             if len(spans) == 1:
                 first, last = spans.pop()
                 if first <= last:
-                    return first, last
-            return None, None
-    return None, None
+                    return (first, last), False
+            return None, True
+    return None, False
 
 
 def _fixed_shape(clause):
@@ -480,7 +483,8 @@ def _fixed_item(clause, first, zone, party, *, reply=''):
 def grounded_fields(turns, city):
     turns = _compatible_turns(turns, city)
     clauses = tuple(clause for turn in turns for clause in _clauses(turn.text))
-    first, last = _day_span(turns, city)
+    span, conflicting_dates = _day_span(turns, city)
+    first, last = span or (None, None)
     parties = {_number(match[1] or match[2]) for clause in map(_date_declaration, clauses)
                if clause is not None and (PLAN_REQUEST.match(clause) or TRIP_DATES.fullmatch(clause))
                and not NEGATED.search(clause)
@@ -500,4 +504,7 @@ def grounded_fields(turns, city):
         result['party_size'] = _known(party)
     if fixed_items and all(item is not None for item in fixed_items):
         result['fixed_items'] = fixed_items
-    return GroundedPlanning(result, None in fixed_items, len(parties) > 1)
+    missing_fixed = None in fixed_items
+    conflicting_party = len(parties) > 1
+    restart_needed = conflicting_dates or conflicting_party or (bool(fixed_details) and missing_fixed)
+    return GroundedPlanning(result, missing_fixed, conflicting_party, restart_needed)
