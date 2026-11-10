@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from types import SimpleNamespace
 import unittest
 
-from cj_api.lio_memory_preferences import supported_preference
+from cj_api.lio_memory_preferences import explicit_pilot_preference, supported_preference
 from cj_api.local_lio_memory import pilot_write_configuration
 from cj_memory.domain import Unavailable
 from cj_memory.local import LocalMemoryConfiguration, LocalMemoryProfile, SlotPolicy
@@ -93,3 +93,20 @@ class LioMemoryPreferenceTest(unittest.TestCase):
         self.assertTrue(pilot.policy('demo').evaluate(command('travel.pace', 'I prefer a slow pace.'), b''))
         self.assertTrue(pilot.policy('demo').evaluate(command('quiet.entrance', 'Use a different quiet entrance.'), b''))
         self.assertIs(pilot.collection.profiles['other'], profile)
+
+    def test_exact_pilot_preferences_use_the_original_quote(self):
+        slots = {'travel.pace', 'quiet.entrance'}
+        for original, quote in [
+            ('请记住，我旅行时喜欢慢节奏。', '我旅行时喜欢慢节奏。'),
+            ('Please remember that I prefer a slow pace when I travel.',
+             'I prefer a slow pace when I travel.'),
+        ]:
+            with self.subTest(original=original):
+                self.assertEqual(explicit_pilot_preference(original, slots), ('travel.pace', quote))
+        for text in ('I prefer a slow pace because I have asthma.',
+                     'I never said I prefer a slow pace.',
+                     'I prefer a slow pace. I prefer a fast pace.',
+                     'I prefer quiet entrances.'):
+            with self.subTest(text=text):
+                self.assertIsNone(explicit_pilot_preference(text, slots))
+        self.assertIsNone(explicit_pilot_preference('I prefer a slow pace.', {'quiet.entrance'}))
