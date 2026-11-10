@@ -13,6 +13,12 @@ class TripContext:
     needs_source:bytes
 
 
+class AdoptedTripConflict(Conflict):
+    def __init__(self, rule):
+        super().__init__(rule)
+        self.rule = rule
+
+
 def read_current(repository,needs_scope,needs_id):
     with repository.transaction() as cur:
         return current_in_tx(cur,repository,needs_scope,needs_id)
@@ -36,11 +42,11 @@ def protect_model(original,document):
     """Model cannot turn local fixed intent into an edit authorization."""
     before=json.loads(original.content);old={item['id']:item for item in before['items']}
     new={item['id']:item for item in document['items']}
-    if not set(old)<=set(new):raise Conflict('model removed adopted current Trip item')
+    if not set(old)<=set(new):raise AdoptedTripConflict('model removed adopted current Trip item')
     changes=[]
     for item_id,item in old.items():
         proposed=new[item_id]
-        if proposed['fixed']!=item['fixed']:raise Conflict('model changed adopted fixed intent')
+        if proposed['fixed']!=item['fixed']:raise AdoptedTripConflict('model changed adopted fixed intent')
         for field in ('text','schedule'):
             if proposed[field]!=item[field]:changes.append(dict(item_id=item_id,field=field,value=proposed[field]))
     order=[item['id'] for item in document['items'] if item['id'] in old]
