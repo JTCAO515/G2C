@@ -33,7 +33,8 @@ COMPACT_DRAFT = (
     'Cover each requested date with its retained items or one concise new stop. Follow requested time periods. '
     'Otherwise plan afternoon stops, except for an evening activity on the last day of a trip of three or more days. '
     'For each new suggestion, set known local start and end dates, times and timezone. Keep utc_offset unknown. '
-    'Add no other stops. Use a short title and short new stop labels. '
+    'Add no other stops. Use short new stop labels. '
+    'Only when current_trip in TRIP-source-input.2 is null, use a short title. '
     'Return only the compact JSON object.'
 )
 SYSTEM = (

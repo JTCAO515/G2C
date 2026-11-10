@@ -283,6 +283,7 @@ def verify_upgrade(root, blueprint, target):
 
 def lio_fixture_model(*, empty_first_day=False):
     from cj_api.local_lio_planning import COMPACT_DRAFT, DISCUSSION_PROMPT, SYSTEM
+    from cj_draft.lio_plan import LIO_REPLAN_DELTA_V2
     from cj_draft.needs_publisher import SYSTEM as PLAN_SYSTEM
 
     prompts = []
@@ -311,9 +312,10 @@ def lio_fixture_model(*, empty_first_day=False):
                 return
             if system.startswith(PLAN_SYSTEM):
                 assert system.endswith(COMPACT_DRAFT)
+                assert 'Only when current_trip in TRIP-source-input.2 is null, use a short title.' in system
+                assert 'Use a short title and short new stop labels.' not in system
                 source = json.loads(messages[-1]['content'])
                 before = source['current_trip']
-                title = 'Beijing walk' if before is None else 'Beijing walks'
                 if before is None:
                     def at(day, clock):
                         return dict(date=dict(state='known', value=day),
@@ -331,9 +333,10 @@ def lio_fixture_model(*, empty_first_day=False):
                                   fixed=dict(state='unknown'), source_category='unknown', source_refs=[])]
                     subjects = {'park':['party'],'museum':['party']}
                 else:
-                    items = before['content']['items']
-                    subjects = {}
-                yield json.dumps(dict(version='TRIP-model-plan.1', title=title, items=items,
+                    assert 'Omit title.' in system and LIO_REPLAN_DELTA_V2 in system
+                    yield json.dumps(dict(version=LIO_REPLAN_DELTA_V2, items=[], proposed_subjects={}))
+                    return
+                yield json.dumps(dict(version='TRIP-model-plan.1', title='Beijing walk', items=items,
                                       proposed_subjects=subjects))
                 return
             if messages[-1]['content'] == 'Synthetic lost model outcome':
@@ -742,7 +745,7 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     assert cards[0] == saved
     assert cards[1]['status'] == 'completed' and cards[1]['failure'] is None, cards[1]
     assert cards[1]['trip']['trip_id'] == saved['trip']['trip_id']
-    assert cards[1]['trip']['title'] == 'Beijing walks'
+    assert cards[1]['trip']['title'] == saved['trip']['title']
     assert api.post(messages, content=change, headers=owner).status_code == 200
     assert worker.process() == []
     check_lio_undo(api, owner, headers, cards)
