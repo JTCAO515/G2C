@@ -56,7 +56,7 @@ struct CJProbeApp: App {
         WindowGroup {
             #if G2C_DEMO_BETA
             if let demo { DemoBetaRootView(shell: shell, root: demo) }
-            else { Text(shell.language.text("Secure demo session is unavailable.", "安全演示会话暂不可用。")) }
+            else { Text(shell.language.text("Lio is temporarily unavailable.", "暂时打不开 Lio。")) }
             #elseif DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
             #if targetEnvironment(simulator)
             #if G2C_LIO_APP
