@@ -34,10 +34,14 @@ struct LioReplyMarkdownTests {
         #expect(LioReplyMarkdown.render("[Open](https://api-beta.go2china.space/v2/memories)") == nil)
     }
 
-    @Test func cannotOpenAlternateSpellingsOfServiceHosts() throws {
-        #expect(LioReplyMarkdown.render("[Forecast](https://api-beta.go2china.space./)") == nil)
-        let answer = try #require(LioReplyMarkdown.render("[Forecast](https://api-beta.go2china%2Espace./)"))
-        #expect(String(answer.characters) == "Forecast")
-        #expect(answer.runs.allSatisfy { $0.link == nil })
+    @Test(arguments: [
+        "https://api-beta.go2china.space./",
+        "https://api-beta.go2china%2Espace./",
+        "https://api-beta.go2china.space%E3%80%82/",
+        "https://%EF%BD%81pi-beta.go2china.space/"
+    ])
+    func cannotDisplayAlternateSpellingsOfServiceHosts(_ address: String) {
+        #expect(LioReplyMarkdown.render("[Forecast](\(address))") == nil)
+        #expect(LioReplyMarkdown.render("See \(address)") == nil)
     }
 }

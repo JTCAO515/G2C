@@ -6,8 +6,16 @@ private struct LioScrollFixture: View {
 
     var body: some View {
         let stream = sections.stream
-        let testDisplayGuard = ProcessInfo.processInfo.arguments.contains("--lio-display-guard")
-        let testFormattedGuard = ProcessInfo.processInfo.arguments.contains("--lio-display-guard-markdown")
+        let arguments = ProcessInfo.processInfo.arguments
+        let hiddenText: String? = if arguments.contains("--lio-display-guard-markdown") {
+            " 查**询**后，暂时没有预报。"
+        } else if arguments.contains("--lio-display-guard-host") {
+            " [Forecast](https://%EF%BD%81pi-beta.go2china.space%E3%80%82/)"
+        } else if arguments.contains("--lio-display-guard") {
+            " 我查询了高德天气接口，暂时没有预报。"
+        } else {
+            nil
+        }
         LioHome(language: shell.language.lio, service: LioService { _ in
             AsyncStream { output in
                 let task = Task {
@@ -16,8 +24,8 @@ private struct LioScrollFixture: View {
                     output.yield(.source(.init(id: "scroll-source", title: "Sample travel guide", url: nil)))
                     var next = stream.makeAsyncIterator()
                     guard await next.next() != nil else { return }
-                    if testDisplayGuard || testFormattedGuard {
-                        output.yield(.text(testFormattedGuard ? " 查**询**后，暂时没有预报。" : " 我查询了高德天气接口，暂时没有预报。"))
+                    if let hiddenText {
+                        output.yield(.text(hiddenText))
                         output.yield(.finished)
                         return
                     }
