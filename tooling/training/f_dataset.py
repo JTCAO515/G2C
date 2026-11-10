@@ -25,16 +25,24 @@ def check_dataset(path, version, input_sha256):
         return {**result, 'status': 'UNRUN', 'code': 'UNKNOWN_DATA_VERSION'}, 2
     if not input_sha256 or not re.fullmatch('[a-f0-9]{64}', input_sha256):
         return {**result, 'status': 'UNRUN', 'code': 'MISSING_OR_INVALID_INPUT_SHA256'}, 2
+    source = ROOT / 'tooling/datasets'
+    pins = ((source / 'schema.v1.json', SCHEMA_SHA256),
+            (source / 'convert.py', CONVERTER_SHA256))
+    # F reads schema at import time. Check bytes before executing that module,
+    # so malformed or changed material is reported as UNRUN, not a traceback.
+    try:
+        changed = any(hashlib.sha256(p.read_bytes()).hexdigest() != expected
+                      for p, expected in pins)
+    except FileNotFoundError:
+        return {**result, 'status': 'UNRUN', 'code': 'F_SCHEMA_UNAVAILABLE'}, 2
+    if changed:
+        return {**result, 'status': 'UNRUN', 'code': 'UNREVIEWED_F_REVISION'}, 2
     try:
         from tooling.datasets import convert as f
     except ModuleNotFoundError:
         return {**result, 'status': 'UNRUN', 'code': 'F_ENVIRONMENT_UNAVAILABLE',
                 'reason': 'Run in the repository locked environment after F delivery.'}, 2
-    # These are the source bytes independently checked in F PR782, not a schema copy.
-    pins = ((f.HERE / 'schema.v1.json', SCHEMA_SHA256),
-            (f.HERE / 'convert.py', CONVERTER_SHA256))
-    if (any(hashlib.sha256(p.read_bytes()).hexdigest() != expected for p, expected in pins)
-            or f.TOOLS_HASH != TOOLS_SHA256):
+    if f.TOOLS_HASH != TOOLS_SHA256:
         return {**result, 'status': 'UNRUN', 'code': 'UNREVIEWED_F_REVISION'}, 2
     raw = path.read_bytes()
     actual = hashlib.sha256(raw).hexdigest()

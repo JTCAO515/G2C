@@ -5,7 +5,11 @@ the existing root domain dependencies, not new copies in the training env.
 """
 from copy import deepcopy
 import hashlib
+import json
 from pathlib import Path
+import shutil
+import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -58,6 +62,24 @@ class FConsumerTests(unittest.TestCase):
         self.assertEqual((code, result['code']), (1, 'INPUT_SHA256_MISMATCH'))
         result, code = self.check_rows([])
         self.assertEqual((code, result['code']), (1, 'EMPTY_DATASET'))
+
+    def test_changed_schema_is_rejected_before_f_import(self):
+        with tempfile.TemporaryDirectory(prefix='g2c-g-pin-check-') as directory:
+            root = Path(directory)
+            training, datasets = root / 'tooling/training', root / 'tooling/datasets'
+            training.mkdir(parents=True)
+            datasets.mkdir(parents=True)
+            for name in ('preflight.py', 'f_dataset.py'):
+                shutil.copyfile(Path(__file__).with_name(name), training / name)
+            for name in ('__init__.py', 'convert.py'):
+                shutil.copyfile(f.HERE / name, datasets / name)
+            (datasets / 'schema.v1.json').write_text('{invalid JSON')
+            command = [sys.executable, '-B', str(training / 'preflight.py'), 'dataset',
+                       str(f.HERE / 'samples.v1.jsonl'), '--version', VERSION,
+                       '--input-sha256', hashlib.sha256((f.HERE / 'samples.v1.jsonl').read_bytes()).hexdigest()]
+            result = subprocess.run(command, capture_output=True, text=True, cwd=root)
+            self.assertEqual(result.returncode, 2, result.stderr)
+            self.assertEqual(json.loads(result.stdout)['code'], 'UNREVIEWED_F_REVISION')
 
 
 if __name__ == '__main__':

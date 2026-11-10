@@ -115,7 +115,7 @@ uv run --locked python -B tooling/training/check_f_dataset.py -v
 | Python 包一致性、接口导入、示例参数名 | PASS；`uv pip check` 与 `environment.py` |
 | MPS 张量前反向 | PASS，输入 2 的平方梯度 4；不是模型训练 |
 | 独立目标格式合成边界检查 | PASS；`test_preflight.py`，不代表 F 数据验收 |
-| F schema 合成接口消费 | PASS：直接复用 8bbdf6a9 的 converter，4 个实际集成检查；22 条接受、18/2/2 原用途保留，缺字段/错回执拒绝，未知版/pin 不匹配明确报告。正式数据质量 UNKNOWN |
+| F schema 合成接口消费 | PASS：直接复用 8bbdf6a9 的 converter，5 个实际集成检查；22 条接受、18/2/2 原用途保留，缺字段/错回执拒绝，未知版/pin 不匹配明确报告。正式数据质量 UNKNOWN |
 | 真实 tokenizer/template/loss mask | UNRUN，缺选定并获准的本地模型材料 |
 | 正式训练/恢复/质量/生产上线 | UNRUN，本轮未授权 |
 
