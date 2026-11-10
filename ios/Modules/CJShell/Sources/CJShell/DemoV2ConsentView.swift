@@ -21,9 +21,10 @@ public struct DemoV2ConsentView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 ShellCardHeading(title: language.text("Use fictional trip details", "请使用虚构旅行信息"), symbol: "hand.raised")
+                // Replace the interim demo wording after #225 is decided.
                 RunReadableText(text: language.text(
-                    "This is an internal demo. Please use fictional trip details and leave out personal information. Placeholder pending #225.",
-                    "本次为内部演示。请使用虚构的旅行信息，勿填写个人信息。待 #225 定案后替换。"))
+                    "This is an internal demo. Please use fictional trip details and leave out personal information.",
+                    "本次为内部演示。请使用虚构的旅行信息，勿填写个人信息。"))
                     .accessibilityIdentifier("demo.invite.consent")
                 Button(action: onAgree) {
                     ShellActionLabel(title: language.text("Agree and continue", "同意并继续"), symbol: "checkmark")

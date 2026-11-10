@@ -6,6 +6,7 @@ private struct LioScrollFixture: View {
 
     var body: some View {
         let stream = sections.stream
+        let testDisplayGuard = ProcessInfo.processInfo.arguments.contains("--lio-display-guard")
         LioHome(language: shell.language.lio, service: LioService { _ in
             AsyncStream { output in
                 let task = Task {
@@ -14,6 +15,11 @@ private struct LioScrollFixture: View {
                     output.yield(.source(.init(id: "scroll-source", title: "Sample travel guide", url: nil)))
                     var next = stream.makeAsyncIterator()
                     guard await next.next() != nil else { return }
+                    if testDisplayGuard {
+                        output.yield(.text(" 我查询了高德天气接口，暂时没有预报。"))
+                        output.yield(.finished)
+                        return
+                    }
                     output.yield(.text("\n\nLong section." + String(repeating: "\n\nMore travel details are shown here.", count: 24)))
                     guard await next.next() != nil else { return }
                     output.yield(.text("\n\nEnd of the reply."))

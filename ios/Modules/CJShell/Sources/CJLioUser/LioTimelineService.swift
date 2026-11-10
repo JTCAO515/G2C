@@ -23,9 +23,12 @@ struct LioTimelineTurn: Sendable {
         text = message.question
         answer = message.answer
         itinerary = message.trip.map(LioItinerary.init)
-        memoryTags = message.memoryTags
-        sources = message.sources.enumerated().map { index, source in
-            LioSource(id: "\(message.id).\(index)", title: source.title, url: source.link)
+        // A choice is available only when its description is safe to show.
+        memoryTags = message.memoryTags.filter { LioPublicDisplay.permitsText($0.text) }
+        sources = message.sources.enumerated().compactMap { index, source in
+            guard LioPublicDisplay.permitsText(source.title) else { return nil }
+            let url = source.link.flatMap { LioPublicDisplay.permitsSource($0) ? $0 : nil }
+            return LioSource(id: "\(message.id).\(index)", title: source.title, url: url)
         }
         switch (message.state, message.activity) {
         case (.waiting, _): status = .thinking
