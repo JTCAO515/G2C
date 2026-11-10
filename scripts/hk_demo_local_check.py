@@ -90,7 +90,7 @@ def verify_upgrade(root, blueprint, target):
 
 
 def check_lio(api, database, auth, other, headers, conninfo, memory):
-    from cj_api.local_lio_planning import LioPlanning, SYSTEM
+    from cj_api.local_lio_planning import COMPACT_DRAFT, LioPlanning, SYSTEM
     from cj_draft.lio_plan import LioPlanPublisher
     from cj_draft.needs_publisher import SYSTEM as PLAN_SYSTEM
     from cj_message import demo_dialogue
@@ -359,6 +359,7 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
                     ensure_ascii=False)
                 return
             if system.startswith(PLAN_SYSTEM):
+                assert system.endswith(COMPACT_DRAFT)
                 source = json.loads(messages[-1]['content'])
                 before = source['current_trip']
                 title = 'Beijing walk' if before is None else 'Beijing walks'
