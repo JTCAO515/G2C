@@ -100,7 +100,7 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     from cj_run.core import Binding, ResyncRequired
     from cj_trip.confirmation import ConfirmationSigner
     from cj_trip.domain import CommitUnknown as TripCommitUnknown
-    from cj_api.lio_planning_grounding import grounded_fields, stated_city
+    from cj_api.lio_planning_grounding import grounded_fields, planning_authority_complete, stated_city
     from datetime import date
     fixed_words = 'The hotel meetup from 9 to 10 a.m. on the first day is fixed'
     sample = f'Plan three days in Beijing for two people starting tomorrow. {fixed_words}.'
@@ -179,6 +179,13 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     polite, _ = grounded_fields(('Could you plan a trip to Beijing starting tomorrow for three days?',),
                                 'Beijing', today)
     assert polite['departure']['date']['value'] == '2026-11-12'
+    assert planning_authority_complete(('Could you plan a trip to Beijing starting tomorrow for three days?',),
+                                       'Beijing', today, has_fixed=False)
+    for scope_clause in ('Those are Shanghai dates only.', 'Tomorrow is the departure day for Shanghai only.',
+                         'Please put everything on hold.'):
+        assert not planning_authority_complete((
+            'Plan a trip to Beijing from 2026-11-11 to 2026-11-12. ' + scope_clause,
+        ), 'Beijing', today, has_fixed=False)
     meetings, _ = grounded_fields(('The trip dates are undecided. The meeting is from 2026-11-11 to 2026-11-12.',),
                                    'Beijing', today)
     assert meetings['arrival']['date']['state'] == 'missing'
@@ -426,7 +433,7 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     withdrawals = ('Do not save it.', "Please don't save it yet.", 'Show me a draft without saving.',
                    "Please don't save this itinerary to my account.", 'I do not want this itinerary saved.',
                    'Can you show me before saving?', 'Cancel it.', 'Actually, cancel it.',
-                   'Please leave it as a draft.', '取消吧。', '请不要把行程保存到我的账户。')
+                   'Please leave it as a draft.', 'Please cancel this request.', '取消吧。', '请不要把行程保存到我的账户。')
     for i, withdrawal in enumerate(withdrawals):
         assert api.post(messages, headers=owner, content=original(
             f'lio-withdrawal-{i}', 'Plan a trip to Beijing from 2026-12-01 to 2026-12-03. ' + withdrawal, 'en')).status_code == 200

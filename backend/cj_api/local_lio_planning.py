@@ -16,7 +16,8 @@ from cj_needs.domain import InvalidInput, decode, exact
 from cj_needs.preview import encode, preview
 from cj_run.postgres import CommitUnknown
 
-from .lio_planning_grounding import PLAN_REQUEST, grounded_fields, planning_withdrawn, stated_city
+from .lio_planning_grounding import (PLAN_REQUEST, grounded_fields, planning_authority_complete,
+    planning_withdrawn, stated_city)
 
 
 ASK_MORE = 'lio_planning_needs_details'
@@ -199,4 +200,7 @@ def extract(worker, binding, locale, texts, references):
     if missing_fixed:
         questions.append('哪项安排需要保留？请告诉我谁参加、哪天以及开始和结束时间。' if locale == 'zh'
                          else 'Which arrangement should I keep? Please share who is going, the day, and the start and end times.')
+    if not questions and not planning_authority_complete(texts, city, today, has_fixed=bool(fields.get('fixed_items'))):
+        questions.append('还有些安排我没理解。请告诉我这趟北京行程要用哪些信息。' if locale == 'zh'
+                         else 'I’m not sure how to use part of your request. What should I include in the Beijing itinerary?')
     return PlanningDetails(city, fields, ' '.join(questions) if questions else None, references)

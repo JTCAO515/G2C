@@ -38,7 +38,7 @@ ADJACENT_DURATION = re.compile(rf'\s*[,，]?\s*(?:for\s+({NUMBER})\s+days?\b|(?:
 DESTINATION_NEUTRAL = re.compile(r'^(?:please\s+)?(?:plan|make|build|create)\s+(?:a\s+|an\s+)?(?:trip|itinerary)'
                                  r'|^(?:请|帮我|给我)?\s*规划(?:一趟|一次|一个|一份)?(?:旅行|行程)', re.I)
 WITHDRAWAL = re.compile(
-    r'\b(?:never mind|forget it|scratch that|cancel\s+(?:it|(?:(?:the|this|that|my|our)\s+)?(?:trip|plan|itinerary)))\b|'
+    r'\b(?:never mind|forget it|scratch that|cancel\b|call (?:it|(?:the|this|that) (?:trip|plan|request)) off)\b|'
     r'\b(?:keep|leave)\s+(?:it|(?:the |this |my )?(?:trip|plan|itinerary))\s+(?:as\s+)?(?:a\s+)?draft\b|'
     r'\b(?:wait for my (?:approval|confirmation)|(?:only after|once) I (?:approve|confirm))\b|'
     r'算了|不用规划了|取消吧|取消(?:这次|这份|这个)?(?:规划|行程|计划)|等我(?:确认|同意|批准)',
@@ -65,6 +65,17 @@ ZH_DIRECT = re.compile(rf'(?:规划|安排|设计|做)\s*(?:一下|一个|一份
 ZH_RELATIVE = re.compile(r'(?:规划|安排|设计|做)\s*从?(?:明天|今天|后天)(?:开始|起)的?北京')
 ZH_RELATIVE_TAIL = re.compile(rf'\s*的?北京\s*(?:{NUMBER})天(?:游|行程|旅行)\s*(?:[,，]\s*(?:{NUMBER})个人)?\s*')
 POLITE_PLAN_QUESTION = re.compile(r'^(?:can|could|would) you\s+', re.I)
+OPEN_PLAN = re.compile(
+    r"(?:(?:can|could|would) you\s+|please\s+|i(?: would|'d) like you to\s+)?"
+    rf'(?:help (?:me|us) (?:to )?)?(?:plan|build|create|organize|put together|draft|make)\s+'
+    rf'(?:(?:a\s+|an\s+)?(?:(?:{NUMBER})-day\s+)?(?:Beijing\s+)?(?:trip|itinerary|visit)'
+    rf'(?:\s+(?:in|to)\s+Beijing)?|(?:{NUMBER})\s+days?\s+in\s+Beijing)'
+    rf'(?:\s+for\s+(?:our party|(?:{NUMBER})\s+people))?'
+    rf'|(?:请|麻烦)?(?:(?:帮|给|为)(?:我们|我))?\s*(?:规划|安排|设计|做)\s*'
+    rf'(?:一下|一个|一份|一趟|一次)?\s*(?:(?:{NUMBER})天的?)?(?:(?:去|到|在)?北京)?\s*'
+    rf'(?:(?:{NUMBER})天)?(?:旅行|行程|日游|游|旅游|攻略)'
+    rf'|(?:请|麻烦)?(?:帮我|给我|帮我们)?\s*规划(?:一趟|一次|一个|一份)?(?:旅行|行程)', re.I)
+
 EN_DATE_SCOPE = re.compile(
     r'\b(?:trip dates?|travel dates?|(?:those|these|the|that)\s+(?:dates?|days?|departure(?: date| day)?|start(?: date| day)?))'
     r'\b[^.!?]{0,96}?(?:\b(?:(?:are|is|were|was)\s+(?:not\s+)?(?:only\s+)?for|'
@@ -286,6 +297,27 @@ def _day_span(turns, today, city):
                     return first, last
             return None, None
     return None, None
+
+
+def planning_authority_complete(turns, city, today, *, has_fixed):
+    """A grounded date does not authorize an unexplained instruction in the same turn."""
+    for turn in _compatible_turns(turns, city):
+        for original in _clauses(turn):
+            clause = _date_declaration(original)
+            if clause is None:
+                return False
+            if (clause.casefold() in ('北京', 'beijing') or OPEN_PLAN.fullmatch(clause)
+                    or SAVE_ASSENT.fullmatch(clause) or RELATIVE_REPLY.fullmatch(clause)
+                    or TRIP_DATES.fullmatch(clause)):
+                continue
+            if (EN_DATE_SCOPE.fullmatch(clause) or ZH_DATE_SCOPE.fullmatch(clause)) and not _date_scope_disputed(clause, city):
+                continue
+            if has_fixed and (FIXED.search(clause) or FIXED_REPLY.match(clause)):
+                continue
+            if PLAN_REQUEST.match(clause) and _day_span((clause,), today, city)[0] is not None:
+                continue
+            return False
+    return True
 
 
 def _clock(hour, minute, meridiem):
