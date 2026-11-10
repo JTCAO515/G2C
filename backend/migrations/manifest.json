@@ -410,6 +410,14 @@
       "down": "backend/migrations/down/0051_lio_dialogue.down.sql",
       "sha256": "3d69b2c34147749ef103a649397747a1eb018686916ac6ce5102827481472520",
       "down_sha256": "d14320f39ff244e10eef4dbd249822af30babcbbef10d5115fad0cf144f86467"
+    },
+    {
+      "version": 52,
+      "name": "demo_daily_quota",
+      "file": "backend/migrations/0052_demo_daily_quota.sql",
+      "down": "backend/migrations/down/0052_demo_daily_quota.down.sql",
+      "sha256": "6d8318cd42596341c1bb83a0303489f71738d036efa8bd194be8df9474d5db5d",
+      "down_sha256": "776b914206204d761107e127734a60c60096143923e04ef83af23815ec757bc0"
     }
   ]
 }

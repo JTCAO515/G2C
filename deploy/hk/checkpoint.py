@@ -104,6 +104,7 @@ def require_release(connection,control):
     if (release.get('version')!='g2c-beta-release.1' or release.get('instance')!=current[0]
             or release.get('lineage')!=current[1] or migrate.applied(connection)!=versions()):
         raise ValueError('beta_database_not_released')
+    return release
 
 
 def bootstrap(control,initialize):
