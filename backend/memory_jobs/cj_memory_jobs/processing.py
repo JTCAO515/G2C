@@ -65,12 +65,14 @@ class ProcessingSourcePolicy(SourcePolicy):
     def _input(self,snapshot):
         row=self._original(self.query)
         source=SourceV2(snapshot.cursor,snapshot.source_version,snapshot.withdrawal_epoch)
-        if encode_v2(source,snapshot.messages,row[5])!=row[2]:
+        if self._encode_batch(source,snapshot.messages,row[5])!=row[2]:
             raise Conflict('original processing messages differ')
         current=self._render(snapshot,row[5])
         if current!=self.original_input:
             raise Conflict('original processing model input differs')
         return row
+
+    _encode_batch = staticmethod(encode_v2)
 
     def _render(self,snapshot,mode):
         return encoded(snapshot,self.extraction,mode,max_payload_bytes=self.max_payload_bytes)

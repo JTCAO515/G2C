@@ -14,6 +14,7 @@ class SourcePolicy:
     Collection consumers use this transaction only during the protected callback.
     """
     transaction_type=Transaction
+    initialize=False
 
     def __init__(self, repository, principal, guard):
         self.repository, self.principal = repository, principal
@@ -29,13 +30,13 @@ class SourcePolicy:
         self.guard('source_entry')
         with self.repository.transaction() as memory:
             tx = self.transaction_type(memory)
-            tx.require_live()
-            tx.require_source(query)
+            tx.require_live(initialize=self.initialize)
+            self._require_source(tx, query)
             self.transaction = tx
             try:
                 yield SourcePermit(Cursor(scope,query.conversation_id,query.generation,
                     query.epoch,query.through,query.after),query.source_version,query.withdrawal_epoch)
-                tx.require_source(query)
+                self._require_source(tx, query)
                 self.guard('source_precommit')
                 self._before_commit()
                 self.commit_attempted = True
@@ -44,3 +45,6 @@ class SourcePolicy:
 
     def _before_commit(self):
         """Internal extension point after all source/auth checks, before COMMIT."""
+
+    def _require_source(self, tx, query):
+        tx.require_source(query)
