@@ -679,7 +679,7 @@ def check_lio_provider_wire(root, database, auth, runtime, actor, api, headers):
 
     scope = scope_for(ISSUER,actor)
     subjects = frozenset({actor})
-    question = 'I always prefer a slower travel pace.'
+    question = 'I prefer quieter entrances at attractions.'
     answer = 'I can suggest a relaxed route. The entrance hours are UNKNOWN.'
     attempts = []
     key = 'synthetic-wire-fixture-key-only'
@@ -705,7 +705,7 @@ def check_lio_provider_wire(root, database, auth, runtime, actor, api, headers):
             entry, = json.loads(data['content'])['messages']
             assert entry['text'] == question
             content = json.dumps(dict(version='MEMORY-EXTRACT@2',entries=[dict(subject='self',
-                slot='travel.pace',kind='preference',text=question,extent='long_term',occurred_at='date unknown',
+                slot='quiet.entrance',kind='preference',text=question,extent='long_term',occurred_at='date unknown',
                 evidence=[dict(ref=entry['ref'],quote=question)])]))
         identity = dict(id='synthetic-lio-wire-'+str(len(attempts)),model=M4_MODEL)
         events = [dict(**identity,choices=[dict(index=0,delta=dict(content=content),finish_reason=None)]),
@@ -1008,6 +1008,30 @@ def check_lio_memory(root, database, auth, path, context, foreign, actor, unknow
                 WHERE m.message_id=%s AND o.kind='model'""",(after_erase,)).fetchone()
             assert quiet.encode() not in bytes(original_after_erase)
         print('PASS signed Lio item erasure clears Pub4 and recalled Meter payloads, preserves ledger and sibling, and stops recall')
+
+        direct_id = 'lio-direct-pilot-pace'
+        direct_text = '请记住，我旅行时喜欢慢节奏。'
+        assert api.post('/v1/lio/messages', headers=owner, content=encoded(dict(
+            version='LIO-message.1', message_id=direct_id, text=direct_text, locale='zh'))).status_code == 200
+        assert [outcome.status for outcome in worker.process()] == ['completed']
+        received = api.get(timeline, headers=owner)
+        assert received.status_code == 200, received.text
+        direct_turn, = [row for row in received.json()['messages'] if row['message_id'] == direct_id]
+        tag, = direct_turn['memory']['tags']
+        assert tag['text'] == '我旅行时喜欢慢节奏。'
+        with database.connect(scope) as db:
+            assert db.execute('SELECT status FROM cj_memory_item WHERE item_id=%s', (tag['id'],)).fetchone() == ('candidate',)
+            assert db.execute(
+                "SELECT count(*) FROM cj_run_metered_operation o JOIN cj_message_receipt m USING(scope,run_id) "
+                "WHERE m.message_id=%s AND o.kind='memory'", (direct_id,)).fetchone() == (0,)
+        direct_choice = dict(version='LIO-memory-action.1', action_id='remember-direct-pace',
+                             operation='remember', target=tag['target'])
+        assert api.post(actions, headers=owner, content=encoded(direct_choice)).json()['status'] == 'remembered'
+        assert api.post(receipts, headers=owner, content=encoded(direct_choice)).json()['status'] == 'remembered'
+        with database.connect(scope) as db:
+            assert db.execute('SELECT status FROM cj_memory_item WHERE item_id=%s', (tag['id'],)).fetchone() == ('active',)
+        assert direct_text not in model_inputs
+        print('PASS signed exact pilot preference uses original quote, zero external extraction and explicit confirmation')
     print('PASS signed Lio Meter and middle-turn Pub4, explicit remember/dismiss, stale choice, isolation, ACK recovery and original UNKNOWN')
     return app, remember
 
