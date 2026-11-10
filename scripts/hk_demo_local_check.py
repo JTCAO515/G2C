@@ -608,6 +608,8 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     assert api.get(v2_trip + '/undo', params=query, headers=owner).json() == applied
     assert api.get(v2_trip + '/undo', params=dict(query, conversation_id=conversation),
                    headers=owner).status_code == 403
+    legacy_query = {key: value for key, value in query.items() if key != 'conversation_id'}
+    assert api.get('/v1/lio/trip/undo', params=legacy_query, headers=owner).json()['committed'] is False
     assert api.get(v2_trip, params=params, headers=owner).json()['current'] == new_history['current']
     assert api.get('/v1/lio/trip', headers=owner).json() == default_trip
     default_message = v2_original('lio-default-from-v2', 'What can I see in Beijing?')

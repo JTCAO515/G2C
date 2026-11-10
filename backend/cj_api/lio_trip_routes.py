@@ -123,6 +123,11 @@ def _receipt(context, action, conversation):
     if conversation is not None:
         _require_selected_trip(context, action, conversation)
     receipt = context.lio_undo_receipt(action)
+    if receipt is not None and conversation is None:
+        # Keep the legacy receipt lookup on the legacy default itinerary.
+        head = _head(context, None)
+        if head is None or head.trip_id != action.trip_id:
+            receipt = None
     return _undo_result(action.action_id, receipt is not None, conversation)
 
 
