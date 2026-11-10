@@ -583,6 +583,54 @@ class Boundaries(unittest.TestCase):
         self.assertEqual(receipt['usage']['total_tokens'],50)
         self.assertEqual(len(self.sent),1)
 
+    def test_lio_memory_releases_the_dispatch_fence_before_reading_the_receipt(self):
+        from contextlib import closing
+
+        from cj_agent.provider import _M4_REQUEST_SENT
+        from cj_api.local_app import ISSUER, scope_for
+        from cj_memory_jobs.model_v2 import SYSTEM as MEMORY_SYSTEM
+
+        first,*tail = sse().splitlines(keepends=True)
+        event = json.loads(first[6:])
+        result = json.dumps(dict(version='MEMORY-EXTRACT@2',entries=[]))
+        event['choices'][0]['delta']['content'] = result
+        stream = ('data: '+json.dumps(event)+'\n'+''.join(tail)).encode()
+        read_ready = asyncio.Event()
+        requests = []
+
+        async def wire(config, raw, guard, observation):
+            self.assertTrue(guard())
+            requests.append(json.loads(raw))
+            yield _M4_REQUEST_SENT
+            await read_ready.wait()
+            yield stream
+
+        provider = MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),self.budget)
+        subject = 'm4-synthetic-lio-wire'
+        tools = RealTools(RealServices(provider,KEY,frozenset({subject})))
+        registration = tools.registrations['memory.lio_extract.1']
+        self.assertEqual(registration.kind,'memory')
+        original = registration.prepare_input(([dict(role='user',content='Synthetic source data')],MEMORY_SYSTEM,provider))
+        self.assertEqual(json.loads(original.original_bytes)['response_mode'],'lio-memory-json.1')
+        attempt = 'synthetic-memory-fence'
+        operation = SimpleNamespace(binding=SimpleNamespace(scope=scope_for(ISSUER,subject)),
+                                    command=SimpleNamespace(attempt_id=attempt))
+        with patch('cj_agent.provider._m4_wire',wire):
+            invoke = original.bind_operation(operation,lambda:True)
+            with closing(invoke()) as reply:
+                self.assertEqual(next(reply),'')
+                self.assertEqual(self.budget.inspect()[0]['state'],'INTENT')
+                self.assertEqual(len(requests),1)
+                self.assertNotIn('tools',requests[0])
+                self.assertEqual(requests[0]['response_format'],{'type':'json_object'})
+                read_ready.set()
+                self.assertEqual(''.join(reply),result)
+            self.assertEqual(self.budget.inspect()[0]['state'],'RECEIVED')
+            self.assertEqual(original.receipt(attempt,'provider_call',len(result)).attempt_id,attempt)
+            with self.assertRaises(BudgetUnknown):
+                list(invoke())
+        self.assertEqual(len(requests),1)
+
     def test_lio_timeline_keeps_uncertainty_plain_and_withholds_internal_answers(self):
         from cj_api.lio_dialogue_routes import _message
         from cj_message.lio_timeline import TimelineMessage

@@ -112,7 +112,7 @@ def _require_memory_configuration(cursor, scope, configuration, travel):
         raise RuntimeDenied('existing memory requires explicit runtime configuration')
 
 
-def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,formal_memory_configuration=None,account_checker_builder=None,run_credential=False,assembly_planning=False,demo_planning=False,lio_confirmation=None):
+def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,formal_memory_configuration=None,account_checker_builder=None,run_credential=False,assembly_planning=False,demo_planning=False,lio_confirmation=None,lio_memory_enabled=False):
     if draft_profile not in (None,'needs-structured.1','needs-current-trip.1'):
         raise CompositionUnavailable('unknown explicit draft profile')
     if place_draft_configuration is not None:
@@ -308,13 +308,29 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
         history=HistoryMemory(memory,OriginalHistory(messages,decisions))
     lio_original = None
     lio_planning = None
+    lio_edit = None
+    lio_memory = None
+    if lio_memory_enabled:
+        from cj_api.local_lio_memory import LioMemoryExtraction, lio_candidates
+        from cj_message.auth_boundary import Boundary
+        if not demo_planning or type(memory_configuration) is not TypedRuntimeConfiguration:
+            raise CompositionUnavailable('Lio collection requires the admitted typed Demo worker')
+
+        def resolve_memory_owner(principal):
+            return database.message_repository(scope_for(principal.issuer, principal.subject))
+
+        boundary = Boundary(checker, resolve_memory_owner, lambda: None)
+        candidates = lio_candidates(database, boundary, frozenset({subject}), memory_configuration.collection)
+        lio_memory = LioMemoryExtraction(database, candidates, memory_credential)
     if demo_planning:
         from functools import partial
         from cj_message.lio_context import original_for
         lio_original = partial(original_for, database)
         if lio_confirmation is not None:
+            from cj_api.local_lio_edit import LioEdit
             from cj_api.local_lio_planning import LioPlanning, LioPlanSave
             lio_planning = LioPlanning(database, LioPlanSave(database, drafts, lio_confirmation))
+            lio_edit = LioEdit(drafts, lio_confirmation)
     return RunWorker(scope=scope, messages=messages, runs=runs, provider=model, drafts=drafts,
         memory=memory,edit_publisher=None if edit_config is None else edit_config.publisher,edit_results=database.edit_results,
         memory_history=history is not None,history_adapter=history,
@@ -323,6 +339,8 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
         owned_transaction_lease=(lambda: database.lease_run_transactions(runs.repository)) if reuse_connections else None,
         tools=tools_configuration,place_sources=place_sources,lio_original=lio_original,
         lio_planning=lio_planning,
+        lio_edit=lio_edit,
+        lio_memory=lio_memory,
         execution_guard=lambda binding: database.require_execution(binding.scope, binding, connection=execution_connection),
         needs_lease=needs_lease_for(database,checker,memory_credential if run_credential else token),
         budget_exit=(LocalBudgetRouter(database) if tools_configuration is None else
@@ -393,7 +411,8 @@ def run_once(database, model, auth_dir, *, memory_configuration=None,memory_conf
                                          place_draft_configuration=place_draft_configuration,formal_memory_configuration=formal_memory_configuration,
                                          account_checker_builder=account_checker_builder,run_credential=run_credential,
                                          assembly_planning=assembly_planning,demo_planning=scope in hk_demo_scopes,
-                                         lio_confirmation=lio_confirmation).process()
+                                         lio_confirmation=lio_confirmation,
+                                         lio_memory_enabled=scope in hk_demo_scopes).process()
         except Exception as error:
             if failure is None: failure = error
     if background_jobs is not None:results+=background_jobs.run_once(model)

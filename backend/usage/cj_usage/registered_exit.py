@@ -48,6 +48,7 @@ def _model_input(argument):
 MODEL_REGISTRY=MappingProxyType({
     'model.answer':Registration('model',_model_input),
     'model.draft':Registration('model',_model_input),
+    'memory.lio_extract.1':Registration('memory',_model_input),
 })
 
 
