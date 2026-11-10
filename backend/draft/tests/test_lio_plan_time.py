@@ -5,7 +5,9 @@ import pytest
 
 from cj_draft.lio_plan import LioPlanPublisher
 from cj_draft.needs_context import ContextPublisher
+from cj_needs.domain import Command, Revision, Snapshot
 from cj_trip.domain import packed
+from cj_trip.needs_plan import MODEL_VERSION
 from cj_trip.structured import SourceRejected
 
 
@@ -56,3 +58,29 @@ def test_lio_time_gate_rejects_incomplete_or_invalid_new_intervals(monkeypatch, 
     suggestion['schedule'][edge][field] = value
     with pytest.raises(SourceRejected, match='same-day planned interval'):
         build(monkeypatch, [suggestion])
+
+
+def test_lio_retains_only_verbatim_fixed_source():
+    description = 'The hotel meetup from 9 to 10 a.m. on the first day is fixed'
+    model_stop = dict(stop('fixed', known('09:00'), known('10:00')), text=description, fixed=known(True),
+                      verification='pending', evidence=[], source_category='user_provided', source_refs=[])
+    schedule = {edge: {key: event[key] for key in ('date', 'time', 'timezone')} | {'place': {'state': 'unknown'}}
+                for edge, event in model_stop['schedule'].items()}
+    fields = {'fixed_items': [dict(item_id='fixed', kind='appointment', description=description, applies_to=['self'],
+                                   locked=known(True), booking_status={'state': 'unknown'}, **schedule)]}
+    command = Command(packed(dict(action_id='declare', needs_id='need', expected_version=0, changes=fields,
+                                  source=dict(kind='manual', text=description))))
+    snapshot = Snapshot('need', 1, packed(fields))
+    revision = Revision('need', 1, command.action_id, command.raw, snapshot.content)
+    capture = SimpleNamespace(binding='original', records=lambda: (snapshot, (revision,)))
+    publisher = LioPlanPublisher.__new__(LioPlanPublisher)
+    publisher.source = SimpleNamespace(contexts={'original': None})
+
+    def draft(item):
+        return packed(dict(version=MODEL_VERSION, title='Beijing', items=[item], proposed_subjects={}))
+
+    raw, _, _ = publisher.build_plan(draft(model_stop), capture)
+    assert json.loads(raw)['items'] == [model_stop]
+    for invalid in (dict(model_stop, source_category='unknown'), dict(model_stop, text='Hotel meetup')):
+        with pytest.raises(SourceRejected, match='source association'):
+            publisher.build_plan(draft(invalid), capture)

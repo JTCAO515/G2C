@@ -35,6 +35,13 @@ class LioContextSource(ContextSource):
 
 
 class LioPlanPublisher(ContextPublisher):
+    system = ContextPublisher.system + (
+        ' Copy each retained Trip item\'s text and source_category verbatim. For each required fixed NEEDS '
+        'item absent from the current Trip, copy its description verbatim as text and set source_category '
+        'to "user_provided". Do not translate, shorten, or rephrase retained text. '
+        'Concise labels in the question language apply only to new suggestions.'
+    )
+
     def __init__(self, original, confirmation, original_needs, check_lio_original):
         if type(confirmation) is not ConfirmationSigner:
             raise ValueError('Lio planning requires the original Trip signer')
