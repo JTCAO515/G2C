@@ -11,6 +11,7 @@ from .travel import ABI, Action, Service as TravelService
 
 MESSAGE_VERSION = 'DEMO-dialogue-message.1'
 LIO_VERSION = 'LIO-message.1'
+LIO_VERSION_V2 = 'LIO-message.2'
 RECEIPT_VERSION = 'DEMO-dialogue-receipt.1'
 CHAT_PATTERN = re.compile(r'demo-dialogue-[0-9a-f]{32}')
 LIO_CHAT_PATTERN = re.compile(r'lio-dialogue-[0-9a-f]{32}')
@@ -34,12 +35,11 @@ class DialogueMessage:
     protocol: str = MESSAGE_VERSION
 
     @classmethod
-    def parse(cls, raw, *, lio=False):
+    def parse(cls, raw, *, version=MESSAGE_VERSION):
         try:
             value = json.loads(raw.decode('utf-8'), object_pairs_hook=unique_fields)
             required = {'version', 'message_id', 'text', 'locale'}
-            version = LIO_VERSION if lio else MESSAGE_VERSION
-            optional = {'conversation_id'} if lio else {'conversation_id', 'new_conversation'}
+            optional = {'conversation_id'} if version == LIO_VERSION else {'conversation_id', 'new_conversation'}
             if (type(value) is not dict or not required <= value.keys()
                     or value.keys() - required - optional
                     or value['version'] != version or value['locale'] not in ('zh', 'en')
@@ -50,7 +50,7 @@ class DialogueMessage:
             if type(text) is not str or not text.strip() or '\x00' in text or len(text.encode('utf-8')) > 12000:
                 raise InvalidInput('invalid dialogue text')
             conversation = value.get('conversation_id')
-            pattern = LIO_CHAT_PATTERN if lio else CHAT_PATTERN
+            pattern = CHAT_PATTERN if version == MESSAGE_VERSION else LIO_CHAT_PATTERN
             if 'conversation_id' in value and (type(conversation) is not str or not pattern.fullmatch(conversation)):
                 raise InvalidInput('invalid dialogue conversation identifier')
             return cls(message_id(value['message_id']), text, value['locale'], conversation,
@@ -111,8 +111,8 @@ def receive(service, raw):
     return _receive(service, DialogueMessage.parse(raw))
 
 
-def receive_lio(service, raw, *, prepare_scope):
-    command = DialogueMessage.parse(raw, lio=True)
+def receive_lio(service, raw, *, prepare_scope, version=LIO_VERSION):
+    command = DialogueMessage.parse(raw, version=version)
     try:
         return _receive(service, command, prepare_scope=prepare_scope)
     except CommitUnknown:
@@ -143,21 +143,26 @@ def _receive(service, command, *, prepare_scope=None):
             if conversation is not None and conversation != default:
                 raise InvalidInput('invalid Lio conversation identifier')
             conversation = default
+        elif command.protocol == LIO_VERSION_V2 and conversation is None:
+            conversation = ('lio-dialogue-' + _identity(tx.scope, 'lio-new:' + command.id)
+                            if command.new_conversation else lio_conversation(tx.scope))
         elif conversation is None:
             purpose = 'new:' + command.id if command.new_conversation else 'default:' + command.locale
             conversation = 'demo-dialogue-' + _identity(tx.scope, purpose)
         chat = tx.active_head(conversation)
         if chat is None:
             if command.conversation_id is not None:
+                if command.protocol == LIO_VERSION_V2:
+                    raise InvalidInput('invalid Lio conversation identifier')
                 raise Unavailable('dialogue conversation unavailable')
             chat = tx.open_chat(conversation, uuid.uuid4().hex)
             if chat is None:
                 raise Unavailable('dialogue conversation unavailable')
-        elif command.conversation_id is not None or chat.last_sequence:
-            original = tx.cur.execute('SELECT 1 FROM cj_message_receipt WHERE scope=%s AND conversation_id=%s '
-                                      'AND generation=%s AND demo_dialogue_input_sha256 IS NOT NULL LIMIT 1',
-                                      (tx.scope, conversation, chat.generation)).fetchone()
-            if original is None:
+        elif command.conversation_id is not None or chat.last_sequence or (
+                command.protocol == LIO_VERSION_V2 and command.new_conversation):
+            if not admitted_dialogue(tx, conversation, chat.generation, lio=command.protocol != MESSAGE_VERSION):
+                if command.protocol == LIO_VERSION_V2 and command.conversation_id is not None:
+                    raise InvalidInput('invalid Lio conversation identifier')
                 raise Unavailable('dialogue conversation unavailable')
 
         tx.cur.execute("SELECT set_config('cj.message_context_abi',%s,true)", (ABI,))
@@ -168,6 +173,16 @@ def _receive(service, command, *, prepare_scope=None):
             travel_context=selection, needs_reference=None)))
         receipt = service.accept_new(tx, inner, travel=True, dialogue=command)
         return DialogueReceipt(receipt.message_id, receipt.conversation_id, receipt.run_id, command.input_sha256)
+
+
+def admitted_dialogue(tx, conversation, generation, *, lio):
+    query = ('SELECT 1 FROM cj_message_receipt WHERE scope=%s AND conversation_id=%s '
+             'AND generation=%s AND demo_dialogue_input_sha256 IS NOT NULL')
+    args = (tx.scope, conversation, generation)
+    if lio:
+        query += ' AND demo_dialogue_protocol=%s'
+        args += (LIO_VERSION,)
+    return tx.cur.execute(query + ' LIMIT 1', args).fetchone() is not None
 
 
 def query(service, mid, *, lio=False):
