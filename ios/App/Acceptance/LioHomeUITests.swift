@@ -47,7 +47,7 @@ import XCTest
         continueAfterFailure = false
         let chinese = language == "zh-Hans"
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
-        app.launchArguments = ["--lio-journey-acceptance", "-cj.ui.language.v1", language]
+        app.launchArguments = ["--lio-preview", "--lio-journey-acceptance", "-cj.ui.language.v1", language]
         app.launch()
         defer { app.terminate() }
 
