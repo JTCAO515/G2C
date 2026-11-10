@@ -1,6 +1,7 @@
 #if os(iOS)
 import SwiftUI
 import CJRunClient
+import CJMessageHTTP
 
 public struct LioHome<MenuContent: View>: View {
     private let language: LioLanguage
@@ -239,10 +240,15 @@ public struct LioHome<MenuContent: View>: View {
                     .accessibilityIdentifier("lio.question")
             }
             if !turn.answer.isEmpty {
-                Text(turn.answer)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .textSelection(.enabled)
-                    .accessibilityIdentifier("lio.answer")
+                if LioPublicDisplay.permitsText(turn.answer) {
+                    Text(turn.answer)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .textSelection(.enabled)
+                        .accessibilityIdentifier("lio.answer")
+                } else {
+                    Text(language.text("This reply can’t be shown right now.", "这条回答暂时无法显示。"))
+                        .accessibilityIdentifier("lio.reply.unavailable")
+                }
             }
             messageStatus(turn)
             ForEach(turn.sources) { item in
