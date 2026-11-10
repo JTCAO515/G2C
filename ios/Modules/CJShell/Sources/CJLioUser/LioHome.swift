@@ -187,7 +187,20 @@ public struct LioHome<MenuContent: View>: View {
             }
         }
         .background(Color(uiColor: .systemBackground))
-        .overlay(alignment: .top) { floatingControls }
+        .overlay(alignment: .top) {
+            floatingControls
+                .background {
+                    Color(uiColor: .systemBackground)
+                        .overlay(alignment: .bottom) {
+                            LinearGradient(colors: [Color(uiColor: .systemBackground), .clear],
+                                           startPoint: .top, endPoint: .bottom)
+                                .frame(height: 12)
+                                .offset(y: 12)
+                        }
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
+                }
+        }
         .safeAreaInset(edge: .bottom, spacing: 0) { composer }
         .sheet(isPresented: $menuOpen) {
             NavigationStack {
