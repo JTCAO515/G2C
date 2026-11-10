@@ -177,7 +177,7 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     assert model.calls == 4
 
     class ObservedTools:
-        def answer(self, worker, binding, messages, *, lio_locale):
+        def answer(self, worker, binding, messages, *, lio_locale, lio_question_day):
             assert lio_locale == 'en'
             yield LioToolProgress('tool.0.0', 'checking_places')
             with database.run_repository(scope).transaction():
