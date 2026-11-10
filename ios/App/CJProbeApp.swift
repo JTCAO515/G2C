@@ -3,6 +3,9 @@ import CJShell
 #if G2C_LIO_APP
 import CJLioUser
 #endif
+#if DEBUG && G2C_LIO_APP && targetEnvironment(simulator)
+import CJTripClient
+#endif
 
 /// The native product uses Lio. Development profiles keep their existing shell.
 @main
@@ -60,7 +63,7 @@ struct CJProbeApp: App {
             if ProcessInfo.processInfo.arguments.contains("--lio-preview"),
                !ProcessInfo.processInfo.environment.keys.contains(where: { $0.hasPrefix("G2C_DEV_") }),
                development == nil, developmentAccounts == nil, !developmentFailed {
-                LioHome(language: shell.language.lio, service: .demo, isDemo: true) { LioLanguagePicker(shell: shell) }
+                lioPreview
             } else {
                 debugPreviewOrShell
             }
@@ -79,6 +82,24 @@ struct CJProbeApp: App {
             #endif
         }
     }
+
+    #if DEBUG && G2C_LIO_APP && targetEnvironment(simulator)
+    @ViewBuilder private var lioPreview: some View {
+        if let encoded = ProcessInfo.processInfo.environment["G2C_LIO_PREVIEW_TRIP"] {
+            switch Result(catching: { try LioPreviewTripFixture.library(encoded) }) {
+            case .success(let library):
+                LioHome(language: shell.language.lio, service: .demo, isDemo: true, tripLibrary: library,
+                        recordedMap: { document in
+                    AnyView(LioRecordedTripMap(document: document, language: shell.language))
+                }) { LioLanguagePicker(shell: shell) }
+            case .failure:
+                Text(shell.language.text("Sample trip unavailable.", "示例行程暂不可用。"))
+            }
+        } else {
+            LioHome(language: shell.language.lio, service: .demo, isDemo: true) { LioLanguagePicker(shell: shell) }
+        }
+    }
+    #endif
 
     #if DEBUG && targetEnvironment(simulator)
     @ViewBuilder private var debugPreviewOrShell: some View {
@@ -145,6 +166,28 @@ struct LioLanguagePicker: View {
             Text("English").tag(ShellLanguage.english)
             Text("简体中文").tag(ShellLanguage.chinese)
         }
+    }
+}
+#endif
+
+
+#if DEBUG && G2C_LIO_APP && targetEnvironment(simulator)
+private struct LioPreviewTripFixture: Decodable {
+    let trace: String
+    let list: Data
+    let detail: Data
+
+    static func library(_ encoded: String) throws -> LioTripLibrary {
+        guard let data = Data(base64Encoded: encoded) else { throw TripFailure.invalidResponse }
+        let fixture = try JSONDecoder().decode(Self.self, from: data)
+        let page = try StructuredTripReadV1.page(fixture.list, requestID: fixture.trace)
+        guard let record = try StructuredTripReadV1.detail(fixture.detail, requestID: fixture.trace),
+              page.trips.contains(where: { $0.tripID == record.tripID }) else {
+            throw TripFailure.invalidResponse
+        }
+        return LioTripLibrary(list: { page.trips }, detail: { id in
+            id == record.tripID ? record : nil
+        })
     }
 }
 #endif

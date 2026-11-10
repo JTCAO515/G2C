@@ -124,6 +124,9 @@ private var developmentHostEnvironment: [String: String] {
 @MainActor final class DevelopmentTripHost {
     let id = UUID()
     let trips: TripContainerHost
+    #if G2C_DEMO_BETA
+    let lioTripLibrary: LioTripLibrary?
+    #endif
     let messages: DevelopmentMessageHost
     #if DEBUG
     let memory: DevelopmentMemoryHost?
@@ -225,6 +228,28 @@ private var developmentHostEnvironment: [String: String] {
                 session: lifetime.session, sessionOperation: lifetime.operation, pendingStore: store, liveTransport: transport, liveWrites: TripLiveWrites())
             #endif
         }
+        #if G2C_DEMO_BETA
+        if tripEditingProfile != nil {
+            lioTripLibrary = LioTripLibrary(list: {
+                var rows: [StructuredTripSummary] = []
+                var cursor: StructuredTripCursor?
+                repeat {
+                    try Task.checkCancellation()
+                    let request = try client.prepareStructuredPage(limit: 20, after: cursor, binding: lifetime.trip)
+                    let page = try await client.structuredPage(for: request)
+                    rows.append(contentsOf: page.trips)
+                    cursor = page.next
+                } while cursor != nil
+                return rows
+            }, detail: { id in
+                let request = try client.prepareStructuredDetail(id: id, binding: lifetime.trip)
+                guard let snapshot = try await client.structuredDetail(for: request) else { return nil }
+                return try client.withCurrentStructuredSnapshot(snapshot) { _, record, _, _ in record }
+            })
+        } else {
+            lioTripLibrary = nil
+        }
+        #endif
         trips = TripContainerHost(shell: shell)
         guard trips.bind(TripContainerBinding(client: client, trip: lifetime.trip, shellGeneration: shell.generation,
             session: lifetime.session, sessionOperation: lifetime.operation, pageSize: 20,

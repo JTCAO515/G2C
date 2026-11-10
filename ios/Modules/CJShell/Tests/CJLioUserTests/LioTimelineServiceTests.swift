@@ -119,6 +119,34 @@ struct LioTimelineServiceTests {
         #expect(await fixture.sent.map(\.messageID) == [question.messageID])
     }
 
+    @Test func reconnectFollowsAnOlderActiveAnswerWithoutManualHistoryOrAnotherWrite() async throws {
+        let fixture = TimelineFixture(loseResponse: true, firstAnswerNeedsOlderReads: 2)
+        await fixture.disconnect()
+        let service = LioService.timeline(
+            send: { try await fixture.submit($0) }, read: { try await fixture.read($0, before: $1) },
+            pollInterval: .milliseconds(1), observationWindow: .milliseconds(12),
+            recoveryInterval: .milliseconds(1))
+        let model = LioConversation(service: service)
+        model.send("在哪里坐地铁？", language: .chinese)
+        let question = try #require(model.pending)
+        await model.receive(question)
+        #expect(model.turns.last?.status == .failed(.waiting))
+
+        for index in 1...45 {
+            await fixture.restore(try LioTimelineWire.Send(messageID: "other-\(index)", text: "Metro?", locale: .english))
+        }
+        await fixture.reconnectAfterReads(0)
+        await model.refreshTimeline()
+
+        #expect(model.turns.map { $0.question.messageID } == ["previous", question.messageID] + (1...45).map { "other-\($0)" })
+        let recovered = try #require(model.turns.first { $0.id == question.id })
+        #expect(recovered.status == .finished)
+        #expect(recovered.question.language == .chinese)
+        #expect(recovered.answer == "Take the metro.")
+        #expect(await fixture.olderRequests == ["other-26", "other-6", "other-6"])
+        #expect(await fixture.sent.map(\.messageID) == [question.messageID])
+    }
+
     @Test func olderPagesRemainInOrderAfterRefreshingTheLatestPage() async throws {
         let fixture = TimelineFixture()
         for index in 1...45 {
@@ -232,16 +260,19 @@ private actor TimelineFixture {
     let loseResponse: Bool
     let firstNotSent: Bool
     let serviceLimit: Bool
+    let firstAnswerNeedsOlderReads: Int
     private(set) var olderRequests: [String] = []
     private(set) var sent: [LioTimelineWire.Send] = []
     private var accepted: [LioTimelineWire.Send] = []
     private var readCount = 0
     private var readsUntilConnection: Int?
 
-    init(loseResponse: Bool = false, firstNotSent: Bool = false, serviceLimit: Bool = false) {
+    init(loseResponse: Bool = false, firstNotSent: Bool = false, serviceLimit: Bool = false,
+         firstAnswerNeedsOlderReads: Int = 0) {
         self.loseResponse = loseResponse
         self.firstNotSent = firstNotSent
         self.serviceLimit = serviceLimit
+        self.firstAnswerNeedsOlderReads = firstAnswerNeedsOlderReads
     }
 
     func disconnect() { readsUntilConnection = .max }
@@ -278,7 +309,8 @@ private actor TimelineFixture {
                              "status": "failed", "failure": "quota", "sources": []])
                 continue
             }
-            let done = readCount > 1 || send.messageID != accepted.last?.messageID
+            let held = send.messageID == accepted.first?.messageID && olderRequests.count < firstAnswerNeedsOlderReads
+            let done = !held && (readCount > 1 || send.messageID != accepted.last?.messageID)
             rows.append([
                 "message_id": send.messageID,
                 "text": text,
