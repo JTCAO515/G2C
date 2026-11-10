@@ -1318,15 +1318,21 @@ def check_lio_memory(root, database, auth, path, context, foreign, actor, unknow
     expiry = (datetime.now(timezone.utc)+timedelta(hours=1)).isoformat()
     profile = dict(subjects=['self'],extents=['long_term'],context_ids=[],slots={
         slot:dict(kind='preference',collection_allowed=True,semantic_resolved=True)
-        for slot in ('quiet.entrance','travel.pace')})
+        for slot in ('quiet.entrance','travel.pace','travel.budget')})
     collection = dict(version='local-memory-typed.1',
         collection=dict(version='local-memory-policy.1',expires_at=expiry,
                         profiles={subject:profile for subject in selected}),
         travel_contexts={subject:[] for subject in selected})
     runtime = TypedRuntimeConfiguration.from_bytes(encoded(dict(version='local-memory-run.2',
-        collection=collection,selections={subject:dict(subject='self',slots=['quiet.entrance','travel.pace'],
+        collection=collection,selections={subject:dict(subject='self',slots=['quiet.entrance','travel.pace','travel.budget'],
                                                         max_bytes=1000) for subject in selected})))
     model_inputs = []
+    misleading_preferences = {
+        'I do not prefer luxury travel experiences.': 'luxury travel experiences',
+        'My friend prefers luxury travel experiences.': 'luxury travel experiences',
+        '我不喜欢豪华旅行体验。': '豪华旅行体验',
+        '我的朋友喜欢豪华旅行体验。': '豪华旅行体验',
+    }
 
     class MemoryModel(FakeProvider):
         def stream(self, messages, system=None):
@@ -1343,6 +1349,11 @@ def check_lio_memory(root, database, auth, path, context, foreign, actor, unknow
                 entries = [dict(subject='self',slot=slot,kind='preference',text=quote,extent='long_term',
                     occurred_at='date unknown',evidence=[dict(ref=evidence['ref'],quote=quote)])
                     for slot,quote in (('quiet.entrance',quiet),('travel.pace',pace))]
+            if evidence['text'] in misleading_preferences:
+                quote = misleading_preferences[evidence['text']]
+                entries = [dict(subject='self', slot='travel.budget', kind='preference', text=quote,
+                    extent='long_term', occurred_at='date unknown',
+                    evidence=[dict(ref=evidence['ref'], quote=quote)])]
             yield encoded(dict(version='MEMORY-EXTRACT@2',entries=entries)).decode()
     candidates = None
 
@@ -1552,29 +1563,66 @@ def check_lio_memory(root, database, auth, path, context, foreign, actor, unknow
             assert quiet.encode() not in remaining_input and updated.encode() not in remaining_input
         print('PASS signed Lio v2 recalls saved Memory across conversations and preserves the erasure fence')
 
-        direct_id = 'lio-direct-pilot-pace'
-        direct_text = '请记住，我旅行时喜欢慢节奏。'
-        assert api.post('/v1/lio/messages', headers=owner, content=encoded(dict(
-            version='LIO-message.1', message_id=direct_id, text=direct_text, locale='zh'))).status_code == 200
-        assert [outcome.status for outcome in worker.process()] == ['completed']
-        received = api.get(timeline, headers=owner)
-        assert received.status_code == 200, received.text
-        direct_turn, = [row for row in received.json()['messages'] if row['message_id'] == direct_id]
-        tag, = direct_turn['memory']['tags']
-        assert tag['text'] == '我旅行时喜欢慢节奏。'
-        with database.connect(scope) as db:
-            assert db.execute('SELECT status FROM cj_memory_item WHERE item_id=%s', (tag['id'],)).fetchone() == ('candidate',)
-            assert db.execute(
-                "SELECT count(*) FROM cj_run_metered_operation o JOIN cj_message_receipt m USING(scope,run_id) "
-                "WHERE m.message_id=%s AND o.kind='memory'", (direct_id,)).fetchone() == (0,)
-        direct_choice = dict(version='LIO-memory-action.1', action_id='remember-direct-pace',
-                             operation='remember', target=tag['target'])
-        assert api.post(actions, headers=owner, content=encoded(direct_choice)).json()['status'] == 'remembered'
-        assert api.post(receipts, headers=owner, content=encoded(direct_choice)).json()['status'] == 'remembered'
-        with database.connect(scope) as db:
-            assert db.execute('SELECT status FROM cj_memory_item WHERE item_id=%s', (tag['id'],)).fetchone() == ('active',)
-        assert direct_text not in model_inputs
-        print('PASS signed exact pilot preference uses original quote, zero external extraction and explicit confirmation')
+        for suffix, locale, direct_text, quote in (
+            ('pace', 'zh', '请记住，我旅行时喜欢慢节奏。', '我旅行时喜欢慢节奏。'),
+            ('luxury-en', 'en', 'I prefer luxury travel experiences', 'I prefer luxury travel experiences'),
+            ('luxury-zh', 'zh', '我更喜欢奢华的旅行体验。', '我更喜欢奢华的旅行体验。'),
+        ):
+            direct_id = 'lio-direct-pilot-' + suffix
+            assert api.post('/v1/lio/messages', headers=owner, content=encoded(dict(
+                version='LIO-message.1', message_id=direct_id, text=direct_text, locale=locale))).status_code == 200
+            assert [outcome.status for outcome in worker.process()] == ['completed']
+            received = api.get(timeline, headers=owner)
+            assert received.status_code == 200, received.text
+            direct_turn, = [row for row in received.json()['messages'] if row['message_id'] == direct_id]
+            assert direct_turn['memory'] is not None, direct_id
+            tag, = direct_turn['memory']['tags']
+            assert tag['text'] == quote
+            with database.connect(scope) as db:
+                assert db.execute('SELECT status FROM cj_memory_item WHERE item_id=%s', (tag['id'],)).fetchone() == ('candidate',)
+                assert db.execute(
+                    "SELECT count(*) FROM cj_run_metered_operation o JOIN cj_message_receipt m USING(scope,run_id) "
+                    "WHERE m.message_id=%s AND o.kind='memory'", (direct_id,)).fetchone() == (0,)
+            pending = api.get('/v2/memory-items', headers=owner, params={'item_id': tag['id']})
+            assert pending.status_code == 200 and pending.json()['item'].get('status') == 'candidate', pending.text
+            direct_choice = dict(version='LIO-memory-action.1', action_id='remember-direct-' + suffix,
+                                 operation='remember', target=tag['target'])
+            assert api.post(actions, headers=foreign, content=encoded(direct_choice)).status_code == 403
+            confirmed = api.post(actions, headers=owner, content=encoded(direct_choice))
+            assert confirmed.status_code == 200 and confirmed.json().get('status') == 'remembered', confirmed.text
+            assert api.post(receipts, headers=owner, content=encoded(direct_choice)).json()['status'] == 'remembered'
+            assert api.post(actions, headers=owner, content=encoded(direct_choice)).json()['status'] == 'remembered'
+            saved = api.get('/v2/memory-items', headers=owner, params={'item_id': tag['id']})
+            assert saved.status_code == 200 and saved.json()['item'].get('status') == 'active', saved.text
+            assert saved.json()['item']['command']['text'] == quote
+            listing = api.get('/v2/memories', headers=owner, params={'limit': 100})
+            assert listing.status_code == 200, listing.text
+            assert any(item['command']['item_id'] == tag['id'] for item in listing.json()['items'])
+            assert direct_text not in model_inputs
+            # Each language confirms a fresh value. Explicitly pause the previous
+            # one through the existing API to preserve active-slot uniqueness.
+            item = saved.json()['item']
+            paused = api.post('/v2/memory-management-actions', headers=owner, content=encoded(dict(
+                version='MEMORY-management.2', action_id='pause-direct-' + suffix, operation='pause',
+                item_id=tag['id'], expected_version=item['version'],
+                expected_source_version=item['command']['source_version'])))
+            assert paused.status_code == 200 and paused.json()['receipt']['status'] == 'disabled', paused.text
+        print('PASS signed exact pilot pace and bilingual luxury preferences, candidate before confirmation, Memory readback after confirmation, isolation and idempotency')
+        for index, negative in enumerate(misleading_preferences):
+            negative_id = 'lio-luxury-negative-' + str(index)
+            with database.connect(scope) as db:
+                before = db.execute('SELECT count(*) FROM cj_memory_item').fetchone()
+            assert api.post('/v1/lio/messages', headers=owner, content=encoded(dict(
+                version='LIO-message.1', message_id=negative_id, text=negative, locale='en' if index < 2 else 'zh'))).status_code == 200
+            assert [outcome.status for outcome in worker.process()] == ['completed']
+            received = api.get(timeline, headers=owner)
+            assert received.status_code == 200, received.text
+            negative_turn, = [row for row in received.json()['messages'] if row['message_id'] == negative_id]
+            assert negative_turn['memory'] is None, negative_id
+            with database.connect(scope) as db:
+                assert db.execute('SELECT count(*) FROM cj_memory_item').fetchone() == before
+            assert negative in model_inputs
+        print('PASS signed bilingual luxury negation and companion context reject misleading model extraction')
     print('PASS signed Lio Meter and middle-turn Pub4, explicit remember/dismiss, stale choice, isolation, ACK recovery and original UNKNOWN')
     return app, remember
 
