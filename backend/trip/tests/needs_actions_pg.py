@@ -86,7 +86,9 @@ class NeedsActionChecks(unittest.TestCase):
                 if system not in source_fixture.PLAN_SYSTEMS:
                     yield from super().stream(messages,system);return
                 self.calls+=1;source=json.loads(messages[-1]['content']);content=source['current_trip']['content']
-                value=dict(version='TRIP-model-plan.1',title=content['title'],items=content['items'],proposed_subjects={})
+                delta=source.get('response_version')
+                value=dict(version=delta or 'TRIP-model-plan.1',title=content['title'],
+                           items=[] if delta else content['items'],proposed_subjects={})
                 if change:change(value)
                 yield json.dumps(value,ensure_ascii=False)
         worker,db=self.worker(subject,OriginalContextModel())

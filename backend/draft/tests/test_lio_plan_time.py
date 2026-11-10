@@ -3,12 +3,12 @@ from types import SimpleNamespace
 
 import pytest
 
-from cj_draft.lio_plan import LioPlanPublisher
+from cj_draft.lio_plan import LIO_REPLAN_DELTA, LIO_REPLAN_SOURCE, LioPlanPublisher
 from cj_draft.needs_context import ContextPublisher
 from cj_needs.domain import Command, Revision, Snapshot
 from cj_trip.domain import Trip, packed
 from cj_trip.needs_plan import MODEL_VERSION
-from cj_trip.structured import SourceRejected
+from cj_trip.structured import FieldRejected, SourceRejected
 
 
 def known(value):
@@ -81,6 +81,10 @@ def test_lio_retains_only_verbatim_fixed_source():
 
     raw, _, _ = publisher.build_plan(draft(model_stop), capture)
     assert json.loads(raw)['items'] == [model_stop]
+    source = json.loads(publisher.model_messages('original', description, capture, [])[-1]['content'])
+    assert source['version'] == 'TRIP-source-input.2' and 'response_version' not in source
+    with pytest.raises(FieldRejected, match='TRIP-model-plan.1 required'):
+        publisher.build_plan(packed(dict(version=LIO_REPLAN_DELTA, title='Beijing', items=[], proposed_subjects={})), capture)
     for invalid in (dict(model_stop, source_category='unknown'), dict(model_stop, text='Hotel meetup')):
         with pytest.raises(SourceRejected, match='source association'):
             publisher.build_plan(draft(invalid), capture)
@@ -104,8 +108,8 @@ def test_lio_replan_retains_saved_fixed_state_of_an_adopted_suggestion():
     publisher = LioPlanPublisher.__new__(LioPlanPublisher)
     publisher.source = SimpleNamespace(contexts={'original': SimpleNamespace(trip=trip, proposed=proposed)})
 
-    def draft(items):
-        return packed(dict(version=MODEL_VERSION, title='Replanned Beijing', items=items, proposed_subjects={}))
+    def draft(items, *, version=MODEL_VERSION, subjects=None):
+        return packed(dict(version=version, title='Replanned Beijing', items=items, proposed_subjects=subjects or {}))
 
     raw, _, _ = publisher.build_plan(draft([saved]), capture)
     assert json.loads(raw)['items'] == [saved]
@@ -113,3 +117,15 @@ def test_lio_replan_retains_saved_fixed_state_of_an_adopted_suggestion():
         publisher.build_plan(draft([dict(saved, fixed=unknown)]), capture)
     with pytest.raises(SourceRejected, match='removed adopted current Trip item'):
         publisher.build_plan(draft([dict(saved, id='replacement')]), capture)
+
+    source = json.loads(publisher.model_messages('original', 'replan', capture, [])[-1]['content'])
+    assert source['version'] == LIO_REPLAN_SOURCE and source['response_version'] == LIO_REPLAN_DELTA
+    assert source['current_trip']['content']['items'] == [saved]
+    raw, _, _ = publisher.build_plan(draft([], version=LIO_REPLAN_DELTA), capture)
+    assert json.loads(raw)['items'] == [saved]
+    new = dict(saved, id='new', text='Evening walk', fixed=unknown,
+               schedule=stop('new', known('18:00'), known('19:00'))['schedule'])
+    raw, _, _ = publisher.build_plan(draft([new], version=LIO_REPLAN_DELTA, subjects={'new': ['self']}), capture)
+    assert json.loads(raw)['items'] == [saved, dict(new, fixed=known(False))]
+    with pytest.raises(FieldRejected, match='duplicate global item ID'):
+        publisher.build_plan(draft([saved], version=LIO_REPLAN_DELTA), capture)

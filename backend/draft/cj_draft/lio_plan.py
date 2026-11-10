@@ -10,10 +10,15 @@ from cj_needs.revision_lease import LeaseUnavailable
 from cj_trip.confirmation import ConfirmationSigner
 from cj_trip.domain import CommitUnknown, Conflict, Denied, Proposal, ProposalDetail, packed
 from cj_trip.lio_history import EDIT_BASIS, PLAN_BASIS, TripHead, edit_action_id, plan_action_id
+from cj_trip.needs_plan import MODEL_VERSION, parse_model
 from cj_trip.postgres import Repository
-from cj_trip.structured import SourceRejected
+from cj_trip.structured import FieldRejected, SourceRejected
 
 from .needs_context import ContextPublisher, ContextSource
+
+
+LIO_REPLAN_SOURCE = 'TRIP-lio-replan-source.1'
+LIO_REPLAN_DELTA = 'TRIP-lio-replan-delta.1'
 
 
 class LioContextSource(ContextSource):
@@ -36,11 +41,12 @@ class LioContextSource(ContextSource):
 
 class LioPlanPublisher(ContextPublisher):
     system = ContextPublisher.system + (
-        ' Copy every item object in current_trip.content.items exactly once and in its existing order. '
-        'Keep its ID, text, schedule, fixed observation, and source_category verbatim. '
-        'current_trip.proposed_fields describes source history. Use current_trip.content.items for the saved '
-        'values, including known false fixed observations. For each required fixed NEEDS item absent from the '
-        'current Trip, copy its description verbatim as text and set source_category to "user_provided". '
+        f' When source version is {LIO_REPLAN_SOURCE}, use response version {LIO_REPLAN_DELTA} '
+        'instead of TRIP-model-plan.1. In that mode, the server retains every item in current_trip.content.items '
+        'in saved order. Do not return any of those items or IDs. Return only new suggestions and any newly '
+        'declared fixed NEEDS items absent from the saved Trip. Return items:[] and proposed_subjects:{} when '
+        'the saved Trip already covers the request. In either format, copy the description of a required fixed '
+        'NEEDS item absent from the current Trip verbatim as text and set source_category to "user_provided". '
         'Concise labels in the question language apply only to new suggestions.'
     )
 
@@ -51,6 +57,26 @@ class LioPlanPublisher(ContextPublisher):
                                 confirmation, structured=True)
         super().__init__(repository, LioContextSource(original.source, original_needs), original.clock)
         self.check_lio_original = check_lio_original
+
+    def _model_source(self, binding, capture):
+        source = super()._model_source(binding, capture)
+        if source['current_trip'] is not None:
+            source['version'] = LIO_REPLAN_SOURCE
+            source['response_version'] = LIO_REPLAN_DELTA
+        return source
+
+    def _model_plan(self, raw, context):
+        value = parse_model(raw, versions=(MODEL_VERSION, LIO_REPLAN_DELTA))
+        if value['version'] == MODEL_VERSION:
+            return value
+        if type(value['items']) is not list:
+            raise FieldRejected('items', 'Lio replan additions must be a list')
+        retained = json.loads(context.trip.content)
+        if retained['sources']:
+            raise SourceRejected('sources', 'Lio replan cannot omit retained Trip sources')
+        # Reuse the existing structured.2 and source checks on the composed
+        # candidate. A model ID matching a retained ID fails as a duplicate.
+        return dict(value, version=MODEL_VERSION, items=retained['items'] + value['items'])
 
     def build_plan(self, raw, capture):
         content, candidate, report = super().build_plan(raw, capture)
