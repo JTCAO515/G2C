@@ -14,6 +14,7 @@ _ENGLISH_EDIT = re.compile(
     r'^(?:please\s+|(?:could|can|would) you\s+)?(?:change|replace|swap)\s+(?P<target>.+?)'
     r'\s+(?:to|with|for)\s+(?P<replacement>.+)$', re.I,
 )
+_ENGLISH_SEPARATOR = re.compile(r'\s+(?:to|with|for)\s+', re.I)
 _KEEP_OTHER_STOPS = re.compile(
     r'(?:[，,]\s*)?保留(?:其他|其余)安排$|'
     r'(?:,\s*(?:and\s+)?|\s+and\s+)keep\s+(?:the\s+)?'
@@ -53,6 +54,16 @@ class LioEditSelection:
 def match_edit(text):
     utterance = text.strip()
     return _CHINESE_EDIT.fullmatch(utterance) or _ENGLISH_EDIT.fullmatch(utterance)
+
+
+def _edit_parts(match):
+    if match.re is _CHINESE_EDIT:
+        yield match['target'].strip(), match['replacement']
+        return
+    # A separator can be part of an itinerary title or a quoted replacement.
+    tail = match.string[match.start('target'):]
+    for separator in _ENGLISH_SEPARATOR.finditer(tail):
+        yield tail[:separator.start()].strip(), tail[separator.end():]
 
 
 def _replacement_label(raw):
@@ -149,15 +160,20 @@ def select_lio_edit(trip, text, locale, request_id, *, starts_on, ends_on=None):
     match = match_edit(text)
     if match is None:
         return None
-    target = match['target'].strip()
-    replacement = _replacement_label(match['replacement'])
-    if trip is None or not target or replacement is None:
+    if trip is None:
         return LioEditSelection('clarify')
     document = json.loads(trip.content)
-    selected = _select(document['items'], target, starts_on, ends_on)
-    if len(selected) != 1 or selected[0]['text'] == replacement:
+    interpretations = []
+    for target, raw_replacement in _edit_parts(match):
+        replacement = _replacement_label(raw_replacement)
+        if target and replacement is not None:
+            selected = _select(document['items'], target, starts_on, ends_on)
+            interpretations.extend((item, replacement) for item in selected)
+    if len(interpretations) != 1:
         return LioEditSelection('clarify')
-    item = selected[0]
+    (item, replacement), = interpretations
+    if item['text'] == replacement:
+        return LioEditSelection('clarify')
     if item['fixed'] != {'state': 'known', 'value': False}:
         return LioEditSelection('protected')
 
