@@ -423,8 +423,10 @@ public struct LioHome<MenuContent: View>: View {
             }
             if let memoryActions {
                 ForEach(turn.memoryTags.filter { !handledTags.contains($0) }) { tag in
+                    let text = tag.text.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let preference = text.last.map { ".。!?！？".contains($0) } == true ? String(text.dropLast()) : text
                     VStack(alignment: .leading, spacing: 4) {
-                        RunReadableText(text: language.text("Remember: \(tag.text)?", "记住：\(tag.text)？"))
+                        RunReadableText(text: language.text("Remember: \(preference)?", "记住：\(preference)？"))
                         HStack {
                             Button(language.text("Remember", "记住")) {
                                 Task { await chooseMemory(.remember, tag: tag, client: memoryActions) }

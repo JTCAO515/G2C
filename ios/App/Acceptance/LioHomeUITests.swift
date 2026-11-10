@@ -130,6 +130,7 @@ import XCTest
         let remembered = app.staticTexts[chinese ? "已记住" : "Remembered"]
         XCTAssertFalse(remembered.exists)
         reveal(remember)
+        reply(chinese ? "记住：你喜欢安静的酒店？" : "Remember: You like quiet hotels?")
         remember.tap()
         XCTAssertTrue(remembered.waitForExistence(timeout: 10))
         XCTAssertFalse(remember.exists)

@@ -106,7 +106,7 @@ private actor JourneyScenario {
             if await memoryBackend.rememberedPreference() == nil {
                 row["memory"] = ["tags": [
                     ["id": "quiet-hotel", "kind": "preference", "target": "quiet_hotel",
-                     "text": language.text("You like quiet hotels", "你喜欢安静的酒店")],
+                     "text": language.text("You like quiet hotels.", "你喜欢安静的酒店。")],
                     ["id": "technical-tag", "kind": "preference", "target": "technical_tag",
                      "text": language.text("Review the request ID", "核实这次操作")]
                 ]]
