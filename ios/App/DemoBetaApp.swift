@@ -142,70 +142,27 @@ private struct LioAccountDeletion: View {
 private struct DemoInviteView: View {
     let shell: ShellState
     let accounts: DevelopmentAccountHost
-    @State private var code = ""
-    @State private var pendingConsent: ConsentAction?
-    @FocusState private var enteringCode: Bool
+    @State private var triedRestore = false
     private var language: ShellLanguage { shell.language }
 
-    private enum ConsentAction: String, Identifiable {
-        case signIn, restore
-        var id: Self { self }
-    }
-
     var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    LioLanguagePicker(shell: shell)
-                }
-                Section {
-                    SecureField(language.text("Invitation code", "邀请码"), text: $code)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .focused($enteringCode)
-                        .accessibilityIdentifier("demo.invite.code")
-                    Button(language.text("Continue", "继续")) {
-                        enteringCode = false
-                        pendingConsent = .signIn
-                    }
-                    .disabled(code.isEmpty || accounts.state == .checking)
-                    .accessibilityIdentifier("demo.invite.continue")
-                    Button(language.text("Continue with your account", "继续使用账号")) {
-                        enteringCode = false
-                        pendingConsent = .restore
-                    }
-                    .disabled(accounts.state == .checking)
-                    .accessibilityIdentifier("demo.invite.restore")
-                }
-                if let notice {
-                    Section { Text(notice).accessibilityIdentifier("demo.invite.status") }
-                }
-            }
-            .navigationTitle(language.text("Internal demo", "内部演示"))
-        }
-        .sheet(item: $pendingConsent) { action in
-            NavigationStack {
-                DemoV2ConsentView(
-                    language: language, canAgree: accounts.state != .checking && (action != .signIn || !code.isEmpty),
-                    onAgree: { completeConsent(action) }, onBack: { pendingConsent = nil })
-            }
+        LioInvitationView(language: language.lio, isBusy: accounts.state == .checking, notice: notice,
+                          onInvite: signIn, onRestore: restore) {
+            LioLanguagePicker(shell: shell)
         }
     }
 
-    private func completeConsent(_ action: ConsentAction) {
-        guard pendingConsent == action, accounts.state != .checking else { return }
-        pendingConsent = nil
-        switch action {
-        case .signIn:
-            let candidate = code
-            guard !candidate.isEmpty else { return }
-            code = ""
-            let starter: DemoStarterLanguage = language == .chinese ? .zh : .en
-            accounts.signIn { try await DemoInviteClient.exchange(code: candidate, consent: true, language: starter) }
-        case .restore:
-            code = ""
-            accounts.restore()
-        }
+    private func signIn(_ code: String) {
+        guard accounts.state != .checking else { return }
+        triedRestore = false
+        let starter: DemoStarterLanguage = language == .chinese ? .zh : .en
+        accounts.signIn { try await DemoInviteClient.exchange(code: code, consent: true, language: starter) }
+    }
+
+    private func restore() {
+        guard accounts.state != .checking else { return }
+        triedRestore = true
+        accounts.restore()
     }
 
     private var notice: String? {
@@ -215,6 +172,8 @@ private struct DemoInviteView: View {
         case .rejected: language.text("We couldn’t sign you in. Ask your demo organizer for access.", "暂时无法登录，请联系演示组织者。")
         case .networkUnknown: language.text("We couldn’t sign you in. Check your connection and try again.", "暂时无法登录，请检查网络后重试。")
         case .storageUnavailable: language.text("Sign-in is temporarily unavailable.", "暂时无法登录。")
+        case .signedOut where triedRestore:
+            language.text("Enter an invitation code to sign in.", "请输入邀请码登录。")
         case .paused, .signedOut, .signedIn: nil
         }
     }

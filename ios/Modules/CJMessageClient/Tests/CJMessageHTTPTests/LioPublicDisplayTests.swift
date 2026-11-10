@@ -29,6 +29,19 @@ struct LioPublicDisplayTests {
         #expect(!LioPublicDisplay.permitsSource(url))
     }
 
+    @Test(arguments: [
+        "See https://a'bc@api-beta.go2china.space/",
+        "See https://a(b)@api.go2china.space",
+        "See \"https://api-beta.go2china.space\".",
+        "See (https://%61pi-beta.go2china.space).Forecast",
+        "See (https://ap%C2%ADi.go2china.space).Forecast",
+        "请看（https://%61pi-beta.go2china.space）天气",
+        "https://weather.com.cn)[Forecast](https://%EF%BD%81pi-beta.go2china.space%E3%80%82/)"
+    ])
+    func findsServiceHostsInsideTextPunctuation(_ text: String) {
+        #expect(!LioPublicDisplay.permitsText(text))
+    }
+
     @Test func preservesTravelLanguageAndPublicAttribution() throws {
         #expect(LioPublicDisplay.permitsText("草原夜间偏凉。"))
         #expect(LioPublicDisplay.permitsText("Trains run frequently. Your itinerary needs a little more time."))
@@ -38,6 +51,7 @@ struct LioPublicDisplayTests {
         #expect(LioPublicDisplay.permitsSource(try #require(URL(string: "https://weather.com.cn./"))))
         #expect(LioPublicDisplay.permitsSource(try #require(URL(string: "https://ma%C3%B1ana.example/"))))
         #expect(LioPublicDisplay.permitsText("Open https://ma%C3%B1ana.example/ for more."))
+        #expect(LioPublicDisplay.permitsText("请看（https://ma%C3%B1ana.example）天气"))
         #expect(!LioPublicDisplay.permitsSource(try #require(URL(string: "https://restapi.amap.com/v3/weather/weatherInfo"))))
         #expect(!LioPublicDisplay.permitsSource(try #require(URL(string: "https://api-beta.go2china.space/v1/lio/timeline"))))
     }

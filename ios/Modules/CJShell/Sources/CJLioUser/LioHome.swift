@@ -200,12 +200,7 @@ public struct LioHome<MenuContent: View>: View {
     private var floatingControls: some View {
         ZStack(alignment: .leading) {
             HStack(spacing: 8) {
-                Image("LioAvatar", bundle: .module)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 34, height: 34)
-                    .clipShape(Circle())
-                    .accessibilityHidden(true)
+                LioPortrait(size: 34)
                 Text("Lio").font(.headline)
             }
             .padding(6)
@@ -264,7 +259,7 @@ public struct LioHome<MenuContent: View>: View {
     private var composer: some View {
         let placeholder = language.text("Start chatting", "开始聊天")
         let canSend = !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && conversation.pending == nil
-        return HStack(alignment: .bottom, spacing: 10) {
+        return HStack(alignment: .center, spacing: 10) {
             TextField(placeholder, text: $draft, prompt: Text(placeholder).foregroundStyle(Color.primary.opacity(0.78)), axis: .vertical)
                 .lineLimit(1...5)
                 .frame(minHeight: 44)
@@ -430,8 +425,10 @@ public struct LioHome<MenuContent: View>: View {
             }
             if let memoryActions {
                 ForEach(turn.memoryTags.filter { !handledTags.contains($0) }) { tag in
+                    let text = tag.text.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let preference = text.last.map { ".。!?！？".contains($0) } == true ? String(text.dropLast()) : text
                     VStack(alignment: .leading, spacing: 4) {
-                        RunReadableText(text: language.text("Remember: \(tag.text)?", "记住：\(tag.text)？"))
+                        RunReadableText(text: language.text("Remember: \(preference)?", "记住：\(preference)？"))
                         HStack {
                             Button(language.text("Remember", "记住")) {
                                 Task { await chooseMemory(.remember, tag: tag, client: memoryActions) }
@@ -507,7 +504,13 @@ public struct LioHome<MenuContent: View>: View {
     }
 
     private func statusLine(_ title: String) -> some View {
-        Label(title, systemImage: "ellipsis.bubble")
+        Label {
+            Text(title)
+        } icon: {
+            Image(systemName: "ellipsis.bubble")
+                .symbolEffect(.pulse, options: .repeating, isActive: !reduceMotion)
+                .accessibilityHidden(true)
+        }
             .font(.footnote)
             .foregroundStyle(Color.primary.opacity(0.78))
             .accessibilityIdentifier("lio.progress")

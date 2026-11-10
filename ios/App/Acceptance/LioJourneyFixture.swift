@@ -106,7 +106,7 @@ private actor JourneyScenario {
         } else if text.contains("prefer") || text.contains("喜欢") {
             row["answer"] = language.text("Quiet hotels sound good.", "安静的酒店很不错。")
             if await memoryBackend.rememberedPreference() == nil {
-                let preference = language.text("You like quiet hotels", "你喜欢安静的酒店")
+                let preference = language.text("You like quiet hotels.", "你喜欢安静的酒店。")
                 let target = try json(["candidate_id": "quiet-hotel", "text": preference]).base64EncodedString()
                     .replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_")
                     .replacingOccurrences(of: "=", with: "")

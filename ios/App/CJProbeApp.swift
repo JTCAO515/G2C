@@ -56,13 +56,13 @@ struct CJProbeApp: App {
         WindowGroup {
             #if G2C_DEMO_BETA
             if let demo { DemoBetaRootView(shell: shell, root: demo) }
-            else { Text(shell.language.text("Secure demo session is unavailable.", "安全演示会话暂不可用。")) }
+            else { Text(shell.language.text("Lio is temporarily unavailable.", "暂时打不开 Lio。")) }
             #elseif DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
             #if targetEnvironment(simulator)
             #if G2C_LIO_APP
-            if ProcessInfo.processInfo.arguments.contains("--lio-preview"),
-               !ProcessInfo.processInfo.environment.keys.contains(where: { $0.hasPrefix("G2C_DEV_") }),
-               development == nil, developmentAccounts == nil, !developmentFailed {
+            if canPreviewLio, ProcessInfo.processInfo.arguments.contains("--lio-onboarding-preview") {
+                LioOnboardingPreview(shell: shell)
+            } else if canPreviewLio, ProcessInfo.processInfo.arguments.contains("--lio-preview") {
                 lioPreview
             } else {
                 debugPreviewOrShell
@@ -83,7 +83,12 @@ struct CJProbeApp: App {
         }
     }
 
-    #if DEBUG && G2C_LIO_APP && targetEnvironment(simulator)
+    #if DEBUG && targetEnvironment(simulator) && G2C_LIO_APP
+    private var canPreviewLio: Bool {
+        !ProcessInfo.processInfo.environment.keys.contains(where: { $0.hasPrefix("G2C_DEV_") })
+            && development == nil && developmentAccounts == nil && !developmentFailed
+    }
+
     @ViewBuilder private var lioPreview: some View {
         if let encoded = ProcessInfo.processInfo.environment["G2C_LIO_PREVIEW_TRIP"] {
             switch Result(catching: { try LioPreviewTripFixture.library(encoded) }) {
@@ -188,6 +193,22 @@ private struct LioPreviewTripFixture: Decodable {
         return LioTripLibrary(list: { page.trips }, detail: { id in
             id == record.tripID ? record : nil
         })
+    }
+}
+
+private struct LioOnboardingPreview: View {
+    let shell: ShellState
+    @State private var admitted = false
+
+    var body: some View {
+        if admitted {
+            LioHome(language: shell.language.lio, service: .demo, isDemo: true) { LioLanguagePicker(shell: shell) }
+        } else {
+            LioInvitationView(language: shell.language.lio, isBusy: false, notice: nil,
+                              onInvite: { _ in admitted = true }, onRestore: { admitted = true }) {
+                LioLanguagePicker(shell: shell)
+            }
+        }
     }
 }
 #endif
