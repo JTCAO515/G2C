@@ -76,6 +76,14 @@ def allows_pilot_preference_write(command):
             and _value(form, command.text) is not None)
 
 
+def explicit_pilot_preference(text, slots):
+    """Resolve one complete statement within the newly approved pilot slots."""
+    statement = _REMEMBER.sub('', text.strip())
+    matches = [slot for slot in slots
+               if slot in PREFERENCE_SLOTS - _EXISTING_SLOTS and _value(_FORMS[slot], statement) is not None]
+    return (matches[0], statement) if len(matches) == 1 else None
+
+
 def supported_preference(entry, original):
     """Accept only a supported value stated in the complete original turn."""
     form = _FORMS.get(entry.slot)
