@@ -18,6 +18,7 @@ from cj_message.domain import CommitUnknown as MessageCommitUnknown
 from cj_message.source import SourceQuery
 from cj_usage.background_exit import ModelInput
 from cj_usage.metered_exit import BudgetExceeded, BudgetUnknown
+from .lio_memory_preferences import PREFERENCE_SLOTS, supported_preference
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -34,12 +35,12 @@ def lio_candidates(database, boundary, subjects, configuration):
         profile = configuration.collection.profiles[principal.subject]
         allowed_subjects = profile.subjects & {'self'}
         slots = frozenset(name for name, slot in profile.slots.items()
-                          if slot.collection_allowed and slot.kind in ('fact', 'preference'))
+                          if name in PREFERENCE_SLOTS and slot.collection_allowed and slot.kind == 'preference')
         if not allowed_subjects or not slots or 'long_term' not in profile.extents or profile.expires_at <= datetime.now(timezone.utc):
             raise Unavailable('Lio memory collection unavailable')
 
         def allowed(entry):
-            return entry.extent == 'long_term' and entry.kind == profile.slots[entry.slot].kind
+            return entry.extent == 'long_term' and supported_preference(entry)
 
         # This channel produces candidates only. An explicit action is the sole
         # authority for promoting an item, even when the quote is verbatim.

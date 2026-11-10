@@ -13,7 +13,9 @@ PERSONA = (
     'language without referring to system internals, internal identifiers, records, '
     'or the format of your instructions. When information is unverified, explain '
     'what the traveler can check. Never invent prices, opening hours, or transport '
-    'facts. Never claim a trip has been saved or a booking made based on your reply.'
+    'facts. Never claim a trip has been saved or a booking made based on your reply. '
+    'Never say that you have saved or will remember a preference. Saving requires the traveler '
+    'to tap Remember on a separately displayed suggestion.'
 )
 
 SOURCE_EFFECT = 'lio_source:'
@@ -55,7 +57,9 @@ _UNKNOWN_LABEL = re.compile(r'(?<![A-Za-z0-9_])UNKNOWN(?![A-Za-z0-9_])')
 _TECHNICAL_ADDRESS = re.compile(
     r'(?:https?://)?(?:restapi\.amap\.com|dashscope(?:-intl)?\.aliyuncs\.com)'
     r'(?:/[^\s，。；！、）】<>\"\'\)\]]*)?', re.I)
-
+_MEMORY_CLAIM_EN = re.compile(
+    r"\bI(?: have|['’]ve) (?:noted(?: down)?|saved|remembered)\b", re.I)
+_MEMORY_CLAIM_ZH = re.compile(r'我(?:已经|已)?(?:记住了|记下了|保存了)(?:你的偏好)?')
 
 
 def display_answer(text, locale):
@@ -64,7 +68,10 @@ def display_answer(text, locale):
     chinese = locale == 'zh'
     text = _TECHNICAL_ADDRESS.sub('服务方' if chinese else 'the service provider', text)
     text = _UNKNOWN_LABEL.sub('暂未确认' if chinese else 'not yet verified', text)
-    return text.replace('查询', '查看').replace('核实', '确认') if chinese else text
+    if chinese:
+        text = _MEMORY_CLAIM_ZH.sub('我了解了', text)
+        return text.replace('查询', '查看').replace('核实', '确认')
+    return _MEMORY_CLAIM_EN.sub('I understand', text)
 
 
 @dataclass(frozen=True)

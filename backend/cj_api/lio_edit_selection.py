@@ -27,16 +27,16 @@ _DEMO_STOP_NAMES = frozenset({
     'temple of heaven', 'the temple of heaven', 'summer palace', 'the summer palace',
     'forbidden city', 'the forbidden city', 'palace museum', 'the palace museum', 'jingshan park',
 })
-_CHINESE_SLOT = re.compile(r'第([一二三四五六七八九十]|[1-9][0-9]?)天\s*(上午|下午|晚上)')
-_ENGLISH_SLOT = re.compile(r'(?:the\s+)?(?:day\s+([1-9][0-9]?)|(?:the\s+)?(first|second|third)\s+day)'
+_CHINESE_SLOT = re.compile(r'(?:第([一二三四五六七八九十]|[1-9][0-9]?)天|(最后一天))\s*(上午|下午|晚上)')
+_ENGLISH_SLOT = re.compile(r'(?:the\s+)?(?:day\s+([1-9][0-9]?)|(first|second|third|last|final)(?:\s+day)?)'
                            r'(?:\s+in\s+the)?\s+(morning|afternoon|evening)', re.I)
 _ENGLISH_PERIOD_FIRST = re.compile(r'(?:the\s+)?(morning|afternoon|evening)\s+of\s+'
-                                   r'(?:day\s+([1-9][0-9]?)|(?:the\s+)?(first|second|third)\s+day)', re.I)
+                                   r'(?:day\s+([1-9][0-9]?)|(?:the\s+)?(first|second|third|last|final)\s+day)', re.I)
 _DATED_SLOT = re.compile(r'([0-9]{4}-[0-9]{2}-[0-9]{2})\s*(上午|下午|晚上|morning|afternoon|evening)', re.I)
 _ENGLISH_DATED_SLOT = re.compile(r'(?:the\s+)?(morning|afternoon|evening)\s+(?:of|on)\s+'
                                  r'([0-9]{4}-[0-9]{2}-[0-9]{2})', re.I)
 _ORDINALS = {**dict(zip('一二三四五六七八九十', range(1, 11), strict=True)),
-             'first': 1, 'second': 2, 'third': 3}
+             'first': 1, 'second': 2, 'third': 3, 'last': -1, 'final': -1, '最后一天': -1}
 _PERIODS = {
     '上午': (time(0), time(12)), 'morning': (time(0), time(12)),
     '下午': (time(12), time(18)), 'afternoon': (time(12), time(18)),
@@ -73,7 +73,7 @@ def _ordinal(value):
 def _slot(target):
     chinese = _CHINESE_SLOT.fullmatch(target)
     if chinese:
-        return _ordinal(chinese[1]), _PERIODS[chinese[2]]
+        return _ordinal(chinese[1] or chinese[2]), _PERIODS[chinese[3]]
     english = _ENGLISH_SLOT.fullmatch(target)
     if english:
         return _ordinal(english[1] or english[2]), _PERIODS[english[3].lower()]
@@ -97,7 +97,7 @@ def _dated_slot(target):
     return None
 
 
-def _select(items, target, starts_on):
+def _select(items, target, starts_on, ends_on):
     relative = _slot(target)
     dated = _dated_slot(target) if relative is None else None
     if relative is None and dated is None:
@@ -109,13 +109,17 @@ def _select(items, target, starts_on):
     if relative is not None:
         ordinal, (lower, upper) = relative
         displayed_dates = sorted(set(dates))
-        if starts_on is None or ordinal > len(displayed_dates):
+        if ordinal == -1:
+            if ends_on is None or displayed_dates[-1:] != [ends_on.isoformat()]:
+                return []
+            day = ends_on.isoformat()
+        elif starts_on is None or ordinal > len(displayed_dates):
             return []
-        day = displayed_dates[ordinal - 1]
-        # A day with no stops is absent from the current card. A relative edit
-        # must select the same date in the trip calendar and in that card.
-        if (date.fromisoformat(day) - starts_on).days != ordinal - 1:
-            return []
+        else:
+            day = displayed_dates[ordinal - 1]
+            # A relative edit must agree with both the calendar and the card.
+            if (date.fromisoformat(day) - starts_on).days != ordinal - 1:
+                return []
     else:
         day, (lower, upper) = dated
         if day not in dates:
@@ -140,7 +144,7 @@ def _select(items, target, starts_on):
     return selected
 
 
-def select_lio_edit(trip, text, locale, request_id, *, starts_on):
+def select_lio_edit(trip, text, locale, request_id, *, starts_on, ends_on=None):
     """Return an exact provisional change. This does not authorize publication."""
     match = match_edit(text)
     if match is None:
@@ -150,7 +154,7 @@ def select_lio_edit(trip, text, locale, request_id, *, starts_on):
     if trip is None or not target or replacement is None:
         return LioEditSelection('clarify')
     document = json.loads(trip.content)
-    selected = _select(document['items'], target, starts_on)
+    selected = _select(document['items'], target, starts_on, ends_on)
     if len(selected) != 1 or selected[0]['text'] == replacement:
         return LioEditSelection('clarify')
     item = selected[0]
