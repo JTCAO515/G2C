@@ -54,3 +54,13 @@ class LioMemoryPreferenceTest(unittest.TestCase):
                 self.assertFalse(supported_preference(candidate, original))
         changed = entry('travel.pace', 'a fast travel pace', quote=text)
         self.assertFalse(supported_preference(changed, text))
+
+    def test_explicit_remember_request_yields_the_same_preference_value(self):
+        for original, quote, text in [
+            ('我喜欢慢节奏。', '我喜欢慢节奏', '慢节奏旅行'),
+            ('请记住，我喜欢慢节奏旅行。', '我喜欢慢节奏旅行', '慢节奏'),
+            ('Please remember that I prefer a slow pace when I travel.',
+             'I prefer a slow pace when I travel.', 'slow pace'),
+        ]:
+            with self.subTest(original=original):
+                self.assertTrue(supported_preference(entry('travel.pace', text, quote=quote), original))

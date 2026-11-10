@@ -141,20 +141,26 @@ _EN_POSSESSIVE_WEATHER = re.compile(
     r'(?:\s+in\s+Beijing)?' + _EN_WEATHER_SOURCE, re.I)
 _TRANSIT_POLICY = re.compile(
     r'过境免签|免签过境|visa[ -]free transit|transit (?:without a visa|visa exemption|policy)', re.I)
+_TRANSIT_TOPIC = re.compile(r'过境|转机|\b(?:transit|layover|stopover)\b', re.I)
+_TRANSIT_VISA = re.compile(r'签证|免签|\b(?:visa[ -]free|without a visa|visa exemption)\b', re.I)
 _TRANSIT_ELIGIBILITY = re.compile(
     r'适用|符合|资格|可以吗|能用吗|\b(?:qualify|eligib\w*|apply|applies)\b', re.I)
 _TRANSIT_SECTION = re.compile(r'^[IVX]+\.\s+')
 _TRANSIT_DURATION = re.compile(r'\b(?:10 days|240 hours)\b', re.I)
 
 
+def _asks_transit_policy(text):
+    return bool(_TRANSIT_POLICY.search(text) or (_TRANSIT_TOPIC.search(text) and _TRANSIT_VISA.search(text)))
+
+
 def _lio_transit_request(messages):
     question = messages[-1]['content']
-    if _TRANSIT_POLICY.search(question):
+    if _asks_transit_policy(question):
         return True
     if not _TRANSIT_ELIGIBILITY.search(question):
         return False
     previous = next((row['content'] for row in reversed(messages[:-1]) if row['role'] == 'user'), '')
-    return _TRANSIT_POLICY.search(previous) is not None
+    return _asks_transit_policy(previous)
 
 
 def _lio_weather_day(text, today):

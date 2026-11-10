@@ -913,6 +913,11 @@ class Boundaries(unittest.TestCase):
                    dict(role='assistant', content='Check the official guidance.')]
         self.assertTrue(_lio_transit_request([*history, dict(role='user', content='Does that apply to me?')]))
         self.assertFalse(_lio_transit_request([*history, dict(role='user', content='What is the weather?')]))
+        for question in ('How long can I stay in China visa-free during transit?',
+                         'Can I stay in Beijing for 240 hours without a visa during a layover?',
+                         '在北京转机需要签证吗？'):
+            with self.subTest(question=question):
+                self.assertTrue(_lio_transit_request([dict(role='user', content=question)]))
 
     def test_complete_named_function_with_stop_keeps_the_original_receipt(self):
         marker='G2C_SYNTHETIC_D1_OK'

@@ -6,6 +6,8 @@ _EN = r"(?:I (?:(?:usually|always|generally) )?(?:prefer|like|enjoy) |prefers? )
 _ZH = r'(?:我(?:平时|通常|一般|一直)?(?:更)?(?:喜欢|偏爱|偏好|习惯|更爱))?'
 _INTEREST_EN = r'(?:art|museums?|architecture|history|nature|scenic walks|food markets|local food)'
 _INTEREST_ZH = r'(?:博物馆|美术馆|艺术|建筑|历史|自然风景|城市漫步|美食|菜市场)'
+_REMEMBER = re.compile(r'^(?:请(?:帮我)?记住[，、：:\s]*|(?:please )?remember(?: that)?[,:\s]+)', re.I)
+_TRAVEL_QUALIFIER = re.compile(r' (?:when I travel|when travelling|when traveling)$', re.I)
 
 
 def _forms(english, chinese, *, extra=''):
@@ -18,7 +20,8 @@ _FORMS = {
         r'(?:a )?(?:slow(?:er)?|fast(?:er)?|relaxed|leisurely) (?:travel pace|pace|trips?)|'
         r'(?:slow|fast)[- ]paced trips?|fewer stops (?:in|per) a? ?day|'
         r'no more than (?:one|two|three|[1-3]) sights a day',
-        r'(?:慢节奏|快节奏|轻松|悠闲)(?:的)?(?:旅行|行程|旅游)|每天(?:只|最多)(?:一|两|二|三|[1-3])个景点',
+        r'(?:慢节奏|快节奏)(?:(?:的)?(?:旅行|行程|旅游))?|(?:轻松|悠闲)(?:的)?(?:旅行|行程|旅游)|'
+        r'每天(?:只|最多)(?:一|两|二|三|[1-3])个景点',
     ),
     'travel.budget': _forms(
         r'(?:budget[- ]friendly|moderate[- ]budget|luxury) trips?|'
@@ -53,9 +56,15 @@ PREFERENCE_SLOTS = frozenset(_FORMS)
 
 
 def _value(form, text):
-    text = text.strip().rstrip('.。!！')
+    text = _REMEMBER.sub('', text.strip()).rstrip('.。!！')
+    text = _TRAVEL_QUALIFIER.sub('', text)
     match = form.fullmatch(text)
-    return (match['en'] or match['zh'] or match[0]).casefold() if match is not None else None
+    if match is None:
+        return None
+    value = (match['en'] or match['zh'] or match[0]).casefold()
+    if value.startswith(('慢节奏', '快节奏')):
+        return value[:3]
+    return value.removeprefix('a ')
 
 
 def supported_preference(entry, original):
