@@ -29,12 +29,11 @@ MAX_CLARIFICATIONS = 4
 BEIJING = re.compile(r'北京|\bBeijing\b', re.I)
 _LOGGER = logging.getLogger(__name__)
 COMPACT_DRAFT = (
-    ' For this Lio draft, retain every required fixed and existing item. '
-    'Cover each requested date with its retained items or one concise new stop. Follow requested time periods. '
+    ' Cover each requested date. A date already covered by retained stops needs no new stop. '
+    'For an uncovered date, suggest only one concise stop. Follow requested time periods. '
     'Otherwise plan afternoon stops, except for an evening activity on the last day of a trip of three or more days. '
     'For each new suggestion, set known local start and end dates, times and timezone. Keep utc_offset unknown. '
     'Add no other stops. Use short new stop labels. '
-    'Only when current_trip in TRIP-source-input.2 is null, use a short title. '
     'Return only the compact JSON object.'
 )
 SYSTEM = (
@@ -183,8 +182,7 @@ class LioPlanSave:
                     and worker.message_context.active_original(binding) == original)
 
         publisher = LioPlanPublisher(self.context_publisher, self.confirmation,
-                                     original_needs, check_original)
-        publisher.system += COMPACT_DRAFT
+                                     original_needs, check_original, draft_guidance=COMPACT_DRAFT)
         previous = worker.drafts
         worker.drafts = publisher
         try:
