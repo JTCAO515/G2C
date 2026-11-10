@@ -186,6 +186,13 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
         assert not planning_authority_complete((
             'Plan a trip to Beijing from 2026-11-11 to 2026-11-12. ' + scope_clause,
         ), 'Beijing', today, has_fixed=False)
+    for tail in (', but please put this on hold.', ', but those are Shanghai dates only.'):
+        assert not planning_authority_complete((sample[:-1] + tail,), 'Beijing', today, has_fixed=True)
+    assert planning_authority_complete((sample,), 'Beijing', today, has_fixed=True)
+    assert not planning_authority_complete((
+        'Plan a trip to Shanghai from 2026-12-01 to 2026-12-03.',
+        'Please put this on hold. Beijing, from 2026-12-11 to 2026-12-13.',
+    ), 'Beijing', today, has_fixed=False)
     meetings, _ = grounded_fields(('The trip dates are undecided. The meeting is from 2026-11-11 to 2026-11-12.',),
                                    'Beijing', today)
     assert meetings['arrival']['date']['state'] == 'missing'
@@ -433,7 +440,7 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     withdrawals = ('Do not save it.', "Please don't save it yet.", 'Show me a draft without saving.',
                    "Please don't save this itinerary to my account.", 'I do not want this itinerary saved.',
                    'Can you show me before saving?', 'Cancel it.', 'Actually, cancel it.',
-                   'Please leave it as a draft.', 'Please cancel this request.', '取消吧。', '请不要把行程保存到我的账户。')
+                   'Please leave it as a draft.', 'Please cancel this request.', 'Please put this on hold.', '取消吧。', '请不要把行程保存到我的账户。')
     for i, withdrawal in enumerate(withdrawals):
         assert api.post(messages, headers=owner, content=original(
             f'lio-withdrawal-{i}', 'Plan a trip to Beijing from 2026-12-01 to 2026-12-03. ' + withdrawal, 'en')).status_code == 200

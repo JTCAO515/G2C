@@ -40,10 +40,12 @@ DESTINATION_NEUTRAL = re.compile(r'^(?:please\s+)?(?:plan|make|build|create)\s+(
 WITHDRAWAL = re.compile(
     r'\b(?:never mind|forget it|scratch that|cancel\b|call (?:it|(?:the|this|that) (?:trip|plan|request)) off)\b|'
     r'\b(?:keep|leave)\s+(?:it|(?:the |this |my )?(?:trip|plan|itinerary))\s+(?:as\s+)?(?:a\s+)?draft\b|'
+    r'\b(?:put [^.!?]{0,24} on hold|hold off|pause (?:it|this|the plan|planning))\b|先暂停|暂缓规划|先放一放|'
     r'\b(?:wait for my (?:approval|confirmation)|(?:only after|once) I (?:approve|confirm))\b|'
     r'算了|不用规划了|取消吧|取消(?:这次|这份|这个)?(?:规划|行程|计划)|等我(?:确认|同意|批准)',
     re.I,
 )
+DRAFT_REQUEST = re.compile(r'^(?:please\s+|(?:can|could|would) you\s+)?draft\b|(?:只要|先给|先看|看看)[^。！？]{0,12}(?:草稿|预览)', re.I)
 SAVE_LANGUAGE = re.compile(r'\b(?:sav(?:e|es|ed|ing)|stor(?:e|es|ed|ing)|persist(?:s|ed|ing)?|'
                            r'publish(?:es|ed|ing)?|writ(?:e|es|ing)\b[^.!?]{0,24}\bdown)\b'
                            r'|保存|存入|存下|存到|记录|写入|发布', re.I)
@@ -100,6 +102,11 @@ RANGE = re.compile(rf'{CLOCK}\s*(?:[-–—到至]|\bto\b)\s*{CLOCK}', re.I)
 CLAUSE_BREAK = re.compile(r'[!。！；;\n]+|(?<=[?？])\s*|\.(?=\s+[A-Z])|，(?=\s*(?:第[一二三四五六七八九十\d]+天|酒店集合))')
 FIXED_REPLY = re.compile(r'^(?:全体|大家|本人|我参加|第[一二三四五六七八九十\d]+天|'
                          r'(?:for (?:everyone|our party|both of us)|on (?:the first day|\d{4}-))\b)', re.I)
+FIXED_PARTY_REPLY = re.compile(r'全体(?:参加)?|大家(?:参加)?|本人|我参加|for (?:everyone|our party|both of us)', re.I)
+FIXED_SUBSEQUENT_CLAUSE = re.compile(
+    r'\b(?:but|however|although|instead|unless|actually|though|yet)\b|不过|但是|但请|然而|反而|除非|改为|而是',
+    re.I)
+
 
 
 def _clauses(text):
@@ -121,7 +128,11 @@ def _planning_without_assent(clause):
 
 
 def planning_withdrawn(text):
-    for clause in _clauses(text):
+    clauses = _clauses(text)
+    if any(DRAFT_REQUEST.search(clause) for clause in clauses) and not any(
+            SAVE_ASSENT.fullmatch(clause) or _planning_without_assent(clause) is not None for clause in clauses):
+        return True
+    for clause in clauses:
         if WITHDRAWAL.search(clause):
             return True
         if not SAVE_LANGUAGE.search(NONPERSISTENT_SAVE.sub('', clause)):
@@ -299,9 +310,26 @@ def _day_span(turns, today, city):
     return None, None
 
 
+def _fixed_authority_clause(clause):
+    if FIXED_SUBSEQUENT_CLAUSE.search(clause):
+        return False
+    if FIXED_PARTY_REPLY.fullmatch(clause):
+        return True
+    statement = FIXED.search(clause)
+    if statement is not None and statement.end() == len(clause):
+        return True
+    if statement is not None or FIXED_REPLY.match(clause):
+        without_dates = re.sub(ISO, lambda match: ' ' * len(match[0]), clause)
+        return any(match.end() == len(without_dates) for match in RANGE.finditer(without_dates))
+    return False
+
+
 def planning_authority_complete(turns, city, today, *, has_fixed):
     """A grounded date does not authorize an unexplained instruction in the same turn."""
-    for turn in _compatible_turns(turns, city):
+    # Historical details may be dropped when the city changes. The latest
+    # original must still be evaluated in full, even before its new destination.
+    latest = '\n'.join(_planning_without_assent(clause) or clause for clause in _clauses(turns[-1]))
+    for turn in (*_compatible_turns(turns[:-1], city), latest):
         for original in _clauses(turn):
             clause = _date_declaration(original)
             if clause is None:
@@ -312,7 +340,7 @@ def planning_authority_complete(turns, city, today, *, has_fixed):
                 continue
             if (EN_DATE_SCOPE.fullmatch(clause) or ZH_DATE_SCOPE.fullmatch(clause)) and not _date_scope_disputed(clause, city):
                 continue
-            if has_fixed and (FIXED.search(clause) or FIXED_REPLY.match(clause)):
+            if has_fixed and _fixed_authority_clause(clause):
                 continue
             if PLAN_REQUEST.match(clause) and _day_span((clause,), today, city)[0] is not None:
                 continue
