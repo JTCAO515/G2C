@@ -112,7 +112,7 @@ def _require_memory_configuration(cursor, scope, configuration, travel):
         raise RuntimeDenied('existing memory requires explicit runtime configuration')
 
 
-def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,formal_memory_configuration=None,account_checker_builder=None,run_credential=False,assembly_planning=False,demo_planning=False):
+def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,formal_memory_configuration=None,account_checker_builder=None,run_credential=False,assembly_planning=False,demo_planning=False,lio_confirmation=None):
     if draft_profile not in (None,'needs-structured.1','needs-current-trip.1'):
         raise CompositionUnavailable('unknown explicit draft profile')
     if place_draft_configuration is not None:
@@ -307,10 +307,14 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
         decisions=OriginalDecisions(database,Path(auth_dir),memory_credential,memory_admit,message_context)
         history=HistoryMemory(memory,OriginalHistory(messages,decisions))
     lio_original = None
+    lio_planning = None
     if demo_planning:
         from functools import partial
         from cj_message.lio_context import original_for
         lio_original = partial(original_for, database)
+        if lio_confirmation is not None:
+            from cj_api.local_lio_planning import LioPlanning, LioPlanSave
+            lio_planning = LioPlanning(database, LioPlanSave(database, drafts, lio_confirmation))
     return RunWorker(scope=scope, messages=messages, runs=runs, provider=model, drafts=drafts,
         memory=memory,edit_publisher=None if edit_config is None else edit_config.publisher,edit_results=database.edit_results,
         memory_history=history is not None,history_adapter=history,
@@ -318,13 +322,14 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
         execution_lease=lease_run_credential if run_credential else lease_execution if reuse_connections else nullcontext,
         owned_transaction_lease=(lambda: database.lease_run_transactions(runs.repository)) if reuse_connections else None,
         tools=tools_configuration,place_sources=place_sources,lio_original=lio_original,
+        lio_planning=lio_planning,
         execution_guard=lambda binding: database.require_execution(binding.scope, binding, connection=execution_connection),
         needs_lease=needs_lease_for(database,checker,memory_credential if run_credential else token),
         budget_exit=(LocalBudgetRouter(database) if tools_configuration is None else
                      LocalBudgetRouter(database,registrations=tools_configuration.registrations)))
 
 
-def run_once(database, model, auth_dir, *, memory_configuration=None,memory_configuration_for_scope=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,background_jobs=None,formal_memory_configuration=None,real_services=None,account_admission=False,hk_beta_b_run_credential=False,hk_assembly_scopes=frozenset(),hk_assembly_run_credential_scopes=frozenset(),hk_demo_scopes=frozenset()):
+def run_once(database, model, auth_dir, *, memory_configuration=None,memory_configuration_for_scope=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,background_jobs=None,formal_memory_configuration=None,real_services=None,account_admission=False,hk_beta_b_run_credential=False,hk_assembly_scopes=frozenset(),hk_assembly_run_credential_scopes=frozenset(),hk_demo_scopes=frozenset(),lio_confirmation=None):
     if memory_configuration_for_scope is not None and (memory_configuration is not None or formal_memory_configuration is not None):
         raise ValueError('select one explicit Memory configuration source')
     planning_scopes=hk_assembly_scopes|hk_demo_scopes
@@ -387,7 +392,8 @@ def run_once(database, model, auth_dir, *, memory_configuration=None,memory_conf
                                          draft_profile='needs-structured.1' if assembly_planning else draft_profile,
                                          place_draft_configuration=place_draft_configuration,formal_memory_configuration=formal_memory_configuration,
                                          account_checker_builder=account_checker_builder,run_credential=run_credential,
-                                         assembly_planning=assembly_planning,demo_planning=scope in hk_demo_scopes).process()
+                                         assembly_planning=assembly_planning,demo_planning=scope in hk_demo_scopes,
+                                         lio_confirmation=lio_confirmation).process()
         except Exception as error:
             if failure is None: failure = error
     if background_jobs is not None:results+=background_jobs.run_once(model)

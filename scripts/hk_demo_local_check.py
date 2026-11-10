@@ -90,10 +90,207 @@ def verify_upgrade(root, blueprint, target):
 
 
 def check_lio(api, database, auth, other, headers, conninfo, memory):
+    from cj_api.local_lio_planning import LioPlanning, SYSTEM
+    from cj_draft.lio_plan import LioPlanPublisher
+    from cj_draft.needs_publisher import SYSTEM as PLAN_SYSTEM
     from cj_message import demo_dialogue
     from cj_message.domain import CommitUnknown
     from cj_message.lio_context import LioCitation, LioToolProgress
+    from cj_message.lio_plan_needs import original_needs
     from cj_run.core import Binding, ResyncRequired
+    from cj_trip.confirmation import ConfirmationSigner
+    from cj_trip.domain import CommitUnknown as TripCommitUnknown
+    from cj_api.lio_planning_grounding import (
+        PlanningTurn, grounded_fields as grounded_dated_fields,
+        planning_authority_complete as dated_authority_complete, stated_city,
+    )
+    from datetime import date
+
+    def grounded_fields(turns, city, day):
+        grounded = grounded_dated_fields(tuple(PlanningTurn(text, day) for text in turns), city)
+        return grounded.fields, grounded.missing_fixed
+
+    def planning_authority_complete(turns, city, day, *, has_fixed):
+        return dated_authority_complete(tuple(PlanningTurn(text, day) for text in turns),
+                                        city, has_fixed=has_fixed)
+
+    fixed_words = 'The hotel meetup from 9 to 10 a.m. on the first day is fixed'
+    sample = f'Plan three days in Beijing for two people starting tomorrow. {fixed_words}.'
+    today = date(2026, 11, 9)
+    grounded, missing = grounded_fields((sample,), 'Beijing', today)
+    assert not missing and len(grounded['fixed_items']) == 1
+    assert grounded['arrival']['date']['value'] == '2026-11-10'
+    assert grounded['departure']['date']['value'] == '2026-11-12'
+    assert grounded['fixed_items'][0]['start']['time']['value'] == '09:00'
+    assert grounded['fixed_items'][0]['booking_status'] == {'state':'unknown'}
+    english = ('Plan a three-day trip to Beijing.', 'Starting tomorrow.')
+    from_tomorrow = ('Plan a trip to Beijing.', 'From tomorrow, for three days.')
+    chinese_reply = ('帮我规划三天的北京行程。', '北京，从明天开始，玩三天。')
+    for turns, city in ((english, 'Beijing'), (from_tomorrow, 'Beijing'), (chinese_reply, '北京')):
+        assert stated_city(turns, city)
+        reply_fields, _ = grounded_fields(turns, city, today)
+        assert reply_fields['arrival']['date']['value'] == '2026-11-10'
+        assert reply_fields['departure']['date']['value'] == '2026-11-12'
+    one_turn, _ = grounded_fields(
+        ('Plan a trip to Beijing for three days starting tomorrow.',), 'Beijing', today)
+    assert one_turn['departure']['date']['value'] == '2026-11-12'
+    assert planning_authority_complete(('Plan a trip to Beijing for three days starting tomorrow.',),
+                                       'Beijing', today, has_fixed=False)
+    changed_city, _ = grounded_fields(
+        ('Plan a trip to Shanghai from 2026-12-01 to 2026-12-03.',
+         'Beijing, from 2026-12-11 to 2026-12-13.'), 'Beijing', today)
+    assert changed_city['arrival']['date']['value'] == '2026-12-11'
+    assert changed_city['departure']['date']['value'] == '2026-12-13'
+    unstated, _ = grounded_fields(
+        ('Plan a trip to Shanghai from 2026-12-01 to 2026-12-03.',
+         '2026-12-04 to 2026-12-06.', 'Beijing.'), 'Beijing', today)
+    assert unstated['arrival']['date']['state'] == 'missing'
+    separate_clauses, _ = grounded_fields(
+        ('Plan a trip to Shanghai from 2026-12-01 to 2026-12-03. Plan a Beijing itinerary.',), 'Beijing', today)
+    assert separate_clauses['arrival']['date']['state'] == 'missing'
+    attributed_dates, _ = grounded_fields((
+        'Plan a Beijing itinerary. Trip dates from 2026-12-01 to 2026-12-03 are for Shanghai only.',
+    ), 'Beijing', today)
+    assert attributed_dates['arrival']['date']['state'] == 'missing'
+    affirmed_dates, _ = grounded_fields(
+        ('Plan a trip to Beijing from 2026-12-01 to 2026-12-03 and save it to my account.',), 'Beijing', today)
+    assert affirmed_dates['arrival']['date']['value'] == '2026-12-01'
+    unrelated, _ = grounded_fields(
+        ('Plan a trip to Beijing starting tomorrow, but we have a 7 day Shanghai trip later.',), 'Beijing', today)
+    assert unrelated['departure']['date']['state'] == 'missing'
+    tickets, missing = grounded_fields(
+        ('Plan a trip to Beijing from 2026-12-01 to 2026-12-03. '
+         'We have tickets for a museum on 2026-12-02 from 09:00 to 11:00.',), 'Beijing', today)
+    assert not missing and tickets['fixed_items'][0]['locked'] == dict(state='known',value=True)
+    negative = 'We have not actually booked a hotel for the first day 09:00 to 10:00.'
+    unconfirmed, _ = grounded_fields((negative,), 'Beijing', today)
+    assert 'fixed_items' not in unconfirmed
+    rejected_dates, _ = grounded_fields(
+        ('I cannot travel on 2026-11-10. Travel from 2026-11-11 to 2026-11-12.',), 'Beijing', today)
+    assert rejected_dates['arrival']['date']['value'] == '2026-11-11'
+    foreign_appointment, missing = grounded_fields(
+        ('My daughter has an already booked appointment on 2026-11-11 from 09:00 to 10:00.',),
+        'Beijing', today)
+    assert missing and 'fixed_items' not in foreign_appointment
+    assert not stated_city(('Plan a trip from Beijing to Shanghai.',), 'Beijing')
+    assert not stated_city(('Plan a trip to Shanghai. I live in Beijing.',), 'Beijing')
+    assert not stated_city(('Plan a trip to Shanghai with a short visit to Beijing.',), 'Beijing')
+    assert not stated_city(('帮我规划上海行程，途经北京，从 2026-11-11 到 2026-11-12',
+                            '2026-11-11 到 2026-11-12'), '北京')
+    for turns, city in (
+        (('Plan a trip to Beijing starting tomorrow for three days, but those dates are for Shanghai only.',), 'Beijing'),
+        (('帮我规划从明天开始的北京三天行程，但明天是上海的出发日。',), '北京'),
+        (('Plan a three-day trip to Beijing.', 'Starting tomorrow?'), 'Beijing'),
+        (('Plan a Beijing itinerary.', 'Travel from 2026-11-11 to 2026-11-12?'), 'Beijing'),
+        (('Plan a trip to Beijing starting tomorrow for three days. Those dates are for Shanghai only.',), 'Beijing'),
+        (('Plan a trip to Beijing from 2026-11-11 to 2026-11-12. Those dates apply only to Shanghai.',), 'Beijing'),
+        (('帮我规划从明天开始的北京三天行程。明天是上海的出发日。',), '北京'),
+        (('Plan a three-day trip to Beijing. Those dates are for Shanghai only.', 'Starting tomorrow.'), 'Beijing'),
+    ):
+        tentative, _ = grounded_fields(turns, city, today)
+        assert tentative['arrival']['date']['state'] == 'missing', turns
+        assert tentative['departure']['date']['state'] == 'missing', turns
+    polite, _ = grounded_fields(('Could you plan a trip to Beijing starting tomorrow for three days?',),
+                                'Beijing', today)
+    assert polite['departure']['date']['value'] == '2026-11-12'
+    assert planning_authority_complete(('Could you plan a trip to Beijing starting tomorrow for three days?',),
+                                       'Beijing', today, has_fixed=False)
+    for scope_clause in ('Those are Shanghai dates only.', 'Tomorrow is the departure day for Shanghai only.',
+                         'Please put everything on hold.'):
+        assert not planning_authority_complete((
+            'Plan a trip to Beijing from 2026-11-11 to 2026-11-12. ' + scope_clause,
+        ), 'Beijing', today, has_fixed=False)
+    for tail in (', but please put this on hold.', ', but those are Shanghai dates only.'):
+        assert not planning_authority_complete((sample[:-1] + tail,), 'Beijing', today, has_fixed=True)
+    assert planning_authority_complete((sample,), 'Beijing', today, has_fixed=True)
+    for qualifier in ('Those dates still need approval and are for Beijing.',
+                      'Those dates are tentative but are for Beijing.'):
+        assert not planning_authority_complete((
+            'Plan a trip to Beijing from 2026-11-11 to 2026-11-12. ' + qualifier,
+        ), 'Beijing', today, has_fixed=False)
+    for timed in ('Plan only a preview of the trip to Beijing from 2026-11-11 to 2026-11-12.',
+                  'Plan an unsaved trip to Beijing from 2026-11-11 to 2026-11-12.'):
+        assert not planning_authority_complete((timed,), 'Beijing', today, has_fixed=False)
+    for prefix in ('Those are Shanghai dates only, and ', 'This is just a hypothetical and '):
+        joined = 'Plan a trip to Beijing from 2026-11-11 to 2026-11-12 for two people. ' + prefix + fixed_words + '.'
+        assert not planning_authority_complete((joined,), 'Beijing', today, has_fixed=True)
+    assert not planning_authority_complete((
+        'Plan a trip to Shanghai from 2026-12-01 to 2026-12-03.',
+        'Please put this on hold. Beijing, from 2026-12-11 to 2026-12-13.',
+    ), 'Beijing', today, has_fixed=False)
+    meetings, _ = grounded_fields(('The trip dates are undecided. The meeting is from 2026-11-11 to 2026-11-12.',),
+                                   'Beijing', today)
+    assert meetings['arrival']['date']['state'] == 'missing'
+    suggested, _ = grounded_fields(('Plan a trip to Beijing and suggest dates around my meeting from 2026-11-11 to 2026-11-12.',),
+                                    'Beijing', today)
+    assert suggested['arrival']['date']['state'] == 'missing'
+    conference, _ = grounded_fields((
+        'Plan a trip to Beijing around my conference in Beijing from 2026-11-11 to 2026-11-12. When should I travel?',
+    ), 'Beijing', today)
+    assert conference['arrival']['date']['state'] == 'missing'
+    hypothetical, _ = grounded_fields(('If I have already booked a hotel meetup from 09:00 to 10:00 on the first day.',),
+                                       'Beijing', today)
+    assert 'fixed_items' not in hypothetical
+    supposed, _ = grounded_fields(('Suppose we have already booked a hotel meetup from 09:00 to 10:00 on the first day.',
+        'For everyone, on the first day from 09:00 to 10:00.'), 'Beijing', today)
+    assert 'fixed_items' not in supposed
+    filled, missing = grounded_fields(('Plan a trip to Beijing from 2026-11-11 to 2026-11-12. The hotel meetup is fixed.',
+        'For everyone, on the first day from 09:00 to 10:00.'), 'Beijing', today)
+    assert not missing and filled['fixed_items'][0]['applies_to'] == ['party']
+    first_day, reply_day = date(2026, 11, 9), date(2026, 11, 10)
+    midnight = grounded_dated_fields((
+        PlanningTurn('Plan three days in Beijing for two people starting tomorrow. The hotel meetup is fixed.', first_day),
+        PlanningTurn('For everyone, on the first day from 09:00 to 10:00.', reply_day),
+    ), 'Beijing')
+    assert not midnight.missing_fixed and midnight.fields['arrival']['date']['value'] == '2026-11-10'
+    assert midnight.fields['departure']['date']['value'] == '2026-11-12'
+    assert midnight.fields['fixed_items'][0]['start']['date']['value'] == '2026-11-10'
+    clarified = grounded_dated_fields((
+        PlanningTurn('Plan a three-day trip to Beijing.', first_day),
+        PlanningTurn('Starting tomorrow.', reply_day),
+    ), 'Beijing')
+    assert clarified.fields['arrival']['date']['value'] == '2026-11-11'
+    date_reply = PlanningTurn('2026-11-11 to 2026-11-13 for 3 people.', reply_day)
+    party = grounded_dated_fields((PlanningTurn('Plan a trip to Beijing.', first_day), date_reply), 'Beijing')
+    assert party.fields['party_size']['value'] == 3 and not party.conflicting_party
+    conflict = grounded_dated_fields(
+        (PlanningTurn('Plan a trip to Beijing for 2 people.', first_day), date_reply), 'Beijing')
+    assert conflict.conflicting_party and 'party_size' not in conflict.fields
+    for tentative, certain in (
+        ('Starting tomorrow?', 'Starting tomorrow.'),
+        ('2026-11-11 to 2026-11-13?', '2026-11-11 to 2026-11-13.'),
+    ):
+        plan = ('Plan a three-day trip to Beijing.', tentative)
+        assert not planning_authority_complete(plan, 'Beijing', today, has_fixed=False)
+        assert planning_authority_complete((*plan, certain), 'Beijing', today, has_fixed=False)
+    assert not planning_authority_complete((
+        'Plan a three-day trip to Beijing.', 'Do those dates only work for Shanghai?', 'Starting tomorrow.',
+    ), 'Beijing', today, has_fixed=False)
+    for turns in (
+        ('Plan a 2-day trip to Beijing starting tomorrow for 3 days.',),
+        ('Plan a 2-day trip to Beijing from 2026-11-11 to 2026-11-13.',),
+        ('Plan a 2-day trip to Beijing.', 'Starting tomorrow for 3 days.'),
+    ):
+        disputed, _ = grounded_fields(turns, 'Beijing', today)
+        assert disputed['arrival']['date']['state'] == 'missing'
+        assert disputed['departure']['date']['state'] == 'missing'
+    consistent, _ = grounded_fields(('Plan a 3-day trip to Beijing from 2026-11-11 to 2026-11-13.',), 'Beijing', today)
+    assert consistent['departure']['date']['value'] == '2026-11-13'
+    fixed_prefix = ('Plan a trip to Beijing from 2026-11-11 to 2026-11-13 for 2 people. '
+                    'The hotel meetup from 9 to 10 a.m. on the first day is fixed.')
+    other_time = 'For everyone, on the first day from 11:00 to 12:00.'
+    for turns in ((fixed_prefix + ' ' + other_time,), (fixed_prefix, other_time)):
+        disputed, missing = grounded_fields(turns, 'Beijing', today)
+        assert missing and 'fixed_items' not in disputed
+    agreed, missing = grounded_fields(
+        (fixed_prefix + ' For everyone, on the first day from 09:00 to 10:00.',), 'Beijing', today)
+    assert not missing and agreed['fixed_items'][0]['start']['time']['value'] == '09:00'
+    dated, missing = grounded_fields(('Plan a trip to Beijing from 2026-11-11 to 2026-11-12. The hotel meetup is fixed.',
+        'For everyone, on 2026-11-12 from 09:00 to 10:00.'), 'Beijing', today)
+    assert not missing and dated['fixed_items'][0]['start']['date']['value'] == '2026-11-12'
+    chinese = '帮我为两个人规划从明天开始的北京三天游，第一天 9:00–10:00 的酒店集合已经定好。'
+    zh, missing = grounded_fields((chinese,), '北京', today)
+    assert not missing and zh['departure']['date']['value'] == '2026-11-12'
 
     messages = '/v1/lio/messages'
     timeline = '/v1/lio/timeline'
@@ -146,6 +343,41 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
         def stream(self, messages, system=None):
             self.calls += 1
             prompts.append(system)
+            if system.startswith(SYSTEM):
+                fields = {}
+                city = None
+                if len(messages) == 2:
+                    assert messages[0]['content'] == '帮我规划旅行'
+                    assert messages[1]['content'] == '北京，2026-11-11 到 2026-11-12'
+                if '2026-11-11' in messages[-1]['content']:
+                    city = '北京' if '北京' in messages[-1]['content'] else 'Beijing'
+                    for edge, day in (('arrival','2026-11-11'), ('departure','2026-11-12')):
+                        fields[edge] = dict(date=dict(state='known', value=day), time=dict(state='missing'),
+                                            timezone=dict(state='missing'), place=dict(state='missing'))
+                yield json.dumps(dict(city=city, continues_trip=True, extraction=dict(
+                    version='NEEDS-extraction.1', fields=fields, unresolved=[], long_term_requests=[])),
+                    ensure_ascii=False)
+                return
+            if system.startswith(PLAN_SYSTEM):
+                source = json.loads(messages[-1]['content'])
+                before = source['current_trip']
+                title = 'Beijing walk' if before is None else 'Beijing walks'
+                if before is None:
+                    def at(clock):
+                        return dict(date=dict(state='known', value='2026-11-11'),
+                                    time=dict(state='known', value=clock),
+                                    timezone=dict(state='known', value='Asia/Shanghai'),
+                                    utc_offset=dict(state='unknown'))
+                    items = [dict(id='park', text='Park walk', verification='pending', evidence=[],
+                                  schedule=dict(start=at('09:00'), end=at('10:00')),
+                                  fixed=dict(state='unknown'), source_category='unknown', source_refs=[])]
+                    subjects = {'park':['party']}
+                else:
+                    items = before['content']['items']
+                    subjects = {}
+                yield json.dumps(dict(version='TRIP-model-plan.1', title=title, items=items,
+                                      proposed_subjects=subjects))
+                return
             if messages[-1]['content'] == 'Synthetic lost model outcome':
                 raise ProviderUnknown()
             yield '北京有许多适合散步的公园。' if system.endswith('Reply in Chinese.') else 'Beijing has many parks for walking.'
@@ -213,16 +445,91 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
         raise AssertionError('retained display relaxed the original operational recovery deadline')
     assert api.get(timeline, headers=owner).json()['messages'][0] == ready[0]
 
-    planning_question = original('lio-question-no-write',
-        'Plan a trip to Beijing from 2026-11-11 to 2026-11-12.', 'en')
-    assert api.post(messages, content=planning_question, headers=owner).status_code == 200
+    no_signer = original('lio-no-signer', 'Plan a trip to Beijing from 2026-11-11 to 2026-11-12.', 'en')
+    assert api.post(messages, content=no_signer, headers=owner).status_code == 200
     assert [outcome.status for outcome in worker.process()] == ['completed']
-    final = api.get(timeline, headers=owner).json()['messages']
-    assert all(row['trip'] is None and row['memory'] is None for row in final)
-    from cj_agent.draft import trip_scope_for
-    with psycopg.connect(**conninfo) as db:
-        assert db.execute('SELECT 1 FROM cj_trip_scope WHERE scope=%s', (trip_scope_for(scope),)).fetchone() is None
+    no_save = api.get(timeline, headers=owner).json()['messages'][-1]
+    assert no_save['status'] == 'completed' and no_save['answer'] and no_save['trip'] is None
 
+    seen = []
+    def validate_intake(worker, plan, state, details, locale):
+        with database.connect(scope) as connection:
+            with connection.cursor() as cursor:
+                needs_id, revision, digest = original_needs(cursor, plan)
+                assert len(digest) == 64
+                assert original_needs(cursor, binding) is None
+                seen.append((needs_id, revision, details.city, locale))
+        # This tests the B admission and intake boundary in isolation.
+        # An unavailable save must never look like a completed trip.
+        raise ProviderFailed('synthetic C save unavailable')
+
+    worker = run_worker._worker_for_scope(database, model, auth, scope, checker_for(auth),
+                                         memory_configuration=memory, demo_planning=True)
+    worker.lio_planning = LioPlanning(database, validate_intake)
+    assert api.post(messages, content=original('lio-plan-ask', '帮我规划旅行', 'zh'),
+                    headers=owner).status_code == 200
+    assert [outcome.status for outcome in worker.process()] == ['completed']
+    ask = api.get(timeline, headers=owner).json()['messages'][-1]
+    assert '哪座城市' in ask['answer'] and '几天' in ask['answer'] and ask['trip'] is None
+    assert not seen
+    reply = original('lio-plan-detail', '北京，2026-11-11 到 2026-11-12', 'zh')
+    assert api.post(messages, content=reply, headers=owner).status_code == 200
+    assert [outcome.status for outcome in worker.process()] == ['failed']
+    assert len(seen) == 1 and seen[0][1:] == (1, '北京', 'zh')
+    unavailable = api.get(timeline, headers=owner).json()['messages'][-1]
+    assert (unavailable['status'], unavailable['failure'], unavailable['trip']) == ('failed', 'unavailable', None)
+    assert api.post(messages, content=reply, headers=owner).status_code == 200
+    assert worker.process() == [] and len(seen) == 1
+
+    confirmation = ConfirmationSigner((auth/'trip-confirmation.key').read_bytes())
+    worker = run_worker._worker_for_scope(database, model, auth, scope, checker_for(auth),
+                                         memory_configuration=memory, draft_profile='needs-structured.1', demo_planning=True,
+                                         lio_confirmation=confirmation)
+    request = 'Plan a trip to Beijing from 2026-11-11 to 2026-11-12 for our party.'
+    assert api.post(messages, content=original('lio-save', request, 'en'), headers=owner).status_code == 200
+    assert [outcome.status for outcome in worker.process()] == ['completed']
+    saved = api.get(timeline, headers=owner).json()['messages'][-1]
+    assert saved['status'] == 'completed' and saved['answer'] == 'I saved your itinerary.', saved
+    assert saved['trip']['title'] == 'Beijing walk'
+    # PR725 makes a newly generated suggestion editable.
+    assert saved['trip']['days'][0]['items'][0]['fixed'] is False
+
+    commit_plan = LioPlanPublisher._commit
+    def lose_save_ack(publisher, *args):
+        commit_plan(publisher, *args)
+        raise TripCommitUnknown()
+
+    change = original('lio-save-without-ack', request, 'en')
+    assert api.post(messages, content=change, headers=owner).status_code == 200
+    with patch.object(LioPlanPublisher, '_commit', lose_save_ack):
+        assert [outcome.status for outcome in worker.process()] == ['unknown']
+    cards = api.get(timeline, headers=owner).json()['messages'][-2:]
+    assert cards[0] == saved
+    assert cards[1]['status'] == 'completed' and cards[1]['failure'] is None, cards[1]
+    assert cards[1]['trip']['trip_id'] == saved['trip']['trip_id']
+    assert cards[1]['trip']['title'] == 'Beijing walks'
+    assert api.post(messages, content=change, headers=owner).status_code == 200
+    assert worker.process() == []
+    withdrawals = ('Do not save it.', "Please don't save it yet.", 'Show me a draft without saving.',
+                   "Please don't save this itinerary to my account.", 'I do not want this itinerary saved.',
+                   'Can you show me before saving?', 'Cancel it.', 'Actually, cancel it.',
+                   'Please leave it as a draft.', 'Please cancel this request.', 'Please put this on hold.', '取消吧。', '请不要把行程保存到我的账户。')
+    for i, withdrawal in enumerate(withdrawals):
+        assert api.post(messages, headers=owner, content=original(
+            f'lio-withdrawal-{i}', 'Plan a trip to Beijing from 2026-12-01 to 2026-12-03. ' + withdrawal, 'en')).status_code == 200
+        calls = model.calls
+        assert [outcome.status for outcome in worker.process()] == ['completed'] and model.calls == calls
+        canceled = api.get(timeline, headers=owner).json()['messages'][-1]
+        assert canceled['trip'] is None and "won't save" in canceled['answer']
+    assert api.post(messages, headers=owner, content=original(
+        'lio-withdrawal-intake', '帮我规划旅行', 'zh')).status_code == 200
+    assert [outcome.status for outcome in worker.process()] == ['completed']
+    assert api.post(messages, headers=owner, content=original(
+        'lio-withdrawal-reply', '北京。算了，不要保存。', 'zh')).status_code == 200
+    calls = model.calls
+    assert [outcome.status for outcome in worker.process()] == ['completed'] and model.calls == calls
+    canceled = api.get(timeline, headers=owner).json()['messages'][-1]
+    assert canceled['trip'] is None and '不保存' in canceled['answer']
     with psycopg.connect(**conninfo) as db:
         try:
             with db.transaction():

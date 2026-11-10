@@ -34,6 +34,12 @@ def capture(cursor, message_scope, stored, *, command=None):
             raise Unavailable('required NEEDS selection unavailable')
         try: needs_id = identifier(selected[1])
         except InvalidInput: raise Unavailable('invalid NEEDS selection') from None
+    capture_revision(cursor, message_scope, r.message_id, r.run_id, needs_id, expected_version)
+
+
+def capture_revision(cursor, message_scope, message_id, run_id, needs_id, expected_version):
+    """Bind a validated original to the current revision under the NEEDS fence."""
+    needs_scope = needs_scope_for(message_scope)
     cursor.execute('SELECT pg_advisory_xact_lock_shared(public.cj_needs_fence_key(%s))',(needs_scope,))
     cursor.execute('SELECT n.version,n.content,h.content,h.source_kind FROM cj_needs_record n '
                    'JOIN cj_needs_revision h ON (h.scope,h.needs_id,h.version)=(n.scope,n.needs_id,n.version) '
@@ -51,4 +57,4 @@ def capture(cursor, message_scope, stored, *, command=None):
     cursor.execute('INSERT INTO cj_message_needs_binding '
                    '(message_scope,message_id,run_id,needs_scope,needs_id,needs_version,content_sha256) '
                    'VALUES (%s,%s,%s,%s,%s,%s,%s)',
-                   (message_scope,r.message_id,r.run_id,needs_scope,needs_id,row[0],hashlib.sha256(content).hexdigest()))
+                   (message_scope,message_id,run_id,needs_scope,needs_id,row[0],hashlib.sha256(content).hexdigest()))
