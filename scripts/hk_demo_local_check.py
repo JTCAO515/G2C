@@ -867,6 +867,7 @@ def check_lio_memory(root, database, auth, path, context, foreign, actor, unknow
     from cj_api.lio_memory_routes import LioMemoryCards, _decode_target, _encode_target
     from cj_api.local_lio_memory import lio_candidates
     from cj_memory.domain import CommitUnknown as MemoryCommitUnknown
+    from cj_memory.typed_api import register_typed_routes
     from cj_memory.typed_runtime import TypedRuntimeConfiguration
     from cj_memory_jobs.publication_result import VERSION_DEMO
     from cj_memory_jobs.service import OperationWithheld
@@ -924,6 +925,7 @@ def check_lio_memory(root, database, auth, path, context, foreign, actor, unknow
     app = create_local_app(conninfo_path=None,auth_dir=auth,run_context=context,database=database,
         account_admission=True,demo_dialogue_subjects=selected,lio_dialogue_subjects=selected,
         lio_memory_factory=memory_host)
+    register_typed_routes(app, database=database, auth_dir=auth, configuration=runtime.collection)
     service = candidates.collection
     with TestClient(app) as api:
         mid = 'lio-memory-original'
@@ -1075,10 +1077,27 @@ def check_lio_memory(root, database, auth, path, context, foreign, actor, unknow
         new_chat = new_memory_question(recall).json()['conversation_id']
         assert new_chat != api.get(timeline, headers=owner).json()['conversation_id']
         assert [outcome.status for outcome in worker.process()] == ['completed']
+        chosen = _decode_target(remember['target'])
         with database.connect(scope) as db:
             assert quiet.encode() in bytes(answer_input(db, recall))
+            version, source_version = db.execute(
+                'SELECT version,source_version FROM cj_memory_item WHERE item_id=%s',
+                (chosen['candidate_id'],)).fetchone()
+        updated = 'I prefer quiet entrances to museums.'
+        edit = dict(version='MEMORY-management.2', action_id='lio-edit-cross-chat-memory',
+                    operation='edit', item_id=chosen['candidate_id'], expected_version=version,
+                    expected_source_version=source_version, context=None, text=updated)
+        changed = api.post('/v2/memory-management-actions', headers=owner, content=encoded(edit))
+        assert changed.status_code == 200, changed.text
+        edited_recall = 'lio-new-memory-after-edit'
+        edited_chat = new_memory_question(edited_recall).json()['conversation_id']
+        assert edited_chat != new_chat
+        assert [outcome.status for outcome in worker.process()] == ['completed']
+        with database.connect(scope) as db:
+            edited_input = bytes(answer_input(db, edited_recall))
+            assert updated.encode() in edited_input and quiet.encode() not in edited_input
         check_lio_item_erasure(root,database,auth,path,context,scope,owner,
-            _decode_target(remember['target']),_decode_target(dismiss['target']),consumer,quiet)
+            chosen,_decode_target(dismiss['target']),consumer,quiet)
         after_erase = 'lio-after-item-erasure'
         assert api.post('/v1/lio/messages',headers=owner,content=encoded(dict(
             version='LIO-message.1',message_id=after_erase,text='What should I see near the metro?',locale='en'))).status_code == 200
@@ -1094,7 +1113,9 @@ def check_lio_memory(root, database, auth, path, context, foreign, actor, unknow
         assert [outcome.status for outcome in worker.process()] == ['completed']
         with database.connect(scope) as db:
             assert answer_input(db, recall) is None
-            assert quiet.encode() not in bytes(answer_input(db, post_delete))
+            assert answer_input(db, edited_recall) is None
+            remaining_input = bytes(answer_input(db, post_delete))
+            assert quiet.encode() not in remaining_input and updated.encode() not in remaining_input
         print('PASS signed Lio v2 recalls saved Memory across conversations and preserves the erasure fence')
 
         direct_id = 'lio-direct-pilot-pace'
