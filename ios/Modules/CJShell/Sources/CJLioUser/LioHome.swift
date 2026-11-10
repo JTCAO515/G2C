@@ -21,6 +21,8 @@ public struct LioHome<MenuContent: View>: View {
     @State private var menuOpen = false
     @State private var source: LioSource?
     @State private var followsAnswer = true
+    @State private var opening = Opening.beforeNext
+    @State private var didEnterBackground = false
     @State private var tab = Tab.chat
     @State private var tripPath: [LioTripRoute] = []
     @State private var memoryBusy = false
@@ -39,6 +41,7 @@ public struct LioHome<MenuContent: View>: View {
         let plan: ObjectIdentifier?
     }
     private enum Tab { case chat, trips, memory }
+    private enum Opening: Equatable { case beforeNext, before(Data), hidden }
     @FocusState private var typing: Bool
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -130,12 +133,19 @@ public struct LioHome<MenuContent: View>: View {
         return ScrollViewReader { scroll in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 22) {
-                    if conversation.turns.isEmpty { examples }
+                    if conversation.turns.isEmpty {
+                        if opening == .beforeNext { openingMessage }
+                        examples
+                    }
                     ForEach(conversation.turns) { turn in
                         VStack(alignment: .leading, spacing: 22) {
                             if turn.id == earlierID { earlierMessages(scroll) }
+                            if opening == .before(turn.id) { openingMessage }
                             turnView(turn)
                         }
+                    }
+                    if !conversation.turns.isEmpty, opening == .beforeNext, pending == nil {
+                        openingMessage
                     }
                     if let memoryNotice { Text(memoryNotice).font(.footnote) }
                     if memoryPending {
@@ -166,6 +176,14 @@ public struct LioHome<MenuContent: View>: View {
             .onChange(of: latest?.status) { _, status in
                 if followsAnswer && status == .finished { scroll.scrollTo("lio.bottom", anchor: .bottom) }
             }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .background { didEnterBackground = true }
+                guard phase == .active, didEnterBackground else { return }
+                didEnterBackground = false
+                opening = .beforeNext
+                followsAnswer = true
+                if !conversation.turns.isEmpty, pending == nil { scroll.scrollTo("lio.bottom", anchor: .bottom) }
+            }
         }
         .background(Color(uiColor: .systemBackground))
         .overlay(alignment: .top) { floatingControls }
@@ -180,7 +198,7 @@ public struct LioHome<MenuContent: View>: View {
                         Section {
                             Button {
                                 guard canSwitchChat else { return }
-                                switchChat(chatLibrary.newChat())
+                                switchChat(chatLibrary.newChat(), opening: .beforeNext)
                             } label: {
                                 Label(language.text("New chat", "新对话"), systemImage: "square.and.pencil")
                             }
@@ -188,7 +206,7 @@ public struct LioHome<MenuContent: View>: View {
                             .accessibilityIdentifier("lio.chat.new")
                             NavigationLink {
                                 LioChatHistoryView(library: chatLibrary, language: language, currentID: chatID,
-                                                   canSwitch: canSwitchChat, select: switchChat)
+                                                   canSwitch: canSwitchChat, select: { switchChat($0) })
                             } label: {
                                 Label(language.text("Chat history", "历史对话"), systemImage: "clock")
                             }
@@ -216,12 +234,13 @@ public struct LioHome<MenuContent: View>: View {
             && tripPlan?.busy != true && tripPlan?.pending != true
     }
 
-    private func switchChat(_ chat: LioChatSession) {
+    private func switchChat(_ chat: LioChatSession, opening: Opening = .hidden) {
         guard canSwitchChat else { return }
         if chat.id != chatID {
             if let chatID { chatDrafts[chatID] = draft }
             selectedChat = chat
             conversation = LioConversation(service: chat.service)
+            self.opening = opening
             draft = chatDrafts.removeValue(forKey: chat.id) ?? ""
             tripPath = []
             source = nil
@@ -280,10 +299,18 @@ public struct LioHome<MenuContent: View>: View {
         .padding(.vertical, 8)
     }
 
+    private var openingMessage: some View {
+        Text(language.text("Hi, I’m Lio, your personal travel agent. How can I help?",
+                           "你好，我是 Lio，你的个人旅行助手。有什么可以帮你？"))
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 19))
+            .accessibilityIdentifier("lio.opening")
+    }
+
     private var examples: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text(language.text("Where are you headed?", "你想去哪儿？"))
-                .font(.title2.weight(.semibold))
             if isDemo {
                 Text(language.text("Try a sample question.", "可以先试一个示例问题。"))
                     .font(.subheadline)
@@ -323,6 +350,7 @@ public struct LioHome<MenuContent: View>: View {
             Button {
                 followsAnswer = true
                 conversation.send(draft, language: language)
+                if opening == .beforeNext, let id = conversation.pending?.id { opening = .before(id) }
                 draft = ""
                 typing = false
             } label: {

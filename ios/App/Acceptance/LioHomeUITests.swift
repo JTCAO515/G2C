@@ -7,6 +7,33 @@ import XCTest
     func testInvitationEnglish() throws { try exerciseInvitation("en") }
     func testInvitationChinese() throws { try exerciseInvitation("zh-Hans") }
 
+    func testOpeningGreetingReturnsAfterBackgroundWithoutResettingTheChat() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "-cj.ui.language.v1", "en"]
+        app.launch()
+        defer { app.terminate() }
+
+        let greeting = app.staticTexts["lio.opening"]
+        XCTAssertTrue(greeting.waitForExistence(timeout: 12))
+        let sample = app.buttons["lio.example.0"]
+        sample.tap()
+        app.buttons["lio.send"].tap()
+        let question = app.staticTexts["lio.question"]
+        let answer = app.staticTexts["lio.answer"]
+        XCTAssertTrue(answer.waitForExistence(timeout: 8))
+        XCTAssertLessThan(greeting.frame.minY, question.frame.minY)
+
+        XCUIDevice.shared.press(.home)
+        XCTAssertTrue(app.wait(for: .runningBackground, timeout: 5) || app.state == .runningBackgroundSuspended)
+        app.activate()
+        XCTAssertTrue(greeting.waitForExistence(timeout: 8))
+        XCTAssertTrue(question.exists)
+        XCTAssertTrue(answer.exists)
+        XCTAssertGreaterThan(greeting.frame.minY, answer.frame.minY)
+        XCTAssertEqual(app.staticTexts.matching(identifier: "lio.opening").count, 1)
+    }
+
     func testNewChatAndHistoryKeepMessagesAndDraftsSeparate() {
         exerciseChatHistory("en")
     }
@@ -57,12 +84,14 @@ import XCTest
         let oldReply = app.staticTexts["An earlier reply."]
         let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
         XCTAssertTrue(oldReply.waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["lio.opening"].exists)
         menu.tap()
         let newChat = app.buttons["lio.chat.new"]
         XCTAssertEqual(newChat.label, chinese ? "新对话" : "New chat")
         newChat.tap()
         let example = app.buttons["lio.example.0"]
         XCTAssertTrue(example.waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["lio.opening"].exists)
         XCTAssertFalse(oldReply.exists)
         XCTAssertFalse(app.staticTexts["lio.question"].exists)
         example.tap()
@@ -88,6 +117,7 @@ import XCTest
         }
         openHistory(chinese ? "最早的对话" : "First conversation")
         XCTAssertTrue(oldReply.waitForExistence(timeout: 8))
+        XCTAssertFalse(app.staticTexts["lio.opening"].exists)
         XCTAssertFalse(newReply.exists)
         XCTAssertNotEqual(composer.value as? String, draft)
         openHistory(firstQuestion)
@@ -558,6 +588,11 @@ import XCTest
 
         XCTAssertTrue(app.buttons["lio.menu"].waitForExistence(timeout: 12))
         XCTAssertTrue(app.staticTexts["Lio"].exists)
+        let greeting = app.staticTexts["lio.opening"]
+        XCTAssertTrue(greeting.exists)
+        XCTAssertEqual(greeting.label, language == "en" ? "Hi, I’m Lio, your personal travel agent. How can I help?"
+                       : "你好，我是 Lio，你的个人旅行助手。有什么可以帮你？")
+        XCTAssertFalse(app.staticTexts["lio.question"].exists)
         XCTAssertFalse(app.navigationBars.firstMatch.exists)
         XCTAssertTrue(app.tabBars.buttons[language == "en" ? "Trips" : "行程"].exists)
         XCTAssertFalse(app.buttons["lio.send"].isEnabled)
