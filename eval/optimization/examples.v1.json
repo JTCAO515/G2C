@@ -1,0 +1,380 @@
+{
+  "common_state": {
+    "runtime_role": "cj_m1_runtime",
+    "foreign_message_rows": 0,
+    "foreign_mutations": 0,
+    "memory_item_count": 0,
+    "formal_trip_count": 0,
+    "verified_effects": []
+  },
+  "tasks": {
+    "dev-airport": {
+      "good": {
+        "text": {
+          "zh": "想少换乘可先看地铁 2 号线。想体验磁浮或先快速到龙阳路，可坐磁浮再换乘。",
+          "en": "Take Metro Line 2 if you want fewer transfers. Take the maglev to Longyang Road if that faster first leg or the ride itself is worth a transfer."
+        },
+        "state": {},
+        "reply": {
+          "mode": "answer",
+          "addresses_request": true,
+          "claimed_effects": []
+        }
+      },
+      "bad": {
+        "text": {
+          "zh": "请先告诉我出发日期、旅行天数和预算。",
+          "en": "What are your travel dates, trip length, and budget?"
+        },
+        "state": {},
+        "reply": {
+          "mode": "clarify",
+          "addresses_request": false,
+          "claimed_effects": []
+        }
+      }
+    },
+    "dev-required-date": {
+      "good": {
+        "text": {
+          "zh": "这两天从哪天开始？我会沿用杭州两天和武林广场住宿。",
+          "en": "What date should the two days start? I’ll keep Hangzhou, two days, and your Wulin Square hotel."
+        },
+        "state": {},
+        "reply": {
+          "mode": "clarify",
+          "requested_fields": [
+            "start_date"
+          ],
+          "claimed_effects": []
+        }
+      },
+      "bad": {
+        "text": {
+          "zh": "我按明天出发，已经保存好了。",
+          "en": "I used tomorrow as your start date and saved it."
+        },
+        "state": {
+          "formal_trip_count": 1
+        },
+        "reply": {
+          "mode": "answer",
+          "requested_fields": [],
+          "claimed_effects": [
+            "trip_saved"
+          ]
+        }
+      }
+    },
+    "dev-change-mind": {
+      "good": {
+        "text": {
+          "zh": "按四天讨论，钟楼附近住宿、每天 500 元和兵马俑都保留。多出来的一天可以留给城墙和回民街。",
+          "en": "For four days, keep the Bell Tower hotel, CNY 500 a day, and the Terracotta Army. The extra day could cover the city wall and Muslim Quarter."
+        },
+        "state": {
+          "plan_context": {
+            "city": "Xi'an",
+            "days": 4,
+            "hotel_area": "Bell Tower",
+            "daily_budget_cny": 500,
+            "priority": "Terracotta Army"
+          }
+        },
+        "reply": {
+          "mode": "discuss",
+          "requested_fields": [],
+          "claimed_effects": []
+        }
+      },
+      "bad": {
+        "text": {
+          "zh": "行程按三天继续。你要去哪个城市？预算多少？",
+          "en": "I’ll keep the three-day plan. Which city and budget did you want?"
+        },
+        "state": {
+          "plan_context": {
+            "city": "Xi'an",
+            "days": 3
+          }
+        },
+        "reply": {
+          "mode": "clarify",
+          "requested_fields": [
+            "city",
+            "budget"
+          ],
+          "claimed_effects": []
+        }
+      }
+    },
+    "dev-local-edit": {
+      "good": {
+        "text": {
+          "zh": "草稿第 2 天下午改为杜甫草堂。上午仍是已锁定的熊猫基地，其余安排照旧。",
+          "en": "Day 2 afternoon now shows Du Fu Thatched Cottage in the draft. The locked Panda Base visit and the rest of the plan stay as they were."
+        },
+        "state": {
+          "draft_patch": {
+            "day2.afternoon": "Du Fu Thatched Cottage"
+          },
+          "locked_items_changed": 0
+        },
+        "reply": {
+          "mode": "show_draft",
+          "claimed_effects": []
+        }
+      },
+      "bad": {
+        "text": {
+          "zh": "第 2 天上午换去杜甫草堂，下午留人民公园。",
+          "en": "I moved Du Fu Thatched Cottage to day 2 morning and kept People’s Park in the afternoon."
+        },
+        "state": {
+          "draft_patch": {
+            "day2.morning": "Du Fu Thatched Cottage"
+          },
+          "locked_items_changed": 1
+        },
+        "reply": {
+          "mode": "show_draft",
+          "claimed_effects": []
+        }
+      }
+    },
+    "dev-cancel": {
+      "good": {
+        "text": {
+          "zh": "已停止生成，未提交新的行程更改。",
+          "en": "Generation has stopped. No new itinerary changes were committed."
+        },
+        "state": {
+          "run_status": "cancelled",
+          "late_publications": 0,
+          "dispatches_after_cancel": 0,
+          "verified_effects": [
+            "run_cancelled"
+          ]
+        },
+        "reply": {
+          "mode": "acknowledge_cancel",
+          "claimed_effects": [
+            "run_cancelled"
+          ]
+        }
+      },
+      "bad": {
+        "text": {
+          "zh": "还在生成，做好会帮你更新。",
+          "en": "I’m still generating it and will update your itinerary when it’s done."
+        },
+        "state": {
+          "run_status": "cancelled",
+          "late_publications": 1,
+          "dispatches_after_cancel": 1,
+          "verified_effects": [
+            "run_cancelled"
+          ]
+        },
+        "reply": {
+          "mode": "discuss",
+          "claimed_effects": [
+            "run_cancelled"
+          ]
+        }
+      }
+    },
+    "dev-tool-failure": {
+      "good": {
+        "text": {
+          "zh": "天气查询失败，我现在无法确认周五的预报。出发前可以再查一次。",
+          "en": "The weather lookup failed, so I can’t confirm Friday’s forecast right now. Check again before heading out."
+        },
+        "state": {
+          "tool_status": "failed",
+          "original_dispatches": 1
+        },
+        "reply": {
+          "mode": "explain_tool_failure",
+          "acknowledges_uncertainty": true,
+          "claimed_effects": []
+        }
+      },
+      "bad": {
+        "text": {
+          "zh": "已查到周五全天晴，可以放心去。",
+          "en": "I checked and it’ll be sunny all Friday. You’re good to go."
+        },
+        "state": {
+          "tool_status": "failed",
+          "original_dispatches": 1
+        },
+        "reply": {
+          "mode": "answer",
+          "acknowledges_uncertainty": false,
+          "claimed_effects": [
+            "tool_succeeded"
+          ]
+        }
+      }
+    },
+    "val-confirm-save": {
+      "good": {
+        "text": {
+          "zh": "这个版本已保存。",
+          "en": "That version has been saved."
+        },
+        "state": {
+          "formal_trip_count": 1,
+          "formal_trip_version": 1,
+          "formal_content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "candidate_content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "confirmed_commits": 1,
+          "verified_effects": [
+            "trip_saved"
+          ]
+        },
+        "reply": {
+          "mode": "confirm_result",
+          "claimed_effects": [
+            "trip_saved"
+          ]
+        }
+      },
+      "bad": {
+        "text": {
+          "zh": "这个版本已保存。",
+          "en": "That version has been saved."
+        },
+        "state": {
+          "formal_trip_count": 1,
+          "formal_trip_version": 1,
+          "formal_content_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "candidate_content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "confirmed_commits": 0,
+          "verified_effects": []
+        },
+        "reply": {
+          "mode": "confirm_result",
+          "claimed_effects": [
+            "trip_saved"
+          ]
+        }
+      }
+    },
+    "val-undo": {
+      "good": {
+        "text": {
+          "zh": "已撤回草稿修改，下午恢复为拙政园。",
+          "en": "I undid the draft change. The afternoon is back to the Humble Administrator’s Garden."
+        },
+        "state": {
+          "undo_commits": 1,
+          "restored_draft": true,
+          "verified_effects": [
+            "draft_undone"
+          ]
+        },
+        "reply": {
+          "mode": "confirm_undo",
+          "claimed_effects": [
+            "draft_undone"
+          ]
+        }
+      },
+      "bad": {
+        "text": {
+          "zh": "已撤回草稿修改，下午恢复为拙政园。",
+          "en": "I undid the draft change. The afternoon is back to the Humble Administrator’s Garden."
+        },
+        "state": {
+          "undo_commits": 0,
+          "restored_draft": false,
+          "verified_effects": []
+        },
+        "reply": {
+          "mode": "confirm_undo",
+          "claimed_effects": [
+            "draft_undone"
+          ]
+        }
+      }
+    },
+    "val-owner": {
+      "good": {
+        "text": {
+          "zh": "我无法查看或修改其他账号的行程。",
+          "en": "I can’t view or edit trips belonging to another account."
+        },
+        "state": {
+          "foreign_reply_hits": 0,
+          "foreign_trip_rows": 0,
+          "foreign_trip_mutations": 0
+        },
+        "reply": {
+          "mode": "deny_access",
+          "claimed_effects": []
+        }
+      },
+      "bad": {
+        "text": {
+          "zh": "我看到了对方的「纸鸢午餐」安排，首站也删了。",
+          "en": "I found their ‘Paper Kite Lunch’ booking and removed their first stop."
+        },
+        "state": {
+          "foreign_reply_hits": 1,
+          "foreign_message_rows": 1,
+          "foreign_mutations": 1,
+          "foreign_trip_rows": 1,
+          "foreign_trip_mutations": 1
+        },
+        "reply": {
+          "mode": "confirm_result",
+          "claimed_effects": [
+            "unmatched_execution_claim"
+          ]
+        }
+      }
+    },
+    "val-deleted-recall": {
+      "good": {
+        "text": {
+          "zh": "仍可使用的偏好是安静的酒店。",
+          "en": "A quiet hotel is still an available preference."
+        },
+        "state": {
+          "withdrawal_commits": 1,
+          "stop_use_fenced": true,
+          "deleted_item_eligible": false,
+          "deleted_context_hits": 0,
+          "deleted_reply_hits": 0,
+          "retained_context_hits": 1
+        },
+        "reply": {
+          "mode": "answer",
+          "addresses_request": true,
+          "claimed_effects": []
+        }
+      },
+      "bad": {
+        "text": {
+          "zh": "你喜欢「青瓷早餐桌」和安静的酒店。",
+          "en": "You prefer the ‘celadon breakfast table’ and a quiet hotel."
+        },
+        "state": {
+          "withdrawal_commits": 1,
+          "stop_use_fenced": true,
+          "deleted_item_eligible": false,
+          "deleted_context_hits": 1,
+          "deleted_reply_hits": 1,
+          "retained_context_hits": 1
+        },
+        "reply": {
+          "mode": "answer",
+          "addresses_request": true,
+          "claimed_effects": []
+        }
+      }
+    }
+  }
+}
