@@ -107,7 +107,8 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     from datetime import date
 
     def grounded_fields(turns, city, day):
-        return grounded_dated_fields(tuple(PlanningTurn(text, day) for text in turns), city)
+        grounded = grounded_dated_fields(tuple(PlanningTurn(text, day) for text in turns), city)
+        return grounded.fields, grounded.missing_fixed
 
     def planning_authority_complete(turns, city, day, *, has_fixed):
         return dated_authority_complete(tuple(PlanningTurn(text, day) for text in turns),
@@ -237,18 +238,53 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
         'For everyone, on the first day from 09:00 to 10:00.'), 'Beijing', today)
     assert not missing and filled['fixed_items'][0]['applies_to'] == ['party']
     first_day, reply_day = date(2026, 11, 9), date(2026, 11, 10)
-    midnight, missing = grounded_dated_fields((
+    midnight = grounded_dated_fields((
         PlanningTurn('Plan three days in Beijing for two people starting tomorrow. The hotel meetup is fixed.', first_day),
         PlanningTurn('For everyone, on the first day from 09:00 to 10:00.', reply_day),
     ), 'Beijing')
-    assert not missing and midnight['arrival']['date']['value'] == '2026-11-10'
-    assert midnight['departure']['date']['value'] == '2026-11-12'
-    assert midnight['fixed_items'][0]['start']['date']['value'] == '2026-11-10'
-    clarified, _ = grounded_dated_fields((
+    assert not midnight.missing_fixed and midnight.fields['arrival']['date']['value'] == '2026-11-10'
+    assert midnight.fields['departure']['date']['value'] == '2026-11-12'
+    assert midnight.fields['fixed_items'][0]['start']['date']['value'] == '2026-11-10'
+    clarified = grounded_dated_fields((
         PlanningTurn('Plan a three-day trip to Beijing.', first_day),
         PlanningTurn('Starting tomorrow.', reply_day),
     ), 'Beijing')
-    assert clarified['arrival']['date']['value'] == '2026-11-11'
+    assert clarified.fields['arrival']['date']['value'] == '2026-11-11'
+    date_reply = PlanningTurn('2026-11-11 to 2026-11-13 for 3 people.', reply_day)
+    party = grounded_dated_fields((PlanningTurn('Plan a trip to Beijing.', first_day), date_reply), 'Beijing')
+    assert party.fields['party_size']['value'] == 3 and not party.conflicting_party
+    conflict = grounded_dated_fields(
+        (PlanningTurn('Plan a trip to Beijing for 2 people.', first_day), date_reply), 'Beijing')
+    assert conflict.conflicting_party and 'party_size' not in conflict.fields
+    for tentative, certain in (
+        ('Starting tomorrow?', 'Starting tomorrow.'),
+        ('2026-11-11 to 2026-11-13?', '2026-11-11 to 2026-11-13.'),
+    ):
+        plan = ('Plan a three-day trip to Beijing.', tentative)
+        assert not planning_authority_complete(plan, 'Beijing', today, has_fixed=False)
+        assert planning_authority_complete((*plan, certain), 'Beijing', today, has_fixed=False)
+    assert not planning_authority_complete((
+        'Plan a three-day trip to Beijing.', 'Do those dates only work for Shanghai?', 'Starting tomorrow.',
+    ), 'Beijing', today, has_fixed=False)
+    for turns in (
+        ('Plan a 2-day trip to Beijing starting tomorrow for 3 days.',),
+        ('Plan a 2-day trip to Beijing from 2026-11-11 to 2026-11-13.',),
+        ('Plan a 2-day trip to Beijing.', 'Starting tomorrow for 3 days.'),
+    ):
+        disputed, _ = grounded_fields(turns, 'Beijing', today)
+        assert disputed['arrival']['date']['state'] == 'missing'
+        assert disputed['departure']['date']['state'] == 'missing'
+    consistent, _ = grounded_fields(('Plan a 3-day trip to Beijing from 2026-11-11 to 2026-11-13.',), 'Beijing', today)
+    assert consistent['departure']['date']['value'] == '2026-11-13'
+    fixed_prefix = ('Plan a trip to Beijing from 2026-11-11 to 2026-11-13 for 2 people. '
+                    'The hotel meetup from 9 to 10 a.m. on the first day is fixed.')
+    other_time = 'For everyone, on the first day from 11:00 to 12:00.'
+    for turns in ((fixed_prefix + ' ' + other_time,), (fixed_prefix, other_time)):
+        disputed, missing = grounded_fields(turns, 'Beijing', today)
+        assert missing and 'fixed_items' not in disputed
+    agreed, missing = grounded_fields(
+        (fixed_prefix + ' For everyone, on the first day from 09:00 to 10:00.',), 'Beijing', today)
+    assert not missing and agreed['fixed_items'][0]['start']['time']['value'] == '09:00'
     dated, missing = grounded_fields(('Plan a trip to Beijing from 2026-11-11 to 2026-11-12. The hotel meetup is fixed.',
         'For everyone, on 2026-11-12 from 09:00 to 10:00.'), 'Beijing', today)
     assert not missing and dated['fixed_items'][0]['start']['date']['value'] == '2026-11-12'
