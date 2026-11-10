@@ -564,6 +564,9 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
         return json.dumps(dict(version='LIO-message.2', message_id=mid, text=text, locale='en', **fields)).encode()
 
     new_plan = v2_original('lio-new-plan', request, new_conversation=True)
+    lookup = dict(message_id='lio-new-plan', input_sha256=hashlib.sha256(new_plan).hexdigest())
+    no_receipt = dict(version='LIO-message-lookup.2', receipt=None)
+    assert api.get(v2_send, params=lookup, headers=owner).json() == no_receipt
     assert api.post(messages, content=new_plan, headers=owner).status_code == 400
     assert api.post(v2_send, content=raw, headers=owner).status_code == 400
     with patch.object(demo_dialogue, '_receive', side_effect=lose_commit_ack):
@@ -571,6 +574,11 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     assert created.status_code == 200, created.text
     new_chat = created.json()['conversation_id']
     assert new_chat != conversation and created.json()['version'] == 'LIO-message-receipt.2'
+    assert api.get(v2_send, params=lookup, headers=owner).json() == dict(
+        version='LIO-message-lookup.2', receipt=created.json())
+    assert api.get(v2_send, params=lookup, headers=headers).json() == no_receipt
+    assert api.get(v2_send, params=dict(lookup, input_sha256='0'*64), headers=owner).status_code == 409
+    assert api.get(v2_send, params=dict(lookup, input_sha256='invalid'), headers=owner).status_code == 400
     assert api.post(v2_send, content=new_plan, headers=owner).json() == created.json()
     assert api.post(v2_send, content=new_plan + b' ', headers=owner).status_code == 409
     assert api.post(v2_send, content=v2_original('lio-new-invalid', request, new_conversation=True,

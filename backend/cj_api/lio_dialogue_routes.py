@@ -1,5 +1,6 @@
 """User-facing send and polling routes over the original dialogue service."""
 import json
+import re
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
@@ -146,6 +147,31 @@ def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, pre
     @app.post('/v2/lio/messages')
     async def send_conversation(request: Request):
         return await send(request, LIO_VERSION_V2, 'LIO-message-receipt.2')
+
+    @app.get('/v2/lio/messages')
+    async def read_original_receipt(request: Request):
+        token = _token(request)
+        if token is None:
+            return _failure(401)
+        try:
+            params = _query(request, ('message_id', 'input_sha256'))
+            original_id = message_id(params['message_id'])
+            digest = params['input_sha256']
+            if re.fullmatch(r'[0-9a-f]{64}', digest) is None:
+                raise InvalidInput('invalid original message digest')
+        except (ValueError, UnicodeError):
+            return _failure(400)
+        try:
+            receipt = await run_in_threadpool(boundary.query_lio, token, original_id)
+        except Exception as exc:
+            return _failure(message_failure(request, exc, False).status_code)
+        value = None
+        if receipt is not None:
+            if receipt.input_sha256 != digest:
+                return _failure(409)
+            value = dict(version='LIO-message-receipt.2', message_id=receipt.message_id,
+                         conversation_id=receipt.conversation_id)
+        return _json(dict(version='LIO-message-lookup.2', receipt=value))
 
     @app.get('/v1/lio/timeline')
     async def timeline_default(request: Request):

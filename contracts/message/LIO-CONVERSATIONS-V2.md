@@ -16,7 +16,9 @@ The first accepted message creates the new conversation and returns its ID in th
 {"version":"LIO-message-receipt.2","message_id":"first-new-question","conversation_id":"lio-dialogue-12c1b3c6601251fa7ee290de44eea521"}
 ```
 
-Retry a lost send with the same message ID and exact bytes. The ID is unique for the signed owner across conversations and versions. Different bytes for an accepted ID return 409. Replay adds no question or provider call. Sending both selection fields, sending `new_conversation: false`, using a foreign or unrecognized conversation ID, or submitting a version to the wrong endpoint returns 400. The existing owner admission, revocation, and daily question limit apply.
+After a lost response, read the original without a conversation ID. Use `GET /v2/lio/messages?message_id=…&input_sha256=…` with the lowercase SHA-256 of the exact request bytes. It returns `{"version":"LIO-message-lookup.2","receipt":null}` when no matching owner receipt is visible, or the original `LIO-message-receipt.2` in `receipt`. A different digest for an accepted owner message returns 409. A foreign message ID has no owner receipt. A null receipt does not settle a send whose result is still uncertain.
+
+If a send is retried, use the same message ID and exact bytes. The ID is unique for the signed owner across conversations and versions. Different bytes for an accepted ID return 409. An original receipt read and an accepted send replay add no question or provider call. Sending both selection fields, sending `new_conversation: false`, using a foreign or unrecognized conversation ID, or submitting a version to the wrong endpoint returns 400. The existing owner admission, revocation, and daily question limit apply.
 
 ## Read and undo
 
