@@ -120,6 +120,22 @@ def demo_periods(context, now):
     raise ValueError('active HK Demo Meter period required')
 
 
+def beta_subjects():
+    subjects=json.loads(os.environ['CJ_BETA_SUBJECTS_JSON'],object_pairs_hook=reject_duplicates(ValueError,'duplicate_beta_subject_field'))
+    if (type(subjects) is not list or not subjects
+            or any(type(s) is not str or re.fullmatch('m4-synthetic-[a-z0-9-]{1,80}',s) is None for s in subjects)
+            or len(set(subjects))!=len(subjects)):
+        raise ValueError('explicit_unique_beta_synthetic_subjects_required')
+    demo=json.loads(os.environ.get(DEMO_SUBJECTS,'[]'))
+    if (type(demo) is not list or len(demo)>10
+            or any(type(s) is not str or re.fullmatch(r'm4-synthetic-demo-[a-z0-9]{12}',s) is None for s in demo)
+            or len(set(demo))!=len(demo)
+            or set(demo)!={s for s in subjects if s.startswith('m4-synthetic-demo-')}
+            or demo and not local_database_target()):
+        raise ValueError('explicit HK local demo invitation subjects required')
+    return subjects,frozenset(demo)
+
+
 @dataclass(repr=False)
 class Runtime:
     auth:Path
@@ -141,19 +157,7 @@ class Runtime:
     def load(cls,root,*,worker=False):
         authorization();root=Path(root)
         root.mkdir(mode=0o700,parents=True,exist_ok=True)
-        subjects=json.loads(os.environ['CJ_BETA_SUBJECTS_JSON'],object_pairs_hook=reject_duplicates(ValueError,'duplicate_beta_subject_field'))
-        if (type(subjects) is not list or not subjects
-                or any(type(s) is not str or re.fullmatch('m4-synthetic-[a-z0-9-]{1,80}',s) is None for s in subjects)
-                or len(set(subjects))!=len(subjects)):
-            raise ValueError('explicit_unique_beta_synthetic_subjects_required')
-        demo=json.loads(os.environ.get(DEMO_SUBJECTS,'[]'))
-        if (type(demo) is not list or len(demo)>10
-                or any(type(s) is not str or re.fullmatch(r'm4-synthetic-demo-[a-z0-9]{12}',s) is None for s in demo)
-                or len(set(demo))!=len(demo)
-                or set(demo)!={s for s in subjects if s.startswith('m4-synthetic-demo-')}
-                or demo and not local_database_target()):
-            raise ValueError('explicit HK local demo invitation subjects required')
-        demo_subjects=frozenset(demo)
+        subjects,demo_subjects=beta_subjects()
         assembly_subjects=frozenset()
         if ASSEMBLY_SUBJECTS in os.environ:
             selected=json.loads(os.environ[ASSEMBLY_SUBJECTS])
