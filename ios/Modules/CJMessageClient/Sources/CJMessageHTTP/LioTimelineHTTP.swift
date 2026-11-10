@@ -50,12 +50,13 @@ public final class LioTimelineHTTP {
         return .accepted(conversationID: try original.confirm(bytes))
     }
 
-    public func timeline(conversationID: String? = nil, before: String? = nil) async throws -> LioTimelineWire.Page {
+    public func timeline(conversationID: String? = nil, before: String? = nil,
+                         version: LioTimelineWire.Version = .v1) async throws -> LioTimelineWire.Page {
         let token = try await bearer()
-        let (response, body) = try await transport.readLio(conversationID: conversationID, before: before, bearer: token)
+        let (response, body) = try await transport.readLio(conversationID: conversationID, before: before, bearer: token, version: version)
         guard response.status.code == 200 else { throw MessageHTTPFailure.invalidResponse }
         let bytes = try await json(response, body, limit: 4_500_000)
-        let page = try LioTimelineWire.decodePage(bytes, for: conversationID)
+        let page = try LioTimelineWire.decodePage(bytes, for: conversationID, version: version)
         if let before, page.messages.contains(where: { $0.id.utf8.elementsEqual(before.utf8) }) {
             throw MessageHTTPFailure.invalidResponse
         }

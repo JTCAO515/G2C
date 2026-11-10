@@ -4,19 +4,19 @@ import Foundation
 /// grant a network route or a write capability.
 public enum LioTimelineWire {
     public enum Locale: String, Sendable { case english = "en", chinese = "zh" }
+    public enum Version: Int, Sendable { case v1 = 1, v2 = 2 }
+    public enum V2Destination: Sendable {
+        case defaultChat, newChat, existing(String)
+    }
 
     public struct Send: Sendable {
         public let messageID: String
         public let conversationID: String?
         public let originalUTF8: Data
+        let version: Version
 
         public init(messageID: String, text: String, locale: Locale, conversationID: String? = nil) throws {
-            guard LioTimelineWire.validMessageID(messageID),
-                  !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-                  !text.utf8.contains(0), text.utf8.count <= 12_000,
-                  conversationID.map(LioTimelineWire.validConversationID) ?? true else {
-                throw MessageHTTPFailure.invalidConfiguration
-            }
+            try Self.validate(messageID, text, conversationID)
             var value = ["version": "LIO-message.1", "message_id": messageID,
                          "text": text, "locale": locale.rawValue]
             if let conversationID { value["conversation_id"] = conversationID }
@@ -25,6 +25,48 @@ public enum LioTimelineWire {
             self.messageID = messageID
             self.conversationID = conversationID
             originalUTF8 = bytes
+            version = .v1
+        }
+
+        public init(messageID: String, text: String, locale: Locale, destination: V2Destination) throws {
+            let conversationID: String?
+            let newConversation: Bool?
+            switch destination {
+            case .defaultChat: (conversationID, newConversation) = (nil, nil)
+            case .newChat: (conversationID, newConversation) = (nil, true)
+            case .existing(let id): (conversationID, newConversation) = (id, nil)
+            }
+            try Self.validate(messageID, text, conversationID)
+            let bytes = try JSONEncoder().encode(V2Question(messageID: messageID, text: text, locale: locale.rawValue,
+                                                            conversationID: conversationID, newConversation: newConversation))
+            guard bytes.count <= 16_384 else { throw MessageHTTPFailure.invalidConfiguration }
+            self.messageID = messageID
+            self.conversationID = conversationID
+            originalUTF8 = bytes
+            version = .v2
+        }
+
+        private static func validate(_ messageID: String, _ text: String, _ conversationID: String?) throws {
+            guard LioTimelineWire.validMessageID(messageID),
+                  !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                  !text.utf8.contains(0), text.utf8.count <= 12_000,
+                  conversationID.map(LioTimelineWire.validConversationID) ?? true else {
+                throw MessageHTTPFailure.invalidConfiguration
+            }
+        }
+
+        private struct V2Question: Encodable {
+            let version = "LIO-message.2"
+            let messageID: String
+            let text: String
+            let locale: String
+            let conversationID: String?
+            let newConversation: Bool?
+
+            enum CodingKeys: String, CodingKey {
+                case version, messageID = "message_id", text, locale
+                case conversationID = "conversation_id", newConversation = "new_conversation"
+            }
         }
 
         /// A transport may reuse originalUTF8 for an explicitly authorized same
@@ -34,7 +76,7 @@ public enum LioTimelineWire {
             guard response.count <= 65_536 else { throw MessageHTTPFailure.invalidResponse }
             try validateUnambiguousJSON(response)
             let reply = try JSONDecoder().decode(Acceptance.self, from: response)
-            guard reply.version == "LIO-message-receipt.1",
+            guard reply.version == "LIO-message-receipt.\(version.rawValue)",
                   reply.messageID.utf8.elementsEqual(messageID.utf8),
                   LioTimelineWire.validConversationID(reply.conversationID),
                   conversationID.map({ $0 == reply.conversationID }) ?? true else {
@@ -105,11 +147,12 @@ public enum LioTimelineWire {
         public let nextBefore: String?
     }
 
-    public static func decodePage(_ data: Data, for expectedConversationID: String? = nil) throws -> Page {
+    public static func decodePage(_ data: Data, for expectedConversationID: String? = nil,
+                                  version: Version = .v1) throws -> Page {
         guard data.count <= 4_500_000 else { throw MessageHTTPFailure.invalidResponse }
         try validateUnambiguousJSON(data)
         let page = try JSONDecoder().decode(Snapshot.self, from: data)
-        guard page.version == "LIO-timeline.1", page.messages.count <= 20,
+        guard page.version == "LIO-timeline.\(version.rawValue)", page.messages.count <= 20,
               page.conversationID.map(validConversationID) ?? (page.messages.isEmpty && page.nextBefore == nil),
               expectedConversationID.map({ $0 == page.conversationID }) ?? true,
               page.nextBefore.map({ cursor in

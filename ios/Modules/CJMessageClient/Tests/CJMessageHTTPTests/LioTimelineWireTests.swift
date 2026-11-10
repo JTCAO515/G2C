@@ -49,6 +49,39 @@ struct LioTimelineWireTests {
         }
     }
 
+    @Test func v2SelectsNewExistingOrDefaultWithoutMixingDestinations() throws {
+        let new = try LioTimelineWire.Send(messageID: "first", text: "Hello", locale: .english, destination: .newChat)
+        let fields = try #require(JSONSerialization.jsonObject(with: new.originalUTF8) as? [String: Any])
+        #expect(fields["version"] as? String == "LIO-message.2")
+        #expect(fields["new_conversation"] as? Bool == true)
+        #expect(fields["conversation_id"] == nil)
+        let existing = try LioTimelineWire.Send(messageID: "next", text: "Hello", locale: .english, destination: .existing(conversation))
+        let scoped = try #require(JSONSerialization.jsonObject(with: existing.originalUTF8) as? [String: Any])
+        #expect(scoped["conversation_id"] as? String == conversation && scoped["new_conversation"] == nil)
+        let fallback = try LioTimelineWire.Send(messageID: "default", text: "Hello", locale: .english, destination: .defaultChat)
+        let defaults = try #require(JSONSerialization.jsonObject(with: fallback.originalUTF8) as? [String: Any])
+        #expect(defaults["conversation_id"] == nil && defaults["new_conversation"] == nil)
+
+        let receipt = Data("""
+            {"version":"LIO-message-receipt.2","message_id":"first","conversation_id":"\(conversation)"}
+            """.utf8)
+        #expect(try new.confirm(receipt) == conversation)
+        #expect(throws: MessageHTTPFailure.self) { try existing.confirm(receipt) }
+        let legacy = try LioTimelineWire.Send(messageID: "first", text: "Hello", locale: .english)
+        #expect(throws: MessageHTTPFailure.self) { try legacy.confirm(receipt) }
+    }
+
+    @Test func v2TimelineRequiresTheExpectedVersionAndConversation() throws {
+        let data = Data("""
+            {"version":"LIO-timeline.2","conversation_id":"\(conversation)","messages":[],"next_before":null}
+            """.utf8)
+        #expect(try LioTimelineWire.decodePage(data, for: conversation, version: .v2).conversationID == conversation)
+        #expect(throws: MessageHTTPFailure.self) { try LioTimelineWire.decodePage(data, for: conversation) }
+        #expect(throws: MessageHTTPFailure.self) {
+            try LioTimelineWire.decodePage(data, for: "lio-dialogue-00000000000000000000000000000000", version: .v2)
+        }
+    }
+
     private func page(_ rows: String) -> Data {
         Data("""
             {"version":"LIO-timeline.1","conversation_id":"\(conversation)","messages":[\(rows)],"next_before":null}

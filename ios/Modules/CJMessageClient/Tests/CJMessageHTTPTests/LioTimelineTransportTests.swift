@@ -41,6 +41,25 @@ struct LioTimelineTransportTests {
         #expect(await exit.calls.isEmpty)
     }
 
+    @Test func v2UsesOnlyTheSignedConversationRoutes() async throws {
+        let endpoint = try endpoint()
+        let exit = LioExit()
+        let transport = try NoRedirectTransport(interceptedTransport: exit, messageEndpoint: endpoint,
+                                                validateMessage: {}, lio: true)
+        let original = try LioTimelineWire.Send(messageID: "one", text: "你好", locale: .chinese, destination: .newChat)
+        let conversation = "lio-dialogue-0123456789abcdef0123456789abcdef"
+        await #expect(throws: MessageHTTPFailure.productionActivationUnavailable) {
+            _ = try await transport.send(HTTPRequest(method: .get, scheme: nil, authority: nil, path: "/v2/lio/timeline"),
+                                         body: nil, baseURL: endpoint.url, operationID: "readLioTimelineV2")
+        }
+        _ = try await transport.sendLio(original, bearer: "fixture")
+        _ = try await transport.readLio(conversationID: conversation, before: "one+a&b", bearer: "fixture", version: .v2)
+        let calls = await exit.calls
+        #expect(calls.map(\.method) == [.post, .get])
+        #expect(calls.map(\.path) == ["/v2/lio/messages", "/v2/lio/timeline?conversation_id=\(conversation)&before=one%2Ba%26b"])
+        #expect(calls.map(\.body) == [original.originalUTF8, nil])
+    }
+
     @Test func tripHistoryAndUndoUseOnlyTheirSignedRoutes() async throws {
         let endpoint = try endpoint()
         let exit = LioExit()

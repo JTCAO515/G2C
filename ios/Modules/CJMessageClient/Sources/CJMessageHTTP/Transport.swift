@@ -188,16 +188,19 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
 
     func sendLio(_ original: LioTimelineWire.Send, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
         guard let messages, messages.wire == .lio else { throw MessageHTTPFailure.productionActivationUnavailable }
-        var request = HTTPRequest(method: .post, scheme: nil, authority: nil, path: messages.wire.path)
+        let path = original.version == .v1 ? messages.wire.path : "/v2/lio/messages"
+        let operation = original.version == .v1 ? messages.wire.operation : "sendLioMessageV2"
+        var request = HTTPRequest(method: .post, scheme: nil, authority: nil, path: path)
         request.headerFields[.authorization] = "Bearer " + bearer
         request.headerFields[.contentType] = "application/octet-stream"
         request.headerFields[.accept] = "application/json"
         return try await sendLocalWrite(request, body: HTTPBody(original.originalUTF8),
-            baseURL: messages.endpoint.url, operationID: messages.wire.operation,
+            baseURL: messages.endpoint.url, operationID: operation,
             capability: messages.boundary, messageWire: nil)
     }
 
-    func readLio(conversationID: String?, before: String?, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
+    func readLio(conversationID: String?, before: String?, bearer: String,
+                 version: LioTimelineWire.Version = .v1) async throws -> (HTTPResponse, HTTPBody?) {
         var query: [URLQueryItem] = []
         if let conversationID {
             guard LioTimelineWire.validConversationID(conversationID) else { throw MessageHTTPFailure.invalidConfiguration }
@@ -207,7 +210,8 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
             guard LioTimelineWire.validMessageID(before) else { throw MessageHTTPFailure.invalidConfiguration }
             query.append(URLQueryItem(name: "before", value: before))
         }
-        return try await lioRead(path: "/v1/lio/timeline", query: query, operation: "readLioTimelineV1", bearer: bearer)
+        return try await lioRead(path: "/v\(version.rawValue)/lio/timeline", query: query,
+                                 operation: "readLioTimelineV\(version.rawValue)", bearer: bearer)
     }
 
     func readLioTrip(before: String?, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
