@@ -89,6 +89,7 @@ private actor JourneyMemoryBackend: ClientTransport {
         var responseVersion = "MEMORY-result.2"
         switch operationID {
         case "listTypedMemories":
+            try Task.checkCancellation()
             let ids = [otherID, selectedID].filter { id in
                 parameter("after").map { $0.utf8.lexicographicallyPrecedes(id.utf8) } ?? true
             }

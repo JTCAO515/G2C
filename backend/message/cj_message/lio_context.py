@@ -1,5 +1,6 @@
 """Trusted Lio origin metadata and user-facing answer prompt."""
 from dataclasses import dataclass
+from datetime import date
 import json
 import re
 
@@ -51,20 +52,33 @@ _INTERNAL_ANSWER = re.compile(
     r'会话上下文|原运行|规划候选|消息投递|原回执'
 )
 _UNKNOWN_LABEL = re.compile(r'(?<![A-Za-z0-9_])UNKNOWN(?![A-Za-z0-9_])')
+_TECHNICAL_ADDRESS = re.compile(
+    r'(?:https?://)?(?:restapi\.amap\.com|dashscope(?:-intl)?\.aliyuncs\.com)'
+    r'(?:/[^\s，。；！、）】<>\"\'\)\]]*)?', re.I)
+
 
 
 def display_answer(text, locale):
     if _INTERNAL_ANSWER.search(text):
         return None
-    return _UNKNOWN_LABEL.sub('尚未核实' if locale == 'zh' else 'not yet verified', text)
+    chinese = locale == 'zh'
+    text = _TECHNICAL_ADDRESS.sub('服务方' if chinese else 'the service provider', text)
+    text = _UNKNOWN_LABEL.sub('暂未确认' if chinese else 'not yet verified', text)
+    return text.replace('查询', '查看').replace('核实', '确认') if chinese else text
 
 
-def locale_for(database, binding):
+@dataclass(frozen=True)
+class LioOriginal:
+    locale: str
+    question_day: date | None
+
+
+def original_for(database, binding):
     with database.connect(binding.scope) as connection:
         row = connection.execute(
-            'SELECT demo_dialogue_locale FROM cj_message_receipt WHERE scope=%s AND '
+            'SELECT demo_dialogue_locale,demo_question_day FROM cj_message_receipt WHERE scope=%s AND '
             'conversation_id=%s AND generation=%s AND message_id=%s AND run_id=%s AND '
             'demo_dialogue_protocol=%s',
             (binding.scope, binding.conversation_id, binding.generation, binding.message_id,
              binding.run_id, LIO_VERSION)).fetchone()
-    return row[0] if row is not None else None
+    return LioOriginal(*row) if row is not None else None

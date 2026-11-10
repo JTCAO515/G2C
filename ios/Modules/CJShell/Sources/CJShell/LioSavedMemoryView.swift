@@ -17,6 +17,7 @@ public struct LioSavedMemoryView: View {
     }
 
     public var body: some View {
+        let listSurface = path.isEmpty ? surface : nil
         NavigationStack(path: $path) {
             List {
                 switch host.items {
@@ -68,10 +69,12 @@ public struct LioSavedMemoryView: View {
         .onChange(of: path) { _, newPath in
             if newPath.isEmpty { reload += 1 }
         }
-        .task(id: reload) {
-            guard path.isEmpty, let surface else { return }
-            await host.loadItems(surface: surface)
-            if deletion == nil, path.isEmpty, let model = host.erasurePresentation, model.original == nil,
+        // Use the same snapshot to identify and start the task. The initial
+        // task must not pick up the surface created by onAppear and race its replacement.
+        .task(id: listSurface.map { _ in reload }) {
+            guard let listSurface, !Task.isCancelled else { return }
+            await host.loadItems(surface: listSurface)
+            if !Task.isCancelled, deletion == nil, path.isEmpty, let model = host.erasurePresentation, model.original == nil,
                let work = model.prepareOriginals() {
                 await model.perform(work)
             }
