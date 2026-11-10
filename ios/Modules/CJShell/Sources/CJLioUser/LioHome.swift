@@ -19,6 +19,7 @@ public struct LioHome<MenuContent: View>: View {
     @State private var source: LioSource?
     @State private var followsAnswer = true
     @State private var tab = Tab.chat
+    @State private var tripPath: [Data] = []
     @State private var memoryBusy = false
     @State private var memoryPending = false
     @State private var memoryNotice: String?
@@ -71,7 +72,7 @@ public struct LioHome<MenuContent: View>: View {
             LioTripsView(itineraries: conversation.itineraries, language: language, library: tripLibrary,
                          tripPlan: tripPlan, currentPlan: tripPlan?.current(for: tripCard),
                          canUndo: canObserve && tripPlan?.requestedCard == tripCard,
-                         recordedMap: recordedMap) { tab = .chat }
+                         recordedMap: recordedMap, path: $tripPath) { tab = .chat }
                 .tabItem { Label(language.text("Trips", "行程"), systemImage: "suitcase") }
                 .tag(Tab.trips)
             if let savedMemory {
@@ -402,6 +403,7 @@ public struct LioHome<MenuContent: View>: View {
                 let isLatest = card == latestTripCard
                 let current = isLatest ? tripPlan?.current(in: card) : nil
                 LioItineraryCard(itinerary: current ?? itinerary, language: language) {
+                    if tripLibrary != nil { tripPath = [Data(itinerary.id.utf8)] }
                     tab = .trips
                 } actions: {
                     if isLatest, let tripPlan {
