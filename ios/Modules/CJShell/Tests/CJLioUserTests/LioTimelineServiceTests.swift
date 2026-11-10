@@ -65,7 +65,8 @@ struct LioTimelineServiceTests {
         let question = try #require(model.pending)
         await model.receive(question)
 
-        #expect(model.turns.last?.status == .failed(.unavailable))
+        #expect(model.turns.last?.status == .failed(.serviceLimit))
+        #expect(model.turns.last?.hasTimelineResult == true)
         model.resend(question.id)
         model.askAgain(question.id)
         #expect(model.pending == nil)

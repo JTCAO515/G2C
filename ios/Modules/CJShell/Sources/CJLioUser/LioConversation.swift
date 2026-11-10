@@ -35,6 +35,7 @@ enum LioFailure: Equatable, Sendable {
     /// The service rejected this question before accepting it.
     case invalidInput
     case dailyLimit
+    case serviceLimit
     /// The service confirmed that this question finished without an answer.
     case unfinished
     /// Delivery or the result is uncertain. A read can resolve it; no new write.
@@ -87,7 +88,7 @@ struct LioTurn: Identifiable {
     var hasTimelineResult: Bool {
         guard fromTimeline else { return false }
         return switch status {
-        case .finished, .failed(.dailyLimit), .failed(.unavailable): true
+        case .finished, .failed(.dailyLimit), .failed(.serviceLimit), .failed(.unavailable): true
         default: false
         }
     }
