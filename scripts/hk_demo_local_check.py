@@ -168,6 +168,10 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
         (('帮我规划从明天开始的北京三天行程，但明天是上海的出发日。',), '北京'),
         (('Plan a three-day trip to Beijing.', 'Starting tomorrow?'), 'Beijing'),
         (('Plan a Beijing itinerary.', 'Travel from 2026-11-11 to 2026-11-12?'), 'Beijing'),
+        (('Plan a trip to Beijing starting tomorrow for three days. Those dates are for Shanghai only.',), 'Beijing'),
+        (('Plan a trip to Beijing from 2026-11-11 to 2026-11-12. Those dates apply only to Shanghai.',), 'Beijing'),
+        (('帮我规划从明天开始的北京三天行程。明天是上海的出发日。',), '北京'),
+        (('Plan a three-day trip to Beijing. Those dates are for Shanghai only.', 'Starting tomorrow.'), 'Beijing'),
     ):
         tentative, _ = grounded_fields(turns, city, today)
         assert tentative['arrival']['date']['state'] == 'missing', turns
@@ -421,8 +425,8 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     assert worker.process() == []
     withdrawals = ('Do not save it.', "Please don't save it yet.", 'Show me a draft without saving.',
                    "Please don't save this itinerary to my account.", 'I do not want this itinerary saved.',
-                   'Can you show me before saving?', 'Cancel it.', 'Please leave it as a draft.',
-                   '请不要把行程保存到我的账户。')
+                   'Can you show me before saving?', 'Cancel it.', 'Actually, cancel it.',
+                   'Please leave it as a draft.', '取消吧。', '请不要把行程保存到我的账户。')
     for i, withdrawal in enumerate(withdrawals):
         assert api.post(messages, headers=owner, content=original(
             f'lio-withdrawal-{i}', 'Plan a trip to Beijing from 2026-12-01 to 2026-12-03. ' + withdrawal, 'en')).status_code == 200
