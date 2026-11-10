@@ -3,6 +3,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from hashlib import sha256
 import json
+import logging
+import re
 from zoneinfo import ZoneInfo
 
 from psycopg import Error as DatabaseError
@@ -22,6 +24,8 @@ from .lio_planning_grounding import (PLAN_REQUEST, PlanningTurn, grounded_fields
 
 ASK_MORE = 'lio_planning_needs_details'
 MAX_CLARIFICATIONS = 4
+BEIJING = re.compile(r'北京|\bBeijing\b', re.I)
+_LOGGER = logging.getLogger(__name__)
 SYSTEM = (
     'Extract only information provided by the traveler for this trip. Return JSON with exactly '
     'city (an exact substring of the user text or null), continues_trip (boolean), and extraction. '
@@ -65,8 +69,10 @@ def register(worker, binding, state, details):
         current = worker.runs.snapshot(binding)
         if BOUND_EFFECT in current.effects and current.status == 'running':
             return current
+        _LOGGER.warning('lio_planning_registration_unknown run_id=%s', binding.run_id)
         raise ProviderUnknown('original Lio planning registration unavailable') from exc
     except DatabaseError as exc:
+        _LOGGER.warning('lio_planning_registration_unavailable run_id=%s sqlstate=%s', binding.run_id, exc.sqlstate)
         raise ProviderUnknown('original Lio planning registration unavailable') from exc
 
 
@@ -86,7 +92,9 @@ class LioPlanning:
             state = worker._event(binding, state, 'text_delta', answer)
             return worker._event(binding, state, 'completed')
         turns, references = inputs
-        details = extract(worker, binding, locale, turns, references)
+        details = explicit_plan(turns, references)
+        if details is None:
+            details = extract(worker, binding, locale, turns, references)
         if details is None:
             return None
         if details.clarification is not None:
@@ -161,6 +169,22 @@ def planning_texts(database, binding, current):
     return (*reversed(turns), current), tuple(reversed(references))
 
 
+def explicit_plan(turns, references):
+    """Use only a complete and unambiguous plan grounded in the original turns."""
+    texts = tuple(turn.text for turn in turns)
+    city = next((match[0] for text in reversed(texts) for match in BEIJING.finditer(text)
+                 if stated_city(texts, match[0])), None)
+    if city is None:
+        return None
+    grounded = grounded_fields(turns, city)
+    fields = grounded.fields
+    if (grounded.missing_fixed or grounded.conflicting_party
+            or any(fields[edge]['date']['state'] != 'known' for edge in ('arrival', 'departure'))
+            or not planning_authority_complete(turns, city, has_fixed=bool(fields.get('fixed_items')))):
+        return None
+    return PlanningDetails(city, fields, None, references)
+
+
 def extract(worker, binding, locale, turns, references):
     texts = tuple(turn.text for turn in turns)
     source = '\n'.join(texts)
@@ -170,6 +194,7 @@ def extract(worker, binding, locale, turns, references):
     raw = ''.join(worker._registered_stream(
         binding, 'model.lio_intake.0', 'model.answer', (messages, system, worker.provider),
         message_refs=references))
+    stage = 'envelope'
     try:
         envelope = decode(raw.encode('utf-8'))
         exact(envelope, ('city', 'continues_trip', 'extraction'))
@@ -177,16 +202,19 @@ def extract(worker, binding, locale, turns, references):
             raise InvalidInput('invalid planning classification')
         if not envelope['continues_trip']:
             return None
+        stage = 'destination'
         city = envelope['city']
         if city is not None and (type(city) is not str or not city.strip() or city not in source
                                  or len(city.encode('utf-8')) > 256):
             raise InvalidInput('unbound destination')
         if city is not None and not stated_city(texts, city):
             city = None
+        stage = 'needs_preview'
         value = json.loads(preview(encode(envelope['extraction']), message_id=binding.message_id,
                                    run_id=binding.run_id, source_text=source))
         grounded = grounded_fields(turns, city)
     except (InvalidInput, UnicodeError) as exc:
+        _LOGGER.warning('lio_planning_intake_invalid run_id=%s stage=%s', binding.run_id, stage)
         raise ProviderUnknown('Lio planning details unavailable') from exc
     questions = []
     fields = grounded.fields
