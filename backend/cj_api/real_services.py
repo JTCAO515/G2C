@@ -6,7 +6,7 @@ client modes and draft/confirmation semantics remain unchanged.
 import asyncio
 from contextlib import closing,contextmanager
 from dataclasses import dataclass
-from datetime import datetime,timezone
+from datetime import datetime,timedelta,timezone
 import hashlib
 import json
 import logging
@@ -16,6 +16,7 @@ import re
 from time import monotonic
 from types import MappingProxyType
 from urllib.parse import urlencode
+from zoneinfo import ZoneInfo
 
 from cj_agent.provider import (
     DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,M4_REAL_OUTPUT_TOKENS,
@@ -123,6 +124,59 @@ def canonical_tool(name,raw):
         query=dict(kind='RouteQuery',origin=endpoint('origin'),destination=endpoint('destination'),
                    mode=value['mode'],departure=dict(condition='at_query_time',at=None))
     return 'place',canonical(dict(version='PLACE-query.1',query=query))
+
+
+_ZH_RELATIVE_WEATHER = re.compile(
+    r'(?:请)?(?:问|查|看看)?(?:北京)?(?P<day>今天|明天)(?:北京|在北京|的北京)?(?:的)?天气(?:预报)?'
+    r'(?:怎么样|如何|好吗)?[？?，,。\s]*(?:请(?:给出|给我|附上)(?:来源(?:链接)?|出处|链接))?[？?。\s]*')
+_EN_WEATHER_OPENING = r"(?:please\s+)?(?:(?:what(?:['’]s| is)|how(?:['’]s| is)|check)\s+)?(?:the\s+)?"
+_EN_WEATHER_SOURCE = r'[?.\s]*(?:please\s+(?:include|give)\s+(?:the\s+)?source(?:\s+link)?[.\s]*)?'
+_EN_RELATIVE_WEATHER = re.compile(
+    _EN_WEATHER_OPENING +
+    r'(?:Beijing\s+)?(?:weather(?: forecast)?|forecast)\s+'
+    r'(?:(?:in|for)\s+Beijing\s+)?(?:for\s+)?(?P<day>today|tomorrow)'
+    r'(?:\s+in\s+Beijing)?' + _EN_WEATHER_SOURCE, re.I)
+_EN_POSSESSIVE_WEATHER = re.compile(
+    _EN_WEATHER_OPENING + r"(?P<day>today|tomorrow)['’]s\s+(?:weather(?: forecast)?|forecast)"
+    r'(?:\s+in\s+Beijing)?' + _EN_WEATHER_SOURCE, re.I)
+
+
+def _lio_weather_day(text, today):
+    text = text.strip()
+    match = (_ZH_RELATIVE_WEATHER.fullmatch(text) or _EN_RELATIVE_WEATHER.fullmatch(text)
+             or _EN_POSSESSIVE_WEATHER.fullmatch(text))
+    if match is None:
+        return None
+    return today + timedelta(days=1) if match['day'].casefold() in ('明天','tomorrow') else today
+
+
+def _weather_arguments_for_day(arguments, day):
+    # Reject malformed supplier arguments through the same decoder as the exit.
+    try:
+        fact_query(arguments, evaluated_at=datetime.now(timezone.utc))
+    except (ValueError, FactFailure):
+        raise ProviderUnknown('live model tool arguments unavailable') from None
+    data = json.loads(arguments)
+    data['dates'] = dict(start=day.isoformat(),end=day.isoformat())
+    return canonical(data)
+
+
+def _lio_tool_result(name, data, source, chinese, arguments):
+    """Project supplier evidence into the Lio model turn without machine provenance."""
+    if name == 'place':
+        return dict(query=data['query'], outcome=data['outcome'], places=data['places'],
+                    routes=data['routes'], source=source)
+    if name == 'weather':
+        if data['forecasts']:
+            note = '这是预报，实际天气可能变化。' if chinese else 'This is a forecast. Conditions may change.'
+        else:
+            note = ('目前没有所问日期的预报。' if chinese
+                    else 'A forecast is not available for the requested dates.')
+        report_time = data['provider_reporttime']
+        return dict(forecasts=data['forecasts'], report_time=report_time if report_time != 'UNKNOWN' else None,
+                    dates=json.loads(arguments)['dates'], note=note, source=source)
+    return dict(excerpts=data['excerpts'], source=source,
+                note='此页面没有确认个人资格。' if chinese else 'The page does not confirm individual eligibility.')
 
 
 def _receipt(metadata):
@@ -301,16 +355,22 @@ class RealTools:
             return invoke
         return InvocationInput(original,None,bind,_receipt(metadata))
 
-    def answer(self,worker,binding,messages,*,lio_locale=None):
+    def answer(self,worker,binding,messages,*,lio_locale=None,lio_question_day=None):
         self.services.require_scope(binding.scope)
         messages=list(messages);seen=set()
         system = TOOL_SYSTEM
+        weather_day = None
         if lio_locale is None:
             chinese=any('一'<=c<='鿿' for c in messages[-1]['content'])
         else:
             from cj_message.lio_context import LioCitation, LioToolProgress, answer_prompt
             chinese = lio_locale == 'zh'
             system += ' ' + answer_prompt(lio_locale)
+            today = lio_question_day or datetime.now(ZoneInfo('Asia/Shanghai')).date()
+            weather_day = _lio_weather_day(messages[-1]['content'], today)
+            tomorrow = today + timedelta(days=1)
+            system += f' In Beijing, today is {today.isoformat()} and tomorrow is {tomorrow.isoformat()}.'
+            system += ' Use Beijing calendar dates for weather. Only cite links supplied as public sources.'
         if binding.scope in self.buffered_streaming_scopes:profile=M4_NATIVE_TURN_BUFFERED
         elif binding.scope in self.streaming_scopes:profile=M4_NATIVE_TURN_STREAM
         else:profile=M4_NATIVE_TURN_PROFILE_V2
@@ -350,6 +410,8 @@ class RealTools:
                 key='tool.'+str(round_index)+'.'+str(index)
                 ref='op-'+hashlib.sha256((binding.run_id+'\0'+key).encode()).hexdigest()
                 name,arguments=canonical_tool(call.name,call.arguments)
+                if name == 'weather' and weather_day is not None:
+                    arguments = _weather_arguments_for_day(arguments, weather_day)
                 original_query=(name,arguments)
                 if original_query in seen:raise ProviderFailed('M4 original tool query already dispatched; no repeat')
                 seen.add(original_query)
@@ -376,6 +438,7 @@ class RealTools:
                     source = place_source['endpoint'] if place_source is not None else None
                 else:
                     source = data['source_url']
+                public_source = None
                 if source and lio_locale is None:
                     yield ('来源：' if chinese else 'Source: ')+source+'\n'
                 elif source:
@@ -393,8 +456,11 @@ class RealTools:
                             public_url = 'https://uri.amap.com/marker?' + urlencode({'position': point['raw']})
                     else:
                         observed_at = data['retrieved_at']
-                    yield LioCitation(key, title_zh if chinese else title_en, public_url, observed_at)
-                results.append(dict(index=index,name=call.name,tool=name,result=data))
+                    title = title_zh if chinese else title_en
+                    public_source = dict(title=title, url=public_url, observed_at=observed_at)
+                    yield LioCitation(key, title, public_url, observed_at)
+                model_result = data if lio_locale is None else _lio_tool_result(name, data, public_source, chinese, arguments)
+                results.append(dict(index=index,name=call.name,tool=name,result=model_result))
             if incremental:
                 for supplier_call,result in zip(assistant['tool_calls'],results,strict=True):
                     messages.append(dict(role='tool',tool_call_id=supplier_call['id'],
