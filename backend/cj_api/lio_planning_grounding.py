@@ -103,9 +103,26 @@ CLAUSE_BREAK = re.compile(r'[!。！；;\n]+|(?<=[?？])\s*|\.(?=\s+[A-Z])|，(?
 FIXED_REPLY = re.compile(r'^(?:全体|大家|本人|我参加|第[一二三四五六七八九十\d]+天|'
                          r'(?:for (?:everyone|our party|both of us)|on (?:the first day|\d{4}-))\b)', re.I)
 FIXED_PARTY_REPLY = re.compile(r'全体(?:参加)?|大家(?:参加)?|本人|我参加|for (?:everyone|our party|both of us)', re.I)
-FIXED_SUBSEQUENT_CLAUSE = re.compile(
-    r'\b(?:but|however|although|instead|unless|actually|though|yet)\b|不过|但是|但请|然而|反而|除非|改为|而是',
-    re.I)
+EN_FIXED_EVENT = (
+    r'(?:(?:the|my|our|a|an)\s+)?'
+    r'(?:(?:hotel|airport|train|flight|museum|restaurant|park|entry)\s+){0,3}'
+    r'(?:meetup|meeting|appointment|reservation|booking|transfer|visit|tickets?|flight|train|departure|check-in|museum)')
+EN_FIXED_DAY = r'(?:on\s+)?(?:the\s+first\s+day|@date)'
+EN_FIXED_TIME = r'(?:from\s+)?@time'
+EN_FIXED_LOCK = r'(?:is fixed|is booked|already booked|is already booked|is already set|cannot be changed)'
+EN_FIXED_DECLARATION = re.compile(
+    rf'{EN_FIXED_EVENT}\s+(?:(?:{EN_FIXED_TIME}\s+{EN_FIXED_DAY}|{EN_FIXED_DAY}\s+{EN_FIXED_TIME})\s+)?{EN_FIXED_LOCK}'
+    rf'|(?:we|i)\s+(?:have tickets? (?:for|to)|have (?:already |actually )?booked)\s+{EN_FIXED_EVENT}'
+    rf'\s+(?:{EN_FIXED_DAY}\s+{EN_FIXED_TIME}|{EN_FIXED_TIME}\s+{EN_FIXED_DAY})',re.I)
+EN_FIXED_DETAILS = re.compile(
+    rf'(?:for (?:everyone|our party|both of us)\s*[,，]\s*)?'
+    rf'(?:{EN_FIXED_DAY}\s+{EN_FIXED_TIME}|{EN_FIXED_TIME}\s+{EN_FIXED_DAY})',re.I)
+ZH_FIXED_DAY = r'(?:第[一二三四五六七八九十\d]+天|@date)'
+ZH_FIXED_DECLARATION = re.compile(
+    rf'(?:{ZH_FIXED_DAY}\s*@time\s*的?)?\s*'
+    r'(?:酒店集合|机场集合|车站集合|集合|预约|门票|酒店预订|会面|会议|航班|火车|接送)'
+    r'(?:已经定好|已定好|是固定安排|固定安排|已锁定|已经预订|已预订|已订|已买票|已经买票|已预约|已经预约|不可更改|不能改)')
+ZH_FIXED_DETAILS = re.compile(rf'(?:(?:全体|大家|本人|我参加)\s*[,，]\s*)?{ZH_FIXED_DAY}\s*@time')
 
 
 
@@ -311,17 +328,10 @@ def _day_span(turns, today, city):
 
 
 def _fixed_authority_clause(clause):
-    if FIXED_SUBSEQUENT_CLAUSE.search(clause):
-        return False
-    if FIXED_PARTY_REPLY.fullmatch(clause):
-        return True
-    statement = FIXED.search(clause)
-    if statement is not None and statement.end() == len(clause):
-        return True
-    if statement is not None or FIXED_REPLY.match(clause):
-        without_dates = re.sub(ISO, lambda match: ' ' * len(match[0]), clause)
-        return any(match.end() == len(without_dates) for match in RANGE.finditer(without_dates))
-    return False
+    normalized = ' '.join(RANGE.sub(' @time ', re.sub(ISO, ' @date ', clause)).split())
+    return any(pattern.fullmatch(normalized) for pattern in (
+        FIXED_PARTY_REPLY, EN_FIXED_DECLARATION, EN_FIXED_DETAILS, ZH_FIXED_DECLARATION, ZH_FIXED_DETAILS,
+    ))
 
 
 def planning_authority_complete(turns, city, today, *, has_fixed):
