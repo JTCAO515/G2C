@@ -9,7 +9,7 @@ _INTEREST_ZH = r'(?:博物馆|美术馆|艺术|建筑|历史|自然风景|城市
 
 
 def _forms(english, chinese, *, extra=''):
-    forms = (_EN + '(?:' + english + ')', _ZH + '(?:' + chinese + ')')
+    forms = (_EN + '(?P<en>' + english + ')', _ZH + '(?P<zh>' + chinese + ')')
     return re.compile('|'.join((*forms, extra) if extra else forms), re.IGNORECASE)
 
 
@@ -52,12 +52,21 @@ _FORMS = {
 PREFERENCE_SLOTS = frozenset(_FORMS)
 
 
-def supported_preference(entry):
-    """Accept a positive travel-preference form, with equally bounded evidence."""
+def _value(form, text):
+    text = text.strip().rstrip('.。!！')
+    match = form.fullmatch(text)
+    return (match['en'] or match['zh'] or match[0]).casefold() if match is not None else None
+
+
+def supported_preference(entry, original):
+    """Accept only a supported value stated in the complete original turn."""
     form = _FORMS.get(entry.slot)
     if entry.kind != 'preference' or form is None:
         return False
-    for value in (entry.text, *(evidence.quote for evidence in entry.evidence)):
-        if form.fullmatch(value.strip().rstrip('.。!！')) is None:
-            return False
-    return True
+    value = _value(form, entry.text)
+    if value is None or any(_value(form, evidence.quote) != value for evidence in entry.evidence):
+        return False
+    statements = [part.strip() for part in re.split(r'(?<=[.!。！])\s+|[。！]', original) if part.strip()]
+    return (any(_value(form, statement) == value for statement in statements)
+            and all(any(_value(allowed, statement) is not None for allowed in _FORMS.values())
+                    for statement in statements))

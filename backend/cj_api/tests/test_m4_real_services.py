@@ -578,6 +578,7 @@ class Boundaries(unittest.TestCase):
         self.assertEqual(display_answer('我记住了，你喜欢慢节奏旅行。', 'zh'),
                          '我了解了，你喜欢慢节奏旅行。')
         self.assertEqual(display_answer('You prefer a slow pace.', 'en'), 'You prefer a slow pace.')
+        self.assertEqual(display_answer('I saved time by walking.', 'en'), 'I saved time by walking.')
 
     def test_named_turn_answer_uses_the_existing_envelope_without_an_extra_call(self):
         reply={};receipt={}
@@ -880,15 +881,18 @@ class Boundaries(unittest.TestCase):
                 else:
                     evidence = json.loads(argument.messages[-1]['content'])['results'][0]['result']
                     assert '240-Hour' in evidence['excerpts'][0]['text']
-                    yield 'The current policy is 1'
-                    yield '44-hour visa-free transit.'
+                    yield 'You qualify automatically for 30 days or 1'
+                    yield '44 hours.'
 
         worker = Worker()
         worker.provider = provider
         for excerpts, expected in [
             ([dict(text='NIA home navigation')], 'could not verify'),
             ([dict(text='II. 240-Hour Visa-Free Transit Policy'),
+              dict(text='The policy applies to travelers from eligible countries.'),
               dict(text='Synthetic policy excerpt: stay up to 10 days.')], 'describes 240-hour'),
+            ([dict(text='II. 240-Hour Visa-Free Transit Policy'), dict(text='III. Other Entry Policy'),
+              dict(text='Different policy excerpt: stay up to 10 days.')], 'could not verify'),
         ]:
             with self.subTest(excerpts=excerpts):
                 worker.excerpts = excerpts
@@ -898,7 +902,17 @@ class Boundaries(unittest.TestCase):
                 self.assertEqual(citation.url, NOTICE_URL)
                 answer = ''.join(chunk for chunk in chunks if isinstance(chunk,str))
                 self.assertIn(expected,answer)
-                self.assertNotIn('144-hour',answer)
+                self.assertNotIn('automatically', answer)
+                self.assertNotIn('30 days', answer)
+                self.assertNotIn('144 hours', answer)
+
+    def test_lio_entry_policy_eligibility_followup_needs_current_evidence(self):
+        from cj_api.real_services import _lio_transit_request
+
+        history = [dict(role='user', content='How does visa-free transit work?'),
+                   dict(role='assistant', content='Check the official guidance.')]
+        self.assertTrue(_lio_transit_request([*history, dict(role='user', content='Does that apply to me?')]))
+        self.assertFalse(_lio_transit_request([*history, dict(role='user', content='What is the weather?')]))
 
     def test_complete_named_function_with_stop_keeps_the_original_receipt(self):
         marker='G2C_SYNTHETIC_D1_OK'

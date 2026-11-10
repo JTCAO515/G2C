@@ -40,7 +40,7 @@ def lio_candidates(database, boundary, subjects, configuration):
             raise Unavailable('Lio memory collection unavailable')
 
         def allowed(entry):
-            return entry.extent == 'long_term' and supported_preference(entry)
+            return entry.extent == 'long_term'
 
         # This channel produces candidates only. An explicit action is the sole
         # authority for promoting an item, even when the quote is verbatim.
@@ -48,7 +48,7 @@ def lio_candidates(database, boundary, subjects, configuration):
         return extraction, configuration.policy(principal.subject), lambda entry: (None, None)
 
     service = CollectionService(boundary, repository, collection)
-    return LioCandidates(service, subjects)
+    return LioCandidates(service, subjects, original_allows=supported_preference)
 
 
 class LioMemoryExtraction:

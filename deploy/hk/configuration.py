@@ -314,7 +314,7 @@ class Runtime:
                 editing_only=True,selected_subjects=planning)
             register_local_structured_read_routes(app,database=database,auth_dir=self.auth,
                 selected_subjects=planning)
-            register_assembly_erasure(app,database,self.auth,cleanup,planning)
+            register_assembly_erasure(app,database,self.auth,cleanup,planning | self.demo_subjects)
         if self.demo_subjects:
             from .demo_login import register_demo_login
             register_demo_login(app)

@@ -197,6 +197,8 @@ API 启动还必须读到该主体已激活的原 `message-travel.1` profile。
 暂停提交并确认无在途后，从 worker 文件移除该字段并重建 worker 可恢复原 5 分钟组装范围。
 Typed 保存、管理及既有 `/v1/memory-erasures` 不安装 V1 记忆写入。device-v4 使用同一认证身份，
 注销采用既有 cleanup 登录和原登记内容域，离线与客户端控制记录按原清理协议验收。
+此组装启用 cleanup 时，另允许现有 HK Lio Demo 名单通过同一签名入口删除各自的单条记忆。
+账号清理和 Trip 组装仍沿各自原名单。
 
 在原 A/C 无在途且 API、worker 暂停的维护窗口，用同版镜像执行
 `python -m deploy.hk.assembly_profiles bootstrap|insert|inspect <subject>`。

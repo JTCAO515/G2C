@@ -58,8 +58,9 @@ _TECHNICAL_ADDRESS = re.compile(
     r'(?:https?://)?(?:restapi\.amap\.com|dashscope(?:-intl)?\.aliyuncs\.com)'
     r'(?:/[^\s，。；！、）】<>\"\'\)\]]*)?', re.I)
 _MEMORY_CLAIM_EN = re.compile(
-    r"\bI(?: have|['’]ve) (?:noted(?: down)?|saved|remembered)\b", re.I)
-_MEMORY_CLAIM_ZH = re.compile(r'我(?:已经|已)?(?:记住了|记下了|保存了)(?:你的偏好)?')
+    r"\bI(?: have|['’]ve) (?:noted(?: down)?|(?:saved|remembered)(?= (?:your |this )?preference))\b"
+    r"|\bI(?: will|['’]ll) remember\b", re.I)
+_MEMORY_CLAIM_ZH = re.compile(r'(?:我(?:已经|已)?(?:为你)?(?:记住了|记下了|保存了)|(?:已经|已)为你记住)')
 
 
 def display_answer(text, locale):
