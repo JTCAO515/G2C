@@ -58,6 +58,20 @@ struct LioTimelineServiceTests {
         #expect(model.turns.first(where: { $0.id == first.id })?.status == .finished)
     }
 
+    @Test func timelineServiceLimitDoesNotClaimDailyCapOrAllowAnotherWrite() async throws {
+        let fixture = TimelineFixture(serviceLimit: true)
+        let model = LioConversation(service: service(fixture))
+        model.send("Where is the metro?", language: .english)
+        let question = try #require(model.pending)
+        await model.receive(question)
+
+        #expect(model.turns.last?.status == .failed(.unavailable))
+        model.resend(question.id)
+        model.askAgain(question.id)
+        #expect(model.pending == nil)
+        #expect(await fixture.sent.map(\.messageID) == [question.messageID])
+    }
+
     @Test func coldStartFollowsAnExistingAnswerWithoutSendingAnything() async throws {
         let fixture = TimelineFixture()
         let persisted = try LioTimelineWire.Send(messageID: "already-accepted", text: "Metro?", locale: .english)
@@ -217,15 +231,17 @@ private actor TimelineFixture {
     let conversationID = "lio-dialogue-0123456789abcdef0123456789abcdef"
     let loseResponse: Bool
     let firstNotSent: Bool
+    let serviceLimit: Bool
     private(set) var olderRequests: [String] = []
     private(set) var sent: [LioTimelineWire.Send] = []
     private var accepted: [LioTimelineWire.Send] = []
     private var readCount = 0
     private var readsUntilConnection: Int?
 
-    init(loseResponse: Bool = false, firstNotSent: Bool = false) {
+    init(loseResponse: Bool = false, firstNotSent: Bool = false, serviceLimit: Bool = false) {
         self.loseResponse = loseResponse
         self.firstNotSent = firstNotSent
+        self.serviceLimit = serviceLimit
     }
 
     func disconnect() { readsUntilConnection = .max }
@@ -256,10 +272,16 @@ private actor TimelineFixture {
         ]
         for send in accepted {
             let payload = try #require(JSONSerialization.jsonObject(with: send.originalUTF8) as? [String: String])
+            let text = try #require(payload["text"])
+            if serviceLimit {
+                rows.append(["message_id": send.messageID, "text": text, "answer": "",
+                             "status": "failed", "failure": "quota", "sources": []])
+                continue
+            }
             let done = readCount > 1 || send.messageID != accepted.last?.messageID
             rows.append([
                 "message_id": send.messageID,
-                "text": try #require(payload["text"]),
+                "text": text,
                 "answer": done ? "Take the metro." : "Take the ",
                 "status": done ? "completed" : "answering",
                 "activity": done ? NSNull() : "checking_travel_information",
