@@ -1,0 +1,305 @@
+{
+  "version": "LIO-national-cases.1",
+  "issue": 815,
+  "synthetic_only": true,
+  "public_acceptance_not_holdout": true,
+  "source_window_policy": "LIO-source-window.1",
+  "planned_n": 16,
+  "core_city_language_n": 12,
+  "ambiguity_city_language_n": 4,
+  "locales": [
+    "zh",
+    "en"
+  ],
+  "question_clock": "Freeze each accepted original message's Asia/Shanghai question_day. Resolve 'tomorrow' using the date-bearing original message, not the first turn or analysis clock; later city/day clarifications do not re-anchor an already supplied date.",
+  "common_flow": [
+    {
+      "step": "intake",
+      "expected": "Ask only the missing/ambiguous mandatory parameter before save; preserve stated city/days/dates and explicit unknowns. For complete input, plan without a redundant candidate-confirmation step."
+    },
+    {
+      "step": "plan-and-save",
+      "expected": "One new formal Trip version after complete source intake; correct confirmed city, date count/range, planned time ranges, fixed original meetup and truthful source/unknown labels."
+    },
+    {
+      "step": "named-afternoon-replacement",
+      "zh": "把第二天下午「{actual_item_name}」（{actual_time_range}）换成{replacement_query}，其他安排和酒店集合不变。",
+      "en": "Replace '{actual_item_name}' on the afternoon of day 2 ({actual_time_range}) with {replacement_query}; keep everything else and the hotel meetup unchanged.",
+      "selection_rule": "Read the actual full returned label/time of one unlocked day2-afternoon item. Use the first listed replacement query that is not the selected existing place; record the choice. Necessary POI disambiguation requires an explicit user answer, never a hidden first-result choice. A missing selectable afternoon is a recorded failure, not a modified input."
+    },
+    {
+      "step": "undo",
+      "zh": "撤销刚才的替换。",
+      "en": "Undo that last replacement.",
+      "expected": "Use the actual Lio undo entry bound to the current original version; append a new version restoring the full pre-edit content, keeping both historical versions."
+    }
+  ],
+  "cases": [
+    {
+      "id": "national-chengdu",
+      "group": "core-six",
+      "destination": {
+        "city_zh": "成都",
+        "city_en": "Chengdu",
+        "province_zh": "四川"
+      },
+      "days": 3,
+      "starts": "tomorrow_after_date_bearing_original_question_day",
+      "required_clarification": "start_date",
+      "variants": {
+        "zh": {
+          "turns": [
+            "去成都玩三天",
+            "从明天开始。 第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变；酒店名称和位置尚未确定。请给每天的上午、下午安排写出计划时间段，不要声称已有预约。"
+          ],
+          "replacement_queries": [
+            "杜甫草堂",
+            "成都博物馆"
+          ]
+        },
+        "en": {
+          "turns": [
+            "I want to spend three days in Chengdu.",
+            "Start tomorrow. On day 1 I have a fixed hotel meetup from 9 to 10 a.m.; keep it unchanged. The hotel name and location are not known yet. Include planned morning and afternoon time ranges each day, without claiming a booking."
+          ],
+          "replacement_queries": [
+            "Du Fu Thatched Cottage",
+            "Chengdu Museum"
+          ]
+        }
+      }
+    },
+    {
+      "id": "national-xian",
+      "group": "core-six",
+      "destination": {
+        "city_zh": "西安",
+        "city_en": "Xi'an",
+        "province_zh": "陕西"
+      },
+      "days": 4,
+      "starts": "tomorrow_after_date_bearing_original_question_day",
+      "required_clarification": null,
+      "variants": {
+        "zh": {
+          "turns": [
+            "想去西安逛4天，从明天开始，帮我安排一下。 第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变；酒店名称和位置尚未确定。请给每天的上午、下午安排写出计划时间段，不要声称已有预约。"
+          ],
+          "replacement_queries": [
+            "西安碑林博物馆",
+            "大雁塔"
+          ]
+        },
+        "en": {
+          "turns": [
+            "Plan 4 days in Xi'an from tomorrow. On day 1 I have a fixed hotel meetup from 9 to 10 a.m.; keep it unchanged. The hotel name and location are not known yet. Include planned morning and afternoon time ranges each day, without claiming a booking."
+          ],
+          "replacement_queries": [
+            "Xi'an Beilin Museum",
+            "Giant Wild Goose Pagoda"
+          ]
+        }
+      }
+    },
+    {
+      "id": "national-shanghai",
+      "group": "core-six",
+      "destination": {
+        "city_zh": "上海",
+        "city_en": "Shanghai",
+        "province_zh": "上海"
+      },
+      "days": 2,
+      "starts": "tomorrow_after_date_bearing_original_question_day",
+      "required_clarification": "duration",
+      "variants": {
+        "zh": {
+          "turns": [
+            "我明天去上海，帮我规划一下。",
+            "两天。 第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变；酒店名称和位置尚未确定。请给每天的上午、下午安排写出计划时间段，不要声称已有预约。"
+          ],
+          "replacement_queries": [
+            "豫园",
+            "上海博物馆"
+          ]
+        },
+        "en": {
+          "turns": [
+            "I am going to Shanghai tomorrow. Could you make an itinerary?",
+            "Two days. On day 1 I have a fixed hotel meetup from 9 to 10 a.m.; keep it unchanged. The hotel name and location are not known yet. Include planned morning and afternoon time ranges each day, without claiming a booking."
+          ],
+          "replacement_queries": [
+            "Yu Garden",
+            "Shanghai Museum"
+          ]
+        }
+      }
+    },
+    {
+      "id": "national-hangzhou",
+      "group": "core-six",
+      "destination": {
+        "city_zh": "杭州",
+        "city_en": "Hangzhou",
+        "province_zh": "浙江"
+      },
+      "days": 3,
+      "starts": "tomorrow_after_date_bearing_original_question_day",
+      "required_clarification": null,
+      "variants": {
+        "zh": {
+          "turns": [
+            "明天起在杭州待三天，给我排个行程吧。 第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变；酒店名称和位置尚未确定。请给每天的上午、下午安排写出计划时间段，不要声称已有预约。"
+          ],
+          "replacement_queries": [
+            "岳王庙",
+            "西溪国家湿地公园"
+          ]
+        },
+        "en": {
+          "turns": [
+            "Could you put together a three-day Hangzhou itinerary starting tomorrow? On day 1 I have a fixed hotel meetup from 9 to 10 a.m.; keep it unchanged. The hotel name and location are not known yet. Include planned morning and afternoon time ranges each day, without claiming a booking."
+          ],
+          "replacement_queries": [
+            "Yue Fei Temple",
+            "Xixi National Wetland Park"
+          ]
+        }
+      }
+    },
+    {
+      "id": "national-chongqing",
+      "group": "core-six",
+      "destination": {
+        "city_zh": "重庆",
+        "city_en": "Chongqing",
+        "province_zh": "重庆"
+      },
+      "days": 3,
+      "starts": "tomorrow_after_date_bearing_original_question_day",
+      "required_clarification": "city",
+      "variants": {
+        "zh": {
+          "turns": [
+            "帮我安排三天，从明天开始。",
+            "去重庆。 第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变；酒店名称和位置尚未确定。请给每天的上午、下午安排写出计划时间段，不要声称已有预约。"
+          ],
+          "replacement_queries": [
+            "重庆中国三峡博物馆",
+            "重庆动物园"
+          ]
+        },
+        "en": {
+          "turns": [
+            "Plan three days starting tomorrow.",
+            "Chongqing, China. On day 1 I have a fixed hotel meetup from 9 to 10 a.m.; keep it unchanged. The hotel name and location are not known yet. Include planned morning and afternoon time ranges each day, without claiming a booking."
+          ],
+          "replacement_queries": [
+            "Chongqing China Three Gorges Museum",
+            "Chongqing Zoo"
+          ]
+        }
+      }
+    },
+    {
+      "id": "national-shenzhen",
+      "group": "core-six",
+      "destination": {
+        "city_zh": "深圳",
+        "city_en": "Shenzhen",
+        "province_zh": "广东"
+      },
+      "days": 2,
+      "starts": "tomorrow_after_date_bearing_original_question_day",
+      "required_clarification": null,
+      "variants": {
+        "zh": {
+          "turns": [
+            "安排一个从明天开始的深圳两日游。 第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变；酒店名称和位置尚未确定。请给每天的上午、下午安排写出计划时间段，不要声称已有预约。"
+          ],
+          "replacement_queries": [
+            "深圳博物馆",
+            "莲花山公园"
+          ]
+        },
+        "en": {
+          "turns": [
+            "I would like a two-day itinerary in Shenzhen beginning tomorrow. On day 1 I have a fixed hotel meetup from 9 to 10 a.m.; keep it unchanged. The hotel name and location are not known yet. Include planned morning and afternoon time ranges each day, without claiming a booking."
+          ],
+          "replacement_queries": [
+            "Shenzhen Museum",
+            "Lianhuashan Park"
+          ]
+        }
+      }
+    },
+    {
+      "id": "national-taizhou-zhejiang",
+      "group": "city-ambiguity",
+      "destination": {
+        "city_zh": "台州",
+        "city_en": "Taizhou",
+        "province_zh": "浙江"
+      },
+      "days": 3,
+      "starts": "tomorrow_after_date_bearing_original_question_day",
+      "required_clarification": "administrative_ambiguity",
+      "variants": {
+        "zh": {
+          "turns": [
+            "从明天起去Taizhou玩三天，帮我安排。",
+            "我指浙江的台州市，不是江苏的泰州市。 第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变；酒店名称和位置尚未确定。请给每天的上午、下午安排写出计划时间段，不要声称已有预约。"
+          ],
+          "replacement_queries": [
+            "台州市博物馆",
+            "台州府城墙"
+          ]
+        },
+        "en": {
+          "turns": [
+            "Plan three days in Taizhou starting tomorrow.",
+            "I mean Taizhou in Zhejiang, China, not Taizhou in Jiangsu. On day 1 I have a fixed hotel meetup from 9 to 10 a.m.; keep it unchanged. The hotel name and location are not known yet. Include planned morning and afternoon time ranges each day, without claiming a booking."
+          ],
+          "replacement_queries": [
+            "Taizhou Museum in Zhejiang",
+            "Taizhou City Wall in Linhai, Zhejiang"
+          ]
+        }
+      }
+    },
+    {
+      "id": "national-suzhou-anhui",
+      "group": "city-ambiguity",
+      "destination": {
+        "city_zh": "宿州",
+        "city_en": "Suzhou",
+        "province_zh": "安徽"
+      },
+      "days": 3,
+      "starts": "tomorrow_after_date_bearing_original_question_day",
+      "required_clarification": "administrative_ambiguity",
+      "variants": {
+        "zh": {
+          "turns": [
+            "我想去Suzhou玩三天，从明天开始。",
+            "我说的是安徽宿州，不是江苏苏州。 第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变；酒店名称和位置尚未确定。请给每天的上午、下午安排写出计划时间段，不要声称已有预约。"
+          ],
+          "replacement_queries": [
+            "宿州博物馆",
+            "宿州三角洲公园"
+          ]
+        },
+        "en": {
+          "turns": [
+            "Make a three-day Suzhou itinerary starting tomorrow.",
+            "I mean Suzhou in Anhui, China, not Suzhou in Jiangsu. On day 1 I have a fixed hotel meetup from 9 to 10 a.m.; keep it unchanged. The hotel name and location are not known yet. Include planned morning and afternoon time ranges each day, without claiming a booking."
+          ],
+          "replacement_queries": [
+            "the city museum in Suzhou, Anhui",
+            "Delta Park in Suzhou, Anhui"
+          ]
+        }
+      }
+    }
+  ]
+}
