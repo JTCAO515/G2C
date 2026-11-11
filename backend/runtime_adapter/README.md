@@ -114,6 +114,9 @@ caller/D仍负责独立真实反馈标注及原件来源，不准将最终题或
 身份/pins/原账ID；操作集合与受保护 inventory 精确一致，不能只交最后一次RUN或成功子集。
 还要复读相同原snapshot，来源/身份漂移即UNKNOWN。整个query受30秒读取界限约束。
 某一步缺失或坏原件仍继续读取其余已启动步骤，逐步保留UNKNOWN；返回前再次核读取资格。
+同一步先核受保护action/inventory及操作集合，再读取每个operation全部已有输入/输出、
+provider/Meter/fee原件。某一坏件不隐藏本operation其余回执或后续operation，
+`operation_checks`逐项保留UNKNOWN与稳定错误码；不可信顶层/库存不据其refs继续遍历。
 身份变化、撤权或读取资格失效时不返回已读的私密steps/result，不能只改状态而泄露旧载荷。
 
 provider INTENT、未settle Meter、缺回执、找不到原件、坏hash或未知ACK均UNKNOWN，

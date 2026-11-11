@@ -445,6 +445,44 @@ def test_missing_output_requires_explicit_null_in_original_meter_mapping(local):
     assert adapter.query('task-1')['status'] == 'UNKNOWN'
 
 
+@pytest.mark.parametrize('failure', ['input', 'meter', 'provider', 'fee'])
+def test_query_collects_every_receipt_and_later_operation_after_bad_original(local, failure):
+    adapter, backend = local
+    call(adapter)
+    request = backend.sent[-1]
+    current = backend.snapshots[request['step_id']]
+    first = current['operations'][0]
+    second = deepcopy(first)
+    second.update(operation_id='second-operation', attempt_id='second-provider-attempt')
+    for field in ('meter', 'provider', 'fee'):
+        proof = decode(backend.proofs[second[field]['ref']])
+        proof['attempt_id'] = second['attempt_id']
+        if field == 'meter': proof['operation_id'] = second['operation_id']
+        second[field] = backend.proof(proof)
+    current['operations'].append(second)
+    inventory = decode(backend.proofs[current['inventory']['ref']])
+    inventory['operation_ids'].append(second['operation_id'])
+    current['inventory'] = backend.proof(inventory)
+    backend.bind_action(current, request)
+    backend.proofs[first[failure]['ref']] = b'corrupt original'
+    reads = []
+    original = backend.original
+    def observed(ref, **kwargs):
+        reads.append(ref)
+        return original(ref, **kwargs)
+    backend.original = observed
+    result = adapter.query('task-1')
+    assert result['status'] == 'UNKNOWN' and len(backend.sent) == 2
+    for operation in (first, second):
+        assert all(operation[field]['ref'] in reads for field in ('input', 'output', 'meter', 'provider', 'fee'))
+    # If shared input was damaged both are UNKNOWN; each still has its own
+    # explicit verification result and complete receipt acquisition.
+    checks = result['steps'][-1]['operation_checks']
+    assert [check['operation_id'] for check in checks] == [first['operation_id'], second['operation_id']]
+    assert checks[0]['status'] == 'UNKNOWN'
+    assert checks[1]['status'] == ('UNKNOWN' if failure == 'input' else 'PASS')
+
+
 def test_model_json_boolean_cannot_be_substituted_with_integer(local):
     adapter, backend = local
     call(adapter)

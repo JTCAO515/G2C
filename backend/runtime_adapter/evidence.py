@@ -1,5 +1,5 @@
 """Validate B-protected original evidence; never infer it from a model response."""
-from .contract import VERSION, decode, digest, encode, hash256, label, raw_digest, require
+from .contract import VERSION, Invalid, Unavailable, decode, digest, encode, error_code, hash256, label, raw_digest, require
 
 
 def reference(value):
@@ -62,7 +62,6 @@ def check_snapshot(raw, *, request, binding, pins, original):
     require(type(s['operations']) is list and len(s['operations']) <= 2048, 'OPERATION_BOUND')
     identities = []
     provider_ids = []
-    unsettled = False
     for op in s['operations']:
         require(type(op) is dict and set(op) == {'operation_id', 'attempt_id', 'run_id',
                 'registration_id', 'kind', 'input', 'output', 'meter', 'provider', 'fee',
@@ -71,11 +70,12 @@ def check_snapshot(raw, *, request, binding, pins, original):
             label(op[name])
         identities.append(op['operation_id'])
         provider_ids.append(op['attempt_id'])
+    require(len(identities) == len(set(identities)) and identities == inventory['operation_ids'] and
+            len(provider_ids) == len(set(provider_ids)), 'INCOMPLETE_OPERATION_INVENTORY')
+
+    def check_operation(op, originals):
         require(op['run_id'] in s['run_ids'] and op['kind'] in ('model', 'tool', 'memory'), 'OPERATION_RUN')
-        read(op['input'])
-        if op['output'] is not None:
-            read(op['output'])
-        meter = decode(read(op['meter']))
+        meter = decode(originals['meter'])
         require(type(meter) is dict and meter.get('attempt_id') == op['attempt_id'] and
                 meter.get('operation_id') == op['operation_id'] and
                 meter.get('run_id') == op['run_id'] and meter.get('registration_id') == op['registration_id'] and
@@ -90,11 +90,13 @@ def check_snapshot(raw, *, request, binding, pins, original):
         else:
             require(op['provider_state'] in ('RECEIVED', 'INTENT') and
                     op['fee_state'] in ('RECEIVED', 'INTENT'), 'PROVIDER_STATE')
-            fee = decode(read(op['fee']))
+            require(op['fee'] is not None, 'SHARED_FEE_ORIGINAL_REQUIRED')
+            fee = decode(originals['fee'])
             require(type(fee) is dict and fee.get('attempt_id') == op['attempt_id'] and fee.get('ledger_id') == binding.ledger_id
                     and fee.get('state') == op['fee_state'], 'SHARED_FEE_ORIGINAL_MISMATCH')
             if op['provider_state'] == 'RECEIVED':
-                provider = decode(read(op['provider']))
+                require(op['provider'] is not None, 'PROVIDER_ORIGINAL_REQUIRED')
+                provider = decode(originals['provider'])
                 require(type(provider) is dict and provider.get('attempt_id') == op['attempt_id'] and
                         provider.get('input_sha256') == op['input']['sha256'] and
                         op['output'] is not None and provider.get('response_sha256') == op['output']['sha256'],
@@ -105,9 +107,30 @@ def check_snapshot(raw, *, request, binding, pins, original):
                 require(op['provider'] is None, 'INTENT_MUST_NOT_INVENT_RECEIPT')
         if op['kind'] in ('model', 'memory'):
             require(encode(op['model']) == encode(pins.value['model']), 'ACTUAL_MODEL_PIN_MISMATCH')
-        unsettled |= op['provider_state'] == 'INTENT' or op['fee_state'] == 'INTENT' or op['meter_state'] != 'SETTLED'
-    require(len(identities) == len(set(identities)) and identities == inventory['operation_ids'] and
-            len(provider_ids) == len(set(provider_ids)), 'INCOMPLETE_OPERATION_INVENTORY')
+        return op['provider_state'] == 'INTENT' or op['fee_state'] == 'INTENT' or op['meter_state'] != 'SETTLED'
+
+    unsettled = False
+    operation_checks = []
+    for op in s['operations']:
+        originals, errors = {}, []
+        pending = False
+        # Only traverse the already authenticated inventory. A broken input or
+        # receipt must not hide the other provider/Meter/fee originals, either
+        # within this operation or in later operations of the same RUN.
+        for name in ('input', 'output', 'meter', 'provider', 'fee'):
+            if name in ('input', 'meter') or op[name] is not None:
+                try:
+                    originals[name] = read(op[name])
+                except (Invalid, Unavailable, OSError, TimeoutError) as error:
+                    errors.append(dict(field=name, reason=error_code(error)))
+        if not errors:
+            try:
+                pending = check_operation(op, originals)
+            except Invalid as error:
+                errors.append(dict(field='association', reason=error_code(error)))
+        operation_checks.append(dict(operation_id=op['operation_id'],
+            status='UNKNOWN' if errors or pending else 'PASS', errors=errors))
+        unsettled |= bool(errors) or pending
     if request['kind'] == 'reflection':
         require(len(s['operations']) == 1 and s['operations'][0]['kind'] == 'model' and
                 s['operations'][0]['registration_id'] == 'model.runtime_reflection.1',
@@ -122,4 +145,4 @@ def check_snapshot(raw, *, request, binding, pins, original):
         read(proof)
     result = None if s['result'] is None else decode(read(s['result']))
     status = 'UNKNOWN' if unsettled or s['status'] in ('UNKNOWN', 'RUNNING') else s['status']
-    return dict(status=status, source_status=s['status'], snapshot=s, result=result)
+    return dict(status=status, source_status=s['status'], snapshot=s, result=result, operation_checks=operation_checks)

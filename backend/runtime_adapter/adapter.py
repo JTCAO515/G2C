@@ -6,7 +6,7 @@ from pathlib import Path
 from time import monotonic
 
 from .contract import (VERSION, Invalid, Unavailable, candidate as checked_candidate, decode, digest, encode,
-                       label, raw_digest, require, seconds)
+                       error_code, label, raw_digest, require, seconds)
 from .evidence import check_snapshot
 from .journal import IntentStore
 
@@ -75,7 +75,7 @@ class RuntimeAdapter:
                 step = self._read_step(request, deadline)
             except (Unavailable, Invalid, OSError, TimeoutError) as error:
                 # A broken/missing original cannot hide the other started RUNs.
-                code = str(error) if type(error) in (Unavailable, Invalid) else type(error).__name__
+                code = error_code(error)
                 step = dict(status='UNKNOWN', step_id=request['step_id'], reason=code)
             steps.append(step)
         try:
@@ -84,7 +84,7 @@ class RuntimeAdapter:
             # return the earlier results merely with an UNKNOWN label.
             self._guard('query', deadline, read_only=True)
         except (Unavailable, OSError, TimeoutError) as error:
-            code = str(error) if type(error) is Unavailable else type(error).__name__
+            code = error_code(error)
             return self._result('UNKNOWN', attempt_id, code)
         original_ids = [op['attempt_id'] for step in steps if 'snapshot' in step
                         for op in step['snapshot']['operations']]

@@ -23,6 +23,11 @@ class Unavailable(RuntimeError):
         super().__init__(code)
 
 
+def error_code(error):
+    """Publish domain reason codes; never backend exception text or secrets."""
+    return str(error) if type(error) in (Unavailable, Invalid) else type(error).__name__
+
+
 def require(condition, code):
     if not condition:
         raise Invalid(code)
