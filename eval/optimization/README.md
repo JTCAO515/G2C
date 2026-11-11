@@ -90,11 +90,66 @@ JSON。每个候选批次一格最多一次，用原任务尝试及原件引用�
   内容也公开，只能证明公开验证。每次运行以整个任务为单位保留前后轮次与中英改写。
   `trip_family` 分组在加载时检查，同一旅行及其派生任务必须沿用原 family ID。
 - 最终题及答案不在本仓库、Git 历史、普通 Issue、共享 worktree 或 CI artifact。
-  当前没有已授权且验证过的最终题保管位置，最终集和实际访问拒绝均 UNRUN。
-  保管方须先交付隔离存储和不同权限主体，实测受控执行主体可读、普通开发主体拒绝
-  （包括镜像、缓存、制品路径）。由保管方在内部去重旅行家族和翻译改写，记录冻结
-  数据摘要、任务分母、策略与拒绝证据。对外只交允许公开的汇总和版本引用。
+  JT 在 #495 的2026-11-11决定指定仓库外加密和JT独占解密秘密，D/E/B开发会话
+  按同一密文实测无法解密。封存、分母与拒读状态以本轮公开元数据和PR证据为准。
+  受控侧去重完整旅行家族和翻译改写，记录整体摘要、分母与用途，公开只交元数据。
+  口令由JT在本机隐藏窗口设置；R于后续获准比较时取得解密权限。
 - B [#762](https://github.com/JTCAO515/G2C/issues/762) 交可关联原动作的可信观测。
   E [#763](https://github.com/JTCAO515/G2C/issues/763) 固定上述版本与摘要。
   R [#772](https://github.com/JTCAO515/G2C/issues/772) 独立核对规则和已知好坏样例。
   真实服务回归由 #32/#702 承接。候选比较和晋级等后续 Goal。
+
+## 签名本机评分证据
+
+`G2C-signed-score-probe.1` 使用 C 的原签名 harness、独立 Unix-socket PG、原 worker
+和 FakeProvider，实际读取原动作回执、正式内容、withdraw fence、后续模型输入和
+可见正文。每个控制分别运行中文和英文，保存同一份观测后用两个独立评分 CLI
+进程评分并比较完整输出字节。评分器和公开题集保持原固定版本。
+
+```sh
+CJ_ENV=local CJ_PG_BINDIR=/path/to/postgresql17/bin \
+  uv run --locked python -B -m eval.optimization.signed_probe --output .local/signed-score-new
+```
+
+五类控制分别为正确保存、签名提交错候选、无提交却声明已保存、撤回后保留另一偏好、
+故意错误 FakeProvider 在可见回答中召回已撤回的哨兵。后两类均实际提交 stop-use，
+后续完整 provider 输入仍需保留有效项并排除被删项。负例是本机故意错误控制，
+用于证明硬失败优先，不据此宣称现役产品有同一失败。
+每批计划分母仍为验证集8格，仅采集对应任务的2格，其余6格UNRUN。
+自由文本仅对这里固定的已知控制独立标注，真实 B 对话仍须按原件独立审阅。
+输出目录拒绝覆盖，原失败/修复记录保留，运行日志和原始观测放忽略目录。
+
+## 最终题封存
+
+JT 在 #495 的2026-11-11决定授权 D/R 编制最终题，密文放仓库外，JT独占解密秘密。
+编题规则与覆盖由 D/R 核对，D 唯一编制密文；编题作者的曝光如实登记。
+封存后的拒读只证明当时的解密访问控制。它不能证明作者从未接触编题规则或内容。
+受控文件包含完整任务和中英变体，只用于 #765 后续独立验收，不能用于教师、优化或训练。
+
+`custody.py` 固定本机 age v1.3.2。使用 JT 在本机隐藏窗口设置的专用强口令，
+口令、题集明文及 age 往返校验结果仅经匿名管道和短生命周期内存，命令不打印它们。
+流程不把口令放 argv、环境变量、文件或日志。作者仍能看到编制程序和公共规则，
+流程不承诺擦除操作系统内存/交换区或所有会话记录。最终题的实际文本与答案不输出到
+命令记录、仓库、Issue、共享 worktree 或CI。只持久保存仓库外密文及公开hash、分母、用途。
+
+先用公开控制运行加密、篡改拒绝和缺口令拒读回归，再封存。写入前以JT当次口令
+在内存解密并核同payload，完整密文一次性写出；取消、口令不符或校验失败均拒绝生成。
+JT需自行保管口令，#765获准执行时只交给R。D/E/B各自对同一密文实测不带秘密的解密，
+报告退出码、解密输出字节数、密文摘要和状态。错口令测试不能代替三会话实测。
+
+```sh
+uv run --locked python -B -m unittest eval.optimization.test_custody
+uv run --locked python -B -m eval.optimization.custody deny-probe \
+  --ciphertext /external/path/final.age --session D
+```
+
+封存由受控侧把题集仅在内存传给 `seal(payload, external_path)`。公开接口只返回
+整体明文hash、密文hash、任务/家族/语言/类别分母与用途。`seal`拒绝Git worktree内
+的输出位置和覆盖已有密文；最终加载器不进入E的公开开发评分入口。
+只读回归需要已有 age v1.3.2，沿官方 CLI 的 passphrase 模式，不新增生产Python依赖。
+官方接口见 [age v1.3.2 手册](https://github.com/FiloSottile/age/blob/v1.3.2/doc/age.1)，
+许可证为 [BSD 三条款](https://raw.githubusercontent.com/FiloSottile/age/v1.3.2/LICENSE)。
+
+#765 的三组配置、当前依赖、全量分母、既定指标、改善定义、停止/恢复和晋级条件
+在 `comparison-plan.v1.json` 预登记。未知的候选/模型/适配器字段须在获准执行前冻结；
+当前登记版本不授权实际比较。
