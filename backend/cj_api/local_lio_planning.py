@@ -185,16 +185,33 @@ class LioPlanSave:
         from cj_trip.planning_context import read_current
         from cj_message.lio_plan_needs import lio_needs_id
         from cj_needs.contract_v1 import decode_snapshot
-        from .lio_city import forms,_normalize
+        from .lio_city import _normalize
         current=read_current(self.context_publisher.repository,needs_scope_for(binding.scope),
                              lio_needs_id(binding.scope,binding.conversation_id))
         if current is None:return True
         try:
-            fields=decode_snapshot(b64decode(json.loads(current.needs_source)['snapshot'],validate=True)).fields
-            destination=fields.get('arrival',{}).get('place',{})
+            snapshot=decode_snapshot(b64decode(json.loads(current.needs_source)['snapshot'],validate=True))
+            destination=snapshot.fields.get('arrival',{}).get('place',{})
         except (ValueError,KeyError) as error:
             raise ProviderUnknown('original itinerary destination unavailable') from error
-        return destination.get('state')=='known' and _normalize(destination['value']) in forms(city.name,city.level)
+        # A name is not an administrative identity: different provinces can
+        # contain identically named districts. Read the original resolved code
+        # bound to this exact captured NEEDS revision, including after edit/undo.
+        with self.database.connect(binding.scope) as db:
+            rows=db.execute('SELECT e.value FROM cj_message_needs_binding b '
+                'JOIN cj_run_event e ON (e.scope,e.run_id)=(b.message_scope,b.run_id) '
+                "WHERE b.message_scope=%s AND b.needs_scope=%s AND b.needs_id=%s AND b.needs_version=%s "
+                "AND e.kind='effect_committed' AND e.value LIKE %s",
+                (binding.scope,needs_scope_for(binding.scope),snapshot.needs_id,snapshot.version,'lio_city_resolution.1:%')).fetchall()
+        codes=set()
+        for raw, in rows:
+            value=json.loads(raw.removeprefix('lio_city_resolution.1:'))
+            if value['status']=='resolved' and len(value['candidates'])==1:codes.add(value['candidates'][0]['adcode'])
+        if codes:return codes=={city.adcode}
+        # Before this additive profile, only the frozen Beijing producer could
+        # create a Lio plan. Do not infer a code for any other legacy name.
+        return (destination.get('state')=='known' and _normalize(destination['value']) in ('北京','北京市','beijing')
+                and city.adcode=='110000')
 
     def __call__(self, worker, binding, state, details, locale):
         original = worker.messages.query(binding.message_id)

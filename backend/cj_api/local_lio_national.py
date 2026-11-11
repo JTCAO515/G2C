@@ -87,7 +87,7 @@ class NationalLioPlanning:
             return self._answer(worker,binding,state,original.locale,'好，先不保存或修改行程。',"Okay, I won't save or change an itinerary.")
         if intake.intent=='consult' and not intake.needs_tools:
             state=self._context(worker,binding,state,dict(authority='none',status='consult'))
-            return self._reply(worker,binding,state,intake.reply)
+            return self._reply(worker,binding,state,intake.reply,collect_memory=True)
         if intake.city is None:
             if intake.intent=='consult' and intake.needs_tools:
                 from .real_services import _lio_transit_request
@@ -195,9 +195,13 @@ class NationalLioPlanning:
         return worker._event(binding,state,'effect_committed',CONTEXT+json.dumps(value,ensure_ascii=False,separators=(',',':')))
 
     @staticmethod
-    def _reply(worker,binding,state,text):
+    def _reply(worker,binding,state,text,*,collect_memory=False):
         state=worker._event(binding,state,'text_delta',text)
-        return worker._event(binding,state,'completed')
+        publish_memory=(worker.lio_memory.extract(worker,binding)
+                        if collect_memory and worker.lio_memory is not None else None)
+        state=worker._event(binding,state,'completed')
+        if publish_memory is not None:publish_memory()
+        return state
 
     def _answer(self,worker,binding,state,locale,zh,en):
         return self._reply(worker,binding,state,zh if locale=='zh' else en)

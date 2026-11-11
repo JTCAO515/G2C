@@ -10,6 +10,7 @@ from cj_api.lio_city import CityReference
 from cj_api.lio_national_intake import parse
 from cj_api.lio_planning_grounding import PlanningTurn
 from cj_api.local_lio_national import NationalLioPlanning
+from cj_message.lio_plan_needs import BOUND_EFFECT
 
 
 class NationalExecution(unittest.TestCase):
@@ -34,7 +35,7 @@ class NationalExecution(unittest.TestCase):
         resolution=resolution or dict(status='resolved',candidates=[city.__dict__],requested_name='上海',source={})
         published=[];events=[];lookups=[]
         class Worker:
-            memory_run=None;message_context=None;provider=object();lio_city_context=None
+            memory_run=None;message_context=None;provider=object();lio_city_context=None;lio_memory=None
             def _registered_stream(self,*args,**kwargs):yield json.dumps(value,ensure_ascii=False)
             def _event(self,binding,state,kind,value='',**kwargs):
                 events.append((kind,value));return SimpleNamespace(sequence=state.sequence+1)
@@ -45,7 +46,7 @@ class NationalExecution(unittest.TestCase):
         planning=NationalLioPlanning(None,Save())
         planning.context=lambda *a:(turns,(),previous)
         binding=SimpleNamespace(message_id='national-message',run_id='national-run')
-        with patch('cj_api.local_lio_national.register',side_effect=lambda w,b,s,d:s):
+        with patch('cj_api.local_lio_national.register',side_effect=lambda w,b,s,d:events.append(('registered',BOUND_EFFECT)) or s):
             result=planning.execute(worker,binding,SimpleNamespace(sequence=0),text,SimpleNamespace(question_day=date(2026,11,11),locale='zh'))
         return published,events,lookups,result
 
@@ -248,7 +249,7 @@ class NationalExecution(unittest.TestCase):
         published,events,_,_=self.run_intake(self.envelope('计划上海2026-11-20，两个人'),same_destination=False)
         self.assertEqual(published,[])
         self.assertTrue(any('新开对话' in v for k,v in events if k=='text_delta'))
-        self.assertFalse(any(v=='lio_needs_bound.1' for k,v in events))
+        self.assertFalse(any(k=='registered' and v==BOUND_EFFECT for k,v in events))
 
 
     def test_latest_province_denial_revokes_prior_affirmative_and_cached_city(self):
@@ -279,3 +280,26 @@ class NationalExecution(unittest.TestCase):
             self.assertEqual(result.status,'preview')
         locked,_=itinerary(known(True))
         self.assertEqual(select_lio_edit(locked,'把第二天下午换成西湖','zh','locked',starts_on=date(2026,11,11),national_names=True).status,'protected')
+
+
+    def test_equal_district_name_requires_original_administrative_code(self):
+        from base64 import b64encode
+        from contextlib import contextmanager
+        from cj_api.local_lio_planning import LioPlanSave
+        from cj_needs.domain import Snapshot
+        from cj_needs.contract_v1 import encode_snapshot
+        binding=SimpleNamespace(scope='owner',conversation_id='chat')
+        snapshot=Snapshot('source-needs',1,json.dumps(dict(arrival=dict(date=dict(state='known',value='2026-11-20'),
+            time=dict(state='missing'),timezone=dict(state='known',value='Asia/Shanghai'),place=dict(state='known',value='朝阳区')))).encode())
+        current=SimpleNamespace(needs_source=json.dumps(dict(snapshot=b64encode(encode_snapshot(snapshot)).decode())))
+        code=['110105']
+        class Database:
+            @contextmanager
+            def connect(self,scope):
+                assert scope=='owner'
+                yield SimpleNamespace(execute=lambda *args:SimpleNamespace(fetchall=lambda:[('lio_city_resolution.1:'+json.dumps(
+                    dict(status='resolved',candidates=[dict(adcode=code[0])])),)]))
+        save=LioPlanSave(Database(),SimpleNamespace(repository=object()),None,source_window=True)
+        with patch('cj_trip.planning_context.read_current',return_value=current):
+            self.assertFalse(save.supports_destination(binding,CityReference('220104','朝阳区','吉林省','长春市','district','Asia/Shanghai')))
+            self.assertTrue(save.supports_destination(binding,CityReference('110105','朝阳区','北京市','北京市','district','Asia/Shanghai')))

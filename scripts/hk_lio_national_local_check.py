@@ -32,6 +32,7 @@ SUBJECT='m4-synthetic-demo-0123456789ab'
 CITIES=(('上海','Shanghai','310000'),('成都','Chengdu','510100'),('西安',"Xi'an",'610100'),
         ('桂林','Guilin','450300'),('广州','Guangzhou','440100'),('杭州','Hangzhou','330100'))
 KEY='national-http-fixture-key-only'
+PREFERENCE='I prefer fewer stops in a day.'
 
 
 def exercise(root,conninfo):
@@ -42,10 +43,10 @@ def exercise(root,conninfo):
         max_steps=24,max_tools=12,max_output=65536,max_seconds=600),
         output_limits=dict(model=12000,tool=48000,memory=12000)),history=[])))
     context=load_run_context(meter);database=LocalDatabase(config,run_context=context,travel_context=True,needs_context=True)
-    profile=dict(subjects=['self'],slots={'pace':dict(kind='preference',collection_allowed=True,semantic_resolved=True)},extents=['long_term'],context_ids=[])
+    profile=dict(subjects=['self'],slots={'travel.pace':dict(kind='preference',collection_allowed=True,semantic_resolved=True)},extents=['long_term'],context_ids=[])
     policy=dict(version='local-memory-typed.1',collection=dict(version='local-memory-policy.1',expires_at='2099-01-01T00:00:00Z',profiles={SUBJECT:profile}),travel_contexts={SUBJECT:[]})
     memory=TypedRuntimeConfiguration.from_bytes(json.dumps(dict(version='local-memory-run.2',collection=policy,
-        selections={SUBJECT:dict(subject='self',slots=['pace'],max_bytes=1000)})).encode())
+        selections={SUBJECT:dict(subject='self',slots=['travel.pace'],max_bytes=1000)})).encode())
     runtime=Runtime(auth,context,meter,[],memory_runtime=memory,subjects=frozenset({SUBJECT}),demo_subjects=frozenset({SUBJECT}));runtime._database=database
     control=root/'control';operation=root/'operations';operation.mkdir(mode=0o700)
     @contextmanager
@@ -63,16 +64,40 @@ def exercise(root,conninfo):
     def response(request):
         assert str(request.url)==M4_BASE+'/chat/completions'
         body=json.loads(request.content);wire.append(body);system=body['messages'][0]['content']
-        if 'LIO-planning-intake.1' in system:
+        if body.get('tools'):
+            # Identity is answered only with the actual saved Memory selection.
+            visible=json.dumps(body['messages'],ensure_ascii=False)
+            has_saved=PREFERENCE in visible
+            assert has_saved==current['saved_memory']
+            assert 'Use only saved memory' in system
+            if current['identity_locale']=='zh':
+                content='你曾分享过，旅行时喜欢每天少安排几个地方。' if has_saved else '我还不了解你，愿意介绍一下自己吗？'
+            else:
+                content=('You have shared that you prefer fewer stops in a day.' if has_saved else
+                         "I don't know you yet. Would you like to introduce yourself?")
+        elif 'LIO-planning-intake.1' in system:
             text=body['messages'][-1]['content'];current['text']=text
+            source_index=len([m for m in body['messages'][1:] if m['role']=='user' and not m['content'].startswith('Stored memory data')])-1
+            if text==PREFERENCE:
+                content=json.dumps(dict(version='LIO-planning-intake.1',intent='consult',reply='I can suggest a relaxed pace.',needs_tools=False,
+                    city=None,duration_days=None,extraction=dict(version='NEEDS-extraction.1',fields={},unresolved=[],long_term_requests=[]),
+                    field_sources={},current_request=text))
+            else:
+                content=None
             fields=dict(arrival=dict(date=dict(state='known',value='2026-11-20')),party_size=dict(state='known',value=2))
-            content=json.dumps(dict(version='LIO-planning-intake.1',intent='plan',reply='I can arrange the trip.',needs_tools=False,
-                city=dict(query=current['mention'],normalized_name=None,province=None,source_index=0,quote=current['mention']),
+            content=content or json.dumps(dict(version='LIO-planning-intake.1',intent='plan',reply='I can arrange the trip.',needs_tools=False,
+                city=dict(query=current['mention'],normalized_name=None,province=None,source_index=source_index,quote=current['mention']),
                 duration_days=3,extraction=dict(version='NEEDS-extraction.1',fields=fields,unresolved=[],long_term_requests=[]),
-                field_sources={k:[dict(source_index=0,quote=q)] for k,q in (
+                field_sources={k:[dict(source_index=source_index,quote=q)] for k,q in (
                     ('arrival.date','2026-11-20'),('party_size',current['party']),('duration_days',current['duration']))},current_request=text),ensure_ascii=False)
         elif 'MEMORY-EXTRACT@2' in system:
-            content=json.dumps(dict(version='MEMORY-EXTRACT@2',entries=[]))
+            entries=[]
+            source=json.loads(body['messages'][-1]['content'])['messages']
+            for original in source:
+                if original['text']==PREFERENCE:
+                    entries.append(dict(subject='self',slot='travel.pace',kind='preference',text=PREFERENCE,extent='long_term',
+                        occurred_at='date unknown',evidence=[dict(ref=original['ref'],quote=PREFERENCE)]))
+            content=json.dumps(dict(version='MEMORY-EXTRACT@2',entries=entries))
         else:
             original=json.loads(body['messages'][-1]['content'])
             assert original['version']=='TRIP-source-input.2'
@@ -80,8 +105,11 @@ def exercise(root,conninfo):
             assert original['fields']['destination_timezone']['value']=='Asia/Shanghai'
             items=[dict(id='visit-'+str(i),text=current['en']+' Walk '+str(i),date='2026-11-'+str(19+i),
                 start_time='19:00' if i==3 else '14:00',end_time='20:00' if i==3 else '15:00',timezone='Asia/Shanghai') for i in (1,2,3)]
-            content=json.dumps(dict(version='TRIP-lio-first-plan.1',title=current['en']+' trip',items=items,
-                proposed_subjects={item['id']:['party'] for item in items}),ensure_ascii=False)
+            if original['current_trip'] is not None:
+                content=json.dumps(dict(version='TRIP-lio-replan-delta.3',items=[],proposed_subjects={}))
+            else:
+                content=json.dumps(dict(version='TRIP-lio-first-plan.1',title=current['en']+' trip',items=items,
+                    proposed_subjects={item['id']:['party'] for item in items}),ensure_ascii=False)
         identity=dict(id='fixture-national-'+str(len(wire)),model=M4_MODEL)
         events=[dict(**identity,choices=[dict(index=0,delta=dict(content=content),finish_reason=None)]),
                 dict(**identity,choices=[dict(index=0,delta={},finish_reason='stop')]),
@@ -100,8 +128,15 @@ def exercise(root,conninfo):
         return run_worker.run_once(database,model,auth,tools_configuration=tools,real_services=services,
             memory_configuration_for_scope=lambda owner:memory if owner==scope else None,
             account_admission=True,hk_demo_scopes=frozenset({scope}),lio_confirmation=signer)
+    from cj_api.lio_memory_routes import LioMemoryCards
+    from cj_api.local_lio_memory import lio_candidates
+    from cj_memory.typed_api import register_typed_routes
+    def memory_host(boundary):
+        candidates=lio_candidates(database,boundary,subjects,memory.collection)
+        return LioMemoryCards(candidates.collection,candidates.current)
     app=create_local_app(conninfo_path=None,auth_dir=auth,database=database,run_context=context,account_admission=True,
-        confirmation_signer=signer,demo_dialogue_subjects=subjects,lio_dialogue_subjects=subjects)
+        confirmation_signer=signer,demo_dialogue_subjects=subjects,lio_dialogue_subjects=subjects,lio_memory_factory=memory_host)
+    register_typed_routes(app,database=database,auth_dir=auth,configuration=memory.collection)
     headers={'Authorization':'Bearer '+dev_auth.token(auth,SUBJECT,3600),'Content-Type':'application/octet-stream'}
     with TestClient(app) as api,patch('cj_api.lio_city._catalog_exchange',side_effect=city_exchange):
         for zh,en,adcode in CITIES:
@@ -134,7 +169,44 @@ def exercise(root,conninfo):
                 replay=api.post('/v2/lio/messages',headers=headers,content=json.dumps(payload).encode());assert replay.json()==accepted.json()
                 assert process()==[]
                 print('PASS signed fixture national plan/save/edit/undo',adcode,locale,flush=True)
-    assert len(city_calls)==12
+        # Replanning the same destination reads the original adcode after an
+        # edit and native undo; changing city never rewrites that Trip/NEEDS.
+        payload=dict(payload,message_id='national-replan',new_conversation=False,conversation_id=cid)
+        payload.pop('new_conversation')
+        accepted=api.post('/v2/lio/messages',headers=headers,content=json.dumps(payload).encode());assert accepted.status_code==200,accepted.text
+        assert [o.status for o in process()]==['completed']
+        after_replan=api.get('/v2/lio/trip',params=params,headers=headers).json()
+        assert after_replan['current']['days']==initial['days'] and len(after_replan['history'])==3
+        current.update(zh='上海',en='Shanghai',mention='Shanghai',party='two people',duration='three-day')
+        switch=dict(version='LIO-message.2',message_id='national-other-destination',conversation_id=cid,locale='en',
+            text='Plan a three-day trip to Shanghai for two people starting 2026-11-20.')
+        accepted=api.post('/v2/lio/messages',headers=headers,content=json.dumps(switch).encode());assert accepted.status_code==200,accepted.text
+        assert [o.status for o in process()]==['completed']
+        assert api.get('/v2/lio/trip',params=params,headers=headers).json()==after_replan
+        print('PASS actual original adcode survives edit/undo/replan and different-city request writes no Trip',flush=True)
+        # An unsaved candidate must not become personal identity in a new chat.
+        preference=dict(version='LIO-message.2',message_id='nation-preference',text=PREFERENCE,locale='en',new_conversation=True)
+        accepted=api.post('/v2/lio/messages',headers=headers,content=json.dumps(preference).encode());assert accepted.status_code==200,accepted.text
+        preference_chat=accepted.json()['conversation_id']
+        assert [o.status for o in process()]==['completed']
+        timeline=api.get('/v2/lio/timeline',headers=headers,params=dict(conversation_id=preference_chat)).json()
+        tag,=timeline['messages'][-1]['memory']['tags']
+        for saved in (False,True):
+            if saved:
+                action=dict(version='LIO-memory-action.1',action_id='nation-remember',operation='remember',target=tag['target'])
+                result=api.post('/v1/lio/memory/actions',headers=headers,content=json.dumps(action).encode())
+                assert result.status_code==200 and result.json()['status']=='remembered',result.text
+            current['saved_memory']=saved
+            for locale,question in (('en','Who am I?'),('zh','我是谁')):
+                current['identity_locale']=locale
+                identity=dict(version='LIO-message.2',message_id='nation-identity-'+str(saved)+'-'+locale,text=question,locale=locale,new_conversation=True)
+                accepted=api.post('/v2/lio/messages',headers=headers,content=json.dumps(identity).encode());assert accepted.status_code==200,accepted.text
+                assert [o.status for o in process()]==['completed']
+                read=api.get('/v2/lio/timeline',headers=headers,params=dict(conversation_id=accepted.json()['conversation_id'])).json()
+                reply=read['messages'][-1]['answer']
+                assert ('fewer stops' in reply or '少安排' in reply) if saved else ("don't know you yet" in reply or '还不了解你' in reply)
+        print('PASS national consultation retains Memory candidates and new-chat identity recalls only saved Memory',flush=True)
+    assert len(city_calls)==13
     assert all(row['state']=='RECEIVED' for row in journal.inspect())
     print('PASS 12 signed private PG chains, original model/tool receipts, no live vendor calls',flush=True)
 
