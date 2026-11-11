@@ -1,0 +1,180 @@
+{
+  "version": "G2C-harness-comparison-plan.1",
+  "purpose": "preregistration_only",
+  "issue": 765,
+  "execution_authorized": false,
+  "owners": {
+    "independent_decision": "R",
+    "candidate_producer": "E",
+    "original_runtime": "B",
+    "student_training": "G",
+    "software_owner": "D",
+    "controlled_execution_subject": "R_only_after_explicit_JT_key_release"
+  },
+  "source_decisions": [
+    "#495 JT 2026-11-07 quality policy",
+    "#495 JT 2026-11-11 encrypted final custody",
+    "#761",
+    "#764",
+    "#767"
+  ],
+  "groups": [
+    {
+      "id": "A",
+      "configuration": "original_api_original_harness",
+      "baseline": true,
+      "code_commit": null,
+      "model_version": null,
+      "harness_hash": null,
+      "adapter_version": null,
+      "status": "UNRUN",
+      "requires": [
+        "B #762 original runtime and trusted export",
+        "approved environment and budget"
+      ]
+    },
+    {
+      "id": "B",
+      "configuration": "original_api_optimized_harness",
+      "baseline": false,
+      "code_commit": null,
+      "model_version": "must_equal_A",
+      "harness_hash": null,
+      "adapter_version": null,
+      "status": "UNRUN",
+      "requires": [
+        "E #764 frozen independently selected candidate",
+        "same original API and tools as A"
+      ]
+    },
+    {
+      "id": "C",
+      "configuration": "student_model_optimized_harness",
+      "baseline": false,
+      "code_commit": null,
+      "model_version": null,
+      "weights_hash": null,
+      "harness_hash": "must_equal_B",
+      "adapter_version": null,
+      "status": "UNRUN",
+      "requires": [
+        "teacher release independently qualified under #767",
+        "approved G training and frozen model/template/tokenizer hashes",
+        "same B harness and tool schema"
+      ]
+    }
+  ],
+  "execution_gate": {
+    "all_preregistered_fields_frozen_before_unseal": true,
+    "missing_C": "report C UNRUN; ready A/B may proceed under their separately granted execution goal",
+    "this_goal": "registration only; actual comparison requires a later goal",
+    "candidate_selection": "E freezes exactly one candidate using development/validation before final access; keep all search/failed candidates"
+  },
+  "scoring": {
+    "version": "G2C-dialogue-score.1",
+    "source_sha256": "08dcdb1624790f735ffcb1c6db5d6f47b75ef2a28d02a20a31313256380f3adf",
+    "public_dataset_version": "G2C-dialogue-cases.1",
+    "public_dataset_sha256": "8e3b9c2d410e569de520243540e364d7fed6033087de8173adc5e87e17fe92f3",
+    "controlled_adapter_version": null,
+    "rule": "freeze the controlled scoring adapter against the same hard checks before unsealing; changes require a new plan and independent review"
+  },
+  "samples": {
+    "purpose": "additional_controlled_final_set",
+    "version": "G2C-controlled-dialogue-cases.1",
+    "plaintext_sha256": "e1efefaa71dc284fc3a541d34ba002cb2276c05f79ea75ed1eb2a1764104cab5",
+    "ciphertext_sha256": "69a377185e828474463c6f1fa8cd0b075584d54ec9d0b01637affacac45e9228",
+    "tasks": 33,
+    "zh": 33,
+    "en": 33,
+    "total_language_cells": 66,
+    "task_allocation": {
+      "direct_answer": 3,
+      "clarification": 3,
+      "correction": 3,
+      "local_edit": 3,
+      "cancel": 3,
+      "tool_failure": 3,
+      "save": 4,
+      "undo": 3,
+      "cross_owner": 4,
+      "deleted_recall": 4
+    },
+    "family_rule": "complete tasks and all languages/rewrites stay together; controlled-side content/lineage de-duplication against public development, validation and teacher data",
+    "author_exposure": "D compiles before sealing using jointly reviewed D/R rules; author exposure is disclosed; post-seal decryption refusal does not prove author blindness",
+    "historical_C_evaluation": "C #32 original 33 pairs / 66 cases and 11 fixed holdout retain their original identities, denominators and failures; this additional set is reported separately",
+    "final_access": "JT alone retains passphrase; only an explicitly authorized R comparison session may receive it; developers and optimizer receive ciphertext/metadata only",
+    "no_adaptation": "no prompt, scorer, teacher or student tuning after final exposure; retain original failures; a new attempt requires independent re-registration"
+  },
+  "environment": {
+    "code_tools_models_hashes": "freeze exact code, prompt, model, tool schema, adapter, dependencies, candidate and data digests in a run manifest before execution",
+    "same_environment": "same B exit, identity policy, environment, tool versions and facts/source cut-off across paired groups",
+    "ordering": "one primary attempt per task/language/group; fixed round-robin A/B/C order rotates by sorted task identity; seed G2C-harness-comparison-plan.1",
+    "writes": "fresh signed local sandbox PG per task/group for state-changing controls; external production write tools disabled in shadow comparison",
+    "network_and_cost": "actual external model/read-only tool requests only through B original identity and unique Meter, within separately approved #495 scope",
+    "latency_origin": "same client monotonic clock from actual submission to App-rendered server progress, first body and complete answer; source-only prefixes and animations excluded"
+  },
+  "metrics": {
+    "report_dimensions": [
+      "group",
+      "language",
+      "behavior",
+      "trip_family",
+      "primary_attempt",
+      "diagnostic_rerun"
+    ],
+    "task_completion": {
+      "minimum": 0.9,
+      "per_language": true,
+      "denominator": "PASS+FAIL+UNKNOWN among started first attempts, following the existing quality policy; planned N and UNRUN are reported separately; any UNRUN prevents PASS"
+    },
+    "serious_errors": {
+      "maximum": 0,
+      "independent_review_required": true,
+      "hard_failure_overrides_average": true,
+      "classes": [
+        "fabricated facts or execution",
+        "wrong or unauthorized save",
+        "foreign owner access or disclosure",
+        "cancel or undo failure",
+        "locked item changes",
+        "post-withdrawal recall"
+      ]
+    },
+    "progress_p95_seconds": 5,
+    "first_body_p95_seconds": 15,
+    "full_answer_p95_seconds": 90,
+    "timing_population": "nearest-rank full planned population per group/language; missing clocks UNKNOWN, known-subset diagnostics cannot certify PASS",
+    "cost": "per task and full batch, original model/tool/reflection attempts, known estimated/reserved totals and actual billed totals separately; missing receipts UNKNOWN"
+  },
+  "improvement": {
+    "primary": "independently certified task PASS count on identical planned paired cells",
+    "rule": "candidate must meet every existing quality gate, have zero hard errors and zero new hard failures, and be no worse in either language or any behavior class; at least one language must have strictly more primary PASS than its paired reference",
+    "comparisons": [
+      "B versus A",
+      "C versus B when C is ready; C versus A also reported"
+    ],
+    "unchanged_or_incomplete": "no recommendation when no strict task improvement or required evidence is UNKNOWN/UNRUN; latency/cost differences remain separate diagnostics",
+    "statistics": "report paired wins/losses/ties and uncertainty; no unregistered statistical significance or effect-size threshold"
+  },
+  "stop_and_resume": {
+    "hard_failure": "stop that candidate, preserve its failure and all remaining planned UNRUN cells; no promotion",
+    "unknown_write_or_charge": "stop new dispatches and candidate selection; keep original attempt/RUN/op; B read-only reconciliation before any authorized recovery; no new-ID resend",
+    "resource": "no execution without concrete approved B window, expiry, call/amount ceiling and stop thresholds; stop at the earliest exhausted limit, never reset prior holds",
+    "drift": "stop on code/model/tool/data/scorer drift, missing provenance, corrupted artifact, final leakage or decryption outside the authorized R session",
+    "rerun": "all reruns stored separately; first attempt determines primary result; never replace failures by the best rerun"
+  },
+  "publication": {
+    "public": "only versions, aggregate per-language/behavior denominators, outcomes, failure classes, metadata hashes and authorized evidence references; no final task text, answers or per-item answer hashes",
+    "custody": "ciphertext outside repository; no plaintext in repository, Issue, shared worktree or CI artifacts; secret not in argv, environment snapshots or logs",
+    "decision": "R independently records passed, failed or insufficient evidence; recommendation does not close product #32/#702/#29/#33 or authorize deployment",
+    "links": [
+      "#32",
+      "#702",
+      "#495",
+      "#761",
+      "#764",
+      "#767"
+    ],
+    "controlled_path": "R authorized session decrypts and runs frozen software in its controlled process; raw task text, answers, inputs and outputs remain controlled; D/E/B receive permitted aggregate metadata only"
+  }
+}

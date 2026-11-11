@@ -1,0 +1,17 @@
+{
+  "version": "G2C-teacher-known-bad.1",
+  "replies": [
+    {
+      "id": "unsupported-save-zh",
+      "message": {"role": "assistant", "content": "已为你保存行程。"},
+      "reason": "known_unverified_write_claim",
+      "source": "F789 public synthetic negative; no write tools or confirmed write receipt"
+    },
+    {
+      "id": "unsupported-save-en",
+      "message": {"role": "assistant", "content": "I have saved your trip."},
+      "reason": "known_unverified_write_claim",
+      "source": "F789 public synthetic negative; no write tools or confirmed write receipt"
+    }
+  ]
+}

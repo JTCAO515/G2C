@@ -1,0 +1,23 @@
+{
+  "ciphertext_sha256": "69a377185e828474463c6f1fa8cd0b075584d54ec9d0b01637affacac45e9228",
+  "denominators": {
+    "by_kind": {
+      "cancel": 3,
+      "clarification": 3,
+      "correction": 3,
+      "cross_owner": 4,
+      "deleted_recall": 4,
+      "direct_answer": 3,
+      "local_edit": 3,
+      "save": 4,
+      "tool_failure": 3,
+      "undo": 3
+    },
+    "en": 33,
+    "tasks": 33,
+    "trip_families": 33,
+    "zh": 33
+  },
+  "plaintext_sha256": "e1efefaa71dc284fc3a541d34ba002cb2276c05f79ea75ed1eb2a1764104cab5",
+  "purpose": "final_acceptance_only"
+}
