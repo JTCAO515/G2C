@@ -32,6 +32,7 @@ class NationalLioCity(unittest.TestCase):
     def test_unproven_translation_and_province_ask_before_publishing(self):
         assert resolve(data(), 'Canton', normalized_name='广州市')['status'] == 'confirmation_required'
         assert resolve(data(), '四川')['status'] == 'needs_city'
+        assert resolve(data(), 'Szechuan',normalized_name='四川省')['status']=='needs_city'
         assert resolve(data(), 'not-a-city')['status'] == 'not_found'
         assert resolve(data(), "Xi'an",province='Shaanxi')['status']=='confirmation_required'
         assert resolve(data(), "Xi'an",province='Shaanxi')['candidates'][0]['name']=='西安市'

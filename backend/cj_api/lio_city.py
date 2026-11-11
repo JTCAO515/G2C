@@ -107,7 +107,7 @@ def resolve(raw,name,province=None,normalized_name=None):
         if filtered:matches=filtered
         elif matches:province_unconfirmed=True
     status='not_found' if not matches else 'ambiguous' if len(matches)>1 else 'confirmation_required' if translated or province_unconfirmed else 'resolved'
-    if status=='resolved' and matches[0].level=='province' and matches[0].adcode not in {
+    if status in ('resolved','confirmation_required') and matches[0].level=='province' and matches[0].adcode not in {
             '110000','120000','310000','500000','810000','820000'}:
         status='needs_city'
     return dict(version=VERSION,status=status,requested_name=name,
