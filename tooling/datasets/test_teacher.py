@@ -128,6 +128,21 @@ class TeacherTests(unittest.TestCase):
         proof = load((output / 'tools.jsonl').read_bytes().splitlines()[0])
         self.assertEqual(proof['execution']['evidence']['attempt_id'], 'wrong-original-attempt')
 
+    def test_tool_without_a_receipt_still_keeps_the_original_request(self):
+        class NoReceipt(FakeTools):
+            def execute(self, case, call, stub):
+                from .convert import Rejected
+                raise Rejected('fake_supplier_unavailable')
+        output, report, teacher, _ = self.produce(control='bad-receipt', tools=NoReceipt())
+        self.assertEqual(report['status'], 'UNKNOWN')
+        self.assertEqual(report['generation']['model_requests'], 1)
+        self.assertEqual(report['generation']['tool_requests'], 1)
+        proof = load((output / 'tools.jsonl').read_bytes().splitlines()[0])
+        self.assertIsNone(proof['execution'])
+        self.assertTrue(proof['requested_execution']['operation_id'].startswith('op-'))
+        self.assertEqual(proof['reason'], 'fake_supplier_unavailable')
+        self.assertEqual(len(teacher.inputs), 1)
+
     def test_partial_batch_unknown_preserves_actual_unseen_result_and_stops(self):
         output, report, teacher, tools = self.produce(control='unknown')
         self.assertEqual(report['status'], 'UNKNOWN')

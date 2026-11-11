@@ -250,8 +250,15 @@ def generate(case, batch, teacher, tools, counts, limits, bad, model_events, too
                 if counts['tool'] >= limits.tool or counts['tool'] - start['tool'] >= 8:
                     raise LimitReached('tool_request_limit')
                 counts['tool'] += 1
-                proof = tools.execute(case, call, row['executions'][offset + i])
-                tool_events.append(deepcopy(proof))
+                event = dict(call=deepcopy(call), requested_execution=deepcopy(row['executions'][offset + i]),
+                             execution=None, response_state='unknown', response_base64=None)
+                tool_events.append(event)
+                try:
+                    proof = tools.execute(case, call, row['executions'][offset + i])
+                except Rejected as error:
+                    event['reason'] = str(error)
+                    raise
+                event.update(deepcopy(proof))
                 row['executions'][offset + i] = proof['execution']
                 outcome = proof['execution']['status']
                 row['run']['status'] = {'received': 'unknown', 'failed': 'failed', 'unknown': 'unknown',

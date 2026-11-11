@@ -93,6 +93,7 @@ processing PASS 是处理/拦截正确，不是原 RUN 已成功、更不是教�
 | 文件 | 含义 |
 |---|---|
 | candidates.jsonl、train/validation/test.jsonl | 经原F边界接受的合成行；去重前候选与拆分后行分开，绝非正式教师发布 |
+| planned-cases.json | 全部计划身份/家族/语言/行为和公开Fake夹具摘要；与实际任务分母分开 |
 | raw-candidates.jsonl、models.jsonl、tools.jsonl | 过程原件，仅本地Fake；坏JSON保留base64原字节，实际工具原件与可见投影分离 |
 | tasks.json | 全部计划任务及完整家族/语言/行为、原状态、拒绝/停止原因和实际请求数；未派发不抹零当成功 |
 | lineage.json、rejected.json、known-bad.json | 每来源及去重/拒绝原因、所有坏控结果，不择优回填 |
@@ -115,6 +116,6 @@ D冻结handoff及所有文件摘要后，独立选择完整连通家族：真实
 任何数据/过滤/规则修订均重发固定版并完整交D，既有版本与分组不能混用。
 正式训练仍是G后续Goal，不由本管线或Fake PASS启动。
 
-默认 CI 新入口登记由共享 owner G 的 #785 负责。已通知用数据目录 discover 覆盖
-原 test_convert 与新 test_teacher；本PR不写共享 scripts/test.py，显式本地/独立检查
-与默认 CI 是否实际执行该套件分别记录。
+G #785 已登记原 test_convert。当前共享入口仍只运行该模块，新增 test_teacher 尚未
+进入默认调用；已通知 G 用目录 discover 覆盖旧/新套件。本PR不写共享 scripts/test.py，
+新教师专项由本地及独立审查显式运行；默认 CI 绿不冒充已经执行新专项。
