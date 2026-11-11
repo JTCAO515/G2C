@@ -19,6 +19,15 @@ _KEEP_OTHER_STOPS = re.compile(
     r'(?:[，,]\s*)?保留(?:其他|其余)安排$|'
     r'(?:,\s*(?:and\s+)?|\s+and\s+)keep\s+(?:the\s+)?'
     r'(?:other (?:plans|stops|arrangements)|rest)(?:\s+(?:unchanged|the same))?$', re.I)
+_NATIONAL_KEEP = re.compile(
+    r'[，,]\s*其他安排(?:和(?P<zh_keep>[^，,；;。.!?]+))?不变$|'
+    r';\s*keep everything else(?: and (?:the )?(?P<en_keep>[^;.!?]+?))? unchanged$',re.I)
+_COMPOUND_ZH = re.compile(
+    r'^(?P<slot>.+?)(?P<open>[「“\"\'])(?P<name>.+)(?P<close>[」”\"\'])\s*[（(]'
+    r'(?P<start>[0-9]{2}:[0-9]{2})\s*[–—-]\s*(?P<end>[0-9]{2}:[0-9]{2})[)）]$')
+_COMPOUND_EN = re.compile(
+    r"^(?P<open>['\"“「])(?P<name>.+)(?P<close>['\"”」])\s+on\s+(?P<slot>.+?)\s+"
+    r"\((?P<start>[0-9]{2}:[0-9]{2})\s*[–—-]\s*(?P<end>[0-9]{2}:[0-9]{2})\)$",re.I)
 _STOP_LABEL = re.compile(r"[^\W_]+(?:[ '’&·()（）-]+[^\W_]+)*[)）]?")
 _STOP_QUOTES = {'"': '"', '“': '”', '「': '」'}
 # Frozen unselected consumers keep the original admitted aliases.
@@ -70,6 +79,18 @@ def _edit_parts(match):
         yield tail[:separator.start()].strip(), tail[separator.end():]
 
 
+def _national_replacement(raw):
+    text=raw.strip().rstrip('。.!！?？').rstrip()
+    keep=_NATIONAL_KEEP.search(text)
+    if keep is None:return raw,None
+    protected=keep['zh_keep'] or keep['en_keep']
+    if protected is not None:
+        protected=protected.strip()
+        if len(protected)>80 or _STOP_LABEL.fullmatch(protected) is None or _QUALIFIED_LABEL.search(protected):
+            return None,None
+    return text[:keep.start()],protected
+
+
 def _replacement_label(raw,*,national_names=False):
     label = raw.strip().rstrip('。.!！?？').rstrip()
     label = _KEEP_OTHER_STOPS.sub('', label).rstrip()
@@ -114,7 +135,23 @@ def _dated_slot(target):
     return None
 
 
-def _select(items, target, starts_on, ends_on):
+def _select(items, target, starts_on, ends_on,*,national_names=False):
+    if national_names:
+        compound=_COMPOUND_ZH.fullmatch(target) or _COMPOUND_EN.fullmatch(target)
+        if compound is not None:
+            if {"'":"'",'"':'"','“':'”','「':'」'}[compound['open']]!=compound['close']:
+                return []
+            if _slot(compound['slot'].strip()) is None and _dated_slot(compound['slot'].strip()) is None:return []
+            try:
+                start,end=time.fromisoformat(compound['start']),time.fromisoformat(compound['end'])
+            except ValueError:return []
+            if start>=end:return []
+            # All supplied constraints must identify the same actual item.
+            return [item for item in _select(items,compound['slot'].strip(),starts_on,ends_on)
+                    if item['text'].casefold()==compound['name'].strip().casefold()
+                    and _known(item['schedule']['start']['time'])==compound['start']
+                    and _known(item['schedule']['end']['time'])==compound['end']]
+
     relative = _slot(target)
     dated = _dated_slot(target) if relative is None else None
     if relative is None and dated is None:
@@ -171,9 +208,15 @@ def select_lio_edit(trip, text, locale, request_id, *, starts_on, ends_on=None,n
     document = json.loads(trip.content)
     interpretations = []
     for target, raw_replacement in _edit_parts(match):
+        protected=None
+        if national_names:
+            raw_replacement,protected=_national_replacement(raw_replacement)
+            if raw_replacement is None:continue
         replacement = _replacement_label(raw_replacement,national_names=national_names)
         if target and replacement is not None:
-            selected = _select(document['items'], target, starts_on, ends_on)
+            selected = _select(document['items'], target, starts_on, ends_on,national_names=national_names)
+            if protected is not None:
+                selected=[item for item in selected if protected.casefold() not in item['text'].casefold()]
             interpretations.extend((item, replacement) for item in selected)
     if len(interpretations) != 1:
         return LioEditSelection('clarify')

@@ -221,7 +221,8 @@ class NationalExecution(unittest.TestCase):
 
     def test_natural_fixed_day_number_keeps_explicit_self_and_unbooked_status(self):
         for declaration in ('第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变',
-                            'On day 1 I have a fixed hotel meetup from 9 to 10 a.m., keep it unchanged'):
+                            'On day 1 I have a fixed hotel meetup from 9 to 10 a.m., keep it unchanged',
+                            'On day 1 I have a fixed hotel meetup from 9 to 10 a.m.; keep it unchanged'):
             with self.subTest(declaration=declaration):
                 text='计划上海2026-11-20，仅我一人。'+declaration
                 value=self.envelope(text,party=1)
