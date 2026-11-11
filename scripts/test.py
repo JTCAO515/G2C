@@ -73,7 +73,9 @@ def main():
                            BACKEND / directory, BACKEND / directory))
     results.append(run('evaluation/cj028', [*pytest, 'tests'], ROOT / 'evaluation/cj028', ROOT / 'evaluation/cj028'))
     results.append(run('eval/optimization', ['-B', '-m', 'unittest', '-v', 'eval.optimization.test_score']))
-    results.append(run('tooling/datasets', ['-B', '-m', 'unittest', '-v', 'tooling.datasets.test_convert']))
+    results.append(run('tooling/datasets',
+                       ['-B', '-m', 'unittest', 'discover', '-s', 'tooling/datasets',
+                        '-t', '.', '-p', 'test_*.py', '-v']))
     # GEPA uses its accepted project lock and environment, not the production root dependencies.
     results.append(run('tooling/optimization',
                        ['run', '--project', 'tooling/optimization', '--locked', 'python',
