@@ -33,6 +33,8 @@ public struct LioHome<MenuContent: View>: View {
     @State private var activeMemory: LioMemoryWire.Tag?
     @State private var handledTags: Set<LioMemoryWire.Tag> = []
     @State private var refreshRequest = 0
+    @State private var jumpRequest = 0
+    @State private var sendCount = 0
     private struct Observation: Equatable {
         let active: Bool
         let request: Int
@@ -198,7 +200,7 @@ public struct LioHome<MenuContent: View>: View {
                 }
                 .frame(maxWidth: 680)
                 .padding(.horizontal, 18)
-                .padding(.top, 86)
+                .padding(.top, 12)
                 .padding(.bottom, 12)
                 .frame(maxWidth: .infinity)
             }
@@ -217,6 +219,12 @@ public struct LioHome<MenuContent: View>: View {
             .onChange(of: latest?.status) { _, status in
                 if followsAnswer && status == .finished { scroll.scrollTo("lio.bottom", anchor: .bottom) }
             }
+            .onChange(of: jumpRequest) { _, _ in
+                followsAnswer = true
+                withAnimation(LioTheme.Motion.animation(LioTheme.Motion.change, reduceMotion: reduceMotion)) {
+                    scroll.scrollTo("lio.bottom", anchor: .bottom)
+                }
+            }
             .onChange(of: scenePhase) { _, phase in
                 if phase == .background { didEnterBackground = true }
                 guard phase == .active, didEnterBackground else { return }
@@ -227,16 +235,12 @@ public struct LioHome<MenuContent: View>: View {
             }
         }
         .background(LioTheme.paper)
-        .overlay(alignment: .top) {
+        .safeAreaInset(edge: .top, spacing: 0) {
             floatingControls
                 .background {
                     LioTheme.paper
-                        .overlay(alignment: .bottom) {
-                            LinearGradient(colors: [LioTheme.paper, .clear],
-                                           startPoint: .top, endPoint: .bottom)
-                                .frame(height: 12)
-                                .offset(y: 12)
-                        }
+                        .ignoresSafeArea(edges: .top)
+                        .overlay(alignment: .bottom) { fade(from: .top) }
                         .allowsHitTesting(false)
                         .accessibilityHidden(true)
                 }
@@ -327,51 +331,94 @@ public struct LioHome<MenuContent: View>: View {
     }
 
     private var floatingControls: some View {
-        ZStack(alignment: .leading) {
-            HStack(spacing: 8) {
-                LioPortrait(size: 34)
-                Text("Lio").font(.headline)
-            }
-            .padding(6)
-            .padding(.trailing, 8)
-            .lioCard(Capsule())
-            .frame(maxWidth: .infinity)
-            .accessibilityIdentifier("lio.name")
+        HStack(alignment: .top, spacing: LioTheme.Spacing.xs) {
             Button {
                 typing = false
                 menuOpen = true
             } label: {
-                Text("≋")
-                    .font(.title3.weight(.medium))
-                    .frame(width: 48, height: 48)
-                    .foregroundStyle(LioTheme.ink)
-                    .lioCard(Circle())
+                controlIcon("line.3.horizontal")
             }
             .buttonStyle(.plain)
             .accessibilityLabel(language.text("Menu", "菜单"))
             .accessibilityIdentifier("lio.menu")
+            Spacer(minLength: 0)
+            VStack(spacing: LioTheme.Spacing.xxs) {
+                LioPortrait(size: 44)
+                Text("Lio")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(LioTheme.ink)
+            }
+            .accessibilityIdentifier("lio.name")
+            Spacer(minLength: 0)
+            if let chatLibrary {
+                Button {
+                    guard canSwitchChat else { return }
+                    switchChat(chatLibrary.newChat(), opening: .beforeNext)
+                } label: {
+                    controlIcon("square.and.pencil")
+                }
+                .buttonStyle(.plain)
+                .disabled(!canSwitchChat)
+                .accessibilityLabel(language.text("New chat", "新对话"))
+                .accessibilityIdentifier("lio.chat.newShortcut")
+            } else {
+                Color.clear.frame(width: 44, height: 44).accessibilityHidden(true)
+            }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
+        .padding(.horizontal, LioTheme.Spacing.md)
+        .padding(.top, LioTheme.Spacing.xxs)
+        .padding(.bottom, LioTheme.Spacing.xs)
+    }
+
+    private func controlIcon(_ symbol: String) -> some View {
+        Image(systemName: symbol)
+            .font(.body.weight(.semibold))
+            .frame(width: 44, height: 44)
+            .foregroundStyle(LioTheme.ink)
+            .lioCard(Circle())
+    }
+
+    /// A short paper-to-clear fade where content scrolls under the top controls or the composer.
+    private func fade(from edge: VerticalEdge) -> some View {
+        LinearGradient(colors: [LioTheme.paper, LioTheme.paper.opacity(0)],
+                       startPoint: edge == .top ? .top : .bottom, endPoint: edge == .top ? .bottom : .top)
+            .frame(height: LioTheme.Spacing.sm)
+            .offset(y: edge == .top ? LioTheme.Spacing.sm : -LioTheme.Spacing.sm)
     }
 
     private var openingMessage: some View {
-        replyBubble(Text(language.text("Hi, I’m Lio, your personal travel agent. How can I help?",
-                                       "你好，我是 Lio，你的个人旅行助手。有什么可以帮你？")))
-            .accessibilityIdentifier("lio.opening")
+        lioReply {
+            replyText(Text(language.text("Hi, I’m Lio, your personal travel agent. How can I help?",
+                                         "你好，我是 Lio，你的个人旅行助手。有什么可以帮你？")))
+                .accessibilityIdentifier("lio.opening")
+        }
     }
 
-    private func replyBubble(_ content: Text) -> some View {
+    /// A Lio turn: a small avatar and name, then the reply laid out on the page without a bubble (D2).
+    private func lioReply<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
+            lioByline
+            content()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var lioByline: some View {
+        HStack(spacing: 6) {
+            LioPortrait(size: 22)
+            Text("Lio")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(LioTheme.ink)
+        }
+        .accessibilityHidden(true)
+    }
+
+    private func replyText(_ content: Text) -> some View {
         content
             .font(.body)
             .foregroundStyle(LioTheme.ink)
-            .lineSpacing(3)
+            .lineSpacing(4)
             .fixedSize(horizontal: false, vertical: true)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
-            .lioCard(UnevenRoundedRectangle(topLeadingRadius: LioTheme.Radius.tail, bottomLeadingRadius: LioTheme.Radius.card,
-                                            bottomTrailingRadius: LioTheme.Radius.card, topTrailingRadius: LioTheme.Radius.card))
-            .padding(.trailing, dynamicTypeSize.isAccessibilitySize ? 0 : 22)
     }
 
     private var examples: some View {
@@ -413,6 +460,7 @@ public struct LioHome<MenuContent: View>: View {
     private var composer: some View {
         let placeholder = language.text("Start chatting", "开始聊天")
         let canSend = !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && conversation.pending == nil
+        let showsJump = !followsAnswer && !conversation.turns.isEmpty
         return HStack(alignment: .center, spacing: 10) {
             TextField(placeholder, text: $draft, prompt: Text(placeholder).foregroundStyle(LioTheme.inkSecondary), axis: .vertical)
                 .lineLimit(1...5)
@@ -421,6 +469,7 @@ public struct LioHome<MenuContent: View>: View {
                 .accessibilityIdentifier("lio.composer")
             Button {
                 followsAnswer = true
+                sendCount += 1
                 conversation.send(draft, language: language)
                 recordPendingFirstQuestion()
                 if opening == .beforeNext, let id = conversation.pending?.id { opening = .before(id) }
@@ -430,22 +479,39 @@ public struct LioHome<MenuContent: View>: View {
                 Image(systemName: "arrow.up")
                     .font(.body.weight(.semibold))
                     .frame(width: 44, height: 44)
-                    .foregroundStyle(canSend ? LioTheme.paper : LioTheme.inkSecondary)
-                    .background(canSend ? LioTheme.ink : LioTheme.surfaceSunken, in: Circle())
+                    .foregroundStyle(canSend ? LioTheme.onVermilion : LioTheme.inkSecondary)
+                    .background(canSend ? LioTheme.vermilion : LioTheme.surfaceSunken, in: Circle())
             }
             .disabled(!canSend)
             .buttonStyle(.plain)
+            .sensoryFeedback(.impact(weight: .light), trigger: sendCount)
             .accessibilityLabel(language.text("Send", "发送"))
             .accessibilityIdentifier("lio.send")
         }
         .padding(.leading, 16)
         .padding(5)
         .lioCard(Capsule())
+        .overlay(alignment: .top) {
+            if showsJump {
+                Button { jumpRequest += 1 } label: { controlIcon("arrow.down") }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(language.text("Jump to latest", "回到最新"))
+                    .accessibilityIdentifier("lio.jumpToLatest")
+                    .alignmentGuide(.top) { $0[.bottom] + LioTheme.Spacing.sm }
+                    .transition(.opacity)
+            }
+        }
+        .animation(LioTheme.Motion.animation(LioTheme.Motion.change, reduceMotion: reduceMotion), value: showsJump)
         .frame(maxWidth: 680)
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
         .frame(maxWidth: .infinity)
-        .background(LioTheme.paper)
+        .background {
+            LioTheme.paper
+                .overlay(alignment: .top) { fade(from: .bottom) }
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+        }
     }
 
     private func chooseMemory(_ choice: LioMemoryWire.Choice, tag: LioMemoryWire.Tag,
@@ -513,7 +579,7 @@ public struct LioHome<MenuContent: View>: View {
     private func turnView(_ turn: LioTurn) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 4) {
-                Spacer(minLength: dynamicTypeSize.isAccessibilitySize ? 12 : 32)
+                Spacer(minLength: dynamicTypeSize.isAccessibilitySize ? 12 : 64)
                 if turn.status == .failed(.notSent) {
                     Button {
                         if turn.id == conversation.turns.last?.id { followsAnswer = true }
@@ -535,7 +601,7 @@ public struct LioHome<MenuContent: View>: View {
                     .padding(.vertical, 10)
                     .background(LioTheme.surfaceSunken,
                                 in: UnevenRoundedRectangle(topLeadingRadius: LioTheme.Radius.card, bottomLeadingRadius: LioTheme.Radius.card,
-                                                           bottomTrailingRadius: LioTheme.Radius.card, topTrailingRadius: LioTheme.Radius.tail))
+                                                           bottomTrailingRadius: LioTheme.Radius.tail, topTrailingRadius: LioTheme.Radius.card))
                     .textSelection(.enabled)
                     .accessibilityIdentifier("lio.question")
             }
@@ -544,13 +610,17 @@ public struct LioHome<MenuContent: View>: View {
             } else if !turn.answer.isEmpty {
                 if let answer = LioReplyMarkdown.render(turn.answer) {
                     if !answer.characters.isEmpty {
-                        replyBubble(Text(answer))
-                            .textSelection(.enabled)
-                            .accessibilityIdentifier("lio.answer")
+                        lioReply {
+                            replyText(Text(answer))
+                                .textSelection(.enabled)
+                                .accessibilityIdentifier("lio.answer")
+                        }
                     }
                 } else {
-                    replyBubble(Text(language.text("This reply can’t be shown right now.", "这条回答暂时无法显示。")))
-                        .accessibilityIdentifier("lio.reply.unavailable")
+                    lioReply {
+                        replyText(Text(language.text("This reply can’t be shown right now.", "这条回答暂时无法显示。")))
+                            .accessibilityIdentifier("lio.reply.unavailable")
+                    }
                 }
             }
             messageStatus(turn)
@@ -670,17 +740,20 @@ public struct LioHome<MenuContent: View>: View {
         }
     }
 
+    /// Waiting for Lio: the avatar and moving dots where the reply will appear. Read aloud as the title.
     private func statusLine(_ title: String) -> some View {
-        Label {
-            Text(title)
-        } icon: {
-            Image(systemName: "ellipsis.bubble")
-                .symbolEffect(.pulse, options: .repeating, isActive: !reduceMotion)
-                .accessibilityHidden(true)
+        HStack(spacing: LioTheme.Spacing.xs) {
+            LioPortrait(size: 22)
+            Image(systemName: "ellipsis")
+                .font(.title3.weight(.bold))
+                .foregroundStyle(LioTheme.inkSecondary)
+                .symbolEffect(.variableColor.iterative, options: .repeating, isActive: !reduceMotion)
         }
-            .font(.footnote)
-            .foregroundStyle(LioTheme.inkSecondary)
-            .accessibilityIdentifier("lio.progress")
+        .frame(minHeight: 28)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(title)
+        .accessibilityAddTraits(.isStaticText)
+        .accessibilityIdentifier("lio.progress")
     }
 }
 #endif

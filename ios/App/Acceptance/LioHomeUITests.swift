@@ -641,6 +641,93 @@ import XCTest
         XCTAssertFalse(app.buttons["lio.source"].exists)
     }
 
+    func testTopControlsCenterLioAndStartANewChat() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-chat-history-acceptance", "-cj.ui.language.v1", "en"]
+        app.launch()
+        defer { app.terminate() }
+
+        let oldReply = app.staticTexts["An earlier reply."]
+        XCTAssertTrue(oldReply.waitForExistence(timeout: 8))
+        let menu = app.buttons["lio.menu"]
+        let name = app.staticTexts["lio.name"]
+        let shortcut = app.buttons["lio.chat.newShortcut"]
+        XCTAssertTrue(name.exists)
+        XCTAssertEqual(name.label, "Lio")
+        XCTAssertEqual(name.frame.midX, app.windows.firstMatch.frame.midX, accuracy: 2)
+        XCTAssertLessThan(menu.frame.maxX, name.frame.minX)
+        XCTAssertGreaterThan(shortcut.frame.minX, name.frame.maxX)
+        XCTAssertEqual(menu.frame.midY, shortcut.frame.midY, accuracy: 1)
+        XCTAssertEqual(shortcut.label, "New chat")
+        // Audit only the top controls; other elements are covered by testEnglish/testChinese.
+        let controls: Set<String> = ["lio.name", "lio.chat.newShortcut", "lio.menu"]
+        try app.performAccessibilityAudit(for: [.contrast, .hitRegion]) { issue in
+            !controls.contains(issue.element?.identifier ?? "")
+        }
+
+        XCTAssertTrue(shortcut.isEnabled)
+        shortcut.tap()
+        XCTAssertTrue(app.buttons["lio.example.0"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["lio.opening"].exists)
+        XCTAssertFalse(oldReply.exists)
+        XCTAssertFalse(app.staticTexts["lio.question"].exists)
+    }
+
+    func testJumpToLatestReturnsToTheNewestReply() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-scroll-acceptance", "-cj.ui.language.v1", "en"]
+        app.launch()
+        defer { app.terminate() }
+
+        let jump = app.buttons["lio.jumpToLatest"]
+        XCTAssertTrue(app.buttons["lio.example.0"].waitForExistence(timeout: 12))
+        XCTAssertFalse(jump.exists)
+        app.buttons["lio.example.0"].tap()
+        app.buttons["lio.send"].tap()
+        let answers = app.staticTexts.matching(identifier: "lio.answer")
+        XCTAssertTrue(answers.firstMatch.waitForExistence(timeout: 8))
+        XCTAssertFalse(jump.exists)
+        app.buttons["Next section"].tap()
+        let long = answers.containing(NSPredicate(format: "label CONTAINS %@", "Long section.")).firstMatch
+        XCTAssertTrue(long.waitForExistence(timeout: 8))
+
+        app.scrollViews.firstMatch.swipeDown()
+        app.scrollViews.firstMatch.swipeDown()
+        XCTAssertTrue(jump.waitForExistence(timeout: 4))
+        XCTAssertEqual(jump.label, "Jump to latest")
+        let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+        XCTAssertLessThan(jump.frame.maxY, composer.frame.minY)
+        XCTAssertGreaterThan(long.frame.maxY, composer.frame.minY)
+        jump.tap()
+        let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: jump)
+        XCTAssertEqual(XCTWaiter.wait(for: [gone], timeout: 4), .completed)
+        XCTAssertLessThanOrEqual(long.frame.maxY, composer.frame.minY)
+
+        app.buttons["Next section"].tap()
+        let finished = answers.containing(NSPredicate(format: "label CONTAINS %@", "End of the reply.")).firstMatch
+        XCTAssertTrue(finished.waitForExistence(timeout: 8))
+        XCTAssertLessThanOrEqual(finished.frame.maxY, composer.frame.minY)
+    }
+
+    func testLongPressOffersCopyOnMessages() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "-cj.ui.language.v1", "en", "-AppleLanguages", "(en)"]
+        app.launch()
+        defer { app.terminate() }
+
+        XCTAssertTrue(app.buttons["lio.example.0"].waitForExistence(timeout: 12))
+        app.buttons["lio.example.0"].tap()
+        app.buttons["lio.send"].tap()
+        let answer = app.staticTexts["lio.answer"]
+        XCTAssertTrue(answer.waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["lio.question"].exists)
+        answer.press(forDuration: 1.2)
+        XCTAssertTrue(app.menuItems["Copy"].waitForExistence(timeout: 4), app.debugDescription)
+    }
+
     func testLongReplyFollowsUntilTheReaderScrollsAway() {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
