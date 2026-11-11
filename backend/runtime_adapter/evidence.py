@@ -47,10 +47,15 @@ def check_snapshot(raw, *, request, binding, pins, original):
     require(type(action) is dict and action.get('binding_sha256') == binding.key and
             action.get('client_step_id') == request['step_id'] and
             action.get('request_sha256') == digest(request) and
-            action.get('message_id') == s['message_id'] and action.get('action_id') == s['action_id'],
+            action.get('message_id') == s['message_id'] and action.get('action_id') == s['action_id'] and
+            action.get('run_ids') == s['run_ids'] and action.get('inventory') == s['inventory'] and
+            action.get('result') == s['result'] and action.get('state_evidence') == s['state_evidence'],
             'ACTION_ORIGINAL_MISMATCH')
     inventory = decode(read(s['inventory']))
     require(type(inventory) is dict and inventory.get('binding_sha256') == binding.key and
+            inventory.get('client_step_id') == request['step_id'] and
+            inventory.get('request_sha256') == digest(request) and
+            inventory.get('message_id') == s['message_id'] and inventory.get('action_id') == s['action_id'] and
             inventory.get('run_ids') == s['run_ids'] and type(inventory.get('operation_ids')) is list,
             'PROTECTED_INVENTORY_REQUIRED')
     require(type(s['operations']) is list and len(s['operations']) <= 2048, 'OPERATION_BOUND')
@@ -99,6 +104,11 @@ def check_snapshot(raw, *, request, binding, pins, original):
         require(len(s['operations']) == 1 and s['operations'][0]['kind'] == 'model' and
                 s['operations'][0]['registration_id'] == 'model.runtime_reflection.1',
                 'REFLECTION_REGISTERED_MODEL_ONLY')
+        if s['result'] is not None:
+            reference(s['result'])
+            output = s['operations'][0]['output']
+            require(output is not None and s['result']['sha256'] == output['sha256'],
+                    'REFLECTION_RESULT_NOT_ORIGINAL_OUTPUT')
     require(type(s['state_evidence']) is list and len(s['state_evidence']) <= 256, 'STATE_PROOF_BOUND')
     for proof in s['state_evidence']:
         read(proof)

@@ -113,6 +113,8 @@ caller/D仍负责独立真实反馈标注及原件来源，不准将最终题或
 每个opaque ref由 B 在同一原owner/authority生命周期读取，G重算原字节SHA并核原ID/运行/
 身份/pins/原账ID；操作集合与受保护 inventory 精确一致，不能只交最后一次RUN或成功子集。
 还要复读相同原snapshot，来源/身份漂移即UNKNOWN。整个query受30秒读取界限约束。
+某一步缺失或坏原件仍继续读取其余已启动步骤，逐步保留UNKNOWN；返回前再次核读取资格。
+身份变化、撤权或读取资格失效时不返回已读的私密steps/result，不能只改状态而泄露旧载荷。
 
 provider INTENT、未settle Meter、缺回执、找不到原件、坏hash或未知ACK均UNKNOWN，
 不释放hold、不生成新动作、不登录/续身份、不resend。查询不改任何 B 数据或本地意图。
@@ -146,13 +148,19 @@ provider INTENT、未settle Meter、缺回执、找不到原件、坏hash或未�
 
 - 顶层：version、attempt_id、step_id、request_sha256、binding_sha256、pins_sha256、
   status、实际message_id/run_ids/action_id、action/inventory/result/state_evidence引用和operations。
-- action原件映射绑定client_step_id、request_sha256、原身份及实际message/action ID。
-- inventory原件映射绑定原身份、完整run_ids、有序完整operation_ids。
+- action原件映射绑定client_step_id、request_sha256、原身份及实际message/action ID、完整run_ids，
+  以及inventory/result/state_evidence的原引用，不能串用同owner另一动作的RUN或状态。
+- inventory原件映射独立绑定client_step_id、request_sha256、message/action ID、原身份、
+  完整run_ids、有序完整operation_ids。由原存储关联枚举，不能信任客户端声明的RUN集合。
+  action/inventory必须由B受保护的原client-step持久关联（或可核来源的只读映射）生成；
+  不能在query时将待验snapshot的字段复制成“证明”，从而形成自证闭环。
 - 每operation：原operation_id/attempt_id/run_id/registration_id/kind、input/output/meter/provider/fee
   引用、provider_state/meter_state/fee_state和实际model配置。model/memory必须匹配模型pin。
 - 引用为 `{ref:<B opaque original>, sha256:<原字节>}`，解析器不支持任意URL或本机文件路径。
   Meter映射绑定attempt/operation/owner/status，fee映射绑定原attempt/ledger/state，provider映射绑定
   原attempt及输入/输出hash。INTENT不能伪造已收到回执，NOT_SENT不制造provider/fee回执。
+- reflection的output必须是原RegisteredExit流最终文本的原字节，provider回执映射绑定该输出hash；
+  result必须与该唯一模型output为同一字节hash，再严格解析JSON。不能将另一份合法槽文本替作结果。
 - response缺失为null，不填空JSON或0费用。正式状态/全部Trip历史、undo_target、实际上下文/续接
   与provider输入/投影前工具结果及可见投影均在state_evidence/原件中保留，由D据实归一化并独立标注。
 

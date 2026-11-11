@@ -70,15 +70,24 @@ class RuntimeAdapter:
                 'ORIGINAL_INTENT_BINDING_CHANGED')
         steps = []
         deadline = self.clock() + 30
-        try:
-            for request in record['steps']:
+        for request in record['steps']:
+            try:
                 step = self._read_step(request, deadline)
-                steps.append(step)
-        except (Unavailable, Invalid, OSError, TimeoutError) as error:
-            # Reason codes only; raw backend messages/receipts are never echoed.
-            code = str(error) if type(error) in (Unavailable, Invalid) else type(error).__name__
-            return self._result('UNKNOWN', attempt_id, code, steps=steps)
-        original_ids = [op['attempt_id'] for step in steps for op in step['snapshot']['operations']]
+            except (Unavailable, Invalid, OSError, TimeoutError) as error:
+                # A broken/missing original cannot hide the other started RUNs.
+                code = str(error) if type(error) in (Unavailable, Invalid) else type(error).__name__
+                step = dict(status='UNKNOWN', step_id=request['step_id'], reason=code)
+            steps.append(step)
+        try:
+            # Prior successful reads are private too. Recheck before publishing
+            # any payload; revoked/changed authority or an expired read may not
+            # return the earlier results merely with an UNKNOWN label.
+            self._guard('query', deadline, read_only=True)
+        except (Unavailable, OSError, TimeoutError) as error:
+            code = str(error) if type(error) is Unavailable else type(error).__name__
+            return self._result('UNKNOWN', attempt_id, code)
+        original_ids = [op['attempt_id'] for step in steps if 'snapshot' in step
+                        for op in step['snapshot']['operations']]
         if len(original_ids) != len(set(original_ids)):
             return self._result('UNKNOWN', attempt_id, 'DUPLICATE_ORIGINAL_ATTEMPT_IN_TASK', steps=steps)
         statuses = {step['status'] for step in steps}
