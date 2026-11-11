@@ -49,12 +49,12 @@ class NationalExecution(unittest.TestCase):
             if wire['intent'] in ('consult','discuss','cancel'):
                 wire.update(extraction=None,duration_days=None,field_sources={},start_date=None)
         else:wire=model_output
-        from lio_flat_fixture import flat_fixture
-        wire=flat_fixture(wire)
+        from lio_flat_fixture import facts_fixture
+        wire=facts_fixture(wire)
         class Worker:
             memory_run=None;message_context=None;provider=object();lio_city_context=None;lio_memory=None
             def _registered_stream(self,binding,key,registration,argument,**kwargs):
-                assert registration=='model.lio_intake.6' and argument[3]==len(turns)-1
+                assert registration=='model.lio_intake.7' and argument[3]==len(turns)-1
                 yield json.dumps(wire,ensure_ascii=False)
             def _event(self,binding,state,kind,value='',**kwargs):
                 events.append((kind,value));return SimpleNamespace(sequence=state.sequence+1)

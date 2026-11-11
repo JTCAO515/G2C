@@ -32,3 +32,16 @@ def flat_fixture(value):
         elif key in ('companions','temporary_conditions'):result['extra_fields'][key]=item
         else:result['extra_fields'][key]=scalar(item,key,result['extra_unknown_fields'],result['extra_uncertain_fields'])
     return result
+
+
+def facts_fixture(value):
+    """New test-only data6 facts, never repair a received supplier response."""
+    result=flat_fixture(value)
+    result['version']='LIO-planning-intake.6'
+    result['field_sources']=[dict(field=field,**ref)for field,refs in result['field_sources'].items()
+        if not field.startswith('fixed_items') and field not in ('city','city.query')for ref in refs]
+    for item in result['fixed_items']:
+        status=item.pop('booking_status')
+        item['booking_evidence']=None if status is None else dict(status=status,
+            source_index=item['source_index'],quote=item['quote'])
+    return result

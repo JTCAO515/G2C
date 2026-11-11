@@ -8,7 +8,7 @@ import re
 from zoneinfo import ZoneInfo
 
 from cj_agent.provider import ProviderUnknown
-from cj_agent.lio_intake_flat_schema import SYSTEM as FLAT_SYSTEM
+from cj_agent.lio_intake_facts_schema import SYSTEM as FACTS_SYSTEM
 from cj_message.demo_dialogue import LIO_VERSION
 from cj_message.domain import Command,Unavailable
 from cj_message.lio_context import answer_prompt
@@ -16,7 +16,7 @@ from cj_message.lio_plan_needs import BOUND_EFFECT
 from cj_needs.domain import InvalidInput
 
 from .lio_city import CityReference,forms,_normalize
-from .lio_flat_intake import parse_flat
+from .lio_sourced_intake import parse_sourced
 from .lio_national_intake import NONPERSISTENT,fields_for,fixed_sources_complete,province_evidence,diagnostic_code,StartDateConflict,FixedTimezoneConflict
 from .lio_planning_grounding import PlanningTurn,standalone_question
 from .local_lio_planning import PlanningDetails,register
@@ -24,7 +24,7 @@ from .local_lio_planning import PlanningDetails,register
 CONTEXT='lio_planning_context.1:'
 CITY='lio_city_resolution.1:'
 MAX_TURNS=8
-CURRENT_SYSTEM=FLAT_SYSTEM
+CURRENT_SYSTEM=FACTS_SYSTEM
 # This is a publication gate, not city/date extraction or the intent router.
 # A model cannot turn an isolated date/party answer into a fresh save grant.
 PUBLICATION_REQUEST=re.compile(r"计划|规划|安排|设计|保存|存到|存入|想去|要去|帮我做|"
@@ -85,9 +85,9 @@ class NationalLioPlanning:
             messages=[*memory_messages[:-1],*messages]
         if worker.message_context is not None:messages=worker.message_context.answer_messages(binding,messages)
         system=intake_prompt(original.locale,turns)
-        raw=''.join(worker._registered_stream(binding,'model.lio_intake.0','model.lio_intake.6',
+        raw=''.join(worker._registered_stream(binding,'model.lio_intake.0','model.lio_intake.7',
                     (messages,system,worker.provider,len(turns)-1),message_refs=refs))
-        try:intake=parse_flat(raw,turns)
+        try:intake=parse_sourced(raw,turns)
         except (InvalidInput,ValueError,UnicodeError) as error:
             logging.getLogger('cj_usage.audit').warning('LIO_INTAKE_REJECTED run_id=%s code=%s output_sha256=%s output_bytes=%s',
                 binding.run_id,diagnostic_code(error),sha256(raw.encode('utf-8','surrogatepass')).hexdigest(),len(raw.encode('utf-8','surrogatepass')))
