@@ -114,14 +114,22 @@ def province_evidence(mentions,texts):
  return last
 
 
-def parse(raw,turns):
+def parse(raw,turns,*,version=VERSION):
  value=decode(raw.encode() if type(raw) is str else raw)
- exact(value,('version','intent','reply','needs_tools','city','duration_days','extraction','field_sources','current_request'))
- if value['version']!=VERSION or type(value['intent']) is not str or value['intent'] not in INTENTS or type(value['needs_tools']) is not bool:
+ current_index=version=='LIO-planning-intake.2'
+ exact(value,('version','intent','reply','needs_tools','city','duration_days','extraction','field_sources',
+              'current_source_index' if current_index else 'current_request'))
+ if value['version']!=version or type(value['intent']) is not str or value['intent'] not in INTENTS or type(value['needs_tools']) is not bool:
   raise InvalidInput('explicit nationwide intake required')
  if type(value['reply']) is not str or not value['reply'].strip() or len(value['reply'].encode())>12000:
   raise InvalidInput('bounded user-facing intake answer required')
- if value['current_request']!=turns[-1].text:raise InvalidInput('intake must bind the complete latest request')
+ if current_index:
+  index=value['current_source_index']
+  if type(index) is not int or index!=len(turns)-1:raise InvalidInput('intake must bind the complete latest request')
+  current_request=turns[index].text
+ else:
+  if value['current_request']!=turns[-1].text:raise InvalidInput('intake must bind the complete latest request')
+  current_request=value['current_request']
  sources=value['field_sources']
  if type(sources) is not dict:raise InvalidInput('original field evidence required')
  def source(ref):
@@ -182,7 +190,7 @@ def parse(raw,turns):
      if relative_dates and (len(relative_dates)!=1 or observation['value'] not in relative_dates):
       raise InvalidInput('relative date differs from its original question day')
  intent='discuss' if value['intent'] in ('plan','save') and NONPERSISTENT.search(turns[-1].text) else value['intent']
- return Intake(intent,value['reply'],value['needs_tools'],city,days,extraction,sources,value['current_request'])
+ return Intake(intent,value['reply'],value['needs_tools'],city,days,extraction,sources,current_request)
 
 
 def fields_for(intake,city_reference,*,message_id,run_id,source_text):

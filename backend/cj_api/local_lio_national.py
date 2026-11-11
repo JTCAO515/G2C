@@ -8,6 +8,7 @@ import re
 from zoneinfo import ZoneInfo
 
 from cj_agent.provider import ProviderUnknown
+from cj_agent.lio_intake_current_schema import GUIDANCE
 from cj_message.demo_dialogue import LIO_VERSION
 from cj_message.domain import Command,Unavailable
 from cj_message.lio_context import answer_prompt
@@ -22,6 +23,10 @@ from .local_lio_planning import PlanningDetails,register
 CONTEXT='lio_planning_context.1:'
 CITY='lio_city_resolution.1:'
 MAX_TURNS=8
+CURRENT_SYSTEM=SYSTEM.replace('field_sources,current_request','field_sources,current_source_index').replace(
+    'version is LIO-planning-intake.1.','version is LIO-planning-intake.2.').replace(
+    'current_request copies the complete latest traveler message exactly.',
+    'current_source_index identifies the latest original traveler message.')
 # This is a publication gate, not city/date extraction or the intent router.
 # A model cannot turn an isolated date/party answer into a fresh save grant.
 PUBLICATION_REQUEST=re.compile(r"计划|规划|安排|设计|保存|存到|存入|想去|要去|帮我做|"
@@ -77,10 +82,10 @@ class NationalLioPlanning:
             memory_messages=worker.memory_run.messages(text)
             messages=[*memory_messages[:-1],*messages]
         if worker.message_context is not None:messages=worker.message_context.answer_messages(binding,messages)
-        system=answer_prompt(original.locale)+' '+SYSTEM+' Original traveler messages have source indices 0 through '+str(len(turns)-1)+'. Stored memory data is not an indexed traveler message. Original local China days in that order: '+dates
-        raw=''.join(worker._registered_stream(binding,'model.lio_intake.0','model.lio_intake.1',
-                    (messages,system,worker.provider),message_refs=refs))
-        try:intake=parse(raw,turns)
+        system=answer_prompt(original.locale)+' '+CURRENT_SYSTEM+GUIDANCE+' Original traveler messages have source indices 0 through '+str(len(turns)-1)+'. Stored memory data is not an indexed traveler message. Original local China days in that order: '+dates
+        raw=''.join(worker._registered_stream(binding,'model.lio_intake.0','model.lio_intake.3',
+                    (messages,system,worker.provider,len(turns)-1),message_refs=refs))
+        try:intake=parse(raw,turns,version='LIO-planning-intake.2')
         except (InvalidInput,ValueError,UnicodeError) as error:
             logging.getLogger('cj_usage.audit').warning('LIO_INTAKE_REJECTED run_id=%s code=%s output_sha256=%s output_bytes=%s',
                 binding.run_id,diagnostic_code(error),sha256(raw.encode('utf-8','surrogatepass')).hexdigest(),len(raw.encode('utf-8','surrogatepass')))

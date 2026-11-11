@@ -278,8 +278,9 @@ class RunWorker:
         yield from self._stream_source(binding,source,draft=draft)
 
     def _registered_stream(self,binding,key,registration,argument,*,progress=None,message_refs=()):
-        if self.memory_history and registration in ('model.answer','model.draft','model.lio_intake.1'):
-            messages,system,_=argument
+        if self.memory_history and registration in ('model.answer','model.draft','model.lio_intake.1','model.lio_intake.2','model.lio_intake.3'):
+            if registration=='model.lio_intake.3':messages,system,_,_=argument
+            else:messages,system,_=argument
             self._model_history(binding,messages,system,message_refs=message_refs)
         options={'reserve_final_model':True} if self._lio_active and registration.startswith('tool.') else {}
         prepared=self.budget_exit.prepare_operation(self.runs,binding,key,registration,argument,stage='answer',**options)

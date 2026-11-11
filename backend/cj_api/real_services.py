@@ -324,6 +324,8 @@ class RealTools:
         model=Registration('model',self._model_input)
         self.registrations=MappingProxyType({'model.answer':model,'model.draft':model,'model.tool_turn':model,
             'model.lio_intake.1':Registration('model',self._lio_intake_input),
+            'model.lio_intake.2':Registration('model',self._lio_intake_schema_input),
+            'model.lio_intake.3':Registration('model',self._lio_intake_current_input),
             'tool.lio_city.1':Registration('tool',self._city_input),
             'memory.lio_extract.1':Registration('memory',self._lio_memory_input),
             **{'tool.'+name:Registration('tool',lambda argument,name=name:self._tool_input(name,argument)) for name in {NATIVE_REGISTRATION[n] for n in allowed_native}}})
@@ -373,12 +375,21 @@ class RealTools:
     def _lio_intake_input(self,argument):
         return self._model_input(argument,national_intake=True)
 
+    def _lio_intake_schema_input(self,argument):
+        return self._model_input(argument,national_intake=True,intake_profile='LIO-planning-intake.2')
+
+    def _lio_intake_current_input(self,argument):
+        return self._model_input(argument,national_intake=True,intake_profile='LIO-planning-intake.3')
+
     def _lio_memory_input(self, argument):
         return self._model_input(argument, release_after_send=True)
 
-    def _model_input(self,argument,*,release_after_send=False,national_intake=False):
+    def _model_input(self,argument,*,release_after_send=False,national_intake=False,intake_profile='LIO-planning-intake.1'):
         native_turn = type(argument) is ModelInput
-        if native_turn:
+        if intake_profile=='LIO-planning-intake.3':
+            messages,system,provider,source_index=argument
+            native_reply=None;final_answer=False;turn_profile=M4_NATIVE_TURN_PROFILE_V2
+        elif native_turn:
             messages,system,provider=argument.messages,argument.system,argument.provider
             native_reply=argument.native_reply
             final_answer=argument.final_answer
@@ -389,10 +400,15 @@ class RealTools:
         wrapped=type(provider) in (_MemoryProvider,_EditMemoryProvider)
         if (provider.original if wrapped else provider) is not self.services.model:
             raise BudgetUnknown('M4 model registration mismatch')
+        from cj_agent.lio_intake_schema import SCHEMA_SHA256
+        from cj_agent.lio_intake_current_schema import response_format_sha256
         raw=canonical(dict(messages=messages,system=system,endpoint=M4_BASE,model=M4_MODEL,synthetic_only=True,
                            native_tools=(self.national_tools if argument.national else self.native_tools) if native_turn else None,
                            **({'response_mode':'lio-memory-json.1'} if release_after_send else {}),
-                           **({'structured_profile':'LIO-planning-intake.1'} if national_intake else {}),
+                           **({'structured_profile':intake_profile} if national_intake else {}),
+                           **({'response_format_sha256':SCHEMA_SHA256} if national_intake and intake_profile=='LIO-planning-intake.2' else {}),
+                           **({'current_source_index':source_index,'response_format_sha256':response_format_sha256(source_index)}
+                              if intake_profile=='LIO-planning-intake.3' else {}),
                            **({'answer_format_profile':'lio-user.1'} if native_turn and argument.lio_answer else {}),
                            **({'native_turn_profile':turn_profile,'external_tools_disabled':final_answer} if native_turn else {})))
         inputs=json.loads(raw);metadata={}
@@ -415,7 +431,8 @@ class RealTools:
                         native_turn_profile=inputs.get('native_turn_profile'),final_answer=inputs.get('external_tools_disabled',False),
                         release_after_send=inputs.get('response_mode')=='lio-memory-json.1',
                         lio_answer=inputs.get('answer_format_profile')=='lio-user.1',
-                        **({'structured_profile':inputs['structured_profile']} if 'structured_profile' in inputs else {}))
+                        **({'structured_profile':inputs['structured_profile']} if 'structured_profile' in inputs else {}),
+                        **({'intake_source_index':inputs['current_source_index']} if 'current_source_index' in inputs else {}))
                     if national_intake and self.tool_evidence is not None and self.tool_evidence.intake_enabled:
                         result=''.join(stream)
                         if checked() is not True:raise BudgetUnknown('original intake evidence authority changed')
