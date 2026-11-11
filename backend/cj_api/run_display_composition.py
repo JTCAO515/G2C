@@ -1,6 +1,6 @@
 """Explicit local display-only composition; one existing MESSAGE authority."""
 from dataclasses import dataclass
-from .composition import CompositionUnavailable,_internal_modules
+from .composition import CompositionUnavailable,_internal_modules,_strict_admission_checker
 
 @dataclass(frozen=True)
 class RunDisplayWireConfiguration:
@@ -24,10 +24,8 @@ def build_run_display_reader(*,environment,jwt_configuration,verification_keys,a
                              resolve_message_repository,resolve_run,configuration):
     if environment!='local' or None in (resolve_message_repository,resolve_run,verification_keys,access_provider):
         raise CompositionUnavailable('Explicit local display AUTH and resolvers required')
-    modules=_internal_modules('run_display');auth=modules['cj_auth.jwt_adapter']
-    if not isinstance(jwt_configuration,auth.JWTConfiguration) or jwt_configuration.profile is not auth.JWTProfile.STRICT_V1:
-        raise CompositionUnavailable('Fixed strict AUTH profile required')
-    checker=modules['cj_auth.admission'].AdmissionChecker(auth.PyJWTVerifier(jwt_configuration,verification_keys),access_provider)
+    modules=_internal_modules('run_display')
+    checker=_strict_admission_checker(modules,jwt_configuration,verification_keys,access_provider)
     message=modules['cj_message.auth_boundary'].Boundary(checker,resolve_message_repository,None)
     return _attach_run_display(message,resolve_run,configuration)
 

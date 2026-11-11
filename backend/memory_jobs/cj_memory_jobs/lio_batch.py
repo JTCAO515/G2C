@@ -1,4 +1,5 @@
 """Single-message Lio batch; old history batches keep their own stream."""
+from cj_strict_json import compact
 from dataclasses import asdict
 from hashlib import sha256
 import json
@@ -13,7 +14,7 @@ ATTEMPT_PREFIX = 'lio-message-attempt-v1:'
 
 
 def _canonical(value):
-    return json.dumps(value, ensure_ascii=True, sort_keys=True, separators=(',', ':')).encode('ascii')
+    return compact(value, sort_keys=True, ensure_ascii=True, allow_nan=True)
 
 
 def encode_batch(source, rows, mode):

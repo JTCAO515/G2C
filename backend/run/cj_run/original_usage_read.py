@@ -3,9 +3,9 @@
 No Meter dependency or mutation; stored association is not proof of dispatch,
 reservation, execution, fees, or current USAGE status.
 """
+from cj_strict_json import compact
 from dataclasses import dataclass
 import inspect
-import json
 from cj_message.auth_boundary import Boundary, HistoryReadContext
 from .core import Binding
 from .postgres import Repository
@@ -147,11 +147,11 @@ class OriginalUsageAssociationReader:
             current_source()
             first, usage, values = _association(repository, binding)
             frozen()  # Canonical recovery has committed and closed before publication.
-            body = json.dumps({
+            body = compact({
                 'conversation_id': binding.conversation_id, 'generation': binding.generation,
                 'message_id': binding.message_id, 'message_sequence': binding.message_sequence,
                 'run_id': binding.run_id, 'attempt_id': values['attempt_id'], 'operation_id': values['operation_id'],
-            }, ensure_ascii=False, separators=(',', ':'), allow_nan=False).encode('utf-8')
+            })
             if len(body) > limit:
                 raise UsageAssociationTooLarge('original references exceed configured byte bound')
             encoded = project(body)

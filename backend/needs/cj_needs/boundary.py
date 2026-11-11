@@ -5,9 +5,8 @@ MESSAGE/RUN assertion, or additional authorization policy is accepted.
 """
 from contextvars import ContextVar
 from dataclasses import dataclass
-import inspect
-import threading
 from cj_auth.interfaces import AdmissionStatus, TrustedPrincipal
+from cj_auth.operation_fence import FencedOperation, new_state, run_fenced
 from .domain import Command, CommitUnknown, Denied, identifier
 from .postgres import Repository
 
@@ -27,52 +26,30 @@ class Metadata:
     scope: str
 
 
-class Operation:
-    def __init__(self, repository, metadata, state):
-        self.__repository, self.__metadata, self.__state = repository, metadata, state
+class Operation(FencedOperation):
+    active, withheld, commit_unknown = _active, OperationWithheld, CommitUnknown
 
-    def __check(self):
-        s = self.__state
-        if not s['active'] or s['blocked'] or _active.get() is not self or threading.get_ident() != s['thread']:
-            s['blocked'] = True
-            raise OperationWithheld(s['action_id'], s['commit_possible'])
+    def _admit(self, s, method, args):
+        if s.get('read_only', False) and method not in ('detail', 'revision'):
+            raise Denied('protected projection is read-only')
+        if method == 'act':
+            if s['write_started']: raise ValueError('one action per operation')
+            if type(args[0]) is not Command: raise ValueError('validated command required')
+            aid = args[0].action_id
+            if s['action_id'] not in (None, aid): raise ValueError('original action changed')
+            s['write_started'] = True
+            s['action_id'] = aid
+            return True
+        if method == 'query_action':
+            aid = identifier(args[0])
+            if s['action_id'] not in (None, aid): raise ValueError('original action changed')
+            s['action_id'] = aid
+        return False
 
-    @property
-    def metadata(self):
-        self.__check()
-        return self.__metadata
-
-    def __call(self, method, *args):
-        self.__check()
-        s = self.__state
-        try:
-            if s.get('read_only', False) and method not in ('detail', 'revision'):
-                raise Denied('protected projection is read-only')
-            if method == 'act':
-                if s['write_started']: raise ValueError('one action per operation')
-                if type(args[0]) is not Command: raise ValueError('validated command required')
-                aid = args[0].action_id
-                if s['action_id'] not in (None, aid): raise ValueError('original action changed')
-                s['write_started'] = True
-                s['action_id'] = aid
-            elif method == 'query_action':
-                aid = identifier(args[0])
-                if s['action_id'] not in (None, aid): raise ValueError('original action changed')
-                s['action_id'] = aid
-            result = getattr(self.__repository, method)(*args)
-            if method == 'act': s['commit_possible'] = True
-            return result
-        except BaseException as exc:
-            s['blocked'] = True
-            s['commit_possible'] |= bool(getattr(exc, 'commit_possible', False)) or isinstance(exc, CommitUnknown)
-            if s['commit_possible'] or not isinstance(exc, Exception):
-                raise OperationWithheld(s['action_id'], s['commit_possible']) from None
-            raise
-
-    def act(self, command): return self.__call('act', command)
-    def query_action(self, action_id): return self.__call('query_action', action_id)
-    def detail(self, needs_id): return self.__call('detail', needs_id)
-    def revision(self, needs_id, version): return self.__call('revision', needs_id, version)
+    def act(self, command): return self._call('act', command)
+    def query_action(self, action_id): return self._call('query_action', action_id)
+    def detail(self, needs_id): return self._call('detail', needs_id)
+    def revision(self, needs_id, version): return self._call('revision', needs_id, version)
 
 
 class Boundary:
@@ -81,10 +58,9 @@ class Boundary:
         self.repository_factory = repository_factory
 
     def with_operation(self, token, callback):
-        state = dict(active=True, blocked=False, action_id=None, commit_possible=False, write_started=False,
-                     thread=threading.get_ident())
-        context_token = None
-        try:
+        state = new_state(write_started=False)
+
+        def bind():
             checker, resolve = self.checker, self.resolve
             if checker is None or resolve is None: raise Denied('AUTH unconfigured')
             first = checker.check(token)
@@ -109,21 +85,6 @@ class Boundary:
                     raise
 
             repository = self.repository_factory(connect, scope, guard)
-            operation = Operation(repository, Metadata(first.principal, scope), state)
-            context_token = _active.set(operation)
-            guard('entry')
-            result = callback(operation)
-            if type(result) is not bytes:
-                if inspect.iscoroutine(result): result.close()
-                raise TypeError('synchronous fully encoded bytes required')
-            guard('serialized_return')
-            return result
-        except BaseException as exc:
-            state['blocked'] = True
-            state['commit_possible'] |= bool(getattr(exc, 'commit_possible', False)) or isinstance(exc, CommitUnknown)
-            if isinstance(exc, OperationWithheld) or state['commit_possible'] or not isinstance(exc, Exception):
-                raise OperationWithheld(state['action_id'], state['commit_possible']) from None
-            raise
-        finally:
-            state['active'] = False
-            if context_token is not None: _active.reset(context_token)
+            return Operation(repository, Metadata(first.principal, scope), state), guard
+
+        return run_fenced(Operation, state, bind, callback)

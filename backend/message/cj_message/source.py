@@ -1,5 +1,6 @@
 """MESSAGE-SOURCE@1: committed intervals under canonical MESSAGE + consent locks."""
 from __future__ import annotations
+from cj_strict_json import compact
 
 from dataclasses import dataclass
 from hashlib import sha256
@@ -98,8 +99,7 @@ class SourceSnapshot:
 
 
 def end_id(scope, query: EndQuery):
-    raw = json.dumps([scope, query.conversation_id, query.generation, query.epoch, query.through],
-                     ensure_ascii=True, separators=(",", ":")).encode("ascii")
+    raw = compact([scope, query.conversation_id, query.generation, query.epoch, query.through], ensure_ascii=True, allow_nan=True)
     return sha256(raw).hexdigest()
 
 

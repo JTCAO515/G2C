@@ -1,4 +1,5 @@
 """NEEDS@1.0 data codec; owner, freshness and publication permission stay external."""
+from cj_strict_json import compact
 import base64
 import binascii
 from hashlib import sha256
@@ -16,7 +17,7 @@ MAX_BYTES = 524288
 
 
 def _dump(value):
-    return json.dumps(value, ensure_ascii=False, separators=(',', ':'), allow_nan=False).encode('utf8')
+    return compact(value)
 
 
 def _load(raw):

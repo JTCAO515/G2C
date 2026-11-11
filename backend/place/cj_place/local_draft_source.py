@@ -1,5 +1,5 @@
 """Append-only synthetic producer interface returning the original typed parse."""
-import json
+from cj_strict_json import compact
 from .local_source import LocalPlaceProducer
 from .gaode import prepare,PreparationError,Response,parse_response
 from .contract_v1 import encode_result
@@ -20,7 +20,7 @@ class LocalDraftPlaceProducer(LocalPlaceProducer):
         def invoke():
             self.invocations+=1;self.transport_calls+=1
             status,payload=self._response(query)
-            raw=payload if type(payload) is bytes else json.dumps(payload,ensure_ascii=False,separators=(',',':')).encode('utf8')
+            raw=payload if type(payload) is bytes else compact(payload, allow_nan=True)
             response=Response(request.binding_digest,request.origin,request.path,status,raw,self.clock())
             parsed_at=self.clock()
             result=parse_response(config,request,response,now=parsed_at,evidence='synthetic')

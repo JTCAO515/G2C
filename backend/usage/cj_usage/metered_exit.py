@@ -147,6 +147,10 @@ class MeteredExitCore:
                 previous=ledger.last_clock
         except (CommitUnknown,RepositoryUnavailable,CorruptLedger,DatabaseError,Blocked):
             raise BudgetUnknown('original publication budget outcome unavailable') from None
+        return self._deadline(started,previous)
+
+    def _deadline(self,started,previous):
+        """SQL-free total run time check from an already read start and clock."""
         def check():
             nonlocal previous
             previous=self._now(previous)

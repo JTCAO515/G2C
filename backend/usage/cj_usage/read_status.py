@@ -1,6 +1,6 @@
 """Minimal historical status; internal values, not an HTTP schema."""
+from cj_strict_json import compact
 from dataclasses import dataclass, asdict
-import json
 from .core import Attempt, Config
 
 class ReadUnavailable(Exception):
@@ -43,5 +43,4 @@ def status_of(attempt, config):
 def encode_status(status):
     if type(status) is not AttemptStatus:
         raise ReadUnavailable('invalid status projection')
-    return json.dumps(asdict(status), ensure_ascii=False, allow_nan=False,
-                      separators=(',', ':')).encode('utf-8')
+    return compact(asdict(status))

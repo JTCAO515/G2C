@@ -70,6 +70,15 @@ struct PreviewV1Tests {
         root["source"] = source; root["fields"] = fields
         #expect(throws: (any Error).self) { try f.decode(JSONSerialization.data(withJSONObject: root)) }
     }
+    @Test func nonObjectFieldsFailClosedInsteadOfCrashing() throws {
+        let f = try #require(fixtures().first(where: { $0.name == "questions" }))
+        let replacements: [Any] = ["text", 7, true, ["party_size"]]
+        for replacement in replacements {
+            var root = try #require(JSONSerialization.jsonObject(with: f.bytes) as? [String: Any])
+            root["fields"] = replacement
+            #expect(throws: (any Error).self) { try f.decode(JSONSerialization.data(withJSONObject: root)) }
+        }
+    }
     @Test func duplicateNullIntegerTokenAndOriginalUnicodeDoNotNormalize() throws {
         let f = try #require(fixtures().first)
         let text = String(decoding: f.bytes, as: UTF8.self)

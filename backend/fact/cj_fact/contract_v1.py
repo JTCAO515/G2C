@@ -1,4 +1,5 @@
 """FACT@1.0 bounded data codec over the existing source parser/evaluator."""
+from cj_strict_json import compact
 import base64
 import binascii
 from datetime import date, datetime
@@ -18,7 +19,7 @@ WIRE_POLICY = SourcePolicy((ORIGIN,), 131072, 1, 0, 2, 24, 16384)
 
 
 def dump(value):
-    return json.dumps(value, ensure_ascii=False, separators=(',', ':'), allow_nan=False).encode('utf8')
+    return compact(value)
 
 
 def load(raw):

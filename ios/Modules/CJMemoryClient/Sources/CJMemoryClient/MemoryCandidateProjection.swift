@@ -37,8 +37,5 @@ public struct MemoryCandidateProjectionPage: Sendable {
     }
 }
 
-func candidateItemIdentity(_ value: StrictJSONValue?) throws -> String {
-    let string = try historyString(value, limit: 16384)
-    guard string.unicodeScalars.count <= 4096 else { throw MemoryFailure.invalidResponse }
-    return string
-}
+/// Same bounds as candidate text; the name records what the field identifies.
+func candidateItemIdentity(_ value: StrictJSONValue?) throws -> String { try candidateText(value) }

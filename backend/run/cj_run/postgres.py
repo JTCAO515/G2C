@@ -1,9 +1,9 @@
 """Injected DB-API repository. No DSN, connection creation, auth or dispatch."""
+from cj_strict_json import compact
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
 import hashlib
-import json
 import logging
 from psycopg.errors import LockNotAvailable
 from .core import Binding, State, Event, Cursor, Conflict, Denied, ResyncRequired, WorkerOwnershipLost, advance, page
@@ -78,7 +78,7 @@ class Repository:
         lock remains until explicit release or process/session death.
         """
         if binding.scope != self.scope: raise Denied('scope unavailable')
-        raw = b'CJ-RUN-WORKER-LEASE@1\x00' + json.dumps(binding.chat, ensure_ascii=False, separators=(',', ':')).encode()
+        raw = b'CJ-RUN-WORKER-LEASE@1\x00' + compact(binding.chat, allow_nan=True)
         unsigned = int.from_bytes(hashlib.sha256(raw).digest()[:8], 'big')
         key = unsigned if unsigned < 1 << 63 else unsigned - (1 << 64)
         high, low = unsigned >> 32, unsigned & 0xffffffff

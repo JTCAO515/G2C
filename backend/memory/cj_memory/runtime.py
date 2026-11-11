@@ -3,9 +3,9 @@
 A RuntimeRun is issued from a fresh guarded consumption, never caller Context.
 The host acquires RUN before hold(), retaining hold until RUN commit completes.
 """
+from cj_strict_json import compact
 from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
-import json
 import threading
 from psycopg import Error as DatabaseError
 
@@ -122,8 +122,7 @@ class RuntimeMemory:
                     item['context']=(None if command.extent=='long_term' else
                         dict(kind=command.context_kind,id=command.context_id))
             try:
-                return json.dumps({'version': self.payload_version, 'items': items},
-                                  ensure_ascii=False, separators=(',', ':')).encode('utf-8')
+                return compact({'version': self.payload_version, 'items': items}, allow_nan=True)
             except UnicodeError:
                 raise InvalidInput('memory context is not UTF-8') from None
 

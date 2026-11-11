@@ -1,4 +1,5 @@
 """Code-owned registrations over the single accounting engine."""
+from cj_strict_json import compact
 from dataclasses import dataclass
 import json
 from types import MappingProxyType
@@ -34,8 +35,7 @@ def _model_input(argument):
     if not isinstance(provider,FakeProvider):
         raise BudgetUnknown('registered model adapter permits only FakeProvider')
     try:
-        raw=json.dumps({'messages':messages,'system':system},ensure_ascii=False,
-                       separators=(',',':'),allow_nan=False).encode('utf-8')
+        raw=compact({'messages':messages,'system':system})
     except UnicodeError:
         raise BudgetUnknown('registered model input encoding unavailable') from None
     inputs=json.loads(raw)
@@ -72,7 +72,6 @@ class RegisteredExit(MeteredExitCore):
         are never resumed through this path, so a lost clock cannot be reset.
         """
         from cj_run.step_usage import ledger_scope_for
-        from .metered_exit import BudgetExceeded
         try:OperationStore(runs,self.config).bind_period_without_operation(binding)
         except (OriginalStepOnly,RunCommitUnknown,DatabaseError):
             raise BudgetUnknown('original zero-model period unavailable') from None
@@ -81,12 +80,8 @@ class RegisteredExit(MeteredExitCore):
             with meter.repo.transaction() as ledger:previous=ledger.last_clock
         except (CommitUnknown,RepositoryUnavailable,CorruptLedger,DatabaseError,Blocked):
             raise BudgetUnknown('original result clock unavailable') from None
-        started=previous=self._now(previous)
-        def check():
-            nonlocal previous
-            previous=self._now(previous)
-            if previous-started>=self.config.max_seconds:raise BudgetExceeded('draft')
-        return check
+        started=self._now(previous)
+        return self._deadline(started,started)
 
     def prepare_operation(self,runs,binding,operation_key,registration_id,argument,*,stage,reserve_final_model=False):
         try: registration=self.registrations[registration_id]
