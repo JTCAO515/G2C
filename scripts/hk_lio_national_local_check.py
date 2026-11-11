@@ -76,21 +76,22 @@ def exercise(root,conninfo):
             else:
                 content=('You have shared that you prefer fewer stops in a day.' if has_saved else
                          "I don't know you yet. Would you like to introduce yourself?")
-        elif 'LIO-planning-intake.1' in system:
+        elif 'LIO-planning-intake.2' in system:
             text=body['messages'][-1]['content'];current['text']=text
             source_index=len([m for m in body['messages'][1:] if m['role']=='user' and not m['content'].startswith('Stored memory data')])-1
-            from cj_agent.lio_intake_schema import RESPONSE_FORMAT
-            assert body['response_format']==RESPONSE_FORMAT
-            if text in MISSING_REQUESTS:
-                _,mention,duration=MISSING_REQUESTS[text]
-                content=json.dumps(dict(version='LIO-planning-intake.1',intent='plan',reply='请补充日期和人数。',needs_tools=False,
-                    city=dict(query=mention,normalized_name=None,province=None,source_index=source_index,quote=mention),duration_days=3,
+            from cj_agent.lio_intake_current_schema import response_format
+            assert body['response_format']==response_format(source_index)
+            if text in MISSING_REQUESTS or text in ('继续','Please continue.'):
+                _,mention,duration=MISSING_REQUESTS[text if text in MISSING_REQUESTS else current['missing_question']]
+                evidence_index=source_index if text in MISSING_REQUESTS else 0
+                content=json.dumps(dict(version='LIO-planning-intake.2',intent='plan',reply='请补充日期和人数。',needs_tools=False,
+                    city=dict(query=mention,normalized_name=None,province=None,source_index=evidence_index,quote=mention),duration_days=3,
                     extraction=dict(version='NEEDS-extraction.1',fields={},unresolved=[],long_term_requests=[]),
-                    field_sources={'duration_days':[dict(source_index=source_index,quote=duration)]},current_request=text),ensure_ascii=False)
+                    field_sources={'duration_days':[dict(source_index=evidence_index,quote=duration)]},current_source_index=source_index),ensure_ascii=False)
             elif text==PREFERENCE:
-                content=json.dumps(dict(version='LIO-planning-intake.1',intent='consult',reply='I can suggest a relaxed pace.',needs_tools=False,
+                content=json.dumps(dict(version='LIO-planning-intake.2',intent='consult',reply='I can suggest a relaxed pace.',needs_tools=False,
                     city=None,duration_days=None,extraction=dict(version='NEEDS-extraction.1',fields={},unresolved=[],long_term_requests=[]),
-                    field_sources={},current_request=text))
+                    field_sources={},current_source_index=source_index))
             else:
                 content=None
             fields=dict(arrival=dict(date=dict(state='known',value='2026-11-20'),time=dict(state='missing'),timezone=dict(state='missing'),place=dict(state='missing')),party_size=dict(state='known',value=2))
@@ -104,10 +105,10 @@ def exercise(root,conninfo):
                     applies_to=['self'],locked=dict(state='known',value=True),booking_status=dict(state='unknown'),
                     start=event('09:00'),end=event('10:00'))]
                 sources['fixed_items']=[dict(source_index=source_index,quote=current['fixed_description'])]
-            content=content or json.dumps(dict(version='LIO-planning-intake.1',intent='plan',reply='I can arrange the trip.',needs_tools=False,
+            content=content or json.dumps(dict(version='LIO-planning-intake.2',intent='plan',reply='I can arrange the trip.',needs_tools=False,
                 city=dict(query=current['mention'],normalized_name=None,province=None,source_index=source_index,quote=current['mention']),
                 duration_days=3,extraction=dict(version='NEEDS-extraction.1',fields=fields,unresolved=[],long_term_requests=[]),
-                field_sources=sources,current_request=text),ensure_ascii=False)
+                field_sources=sources,current_source_index=source_index),ensure_ascii=False)
         elif 'MEMORY-EXTRACT@2' in system:
             entries=[]
             source=json.loads(body['messages'][-1]['content'])['messages']
@@ -128,10 +129,9 @@ def exercise(root,conninfo):
             else:
                 content=json.dumps(dict(version='TRIP-lio-first-plan.1',title=current['en']+' trip',items=items,
                     proposed_subjects={item['id']:['party'] for item in items}),ensure_ascii=False)
-        if 'LIO-planning-intake.1' in system:
-            from cj_agent.lio_intake_schema import SCHEMA
+        if 'LIO-planning-intake.2' in system:
             from jsonschema import Draft202012Validator
-            Draft202012Validator(SCHEMA).validate(json.loads(content))
+            Draft202012Validator(body['response_format']['json_schema']['schema']).validate(json.loads(content))
         identity=dict(id='fixture-national-'+str(len(wire)),model=M4_MODEL)
         events=[dict(**identity,choices=[dict(index=0,delta=dict(content=content),finish_reason=None)]),
                 dict(**identity,choices=[dict(index=0,delta={},finish_reason='stop')]),
@@ -162,18 +162,24 @@ def exercise(root,conninfo):
     headers={'Authorization':'Bearer '+dev_auth.token(auth,SUBJECT,3600),'Content-Type':'application/octet-stream'}
     with TestClient(app) as api,patch('cj_api.lio_city._catalog_exchange',side_effect=city_exchange):
         for index,(question,(locale,mention,duration)) in enumerate(MISSING_REQUESTS.items()):
-            current.update(zh='成都',en='Chengdu',locale=locale,mention=mention,party='两个人',duration=duration,fixed_description='not-present')
+            current.update(zh='成都',en='Chengdu',locale=locale,mention=mention,party='两个人',duration=duration,fixed_description='not-present',missing_question=question)
             mid='missing-original-'+str(index)
             clarification_request=dict(version='LIO-message.2',message_id=mid,text=question,locale=locale,new_conversation=True)
             accepted=api.post('/v2/lio/messages',headers=headers,content=json.dumps(clarification_request).encode());assert accepted.status_code==200,accepted.text
             assert [(o.message_id,o.status) for o in process()]==[(mid,'completed')]
             rows=api.get('/v2/lio/timeline',headers=headers,params=dict(conversation_id=accepted.json()['conversation_id'])).json()['messages']
             assert rows[-1]['trip'] is None and rows[-1]['status']=='completed' and rows[-1]['answer']
+            continuation=dict(version='LIO-message.2',message_id=mid+'-continue',locale=locale,
+                text='继续' if locale=='zh' else 'Please continue.',conversation_id=accepted.json()['conversation_id'])
+            followed=api.post('/v2/lio/messages',headers=headers,content=json.dumps(continuation).encode());assert followed.status_code==200,followed.text
+            assert [(o.message_id,o.status) for o in process()]==[(mid+'-continue','completed')]
+            rows=api.get('/v2/lio/timeline',headers=headers,params=dict(conversation_id=accepted.json()['conversation_id'])).json()['messages']
+            assert len(rows)==2 and all(row['trip'] is None and row['status']=='completed' and row['answer'] for row in rows)
             with database.connect(scope) as db:
-                assert db.execute('SELECT count(*) FROM cj_message_needs_binding WHERE message_scope=%s AND message_id=%s',(scope,mid)).fetchone()==(0,)
+                assert db.execute('SELECT count(*) FROM cj_message_needs_binding WHERE message_scope=%s AND message_id=ANY(%s)',(scope,[mid,mid+'-continue'])).fetchone()==(0,)
                 assert db.execute('SELECT count(*) FROM cj_trip_record').fetchone()==(0,)
                 assert db.execute('SELECT count(*) FROM cj_memory_item').fetchone()==(0,)
-            print('PASS signed exact missing-date/party clarification, zero NEEDS/Trip/active Memory',locale,flush=True)
+            print('PASS signed exact missing-date/party and current-source continuation, zero NEEDS/Trip/active Memory',locale,flush=True)
         for zh,en,adcode in CITIES:
             for locale in ('zh','en'):
                 current.update(zh=zh,en=en,locale=locale,mention=zh if locale=='zh' else en,

@@ -445,7 +445,7 @@ class MeteredDashScopeProvider:
                 finally:loop.close()
 
     def invoke(self,messages,system,attempt,*,tools=None,receipt,guard,native_reply=None,tool_choice=None,
-               native_turn_profile=None,final_answer=False,release_after_send=False,lio_answer=False,structured_profile=None):
+               native_turn_profile=None,final_answer=False,release_after_send=False,lio_answer=False,structured_profile=None,intake_source_index=None):
         from cj_usage.authorization_budget import canonical
         native_tools=tools or []
         buffered=native_turn_profile==M4_NATIVE_TURN_BUFFERED
@@ -457,7 +457,7 @@ class MeteredDashScopeProvider:
                 or (proxy or incremental) and (not native_tools or tool_choice is not None)
                 or final_answer and not (proxy or incremental)):
             raise ProviderFailed('explicit native turn transport required')
-        if structured_profile not in (None,'LIO-planning-intake.1','LIO-planning-intake.2') or structured_profile is not None and (native_tools or system is None):
+        if structured_profile not in (None,'LIO-planning-intake.1','LIO-planning-intake.2','LIO-planning-intake.3') or structured_profile is not None and (native_tools or system is None):
             raise ProviderFailed('explicit nationwide structured profile required')
         if release_after_send and (native_tools or system is None):
             raise ProviderFailed('explicit structured model input required')
@@ -507,7 +507,10 @@ class MeteredDashScopeProvider:
         if tool_choice is not None:body['tool_choice']=tool_choice
         if native_tools and not (proxy or incremental):body['response_format']=_m4_native_answer_format()
         elif not native_tools and system is not None:
-            if structured_profile=='LIO-planning-intake.2':
+            if structured_profile=='LIO-planning-intake.3':
+                from .lio_intake_current_schema import response_format
+                body['response_format']=response_format(intake_source_index)
+            elif structured_profile=='LIO-planning-intake.2':
                 from .lio_intake_schema import RESPONSE_FORMAT
                 body['response_format']=RESPONSE_FORMAT
             else:body['response_format']={'type':'json_object'}
