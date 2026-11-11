@@ -36,6 +36,15 @@ COMPACT_DRAFT = (
     'Add no other stops. Use short new stop labels. '
     'Return only the compact JSON object.'
 )
+NATIONAL_COMPACT_DRAFT = (
+    ' Cover each requested date and requested morning/afternoon/evening period. '
+    'An original fixed commitment covers only its actual period, not the whole date. '
+    'Suggest one concise stop per requested uncovered period; if no periods were requested, '
+    'use one afternoon stop per date, with an evening stop on the last date of a trip of three or more days. '
+    'For every new suggestion give known local date, start/end time and confirmed destination timezone; '
+    'keep utc_offset unknown. Never assert a booking or an observed source for a suggestion. '
+    'Use short labels in the question language and return only compact JSON.'
+)
 SYSTEM = (
     'Extract only information provided by the traveler for this trip. Return JSON with exactly '
     'city (an exact substring of the user text or null), continues_trip (boolean), and extraction. '
@@ -190,7 +199,7 @@ class LioPlanSave:
             from cj_draft.lio_plan import LioSourceWindowPublisher
             publisher_class=LioSourceWindowPublisher
         publisher = publisher_class(self.context_publisher, self.confirmation,
-                                     original_needs, check_original, draft_guidance=COMPACT_DRAFT)
+                                     original_needs, check_original, draft_guidance=NATIONAL_COMPACT_DRAFT if self.source_window else COMPACT_DRAFT)
         previous = worker.drafts
         worker.drafts = publisher
         try:

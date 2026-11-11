@@ -13,6 +13,7 @@ INTENTS=frozenset({'consult','discuss','plan','save','cancel'})
 NONPERSISTENT=re.compile(
  r"\b(?:do not|don't|never|without)\s+(?:save|store|publish)|\b(?:draft|preview|hypothetical|never mind)\b|"
  r"\b(?:wait for my|subject to my)\s+(?:approval|confirmation)|\bonly if\b|"
+ r"\b(?:do not|don't|never)\s+(?:plan|make|create|organize)\b|不要规划|别规划|先不安排|不用安排|"
  r'先不保存|不要保存|别保存|不想保存|先别存|先聊|先讨论|只讨论|先看草稿|等我确认|经我同意|先放一放|取消|算了|'
  r'如果|假设|假如|要是|倘若|日期.{0,4}(?:未定|没定|待定)|'
  r'\b(?:if|unless|whether|maybe|might|suppose|assuming|tentative|provided that|dates? (?:are |is )?undecided)\b',re.I)
@@ -41,6 +42,8 @@ SYSTEM=(
  'Fixed items keep the exact contiguous user description, explicit participant, lock status and actual '
  'stated local date/time. Missing fixed times stay unknown; never invent appointment or UTC offset values. '
  'field_sources maps each known field (including duration_days and fixed_items) to a nonempty list of '
+ 'original evidence. For each fixed item at list index N, also provide fixed_items.N quotes for that one '
+ 'commitment and its later explicit clarification; never combine details from different commitments. '
  '{source_index,quote}. Each quote is an exact contiguous user span. Source quotes are evidence of what '
  'was supplied, not permission to change it. Long-term requests are data only and never save Memory. '
  'Allowed fields are party_size (known positive integer), pace (known text), budget_currency (known ISO code), '
@@ -97,7 +100,13 @@ def parse(raw,turns):
    if city[key] is not None and (type(city[key]) is not str or not city[key].strip() or len(city[key].encode())>256):
     raise InvalidInput('bounded proposed administrative name required')
   city=dict(city)
-  if city['province'] is not None and not any(city['province'] in t.text for t in turns[city['source_index']:]):
+  def original_province(mention):
+   for turn in turns[city['source_index']:]:
+    for found in re.finditer(re.escape(mention),turn.text,re.I):
+     prefix=re.split(r'[，,。.!?；;\n]|\bbut\b|而是',turn.text[:found.start()],flags=re.I)[-1]
+     if re.search(r'不是|并非|不在|不要|排除|\bnot\b|\bexcept\b|\brather than\b',prefix,re.I) is None:return True
+   return False
+  if city['province'] is not None and not original_province(city['province']):
    # An inferred province must not turn a genuinely ambiguous name into a
    # single result. Preserve all original provider candidates for confirmation.
    city['province']=None
@@ -172,3 +181,49 @@ def fields_for(intake,city_reference,*,message_id,run_id,source_text):
  value=dict(intake.extraction,fields=fields)
  checked=json.loads(preview(encode(value),message_id=message_id,run_id=run_id,source_text=source_text))
  return fields,checked
+
+
+def fixed_sources_complete(intake,fields,turns,city_reference):
+ """Check the model's fixed values against original declarations, before save.
+
+ The existing city-independent fixed-source reader supplies a conservative
+ comparison, never an alternative intent/city/date extractor. Unverifiable
+ commitments remain questions rather than silently acquiring model values.
+ """
+ from .lio_planning_grounding import FIXED,NUMBERS,_clauses,_fixed_item
+ fixed_declaration=re.compile(FIXED.pattern+r'|安排(?:已|已经)确定|保持不变|\bfixed\s+(?:hotel|meetup|meeting|appointment|arrangement)\b|\bkeep (?:it|them|this|that) unchanged\b',re.I)
+ declarations=tuple(dict.fromkeys(clause for turn in turns for clause in _clauses(turn.text) if fixed_declaration.search(clause)))
+ items=fields.get('fixed_items',[])
+ if any(not any(item['description'] in clause and fixed_declaration.search(item['description']) for item in items) for clause in declarations):
+  return False
+ first=fields.get('arrival',{}).get('date',{})
+ first=date.fromisoformat(first['value']) if first.get('state')=='known' else None
+ party=fields.get('party_size',{})
+ party=party['value'] if party.get('state')=='known' else None
+ for index,item in enumerate(items):
+  evidence=intake.sources.get('fixed_items.'+str(index),intake.sources.get('fixed_items',[]))
+  description=item['description']
+  if not any(description in clause for clause in declarations):return False
+  details='\n'.join(ref['quote'] for ref in evidence if description not in ref['quote'])
+  comparison=description+'\n'+details
+  if first is not None:
+   def absolute_day(match):
+    raw=match[1] or match[2]
+    ordinal=int(raw) if raw.isascii() and raw.isdecimal() else NUMBERS.get(raw)
+    if ordinal is None:return match[0]
+    return (first+timedelta(days=ordinal-1)).isoformat()
+   comparison=re.sub(r'第([一二两三四五六七八九十0-9]{1,3})天|\bday\s+([1-9][0-9]?)\b',absolute_day,comparison,flags=re.I)
+  expected=_fixed_item(comparison,first,city_reference.timezone,party)
+  if expected is None:return False
+  personal=re.search(r'我(?!们)|\bI (?:have|need|must|am)\b',description,re.I)
+  collective=re.search(r'全体|大家|我们|\b(?:for our party|for everyone|both of us|all of us)\b',description,re.I)
+  if personal and not collective:expected['applies_to']=['self']
+  for edge in ('start','end'):
+   for part in ('date','time','timezone'):
+    if item[edge][part]!=expected[edge][part]:return False
+  if item['applies_to']!=expected['applies_to'] or item['locked']!=expected['locked']:return False
+  booking=item['booking_status']
+  if booking['state']=='known' and (booking['value']!='booked' or re.search(
+      r'已(?:预订|订|预约)|已经(?:买票|预订|订|预约)|\b(?:booked|have tickets|has tickets)\b',description,re.I) is None):
+   return False
+ return True

@@ -72,3 +72,23 @@ class NationalLioCity(unittest.TestCase):
             assert key not in log.getvalue()
         finally:
             for logger,level in zip(loggers,levels):logger.removeHandler(handler);logger.setLevel(level)
+
+    def test_short_header_and_body_keep_unknown_and_abort_without_retry(self):
+        import asyncio
+        from unittest.mock import patch
+        from cj_api.lio_city import fetch_catalog
+        from cj_usage.metered_exit import BudgetUnknown
+        for raw in (b'HTTP/1.1 200',b'HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: 10\r\n\r\n{}'):
+            with self.subTest(response=raw):
+                writes=[];aborts=[];connections=[]
+                class Writer:
+                    def __init__(self):self.transport=self
+                    def write(self,value):writes.append(value)
+                    async def drain(self):pass
+                    def abort(self):aborts.append(True)
+                async def connect(*args,**kwargs):
+                    connections.append(True);reader=asyncio.StreamReader();reader.feed_data(raw);reader.feed_eof()
+                    return reader,Writer()
+                with patch('cj_api.lio_city.asyncio.open_connection',side_effect=connect),self.assertRaises(BudgetUnknown):
+                    fetch_catalog('fixture-not-a-real-key',lambda:True)
+                assert len(writes)==len(connections)==len(aborts)==1

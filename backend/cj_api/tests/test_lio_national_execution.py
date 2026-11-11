@@ -180,3 +180,60 @@ class NationalExecution(unittest.TestCase):
         value['current_request']=text.replace('安徽省','江苏省');value['city']['province']='江苏省'
         intake=parse(json.dumps(value),(PlanningTurn(value['current_request'],date(2026,11,11)),))
         self.assertEqual(NationalLioPlanning._previous_city(intake,previous,value['current_request'])['candidates'],[old])
+
+    def test_fixed_values_must_match_original_clocks_dates_subject_and_lock(self):
+        import copy
+        declaration='全体酒店集合已预约2026-11-20 09:00到10:00，不可更改'
+        text='计划上海2026-11-20到2026-11-22，两个人。'+declaration
+        value=self.envelope(text)
+        value['extraction']['fields']['departure']['date']['value']='2026-11-22'
+        value['field_sources']['departure.date'][0]['quote']='2026-11-22'
+        def event(day,clock):
+            return dict(date=dict(state='known',value=day),time=dict(state='known',value=clock),
+                timezone=dict(state='known',value='Asia/Shanghai'),place=dict(state='missing'))
+        item=dict(item_id='hotel',kind='appointment',description=declaration,applies_to=['party'],
+            locked=dict(state='known',value=True),booking_status=dict(state='known',value='booked'),
+            start=event('2026-11-20','09:00'),end=event('2026-11-20','10:00'))
+        value['extraction']['fields']['fixed_items']=[item]
+        value['field_sources']['fixed_items']=[dict(source_index=0,quote=declaration)]
+        self.assertEqual(len(self.run_intake(value)[0]),1)
+        for change in ('date','clock','subject','lock'):
+            with self.subTest(change=change):
+                altered=copy.deepcopy(value);fixed=altered['extraction']['fields']['fixed_items'][0]
+                if change=='date':
+                    for edge in ('start','end'):fixed[edge]['date']['value']='2026-11-21'
+                elif change=='clock':
+                    fixed['start']['time']['value']='13:00';fixed['end']['time']['value']='14:00'
+                elif change=='subject':fixed['applies_to']=['self']
+                else:fixed['locked']['value']=False
+                published,events,_,_=self.run_intake(altered)
+                self.assertEqual(published,[])
+                self.assertTrue(any('谁参加' in v for k,v in events if k=='text_delta'))
+        second='全体午餐已预订2026-11-21 12:00到13:00，不可更改'
+        value['current_request']=text+'；'+second
+        self.assertEqual(self.run_intake(value)[0],[])
+
+    def test_natural_fixed_day_number_keeps_explicit_self_and_unbooked_status(self):
+        for declaration in ('第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变',
+                            'On day 1 I have a fixed hotel meetup from 9 to 10 a.m., keep it unchanged'):
+            with self.subTest(declaration=declaration):
+                text='计划上海2026-11-20，仅我一人。'+declaration
+                value=self.envelope(text,party=1)
+                value['field_sources']['party_size'][0]['quote']='仅我一人'
+                def event(clock):
+                    return dict(date=dict(state='known',value='2026-11-20'),time=dict(state='known',value=clock),
+                        timezone=dict(state='known',value='Asia/Shanghai'),place=dict(state='missing'))
+                value['extraction']['fields']['fixed_items']=[dict(item_id='hotel',kind='appointment',description=declaration,
+                    applies_to=['self'],locked=dict(state='known',value=True),booking_status=dict(state='unknown'),
+                    start=event('09:00'),end=event('10:00'))]
+                value['field_sources']['fixed_items']=[dict(source_index=0,quote=declaration)]
+                self.assertEqual(len(self.run_intake(value)[0]),1)
+
+
+    def test_a_negated_province_does_not_filter_the_city_candidates(self):
+        text='计划Suzhou，从2026-11-20开始，两个人，我指安徽宿州，不是江苏苏州'
+        value=self.envelope(text,city='Suzhou');value['city']['province']='江苏'
+        intake=parse(json.dumps(value),(PlanningTurn(text,date(2026,11,11)),))
+        self.assertIsNone(intake.city['province'])
+        value['city']['province']='安徽'
+        self.assertEqual(parse(json.dumps(value),(PlanningTurn(text,date(2026,11,11)),)).city['province'],'安徽')

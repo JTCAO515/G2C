@@ -132,7 +132,7 @@ async def _catalog_exchange(key,guard):
             status,raw=await _read_response(reader,MAX_CATALOG_BYTES)
             if status!=200:raise BudgetUnknown('original city lookup HTTP outcome unavailable')
             return raw
-    except (TimeoutError,OSError,ssl.SSLError,_WireFailure):
+    except (TimeoutError,OSError,ssl.SSLError,asyncio.IncompleteReadError,asyncio.LimitOverrunError,_WireFailure):
         raise BudgetUnknown('original city lookup transport unknown') from None
     finally:
         if writer is not None:writer.transport.abort()

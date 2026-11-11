@@ -14,8 +14,8 @@ from cj_message.lio_plan_needs import BOUND_EFFECT
 from cj_needs.domain import InvalidInput
 
 from .lio_city import CityReference,forms,_normalize
-from .lio_national_intake import SYSTEM,NONPERSISTENT,fields_for,parse
-from .lio_planning_grounding import PlanningTurn,standalone_question,FIXED
+from .lio_national_intake import SYSTEM,NONPERSISTENT,fields_for,parse,fixed_sources_complete
+from .lio_planning_grounding import PlanningTurn,standalone_question
 from .local_lio_planning import PlanningDetails,register
 
 CONTEXT='lio_planning_context.1:'
@@ -24,8 +24,10 @@ MAX_TURNS=8
 # This is a publication gate, not city/date extraction or the intent router.
 # A model cannot turn an isolated date/party answer into a fresh save grant.
 PUBLICATION_REQUEST=re.compile(r"计划|规划|安排|设计|保存|存到|存入|想去|要去|帮我做|"
-    r"\b(?:plan(?:ning)?|save|store|build|create|organize|put together)\b|"
-    r"\b(?:want|would like) to (?:go|visit|travel)\b",re.I)
+    r"\b(?:plan(?:ning)?|save|store|build|create|make|design|organize|put together)\b|"
+    r"\b(?:want|would like) to (?:go|visit|travel|spend)\b|"
+    r"\b(?:i|we) would like\b[^.!?]{0,120}\b(?:itinerary|trip)\b|"
+    r"去[^。！？?!.]{1,80}(?:玩|旅游|旅行|游)|排(?:个|一个|一份)?行程",re.I)
 
 
 class NationalLioPlanning:
@@ -140,12 +142,9 @@ class NationalLioPlanning:
         for edge in ('arrival','departure'):
             if fields.get(edge,{}).get('date',{}).get('state')!='known':missing.append(edge+'.date')
         questions=[q for q in checked.get('questions',[]) if q['field']=='fixed_items']
-        fixed_items=fields.get('fixed_items',[])
-        incomplete_fixed=any(any(item[edge][part]['state']!='known' for edge in ('start','end')
-                                 for part in ('date','time','timezone')) for item in fixed_items)
-        omitted_fixed=not fixed_items and any(FIXED.search(t.text) for t in turns)
+        complete_fixed=fixed_sources_complete(intake,fields,turns,city)
         if fields.get('party_size',{}).get('state')!='known':missing.append('party_size')
-        if missing or questions or incomplete_fixed or omitted_fixed:
+        if missing or questions or not complete_fixed:
             state=self._context(worker,binding,state,dict(authority=authority,status='needs_details',city=resolution))
             if missing==['party_size']:
                 zh='这趟旅行一共几个人？';en='How many people are traveling?'
