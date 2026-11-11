@@ -106,4 +106,6 @@ class NationalLioCity(unittest.TestCase):
                 self.assertEqual(result['status'],'resolved')
                 self.assertEqual([c['adcode'] for c in result['candidates']],['610100'])
         self.assertEqual(resolve(raw,'Xian')['status'],'ambiguous')
+        self.assertEqual(resolve(raw,"'Xian'")['status'],'ambiguous')
+        self.assertEqual(resolve(raw,"'西安'")['candidates'][0]['adcode'],'610100')
         self.assertEqual(resolve(raw,'献县')['candidates'][0]['adcode'],'130929')
