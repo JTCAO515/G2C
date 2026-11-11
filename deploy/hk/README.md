@@ -285,6 +285,34 @@ Lio 的本机追加迁移使用 `python -B -m deploy.hk.demo_schema --target 51`
 
 `revoke <subject>` 立即拒绝原邀请码和会话；确认原 scope 无在途后，`rotate <subject>` 可登记
 新摘要与有效期，旧会话继续拒绝，每日计数保留。结果不明先 `inspect <subject>` 和原动作日志。
+
+#### 七天滚动会话
+
+JT 的 [#495 决定](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6783256928)
+适用于现有香港内测 Demo 主体。新增入口如下，响应均为 `Cache-Control: no-store`。
+
+| 入口 | 请求与结果 |
+|---|---|
+| `POST /v2/demo-invite-sessions` | JSON 为 `{version:"DEMO-invite-session.2",invite_code,consent:true}`。成功返回 `{version:"DEMO-invite-session.2",access_token,subject,expires_at}`。 |
+| `POST /v2/demo-session-renewals` | 当前仍有效的 Bearer JWT，JSON 仅 `{version:"DEMO-session-renewal.1"}`。成功返回相同 `.2` grant，保持原 subject、issuer、audience。 |
+
+新凭据从签发时刻滚动最多七天，截止不超过原邀请资格。续期不延长资格，不更改业务
+composition 或计量。有效旧两小时凭据可升级；过期、撤销、轮换前或不属于 Demo 的
+凭据拒绝续期。签名仍由原 worker 的私密 Unix socket 提供，API 不持私钥。
+签发事务对资格行加共享锁，撤销/轮换与之串行；撤销后新旧凭据的业务与续期均拒绝。
+
+错误沿用 `{request_id,error:{code,category,message_en,message_zh,outcome,recovery}}`。
+续期 400 为 `INVALID_INPUT/input/failed/do_not_retry`，401 为
+`DEMO_SESSION_DENIED/access/failed/do_not_retry`，503 为
+`DEMO_SESSION_UNAVAILABLE/dependency/unknown/do_not_retry`。
+邀请码 401/503 沿用 `DEMO_INVITE_DENIED`、`DEMO_LOGIN_UNAVAILABLE`。
+客户端在有效会话回前台且余期不超过一天时续期，未知时保留仍有效旧凭据。
+
+`/v1` 和 `.1` 为旧内部构建保留原两小时上限，退出条件为旧构建退场。
+部署先核原资格、撤销与 session floor，原私钥和资格期限沿用。
+回退到原镜像会恢复 v1 签发，A 需配套使用 v1 入口/构建；已经签发的凭据仍受原
+资格与撤销检查约束。回退不自动轮换 JT 的邀请或清除其原数据。
+
 MESSAGE 只对实际新接受的原件计数。0052 将北京时间每日上限从 40 提至 400。
 同原件回查和幂等重入沿用原回执。香港额度迁移已经提交，或任一合成账号单日已受理超过 40 条时，0052 拒绝降级。
 已应用 0051 的香港内测主机可在原 API/worker 暂停后，用新 operator 镜像运行

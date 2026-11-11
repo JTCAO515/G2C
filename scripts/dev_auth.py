@@ -65,12 +65,13 @@ def history_key(directory):
     print(f'created {path}')
 
 
-def token(directory, subject, minutes, *, jti=None):
+def token(directory, subject, minutes, *, jti=None, expires_at=None):
     if os.environ.get('CJ_ENV') != 'local':
         raise SystemExit('CJ_ENV=local is required')
     key = serialization.load_pem_private_key((directory / 'private.pem').read_bytes(), password=None)
     now = int(time.time())
-    claims = dict(iss=ISSUER, aud=AUDIENCE, sub=subject, iat=now, nbf=now, exp=now + 60 * minutes)
+    expiry = now + 60 * minutes if expires_at is None else expires_at
+    claims = dict(iss=ISSUER, aud=AUDIENCE, sub=subject, iat=now, nbf=now, exp=expiry)
     if jti is not None:
         claims['jti'] = jti
     return jwt.encode(claims, key, algorithm='RS256', headers={'kid': KEY_ID})
