@@ -329,3 +329,10 @@ class NationalExecution(unittest.TestCase):
             previous=previous,resolution=dict(status='resolved',candidates=[ah],source={}))
         self.assertEqual(published,[])
         self.assertTrue(any('哪天' in v for k,v in events if k=='text_delta'))
+
+
+    def test_keep_unchanged_cannot_be_omitted_when_fixed_word_is_absent(self):
+        text='计划上海2026-11-20，两个人。On day 1 I have a hotel meetup from 9 to 10 a.m.; keep it unchanged'
+        published,events,_,_=self.run_intake(self.envelope(text))
+        self.assertEqual(published,[])
+        self.assertTrue(any('谁参加' in v for k,v in events if k=='text_delta'))

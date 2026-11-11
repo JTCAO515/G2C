@@ -210,7 +210,8 @@ def fixed_sources_complete(intake,fields,turns,city_reference):
    bare_keep=(re.fullmatch(r'keep (?:it|them|this|that) unchanged',marker[0],re.I) is not None
        and turn.text[:marker.start()].rstrip().endswith((';','；'))
        and re.match(r'\s*(?:[.。!！;；]|$)',turn.text[marker.end():]) is not None)
-   if bare_keep:continue
+   if bare_keep and any(end<=marker.start() and re.fullmatch(r'[\s;；.。!！?？]*',turn.text[end:marker.start()]) is not None
+                        for start,end in spans):continue
    if not any(start<=marker.start() and marker.end()<=end for start,end in spans):return False
  first=fields.get('arrival',{}).get('date',{})
  first=date.fromisoformat(first['value']) if first.get('state')=='known' else None
