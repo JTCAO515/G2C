@@ -45,50 +45,58 @@ public struct LioInvitationView<Settings: View>: View {
     public var body: some View {
         NavigationStack {
             Form {
-                Section {
-                    HStack(spacing: 14) {
-                        LioPortrait(size: 58)
-                        VStack(alignment: .leading, spacing: 4) {
-                            RunReadableText(text: language.text("Meet Lio", "和 Lio 聊聊"), style: .headline)
-                            RunReadableText(text: language.text("Use your invitation to start chatting.", "输入邀请码，开始聊你的旅行。"))
+                Group {
+                    Section {
+                        HStack(spacing: 14) {
+                            LioPortrait(size: 58)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(language.text("Meet Lio", "和 Lio 聊聊"))
+                                .font(LioTheme.display(.headline))
+                                .fixedSize(horizontal: false, vertical: true)
+                                RunReadableText(text: language.text("Use your invitation to start chatting.", "输入邀请码，开始聊你的旅行。"))
+                            }
+                        }
+                        .padding(.vertical, 8)
+                    }
+                    Section {
+                        SecureField(language.text("Invitation code", "邀请码"), text: $code)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .focused($enteringCode)
+                            .frame(minHeight: 44)
+                            .accessibilityIdentifier("demo.invite.code")
+                        Button(language.text("Continue", "继续")) {
+                            enteringCode = false
+                            consent = .invite
+                        }
+                        .disabled(code.isEmpty || isBusy)
+                        .accessibilityIdentifier("demo.invite.continue")
+                        Button(language.text("Continue with your account", "继续使用账号")) {
+                            enteringCode = false
+                            consent = .continueAccount
+                        }
+                        .disabled(isBusy)
+                        .accessibilityIdentifier("demo.invite.restore")
+                    }
+                    if let notice {
+                        Section {
+                            RunReadableText(text: notice)
+                                .accessibilityIdentifier("demo.invite.status")
                         }
                     }
-                    .padding(.vertical, 8)
+                    Section { settings }
                 }
-                Section {
-                    SecureField(language.text("Invitation code", "邀请码"), text: $code)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .focused($enteringCode)
-                        .frame(minHeight: 44)
-                        .accessibilityIdentifier("demo.invite.code")
-                    Button(language.text("Continue", "继续")) {
-                        enteringCode = false
-                        consent = .invite
-                    }
-                    .disabled(code.isEmpty || isBusy)
-                    .accessibilityIdentifier("demo.invite.continue")
-                    Button(language.text("Continue with your account", "继续使用账号")) {
-                        enteringCode = false
-                        consent = .continueAccount
-                    }
-                    .disabled(isBusy)
-                    .accessibilityIdentifier("demo.invite.restore")
-                }
-                if let notice {
-                    Section {
-                        RunReadableText(text: notice)
-                            .accessibilityIdentifier("demo.invite.status")
-                    }
-                }
-                Section { settings }
+                .lioRow()
             }
+            .lioPage()
             .navigationTitle(language.text("Internal demo", "内部演示"))
         }
+        .tint(LioTheme.vermilion)
         .sheet(item: $consent) { action in
             NavigationStack {
                 consentPage(action)
             }
+            .tint(LioTheme.vermilion)
         }
     }
 
@@ -96,7 +104,9 @@ public struct LioInvitationView<Settings: View>: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 LioPortrait(size: 58)
-                RunReadableText(text: language.text("Use fictional trip details", "请使用虚构旅行信息"), style: .headline)
+                Text(language.text("Use fictional trip details", "请使用虚构旅行信息"))
+                    .font(LioTheme.display(.headline))
+                    .fixedSize(horizontal: false, vertical: true)
                     .accessibilityAddTraits(.isHeader)
                 // Interim internal-demo wording until #225 is decided.
                 RunReadableText(text: language.text(
@@ -125,6 +135,7 @@ public struct LioInvitationView<Settings: View>: View {
             .padding(24)
             .frame(maxWidth: .infinity, alignment: .center)
         }
+        .background(LioTheme.paper)
         .navigationTitle(language.text("Internal demo consent", "内部演示同意"))
         .navigationBarTitleDisplayMode(.inline)
     }

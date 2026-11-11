@@ -14,7 +14,10 @@ struct LioItineraryCard<Actions: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             if let introduction = itinerary.planningIntroduction(language) { RunReadableText(text: introduction) }
-            RunReadableText(text: itinerary.title, style: .headline)
+            Text(itinerary.title)
+                .font(LioTheme.display(.headline))
+                .foregroundStyle(LioTheme.ink)
+                .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
             ForEach(itinerary.days) { day in
                 DisclosureGroup {
@@ -36,7 +39,7 @@ struct LioItineraryCard<Actions: View>: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 20))
+        .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
     }
 }
 
@@ -86,6 +89,7 @@ struct LioTripsView: View {
                         } else {
                             List(saved, id: \.tripID) { trip in
                                 NavigationLink(trip.title, value: LioTripRoute(id: trip.tripID))
+                                    .lioRow()
                             }
                             .listStyle(.insetGrouped)
                         }
@@ -100,11 +104,13 @@ struct LioTripsView: View {
                             Section(itinerary.title) {
                                 LioTripDays(itinerary: itinerary, language: language) { mapDay = $0 }
                             }
+                            .lioRow()
                         }
                     }
                     .listStyle(.insetGrouped)
                 }
             }
+            .lioPage()
             .navigationTitle(language.text("Trips", "行程"))
             .navigationDestination(for: LioTripRoute.self) { route in
                 if let library {
@@ -170,7 +176,8 @@ private struct LioTripDetail: View {
             if let record {
                 List {
                     LioTripDays(itinerary: LioItinerary(record), language: language) { mapDay = $0 }
-                    if let recordedMap { recordedMap(record.document) }
+                        .lioRow()
+                    if let recordedMap { recordedMap(record.document).lioRow() }
                 }
             } else if unavailable {
                 ContentUnavailableView {
@@ -182,6 +189,7 @@ private struct LioTripDetail: View {
                 ProgressView()
             }
         }
+        .lioPage()
         .navigationTitle(record?.document.title ?? language.text("Trip details", "行程详情"))
         .sheet(item: $mapDay) { day in
             LioDayMap(day: day, language: language)
@@ -237,17 +245,22 @@ private struct LioDayStops: View {
                 HStack(alignment: .top, spacing: 10) {
                     Image(systemName: stop.fixed == true ? "lock.fill" : "circle.fill")
                         .font(.caption)
+                        .foregroundStyle(stop.fixed == true ? LioTheme.jade : LioTheme.inkSecondary)
                         .frame(width: 20, height: 20)
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 2) {
                         let ending = [stop.endDate, stop.endTime].compactMap { $0 }.joined(separator: " ")
-                        if let start = stop.time, !ending.isEmpty {
-                            Text("\(start)–\(ending)").font(.footnote)
-                        } else if let start = stop.time {
-                            Text(start).font(.footnote)
-                        } else if !ending.isEmpty {
-                            Text(language.text("Until \(ending)", "至 \(ending)")).font(.footnote)
+                        Group {
+                            if let start = stop.time, !ending.isEmpty {
+                                Text("\(start)–\(ending)")
+                            } else if let start = stop.time {
+                                Text(start)
+                            } else if !ending.isEmpty {
+                                Text(language.text("Until \(ending)", "至 \(ending)"))
+                            }
                         }
+                        .font(.footnote)
+                        .foregroundStyle(LioTheme.inkSecondary)
                         RunReadableText(text: stop.name)
                         if stop.fixed == true {
                             Text(language.text("Fixed plan", "固定安排")).font(.footnote)
