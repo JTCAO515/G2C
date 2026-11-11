@@ -1753,12 +1753,100 @@ def check_lio_retirement(root, database, auth, conninfo, context, memory, clean_
     print('PASS signed Lio retirement, original UNKNOWN preserves evidence, clean online erasure and cross-owner isolation')
 
 
+def check_rolling_sessions(api,runtime,database,auth,context,control,operation,actor,code):
+    from threading import Event
+
+    scope=scope_for(ISSUER,actor)
+    account=ledger_scope_for(scope,context.current.meter)
+    with database.connect(scope) as connection:
+        original=connection.execute('SELECT ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(account,)).fetchone()
+
+    def login(version,invite=code):
+        path='/v1/demo-invite-sessions' if version==demo_login.VERSION else '/v2/demo-invite-sessions'
+        return api.post(path,json=dict(version=version,invite_code=invite,consent=True))
+
+    def renew(token):
+        return api.post('/v2/demo-session-renewals',json=dict(version=demo_login.RENEW_VERSION),
+                        headers={'Authorization':'Bearer '+token})
+
+    legacy=login(demo_login.VERSION)
+    assert legacy.status_code==200,legacy.text
+    initial=login(demo_login.ROLLING_VERSION)
+    assert initial.status_code==200,initial.text
+    old_claims=json.loads(base64.urlsafe_b64decode(legacy.json()['access_token'].split('.')[1]+'=='))
+    claims=json.loads(base64.urlsafe_b64decode(initial.json()['access_token'].split('.')[1]+'=='))
+    assert old_claims['exp']-old_claims['iat']<=7200 and 604798<=claims['exp']-claims['iat']<=604800
+    assert renew(legacy.json()['access_token']).status_code==200
+    with patch.object(dev_auth,'time',SimpleNamespace(time=lambda:time.time()-86400)):
+        previous=dev_auth.token(auth,actor,7*24*60)
+    previous_claims=json.loads(base64.urlsafe_b64decode(previous.split('.')[1]+'=='))
+    continued=renew(previous)
+    assert continued.status_code==200 and continued.json()['subject']==actor,continued.text
+    current=json.loads(base64.urlsafe_b64decode(continued.json()['access_token'].split('.')[1]+'=='))
+    assert current['exp']-previous_claims['exp']>=86398
+    assert (current['iss'],current['aud'],current['sub'])==(previous_claims['iss'],previous_claims['aud'],previous_claims['sub'])
+
+    entered,release,revoking=Event(),Event(),Event()
+    grant=demo_login._grant
+
+    def delayed_grant(*args,**kwargs):
+        entered.set()
+        assert release.wait(10)
+        return grant(*args,**kwargs)
+
+    def revoke():
+        revoking.set()
+        return demo_accounts.manage(runtime,'revoke',actor,control,operation)
+
+    with patch.object(demo_login,'_grant',side_effect=delayed_grant),ThreadPoolExecutor(max_workers=2) as pool:
+        refreshing=pool.submit(renew,initial.json()['access_token'])
+        try:
+            assert entered.wait(10)
+            retiring=pool.submit(revoke)
+            assert revoking.wait(10)
+            until=time.monotonic()+10
+            blocked=False
+            while not blocked and time.monotonic()<until:
+                with checkpoint.operator() as (connection,_):
+                    blocked,=connection.execute("SELECT EXISTS(SELECT 1 FROM pg_stat_activity "
+                        "WHERE pid<>pg_backend_pid() AND state='active' AND wait_event_type='Lock' "
+                        "AND query LIKE '%demo_revoked_at=clock_timestamp()%')").fetchone()
+                if not blocked:time.sleep(0.01)
+            assert blocked and not retiring.done()
+        finally:
+            release.set()
+        concurrent=refreshing.result(timeout=10)
+        assert concurrent.status_code==200,concurrent.text
+        assert retiring.result(timeout=10)=='revoked'
+    assert renew(concurrent.json()['access_token']).status_code==401
+    denied=renew(initial.json()['access_token'])
+    assert denied.status_code==401 and denied.json()['error']['code']=='DEMO_SESSION_DENIED',denied.text
+    next_code=code[:-22]+'s'*22
+    expiry=datetime.now(timezone.utc)+timedelta(seconds=90)
+    assert demo_accounts.manage(runtime,'rotate',actor,control,operation,(digest(next_code),expiry))=='active'
+    time.sleep(1.05)
+    assert renew(initial.json()['access_token']).status_code==401
+    assert login(demo_login.ROLLING_VERSION).status_code==401
+    bounded=login(demo_login.ROLLING_VERSION,next_code)
+    assert bounded.status_code==200,bounded.text
+    bounded_claims=json.loads(base64.urlsafe_b64decode(bounded.json()['access_token'].split('.')[1]+'=='))
+    assert time.time()<bounded_claims['exp']<=int(expiry.timestamp())
+    assert bounded.headers['cache-control']=='no-store'
+    with database.connect(scope) as connection:
+        assert connection.execute('SELECT ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(account,)).fetchone()==original
+        assert connection.execute('SELECT count(*) FROM cj_message_receipt').fetchone()==(0,)
+        assert connection.execute('SELECT count(*) FROM cj_run_record').fetchone()==(0,)
+    print('PASS signed v1 compatibility, seven-day sliding renewal, old credential upgrade, invitation cap, serialized revoke/rotation and zero MESSAGE/RUN/Meter writes')
+
+
 def exercise(root,conninfo):
     auth=root/'auth'
     other='other-dialogue-owner'
     memory_actor='m4-synthetic-lio-memory'
     planning_actor='m4-synthetic-lio-planning'
-    dev_auth.init(auth,[SUBJECT,other,'invited-outside-dialogue','legacy-dialogue-only',memory_actor,planning_actor])
+    auth_actor='m4-synthetic-demo-111111111111'
+    auth_code='D1-111111111111.'+'r'*22
+    dev_auth.init(auth,[SUBJECT,other,'invited-outside-dialogue','legacy-dialogue-only',memory_actor,planning_actor,auth_actor])
     path=root/'conn.json'
     path.write_text(json.dumps(conninfo))
     now=int(time.time())
@@ -1775,19 +1863,19 @@ def exercise(root,conninfo):
         semantic_resolved=True)},extents=['long_term'],context_ids=[])
     collection=dict(version='local-memory-typed.1',collection=dict(version='local-memory-policy.1',
         expires_at=(datetime.now(timezone.utc)+timedelta(hours=2)).isoformat(),profiles={
-            subject:profile for subject in (SUBJECT,other,memory_actor)}),
-        travel_contexts={subject:[] for subject in (SUBJECT,other,memory_actor)})
+            subject:profile for subject in (SUBJECT,other,memory_actor,auth_actor)}),
+        travel_contexts={subject:[] for subject in (SUBJECT,other,memory_actor,auth_actor)})
     memory=TypedRuntimeConfiguration.from_bytes(json.dumps(dict(version='local-memory-run.2',collection=collection,
         selections={subject:dict(subject='self',slots=['quiet.entrance'],max_bytes=1000)
-                    for subject in (SUBJECT,other,memory_actor)})).encode())
-    runtime=Runtime(auth,context,context_path,[],memory_runtime=memory,subjects=frozenset({SUBJECT}),
-        demo_subjects=frozenset({SUBJECT}),demo_next_context=following)
+                    for subject in (SUBJECT,other,memory_actor,auth_actor)})).encode())
+    runtime=Runtime(auth,context,context_path,[],memory_runtime=memory,subjects=frozenset({SUBJECT,auth_actor}),
+        demo_subjects=frozenset({SUBJECT,auth_actor}),demo_next_context=following)
     runtime._database=database
     control=root/'control';operation=root/'operation';operation.mkdir(mode=0o700)
     endpoint=root/'signer';endpoint.mkdir(mode=0o700)
     key=Ed25519PrivateKey.generate()
     env=dict(CJ_DEPLOY_TARGET='hk-beta',CJ_M4_SYNTHETIC_ONLY='1',CJ_BETA_DB_TARGET='hk-local',
-        CJ_TRIAL_VALID_UNTIL='2026-12-31T16:00:00+00:00',CJ_BETA_DEMO_SUBJECTS_JSON=json.dumps([SUBJECT]),
+        CJ_TRIAL_VALID_UNTIL='2026-12-31T16:00:00+00:00',CJ_BETA_DEMO_SUBJECTS_JSON=json.dumps([SUBJECT,auth_actor]),
         CJ_BETA_RECOVERY_PRIVATE_B64=base64.b64encode(key.private_bytes(Encoding.Raw,PrivateFormat.Raw,NoEncryption())).decode(),
         CJ_BETA_RECOVERY_PUBLIC_B64=base64.b64encode(key.public_key().public_bytes(Encoding.Raw,PublicFormat.Raw)).decode())
 
@@ -1802,6 +1890,9 @@ def exercise(root,conninfo):
         assert demo_accounts.manage(runtime,'bootstrap',SUBJECT,control,operation,(digest(CODE),expiry))=='bootstrapped'
         assert demo_accounts.manage(runtime,'insert',SUBJECT,control,operation)=='activated'
         assert demo_accounts.manage(runtime,'insert',SUBJECT,control,operation)=='existing'
+        assert demo_accounts.manage(runtime,'bootstrap',auth_actor,control,operation,
+            (digest(auth_code),datetime.now(timezone.utc)+timedelta(days=10)))=='bootstrapped'
+        assert demo_accounts.manage(runtime,'insert',auth_actor,control,operation)=='activated'
         local_run_context.provision_budget(path,context,other)
         dev_auth.activate_travel(path,other,context,ABI)
         local_run_context.provision_budget(path,context,planning_actor)
@@ -1813,6 +1904,7 @@ def exercise(root,conninfo):
             lio_dialogue_subjects=frozenset({SUBJECT,other,planning_actor}))
         demo_login.register_demo_login(app)
         with demo_login.signing_socket(runtime),TestClient(app) as api:
+            check_rolling_sessions(api,runtime,database,auth,context,control,operation,auth_actor,auth_code)
             def login(code,consent=True):
                 return api.post('/v1/demo-invite-sessions',json=dict(version=demo_login.VERSION,invite_code=code,consent=consent))
             assert login(CODE,False).status_code==400
