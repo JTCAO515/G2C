@@ -168,3 +168,15 @@ class NationalExecution(unittest.TestCase):
                 published,events,_,_=self.run_intake(value)
                 self.assertEqual(published,[])
                 self.assertTrue(any('谁参加' in v for k,v in events if k=='text_delta'))
+
+
+    def test_explicit_province_correction_does_not_reuse_same_spelling_city(self):
+        text='计划安徽省Suzhou，从2026-11-20开始，两个人'
+        value=self.envelope(text,city='Suzhou');value['city']['province']='安徽省'
+        intake=parse(json.dumps(value),(PlanningTurn(text,date(2026,11,11)),))
+        old=CityReference('320500','苏州市','江苏省','苏州市','city','Asia/Shanghai').__dict__
+        previous=dict(city=dict(status='resolved',candidates=[old],source={}))
+        self.assertIsNone(NationalLioPlanning._previous_city(intake,previous,text))
+        value['current_request']=text.replace('安徽省','江苏省');value['city']['province']='江苏省'
+        intake=parse(json.dumps(value),(PlanningTurn(value['current_request'],date(2026,11,11)),))
+        self.assertEqual(NationalLioPlanning._previous_city(intake,previous,value['current_request'])['candidates'],[old])

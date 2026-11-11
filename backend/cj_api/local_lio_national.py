@@ -171,7 +171,9 @@ class NationalLioPlanning:
         same=_normalize(intake.city['query']) in forms(city['name'],city['level'])
         confirmed=(old['status']=='confirmation_required' and re.fullmatch(
             r"\s*(?:yes|correct|that's right|confirm|是|是的|对|对的|没错|确认)[。.!！]?\s*",text,re.I) is not None)
-        if old['status']=='resolved' and same or confirmed:
+        province=intake.city['province']
+        same_province=province is None or _normalize(province) in forms(city['province'],'province')
+        if old['status']=='resolved' and same and same_province or confirmed:
             return dict(old,status='resolved')
         return None
 
