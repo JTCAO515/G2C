@@ -303,3 +303,28 @@ class NationalExecution(unittest.TestCase):
         with patch('cj_trip.planning_context.read_current',return_value=current):
             self.assertFalse(save.supports_destination(binding,CityReference('220104','朝阳区','吉林省','长春市','district','Asia/Shanghai')))
             self.assertTrue(save.supports_destination(binding,CityReference('110105','朝阳区','北京市','北京市','district','Asia/Shanghai')))
+
+    def test_disambiguating_original_destination_keeps_its_sourced_dates(self):
+        old='计划Suzhou，从2026-11-20开始，两个人'
+        current='我指安徽宿州'
+        value=self.envelope(old,city='Suzhou');value['current_request']=current
+        value['city']=dict(query='宿州',normalized_name=None,province='安徽',source_index=1,quote='宿州')
+        js=CityReference('320500','苏州市','江苏省','苏州市','city','Asia/Shanghai').__dict__
+        ah=CityReference('341300','宿州市','安徽省','宿州市','city','Asia/Shanghai').__dict__
+        previous=dict(authority='plan',status='ambiguous',city=dict(status='ambiguous',candidates=[js,ah],source={}))
+        published,_,_,_=self.run_intake(value,turns=(PlanningTurn(old,date(2026,11,11)),PlanningTurn(current,date(2026,11,11))),
+            previous=previous,resolution=dict(status='resolved',candidates=[ah],source={}))
+        self.assertEqual(len(published),1)
+        self.assertEqual(published[0][3].fields['arrival']['date']['value'],'2026-11-20')
+
+    def test_changed_province_cannot_borrow_dates_even_when_city_quote_is_older(self):
+        old='计划江苏Suzhou，从2026-11-20开始，两个人'
+        current='我指安徽的Suzhou'
+        value=self.envelope(old,city='Suzhou');value['current_request']=current;value['city']['province']='安徽'
+        js=CityReference('320500','苏州市','江苏省','苏州市','city','Asia/Shanghai').__dict__
+        ah=CityReference('341300','宿州市','安徽省','宿州市','city','Asia/Shanghai').__dict__
+        previous=dict(authority='plan',status='needs_details',city=dict(status='resolved',candidates=[js],source={}))
+        published,events,_,_=self.run_intake(value,turns=(PlanningTurn(old,date(2026,11,11)),PlanningTurn(current,date(2026,11,11))),
+            previous=previous,resolution=dict(status='resolved',candidates=[ah],source={}))
+        self.assertEqual(published,[])
+        self.assertTrue(any('哪天' in v for k,v in events if k=='text_delta'))

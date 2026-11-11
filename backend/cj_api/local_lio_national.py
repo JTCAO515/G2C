@@ -134,15 +134,25 @@ class NationalLioPlanning:
             return self._answer(worker,binding,state,original.locale,
                 '这个对话已有另一座城市的行程。请新开对话来规划这趟旅行，保留原行程。',
                 'This conversation already has an itinerary for another destination. Start a new conversation for this trip to keep the original itinerary.')
-        # A date mentioned for an earlier destination must not leak into a
-        # later city correction. Missing-city clarification retains its dates.
-        if intake.city['source_index']>0 and previous is not None and previous.get('city') is not None:
-            old=previous['city']['candidates']
-            if len(old)!=1 or old[0]['adcode']!=city.adcode:
-                for edge in ('arrival','departure'):
-                    evidence=intake.sources.get(edge+'.date',[])
-                    if not evidence or all(r['source_index']<intake.city['source_index'] for r in evidence):
-                        fields[edge]['date']=dict(state='missing')
+        # Refining an unresolved destination preserves that original request's
+        # dates. Changing an already resolved destination does not, even when
+        # the model reuses an older homonymous city quote.
+        date_boundary=intake.city['source_index']
+        prior_city=None if previous is None else previous.get('city')
+        if prior_city is not None:
+            same_target=any(candidate['adcode']==city.adcode or
+                candidate['level']=='province' and candidate['name']==city.province
+                for candidate in prior_city['candidates'])
+            date_boundary=0 if same_target else len(turns)-1
+        elif previous is not None and previous.get('status')=='needs_city':
+            date_boundary=0
+        if date_boundary:
+            for edge in ('arrival','departure'):
+                evidence=intake.sources.get(edge+'.date',[])
+                if edge=='departure' and not evidence and intake.duration_days is not None:
+                    evidence=intake.sources.get('arrival.date',[])
+                if evidence and all(ref['source_index']<date_boundary for ref in evidence):
+                    fields[edge]['date']=dict(state='missing')
         missing=[]
         for edge in ('arrival','departure'):
             if fields.get(edge,{}).get('date',{}).get('state')!='known':missing.append(edge+'.date')
