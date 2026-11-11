@@ -29,19 +29,30 @@ class NationalExecution(unittest.TestCase):
             extraction=dict(version='NEEDS-extraction.1',fields=fields,unresolved=[],long_term_requests=[]),
             field_sources=sources,current_request=text)
 
-    def run_intake(self,value,*,turns=None,previous=None,resolution=None,same_destination=True):
+    def run_intake(self,value,*,turns=None,previous=None,resolution=None,same_destination=True,model_output=None):
         text=value['current_request'];turns=turns or (PlanningTurn(text,date(2026,11,11)),)
         city=CityReference('310000','上海市','上海市',None,'province','Asia/Shanghai')
         resolution=resolution or dict(status='resolved',candidates=[city.__dict__],requested_name='上海',source={})
         published=[];events=[];lookups=[]
-        wire=dict(value,version='LIO-planning-intake.3',current_source_index=len(turns)-1)
-        wire.pop('current_request')
-        if wire['intent'] in ('consult','discuss','cancel'):
-            wire.update(extraction=None,duration_days=None,field_sources={})
+        if model_output is None:
+            wire=json.loads(json.dumps(value));wire.update(version='LIO-planning-intake.4',current_source_index=len(turns)-1)
+            wire.pop('current_request')
+            wire['start_date']=wire['extraction']['fields'].get('arrival',{}).get('date',dict(state='missing'))
+            if wire['start_date']['state']=='known':wire['field_sources']['start_date']=wire['field_sources']['arrival.date']
+            wire['extraction']['version']='LIO-execution-extraction.1'
+            wire['extraction']['fields'].setdefault('party_size',dict(state='missing'))
+            wire['extraction']['fields'].setdefault('fixed_items',[])
+            for fixed in wire['extraction']['fields'].get('fixed_items',[]):
+                fixed['label']=fixed.pop('description')
+                fixed['source_ref']=next(ref for ref in wire['field_sources']['fixed_items'] if fixed['label'] in ref['quote'])
+                fixed['detail_refs']=[]
+            if wire['intent'] in ('consult','discuss','cancel'):
+                wire.update(extraction=None,duration_days=None,field_sources={},start_date=None)
+        else:wire=model_output
         class Worker:
             memory_run=None;message_context=None;provider=object();lio_city_context=None;lio_memory=None
             def _registered_stream(self,binding,key,registration,argument,**kwargs):
-                assert registration=='model.lio_intake.4' and argument[3]==len(turns)-1
+                assert registration=='model.lio_intake.5' and argument[3]==len(turns)-1
                 yield json.dumps(wire,ensure_ascii=False)
             def _event(self,binding,state,kind,value='',**kwargs):
                 events.append((kind,value));return SimpleNamespace(sequence=state.sequence+1)
