@@ -457,7 +457,7 @@ class MeteredDashScopeProvider:
                 or (proxy or incremental) and (not native_tools or tool_choice is not None)
                 or final_answer and not (proxy or incremental)):
             raise ProviderFailed('explicit native turn transport required')
-        if structured_profile not in (None,'LIO-planning-intake.1') or structured_profile is not None and (native_tools or system is None):
+        if structured_profile not in (None,'LIO-planning-intake.1','LIO-planning-intake.2') or structured_profile is not None and (native_tools or system is None):
             raise ProviderFailed('explicit nationwide structured profile required')
         if release_after_send and (native_tools or system is None):
             raise ProviderFailed('explicit structured model input required')
@@ -506,7 +506,11 @@ class MeteredDashScopeProvider:
         if incremental:body['tool_choice']='none' if final_answer else 'auto'
         if tool_choice is not None:body['tool_choice']=tool_choice
         if native_tools and not (proxy or incremental):body['response_format']=_m4_native_answer_format()
-        elif not native_tools and system is not None:body['response_format']={'type':'json_object'}
+        elif not native_tools and system is not None:
+            if structured_profile=='LIO-planning-intake.2':
+                from .lio_intake_schema import RESPONSE_FORMAT
+                body['response_format']=RESPONSE_FORMAT
+            else:body['response_format']={'type':'json_object'}
         raw=canonical(body)
         if len(raw)>32768:raise ProviderFailed('bounded M4 model input required')
         self.authorization.begin(attempt,'model',raw)

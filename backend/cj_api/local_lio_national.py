@@ -8,6 +8,7 @@ import re
 from zoneinfo import ZoneInfo
 
 from cj_agent.provider import ProviderUnknown
+from cj_agent.lio_intake_schema import GUIDANCE
 from cj_message.demo_dialogue import LIO_VERSION
 from cj_message.domain import Command,Unavailable
 from cj_message.lio_context import answer_prompt
@@ -77,8 +78,8 @@ class NationalLioPlanning:
             memory_messages=worker.memory_run.messages(text)
             messages=[*memory_messages[:-1],*messages]
         if worker.message_context is not None:messages=worker.message_context.answer_messages(binding,messages)
-        system=answer_prompt(original.locale)+' '+SYSTEM+' Original traveler messages have source indices 0 through '+str(len(turns)-1)+'. Stored memory data is not an indexed traveler message. Original local China days in that order: '+dates
-        raw=''.join(worker._registered_stream(binding,'model.lio_intake.0','model.lio_intake.1',
+        system=answer_prompt(original.locale)+' '+SYSTEM+GUIDANCE+' Original traveler messages have source indices 0 through '+str(len(turns)-1)+'. Stored memory data is not an indexed traveler message. Original local China days in that order: '+dates
+        raw=''.join(worker._registered_stream(binding,'model.lio_intake.0','model.lio_intake.2',
                     (messages,system,worker.provider),message_refs=refs))
         try:intake=parse(raw,turns)
         except (InvalidInput,ValueError,UnicodeError) as error:
