@@ -68,7 +68,7 @@ class Intake:
  needs_tools:bool
  city:dict|None
  duration_days:int|None
- extraction:dict
+ extraction:dict|None
  sources:dict
  current_request:str
 
@@ -116,7 +116,7 @@ def province_evidence(mentions,texts):
 
 def parse(raw,turns,*,version=VERSION):
  value=decode(raw.encode() if type(raw) is str else raw)
- current_index=version=='LIO-planning-intake.2'
+ current_index=version in ('LIO-planning-intake.2','LIO-planning-intake.3')
  exact(value,('version','intent','reply','needs_tools','city','duration_days','extraction','field_sources',
               'current_source_index' if current_index else 'current_request'))
  if value['version']!=version or type(value['intent']) is not str or value['intent'] not in INTENTS or type(value['needs_tools']) is not bool:
@@ -144,7 +144,10 @@ def parse(raw,turns,*,version=VERSION):
  if city is not None:
   exact(city,('query','normalized_name','province','source_index','quote'))
   source({k:city[k] for k in ('source_index','quote')})
-  if city['query']!=city['quote']:raise InvalidInput('city query must preserve its original destination mention')
+  if version=='LIO-planning-intake.3':
+   if type(city['query']) is not str or not city['query'].strip() or city['query'] not in city['quote']:
+    raise InvalidInput('city query must preserve its original destination mention')
+  elif city['query']!=city['quote']:raise InvalidInput('city query must preserve its original destination mention')
   for key in ('normalized_name','province'):
    if city[key] is not None and (type(city[key]) is not str or not city[key].strip() or len(city[key].encode())>256):
     raise InvalidInput('bounded proposed administrative name required')
@@ -154,12 +157,18 @@ def parse(raw,turns,*,version=VERSION):
    # single result. Preserve all original provider candidates for confirmation.
    city['province']=None
  days=value['duration_days']
+ if version=='LIO-planning-intake.3' and value['intent'] in ('consult','discuss','cancel'):
+  if value['extraction'] is not None or days is not None or sources:
+   raise InvalidInput('nonexecuting intake must not include execution parameters')
+  return Intake(value['intent'],value['reply'],value['needs_tools'],city,None,None,{},current_request)
  if days is not None and (type(days) is not int or not 1<=days<=366 or 'duration_days' not in sources):
   raise InvalidInput('original bounded duration required')
  extraction=value['extraction'];exact(extraction,('version','fields','unresolved','long_term_requests'))
  if extraction['version']!='NEEDS-extraction.1' or type(extraction['fields']) is not dict:
   raise InvalidInput('original NEEDS extraction required')
  fields=extraction['fields']
+ if version=='LIO-planning-intake.3' and 'destination_timezone' in fields:
+  raise InvalidInput('destination timezone must come from the confirmed city')
  # The model boundary accepts partial events; all internal NEEDS objects use
  # their complete established event shape after this one normalization.
  for key in EVENTS & fields.keys():

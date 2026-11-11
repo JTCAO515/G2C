@@ -101,7 +101,7 @@ class ToolEvidence:
         if (binding.scope,binding.message_id) not in self.selected:return
         now=self.clock()
         if now>=self.expires_at:raise BudgetUnknown('original intake evidence window expired')
-        if operation.registration_id not in ('model.lio_intake.1','model.lio_intake.2','model.lio_intake.3') or operation.command.kind!='model':
+        if operation.registration_id not in ('model.lio_intake.1','model.lio_intake.2','model.lio_intake.3','model.lio_intake.4') or operation.command.kind!='model':
             raise BudgetUnknown('original intake registration required')
         value=dict(version='G2C-lio-intake-evidence.1',capture_kind='model',source_commit=self.source_commit,
             model_implementation_sha256=self.tool_sha256,scope_sha256=sha256(binding.scope.encode()).hexdigest(),
