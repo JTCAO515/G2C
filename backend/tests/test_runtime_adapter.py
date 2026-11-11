@@ -553,6 +553,30 @@ def test_c0_source_cannot_mint_live_image_or_authority():
     assert decode((ROOT/'backend/runtime_adapter/c0.source.json').read_bytes())==reference
 
 
+def test_reg7_actual_intake_anchor_and_missing_national_discussion_hook():
+    from datetime import date
+    from types import SimpleNamespace
+    from cj_api.local_lio_national import intake_prompt, CURRENT_SYSTEM
+    from cj_message.lio_context import answer_prompt
+    from runtime_adapter.profiles import CLARIFICATION
+    turns = [SimpleNamespace(question_day=date(2026, 11, 12))]
+    for locale in ('zh', 'en'):
+        system = intake_prompt(locale, turns)
+        assert system.startswith(answer_prompt(locale) + ' ' + CURRENT_SYSTEM)
+        assert render(system, [], C0, profile='answer') == (system, [])
+        changed = {**C0, 'prompt.answer_style': 'Use brief sentences.'}
+        answer, _ = render(answer_prompt(locale), [], changed, profile='answer')
+        assert answer.replace(changed['prompt.answer_style'], C0['prompt.answer_style']) == answer_prompt(locale)
+        # The only proposed hook changes the persona fragment, leaving the
+        # actual reg7 authority/schema/source-index/date suffix byte-identical.
+        assembled = answer + system[len(answer_prompt(locale)):]
+        assert assembled.replace(changed['prompt.answer_style'], C0['prompt.answer_style']) == system
+        assert CLARIFICATION not in system
+        with pytest.raises(Invalid, match='BASELINE_PROMPT_ANCHOR_DRIFT'):
+            render(system, [], C0, profile='discussion')
+        assert render(system, [], C0, profile='authority') == (system, [])
+
+
 def test_reflection_registration_delegates_only_original_model_preparation():
     from types import SimpleNamespace
     captured = []

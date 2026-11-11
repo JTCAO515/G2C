@@ -12,7 +12,7 @@
 ## 文件与默认验证
 
 - `contract.py`：不可变 Binding/Pins、候选/输入边界；复用 `cj_strict_json`。
-- `profiles.py`：三个生产文本锚点、只改文本的 renderer、原注册模型反思 preparation。
+- `profiles.py`：三个来源文本锚点、只改文本的 renderer、原注册模型反思 preparation；宿主接线均UNRUN。
 - `configuration.py` / `c0.source.json`：可重复的源C0配置及逐文件/片段摘要；不填假镜像。
 - `adapter.py` / `ports.py`：公开 call/propose/query 与 B 的最小组合接口。
 - `journal.py`：本地原操作映射；不保存/结算费用、不替代 B 的任何账本。
@@ -27,14 +27,20 @@ uv run --locked python -B -m runtime_adapter.configuration
 源C0生成仅导入固定代码/读取公开输入，不创建 provider、读取凭据或打开费用库。
 默认根可编辑安装已暴露 `backend/`，可 `from runtime_adapter import RuntimeAdapter`；
 实际生产 wheel 的包含与 B 宿主挂接仍须 B 在其后续接线中显式完成。
+`configuration.source_c0()`还会从仓库相对根读取以下公开固定输入：
+`eval/optimization/cases.v2.json`、`eval/optimization/score_v2.py`、
+`tooling/optimization/uv.lock`。B须在生产wheel/镜像保留这些相对路径及全部被hash的策略源码，
+或另交显式版本化的资源根接口；当前Docker只COPY backend/scripts/deploy，不足以运行此配置读取。
+仅拷这三项公开固定输入，不拷最终题、私有原件、日志或凭据；打包由B补，本模块不改Docker。
 
 ## C0 与固定材料
 
 `c0.source.json` 是 **C0-source-national.1 源配置**：
 
 - 三槽仍为 `prompt.answer_style`、`tool.lookup.description`、`example.clarification`。
-  原文分别来自当前 `PERSONA` 的风格句、`NATIONAL_TOOLS.place_search.description`、
-  `DISCUSSION_PROMPT` 的澄清句；不是 E 的合成 SEED，也不把身份/权限/保存条件放入槽位。
+  原文分别来自 `PERSONA` 的风格句、`NATIONAL_TOOLS.place_search.description`、
+  旧 `DISCUSSION_PROMPT` 的澄清句；第三句不是当前全国reg7路径的消费锚点。
+  不是 E 的合成 SEED，也不把身份/权限/保存条件放入槽位。
 - `render(..., C0, profile=...)` 返回与原 B system/tools 相同的字节内容。
   answer/discussion 仅替换其声明的唯一锚点；authority/intake/save 策略不替换 system。
   lookup 只改变 place_search 的 description；parameters、其他工具/字段均保留。
@@ -49,6 +55,23 @@ uv run --locked python -B -m runtime_adapter.configuration
 - task/cases固定 `G2C-dialogue-cases.2`，score固定 `G2C-dialogue-score.2`，
   E登记正文 `285500035df89e848ef20f9c34fc8f53887b3050cdf7b69e33d818334c7ea91f`。
   v1不自动回退，最终题不加载。F尚未获批的真实教师任务集不由此虚构或准入。
+
+### 现役reg7消费路径与B所需hook
+
+下表为已接受源码的可组合位置，**不是已接线证据**；三槽宿主状态均UNRUN。
+
+| 槽 | 实际路径 / renderer profile | B最小hook与当前限制 |
+| --- | --- | --- |
+| `prompt.answer_style` | `cj_message.lio_context.answer_prompt(locale)`包含PERSONA；`local_lio_national.intake_prompt`把它接到CURRENT_SYSTEM前，注册`model.lio_intake.7`生成reply；`RealTools.answer`也把它接到TOOL_SYSTEM后。profile=`answer`。 | 在原prompt组装处，仅对`answer_prompt(locale)`这段调用`render(..., [], fragments, profile='answer')`，再接回原策略/日期/源索引；两个入口都需按原RUN绑定候选，不替换CURRENT_SYSTEM、响应schema、compiler或保存authority。 |
+| `tool.lookup.description` | `RealTools._model_input(ModelInput(..., national=True))`序列化`self.national_tools`；`model.tool_turn`消费place_search描述。该tools参数可随任一profile处理，纯工具阶段用`authority`（system不变）。 | 每RUN从原工具列表拷贝、只替换description，在原注册准备/原输入hash/Meter前传入；不全局修改`self.national_tools`。无工具的consult不消费本槽，不能把这类轨迹算作lookup接线验证。 |
+| `example.clarification` | profile=`discussion`只适用于旧`local_lio_planning.DISCUSSION_PROMPT`。reg7的consult/discuss直接取intake.reply，实际intake_prompt不含此锚点；profile=`authority`也不替换prompt。 | **全国NOT_CONNECTED**。B须在#762给明确允许的reply-only文本hook与C0原字节等价方案，必要时与E重新固定基线；不能把旧锚点追加到CURRENT_SYSTEM、改schema/compiler或凭空新增指令。未交前，B整任务准入须将依赖此槽的非C0候选明确UNRUN，不能静默忽略后称三槽已优化。 |
+
+accepted main中人设入口是`backend/message/cj_message/lio_context.py:answer_prompt`，
+没有名为`lio_answer_prompt.py`的文件；固定实际定义文件hash，不创建影子源码。
+source bundle另固定现役start/flat/facts schema及flat/sourced compiler，保留历史策略hash供来源核对。
+本模块renderer的本地C0 no-op只证明所传原system/tools原样返回；真实宿主尚未调用renderer。
+B挂接后必须在两个真实输入入口逐字比较C0序列化请求（含response_format和tools），
+并用非C0单槽候选证明仅目标文本变化、其余authority字节不变。缺失路径继续UNRUN。
 
 ```python
 from runtime_adapter import Binding, RuntimeAdapter
