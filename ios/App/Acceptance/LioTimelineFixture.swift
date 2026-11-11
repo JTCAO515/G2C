@@ -24,7 +24,13 @@ private struct LioTimelineFixture: View {
         } else {
             tripLibrary = nil
         }
-        let acceptedFailure = ProcessInfo.processInfo.arguments.contains("--lio-accepted-failure-acceptance")
+        let acceptedFailure: String? = if ProcessInfo.processInfo.arguments.contains("--lio-accepted-limit-acceptance") {
+            "quota"
+        } else if ProcessInfo.processInfo.arguments.contains("--lio-accepted-failure-acceptance") {
+            "unavailable"
+        } else {
+            nil
+        }
         let server = TimelineAcceptanceServer(exerciseResend: exerciseResend, historicalTrip: historicalTrip,
                                               acceptedFailure: acceptedFailure)
         _server = State(initialValue: server)
@@ -56,18 +62,18 @@ private final class TimelineAcceptanceServer {
     private let conversationID = "lio-dialogue-0123456789abcdef0123456789abcdef"
     private let exerciseResend: Bool
     private let historicalTrip: Bool
-    private let acceptedFailure: Bool
+    private let acceptedFailure: String?
     private var step = Step.sending
     private var sent: (id: String, question: String)?
     private var unsent: LioTimelineWire.Send?
     private(set) var reads = 0
     private(set) var sends = 0
 
-    init(exerciseResend: Bool, historicalTrip: Bool, acceptedFailure: Bool) {
+    init(exerciseResend: Bool, historicalTrip: Bool, acceptedFailure: String?) {
         self.exerciseResend = exerciseResend
         self.historicalTrip = historicalTrip
         self.acceptedFailure = acceptedFailure
-        if historicalTrip || acceptedFailure { step = .finished }
+        if historicalTrip || acceptedFailure != nil { step = .finished }
     }
 
     func advance() {
@@ -102,9 +108,11 @@ private final class TimelineAcceptanceServer {
             case .weather: row["activity"] = "checking_weather"
             case .prefix: row["answer"] = "北京明天"
             case .finished:
-                if acceptedFailure {
+                if let acceptedFailure {
                     row["status"] = "failed"
-                    row["failure"] = "unavailable"
+                    row["failure"] = acceptedFailure
+                    row["answer"] = "I'd love to help you plan"
+                    row["sources"] = [["title": "Amap Weather"], ["title": "Amap"]]
                     break
                 }
                 row["status"] = "completed"

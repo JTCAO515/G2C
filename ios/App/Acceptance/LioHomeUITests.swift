@@ -1,8 +1,8 @@
 import XCTest
 
 @MainActor final class LioHomeUITests: XCTestCase {
-    func testEnglish() throws { try exercise("en", question: "How do I take the metro in Shanghai?", source: "Source") }
-    func testChinese() throws { try exercise("zh-Hans", question: "在上海怎么坐地铁？", source: "来源") }
+    func testEnglish() throws { try exercise("en", question: "How do I take the metro in Shanghai?") }
+    func testChinese() throws { try exercise("zh-Hans", question: "在上海怎么坐地铁？") }
 
     func testInvitationEnglish() throws { try exerciseInvitation("en") }
     func testInvitationChinese() throws { try exerciseInvitation("zh-Hans") }
@@ -247,15 +247,11 @@ import XCTest
         metro.tap()
         XCTAssertFalse(app.staticTexts["lio.question"].exists)
         send.tap()
-        XCTAssertTrue(app.staticTexts[chinese ? "正在查旅行信息…" : "Checking travel information…"]
+        XCTAssertTrue(app.staticTexts[chinese ? "Lio 正在回复…" : "Lio is replying…"]
             .waitForExistence(timeout: 3))
         reply(chinese ? "跟着地铁线路指示牌走。" : "Follow the signs for your metro line.")
-        let source = app.buttons["lio.source"]
-        XCTAssertTrue(source.waitForExistence(timeout: 6))
-        source.tap()
-        let sourceTitle = chinese ? "来源" : "Source"
-        XCTAssertTrue(app.navigationBars[sourceTitle].waitForExistence(timeout: 6))
-        app.navigationBars[sourceTitle].buttons[chinese ? "完成" : "Done"].tap()
+        XCTAssertFalse(app.buttons["lio.source"].exists)
+        XCTAssertFalse(app.staticTexts[chinese ? "正在查旅行信息…" : "Checking travel information…"].exists)
 
         ask(chinese ? "帮我规划北京两天" : "Plan two days in Beijing")
         reply(chinese ? "你想慢慢逛吗？" : "Would you like a slower pace?")
@@ -497,22 +493,30 @@ import XCTest
     func testAcceptedFailureDescribesOnlyTheCurrentRequest() {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
-        for language in ["en", "zh-Hans"] {
-            app.launchArguments = ["--lio-preview", "--lio-timeline-acceptance", "--lio-accepted-failure-acceptance",
-                                   "-cj.ui.language.v1", language]
-            app.launch()
-            defer { app.terminate() }
+        for (scenario, english, chinese) in [
+            ("--lio-accepted-failure-acceptance", "I couldn’t complete this request.", "这次没能完成你的请求。"),
+            ("--lio-accepted-limit-acceptance", "Lio couldn’t finish this request within the current limit.", "这次没能在限额内答完。")
+        ] {
+            for language in ["en", "zh-Hans"] {
+                app.launchArguments = ["--lio-preview", "--lio-timeline-acceptance", scenario,
+                                       "-cj.ui.language.v1", language]
+                app.launch()
+                defer { app.terminate() }
 
-            let example = app.buttons["lio.example.1"]
-            XCTAssertTrue(example.waitForExistence(timeout: 12))
-            example.tap()
-            app.buttons["lio.send"].tap()
-            let failure = app.staticTexts["lio.failure"]
-            XCTAssertTrue(failure.waitForExistence(timeout: 8))
-            XCTAssertEqual(failure.label, language == "en" ? "I couldn’t complete this request." : "这次没能完成你的请求。")
-            XCTAssertEqual(app.staticTexts["lio.fixture.send-count"].label, "1")
-            XCTAssertFalse(app.buttons["lio.resend"].exists)
-            XCTAssertFalse(app.buttons["lio.askAgain"].exists)
+                let example = app.buttons["lio.example.1"]
+                XCTAssertTrue(example.waitForExistence(timeout: 12))
+                example.tap()
+                app.buttons["lio.send"].tap()
+                let failure = app.staticTexts["lio.failure"]
+                XCTAssertTrue(failure.waitForExistence(timeout: 8))
+                XCTAssertEqual(failure.label, language == "en" ? english : chinese)
+                XCTAssertEqual(app.staticTexts["lio.fixture.send-count"].label, "1")
+                XCTAssertFalse(app.staticTexts["lio.answer"].exists)
+                XCTAssertFalse(app.buttons["lio.source"].exists)
+                XCTAssertFalse(app.staticTexts["Amap Weather"].exists)
+                XCTAssertFalse(app.buttons["lio.resend"].exists)
+                XCTAssertFalse(app.buttons["lio.askAgain"].exists)
+            }
         }
     }
 
@@ -532,11 +536,11 @@ import XCTest
         composer.typeText("北京明天天气")
         app.buttons["lio.send"].tap()
         XCTAssertTrue(app.staticTexts["lio.question"].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label BEGINSWITH %@", "思考中")).firstMatch.exists)
+        XCTAssertTrue(app.staticTexts["Lio 正在回复…"].exists)
 
         step.tap()
-        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label BEGINSWITH %@", "正在查天气"))
-            .firstMatch.waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Lio 正在回复…"].waitForExistence(timeout: 8))
+        XCTAssertFalse(app.staticTexts["正在查天气…"].exists)
         XCTAssertFalse(answer.exists)
 
         step.tap()
@@ -545,16 +549,10 @@ import XCTest
         XCTAssertFalse(app.buttons["lio.source"].exists)
 
         step.tap()
-        let source = app.buttons["lio.source"]
-        XCTAssertTrue(source.waitForExistence(timeout: 8))
         XCTAssertEqual(answer.label, "北京明天有小雨。")
-        source.tap()
-        XCTAssertTrue(app.navigationBars["来源"].waitForExistence(timeout: 8))
-        let openSource = app.descendants(matching: .any).matching(identifier: "打开来源").firstMatch
-        XCTAssertTrue(openSource.waitForExistence(timeout: 8), app.debugDescription)
-        XCTAssertTrue(openSource.isHittable, app.debugDescription)
-        XCTAssertFalse(app.staticTexts["这条来源没有链接。"].exists)
-        app.navigationBars["来源"].buttons["完成"].tap()
+        XCTAssertFalse(app.buttons["lio.source"].exists)
+        XCTAssertFalse(app.staticTexts["演示天气预报"].exists)
+        XCTAssertFalse(app.staticTexts["lio.progress"].exists)
 
         let before = try XCTUnwrap(Int(readCount.label))
         XCUIDevice.shared.press(.home)
@@ -569,7 +567,7 @@ import XCTest
         XCTAssertEqual(app.staticTexts["lio.fixture.send-count"].label, "1")
     }
 
-    func testUnsafeReplyIsWithheldWithoutHidingTheAttribution() {
+    func testUnsafeReplyIsWithheldWithoutExposingTools() {
         exerciseWithheldReply("--lio-display-guard")
     }
 
@@ -596,7 +594,7 @@ import XCTest
         XCTAssertTrue(withheld.waitForExistence(timeout: 8))
         XCTAssertEqual(withheld.label, "这条回答暂时无法显示。")
         XCTAssertFalse(app.staticTexts["lio.answer"].exists)
-        XCTAssertTrue(app.buttons["lio.source"].exists)
+        XCTAssertFalse(app.buttons["lio.source"].exists)
     }
 
     func testLongReplyFollowsUntilTheReaderScrollsAway() {
@@ -611,26 +609,27 @@ import XCTest
         sample.tap()
         app.buttons["lio.send"].tap()
 
-        let source = app.buttons["lio.source"]
         let advance = app.buttons["Next section"]
         let answers = app.staticTexts.matching(identifier: "lio.answer")
-        XCTAssertTrue(source.waitForExistence(timeout: 8))
-        XCTAssertTrue(source.isHittable)
+        let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+        XCTAssertTrue(answers.firstMatch.waitForExistence(timeout: 8))
+        XCTAssertFalse(app.buttons["lio.source"].exists)
         advance.tap()
         let long = answers.containing(NSPredicate(format: "label CONTAINS %@", "Long section.")).firstMatch
         XCTAssertTrue(long.waitForExistence(timeout: 8))
-        XCTAssertTrue(source.isHittable)
+        XCTAssertLessThanOrEqual(long.frame.maxY, composer.frame.minY)
         XCTAssertFalse(app.buttons["lio.send"].isEnabled)
 
         app.scrollViews.firstMatch.swipeDown()
-        XCTAssertFalse(source.isHittable)
+        let readerPosition = long.frame.minY
         advance.tap()
         let finished = answers.containing(NSPredicate(format: "label CONTAINS %@", "End of the reply.")).firstMatch
         XCTAssertTrue(finished.waitForExistence(timeout: 8))
-        XCTAssertFalse(source.isHittable)
+        XCTAssertEqual(finished.frame.minY, readerPosition, accuracy: 2)
+        XCTAssertFalse(app.buttons["lio.source"].exists)
     }
 
-    private func exercise(_ language: String, question: String, source title: String) throws {
+    private func exercise(_ language: String, question: String) throws {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
         app.launchArguments = ["--lio-preview", "-cj.ui.language.v1", language]
@@ -665,11 +664,9 @@ import XCTest
         XCTAssertTrue(answer.waitForExistence(timeout: 8))
         XCTAssertLessThan(answer.frame.minX, sentQuestion.frame.minX)
         XCTAssertGreaterThanOrEqual(answer.frame.minY, sentQuestion.frame.maxY)
-        let source = app.buttons["lio.source"]
-        XCTAssertTrue(source.waitForExistence(timeout: 8))
-        XCTAssertTrue(source.isHittable)
-        source.tap()
-        XCTAssertTrue(app.navigationBars[title].waitForExistence(timeout: 8))
+        XCTAssertFalse(app.buttons["lio.source"].exists)
+        XCTAssertFalse(app.staticTexts["lio.progress"].exists)
+        XCTAssertFalse(app.navigationBars.firstMatch.exists)
         XCTAssertFalse(app.links.firstMatch.exists)
     }
 }
