@@ -1,6 +1,7 @@
 """Seal a controlled final set with a JT-entered passphrase and emit metadata only."""
 import argparse
 import errno
+from datetime import date
 from hashlib import sha256
 import json
 import os
@@ -105,6 +106,18 @@ def jt_passphrase():
     return first
 
 
+def rubric_shape(value, reference):
+    if type(value) is not type(reference):
+        return False
+    if type(reference) is dict:
+        return value.keys() == reference.keys() and all(rubric_shape(value[key], wanted) for key, wanted in reference.items())
+    if type(reference) is str:
+        return nonempty(value)
+    if type(reference) is int:
+        return value == 0 if reference == 0 else value > 0
+    return value == reference
+
+
 def final_metadata(payload):
     document = read_json(payload)
     fields(document, {'version', 'purpose', 'tasks'}, 'controlled set')
@@ -112,26 +125,47 @@ def final_metadata(payload):
     public, _ = dataset()
     public_families = {task['trip_family'] for task in public['tasks']}
     public_inputs = {tuple(variant['turns']) for task in public['tasks'] for variant in task['variants'].values()}
+    references = {task['kind']: task for task in public['tasks']}
+    sample_plan = read_json(Path(__file__).with_name('comparison-plan.v1.json').read_bytes())['samples']
+    require(sample_plan['version'] == FINAL_VERSION, 'controlled plan version mismatch')
     tasks = document['tasks']
     require(type(tasks) is list and bool(tasks), 'controlled tasks are required')
     ids = set()
     kinds = set()
     for task in tasks:
-        fields(task, {'id', 'split', 'trip_family', 'kind', 'setup', 'variants'}, 'controlled task')
+        fields(task, {'id', 'split', 'trip_family', 'kind', 'setup', 'known_fields', 'variants'}, 'controlled task')
         require(nonempty(task['id']) and task['id'] not in ids, 'duplicate or missing controlled task identity')
         require(task['split'] == 'final' and nonempty(task['trip_family']) and task['trip_family'] not in public_families,
                 'controlled travel family is exposed in the public set')
         require(task['kind'] in STATE_RULES and nonempty(task['setup']), 'invalid controlled task setup/kind')
-        require(set(task['variants']) == set(LANGUAGES), 'controlled task needs both languages')
-        for variant in task['variants'].values():
+        fields(task['known_fields'], {'task_clock', 'travel'}, 'controlled known fields')
+        known = task['known_fields']
+        date.fromisoformat(known['task_clock'])
+        fields(known['travel'], {'city', 'start_date', 'days', 'daily_budget_cny'}, 'controlled travel fields')
+        require(nonempty(known['travel']['city']) and type(known['travel']['days']) is int
+                and known['travel']['days'] > 0 and type(known['travel']['daily_budget_cny']) is int
+                and known['travel']['daily_budget_cny'] > 0, 'invalid controlled travel field values')
+        if known['travel']['start_date'] is not None:
+            date.fromisoformat(known['travel']['start_date'])
+        if task['kind'] == 'clarification':
+            require(known['travel']['start_date'] is None, 'start-date clarification has a known start date')
+        require(type(task['variants']) is dict and set(task['variants']) == set(LANGUAGES), 'controlled task needs both languages')
+        for language, variant in task['variants'].items():
             require(type(variant) is dict and variant.keys() <= {'turns', 'behavior', 'state'}, 'invalid controlled variant')
             turns = variant.get('turns')
             require(type(turns) is list and bool(turns) and all(nonempty(turn) for turn in turns), 'invalid controlled turns')
             require(tuple(turns) not in public_inputs, 'controlled input repeats a public task')
-            require(type(variant.get('behavior')) is dict and bool(variant['behavior']), 'controlled behavior rubric missing')
+            reference = references[task['kind']]['variants'][language]
+            require(variant.get('behavior') == reference['behavior'] and rubric_shape(variant['behavior'], reference['behavior']),
+                    'controlled behavior differs from the frozen scoring rubric')
+            expected_state = reference.get('state', {})
+            require(rubric_shape(variant.get('state', {}), expected_state), 'controlled state rubric has invalid fields or types')
         ids.add(task['id'])
         kinds.add(task['kind'])
     require(kinds == set(STATE_RULES), 'controlled set lacks a required behavior or hard-state class')
+    allocation = {kind: sum(task['kind'] == kind for task in tasks) for kind in kinds}
+    require(len(tasks) == sample_plan['tasks'] and allocation == sample_plan['task_allocation'],
+            'controlled denominator or allocation differs from the frozen plan')
     return dict(plaintext_sha256=sha256(payload).hexdigest(), purpose=PURPOSE,
                 denominators=dict(tasks=len(tasks), trip_families=len({task['trip_family'] for task in tasks}),
                                   **{language: len(tasks) for language in LANGUAGES},
@@ -159,15 +193,31 @@ def seal(payload, output):
     return metadata
 
 
-def deny_probe(ciphertext, session):
+def deny_probe(ciphertext, session, manifest):
     executable = age_binary()
+    fields(manifest, {'plaintext_sha256', 'ciphertext_sha256', 'purpose', 'denominators'}, 'sealed manifest')
+    require(manifest['purpose'] == PURPOSE, 'manifest is not the controlled final release')
+    for name in ('plaintext_sha256', 'ciphertext_sha256'):
+        digest = manifest[name]
+        require(type(digest) is str and len(digest) == 64 and all(char in '0123456789abcdef' for char in digest),
+                'invalid sealed manifest hash')
     raw = ciphertext.expanduser().resolve().read_bytes()
+    require(sha256(raw).hexdigest() == manifest['ciphertext_sha256'], 'ciphertext differs from the frozen manifest')
+    inspector = str(Path(executable).with_name('age-inspect'))
+    inspected = subprocess.run([inspector, '--json'], input=raw, capture_output=True, timeout=15)
+    require(inspected.returncode == 0, 'invalid age ciphertext')
+    header = read_json(inspected.stdout)
+    require(header['version'] == 'age-encryption.org/v1' and header['stanza_types'] == ['scrypt']
+            and header['sizes']['min_payload'] > 0, 'unsupported or empty controlled ciphertext')
     result = subprocess.run([executable, '--decrypt'], input=raw, capture_output=True,
                             start_new_session=True, timeout=15)
+    no_passphrase = b'standard input is not a terminal, and /dev/tty is not available' in result.stderr
     return dict(session=session, ciphertext_sha256=sha256(raw).hexdigest(), age_version=AGE_VERSION,
                 exit_code=result.returncode, decrypted_bytes=len(result.stdout),
                 stderr_sha256=sha256(result.stderr).hexdigest(),
-                status='PASS' if result.returncode != 0 and not result.stdout else 'FAIL')
+                failure_class='passphrase_unavailable' if no_passphrase else 'unexpected_failure',
+                matched_frozen_ciphertext=True,
+                status='PASS' if no_passphrase and result.returncode != 0 and not result.stdout else 'UNKNOWN')
 
 
 def main():
@@ -177,10 +227,11 @@ def main():
     writer.add_argument('--output', type=Path, required=True)
     probe = commands.add_parser('deny-probe')
     probe.add_argument('--ciphertext', type=Path, required=True)
+    probe.add_argument('--manifest', type=Path, required=True)
     probe.add_argument('--session', choices=('D', 'E', 'B'), required=True)
     args = parser.parse_args()
     try:
-        result = seal(sys.stdin.buffer.read(), args.output) if args.command == 'seal' else deny_probe(args.ciphertext, args.session)
+        result = seal(sys.stdin.buffer.read(), args.output) if args.command == 'seal' else deny_probe(args.ciphertext, args.session, read_json(args.manifest.read_bytes()))
     except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
         parser.exit(2, f'Custody operation failed ({type(error).__name__}).\n')
     print(json.dumps(result, sort_keys=True, ensure_ascii=False, indent=2))

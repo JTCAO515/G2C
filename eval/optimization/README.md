@@ -135,12 +135,15 @@ JT 在 #495 的2026-11-11决定授权 D/R 编制最终题，密文放仓库外�
 先用公开控制运行加密、篡改拒绝和缺口令拒读回归，再封存。写入前以JT当次口令
 在内存解密并核同payload，完整密文一次性写出；取消、口令不符或校验失败均拒绝生成。
 JT需自行保管口令，#765获准执行时只交给R。D/E/B各自对同一密文实测不带秘密的解密，
-报告退出码、解密输出字节数、密文摘要和状态。错口令测试不能代替三会话实测。
+探针先匹配已成功封存的固定manifest摘要，再由age-inspect验证非空scrypt密文格式，
+只把无口令且无控制终端的确定拒绝记为PASS。坏件/错摘要/非密文均拒绝。报告退出码、
+解密输出字节数、密文摘要和状态；自填session标签不充当主体证明，需对应会话原执行记录。
+错口令测试不能代替三会话实测。
 
 ```sh
 uv run --locked python -B -m unittest eval.optimization.test_custody
 uv run --locked python -B -m eval.optimization.custody deny-probe \
-  --ciphertext /external/path/final.age --session D
+  --ciphertext /external/path/final.age --manifest eval/optimization/final-manifest.v1.json --session D
 ```
 
 封存由受控侧把题集仅在内存传给 `seal(payload, external_path)`。公开接口只返回
@@ -153,3 +156,7 @@ uv run --locked python -B -m eval.optimization.custody deny-probe \
 #765 的三组配置、当前依赖、全量分母、既定指标、改善定义、停止/恢复和晋级条件
 在 `comparison-plan.v1.json` 预登记。未知的候选/模型/适配器字段须在获准执行前冻结；
 当前登记版本不授权实际比较。
+
+受控任务的known_fields分别记录task_clock和travel字段。缺日期控制的travel.start_date必须为null。
+封存边界按原评分器的每类behavior/state字段与类型校验，并核对comparison-plan的版本、分母及类目配额。
+#765由D拥有运行软件，由JT专门授权的R会话持钥执行，题目与逐题原结果留在受控侧。

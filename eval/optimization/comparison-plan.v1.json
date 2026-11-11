@@ -4,11 +4,12 @@
   "issue": 765,
   "execution_authorized": false,
   "owners": {
-    "execution": "D",
     "independent_decision": "R",
     "candidate_producer": "E",
     "original_runtime": "B",
-    "student_training": "G"
+    "student_training": "G",
+    "software_owner": "D",
+    "controlled_execution_subject": "R_only_after_explicit_JT_key_release"
   },
   "source_decisions": [
     "#495 JT 2026-11-07 quality policy",
@@ -173,6 +174,7 @@
       "#761",
       "#764",
       "#767"
-    ]
+    ],
+    "controlled_path": "R authorized session decrypts and runs frozen software in its controlled process; raw task text, answers, inputs and outputs remain controlled; D/E/B receive permitted aggregate metadata only"
   }
 }
