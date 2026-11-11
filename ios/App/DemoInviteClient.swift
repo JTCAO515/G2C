@@ -12,6 +12,34 @@ private final class DemoInviteRedirectBlocker: NSObject, URLSessionTaskDelegate,
 }
 
 enum DemoInviteClient {
+    /// Rolling renewal is a credential operation only; starter selections and
+    /// business originals are retained, never recreated or replayed here.
+    static func renew(_ material: SessionMaterial) async throws -> SessionMaterial? {
+        do {
+            let previous = try material.withBytes { try DemoInviteSession.decode($0, now: Date()) }
+            guard let request = try DemoBetaConfiguration.renewalRequest(grant: previous.grant, now: Date()) else { return nil }
+            let configuration = URLSessionConfiguration.ephemeral
+            configuration.httpCookieStorage = nil
+            configuration.urlCache = nil
+            configuration.urlCredentialStorage = nil
+            configuration.timeoutIntervalForRequest = 15
+            configuration.timeoutIntervalForResource = 25
+            let session = URLSession(configuration: configuration, delegate: DemoInviteRedirectBlocker(), delegateQueue: nil)
+            defer { session.invalidateAndCancel() }
+            let (body, http) = try await read(request, session: session)
+            let renewed = try DemoBetaConfiguration.verifyRenewalResponse(body, status: http.statusCode,
+                contentType: http.value(forHTTPHeaderField: "Content-Type"), previous: previous, now: Date())
+            try Task.checkCancellation()
+            return try SessionMaterial(trustedSDKBytes: JSONEncoder().encode(renewed))
+        } catch DemoBetaConfiguration.Failure.inviteDenied {
+            throw DemoAccountExchangeFailure.rejected
+        } catch DemoBetaConfiguration.Failure.expired {
+            throw DemoAccountExchangeFailure.expired
+        } catch {
+            throw DemoAccountExchangeFailure.unavailable
+        }
+    }
+
     static func exchange(code: String, consent: Bool, language: DemoStarterLanguage) async throws -> SessionMaterial {
         let request: URLRequest
         do { request = try DemoBetaConfiguration.inviteRequest(code: code, consent: consent) }

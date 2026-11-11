@@ -72,6 +72,18 @@ public final class LioTimelineHTTP {
         return chats.sorted { $0.id.utf8.lexicographicallyPrecedes($1.id.utf8) }
     }
 
+    /// Only absence of an original action or a recorded rejection proves that
+    /// a first question can return to a blank composer. An interrupted staged
+    /// action remains query-only under MessageRecovery's existing policy.
+    public func firstChatCanReturnToDraft(messageID: String) throws -> Bool {
+        guard let firstChatRecovery else { throw MessageHTTPFailure.productionActivationUnavailable }
+        guard let record = try firstChatRecovery.action(messageID: messageID, lease: lease) else { return true }
+        guard try LioTimelineWire.Send.recordedFirst(record.originalUTF8, messageID: record.messageID) != nil else {
+            throw RecoveryError.invalidSnapshot
+        }
+        return record.phase == .notAccepted
+    }
+
     /// Only a signed lookup of the recorded ID and exact digest may resolve a lost first receipt.
     public func reconcileFirstChat(messageID: String? = nil) async throws -> String? {
         guard let firstChatRecovery else { throw MessageHTTPFailure.productionActivationUnavailable }
