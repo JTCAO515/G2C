@@ -68,7 +68,7 @@ import XCTest
         let greeting = app.staticTexts["lio.opening"]
         XCTAssertTrue(greeting.waitForExistence(timeout: 12))
         let sample = app.buttons["lio.example.0"]
-        sample.tap()
+        enterSampleQuestion(in: app, index: 0)
         app.buttons["lio.send"].tap()
         let question = app.staticTexts["lio.question"]
         let answer = app.staticTexts["lio.answer"]
@@ -117,7 +117,7 @@ import XCTest
         menu.tap(); app.buttons["lio.chat.new"].tap()
         let example = app.buttons["lio.example.0"]
         XCTAssertTrue(example.waitForExistence(timeout: 8))
-        example.tap(); app.buttons["lio.send"].tap()
+        enterSampleQuestion(in: app, index: 0); app.buttons["lio.send"].tap()
         XCTAssertTrue(app.staticTexts["A separate reply."].waitForExistence(timeout: 12))
         composer.tap(); composer.typeText("My unsent follow-up")
         menu.tap(); app.buttons["synthetic.chat.recreate"].tap()
@@ -141,7 +141,7 @@ import XCTest
         app.buttons["lio.chat.new"].tap()
         let example = app.buttons["lio.example.0"]
         XCTAssertTrue(example.waitForExistence(timeout: 8))
-        example.tap()
+        enterSampleQuestion(in: app, index: 0)
         let send = app.buttons["lio.send"]
         send.tap()
         let failure = app.staticTexts["lio.failure"]
@@ -179,7 +179,7 @@ import XCTest
         XCTAssertTrue(app.staticTexts["lio.opening"].exists)
         XCTAssertFalse(oldReply.exists)
         XCTAssertFalse(app.staticTexts["lio.question"].exists)
-        example.tap()
+        enterSampleQuestion(in: app, index: 0)
         let firstQuestion = chinese ? "在上海怎么坐地铁？" : "How do I take the metro in Shanghai?"
         XCTAssertEqual(composer.value as? String, firstQuestion)
         app.buttons["lio.send"].tap()
@@ -278,7 +278,7 @@ import XCTest
 
         let metro = app.buttons["lio.example.0"]
         XCTAssertTrue(metro.waitForExistence(timeout: 12))
-        metro.tap()
+        enterSampleQuestion(in: app, index: 0)
         XCTAssertFalse(app.staticTexts["lio.question"].exists)
         send.tap()
         XCTAssertTrue(app.staticTexts[chinese ? "Lio 正在回复…" : "Lio is replying…"]
@@ -436,7 +436,7 @@ import XCTest
 
         let example = app.buttons["lio.example.0"]
         XCTAssertTrue(example.waitForExistence(timeout: 12))
-        example.tap()
+        enterSampleQuestion(in: app, index: 0)
         app.buttons["lio.send"].tap()
         let viewTrip = app.buttons["lio.trip.show"]
         XCTAssertTrue(viewTrip.waitForExistence(timeout: 8))
@@ -464,7 +464,7 @@ import XCTest
 
         let sample = app.buttons["lio.example.1"]
         XCTAssertTrue(sample.waitForExistence(timeout: 12))
-        sample.tap()
+        enterSampleQuestion(in: app, index: 1)
         app.buttons["lio.send"].tap()
         let reply = app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", clarification)).firstMatch
         XCTAssertTrue(reply.waitForExistence(timeout: 8))
@@ -501,7 +501,7 @@ import XCTest
 
         let sample = app.buttons["lio.example.0"]
         XCTAssertTrue(sample.waitForExistence(timeout: 12))
-        sample.tap()
+        enterSampleQuestion(in: app, index: 0)
         app.buttons["lio.send"].tap()
 
         let failure = app.staticTexts["lio.failure"]
@@ -539,7 +539,7 @@ import XCTest
 
                 let example = app.buttons["lio.example.1"]
                 XCTAssertTrue(example.waitForExistence(timeout: 12))
-                example.tap()
+                enterSampleQuestion(in: app, index: 1)
                 app.buttons["lio.send"].tap()
                 let failure = app.staticTexts["lio.failure"]
                 XCTAssertTrue(failure.waitForExistence(timeout: 8))
@@ -630,7 +630,7 @@ import XCTest
 
         let sample = app.buttons["lio.example.0"]
         XCTAssertTrue(sample.waitForExistence(timeout: 12))
-        sample.tap()
+        enterSampleQuestion(in: app, index: 0)
         app.buttons["lio.send"].tap()
         XCTAssertTrue(app.staticTexts["lio.answer"].waitForExistence(timeout: 8))
         app.buttons["Next section"].tap()
@@ -684,7 +684,7 @@ import XCTest
         let jump = app.buttons["lio.jumpToLatest"]
         XCTAssertTrue(app.buttons["lio.example.0"].waitForExistence(timeout: 12))
         XCTAssertFalse(jump.exists)
-        app.buttons["lio.example.0"].tap()
+        enterSampleQuestion(in: app, index: 0)
         app.buttons["lio.send"].tap()
         let answers = app.staticTexts.matching(identifier: "lio.answer")
         XCTAssertTrue(answers.firstMatch.waitForExistence(timeout: 8))
@@ -719,7 +719,7 @@ import XCTest
         defer { app.terminate() }
 
         XCTAssertTrue(app.buttons["lio.example.0"].waitForExistence(timeout: 12))
-        app.buttons["lio.example.0"].tap()
+        enterSampleQuestion(in: app, index: 0)
         app.buttons["lio.send"].tap()
         let answer = app.staticTexts["lio.answer"]
         XCTAssertTrue(answer.waitForExistence(timeout: 8))
@@ -737,7 +737,7 @@ import XCTest
 
         let sample = app.buttons["lio.example.0"]
         XCTAssertTrue(sample.waitForExistence(timeout: 12))
-        sample.tap()
+        enterSampleQuestion(in: app, index: 0)
         app.buttons["lio.send"].tap()
 
         let advance = app.buttons["Next section"]
@@ -758,6 +758,61 @@ import XCTest
         XCTAssertTrue(finished.waitForExistence(timeout: 8))
         XCTAssertEqual(finished.frame.minY, readerPosition, accuracy: 2)
         XCTAssertFalse(app.buttons["lio.source"].exists)
+    }
+
+    private func enterSampleQuestion(in app: XCUIApplication, index: Int) {
+        let chinese = app.launchArguments.contains("zh-Hans")
+        let questions = chinese
+            ? ["在上海怎么坐地铁？", "帮我规划北京三天两晚的旅行。"]
+            : ["How do I take the metro in Shanghai?", "Plan a three-day trip to Beijing."]
+        app.buttons["lio.example.\(index)"].tap()
+        let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+        let starter = composer.value as? String ?? ""
+        XCTAssertFalse(starter.isEmpty)
+        XCTAssertFalse(app.staticTexts["lio.question"].exists)
+        composer.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: starter.count) + questions[index])
+        XCTAssertEqual(composer.value as? String, questions[index])
+    }
+
+    func testStartersOnlyFillTheComposerInBothLanguages() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        for language in ["en", "zh-Hans"] {
+            app.launchArguments = ["--lio-preview", "-cj.ui.language.v1", language]
+            app.launch()
+            let chinese = language == "zh-Hans"
+            let labels = chinese ? ["天气", "景点", "交通", "行程"] : ["Weather", "Sights", "Transport", "Trips"]
+            let prefixes = chinese ? ["天气：", "景点：", "交通：", "规划行程："]
+                : ["Weather: ", "Sights: ", "Transport: ", "Plan a trip: "]
+            let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+            XCTAssertTrue(composer.waitForExistence(timeout: 12))
+            let first = app.buttons["lio.example.0"]
+            let last = app.buttons["lio.example.3"]
+            XCTAssertTrue(first.isHittable)
+            XCTAssertTrue(last.isHittable)
+            XCTAssertEqual(first.frame.midY, last.frame.midY, accuracy: 1)
+            let capture = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+            capture.name = "Lio-starters-" + language
+            capture.lifetime = .keepAlways
+            add(capture)
+            for index in 0..<4 {
+                let button = app.buttons["lio.example.\(index)"]
+                XCTAssertEqual(button.label, labels[index])
+                button.tap()
+                XCTAssertEqual(composer.value as? String, prefixes[index])
+                XCTAssertFalse(app.staticTexts["lio.question"].exists)
+                XCTAssertFalse(app.staticTexts["lio.answer"].exists)
+                XCTAssertTrue(button.exists)
+            }
+            composer.typeText(chinese ? "北京三天" : "three days in Beijing")
+            app.buttons["lio.send"].tap()
+            XCTAssertTrue(app.staticTexts["lio.question"].waitForExistence(timeout: 8))
+            XCTAssertEqual(app.staticTexts["lio.question"].label,
+                           prefixes[3] + (chinese ? "北京三天" : "three days in Beijing"))
+            XCTAssertFalse(first.exists)
+            XCTAssertFalse(last.exists)
+            app.terminate()
+        }
     }
 
     private func exercise(_ language: String, question: String) throws {
@@ -782,7 +837,7 @@ import XCTest
         XCTAssertTrue(sample.isHittable)
         try app.performAccessibilityAudit(for: .all)
 
-        sample.tap()
+        enterSampleQuestion(in: app, index: 0)
         let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
         XCTAssertEqual(composer.value as? String, question)
         XCTAssertFalse(app.staticTexts["lio.question"].exists)

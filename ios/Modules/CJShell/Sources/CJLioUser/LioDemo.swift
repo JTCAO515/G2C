@@ -39,12 +39,12 @@ extension LioService {
 }
 
 enum LioDemo {
-    static func examples(_ language: LioLanguage) -> [String] {
+    static func starters(_ language: LioLanguage) -> [(symbol: String, label: String, prefix: String)] {
         [
-            language.text("How do I take the metro in Shanghai?", "在上海怎么坐地铁？"),
-            language.text("Plan a three-day trip to Beijing.", "帮我规划北京三天两晚的旅行。"),
-            language.text("Where should I stay to explore Chengdu’s old town?", "在成都住哪里方便逛老城区？"),
-            language.text("I like slow trips and quiet hotels.", "我喜欢慢一点的旅行，也喜欢安静的酒店。")
+            ("cloud.sun", language.text("Weather", "天气"), language.text("Weather: ", "天气：")),
+            ("binoculars", language.text("Sights", "景点"), language.text("Sights: ", "景点：")),
+            ("tram", language.text("Transport", "交通"), language.text("Transport: ", "交通：")),
+            ("map", language.text("Trips", "行程"), language.text("Plan a trip: ", "规划行程："))
         ]
     }
 
