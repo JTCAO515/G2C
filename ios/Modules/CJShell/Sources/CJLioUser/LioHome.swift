@@ -104,6 +104,7 @@ public struct LioHome<MenuContent: View>: View {
                     .tag(Tab.memory)
             }
         }
+        .tint(LioTheme.vermilion)
         .disabled(restoringChat)
         .opacity(restoringChat ? 0 : 1)
         .overlay {
@@ -208,7 +209,7 @@ public struct LioHome<MenuContent: View>: View {
             .onChange(of: latest?.id) { _, _ in
                 guard followsAnswer else { return }
                 if reduceMotion { scroll.scrollTo("lio.bottom", anchor: .bottom) }
-                else { withAnimation(.easeOut(duration: 0.22)) { scroll.scrollTo("lio.bottom", anchor: .bottom) } }
+                else { withAnimation(LioTheme.Motion.change) { scroll.scrollTo("lio.bottom", anchor: .bottom) } }
             }
             .onChange(of: latest?.answer) { _, _ in
                 if followsAnswer, let pending, latest?.id == pending.id { scroll.scrollTo("lio.bottom", anchor: .bottom) }
@@ -225,13 +226,13 @@ public struct LioHome<MenuContent: View>: View {
                 if !conversation.turns.isEmpty, pending == nil { scroll.scrollTo("lio.bottom", anchor: .bottom) }
             }
         }
-        .background(Color(uiColor: .systemBackground))
+        .background(LioTheme.paper)
         .overlay(alignment: .top) {
             floatingControls
                 .background {
-                    Color(uiColor: .systemBackground)
+                    LioTheme.paper
                         .overlay(alignment: .bottom) {
-                            LinearGradient(colors: [Color(uiColor: .systemBackground), .clear],
+                            LinearGradient(colors: [LioTheme.paper, .clear],
                                            startPoint: .top, endPoint: .bottom)
                                 .frame(height: 12)
                                 .offset(y: 12)
@@ -246,6 +247,7 @@ public struct LioHome<MenuContent: View>: View {
                 List {
                     if isDemo {
                         Text(language.text("Sample replies only", "仅提供演示回答"))
+                            .lioRow()
                     }
                     if let chatLibrary {
                         Section {
@@ -265,9 +267,11 @@ public struct LioHome<MenuContent: View>: View {
                             }
                             .accessibilityIdentifier("lio.chat.history")
                         }
+                        .lioRow()
                     }
-                    menu
+                    menu.lioRow()
                 }
+                .lioPage()
                 .navigationTitle(language.text("Menu", "菜单"))
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -276,6 +280,7 @@ public struct LioHome<MenuContent: View>: View {
                     }
                 }
             }
+            .tint(LioTheme.vermilion)
         }
     }
 
@@ -329,7 +334,7 @@ public struct LioHome<MenuContent: View>: View {
             }
             .padding(6)
             .padding(.trailing, 8)
-            .background(.regularMaterial, in: Capsule())
+            .lioCard(Capsule())
             .frame(maxWidth: .infinity)
             .accessibilityIdentifier("lio.name")
             Button {
@@ -339,7 +344,8 @@ public struct LioHome<MenuContent: View>: View {
                 Text("≋")
                     .font(.title3.weight(.medium))
                     .frame(width: 48, height: 48)
-                    .background(.regularMaterial, in: Circle())
+                    .foregroundStyle(LioTheme.ink)
+                    .lioCard(Circle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel(language.text("Menu", "菜单"))
@@ -358,13 +364,13 @@ public struct LioHome<MenuContent: View>: View {
     private func replyBubble(_ content: Text) -> some View {
         content
             .font(.body)
+            .foregroundStyle(LioTheme.ink)
             .lineSpacing(3)
             .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
-            .background(Color(uiColor: .secondarySystemBackground),
-                        in: UnevenRoundedRectangle(topLeadingRadius: 7, bottomLeadingRadius: 20,
-                                                   bottomTrailingRadius: 20, topTrailingRadius: 20))
+            .lioCard(UnevenRoundedRectangle(topLeadingRadius: LioTheme.Radius.tail, bottomLeadingRadius: LioTheme.Radius.card,
+                                            bottomTrailingRadius: LioTheme.Radius.card, topTrailingRadius: LioTheme.Radius.card))
             .padding(.trailing, dynamicTypeSize.isAccessibilitySize ? 0 : 22)
     }
 
@@ -373,7 +379,7 @@ public struct LioHome<MenuContent: View>: View {
             if isDemo {
                 Text(language.text("Try a sample question.", "可以先试一个示例问题。"))
                     .font(.subheadline)
-                    .foregroundStyle(Color.primary.opacity(0.78))
+                    .foregroundStyle(LioTheme.inkSecondary)
             }
             ForEach(Array(LioDemo.examples(language).enumerated()), id: \.offset) { index, example in
                 Button {
@@ -385,10 +391,11 @@ public struct LioHome<MenuContent: View>: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                         Image(systemName: "arrow.up.left").accessibilityHidden(true)
                     }
+                    .foregroundStyle(LioTheme.ink)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
                     .frame(minHeight: 48)
-                    .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
+                    .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.small))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(example)
@@ -407,7 +414,7 @@ public struct LioHome<MenuContent: View>: View {
         let placeholder = language.text("Start chatting", "开始聊天")
         let canSend = !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && conversation.pending == nil
         return HStack(alignment: .center, spacing: 10) {
-            TextField(placeholder, text: $draft, prompt: Text(placeholder).foregroundStyle(Color.primary.opacity(0.78)), axis: .vertical)
+            TextField(placeholder, text: $draft, prompt: Text(placeholder).foregroundStyle(LioTheme.inkSecondary), axis: .vertical)
                 .lineLimit(1...5)
                 .frame(minHeight: 44)
                 .focused($typing)
@@ -423,8 +430,8 @@ public struct LioHome<MenuContent: View>: View {
                 Image(systemName: "arrow.up")
                     .font(.body.weight(.semibold))
                     .frame(width: 44, height: 44)
-                    .foregroundStyle(canSend ? Color(uiColor: .systemBackground) : Color.primary.opacity(0.72))
-                    .background(canSend ? Color.primary : Color(uiColor: .tertiarySystemFill), in: Circle())
+                    .foregroundStyle(canSend ? LioTheme.paper : LioTheme.inkSecondary)
+                    .background(canSend ? LioTheme.ink : LioTheme.surfaceSunken, in: Circle())
             }
             .disabled(!canSend)
             .buttonStyle(.plain)
@@ -433,12 +440,12 @@ public struct LioHome<MenuContent: View>: View {
         }
         .padding(.leading, 16)
         .padding(5)
-        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 27))
+        .lioCard(Capsule())
         .frame(maxWidth: 680)
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
         .frame(maxWidth: .infinity)
-        .background(Color(uiColor: .systemBackground))
+        .background(LioTheme.paper)
     }
 
     private func chooseMemory(_ choice: LioMemoryWire.Choice, tag: LioMemoryWire.Tag,
@@ -514,7 +521,7 @@ public struct LioHome<MenuContent: View>: View {
                         recordPendingFirstQuestion()
                     } label: {
                         Image(systemName: "exclamationmark.circle.fill")
-                            .foregroundStyle(.red)
+                            .foregroundStyle(LioTheme.danger)
                             .frame(width: 44, height: 44)
                     }
                     .buttonStyle(.plain)
@@ -523,11 +530,12 @@ public struct LioHome<MenuContent: View>: View {
                     .accessibilityIdentifier("lio.resend")
                 }
                 Text(turn.question.text)
+                    .foregroundStyle(LioTheme.ink)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
-                    .background(Color.accentColor.opacity(0.14),
-                                in: UnevenRoundedRectangle(topLeadingRadius: 20, bottomLeadingRadius: 20,
-                                                           bottomTrailingRadius: 20, topTrailingRadius: 7))
+                    .background(LioTheme.surfaceSunken,
+                                in: UnevenRoundedRectangle(topLeadingRadius: LioTheme.Radius.card, bottomLeadingRadius: LioTheme.Radius.card,
+                                                           bottomTrailingRadius: LioTheme.Radius.card, topTrailingRadius: LioTheme.Radius.tail))
                     .textSelection(.enabled)
                     .accessibilityIdentifier("lio.question")
             }
@@ -594,12 +602,16 @@ public struct LioHome<MenuContent: View>: View {
             Label {
                 RunReadableText(text: language.text("Remember: \(preference)?", "记住：\(preference)？"))
             } icon: {
-                Image(systemName: "bookmark").accessibilityHidden(true)
+                Image(systemName: "bookmark").foregroundStyle(LioTheme.gold).accessibilityHidden(true)
             }
             .font(.subheadline.weight(.semibold))
             actions {
-                Button(language.text("Remember", "记住")) {
+                Button {
                     Task { await chooseMemory(.remember, tag: tag, client: client) }
+                } label: {
+                    // White on the dark-mode vermilion fill is below 4.5:1, so the label uses onVermilion.
+                    Text(language.text("Remember", "记住"))
+                        .foregroundStyle(memoryBusy || memoryPending ? LioTheme.inkSecondary : LioTheme.onVermilion)
                 }
                 .buttonStyle(.borderedProminent)
                 .accessibilityIdentifier("lio.memory.remember")
@@ -614,7 +626,7 @@ public struct LioHome<MenuContent: View>: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
+        .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.small))
     }
 
     @ViewBuilder
@@ -640,7 +652,7 @@ public struct LioHome<MenuContent: View>: View {
             }
             Text(message)
                 .font(.footnote)
-                .foregroundStyle(Color.primary.opacity(0.78))
+                .foregroundStyle(LioTheme.inkSecondary)
                 .accessibilityIdentifier("lio.failure")
             if failure == .unfinished {
                 Button(language.text("Ask again", "重新问")) {
@@ -667,7 +679,7 @@ public struct LioHome<MenuContent: View>: View {
                 .accessibilityHidden(true)
         }
             .font(.footnote)
-            .foregroundStyle(Color.primary.opacity(0.78))
+            .foregroundStyle(LioTheme.inkSecondary)
             .accessibilityIdentifier("lio.progress")
     }
 }

@@ -1,4 +1,5 @@
 #if os(iOS)
+import CJLioUser
 import CJMemoryClient
 import SwiftUI
 
@@ -20,35 +21,39 @@ public struct LioSavedMemoryView: View {
         let listSurface = path.isEmpty ? surface : nil
         NavigationStack(path: $path) {
             List {
-                switch host.items {
-                case .unconfigured, .loading:
-                    ProgressView()
-                case .failed:
-                    Text(language.text("Couldn’t show your memories. Pull down to try again.",
-                                       "暂时看不到你的记忆，下拉再试一次。"))
-                case .loaded(let items):
-                    let saved = items.filter { isSaved($0) }
-                    if saved.isEmpty && !host.hasMore {
-                        Text(language.text("Things you ask Lio to remember appear here.", "你让 Lio 记住的内容会出现在这里。"))
-                    }
-                    ForEach(saved.indices, id: \.self) { index in
-                        let item = saved[index].item.value
-                        NavigationLink(value: Data(item.command.item_id.utf8)) {
-                            Text(item.command.text)
+                Group {
+                    switch host.items {
+                    case .unconfigured, .loading:
+                        ProgressView()
+                    case .failed:
+                        Text(language.text("Couldn’t show your memories. Pull down to try again.",
+                                           "暂时看不到你的记忆，下拉再试一次。"))
+                    case .loaded(let items):
+                        let saved = items.filter { isSaved($0) }
+                        if saved.isEmpty && !host.hasMore {
+                            Text(language.text("Things you ask Lio to remember appear here.", "你让 Lio 记住的内容会出现在这里。"))
+                        }
+                        ForEach(saved.indices, id: \.self) { index in
+                            let item = saved[index].item.value
+                            NavigationLink(value: Data(item.command.item_id.utf8)) {
+                                Text(item.command.text)
+                            }
+                        }
+                        if host.hasMore {
+                            Button(language.text("More memories", "更多记忆")) {
+                                let current = surface
+                                Task { await host.loadItems(surface: current, more: true) }
+                            }
                         }
                     }
-                    if host.hasMore {
-                        Button(language.text("More memories", "更多记忆")) {
-                            let current = surface
-                            Task { await host.loadItems(surface: current, more: true) }
-                        }
+                    if let model = host.erasurePresentation, model.original != nil || !model.originals.isEmpty {
+                        Button(language.text("Memory deletions", "记忆删除记录")) { deletion = .history }
+                            .disabled(model.state.isBusy)
                     }
                 }
-                if let model = host.erasurePresentation, model.original != nil || !model.originals.isEmpty {
-                    Button(language.text("Memory deletions", "记忆删除记录")) { deletion = .history }
-                        .disabled(model.state.isBusy)
-                }
+                .lioRow()
             }
+            .lioPage()
             .navigationTitle(language.text("Memory", "记忆"))
             .refreshable { await host.loadItems(surface: surface) }
             .navigationDestination(for: Data.self) { id in
@@ -114,59 +119,63 @@ private struct LioSavedMemoryDetail: View {
 
     var body: some View {
         Form {
-            if let draft {
-                TextField(language.text("Memory", "记忆"),
-                          text: Binding(get: { self.draft ?? draft }, set: { self.draft = $0 }), axis: .vertical)
-                    .lineLimit(3...8)
-                    .disabled(saving)
-                    .accessibilityIdentifier("lio.memory.editor")
-                Button(language.text("Save", "保存")) { Task { await save(draft) } }
-                    .disabled(saving || !(1...4096).contains(draft.unicodeScalars.count) ||
-                              draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    .accessibilityIdentifier("lio.memory.save")
-                Button(language.text("Cancel", "取消")) { self.draft = nil }
-                    .disabled(saving)
-            } else {
-                switch host.detail {
-                case .unconfigured, .loading:
-                    ProgressView()
-                case .loaded(let entry):
-                    if let entry, isSaved(entry) {
-                        let item = entry.item.value
-                        Text(item.command.text)
-                        if item.status == .disabled {
-                            Text(language.text("Lio isn’t using this memory.", "Lio 暂时不用这条记忆。"))
-                                .foregroundStyle(.secondary)
-                        }
-                        if entry.item.scope == .longTerm, item.command.kind != .inference {
-                            Button(language.text("Edit", "编辑")) {
-                                notice = nil
-                                draft = item.command.text
+            Group {
+                if let draft {
+                    TextField(language.text("Memory", "记忆"),
+                              text: Binding(get: { self.draft ?? draft }, set: { self.draft = $0 }), axis: .vertical)
+                        .lineLimit(3...8)
+                        .disabled(saving)
+                        .accessibilityIdentifier("lio.memory.editor")
+                    Button(language.text("Save", "保存")) { Task { await save(draft) } }
+                        .disabled(saving || !(1...4096).contains(draft.unicodeScalars.count) ||
+                                  draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        .accessibilityIdentifier("lio.memory.save")
+                    Button(language.text("Cancel", "取消")) { self.draft = nil }
+                        .disabled(saving)
+                } else {
+                    switch host.detail {
+                    case .unconfigured, .loading:
+                        ProgressView()
+                    case .loaded(let entry):
+                        if let entry, isSaved(entry) {
+                            let item = entry.item.value
+                            Text(item.command.text)
+                            if item.status == .disabled {
+                                Text(language.text("Lio isn’t using this memory.", "Lio 暂时不用这条记忆。"))
+                                    .foregroundStyle(LioTheme.inkSecondary)
                             }
-                            .accessibilityIdentifier("lio.memory.edit")
-                        }
-                        if let model = host.erasurePresentation {
-                            Button(language.text("Delete memory", "删除记忆"), role: .destructive) {
-                                do {
-                                    try host.prepareErasure(surface: surface)
-                                    showDeletion()
-                                } catch {
-                                    notice = language.text("Couldn’t open memory deletion.", "暂时无法删除这条记忆。")
+                            if entry.item.scope == .longTerm, item.command.kind != .inference {
+                                Button(language.text("Edit", "编辑")) {
+                                    notice = nil
+                                    draft = item.command.text
                                 }
+                                .accessibilityIdentifier("lio.memory.edit")
                             }
-                            .disabled(model.state.isBusy || host.busy)
-                            .accessibilityIdentifier("lio.memory.delete")
+                            if let model = host.erasurePresentation {
+                                Button(language.text("Delete memory", "删除记忆"), role: .destructive) {
+                                    do {
+                                        try host.prepareErasure(surface: surface)
+                                        showDeletion()
+                                    } catch {
+                                        notice = language.text("Couldn’t open memory deletion.", "暂时无法删除这条记忆。")
+                                    }
+                                }
+                                .disabled(model.state.isBusy || host.busy)
+                                .accessibilityIdentifier("lio.memory.delete")
+                            }
+                        } else {
+                            Text(language.text("This memory is no longer available.", "这条记忆已不可用。"))
                         }
-                    } else {
-                        Text(language.text("This memory is no longer available.", "这条记忆已不可用。"))
+                    case .failed:
+                        Text(language.text("Couldn’t show this memory. Pull down to try again.", "暂时看不到这条记忆，下拉再试一次。"))
                     }
-                case .failed:
-                    Text(language.text("Couldn’t show this memory. Pull down to try again.", "暂时看不到这条记忆，下拉再试一次。"))
                 }
+                if let notice { Text(notice).font(.footnote) }
+                if saving { ProgressView() }
             }
-            if let notice { Text(notice).font(.footnote) }
-            if saving { ProgressView() }
+            .lioRow()
         }
+        .lioPage()
         .navigationTitle(language.text("Memory", "记忆"))
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(saving)

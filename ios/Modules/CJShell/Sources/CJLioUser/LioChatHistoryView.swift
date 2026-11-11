@@ -18,31 +18,35 @@ struct LioChatHistoryView: View {
 
     var body: some View {
         List {
-            switch state {
-            case .loading:
-                ProgressView()
-            case .loaded(let chats) where chats.isEmpty:
-                Text(language.text("Your conversations will appear here.", "你的对话会出现在这里。"))
-            case .loaded(let chats):
-                ForEach(chats) { chat in
-                    Button { select(chat) } label: {
-                        HStack {
-                            Text(title(for: chat))
-                            Spacer()
-                            if chat.id == currentID {
-                                Image(systemName: "checkmark").accessibilityHidden(true)
+            Group {
+                switch state {
+                case .loading:
+                    ProgressView()
+                case .loaded(let chats) where chats.isEmpty:
+                    Text(language.text("Your conversations will appear here.", "你的对话会出现在这里。"))
+                case .loaded(let chats):
+                    ForEach(chats) { chat in
+                        Button { select(chat) } label: {
+                            HStack {
+                                Text(title(for: chat))
+                                Spacer()
+                                if chat.id == currentID {
+                                    Image(systemName: "checkmark").accessibilityHidden(true)
+                                }
                             }
                         }
+                        .disabled(!canSwitch)
+                        .accessibilityIdentifier("lio.chat.history.row")
+                        .accessibilityAddTraits(chat.id == currentID ? .isSelected : [])
                     }
-                    .disabled(!canSwitch)
-                    .accessibilityIdentifier("lio.chat.history.row")
-                    .accessibilityAddTraits(chat.id == currentID ? .isSelected : [])
+                case .failed:
+                    Text(language.text("Couldn’t show your conversations.", "暂时看不到对话。"))
+                    Button(language.text("Try again", "再试一次")) { attempt += 1 }
                 }
-            case .failed:
-                Text(language.text("Couldn’t show your conversations.", "暂时看不到对话。"))
-                Button(language.text("Try again", "再试一次")) { attempt += 1 }
             }
+            .lioRow()
         }
+        .lioPage()
         .navigationTitle(language.text("Chat history", "历史对话"))
         .task(id: attempt) {
             state = .loading
