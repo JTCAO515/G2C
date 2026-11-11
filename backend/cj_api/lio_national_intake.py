@@ -73,6 +73,18 @@ class Intake:
  current_request:str
 
 
+def province_evidence(mentions,texts):
+ """Latest literal province mention wins; an explicit denial revokes older data."""
+ last=None
+ for text in texts:
+  occurrences=sorted((match.start(),match.end()) for mention in mentions
+      for match in re.finditer(re.escape(mention),text,re.I))
+  for start,end in occurrences:
+   prefix=re.split(r'[，,。.!?；;\n]|\bbut\b|而是',text[:start],flags=re.I)[-1]
+   last=re.search(r'不是|并非|不在|不要|排除|\bnot\b|\bexcept\b|\brather than\b',prefix,re.I) is None
+ return last
+
+
 def parse(raw,turns):
  value=decode(raw.encode() if type(raw) is str else raw)
  exact(value,('version','intent','reply','needs_tools','city','duration_days','extraction','field_sources','current_request'))
@@ -100,13 +112,7 @@ def parse(raw,turns):
    if city[key] is not None and (type(city[key]) is not str or not city[key].strip() or len(city[key].encode())>256):
     raise InvalidInput('bounded proposed administrative name required')
   city=dict(city)
-  def original_province(mention):
-   for turn in turns[city['source_index']:]:
-    for found in re.finditer(re.escape(mention),turn.text,re.I):
-     prefix=re.split(r'[，,。.!?；;\n]|\bbut\b|而是',turn.text[:found.start()],flags=re.I)[-1]
-     if re.search(r'不是|并非|不在|不要|排除|\bnot\b|\bexcept\b|\brather than\b',prefix,re.I) is None:return True
-   return False
-  if city['province'] is not None and not original_province(city['province']):
+  if city['province'] is not None and province_evidence((city['province'],),(t.text for t in turns[city['source_index']:])) is not True:
    # An inferred province must not turn a genuinely ambiguous name into a
    # single result. Preserve all original provider candidates for confirmation.
    city['province']=None
@@ -194,8 +200,11 @@ def fixed_sources_complete(intake,fields,turns,city_reference):
  fixed_declaration=re.compile(FIXED.pattern+r'|安排(?:已|已经)确定|保持不变|\bfixed\s+(?:hotel|meetup|meeting|appointment|arrangement)\b|\bkeep (?:it|them|this|that) unchanged\b',re.I)
  declarations=tuple(dict.fromkeys(clause for turn in turns for clause in _clauses(turn.text) if fixed_declaration.search(clause)))
  items=fields.get('fixed_items',[])
- if any(not any(item['description'] in clause and fixed_declaration.search(item['description']) for item in items) for clause in declarations):
-  return False
+ for turn in turns:
+  spans=[(found.start(),found.end()) for item in items
+         for found in re.finditer(re.escape(item['description']),turn.text)]
+  for marker in fixed_declaration.finditer(turn.text):
+   if not any(start<=marker.start() and marker.end()<=end for start,end in spans):return False
  first=fields.get('arrival',{}).get('date',{})
  first=date.fromisoformat(first['value']) if first.get('state')=='known' else None
  party=fields.get('party_size',{})

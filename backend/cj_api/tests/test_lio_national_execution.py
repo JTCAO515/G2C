@@ -28,7 +28,7 @@ class NationalExecution(unittest.TestCase):
             extraction=dict(version='NEEDS-extraction.1',fields=fields,unresolved=[],long_term_requests=[]),
             field_sources=sources,current_request=text)
 
-    def run_intake(self,value,*,turns=None,previous=None,resolution=None):
+    def run_intake(self,value,*,turns=None,previous=None,resolution=None,same_destination=True):
         text=value['current_request'];turns=turns or (PlanningTurn(text,date(2026,11,11)),)
         city=CityReference('310000','上海市','上海市',None,'province','Asia/Shanghai')
         resolution=resolution or dict(status='resolved',candidates=[city.__dict__],requested_name='上海',source={})
@@ -39,7 +39,10 @@ class NationalExecution(unittest.TestCase):
             def _event(self,binding,state,kind,value='',**kwargs):
                 events.append((kind,value));return SimpleNamespace(sequence=state.sequence+1)
         worker=Worker();worker.tools=SimpleNamespace(resolve_city=lambda *a:(lookups.append(a) or resolution))
-        planning=NationalLioPlanning(None,lambda *a:published.append(a) or a[2])
+        class Save:
+            def __call__(self,*args):published.append(args);return args[2]
+            def supports_destination(self,binding,city):return same_destination
+        planning=NationalLioPlanning(None,Save())
         planning.context=lambda *a:(turns,(),previous)
         binding=SimpleNamespace(message_id='national-message',run_id='national-run')
         with patch('cj_api.local_lio_national.register',side_effect=lambda w,b,s,d:s):
@@ -210,8 +213,10 @@ class NationalExecution(unittest.TestCase):
                 self.assertEqual(published,[])
                 self.assertTrue(any('谁参加' in v for k,v in events if k=='text_delta'))
         second='全体午餐已预订2026-11-21 12:00到13:00，不可更改'
-        value['current_request']=text+'；'+second
-        self.assertEqual(self.run_intake(value)[0],[])
+        for joiner in ('；','，并且',' and also '):
+            with self.subTest(joiner=joiner):
+                value['current_request']=text+joiner+second
+                self.assertEqual(self.run_intake(value)[0],[])
 
     def test_natural_fixed_day_number_keeps_explicit_self_and_unbooked_status(self):
         for declaration in ('第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变',
@@ -237,3 +242,40 @@ class NationalExecution(unittest.TestCase):
         self.assertIsNone(intake.city['province'])
         value['city']['province']='安徽'
         self.assertEqual(parse(json.dumps(value),(PlanningTurn(text,date(2026,11,11)),)).city['province'],'安徽')
+
+
+    def test_different_destination_retains_current_trip_and_requests_new_conversation(self):
+        published,events,_,_=self.run_intake(self.envelope('计划上海2026-11-20，两个人'),same_destination=False)
+        self.assertEqual(published,[])
+        self.assertTrue(any('新开对话' in v for k,v in events if k=='text_delta'))
+        self.assertFalse(any(v=='lio_needs_bound.1' for k,v in events))
+
+
+    def test_latest_province_denial_revokes_prior_affirmative_and_cached_city(self):
+        old='计划Suzhou，江苏，2026-11-20，两个人'
+        current='不是江苏，是安徽'
+        value=self.envelope(old,city='Suzhou');value['current_request']=current;value['city']['province']='江苏'
+        turns=(PlanningTurn(old,date(2026,11,11)),PlanningTurn(current,date(2026,11,11)))
+        intake=parse(json.dumps(value),turns)
+        self.assertIsNone(intake.city['province'])
+        city=CityReference('320500','苏州市','江苏省','苏州市','city','Asia/Shanghai').__dict__
+        self.assertIsNone(NationalLioPlanning._previous_city(intake,dict(city=dict(status='resolved',candidates=[city],source={})),current))
+        same=old+'，不是江苏而是安徽'
+        value['current_request']=same
+        self.assertIsNone(parse(json.dumps(value),(PlanningTurn(same,date(2026,11,11)),)).city['province'])
+
+    def test_national_names_preserve_conditional_ambiguity_and_locked_item_fences(self):
+        from test_lio_edit_selection import itinerary,known
+        from cj_api.lio_edit_selection import select_lio_edit
+        trip,_=itinerary()
+        for text in ("Replace the second afternoon with Riverside Park but don't apply.",
+                     '把第二天下午换成人民公园不要改。',
+                     'Replace the second afternoon with Riverside Park or West Lake.'):
+            with self.subTest(text=text):
+                result=select_lio_edit(trip,text,'en','hold',starts_on=date(2026,11,11),national_names=True)
+                self.assertEqual(result.status,'clarify')
+        for label in ('上海博物馆','杜甫草堂','象鼻山','广州塔','西湖'):
+            result=select_lio_edit(trip,'把第二天下午换成'+label,'zh','national',starts_on=date(2026,11,11),national_names=True)
+            self.assertEqual(result.status,'preview')
+        locked,_=itinerary(known(True))
+        self.assertEqual(select_lio_edit(locked,'把第二天下午换成西湖','zh','locked',starts_on=date(2026,11,11),national_names=True).status,'protected')

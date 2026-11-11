@@ -180,6 +180,22 @@ class LioPlanSave:
         self.confirmation = confirmation
         self.source_window=source_window
 
+    def supports_destination(self,binding,city):
+        from base64 import b64decode
+        from cj_trip.planning_context import read_current
+        from cj_message.lio_plan_needs import lio_needs_id
+        from cj_needs.contract_v1 import decode_snapshot
+        from .lio_city import forms,_normalize
+        current=read_current(self.context_publisher.repository,needs_scope_for(binding.scope),
+                             lio_needs_id(binding.scope,binding.conversation_id))
+        if current is None:return True
+        try:
+            fields=decode_snapshot(b64decode(json.loads(current.needs_source)['snapshot'],validate=True)).fields
+            destination=fields.get('arrival',{}).get('place',{})
+        except (ValueError,KeyError) as error:
+            raise ProviderUnknown('original itinerary destination unavailable') from error
+        return destination.get('state')=='known' and _normalize(destination['value']) in forms(city.name,city.level)
+
     def __call__(self, worker, binding, state, details, locale):
         original = worker.messages.query(binding.message_id)
         with self.database.connect(binding.scope) as connection:

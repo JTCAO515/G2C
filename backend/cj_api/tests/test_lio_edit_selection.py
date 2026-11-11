@@ -84,6 +84,8 @@ def test_ambiguous_interval_and_non_edit_leave_no_candidate():
 
 
 @pytest.mark.parametrize('text,locale', [
+    ("Replace the afternoon of day 2 with Riverside Park but don't apply.", 'en'),
+    ('把第二天下午换成人民公园不要改。', 'zh'),
     ('Replace the afternoon of day 2 with Temple of Heaven, but do not change anything yet.', 'en'),
     ('Replace the afternoon of day 2 with Temple of Heaven only if it is open.', 'en'),
     ('把第二天下午换成颐和园，不过先别改。', 'zh'),
@@ -102,9 +104,10 @@ def test_ambiguous_interval_and_non_edit_leave_no_candidate():
     ('把第二天下午换成颐和园经我同意再执行。', 'zh'),
     ('把第二天下午换成「颐和园」经我同意再执行。', 'zh'),
 ])
-def test_qualified_replacements_need_clarification(text, locale):
+@pytest.mark.parametrize('national_names',[False,True])
+def test_qualified_replacements_need_clarification(text, locale,national_names):
     trip, _ = itinerary()
-    result = select_lio_edit(trip, text, locale, 'original-edit', starts_on=date(2026,11,11))
+    result = select_lio_edit(trip, text, locale, 'original-edit', starts_on=date(2026,11,11),national_names=national_names)
     assert result.status == 'clarify' and result.candidate is None
 
 def test_missing_calendar_day_does_not_shift_an_edit_to_another_date():

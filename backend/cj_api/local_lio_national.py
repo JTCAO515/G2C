@@ -14,7 +14,7 @@ from cj_message.lio_plan_needs import BOUND_EFFECT
 from cj_needs.domain import InvalidInput
 
 from .lio_city import CityReference,forms,_normalize
-from .lio_national_intake import SYSTEM,NONPERSISTENT,fields_for,parse,fixed_sources_complete
+from .lio_national_intake import SYSTEM,NONPERSISTENT,fields_for,parse,fixed_sources_complete,province_evidence
 from .lio_planning_grounding import PlanningTurn,standalone_question
 from .local_lio_planning import PlanningDetails,register
 
@@ -129,6 +129,11 @@ class NationalLioPlanning:
         except (InvalidInput,ValueError) as error:
             raise ProviderUnknown('original nationwide planning fields unavailable') from error
         authority=self._authority(intake,previous)
+        if not self.plan_and_save.supports_destination(binding,city):
+            state=self._context(worker,binding,state,dict(authority='none',status='different_destination',city=resolution))
+            return self._answer(worker,binding,state,original.locale,
+                '这个对话已有另一座城市的行程。请新开对话来规划这趟旅行，保留原行程。',
+                'This conversation already has an itinerary for another destination. Start a new conversation for this trip to keep the original itinerary.')
         # A date mentioned for an earlier destination must not leak into a
         # later city correction. Missing-city clarification retains its dates.
         if intake.city['source_index']>0 and previous is not None and previous.get('city') is not None:
@@ -171,7 +176,8 @@ class NationalLioPlanning:
         confirmed=(old['status']=='confirmation_required' and re.fullmatch(
             r"\s*(?:yes|correct|that's right|confirm|是|是的|对|对的|没错|确认)[。.!！]?\s*",text,re.I) is not None)
         province=intake.city['province']
-        same_province=province is None or _normalize(province) in forms(city['province'],'province')
+        same_province=(province is None or _normalize(province) in forms(city['province'],'province'))
+        if province_evidence(forms(city['province'],'province'),(text,)) is False:same_province=False
         if old['status']=='resolved' and same and same_province or confirmed:
             return dict(old,status='resolved')
         return None

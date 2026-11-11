@@ -30,8 +30,8 @@ _LEGACY_STOP_NAMES = frozenset({
 # Unquoted names may come from any destination. Multi-place, conditional or
 # deferred commands still require clarification; quoting makes a label literal.
 _QUALIFIED_LABEL = re.compile(
-    r"\b(?:and|or|only|if|unless|provided|subject|approval|confirm|wait|yet|please|not|do)\b"
-    r"|[，,；;、/&]|不过|如果|但是|但|或者|或|以及|和|与|先别|先不|缓一缓|问问我|经我同意|再执行", re.I)
+    r"\b(?:and|or|only|if|unless|provided|subject|approval|confirm|wait|yet|please|not|do|but|without|after|later|defer|hold|cancel|never)\b"
+    r"|n['’]t\b|[，,；;、/&]|不要|别改|不改|暂不|暂停|取消|等我|等一下|稍后|再说|不过|如果|但是|但|或者|或|以及|和|与|先别|先不|缓一缓|问问我|经我同意|再执行", re.I)
 _CHINESE_SLOT = re.compile(r'(?:第([一二三四五六七八九十]|[1-9][0-9]?)天|(最后一天))\s*(上午|下午|晚上)')
 _ENGLISH_SLOT = re.compile(r'(?:the\s+)?(?:day\s+([1-9][0-9]?)|(first|second|third|last|final)(?:\s+day)?)'
                            r'(?:\s+in\s+the)?\s+(morning|afternoon|evening)', re.I)
