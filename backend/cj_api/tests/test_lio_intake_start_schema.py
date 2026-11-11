@@ -138,10 +138,20 @@ class StartSchema(unittest.TestCase):
             intake=checked(value,turns)
             with self.assertRaises(FixedTimezoneConflict):prepared(intake,turns)
             self.assertEqual(intake.extraction['fields']['fixed_items'][0]['start']['timezone'],zone)
-        for marker in ('America/Los_Angeles','UTC+8','CST'):
+        for marker in ('America/Los_Angeles','UTC+8','CST','CET','CEST','EET','EEST','HKT','SGT','XYZ timezone'):
             value,turns=sample('zh',True);ref=value['extraction']['fields']['fixed_items'][0]['source_ref'];old=ref['quote'];ref['quote']+=' '+marker
             turns=(turns[0],SimpleNamespace(text=turns[1].text.replace(old,ref['quote'],1),question_day=turns[1].question_day),turns[2])
             with self.assertRaises(FixedTimezoneConflict):prepared(checked(value,turns),turns)
+
+    def test_explicit_offsets_zulu_or_unknown_clock_zone_never_default_to_destination(self):
+        for suffix in (' (+01:00)',' (+0100)',' Z',' XYZ'):
+            with self.subTest(suffix=suffix):
+                value,turns=sample('zh',True);ref=value['extraction']['fields']['fixed_items'][0]['source_ref'];old=ref['quote']
+                ref['quote']=old.replace('9:00–10:00','9:00–10:00'+suffix)
+                turns=(turns[0],SimpleNamespace(text=turns[1].text.replace(old,ref['quote'],1),question_day=turns[1].question_day),turns[2])
+                with self.assertRaises(FixedTimezoneConflict):prepared(checked(value,turns),turns)
+        value,turns=sample('en',True)
+        self.assertTrue(fixed_sources_complete(checked(value,turns),prepared(checked(value,turns),turns),turns,CITY))
 
     def test_clock_or_locked_marker_omission_cannot_publish_after_compilation(self):
         value,turns=sample('zh',True);value['extraction']['fields']['fixed_items'][0]['start']['time']['value']='08:00'
@@ -162,10 +172,43 @@ class StartSchema(unittest.TestCase):
 
 
     def test_one_primary_cannot_merge_two_distinct_locked_commitments(self):
-        value,turns=sample('zh',True);first=value['extraction']['fields']['fixed_items'][0]['source_ref']['quote']
-        second='第一天我9:00–10:00要在博物馆集合，这项安排已确定，保持不变'
-        combined=first+'；'+second
-        turns=(turns[0],SimpleNamespace(text=turns[1].text.replace(first,combined,1),question_day=turns[1].question_day),turns[2])
-        value['extraction']['fields']['fixed_items'][0]['source_ref']['quote']=combined
+        for joiner in ('；','，并且',' and also ', '、然后'):
+            with self.subTest(joiner=joiner):
+                value,turns=sample('zh',True);first=value['extraction']['fields']['fixed_items'][0]['source_ref']['quote']
+                second='第一天我9:00–10:00要在博物馆集合，这项安排已确定，保持不变'
+                combined=first+joiner+second
+                turns=(turns[0],SimpleNamespace(text=turns[1].text.replace(first,combined,1),question_day=turns[1].question_day),turns[2])
+                value['extraction']['fields']['fixed_items'][0]['source_ref']['quote']=combined
+                intake=checked(value,turns)
+                self.assertFalse(fixed_sources_complete(intake,prepared(intake,turns),turns,CITY))
+
+    def test_generic_detail_cannot_authorize_two_primary_arrangements(self):
+        value,turns=sample('zh',True)
+        a='第一天我在酒店甲集合，这项安排已确定，保持不变'
+        b='第二天我在酒店乙集合，这项安排已确定，保持不变'
+        detail='集合本人09:00到10:00'
+        texts=[turns[0].text,'从明天开始。'+a+'；'+b,'只有我一人。'+detail]
+        turns=tuple(SimpleNamespace(text=t,question_day=date(2026,11,12)) for t in texts)
+        item=value['extraction']['fields']['fixed_items'][0]
+        items=[]
+        for n,quote in enumerate((a,b)):
+            fixed=deepcopy(item);fixed.update(item_id='hotel-'+str(n),label='集合',source_ref=dict(source_index=1,quote=quote),
+                detail_refs=[dict(source_index=2,quote=detail)])
+            for edge in ('start','end'):fixed[edge]['date']['value']='2026-11-'+str(13+n)
+            items.append(fixed)
+        value['extraction']['fields']['fixed_items']=items
+        value['field_sources']['party_size']=[dict(source_index=2,quote='只有我一人')]
+        self.assertTrue(checked(value,turns).fixed_detail_ambiguous)
+        legacy=fixtures.NationalExecution().envelope(texts[-1],start=None,party=None)
+        published,events,_,_=fixtures.NationalExecution().run_intake(legacy,turns=turns,
+            previous=dict(authority='plan',status='needs_details'),model_output=value)
+        self.assertEqual(published,[])
+        self.assertTrue(any('针对哪一项' in text for kind,text in events if kind=='text_delta'))
+        # Distinct original names and explicitly named details resolve both.
+        da='酒店甲集合本人09:00到10:00';db='酒店乙集合本人09:00到10:00'
+        turns=(*turns[:-1],SimpleNamespace(text='只有我一人。'+da+'；'+db,question_day=date(2026,11,12)))
+        for fixed,label,quote in zip(items,('酒店甲集合','酒店乙集合'),(da,db)):
+            fixed['label']=label;fixed['detail_refs']=[dict(source_index=2,quote=quote)]
         intake=checked(value,turns)
-        self.assertFalse(fixed_sources_complete(intake,prepared(intake,turns),turns,CITY))
+        self.assertFalse(intake.fixed_detail_ambiguous)
+        self.assertTrue(fixed_sources_complete(intake,prepared(intake,turns),turns,CITY))

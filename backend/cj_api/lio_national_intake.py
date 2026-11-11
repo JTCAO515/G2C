@@ -83,7 +83,19 @@ class FixedTimezoneConflict(InvalidInput):
  pass
 
 
-ZONE_LITERAL=re.compile(r'\b(?:Africa|America|Antarctica|Arctic|Asia|Atlantic|Australia|Europe|Indian|Pacific|Etc|US|Canada)/[A-Za-z_+-]+(?:/[A-Za-z_+-]+)?\b|\b(?:UTC|GMT)(?:[+-][0-9]{1,2}(?::?[0-9]{2})?)?\b|\b(?:PST|PDT|EST|EDT|CST|CDT|MST|MDT|BST|IST|JST|KST|AEST|AEDT)\b|时区|\btime\s*zone\b',re.I)
+ZONE_LITERAL=re.compile(r'\b(?:Africa|America|Antarctica|Arctic|Asia|Atlantic|Australia|Europe|Indian|Pacific|Etc|US|Canada)/[A-Za-z_+-]+(?:/[A-Za-z_+-]+)?\b|\b(?:UTC|GMT)(?:[+-][0-9]{1,2}(?::?[0-9]{2})?)?\b|\b(?:PST|PDT|EST|EDT|CST|CDT|MST|MDT|BST|IST|JST|KST|AEST|AEDT|ACST|ACDT|AWST|CET|CEST|EET|EEST|WET|WEST|HKT|SGT|NZST|NZDT|AKST|AKDT|HST|MSK|SAST|CAT|EAT|WAT)\b|时区|\btime\s*zone\b',re.I)
+
+
+def _clock_zone_marker(quote):
+ from .lio_planning_grounding import RANGE,ISO
+ text=re.sub(ISO,' ',quote)
+ marker=r'(?:[+-](?:0[0-9]|1[0-4]):?[0-5][0-9]|Z|[A-Z]{2,8})'
+ for clock in RANGE.finditer(text):
+  after=re.match(r'\s*(?:[\(\[]\s*)?('+marker+r')(?![A-Za-z0-9])',text[clock.end():])
+  before=re.search(r'(?<![A-Za-z])('+marker+r')\s*(?:[\)\]]\s*)?$',text[:clock.start()])
+  for found in (after,before):
+   if found is not None and found[1] not in ('AM','PM'):return True
+ return False
 
 
 _DIAGNOSTIC_CODES={
@@ -206,7 +218,7 @@ def parse(raw,turns,*,version=VERSION):
   fields=json.loads(json.dumps(extraction['fields']))
   items=fields.get('fixed_items',[])
   if type(items) is not list:raise InvalidInput('structured fixed items required')
-  primary=[];item_sources={}
+  primary=[];item_sources={};bindings=[]
   for n,item in enumerate(items):
    exact(item,FIXED_FIELDS)
    ref=item.pop('source_ref');details=item.pop('detail_refs');source(ref)
@@ -215,9 +227,14 @@ def parse(raw,turns,*,version=VERSION):
    label=item.pop('label')
    if type(label) is not str or not label.strip() or label not in ref['quote']:
     raise InvalidInput('fixed label must be an original primary source span')
-   if any(label not in detail['quote'] for detail in details):ambiguous=True
+   bindings.append((label,ref,details))
    item['description']=ref['quote'];primary.append(ref)
    item_sources['fixed_items.'+str(n)]=[ref,*details]
+  for n,(_,_,details) in enumerate(bindings):
+   for detail in details:
+    matches={index for index,(label,_,_) in enumerate(bindings) if label in detail['quote']
+        and sum(label in primary_ref['quote'] for _,primary_ref,_ in bindings)==1}
+    if matches!={n}:ambiguous=True
   sources={**sources,**({'fixed_items':primary} if primary else {}),**item_sources}
   extraction={**extraction,'version':'NEEDS-extraction.1','fields':fields}
  fields=extraction['fields']
@@ -289,7 +306,7 @@ def fields_for(intake,city_reference,*,message_id,run_id,source_text):
   if intake.start_date is not None:
    evidence=intake.sources['fixed_items.'+str(index)]
    literals=[match[0] for ref in evidence for match in ZONE_LITERAL.finditer(ref['quote'])]
-   if any(value!=city_reference.timezone for value in literals):
+   if any(value!=city_reference.timezone for value in literals) or any(_clock_zone_marker(ref['quote']) for ref in evidence):
     raise FixedTimezoneConflict('explicit fixed timezone needs confirmation')
    for edge in ('start','end'):
     zone=item[edge]['timezone']
@@ -320,7 +337,7 @@ def fixed_sources_complete(intake,fields,turns,city_reference):
  comparison, never an alternative intent/city/date extractor. Unverifiable
  commitments remain questions rather than silently acquiring model values.
  """
- from .lio_planning_grounding import FIXED,_clauses,_fixed_item
+ from .lio_planning_grounding import FIXED,RANGE,ISO,_clauses,_fixed_item
  fixed_declaration=re.compile(FIXED.pattern+r'|安排(?:已|已经)确定|保持不变|\bfixed\s+(?:hotel|meetup|meeting|appointment|arrangement)\b|\bkeep (?:it|them|this|that) unchanged\b',re.I)
  declarations=tuple(dict.fromkeys(clause for turn in turns for clause in _clauses(turn.text) if fixed_declaration.search(clause)))
  items=fields.get('fixed_items',[])
@@ -345,12 +362,11 @@ def fixed_sources_complete(intake,fields,turns,city_reference):
   evidence=intake.sources.get('fixed_items.'+str(index),intake.sources.get('fixed_items',[]))
   description=item['description']
   if not any(description in turn.text for turn in turns) or fixed_declaration.search(description) is None:return False
+  if intake.start_date is not None and sum(1 for _ in RANGE.finditer(re.sub(ISO,' ',description)))>1:return False
   details='\n'.join(ref['quote'] for ref in evidence if description not in ref['quote'])
   comparison=description+'\n'+details
   if first is not None:
    comparison=_absolute_fixed_days(comparison,first)
-   if intake.start_date is not None and sum(_fixed_item(_absolute_fixed_days(clause,first),first,
-       city_reference.timezone,party) is not None for clause in _clauses(description))>1:return False
   expected=_fixed_item(comparison,first,city_reference.timezone,party)
   if expected is None:return False
   personal=re.search(r'我(?!们)|\bI (?:have|need|must|am)\b',description,re.I)

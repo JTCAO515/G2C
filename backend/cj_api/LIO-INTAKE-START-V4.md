@@ -39,8 +39,10 @@ source_ref and item-specific detail_refs (possibly []). Each reference is an
 exact quote of its indexed original traveler turn. The label must be a nonblank
 contiguous span of the primary quote. The host compiles that exact primary quote
 as canonical NEEDS description, never an entire turn, a normalized string, the
-longest global citation or a guessed fixed_items.N match. Later details must
-explicitly name that label; ambiguous association is a question, not save authority.
+longest global citation or a guessed fixed_items.N match. A later detail must
+match exactly one label that is unique across all original primary quotes;
+two generic "meetup" labels do not authorize assigning the same supplement to
+both. Ambiguous association is a question, not save authority.
 
 This compilation is exclusive to the new execution version. Its source fields
 are not presented to frozen NEEDS1 consumers; only validated compiled fields are.
@@ -51,13 +53,17 @@ existing description hash rule.
 
 Every original fixed marker must remain covered. Dates, clock intervals, subjects,
 locks and booking claims still undergo the existing independent source checks;
-a primary quote combining distinct commitments does not justify merging them.
+a primary quote cannot contain multiple raw clock ranges, even identical ones
+joined in one sentence. This deliberately does not deduplicate two same-time
+commitments into one. A named reaffirmation can use a separate item detail ref.
 Only missing local fixed timezones may use the confirmed destination's existing
 host timezone policy. The administrative source identifies the city; this does
 not claim that the supplier provided a timezone/UTC offset. Explicit known
 conflicts or unknown/uncertain timezones produce a timezone question and zero
 write. Explicit IANA/UTC/GMT/abbreviation markers in the original cannot be ignored
-because a model returned missing. UTC offsets are not inferred.
+because a model returned missing. Explicit offsets/Zulu and unknown uppercase
+zone markers next to a clock also require a question; AM/PM remain clock markers.
+UTC offsets are never inferred or converted.
 
 ## Compatibility and evidence
 
