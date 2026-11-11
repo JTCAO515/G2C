@@ -170,76 +170,66 @@ public struct LioHome<MenuContent: View>: View {
         let pending = conversation.pending
         let latest = conversation.turns.last
         let earlierID = conversation.nextBefore.map { Data($0.utf8) }
-        return ScrollViewReader { scroll in
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 22) {
-                    if conversation.turns.isEmpty {
-                        if opening == .beforeNext { openingMessage }
-                        examples
-                    }
-                    ForEach(conversation.turns) { turn in
-                        VStack(alignment: .leading, spacing: 22) {
-                            if turn.id == earlierID { earlierMessages(scroll) }
-                            if opening == .before(turn.id) { openingMessage }
-                            turnView(turn)
+        return VStack(spacing: 0) {
+            floatingControls
+            ScrollViewReader { scroll in
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 22) {
+                        if conversation.turns.isEmpty {
+                            if opening == .beforeNext { openingMessage }
+                            examples
                         }
+                        ForEach(conversation.turns) { turn in
+                            VStack(alignment: .leading, spacing: 22) {
+                                if turn.id == earlierID { earlierMessages(scroll) }
+                                if opening == .before(turn.id) { openingMessage }
+                                turnView(turn)
+                            }
+                        }
+                        if !conversation.turns.isEmpty, opening == .beforeNext, pending == nil {
+                            openingMessage
+                        }
+                        if let memoryNotice { Text(memoryNotice).font(.footnote) }
+                        if memoryPending {
+                            Text(language.text("Waiting to save your choice…", "正在等待保存你的选择…"))
+                                .font(.footnote)
+                                .accessibilityIdentifier("lio.memory.waiting")
+                        }
+                        Color.clear.frame(height: 1).id("lio.bottom")
                     }
-                    if !conversation.turns.isEmpty, opening == .beforeNext, pending == nil {
-                        openingMessage
-                    }
-                    if let memoryNotice { Text(memoryNotice).font(.footnote) }
-                    if memoryPending {
-                        Text(language.text("Waiting to save your choice…", "正在等待保存你的选择…"))
-                            .font(.footnote)
-                            .accessibilityIdentifier("lio.memory.waiting")
-                    }
-                    Color.clear.frame(height: 1).id("lio.bottom")
+                    .frame(maxWidth: 680)
+                    .padding(.horizontal, 18)
+                    .padding(.top, 12)
+                    .padding(.bottom, 12)
+                    .frame(maxWidth: .infinity)
                 }
-                .frame(maxWidth: 680)
-                .padding(.horizontal, 18)
-                .padding(.top, 86)
-                .padding(.bottom, 12)
-                .frame(maxWidth: .infinity)
+                .scrollDismissesKeyboard(.interactively)
+                .simultaneousGesture(DragGesture(minimumDistance: 12).onChanged { _ in
+                    followsAnswer = false
+                })
+                .onChange(of: latest?.id) { _, _ in
+                    guard followsAnswer else { return }
+                    if reduceMotion { scroll.scrollTo("lio.bottom", anchor: .bottom) }
+                    else { withAnimation(.easeOut(duration: 0.22)) { scroll.scrollTo("lio.bottom", anchor: .bottom) } }
+                }
+                .onChange(of: latest?.answer) { _, _ in
+                    if followsAnswer, let pending, latest?.id == pending.id { scroll.scrollTo("lio.bottom", anchor: .bottom) }
+                }
+                .onChange(of: latest?.status) { _, status in
+                    if followsAnswer && status == .finished { scroll.scrollTo("lio.bottom", anchor: .bottom) }
+                }
+                .onChange(of: scenePhase) { _, phase in
+                    if phase == .background { didEnterBackground = true }
+                    guard phase == .active, didEnterBackground else { return }
+                    didEnterBackground = false
+                    opening = .beforeNext
+                    followsAnswer = true
+                    if !conversation.turns.isEmpty, pending == nil { scroll.scrollTo("lio.bottom", anchor: .bottom) }
+                }
             }
-            .scrollDismissesKeyboard(.interactively)
-            .simultaneousGesture(DragGesture(minimumDistance: 12).onChanged { _ in
-                followsAnswer = false
-            })
-            .onChange(of: latest?.id) { _, _ in
-                guard followsAnswer else { return }
-                if reduceMotion { scroll.scrollTo("lio.bottom", anchor: .bottom) }
-                else { withAnimation(.easeOut(duration: 0.22)) { scroll.scrollTo("lio.bottom", anchor: .bottom) } }
-            }
-            .onChange(of: latest?.answer) { _, _ in
-                if followsAnswer, let pending, latest?.id == pending.id { scroll.scrollTo("lio.bottom", anchor: .bottom) }
-            }
-            .onChange(of: latest?.status) { _, status in
-                if followsAnswer && status == .finished { scroll.scrollTo("lio.bottom", anchor: .bottom) }
-            }
-            .onChange(of: scenePhase) { _, phase in
-                if phase == .background { didEnterBackground = true }
-                guard phase == .active, didEnterBackground else { return }
-                didEnterBackground = false
-                opening = .beforeNext
-                followsAnswer = true
-                if !conversation.turns.isEmpty, pending == nil { scroll.scrollTo("lio.bottom", anchor: .bottom) }
-            }
+            .clipped()
         }
         .background(Color(uiColor: .systemBackground))
-        .overlay(alignment: .top) {
-            floatingControls
-                .background {
-                    Color(uiColor: .systemBackground)
-                        .overlay(alignment: .bottom) {
-                            LinearGradient(colors: [Color(uiColor: .systemBackground), .clear],
-                                           startPoint: .top, endPoint: .bottom)
-                                .frame(height: 12)
-                                .offset(y: 12)
-                        }
-                        .allowsHitTesting(false)
-                        .accessibilityHidden(true)
-                }
-        }
         .safeAreaInset(edge: .bottom, spacing: 0) { composer }
         .sheet(isPresented: $menuOpen) {
             NavigationStack {

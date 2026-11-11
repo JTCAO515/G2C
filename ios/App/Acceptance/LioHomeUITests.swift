@@ -673,6 +673,38 @@ import XCTest
         XCTAssertFalse(app.buttons["lio.source"].exists)
     }
 
+    func testConversationViewportStaysBelowFloatingControls() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        for language in ["en", "zh-Hans"] {
+            app.launchArguments = ["--lio-preview", "--lio-scroll-acceptance", "-cj.ui.language.v1", language]
+            app.launch()
+            let menu = app.buttons["lio.menu"]
+            let name = app.descendants(matching: .any).matching(identifier: "lio.name").firstMatch
+            XCTAssertTrue(menu.waitForExistence(timeout: 12))
+            XCTAssertTrue(name.exists)
+            let viewport = app.scrollViews.firstMatch
+            let headerBottom = max(menu.frame.maxY, name.frame.maxY)
+            XCTAssertGreaterThanOrEqual(viewport.frame.minY, headerBottom)
+            app.buttons["lio.example.0"].tap()
+            app.buttons["lio.send"].tap()
+            let advance = app.buttons["Next section"]
+            XCTAssertTrue(advance.waitForExistence(timeout: 8))
+            advance.tap()
+            let long = app.staticTexts.matching(identifier: "lio.answer")
+                .containing(NSPredicate(format: "label CONTAINS %@", "Long section.")).firstMatch
+            XCTAssertTrue(long.waitForExistence(timeout: 8))
+            viewport.swipeDown()
+            XCTAssertGreaterThanOrEqual(viewport.frame.minY, headerBottom)
+            XCTAssertTrue(menu.isHittable)
+            let capture = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+            capture.name = "Lio-header-viewport-" + language
+            capture.lifetime = .keepAlways
+            add(capture)
+            app.terminate()
+        }
+    }
+
     private func exercise(_ language: String, question: String) throws {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
