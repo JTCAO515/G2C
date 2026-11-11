@@ -22,7 +22,6 @@ public struct LioHome<MenuContent: View>: View {
     @State private var draft = ""
     @State private var chatDrafts: [Data: String] = [:]
     @State private var menuOpen = false
-    @State private var source: LioSource?
     @State private var followsAnswer = true
     @State private var opening = Opening.beforeNext
     @State private var didEnterBackground = false
@@ -282,9 +281,6 @@ public struct LioHome<MenuContent: View>: View {
                 }
             }
         }
-        .sheet(item: $source) { selected in
-            LioSourceSheet(source: selected, language: language)
-        }
     }
 
     private var canSwitchChat: Bool {
@@ -302,7 +298,6 @@ public struct LioHome<MenuContent: View>: View {
             self.opening = opening
             draft = chatDrafts.removeValue(forKey: chat.id) ?? ""
             tripPath = []
-            source = nil
             memoryNotice = nil
             followsAnswer = true
             refreshRequest += 1
@@ -532,7 +527,9 @@ public struct LioHome<MenuContent: View>: View {
                     .textSelection(.enabled)
                     .accessibilityIdentifier("lio.question")
             }
-            if !turn.answer.isEmpty {
+            if case .failed = turn.status {
+                EmptyView()
+            } else if !turn.answer.isEmpty {
                 if let answer = LioReplyMarkdown.render(turn.answer) {
                     if !answer.characters.isEmpty {
                         replyBubble(Text(answer))
@@ -580,18 +577,6 @@ public struct LioHome<MenuContent: View>: View {
                     }
                 }
             }
-            ForEach(turn.sources) { item in
-                Button { source = item } label: {
-                    Label(item.title, systemImage: "link")
-                        .font(.footnote)
-                        .padding(.horizontal, 11)
-                        .frame(minHeight: 44)
-                        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("lio.source")
-            }
         }
     }
 
@@ -631,16 +616,8 @@ public struct LioHome<MenuContent: View>: View {
     @ViewBuilder
     private func messageStatus(_ turn: LioTurn) -> some View {
         switch turn.status {
-        case .thinking:
-            statusLine(language.text("Thinking…", "思考中…"))
-        case .working(let activity):
-            let status = switch activity {
-            case .places: language.text("Looking up places…", "正在找地点…")
-            case .weather: language.text("Checking the weather…", "正在查天气…")
-            case .directions: language.text("Looking for directions…", "正在找路线…")
-            case .travelInformation: language.text("Checking travel information…", "正在查旅行信息…")
-            }
-            statusLine(status)
+        case .thinking, .working:
+            statusLine(language.text("Lio is replying…", "Lio 正在回复…"))
         case .failed(let failure):
             let message = switch failure {
             case .notSent: language.text("Message couldn’t be sent. Check your connection and tap to try again.",
@@ -649,8 +626,8 @@ public struct LioHome<MenuContent: View>: View {
                                               "这条消息没发出去，请换个说法再试。")
             case .dailyLimit: language.text("You’ve used all your questions for today. Try again tomorrow.",
                                             "今天的问题额度已用完，明天再来聊吧。")
-            case .serviceLimit: language.text("There’s no chat allowance available right now.",
-                                              "暂时没有可用的聊天额度。")
+            case .serviceLimit: language.text("Lio couldn’t finish this request within the current limit.",
+                                              "这次没能在限额内答完。")
             case .unfinished: language.text("I couldn’t finish this one.", "这次没答完。")
             case .waiting: language.text("I don’t have an answer for this yet.", "这条消息暂时还没有回答。")
             case .unavailable where turn.fromTimeline:
@@ -687,33 +664,6 @@ public struct LioHome<MenuContent: View>: View {
             .font(.footnote)
             .foregroundStyle(Color.primary.opacity(0.78))
             .accessibilityIdentifier("lio.progress")
-    }
-}
-
-private struct LioSourceSheet: View {
-    let source: LioSource
-    let language: LioLanguage
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            List {
-                Text(source.title).textSelection(.enabled)
-                if let url = source.url {
-                    Link(language.text("Open source", "打开来源"), destination: url)
-                } else {
-                    Text(language.text("No link for this source.", "这条来源没有链接。"))
-                        .foregroundStyle(Color.primary.opacity(0.78))
-                }
-            }
-            .navigationTitle(language.text("Source", "来源"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(language.text("Done", "完成")) { dismiss() }
-                }
-            }
-        }
     }
 }
 #endif

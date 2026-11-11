@@ -52,6 +52,17 @@ struct LioReplyMarkdownTests {
         #expect(LioReplyMarkdown.render("[Open](https://api-beta.go2china.space/v2/memories)") == nil)
     }
 
+    @Test func withholdsExplicitExecutionDetailsWhileKeepingOrdinaryAnswerText() throws {
+        for text in ["<think>Choose a search tool.</think> Here is the answer.",
+                     "Calling Amap Weather now.",
+                     "正在调用高德获取地点。",
+                     #"{"tool_calls":[{"name":"weather"}]}"#] {
+            #expect(LioReplyMarkdown.render(text) == nil)
+        }
+        let answer = try #require(LioReplyMarkdown.render("I think a quiet walk would suit this trip."))
+        #expect(String(answer.characters) == "I think a quiet walk would suit this trip.")
+    }
+
     @Test(arguments: [
         "https://api-beta.go2china.space./",
         "https://api-beta.go2china%2Espace./",
