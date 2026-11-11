@@ -34,6 +34,10 @@ CITIES=(('上海','Shanghai','310000'),('成都','Chengdu','510100'),('西安',"
 KEY='national-http-fixture-key-only'
 PREFERENCE='I prefer fewer stops in a day.'
 MISSING_REQUESTS={'去成都玩三天':('zh','成都','三天'), 'Plan a three-day trip to Chengdu.':('en','Chengdu','three-day')}
+CHENGDU_CASE=json.loads((ROOT/'eval/lio_national_cases.v1.json').read_bytes())['cases'][0]
+FIXED_TEXT={'zh':'第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变',
+    'en':'On day 1 I have a fixed hotel meetup from 9 to 10 a.m.; keep it unchanged'}
+PARTY_REPLY={'zh':'只有我一人，酒店集合也只有我本人参加。','en':'It is just me; the hotel meetup is also only for me.'}
 DISCUSSION_REQUESTS={
     '想去杭州玩两天，日期和人数还没确定，先聊聊不要保存。':('zh','杭州','想去杭州玩两天'),
     'I would like to visit Hangzhou for two days; dates and party size are undecided. Just discuss, do not save.':
@@ -80,25 +84,48 @@ def exercise(root,conninfo):
             else:
                 content=('You have shared that you prefer fewer stops in a day.' if has_saved else
                          "I don't know you yet. Would you like to introduce yourself?")
-        elif 'LIO-planning-intake.3' in system:
+        elif 'LIO-planning-intake.4' in system:
             text=body['messages'][-1]['content'];current['text']=text
             source_index=len([m for m in body['messages'][1:] if m['role']=='user' and not m['content'].startswith('Stored memory data')])-1
-            from cj_agent.lio_intake_modes_schema import response_format
+            from cj_agent.lio_intake_start_schema import response_format
             assert body['response_format']==response_format(source_index)
-            if text in DISCUSSION_REQUESTS or text in ('继续','Please continue.') and current['missing_question'] in DISCUSSION_REQUESTS:
+            if current.get('clarification_flow'):
+                flow=CHENGDU_CASE['variants'][current['locale']]['turns'];fields={'party_size':dict(state='missing'),'fixed_items':[]}
+                sources={'duration_days':[dict(source_index=0,quote='三天' if current['locale']=='zh' else 'three days')]}
+                start=dict(state='missing')
+                if source_index:
+                    days=system.split('Original local China days in that order: ',1)[1].splitlines()[0].split(', ')
+                    first=(date.fromisoformat(days[1])+timedelta(days=1)).isoformat();current['start_date']=first
+                    start=dict(state='known',value=first)
+                    sources['start_date']=[dict(source_index=1,quote='从明天开始' if current['locale']=='zh' else 'Start tomorrow')]
+                    def fixed_event(clock):return dict(date=dict(state='known',value=first),time=dict(state='known',value=clock),timezone=dict(state='missing'),place=dict(state='missing'))
+                    item=dict(item_id='hotel',kind='appointment',label='酒店集合' if current['locale']=='zh' else 'hotel meetup',
+                        source_ref=dict(source_index=1,quote=FIXED_TEXT[current['locale']]),detail_refs=[],
+                        applies_to=['self'],locked=dict(state='known',value=True),booking_status=dict(state='missing'),
+                        start=fixed_event('09:00'),end=fixed_event('10:00'))
+                    fields['fixed_items']=[item]
+                    if source_index==2:
+                        fields['party_size']=dict(state='known',value=1)
+                        sources['party_size']=[dict(source_index=2,quote=PARTY_REPLY[current['locale']])]
+                        item['detail_refs']=[dict(source_index=2,quote=PARTY_REPLY[current['locale']])]
+                content=json.dumps(dict(version='LIO-planning-intake.4',intent='plan',reply='I will retain the supplied facts.',needs_tools=False,
+                    city=dict(query=current['mention'],normalized_name=None,province=None,source_index=0,quote=flow[0]),
+                    duration_days=3,start_date=start,extraction=dict(version='LIO-execution-extraction.1',fields=fields,unresolved=[],long_term_requests=[]),
+                    field_sources=sources,current_source_index=source_index),ensure_ascii=False)
+            elif text in DISCUSSION_REQUESTS or text in ('继续','Please continue.') and current['missing_question'] in DISCUSSION_REQUESTS:
                 _,mention,quote=DISCUSSION_REQUESTS[text if text in DISCUSSION_REQUESTS else current['missing_question']]
-                content=json.dumps(dict(version='LIO-planning-intake.3',intent='discuss',reply='可以先讨论，不保存。',needs_tools=False,
+                content=json.dumps(dict(version='LIO-planning-intake.4',intent='discuss',reply='可以先讨论，不保存。',needs_tools=False,
                     city=dict(query=mention,normalized_name=None,province=None,source_index=0,quote=quote),duration_days=None,
                     extraction=None,field_sources={},current_source_index=source_index),ensure_ascii=False)
             elif text in MISSING_REQUESTS or text in ('继续','Please continue.'):
                 _,mention,duration=MISSING_REQUESTS[text if text in MISSING_REQUESTS else current['missing_question']]
                 evidence_index=source_index if text in MISSING_REQUESTS else 0
-                content=json.dumps(dict(version='LIO-planning-intake.3',intent='plan',reply='请补充日期和人数。',needs_tools=False,
+                content=json.dumps(dict(version='LIO-planning-intake.4',intent='plan',reply='请补充日期和人数。',needs_tools=False,
                     city=dict(query=mention,normalized_name=None,province=None,source_index=evidence_index,quote=mention),duration_days=3,
                     extraction=dict(version='NEEDS-extraction.1',fields={},unresolved=[],long_term_requests=[]),
                     field_sources={'duration_days':[dict(source_index=evidence_index,quote=duration)]},current_source_index=source_index),ensure_ascii=False)
             elif text==PREFERENCE:
-                content=json.dumps(dict(version='LIO-planning-intake.3',intent='consult',reply='I can suggest a relaxed pace.',needs_tools=False,
+                content=json.dumps(dict(version='LIO-planning-intake.4',intent='consult',reply='I can suggest a relaxed pace.',needs_tools=False,
                     city=None,duration_days=None,extraction=None,
                     field_sources={},current_source_index=source_index))
             else:
@@ -114,7 +141,7 @@ def exercise(root,conninfo):
                     applies_to=['self'],locked=dict(state='known',value=True),booking_status=dict(state='unknown'),
                     start=event('09:00'),end=event('10:00'))]
                 sources['fixed_items']=[dict(source_index=source_index,quote=current['fixed_description'])]
-            content=content or json.dumps(dict(version='LIO-planning-intake.3',intent='plan',reply='I can arrange the trip.',needs_tools=False,
+            content=content or json.dumps(dict(version='LIO-planning-intake.4',intent='plan',reply='I can arrange the trip.',needs_tools=False,
                 city=dict(query=current['mention'],normalized_name=None,province=None,source_index=source_index,quote=current['mention']),
                 duration_days=3,extraction=dict(version='NEEDS-extraction.1',fields=fields,unresolved=[],long_term_requests=[]),
                 field_sources=sources,current_source_index=source_index),ensure_ascii=False)
@@ -131,14 +158,29 @@ def exercise(root,conninfo):
             assert original['version']=='TRIP-source-input.2'
             assert original['fields']['arrival']['place']['value']==current['zh']+'市'
             assert original['fields']['destination_timezone']['value']=='Asia/Shanghai'
-            items=[dict(id='visit-'+str(i),text=(current['zh']+'散步'+str(i) if current['locale']=='zh' else current['en']+' Walk '+str(i)),date='2026-11-'+str(19+i),
+            items=[dict(id='visit-'+str(i),text=(current['zh']+'散步'+str(i) if current['locale']=='zh' else current['en']+' Walk '+str(i)),date=(date.fromisoformat(current.get('start_date','2026-11-20'))+timedelta(days=i-1)).isoformat(),
                 start_time='19:00' if i==3 else '14:00',end_time='20:00' if i==3 else '15:00',timezone='Asia/Shanghai') for i in (1,2,3)]
             if original['current_trip'] is not None:
                 content=json.dumps(dict(version='TRIP-lio-replan-delta.3',items=[],proposed_subjects={}))
             else:
                 content=json.dumps(dict(version='TRIP-lio-first-plan.1',title=current['en']+' trip',items=items,
                     proposed_subjects={item['id']:['party'] for item in items}),ensure_ascii=False)
-        if 'LIO-planning-intake.3' in system:
+        if 'LIO-planning-intake.4' in system:
+            data=json.loads(content)
+            if 'start_date' not in data:
+                if data['intent'] in ('consult','discuss','cancel'):data['start_date']=None
+                else:
+                    data['start_date']=data['extraction']['fields'].get('arrival',{}).get('date',dict(state='missing'))
+                    if data['start_date']['state']=='known':data['field_sources']['start_date']=data['field_sources']['arrival.date']
+                    data['extraction']['version']='LIO-execution-extraction.1'
+                    data['extraction']['fields'].setdefault('party_size',dict(state='missing'))
+                    data['extraction']['fields'].setdefault('fixed_items',[])
+                    for fixed in data['extraction']['fields'].get('fixed_items',[]):
+                        original=fixed.pop('description')
+                        fixed.update(label='酒店集合' if current['locale']=='zh' else 'hotel meetup',
+                            source_ref=next(ref for ref in data['field_sources']['fixed_items'] if ref['quote']==original),detail_refs=[])
+                        for edge in ('start','end'):fixed[edge]['timezone']=dict(state='missing')
+                content=json.dumps(data,ensure_ascii=False)
             from jsonschema import Draft202012Validator
             Draft202012Validator(body['response_format']['json_schema']['schema']).validate(json.loads(content))
         identity=dict(id='fixture-national-'+str(len(wire)),model=M4_MODEL)
@@ -151,7 +193,13 @@ def exercise(root,conninfo):
         assert key==KEY and guard() is True
         city_calls.append('original district exchange')
         return city_catalog()
-    model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),journal,transport=httpx.MockTransport(response))
+    def fixture_exchange(request):
+        try:return response(request)
+        except Exception:
+            import traceback
+            traceback.print_exc()
+            raise
+    model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),journal,transport=httpx.MockTransport(fixture_exchange))
     services=RealServices(model,KEY,subjects,demo_subjects=subjects,national_subjects=subjects)
     tools=RealTools(services,buffered_streaming_subjects=subjects)
     signer=load_confirmation_signer(auth)
@@ -252,6 +300,55 @@ def exercise(root,conninfo):
         assert [o.status for o in process()]==['completed']
         assert api.get('/v2/lio/trip',params=params,headers=headers).json()==after_replan
         print('PASS actual original adcode survives edit/undo/replan and different-city request writes no Trip',flush=True)
+        # Exact public C date/locked-hotel wording. The supplier omits arrival
+        # and sends a short label, explicit primary source, missing timezone.
+        for locale in ('zh','en'):
+            current.update(zh='成都',en='Chengdu',locale=locale,mention='成都' if locale=='zh' else 'Chengdu',
+                clarification_flow=True,fixed_description=FIXED_TEXT[locale],party=PARTY_REPLY[locale])
+            turns=[*CHENGDU_CASE['variants'][locale]['turns'],PARTY_REPLY[locale]]
+            for index,text in enumerate(turns):
+                mid='date-clarification-'+locale+'-'+str(index)
+                message=dict(version='LIO-message.2',message_id=mid,text=text,locale=locale,
+                    **({'new_conversation':True} if index==0 else {'conversation_id':flow_cid}))
+                result=api.post('/v2/lio/messages',headers=headers,content=json.dumps(message).encode());assert result.status_code==200,result.text
+                flow_cid=result.json()['conversation_id']
+                outcomes=process();assert [(o.message_id,o.status) for o in outcomes]==[(mid,'completed')],(index,mid,outcomes)
+                rows=api.get('/v2/lio/timeline',headers=headers,params=dict(conversation_id=flow_cid)).json()['messages']
+                trip=api.get('/v2/lio/trip',headers=headers,params=dict(conversation_id=flow_cid)).json()
+                if index<2:
+                    assert trip['current'] is None
+                    with database.connect(scope) as db:
+                        assert db.execute('SELECT count(*) FROM cj_message_needs_binding WHERE message_scope=%s AND message_id=%s',(scope,mid)).fetchone()==(0,)
+                    if index==1:
+                        answer=rows[-1]['answer'];assert ('几个人' in answer) if locale=='zh' else ('How many people' in answer)
+                        assert '哪天开始' not in answer and 'What date should' not in answer
+                else:
+                    assert trip['current'] is not None and trip['history']==[]
+                    initial=trip['current'];assert initial['days'][0]['date']==current['start_date']
+                    fixed,=[i for d in initial['days'] for i in d['items'] if i['fixed']]
+                    assert fixed['label']==FIXED_TEXT[locale] and (fixed['start_time'],fixed['end_time'])==('09:00','10:00')
+                    with database.connect(scope) as db:
+                        row=db.execute('SELECT version,content FROM cj_trip_record WHERE trip_id=%s',(initial['trip_id'],)).fetchone()
+                        assert row[0]==1;initial_bytes=bytes(row[1])
+            target=initial['days'][1]['items'][0]
+            template=json.loads((ROOT/'eval/lio_national_cases.v1.json').read_bytes())['common_flow'][2][locale]
+            edit=dict(version='LIO-message.2',message_id=mid+'-edit',conversation_id=flow_cid,locale=locale,
+                text=template.format(actual_item_name=target['label'],actual_time_range=target['start_time']+'–'+target['end_time'],
+                    replacement_query=CHENGDU_CASE['variants'][locale]['replacement_queries'][0]))
+            assert api.post('/v2/lio/messages',headers=headers,content=json.dumps(edit).encode()).status_code==200
+            assert [(o.message_id,o.status) for o in process()]==[(mid+'-edit','completed')]
+            changed=api.get('/v2/lio/trip',headers=headers,params=dict(conversation_id=flow_cid)).json()
+            assert changed['history']==[initial] and changed['current']!=initial
+            undo=dict(version='LIO-trip-undo.2',action_id=mid+'-undo',conversation_id=flow_cid,target=changed['undo_target'])
+            assert api.post('/v2/lio/trip/undo',headers=headers,content=json.dumps(undo).encode()).status_code==200
+            with database.connect(scope) as db:
+                row=db.execute('SELECT version,content FROM cj_trip_record WHERE trip_id=%s',(initial['trip_id'],)).fetchone()
+                assert row[0]==3 and bytes(row[1])==initial_bytes
+                versions=db.execute('SELECT committed_version FROM cj_trip_receipt WHERE trip_id=%s ORDER BY committed_version',(initial['trip_id'],)).fetchall()
+                assert versions==[(1,),(2,),(3,)]
+                assert db.execute('SELECT count(*) FROM cj_memory_item').fetchone()==(0,)
+            print('PASS exact C missing->relative start/fixed->party->one save->edit->full-byte undo',locale,flush=True)
+        current.pop('clarification_flow');current.pop('start_date')
         # An unsaved candidate must not become personal identity in a new chat.
         preference=dict(version='LIO-message.2',message_id='nation-preference',text=PREFERENCE,locale='en',new_conversation=True)
         accepted=api.post('/v2/lio/messages',headers=headers,content=json.dumps(preference).encode());assert accepted.status_code==200,accepted.text
@@ -274,7 +371,7 @@ def exercise(root,conninfo):
                 reply=read['messages'][-1]['answer']
                 assert ('fewer stops' in reply or '少安排' in reply) if saved else ("don't know you yet" in reply or '还不了解你' in reply)
         print('PASS national consultation retains Memory candidates and new-chat identity recalls only saved Memory',flush=True)
-    assert len(city_calls)==17
+    assert len(city_calls)==19
     assert all(row['state']=='RECEIVED' for row in journal.inspect())
     print('PASS 12 signed private PG chains, original model/tool receipts, no live vendor calls',flush=True)
 
