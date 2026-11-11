@@ -365,16 +365,17 @@ def test_reflection_result_must_be_the_unique_original_provider_output(local):
     assert len(backend.sent) == 1
 
 
-def test_original_failure_cannot_be_relabelled_as_pass_to_continue(local):
+@pytest.mark.parametrize('original_status', ['FAIL', 'CANCELLED', 'RUNNING'])
+def test_original_failure_cannot_be_relabelled_as_pass_to_continue(local, original_status):
     adapter, backend = local
     dispatch = backend.dispatch
     def rejected_original(raw, **kwargs):
         dispatch(raw, **kwargs)
         request = decode(raw)
         current = backend.snapshots[request['step_id']]
-        current['status'] = 'FAIL'
+        current['status'] = original_status
         backend.bind_action(current, request)
-        current['status'] = 'PASS'  # corrupt collector summary, original still FAIL
+        current['status'] = 'PASS'  # corrupt summary, original has not passed
     backend.dispatch = rejected_original
     assert call(adapter, task='dev-local-edit')['status'] == 'UNKNOWN'
     assert len(backend.sent) == 1
@@ -400,6 +401,48 @@ def test_operation_metadata_and_model_are_bound_to_original_receipts(local, fiel
         operation['provider'] = backend.proof(original)
     assert adapter.query('task-1')['status'] == 'UNKNOWN'
     assert len(backend.sent) == 2
+
+
+@pytest.mark.parametrize('field', ['run_id', 'registration_id', 'kind', 'input_sha256', 'output_sha256'])
+def test_original_meter_association_fields_cannot_be_missing_or_wrong(local, field):
+    adapter, backend = local
+    call(adapter)
+    operation = backend.snapshots[backend.sent[-1]['step_id']]['operations'][0]
+    original = decode(backend.proofs[operation['meter']['ref']])
+    for changed in ({k: v for k, v in original.items() if k != field}, {**original, field: 'other'}):
+        operation['meter'] = backend.proof(changed)
+        assert adapter.query('task-1')['status'] == 'UNKNOWN'
+
+
+@pytest.mark.parametrize('provider_state', ['NOT_SENT', 'INTENT'])
+def test_existing_output_is_hashed_even_without_provider_receipt(local, provider_state):
+    adapter, backend = local
+    call(adapter)
+    operation = backend.snapshots[backend.sent[-1]['step_id']]['operations'][0]
+    operation.update(provider_state=provider_state, provider=None)
+    if provider_state == 'NOT_SENT': operation.update(fee=None, fee_state='NOT_SENT')
+    backend.proofs[operation['output']['ref']] = b'corrupt stored output'
+    result = adapter.query('task-1')
+    assert result['status'] == 'UNKNOWN'
+    assert result['steps'][-1]['reason'] == 'ORIGINAL_HASH_MISMATCH'
+
+
+def test_missing_output_requires_explicit_null_in_original_meter_mapping(local):
+    adapter, backend = local
+    call(adapter)
+    request = backend.sent[-1]
+    current = backend.snapshots[request['step_id']]
+    operation = current['operations'][0]
+    operation.update(output=None, provider_state='NOT_SENT', provider=None, fee=None, fee_state='NOT_SENT')
+    original = decode(backend.proofs[operation['meter']['ref']])
+    original['output_sha256'] = None
+    operation['meter'] = backend.proof(original)
+    current['result'] = None
+    backend.bind_action(current, request)
+    assert adapter.query('task-1')['status'] == 'PASS'
+    del original['output_sha256']
+    operation['meter'] = backend.proof(original)
+    assert adapter.query('task-1')['status'] == 'UNKNOWN'
 
 
 def test_model_json_boolean_cannot_be_substituted_with_integer(local):

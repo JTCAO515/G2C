@@ -73,6 +73,8 @@ def check_snapshot(raw, *, request, binding, pins, original):
         provider_ids.append(op['attempt_id'])
         require(op['run_id'] in s['run_ids'] and op['kind'] in ('model', 'tool', 'memory'), 'OPERATION_RUN')
         read(op['input'])
+        if op['output'] is not None:
+            read(op['output'])
         meter = decode(read(op['meter']))
         require(type(meter) is dict and meter.get('attempt_id') == op['attempt_id'] and
                 meter.get('operation_id') == op['operation_id'] and
@@ -99,7 +101,6 @@ def check_snapshot(raw, *, request, binding, pins, original):
                         'PROVIDER_ORIGINAL_MISMATCH')
                 if op['kind'] in ('model', 'memory'):
                     require(encode(provider.get('model')) == encode(op['model']), 'PROVIDER_MODEL_ORIGINAL_MISMATCH')
-                read(op['output'])
             else:
                 require(op['provider'] is None, 'INTENT_MUST_NOT_INVENT_RECEIPT')
         if op['kind'] in ('model', 'memory'):
