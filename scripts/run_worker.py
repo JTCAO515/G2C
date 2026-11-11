@@ -112,7 +112,7 @@ def _require_memory_configuration(cursor, scope, configuration, travel):
         raise RuntimeDenied('existing memory requires explicit runtime configuration')
 
 
-def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,formal_memory_configuration=None,account_checker_builder=None,run_credential=False,assembly_planning=False,demo_planning=False,lio_confirmation=None,lio_memory_enabled=False):
+def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,formal_memory_configuration=None,account_checker_builder=None,run_credential=False,assembly_planning=False,demo_planning=False,lio_confirmation=None,lio_memory_enabled=False,runtime_window=None):
     if draft_profile not in (None,'needs-structured.1','needs-current-trip.1'):
         raise CompositionUnavailable('unknown explicit draft profile')
     if place_draft_configuration is not None:
@@ -340,7 +340,7 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
         tools=tools_configuration,place_sources=place_sources,lio_original=lio_original,
         lio_planning=lio_planning,
         lio_edit=lio_edit,
-        lio_memory=lio_memory,
+        lio_memory=lio_memory,runtime_window=runtime_window,
         execution_guard=lambda binding: database.require_execution(binding.scope, binding, connection=execution_connection),
         needs_lease=needs_lease_for(database,checker,memory_credential if run_credential else token),
         budget_exit=(LocalBudgetRouter(database) if tools_configuration is None else
@@ -377,6 +377,8 @@ def run_once(database, model, auth_dir, *, memory_configuration=None,memory_conf
                 or database.run_context.version!='CJ-LOCAL-RUN@2' or background_jobs is not None):
             raise ProviderFailed('explicit registered M4 real composition required')
         pending_scopes=real_services.dispatch_scopes(pending_scopes)
+        if real_services.runtime_window is not None and set(pending_scopes)-real_services.runtime_window.scopes.keys():
+            raise CompositionUnavailable('exclusive runtime window has other pending identities')
         for scope in pending_scopes:real_services.require_scope(scope)
     account_checker_builder = None
     if formal_memory_configuration is None and not account_admission:
@@ -412,7 +414,8 @@ def run_once(database, model, auth_dir, *, memory_configuration=None,memory_conf
                                          account_checker_builder=account_checker_builder,run_credential=run_credential,
                                          assembly_planning=assembly_planning,demo_planning=scope in hk_demo_scopes,
                                          lio_confirmation=lio_confirmation,
-                                         lio_memory_enabled=scope in hk_demo_scopes).process()
+                                         lio_memory_enabled=scope in hk_demo_scopes,
+                                         runtime_window=None if real_services is None else real_services.runtime_window).process()
         except Exception as error:
             if failure is None: failure = error
     if background_jobs is not None:results+=background_jobs.run_once(model)

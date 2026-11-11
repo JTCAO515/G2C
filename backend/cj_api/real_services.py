@@ -101,6 +101,7 @@ class ModelInput:
     final_answer:bool=False
     turn_profile:str=M4_NATIVE_TURN_PROFILE_V2
     lio_answer:bool=False
+    lookup_description:str|None=None
 
 
 def canonical_tool(name,raw):
@@ -236,6 +237,7 @@ class RealServices:
     amap_key:str
     subjects:frozenset
     demo_subjects:frozenset=frozenset()
+    runtime_window:object=None
 
     def __post_init__(self):
         if (type(self.model) is not MeteredDashScopeProvider or type(self.amap_key) is not str
@@ -321,14 +323,19 @@ class RealTools:
             native_reply=argument.native_reply
             final_answer=argument.final_answer
             turn_profile=argument.turn_profile
+            native_tools=self.native_tools
+            if argument.lookup_description is not None:
+                native_tools=[dict(tool,function=dict(tool['function'],description=argument.lookup_description))
+                              if tool['function']['name']=='place_search' else tool for tool in native_tools]
         else:
             messages,system,provider=argument;native_reply=None;final_answer=False;turn_profile=M4_NATIVE_TURN_PROFILE_V2
+            native_tools=None
         from cj_agent.worker import _MemoryProvider,_EditMemoryProvider
         wrapped=type(provider) in (_MemoryProvider,_EditMemoryProvider)
         if (provider.original if wrapped else provider) is not self.services.model:
             raise BudgetUnknown('M4 model registration mismatch')
         raw=canonical(dict(messages=messages,system=system,endpoint=M4_BASE,model=M4_MODEL,synthetic_only=True,
-                           native_tools=self.native_tools if native_turn else None,
+                           native_tools=native_tools,
                            **({'response_mode':'lio-memory-json.1'} if release_after_send else {}),
                            **({'answer_format_profile':'lio-user.1'} if native_turn and argument.lio_answer else {}),
                            **({'native_turn_profile':turn_profile,'external_tools_disabled':final_answer} if native_turn else {})))
@@ -349,7 +356,9 @@ class RealTools:
                         tools=inputs['native_tools'],receipt=metadata,guard=checked,native_reply=native_reply,
                         native_turn_profile=inputs.get('native_turn_profile'),final_answer=inputs.get('external_tools_disabled',False),
                         release_after_send=inputs.get('response_mode')=='lio-memory-json.1',
-                        lio_answer=inputs.get('answer_format_profile')=='lio-user.1')
+                        lio_answer=inputs.get('answer_format_profile')=='lio-user.1',
+                        **({} if self.services.runtime_window is None else
+                           {'before_intent':self.services.runtime_window.before_intent(operation)}))
             return invoke
         return InvocationInput(raw,None,bind,_receipt(metadata))
 
@@ -377,7 +386,9 @@ class RealTools:
                 return valid
             def invoke():
                 self.services.require_scope(operation.binding.scope)
-                budget.begin(operation.command.attempt_id,kind,original);budget.check_date()
+                allocation={} if self.services.runtime_window is None else {
+                    'before_intent':self.services.runtime_window.before_intent(operation)}
+                budget.begin(operation.command.attempt_id,kind,original,**allocation);budget.check_date()
                 try:
                     with _external_timing(kind,operation,admitted) as checked:
                         if name=='place':
@@ -403,6 +414,9 @@ class RealTools:
                         if admitted() is not True:
                             raise BudgetUnknown('original tool authority changed before evidence capture')
                         self.tool_evidence.record(operation,name,raw,metadata)
+                    if self.services.runtime_window is not None:
+                        if admitted() is not True:raise BudgetUnknown('runtime tool authority changed')
+                        self.services.runtime_window.capture_tool(operation,name,raw,metadata)
                     yield raw.decode('utf8')
                 except (FactFailure,TimeoutError,OSError,UnicodeError,ValueError):
                     raise BudgetUnknown('original external tool outcome unknown') from None

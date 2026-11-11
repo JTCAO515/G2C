@@ -89,20 +89,22 @@ def _price_receipt(kind, raw):
     return None
 
 
-def authorization_usage(db):
+def authorization_usage(db, *, attempt_ids=None, include_M1=True):
     """Read-only totals over original rows, in fixed-point CNY for each category."""
     counts=dict.fromkeys(LIMITS,0)
     estimates=dict.fromkeys(LIMITS,0)
     holds=dict.fromkeys(LIMITS,0)
-    for kind,state,receipt in db.execute('SELECT kind,state,receipt FROM attempt'):
+    for identity,kind,state,receipt in db.execute('SELECT id,kind,state,receipt FROM attempt'):
+        if attempt_ids is not None and identity not in attempt_ids:continue
         counts[kind]+=1
         estimate=_price_receipt(kind,receipt) if state=='RECEIVED' else None
         if estimate is None:
             holds[kind]+=LIMITS[kind][1]*CNY_SCALE
         else:
             estimates[kind]+=estimate
-    estimates['model']+=M1_ESTIMATED
-    holds['model']+=M1_UNRESOLVED_CNY*CNY_SCALE
+    if include_M1:
+        estimates['model']+=M1_ESTIMATED
+        holds['model']+=M1_UNRESOLVED_CNY*CNY_SCALE
     return counts,estimates,holds
 
 
@@ -180,7 +182,7 @@ class AuthorizationBudget:
                     save_anchor(intent)
             if intent is not None:save_anchor(dict(intent,state='ADOPTED'))
 
-    def begin(self,attempt,kind,raw):
+    def begin(self,attempt,kind,raw,*,before_intent=None):
         self.check_date()
         if kind not in LIMITS or type(attempt) is not str or not 1<=len(attempt)<=128:
             raise BudgetUnknown('M4 original attempt unavailable')
@@ -195,6 +197,7 @@ class AuthorizationBudget:
                     raise BudgetUnknown('M4 model authorization ceiling')
             elif sum(estimates[k]+holds[k] for k in LIMITS if k!='model')+reserve>min(TOOL_STOP_CNY,TOOL_TOTAL_CNY)*CNY_SCALE:
                 raise BudgetUnknown('M4 tool authorization ceiling')
+            if before_intent is not None:before_intent(db,attempt,kind,raw)
             db.execute('INSERT INTO attempt VALUES(?,?,?,\'INTENT\',NULL)',
                        (attempt,kind,hashlib.sha256(raw).hexdigest()))
 

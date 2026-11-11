@@ -9,6 +9,7 @@ import sys
 import time
 import threading
 from contextlib import contextmanager
+from dataclasses import replace
 
 import psycopg
 from fastapi.responses import JSONResponse
@@ -80,18 +81,24 @@ def worker_pulse():
     finally:stop.set();thread.join()
 
 
-def worker(runtime, *, tool_evidence=None):
+def worker(runtime, *, tool_evidence=None,runtime_manifest=None):
     from .demo_login import signing_socket
     with signing_socket(runtime):
-        _run_worker(runtime, tool_evidence=tool_evidence)
+        _run_worker(runtime, tool_evidence=tool_evidence,runtime_manifest=runtime_manifest)
 
 
-def _run_worker(runtime, *, tool_evidence=None):
+def _run_worker(runtime, *, tool_evidence=None,runtime_manifest=None):
     # Missing transferred journal is a configuration failure, never a new quota.
     if not (Path.home()/'.local/share/g2c/m4-real-services/m4-outflows.sqlite').is_file():
         raise ValueError('original_shared_authorization_journal_required')
     services=RealServices.from_environment(runtime.auth,authorization_guard=authorization,demo_subjects=runtime.demo_subjects)
     with services.model.authorization.connect() as journal:services.model.authorization.require_producer(journal)
+    if runtime_manifest is not None:
+        from cj_api.runtime_window import RuntimeWindow
+        window=RuntimeWindow.load(runtime_manifest,runtime.database(),runtime.demo_subjects)
+        if os.environ.get('CJ_BETA_BUILD_SOURCE')!=window.value['source_commit']:
+            raise ValueError('runtime window must match the actual image source')
+        services=replace(services,runtime_window=window)
     probe=os.environ.get(ASSEMBLY_PROBE_MESSAGE)
     binding=None
     if probe is not None:
@@ -151,8 +158,9 @@ def initialize(runtime):
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('command',choices=['migrate','api','worker'])
     parser.add_argument('--tool-evidence-manifest',type=Path)
+    parser.add_argument('--runtime-adapter-manifest',type=Path)
     args=parser.parse_args();runtime=None
-    if args.tool_evidence_manifest is not None and args.command!='worker':
+    if (args.tool_evidence_manifest is not None or args.runtime_adapter_manifest is not None) and args.command!='worker':
         parser.error('tool evidence is available only on the existing synthetic worker')
     try:
         load_secret_environment(args.command)
@@ -163,7 +171,7 @@ def main():
             from cj_api.tool_evidence import ToolEvidence
             evidence=(None if args.tool_evidence_manifest is None else
                       ToolEvidence.load(args.tool_evidence_manifest,runtime.demo_subjects))
-            worker(runtime,tool_evidence=evidence)
+            worker(runtime,tool_evidence=evidence,runtime_manifest=args.runtime_adapter_manifest)
         else:
             dict(migrate=initialize,api=api)[args.command](runtime)
     except (OSError,ValueError,KeyError,CompositionUnavailable,psycopg.Error):

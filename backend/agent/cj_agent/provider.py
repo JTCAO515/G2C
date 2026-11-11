@@ -445,7 +445,7 @@ class MeteredDashScopeProvider:
                 finally:loop.close()
 
     def invoke(self,messages,system,attempt,*,tools=None,receipt,guard,native_reply=None,tool_choice=None,
-               native_turn_profile=None,final_answer=False,release_after_send=False,lio_answer=False):
+               native_turn_profile=None,final_answer=False,release_after_send=False,lio_answer=False,before_intent=None):
         from cj_usage.authorization_budget import canonical
         native_tools=tools or []
         buffered=native_turn_profile==M4_NATIVE_TURN_BUFFERED
@@ -507,7 +507,8 @@ class MeteredDashScopeProvider:
         elif not native_tools and system is not None:body['response_format']={'type':'json_object'}
         raw=canonical(body)
         if len(raw)>32768:raise ProviderFailed('bounded M4 model input required')
-        self.authorization.begin(attempt,'model',raw)
+        allocation={} if before_intent is None else {'before_intent':before_intent}
+        self.authorization.begin(attempt,'model',raw,**allocation)
         # A durable INTENT remains after any crash/cancel/timeout, even before the
         # first byte. No implicit retry, alternate region or replacement attempt.
         self.authorization.check_date()

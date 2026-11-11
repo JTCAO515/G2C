@@ -102,7 +102,7 @@ class Outcome:
 
 
 class RunWorker:
-    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None, memory=None, message_context=None, tools=None, edit_publisher=None,edit_results=False,place_sources=None,memory_history=False,history_adapter=None,execution_lease=nullcontext,owned_transaction_lease=None,lio_original=None,lio_planning=None,lio_edit=None,lio_memory=None):
+    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None, memory=None, message_context=None, tools=None, edit_publisher=None,edit_results=False,place_sources=None,memory_history=False,history_adapter=None,execution_lease=nullcontext,owned_transaction_lease=None,lio_original=None,lio_planning=None,lio_edit=None,lio_memory=None,runtime_window=None):
         """`messages`: cj_message.domain.Service and `runs`: cj_run.core.Service, both bound to `scope`.
 
         `drafts`: optional cj_agent.draft.DraftPublisher for this user's TRIP scope; messages
@@ -130,6 +130,8 @@ class RunWorker:
         self.lio_memory = lio_memory
         self._lio_active = False
         self._lio_answer_refs = ()
+        self.runtime_window=runtime_window
+        self.runtime_call=None
 
     def process(self, limit=20):
         outcomes = []
@@ -278,6 +280,7 @@ class RunWorker:
         yield from self._stream_source(binding,source,draft=draft)
 
     def _registered_stream(self,binding,key,registration,argument,*,progress=None,message_refs=()):
+        if self.runtime_call is not None:argument=self.runtime_call.apply(registration,argument)
         if self.memory_history and registration in ('model.answer','model.draft'):
             messages,system,_=argument
             self._model_history(binding,messages,system,message_refs=message_refs)
@@ -400,7 +403,7 @@ class RunWorker:
                               lio_original=self.lio_original,
                               lio_planning=self.lio_planning,
                               lio_edit=self.lio_edit,
-                              lio_memory=self.lio_memory,
+                              lio_memory=self.lio_memory,runtime_window=self.runtime_window,
                               runs=Service(OwnedRepository(), runs.valid))
             if self.edit_publisher is not None:
                 with self.message_context.worker_repository(owned.runs.repository):
@@ -463,6 +466,9 @@ class RunWorker:
         stored = lio_original if lio_original is not None else self.messages.query(receipt.message_id)
         command = json.loads(stored.raw)
         text = command['text']
+        self.runtime_call=None if self.runtime_window is None else self.runtime_window.for_run(binding)
+        teacher=self.runtime_call is not None and self.runtime_call.teacher
+        reflection=self.runtime_call is not None and self.runtime_call.reflection
         if self.memory is not None:
             self.memory_run = (self.history_adapter.capture(binding) if self.memory_history
                                else self.memory.capture(binding))
@@ -482,14 +488,22 @@ class RunWorker:
         try:
             from cj_message.lio_context import LioCitation, LioToolProgress, answer_prompt
 
-            if lio_replacement:
+            if reflection:
+                argument=self.runtime_call.reflection_input(text,self.provider)
+                raw=''.join(self._registered_stream(binding,'model.runtime_reflection.0','model.answer',argument))
+                try:reply=self.runtime_call.reflection_result(raw)
+                except (ValueError,UnicodeError):raise ProviderFailed('bounded reflection proposal unavailable') from None
+                state=self._event(binding,state,'text_delta',reply)
+                state=self._event(binding,state,'completed')
+                return self._finish(receipt,state)
+            if lio_replacement and not teacher:
                 edited = self.lio_edit.execute(self, binding, state, stored, text, locale, result_deadline)
                 return self._finish(receipt, edited)
-            if locale is not None and self.lio_planning is not None:
+            if locale is not None and self.lio_planning is not None and not teacher:
                 planning = self.lio_planning.execute(self, binding, state, text, original)
                 if planning is not None:
                     return self._finish(receipt, planning)
-            inputs = ([{'role': 'user', 'content': text}] if self.memory_run is None
+            inputs = ([{'role': 'user', 'content': text}] if self.memory_run is None or teacher
                       else self.memory_run.messages(text))
             if locale is not None and self.lio_planning is not None:
                 inputs,self._lio_answer_refs=self.lio_planning.answer_context(binding,inputs)
@@ -513,7 +527,7 @@ class RunWorker:
             if self.drafts is not None and command['creation_intent'] == 'consider_trip':
                 state, proposal_id = self._draft(binding, state, text, stored)
             publish_memory = (self.lio_memory.extract(self, binding)
-                              if locale is not None and self.lio_memory is not None else None)
+                              if locale is not None and self.lio_memory is not None and not teacher else None)
             state = self._event(binding, state, 'completed')
             if publish_memory is not None:
                 publish_memory()
