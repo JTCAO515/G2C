@@ -4,6 +4,7 @@ from datetime import date,timedelta
 from hashlib import sha256
 import json
 import re
+import unicodedata
 
 from cj_needs.domain import InvalidInput,decode,exact,validate_fields,EVENTS,OBSERVATIONS,COLLECTIONS
 from cj_needs.preview import preview,encode
@@ -88,14 +89,19 @@ ZONE_LITERAL=re.compile(r'\b(?:Africa|America|Antarctica|Arctic|Asia|Atlantic|Au
 
 def _clock_zone_marker(quote):
  from .lio_planning_grounding import RANGE,ISO
- text=re.sub(ISO,' ',quote)
- marker=r'(?:[+-](?:0[0-9]|1[0-4]):?[0-5][0-9]|Z|[A-Z]{2,8})'
+ text=re.sub(ISO,' ',_zone_text(quote))
+ marker=r'(?:[+-](?:0[0-9]|1[0-4]):?[0-5][0-9]|[Zz]|[A-Z]{2,8})'
  for clock in RANGE.finditer(text):
-  after=re.match(r'\s*(?:[\(\[]\s*)?('+marker+r')(?![A-Za-z0-9])',text[clock.end():])
-  before=re.search(r'(?<![A-Za-z])('+marker+r')\s*(?:[\)\]]\s*)?$',text[:clock.start()])
+  after=re.match(r'\s*(?:[\(\[（【]\s*)?('+marker+r')(?![A-Za-z0-9])',text[clock.end():])
+  before=re.search(r'(?<![A-Za-z])('+marker+r')\s*(?:[\)\]）】]\s*)?$',text[:clock.start()])
   for found in (after,before):
    if found is not None and found[1] not in ('AM','PM'):return True
  return False
+
+
+def _zone_text(quote):
+ # Detection only; original refs, canonical descriptions and hashes stay exact.
+ return unicodedata.normalize('NFKC',quote).replace('−','-')
 
 
 _DIAGNOSTIC_CODES={
@@ -305,7 +311,7 @@ def fields_for(intake,city_reference,*,message_id,run_id,source_text):
   if not any(description in ref['quote'] for ref in quotes):raise InvalidInput('unbound fixed arrangement')
   if intake.start_date is not None:
    evidence=intake.sources['fixed_items.'+str(index)]
-   literals=[match[0] for ref in evidence for match in ZONE_LITERAL.finditer(ref['quote'])]
+   literals=[match[0] for ref in evidence for match in ZONE_LITERAL.finditer(_zone_text(ref['quote']))]
    if any(value!=city_reference.timezone for value in literals) or any(_clock_zone_marker(ref['quote']) for ref in evidence):
     raise FixedTimezoneConflict('explicit fixed timezone needs confirmation')
    for edge in ('start','end'):

@@ -144,7 +144,7 @@ class StartSchema(unittest.TestCase):
             with self.assertRaises(FixedTimezoneConflict):prepared(checked(value,turns),turns)
 
     def test_explicit_offsets_zulu_or_unknown_clock_zone_never_default_to_destination(self):
-        for suffix in (' (+01:00)',' (+0100)',' Z',' XYZ'):
+        for suffix in (' (+01:00)',' (+0100)',' Z',' z',' XYZ','（+01:00）','（+0100）','（XYZ）','（＋０１：００）','（−01:00）'):
             with self.subTest(suffix=suffix):
                 value,turns=sample('zh',True);ref=value['extraction']['fields']['fixed_items'][0]['source_ref'];old=ref['quote']
                 ref['quote']=old.replace('9:00–10:00','9:00–10:00'+suffix)
