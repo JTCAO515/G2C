@@ -330,11 +330,11 @@ public struct LioHome<MenuContent: View>: View {
         ZStack(alignment: .leading) {
             HStack(spacing: 8) {
                 LioPortrait(size: 34)
-                Text("Lio").font(LioTheme.display(.headline))
+                Text("Lio").font(.headline)
             }
             .padding(6)
             .padding(.trailing, 8)
-            .background(.regularMaterial, in: Capsule())
+            .lioCard(Capsule())
             .frame(maxWidth: .infinity)
             .accessibilityIdentifier("lio.name")
             Button {
@@ -344,7 +344,8 @@ public struct LioHome<MenuContent: View>: View {
                 Text("≋")
                     .font(.title3.weight(.medium))
                     .frame(width: 48, height: 48)
-                    .background(.regularMaterial, in: Circle())
+                    .foregroundStyle(LioTheme.ink)
+                    .lioCard(Circle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel(language.text("Menu", "菜单"))
