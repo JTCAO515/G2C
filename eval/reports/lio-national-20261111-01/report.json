@@ -1,0 +1,364 @@
+{
+  "version": "LIO-national-results.1",
+  "stage_id": "c-national-20261111-01",
+  "state": "STOPPED_ORIGINAL_RUN_UNKNOWN",
+  "planned_n": 16,
+  "core_n": 12,
+  "ambiguity_n": 4,
+  "source": "ec7269cf49fb59ce4c7faa9d3fce2242cb231c36",
+  "image": "sha256:dceaa82178247b066744e7013d318b6df957989cffcbcf598970898dd34d2e35",
+  "cost": {
+    "conservative_cny": {
+      "model": "1",
+      "tool": "0"
+    },
+    "token_receipt_estimate_cny": {
+      "model": "0.0018726",
+      "tool": "0"
+    },
+    "supplier_paid_cny": "UNKNOWN"
+  },
+  "cases": [
+    {
+      "task_id": "national-chengdu-zh",
+      "locale": "zh",
+      "status": "UNKNOWN",
+      "original_message_ids": [
+        "cnat-20261111-chengdu-zh-t1-1b7a24aa551e"
+      ],
+      "original_run_ids": [
+        "b5cebd0c-a86f-481f-8708-a778d7a2c017"
+      ],
+      "plan_saved": "UNRUN",
+      "named_edit": "UNRUN",
+      "native_undo": "UNRUN",
+      "source_proof": "UNRUN",
+      "first_progress_seconds": 1.2859034590001102,
+      "first_body_seconds": null,
+      "complete_seconds": null,
+      "intake_status": "UNKNOWN_no_clarification_answer",
+      "evidence_sha256": "61758837ebe07a12228353e4cb877593688734fcbfd95b38cd168a38b8516ba4"
+    },
+    {
+      "task_id": "national-chengdu-en",
+      "locale": "en",
+      "status": "UNRUN",
+      "original_message_ids": [],
+      "original_run_ids": [],
+      "plan_saved": "UNRUN",
+      "named_edit": "UNRUN",
+      "native_undo": "UNRUN",
+      "source_proof": "UNRUN",
+      "first_progress_seconds": null,
+      "first_body_seconds": null,
+      "complete_seconds": null
+    },
+    {
+      "task_id": "national-xian-zh",
+      "locale": "zh",
+      "status": "UNRUN",
+      "original_message_ids": [],
+      "original_run_ids": [],
+      "plan_saved": "UNRUN",
+      "named_edit": "UNRUN",
+      "native_undo": "UNRUN",
+      "source_proof": "UNRUN",
+      "first_progress_seconds": null,
+      "first_body_seconds": null,
+      "complete_seconds": null
+    },
+    {
+      "task_id": "national-xian-en",
+      "locale": "en",
+      "status": "UNRUN",
+      "original_message_ids": [],
+      "original_run_ids": [],
+      "plan_saved": "UNRUN",
+      "named_edit": "UNRUN",
+      "native_undo": "UNRUN",
+      "source_proof": "UNRUN",
+      "first_progress_seconds": null,
+      "first_body_seconds": null,
+      "complete_seconds": null
+    },
+    {
+      "task_id": "national-shanghai-zh",
+      "locale": "zh",
+      "status": "UNRUN",
+      "original_message_ids": [],
+      "original_run_ids": [],
+      "plan_saved": "UNRUN",
+      "named_edit": "UNRUN",
+      "native_undo": "UNRUN",
+      "source_proof": "UNRUN",
+      "first_progress_seconds": null,
+      "first_body_seconds": null,
+      "complete_seconds": null
+    },
+    {
+      "task_id": "national-shanghai-en",
+      "locale": "en",
+      "status": "UNRUN",
+      "original_message_ids": [],
+      "original_run_ids": [],
+      "plan_saved": "UNRUN",
+      "named_edit": "UNRUN",
+      "native_undo": "UNRUN",
+      "source_proof": "UNRUN",
+      "first_progress_seconds": null,
+      "first_body_seconds": null,
+      "complete_seconds": null
+    },
+    {
+      "task_id": "national-hangzhou-zh",
+      "locale": "zh",
+      "status": "UNRUN",
+      "original_message_ids": [],
+      "original_run_ids": [],
+      "plan_saved": "UNRUN",
+      "named_edit": "UNRUN",
+      "native_undo": "UNRUN",
+      "source_proof": "UNRUN",
+      "first_progress_seconds": null,
+      "first_body_seconds": null,
+      "complete_seconds": null
+    },
+    {
+      "task_id": "national-hangzhou-en",
+      "locale": "en",
+      "status": "UNRUN",
+      "original_message_ids": [],
+      "original_run_ids": [],
+      "plan_saved": "UNRUN",
+      "named_edit": "UNRUN",
+      "native_undo": "UNRUN",
+      "source_proof": "UNRUN",
+      "first_progress_seconds": null,
+      "first_body_seconds": null,
+      "complete_seconds": null
+    },
+    {
+      "task_id": "national-chongqing-zh",
+      "locale": "zh",
+      "status": "UNRUN",
+      "original_message_ids": [],
+      "original_run_ids": [],
+      "plan_saved": "UNRUN",
+      "named_edit": "UNRUN",
+      "native_undo": "UNRUN",
+      "source_proof": "UNRUN",
+      "first_progress_seconds": null,
+      "first_body_seconds": null,
+      "complete_seconds": null
+    },
+    {
+      "task_id": "national-chongqing-en",
+      "locale": "en",
+      "status": "UNRUN",
+      "original_message_ids": [],
+      "original_run_ids": [],
+      "plan_saved": "UNRUN",
+      "named_edit": "UNRUN",
+      "native_undo": "UNRUN",
+      "source_proof": "UNRUN",
+      "first_progress_seconds": null,
+      "first_body_seconds": null,
+      "complete_seconds": null
+    },
+    {
+      "task_id": "national-shenzhen-zh",
+      "locale": "zh",
+      "status": "UNRUN",
+      "original_message_ids": [],
+      "original_run_ids": [],
+      "plan_saved": "UNRUN",
+      "named_edit": "UNRUN",
+      "native_undo": "UNRUN",
+      "source_proof": "UNRUN",
+      "first_progress_seconds": null,
+      "first_body_seconds": null,
+      "complete_seconds": null
+    },
+    {
+      "task_id": "national-shenzhen-en",
+      "locale": "en",
+      "status": "UNRUN",
+      "original_message_ids": [],
+      "original_run_ids": [],
+      "plan_saved": "UNRUN",
+      "named_edit": "UNRUN",
+      "native_undo": "UNRUN",
+      "source_proof": "UNRUN",
+      "first_progress_seconds": null,
+      "first_body_seconds": null,
+      "complete_seconds": null
+    },
+    {
+      "task_id": "national-taizhou-zhejiang-zh",
+      "locale": "zh",
+      "status": "UNRUN",
+      "original_message_ids": [],
+      "original_run_ids": [],
+      "plan_saved": "UNRUN",
+      "named_edit": "UNRUN",
+      "native_undo": "UNRUN",
+      "source_proof": "UNRUN",
+      "first_progress_seconds": null,
+      "first_body_seconds": null,
+      "complete_seconds": null
+    },
+    {
+      "task_id": "national-taizhou-zhejiang-en",
+      "locale": "en",
+      "status": "UNRUN",
+      "original_message_ids": [],
+      "original_run_ids": [],
+      "plan_saved": "UNRUN",
+      "named_edit": "UNRUN",
+      "native_undo": "UNRUN",
+      "source_proof": "UNRUN",
+      "first_progress_seconds": null,
+      "first_body_seconds": null,
+      "complete_seconds": null
+    },
+    {
+      "task_id": "national-suzhou-anhui-zh",
+      "locale": "zh",
+      "status": "UNRUN",
+      "original_message_ids": [],
+      "original_run_ids": [],
+      "plan_saved": "UNRUN",
+      "named_edit": "UNRUN",
+      "native_undo": "UNRUN",
+      "source_proof": "UNRUN",
+      "first_progress_seconds": null,
+      "first_body_seconds": null,
+      "complete_seconds": null
+    },
+    {
+      "task_id": "national-suzhou-anhui-en",
+      "locale": "en",
+      "status": "UNRUN",
+      "original_message_ids": [],
+      "original_run_ids": [],
+      "plan_saved": "UNRUN",
+      "named_edit": "UNRUN",
+      "native_undo": "UNRUN",
+      "source_proof": "UNRUN",
+      "first_progress_seconds": null,
+      "first_body_seconds": null,
+      "complete_seconds": null
+    }
+  ],
+  "languages": {
+    "zh": {
+      "planned": 8,
+      "PASS": 0,
+      "FAIL": 0,
+      "UNKNOWN": 1,
+      "UNRUN": 7,
+      "verified_success_rate": 0
+    },
+    "en": {
+      "planned": 8,
+      "PASS": 0,
+      "FAIL": 0,
+      "UNKNOWN": 0,
+      "UNRUN": 8,
+      "verified_success_rate": 0
+    }
+  },
+  "severe_errors": "UNKNOWN; formal and independent review stages UNRUN",
+  "new32_six": "UNRUN",
+  "formal66": "UNRUN",
+  "repeat_posts": 0,
+  "scope": "Public synthetic nationwide acceptance; not held-out, not the formal66",
+  "input_version": "LIO-national-cases.1",
+  "input_sha256": "478f772d6b78817c8a88b9d48448f3f05c0bb5c0f31661ade3f6edec5fddce7f",
+  "input_plan_sha256": "792aa4b4c3c847e4882c395e11e5091a8e109a7c7f4cf5c2efef0c12fa82e861",
+  "window_id": "b759-national-20261111-01",
+  "window_state": "STOP_NEW",
+  "owner_issue": "https://github.com/JTCAO515/G2C/issues/822",
+  "first_original_analysis": {
+    "version": "C-national-original-analysis.1",
+    "analysis_id": "analysis-r01",
+    "status": "UNKNOWN",
+    "source": "ec7269cf49fb59ce4c7faa9d3fce2242cb231c36",
+    "image": "sha256:dceaa82178247b066744e7013d318b6df957989cffcbcf598970898dd34d2e35",
+    "message_id": "cnat-20261111-chengdu-zh-t1-1b7a24aa551e",
+    "run_id": "b5cebd0c-a86f-481f-8708-a778d7a2c017",
+    "conversation_id": "lio-dialogue-fbb8d669605804f52ef1a801230a052b",
+    "display_status": "failed",
+    "display_failure": "unavailable",
+    "original_run_status": "unknown",
+    "original_attempt": "e831ca70ee934cef80052d1e84e1237b",
+    "operation": "model.lio_intake.0",
+    "meter_state": "settled",
+    "meter_cancelled": true,
+    "meter_exceeded": false,
+    "provider_state": "RECEIVED",
+    "complete_tokens": {
+      "completion_tokens": 314,
+      "prompt_tokens": 1281,
+      "total_tokens": 1595
+    },
+    "conservative_cny": {
+      "model": "1",
+      "tool": "0"
+    },
+    "token_estimated_cny": {
+      "model": "0.0018726",
+      "tool": "0"
+    },
+    "supplier_paid_cny": "UNKNOWN",
+    "first_progress_seconds": 1.2859034590001102,
+    "first_body_seconds": null,
+    "complete_seconds": null,
+    "failed_display_observed_seconds": 4.956513459001144,
+    "formal_trip_count": 0,
+    "formal_history_count": 0,
+    "memory_items_unchanged": true,
+    "registered_needs_count": 0,
+    "registered_memory_job_count": 0,
+    "ledger_before": {
+      "count": 1097,
+      "sha256": "7f4344ddcb5eff5c7cf7826eca68911b5fb3c107007ad606bda41cfb60dcbe9e"
+    },
+    "ledger_after": {
+      "count": 1098,
+      "sha256": "7ef48d05b8c0ef41da0fcad913619099c04eaaa00d7f5513a1f9cb114260c63f"
+    },
+    "proof_sha256": "61758837ebe07a12228353e4cb877593688734fcbfd95b38cd168a38b8516ba4",
+    "observation_sha256": "28457fe0a7dd1bc4ec500a1167ce171ddebe606b5bb8fbb36d3a9dd6bf84fc4d",
+    "wire_input_sha256": "1b473cd38b0a13ea8c1a234b4df7ffe18fde9ec3a980685745bda9daa2a380ad",
+    "raw_original_response": "NOT_EXPORTED; root cause remains B investigation",
+    "business_posts_total": 1,
+    "repeat_posts": 0
+  },
+  "full_trajectory_pass_n": 0,
+  "full_trajectory_complete_n": 0,
+  "original_post_n": 1,
+  "new_business_after_stop_n": 0,
+  "observer_preflights": [
+    {
+      "run_id": "preflight-r01",
+      "status": "FAIL",
+      "reason": "C observer0600-only JSON reader rejected B immutable0400 proof; no HTTP or business dispatch"
+    },
+    {
+      "run_id": "preflight-r02",
+      "status": "FAIL",
+      "reason": "C observer omitted required conversation_id for a readonlyv2 Trip GET; two GETs, no business dispatch"
+    },
+    {
+      "run_id": "preflight-r03",
+      "status": "PASS",
+      "reason": "Fixed observer; scheduled readonly precheck, six GET200, no business dispatch"
+    },
+    {
+      "run_id": "preflight-r04",
+      "status": "PASS",
+      "reason": "Actual ACTIVE readonly precheck, six GET200, no business dispatch"
+    }
+  ]
+}
