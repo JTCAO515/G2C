@@ -344,11 +344,12 @@ public struct LioHome<MenuContent: View>: View {
             Spacer(minLength: 0)
             VStack(spacing: LioTheme.Spacing.xxs) {
                 LioPortrait(size: 44)
+                // The identifier sits on the name alone so the accessibility frame doesn't include the avatar.
                 Text("Lio")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(LioTheme.ink)
+                    .accessibilityIdentifier("lio.name")
             }
-            .accessibilityIdentifier("lio.name")
             Spacer(minLength: 0)
             if let chatLibrary {
                 Button {
@@ -505,7 +506,7 @@ public struct LioHome<MenuContent: View>: View {
                     .buttonStyle(.plain)
                     .accessibilityLabel(language.text("Jump to latest", "回到最新"))
                     .accessibilityIdentifier("lio.jumpToLatest")
-                    .alignmentGuide(.top) { $0[.bottom] + LioTheme.Spacing.sm }
+                    .offset(y: -(44 + LioTheme.Spacing.sm))
                     .transition(.opacity)
             }
         }
