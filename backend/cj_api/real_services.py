@@ -284,7 +284,8 @@ class RealServices:
 
 class RealTools:
     def __init__(self,services,*,allowed_native=NATIVE_TOOLS,coordinate_routes=True,streaming_subject=None,
-                 assembly_streaming_subjects=frozenset(),buffered_streaming_subjects=frozenset(),controlled_probe=None):
+                 assembly_streaming_subjects=frozenset(),buffered_streaming_subjects=frozenset(),controlled_probe=None,
+                 tool_evidence=None):
         if type(coordinate_routes) is not bool:raise ValueError('explicit_coordinate_route_profile_required')
         self.services=services;self.coordinate_routes=coordinate_routes
         from .local_app import ISSUER,scope_for
@@ -300,6 +301,7 @@ class RealTools:
             raise ValueError('explicit invited buffered streaming subjects required')
         self.buffered_streaming_scopes=frozenset(scope_for(ISSUER,subject) for subject in buffered_streaming_subjects)
         self.controlled_probe=controlled_probe
+        self.tool_evidence=tool_evidence
         if type(allowed_native) is not frozenset or not allowed_native or not allowed_native<=NATIVE_TOOLS:
             raise ValueError('explicit code-owned native tool subset required')
         self.names=allowed_native
@@ -397,6 +399,10 @@ class RealTools:
                     metadata.update(endpoint=endpoint,region='China',response_sha256=hashlib.sha256(raw).hexdigest(),
                                     result_status=status,actual_cost_cny='UNKNOWN' if name!='fact' else '0')
                     budget.finish(operation.command.attempt_id,metadata)
+                    if self.tool_evidence is not None:
+                        if admitted() is not True:
+                            raise BudgetUnknown('original tool authority changed before evidence capture')
+                        self.tool_evidence.record(operation,name,raw,metadata)
                     yield raw.decode('utf8')
                 except (FactFailure,TimeoutError,OSError,UnicodeError,ValueError):
                     raise BudgetUnknown('original external tool outcome unknown') from None
