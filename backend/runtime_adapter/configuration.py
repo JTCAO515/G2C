@@ -15,14 +15,19 @@ def source_c0():
     from cj_api.local_lio_planning import DISCUSSION_PROMPT
     from cj_message.lio_context import PERSONA
     from cj_draft.lio_plan import INITIAL_SYSTEM, REPLAN_SYSTEM
-    files = ('backend/agent/cj_agent/provider.py', 'backend/cj_api/real_services.py',
-             'backend/cj_api/local_lio_planning.py', 'backend/message/cj_message/lio_context.py',
-             'backend/draft/cj_draft/lio_plan.py', 'eval/optimization/cases.v2.json',
+    policy_files = ('backend/agent/cj_agent/provider.py', 'backend/cj_api/real_services.py',
+             'backend/cj_api/local_lio_planning.py', 'backend/cj_api/local_lio_national.py',
+             'backend/cj_api/lio_national_intake.py', 'backend/agent/cj_agent/lio_intake_schema.py',
+             'backend/agent/cj_agent/lio_intake_current_schema.py', 'backend/message/cj_message/lio_context.py',
+             'backend/draft/cj_draft/lio_plan.py')
+    files = (*policy_files,
+             'eval/optimization/cases.v2.json',
              'eval/optimization/score_v2.py', 'tooling/optimization/uv.lock')
     adapter_files = {str(path.relative_to(ROOT)): sha256(path.read_bytes()).hexdigest()
                      for path in sorted(Path(__file__).parent.glob('*.py'))}
     policies = dict(tool_system=TOOL_SYSTEM, persona=PERSONA, discussion=DISCUSSION_PROMPT,
-                    initial=INITIAL_SYSTEM, replan=REPLAN_SYSTEM, reflection=REFLECTION_SYSTEM)
+                    initial=INITIAL_SYSTEM, replan=REPLAN_SYSTEM, reflection=REFLECTION_SYSTEM,
+                    policy_source_sha256={name:sha256((ROOT/name).read_bytes()).hexdigest() for name in policy_files})
     return dict(version=VERSION, configuration='C0-source-national.1', activation_status='UNRUN',
         source_hashes={name: sha256((ROOT/name).read_bytes()).hexdigest() for name in files},
         adapter_files=adapter_files, adapter_sha256=digest(adapter_files),
