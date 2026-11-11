@@ -434,32 +434,37 @@ public struct LioHome<MenuContent: View>: View {
     }
 
     private var examples: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            if isDemo {
-                Text(language.text("Try a sample question.", "可以先试一个示例问题。"))
-                    .font(.subheadline)
-                    .foregroundStyle(LioTheme.inkSecondary)
-            }
-            ForEach(Array(LioDemo.examples(language).enumerated()), id: \.offset) { index, example in
-                Button {
-                    draft = example
-                    typing = true
-                } label: {
-                    HStack(spacing: 12) {
-                        RunReadableText(text: example)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        Image(systemName: "arrow.up.left").accessibilityHidden(true)
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(alignment: .top, spacing: LioTheme.Spacing.xs) {
+                ForEach(Array(LioDemo.starters(language).enumerated()), id: \.offset) { index, starter in
+                    Button {
+                        draft = starter.prefix
+                        typing = true
+                    } label: {
+                        VStack(spacing: LioTheme.Spacing.xs) {
+                            Image(systemName: starter.symbol)
+                                .font(.title3)
+                                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+                                .foregroundStyle(LioTheme.vermilion)
+                                .frame(width: 44, height: 44)
+                                .background(LioTheme.surfaceSunken, in: Circle())
+                                .accessibilityHidden(true)
+                            Text(starter.label)
+                                .font(.caption)
+                                .foregroundStyle(LioTheme.ink)
+                                .fixedSize(horizontal: true, vertical: false)
+                        }
+                        .frame(minWidth: 64, minHeight: 64)
+                        .padding(.horizontal, LioTheme.Spacing.xxs)
                     }
-                    .foregroundStyle(LioTheme.ink)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .frame(minHeight: 48)
-                    .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.small))
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(starter.label)
+                    .accessibilityHint(language.text("Adds a starter. Finish your question, then send it.",
+                                                     "填入开头，补充问题后自行发送。"))
+                    .accessibilityIdentifier("lio.example.\(index)")
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel(example)
-                .accessibilityIdentifier("lio.example.\(index)")
             }
+            .padding(.vertical, LioTheme.Spacing.xxs)
         }
     }
 
