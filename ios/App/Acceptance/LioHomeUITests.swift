@@ -93,6 +93,31 @@ import XCTest
         exerciseChatHistory("zh-Hans")
     }
 
+    func testRecreatedClientReturnsToEnglishConversationAndDraft() { exerciseRecreatedChat("en") }
+    func testRecreatedClientReturnsToChineseConversationAndDraft() { exerciseRecreatedChat("zh-Hans") }
+
+    private func exerciseRecreatedChat(_ language: String) {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-chat-history-acceptance", "--lio-chat-recovery-acceptance", "-cj.ui.language.v1", language]
+        app.launch()
+        defer { app.terminate() }
+        let menu = app.buttons["lio.menu"]
+        XCTAssertTrue(menu.waitForExistence(timeout: 12))
+        menu.tap(); app.buttons["lio.chat.new"].tap()
+        let example = app.buttons["lio.example.0"]
+        XCTAssertTrue(example.waitForExistence(timeout: 8))
+        example.tap(); app.buttons["lio.send"].tap()
+        XCTAssertTrue(app.staticTexts["A separate reply."].waitForExistence(timeout: 12))
+        let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+        composer.tap(); composer.typeText("My unsent follow-up")
+        menu.tap(); app.buttons["synthetic.chat.recreate"].tap()
+        XCTAssertTrue(app.staticTexts["A separate reply."].waitForExistence(timeout: 12), app.debugDescription)
+        XCTAssertFalse(app.staticTexts["An earlier reply."].exists)
+        XCTAssertEqual(composer.value as? String, "My unsent follow-up")
+        XCTAssertFalse(app.otherElements["lio.chat.recovery"].exists)
+    }
+
     func testNewChatCanAcceptAnotherMessageAfterAnInputRefusal() {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")

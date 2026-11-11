@@ -75,9 +75,9 @@ enum DemoBetaConfiguration {
         }
         guard let envelope = try? JSONDecoder().decode(Envelope.self, from: bytes),
               UUID(uuidString: envelope.request_id) != nil, !envelope.error.code.isEmpty else { throw Failure.invalidResponse }
-        switch status {
-        case 401: throw Failure.inviteDenied
-        case 503: throw Failure.unavailable
+        switch (status, envelope.error.code) {
+        case (401, "DEMO_SESSION_DENIED"): throw Failure.inviteDenied
+        case (503, "DEMO_SESSION_UNAVAILABLE"): throw Failure.unavailable
         default: throw Failure.invalidResponse
         }
     }

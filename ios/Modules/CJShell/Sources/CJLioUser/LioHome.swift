@@ -138,11 +138,6 @@ public struct LioHome<MenuContent: View>: View {
             } catch { restoreChatFailed = true }
         }
         .onChange(of: draft) { _, value in chatLibrary?.continuity?.draft = value }
-        .onChange(of: pending?.id) { _, id in
-            if let id, let chatID, chatLibrary?.continuity?.blankIDs.contains(chatID) == true {
-                chatLibrary?.continuity?.firstQuestions[chatID] = String(decoding: id, as: UTF8.self)
-            }
-        }
         .onChange(of: tab) { _, _ in typing = false }
         .task(id: Observation(active: canObserve, request: refreshRequest)) {
             if canObserve { await currentConversation.refreshTimeline() }
@@ -218,6 +213,13 @@ public struct LioHome<MenuContent: View>: View {
                 if followsAnswer, let pending, latest?.id == pending.id { scroll.scrollTo("lio.bottom", anchor: .bottom) }
             }
             .onChange(of: latest?.status) { _, status in
+                if let chatID {
+                    switch status {
+                    case .failed(.notSent), .failed(.invalidInput), .failed(.dailyLimit):
+                        chatLibrary?.continuity?.firstQuestions.removeValue(forKey: chatID)
+                    default: break
+                    }
+                }
                 if followsAnswer && status == .finished { scroll.scrollTo("lio.bottom", anchor: .bottom) }
             }
             .onChange(of: scenePhase) { _, phase in
@@ -401,6 +403,12 @@ public struct LioHome<MenuContent: View>: View {
         }
     }
 
+    private func recordPendingFirstQuestion() {
+        if let id = conversation.pending?.id, let chatID, chatLibrary?.continuity?.blankIDs.contains(chatID) == true {
+            chatLibrary?.continuity?.firstQuestions[chatID] = String(decoding: id, as: UTF8.self)
+        }
+    }
+
     private var composer: some View {
         let placeholder = language.text("Start chatting", "开始聊天")
         let canSend = !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && conversation.pending == nil
@@ -413,6 +421,7 @@ public struct LioHome<MenuContent: View>: View {
             Button {
                 followsAnswer = true
                 conversation.send(draft, language: language)
+                recordPendingFirstQuestion()
                 if opening == .beforeNext, let id = conversation.pending?.id { opening = .before(id) }
                 draft = ""
                 typing = false
@@ -508,6 +517,7 @@ public struct LioHome<MenuContent: View>: View {
                     Button {
                         if turn.id == conversation.turns.last?.id { followsAnswer = true }
                         conversation.resend(turn.id)
+                        recordPendingFirstQuestion()
                     } label: {
                         Image(systemName: "exclamationmark.circle.fill")
                             .foregroundStyle(.red)
@@ -642,6 +652,7 @@ public struct LioHome<MenuContent: View>: View {
                 Button(language.text("Ask again", "重新问")) {
                     followsAnswer = true
                     conversation.askAgain(turn.id)
+                    recordPendingFirstQuestion()
                 }
                     .buttonStyle(.bordered)
                     .controlSize(.large)

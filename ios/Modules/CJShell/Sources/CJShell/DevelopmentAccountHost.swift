@@ -235,10 +235,11 @@ public enum DevelopmentAccountState: Equatable, Sendable {
     /// Revalidate only the already-active in-memory session, never load Keychain automatically.
     public func resume() {
         guard state == .paused || (state == .networkUnknown && isResuming) else { return }
+        let enteringForeground = state == .paused
         let previous = active.map { ($0.0, $0.1, false) } ?? resuming.map { ($0.material, $0.operation, $0.save) }
         guard let previous, session.isCurrent(previous.1), let (id, generation) = begin() else { return }
         resuming = (previous.0, previous.1, generation, previous.2)
-        guard demoMode, !previous.2, let refresh else {
+        guard demoMode, enteringForeground, !previous.2, let refresh else {
             start(previous.0, operation: previous.1, id: id, generation: generation, save: previous.2)
             return
         }

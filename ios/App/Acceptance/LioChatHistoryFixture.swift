@@ -15,7 +15,14 @@ private struct LioChatHistoryFixture: View {
             switch clients {
             case .success(let clients):
                 LioHome(language: shell.language.lio, service: clients.original, isDemo: false,
-                        chatLibrary: clients.library) { LioMenuSettings(shell: shell) }
+                        chatLibrary: clients.library) {
+                    LioMenuSettings(shell: shell)
+                    if ProcessInfo.processInfo.arguments.contains("--lio-chat-recovery-acceptance") {
+                        Button("Recreate client") { self.clients = Result { try clients.recreated(shell: shell) } }
+                            .accessibilityIdentifier("synthetic.chat.recreate")
+                    }
+                }
+                .id(clients.id)
             case .failure(let error):
                 Text("Synthetic chat setup failed: \(String(reflecting: error))")
             case nil:
@@ -30,13 +37,42 @@ private struct LioChatHistoryFixture: View {
 
 @MainActor
 private struct ChatHistoryClients {
+    let id = UUID()
     let original: LioService
     let library: LioChatLibrary
+    private let source: ChatHistorySource
+
+    init(shell: ShellState) throws {
+        try self.init(shell: shell, source: ChatHistorySource(shell: shell), continuity: LioChatContinuity())
+    }
+
+    private init(shell: ShellState, source: ChatHistorySource, continuity: LioChatContinuity) throws {
+        self.source = source
+        let recovery = source.recovery, scope = source.scope
+        let lease = try recovery.activate(scope)
+        let client = source.client(lease: lease)
+        let original = LioService.signedTimeline(client)
+        self.original = original
+        library = .signed(client: client, defaultService: original, language: { shell.language.lio }, continuity: continuity) { id in
+            LioTripHistoryClient(timeline: client, recovery: recovery, scope: scope, lease: lease, conversationID: id)
+        }
+    }
+
+    func recreated(shell: ShellState) throws -> Self {
+        let continuity = LioChatContinuity()
+        if let previous = library.continuity { continuity.inherit(previous) }
+        return try Self(shell: shell, source: source, continuity: continuity)
+    }
+}
+
+@MainActor private struct ChatHistorySource {
+    let scope: StorageScope
+    let recovery: MessageRecovery
+    private let transport: NoRedirectTransport
 
     init(shell: ShellState) throws {
         let scope = try StorageScope(environment: "synthetic", account: UUID().uuidString)
         let recovery = MessageRecovery(storage: JourneyStorage())
-        let lease = try recovery.activate(scope)
         let endpoint = try MessageEndpoint(url: URL(string: "https://synthetic.invalid")!,
                                            maximumRequestBytes: 16_384, maximumResponseBytes: 65_536)
         let locale: LioTimelineWire.Locale = shell.language == .chinese ? .chinese : .english
@@ -44,13 +80,12 @@ private struct ChatHistoryClients {
         let scenario = ChatHistoryTransport(locale: locale, rejectsFirst: rejectsFirst)
         let transport = try NoRedirectTransport(interceptedTransport: scenario, messageEndpoint: endpoint,
                                                 validateMessage: {}, lio: true)
-        let client = LioTimelineHTTP(scope: scope, lease: lease, credentials: JourneyCredentials(),
-                                     transport: transport, firstChatRecovery: recovery)
-        let original = LioService.signedTimeline(client)
-        self.original = original
-        library = .signed(client: client, defaultService: original, language: { shell.language.lio }) { id in
-            LioTripHistoryClient(timeline: client, recovery: recovery, scope: scope, lease: lease, conversationID: id)
-        }
+        self.scope = scope; self.recovery = recovery; self.transport = transport
+    }
+
+    func client(lease: Lease) -> LioTimelineHTTP {
+        LioTimelineHTTP(scope: scope, lease: lease, credentials: JourneyCredentials(),
+                        transport: transport, firstChatRecovery: recovery)
     }
 }
 

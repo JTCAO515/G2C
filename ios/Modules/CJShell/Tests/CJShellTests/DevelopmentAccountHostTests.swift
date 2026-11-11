@@ -170,12 +170,12 @@ import CJSession
     @Test func renewalUnavailableKeepsTheOldCredentialButDoesNotSkipItsVerification() async throws {
         let shell = try makeShell(), store = DevelopmentStore(), checks = DevelopmentChecks()
         let material = try SessionMaterial(trustedSDKBytes: Data("synthetic-old".utf8))
-        var activations = 0
+        var activations = 0, refreshes = 0
         let host = DevelopmentAccountHost(shell: shell, choices: [], persistence: store, demoMode: true,
             material: { _ in throw SessionFailure.invalidConfiguration }, verify: { candidate in
                 #expect(candidate.withBytes { $0 } == material.withBytes { $0 })
                 return await checks.check(candidate)
-            }, refresh: { _ in throw DemoAccountExchangeFailure.unavailable },
+            }, refresh: { _ in refreshes += 1; throw DemoAccountExchangeFailure.unavailable },
             activate: { _, _, _ in activations += 1 }, invalidate: {})
         host.signIn { material }
         await wait { checks.replies.count == 1 }
@@ -191,7 +191,7 @@ import CJSession
         await wait { checks.replies.count == 3 }
         checks.replies[2].resume(returning: .accepted(account: "demo"))
         await wait { host.state == .signedIn("demo") }
-        #expect(store.value?.withBytes { $0 } == material.withBytes { $0 } && store.clears == 0)
+        #expect(store.value?.withBytes { $0 } == material.withBytes { $0 } && store.clears == 0 && refreshes == 1)
     }
 
     @Test func lateRenewalAfterSignOutCannotSaveOrActivate() async throws {

@@ -1154,6 +1154,9 @@ private var developmentHostEnvironment: [String: String] {
     private func fenceCleanupBusiness() throws {
         guard let original = cleanupWorkflow else { throw CleanupFailure.stale }
         try original.requireCurrent()
+        #if G2C_DEMO_BETA
+        lioChatContinuity = nil
+        #endif
         trip?.invalidate()
         guard cleanupWorkflow === original else { throw CleanupFailure.stale }
         try original.requireCurrent(); offline?.hide()

@@ -110,7 +110,8 @@ struct DemoBetaConfigurationTests {
             }
         }
         for (status, failure) in [(401, DemoBetaConfiguration.Failure.inviteDenied), (503, .unavailable)] {
-            let bytes = try JSONSerialization.data(withJSONObject: ["request_id": UUID().uuidString, "error": ["code": "documented-denial"]])
+            let code = status == 401 ? "DEMO_SESSION_DENIED" : "DEMO_SESSION_UNAVAILABLE"
+            let bytes = try JSONSerialization.data(withJSONObject: ["request_id": UUID().uuidString, "error": ["code": code]])
             #expect(throws: failure) {
                 try DemoBetaConfiguration.verifyRenewalResponse(bytes, status: status, contentType: "application/json", previous: previous, now: now)
             }
