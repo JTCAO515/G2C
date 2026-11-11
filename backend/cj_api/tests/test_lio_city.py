@@ -93,3 +93,17 @@ class NationalLioCity(unittest.TestCase):
                 with patch('cj_api.lio_city.asyncio.open_connection',side_effect=connect),self.assertRaises(BudgetUnknown):
                     fetch_catalog('fixture-not-a-real-key',lambda:True)
                 assert len(writes)==len(connections)==len(aborts)==1
+
+
+    def test_pinyin_apostrophe_keeps_xi_an_distinct_from_xian_county(self):
+        value=json.loads(data())
+        value['districts'][0]['districts'].append(node('河北省','130000','province',
+            [node('沧州市','130900','city',[node('献县','130929','district')])]))
+        raw=json.dumps(value,ensure_ascii=False).encode()
+        for query in ("Xi'an",'Xi’an'):
+            with self.subTest(query=query):
+                result=resolve(raw,query)
+                self.assertEqual(result['status'],'resolved')
+                self.assertEqual([c['adcode'] for c in result['candidates']],['610100'])
+        self.assertEqual(resolve(raw,'Xian')['status'],'ambiguous')
+        self.assertEqual(resolve(raw,'献县')['candidates'][0]['adcode'],'130929')

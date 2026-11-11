@@ -95,6 +95,11 @@ def resolve(raw,name,province=None,normalized_name=None):
     candidates=catalog(raw);key=_normalize(name)
     exact=[c for c in candidates if _normalize(c.name)==key]
     matches=exact or [c for c in candidates if key in forms(c.name,c.level)]
+    if re.search("['’]",name):
+        # A pinyin apostrophe is a syllable boundary (Xi'an differs from xian).
+        requested=tuple(part for part in (_normalize(p) for p in re.split("['’]",name)) if part)
+        matches=[c for c in matches if requested in {tuple(lazy_pinyin(label))
+                 for label in (c.name,_base(c.name,c.level))}]
     translated=False
     if not matches and normalized_name is not None:
         normalized=_normalize(normalized_name)
