@@ -21,13 +21,17 @@ _KEEP_OTHER_STOPS = re.compile(
     r'(?:other (?:plans|stops|arrangements)|rest)(?:\s+(?:unchanged|the same))?$', re.I)
 _STOP_LABEL = re.compile(r"[^\W_]+(?:[ '’&·()（）-]+[^\W_]+)*[)）]?")
 _STOP_QUOTES = {'"': '"', '“': '”', '「': '」'}
-# Explicit aliases for the admitted Beijing Demo. Other names can be supplied
-# as one quoted label, without surrounding instructions.
-_DEMO_STOP_NAMES = frozenset({
+# Frozen unselected consumers keep the original admitted aliases.
+_LEGACY_STOP_NAMES = frozenset({
     '天坛', '颐和园', '故宫', '景山公园',
     'temple of heaven', 'the temple of heaven', 'summer palace', 'the summer palace',
     'forbidden city', 'the forbidden city', 'palace museum', 'the palace museum', 'jingshan park',
 })
+# Unquoted names may come from any destination. Multi-place, conditional or
+# deferred commands still require clarification; quoting makes a label literal.
+_QUALIFIED_LABEL = re.compile(
+    r"\b(?:and|or|only|if|unless|provided|subject|approval|confirm|wait|yet|please|not|do|but|without|after|later|defer|hold|cancel|never)\b"
+    r"|n['’]t\b|[，,；;、/&]|不要|别改|不改|暂不|暂停|取消|等我|等一下|稍后|再说|不过|如果|但是|但|或者|或|以及|和|与|先别|先不|缓一缓|问问我|经我同意|再执行", re.I)
 _CHINESE_SLOT = re.compile(r'(?:第([一二三四五六七八九十]|[1-9][0-9]?)天|(最后一天))\s*(上午|下午|晚上)')
 _ENGLISH_SLOT = re.compile(r'(?:the\s+)?(?:day\s+([1-9][0-9]?)|(first|second|third|last|final)(?:\s+day)?)'
                            r'(?:\s+in\s+the)?\s+(morning|afternoon|evening)', re.I)
@@ -66,7 +70,7 @@ def _edit_parts(match):
         yield tail[:separator.start()].strip(), tail[separator.end():]
 
 
-def _replacement_label(raw):
+def _replacement_label(raw,*,national_names=False):
     label = raw.strip().rstrip('。.!！?？').rstrip()
     label = _KEEP_OTHER_STOPS.sub('', label).rstrip()
     quoted = len(label) > 2 and _STOP_QUOTES.get(label[0]) == label[-1]
@@ -74,7 +78,9 @@ def _replacement_label(raw):
         label = label[1:-1].strip()
     if len(label) > 80 or _STOP_LABEL.fullmatch(label) is None:
         return None
-    return label if quoted or label.casefold() in _DEMO_STOP_NAMES else None
+    if quoted:return label
+    if not national_names:return label if label.casefold() in _LEGACY_STOP_NAMES else None
+    return label if _QUALIFIED_LABEL.search(label) is None else None
 
 
 def _ordinal(value):
@@ -155,7 +161,7 @@ def _select(items, target, starts_on, ends_on):
     return selected
 
 
-def select_lio_edit(trip, text, locale, request_id, *, starts_on, ends_on=None):
+def select_lio_edit(trip, text, locale, request_id, *, starts_on, ends_on=None,national_names=False):
     """Return an exact provisional change. This does not authorize publication."""
     match = match_edit(text)
     if match is None:
@@ -165,7 +171,7 @@ def select_lio_edit(trip, text, locale, request_id, *, starts_on, ends_on=None):
     document = json.loads(trip.content)
     interpretations = []
     for target, raw_replacement in _edit_parts(match):
-        replacement = _replacement_label(raw_replacement)
+        replacement = _replacement_label(raw_replacement,national_names=national_names)
         if target and replacement is not None:
             selected = _select(document['items'], target, starts_on, ends_on)
             interpretations.extend((item, replacement) for item in selected)

@@ -27,9 +27,10 @@ from .lio_planning_grounding import planning_withdrawn
 class LioEdit:
     matches = staticmethod(match_edit)
 
-    def __init__(self, context_publisher, confirmation):
+    def __init__(self, context_publisher, confirmation,*,source_window=False):
         self.context_publisher = context_publisher
         self.confirmation = confirmation
+        self.source_window=source_window
 
     def execute(self, worker, binding, state, original, text, locale, deadline):
         if planning_withdrawn(text):
@@ -52,7 +53,7 @@ class LioEdit:
         except (KeyError, ValueError) as error:
             raise ProviderUnknown('original Lio itinerary calendar unavailable') from error
         selection = select_lio_edit(context.trip, text, locale, 'lio-edit-' + binding.run_id,
-                                    starts_on=starts_on, ends_on=ends_on)
+                                    starts_on=starts_on, ends_on=ends_on,national_names=self.source_window)
         if selection.status == 'protected':
             return _answer(worker, binding, state, locale, '这项安排暂时不能改。', "I can't change this stop.")
         if selection.candidate is None:
@@ -68,7 +69,11 @@ class LioEdit:
             return (candidate == binding and expected == head and stored == original
                     and worker.message_context.active_original(binding) == original)
 
-        publisher = LioPlanPublisher(self.context_publisher, self.confirmation, original_needs, check_original)
+        publisher_class=LioPlanPublisher
+        if self.source_window:
+            from cj_draft.lio_plan import LioSourceWindowPublisher
+            publisher_class=LioSourceWindowPublisher
+        publisher = publisher_class(self.context_publisher, self.confirmation, original_needs, check_original)
         previous = worker.drafts
         worker.drafts = publisher
         try:

@@ -41,7 +41,7 @@ STANDALONE_QUESTION = re.compile(
     r'(?:你是谁|你能做什么|你有什么能力|(?:你的)?能力范围(?:是什么)?|'
     r'(?:在?北京\s*)?住[^。！？!?，,；;\n]{1,30}还是[^。！？!?，,；;\n]{1,30}|'
     r'(?:从)?[^。！？!?，,；;\n]{1,30}到[^。！？!?，,；;\n]{1,30}怎么走|'
-    r'who are you|what can you do)[?？]?', re.I)
+    r'我是谁|你了解我什么|who am i|what do you know about me|who are you|what can you do)[?？]?', re.I)
 DATES_UNDECIDED = re.compile(
     r'\b(?:dates? (?:are|is) undecided|travel dates? (?:are|is) unknown)\b|'
     r'\b(?:suggest|recommend|choose|pick|help me decide)\b[^.?!]{0,32}\bdates?\b|'

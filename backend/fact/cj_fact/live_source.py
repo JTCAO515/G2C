@@ -107,13 +107,13 @@ async def public_page(*,guard):
         status='unknown',reason='source_excerpts_only_dates_region_and_eligibility_not_verified')
 
 
-async def _weather_exchange(key,guard):
+async def _weather_exchange(key,guard,*,adcode='110000'):
     writer=None
     try:
         async with asyncio.timeout(20):
             reader,writer=await asyncio.open_connection('restapi.amap.com',443,ssl=tls(),server_hostname='restapi.amap.com',limit=16384)
             if guard() is not True:raise FactFailure('original_weather_authority_invalid')
-            target='/v3/weather/weatherInfo?'+urlencode(dict(key=key,city='110000',extensions='all',output='JSON'))
+            target='/v3/weather/weatherInfo?'+urlencode(dict(key=key,city=adcode,extensions='all',output='JSON'))
             # Use the existing narrow wire reader, without HTTPX's URL logging.
             # This request has no cookie, proxy, redirect, retry or ambient hook.
             writer.write(('GET '+target+' HTTP/1.1\r\nHost: restapi.amap.com\r\nAccept: application/json\r\nAccept-Encoding: identity\r\nConnection: close\r\n\r\n').encode('ascii'))
@@ -152,4 +152,30 @@ def weather(query,key,*,guard):
     return dict(source_url=WEATHER_URL,retrieved_at=datetime.now(timezone.utc).isoformat(),
         original_sha256=sha256(raw).hexdigest(),provider_reporttime=forecast.get('reporttime','UNKNOWN'),
         region_adcode='110000',calendar_timezone='Asia/Shanghai',forecasts=observed,
+        status='observed' if observed else 'unknown',reason='provider_forecast_not_future_guarantee',actual_cost_cny='UNKNOWN')
+
+
+def weather_for_adcode(query,key,*,guard):
+    """Original city-bound forecast; never substitutes another city's data."""
+    adcode=query.city.adcode
+    raw=asyncio.run(_weather_exchange(key,guard,adcode=adcode))
+    if key.encode() in raw:raise FactFailure('weather_secret_echo_rejected')
+    value=json.loads(raw.decode('utf8'),object_pairs_hook=reject_duplicates(FactFailure,'weather_duplicate_field'))
+    if key in json.dumps(value,ensure_ascii=False):raise FactFailure('weather_secret_echo_rejected')
+    if type(value) is not dict or value.get('status')!='1' or value.get('infocode')!='10000' or value.get('count')!='1':
+        raise FactFailure('weather_provider_result_unavailable')
+    forecasts=value.get('forecasts')
+    if type(forecasts) is not list or len(forecasts)!=1 or type(forecasts[0]) is not dict or forecasts[0].get('adcode')!=adcode:
+        raise FactFailure('weather_region_mismatch')
+    forecast=forecasts[0];casts=forecast.get('casts')
+    if type(casts) is not list or not 1<=len(casts)<=4:raise FactFailure('weather_forecast_invalid')
+    from datetime import date
+    observed=[]
+    for day in casts:
+        if type(day) is not dict or type(day.get('date')) is not str:raise FactFailure('weather_forecast_invalid')
+        actual=date.fromisoformat(day['date'])
+        if query.dates.start<=actual<=query.dates.end:observed.append(day)
+    return dict(source_url=WEATHER_URL,retrieved_at=datetime.now(timezone.utc).isoformat(),
+        original_sha256=sha256(raw).hexdigest(),provider_reporttime=forecast.get('reporttime','UNKNOWN'),
+        region_adcode=adcode,city_name=query.city.name,calendar_timezone=query.city.timezone,forecasts=observed,
         status='observed' if observed else 'unknown',reason='provider_forecast_not_future_guarantee',actual_cost_cny='UNKNOWN')

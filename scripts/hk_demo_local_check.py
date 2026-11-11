@@ -622,7 +622,7 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     assert [entry['status'] for entry in ready] == ['completed', 'completed']
     assert model.calls == 2 and all(entry['answer'] and entry['failure'] is None for entry in ready)
     assert prompts[0].endswith('Reply in Chinese.') and prompts[1].endswith('Reply in English.')
-    assert all(prompt.startswith('You are Lio, a lion-dance mascot') for prompt in prompts)
+    assert all(prompt.startswith('You are Lio, a Chinese xingshi (醒狮)') for prompt in prompts)
     assert all(set(entry) == {'message_id','text','answer','status','failure','activity','sources','trip','memory'} for entry in ready)
     assert api.get(timeline, params=dict(before='lio-second'), headers=owner).json()['messages'] == ready[:1]
     assert api.get(timeline, params=dict(before='first'), headers=owner).status_code == 400
@@ -1031,7 +1031,9 @@ def check_lio_short_planning(api, database, auth, actor, headers):
             send(f'lio-short-standalone-{index}', turn, **target)
             assert [item.status for item in worker.process()] == ['completed']
             entry = timeline(target)[-1]
-            assert (entry['answer'], entry['trip']) == (answer, None), entry
+            from cj_message.lio_context import self_description
+            expected=self_description(turn,'zh') or answer
+            assert (entry['answer'], entry['trip']) == (expected, None), entry
 
         for mid, opening, reply, locale in (('lio-dated-discussion', dated_opening, bare_date, 'zh'),
                                             ('lio-english-discussion', english, english_recap, 'en'),

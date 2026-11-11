@@ -46,10 +46,23 @@ def itinerary(fixed=None, *, overlap=False):
     ('把第二天下午换成「颐和园（北门）」。', 'zh', '颐和园（北门）'),
     ('Replace the afternoon of day 2 with “Museum of Arts and Design”.', 'en', 'Museum of Arts and Design'),
     ('把什刹海改成天坛', 'zh', '天坛'),
+    ('把第二天下午换成国家博物馆。', 'zh', '国家博物馆'),
+    ('把第二天下午换成上海博物馆。', 'zh', '上海博物馆'),
+    ('把第二天下午换成武侯祠。', 'zh', '武侯祠'),
+    ('把第二天下午换成兵马俑。', 'zh', '兵马俑'),
+    ('把第二天下午换成象鼻山。', 'zh', '象鼻山'),
+    ('把第二天下午换成广州塔。', 'zh', '广州塔'),
+    ('把第二天下午换成西湖。', 'zh', '西湖'),
+    ('Replace the afternoon of day 2 with Shanghai Museum.', 'en', 'Shanghai Museum'),
+    ('Replace the afternoon of day 2 with Wuhou Shrine.', 'en', 'Wuhou Shrine'),
+    ('Replace the afternoon of day 2 with Terracotta Army.', 'en', 'Terracotta Army'),
+    ('Replace the afternoon of day 2 with Elephant Trunk Hill.', 'en', 'Elephant Trunk Hill'),
+    ('Replace the afternoon of day 2 with Canton Tower.', 'en', 'Canton Tower'),
+    ('Replace the afternoon of day 2 with West Lake.', 'en', 'West Lake'),
 ])
 def test_edit_preserves_everything_outside_the_selected_stop(text, locale, replacement):
     trip, original = itinerary()
-    result = select_lio_edit(trip, text, locale, 'original-edit', starts_on=date(2026,11,11))
+    result = select_lio_edit(trip, text, locale, 'original-edit', starts_on=date(2026,11,11),national_names=True)
     assert result.status == 'preview'
     assert result.candidate.affected_ids == ('afternoon',)
     assert result.candidate.can_publish is False
@@ -71,6 +84,8 @@ def test_ambiguous_interval_and_non_edit_leave_no_candidate():
 
 
 @pytest.mark.parametrize('text,locale', [
+    ("Replace the afternoon of day 2 with Riverside Park but don't apply.", 'en'),
+    ('把第二天下午换成人民公园不要改。', 'zh'),
     ('Replace the afternoon of day 2 with Temple of Heaven, but do not change anything yet.', 'en'),
     ('Replace the afternoon of day 2 with Temple of Heaven only if it is open.', 'en'),
     ('把第二天下午换成颐和园，不过先别改。', 'zh'),
@@ -88,11 +103,11 @@ def test_ambiguous_interval_and_non_edit_leave_no_candidate():
     ('Replace the afternoon of day 2 with Temple of Heaven & Summer Palace.', 'en'),
     ('把第二天下午换成颐和园经我同意再执行。', 'zh'),
     ('把第二天下午换成「颐和园」经我同意再执行。', 'zh'),
-    ('把第二天下午换成国家博物馆。', 'zh'),
 ])
-def test_qualified_replacements_need_clarification(text, locale):
+@pytest.mark.parametrize('national_names',[False,True])
+def test_qualified_replacements_need_clarification(text, locale,national_names):
     trip, _ = itinerary()
-    result = select_lio_edit(trip, text, locale, 'original-edit', starts_on=date(2026,11,11))
+    result = select_lio_edit(trip, text, locale, 'original-edit', starts_on=date(2026,11,11),national_names=national_names)
     assert result.status == 'clarify' and result.candidate is None
 
 def test_missing_calendar_day_does_not_shift_an_edit_to_another_date():
@@ -147,3 +162,9 @@ class LioRelativeDayTest(unittest.TestCase):
                 missing = select_lio_edit(trip, text, locale, 'missing', **dict(dates, ends_on=date(2026, 11, 13)))
                 self.assertEqual(missing.status, 'clarify')
                 self.assertIsNone(missing.candidate)
+
+
+def test_frozen_legacy_names_keep_the_original_unquoted_negative():
+    trip,_=itinerary()
+    assert select_lio_edit(trip,'把第二天下午换成国家博物馆。','zh','legacy',starts_on=date(2026,11,11)).status=='clarify'
+    assert select_lio_edit(trip,'把第二天下午换成颐和园。','zh','legacy',starts_on=date(2026,11,11)).status=='preview'

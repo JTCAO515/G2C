@@ -125,6 +125,7 @@ class RunWorker:
         self.tools=tools
         self.place_sources=place_sources
         self.lio_original = lio_original
+        self.lio_city_context = None
         self.lio_planning = lio_planning
         self.lio_edit = lio_edit
         self.lio_memory = lio_memory
@@ -277,7 +278,7 @@ class RunWorker:
         yield from self._stream_source(binding,source,draft=draft)
 
     def _registered_stream(self,binding,key,registration,argument,*,progress=None,message_refs=()):
-        if self.memory_history and registration in ('model.answer','model.draft'):
+        if self.memory_history and registration in ('model.answer','model.draft','model.lio_intake.1'):
             messages,system,_=argument
             self._model_history(binding,messages,system,message_refs=message_refs)
         options={'reserve_final_model':True} if self._lio_active and registration.startswith('tool.') else {}
@@ -337,12 +338,16 @@ class RunWorker:
         try:
             messages = ([{'role': 'user', 'content': text}] if self.memory_run is None
                         else self.memory_run.messages(text))
+            planning_refs=()
+            if self._lio_active and self.lio_planning is not None:
+                messages,planning_refs=self.lio_planning.answer_context(binding,messages)
             sources=None
             structured=self.drafts.content_version=='structured.2' or self.place_sources is not None
             if structured:
                 if self.message_context is None:raise DraftRejected('canonical original message context required')
                 _,sources=self._step(binding,lambda:self.drafts.sources_for(binding),draft=True)
                 messages=self.drafts.model_messages(binding,text,sources,messages)
+            if planning_refs:self._model_history(binding,messages,self.drafts.system if structured else DRAFT_SYSTEM,message_refs=planning_refs)
             reply = ''.join(self._stream(binding, messages, system=self.drafts.system if structured else DRAFT_SYSTEM))
             if self.drafts.content_version == 'legacy':
                 def publish():
@@ -486,16 +491,21 @@ class RunWorker:
                 planning = self.lio_planning.execute(self, binding, state, text, original)
                 if planning is not None:
                     return self._finish(receipt, planning)
+                state=self.runs.snapshot(binding)
             inputs = ([{'role': 'user', 'content': text}] if self.memory_run is None
                       else self.memory_run.messages(text))
             if self.message_context is not None:
                 inputs=self.message_context.answer_messages(binding,inputs)
+            message_refs=()
+            if locale is not None and self.lio_planning is not None:
+                inputs,message_refs=self.lio_planning.answer_context(binding,inputs)
             if locale is None:
                 chunks = self._stream(binding, inputs) if self.tools is None else self.tools.answer(self, binding, inputs)
             elif self.tools is None:
                 chunks = self._stream(binding, inputs, system=answer_prompt(locale), answer=True)
             else:
-                chunks = self.tools.answer(self, binding, inputs, lio_locale=locale, lio_question_day=original.question_day)
+                chunks = self.tools.answer(self, binding, inputs, lio_locale=locale, lio_question_day=original.question_day,**({'message_refs':message_refs} if message_refs else {}),
+                                           **({'lio_city':self.lio_city_context} if self.lio_city_context is not None else {}))
             for chunk in chunks:
                 if isinstance(chunk, (LioCitation, LioToolProgress)):
                     state = self._event(binding, state, 'effect_committed', chunk.effect())

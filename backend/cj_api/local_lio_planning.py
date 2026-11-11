@@ -36,6 +36,15 @@ COMPACT_DRAFT = (
     'Add no other stops. Use short new stop labels. '
     'Return only the compact JSON object.'
 )
+NATIONAL_COMPACT_DRAFT = (
+    ' Cover each requested date and requested morning/afternoon/evening period. '
+    'An original fixed commitment covers only its actual period, not the whole date. '
+    'Suggest one concise stop per requested uncovered period; if no periods were requested, '
+    'use one afternoon stop per date, with an evening stop on the last date of a trip of three or more days. '
+    'For every new suggestion give known local date, start/end time and confirmed destination timezone; '
+    'keep utc_offset unknown. Never assert a booking or an observed source for a suggestion. '
+    'Use short labels in the question language and return only compact JSON.'
+)
 SYSTEM = (
     'Extract only information provided by the traveler for this trip. Return JSON with exactly '
     'city (an exact substring of the user text or null), continues_trip (boolean), and extraction. '
@@ -125,6 +134,9 @@ class LioPlanning:
         self.database = database
         self.plan_and_save = plan_and_save
 
+    def answer_context(self,binding,messages):
+        return messages,()
+
     def execute(self, worker, binding, state, text, original):
         if standalone_question(text):
             return None
@@ -162,10 +174,44 @@ class LioPlanning:
 
 
 class LioPlanSave:
-    def __init__(self, database, context_publisher, confirmation):
+    def __init__(self, database, context_publisher, confirmation,*,source_window=False):
         self.database = database
         self.context_publisher = context_publisher
         self.confirmation = confirmation
+        self.source_window=source_window
+
+    def supports_destination(self,binding,city):
+        from base64 import b64decode
+        from cj_trip.planning_context import read_current
+        from cj_message.lio_plan_needs import lio_needs_id
+        from cj_needs.contract_v1 import decode_snapshot
+        from .lio_city import _normalize
+        current=read_current(self.context_publisher.repository,needs_scope_for(binding.scope),
+                             lio_needs_id(binding.scope,binding.conversation_id))
+        if current is None:return True
+        try:
+            snapshot=decode_snapshot(b64decode(json.loads(current.needs_source)['snapshot'],validate=True))
+            destination=snapshot.fields.get('arrival',{}).get('place',{})
+        except (ValueError,KeyError) as error:
+            raise ProviderUnknown('original itinerary destination unavailable') from error
+        # A name is not an administrative identity: different provinces can
+        # contain identically named districts. Read the original resolved code
+        # bound to this exact captured NEEDS revision, including after edit/undo.
+        with self.database.connect(binding.scope) as db:
+            rows=db.execute('SELECT e.value FROM cj_message_needs_binding b '
+                'JOIN cj_run_event e ON (e.scope,e.run_id)=(b.message_scope,b.run_id) '
+                "WHERE b.message_scope=%s AND b.needs_scope=%s AND b.needs_id=%s AND b.needs_version=%s "
+                "AND e.kind='effect_committed' AND e.value LIKE %s",
+                (binding.scope,needs_scope_for(binding.scope),snapshot.needs_id,snapshot.version,'lio_city_resolution.1:%')).fetchall()
+        codes=set()
+        for raw, in rows:
+            value=json.loads(raw.removeprefix('lio_city_resolution.1:'))
+            if value['status']=='resolved' and len(value['candidates'])==1:codes.add(value['candidates'][0]['adcode'])
+        if codes:return codes=={city.adcode}
+        # Before this additive profile, only the frozen Beijing producer could
+        # create a Lio plan. Do not infer a code for any other legacy name.
+        return (destination.get('state')=='known' and _normalize(destination['value']) in ('北京','北京市','beijing')
+                and city.adcode=='110000')
 
     def __call__(self, worker, binding, state, details, locale):
         original = worker.messages.query(binding.message_id)
@@ -181,8 +227,12 @@ class LioPlanSave:
             return (candidate == binding and expected == head and stored == original
                     and worker.message_context.active_original(binding) == original)
 
-        publisher = LioPlanPublisher(self.context_publisher, self.confirmation,
-                                     original_needs, check_original, draft_guidance=COMPACT_DRAFT)
+        publisher_class=LioPlanPublisher
+        if self.source_window:
+            from cj_draft.lio_plan import LioSourceWindowPublisher
+            publisher_class=LioSourceWindowPublisher
+        publisher = publisher_class(self.context_publisher, self.confirmation,
+                                     original_needs, check_original, draft_guidance=NATIONAL_COMPACT_DRAFT if self.source_window else COMPACT_DRAFT)
         previous = worker.drafts
         worker.drafts = publisher
         try:

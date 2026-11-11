@@ -8,11 +8,12 @@ from starlette.concurrency import run_in_threadpool
 
 from cj_message.demo_dialogue import LIO_CHAT_PATTERN, LIO_VERSION, LIO_VERSION_V2, message_id
 from cj_message.domain import InvalidInput
-from cj_message.lio_context import SOURCE_EFFECT, TOOL_EFFECT, display_answer
+from cj_message.lio_context import SOURCE_EFFECT, TOOL_EFFECT, display_answer, self_description
 from cj_message.lio_plan_needs import BOUND_EFFECT, EDIT_BOUND_EFFECT
 from cj_run.core import Binding
 from cj_run.display_snapshot import SnapshotTooLarge
 
+from .lio_weather import CITY_EFFECT,reference as city_weather_reference
 from .history_routes import _query
 from .message_routes import BodyError, _read_body, _token, message_failure
 
@@ -48,6 +49,7 @@ def _message(item, state, *, expired=False, trip=None, memory=None):
                    else 'unavailable')
     sources = []
     amap_weather = False
+    weather_city = None
     activity = None
     if state is not None:
         for effect in state.effects:
@@ -56,15 +58,24 @@ def _message(item, state, *, expired=False, trip=None, memory=None):
                 sources.append(dict(title=citation['title'], url=citation['url'],
                                     observed_at=citation['observed_at']))
                 amap_weather |= citation['title'] in ('高德天气', 'Amap Weather') and citation['url'] is None
+            elif effect.startswith(CITY_EFFECT):
+                weather_city = json.loads(effect.removeprefix(CITY_EFFECT))
             elif status == 'answering' and effect.startswith(TOOL_EFFECT):
                 activity = json.loads(effect.removeprefix(TOOL_EFFECT))['activity']
     if amap_weather:
-        # The registered forecast is Amap's. This live Beijing forecast is a
-        # separate public reference with no recorded observation in this turn.
-        title = ('中国天气网 · 北京当前预报（参考）' if item.locale == 'zh'
-                 else 'Weather China · Current Beijing forecast (reference)')
-        sources.append(dict(title=title, url=BEIJING_PUBLIC_FORECAST, observed_at=None))
+        # Records predating CITY_EFFECT came from the frozen Beijing-only
+        # weather producer. New nationwide calls always carry an exact city.
+        url = BEIJING_PUBLIC_FORECAST if weather_city is None else city_weather_reference(weather_city['adcode'])
+        if url is not None:
+            name = ('北京' if item.locale == 'zh' else 'Beijing') if weather_city is None else weather_city['name']
+            title = ('中国天气网 · '+name+'当前预报（参考）' if item.locale == 'zh'
+                     else 'Weather China · Current '+name+' forecast (reference)')
+            sources.append(dict(title=title,url=url,observed_at=None))
     answer = display_answer(state.text, item.locale) if state is not None else ''
+    if status == 'completed' and answer is not None:
+        introduction = self_description(item.text, item.locale)
+        if introduction is not None:
+            answer = introduction
     if answer is None:
         if status == 'completed' and trip is None:
             status, failure = 'failed', 'unavailable'

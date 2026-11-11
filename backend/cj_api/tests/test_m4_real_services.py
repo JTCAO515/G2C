@@ -570,6 +570,41 @@ class Boundaries(unittest.TestCase):
         ordinary=tools._model_input(([dict(role='user',content='Synthetic draft')],'existing structured system',provider))
         self.assertNotIn('answer_format_profile',json.loads(ordinary.original_bytes))
 
+    def test_national_structured_intake_is_pinned_and_keeps_the_configured_ceiling(self):
+        from cj_api.local_app import ISSUER,scope_for
+        provider=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY,max_output_tokens=M4_REAL_OUTPUT_TOKENS),
+            self.budget,transport=httpx.MockTransport(lambda request:
+                self.sent.append(request) or httpx.Response(200,stream=httpx.ByteStream(sse().encode()))))
+        subject='m4-synthetic-national-intake';subjects=frozenset({subject})
+        tools=RealTools(RealServices(provider,KEY,subjects,demo_subjects=subjects,national_subjects=subjects))
+        prepared=tools.registrations['model.lio_intake.1'].prepare_input((
+            [dict(role='user',content='Plan a trip to Shanghai.')],'LIO-planning-intake.1 JSON extraction',provider))
+        self.assertEqual(json.loads(prepared.original_bytes)['structured_profile'],'LIO-planning-intake.1')
+        operation=SimpleNamespace(binding=SimpleNamespace(scope=scope_for(ISSUER,subject)),
+                                  command=SimpleNamespace(attempt_id='national-intake'))
+        self.assertTrue(''.join(prepared.bind_operation(operation,lambda:True)()))
+        body=json.loads(self.sent[0].content)
+        self.assertEqual(body['max_tokens'],M4_REAL_OUTPUT_TOKENS)
+        self.assertEqual(body['response_format'],{'type':'json_object'})
+        self.assertNotIn('tools',body)
+        self.assertEqual(self.budget.inspect()[0]['state'],'RECEIVED')
+        foreign=SimpleNamespace(binding=SimpleNamespace(scope=scope_for(ISSUER,'m4-synthetic-foreign')),
+                                command=SimpleNamespace(attempt_id='foreign-intake'))
+        with self.assertRaises(BudgetUnknown):prepared.bind_operation(foreign,lambda:True)
+        self.assertEqual(len(self.sent),1)
+
+    def test_national_tools_bind_actual_city_and_leave_the_legacy_query_unchanged(self):
+        from cj_api.lio_city import CityReference
+        from cj_api.lio_weather import decode_query as city_weather_query
+        city=CityReference('510100','成都市','四川省','成都市','city','Asia/Shanghai')
+        name,raw=canonical_tool('place_search',json.dumps(dict(keyword='公园',city='北京',page=1,page_size=1)),city=city)
+        self.assertEqual(place_query(raw).city,'510100')
+        _,raw=canonical_tool('weather',json.dumps(dict(start_date='2026-11-12',end_date='2026-11-12')),city=city)
+        self.assertEqual(city_weather_query(raw).city,city)
+        _,old=canonical_tool('weather',json.dumps(dict(start_date='2026-11-12',end_date='2026-11-12')))
+        self.assertEqual(json.loads(old)['version'],'FACT-query.1')
+        self.assertEqual(json.loads(old)['region'],'beijing')
+
     def test_lio_answer_never_presents_unconfirmed_preference_as_saved(self):
         from cj_message.lio_context import display_answer
 
