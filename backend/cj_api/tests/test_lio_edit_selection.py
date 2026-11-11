@@ -46,6 +46,19 @@ def itinerary(fixed=None, *, overlap=False):
     ('把第二天下午换成「颐和园（北门）」。', 'zh', '颐和园（北门）'),
     ('Replace the afternoon of day 2 with “Museum of Arts and Design”.', 'en', 'Museum of Arts and Design'),
     ('把什刹海改成天坛', 'zh', '天坛'),
+    ('把第二天下午换成国家博物馆。', 'zh', '国家博物馆'),
+    ('把第二天下午换成上海博物馆。', 'zh', '上海博物馆'),
+    ('把第二天下午换成武侯祠。', 'zh', '武侯祠'),
+    ('把第二天下午换成兵马俑。', 'zh', '兵马俑'),
+    ('把第二天下午换成象鼻山。', 'zh', '象鼻山'),
+    ('把第二天下午换成广州塔。', 'zh', '广州塔'),
+    ('把第二天下午换成西湖。', 'zh', '西湖'),
+    ('Replace the afternoon of day 2 with Shanghai Museum.', 'en', 'Shanghai Museum'),
+    ('Replace the afternoon of day 2 with Wuhou Shrine.', 'en', 'Wuhou Shrine'),
+    ('Replace the afternoon of day 2 with Terracotta Army.', 'en', 'Terracotta Army'),
+    ('Replace the afternoon of day 2 with Elephant Trunk Hill.', 'en', 'Elephant Trunk Hill'),
+    ('Replace the afternoon of day 2 with Canton Tower.', 'en', 'Canton Tower'),
+    ('Replace the afternoon of day 2 with West Lake.', 'en', 'West Lake'),
 ])
 def test_edit_preserves_everything_outside_the_selected_stop(text, locale, replacement):
     trip, original = itinerary()
@@ -88,7 +101,6 @@ def test_ambiguous_interval_and_non_edit_leave_no_candidate():
     ('Replace the afternoon of day 2 with Temple of Heaven & Summer Palace.', 'en'),
     ('把第二天下午换成颐和园经我同意再执行。', 'zh'),
     ('把第二天下午换成「颐和园」经我同意再执行。', 'zh'),
-    ('把第二天下午换成国家博物馆。', 'zh'),
 ])
 def test_qualified_replacements_need_clarification(text, locale):
     trip, _ = itinerary()

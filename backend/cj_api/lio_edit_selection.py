@@ -21,13 +21,11 @@ _KEEP_OTHER_STOPS = re.compile(
     r'(?:other (?:plans|stops|arrangements)|rest)(?:\s+(?:unchanged|the same))?$', re.I)
 _STOP_LABEL = re.compile(r"[^\W_]+(?:[ '’&·()（）-]+[^\W_]+)*[)）]?")
 _STOP_QUOTES = {'"': '"', '“': '”', '「': '」'}
-# Explicit aliases for the admitted Beijing Demo. Other names can be supplied
-# as one quoted label, without surrounding instructions.
-_DEMO_STOP_NAMES = frozenset({
-    '天坛', '颐和园', '故宫', '景山公园',
-    'temple of heaven', 'the temple of heaven', 'summer palace', 'the summer palace',
-    'forbidden city', 'the forbidden city', 'palace museum', 'the palace museum', 'jingshan park',
-})
+# Unquoted names may come from any destination. Multi-place, conditional or
+# deferred commands still require clarification; quoting makes a label literal.
+_QUALIFIED_LABEL = re.compile(
+    r"\b(?:and|or|only|if|unless|provided|subject|approval|confirm|wait|yet|please|not|do)\b"
+    r"|[，,；;、/&]|不过|如果|但是|但|或者|或|以及|和|与|先别|先不|缓一缓|问问我|经我同意|再执行", re.I)
 _CHINESE_SLOT = re.compile(r'(?:第([一二三四五六七八九十]|[1-9][0-9]?)天|(最后一天))\s*(上午|下午|晚上)')
 _ENGLISH_SLOT = re.compile(r'(?:the\s+)?(?:day\s+([1-9][0-9]?)|(first|second|third|last|final)(?:\s+day)?)'
                            r'(?:\s+in\s+the)?\s+(morning|afternoon|evening)', re.I)
@@ -74,7 +72,7 @@ def _replacement_label(raw):
         label = label[1:-1].strip()
     if len(label) > 80 or _STOP_LABEL.fullmatch(label) is None:
         return None
-    return label if quoted or label.casefold() in _DEMO_STOP_NAMES else None
+    return label if quoted or _QUALIFIED_LABEL.search(label) is None else None
 
 
 def _ordinal(value):

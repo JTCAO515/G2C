@@ -236,13 +236,15 @@ class RealServices:
     amap_key:str
     subjects:frozenset
     demo_subjects:frozenset=frozenset()
+    national_subjects:frozenset=frozenset()
 
     def __post_init__(self):
         if (type(self.model) is not MeteredDashScopeProvider or type(self.amap_key) is not str
                 or re.fullmatch(r'[A-Za-z0-9_-]{16,256}',self.amap_key) is None
                 or type(self.subjects) is not frozenset or not self.subjects
                 or any(type(s) is not str or re.fullmatch(r'm4-synthetic-[a-z0-9-]{1,80}',s) is None for s in self.subjects)
-                or type(self.demo_subjects) is not frozenset or not self.demo_subjects<=self.subjects):
+                or type(self.demo_subjects) is not frozenset or not self.demo_subjects<=self.subjects
+                or type(self.national_subjects) is not frozenset or not self.national_subjects<=self.demo_subjects):
             raise ValueError('explicit M4 synthetic real service configuration required')
 
     def require_scope(self,scope):
@@ -308,8 +310,49 @@ class RealTools:
         self.native_tools=[t for t in TOOLS if t['function']['name'] in allowed_native]
         model=Registration('model',self._model_input)
         self.registrations=MappingProxyType({'model.answer':model,'model.draft':model,'model.tool_turn':model,
+            'tool.lio_city.1':Registration('tool',self._city_input),
             'memory.lio_extract.1':Registration('memory',self._lio_memory_input),
             **{'tool.'+name:Registration('tool',lambda argument,name=name:self._tool_input(name,argument)) for name in {NATIVE_REGISTRATION[n] for n in allowed_native}}})
+
+    def resolve_city(self,worker,binding,query):
+        raw=''.join(worker._registered_stream(binding,'tool.lio_city.0','tool.lio_city.1',query))
+        return json.loads(raw)
+
+    def _city_input(self,query):
+        from .lio_city import ENDPOINT,PARAMETERS,fetch_catalog,resolve
+        if type(query) is not dict or not {'query','normalized_name','province'}<=query.keys():
+            raise ProviderUnknown('bound administrative query required')
+        raw=canonical(dict(version='LIO-city-query.1',name=query['query'],
+                           province=query['province'],normalized_name=query['normalized_name'],
+                           endpoint=ENDPOINT,parameters=PARAMETERS))
+        frozen=json.loads(raw);metadata={};budget=self.services.model.authorization
+        def bind(operation,guard):
+            from .local_app import ISSUER,scope_for
+            admitted_scopes={scope_for(ISSUER,s) for s in self.services.national_subjects}
+            if operation.binding.scope not in admitted_scopes:
+                raise BudgetUnknown('nationwide resolution is not enabled for this scope')
+            def admitted():
+                self.services.require_scope(operation.binding.scope)
+                return guard()
+            def invoke():
+                self.services.require_scope(operation.binding.scope)
+                budget.begin(operation.command.attempt_id,'place',raw)
+                try:
+                    source=fetch_catalog(self.services.amap_key,admitted)
+                    result=resolve(source,frozen['name'],frozen['province'],frozen['normalized_name'])
+                    result['source']['observed_at']=datetime.now(timezone.utc).isoformat()
+                    encoded=canonical(result)
+                    metadata.update(endpoint=ENDPOINT,region='China',raw_response_sha256=hashlib.sha256(source).hexdigest(),
+                                    response_sha256=hashlib.sha256(encoded).hexdigest(),result_status=result['status'],actual_cost_cny='UNKNOWN')
+                    budget.finish(operation.command.attempt_id,metadata)
+                    if self.tool_evidence is not None:
+                        if admitted() is not True:raise BudgetUnknown('city source authority changed')
+                        self.tool_evidence.record(operation,'city_resolve',encoded,metadata)
+                    yield encoded.decode()
+                except (httpx.HTTPError,OSError,ValueError,UnicodeError):
+                    raise BudgetUnknown('original administrative resolution unavailable') from None
+            return invoke
+        return InvocationInput(raw,None,bind,_receipt(metadata))
 
     def _lio_memory_input(self, argument):
         return self._model_input(argument, release_after_send=True)

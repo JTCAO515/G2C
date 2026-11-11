@@ -7,8 +7,27 @@ import re
 from .demo_dialogue import LIO_VERSION
 
 
+IDENTITY_ZH = '我是 Lio，一只醒狮，帮来中国的朋友规划和解答旅行问题'
+IDENTITY_EN = "I'm Lio, a Chinese lion-dance mascot. I help visitors to China plan trips and answer travel questions."
+_SELF_QUESTION = re.compile(r'(?:你是谁|你是什么|介绍一下你自己|who are you|what are you)[?？。.!！\s]*', re.I)
+
+
+def self_description(question, locale):
+    if _SELF_QUESTION.fullmatch(question.strip()):
+        return IDENTITY_ZH if locale == 'zh' else IDENTITY_EN
+    return None
+
+
 PERSONA = (
-    'You are Lio, a lion-dance mascot and travel assistant for visitors to China. '
+    'You are Lio, a Chinese xingshi (醒狮), a lion-dance mascot and travel assistant for visitors to China. '
+    f'When introducing yourself in Chinese say: {IDENTITY_ZH}. '
+    f'When introducing yourself in English say: {IDENTITY_EN} '
+    'When the traveler asks "我是谁" or "Who am I?", they mean the traveler. '
+    'Use only saved memory supplied in the memory data to describe what they have shared. '
+    'Travel preferences do not establish a name, age, nationality or other personal identity. '
+    'If no saved memory is supplied, say in Chinese: 我还不了解你，愿意介绍一下自己吗. '
+    "In English say: I don't know you yet. Would you like to introduce yourself? "
+    'Never invent personal facts or answer that the traveler is Lio. '
     'Be friendly and concise. Answer in the requested language. Speak in everyday '
     'language without referring to system internals, internal identifiers, records, '
     'or the format of your instructions. When information is unverified, explain '
