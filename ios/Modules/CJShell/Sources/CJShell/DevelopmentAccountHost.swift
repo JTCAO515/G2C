@@ -31,6 +31,7 @@ public enum DevelopmentAccountState: Equatable, Sendable {
     @ObservationIgnored private let session: SessionLifecycle
     @ObservationIgnored private let material: (String) throws -> SessionMaterial
     @ObservationIgnored private let verify: (SessionMaterial) async -> DevelopmentSessionCheck
+    @ObservationIgnored private let refresh: ((SessionMaterial) async throws -> SessionMaterial?)?
     @ObservationIgnored private let activate: (SessionMaterial, SessionLifecycle, SessionOperation) throws -> Void
     @ObservationIgnored private let invalidate: () -> Void
     @ObservationIgnored private let clearOffline: (() throws -> Void)?
@@ -40,10 +41,15 @@ public enum DevelopmentAccountState: Equatable, Sendable {
     @ObservationIgnored private var request = UUID()
     @ObservationIgnored private var task: Task<Void, Never>?
     @ObservationIgnored private var active: (SessionMaterial, SessionOperation)?
+    @ObservationIgnored private var resuming: (material: SessionMaterial, operation: SessionOperation, generation: ShellGeneration, save: Bool)?
+
+    /// A foreground check is still the same sign-in, not a new login attempt.
+    public var isResuming: Bool { state == .paused || resuming?.generation == shell.generation }
 
     public init(shell: ShellState, choices: [DevelopmentAccountChoice], persistence: any SessionPersistence, demoMode: Bool = false,
                 material: @escaping (String) throws -> SessionMaterial,
                 verify: @escaping (SessionMaterial) async -> DevelopmentSessionCheck,
+                refresh: ((SessionMaterial) async throws -> SessionMaterial?)? = nil,
                 activate: @escaping (SessionMaterial, SessionLifecycle, SessionOperation) throws -> Void,
                 invalidate: @escaping () -> Void,
                 clearOffline: (() throws -> Void)? = nil,
@@ -53,6 +59,7 @@ public enum DevelopmentAccountState: Equatable, Sendable {
         self.shell = shell; self.choices = choices; self.demoMode = demoMode
         self.session = SessionLifecycle(persistence: persistence, restorePolicy: .userInitiatedOnly)
         self.material = material; self.verify = verify; self.activate = activate; self.invalidate = invalidate
+        self.refresh = refresh
         self.clearOffline = clearOffline; self.serverRejected = serverRejected; self.identityWillChange = identityWillChange; self.rejectedContext = rejectedContext
     }
 
@@ -62,6 +69,7 @@ public enum DevelopmentAccountState: Equatable, Sendable {
     private func begin(cancelTask: Bool = true, cleanup: Bool = false) -> (UUID, ShellGeneration)? {
         let id = UUID(); request = id
         active = nil
+        resuming = nil
         let old = task; task = nil; if cancelTask { old?.cancel() }
         guard request == id else { return nil }
         let generation = cleanup ? shell.retireBusinessForCleanup() : shell.invalidateIdentity()
@@ -178,6 +186,7 @@ public enum DevelopmentAccountState: Equatable, Sendable {
                 return
             }
             guard current(id, generation, operation) else { return }
+            if demoMode { resuming = (candidate, operation, generation, false) }
             start(candidate, operation: operation, id: id, generation: generation, save: false)
         } catch {
             guard request == id, shell.generation == generation else { return }
@@ -212,20 +221,52 @@ public enum DevelopmentAccountState: Equatable, Sendable {
 
     /// Backgrounding fences visible data; it never clears the Keychain credential.
     public func suspend() {
-        guard active != nil || state == .checking else { return }
-        let previous = active
+        guard active != nil || state == .checking || isResuming else { return }
+        let previous = active.map { ($0.0, $0.1, false) } ?? resuming.flatMap { candidate in
+            candidate.generation == shell.generation ? (candidate.material, candidate.operation, candidate.save) : nil
+        }
         guard begin() != nil else { return }
         if let previous, session.isCurrent(previous.1) {
-            active = previous
+            resuming = (previous.0, previous.1, shell.generation, previous.2)
             state = .paused
         } else { state = .signedOut }
     }
 
     /// Revalidate only the already-active in-memory session, never load Keychain automatically.
     public func resume() {
-        guard state == .paused, let previous = active, session.isCurrent(previous.1),
-              let (id, generation) = begin() else { return }
-        start(previous.0, operation: previous.1, id: id, generation: generation, save: false)
+        guard state == .paused || (state == .networkUnknown && isResuming) else { return }
+        let previous = active.map { ($0.0, $0.1, false) } ?? resuming.map { ($0.material, $0.operation, $0.save) }
+        guard let previous, session.isCurrent(previous.1), let (id, generation) = begin() else { return }
+        resuming = (previous.0, previous.1, generation, previous.2)
+        guard demoMode, !previous.2, let refresh else {
+            start(previous.0, operation: previous.1, id: id, generation: generation, save: previous.2)
+            return
+        }
+        state = .checking
+        task = Task { [weak self] in
+            guard let self else { return }
+            do {
+                let renewed = try await refresh(previous.0)
+                guard !Task.isCancelled, self.current(id, generation, previous.1) else { return }
+                if let renewed {
+                    let operation = try self.session.beginTrustedSDKSave()
+                    self.resuming = (renewed, operation, generation, true)
+                    self.start(renewed, operation: operation, id: id, generation: generation, save: true)
+                } else {
+                    self.start(previous.0, operation: previous.1, id: id, generation: generation, save: false)
+                }
+            } catch {
+                guard !Task.isCancelled, self.current(id, generation, previous.1) else { return }
+                switch error as? DemoAccountExchangeFailure {
+                case .expired: _ = self.settleDemoDenial(.expired)
+                case .rejected: _ = self.settleDemoDenial(.serverRejected)
+                default:
+                    // A failed renewal is not sign-out. The unchanged credential
+                    // still requires ordinary server verification before use.
+                    self.start(previous.0, operation: previous.1, id: id, generation: generation, save: false)
+                }
+            }
+        }
     }
 
     private func start(_ candidate: SessionMaterial, operation: SessionOperation,
@@ -272,7 +313,10 @@ public enum DevelopmentAccountState: Equatable, Sendable {
                 self.session.noteNetworkUnknown()
                 self.state = .networkUnknown
             }
-            if self.request == id { self.task = nil }
+            if self.request == id {
+                self.task = nil
+                if result != .networkUnknown { self.resuming = nil }
+            }
         }
     }
 }

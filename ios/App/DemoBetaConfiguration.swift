@@ -4,9 +4,10 @@ import Foundation
 enum DemoBetaConfiguration {
     static let endpoint = URL(string: "https://api-beta.go2china.space")!
     static let bundleID = "space.go2china.app"
-    static let inviteVersion = "DEMO-invite-session.1"
-    static let invitePath = "/v1/demo-invite-sessions"
-    static let maximumSessionDuration: TimeInterval = 2 * 60 * 60
+    static let inviteVersion = "DEMO-invite-session.2"
+    static let invitePath = "/v2/demo-invite-sessions"
+    static let maximumSessionDuration: TimeInterval = 7 * 24 * 60 * 60
+    static let renewalWindow: TimeInterval = 24 * 60 * 60
 
     enum Failure: Error, Equatable {
         case invalidInput, inviteDenied, unavailable, invalidResponse, expired
@@ -21,11 +22,27 @@ enum DemoBetaConfiguration {
         return request
     }
 
+    static func renewalRequest(grant: DemoInviteGrant, now: Date) throws -> URLRequest? {
+        try grant.validate(now: now)
+        guard let expiry = grant.expiry, expiry.timeIntervalSince(now) <= renewalWindow else { return nil }
+        var request = URLRequest(url: endpoint.appending(path: "/v2/demo-session-renewals"))
+        request.httpMethod = "POST"
+        request.setValue("Bearer " + grant.access_token, forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.httpBody = try JSONEncoder().encode(["version": "DEMO-session-renewal.1"])
+        return request
+    }
+
     static func verifyInviteResponse(_ bytes: Data, status: Int, contentType: String?, now: Date) throws -> DemoInviteGrant {
         guard bytes.count <= 65536, contentType?.split(separator: ";").first?.lowercased() == "application/json" else {
             throw Failure.invalidResponse
         }
-        if status == 200 { return try DemoInviteGrant.decode(bytes, now: now) }
+        if status == 200 {
+            let grant = try DemoInviteGrant.decode(bytes, now: now)
+            guard grant.version == inviteVersion else { throw Failure.invalidResponse }
+            return grant
+        }
         struct Envelope: Decodable {
             struct Detail: Decodable { let code: String }
             let request_id: String
@@ -37,6 +54,30 @@ enum DemoBetaConfiguration {
         case (401, "DEMO_INVITE_DENIED"): throw Failure.inviteDenied
         case (400, "INVALID_INPUT"): throw Failure.invalidInput
         case (503, "DEMO_LOGIN_UNAVAILABLE"): throw Failure.unavailable
+        default: throw Failure.invalidResponse
+        }
+    }
+
+    static func verifyRenewalResponse(_ bytes: Data, status: Int, contentType: String?,
+                                      previous: DemoInviteSession, now: Date) throws -> DemoInviteSession {
+        guard bytes.count <= 65536, contentType?.split(separator: ";").first?.lowercased() == "application/json" else {
+            throw Failure.invalidResponse
+        }
+        if status == 200 {
+            let grant = try DemoInviteGrant.decode(bytes, now: now)
+            guard grant.version == inviteVersion, grant.subject == previous.grant.subject else { throw Failure.invalidResponse }
+            return DemoInviteSession(grant: grant, composition: previous.composition)
+        }
+        struct Envelope: Decodable {
+            struct Detail: Decodable { let code: String }
+            let request_id: String
+            let error: Detail
+        }
+        guard let envelope = try? JSONDecoder().decode(Envelope.self, from: bytes),
+              UUID(uuidString: envelope.request_id) != nil, !envelope.error.code.isEmpty else { throw Failure.invalidResponse }
+        switch status {
+        case 401: throw Failure.inviteDenied
+        case 503: throw Failure.unavailable
         default: throw Failure.invalidResponse
         }
     }
@@ -155,7 +196,13 @@ struct DemoInviteGrant: Codable, CustomStringConvertible, CustomDebugStringConve
     func validate(now: Date? = nil) throws {
         let prefix = "m4-synthetic-demo-"
         let identifier = subject.utf8.dropFirst(prefix.utf8.count)
-        guard version == DemoBetaConfiguration.inviteVersion, subject.hasPrefix(prefix), identifier.count == 12,
+        let maximum: TimeInterval
+        switch version {
+        case "DEMO-invite-session.1": maximum = 2 * 60 * 60
+        case DemoBetaConfiguration.inviteVersion: maximum = DemoBetaConfiguration.maximumSessionDuration
+        default: throw DemoBetaConfiguration.Failure.invalidResponse
+        }
+        guard subject.hasPrefix(prefix), identifier.count == 12,
               identifier.allSatisfy({ (48...57).contains($0) || (97...122).contains($0) }),
               let claims = DevelopmentBearerClaims.read(access_token),
               claims.subject == subject, let expiration = claims.expiration, let expiry,
@@ -163,7 +210,7 @@ struct DemoInviteGrant: Codable, CustomStringConvertible, CustomDebugStringConve
             throw DemoBetaConfiguration.Failure.invalidResponse
         }
         if let now {
-            guard expiry.timeIntervalSince(now) <= DemoBetaConfiguration.maximumSessionDuration else {
+            guard expiry.timeIntervalSince(now) <= maximum else {
                 throw DemoBetaConfiguration.Failure.invalidResponse
             }
             guard expiry > now else { throw DemoBetaConfiguration.Failure.expired }
