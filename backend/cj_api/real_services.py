@@ -328,6 +328,7 @@ class RealTools:
             'model.lio_intake.3':Registration('model',self._lio_intake_current_input),
             'model.lio_intake.4':Registration('model',self._lio_intake_modes_input),
             'model.lio_intake.5':Registration('model',self._lio_intake_start_input),
+            'model.lio_intake.6':Registration('model',self._lio_intake_flat_input),
             'tool.lio_city.1':Registration('tool',self._city_input),
             'memory.lio_extract.1':Registration('memory',self._lio_memory_input),
             **{'tool.'+name:Registration('tool',lambda argument,name=name:self._tool_input(name,argument)) for name in {NATIVE_REGISTRATION[n] for n in allowed_native}}})
@@ -389,12 +390,15 @@ class RealTools:
     def _lio_intake_start_input(self,argument):
         return self._model_input(argument,national_intake=True,intake_profile='LIO-planning-intake.5')
 
+    def _lio_intake_flat_input(self,argument):
+        return self._model_input(argument,national_intake=True,intake_profile='LIO-planning-intake.6')
+
     def _lio_memory_input(self, argument):
         return self._model_input(argument, release_after_send=True)
 
     def _model_input(self,argument,*,release_after_send=False,national_intake=False,intake_profile='LIO-planning-intake.1'):
         native_turn = type(argument) is ModelInput
-        indexed=intake_profile in ('LIO-planning-intake.3','LIO-planning-intake.4','LIO-planning-intake.5')
+        indexed=intake_profile in ('LIO-planning-intake.3','LIO-planning-intake.4','LIO-planning-intake.5','LIO-planning-intake.6')
         if indexed:
             messages,system,provider,source_index=argument
             native_reply=None;final_answer=False;turn_profile=M4_NATIVE_TURN_PROFILE_V2
@@ -413,7 +417,8 @@ class RealTools:
         from cj_agent.lio_intake_current_schema import response_format_sha256
         from cj_agent.lio_intake_modes_schema import response_format_sha256 as modes_sha256
         from cj_agent.lio_intake_start_schema import response_format_sha256 as start_sha256
-        indexed_sha=(start_sha256 if intake_profile=='LIO-planning-intake.5' else
+        from cj_agent.lio_intake_flat_schema import response_format_sha256 as flat_sha256
+        indexed_sha=(flat_sha256 if intake_profile=='LIO-planning-intake.6' else start_sha256 if intake_profile=='LIO-planning-intake.5' else
                      modes_sha256 if intake_profile=='LIO-planning-intake.4' else response_format_sha256)
         raw=canonical(dict(messages=messages,system=system,endpoint=M4_BASE,model=M4_MODEL,synthetic_only=True,
                            native_tools=(self.national_tools if argument.national else self.native_tools) if native_turn else None,

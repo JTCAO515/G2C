@@ -676,6 +676,27 @@ class Boundaries(unittest.TestCase):
         self.assertLessEqual(len(self.sent[0].content),32768)
         self.assertEqual(self.budget.inspect()[0]['state'],'RECEIVED')
 
+    def test_flat_profile_keeps_one_registered_model_attempt_and_full_input_bound(self):
+        from cj_agent.lio_intake_flat_schema import PROFILE,response_format,response_format_sha256
+        from cj_api.local_app import ISSUER,scope_for
+        from cj_api.local_lio_national import intake_prompt
+        provider=self.provider(sse());subjects=frozenset({'m4-synthetic-intake-flat'})
+        tools=RealTools(RealServices(provider,KEY,subjects,demo_subjects=subjects,national_subjects=subjects))
+        prepared=tools.registrations['model.lio_intake.6'].prepare_input((
+            [dict(role='user',content='Stored memory data: '+'m'*1000),dict(role='user',content='x'*12000)],
+            intake_prompt('en',(SimpleNamespace(text='x'*12000,question_day=date(2026,11,12)),)),provider,0))
+        inputs=json.loads(prepared.original_bytes)
+        self.assertEqual(inputs['structured_profile'],PROFILE)
+        self.assertEqual(inputs['response_format_sha256'],response_format_sha256(0))
+        operation=SimpleNamespace(binding=SimpleNamespace(scope=scope_for(ISSUER,next(iter(subjects)))),
+                                  command=SimpleNamespace(attempt_id='flat-intake'))
+        self.assertTrue(''.join(prepared.bind_operation(operation,lambda:True)()))
+        wire=json.loads(self.sent[0].content)
+        self.assertEqual(wire['response_format'],response_format(0))
+        self.assertLessEqual(len(self.sent[0].content),32768)
+        self.assertEqual(len(self.sent),1)
+        self.assertEqual(self.budget.inspect()[0]['state'],'RECEIVED')
+
     def test_national_tools_bind_actual_city_and_leave_the_legacy_query_unchanged(self):
         from cj_api.lio_city import CityReference
         from cj_api.lio_weather import decode_query as city_weather_query
