@@ -1,7 +1,7 @@
 """Unconfirmed extraction data, separate from manual NEEDS revisions and Memory."""
+from cj_strict_json import compact
 import base64
 from hashlib import sha256
-import json
 import re
 
 from .domain import InvalidInput, decode, exact, text, validate_fields
@@ -17,7 +17,7 @@ QUESTIONS={
 
 
 def encode(value):
-    return json.dumps(value,ensure_ascii=False,separators=(',',':'),allow_nan=False).encode('utf8')
+    return compact(value)
 
 
 def preview(raw, *, message_id, run_id, source_text):

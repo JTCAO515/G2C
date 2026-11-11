@@ -1,5 +1,5 @@
 """Host-only protected locator; no diagnostic metadata is accepted from the client."""
-import json
+from cj_strict_json import compact
 from fastapi import Request
 from fastapi.responses import Response
 from starlette.concurrency import run_in_threadpool
@@ -19,7 +19,7 @@ def register_feedback_diagnostic_routes(app,reader):
             return _error(request,400,'INVALID_INPUT','input','failed','do_not_retry')
         try:
             raw=await run_in_threadpool(reader.read,token,query['action_id'],
-                lambda value:json.dumps(dict(request_id=request.state.request_id,**value),ensure_ascii=True,separators=(',',':')).encode('ascii'))
+                lambda value:compact(dict(request_id=request.state.request_id,**value), ensure_ascii=True, allow_nan=True))
             return Response(raw,media_type='application/json')
         except Exception:
             return _error(request,503,'FEEDBACK_DIAGNOSTIC_UNAVAILABLE','dependency','unknown','retry_safe_read')

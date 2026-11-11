@@ -110,7 +110,7 @@ public struct MemoryErasureOriginal: Sendable {
          pendingStore: MemoryErasurePendingStore, interceptedTransport: any ClientTransport) {
         self.endpoint = endpoint; self.credentials = credentials; self.currentBinding = currentBinding
         self.session = session; operation = sessionOperation; store = pendingStore
-        factory = { ErasureInterceptedTransport(underlying: interceptedTransport, validate: $0) }
+        factory = { MemoryInterceptedTransport(underlying: interceptedTransport, validate: $0) }
     }
     public func invalidate() { generation = UUID(); progressReads = [:]; consumedReads = [:] }
     private func check(_ scope: ErasureScope) throws {
@@ -298,15 +298,4 @@ private func erasureHTTPError(_ bytes: Data, trace: String, status: Int) throws 
     let code = try historyString(fields["code"], limit: 96)
     guard code.utf8.allSatisfy({ (65...90).contains($0) || (48...57).contains($0) || $0 == 95 }) else { throw MemoryFailure.invalidResponse }
     return status == 503 ? .exchangeUnknown : .rejected(status, code)
-}
-private struct ErasureInterceptedTransport: ClientTransport {
-    let underlying: any ClientTransport
-    let validate: @MainActor @Sendable () throws -> Void
-    func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
-        let bytes: Data?
-        if let body { bytes = try await Data(collecting: body, upTo: 32768) } else { bytes = nil }
-        try await validate(); try Task.checkCancellation()
-        let result = try await underlying.send(request, body: bytes.map(HTTPBody.init), baseURL: baseURL, operationID: operationID)
-        try await validate(); try Task.checkCancellation(); return result
-    }
 }

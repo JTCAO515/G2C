@@ -2,9 +2,9 @@
 from copy import deepcopy
 from hashlib import sha256
 import json
-from .domain import Trip,Proposal,ProposalDetail,Denied,Conflict,packed
+from .domain import Proposal,ProposalDetail,Denied,Conflict,packed
 from .manual_needs import NeedsEdit,prepare
-from .manual_storage import PreparedManual
+from .manual_storage import PreparedManual,_record
 from cj_needs.domain import validate_fields
 from cj_feasibility.validator import Candidate
 from cj_feasibility.proposed import evaluate
@@ -137,11 +137,7 @@ class NeedsEdits:
                     (repository.scope,origin['needs_scope'],origin['needs_id']))
         if cur.fetchone()!=(trip.trip_id,trip.version):raise Conflict('edit the current explicitly selected Trip or select a new plan')
 
-    @staticmethod
-    def _trip(cur,repository,trip_id):
-        cur.execute('SELECT version,content FROM cj_trip_record WHERE scope=%s AND trip_id=%s',(repository.scope,trip_id));row=cur.fetchone()
-        if row is None:raise Denied('original Trip unavailable')
-        return Trip(trip_id,row[0],repository._content(bytes(row[1])))
+    _trip=staticmethod(_record)
     @staticmethod
     def _origin(cur,repository,trip):
         from .needs_lineage import current_origin

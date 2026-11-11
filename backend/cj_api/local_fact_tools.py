@@ -1,4 +1,5 @@
 """FACT's local profile reuses the registered tool loop and its one Meter."""
+from cj_strict_json import compact
 import base64
 import json
 import re
@@ -23,10 +24,9 @@ class LocalFactTools(LocalTools):
         def fact_input(argument):
             try: query=decode_query(argument.original_query,evaluated_at=self.fact.clock())
             except FactFailure: raise ValueError('FACT query unavailable') from None
-            original=json.dumps(dict(version='FACT-tool-input.1',request_ref=argument.request_ref,
+            original=compact(dict(version='FACT-tool-input.1',request_ref=argument.request_ref,
                 prepared_at=stamp(query.evaluated_at),
-                original_query_base64=base64.b64encode(argument.original_query).decode('ascii')),
-                separators=(',',':')).encode('utf8')
+                original_query_base64=base64.b64encode(argument.original_query).decode('ascii')), ensure_ascii=True, allow_nan=True)
             def materialize():
                 invoke=self.fact.prepare_call(query,argument.request_ref)
                 def stream():

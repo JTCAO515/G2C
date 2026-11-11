@@ -1,0 +1,56 @@
+{
+  "version": "G2C-dialogue-release-index.1",
+  "active": {
+    "scorer": "G2C-dialogue-score.2",
+    "dataset": "G2C-dialogue-cases.2",
+    "contract": "G2C-dialogue-task-contract.2",
+    "files": {
+      "score_v2.py": "015fa9f21b418fe49a5ac07a5fb3027e0422620a6616029f2ba6438bfa1e9322",
+      "cases.v2.json": "9d4376ba7512d6f3c0741036ae1bd0dda99752bbc9f8b8fb8dd7025c61a530ec",
+      "examples.v2.json": "567b103f5c6f43c22ba8f0074974edc387791beef856fa6a8cf7e55f065bfd03",
+      "examples_v2.py": "bf8b7d4b42506dfdef5eced04364892100ca1b8dca4d89e70820342e6adba6e2",
+      "lio_probe.py": "c3624246ac8cf4337904ed42499559fffc474b5af14d36a9f072097b412087f9"
+    },
+    "planned_cells": {
+      "development": 12,
+      "validation": 8
+    },
+    "commit_pin": "consumer must additionally freeze the reviewed repository commit"
+  },
+  "historical": {
+    "scorer": "G2C-dialogue-score.1",
+    "dataset": "G2C-dialogue-cases.1",
+    "status": "superseded_by_v2_for_current_Lio; original records and denominators retained",
+    "files": {
+      "score.py": "08dcdb1624790f735ffcb1c6db5d6f47b75ef2a28d02a20a31313256380f3adf",
+      "cases.v1.json": "8e3b9c2d410e569de520243540e364d7fed6033087de8173adc5e87e17fe92f3",
+      "examples.v1.json": "8139232fe3edde62a99cf078737b85376d6099e54b9b4ac69c7dda8ec18c3da5"
+    },
+    "planned_cells": {
+      "development": 12,
+      "validation": 8
+    },
+    "evidence": [
+      "REPORT.md",
+      "PR774",
+      "PR793",
+      "G2C-signed-score-probe.1"
+    ],
+    "evidence_limit": "original M1 signed local controls; not Lio v2 collection or a cross-version improvement baseline"
+  },
+  "controlled_final": {
+    "manifest": "final-manifest.v1.json",
+    "comparison_plan": "comparison-plan.v1.json",
+    "status": "historical_v1_not_eligible_for_current_Lio_v2",
+    "custody_evidence": "retained; no decryption, overwrite or new access attempt in this revision",
+    "matching_v2_controlled_set": "UNRUN; requires separately authorized future preparation and independent R review",
+    "comparison_execution": "UNRUN; not authorized by this revision"
+  },
+  "revised_task_ids": [
+    "dev-required-date",
+    "dev-local-edit",
+    "dev-tool-failure",
+    "val-undo",
+    "val-confirm-save"
+  ]
+}

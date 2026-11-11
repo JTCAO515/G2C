@@ -1,4 +1,5 @@
 """Append-only result read envelopes under original canonical MESSAGE admission."""
+from cj_strict_json import compact
 from dataclasses import asdict
 import base64,json
 from fastapi import Request
@@ -13,7 +14,7 @@ from .message_routes import _error,_token
 
 def register_scoped_result_routes(app,reader,history_configuration):
     def encode(value,maximum):
-        raw=json.dumps(value,ensure_ascii=False,separators=(',',':'),allow_nan=False).encode()
+        raw=compact(value)
         if len(raw)>maximum:raise ValueError('bounded scoped result response required')
         return raw
 

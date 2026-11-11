@@ -4,8 +4,8 @@ No network, caller URL, credentials or admission callback. The registered host
 must supply the original server request reference and its canonical Meter fence.
 Calling this class alone is data production, never execution permission.
 """
+from cj_strict_json import compact
 from datetime import datetime,timezone
-import json
 
 from .contract_v1 import decode_query,encode_result,publish_response
 from .gaode import Config,PreparationError,Response,prepare
@@ -44,7 +44,7 @@ class LocalPlaceProducer:
         query=request.query
         self.transport_calls+=1
         status,payload=self._response(query)
-        raw=payload if type(payload) is bytes else json.dumps(payload,ensure_ascii=False,separators=(',',':')).encode('utf8')
+        raw=payload if type(payload) is bytes else compact(payload, allow_nan=True)
         response=Response(request.binding_digest,request.origin,request.path,status,raw,self.clock())
         return publish_response(self.config,request,response,now=self.clock(),evidence_kind='synthetic')
 

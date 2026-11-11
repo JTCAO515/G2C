@@ -4,7 +4,7 @@ Fresh AUTH checks run through the producer public request-lifetime guard.
 No atomic distributed account/database revocation guarantee is claimed.
 """
 from dataclasses import dataclass
-from .composition import CompositionUnavailable, _internal_modules
+from .composition import CompositionUnavailable, _internal_modules, _strict_admission_checker
 from .local_account_admission_v2 import retirement_read_operation
 
 
@@ -121,12 +121,7 @@ def build_memory_boundary(*, environment, jwt_configuration, verification_keys,
     if environment != 'local' or None in (resolve_binding, source_policy, verification_keys, access_provider):
         raise CompositionUnavailable('Explicit local memory AUTH/binding/source policy required')
     modules = _internal_modules('memory')
-    auth = modules['cj_auth.jwt_adapter']
-    if (not isinstance(jwt_configuration, auth.JWTConfiguration)
-            or jwt_configuration.profile is not auth.JWTProfile.STRICT_V1):
-        raise CompositionUnavailable('Fixed strict AUTH profile required')
-    verifier = auth.PyJWTVerifier(jwt_configuration, verification_keys)
-    checker = modules['cj_auth.admission'].AdmissionChecker(verifier, access_provider)
+    checker = _strict_admission_checker(modules, jwt_configuration, verification_keys, access_provider)
     return MemoryBoundary(checker, resolve_binding, source_policy, modules)
 
 

@@ -1,7 +1,8 @@
 """Actual registered PLACE observations for an explicitly negotiated C producer."""
+from cj_strict_json import compact
 from dataclasses import dataclass,field
 from datetime import timezone
-import base64,hashlib,json
+import base64,hashlib
 from types import MappingProxyType
 from cj_place.contract_v1 import decode_query
 from cj_place.local_draft_source import LocalDraftPlaceProducer
@@ -96,10 +97,9 @@ class LocalPlaceDraftTools(LocalTools):
         expected='op-'+hashlib.sha256((argument.binding.run_id+'\0'+argument.operation_key).encode()).hexdigest()
         if argument.request_ref!=expected or state.complete:
             raise PlaceSourceUnavailable('original PLACE operation mismatch')
-        original=json.dumps(dict(version='PLACE-tool-input.2',operation_key=argument.operation_key,
+        original=compact(dict(version='PLACE-tool-input.2',operation_key=argument.operation_key,
             message_id=argument.binding.message_id,run_id=argument.binding.run_id,
-            request_ref=argument.request_ref,original_query_base64=base64.b64encode(argument.original_query).decode('ascii')),
-            separators=(',',':')).encode()
+            request_ref=argument.request_ref,original_query_base64=base64.b64encode(argument.original_query).decode('ascii')), ensure_ascii=True, allow_nan=True)
         def materialize():
             config=self.place.config;started=self._tick(state)
             invoke=self.place.prepare_observation(query,argument.request_ref)

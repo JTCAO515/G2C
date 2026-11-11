@@ -1,4 +1,5 @@
 """Explicit host-only MESSAGE-SOURCE@1 routes; no default consent authority."""
+from cj_strict_json import compact
 import base64
 from dataclasses import asdict
 import json
@@ -24,7 +25,7 @@ def _parse(raw, fields):
 
 
 def _encode(value):
-    return json.dumps(value, ensure_ascii=True, separators=(',', ':')).encode('ascii')
+    return compact(value, ensure_ascii=True, allow_nan=True)
 
 
 def _snapshot(value):

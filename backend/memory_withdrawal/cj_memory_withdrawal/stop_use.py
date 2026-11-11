@@ -1,4 +1,5 @@
 """MEMORY-STOP-USE@1: canonical scope-locked stop-use, no deletion or cleanup."""
+from cj_strict_json import compact
 from dataclasses import dataclass
 import json
 
@@ -20,7 +21,7 @@ class StopUse(Action):
         if type(value) is not dict or value.pop('version', None) != 'MEMORY-STOP-USE@1':
             raise InvalidInput('explicit stop-use version required')
         # Reuse the fixed legacy action grammar, retaining this version's bytes.
-        action = Action.parse(json.dumps(value, ensure_ascii=False, separators=(',', ':')).encode())
+        action = Action.parse(compact(value, allow_nan=True))
         return cls(action.action_id, action.operation, action.item_id, action.expected_version,
                    action.source_id, action.expected_source_version, raw)
 

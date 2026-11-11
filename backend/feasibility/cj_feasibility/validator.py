@@ -3,10 +3,10 @@
 Caller must obtain each object through the existing authorized NEEDS read boundary.
 Revision chains establish source association, never authorization or supplier truth.
 """
+from cj_strict_json import compact
 from dataclasses import dataclass
 from decimal import Context, Decimal, localcontext
 from hashlib import sha256
-import json
 
 from .time_checks import known as _known, instant as _instant, overlaps as _overlaps
 
@@ -60,7 +60,7 @@ class Report:
 
 
 def _json(value):
-    return json.dumps(value, ensure_ascii=False, separators=(',', ':'), allow_nan=False).encode()
+    return compact(value)
 
 
 def _read(snapshot, revisions):
