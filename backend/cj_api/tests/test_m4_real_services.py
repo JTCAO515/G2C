@@ -637,6 +637,25 @@ class Boundaries(unittest.TestCase):
         self.assertLessEqual(len(self.sent[0].content),32768)
         self.assertEqual(self.budget.inspect()[0]['state'],'RECEIVED')
 
+    def test_intent_specific_profile_pins_schema_without_execution_parameters_for_discussion(self):
+        from cj_agent.lio_intake_modes_schema import PROFILE,response_format,response_format_sha256
+        from cj_api.local_app import ISSUER,scope_for
+        provider=self.provider(sse());subjects=frozenset({'m4-synthetic-intake-modes'})
+        tools=RealTools(RealServices(provider,KEY,subjects,demo_subjects=subjects,national_subjects=subjects))
+        prepared=tools.registrations['model.lio_intake.4'].prepare_input((
+            [dict(role='user',content='Stored memory data: fewer stops.'),dict(role='user',content='x'*12000)],
+            'JSON intent-specific intake',provider,0))
+        inputs=json.loads(prepared.original_bytes)
+        self.assertEqual((inputs['structured_profile'],inputs['current_source_index']),(PROFILE,0))
+        self.assertEqual(inputs['response_format_sha256'],response_format_sha256(0))
+        operation=SimpleNamespace(binding=SimpleNamespace(scope=scope_for(ISSUER,next(iter(subjects)))),
+                                  command=SimpleNamespace(attempt_id='mode-intake'))
+        self.assertTrue(''.join(prepared.bind_operation(operation,lambda:True)()))
+        wire=json.loads(self.sent[0].content)
+        self.assertEqual(wire['response_format'],response_format(0))
+        self.assertLessEqual(len(self.sent[0].content),32768)
+        self.assertEqual(self.budget.inspect()[0]['state'],'RECEIVED')
+
     def test_national_tools_bind_actual_city_and_leave_the_legacy_query_unchanged(self):
         from cj_api.lio_city import CityReference
         from cj_api.lio_weather import decode_query as city_weather_query

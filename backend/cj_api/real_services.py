@@ -326,6 +326,7 @@ class RealTools:
             'model.lio_intake.1':Registration('model',self._lio_intake_input),
             'model.lio_intake.2':Registration('model',self._lio_intake_schema_input),
             'model.lio_intake.3':Registration('model',self._lio_intake_current_input),
+            'model.lio_intake.4':Registration('model',self._lio_intake_modes_input),
             'tool.lio_city.1':Registration('tool',self._city_input),
             'memory.lio_extract.1':Registration('memory',self._lio_memory_input),
             **{'tool.'+name:Registration('tool',lambda argument,name=name:self._tool_input(name,argument)) for name in {NATIVE_REGISTRATION[n] for n in allowed_native}}})
@@ -381,12 +382,16 @@ class RealTools:
     def _lio_intake_current_input(self,argument):
         return self._model_input(argument,national_intake=True,intake_profile='LIO-planning-intake.3')
 
+    def _lio_intake_modes_input(self,argument):
+        return self._model_input(argument,national_intake=True,intake_profile='LIO-planning-intake.4')
+
     def _lio_memory_input(self, argument):
         return self._model_input(argument, release_after_send=True)
 
     def _model_input(self,argument,*,release_after_send=False,national_intake=False,intake_profile='LIO-planning-intake.1'):
         native_turn = type(argument) is ModelInput
-        if intake_profile=='LIO-planning-intake.3':
+        indexed=intake_profile in ('LIO-planning-intake.3','LIO-planning-intake.4')
+        if indexed:
             messages,system,provider,source_index=argument
             native_reply=None;final_answer=False;turn_profile=M4_NATIVE_TURN_PROFILE_V2
         elif native_turn:
@@ -402,13 +407,15 @@ class RealTools:
             raise BudgetUnknown('M4 model registration mismatch')
         from cj_agent.lio_intake_schema import SCHEMA_SHA256
         from cj_agent.lio_intake_current_schema import response_format_sha256
+        from cj_agent.lio_intake_modes_schema import response_format_sha256 as modes_sha256
         raw=canonical(dict(messages=messages,system=system,endpoint=M4_BASE,model=M4_MODEL,synthetic_only=True,
                            native_tools=(self.national_tools if argument.national else self.native_tools) if native_turn else None,
                            **({'response_mode':'lio-memory-json.1'} if release_after_send else {}),
                            **({'structured_profile':intake_profile} if national_intake else {}),
                            **({'response_format_sha256':SCHEMA_SHA256} if national_intake and intake_profile=='LIO-planning-intake.2' else {}),
-                           **({'current_source_index':source_index,'response_format_sha256':response_format_sha256(source_index)}
-                              if intake_profile=='LIO-planning-intake.3' else {}),
+                           **({'current_source_index':source_index,'response_format_sha256':
+                               (modes_sha256 if intake_profile=='LIO-planning-intake.4' else response_format_sha256)(source_index)}
+                              if indexed else {}),
                            **({'answer_format_profile':'lio-user.1'} if native_turn and argument.lio_answer else {}),
                            **({'native_turn_profile':turn_profile,'external_tools_disabled':final_answer} if native_turn else {})))
         inputs=json.loads(raw);metadata={}

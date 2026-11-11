@@ -34,12 +34,14 @@ class NationalExecution(unittest.TestCase):
         city=CityReference('310000','上海市','上海市',None,'province','Asia/Shanghai')
         resolution=resolution or dict(status='resolved',candidates=[city.__dict__],requested_name='上海',source={})
         published=[];events=[];lookups=[]
-        wire=dict(value,version='LIO-planning-intake.2',current_source_index=len(turns)-1)
+        wire=dict(value,version='LIO-planning-intake.3',current_source_index=len(turns)-1)
         wire.pop('current_request')
+        if wire['intent'] in ('consult','discuss','cancel'):
+            wire.update(extraction=None,duration_days=None,field_sources={})
         class Worker:
             memory_run=None;message_context=None;provider=object();lio_city_context=None;lio_memory=None
             def _registered_stream(self,binding,key,registration,argument,**kwargs):
-                assert registration=='model.lio_intake.3' and argument[3]==len(turns)-1
+                assert registration=='model.lio_intake.4' and argument[3]==len(turns)-1
                 yield json.dumps(wire,ensure_ascii=False)
             def _event(self,binding,state,kind,value='',**kwargs):
                 events.append((kind,value));return SimpleNamespace(sequence=state.sequence+1)
