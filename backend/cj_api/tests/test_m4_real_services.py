@@ -678,39 +678,58 @@ class Boundaries(unittest.TestCase):
         self.assertEqual(sources[1], dict(title='Weather China · Current Beijing forecast (reference)',
             url='https://www.weather.com.cn/weather/101010100.shtml', observed_at=None))
 
-    def test_lio_buffered_answer_releases_prefix_before_the_original_receipt(self):
+    def test_lio_decision_answer_waits_for_the_complete_original_receipt(self):
         from cj_agent.provider import M4_NATIVE_TURN_BUFFERED
 
-        first,*tail=sse().splitlines(keepends=True)
-        original=json.loads(first[6:])
-        content='Take the main entrance and check opening hours before you leave. '*6
-        original['choices'][0]['delta']['content']=content
-        wire='data: '+json.dumps(original)+'\n'+''.join(tail)
-        provider=self.provider(wire)
-        receipt={}; native_reply={}
-        stream=provider.invoke([dict(role='user',content='Synthetic Lio question')],TOOL_SYSTEM,
-            'lio-buffered-prefix',tools=TOOLS,native_turn_profile=M4_NATIVE_TURN_BUFFERED,
-            receipt=receipt,native_reply=native_reply,guard=lambda:True,lio_answer=True)
-        prefix=next(stream)
-        self.assertTrue(content.startswith(prefix))
-        self.assertGreaterEqual(len(prefix),24)
-        self.assertEqual((receipt,native_reply,self.budget.inspect()[-1]['state']),({},{},'INTENT'))
-        self.assertEqual(prefix+''.join(stream),content)
+        provider=self.provider(sse())
+        receipt={}; reply={}
+        output=next(provider.invoke([dict(role='user',content='Synthetic Lio question')],TOOL_SYSTEM,
+            'lio-buffered-answer',tools=TOOLS,native_turn_profile=M4_NATIVE_TURN_BUFFERED,
+            receipt=receipt,native_reply=reply,guard=lambda:True,lio_answer=True))
+        self.assertEqual(output,'{"zh":"待核实。","en":"Needs verification."}')
+        self.assertEqual(receipt['usage']['total_tokens'],50)
         self.assertEqual(self.budget.inspect()[-1]['state'],'RECEIVED')
 
-        # The original tool turn cannot be reinterpreted or dispatched after
-        # answering text was already released to this Lio conversation.
-        later=sse(tool=True).splitlines(keepends=True)
-        wire='data: '+json.dumps(original)+'\n\n'+''.join(later)
-        provider=self.provider(wire)
-        receipt={}; native_reply={}
-        stream=provider.invoke([dict(role='user',content='Synthetic Lio question')],TOOL_SYSTEM,
-            'lio-buffered-late-tool',tools=TOOLS,native_turn_profile=M4_NATIVE_TURN_BUFFERED,
-            receipt=receipt,native_reply=native_reply,guard=lambda:True,lio_answer=True)
-        self.assertEqual(next(stream),prefix)
-        with self.assertRaises(ProviderUnknown):
-            list(stream)
-        self.assertEqual((receipt,native_reply,self.budget.inspect()[-1]['state']),({},{},'INTENT'))
+    def test_lio_complete_mixed_decision_consumes_preface_only_on_server(self):
+        from cj_agent.provider import M4_NATIVE_TURN_BUFFERED
+
+        first=json.loads(sse().splitlines()[0][6:])
+        first['choices'][0]['delta']['content']='Synthetic untrusted supplier preface. '*6
+        preface='data: '+json.dumps(first)+'\n\n'
+        for label,body in (('separate',preface+sse(tool=True)),
+                           ('same-delta',sse(tool=True))):
+            if label=='same-delta':
+                lines=body.splitlines(keepends=True)
+                first=json.loads(lines[0][6:])
+                first['choices'][0]['delta']['content']='Synthetic supplier preface.'
+                body='data: '+json.dumps(first)+'\n'+''.join(lines[1:])
+            with self.subTest(label=label):
+                body=body.replace('chatcmpl-synthetic','chatcmpl-'+label)
+                provider=self.provider(body); receipt={}; reply={}
+                output=list(provider.invoke([dict(role='user',content='Synthetic Lio question')],TOOL_SYSTEM,
+                    'lio-mixed-'+label,tools=TOOLS,native_turn_profile=M4_NATIVE_TURN_BUFFERED,
+                    receipt=receipt,native_reply=reply,guard=lambda:True,lio_answer=True))
+                self.assertEqual(len(output),1)
+                self.assertEqual(json.loads(output[0])['kind'],'tool')
+                self.assertNotIn('preface',output[0])
+                self.assertIsNone(reply['assistant']['content'])
+                self.assertEqual(len(reply['assistant']['tool_calls']),1)
+                self.assertEqual(receipt['usage']['total_tokens'],50)
+                self.assertEqual(self.budget.inspect()[-1]['state'],'RECEIVED')
+
+        # Removing DONE or usage still leaves the same attempt unknown, with no
+        # intermediate answer or accepted native call escaping the decision turn.
+        for label,body in (('no-done',preface+sse(tool=True,done=False)),
+                           ('no-usage',preface+sse(tool=True,usage=False))):
+            with self.subTest(label=label):
+                provider=self.provider(body); receipt={}; reply={}; output=[]
+                with self.assertRaises(ProviderUnknown):
+                    for piece in provider.invoke([dict(role='user',content='Synthetic Lio question')],TOOL_SYSTEM,
+                            'lio-mixed-'+label,tools=TOOLS,native_turn_profile=M4_NATIVE_TURN_BUFFERED,
+                            receipt=receipt,native_reply=reply,guard=lambda:True,lio_answer=True):
+                        output.append(piece)
+                self.assertEqual((output,receipt,reply),([],{},{}))
+                self.assertEqual(self.budget.inspect()[-1]['state'],'INTENT')
 
     def test_lio_weather_clock_and_missing_forecast_project_only_public_evidence(self):
         from cj_api.local_app import ISSUER, scope_for

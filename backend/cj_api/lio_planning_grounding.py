@@ -14,7 +14,7 @@ PLAN_REQUEST = re.compile(
     r"^\s*(?:(?:(?:请|麻烦)?(?:(?:帮|给|为)(?:我们|我)[^。！？.!?]{0,16}?)?"
     r"(?:规划|(?:安排|设计|做)(?:个|一个|一份)?[^。！？.!?]*(?:行程|日游|天游|旅行|旅游|游玩|攻略))"
     r"|(?:(?:can|could|would) you\s+|please\s+|i(?: would|'d) like you to\s+)?"
-    r"(?:help (?:me|us) (?:to )?)?(?:plan|build|create|organize|put together|draft|make)\b"
+    r"(?:help (?:me|us) (?:to )?)?(?:plan(?:ning)?|build|create|organize|put together|draft|make)\b"
     r"[^.!?]*\b(?:itinerary|trip|visit|days?\s+in)\b))", re.I,
 )
 ISO = r'(?<!\d)\d{4}-\d{2}-\d{2}(?!\d)'
@@ -52,7 +52,7 @@ RELATIVE_REPLY = re.compile(
     rf'(?:\s*[,，]?\s+for\s+({NUMBER})\s+days?)?'
     rf'|(?:北京\s*[,，：:]\s*)?从?(明天|今天|后天)(?:开始|起)?(?:\s*[,，]?\s*(?:玩|待)?({NUMBER})天)?', re.I,
 )
-EARLIER_DURATION = re.compile(rf'\b({NUMBER})\s*(?:-day\s+(?:trip|visit|itinerary)|days?\s+(?:in|to|visiting))\b'
+EARLIER_DURATION = re.compile(rf'\b({NUMBER})\s*(?:(?:-\s*|\s+)days?\s+(?:luxury\s+)?(?:trip|visit|itinerary)|days?\s+(?:in|to|visiting))\b'
                               rf'|北京\s*({NUMBER})天(?:游|行程)|({NUMBER})天的?北京(?:游|行程)', re.I)
 ADJACENT_DURATION = re.compile(rf'\s*[,，]?\s*(?:for\s+({NUMBER})\s+days?\b|(?:玩|待)\s*({NUMBER})天)', re.I)
 DESTINATION_NEUTRAL = re.compile(r'^(?:please\s+)?(?:plan|make|build|create)\s+(?:a\s+|an\s+)?(?:trip|itinerary)'
@@ -89,8 +89,8 @@ ZH_RELATIVE_TAIL = re.compile(rf'\s*的?北京\s*(?:{NUMBER})天(?:游|行程|�
 POLITE_PLAN_QUESTION = re.compile(r'^(?:can|could|would) you\s+', re.I)
 OPEN_PLAN = re.compile(
     r"(?:(?:can|could|would) you\s+|please\s+|i(?: would|'d) like you to\s+)?"
-    rf'(?:help (?:me|us) (?:to )?)?(?:plan|build|create|organize|put together|draft|make)\s+'
-    rf'(?:(?:a\s+|an\s+)?(?:(?:{NUMBER})-day\s+)?(?:Beijing\s+)?(?:trip|itinerary|visit)'
+    rf'(?:help (?:me|us) (?:to )?)?(?:plan(?:ning)?|build|create|organize|put together|draft|make)\s+'
+    rf'(?:(?:a\s+|an\s+)?(?:(?:{NUMBER})(?:-\s*|\s+)days?\s+)?(?:luxury\s+)?(?:Beijing\s+)?(?:trip|itinerary|visit)'
     rf'(?:\s+(?:in|to)\s+Beijing)?|(?:{NUMBER})\s+days?\s+in\s+Beijing)'
     rf'(?:\s+for\s+(?:our party|(?:{NUMBER})\s+(?:people|days?)))?'
     rf'|(?:请|麻烦)?(?:(?:帮|给|为)(?:我们|我))?\s*(?:(?:为|给)(?:{NUMBER})个人)?\s*(?:规划|安排|设计|做)\s*'

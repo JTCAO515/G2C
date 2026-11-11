@@ -128,6 +128,7 @@ class RunWorker:
         self.lio_planning = lio_planning
         self.lio_edit = lio_edit
         self.lio_memory = lio_memory
+        self._lio_active = False
 
     def process(self, limit=20):
         outcomes = []
@@ -279,7 +280,8 @@ class RunWorker:
         if self.memory_history and registration in ('model.answer','model.draft'):
             messages,system,_=argument
             self._model_history(binding,messages,system,message_refs=message_refs)
-        prepared=self.budget_exit.prepare_operation(self.runs,binding,key,registration,argument,stage='answer')
+        options={'reserve_final_model':True} if self._lio_active and registration.startswith('tool.') else {}
+        prepared=self.budget_exit.prepare_operation(self.runs,binding,key,registration,argument,stage='answer',**options)
         if progress is not None:
             yield progress
         yield from self._stream_source(binding,lambda:self.budget_exit.stream(prepared),draft=False)
@@ -438,6 +440,7 @@ class RunWorker:
     def _execute(self, receipt, binding):
         original = self.lio_original(binding) if self.lio_original is not None else None
         locale = original.locale if original is not None else None
+        self._lio_active = original is not None
         state = self.runs.accept(binding)
         if self.budget_exit is not None:
             self.budget_exit = self.budget_exit.for_run(binding,state)

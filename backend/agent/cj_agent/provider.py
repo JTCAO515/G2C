@@ -450,8 +450,7 @@ class MeteredDashScopeProvider:
         native_tools=tools or []
         buffered=native_turn_profile==M4_NATIVE_TURN_BUFFERED
         incremental=native_turn_profile in (M4_NATIVE_TURN_STREAM,M4_NATIVE_TURN_BUFFERED)
-        lio_buffered=buffered and lio_answer
-        stream_text=incremental and (not buffered or final_answer or lio_buffered)
+        stream_text=incremental and (not buffered or final_answer)
         proxy=native_turn_profile in (M4_NATIVE_TURN_PROFILE,M4_NATIVE_TURN_PROFILE_V2)
         compact=native_turn_profile==M4_NATIVE_TURN_PROFILE_V2
         if (native_turn_profile not in (None,M4_NATIVE_TURN_PROFILE,M4_NATIVE_TURN_PROFILE_V2,M4_NATIVE_TURN_STREAM,M4_NATIVE_TURN_BUFFERED)
@@ -590,15 +589,14 @@ class MeteredDashScopeProvider:
                         tool_calls=delta.get('tool_calls',[])
                         if incremental:
                             if type(tool_calls) is not list or len(tool_calls)>4:raise ProviderUnknown('M4 tool stream invalid')
-                            if (tool_calls and (final_answer or lio_buffered and first_output is not None)
+                            if (tool_calls and final_answer
                                     or not buffered and (tool_calls and (texts or text) or text and calls)):
                                 raise _M4Rejection('mixed_stream_turn','M4 streaming model turn mixed text and tool')
                         if text:
                             if type(text) is not str:raise ProviderUnknown('M4 stream content invalid')
                             texts.append(text)
                             if self.config.api_key in ''.join(texts):raise ProviderUnknown('M4 model secret echo rejected')
-                            if (stream_text and not (lio_buffered and (tool_calls or calls))
-                                    or not native_tools and system is None):
+                            if stream_text or not native_tools and system is None:
                                 pending+=text
                                 keep=len(self.config.api_key)-1
                                 stop=len(pending)-keep

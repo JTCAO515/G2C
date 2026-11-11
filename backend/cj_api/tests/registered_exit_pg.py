@@ -75,7 +75,7 @@ def exercise(auth,conninfo):
     subjects=['alice','draft','foreign','infra','assoc-ack','reserve-ack','claim-ack','settle-ack','rebuild','late-adapter','late-audit','late-time','unregistered','close-primary','close-complete',
               'unicode-high','unicode-low','unicode-valid','race-left-first','race-right-first','duplicate-process','killed-process',
               'before-assoc','before-reserve','before-claim','before-settle','cancel-before-ack','cancel-after-ack',
-              'cancel-before-dispatch','cancel-at-settle']
+              'cancel-before-dispatch','cancel-at-settle','output-bound']
     harness.dev_auth.init(auth,subjects)
     tokens={s:harness.dev_auth.token(auth,s,30) for s in subjects}
     headers={s:{'Authorization':'Bearer '+v} for s,v in tokens.items()}
@@ -90,7 +90,7 @@ def exercise(auth,conninfo):
         assert result.returncode==0,(result.stdout,result.stderr)
         return json.loads(result.stdout)
     for subject in subjects:
-        if subject!='infra': operator(subject,'init-budget')
+        if subject not in ('infra','output-bound'): operator(subject,'init-budget')
     with patch.dict(os.environ,env): app=app_from_environment()
     config=json.loads(conninfo.read_text());context=load_run_context(path)
     database=LocalDatabase(conninfo,run_context=context)
@@ -189,6 +189,67 @@ def exercise(auth,conninfo):
         assert {a.command.kind for a in stored.attempts.values()}=={'model','tool','memory'}
         assert all(a.state=='settled' and a.receipt.actual==1 for a in stored.attempts.values())
         assert conn.execute('SELECT count(*) FROM cj_run_metered_binding WHERE scope=%s',(scope,)).fetchone()[0]==4
+    # Actual signed MESSAGE/worker/RUN/PG association and Meter enforce a
+    # smaller immutable tool bound without changing the configured ceilings.
+    output_profile=json.loads(path.read_text())
+    output_profile['current']['meter'].update(budget=800,max_steps=24,max_tools=12,max_output=65536)
+    output_profile['current']['output_limits'].update(model=12000,tool=48000,memory=12000)
+    output_path=auth.parent/'output-bound.json';output_path.write_text(json.dumps(output_profile))
+    operator('output-bound','init-budget',context_path=output_path)
+    output_context=load_run_context(output_path)
+    output_db=LocalDatabase(conninfo,run_context=output_context)
+    output_scope=scope_for(ISSUER,'output-bound')
+    output_cfg=output_context.current.meter
+    output_account=ledger_scope_for(output_scope,output_cfg)
+    output_registry={}
+    for key,kind,size in (('first','model',10000),('original-tool','tool',10611),
+                           ('next-tool','tool',5000),('final','model',12)):
+        def prepare(argument,size=size):
+            def materialize():
+                def invoke():yield 'x'*size
+                return invoke
+            return InvocationInput(json.dumps(argument).encode(),materialize)
+        output_registry[key]=Registration(kind,prepare)
+
+    class OutputBoundExit(RegisteredExit):
+        def prepare_operation(self,runs,binding,key,registration,argument,*,stage):
+            return super().prepare_operation(runs,binding,key,registration,argument,stage=stage,
+                reserve_final_model=registration=='next-tool')
+
+    class OutputBoundTools:
+        def answer(self,worker,binding,messages,**options):
+            for key in output_registry:
+                answer=''.join(worker._registered_stream(binding,key,key,{'synthetic':key}))
+            yield answer
+
+    def resolve_output(binding,account):
+        assert binding.scope==output_scope and account==output_account
+        return Meter(PostgresRepository(lambda:output_db.connect(output_scope),account),output_cfg,time.time)
+
+    with patch.dict(os.environ,{**env,'CJ_LOCAL_RUN_CONTEXT':str(output_path)}):
+        output_app=app_from_environment()
+    with TestClient(output_app) as client:
+        original=send(client,'output-bound','bounded-output')['receipt']
+        output_worker=run_worker._worker_for_scope(output_db,FakeProvider(),auth,output_scope,checker_for(auth))
+        output_worker.tools=OutputBoundTools()
+        output_worker.budget_exit=OutputBoundExit(output_cfg,resolve_output,clock=time.time,
+            output_limits=output_context.current.output_limits,environment='local',registrations=output_registry)
+        assert [item.status for item in output_worker.process()]==['completed']
+        binding=Binding(output_scope,original['conversation_id'],original['generation'],
+                        original['message_id'],original['run_id'],original['sequence'])
+        operation=OperationStore(output_worker.runs,output_cfg).read_original(binding,'next-tool')
+        assert operation.command.output_limit==32925
+        with psycopg.connect(**config) as db:
+            before=decode(db.execute('SELECT ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',
+                                      (output_account,)).fetchone()[0])
+        assert len(before.attempts)==4 and all(a.state=='settled' for a in before.attempts.values())
+        assert Meter.output_exposure(before,binding.run_id)==25623
+        assert output_worker.process()==[]
+        with psycopg.connect(**config) as db:
+            assert decode(db.execute('SELECT ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',
+                                     (output_account,)).fetchone()[0])==before
+    print('PASS signed worker immutable smaller tool output bound, final-model room, original read/no replay; configured quotas unchanged')
+
     def saved(subject):
         owner=scope_for(ISSUER,subject);account_id=ledger_scope_for(owner,context.current.meter)
         with psycopg.connect(**config) as conn:
