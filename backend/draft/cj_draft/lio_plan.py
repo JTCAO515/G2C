@@ -1,4 +1,5 @@
 """Source-bound planning save for an explicitly admitted Lio publication."""
+from datetime import time
 import json
 
 from cj_agent.draft import DraftRejected, PROPOSAL_TTL_SECONDS, proposal_id_for
@@ -9,9 +10,67 @@ from cj_needs.revision_lease import LeaseUnavailable
 from cj_trip.confirmation import ConfirmationSigner
 from cj_trip.domain import CommitUnknown, Conflict, Denied, Proposal, ProposalDetail, packed
 from cj_trip.lio_history import EDIT_BASIS, PLAN_BASIS, TripHead, edit_action_id, plan_action_id
+from cj_trip.needs_plan import MODEL_VERSION, parse_model
 from cj_trip.postgres import Repository
+from cj_trip.structured import FieldRejected, MAX_ITEMS, SourceRejected, _fields
 
 from .needs_context import ContextPublisher, ContextSource
+
+
+COMPACT_INITIAL_PLAN = 'TRIP-lio-first-plan.1'
+LIO_REPLAN_DELTA = 'TRIP-lio-replan-delta.1'
+LIO_REPLAN_DELTA_V2 = 'TRIP-lio-replan-delta.2'
+LIO_REPLAN_DELTA_V3 = 'TRIP-lio-replan-delta.3'
+COMPACT_SUGGESTIONS = (
+    'The server adds original fixed NEEDS items. Do not return those items or IDs. '
+    'Each new item has exactly id, text, date, start_time, end_time, timezone. Use a short text in the question '
+    'language, date YYYY-MM-DD, local times HH:MM and an IANA timezone. '
+    'Map each new ID to its explicit participant list in proposed_subjects. '
+    'If no new items are needed, return items:[] and proposed_subjects:{}. Return only the JSON object.'
+)
+INITIAL_SYSTEM = (
+    f'Return one compact JSON object with version "{COMPACT_INITIAL_PLAN}" and exactly '
+    'version, title, items and proposed_subjects. Use a short title. ' + COMPACT_SUGGESTIONS
+)
+REPLAN_SYSTEM = (
+    f'Return one compact JSON object with version "{LIO_REPLAN_DELTA_V3}" and exactly '
+    'version, items and proposed_subjects. Omit title. '
+    'The server retains the saved title and every item in current_trip.content.items in saved order. '
+    'Do not return any of those items or IDs. ' + COMPACT_SUGGESTIONS
+)
+
+
+def _plan_item(item_id, text, schedule, fixed, source_category):
+    return dict(id=item_id, text=text, schedule=schedule, fixed=fixed, source_category=source_category,
+                verification='pending', evidence=[], source_refs=[])
+
+
+def _expand_compact(suggestions, capture, retained):
+    if type(suggestions) is not list or len(suggestions) > MAX_ITEMS:
+        raise FieldRejected('items', 'bounded compact suggestions required')
+    snapshot, _ = capture.records()
+    retained_ids = {item['id'] for item in retained}
+    items = []
+    for item in snapshot.fields.get('fixed_items', ()):
+        if item['item_id'] in retained_ids:
+            continue
+        schedule = {
+            edge: dict(date=item[edge]['date'], time=item[edge]['time'], timezone=item[edge]['timezone'],
+                       utc_offset={'state': 'unknown'})
+            for edge in ('start', 'end')
+        }
+        items.append(_plan_item(item['item_id'], item['description'], schedule, item['locked'], 'user_provided'))
+    for index, item in enumerate(suggestions):
+        _fields(item, {'id', 'text', 'date', 'start_time', 'end_time', 'timezone'}, f'items[{index}]',
+                'exact compact suggestion fields required')
+        schedule = {
+            edge: dict(date={'state': 'known', 'value': item['date']},
+                       time={'state': 'known', 'value': item[edge + '_time']},
+                       timezone={'state': 'known', 'value': item['timezone']}, utc_offset={'state': 'unknown'})
+            for edge in ('start', 'end')
+        }
+        items.append(_plan_item(item['id'], item['text'], schedule, {'state': 'unknown'}, 'unknown'))
+    return items
 
 
 class LioContextSource(ContextSource):
@@ -33,13 +92,48 @@ class LioContextSource(ContextSource):
 
 
 class LioPlanPublisher(ContextPublisher):
-    def __init__(self, original, confirmation, original_needs, check_lio_original):
+    def __init__(self, original, confirmation, original_needs, check_lio_original, *, draft_guidance=''):
         if type(confirmation) is not ConfirmationSigner:
             raise ValueError('Lio planning requires the original Trip signer')
         repository = Repository(original.repository.connect, original.repository.scope,
                                 confirmation, structured=True)
         super().__init__(repository, LioContextSource(original.source, original_needs), original.clock)
         self.check_lio_original = check_lio_original
+        self.draft_guidance = draft_guidance
+
+    def model_messages(self, binding, text, capture, messages):
+        system = INITIAL_SYSTEM if self.source.contexts[binding] is None else REPLAN_SYSTEM
+        self.system = system + self.draft_guidance
+        return super().model_messages(binding, text, capture, messages)
+
+    def _model_plan(self, raw, context, capture):
+        if context is None:
+            value = parse_model(raw, versions=(MODEL_VERSION, COMPACT_INITIAL_PLAN))
+            if value['version'] == COMPACT_INITIAL_PLAN:
+                return dict(value, version=MODEL_VERSION, items=_expand_compact(value['items'], capture, ()))
+            return value
+        title_from_trip = (LIO_REPLAN_DELTA_V2, LIO_REPLAN_DELTA_V3)
+        value = parse_model(raw, versions=(MODEL_VERSION, LIO_REPLAN_DELTA, *title_from_trip),
+                            source_title_versions=title_from_trip)
+        if type(value['items']) is not list:
+            raise FieldRejected('items', 'Lio replan items must be a list')
+        retained = json.loads(context.trip.content)
+        if retained['sources']:
+            raise SourceRejected('sources', 'Lio replan cannot omit retained Trip sources')
+        if value['version'] == MODEL_VERSION:
+            retained_ids = {item['id'] for item in retained['items']}
+            echoed = [item for item in value['items'] if type(item) is dict
+                      and type(item.get('id')) is str and item['id'] in retained_ids]
+            if echoed != retained['items']:
+                raise SourceRejected('items', 'legacy Lio replan changed retained Trip items')
+            return value
+        # Reuse the existing structured.2 and source checks on the composed
+        # candidate. A model ID matching a retained ID fails as a duplicate.
+        title = retained['title'] if value['version'] in title_from_trip else value['title']
+        items = value['items']
+        if value['version'] == LIO_REPLAN_DELTA_V3:
+            items = _expand_compact(items, capture, retained['items'])
+        return dict(value, version=MODEL_VERSION, title=title, items=retained['items'] + items)
 
     def build_plan(self, raw, capture):
         content, candidate, report = super().build_plan(raw, capture)
@@ -49,8 +143,14 @@ class LioPlanPublisher(ContextPublisher):
         if context is not None:
             declared.update(item['id'] for item in json.loads(context.trip.content)['items'])
         document = json.loads(content)
-        for item in document['items']:
+        for index, item in enumerate(document['items']):
             if item['id'] not in declared:
+                start, end = item['schedule']['start'], item['schedule']['end']
+                if (start['date']['state'] != 'known' or start['date'] != end['date']
+                        or start['timezone']['state'] != 'known' or start['timezone'] != end['timezone']
+                        or start['time']['state'] != 'known' or end['time']['state'] != 'known'
+                        or time.fromisoformat(start['time']['value']) >= time.fromisoformat(end['time']['value'])):
+                    raise SourceRejected(f'items[{index}].schedule', 'new Lio stop requires a same-day planned interval')
                 # Only a new system suggestion has an application-owned edit
                 # policy. Its canonical NEEDS/booking evidence stays unknown.
                 item['fixed'] = {'state': 'known', 'value': False}

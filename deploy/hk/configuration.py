@@ -49,7 +49,7 @@ def load_secret_environment(role,*,root=Path('/run/secrets')):
     for file,names in expected.items():
         optional=({TYPED_POLICY,TYPED_MESSAGE_SUBJECTS}|ASSEMBLY_CLEANUP if role=='api' and file=='api' else
                   {MEMORY_RUN_POLICY,MODEL_STREAM_SUBJECT,ASSEMBLY_RUN_CREDENTIAL_SUBJECTS,ASSEMBLY_MODEL_STREAM_SUBJECTS,
-                   ASSEMBLY_PROBE_MESSAGE}
+                   ASSEMBLY_PROBE_MESSAGE,'CJ_BETA_CONFIRMATION_B64'}
                   if role=='worker' and file=='worker' else set())
         allowed=names|optional
         if any(name in os.environ for name in allowed):raise ValueError('persistent_container_secret_environment_refused')
@@ -120,6 +120,22 @@ def demo_periods(context, now):
     raise ValueError('active HK Demo Meter period required')
 
 
+def beta_subjects():
+    subjects=json.loads(os.environ['CJ_BETA_SUBJECTS_JSON'],object_pairs_hook=reject_duplicates(ValueError,'duplicate_beta_subject_field'))
+    if (type(subjects) is not list or not subjects
+            or any(type(s) is not str or re.fullmatch('m4-synthetic-[a-z0-9-]{1,80}',s) is None for s in subjects)
+            or len(set(subjects))!=len(subjects)):
+        raise ValueError('explicit_unique_beta_synthetic_subjects_required')
+    demo=json.loads(os.environ.get(DEMO_SUBJECTS,'[]'))
+    if (type(demo) is not list or len(demo)>10
+            or any(type(s) is not str or re.fullmatch(r'm4-synthetic-demo-[a-z0-9]{12}',s) is None for s in demo)
+            or len(set(demo))!=len(demo)
+            or set(demo)!={s for s in subjects if s.startswith('m4-synthetic-demo-')}
+            or demo and not local_database_target()):
+        raise ValueError('explicit HK local demo invitation subjects required')
+    return subjects,frozenset(demo)
+
+
 @dataclass(repr=False)
 class Runtime:
     auth:Path
@@ -141,19 +157,7 @@ class Runtime:
     def load(cls,root,*,worker=False):
         authorization();root=Path(root)
         root.mkdir(mode=0o700,parents=True,exist_ok=True)
-        subjects=json.loads(os.environ['CJ_BETA_SUBJECTS_JSON'],object_pairs_hook=reject_duplicates(ValueError,'duplicate_beta_subject_field'))
-        if (type(subjects) is not list or not subjects
-                or any(type(s) is not str or re.fullmatch('m4-synthetic-[a-z0-9-]{1,80}',s) is None for s in subjects)
-                or len(set(subjects))!=len(subjects)):
-            raise ValueError('explicit_unique_beta_synthetic_subjects_required')
-        demo=json.loads(os.environ.get(DEMO_SUBJECTS,'[]'))
-        if (type(demo) is not list or len(demo)>10
-                or any(type(s) is not str or re.fullmatch(r'm4-synthetic-demo-[a-z0-9]{12}',s) is None for s in demo)
-                or len(set(demo))!=len(demo)
-                or set(demo)!={s for s in subjects if s.startswith('m4-synthetic-demo-')}
-                or demo and not local_database_target()):
-            raise ValueError('explicit HK local demo invitation subjects required')
-        demo_subjects=frozenset(demo)
+        subjects,demo_subjects=beta_subjects()
         assembly_subjects=frozenset()
         if ASSEMBLY_SUBJECTS in os.environ:
             selected=json.loads(os.environ[ASSEMBLY_SUBJECTS])
@@ -286,14 +290,28 @@ class Runtime:
             cleanup=assembly_cleanup(database)
         elif ASSEMBLY_CLEANUP & os.environ.keys():
             raise ValueError('cleanup_requires_explicit_assembly_pair')
+        lio_memory_factory=None
+        if self.demo_subjects:
+            from cj_api.lio_memory_routes import LioMemoryCards
+            from cj_api.local_lio_memory import lio_candidates
+
+            def lio_memory_factory(boundary):
+                candidates=lio_candidates(database,boundary,self.demo_subjects,self.typed_memory)
+                return LioMemoryCards(candidates.collection,candidates.current)
+
         app=create_local_app(conninfo_path=None,auth_dir=self.auth,database=database,run_context=self.context,
             confirmation_signer=signer,history_configuration=history,
             account_admission=True,needs_profile=needs_profile,message_subjects=message_subjects,
             existing_display_reads=True,cleanup_configuration=cleanup,
-            cleanup_subjects=planning or None,demo_dialogue_subjects=planning or None)
+            cleanup_subjects=planning or None,demo_dialogue_subjects=planning or None,
+            lio_dialogue_subjects=self.demo_subjects or None,lio_memory_factory=lio_memory_factory)
         if self.typed_memory is not None:
             from cj_memory.typed_api import register_typed_routes
-            register_typed_routes(app,database=database,auth_dir=self.auth,configuration=self.typed_memory)
+            typed_memory=self.typed_memory
+            if self.demo_subjects:
+                from cj_api.local_lio_memory import pilot_write_configuration
+                typed_memory=pilot_write_configuration(typed_memory,self.demo_subjects)
+            register_typed_routes(app,database=database,auth_dir=self.auth,configuration=typed_memory)
         if planning:
             from cj_trip.local_needs_app import register_local_needs_routes
             from cj_trip.local_manual_app import register_local_manual_routes

@@ -70,7 +70,7 @@ class NeedsActionChecks(unittest.TestCase):
             headers={**self.host.headers[subject],'Content-Type':'application/octet-stream'})
 
     def replan(self,subject,key,change=None,expect_proposal=True,wrap_publisher=None,needs_version=1,
-               text='continue original trip'):
+               text='continue original trip', *, legacy_delta=False):
         with patch.dict(__import__('os').environ,self.env),self.host.api(subject) as client:
             chat=client.put('/v1/conversations',params={'conversation_id':key},headers=self.host.headers[subject]).json()
             raw=json.dumps(dict(version='MESSAGE-send.2',conversation_id=key,message_id=key,text=text,trip_id=None,
@@ -79,15 +79,22 @@ class NeedsActionChecks(unittest.TestCase):
             response=client.post('/v2/messages',content=raw,headers={**self.host.headers[subject],'Content-Type':'application/octet-stream'})
             self.assertEqual(response.status_code,200,response.text)
         from cj_agent.provider import FakeProvider
-        from cj_draft.needs_publisher import SYSTEM
+        from cj_draft.lio_plan import LIO_REPLAN_DELTA, LIO_REPLAN_DELTA_V2, REPLAN_SYSTEM
         from cj_draft.needs_context import publisher
+        from cj_draft.needs_publisher import SYSTEM
         from cj_api.local_worker_context import checker_for
         class OriginalContextModel(FakeProvider):
             def stream(self,messages,system=None):
-                if system!=SYSTEM:
+                if system not in (SYSTEM, REPLAN_SYSTEM):
                     yield from super().stream(messages,system);return
                 self.calls+=1;source=json.loads(messages[-1]['content']);content=source['current_trip']['content']
-                value=dict(version='TRIP-model-plan.1',title=content['title'],items=content['items'],proposed_subjects={})
+                if system==REPLAN_SYSTEM:
+                    value=dict(version=LIO_REPLAN_DELTA_V2,items=[],proposed_subjects={})
+                    if legacy_delta:
+                        value.update(version=LIO_REPLAN_DELTA,title=content['title'])
+                else:
+                    value=dict(version='TRIP-model-plan.1',title=content['title'],
+                               items=content['items'],proposed_subjects={})
                 if change:change(value)
                 yield json.dumps(value,ensure_ascii=False)
         worker,db=self.worker(subject,OriginalContextModel())
@@ -555,7 +562,7 @@ class NeedsActionChecks(unittest.TestCase):
             self.assertEqual(response.status_code,200,response.text)
         admitted['lio-replan']=TripHead.from_trip(original)
         second=self.replan(subject,'lio-replan',lambda plan:plan.update(title='Updated trip'),
-                           wrap_publisher=wrap,needs_version=2)
+                           wrap_publisher=wrap,needs_version=2,legacy_delta=True)
         saved_again=repository.query_action(plan_action_id(second.run_id))
         self.assertEqual((saved_again.trip_id,saved_again.committed_version),(saved.trip_id,2))
         updated=repository.detail(saved.trip_id)

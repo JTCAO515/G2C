@@ -40,6 +40,42 @@ schema资产绑定原迁移hash并放进镜像；镜像标签和OCI revision均�
 
 ## 原预算与启动
 
+### #32 投影前工具原件的受控采集
+
+现有共享账的 `response_sha256` 对应规范工具结果，Lio 后续模型输入只含其投影。
+旧结果没有另存完整原件时，不能从投影还原。新合成窗口可在同一个现役 worker
+增加 `--tool-evidence-manifest /run/tool-evidence/window.json`。API 与迁移入口拒绝此参数。
+默认启动不采集。仅 B 在独占窗口配置已有受邀 Demo 主体及新 MESSAGE ID。
+
+清单由 worker UID 持有，普通文件、0600、无符号链接，格式如下。
+`source_commit` 固定为实际已审构建源，`expires_at` 为该窗口的明确结束时间，最多一天。
+输出目录为独立挂载、同 UID 持有的 0700 目录。运行清单、原件和凭据均不入 Git。
+
+```json
+{
+  "version": "G2C-tool-evidence-window.1",
+  "directory": "/tool-evidence",
+  "messages": [{"subject": "m4-synthetic-demo-0123456789ab", "message_id": "new-synthetic-original"}],
+  "expires_at": "2026-11-11T04:00:00+00:00",
+  "source_commit": "REPLACE_WITH_EXACT_REVIEWED_SOURCE_COMMIT"
+}
+```
+
+采集只观察原注册工具出口已经得到的规范结果。供应商原回执持久保存后、结果投影前，
+将同一原操作的输入、完整规范结果、摘要、Meter attempt、RUN、实现摘要写为
+`G2C-tool-evidence.1` 的独立 0600 文件。没有第二次工具调用，不能覆盖已存在文件。
+选中消息的采集过期或写入不确定时保留 UNKNOWN，不盲重放原请求。
+
+C 只读取得自己这六条原件后，逐条核对三段。
+
+1. `SHA256(result_utf8)` 与唯一共享账原工具回执的 `response_sha256` 相等。
+2. 原件内的 RUN、operation、attempt、`input_sha256` 和实际注册输入一致，Meter 原回执已结算。
+3. 同 RUN 的实际后续模型输入包含由该原件形成的 Lio 投影，并与原工具调用绑定一致。
+
+文件本身不证明 RUN 已完成、模型已续接或产品通过。缺失、不完整原件及原 INTENT
+继续保留原状态。B 在每格前核 A/JT 无在途，遇 FAIL/UNKNOWN 停止新派发。
+窗口结束移除该启动参数和挂载，重建同源 worker，保留原件与唯一账。
+
 迁移预算前停止并确认所有Mac旧producer已结束；先核原请求结果，未决原动作保持UNKNOWN。
 `scripts/m4_budget_transfer.py seal`在原共享SQLite事务锁内封存，再导出同一账本。
 只有指定主机激活和精确文件hash才可adopt。旧实例每次写入都会查producer标识；HK每次SQLite变更先在不随库恢复的control写WRITE_INTENT，再提交、推进精确全行hash锚点；
@@ -236,6 +272,11 @@ API 只读挂载 Unix socket 目录。公网 `POST /v1/demo-invite-sessions` 的
 迁移前暂停 API/worker 并核对原队列及签名 release。原 operator 用新镜像运行
 `python -B -m deploy.hk.demo_schema`，一次追加 0049 并保留原 fence，建立新的本地签名备份基准。
 已在 0049 的 Demo v2 主机只追加 0050，使用 `python -B -m deploy.hk.demo_schema --target 50`。
+Lio 的本机追加迁移使用 `python -B -m deploy.hk.demo_schema --target 51`，沿用相同的原队列、
+签名基准和删除 fence 检查。香港 worker 在获准接入现有 Trip 签名凭据后启用 Lio 规划保存。
+该配置只从 worker 的 0600 秘密文件读取 `CJ_BETA_CONFIRMATION_B64`。缺少配置时，现役 Demo
+和 Lio 纯问答及时间线读取继续提供服务，规划保存保持关闭。
+发布前在主机内核对两份受限秘密文件中的 Trip 签名凭据一致，只记录核对结果。
 日备在新签名基准核实后续接。发现原升级标记时先只读核同，不能重复执行。
 用已挂载原 operator 和 worker 0600 文件的 operator 容器运行
 `python -B -m deploy.hk.demo_accounts bootstrap <subject> --digest <sha256> --expires-at <RFC3339>`，
@@ -244,7 +285,46 @@ API 只读挂载 Unix socket 目录。公网 `POST /v1/demo-invite-sessions` 的
 
 `revoke <subject>` 立即拒绝原邀请码和会话；确认原 scope 无在途后，`rotate <subject>` 可登记
 新摘要与有效期，旧会话继续拒绝，每日计数保留。结果不明先 `inspect <subject>` 和原动作日志。
-MESSAGE 只对实际新接受的原件计数，每日北京时间 40 个；同原件回查和幂等重入沿用原回执。
+
+#### 七天滚动会话
+
+JT 的 [#495 决定](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6783256928)
+适用于现有香港内测 Demo 主体。新增入口如下，响应均为 `Cache-Control: no-store`。
+
+| 入口 | 请求与结果 |
+|---|---|
+| `POST /v2/demo-invite-sessions` | JSON 为 `{version:"DEMO-invite-session.2",invite_code,consent:true}`。成功返回 `{version:"DEMO-invite-session.2",access_token,subject,expires_at}`。 |
+| `POST /v2/demo-session-renewals` | 当前仍有效的 Bearer JWT，JSON 仅 `{version:"DEMO-session-renewal.1"}`。成功返回相同 `.2` grant，保持原 subject、issuer、audience。 |
+
+新凭据从签发时刻滚动最多七天，截止不超过原邀请资格。续期不延长资格，不更改业务
+composition 或计量。有效旧两小时凭据可升级；过期、撤销、轮换前或不属于 Demo 的
+凭据拒绝续期。签名仍由原 worker 的私密 Unix socket 提供，API 不持私钥。
+签发事务对资格行加共享锁，撤销/轮换与之串行；撤销后新旧凭据的业务与续期均拒绝。
+
+错误沿用 `{request_id,error:{code,category,message_en,message_zh,outcome,recovery}}`。
+续期 400 为 `INVALID_INPUT/input/failed/do_not_retry`，401 为
+`DEMO_SESSION_DENIED/access/failed/do_not_retry`，503 为
+`DEMO_SESSION_UNAVAILABLE/dependency/unknown/do_not_retry`。
+邀请码 401/503 沿用 `DEMO_INVITE_DENIED`、`DEMO_LOGIN_UNAVAILABLE`。
+客户端在有效会话回前台且余期不超过一天时续期，未知时保留仍有效旧凭据。
+
+`/v1` 和 `.1` 为旧内部构建保留原两小时上限，退出条件为旧构建退场。
+部署先核原资格、撤销与 session floor，原私钥和资格期限沿用。
+回退到原镜像会恢复 v1 签发，A 需配套使用 v1 入口/构建；已经签发的凭据仍受原
+资格与撤销检查约束。回退不自动轮换 JT 的邀请或清除其原数据。
+
+MESSAGE 只对实际新接受的原件计数。0052 将北京时间每日上限从 40 提至 400。
+同原件回查和幂等重入沿用原回执。香港额度迁移已经提交，或任一合成账号单日已受理超过 40 条时，0052 拒绝降级。
+已应用 0051 的香港内测主机可在原 API/worker 暂停后，用新 operator 镜像运行
+`python -B -m deploy.hk.demo_schema --target 52`。该操作读取原 80 次配置，
+在同一事务中提升现有香港合成名单的当期账本和 Demo 次期账本至 800 次，
+并追加 0052。原尝试、保留、回执及周期边界保留。只有签名备份基准完成后，
+才将暂存的 `CJ_BETA_RUN_CONTEXT_JSON.current.meter.budget=800` 和同源 API/worker 切入。
+共享费用、调用次数和外部服务停点沿用现有门禁。事务前失败可恢复旧服务。
+已提交 0052 时，用新 operator 运行
+`python -B -m deploy.hk.demo_schema --resume-quota` 续结原签名备份，保留未发布的备份尝试。
+已轮换 identity 时，先核对原签名备份与活库行集、序列和 fence，再补发同一 release。
+API/worker 只在签名标记完成且运行配置为 800 后就绪。
 Demo 及已启用流式的组装两主体使用 [STREAM@2](../../contracts/run/MODEL-TOOL-TURN-STREAM-V2.md)，
 可调用工具的轮次先收齐原回执。混合响应仅执行通过原门禁的工具，丢弃未核实的同轮正文。
 过旧服务期限后，实际模型和工具仅允许显式 Demo scope。首次开户同时在原 PG Meter 中准备

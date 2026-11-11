@@ -19,20 +19,33 @@ import run_worker
 from cj_api.composition import CompositionUnavailable
 from cj_api.local_app import ISSUER,scope_for
 from cj_api.real_services import RealServices,RealTools
+from cj_trip.confirmation import ConfirmationSigner
 from local_run_context import provision_budget_connection
-from .configuration import ASSEMBLY_PROBE_MESSAGE,MODEL_STREAM_SUBJECT,Runtime,authorization,load_secret_environment,local_database_target
-from . import checkpoint,local_postgres
+from .configuration import ASSEMBLY_PROBE_MESSAGE,MODEL_STREAM_SUBJECT,Runtime,authorization,decoded,load_secret_environment,local_database_target
+from . import checkpoint,demo_quota,local_postgres
 
 
 def control():return Path(os.environ['CJ_DEPLOY_CONTROL'])
 def heartbeat():return Path(os.environ['CJ_DEPLOY_HEARTBEAT'])/'worker.json'
 
 
-def ready(database):
+def _runtime_gate(database, runtime):
+    authorization()
+    local_postgres.require_serving(control())
+    with database._open_runtime_connection() as connection:
+        release=checkpoint.require_release(connection,control())
+    if runtime is not None and local_database_target():
+        marker=checkpoint.verified(control()/'demo-schema52.json')
+        if (marker['state']!='COMPLETE' or marker['lineage']!=release['lineage']
+                or runtime.context.current.meter.budget!=demo_quota.APPROVED_BUDGET
+                or marker['quota_policy_sha256']!=demo_quota.policy_digest(runtime.context_path.read_text(),
+                    demo_quota.APPROVED_BUDGET)):
+            raise ValueError('HK Demo quota cutover incomplete')
+
+
+def ready(database, runtime=None):
     try:
-        authorization()
-        local_postgres.require_serving(control())
-        with database._open_runtime_connection() as connection:checkpoint.require_release(connection,control())
+        _runtime_gate(database,runtime)
         state=json.loads(heartbeat().read_bytes())
         if set(state)!={'at','component','status'} or not 0<=time.time()-state['at']<15:return 'worker_heartbeat_stale'
         return None if state['status']=='ready' else state['component']+'_unavailable'
@@ -45,7 +58,7 @@ def api(runtime):
     @app.middleware('http')
     async def deployment_gate(request,call_next):
         if request.url.path=='/health/live':return JSONResponse({'status':'alive'})
-        reason=await run_in_threadpool(ready,database)
+        reason=await run_in_threadpool(ready,database,runtime)
         if request.url.path=='/health/ready':
             return JSONResponse({'status':'ready' if reason is None else 'unavailable','component':reason},status_code=200 if reason is None else 503)
         if reason is not None:return JSONResponse({'error':'deployment_unavailable'},status_code=503)
@@ -67,13 +80,13 @@ def worker_pulse():
     finally:stop.set();thread.join()
 
 
-def worker(runtime):
+def worker(runtime, *, tool_evidence=None):
     from .demo_login import signing_socket
     with signing_socket(runtime):
-        _run_worker(runtime)
+        _run_worker(runtime, tool_evidence=tool_evidence)
 
 
-def _run_worker(runtime):
+def _run_worker(runtime, *, tool_evidence=None):
     # Missing transferred journal is a configuration failure, never a new quota.
     if not (Path.home()/'.local/share/g2c/m4-real-services/m4-outflows.sqlite').is_file():
         raise ValueError('original_shared_authorization_journal_required')
@@ -91,19 +104,22 @@ def _run_worker(runtime):
     tools=RealTools(services,streaming_subject=os.environ.get(MODEL_STREAM_SUBJECT),
         assembly_streaming_subjects=runtime.assembly_model_stream_subjects,
         buffered_streaming_subjects=(runtime.assembly_model_stream_subjects|runtime.demo_subjects
-                                     if runtime.demo_subjects else frozenset()),controlled_probe=binding)
+                                     if runtime.demo_subjects else frozenset()),controlled_probe=binding,
+        tool_evidence=tool_evidence)
     database=runtime.database()
+    lio_confirmation = None
+    if runtime.demo_subjects and 'CJ_BETA_CONFIRMATION_B64' in os.environ:
+        lio_confirmation = ConfirmationSigner(decoded('CJ_BETA_CONFIRMATION_B64', length=32))
     while True:
         component='deployment_gate';status='unavailable'
         try:
-            authorization()
-            local_postgres.require_serving(control())
-            with database._open_runtime_connection() as connection:checkpoint.require_release(connection,control())
+            _runtime_gate(database,runtime)
             with worker_pulse():
                 outcomes=run_worker.run_once(database,services.model,runtime.auth,tools_configuration=tools,real_services=services,account_admission=True,
                     hk_beta_b_run_credential=True,
                     hk_assembly_scopes=frozenset(scope_for(ISSUER,subject) for subject in runtime.assembly_subjects),
                     hk_demo_scopes=frozenset(scope_for(ISSUER,subject) for subject in runtime.demo_subjects),
+                    lio_confirmation=lio_confirmation,
                     hk_assembly_run_credential_scopes=frozenset(
                         scope_for(ISSUER,subject) for subject in runtime.assembly_run_credential_subjects),
                     memory_configuration_for_scope=None if runtime.memory_runtime is None else runtime.memory_configuration_for_scope)
@@ -134,13 +150,22 @@ def initialize(runtime):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('command',choices=['migrate','api','worker'])
+    parser.add_argument('--tool-evidence-manifest',type=Path)
     args=parser.parse_args();runtime=None
+    if args.tool_evidence_manifest is not None and args.command!='worker':
+        parser.error('tool evidence is available only on the existing synthetic worker')
     try:
         load_secret_environment(args.command)
         audit=logging.getLogger('cj_usage.audit');audit.setLevel(logging.INFO)
         audit.addHandler(logging.StreamHandler(sys.stderr));audit.propagate=False
         runtime=Runtime.load('/tmp/g2c-beta',worker=args.command=='worker')
-        dict(migrate=initialize,api=api,worker=worker)[args.command](runtime)
+        if args.command=='worker':
+            from cj_api.tool_evidence import ToolEvidence
+            evidence=(None if args.tool_evidence_manifest is None else
+                      ToolEvidence.load(args.tool_evidence_manifest,runtime.demo_subjects))
+            worker(runtime,tool_evidence=evidence)
+        else:
+            dict(migrate=initialize,api=api)[args.command](runtime)
     except (OSError,ValueError,KeyError,CompositionUnavailable,psycopg.Error):
         print('ALERT beta_startup_configuration_or_database_unavailable',file=sys.stderr)
         raise SystemExit(1) from None

@@ -6,7 +6,7 @@ struct DemoBetaConfigurationTests {
     private let now = Date(timeIntervalSince1970: 1_795_000_000)
 
     private func reply(subject: String = "m4-synthetic-demo-0123456789ab", tokenOwner: String? = nil,
-                       lifetime: TimeInterval = 3600) throws -> Data {
+                       lifetime: TimeInterval = 3600, version: String = "DEMO-invite-session.2") throws -> Data {
         let expiry = now.addingTimeInterval(lifetime)
         let claims: [String: Any] = [
             "sub": tokenOwner ?? subject, "iss": "https://local.g2c.invalid", "aud": "g2c-local",
@@ -16,7 +16,7 @@ struct DemoBetaConfigurationTests {
             .replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_")
             .replacingOccurrences(of: "=", with: "")
         let response: [String: Any] = [
-            "version": "DEMO-invite-session.1",
+            "version": version,
             "access_token": "stub.\(encoded).signature",
             "subject": subject,
             "expires_at": ISO8601DateFormatter().string(from: expiry),
@@ -26,7 +26,7 @@ struct DemoBetaConfigurationTests {
 
     @Test func inviteRequestIsFixedOriginAndConsentGated() throws {
         let request = try DemoBetaConfiguration.inviteRequest(code: "Opaque-Case_sensitive", consent: true)
-        #expect(request.url?.absoluteString == "https://api-beta.go2china.space/v1/demo-invite-sessions")
+        #expect(request.url?.absoluteString == "https://api-beta.go2china.space/v2/demo-invite-sessions")
         #expect(request.httpMethod == "POST")
         #expect(request.value(forHTTPHeaderField: "Authorization") == nil)
         let body = try #require(request.httpBody)
@@ -57,12 +57,65 @@ struct DemoBetaConfigurationTests {
     @Test func rejectsOtherOwnerNonDemoExpiredOrOverlongGrant() throws {
         let wrongOwner = try reply(tokenOwner: "other-owner")
         let wrongScope = try reply(subject: "other-owner")
-        let tooLong = try reply(lifetime: 7201)
+        let tooLong = try reply(lifetime: 604801)
         for body in [wrongOwner, wrongScope, tooLong] {
             #expect(throws: DemoBetaConfiguration.Failure.invalidResponse) { try DemoInviteGrant.decode(body, now: now) }
         }
         let expired = try reply(lifetime: -1)
         #expect(throws: DemoBetaConfiguration.Failure.expired) { try DemoInviteGrant.decode(expired, now: now) }
+    }
+
+    @Test func legacyAndSevenDaySessionsKeepSeparateExpiryBounds() throws {
+        for (version, maximum) in [("DEMO-invite-session.1", 7200.0), ("DEMO-invite-session.2", 604800.0)] {
+            _ = try DemoInviteGrant.decode(reply(lifetime: maximum, version: version), now: now)
+            #expect(throws: DemoBetaConfiguration.Failure.invalidResponse) {
+                try DemoInviteGrant.decode(reply(lifetime: maximum + 1, version: version), now: now)
+            }
+        }
+        #expect(throws: DemoBetaConfiguration.Failure.invalidResponse) {
+            try DemoBetaConfiguration.verifyInviteResponse(reply(version: "DEMO-invite-session.1"),
+                status: 200, contentType: "application/json", now: now)
+        }
+    }
+
+    @Test func renewalOnlyUsesAnUnexpiredBearerWithinOneDayOfExpiry() throws {
+        let legacy = try DemoInviteGrant.decode(reply(lifetime: 7200, version: "DEMO-invite-session.1"), now: now)
+        let request = try #require(try DemoBetaConfiguration.renewalRequest(grant: legacy, now: now))
+        #expect(request.url?.absoluteString == "https://api-beta.go2china.space/v2/demo-session-renewals")
+        #expect(request.httpMethod == "POST" && request.value(forHTTPHeaderField: "Authorization") == "Bearer " + legacy.access_token)
+        let body = try #require(request.httpBody)
+        let fields = try #require(try JSONSerialization.jsonObject(with: body) as? [String: String])
+        #expect(fields == ["version": "DEMO-session-renewal.1"])
+        let fresh = try DemoInviteGrant.decode(reply(lifetime: 604800), now: now)
+        #expect(try DemoBetaConfiguration.renewalRequest(grant: fresh, now: now) == nil)
+        #expect(try DemoBetaConfiguration.renewalRequest(grant: fresh, now: now.addingTimeInterval(518400)) != nil)
+        #expect(throws: DemoBetaConfiguration.Failure.expired) {
+            try DemoBetaConfiguration.renewalRequest(grant: legacy, now: now.addingTimeInterval(7200))
+        }
+    }
+
+    @Test func renewedGrantPreservesOwnerAndStarterSelectionAndAcceptsTheServerCap() throws {
+        let grant = try DemoInviteGrant.decode(reply(version: "DEMO-invite-session.1"), now: now)
+        let composition = try DemoCompositionProfile(language: .en, travelID: "0123456789abcdef0123456789abcdef", travelVersion: 3)
+        let previous = DemoInviteSession(grant: grant, composition: composition)
+        // A qualification expiring sooner than seven days caps the new grant.
+        let renewed = try DemoBetaConfiguration.verifyRenewalResponse(reply(lifetime: 1800), status: 200,
+            contentType: "application/json", previous: previous, now: now)
+        #expect(renewed.grant.subject == grant.subject && renewed.grant.expiry == now.addingTimeInterval(1800))
+        #expect(renewed.composition.conversation_id == composition.conversation_id && renewed.composition.needs_id == composition.needs_id)
+        #expect(renewed.composition.travel_id == composition.travel_id && renewed.composition.travel_version == composition.travel_version)
+        for bytes in [try reply(subject: "m4-synthetic-demo-abcdef012345"), try reply(version: "DEMO-invite-session.1")] {
+            #expect(throws: DemoBetaConfiguration.Failure.invalidResponse) {
+                try DemoBetaConfiguration.verifyRenewalResponse(bytes, status: 200, contentType: "application/json", previous: previous, now: now)
+            }
+        }
+        for (status, failure) in [(401, DemoBetaConfiguration.Failure.inviteDenied), (503, .unavailable)] {
+            let code = status == 401 ? "DEMO_SESSION_DENIED" : "DEMO_SESSION_UNAVAILABLE"
+            let bytes = try JSONSerialization.data(withJSONObject: ["request_id": UUID().uuidString, "error": ["code": code]])
+            #expect(throws: failure) {
+                try DemoBetaConfiguration.verifyRenewalResponse(bytes, status: status, contentType: "application/json", previous: previous, now: now)
+            }
+        }
     }
 
     @Test(arguments: DemoStarterLanguage.allCases)

@@ -142,12 +142,12 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         let validate: @MainActor @Sendable () throws -> Void
     }
     private enum MessageWire {
-        case legacy, travel, discussion, edit
+        case legacy, travel, discussion, edit, lio
         var path: String {
-            switch self { case .legacy: "/v1/messages"; case .travel: "/v2/messages"; case .discussion: "/v3/messages"; case .edit: "/v4/messages" }
+            switch self { case .legacy: "/v1/messages"; case .travel: "/v2/messages"; case .discussion: "/v3/messages"; case .edit: "/v4/messages"; case .lio: "/v1/lio/messages" }
         }
         var operation: String {
-            switch self { case .legacy: Operations.receiveMessage.id; case .travel: Operations.receiveMessageV2.id; case .discussion: "receiveTripDiscussionV3"; case .edit: "receiveTripEditV4" }
+            switch self { case .legacy: Operations.receiveMessage.id; case .travel: Operations.receiveMessageV2.id; case .discussion: "receiveTripDiscussionV3"; case .edit: "receiveTripEditV4"; case .lio: "sendLioMessageV1" }
         }
     }
     private struct MessageCapability: Sendable {
@@ -177,6 +177,118 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
 
     public convenience init(requestTimeout: TimeInterval, resourceTimeout: TimeInterval) throws {
         try self.init(requestTimeout:requestTimeout,resourceTimeout:resourceTimeout,preview:nil)
+    }
+
+    static func lioTimeline(endpoint: MessageEndpoint,
+                            validate: @escaping @MainActor @Sendable () throws -> Void) throws -> NoRedirectTransport {
+        guard endpoint.allowsDemoBetaActivation else { throw MessageHTTPFailure.productionActivationUnavailable }
+        return try NoRedirectTransport(requestTimeout: 10, resourceTimeout: 20, preview: nil,
+            messages: MessageCapability(endpoint: endpoint, validate: validate, wire: .lio))
+    }
+
+    func sendLio(_ original: LioTimelineWire.Send, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
+        guard let messages, messages.wire == .lio else { throw MessageHTTPFailure.productionActivationUnavailable }
+        let path = original.version == .v1 ? messages.wire.path : "/v2/lio/messages"
+        let operation = original.version == .v1 ? messages.wire.operation : "sendLioMessageV2"
+        var request = HTTPRequest(method: .post, scheme: nil, authority: nil, path: path)
+        request.headerFields[.authorization] = "Bearer " + bearer
+        request.headerFields[.contentType] = "application/octet-stream"
+        request.headerFields[.accept] = "application/json"
+        return try await sendLocalWrite(request, body: HTTPBody(original.originalUTF8),
+            baseURL: messages.endpoint.url, operationID: operation,
+            capability: messages.boundary, messageWire: nil)
+    }
+
+    func readLio(conversationID: String?, before: String?, bearer: String,
+                 version: LioTimelineWire.Version = .v1) async throws -> (HTTPResponse, HTTPBody?) {
+        var query: [URLQueryItem] = []
+        if let conversationID {
+            guard LioTimelineWire.validConversationID(conversationID) else { throw MessageHTTPFailure.invalidConfiguration }
+            query.append(URLQueryItem(name: "conversation_id", value: conversationID))
+        }
+        if let before {
+            guard LioTimelineWire.validMessageID(before) else { throw MessageHTTPFailure.invalidConfiguration }
+            query.append(URLQueryItem(name: "before", value: before))
+        }
+        return try await lioRead(path: "/v\(version.rawValue)/lio/timeline", query: query,
+                                 operation: "readLioTimelineV\(version.rawValue)", bearer: bearer)
+    }
+
+    func readLioFirstReceipt(_ original: LioTimelineWire.Send, inputSHA256: String,
+                             bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
+        try await lioRead(path: "/v2/lio/messages", query: [
+            URLQueryItem(name: "message_id", value: original.messageID),
+            URLQueryItem(name: "input_sha256", value: inputSHA256)
+        ], operation: "readLioMessageV2", bearer: bearer)
+    }
+
+    func readLioTrip(before: String?, bearer: String, conversationID: String? = nil) async throws -> (HTTPResponse, HTTPBody?) {
+        if let before, !LioTripHistoryWire.validCursor(before) { throw MessageHTTPFailure.invalidConfiguration }
+        var query: [URLQueryItem] = []
+        if let conversationID {
+            guard LioTimelineWire.validConversationID(conversationID) else { throw MessageHTTPFailure.invalidConfiguration }
+            query.append(URLQueryItem(name: "conversation_id", value: conversationID))
+        }
+        if let before { query.append(URLQueryItem(name: "before", value: before)) }
+        let version = conversationID == nil ? 1 : 2
+        return try await lioRead(path: "/v\(version)/lio/trip", query: query,
+                                 operation: "readLioTripHistoryV\(version)", bearer: bearer)
+    }
+
+    func sendLioUndo(_ undo: LioTripHistoryWire.Undo, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
+        guard let messages, messages.wire == .lio else { throw MessageHTTPFailure.productionActivationUnavailable }
+        var request = HTTPRequest(method: .post, scheme: nil, authority: nil, path: "/v\(undo.version)/lio/trip/undo")
+        request.headerFields[.authorization] = "Bearer " + bearer
+        request.headerFields[.contentType] = "application/octet-stream"
+        request.headerFields[.accept] = "application/json"
+        return try await sendLocalWrite(request, body: HTTPBody(undo.originalUTF8),
+            baseURL: messages.endpoint.url, operationID: "undoLioTripV\(undo.version)",
+            capability: messages.boundary, messageWire: nil)
+    }
+
+    func readLioUndo(_ undo: LioTripHistoryWire.Undo, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
+        var query = [
+            URLQueryItem(name: "action_id", value: undo.actionID),
+            URLQueryItem(name: "target", value: undo.target)
+        ]
+        if let id = undo.conversationID { query.append(URLQueryItem(name: "conversation_id", value: id)) }
+        return try await lioRead(path: "/v\(undo.version)/lio/trip/undo", query: query,
+                                 operation: "readLioTripUndoV\(undo.version)", bearer: bearer)
+    }
+
+    func sendLioMemoryChoice(_ action: LioMemoryWire.Action, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
+        try await lioMemoryRequest(action, bearer: bearer, path: "/v1/lio/memory/actions", operation: "chooseLioMemoryV1")
+    }
+
+    /// The B endpoint only observes the existing action. Its POST body keeps the target out of the URL.
+    func readLioMemoryChoice(_ action: LioMemoryWire.Action, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
+        try await lioMemoryRequest(action, bearer: bearer, path: "/v1/lio/memory/receipt", operation: "readLioMemoryChoiceV1")
+    }
+
+    private func lioMemoryRequest(_ action: LioMemoryWire.Action, bearer: String, path: String,
+                                  operation: String) async throws -> (HTTPResponse, HTTPBody?) {
+        guard let messages, messages.wire == .lio else { throw MessageHTTPFailure.productionActivationUnavailable }
+        var request = HTTPRequest(method: .post, scheme: nil, authority: nil, path: path)
+        request.headerFields[.authorization] = "Bearer " + bearer
+        request.headerFields[.contentType] = "application/octet-stream"
+        request.headerFields[.accept] = "application/json"
+        return try await sendLocalWrite(request, body: HTTPBody(action.originalUTF8), baseURL: messages.endpoint.url,
+                                        operationID: operation, capability: messages.boundary, messageWire: nil)
+    }
+
+    private func lioRead(path: String, query: [URLQueryItem], operation: String, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
+        guard let messages, messages.wire == .lio else { throw MessageHTTPFailure.productionActivationUnavailable }
+        var components = URLComponents()
+        components.path = path
+        if !query.isEmpty {
+            components.queryItems = query
+            components.percentEncodedQuery = components.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
+        }
+        guard let route = components.string else { throw MessageHTTPFailure.invalidConfiguration }
+        var request = HTTPRequest(method: .get, scheme: nil, authority: nil, path: route)
+        request.headerFields[.authorization] = "Bearer " + bearer
+        request.headerFields[.accept] = "application/json"
+        return try await sendLocalRead(request, baseURL: messages.endpoint.url, operationID: operation, capability: messages.boundary)
     }
 
     /// Explicit capability for ONE producer-defined readonly computation, never a caller
@@ -521,7 +633,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
 
     /// Module-test-only composition: the supplied transport must be non-network.
     init(interceptedTransport: any ClientTransport, messageEndpoint: MessageEndpoint,
-         validateMessage: @escaping @MainActor @Sendable () throws -> Void) throws {
+         validateMessage: @escaping @MainActor @Sendable () throws -> Void, lio: Bool = false) throws {
         deviceVersion = .v3
         memoryProjection = nil
         memoryErasure = nil
@@ -531,7 +643,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         accountCleanup = nil
         memoryHistory = nil;feedback = nil;tripEditing = nil; needs = nil;typedMemory = nil
         session = nil; transport = interceptedTransport; preview = nil; memory = nil; memoryManagement = nil
-        messages = MessageCapability(endpoint: messageEndpoint, validate: validateMessage, wire: .legacy)
+        messages = MessageCapability(endpoint: messageEndpoint, validate: validateMessage, wire: lio ? .lio : .legacy)
     }
 
     /// Non-network typed MESSAGE transport seam for module boundary tests.
@@ -721,6 +833,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
 
     deinit { session?.invalidateAndCancel() }
     public func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
+        if messages?.wire == .lio { throw MessageHTTPFailure.productionActivationUnavailable }
         if let memoryProjection {
             guard baseURL == memoryProjection.endpoint.url,
                   LocalMemoryCandidateProjectionRoute.accepts(request, hasBody: body != nil, operationID: operationID) else {
@@ -943,6 +1056,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         case .travel: _ = try OriginalTravelMessageSend(raw: bytes, maximumBytes: capability.endpoint.maximumRequestBytes)
         case .discussion: _ = try OriginalTripDiscussion(raw: bytes, maximumBytes: capability.endpoint.maximumRequestBytes)
         case .edit: _ = try OriginalTripEdit(raw: bytes, maximumBytes: capability.endpoint.maximumRequestBytes)
+        case .lio: throw MessageHTTPFailure.invalidConfiguration
         case nil: break
         }
         try await capability.validate()

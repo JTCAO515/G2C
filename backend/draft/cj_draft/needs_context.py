@@ -3,9 +3,9 @@ from copy import deepcopy
 import json
 from cj_trip.domain import packed,Denied,Conflict
 from cj_needs.revision_lease import LeaseUnavailable
-from cj_trip.planning_context import read_current,current_in_tx,protect_model
+from cj_trip.planning_context import AdoptedTripConflict,read_current,current_in_tx,protect_model
 from cj_trip.needs_source import NeedsSourceAuthority
-from cj_trip.needs_plan import build as build_original,parse_model,_build
+from cj_trip.needs_plan import parse_model,_build_model
 from cj_trip.structured import SourceRejected
 from .needs_publisher import NeedsDraftPublisher
 
@@ -27,16 +27,20 @@ class ContextPublisher(NeedsDraftPublisher):
             needs_id=before.needs_id,revision=before.version,fields=before.fields,
             current_trip=None if context is None else dict(trip_id=context.trip.trip_id,version=context.trip.version,
                 content=json.loads(context.trip.content),proposed_fields=json.loads(context.proposed))),ensure_ascii=False,separators=(',',':')))]
+    def _model_plan(self,raw,context,capture):
+        return parse_model(raw)
     def build_plan(self,raw,capture):
         context=self.source.contexts.get(capture.binding)
-        if context is None:return build_original(raw,capture)
-        value=parse_model(raw);document=dict(content_version='structured.2',title=value['title'],items=value['items'],sources=[])
+        value=self._model_plan(raw,context,capture)
+        if context is None:return _build_model(value,capture,{})
+        document=dict(content_version='structured.2',title=value['title'],items=value['items'],sources=[])
         from cj_feasibility.trip_time_v2 import evaluate
         time_report=evaluate(packed(document))
         if time_report.status=='CONFLICT':
             conflict=next(c for c in time_report.checks if c.status=='CONFLICT')
             raise SourceRejected(conflict.evidence[0].path,conflict.code)
         try:protect_model(context.trip,document)
+        except AdoptedTripConflict as error:raise SourceRejected('items',error.rule) from None
         except Conflict:raise SourceRejected('items','adopted Trip fixed and selected scope required') from None
         before,_=capture.records();source_items={item['item_id']:item for item in before.fields.get('fixed_items',[])}
         # Local Trip fixed intent is checked above and retained in Trip content;
@@ -64,7 +68,7 @@ class ContextPublisher(NeedsDraftPublisher):
                 item['source_category']='user_provided' if item['text']==source['description'] else 'unknown'
             elif item['id'] in adopted:
                 item['fixed']=deepcopy(adopted[item['id']]['locked'])
-        original_content,candidate,report=_build(packed(projection),capture,adopted)
+        _,candidate,report=_build_model(projection,capture,adopted)
         return packed(document),candidate,report
     def check_trip_context(self,cur,binding,capture):
         value=json.loads(capture.raw)

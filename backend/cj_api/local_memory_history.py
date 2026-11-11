@@ -8,7 +8,10 @@ from hashlib import sha256
 from psycopg import Error as DatabaseError
 
 from cj_memory.runtime import RuntimeDenied,RuntimeUnknown
+from cj_message.demo_dialogue import LIO_CHAT_PATTERN
 from cj_message.domain import Command
+from cj_message.lio_plan_needs import original_needs
+from cj_message.needs_binding import needs_scope_for
 from cj_trip.auth_boundary import Boundary as TripBoundary
 from cj_trip.domain import Denied as TripDenied,Conflict as TripConflict,CommitUnknown
 from cj_trip.operation import OperationWithheld
@@ -32,9 +35,9 @@ class HistoryMemory:
         if run.erasure_protocol!=FENCE:raise RuntimeDenied('explicit original-history erasure fence required')
         return run
 
-    def before_model(self,binding,original,messages,system):
+    def before_model(self,binding,original,messages,system,*,message_refs=()):
         decisions=self.collect.model_decisions(binding,messages,system)
-        return self.memory.with_history(original,[],decision_source_sha256s=decisions)
+        return self.memory.with_history(original,list(message_refs),decision_source_sha256s=decisions)
 
 
 class OriginalHistory:
@@ -68,6 +71,7 @@ class OriginalHistory:
 
 class OriginalDecisions:
     def __init__(self,database,auth_dir,credential,principal,message_context):
+        self.database = database
         self.credential,self.principal,self.message_context=credential,principal,message_context
         def resolve(p):
             owner=scope_for(p.issuer,p.subject)
@@ -87,6 +91,20 @@ class OriginalDecisions:
         raw=reference.source
         return [self._digest(binding,DecisionQuery(command.trip_context.id,command.trip_context.expected_version,sha256(raw).hexdigest()))]
 
+    def _lio_reference(self, binding, fields):
+        with self.database.connect(binding.scope) as connection:
+            with connection.cursor() as cursor:
+                original = original_needs(cursor, binding)
+                if original is None:
+                    return None
+                needs_id, revision, digest = original
+                row = cursor.execute(
+                    'SELECT content FROM cj_needs_revision WHERE scope=%s AND needs_id=%s AND version=%s',
+                    (needs_scope_for(binding.scope), needs_id, revision)).fetchone()
+                if row is None or sha256(row[0]).hexdigest() != digest or json.loads(bytes(row[0])) != fields:
+                    raise RuntimeDenied('original Lio planning fields differ')
+        return needs_id, revision
+
     def model(self,binding,stored,messages,system):
         command=Command.parse_original(stored.raw);digests=[]
         for message in messages:
@@ -99,7 +117,12 @@ class OriginalDecisions:
             if value.get('version')!='TRIP-source-input.2':
                 if 'current_trip' in value:raise RuntimeDenied('unknown formal model context version')
                 continue
-            if set(value)!={'version','needs_id','revision','fields','current_trip'} or command.needs_reference!=(value['needs_id'],value['revision']):
+            if set(value)!={'version','needs_id','revision','fields','current_trip'}:
+                raise RuntimeDenied('original NEEDS model source differs')
+            reference = command.needs_reference
+            if reference is None and LIO_CHAT_PATTERN.fullmatch(binding.conversation_id):
+                reference = self._lio_reference(binding, value['fields'])
+            if reference != (value['needs_id'],value['revision']):
                 raise RuntimeDenied('original NEEDS model source differs')
             trip=value['current_trip']
             if trip is None:continue

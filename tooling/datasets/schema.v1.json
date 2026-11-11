@@ -1,0 +1,470 @@
+{
+  "type": "object",
+  "properties": {
+    "version": {
+      "enum": [
+        "G2C-dataset.1"
+      ]
+    },
+    "sample_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "task_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "trip_family": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "rewrite_family": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "language": {
+      "enum": [
+        "zh",
+        "en"
+      ]
+    },
+    "scenario": {
+      "enum": [
+        "direct_answer",
+        "clarification",
+        "correction",
+        "cancellation",
+        "tool_failure",
+        "tool_result",
+        "unknown_result"
+      ]
+    },
+    "source": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "synthetic_manual",
+            "synthetic_fixture",
+            "teacher",
+            "real_user"
+          ]
+        },
+        "source_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        }
+      },
+      "required": [
+        "kind",
+        "source_id",
+        "revision"
+      ],
+      "additionalProperties": false
+    },
+    "versions": {
+      "type": "object",
+      "properties": {
+        "trajectory": {
+          "enum": [
+            "MODEL-TOOL-TURN-STREAM@1",
+            "MODEL-TOOL-TURN-STREAM@2"
+          ]
+        },
+        "tool_schema_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "model": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "prompt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "adapter": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 512
+        }
+      },
+      "required": [
+        "trajectory",
+        "tool_schema_sha256",
+        "model",
+        "prompt",
+        "adapter"
+      ],
+      "additionalProperties": false
+    },
+    "run": {
+      "type": "object",
+      "properties": {
+        "attempt_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "status": {
+          "enum": [
+            "completed",
+            "failed",
+            "cancelled",
+            "context_invalid",
+            "unknown"
+          ]
+        },
+        "evidence_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "answer_state": {
+          "enum": [
+            "none",
+            "partial",
+            "complete"
+          ]
+        }
+      },
+      "required": [
+        "attempt_id",
+        "run_id",
+        "status",
+        "evidence_ref",
+        "answer_state"
+      ],
+      "additionalProperties": false
+    },
+    "messages": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 128,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "role": {
+                "enum": [
+                  "user",
+                  "system"
+                ]
+              },
+              "content": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 131072
+              }
+            },
+            "required": [
+              "role",
+              "content"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "role": {
+                "enum": [
+                  "assistant"
+                ]
+              },
+              "content": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 131072
+              }
+            },
+            "required": [
+              "role",
+              "content"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "role": {
+                "enum": [
+                  "assistant"
+                ]
+              },
+              "content": {
+                "type": "null"
+              },
+              "tool_calls": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 4,
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9_-]{1,128}$"
+                    },
+                    "type": {
+                      "enum": [
+                        "function"
+                      ]
+                    },
+                    "function": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 512
+                        },
+                        "arguments": {
+                          "type": "string",
+                          "maxLength": 131072
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "arguments"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "type",
+                    "function"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "role",
+              "content",
+              "tool_calls"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "role": {
+                "enum": [
+                  "tool"
+                ]
+              },
+              "tool_call_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512
+              },
+              "content": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 131072
+              }
+            },
+            "required": [
+              "role",
+              "tool_call_id",
+              "content"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "executions": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "properties": {
+          "tool_call_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "attempt_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "run_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "status": {
+            "enum": [
+              "received",
+              "failed",
+              "unknown",
+              "cancelled",
+              "not_started"
+            ]
+          },
+          "result": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "unknown"
+                    ]
+                  },
+                  "value": {
+                    "type": "null"
+                  }
+                },
+                "required": [
+                  "state",
+                  "value"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "present"
+                    ]
+                  },
+                  "value": {
+                    "type": "string",
+                    "maxLength": 131072
+                  }
+                },
+                "required": [
+                  "state",
+                  "value"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "error_code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "evidence": {
+            "type": "object",
+            "properties": {
+              "ref": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512
+              },
+              "attempt_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512
+              },
+              "run_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512
+              },
+              "tool_call_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512
+              },
+              "status": {
+                "enum": [
+                  "received",
+                  "failed",
+                  "unknown",
+                  "cancelled",
+                  "not_started"
+                ]
+              },
+              "operation_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512
+              }
+            },
+            "required": [
+              "ref",
+              "attempt_id",
+              "run_id",
+              "tool_call_id",
+              "status",
+              "operation_id"
+            ],
+            "additionalProperties": false
+          },
+          "operation_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
+        },
+        "required": [
+          "tool_call_id",
+          "attempt_id",
+          "run_id",
+          "status",
+          "result",
+          "error_code",
+          "evidence",
+          "operation_id"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "version",
+    "sample_id",
+    "task_id",
+    "trip_family",
+    "rewrite_family",
+    "language",
+    "scenario",
+    "source",
+    "versions",
+    "run",
+    "messages",
+    "executions"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:g2c:dataset:1",
+  "title": "G2C offline task dataset v1"
+}

@@ -1,5 +1,5 @@
 """Offline M4 boundaries; HTTP fixtures are not real provider evidence."""
-from datetime import datetime,timezone
+from datetime import date,datetime,timezone
 import asyncio
 import gzip
 import hashlib
@@ -558,8 +558,49 @@ class Boundaries(unittest.TestCase):
         self.assertEqual(declared['native_turn_profile'],M4_NATIVE_TURN_PROFILE_V2)
         self.assertNotIn('answer_format_profile',declared)
         self.assertEqual(declared['native_tools'],tools.native_tools)
+        from cj_message.lio_context import answer_prompt
+        lio = tools._model_input(ModelInput(
+            [dict(role='user',content='Synthetic Lio question')], TOOL_SYSTEM + ' ' + answer_prompt('en'),
+            provider, {}, lio_answer=True))
+        lio_input = json.loads(lio.original_bytes)
+        self.assertEqual(lio_input['answer_format_profile'],'lio-user.1')
+        self.assertEqual(lio_input['native_turn_profile'], M4_NATIVE_TURN_PROFILE_V2)
+        self.assertEqual(lio_input['native_tools'], tools.native_tools)
+        self.assertIn('You are Lio', lio_input['system'])
         ordinary=tools._model_input(([dict(role='user',content='Synthetic draft')],'existing structured system',provider))
         self.assertNotIn('answer_format_profile',json.loads(ordinary.original_bytes))
+
+    def test_lio_answer_never_presents_unconfirmed_preference_as_saved(self):
+        from cj_message.lio_context import display_answer
+
+        self.assertEqual(display_answer("I've noted your preference for a slow pace.", 'en'),
+                         'I understand your preference for a slow pace.')
+        self.assertEqual(display_answer('我记住了，你喜欢慢节奏旅行。', 'zh'),
+                         '我了解了，你喜欢慢节奏旅行。')
+        self.assertEqual(display_answer('You prefer a slow pace.', 'en'), 'You prefer a slow pace.')
+        self.assertEqual(display_answer('I saved time by walking.', 'en'), 'I saved time by walking.')
+
+    def test_lio_capabilities_normalize_actual_chinese_fragments_in_either_locale(self):
+        from cj_message.lio_context import display_answer
+
+        for locale in ('en', 'zh'):
+            with self.subTest(locale=locale):
+                self.assertEqual(display_answer('我是Lio，可以查询合成城市天气，并帮你核实出行信息。', locale),
+                                 '我是Lio，可以查看合成城市天气，并帮你确认出行信息。')
+                self.assertEqual(display_answer('I am Lio. 我可以查询合成城市天气。', locale),
+                                 'I am Lio. 我可以查看合成城市天气。')
+                self.assertIsNone(display_answer('RUN synthetic', locale))
+
+    def test_lio_memory_claims_are_neutralized_in_both_actual_languages(self):
+        from cj_message.lio_context import display_answer
+
+        for locale in ('en', 'zh'):
+            with self.subTest(locale=locale):
+                self.assertEqual(display_answer('我已经记住了，你偏好轻松旅行。', locale),
+                                 '我了解了，你偏好轻松旅行。')
+                self.assertEqual(display_answer("I've noted your preference for a slow pace.", locale),
+                                 'I understand your preference for a slow pace.')
+                self.assertEqual(display_answer('I saved time by walking.', locale), 'I saved time by walking.')
 
     def test_named_turn_answer_uses_the_existing_envelope_without_an_extra_call(self):
         reply={};receipt={}
@@ -573,6 +614,353 @@ class Boundaries(unittest.TestCase):
         self.assertEqual(reply['assistant']['tool_calls'][0]['id'],'call_synthetic')
         self.assertEqual(receipt['usage']['total_tokens'],50)
         self.assertEqual(len(self.sent),1)
+
+    def test_lio_memory_releases_the_dispatch_fence_before_reading_the_receipt(self):
+        from contextlib import closing
+
+        from cj_agent.provider import _M4_REQUEST_SENT
+        from cj_api.local_app import ISSUER, scope_for
+        from cj_memory_jobs.model_v2 import SYSTEM as MEMORY_SYSTEM
+
+        first,*tail = sse().splitlines(keepends=True)
+        event = json.loads(first[6:])
+        result = json.dumps(dict(version='MEMORY-EXTRACT@2',entries=[]))
+        event['choices'][0]['delta']['content'] = result
+        stream = ('data: '+json.dumps(event)+'\n'+''.join(tail)).encode()
+        read_ready = asyncio.Event()
+        requests = []
+
+        async def wire(config, raw, guard, observation):
+            self.assertTrue(guard())
+            requests.append(json.loads(raw))
+            yield _M4_REQUEST_SENT
+            await read_ready.wait()
+            yield stream
+
+        provider = MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),self.budget)
+        subject = 'm4-synthetic-lio-wire'
+        tools = RealTools(RealServices(provider,KEY,frozenset({subject})))
+        registration = tools.registrations['memory.lio_extract.1']
+        self.assertEqual(registration.kind,'memory')
+        original = registration.prepare_input(([dict(role='user',content='Synthetic source data')],MEMORY_SYSTEM,provider))
+        self.assertEqual(json.loads(original.original_bytes)['response_mode'],'lio-memory-json.1')
+        attempt = 'synthetic-memory-fence'
+        operation = SimpleNamespace(binding=SimpleNamespace(scope=scope_for(ISSUER,subject)),
+                                    command=SimpleNamespace(attempt_id=attempt))
+        with patch('cj_agent.provider._m4_wire',wire):
+            invoke = original.bind_operation(operation,lambda:True)
+            with closing(invoke()) as reply:
+                self.assertEqual(next(reply),'')
+                self.assertEqual(self.budget.inspect()[0]['state'],'INTENT')
+                self.assertEqual(len(requests),1)
+                self.assertNotIn('tools',requests[0])
+                self.assertEqual(requests[0]['response_format'],{'type':'json_object'})
+                read_ready.set()
+                self.assertEqual(''.join(reply),result)
+            self.assertEqual(self.budget.inspect()[0]['state'],'RECEIVED')
+            self.assertEqual(original.receipt(attempt,'provider_call',len(result)).attempt_id,attempt)
+            with self.assertRaises(BudgetUnknown):
+                list(invoke())
+        self.assertEqual(len(requests),1)
+
+    def test_lio_timeline_keeps_uncertainty_plain_and_withholds_internal_answers(self):
+        from cj_api.lio_dialogue_routes import _message
+        from cj_message.lio_timeline import TimelineMessage
+
+        def completed(text):
+            return SimpleNamespace(status='completed',text=text,draft_outcome=None,effects=())
+
+        english = TimelineMessage('message','run',1,'Can I run in the park?', 'en')
+        chinese = TimelineMessage('message','run',1,'开放了吗？', 'zh')
+        self.assertEqual(_message(english,completed('The hours are UNKNOWN.'))['answer'],
+                         'The hours are not yet verified.')
+        self.assertEqual(_message(chinese,completed('开放时间：UNKNOWN。'))['answer'],'开放时间：暂未确认。')
+        self.assertEqual(_message(english,completed('You can run in the park.'))['answer'],
+                         'You can run in the park.')
+        self.assertEqual(_message(chinese,completed('请查询并核实 https://restapi.amap.com/v3/weather/weatherInfo。'))['answer'],
+                         '请查看并确认 服务方。')
+        for item, answer in ((english,'The RUN receipt contains your run_id.'),
+                             (chinese,'我核对了消息投递和原回执。')):
+            with self.subTest(locale=item.locale):
+                view = _message(item,completed(answer))
+                self.assertEqual((view['answer'],view['status'],view['failure']),('','failed','unavailable'))
+                self.assertEqual(view['text'],item.text)
+
+    def test_lio_weather_keeps_observation_and_public_reference_distinct(self):
+        from cj_api.lio_dialogue_routes import _message
+        from cj_message.lio_context import LioCitation
+        from cj_message.lio_timeline import TimelineMessage
+
+        item = TimelineMessage('message', 'run', 1, 'What is the weather in Beijing?', 'en')
+        observed = '2026-11-10T01:30:00+00:00'
+        state = SimpleNamespace(status='completed', text='The forecast is clear.', draft_outcome=None,
+            effects=(LioCitation('tool.0.0', 'Amap Weather', None, observed).effect(),))
+        sources = _message(item, state)['sources']
+        self.assertEqual(sources[0], dict(title='Amap Weather', url=None, observed_at=observed))
+        self.assertEqual(sources[1], dict(title='Weather China · Current Beijing forecast (reference)',
+            url='https://www.weather.com.cn/weather/101010100.shtml', observed_at=None))
+
+    def test_lio_decision_answer_waits_for_the_complete_original_receipt(self):
+        from cj_agent.provider import M4_NATIVE_TURN_BUFFERED
+
+        provider=self.provider(sse())
+        receipt={}; reply={}
+        output=next(provider.invoke([dict(role='user',content='Synthetic Lio question')],TOOL_SYSTEM,
+            'lio-buffered-answer',tools=TOOLS,native_turn_profile=M4_NATIVE_TURN_BUFFERED,
+            receipt=receipt,native_reply=reply,guard=lambda:True,lio_answer=True))
+        self.assertEqual(output,'{"zh":"待核实。","en":"Needs verification."}')
+        self.assertEqual(receipt['usage']['total_tokens'],50)
+        self.assertEqual(self.budget.inspect()[-1]['state'],'RECEIVED')
+
+    def test_lio_complete_mixed_decision_consumes_preface_only_on_server(self):
+        from cj_agent.provider import M4_NATIVE_TURN_BUFFERED
+
+        first=json.loads(sse().splitlines()[0][6:])
+        first['choices'][0]['delta']['content']='Synthetic untrusted supplier preface. '*6
+        preface='data: '+json.dumps(first)+'\n\n'
+        for label,body in (('separate',preface+sse(tool=True)),
+                           ('same-delta',sse(tool=True))):
+            if label=='same-delta':
+                lines=body.splitlines(keepends=True)
+                first=json.loads(lines[0][6:])
+                first['choices'][0]['delta']['content']='Synthetic supplier preface.'
+                body='data: '+json.dumps(first)+'\n'+''.join(lines[1:])
+            with self.subTest(label=label):
+                body=body.replace('chatcmpl-synthetic','chatcmpl-'+label)
+                provider=self.provider(body); receipt={}; reply={}
+                output=list(provider.invoke([dict(role='user',content='Synthetic Lio question')],TOOL_SYSTEM,
+                    'lio-mixed-'+label,tools=TOOLS,native_turn_profile=M4_NATIVE_TURN_BUFFERED,
+                    receipt=receipt,native_reply=reply,guard=lambda:True,lio_answer=True))
+                self.assertEqual(len(output),1)
+                self.assertEqual(json.loads(output[0])['kind'],'tool')
+                self.assertNotIn('preface',output[0])
+                self.assertIsNone(reply['assistant']['content'])
+                self.assertEqual(len(reply['assistant']['tool_calls']),1)
+                self.assertEqual(receipt['usage']['total_tokens'],50)
+                self.assertEqual(self.budget.inspect()[-1]['state'],'RECEIVED')
+
+        # Removing DONE or usage still leaves the same attempt unknown, with no
+        # intermediate answer or accepted native call escaping the decision turn.
+        for label,body in (('no-done',preface+sse(tool=True,done=False)),
+                           ('no-usage',preface+sse(tool=True,usage=False))):
+            with self.subTest(label=label):
+                provider=self.provider(body); receipt={}; reply={}; output=[]
+                with self.assertRaises(ProviderUnknown):
+                    for piece in provider.invoke([dict(role='user',content='Synthetic Lio question')],TOOL_SYSTEM,
+                            'lio-mixed-'+label,tools=TOOLS,native_turn_profile=M4_NATIVE_TURN_BUFFERED,
+                            receipt=receipt,native_reply=reply,guard=lambda:True,lio_answer=True):
+                        output.append(piece)
+                self.assertEqual((output,receipt,reply),([],{},{}))
+                self.assertEqual(self.budget.inspect()[-1]['state'],'INTENT')
+
+    def test_lio_weather_clock_and_missing_forecast_project_only_public_evidence(self):
+        from cj_api.local_app import ISSUER, scope_for
+        from cj_message.lio_context import LioCitation
+
+        provider = self.provider(sse())
+        subject = 'm4-synthetic-one'
+        tools = RealTools(RealServices(provider, KEY, frozenset({subject})))
+        binding = SimpleNamespace(scope=scope_for(ISSUER, subject), run_id='synthetic-weather')
+        request = dict(name='weather', arguments=dict(start_date='2026-08-14', end_date='2026-08-15'))
+
+        class MidnightChina(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return datetime(2026, 11, 10, 17, tzinfo=timezone.utc).astimezone(tz)
+
+        class Worker:
+            def _model_history(self, *args):
+                pass
+
+            def _registered_stream(self, binding, key, registration, argument, *, progress=None):
+                if registration == 'tool.weather':
+                    canonical, _ = argument
+                    assert json.loads(canonical)['dates'] == dict(start='2026-11-11',end='2026-11-11')
+                    yield progress
+                    yield json.dumps(dict(source_url='https://restapi.amap.com/v3/weather/weatherInfo',
+                        retrieved_at='2026-11-09T17:00:00+00:00', forecasts=[], provider_reporttime='UNKNOWN'))
+                elif key == 'model.tool_turn.0':
+                    assert 'today is 2026-11-10 and tomorrow is 2026-11-11' in argument.system
+                    argument.native_reply['assistant'] = dict(tool_calls=[dict(id='synthetic-weather')])
+                    yield json.dumps(dict(version='MODEL-tool-turn.1',kind='tool',answer=None,calls=[request]))
+                else:
+                    raw = argument.messages[-1]['content']
+                    assert 'restapi.amap.com' not in raw and 'UNKNOWN' not in raw
+                    result = json.loads(raw)['results'][0]['result']
+                    assert result['forecasts'] == [] and result['source']['url'] is None
+                    assert result['dates'] == dict(start='2026-11-11',end='2026-11-11')
+                    assert result['note'] == '目前没有所问日期的预报。'
+                    yield json.dumps(dict(version='MODEL-tool-turn.1',kind='answer',
+                        answer=dict(zh='目前没有明天的预报。',en='Tomorrow’s forecast is unavailable.'),calls=[]))
+
+        worker = Worker()
+        worker.provider = provider
+        with patch('cj_api.real_services.datetime',MidnightChina):
+            chunks = list(tools.answer(worker,binding,[dict(role='user',content='北京明天天气怎么样请给出来源')],
+                lio_locale='zh',lio_question_day=date(2026,11,10)))
+        source, = [chunk for chunk in chunks if isinstance(chunk,LioCitation)]
+        self.assertEqual((source.title,source.url,source.observed_at),('高德天气',None,'2026-11-09T17:00:00+00:00'))
+        self.assertEqual(chunks[-1],'目前没有明天的预报。')
+
+    def test_lio_weather_date_only_overrides_unambiguous_single_day_questions(self):
+        from cj_api.real_services import _lio_weather_day
+
+        today = date(2026, 11, 10)
+        for question in ('What’s tomorrow’s weather in Beijing?',
+                         '请问明天北京天气怎么样？请给出来源链接。'):
+            with self.subTest(question=question):
+                self.assertEqual(_lio_weather_day(question, today), date(2026, 11, 11))
+        for question in ('Compare today’s and tomorrow’s weather in Beijing.',
+                         'What’s the weather in Beijing on November 18?',
+                         '请问明天北京天气怎么样？再比较后天的预报。'):
+            with self.subTest(question=question):
+                self.assertIsNone(_lio_weather_day(question, today))
+
+    def test_lio_place_timestamp_uses_the_display_wire_type(self):
+        from cj_api.local_app import ISSUER,scope_for
+        from cj_message.lio_context import LioCitation
+
+        provider = self.provider(sse())
+        subject = 'm4-synthetic-one'
+        tools = RealTools(RealServices(provider,KEY,frozenset({subject})))
+        binding = SimpleNamespace(scope=scope_for(ISSUER,subject), run_id='synthetic-lio')
+        request = dict(name='place_search',arguments=dict(keyword='park',city='北京',page=1,page_size=1))
+
+        class Worker:
+            def _model_history(self, *args):
+                pass
+
+            def _registered_stream(self, binding, key, registration, argument, *, progress=None):
+                if registration == 'tool.place':
+                    yield progress
+                    yield json.dumps(dict(source=dict(endpoint='https://restapi.amap.com/v3/place/text',
+                        received_at=dict(iso8601='2026-11-09T12:00:00+00:00',fold=0)),
+                        places=[dict(coordinate=dict(state='present',value=dict(raw='116.4,39.9')))],
+                        query=dict(kind='Search'), outcome='found', routes=[]))
+                elif key == 'model.tool_turn.0':
+                    argument.native_reply['assistant'] = dict(tool_calls=[dict(id='synthetic-place')])
+                    yield json.dumps(dict(version='MODEL-tool-turn.1',kind='tool',answer=None,calls=[request]))
+                else:
+                    model_evidence = argument.messages[-1]['content']
+                    assert 'restapi.amap.com' not in model_evidence and 'https://uri.amap.com/marker?' in model_evidence
+                    yield json.dumps(dict(version='MODEL-tool-turn.1',kind='answer',
+                        answer=dict(zh='附近有公园。',en='There is a park nearby.'),calls=[]))
+
+        worker = Worker()
+        worker.provider = provider
+        chunks = list(tools.answer(worker,binding,[dict(role='user',content='Find a park')],lio_locale='en'))
+        citation, = [chunk for chunk in chunks if isinstance(chunk,LioCitation)]
+        self.assertEqual(citation.observed_at,'2026-11-09T12:00:00+00:00')
+        self.assertEqual(citation.url,'https://uri.amap.com/marker?position=116.4%2C39.9')
+        self.assertEqual(chunks[-1],'There is a park nearby.')
+        self.assertEqual(self.sent,[])
+
+    def test_lio_observed_route_links_the_registered_endpoints(self):
+        from cj_api.local_app import ISSUER, scope_for
+        from cj_message.lio_context import LioCitation
+
+        provider = self.provider(sse())
+        subject = 'm4-synthetic-one'
+        tools = RealTools(RealServices(provider, KEY, frozenset({subject})))
+        binding = SimpleNamespace(scope=scope_for(ISSUER, subject), run_id='synthetic-route')
+        request = dict(name='place_route', arguments=dict(
+            origin_provider_id='first', origin_coordinate='116.4,39.9', origin_coordinate_role='poi_center',
+            destination_provider_id='second', destination_coordinate='116.5,40.0',
+            destination_coordinate_role='entrance', mode='walking'))
+
+        class Worker:
+            def _model_history(self, *args):
+                pass
+
+            def _registered_stream(self, binding, key, registration, argument, *, progress=None):
+                if registration == 'tool.place':
+                    query = json.loads(argument[0])['query']
+                    yield progress
+                    yield json.dumps(dict(source=dict(endpoint='https://restapi.amap.com/v3/direction/walking',
+                        received_at=dict(iso8601='2026-11-09T12:00:00+00:00',fold=0)),
+                        places=[], query=query, outcome='found', routes=[dict()]))
+                elif key == 'model.tool_turn.0':
+                    argument.native_reply['assistant'] = dict(tool_calls=[dict(id='synthetic-route')])
+                    yield json.dumps(dict(version='MODEL-tool-turn.1',kind='tool',answer=None,calls=[request]))
+                else:
+                    yield json.dumps(dict(version='MODEL-tool-turn.1',kind='answer',
+                        answer=dict(zh='步行可达。',en='You can walk there.'),calls=[]))
+
+        worker = Worker()
+        worker.provider = provider
+        chunks = list(tools.answer(worker,binding,[dict(role='user',content='Find a route')],lio_locale='en'))
+        citation, = [chunk for chunk in chunks if isinstance(chunk, LioCitation)]
+        self.assertEqual(citation.title, 'Amap directions')
+        self.assertEqual(citation.observed_at, '2026-11-09T12:00:00+00:00')
+        self.assertEqual(citation.url,
+            'https://uri.amap.com/navigation?from=116.4%2C39.9&to=116.5%2C40.0&mode=walk&callnative=0')
+
+    def test_lio_entry_policy_requires_the_article_and_withholds_stale_durations(self):
+        from cj_api.local_app import ISSUER, scope_for
+        from cj_fact.live_source import NOTICE_URL
+        from cj_message.lio_context import LioCitation
+
+        subject = 'm4-synthetic-one'
+        binding = SimpleNamespace(scope=scope_for(ISSUER, subject), run_id='synthetic-policy')
+        provider = self.provider(sse())
+        tools = RealTools(RealServices(provider, KEY, frozenset({subject})),
+                          buffered_streaming_subjects=frozenset({subject}))
+        request = dict(name='fact', arguments=dict(start_date='2026-11-10', end_date='2026-11-10'))
+
+        class Worker:
+            def _model_history(self, *args):
+                pass
+
+            def _registered_stream(self, binding, key, registration, argument, *, progress=None):
+                if registration == 'tool.fact':
+                    yield progress
+                    yield json.dumps(dict(source_url=NOTICE_URL, retrieved_at='2026-11-10T01:00:00+00:00',
+                                          excerpts=self.excerpts))
+                elif key == 'model.tool_turn.0':
+                    argument.native_reply['assistant'] = dict(tool_calls=[dict(id='synthetic-policy')])
+                    yield json.dumps(dict(version='MODEL-tool-turn.1',kind='tool',answer=None,calls=[request]))
+                else:
+                    evidence = json.loads(argument.messages[-1]['content'])['results'][0]['result']
+                    assert '240-Hour' in evidence['excerpts'][0]['text']
+                    yield 'You qualify automatically for 30 days or 1'
+                    yield '44 hours.'
+
+        worker = Worker()
+        worker.provider = provider
+        for excerpts, expected in [
+            ([dict(text='NIA home navigation')], 'could not verify'),
+            ([dict(text='II. 240-Hour Visa-Free Transit Policy'),
+              dict(text='The policy applies to travelers from eligible countries.'),
+              dict(text='Synthetic policy excerpt: stay up to 10 days.')], 'describes 240-hour'),
+            ([dict(text='II. 240-Hour Visa-Free Transit Policy'), dict(text='III. Other Entry Policy'),
+              dict(text='Different policy excerpt: stay up to 10 days.')], 'could not verify'),
+        ]:
+            with self.subTest(excerpts=excerpts):
+                worker.excerpts = excerpts
+                chunks = list(tools.answer(worker,binding,[dict(role='user',content='Find the transit policy')],
+                                           lio_locale='en'))
+                citation, = [chunk for chunk in chunks if isinstance(chunk,LioCitation)]
+                self.assertEqual(citation.url, NOTICE_URL)
+                answer = ''.join(chunk for chunk in chunks if isinstance(chunk,str))
+                self.assertIn(expected,answer)
+                self.assertNotIn('automatically', answer)
+                self.assertNotIn('30 days', answer)
+                self.assertNotIn('144 hours', answer)
+
+    def test_lio_entry_policy_eligibility_followup_needs_current_evidence(self):
+        from cj_api.real_services import _lio_transit_request
+
+        history = [dict(role='user', content='How does visa-free transit work?'),
+                   dict(role='assistant', content='Check the official guidance.')]
+        self.assertTrue(_lio_transit_request([*history, dict(role='user', content='Does that apply to me?')]))
+        self.assertFalse(_lio_transit_request([*history, dict(role='user', content='What is the weather?')]))
+        for question in ('How long can I stay in China visa-free during transit?',
+                         'Can I stay in Beijing for 240 hours without a visa during a layover?',
+                         'Can I get a 240-hour visa waiver on my layover?',
+                         'Do I need a visa for my layover in Beijing?',
+                         '在北京转机需要签证吗？'):
+            with self.subTest(question=question):
+                self.assertTrue(_lio_transit_request([dict(role='user', content=question)]))
 
     def test_complete_named_function_with_stop_keeps_the_original_receipt(self):
         marker='G2C_SYNTHETIC_D1_OK'

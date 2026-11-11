@@ -1,9 +1,10 @@
 """Real PG/RUN/Meter with native HTTP fixtures; no live key/network/cost."""
 import asyncio,json,os,time
+from hashlib import sha256
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from contextlib import contextmanager
-from datetime import datetime,timezone
+from datetime import datetime,timedelta,timezone
 from threading import Event
 from unittest.mock import patch
 
@@ -13,6 +14,7 @@ from fastapi.testclient import TestClient
 
 from cj_agent.provider import DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,M4_TURN_FUNCTION_V2
 from cj_api.real_services import RealServices,RealTools
+from cj_api.tool_evidence import ToolEvidence
 from cj_api.local_app import LocalDatabase,app_from_environment,create_local_app,scope_for,ISSUER
 from cj_api.local_run_context import load_run_context
 from cj_place.gaode import Response
@@ -168,9 +170,20 @@ def exercise(auth,conninfo):
             await asyncio.sleep(1.1)
             return None,Writer()
         services=RealServices(model,KEY,frozenset(subjects))
+        evidence=None
+        if subject=='m4-synthetic-ok':
+            evidence_directory=auth.parent/'tool-evidence'
+            evidence_directory.mkdir(mode=0o700)
+            manifest=auth.parent/'tool-evidence-window.json'
+            manifest.write_text(json.dumps(dict(version='G2C-tool-evidence-window.1',
+                directory=str(evidence_directory),messages=[dict(subject=subject,message_id=subject)],
+                expires_at=(datetime.now(timezone.utc)+timedelta(hours=1)).isoformat(),source_commit='a'*40)))
+            manifest.chmod(0o600)
+            evidence=ToolEvidence.load(manifest,frozenset(subjects))
         tools=RealTools(services,streaming_subject=subject if legacy_stream else None,
                         assembly_streaming_subjects=frozenset(assembly_pair),
-                        buffered_streaming_subjects=frozenset({subject}) if buffered else frozenset())
+                        buffered_streaming_subjects=frozenset({subject}) if buffered else frozenset(),
+                        tool_evidence=evidence)
         db=LocalDatabase(conninfo,run_context=profiles[subject][1])
         opened = []
         open_runtime = db._open_runtime_connection
@@ -473,6 +486,27 @@ def exercise(auth,conninfo):
             assert operations and len({attempt for _,attempt in operations})==len(operations)
             ledger=decode(conn.execute('SELECT ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(account,)).fetchone()[0])
             assert ledger.attempts
+            if subject=='m4-synthetic-ok':
+                artifact,=evidence_directory.iterdir()
+                captured=json.loads(artifact.read_bytes())
+                assert captured['run_id']==receipt['run_id'] and captured['message_id']==subject
+                raw_input,=conn.execute('SELECT input_bytes FROM cj_run_metered_operation '
+                    'WHERE scope=%s AND run_id=%s AND operation_key=%s',
+                    (scope,receipt['run_id'],captured['operation_key'])).fetchone()
+                assert captured['input_sha256']==sha256(bytes(raw_input)).hexdigest()
+                assert captured['input_utf8'].encode()==bytes(raw_input)
+                native,=conn.execute('SELECT input_bytes FROM cj_run_metered_operation '
+                    'WHERE scope=%s AND run_id=%s AND operation_key=%s',
+                    (scope,receipt['run_id'],'model.tool_turn.1')).fetchone()
+                next_input=json.loads(bytes(native))
+                tool_message=next(message for message in reversed(next_input['messages']) if message['role']=='tool')
+                continued,=json.loads(tool_message['content'])['results']
+                assert continued['result']==json.loads(captured['result_utf8'])
+                original=next(row for row in budget.inspect() if row['attempt_id']==captured['attempt_id'])
+                assert original['state']=='RECEIVED' and ledger.attempts[captured['attempt_id']].state=='settled'
+                assert captured['response_sha256']==original['receipt']['response_sha256']
+                assert captured['response_sha256']==sha256(captured['result_utf8'].encode()).hexdigest()
+                print('PASS signed original tool artifact, registered input, vendor digest, actual continuation and settled Meter')
             if incremental:
                 assert all((attempt.receipt is None)==mixed for attempt in ledger.attempts.values())
                 assert conn.execute('SELECT acknowledged FROM cj_message_delivery WHERE run_id=%s',

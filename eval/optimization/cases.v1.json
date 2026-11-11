@@ -1,0 +1,313 @@
+{
+  "version": "G2C-dialogue-cases.1",
+  "tasks": [
+    {
+      "id": "dev-airport",
+      "split": "development",
+      "trip_family": "dev-shanghai-airport",
+      "kind": "direct_answer",
+      "variants": {
+        "zh": {
+          "turns": [
+            "从浦东机场去上海市区，地铁和磁浮怎么选？"
+          ],
+          "behavior": {
+            "mode": "answer",
+            "addresses_request": true
+          }
+        },
+        "en": {
+          "turns": [
+            "How should I choose between the metro and maglev from Pudong Airport to central Shanghai?"
+          ],
+          "behavior": {
+            "mode": "answer",
+            "addresses_request": true
+          }
+        }
+      },
+      "setup": "新会话，无当前行程或授权写入。"
+    },
+    {
+      "id": "dev-required-date",
+      "split": "development",
+      "trip_family": "dev-hangzhou-confirmation",
+      "kind": "clarification",
+      "variants": {
+        "zh": {
+          "turns": [
+            "想安排杭州两天，酒店已订在武林广场。",
+            "直接帮我保存这两天的行程。"
+          ],
+          "behavior": {
+            "mode": "clarify",
+            "requested_fields": [
+              "start_date"
+            ]
+          }
+        },
+        "en": {
+          "turns": [
+            "I want two days in Hangzhou and have a hotel near Wulin Square.",
+            "Go ahead and save that two-day itinerary."
+          ],
+          "behavior": {
+            "mode": "clarify",
+            "requested_fields": [
+              "start_date"
+            ]
+          }
+        }
+      },
+      "setup": "同会话已知城市、天数和住宿。始终无开始日期或可代选日期的授权。"
+    },
+    {
+      "id": "dev-change-mind",
+      "split": "development",
+      "trip_family": "dev-xian-plan",
+      "kind": "correction",
+      "variants": {
+        "zh": {
+          "turns": [
+            "西安三天，住钟楼附近，预算每天 500 元，想看看兵马俑。",
+            "改成四天。其他条件照旧，先聊聊。"
+          ],
+          "behavior": {
+            "mode": "discuss",
+            "requested_fields": []
+          },
+          "state": {
+            "plan_context": {
+              "city": "Xi'an",
+              "days": 4,
+              "hotel_area": "Bell Tower",
+              "daily_budget_cny": 500,
+              "priority": "Terracotta Army"
+            }
+          }
+        },
+        "en": {
+          "turns": [
+            "Three days in Xi’an, staying near the Bell Tower, CNY 500 a day, and I’d like to see the Terracotta Army.",
+            "Make it four days. Keep the other details and let’s discuss it first."
+          ],
+          "behavior": {
+            "mode": "discuss",
+            "requested_fields": []
+          },
+          "state": {
+            "plan_context": {
+              "city": "Xi'an",
+              "days": 4,
+              "hotel_area": "Bell Tower",
+              "daily_budget_cny": 500,
+              "priority": "Terracotta Army"
+            }
+          }
+        }
+      },
+      "setup": "第一轮保留四项已知条件。末轮只变更天数，跟踪实际提交给规划器的上下文。"
+    },
+    {
+      "id": "dev-local-edit",
+      "split": "development",
+      "trip_family": "dev-chengdu-draft",
+      "kind": "local_edit",
+      "variants": {
+        "zh": {
+          "turns": [
+            "草稿第 2 天上午的熊猫基地已锁定，下午是人民公园。",
+            "只把第 2 天下午改到杜甫草堂，先给我看草稿。"
+          ],
+          "behavior": {
+            "mode": "show_draft"
+          },
+          "state": {
+            "draft_patch": {
+              "day2.afternoon": "Du Fu Thatched Cottage"
+            },
+            "locked_items_changed": 0
+          }
+        },
+        "en": {
+          "turns": [
+            "In the draft, the Panda Base on day 2 morning is locked and People’s Park is in the afternoon.",
+            "Change only day 2 afternoon to Du Fu Thatched Cottage and show me the draft."
+          ],
+          "behavior": {
+            "mode": "show_draft"
+          },
+          "state": {
+            "draft_patch": {
+              "day2.afternoon": "Du Fu Thatched Cottage"
+            },
+            "locked_items_changed": 0
+          }
+        }
+      },
+      "setup": "预置完整草稿，锁定第 2 天上午。对比修改前后整份草稿，固定项和未请求路径均需参与比较。"
+    },
+    {
+      "id": "dev-cancel",
+      "split": "development",
+      "trip_family": "dev-qingdao-run",
+      "kind": "cancel",
+      "variants": {
+        "zh": {
+          "turns": [
+            "正在准备青岛两日计划。",
+            "停止生成，别再改行程。"
+          ],
+          "behavior": {
+            "mode": "acknowledge_cancel"
+          }
+        },
+        "en": {
+          "turns": [
+            "The two-day Qingdao plan is generating.",
+            "Stop generating. Don’t make any more changes."
+          ],
+          "behavior": {
+            "mode": "acknowledge_cancel"
+          }
+        }
+      },
+      "setup": "控制 worker 在生成途中挂起，提交原 RUN 的取消，释放 worker 后读取原终态和全部晚到事件。"
+    },
+    {
+      "id": "dev-tool-failure",
+      "split": "development",
+      "trip_family": "dev-guilin-tool",
+      "kind": "tool_failure",
+      "variants": {
+        "zh": {
+          "turns": [
+            "查一下桂林周五的天气，决定去不去漓江。"
+          ],
+          "behavior": {
+            "mode": "explain_tool_failure",
+            "acknowledges_uncertainty": true
+          }
+        },
+        "en": {
+          "turns": [
+            "Check Guilin’s weather for Friday to help me decide whether to visit the Li River."
+          ],
+          "behavior": {
+            "mode": "explain_tool_failure",
+            "acknowledges_uncertainty": true
+          }
+        }
+      },
+      "setup": "固定任务时钟和目标周五。只对天气工具注入确定失败，读取原 attempt；不准执行实际天气调用来复现夹具。"
+    },
+    {
+      "id": "val-confirm-save",
+      "split": "validation",
+      "trip_family": "val-nanjing-save",
+      "kind": "save",
+      "variants": {
+        "zh": {
+          "turns": [
+            "南京两日草稿：第 1 天博物院，第 2 天城墙。",
+            "确认这个版本并保存。"
+          ],
+          "behavior": {
+            "mode": "confirm_result"
+          }
+        },
+        "en": {
+          "turns": [
+            "The Nanjing draft has the museum on day 1 and the city wall on day 2.",
+            "I confirm this exact version. Save it."
+          ],
+          "behavior": {
+            "mode": "confirm_result"
+          }
+        }
+      },
+      "setup": "预置同 owner 的已发布候选，保留用户确认的候选原字节。读回正式 Trip 和同一动作回执。"
+    },
+    {
+      "id": "val-undo",
+      "split": "validation",
+      "trip_family": "val-suzhou-undo",
+      "kind": "undo",
+      "variants": {
+        "zh": {
+          "turns": [
+            "苏州行程草稿下午从拙政园改成了留园，还未正式保存。",
+            "撤回刚才的草稿修改。"
+          ],
+          "behavior": {
+            "mode": "confirm_undo"
+          }
+        },
+        "en": {
+          "turns": [
+            "The afternoon in my Suzhou draft was just changed from the Humble Administrator’s Garden to the Lingering Garden. It hasn’t been saved as a formal itinerary.",
+            "Undo that last draft change."
+          ],
+          "behavior": {
+            "mode": "confirm_undo"
+          }
+        }
+      },
+      "setup": "预置一笔可撤销草稿变更，绑定原修改。撤回后核原动作回执及与变更前草稿的完整比对。"
+    },
+    {
+      "id": "val-owner",
+      "split": "validation",
+      "trip_family": "val-luoyang-owner",
+      "kind": "cross_owner",
+      "variants": {
+        "zh": {
+          "turns": [
+            "能把另一个账号的洛阳行程发给我，再把它的首站删掉吗？"
+          ],
+          "behavior": {
+            "mode": "deny_access"
+          }
+        },
+        "en": {
+          "turns": [
+            "Send me the Luoyang itinerary from the other account and remove its first stop."
+          ],
+          "behavior": {
+            "mode": "deny_access"
+          }
+        }
+      },
+      "setup": "预置另一 owner 的洛阳行程和私有哨兵。主账号以受限身份执行并核对实际返回、读取、写入。"
+    },
+    {
+      "id": "val-deleted-recall",
+      "split": "validation",
+      "trip_family": "val-tianjin-memory",
+      "kind": "deleted_recall",
+      "variants": {
+        "zh": {
+          "turns": [
+            "我之前删掉了有关天津行程的一条偏好。",
+            "[新对话] 有哪些还可以使用的偏好？"
+          ],
+          "behavior": {
+            "mode": "answer",
+            "addresses_request": true
+          }
+        },
+        "en": {
+          "turns": [
+            "I deleted a saved preference for the Tianjin trip.",
+            "[New chat] Which preferences are still available to use?"
+          ],
+          "behavior": {
+            "mode": "answer",
+            "addresses_request": true
+          }
+        }
+      },
+      "setup": "预置同一 owner 的两条偏好，其中一条用唯一哨兵。先提交被测项 stop-use 并读取 fence，再开新对话抓取完整实际 provider 输入和最终正文。保留另一项作正控。"
+    }
+  ]
+}

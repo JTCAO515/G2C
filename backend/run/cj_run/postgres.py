@@ -55,6 +55,20 @@ class Repository:
         with self.transaction(require_clean_close=True) as tx:
             return None if tx._record(binding) is None else tx.get(binding)
 
+    def lio_timeline(self, bindings):
+        """Display retained Lio originals already resolved by the MESSAGE boundary."""
+        with self._transaction(require_clean_close=True, scope_lock=False, display_snapshot=True) as tx:
+            snapshots = []
+            for binding in bindings:
+                row = tx._record(binding, lock=False)
+                if row is None:
+                    snapshots.append((None, False))
+                    continue
+                state = tx._read_state(binding, row, retained=True)
+                expired = row[6] is not True and state.status in ('queued', 'running')
+                snapshots.append((state, expired))
+            return snapshots
+
     @contextmanager
     def worker_lease(self, binding):
         """One physical-session owner per chat; no row lock is held across the run.
@@ -146,7 +160,7 @@ class Repository:
 
     @contextmanager
     def _transaction(self, *, require_clean_close,scope_lock,background_protocol=None,
-                     borrowed_connection=None,validate_connection=None):
+                     borrowed_connection=None,validate_connection=None,display_snapshot=False):
         conn = self.connect() if borrowed_connection is None else borrowed_connection
         cur = None
         outcome = 'setup_failed'
@@ -169,7 +183,8 @@ class Repository:
                 raise ValueError('autocommit forbidden')
             cur = conn.cursor()
             try:
-                cur.execute('SET TRANSACTION ISOLATION LEVEL READ COMMITTED')
+                cur.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY'
+                            if display_snapshot else 'SET TRANSACTION ISOLATION LEVEL READ COMMITTED')
                 bind_scope = getattr(conn, 'bind_scope', None)
                 if bind_scope is not None:
                     bind_scope(cur)
@@ -188,7 +203,10 @@ class Repository:
                 row = cur.fetchone()
                 if row is None or row[1] is not True:
                     raise Denied('scope unavailable')
-                yield Transaction(cur, self.scope, row[0], self.expires_at) if scope_lock else JobCursor(cur,self.scope,row[0])
+                if scope_lock or display_snapshot:
+                    yield Transaction(cur, self.scope, row[0], self.expires_at)
+                else:
+                    yield JobCursor(cur, self.scope, row[0])
             except BaseException:
                 outcome = 'body_failed'
                 cleanup(conn.rollback, 'rollback')
@@ -241,9 +259,9 @@ class Transaction:
         if type(binding) is not Binding or binding.scope != self.scope:
             raise Denied('scope unavailable')
 
-    def _record(self, binding):
+    def _record(self, binding, *, lock=True):
         self._scope(binding)
-        self.cur.execute('SELECT conversation_id,generation,message_id,message_sequence,status,event_sequence,expires_at>clock_timestamp(),usage_command_bytes,usage_input_bytes FROM cj_run_record WHERE scope=%s AND run_id=%s FOR UPDATE',
+        self.cur.execute('SELECT conversation_id,generation,message_id,message_sequence,status,event_sequence,expires_at>clock_timestamp(),usage_command_bytes,usage_input_bytes FROM cj_run_record WHERE scope=%s AND run_id=%s' + (' FOR UPDATE' if lock else ''),
                          (self.scope, binding.run_id))
         return self.cur.fetchone()
 
@@ -275,9 +293,12 @@ class Transaction:
         row = self._record(binding)
         if row is None:
             raise Conflict('unavailable')
+        return self._read_state(binding, row)
+
+    def _read_state(self, binding, row, *, retained=False):
         if row[:4] != (binding.conversation_id, binding.generation, binding.message_id, binding.message_sequence):
             raise Conflict('binding changed')
-        if row[6] is not True:
+        if not retained and row[6] is not True:
             raise ResyncRequired('run recovery expired; not absent')
         self.cur.execute('SELECT sequence,event_id,kind,value FROM cj_run_event WHERE scope=%s AND run_id=%s ORDER BY sequence',
                          (self.scope, binding.run_id))

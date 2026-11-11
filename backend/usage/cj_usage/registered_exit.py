@@ -11,7 +11,7 @@ from cj_run.postgres import CommitUnknown as RunCommitUnknown
 from .metered_exit import MeteredExitCore, _PreparedCall, BudgetUnknown
 from .postgres import CommitUnknown,RepositoryUnavailable
 from .codec import CorruptLedger
-from .core import Blocked
+from .core import Blocked, Meter
 
 
 @dataclass(frozen=True)
@@ -48,6 +48,7 @@ def _model_input(argument):
 MODEL_REGISTRY=MappingProxyType({
     'model.answer':Registration('model',_model_input),
     'model.draft':Registration('model',_model_input),
+    'memory.lio_extract.1':Registration('memory',_model_input),
 })
 
 
@@ -82,13 +83,25 @@ class RegisteredExit(MeteredExitCore):
         started=self._now(previous)
         return self._deadline(started,started)
 
-    def prepare_operation(self,runs,binding,operation_key,registration_id,argument,*,stage):
+    def prepare_operation(self,runs,binding,operation_key,registration_id,argument,*,stage,reserve_final_model=False):
         try: registration=self.registrations[registration_id]
         except KeyError: raise BudgetUnknown('operation adapter is not registered') from None
         prepared_input=registration.prepare_input(argument)
+        output_limit=self.output_limits[registration.kind]
+        if reserve_final_model and registration.kind=='tool':
+            from cj_run.step_usage import ledger_scope_for
+            from .metered_exit import BudgetExceeded
+            meter=self._original_meter(binding,ledger_scope_for(binding.scope,self.config))
+            try:
+                with meter.repo.transaction() as ledger:
+                    available=self.config.max_output-Meter.output_exposure(ledger,binding.run_id)-self.output_limits['model']
+            except (CommitUnknown,RepositoryUnavailable,CorruptLedger,DatabaseError,Blocked):
+                raise BudgetUnknown('original tool output capacity unavailable') from None
+            if available<1:raise BudgetExceeded(stage)
+            output_limit=min(output_limit,available)
         try:
             operation=OperationStore(runs,self.config).create(binding,operation_key,registration_id,
-                registration.kind,prepared_input.original_bytes,self.output_limits[registration.kind])
+                registration.kind,prepared_input.original_bytes,output_limit)
         except (OriginalStepOnly,RunCommitUnknown,DatabaseError,ValueError):
             raise BudgetUnknown('original operation preparation unavailable') from None
         bind=(None if prepared_input.bind_operation is None else

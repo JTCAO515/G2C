@@ -92,6 +92,28 @@ class HistoryReadContext:
         self._check()
         return result
 
+    def lio_timeline(self, conversation_id, before, *, multiple=False):
+        from .lio_timeline import read
+        self._check()
+        result = read(self._service, conversation_id, before, multiple=multiple)
+        self._check()
+        return result
+
+    def query_lio_message(self, message_id):
+        from .demo_dialogue import message_id as validated_message_id
+        from .lio_timeline import original
+        self._check()
+        result = original(self._service, validated_message_id(message_id))
+        self._check()
+        return result
+
+    def query_lio_receipt(self, message_id):
+        from .demo_dialogue import query
+        self._check()
+        result = query(self._service, message_id, lio=True)
+        self._check()
+        return result
+
     def query_edit_message(self,message_id,*,require_active=True):
         self._check()
         if type(message_id) is not str or not message_id.strip():raise InvalidInput('message ID required')
@@ -318,9 +340,16 @@ class Boundary:
         from .demo_dialogue import receive
         return receive(self._service(token), raw)
 
+    def receive_lio(self, token, raw, *, prepare_scope, version):
+        from .demo_dialogue import receive_lio
+        return receive_lio(self._service(token), raw, prepare_scope=prepare_scope, version=version)
+
     def query_dialogue(self, token, message_id):
         from .demo_dialogue import query
         return query(self._service(token), message_id)
+
+    def query_lio(self, token, message_id):
+        return self.with_history_context(token, lambda context: context.query_lio_receipt(message_id))
 
     def send_status_v2(self, token, conversation_id, message_id=None):
         return self._service(token).send_status_v2(conversation_id,message_id)

@@ -3,6 +3,9 @@ import Foundation
 import Darwin
 import CryptoKit
 import CJShell
+#if G2C_DEMO_BETA
+import CJLioUser
+#endif
 import CJTripClient
 import CJManualPreviewClient
 import CJMessageHTTP
@@ -121,6 +124,9 @@ private var developmentHostEnvironment: [String: String] {
 @MainActor final class DevelopmentTripHost {
     let id = UUID()
     let trips: TripContainerHost
+    #if G2C_DEMO_BETA
+    let lioTripLibrary: LioTripLibrary?
+    #endif
     let messages: DevelopmentMessageHost
     #if DEBUG
     let memory: DevelopmentMemoryHost?
@@ -222,6 +228,28 @@ private var developmentHostEnvironment: [String: String] {
                 session: lifetime.session, sessionOperation: lifetime.operation, pendingStore: store, liveTransport: transport, liveWrites: TripLiveWrites())
             #endif
         }
+        #if G2C_DEMO_BETA
+        if tripEditingProfile != nil {
+            lioTripLibrary = LioTripLibrary(list: {
+                var rows: [StructuredTripSummary] = []
+                var cursor: StructuredTripCursor?
+                repeat {
+                    try Task.checkCancellation()
+                    let request = try client.prepareStructuredPage(limit: 20, after: cursor, binding: lifetime.trip)
+                    let page = try await client.structuredPage(for: request)
+                    rows.append(contentsOf: page.trips)
+                    cursor = page.next
+                } while cursor != nil
+                return rows
+            }, detail: { id in
+                let request = try client.prepareStructuredDetail(id: id, binding: lifetime.trip)
+                guard let snapshot = try await client.structuredDetail(for: request) else { return nil }
+                return try client.withCurrentStructuredSnapshot(snapshot) { _, record, _, _ in record }
+            })
+        } else {
+            lioTripLibrary = nil
+        }
+        #endif
         trips = TripContainerHost(shell: shell)
         guard trips.bind(TripContainerBinding(client: client, trip: lifetime.trip, shellGeneration: shell.generation,
             session: lifetime.session, sessionOperation: lifetime.operation, pageSize: 20,
@@ -284,9 +312,17 @@ private var developmentHostEnvironment: [String: String] {
         #endif
         if let typedMode {
             guard let travel = messages.travelSelection else { throw MemoryFailure.unconfigured }
+            #if G2C_DEMO_BETA
+            let clearLioChoices: (@MainActor (MemoryBinding, String) throws -> Void)? = { [actions = messages.lioMemoryActions] binding, itemID in
+                try actions.clearErasedItem(itemID, environment: binding.environment, account: binding.account)
+            }
+            #else
+            let clearLioChoices: (@MainActor (MemoryBinding, String) throws -> Void)? = nil
+            #endif
             typedMemory = try DevelopmentTypedMemoryHost(configuration:configuration,mode:typedMode,shell:shell,
                 session:lifetime.session,operation:lifetime.operation,travel:travel,messages:messages.messages,
-                isCurrent:{lifetime.current != nil}, erasureEndpoint: erasureEndpoint, candidateEndpoint: candidateEndpoint)
+                isCurrent:{lifetime.current != nil}, erasureEndpoint: erasureEndpoint, candidateEndpoint: candidateEndpoint,
+                clearAdditionalOriginals: clearLioChoices)
         } else { typedMemory = nil }
         if tripEditingProfile != nil {
             let needsHost = needs?.host
@@ -626,7 +662,8 @@ private var developmentHostEnvironment: [String: String] {
     private let candidates: DevelopmentMemoryCandidateComponents?
     init(configuration: DevelopmentSessionConfiguration,mode: DevelopmentTypedMode,shell: ShellState,
          session: SessionLifecycle,operation: SessionOperation,travel: TravelSelectionModel,messages: AssistantMessageHost,
-         isCurrent: @escaping @MainActor () -> Bool, erasureEndpoint: URL? = nil, candidateEndpoint: URL? = nil) throws {
+         isCurrent: @escaping @MainActor () -> Bool, erasureEndpoint: URL? = nil, candidateEndpoint: URL? = nil,
+         clearAdditionalOriginals: (@MainActor (MemoryBinding, String) throws -> Void)? = nil) throws {
         let binding = MemoryBinding(environment:configuration.environmentID,account:configuration.accountID,generation:UUID(),selection:UUID())
         let generation = shell.generation
         let namespace = MessageKeyNamespace(environment:binding.environment,account:binding.account,purpose:.localMemoryPendingV1)
@@ -690,7 +727,7 @@ private var developmentHostEnvironment: [String: String] {
         if let erasureEndpoint {
             erasure = try DevelopmentMemoryErasureComponents(configuration: configuration, endpointURL: erasureEndpoint, binding: binding,
                 legacyRoot: legacyRoot, key: key, keys: keys, manual: oldStore, management: oldManagement, typed: store,
-                session: session, operation: operation, current: current)
+                session: session, operation: operation, current: current, clearAdditionalOriginals: clearAdditionalOriginals)
         } else { erasure = nil }
         host = try TypedMemoryContainerHost(shell:shell,client:client,binding:binding,pageSize:20,options:options,travel:travel,legacy:legacy,currentBinding:current, erasureClient: erasure?.client, itemCleanup: erasure?.cleanup)
         if let candidateEndpoint {
@@ -712,7 +749,8 @@ private var developmentHostEnvironment: [String: String] {
         legacyRoot: URL, key: MessageEncryptionKey, keys: ScopedMessageKeyProvider,
         manual: MemoryPendingStore, management: MemoryManagementPendingStore, typed: TypedMemoryPendingStore,
         session: SessionLifecycle, operation: SessionOperation,
-        current: @escaping @MainActor () -> MemoryBinding?) throws {
+        current: @escaping @MainActor () -> MemoryBinding?,
+        clearAdditionalOriginals: (@MainActor (MemoryBinding, String) throws -> Void)? = nil) throws {
         let files = FileManager.default
         let support = try files.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
         let expected = support.appendingPathComponent("G2CDevelopmentMemory", isDirectory: true)
@@ -737,7 +775,8 @@ private var developmentHostEnvironment: [String: String] {
             return configuration.token
         }, currentBinding: current, session: session, sessionOperation: operation, pendingStore: store,
             requestTimeout: 10, resourceTimeout: 20)
-        cleanup = MemoryItemLocalCleanup(manual: manual, management: management, typed: typed)
+        cleanup = MemoryItemLocalCleanup(manual: manual, management: management, typed: typed,
+                                         clearAdditionalOriginals: clearAdditionalOriginals)
     }
     func invalidate() { client.invalidate() }
 }
@@ -821,6 +860,12 @@ private var developmentHostEnvironment: [String: String] {
     let history: ServerHistoryHost
     let runs: RunContainerHost
     let travelSelection: TravelSelectionModel?
+    #if G2C_DEMO_BETA
+    let lio: LioService
+    let lioChats: LioChatLibrary
+    let lioTripHistory: LioTripHistoryClient
+    let lioMemoryActions: LioMemoryActionsClient
+    #endif
     private let lifetime: DevelopmentMessageLifetime
     private let keyAdapter: ExistingMessageKeyAdapter
 
@@ -870,6 +915,22 @@ private var developmentHostEnvironment: [String: String] {
             transport = try NoRedirectTransport.developmentMessages(endpoint:endpoint,requestTimeout:10,resourceTimeout:20,validate:{try lifetime.validate()})
         }
         let credentials = DevelopmentMessageCredentials(token: configuration.token, scope: scope, lease: lease, lifetime: lifetime)
+        #if G2C_DEMO_BETA
+        let lioEndpoint = try MessageEndpoint(url: configuration.endpoint, maximumRequestBytes: LioMemoryWire.maximumRequestBytes,
+                                              maximumResponseBytes: 4_500_000)
+        let lioClient = try LioTimelineHTTP(endpoint: lioEndpoint, scope: scope, lease: lease,
+                                           credentials: credentials, firstChatRecovery: recovery,
+                                           validate: { try lifetime.validate() })
+        let lioService = LioService.signedTimeline(lioClient)
+        lio = lioService
+        lioChats = .signed(client: lioClient, defaultService: lioService, language: { shell.language.lio },
+                           tripHistory: { conversationID in
+            LioTripHistoryClient(timeline: lioClient, recovery: recovery, scope: scope, lease: lease,
+                                 conversationID: conversationID)
+        })
+        lioTripHistory = LioTripHistoryClient(timeline: lioClient, recovery: recovery, scope: scope, lease: lease)
+        lioMemoryActions = LioMemoryActionsClient(timeline: lioClient, recovery: recovery, scope: scope, lease: lease)
+        #endif
         let betaRead = configuration.endpoint.host == "api-beta.go2china.space"
         let runReads = try NoRedirectTransport(requestTimeout: betaRead ? 30 : 15, resourceTimeout: 150)
         let client = MessageHTTPClient(recovery: recovery, scope: scope, endpoint: endpoint,
@@ -954,6 +1015,9 @@ private var developmentHostEnvironment: [String: String] {
     private let tokens: [String: String]
     private let persistence: KeychainSessionStore
     private let demoMode: Bool
+    #if G2C_DEMO_BETA
+    @ObservationIgnored private var lioChatContinuity: LioChatContinuity?
+    #endif
     @ObservationIgnored lazy var accounts: DevelopmentAccountHost = {
         DevelopmentAccountHost(shell: shell,
             choices: tokens.keys.sorted().map { .init(id: $0, label: $0) }, persistence: persistence, demoMode: demoMode,
@@ -963,6 +1027,12 @@ private var developmentHostEnvironment: [String: String] {
             }, verify: { [weak self] material in
                 guard let self else { return .networkUnknown }
                 return await self.verify(material)
+            }, refresh: { material in
+                #if G2C_DEMO_BETA
+                return try await DemoInviteClient.renew(material)
+                #else
+                return nil
+                #endif
             }, activate: { [weak self] material, session, operation in
                 guard let self, let inputs = try self.sessionInputs(material) else { throw SessionFailure.invalidConfiguration }
                 let configuration = inputs.configuration
@@ -975,6 +1045,12 @@ private var developmentHostEnvironment: [String: String] {
                     self.trip = try DevelopmentTripHost(configuration: configuration, shell: self.shell,
                         lease: DevelopmentSessionLease(session: session, operation: operation), offline: self.offline,
                         memoryExtensionsAllowed: self.cleanupWorkflow?.version == .v4, betaComposition: inputs.composition)
+                    #if G2C_DEMO_BETA
+                    if let current = self.trip?.messages.lioChats.continuity {
+                        if let previous = self.lioChatContinuity { current.inherit(previous) }
+                        self.lioChatContinuity = current
+                    }
+                    #endif
                     if let conversation = inputs.conversation {
                         _ = self.trip?.messages.messages.selectConversationForSending(conversation)
                     }
@@ -987,7 +1063,12 @@ private var developmentHostEnvironment: [String: String] {
             }, invalidate: { [weak self] in self?.trip?.invalidate(); self?.trip = nil },
             clearOffline: offline == nil ? nil : { [weak self] in try self?.offline?.clearLocally() },
             serverRejected: offline == nil || cleanupEnabled ? nil : { [weak self] material in try self?.offline?.identityRejected(material: material) },
-            identityWillChange: { [weak self] in self?.cleanupWorkflow?.invalidate(); self?.cleanupWorkflow = nil; self?.cleanup = nil },
+            identityWillChange: { [weak self] in
+                #if G2C_DEMO_BETA
+                self?.lioChatContinuity = nil
+                #endif
+                self?.cleanupWorkflow?.invalidate(); self?.cleanupWorkflow = nil; self?.cleanup = nil
+            },
             rejectedContext: cleanupEnabled ? { [weak self] material, session, operation in
                 guard let self else { throw CleanupFailure.stale }
                 try await self.reconcileRejectedDevice(material: material, lease: .init(session: session, operation: operation))
@@ -1073,6 +1154,9 @@ private var developmentHostEnvironment: [String: String] {
     private func fenceCleanupBusiness() throws {
         guard let original = cleanupWorkflow else { throw CleanupFailure.stale }
         try original.requireCurrent()
+        #if G2C_DEMO_BETA
+        lioChatContinuity = nil
+        #endif
         trip?.invalidate()
         guard cleanupWorkflow === original else { throw CleanupFailure.stale }
         try original.requireCurrent(); offline?.hide()
