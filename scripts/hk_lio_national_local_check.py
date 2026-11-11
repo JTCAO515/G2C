@@ -34,6 +34,10 @@ CITIES=(('上海','Shanghai','310000'),('成都','Chengdu','510100'),('西安',"
 KEY='national-http-fixture-key-only'
 PREFERENCE='I prefer fewer stops in a day.'
 MISSING_REQUESTS={'去成都玩三天':('zh','成都','三天'), 'Plan a three-day trip to Chengdu.':('en','Chengdu','three-day')}
+DISCUSSION_REQUESTS={
+    '想去杭州玩两天，日期和人数还没确定，先聊聊不要保存。':('zh','杭州','想去杭州玩两天'),
+    'I would like to visit Hangzhou for two days; dates and party size are undecided. Just discuss, do not save.':
+        ('en','Hangzhou','visit Hangzhou for two days')}
 
 
 def exercise(root,conninfo):
@@ -76,21 +80,26 @@ def exercise(root,conninfo):
             else:
                 content=('You have shared that you prefer fewer stops in a day.' if has_saved else
                          "I don't know you yet. Would you like to introduce yourself?")
-        elif 'LIO-planning-intake.2' in system:
+        elif 'LIO-planning-intake.3' in system:
             text=body['messages'][-1]['content'];current['text']=text
             source_index=len([m for m in body['messages'][1:] if m['role']=='user' and not m['content'].startswith('Stored memory data')])-1
-            from cj_agent.lio_intake_current_schema import response_format
+            from cj_agent.lio_intake_modes_schema import response_format
             assert body['response_format']==response_format(source_index)
-            if text in MISSING_REQUESTS or text in ('继续','Please continue.'):
+            if text in DISCUSSION_REQUESTS or text in ('继续','Please continue.') and current['missing_question'] in DISCUSSION_REQUESTS:
+                _,mention,quote=DISCUSSION_REQUESTS[text if text in DISCUSSION_REQUESTS else current['missing_question']]
+                content=json.dumps(dict(version='LIO-planning-intake.3',intent='discuss',reply='可以先讨论，不保存。',needs_tools=False,
+                    city=dict(query=mention,normalized_name=None,province=None,source_index=0,quote=quote),duration_days=None,
+                    extraction=None,field_sources={},current_source_index=source_index),ensure_ascii=False)
+            elif text in MISSING_REQUESTS or text in ('继续','Please continue.'):
                 _,mention,duration=MISSING_REQUESTS[text if text in MISSING_REQUESTS else current['missing_question']]
                 evidence_index=source_index if text in MISSING_REQUESTS else 0
-                content=json.dumps(dict(version='LIO-planning-intake.2',intent='plan',reply='请补充日期和人数。',needs_tools=False,
+                content=json.dumps(dict(version='LIO-planning-intake.3',intent='plan',reply='请补充日期和人数。',needs_tools=False,
                     city=dict(query=mention,normalized_name=None,province=None,source_index=evidence_index,quote=mention),duration_days=3,
                     extraction=dict(version='NEEDS-extraction.1',fields={},unresolved=[],long_term_requests=[]),
                     field_sources={'duration_days':[dict(source_index=evidence_index,quote=duration)]},current_source_index=source_index),ensure_ascii=False)
             elif text==PREFERENCE:
-                content=json.dumps(dict(version='LIO-planning-intake.2',intent='consult',reply='I can suggest a relaxed pace.',needs_tools=False,
-                    city=None,duration_days=None,extraction=dict(version='NEEDS-extraction.1',fields={},unresolved=[],long_term_requests=[]),
+                content=json.dumps(dict(version='LIO-planning-intake.3',intent='consult',reply='I can suggest a relaxed pace.',needs_tools=False,
+                    city=None,duration_days=None,extraction=None,
                     field_sources={},current_source_index=source_index))
             else:
                 content=None
@@ -105,7 +114,7 @@ def exercise(root,conninfo):
                     applies_to=['self'],locked=dict(state='known',value=True),booking_status=dict(state='unknown'),
                     start=event('09:00'),end=event('10:00'))]
                 sources['fixed_items']=[dict(source_index=source_index,quote=current['fixed_description'])]
-            content=content or json.dumps(dict(version='LIO-planning-intake.2',intent='plan',reply='I can arrange the trip.',needs_tools=False,
+            content=content or json.dumps(dict(version='LIO-planning-intake.3',intent='plan',reply='I can arrange the trip.',needs_tools=False,
                 city=dict(query=current['mention'],normalized_name=None,province=None,source_index=source_index,quote=current['mention']),
                 duration_days=3,extraction=dict(version='NEEDS-extraction.1',fields=fields,unresolved=[],long_term_requests=[]),
                 field_sources=sources,current_source_index=source_index),ensure_ascii=False)
@@ -129,7 +138,7 @@ def exercise(root,conninfo):
             else:
                 content=json.dumps(dict(version='TRIP-lio-first-plan.1',title=current['en']+' trip',items=items,
                     proposed_subjects={item['id']:['party'] for item in items}),ensure_ascii=False)
-        if 'LIO-planning-intake.2' in system:
+        if 'LIO-planning-intake.3' in system:
             from jsonschema import Draft202012Validator
             Draft202012Validator(body['response_format']['json_schema']['schema']).validate(json.loads(content))
         identity=dict(id='fixture-national-'+str(len(wire)),model=M4_MODEL)
@@ -161,8 +170,9 @@ def exercise(root,conninfo):
     register_typed_routes(app,database=database,auth_dir=auth,configuration=memory.collection)
     headers={'Authorization':'Bearer '+dev_auth.token(auth,SUBJECT,3600),'Content-Type':'application/octet-stream'}
     with TestClient(app) as api,patch('cj_api.lio_city._catalog_exchange',side_effect=city_exchange):
-        for index,(question,(locale,mention,duration)) in enumerate(MISSING_REQUESTS.items()):
-            current.update(zh='成都',en='Chengdu',locale=locale,mention=mention,party='两个人',duration=duration,fixed_description='not-present',missing_question=question)
+        for index,(question,(locale,mention,duration)) in enumerate({**MISSING_REQUESTS,**DISCUSSION_REQUESTS}.items()):
+            discussing=question in DISCUSSION_REQUESTS
+            current.update(zh='杭州' if discussing else '成都',en='Hangzhou' if discussing else 'Chengdu',locale=locale,mention=mention,party='两个人',duration=duration,fixed_description='not-present',missing_question=question)
             mid='missing-original-'+str(index)
             clarification_request=dict(version='LIO-message.2',message_id=mid,text=question,locale=locale,new_conversation=True)
             accepted=api.post('/v2/lio/messages',headers=headers,content=json.dumps(clarification_request).encode());assert accepted.status_code==200,accepted.text
@@ -179,7 +189,10 @@ def exercise(root,conninfo):
                 assert db.execute('SELECT count(*) FROM cj_message_needs_binding WHERE message_scope=%s AND message_id=ANY(%s)',(scope,[mid,mid+'-continue'])).fetchone()==(0,)
                 assert db.execute('SELECT count(*) FROM cj_trip_record').fetchone()==(0,)
                 assert db.execute('SELECT count(*) FROM cj_memory_item').fetchone()==(0,)
-            print('PASS signed exact missing-date/party and current-source continuation, zero NEEDS/Trip/active Memory',locale,flush=True)
+                if discussing:
+                    contexts=db.execute("SELECT value FROM cj_run_event WHERE scope=%s AND kind='effect_committed' AND value LIKE 'lio_planning_context.1:%%' AND run_id IN (SELECT run_id FROM cj_message_receipt WHERE scope=%s AND message_id=ANY(%s))",(scope,scope,[mid,mid+'-continue'])).fetchall()
+                    assert len(contexts)==2 and all(json.loads(value.removeprefix('lio_planning_context.1:'))['authority']=='none' for value, in contexts)
+            print('PASS signed clarification/discussion and current-source continuation, zero NEEDS/Trip/active Memory',locale,'discussion' if discussing else 'missing',flush=True)
         for zh,en,adcode in CITIES:
             for locale in ('zh','en'):
                 current.update(zh=zh,en=en,locale=locale,mention=zh if locale=='zh' else en,
@@ -261,7 +274,7 @@ def exercise(root,conninfo):
                 reply=read['messages'][-1]['answer']
                 assert ('fewer stops' in reply or '少安排' in reply) if saved else ("don't know you yet" in reply or '还不了解你' in reply)
         print('PASS national consultation retains Memory candidates and new-chat identity recalls only saved Memory',flush=True)
-    assert len(city_calls)==15
+    assert len(city_calls)==17
     assert all(row['state']=='RECEIVED' for row in journal.inspect())
     print('PASS 12 signed private PG chains, original model/tool receipts, no live vendor calls',flush=True)
 
