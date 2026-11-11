@@ -117,6 +117,18 @@ class SourcedIntake(unittest.TestCase):
             turns=(turns[0],type(turns[1])(text=turns[1].text.replace(old,item['quote'],1),question_day=turns[1].question_day),turns[2])
             item['booking_evidence']=dict(status='booked',source_index=1,quote=statement)
             with self.subTest(label=label,other=other),self.assertRaises(InvalidInput):parse_sourced(json.dumps(data),turns)
+
+    def test_question_tag_cannot_be_cut_off_at_a_comma_or_semicolon(self):
+        for locale,statement in (('en','hotel meetup is booked, right?'),
+                ('en','hotel meetup is booked; correct?'),('zh','酒店集合已预约，对吗？')):
+            data,turns=self.sample(locale);item=data['fixed_items'][0];old=item['quote']
+            # The primary itself is clipped, so only the original message can
+            # retain the question's full scope.
+            prefix=statement.split(',')[0].split(';')[0].split('，')[0]
+            item.update(quote=old+'; '+prefix,detail_refs=[])
+            turns=(turns[0],type(turns[1])(text=turns[1].text.replace(old,old+'; '+statement,1),question_day=turns[1].question_day),turns[2])
+            item['booking_evidence']=dict(status='booked',source_index=1,quote=prefix)
+            with self.subTest(statement=statement),self.assertRaises(InvalidInput):parse_sourced(json.dumps(data),turns)
         data,turns=self.sample();data['field_sources'][0]['quote']='not an original source'
         with self.assertRaises(InvalidInput):parse_sourced(json.dumps(data),turns)
 

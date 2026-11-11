@@ -28,6 +28,18 @@ def _booking_source(item,booking,items,turns):
     if len(clauses)!=1:raise InvalidInput('unique affirmative same-item booking source required')
     clause,separator=clauses[0];label=re.escape(item['label']);status=BOOKING[booking['status']]
     from .lio_planning_grounding import RANGE,ISO
+    original=turns[ref['source_index']].text
+    if original.count(ref['quote'])!=1:raise InvalidInput('unique affirmative same-item booking source required')
+    position=original.index(ref['quote'])
+    # Commas/semicolons do not finish a declaration: “booked, right?” is still
+    # a question even if both supplied refs stop before the comma. Mask only
+    # accepted date/clock spans for sentence-boundary detection (e.g. a.m.).
+    sentences=re.sub(ISO,lambda match:' '*len(match[0]),original)
+    sentences=RANGE.sub(lambda match:' '*len(match[0]),sentences)
+    endings=[sentences.find(mark,position)for mark in '.。!?！？\n']
+    ending=min((offset for offset in endings if offset>=0),default=len(sentences))
+    if ending<len(sentences)and sentences[ending]in '?？':
+        raise InvalidInput('unique affirmative same-item booking source required')
     # Accept a whole direct declaration, not a keyword found inside a question,
     # quotation, denial, or a longer target name. Temporal/lock values are still
     # checked against their complete originals by the unchanged final guard.
