@@ -80,13 +80,13 @@ def worker_pulse():
     finally:stop.set();thread.join()
 
 
-def worker(runtime):
+def worker(runtime, *, tool_evidence=None):
     from .demo_login import signing_socket
     with signing_socket(runtime):
-        _run_worker(runtime)
+        _run_worker(runtime, tool_evidence=tool_evidence)
 
 
-def _run_worker(runtime):
+def _run_worker(runtime, *, tool_evidence=None):
     # Missing transferred journal is a configuration failure, never a new quota.
     if not (Path.home()/'.local/share/g2c/m4-real-services/m4-outflows.sqlite').is_file():
         raise ValueError('original_shared_authorization_journal_required')
@@ -104,7 +104,8 @@ def _run_worker(runtime):
     tools=RealTools(services,streaming_subject=os.environ.get(MODEL_STREAM_SUBJECT),
         assembly_streaming_subjects=runtime.assembly_model_stream_subjects,
         buffered_streaming_subjects=(runtime.assembly_model_stream_subjects|runtime.demo_subjects
-                                     if runtime.demo_subjects else frozenset()),controlled_probe=binding)
+                                     if runtime.demo_subjects else frozenset()),controlled_probe=binding,
+        tool_evidence=tool_evidence)
     database=runtime.database()
     lio_confirmation = None
     if runtime.demo_subjects and 'CJ_BETA_CONFIRMATION_B64' in os.environ:
@@ -149,13 +150,22 @@ def initialize(runtime):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('command',choices=['migrate','api','worker'])
+    parser.add_argument('--tool-evidence-manifest',type=Path)
     args=parser.parse_args();runtime=None
+    if args.tool_evidence_manifest is not None and args.command!='worker':
+        parser.error('tool evidence is available only on the existing synthetic worker')
     try:
         load_secret_environment(args.command)
         audit=logging.getLogger('cj_usage.audit');audit.setLevel(logging.INFO)
         audit.addHandler(logging.StreamHandler(sys.stderr));audit.propagate=False
         runtime=Runtime.load('/tmp/g2c-beta',worker=args.command=='worker')
-        dict(migrate=initialize,api=api,worker=worker)[args.command](runtime)
+        if args.command=='worker':
+            from cj_api.tool_evidence import ToolEvidence
+            evidence=(None if args.tool_evidence_manifest is None else
+                      ToolEvidence.load(args.tool_evidence_manifest,runtime.demo_subjects))
+            worker(runtime,tool_evidence=evidence)
+        else:
+            dict(migrate=initialize,api=api)[args.command](runtime)
     except (OSError,ValueError,KeyError,CompositionUnavailable,psycopg.Error):
         print('ALERT beta_startup_configuration_or_database_unavailable',file=sys.stderr)
         raise SystemExit(1) from None

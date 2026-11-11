@@ -40,6 +40,42 @@ schema资产绑定原迁移hash并放进镜像；镜像标签和OCI revision均�
 
 ## 原预算与启动
 
+### #32 投影前工具原件的受控采集
+
+现有共享账的 `response_sha256` 对应规范工具结果，Lio 后续模型输入只含其投影。
+旧结果没有另存完整原件时，不能从投影还原。新合成窗口可在同一个现役 worker
+增加 `--tool-evidence-manifest /run/tool-evidence/window.json`。API 与迁移入口拒绝此参数。
+默认启动不采集。仅 B 在独占窗口配置已有受邀 Demo 主体及新 MESSAGE ID。
+
+清单由 worker UID 持有，普通文件、0600、无符号链接，格式如下。
+`source_commit` 固定为实际已审构建源，`expires_at` 为该窗口的明确结束时间，最多一天。
+输出目录为独立挂载、同 UID 持有的 0700 目录。运行清单、原件和凭据均不入 Git。
+
+```json
+{
+  "version": "G2C-tool-evidence-window.1",
+  "directory": "/tool-evidence",
+  "messages": [{"subject": "m4-synthetic-demo-0123456789ab", "message_id": "new-synthetic-original"}],
+  "expires_at": "2026-11-11T04:00:00+00:00",
+  "source_commit": "REPLACE_WITH_EXACT_REVIEWED_SOURCE_COMMIT"
+}
+```
+
+采集只观察原注册工具出口已经得到的规范结果。供应商原回执持久保存后、结果投影前，
+将同一原操作的输入、完整规范结果、摘要、Meter attempt、RUN、实现摘要写为
+`G2C-tool-evidence.1` 的独立 0600 文件。没有第二次工具调用，不能覆盖已存在文件。
+选中消息的采集过期或写入不确定时保留 UNKNOWN，不盲重放原请求。
+
+C 只读取得自己这六条原件后，逐条核对三段。
+
+1. `SHA256(result_utf8)` 与唯一共享账原工具回执的 `response_sha256` 相等。
+2. 原件内的 RUN、operation、attempt、`input_sha256` 和实际注册输入一致，Meter 原回执已结算。
+3. 同 RUN 的实际后续模型输入包含由该原件形成的 Lio 投影，并与原工具调用绑定一致。
+
+文件本身不证明 RUN 已完成、模型已续接或产品通过。缺失、不完整原件及原 INTENT
+继续保留原状态。B 在每格前核 A/JT 无在途，遇 FAIL/UNKNOWN 停止新派发。
+窗口结束移除该启动参数和挂载，重建同源 worker，保留原件与唯一账。
+
 迁移预算前停止并确认所有Mac旧producer已结束；先核原请求结果，未决原动作保持UNKNOWN。
 `scripts/m4_budget_transfer.py seal`在原共享SQLite事务锁内封存，再导出同一账本。
 只有指定主机激活和精确文件hash才可adopt。旧实例每次写入都会查producer标识；HK每次SQLite变更先在不随库恢复的control写WRITE_INTENT，再提交、推进精确全行hash锚点；
