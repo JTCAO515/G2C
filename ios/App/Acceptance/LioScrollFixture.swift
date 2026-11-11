@@ -7,7 +7,11 @@ private struct LioScrollFixture: View {
     var body: some View {
         let stream = sections.stream
         let arguments = ProcessInfo.processInfo.arguments
-        let hiddenText: String? = if arguments.contains("--lio-display-guard-markdown") {
+        let hiddenText: String? = if arguments.contains("--lio-display-guard-thought") {
+            " <think>Choose a search tool.</think>"
+        } else if arguments.contains("--lio-display-guard-tool") {
+            " Calling Amap Weather now."
+        } else if arguments.contains("--lio-display-guard-markdown") {
             " 查**询**后，暂时没有预报。"
         } else if arguments.contains("--lio-display-guard-host") {
             " [Forecast](https://%EF%BD%81pi-beta.go2china.space%E3%80%82/)"
