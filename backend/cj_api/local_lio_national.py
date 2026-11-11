@@ -3,6 +3,7 @@ from dataclasses import asdict
 from datetime import datetime
 from hashlib import sha256
 import json
+import logging
 import re
 from zoneinfo import ZoneInfo
 
@@ -14,7 +15,7 @@ from cj_message.lio_plan_needs import BOUND_EFFECT
 from cj_needs.domain import InvalidInput
 
 from .lio_city import CityReference,forms,_normalize
-from .lio_national_intake import SYSTEM,NONPERSISTENT,fields_for,parse,fixed_sources_complete,province_evidence
+from .lio_national_intake import SYSTEM,NONPERSISTENT,fields_for,parse,fixed_sources_complete,province_evidence,diagnostic_code
 from .lio_planning_grounding import PlanningTurn,standalone_question
 from .local_lio_planning import PlanningDetails,register
 
@@ -81,6 +82,8 @@ class NationalLioPlanning:
                     (messages,system,worker.provider),message_refs=refs))
         try:intake=parse(raw,turns)
         except (InvalidInput,ValueError,UnicodeError) as error:
+            logging.getLogger('cj_usage.audit').warning('LIO_INTAKE_REJECTED run_id=%s code=%s output_sha256=%s output_bytes=%s',
+                binding.run_id,diagnostic_code(error),sha256(raw.encode('utf-8','surrogatepass')).hexdigest(),len(raw.encode('utf-8','surrogatepass')))
             raise ProviderUnknown('nationwide structured intake unavailable') from error
         if intake.intent=='cancel':
             state=self._context(worker,binding,state,dict(authority='none',status='cancelled'))

@@ -160,3 +160,114 @@ class ToolEvidenceTest(unittest.TestCase):
                                     False, query)
         self.assertNotIn('opaque_original', projected)
         self.assertEqual(budget.inspect()[0]['state'], 'RECEIVED')
+
+    def load_intake(self):
+        self.data=dict(self.data,version='G2C-synthetic-evidence-window.2',kinds=['lio_intake'])
+        self.write_manifest()
+        return self.load()
+
+    def intake_operation(self,raw,*,message='original'):
+        original=self.operation(raw,message=message)
+        command=Command(original.command.attempt_id,original.command.operation_id,original.binding.run_id,
+                        'model',sha256(raw).hexdigest(),1,12000)
+        return RegisteredOperation(original.binding,'model.lio_intake.0','model.lio_intake.1',original.ledger_scope,
+                                   original.period,UsageBinding.from_command(command,raw))
+
+    def test_intake_is_a_separate_model_contract_with_original_bytes_and_receipt(self):
+        evidence=self.load_intake();operation=self.intake_operation(b'private original input')
+        raw='{"version":"LIO-planning-intake.1","opaque":"原始失败字段"}'.encode()
+        receipt=dict(model_id=M4_MODEL,receipt_sha256='c'*64,usage=dict(prompt_tokens=12,completion_tokens=6,total_tokens=18))
+        evidence.record_intake(operation,raw,receipt)
+        path,=self.directory.iterdir();record=json.loads(path.read_bytes())
+        self.assertEqual(record['version'],'G2C-lio-intake-evidence.1')
+        self.assertEqual(record['capture_kind'],'model')
+        self.assertEqual(record['registration_id'],'model.lio_intake.1')
+        self.assertEqual(record['result_utf8'].encode(),raw)
+        self.assertEqual(record['response_sha256'],sha256(raw).hexdigest())
+        self.assertEqual(record['input_sha256'],operation.command.input_digest)
+        self.assertNotIn('input_utf8',record)
+        self.assertEqual(record['receipt'],receipt)
+        self.assertEqual(path.stat().st_mode&0o777,0o600)
+        with self.assertRaises(BudgetUnknown):evidence.record_intake(operation,raw,receipt)
+
+    def test_intake_selection_expiry_and_kind_do_not_widen_tool_capture(self):
+        evidence=self.load_intake();operation=self.intake_operation(b'input',message='not-selected')
+        evidence.record_intake(operation,b'{}',{})
+        self.assertEqual(list(self.directory.iterdir()),[])
+        operation=self.intake_operation(b'input')
+        with self.assertRaises(BudgetUnknown):replace(evidence,clock=lambda:(NOW+timedelta(hours=2)).timestamp()).record_intake(operation,b'{}',{})
+        with self.assertRaises(BudgetUnknown):evidence.record_intake(self.operation(b'input'),b'{}',{})
+        self.assertEqual(list(self.directory.iterdir()),[])
+
+    def test_complete_original_model_is_captured_once_after_vendor_receipt(self):
+        from test_m4_real_services import sse
+        budget=AuthorizationBudget(self.root/'model-journal',clock=lambda:NOW)
+        import httpx
+        sent=[]
+        def response(request):
+            sent.append(request)
+            return httpx.Response(200,stream=httpx.ByteStream(sse().encode()))
+        provider=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),budget,transport=httpx.MockTransport(response))
+        subjects=frozenset({SUBJECT})
+        services=RealServices(provider,KEY,subjects,demo_subjects=subjects,national_subjects=subjects)
+        tools=RealTools(services,tool_evidence=self.load_intake())
+        prepared=tools._lio_intake_input(([dict(role='user',content='Synthetic original')],'JSON intake',provider))
+        operation=self.intake_operation(prepared.original_bytes)
+        raw=''.join(prepared.bind_operation(operation,lambda:True)())
+        self.assertEqual(len(sent),1)
+        self.assertEqual(budget.inspect()[0]['state'],'RECEIVED')
+        path,=self.directory.iterdir();record=json.loads(path.read_bytes())
+        self.assertEqual(record['result_utf8'],raw)
+        self.assertEqual(record['receipt'],budget.inspect()[0]['receipt'])
+        self.assertNotIn(KEY,path.read_text())
+
+    def test_after_receipt_revocation_withholds_capture_without_redispatch(self):
+        from test_m4_real_services import sse
+        import httpx
+        budget=AuthorizationBudget(self.root/'revoked-journal',clock=lambda:NOW);sent=[]
+        def response(request):
+            sent.append(request);return httpx.Response(200,stream=httpx.ByteStream(sse().encode()))
+        provider=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),budget,transport=httpx.MockTransport(response))
+        subjects=frozenset({SUBJECT})
+        tools=RealTools(RealServices(provider,KEY,subjects,demo_subjects=subjects,national_subjects=subjects),tool_evidence=self.load_intake())
+        prepared=tools._lio_intake_input(([dict(role='user',content='Synthetic original')],'JSON intake',provider))
+        operation=self.intake_operation(prepared.original_bytes)
+        def valid():return not any(row['state']=='RECEIVED' for row in budget.inspect())
+        with self.assertRaises(BudgetUnknown):''.join(prepared.bind_operation(operation,valid)())
+        self.assertEqual(len(sent),1)
+        self.assertEqual(budget.inspect()[0]['state'],'RECEIVED')
+        self.assertEqual(list(self.directory.iterdir()),[])
+
+    def test_incomplete_model_never_has_a_complete_intake_artifact(self):
+        from test_m4_real_services import sse
+        from cj_agent.provider import ProviderUnknown
+        import httpx
+        budget=AuthorizationBudget(self.root/'short-journal',clock=lambda:NOW)
+        provider=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),budget,
+            transport=httpx.MockTransport(lambda request:httpx.Response(200,stream=httpx.ByteStream(sse(done=False).encode()))))
+        subjects=frozenset({SUBJECT});tools=RealTools(RealServices(provider,KEY,subjects,demo_subjects=subjects,national_subjects=subjects),tool_evidence=self.load_intake())
+        prepared=tools._lio_intake_input(([dict(role='user',content='Synthetic original')],'JSON intake',provider))
+        with self.assertRaises(ProviderUnknown):''.join(prepared.bind_operation(self.intake_operation(prepared.original_bytes),lambda:True)())
+        self.assertEqual(list(self.directory.iterdir()),[])
+
+
+    def test_old_tool_manifest_does_not_enable_model_output_capture(self):
+        evidence=self.load()
+        self.assertFalse(evidence.intake_enabled)
+        evidence.record_intake(self.intake_operation(b'input'),b'{}',{})
+        self.assertEqual(list(self.directory.iterdir()),[])
+        evidence=self.load_intake()
+        self.assertFalse(evidence.tools_enabled)
+        evidence.record(self.operation(b'input'),'weather',b'{}',dict(response_sha256='b'*64))
+        self.assertEqual(list(self.directory.iterdir()),[])
+
+    def test_model_collection_requires_explicit_unique_supported_kinds(self):
+        original=dict(self.data)
+        for kinds in (None,[],['model'],['lio_intake','lio_intake'],'lio_intake'):
+            with self.subTest(kinds=kinds):
+                self.data=dict(original,version='G2C-synthetic-evidence-window.2',kinds=kinds)
+                self.write_manifest()
+                with self.assertRaises(ValueError):self.load()
+        self.data=dict(original,version='G2C-synthetic-evidence-window.2')
+        self.write_manifest()
+        with self.assertRaises(ValueError):self.load()

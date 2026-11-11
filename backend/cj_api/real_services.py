@@ -410,12 +410,18 @@ class RealTools:
             def invoke():
                 self.services.require_scope(operation.binding.scope)
                 with _external_timing('model',operation,admitted) as checked:
-                    yield from self.services.model.invoke(inputs['messages'],inputs['system'],operation.command.attempt_id,
+                    stream=self.services.model.invoke(inputs['messages'],inputs['system'],operation.command.attempt_id,
                         tools=inputs['native_tools'],receipt=metadata,guard=checked,native_reply=native_reply,
                         native_turn_profile=inputs.get('native_turn_profile'),final_answer=inputs.get('external_tools_disabled',False),
                         release_after_send=inputs.get('response_mode')=='lio-memory-json.1',
                         lio_answer=inputs.get('answer_format_profile')=='lio-user.1',
                         **({'structured_profile':inputs['structured_profile']} if 'structured_profile' in inputs else {}))
+                    if national_intake and self.tool_evidence is not None and self.tool_evidence.intake_enabled:
+                        result=''.join(stream)
+                        if checked() is not True:raise BudgetUnknown('original intake evidence authority changed')
+                        self.tool_evidence.record_intake(operation,result.encode('utf-8'),metadata)
+                        yield result
+                    else:yield from stream
             return invoke
         return InvocationInput(raw,None,bind,_receipt(metadata))
 

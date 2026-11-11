@@ -336,3 +336,17 @@ class NationalExecution(unittest.TestCase):
         published,events,_,_=self.run_intake(self.envelope(text))
         self.assertEqual(published,[])
         self.assertTrue(any('谁参加' in v for k,v in events if k=='text_delta'))
+
+    def test_rejection_log_contains_code_hash_and_size_but_no_raw_model_value(self):
+        from cj_agent.provider import ProviderUnknown
+        value=self.envelope('计划上海2026-11-20，两个人')
+        private='private-model-value-not-a-real-secret'
+        value['field_sources']['arrival.date'][0]['quote']=private
+        with self.assertLogs('cj_usage.audit',level='WARNING') as logs:
+            with self.assertRaises(ProviderUnknown):self.run_intake(value)
+        text=' '.join(logs.output)
+        self.assertIn('code=field_source_binding',text)
+        self.assertIn('output_sha256=',text)
+        self.assertIn('output_bytes=',text)
+        self.assertNotIn(private,text)
+        self.assertNotIn('2026-11-20',text)

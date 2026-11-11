@@ -39,3 +39,8 @@ class NationalLioNationalIntake(unittest.TestCase):
         value['field_sources']['departure.date'] = [dict(source_index=0, quote='2026-11-20')]
         with self.assertRaises(InvalidInput):
             parse(json.dumps(value, ensure_ascii=False), turns)
+
+    def test_diagnostic_codes_do_not_include_arbitrary_model_or_exception_values(self):
+        from cj_api.lio_national_intake import diagnostic_code
+        self.assertEqual(diagnostic_code(InvalidInput('field quote is not in the original message')),'field_source_binding')
+        self.assertEqual(diagnostic_code(ValueError('private raw secret-not-real')),'invalid_model_intake')
