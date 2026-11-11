@@ -1,3 +1,5 @@
+> 历史 v1 记录：当前 Lio 已由 v2 取代。本文件原结果和分母保留，不能作为 Lio v2 完整采集；现行证据见 `REPORT-v2.md`，用途见 `release-index.json`。
+
 # #761 本地评分报告
 
 评分接口 `G2C-dialogue-score.1`，数据版本 `G2C-dialogue-cases.1`，

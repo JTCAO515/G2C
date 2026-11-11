@@ -1,6 +1,107 @@
-# 对话行为评分接口
+# 对话行为评分接口：Lio v2
 
-D 线 [#761](https://github.com/JTCAO515/G2C/issues/761) 的离线评分器。E 固定
+当前 Lio 开发评分使用 `G2C-dialogue-score.2`、`G2C-dialogue-cases.2` 和
+`G2C-dialogue-task-contract.2`。版本/文件摘要及替代关系见 `release-index.json`，
+消费者还必须冻结经 R 审查的仓库提交。v1 原数据、样例、评分器、历史报告和
+开发12/验证8的分母保留，已被 v2 取代，不能把 v1 M1 签名控制当作 Lio v2 采集。
+
+依据 [JT Lio 决定](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6736601057)
+及 [R 语义核对](https://github.com/JTCAO515/G2C/issues/761#issuecomment-6789992233)，
+本轮只升级公开题集和离线判据。完整 B 可信采集仍等 #762 第二部分合并后的精确实现。
+`REPORT-v2.md` 记录合成控制证据，不能证明真实产品质量。
+
+## v2 运行与输出
+
+```sh
+mkdir -p .local/optimization
+uv run --locked python -B -m eval.optimization.examples_v2 --control good > .local/optimization/v2-observations.json
+uv run --locked python -B -m eval.optimization --observations .local/optimization/v2-observations.json > .local/optimization/v2-report.json
+uv run --locked python -B -m unittest eval.optimization.test_score
+```
+
+验证组在生成和评分两条命令上均加 `--split validation`；坏控制改为 `--control bad`。
+Python 入口为 `from eval.optimization.score_v2 import dataset, score`。
+批次结构和四态逐项报告沿用下方 v1 定义，但 `version`/`dataset_version`/`dataset_sha256`
+必须来自 v2。CLI 严格依 `batch.version` 路由，拒绝未知版本、版本混搭和摘要不符，
+不自动回退。原 v1 批次仍走原评分函数，完整报告字节保持可重复。
+
+每格输出完整 `checks`、`hard_status`、失败或缺证原因与原件引用，并按语言给分母。
+`FAIL` 优先于 `UNKNOWN`，没开始的格为 `UNRUN`。CLI 成功只表示生成了报告。
+固定好坏控制的字段是有意合成的观察，不能复制进真实 runner 作为证明。
+
+## v2 任务与原动作
+
+10个完整任务、中英20格及 split/family 分配不变；family ID 是保留的谱系标识，
+历史名称不是当前目的地。三个已保存行程题使用不同日期、固定项和景点，避免同一
+旅行跨组；中英改写及衍生任务始终随完整旅行分组。公开 validation 不是隔离最终题。
+
+| 任务 | v2 执行和确定性要求 |
+|---|---|
+| `dev-local-edit` | 12月1–2日北京酒店见面行程，经原 Lio 明确保存为v1，再对话修改同一Trip为v2；完整业务diff仅改变第二天下午，固定项不变，原历史内容不变。 |
+| `val-undo` | 12月15–16日北京车站见面行程保存v1、修改v2，读取当前真实 `undo_target`，同身份执行原生撤销，内容恢复v1并追加v3；原v1/v2都保留。 |
+| `val-confirm-save` | 2027年1月5–6日北京讨论，前两轮即使参数齐全也零写入；第三轮明确要求保存才生成v1。保留原文/source、同MESSAGE/RUN回执和实际内容。 |
+| `dev-required-date` | 仅把旧杭州写入控制改为受支持的北京/王府井，仍缺开始日期，只澄清 `start_date`，不得代选或保存。 |
+| `dev-tool-failure` | 仅把旧桂林天气控制改北京；按原问题日（Asia/Shanghai）+1绑定目标日，参数/身份准入后，对同一原weather attempt注入确定失败；一次派发，不重试。不能称为真实高德故障证据。 |
+| 其余五题 | 保留原题面与规则。西安“先聊聊”的改口是讨论，需实际模型输入/上下文证明保留原条件并更新天数；不能套用北京写入范围拒绝或把用户原话当已实现证据。 |
+
+只有三个 mutation 任务使用 `variants.steps`：`message` 带原文；
+`lio_undo_current_trip` 是原生操作，不是对话消息。其余七题保留 `variants.turns`
+及 B/C 每类原执行recipe。取消和新会话等说明不得直接伪造为MESSAGE/RUN回执。
+按钮撤销不证明自然语言撤销理解；评分不要求新增助手回复。该格的 `reply.claimed_effects`
+根据实际完整可见面独立标注，没有助手执行声明时可为已核实的空数组。
+未知ACK须查询同一原action/attempt/target，不能换ID重发。
+
+每个独立任务通过允许的原接口开新会话、沿原身份和writer建立前置；setup全部
+MESSAGE/RUN、provider、工具和费用均计入原attempt、共享Meter及现有限额。
+`formal_trip_count` 从全部该任务原动作及受保护owner差异中发现新增/触及的Trip，
+包括错误目标，不能只数预期目标或把整个Demo账号原有Trip当本次写入。
+不删除旧数据、不用管理SQL/bootstrap、新角色或扩展profile预置；原安全setup不存在则
+保留完整分母并记 `UNRUN`。跨owner题须用现有允许的异owner原件，否则同样未跑。
+
+删除后召回沿原 MEMORY.2 的合法既有槽/文本（如 `quiet.entrance`、`diet.spicy`），
+显式保存两个偏好、原STOP-USE及受保护fence、新会话实际provider输入和正文。
+不复制本机retained槽或任意哨兵；括号内“新对话”不证明真实会话已切换。
+
+## v2 状态证据字段
+
+信任边界仍在 runner：核原身份/会话/attempt/操作、原始字节和独立原件引用后，
+才归一化成评分输入。评分器只消费观测，不签发回执，不执行写入，也不以语言打分替代状态。
+
+| 字段 | 原件和归一化要求 |
+|---|---|
+| `before_formal_version`、`formal_trip_version` | 末轮操作前后的受保护正式Trip快照。新保存为0→1；修改为1→2；原生撤销为2→3。公开卡片没有版本号，不能从UI猜值。 |
+| `before_trip_id`、`formal_trip_id`、`receipt_trip_id`、`receipt_version` | 同一正式对象和该次原提交回执；修改/撤销不得另建Trip。 |
+| `request_message_id`/`committed_message_id`、`request_run_id`/`committed_run_id` | 修改/保存的原请求与实际commit source，逐一相同；不能用setup或另一轮回执。 |
+| `request_action_id`/`receipt_action_id`、`undo_target_version` | 撤销实际原action及回执、当前原undo_target对应目标v1。保留opaque target原件；不为按钮编造MESSAGE/RUN。 |
+| `operation_content_sha256`、`formal_content_sha256` | 原操作实际提交的完整内容字节与正式读回内容摘要，不能由期望题面生成。 |
+| `history_before`/`history_after` | 原受保护历史中版本字符串→完整内容SHA-256，核完整版本集合、旧版本不可变及最新版本字节；撤销还核v3内容等于旧v1。 |
+| `write_commits`、`discussion_turns_observed`、`discussion_write_commits` | 末轮实际提交数；保存题另逐轮核前两个讨论轮次及其零提交。不能仅因最后有一个Trip就断言前面没偷存。 |
+| `applied_patch`、`locked_items_changed` | 对完整前后业务内容计算实际diff，再投影规范路径（排除版本/时间等元数据）；不得只投影目标路径而漏掉其他改动。固定项必须不变。英文地名保留原英文标签。 |
+| `unrelated_trip_mutations` | 受保护owner差异和所有原动作证明无无关Trip变更，不能过滤错误目标。 |
+| `weather_request_day`/`weather_query_day`、`weather_region` | 原问题服务器日期、已准入的实际规范化query日和区域；缺原日期为UNKNOWN，日期错或区域非beijing为FAIL。 |
+
+执行声明沿用取消、停止使用记忆和工具效果，Lio新增 `trip_updated`/`trip_undone`，
+`trip_saved` 改核原Lio提交，不再接受旧M1 `confirmed_commits`/草稿恢复证明。
+错误保存、错误版本、越权、删除后召回和编造执行均为硬失败；缺同次证据为UNKNOWN。
+行为标注仍是辅助。无新增依赖或AgentEvals。
+
+## 下游冻结与受控集
+
+E #764 的 v1 预登记应追加经 R 核对的 v2 版本附件，固定新代码提交和数据摘要后才能用，
+不得静默换pin或把旧六个缺writer格当新v2结果。B #762 第二部分交已合SHA、
+call/propose/query接口、C0/三个原文本槽、模型/提示词/工具pin及E/F原Meter子限额后，
+D才接完整可信采集；setup不足或任一原件缺失明确保留UNRUN/UNKNOWN。
+
+旧 `final-manifest.v1.json` 的封存/拒读证据保留，密文不解密、不覆盖。
+它和 `comparison-plan.v1.json` 属于v1，**不能用于当前Lio v2比较**。
+语义匹配的受控v2最终集需未来单独授权、D/R编制和独审；本轮为UNRUN，
+不在仓库、Issue或CI中生成明文，也不重跑旧拒读。#765比较本轮未运行。
+
+---
+
+# v1 历史接口与证据（已被 v2 取代）
+
+以下保留 D 线 [#761](https://github.com/JTCAO515/G2C/issues/761) 的历史用法。当时 E 固定
 `G2C-dialogue-score.1`、`G2C-dialogue-cases.1`、数据文件 SHA-256 和仓库提交。
 评分接口只读取观测并返回报告。模型、工具、计量及请求执行由调用方沿 B 的现有出口取得。
 

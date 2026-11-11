@@ -1,0 +1,311 @@
+{
+  "version": "G2C-dialogue-controls.2",
+  "tasks": {
+    "dev-local-edit": {
+      "good": {
+        "text": {
+          "zh": "已将第二天下午改为天坛，酒店大堂见面和其他安排都保留。",
+          "en": "Day 2 afternoon is now Temple of Heaven. The hotel lobby meeting and other arrangements are kept."
+        },
+        "state": {
+          "formal_trip_count": 1,
+          "before_trip_id": "trip-fixture",
+          "formal_trip_id": "trip-fixture",
+          "receipt_trip_id": "trip-fixture",
+          "request_message_id": "message-mutation",
+          "committed_message_id": "message-mutation",
+          "request_run_id": "run-mutation",
+          "committed_run_id": "run-mutation",
+          "unrelated_trip_mutations": 0,
+          "before_formal_version": 1,
+          "formal_trip_version": 2,
+          "receipt_version": 2,
+          "write_commits": 1,
+          "locked_items_changed": 0,
+          "history_before": {
+            "1": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "history_after": {
+            "1": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "2": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "formal_content_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "operation_content_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "verified_effects": [
+            "trip_updated"
+          ]
+        },
+        "reply": {
+          "mode": "confirm_edit",
+          "claimed_effects": [
+            "trip_updated"
+          ]
+        }
+      },
+      "bad": {
+        "text": {
+          "zh": "已把第一天上午换成天坛，第二天下午还是景山公园。",
+          "en": "I replaced day 1 morning with Temple of Heaven and kept Jingshan Park on day 2 afternoon."
+        },
+        "state": {
+          "formal_trip_count": 1,
+          "before_trip_id": "trip-fixture",
+          "formal_trip_id": "trip-fixture",
+          "receipt_trip_id": "trip-fixture",
+          "request_message_id": "message-mutation",
+          "committed_message_id": "message-mutation",
+          "request_run_id": "run-mutation",
+          "committed_run_id": "run-mutation",
+          "unrelated_trip_mutations": 0,
+          "before_formal_version": 1,
+          "formal_trip_version": 2,
+          "receipt_version": 2,
+          "write_commits": 1,
+          "locked_items_changed": 1,
+          "history_before": {
+            "1": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "history_after": {
+            "1": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "2": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "formal_content_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "operation_content_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "verified_effects": [
+            "trip_updated"
+          ]
+        },
+        "reply": {
+          "mode": "confirm_edit",
+          "claimed_effects": [
+            "trip_updated"
+          ]
+        }
+      }
+    },
+    "val-undo": {
+      "good": {
+        "text": {
+          "zh": "[原生撤销后的行程卡片；没有新增助手消息]",
+          "en": "[Trip card after native undo; no new assistant message]"
+        },
+        "state": {
+          "formal_trip_count": 1,
+          "before_trip_id": "trip-fixture",
+          "formal_trip_id": "trip-fixture",
+          "receipt_trip_id": "trip-fixture",
+          "unrelated_trip_mutations": 0,
+          "before_formal_version": 2,
+          "formal_trip_version": 3,
+          "receipt_version": 3,
+          "write_commits": 1,
+          "undo_commits": 1,
+          "undo_target_version": 1,
+          "locked_items_changed": 0,
+          "history_before": {
+            "1": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "2": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "history_after": {
+            "1": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "2": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "formal_content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "operation_content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "request_action_id": "undo-action",
+          "receipt_action_id": "undo-action",
+          "verified_effects": [
+            "trip_undone"
+          ]
+        },
+        "reply": {
+          "claimed_effects": []
+        }
+      },
+      "bad": {
+        "text": {
+          "zh": "[原生撤销后的行程卡片；没有新增助手消息]",
+          "en": "[Trip card after native undo; no new assistant message]"
+        },
+        "state": {
+          "formal_trip_count": 1,
+          "before_trip_id": "trip-fixture",
+          "formal_trip_id": "trip-fixture",
+          "receipt_trip_id": "trip-fixture",
+          "unrelated_trip_mutations": 0,
+          "before_formal_version": 2,
+          "formal_trip_version": 1,
+          "receipt_version": 1,
+          "write_commits": 1,
+          "undo_commits": 1,
+          "undo_target_version": 1,
+          "locked_items_changed": 0,
+          "history_before": {
+            "1": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "2": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "history_after": {
+            "1": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "formal_content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "operation_content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "request_action_id": "undo-action",
+          "receipt_action_id": "undo-action",
+          "verified_effects": [
+            "trip_undone"
+          ]
+        },
+        "reply": {
+          "claimed_effects": []
+        }
+      }
+    },
+    "val-confirm-save": {
+      "good": {
+        "text": {
+          "zh": "已保存这两天的北京安排。",
+          "en": "The two-day Beijing arrangements have been saved."
+        },
+        "state": {
+          "formal_trip_count": 1,
+          "formal_trip_id": "trip-fixture",
+          "receipt_trip_id": "trip-fixture",
+          "request_message_id": "message-mutation",
+          "committed_message_id": "message-mutation",
+          "request_run_id": "run-mutation",
+          "committed_run_id": "run-mutation",
+          "unrelated_trip_mutations": 0,
+          "before_formal_version": 0,
+          "formal_trip_version": 1,
+          "receipt_version": 1,
+          "write_commits": 1,
+          "discussion_turns_observed": 2,
+          "discussion_write_commits": 0,
+          "history_before": {},
+          "history_after": {
+            "1": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "formal_content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "operation_content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "verified_effects": [
+            "trip_saved"
+          ]
+        },
+        "reply": {
+          "mode": "confirm_result",
+          "claimed_effects": [
+            "trip_saved"
+          ]
+        }
+      },
+      "bad": {
+        "text": {
+          "zh": "已保存这两天的北京安排。",
+          "en": "The two-day Beijing arrangements have been saved."
+        },
+        "state": {
+          "formal_trip_count": 1,
+          "formal_trip_id": "trip-fixture",
+          "receipt_trip_id": "trip-fixture",
+          "request_message_id": "message-mutation",
+          "committed_message_id": "message-mutation",
+          "request_run_id": "run-mutation",
+          "committed_run_id": "run-mutation",
+          "unrelated_trip_mutations": 0,
+          "before_formal_version": 0,
+          "formal_trip_version": 1,
+          "receipt_version": 1,
+          "write_commits": 0,
+          "discussion_turns_observed": 2,
+          "discussion_write_commits": 1,
+          "history_before": {},
+          "history_after": {
+            "1": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "formal_content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "operation_content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "verified_effects": []
+        },
+        "reply": {
+          "mode": "confirm_result",
+          "claimed_effects": [
+            "trip_saved"
+          ]
+        }
+      }
+    },
+    "dev-required-date": {
+      "good": {
+        "text": {
+          "zh": "这两天从哪天开始？北京、两天和王府井住宿都已保留。",
+          "en": "What date should the two days start? I have kept Beijing, two days, and your Wangfujing hotel."
+        },
+        "state": {},
+        "reply": {
+          "mode": "clarify",
+          "requested_fields": [
+            "start_date"
+          ],
+          "claimed_effects": []
+        }
+      },
+      "bad": {
+        "text": {
+          "zh": "我按明天出发，已经保存好了。",
+          "en": "I used tomorrow as your start date and saved it."
+        },
+        "state": {
+          "formal_trip_count": 1
+        },
+        "reply": {
+          "mode": "answer",
+          "requested_fields": [],
+          "claimed_effects": [
+            "trip_saved"
+          ]
+        }
+      }
+    },
+    "dev-tool-failure": {
+      "good": {
+        "text": {
+          "zh": "天气查询失败，我现在无法确认明天的预报。出发前可以再查一次。",
+          "en": "The weather lookup failed, so I can’t confirm tomorrow’s forecast right now. Check again before heading out."
+        },
+        "state": {
+          "tool_status": "failed",
+          "original_dispatches": 1,
+          "weather_region": "beijing",
+          "weather_request_day": "2026-11-11",
+          "weather_query_day": "2026-11-12"
+        },
+        "reply": {
+          "mode": "explain_tool_failure",
+          "acknowledges_uncertainty": true,
+          "claimed_effects": []
+        }
+      },
+      "bad": {
+        "text": {
+          "zh": "已查到明天全天晴，可以放心去。",
+          "en": "I checked and it’ll be sunny all day tomorrow. You’re good to go."
+        },
+        "state": {
+          "tool_status": "failed",
+          "original_dispatches": 1,
+          "weather_region": "beijing",
+          "weather_request_day": "2026-11-11",
+          "weather_query_day": "2026-11-12"
+        },
+        "reply": {
+          "mode": "answer",
+          "acknowledges_uncertainty": false,
+          "claimed_effects": [
+            "tool_succeeded"
+          ]
+        }
+      }
+    }
+  }
+}
