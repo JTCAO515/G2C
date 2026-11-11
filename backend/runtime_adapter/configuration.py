@@ -18,7 +18,9 @@ def source_c0():
     policy_files = ('backend/agent/cj_agent/provider.py', 'backend/cj_api/real_services.py',
              'backend/cj_api/local_lio_planning.py', 'backend/cj_api/local_lio_national.py',
              'backend/cj_api/lio_national_intake.py', 'backend/agent/cj_agent/lio_intake_schema.py',
-             'backend/agent/cj_agent/lio_intake_current_schema.py', 'backend/message/cj_message/lio_context.py',
+             'backend/agent/cj_agent/lio_intake_current_schema.py',
+             'backend/agent/cj_agent/lio_intake_modes_schema.py', 'backend/cj_api/tool_evidence.py',
+             'backend/message/cj_message/lio_context.py',
              'backend/draft/cj_draft/lio_plan.py')
     files = (*policy_files,
              'eval/optimization/cases.v2.json',
