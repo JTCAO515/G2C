@@ -81,8 +81,8 @@
   "samples": {
     "purpose": "additional_controlled_final_set",
     "version": "G2C-controlled-dialogue-cases.1",
-    "plaintext_sha256": null,
-    "ciphertext_sha256": null,
+    "plaintext_sha256": "e1efefaa71dc284fc3a541d34ba002cb2276c05f79ea75ed1eb2a1764104cab5",
+    "ciphertext_sha256": "69a377185e828474463c6f1fa8cd0b075584d54ec9d0b01637affacac45e9228",
     "tasks": 33,
     "zh": 33,
     "en": 33,

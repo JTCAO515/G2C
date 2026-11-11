@@ -215,12 +215,18 @@ def deny_probe(ciphertext, session, manifest):
     result = subprocess.run([executable, '--decrypt'], input=raw, capture_output=True,
                             start_new_session=True, timeout=15)
     no_passphrase = b'standard input is not a terminal, and /dev/tty is not available' in result.stderr
+    if result.returncode == 0 or result.stdout:
+        status, failure_class = 'FAIL', 'plaintext_access_succeeded'
+    elif no_passphrase:
+        status, failure_class = 'PASS', 'passphrase_unavailable'
+    else:
+        status, failure_class = 'UNKNOWN', 'unexpected_failure'
     return dict(session=session, ciphertext_sha256=sha256(raw).hexdigest(), age_version=AGE_VERSION,
                 exit_code=result.returncode, decrypted_bytes=len(result.stdout),
                 stderr_sha256=sha256(result.stderr).hexdigest(),
-                failure_class='passphrase_unavailable' if no_passphrase else 'unexpected_failure',
+                failure_class=failure_class,
                 matched_frozen_ciphertext=True,
-                status='PASS' if no_passphrase and result.returncode != 0 and not result.stdout else 'UNKNOWN')
+                status=status)
 
 
 def main():

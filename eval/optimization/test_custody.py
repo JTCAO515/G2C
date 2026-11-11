@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from evaluation.cj028.evaluate import InputError
 from .custody import PURPOSE, FINAL_VERSION, age_io, deny_probe, final_metadata, seal
@@ -31,6 +32,17 @@ class CustodyTests(unittest.TestCase):
             result = deny_probe(path, 'D', manifest)
             self.assertEqual(result['status'], 'PASS')
             self.assertEqual(result['decrypted_bytes'], 0)
+            original_run = subprocess.run
+
+            def exposed_output(command, **kwargs):
+                if command[-1] == '--decrypt':
+                    return subprocess.CompletedProcess(command, 0, b'PUBLIC EXPOSED CONTROL', b'')
+                return original_run(command, **kwargs)
+
+            with patch('eval.optimization.custody.subprocess.run', side_effect=exposed_output):
+                known_failure = deny_probe(path, 'D', manifest)
+            self.assertEqual(known_failure['status'], 'FAIL')
+            self.assertEqual(known_failure['failure_class'], 'plaintext_access_succeeded')
             manifest_path = Path(folder) / 'public-manifest.json'
             manifest_path.write_text(json.dumps(manifest))
             for invalid in (b'', b'PUBLIC NON-CIPHERTEXT CONTROL', ciphertext[:-1]):
