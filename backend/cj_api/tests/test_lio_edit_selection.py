@@ -62,7 +62,7 @@ def itinerary(fixed=None, *, overlap=False):
 ])
 def test_edit_preserves_everything_outside_the_selected_stop(text, locale, replacement):
     trip, original = itinerary()
-    result = select_lio_edit(trip, text, locale, 'original-edit', starts_on=date(2026,11,11))
+    result = select_lio_edit(trip, text, locale, 'original-edit', starts_on=date(2026,11,11),national_names=True)
     assert result.status == 'preview'
     assert result.candidate.affected_ids == ('afternoon',)
     assert result.candidate.can_publish is False
@@ -159,3 +159,9 @@ class LioRelativeDayTest(unittest.TestCase):
                 missing = select_lio_edit(trip, text, locale, 'missing', **dict(dates, ends_on=date(2026, 11, 13)))
                 self.assertEqual(missing.status, 'clarify')
                 self.assertIsNone(missing.candidate)
+
+
+def test_frozen_legacy_names_keep_the_original_unquoted_negative():
+    trip,_=itinerary()
+    assert select_lio_edit(trip,'把第二天下午换成国家博物馆。','zh','legacy',starts_on=date(2026,11,11)).status=='clarify'
+    assert select_lio_edit(trip,'把第二天下午换成颐和园。','zh','legacy',starts_on=date(2026,11,11)).status=='preview'

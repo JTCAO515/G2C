@@ -5,7 +5,11 @@ import json
 import re
 import unicodedata
 
-import httpx
+import asyncio
+import ssl
+from urllib.parse import urlencode
+from cj_fact.live_source import tls
+from cj_place.https_transport import _read_response,_WireFailure
 from pypinyin import lazy_pinyin
 from cj_strict_json import reject_duplicates
 from cj_usage.authorization_budget import canonical
@@ -96,10 +100,13 @@ def resolve(raw,name,province=None,normalized_name=None):
         normalized=_normalize(normalized_name)
         matches=[c for c in candidates if normalized in forms(c.name,c.level)]
         translated=bool(matches)
+    province_unconfirmed=False
     if province is not None:
         hint=_normalize(province)
-        matches=[c for c in matches if hint in forms(c.province,'province')]
-    status='not_found' if not matches else 'ambiguous' if len(matches)>1 else 'confirmation_required' if translated else 'resolved'
+        filtered=[c for c in matches if hint in forms(c.province,'province')]
+        if filtered:matches=filtered
+        elif matches:province_unconfirmed=True
+    status='not_found' if not matches else 'ambiguous' if len(matches)>1 else 'confirmation_required' if translated or province_unconfirmed else 'resolved'
     if status=='resolved' and matches[0].level=='province' and matches[0].adcode not in {
             '110000','120000','310000','500000','810000','820000'}:
         status='needs_city'
@@ -109,15 +116,29 @@ def resolve(raw,name,province=None,normalized_name=None):
                             parameters=PARAMETERS,raw_response_sha256=sha256(raw).hexdigest()))
 
 
-def fetch_catalog(key,guard,*,transport=None):
-    # This function performs exactly one HTTP request. The registered M4 exit
-    # must persist its original INTENT before entering it.
+async def _catalog_exchange(key,guard):
+    writer=None
+    try:
+        async with asyncio.timeout(20):
+            reader,writer=await asyncio.open_connection('restapi.amap.com',443,ssl=tls(),
+                server_hostname='restapi.amap.com',limit=16384)
+            if guard() is not True:raise BudgetUnknown('original city lookup authority unavailable')
+            target='/v3/config/district?'+urlencode({**PARAMETERS,'key':key})
+            # Reuse the established narrow Amap reader. No URL logger, proxy,
+            # cookie, redirect, TLS key log, retry or ambient HTTP hook.
+            writer.write(('GET '+target+' HTTP/1.1\r\nHost: restapi.amap.com\r\nAccept: application/json\r\n'
+                          'Accept-Encoding: identity\r\nConnection: close\r\n\r\n').encode('ascii'))
+            await writer.drain()
+            status,raw=await _read_response(reader,MAX_CATALOG_BYTES)
+            if status!=200:raise BudgetUnknown('original city lookup HTTP outcome unavailable')
+            return raw
+    except (TimeoutError,OSError,ssl.SSLError,_WireFailure):
+        raise BudgetUnknown('original city lookup transport unknown') from None
+    finally:
+        if writer is not None:writer.transport.abort()
+
+
+def fetch_catalog(key,guard):
+    # Exactly one HTTP exchange after the original registered INTENT.
     if guard() is not True:raise BudgetUnknown('original city lookup authority unavailable')
-    with httpx.Client(transport=transport,timeout=20,follow_redirects=False,trust_env=False) as client:
-        with client.stream('GET',ENDPOINT,params={**PARAMETERS,'key':key}) as response:
-            if response.status_code!=200:raise BudgetUnknown('original city lookup HTTP outcome unavailable')
-            raw=bytearray()
-            for chunk in response.iter_bytes():
-                raw.extend(chunk)
-                if len(raw)>MAX_CATALOG_BYTES:raise BudgetUnknown('original city catalog exceeded its byte bound')
-    return bytes(raw)
+    return asyncio.run(_catalog_exchange(key,guard))

@@ -15,7 +15,7 @@ from cj_needs.domain import InvalidInput
 
 from .lio_city import CityReference,forms,_normalize
 from .lio_national_intake import SYSTEM,NONPERSISTENT,fields_for,parse
-from .lio_planning_grounding import PlanningTurn,standalone_question
+from .lio_planning_grounding import PlanningTurn,standalone_question,FIXED
 from .local_lio_planning import PlanningDetails,register
 
 CONTEXT='lio_planning_context.1:'
@@ -65,7 +65,7 @@ class NationalLioPlanning:
         return [*messages[:-1],*(dict(role='user',content=t.text) for t in turns)],refs
 
     def execute(self,worker,binding,state,text,original):
-        if standalone_question(text):return None
+        if re.fullmatch(r'\s*(?:你是谁|你是什么|我是谁|你了解我什么|你能做什么|你有什么能力|who are you|what are you|who am i|what do you know about me|what can you do)[?？。.!！\s]*',text,re.I):return None
         today=original.question_day or datetime.now(ZoneInfo('Asia/Shanghai')).date()
         turns,refs,previous=self.context(binding,PlanningTurn(text,today))
         dates=', '.join(t.question_day.isoformat() for t in turns)
@@ -88,11 +88,12 @@ class NationalLioPlanning:
             return self._reply(worker,binding,state,intake.reply)
         if intake.city is None:
             if intake.intent=='consult' and intake.needs_tools:
-                # China-wide official policy needs no city; other tool requests
-                # are answered by the native profile with city tools disabled.
-                self._context(worker,binding,state,dict(authority='none',status='consult'))
-                return None
-            state=self._context(worker,binding,state,dict(authority=self._authority(intake,previous),status='needs_city'))
+                from .real_services import _lio_transit_request
+                if _lio_transit_request(messages):
+                    # Official China entry policy has no destination-city parameter.
+                    self._context(worker,binding,state,dict(authority='none',status='consult'))
+                    return None
+            state=self._context(worker,binding,state,dict(authority='none' if intake.intent=='consult' else self._authority(intake,previous),status='needs_city'))
             return self._answer(worker,binding,state,original.locale,'想去哪个城市？','Which city would you like to visit?')
         resolution=self._previous_city(intake,previous,text)
         if resolution is None:resolution=worker.tools.resolve_city(worker,binding,intake.city)
@@ -139,8 +140,12 @@ class NationalLioPlanning:
         for edge in ('arrival','departure'):
             if fields.get(edge,{}).get('date',{}).get('state')!='known':missing.append(edge+'.date')
         questions=[q for q in checked.get('questions',[]) if q['field']=='fixed_items']
+        fixed_items=fields.get('fixed_items',[])
+        incomplete_fixed=any(any(item[edge][part]['state']!='known' for edge in ('start','end')
+                                 for part in ('date','time','timezone')) for item in fixed_items)
+        omitted_fixed=not fixed_items and any(FIXED.search(t.text) for t in turns)
         if fields.get('party_size',{}).get('state')!='known':missing.append('party_size')
-        if missing or questions:
+        if missing or questions or incomplete_fixed or omitted_fixed:
             state=self._context(worker,binding,state,dict(authority=authority,status='needs_details',city=resolution))
             if missing==['party_size']:
                 zh='这趟旅行一共几个人？';en='How many people are traveling?'
@@ -172,7 +177,7 @@ class NationalLioPlanning:
 
     @staticmethod
     def _authority(intake,previous):
-        if NONPERSISTENT.search(intake.current_request):return 'none'
+        if intake.intent in ('consult','discuss','cancel') or NONPERSISTENT.search(intake.current_request):return 'none'
         if intake.intent in ('plan','save') and PUBLICATION_REQUEST.search(intake.current_request):return intake.intent
         if previous is not None and previous.get('status') in ('needs_city','needs_details','ambiguous','confirmation_required','not_found','needs_city'):
             return previous['authority']

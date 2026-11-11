@@ -33,3 +33,42 @@ class NationalLioCity(unittest.TestCase):
         assert resolve(data(), 'Canton', normalized_name='广州市')['status'] == 'confirmation_required'
         assert resolve(data(), '四川')['status'] == 'needs_city'
         assert resolve(data(), 'not-a-city')['status'] == 'not_found'
+        assert resolve(data(), "Xi'an",province='Shaanxi')['status']=='confirmation_required'
+        assert resolve(data(), "Xi'an",province='Shaanxi')['candidates'][0]['name']=='西安市'
+
+    def test_catalog_wire_has_no_url_logger_and_preserves_one_guarded_request(self):
+        import asyncio
+        import io
+        import logging
+        from unittest.mock import patch
+        from cj_api.lio_city import fetch_catalog
+        from cj_usage.metered_exit import BudgetUnknown
+        key='fixture-secret-only-no-real-key';body=data();writes=[];aborts=[];connections=[]
+        class Writer:
+            def __init__(self):self.transport=self
+            def write(self,value):writes.append(value)
+            async def drain(self):pass
+            def abort(self):aborts.append(True)
+        async def connect(*args,**kwargs):
+            connections.append((args,kwargs))
+            reader=asyncio.StreamReader()
+            reader.feed_data(b'HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: '+str(len(body)).encode()+b'\r\n\r\n'+body)
+            reader.feed_eof()
+            return reader,Writer()
+        log=io.StringIO();handler=logging.StreamHandler(log)
+        loggers=[logging.getLogger('httpx'),logging.getLogger('httpcore')]
+        levels=[logger.level for logger in loggers]
+        try:
+            for logger in loggers:logger.addHandler(handler);logger.setLevel(logging.DEBUG)
+            with patch('cj_api.lio_city.asyncio.open_connection',side_effect=connect):
+                assert fetch_catalog(key,lambda:True)==body
+            assert len(writes)==len(connections)==1 and len(aborts)==1
+            assert b'/v3/config/district?' in writes[0] and b'subdistrict=3' in writes[0]
+            assert key not in log.getvalue()
+            writes.clear();connections.clear();aborts.clear();checks=iter((True,False))
+            with patch('cj_api.lio_city.asyncio.open_connection',side_effect=connect), self.assertRaises(BudgetUnknown):
+                fetch_catalog(key,lambda:next(checks))
+            assert not writes and len(connections)==1 and len(aborts)==1
+            assert key not in log.getvalue()
+        finally:
+            for logger,level in zip(loggers,levels):logger.removeHandler(handler);logger.setLevel(level)

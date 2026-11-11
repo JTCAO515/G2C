@@ -8,7 +8,6 @@ from contextlib import closing,contextmanager
 from dataclasses import dataclass
 from datetime import datetime,timedelta,timezone
 import hashlib
-import httpx
 import json
 import logging
 import os
@@ -366,7 +365,7 @@ class RealTools:
                         if admitted() is not True:raise BudgetUnknown('city source authority changed')
                         self.tool_evidence.record(operation,'city_resolve',encoded,metadata)
                     yield encoded.decode()
-                except (httpx.HTTPError,OSError,ValueError,UnicodeError):
+                except (OSError,ValueError,UnicodeError):
                     raise BudgetUnknown('original administrative resolution unavailable') from None
             return invoke
         return InvocationInput(raw,None,bind,_receipt(metadata))

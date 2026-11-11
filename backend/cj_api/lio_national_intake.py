@@ -29,8 +29,8 @@ SYSTEM=(
  'current external facts are required. Do not invent current facts. '
  'city is null or exactly {query,normalized_name,province,source_index,quote}. query equals the exact '
  'destination quote from the indicated zero-based traveler message, not their home or someone else\'s trip. '
- 'normalized_name is a proposed Chinese administrative name or null; province is an explicit or translated '
- 'province hint or null. Never invent an adcode. The server resolves candidates; ambiguity needs confirmation. '
+ 'normalized_name is a proposed Chinese administrative name or null; province is an original '
+ 'province mention quoted exactly from the traveler, or null. Do not infer a province to disambiguate a city. Never invent an adcode. The server resolves candidates; ambiguity needs confirmation. '
  'duration_days is null or an integer count of travel days. Keep all stated facts and explicit unknowns; '
  'a correction changes only the fields the traveler changed. '
  'extraction uses NEEDS-extraction.1 with fields,unresolved,long_term_requests. Omit unstated details. '
@@ -96,6 +96,11 @@ def parse(raw,turns):
   for key in ('normalized_name','province'):
    if city[key] is not None and (type(city[key]) is not str or not city[key].strip() or len(city[key].encode())>256):
     raise InvalidInput('bounded proposed administrative name required')
+  city=dict(city)
+  if city['province'] is not None and not any(city['province'] in t.text for t in turns[city['source_index']:]):
+   # An inferred province must not turn a genuinely ambiguous name into a
+   # single result. Preserve all original provider candidates for confirmation.
+   city['province']=None
  days=value['duration_days']
  if days is not None and (type(days) is not int or not 1<=days<=366 or 'duration_days' not in sources):
   raise InvalidInput('original bounded duration required')
@@ -124,6 +129,14 @@ def parse(raw,turns):
     if part=='date':
      dates={d for ref in sources[source_key] for d in re.findall(r'(?<!\d)\d{4}-\d{2}-\d{2}(?!\d)',ref['quote'])}
      if dates and observation['value'] not in dates:raise InvalidInput('date differs from its original quote')
+     relative_dates=set()
+     for ref in sources[source_key]:
+      for match in re.finditer(r'\b(?:the )?day after tomorrow\b|\btomorrow\b|\btoday\b|后天|明天|今天',ref['quote'],re.I):
+       word=match[0].casefold()
+       offset=2 if word in ('day after tomorrow','the day after tomorrow','后天') else 1 if word in ('tomorrow','明天') else 0
+       relative_dates.add((turns[ref['source_index']].question_day+timedelta(days=offset)).isoformat())
+     if relative_dates and (len(relative_dates)!=1 or observation['value'] not in relative_dates):
+      raise InvalidInput('relative date differs from its original question day')
  intent='discuss' if value['intent'] in ('plan','save') and NONPERSISTENT.search(turns[-1].text) else value['intent']
  return Intake(intent,value['reply'],value['needs_tools'],city,days,extraction,sources,value['current_request'])
 

@@ -53,7 +53,7 @@ class LioEdit:
         except (KeyError, ValueError) as error:
             raise ProviderUnknown('original Lio itinerary calendar unavailable') from error
         selection = select_lio_edit(context.trip, text, locale, 'lio-edit-' + binding.run_id,
-                                    starts_on=starts_on, ends_on=ends_on)
+                                    starts_on=starts_on, ends_on=ends_on,national_names=self.source_window)
         if selection.status == 'protected':
             return _answer(worker, binding, state, locale, '这项安排暂时不能改。', "I can't change this stop.")
         if selection.candidate is None:

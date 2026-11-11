@@ -17,7 +17,9 @@ class NationalExecution(unittest.TestCase):
         fields={};sources={}
         if start:
             fields['arrival']={'date':dict(state='known',value=start)}
+            fields['departure']={'date':dict(state='known',value=start)}
             sources['arrival.date']=[dict(source_index=source_index,quote=start)]
+            sources['departure.date']=[dict(source_index=source_index,quote=start)]
         if party:
             fields['party_size']=dict(state='known',value=party)
             sources['party_size']=[dict(source_index=source_index,quote='两个人')]
@@ -47,6 +49,7 @@ class NationalExecution(unittest.TestCase):
     def test_device_chinese_request_reaches_structured_intake_not_beijing_regex(self):
         text='计划上海三日豪华游，从2026-11-20开始，两个人'
         value=self.envelope(text);value['duration_days']=3
+        value['extraction']['fields'].pop('departure');value['field_sources'].pop('departure.date')
         value['field_sources']['duration_days']=[dict(source_index=0,quote='三日')]
         published,events,lookups,_=self.run_intake(value)
         self.assertEqual(len(published),1)
@@ -109,3 +112,59 @@ class NationalExecution(unittest.TestCase):
         value['extraction']['fields']['arrival']['date']['value']='2026-12-20'
         from cj_agent.provider import ProviderUnknown
         with self.assertRaises(ProviderUnknown):self.run_intake(value)
+
+
+    def test_discussion_revokes_before_missing_or_ambiguous_city_question(self):
+        value=self.envelope("Let's just discuss destinations.",intent='discuss',start=None,party=None)
+        value['city']=None
+        _,events,_,_=self.run_intake(value,previous=dict(authority='plan',status='needs_city'))
+        context=json.loads(next(v.split(':',1)[1] for k,v in events if v.startswith('lio_planning_context.1:')))
+        self.assertEqual(context['authority'],'none')
+        complete=self.envelope('上海2026-11-20，两个人')
+        published,_,_,_=self.run_intake(complete,previous=context)
+        self.assertEqual(published,[])
+        value['city']=dict(query='destinations',normalized_name=None,province=None,source_index=0,quote='destinations')
+        city=CityReference('320500','苏州市','江苏省','苏州市','city','Asia/Shanghai').__dict__
+        _,events,_,_=self.run_intake(value,previous=dict(authority='plan',status='needs_details'),
+            resolution=dict(status='ambiguous',candidates=[city,dict(city,adcode='341300',name='宿州市',province='安徽省')],source={}))
+        context=json.loads(next(v.split(':',1)[1] for k,v in events if v.startswith('lio_planning_context.1:')))
+        self.assertEqual(context['authority'],'none')
+
+    def test_model_only_province_cannot_suppress_original_ambiguity(self):
+        from test_lio_city import data
+        from cj_api.lio_city import resolve
+        text='计划Suzhou 2026-11-20，两个人'
+        value=self.envelope(text,city='Suzhou');value['city']['province']='江苏'
+        intake=parse(json.dumps(value),(PlanningTurn(text,date(2026,11,11)),))
+        self.assertIsNone(intake.city['province'])
+        self.assertEqual(resolve(data(),intake.city['query'],intake.city['province'])['status'],'ambiguous')
+        text+='，江苏';value['current_request']=text
+        intake=parse(json.dumps(value),(PlanningTurn(text,date(2026,11,11)),))
+        self.assertEqual(resolve(data(),intake.city['query'],intake.city['province'])['status'],'resolved')
+
+    def test_relative_date_stays_with_its_original_question_day(self):
+        from cj_needs.domain import InvalidInput
+        for phrase,correct in [('明天','2026-11-12'),('后天','2026-11-13'),('tomorrow','2026-11-12'),('the day after tomorrow','2026-11-13')]:
+            with self.subTest(phrase=phrase):
+                text='计划上海，从'+phrase+'开始，两个人'
+                value=self.envelope(text,start='2027-01-10')
+                for edge in ('arrival','departure'):value['field_sources'][edge+'.date']=[dict(source_index=0,quote=phrase)]
+                turns=(PlanningTurn(text,date(2026,11,11)),)
+                with self.assertRaises(InvalidInput):parse(json.dumps(value),turns)
+                for edge in ('arrival','departure'):value['extraction']['fields'][edge]['date']['value']=correct
+                self.assertEqual(parse(json.dumps(value),turns).extraction['fields']['arrival']['date']['value'],correct)
+
+    def test_incomplete_or_omitted_fixed_item_asks_even_when_model_unresolved_is_empty(self):
+        text='计划上海2026-11-20，两个人，我已订酒店'
+        for omit in (False,True):
+            with self.subTest(omitted=omit):
+                value=self.envelope(text)
+                if not omit:
+                    event={k:dict(state='missing') for k in ('date','time','timezone','place')}
+                    value['extraction']['fields']['fixed_items']=[dict(item_id='hotel',kind='hotel',description='我已订酒店',
+                        applies_to=['party'],locked=dict(state='known',value=True),booking_status=dict(state='known',value='booked'),
+                        start=event,end=event)]
+                    value['field_sources']['fixed_items']=[dict(source_index=0,quote='我已订酒店')]
+                published,events,_,_=self.run_intake(value)
+                self.assertEqual(published,[])
+                self.assertTrue(any('谁参加' in v for k,v in events if k=='text_delta'))

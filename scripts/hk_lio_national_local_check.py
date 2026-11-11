@@ -88,11 +88,10 @@ def exercise(root,conninfo):
                 dict(**identity,choices=[],usage=dict(prompt_tokens=40,completion_tokens=10,total_tokens=50))]
         raw=''.join('data: '+json.dumps(e)+'\n\n' for e in events)+'data: [DONE]\n\n'
         return httpx.Response(200,stream=httpx.ByteStream(raw.encode()))
-    def city_http(request):
-        city_calls.append(request)
-        assert request.url.path=='/v3/config/district' and request.url.params['subdistrict']=='3'
-        return httpx.Response(200,content=city_catalog())
-    def city_source(key,guard):return fetch_catalog(key,guard,transport=httpx.MockTransport(city_http))
+    async def city_exchange(key,guard):
+        assert key==KEY and guard() is True
+        city_calls.append('original district exchange')
+        return city_catalog()
     model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),journal,transport=httpx.MockTransport(response))
     services=RealServices(model,KEY,subjects,demo_subjects=subjects,national_subjects=subjects)
     tools=RealTools(services,buffered_streaming_subjects=subjects)
@@ -104,7 +103,7 @@ def exercise(root,conninfo):
     app=create_local_app(conninfo_path=None,auth_dir=auth,database=database,run_context=context,account_admission=True,
         confirmation_signer=signer,demo_dialogue_subjects=subjects,lio_dialogue_subjects=subjects)
     headers={'Authorization':'Bearer '+dev_auth.token(auth,SUBJECT,3600),'Content-Type':'application/octet-stream'}
-    with TestClient(app) as api,patch('cj_api.lio_city.fetch_catalog',side_effect=city_source):
+    with TestClient(app) as api,patch('cj_api.lio_city._catalog_exchange',side_effect=city_exchange):
         for zh,en,adcode in CITIES:
             for locale in ('zh','en'):
                 current.update(zh=zh,en=en,mention=zh if locale=='zh' else en,
