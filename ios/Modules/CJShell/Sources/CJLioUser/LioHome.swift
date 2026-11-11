@@ -371,9 +371,12 @@ public struct LioHome<MenuContent: View>: View {
         .padding(.bottom, LioTheme.Spacing.xs)
     }
 
+    /// A 44pt round control. The symbol stops growing at xxxLarge so it stays inside the circle;
+    /// the controls carry accessibility labels for larger text needs.
     private func controlIcon(_ symbol: String) -> some View {
         Image(systemName: symbol)
             .font(.body.weight(.semibold))
+            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
             .frame(width: 44, height: 44)
             .foregroundStyle(LioTheme.ink)
             .lioCard(Circle())
