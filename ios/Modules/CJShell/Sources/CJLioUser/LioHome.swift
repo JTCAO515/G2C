@@ -394,11 +394,19 @@ public struct LioHome<MenuContent: View>: View {
         }
     }
 
-    /// A Lio turn: a small avatar and name, then the reply laid out on the page without a bubble (D2).
+    /// A Lio turn: a small avatar and name, then the reply in a `surface` bubble whose corner nearest the
+    /// avatar is tucked in. JT 2026-11-11 kept bubbles for Lio's replies instead of plain page text (D2).
     private func lioReply<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
             lioByline
             content()
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .lioCard(UnevenRoundedRectangle(topLeadingRadius: LioTheme.Radius.tail,
+                                                bottomLeadingRadius: LioTheme.Radius.card,
+                                                bottomTrailingRadius: LioTheme.Radius.card,
+                                                topTrailingRadius: LioTheme.Radius.card))
+                .padding(.trailing, dynamicTypeSize.isAccessibilitySize ? 0 : LioTheme.Spacing.xl)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
