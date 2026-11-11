@@ -43,8 +43,11 @@ def _booking_source(item,booking,items,turns):
     # Accept a whole direct declaration, not a keyword found inside a question,
     # quotation, denial, or a longer target name. Temporal/lock values are still
     # checked against their complete originals by the unchanged final guard.
-    assertion=RANGE.sub(' ',re.sub(ISO,' ',clause))
-    assertion=re.sub(r'不可更改|不能改|不可修改|不能修改','',assertion).strip()
+    # Keep the entire original declaration tail, including comma/conjunction
+    # clauses. A later “but that is false” must not be discarded by atom split.
+    declaration=original[original.index(clause):ending]
+    assertion=RANGE.sub(' ',re.sub(ISO,' ',declaration))
+    assertion=re.sub(r'(?:[，,；;]\s*)?(?:不可更改|不能改|不可修改|不能修改|cannot be changed|keep it unchanged)\s*$','',assertion,flags=re.I).strip()
     tied=re.fullmatch(SUBJECT+'(?:'+label+LINK+'(?:'+status+')|(?:'+status+')'+LINK+label+')',assertion,re.I)
     timed=[part for part in CLAUSE.split(primary['quote'])[::2]if RANGE.search(re.sub(ISO,' ',part))]
     preceding=r'(?:(?<!\w)|(?<=在)|(?<=于)|(?<=到)|(?<=为)|(?<=我)|(?<=我们)|(?<=本人)|(?<=全体)|(?<=大家))'
