@@ -238,6 +238,21 @@ class NationalExecution(unittest.TestCase):
                 value['current_request']=text+joiner+second
                 self.assertEqual(self.run_intake(value)[0],[])
 
+    def test_booking_question_returns_clarification_without_needs_or_trip(self):
+        declaration='全体酒店集合已预约2026-11-20 09:00到10:00，对吗？'
+        value=self.envelope('计划上海2026-11-20，两个人。'+declaration)
+        def event(clock):
+            return dict(date=dict(state='known',value='2026-11-20'),time=dict(state='known',value=clock),
+                timezone=dict(state='known',value='Asia/Shanghai'),place=dict(state='missing'))
+        value['extraction']['fields']['fixed_items']=[dict(item_id='hotel',kind='appointment',description='酒店集合',
+            applies_to=['party'],locked=dict(state='known',value=True),booking_status=dict(state='known',value='booked'),
+            start=event('09:00'),end=event('10:00'))]
+        value['field_sources']['fixed_items']=[dict(source_index=0,quote=declaration)]
+        published,events,_,_=self.run_intake(value)
+        self.assertEqual(published,[])
+        self.assertFalse(any(kind=='registered'for kind,_ in events))
+        self.assertTrue(any('哪一项确实已经预约' in text and '尚未保存' in text for kind,text in events if kind=='text_delta'))
+
     def test_natural_fixed_day_number_keeps_explicit_self_and_unbooked_status(self):
         for declaration in ('第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变',
                             'On day 1 I have a fixed hotel meetup from 9 to 10 a.m., keep it unchanged',

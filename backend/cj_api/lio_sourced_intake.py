@@ -1,5 +1,6 @@
 """Validate sourced data6 once, then use the unchanged original domain compiler."""
 import re
+from dataclasses import replace
 from pydantic import ValidationError
 from cj_agent.lio_intake_facts_schema import SourcedIntake
 from cj_needs.domain import InvalidInput,decode
@@ -13,6 +14,14 @@ BOOKING={
 CLAUSE=re.compile(r'([，,。.!?！？；;\n]|\b(?:and|but)\b|并且|但是)',re.I)
 LINK=r'\s*(?:(?:is|was|has been|have been|already|the|our|my|a|an|for)\s+|(?:已|已经|现已|为|的|已经被|已被))*'
 SUBJECT=r'(?:(?:我|我们|本人|全体|大家)\s*|(?:the|my|our|I|we|have|already)\s+)*'
+
+
+class BookingSourceUnclear(InvalidInput):
+    def __init__(self,intake):
+        super().__init__('unique affirmative same-item booking source required')
+        # Only already checked control metadata may reach a clarification.
+        # No rejected execution/booking facts can reach NEEDS or publication.
+        self.control=replace(intake,duration_days=None,extraction=None,sources={},start_date=None)
 
 
 def _booking_source(item,booking,items,turns):
@@ -74,6 +83,8 @@ def parse_sourced(raw,turns):
         bookings.append((item,booking))
         item['booking_status']=booking['status']
     result=compile_flat(data,turns)
-    if data['intent']in ('plan','save'):
-        for item,booking in bookings:_booking_source(item,booking,data['fixed_items'],turns)
+    if result.intent in ('plan','save'):
+        try:
+            for item,booking in bookings:_booking_source(item,booking,data['fixed_items'],turns)
+        except InvalidInput as error:raise BookingSourceUnclear(result)from error
     return result

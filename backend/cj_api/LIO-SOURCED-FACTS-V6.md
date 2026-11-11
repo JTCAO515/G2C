@@ -32,6 +32,20 @@ that borrows another arrangement's clock are rejected. Clipping “已预约” 
 cases in the first candidate; their original failures and regression cases are
 retained. No received supplier response is rewritten by this rule.
 
+The affirmative check keeps the complete original declaration tail through its
+sentence terminator, including comma/semicolon/conjunction clauses. Question
+tags or a later false/conditional clause cannot disappear when either supplied
+ref is clipped. Date/clock spans are masked only for sentence detection so an
+`a.m.` clock cannot masquerade as the statement ending; original bytes stay exact.
+
+Structurally valid facts with unclear reservation semantics return a typed
+clarification carrying only already checked control metadata. Duration, start,
+sources and execution facts are absent from that control value. The host keeps
+its original authority/city checks and asks for named fixed details before any
+NEEDS/publication. It does not repair or save the rejected booking facts. DTO,
+original source/date and other malformed results still use the original error
+path. Cancellation/discussion/consultation do not consume booking requirements.
+
 Support remains conservative: indirect wording, ambiguous clauses, or a later
 confirmation not supported by the existing final fixed-source checker can still
 require clarification. This version does not claim expanded booking capability;

@@ -4,7 +4,7 @@ import json
 import unittest
 from jsonschema import Draft202012Validator,ValidationError
 from cj_agent.lio_intake_facts_schema import response_format
-from cj_api.lio_sourced_intake import parse_sourced
+from cj_api.lio_sourced_intake import parse_sourced,BookingSourceUnclear
 from cj_needs.domain import InvalidInput
 from lio_flat_fixture import facts_fixture
 import test_lio_intake_start_schema as previous
@@ -51,7 +51,7 @@ class SourcedIntake(unittest.TestCase):
         for locale,confirmation in (('zh','已预约'),('en','already booked')):
             data,turns=self.sample(locale);item=data['fixed_items'][0];old=item['quote']
             statement=item['label']+' '+confirmation
-            item['quote']=old+'; '+statement
+            item['quote']=old+'; '+statement+'.'
             turns=(turns[0],type(turns[1])(text=turns[1].text.replace(old,item['quote'],1),question_day=turns[1].question_day),turns[2])
             item['booking_evidence']=dict(status='booked',source_index=1,quote=statement)
             intake=parse_sourced(json.dumps(data),turns)
@@ -102,7 +102,7 @@ class SourcedIntake(unittest.TestCase):
         for label in ('假日酒店集合','无锡酒店集合'):
             data,turns=self.sample();item=data['fixed_items'][0];old=item['quote'];prior=item['label']
             statement=label+'已预约不可更改'
-            item.update(label=label,quote=old.replace(prior,label)+'; '+statement,detail_refs=[])
+            item.update(label=label,quote=old.replace(prior,label)+'; '+statement+'.',detail_refs=[])
             turns=(turns[0],type(turns[1])(text=turns[1].text.replace(old,item['quote'],1),question_day=turns[1].question_day),turns[2])
             item['booking_evidence']=dict(status='booked',source_index=1,quote=statement)
             intake=parse_sourced(json.dumps(data),turns)
@@ -147,3 +147,12 @@ class SourcedIntake(unittest.TestCase):
         data,turns=self.sample();data['intent']='consult'
         data['fixed_items'][0]['booking_evidence']=dict(status='booked',source_index=1,quote='已确定')
         self.assertIsNone(parse_sourced(json.dumps(data),turns).extraction)
+
+    def test_unclear_booking_exposes_only_checked_control_without_execution_facts(self):
+        data,turns=self.sample();item=data['fixed_items'][0]
+        item['booking_evidence']=dict(status='booked',source_index=1,quote='已确定')
+        with self.assertRaises(BookingSourceUnclear)as raised:parse_sourced(json.dumps(data),turns)
+        control=raised.exception.control
+        self.assertIsNone(control.extraction);self.assertIsNone(control.duration_days)
+        self.assertIsNone(control.start_date);self.assertEqual(control.sources,{})
+        self.assertEqual(control.current_request,turns[-1].text)
