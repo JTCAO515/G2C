@@ -1,5 +1,6 @@
 """CJ-CLEANUP-INTERNAL@0.1.0-rc.1. Metadata-only, no destructive executor."""
 from __future__ import annotations
+from cj_strict_json import compact
 from dataclasses import dataclass, replace, asdict
 from hashlib import sha256
 import json
@@ -20,7 +21,7 @@ class Denied(Exception): pass
 class Invalid(Exception): pass
 
 def encode(value):
-    return json.dumps(value, sort_keys=True, separators=(',', ':'), ensure_ascii=True).encode('ascii')
+    return compact(value, sort_keys=True, ensure_ascii=True, allow_nan=True)
 
 def digest(raw): return sha256(raw).hexdigest()
 

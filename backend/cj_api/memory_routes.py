@@ -57,13 +57,9 @@ def register_memory_routes(app, boundary=None, configuration=None):
         return token,query
 
     def receipt(value):
-        if type(value) is not domain.Receipt:
-            raise ValueError('Invalid memory receipt')
         return MemoryReceipt.model_validate_json(json.dumps(asdict(value)),strict=True)
 
     def item(value):
-        if type(value) is not domain.Item or type(value.command) is not domain.Command:
-            raise ValueError('Invalid memory item')
         projected = MemorySaveCommand.model_validate_json(value.command.raw,strict=True)
         return MemoryItem.model_validate_json(json.dumps(dict(command=projected.model_dump(mode='json'),
             version=value.version,status=value.status,recorded_at=value.recorded_at.isoformat())),strict=True)

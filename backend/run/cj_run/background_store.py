@@ -1,4 +1,5 @@
 """RUN-BACKGROUND@2 original job records; no MESSAGE receipt or RUN reuse."""
+from cj_strict_json import compact
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import asdict,dataclass
@@ -21,7 +22,7 @@ TABLE='cj_run_background_job'
 STATES=('queued','running','publishing','completed','budget_exhausted','cancelled','unknown')
 
 
-def pack(value):return json.dumps(value,ensure_ascii=False,sort_keys=True,separators=(',',':'),allow_nan=False).encode('utf-8')
+def pack(value):return compact(value, sort_keys=True)
 def sha(raw):return hashlib.sha256(raw).hexdigest()
 
 

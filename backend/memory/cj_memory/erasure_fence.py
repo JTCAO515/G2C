@@ -1,4 +1,5 @@
 """MEMORY-HISTORY-ERASURE-FENCE@1 for trusted original runtime coordinates."""
+from cj_strict_json import compact
 from dataclasses import dataclass
 from hashlib import sha256
 import json
@@ -34,7 +35,7 @@ def require_coverage(cursor,scope,operation,item_version,scope_epoch,association
         raise RuntimeDenied('original erasure history capture is incomplete')
     if association is not None:
         original=json.loads(association)
-        references={sha256(json.dumps(ref,ensure_ascii=True,sort_keys=True,separators=(',',':')).encode('ascii')).hexdigest()
+        references={sha256(compact(ref, sort_keys=True, ensure_ascii=True, allow_nan=True)).hexdigest()
                     for ref in original['message_refs']}
         cursor.execute("SELECT count(*) FROM cj_memory_erasure_fence WHERE scope_digest=%s AND kind='message' AND reference_sha256=ANY(%s)",
             (sha256(scope.encode()).hexdigest(),list(references)))
@@ -85,7 +86,7 @@ class References:
         if type(decision_source_sha256s) is not list or len(decision_source_sha256s)>1000:
             raise InvalidInput('bounded original decision references required')
         for value in decision_source_sha256s:digest(value)
-        hashes=frozenset(sha256(json.dumps(ref,ensure_ascii=True,sort_keys=True,separators=(',',':')).encode('ascii')).hexdigest()
+        hashes=frozenset(sha256(compact(ref, sort_keys=True, ensure_ascii=True, allow_nan=True)).hexdigest()
                          for ref in message_refs)
         return cls(hashes,frozenset(decision_source_sha256s))
 

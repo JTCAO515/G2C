@@ -1,4 +1,5 @@
 """Additive MEMORY-manual.2 / stored-command.2; selectors are data, not permits."""
+from cj_strict_json import compact
 from dataclasses import dataclass
 import hashlib
 import json
@@ -32,7 +33,7 @@ def travel_selection(value):
 
 def packed(value):
     try:
-        return json.dumps(value, ensure_ascii=False, separators=(',', ':'), allow_nan=False).encode()
+        return compact(value)
     except (ValueError, UnicodeError):
         raise InvalidInput('UTF8 values required') from None
 

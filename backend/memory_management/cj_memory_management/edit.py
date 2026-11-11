@@ -1,4 +1,5 @@
 """MEMORY-MANAGEMENT-EDIT@1: new explicit bytes, original action ledger."""
+from cj_strict_json import compact
 from dataclasses import dataclass
 import hashlib
 import json
@@ -40,7 +41,7 @@ class Edit:
         value.update(operation_id=self.action_id, text=self.text,
                      source_id='edit-v1:' + hashlib.sha256(self.raw).hexdigest(),
                      source_version=1)
-        return Command.parse(json.dumps(value, ensure_ascii=False, separators=(',', ':')).encode())
+        return Command.parse(compact(value, allow_nan=True))
 
 
 def parse_action(raw):

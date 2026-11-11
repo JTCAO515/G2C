@@ -1,6 +1,6 @@
 """Trusted historical read assembly; creates canonical AUTH lifetime per invocation."""
 from dataclasses import dataclass
-from .composition import CompositionUnavailable,_internal_modules
+from .composition import CompositionUnavailable,_internal_modules,_strict_admission_checker
 
 @dataclass(frozen=True)
 class UsageStatusConfiguration:
@@ -25,10 +25,8 @@ def _usage_status_from_checker(checker,resolve,configuration,*,environment,issue
 def build_usage_status_dependencies(*,environment,jwt_configuration,verification_keys,access_provider,resolve,configuration):
     if environment!='local' or None in (resolve,verification_keys,access_provider):
         raise CompositionUnavailable('Explicit local read AUTH and resolver required')
-    modules=_internal_modules('usage_status');auth=modules['cj_auth.jwt_adapter']
-    if not isinstance(jwt_configuration,auth.JWTConfiguration) or jwt_configuration.profile is not auth.JWTProfile.STRICT_V1:
-        raise CompositionUnavailable('Fixed strict AUTH profile required')
-    checker=modules['cj_auth.admission'].AdmissionChecker(auth.PyJWTVerifier(jwt_configuration,verification_keys),access_provider)
+    modules=_internal_modules('usage_status')
+    checker=_strict_admission_checker(modules,jwt_configuration,verification_keys,access_provider)
     return _usage_status_from_checker(checker,resolve,configuration,environment=environment,issuer=jwt_configuration.issuer,audience=jwt_configuration.audience)
 
 def create_usage_status_app(*,configuration,**dependencies):
