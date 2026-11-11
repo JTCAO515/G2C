@@ -516,6 +516,10 @@ import XCTest
                 XCTAssertFalse(app.staticTexts["Amap Weather"].exists)
                 XCTAssertFalse(app.buttons["lio.resend"].exists)
                 XCTAssertFalse(app.buttons["lio.askAgain"].exists)
+                let capture = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+                capture.name = "Lio-final-failure-" + language + scenario
+                capture.lifetime = .keepAlways
+                add(capture)
             }
         }
     }
@@ -553,6 +557,10 @@ import XCTest
         XCTAssertFalse(app.buttons["lio.source"].exists)
         XCTAssertFalse(app.staticTexts["演示天气预报"].exists)
         XCTAssertFalse(app.staticTexts["lio.progress"].exists)
+        let capture = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        capture.name = "Lio-answer-without-tools"
+        capture.lifetime = .keepAlways
+        add(capture)
 
         let before = try XCTUnwrap(Int(readCount.label))
         XCUIDevice.shared.press(.home)
@@ -575,6 +583,8 @@ import XCTest
         exerciseWithheldReply("--lio-display-guard-markdown")
         exerciseWithheldReply("--lio-display-guard-host")
         exerciseWithheldReply("--lio-display-guard-wrapped-host")
+        exerciseWithheldReply("--lio-display-guard-thought")
+        exerciseWithheldReply("--lio-display-guard-tool")
     }
 
     private func exerciseWithheldReply(_ fixture: String) {

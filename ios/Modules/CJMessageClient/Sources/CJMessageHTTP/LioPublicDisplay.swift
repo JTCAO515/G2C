@@ -4,11 +4,13 @@ import Foundation
 public enum LioPublicDisplay {
     private static let serviceDetails = #"运行|投递|上下文|回执|候选|版本号|核实|对账|读取|查询|确认结果|原(?:请求|操作|动作|字节)|(?:高德天气|后台|服务)接口|(?<![A-Za-z])(?:RUN|UNKNOWN|Needs|(?i:backend|payload|idempotency|scope|reconciliation|request\s+id|(?:signed|operation|request)\s+receipt|original\s+(?:request|action|operation)))(?![A-Za-z])"#
     private static let serviceURL = #"(?i:https?://(?:restapi\.amap\.com|api(?:-beta)?\.go2china\.space)(?:\.|%2e)?)(?=[/:?#\s)>，。]|$)"#
+    private static let executionDetails = #"<\s*/?\s*(?:think|analysis|tool_call|tool_result|function_call)(?:\s|>)|\b(?:tool_calls?|function_call)\b|\b(?:calling|invoking)\s+amap\b|工具调用|调用\s*(?:高德|amap)"#
     private static let serviceHosts: Set<String> = ["restapi.amap.com", "api-beta.go2china.space", "api.go2china.space"]
     private static let urlWrapping = CharacterSet(charactersIn: "\"')]}`，。,.!;:")
 
     public static func permitsText(_ text: String) -> Bool {
         guard text.range(of: serviceDetails, options: .regularExpression) == nil,
+              text.range(of: executionDetails, options: [.regularExpression, .caseInsensitive]) == nil,
               text.range(of: serviceURL, options: .regularExpression) == nil else { return false }
         var next = text.startIndex
         while let scheme = text.range(of: "https?://", options: [.regularExpression, .caseInsensitive],
