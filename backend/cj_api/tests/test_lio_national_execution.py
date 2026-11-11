@@ -29,19 +29,32 @@ class NationalExecution(unittest.TestCase):
             extraction=dict(version='NEEDS-extraction.1',fields=fields,unresolved=[],long_term_requests=[]),
             field_sources=sources,current_request=text)
 
-    def run_intake(self,value,*,turns=None,previous=None,resolution=None,same_destination=True):
+    def run_intake(self,value,*,turns=None,previous=None,resolution=None,same_destination=True,model_output=None):
         text=value['current_request'];turns=turns or (PlanningTurn(text,date(2026,11,11)),)
         city=CityReference('310000','上海市','上海市',None,'province','Asia/Shanghai')
         resolution=resolution or dict(status='resolved',candidates=[city.__dict__],requested_name='上海',source={})
         published=[];events=[];lookups=[]
-        wire=dict(value,version='LIO-planning-intake.3',current_source_index=len(turns)-1)
-        wire.pop('current_request')
-        if wire['intent'] in ('consult','discuss','cancel'):
-            wire.update(extraction=None,duration_days=None,field_sources={})
+        if model_output is None:
+            wire=json.loads(json.dumps(value));wire.update(version='LIO-planning-intake.4',current_source_index=len(turns)-1)
+            wire.pop('current_request')
+            wire['start_date']=wire['extraction']['fields'].get('arrival',{}).get('date',dict(state='missing'))
+            if wire['start_date']['state']=='known':wire['field_sources']['start_date']=wire['field_sources']['arrival.date']
+            wire['extraction']['version']='LIO-execution-extraction.1'
+            wire['extraction']['fields'].setdefault('party_size',dict(state='missing'))
+            wire['extraction']['fields'].setdefault('fixed_items',[])
+            for fixed in wire['extraction']['fields'].get('fixed_items',[]):
+                fixed['label']=fixed.pop('description')
+                fixed['source_ref']=next(ref for ref in wire['field_sources']['fixed_items'] if fixed['label'] in ref['quote'])
+                fixed['detail_refs']=[]
+            if wire['intent'] in ('consult','discuss','cancel'):
+                wire.update(extraction=None,duration_days=None,field_sources={},start_date=None)
+        else:wire=model_output
+        from lio_flat_fixture import facts_fixture
+        wire=facts_fixture(wire)
         class Worker:
             memory_run=None;message_context=None;provider=object();lio_city_context=None;lio_memory=None
             def _registered_stream(self,binding,key,registration,argument,**kwargs):
-                assert registration=='model.lio_intake.4' and argument[3]==len(turns)-1
+                assert registration=='model.lio_intake.7' and argument[3]==len(turns)-1
                 yield json.dumps(wire,ensure_ascii=False)
             def _event(self,binding,state,kind,value='',**kwargs):
                 events.append((kind,value));return SimpleNamespace(sequence=state.sequence+1)
@@ -171,7 +184,7 @@ class NationalExecution(unittest.TestCase):
                 value=self.envelope(text)
                 if not omit:
                     event={k:dict(state='missing') for k in ('date','time','timezone','place')}
-                    value['extraction']['fields']['fixed_items']=[dict(item_id='hotel',kind='hotel',description='我已订酒店',
+                    value['extraction']['fields']['fixed_items']=[dict(item_id='hotel',kind='hotel',description='酒店',
                         applies_to=['party'],locked=dict(state='known',value=True),booking_status=dict(state='known',value='booked'),
                         start=event,end=event)]
                     value['field_sources']['fixed_items']=[dict(source_index=0,quote='我已订酒店')]
@@ -201,7 +214,7 @@ class NationalExecution(unittest.TestCase):
         def event(day,clock):
             return dict(date=dict(state='known',value=day),time=dict(state='known',value=clock),
                 timezone=dict(state='known',value='Asia/Shanghai'),place=dict(state='missing'))
-        item=dict(item_id='hotel',kind='appointment',description=declaration,applies_to=['party'],
+        item=dict(item_id='hotel',kind='appointment',description='酒店集合',applies_to=['party'],
             locked=dict(state='known',value=True),booking_status=dict(state='known',value='booked'),
             start=event('2026-11-20','09:00'),end=event('2026-11-20','10:00'))
         value['extraction']['fields']['fixed_items']=[item]
@@ -224,6 +237,34 @@ class NationalExecution(unittest.TestCase):
             with self.subTest(joiner=joiner):
                 value['current_request']=text+joiner+second
                 self.assertEqual(self.run_intake(value)[0],[])
+
+    def test_booking_question_returns_clarification_without_needs_or_trip(self):
+        declaration='全体酒店集合已预约2026-11-20 09:00到10:00，对吗？'
+        value=self.envelope('计划上海2026-11-20，两个人。'+declaration)
+        def event(clock):
+            return dict(date=dict(state='known',value='2026-11-20'),time=dict(state='known',value=clock),
+                timezone=dict(state='known',value='Asia/Shanghai'),place=dict(state='missing'))
+        value['extraction']['fields']['fixed_items']=[dict(item_id='hotel',kind='appointment',description='酒店集合',
+            applies_to=['party'],locked=dict(state='known',value=True),booking_status=dict(state='known',value='booked'),
+            start=event('09:00'),end=event('10:00'))]
+        value['field_sources']['fixed_items']=[dict(source_index=0,quote=declaration)]
+        published,events,_,_=self.run_intake(value)
+        self.assertEqual(published,[])
+        self.assertFalse(any(kind=='registered'for kind,_ in events))
+        self.assertTrue(any('哪一项确实已经预约' in text and '尚未保存' in text for kind,text in events if kind=='text_delta'))
+
+    def test_bad_booking_reference_is_unknown_before_city_or_execution(self):
+        from cj_agent.provider import ProviderUnknown
+        from test_lio_intake_start_schema import sample
+        from lio_flat_fixture import facts_fixture
+        for index,quote in ((99,'already booked'),(1,'not an original traveler quote')):
+            data,turns=sample('zh',True);wire=facts_fixture(data)
+            wire['fixed_items'][0]['booking_evidence']=dict(status='booked',source_index=index,quote=quote)
+            value=self.envelope(turns[-1].text)
+            with self.subTest(index=index),patch('lio_flat_fixture.facts_fixture',return_value=wire),\
+                 patch.object(NationalLioPlanning,'_previous_city')as downstream:
+                with self.assertRaises(ProviderUnknown):self.run_intake(value,turns=turns)
+                downstream.assert_not_called()
 
     def test_natural_fixed_day_number_keeps_explicit_self_and_unbooked_status(self):
         for declaration in ('第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变',

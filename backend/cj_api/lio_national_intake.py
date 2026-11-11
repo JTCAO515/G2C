@@ -4,6 +4,7 @@ from datetime import date,timedelta
 from hashlib import sha256
 import json
 import re
+import unicodedata
 
 from cj_needs.domain import InvalidInput,decode,exact,validate_fields,EVENTS,OBSERVATIONS,COLLECTIONS
 from cj_needs.preview import preview,encode
@@ -71,6 +72,36 @@ class Intake:
  extraction:dict|None
  sources:dict
  current_request:str
+ start_date:dict|None=None
+ fixed_detail_ambiguous:bool=False
+
+
+class StartDateConflict(InvalidInput):
+ pass
+
+
+class FixedTimezoneConflict(InvalidInput):
+ pass
+
+
+ZONE_LITERAL=re.compile(r'\b(?:Africa|America|Antarctica|Arctic|Asia|Atlantic|Australia|Europe|Indian|Pacific|Etc|US|Canada)/[A-Za-z_+-]+(?:/[A-Za-z_+-]+)?\b|\b(?:UTC|GMT)(?:[+-][0-9]{1,2}(?::?[0-9]{2})?)?\b|\b(?:PST|PDT|EST|EDT|CST|CDT|MST|MDT|BST|IST|JST|KST|AEST|AEDT|ACST|ACDT|AWST|CET|CEST|EET|EEST|WET|WEST|HKT|SGT|NZST|NZDT|AKST|AKDT|HST|MSK|SAST|CAT|EAT|WAT)\b|时区|\btime\s*zone\b',re.I)
+
+
+def _clock_zone_marker(quote):
+ from .lio_planning_grounding import RANGE,ISO
+ text=re.sub(ISO,' ',_zone_text(quote))
+ marker=r'(?:[+-](?:0[0-9]|1[0-4]):?[0-5][0-9]|[Zz]|[A-Z]{2,8})'
+ for clock in RANGE.finditer(text):
+  after=re.match(r'\s*(?:[\(\[（【]\s*)?('+marker+r')(?![A-Za-z0-9])',text[clock.end():])
+  before=re.search(r'(?<![A-Za-z])('+marker+r')\s*(?:[\)\]）】]\s*)?$',text[:clock.start()])
+  for found in (after,before):
+   if found is not None and found[1] not in ('AM','PM'):return True
+ return False
+
+
+def _zone_text(quote):
+ # Detection only; original refs, canonical descriptions and hashes stay exact.
+ return unicodedata.normalize('NFKC',quote).replace('−','-')
 
 
 _DIAGNOSTIC_CODES={
@@ -78,6 +109,9 @@ _DIAGNOSTIC_CODES={
  'explicit nationwide intake required':'intake_discriminator',
  'bounded user-facing intake answer required':'intake_reply',
  'intake must bind the complete latest request':'current_request_binding',
+ 'original trip start source required':'start_date_source',
+ 'fixed label must be an original primary source span':'fixed_source_binding',
+ 'bounded item detail sources required':'fixed_detail_sources',
  'original field evidence required':'field_sources_shape',
  'nonempty original field sources required':'field_sources_list',
  'field quote is not in the original message':'field_source_binding',
@@ -114,11 +148,28 @@ def province_evidence(mentions,texts):
  return last
 
 
+def _date_source(value,references,turns):
+ # An explicit ISO date cannot be swapped for another model-selected date.
+ dates={d for ref in references for d in re.findall(r'(?<!\d)\d{4}-\d{2}-\d{2}(?!\d)',ref['quote'])}
+ if dates and value not in dates:raise InvalidInput('date differs from its original quote')
+ relative_dates=set()
+ for ref in references:
+  for match in re.finditer(r'\b(?:the )?day after tomorrow\b|\btomorrow\b|\btoday\b|后天|明天|今天',ref['quote'],re.I):
+   word=match[0].casefold()
+   offset=2 if word in ('day after tomorrow','the day after tomorrow','后天') else 1 if word in ('tomorrow','明天') else 0
+   relative_dates.add((turns[ref['source_index']].question_day+timedelta(days=offset)).isoformat())
+ if relative_dates and (len(relative_dates)!=1 or value not in relative_dates):
+  raise InvalidInput('relative date differs from its original question day')
+
+
 def parse(raw,turns,*,version=VERSION):
  value=decode(raw.encode() if type(raw) is str else raw)
- current_index=version in ('LIO-planning-intake.2','LIO-planning-intake.3')
- exact(value,('version','intent','reply','needs_tools','city','duration_days','extraction','field_sources',
-              'current_source_index' if current_index else 'current_request'))
+ canonical_start=version=='LIO-planning-intake.4'
+ current_index=version in ('LIO-planning-intake.2','LIO-planning-intake.3','LIO-planning-intake.4')
+ modes=version in ('LIO-planning-intake.3','LIO-planning-intake.4')
+ keys=('version','intent','reply','needs_tools','city','duration_days','extraction','field_sources',
+       'current_source_index' if current_index else 'current_request')
+ exact(value,keys+(('start_date',) if canonical_start else ()))
  if value['version']!=version or type(value['intent']) is not str or value['intent'] not in INTENTS or type(value['needs_tools']) is not bool:
   raise InvalidInput('explicit nationwide intake required')
  if type(value['reply']) is not str or not value['reply'].strip() or len(value['reply'].encode())>12000:
@@ -144,7 +195,7 @@ def parse(raw,turns,*,version=VERSION):
  if city is not None:
   exact(city,('query','normalized_name','province','source_index','quote'))
   source({k:city[k] for k in ('source_index','quote')})
-  if version=='LIO-planning-intake.3':
+  if modes:
    if type(city['query']) is not str or not city['query'].strip() or city['query'] not in city['quote']:
     raise InvalidInput('city query must preserve its original destination mention')
   elif city['query']!=city['quote']:raise InvalidInput('city query must preserve its original destination mention')
@@ -157,17 +208,43 @@ def parse(raw,turns,*,version=VERSION):
    # single result. Preserve all original provider candidates for confirmation.
    city['province']=None
  days=value['duration_days']
- if version=='LIO-planning-intake.3' and value['intent'] in ('consult','discuss','cancel'):
-  if value['extraction'] is not None or days is not None or sources:
+ if modes and value['intent'] in ('consult','discuss','cancel'):
+  if value['extraction'] is not None or days is not None or sources or canonical_start and value['start_date'] is not None:
    raise InvalidInput('nonexecuting intake must not include execution parameters')
   return Intake(value['intent'],value['reply'],value['needs_tools'],city,None,None,{},current_request)
  if days is not None and (type(days) is not int or not 1<=days<=366 or 'duration_days' not in sources):
   raise InvalidInput('original bounded duration required')
  extraction=value['extraction'];exact(extraction,('version','fields','unresolved','long_term_requests'))
- if extraction['version']!='NEEDS-extraction.1' or type(extraction['fields']) is not dict:
+ expected_extraction='LIO-execution-extraction.1' if canonical_start else 'NEEDS-extraction.1'
+ if extraction['version']!=expected_extraction or type(extraction['fields']) is not dict:
   raise InvalidInput('original NEEDS extraction required')
+ ambiguous=False
+ if canonical_start:
+  from cj_agent.lio_intake_start_schema import FIXED_FIELDS
+  fields=json.loads(json.dumps(extraction['fields']))
+  items=fields.get('fixed_items',[])
+  if type(items) is not list:raise InvalidInput('structured fixed items required')
+  primary=[];item_sources={};bindings=[]
+  for n,item in enumerate(items):
+   exact(item,FIXED_FIELDS)
+   ref=item.pop('source_ref');details=item.pop('detail_refs');source(ref)
+   if type(details) is not list or len(details)>8:raise InvalidInput('bounded item detail sources required')
+   for detail in details:source(detail)
+   label=item.pop('label')
+   if type(label) is not str or not label.strip() or label not in ref['quote']:
+    raise InvalidInput('fixed label must be an original primary source span')
+   bindings.append((label,ref,details))
+   item['description']=ref['quote'];primary.append(ref)
+   item_sources['fixed_items.'+str(n)]=[ref,*details]
+  for n,(_,_,details) in enumerate(bindings):
+   for detail in details:
+    matches={index for index,(label,_,_) in enumerate(bindings) if label in detail['quote']
+        and sum(label in primary_ref['quote'] for _,primary_ref,_ in bindings)==1}
+    if matches!={n}:ambiguous=True
+  sources={**sources,**({'fixed_items':primary} if primary else {}),**item_sources}
+  extraction={**extraction,'version':'NEEDS-extraction.1','fields':fields}
  fields=extraction['fields']
- if version=='LIO-planning-intake.3' and 'destination_timezone' in fields:
+ if modes and 'destination_timezone' in fields:
   raise InvalidInput('destination timezone must come from the confirmed city')
  # The model boundary accepts partial events; all internal NEEDS objects use
  # their complete established event shape after this one normalization.
@@ -186,20 +263,18 @@ def parse(raw,turns,*,version=VERSION):
     source_key=field+'.'+part
     if observation['state']!='known':continue
     if source_key not in sources:raise InvalidInput('unstated planning event field')
-    # An explicit ISO date cannot be swapped for another model-selected date.
     if part=='date':
-     dates={d for ref in sources[source_key] for d in re.findall(r'(?<!\d)\d{4}-\d{2}-\d{2}(?!\d)',ref['quote'])}
-     if dates and observation['value'] not in dates:raise InvalidInput('date differs from its original quote')
-     relative_dates=set()
-     for ref in sources[source_key]:
-      for match in re.finditer(r'\b(?:the )?day after tomorrow\b|\btomorrow\b|\btoday\b|后天|明天|今天',ref['quote'],re.I):
-       word=match[0].casefold()
-       offset=2 if word in ('day after tomorrow','the day after tomorrow','后天') else 1 if word in ('tomorrow','明天') else 0
-       relative_dates.add((turns[ref['source_index']].question_day+timedelta(days=offset)).isoformat())
-     if relative_dates and (len(relative_dates)!=1 or observation['value'] not in relative_dates):
-      raise InvalidInput('relative date differs from its original question day')
+     _date_source(observation['value'],sources[source_key],turns)
+ start=None
+ if canonical_start:
+  start=value['start_date']
+  validate_fields({'arrival':dict(date=start,time=dict(state='missing'),timezone=dict(state='missing'),place=dict(state='missing'))},complete=True)
+  if start['state']=='known':
+   if 'start_date' not in sources:raise InvalidInput('original trip start source required')
+   _date_source(start['value'],sources['start_date'],turns)
+   sources={**sources,'arrival.date':sources['start_date']}
  intent='discuss' if value['intent'] in ('plan','save') and NONPERSISTENT.search(turns[-1].text) else value['intent']
- return Intake(intent,value['reply'],value['needs_tools'],city,days,extraction,sources,current_request)
+ return Intake(intent,value['reply'],value['needs_tools'],city,days,extraction,sources,current_request,start,ambiguous)
 
 
 def fields_for(intake,city_reference,*,message_id,run_id,source_text):
@@ -216,6 +291,11 @@ def fields_for(intake,city_reference,*,message_id,run_id,source_text):
   fields[edge]['timezone']=known(city_reference.timezone)
  fields['arrival']['place']=known(city_reference.name)
  fields['destination_timezone']=known(city_reference.timezone)
+ if intake.start_date is not None and intake.start_date['state']=='known':
+  original=fields['arrival']['date']
+  if original['state']=='known' and original['value']!=intake.start_date['value']:
+   raise StartDateConflict('trip start and explicit arrival date disagree')
+  fields['arrival']['date']=dict(intake.start_date)
  start=fields['arrival'].get('date',{})
  if start.get('state')=='known':
   first=date.fromisoformat(start['value'])
@@ -225,14 +305,35 @@ def fields_for(intake,city_reference,*,message_id,run_id,source_text):
    if explicit_end.get('state')=='known' and explicit_end['value']!=derived:
     raise InvalidInput('explicit dates and duration disagree')
    fields['departure']['date']=known(derived)
- for item in fields.get('fixed_items',[]):
+ for index,item in enumerate(fields.get('fixed_items',[])):
   description=item['description']
   quotes=intake.sources.get('fixed_items',[])
   if not any(description in ref['quote'] for ref in quotes):raise InvalidInput('unbound fixed arrangement')
+  if intake.start_date is not None:
+   evidence=intake.sources['fixed_items.'+str(index)]
+   literals=[match[0] for ref in evidence for match in ZONE_LITERAL.finditer(_zone_text(ref['quote']))]
+   if any(value!=city_reference.timezone for value in literals) or any(_clock_zone_marker(ref['quote']) for ref in evidence):
+    raise FixedTimezoneConflict('explicit fixed timezone needs confirmation')
+   for edge in ('start','end'):
+    zone=item[edge]['timezone']
+    if zone['state'] in ('unknown','uncertain'):
+     raise FixedTimezoneConflict('fixed timezone is explicitly unresolved')
+    if zone['state']=='known' and zone['value']!=city_reference.timezone:
+     raise FixedTimezoneConflict('fixed timezone differs from confirmed destination')
+    if zone['state']=='missing':item[edge]['timezone']=known(city_reference.timezone)
   item['item_id']='fixed-'+sha256(description.encode()).hexdigest()[:20]
  value=dict(intake.extraction,fields=fields)
  checked=json.loads(preview(encode(value),message_id=message_id,run_id=run_id,source_text=source_text))
  return fields,checked
+
+
+def _absolute_fixed_days(text,first):
+ from .lio_planning_grounding import NUMBERS
+ def replace(match):
+  raw=match[1] or match[2]
+  ordinal=int(raw) if raw.isascii() and raw.isdecimal() else NUMBERS.get(raw)
+  return match[0] if ordinal is None else (first+timedelta(days=ordinal-1)).isoformat()
+ return re.sub(r'第([一二两三四五六七八九十0-9]{1,3})天|\bday\s+([1-9][0-9]?)\b',replace,text,flags=re.I)
 
 
 def fixed_sources_complete(intake,fields,turns,city_reference):
@@ -242,7 +343,7 @@ def fixed_sources_complete(intake,fields,turns,city_reference):
  comparison, never an alternative intent/city/date extractor. Unverifiable
  commitments remain questions rather than silently acquiring model values.
  """
- from .lio_planning_grounding import FIXED,NUMBERS,_clauses,_fixed_item
+ from .lio_planning_grounding import FIXED,RANGE,ISO,_clauses,_fixed_item
  fixed_declaration=re.compile(FIXED.pattern+r'|安排(?:已|已经)确定|保持不变|\bfixed\s+(?:hotel|meetup|meeting|appointment|arrangement)\b|\bkeep (?:it|them|this|that) unchanged\b',re.I)
  declarations=tuple(dict.fromkeys(clause for turn in turns for clause in _clauses(turn.text) if fixed_declaration.search(clause)))
  items=fields.get('fixed_items',[])
@@ -267,15 +368,11 @@ def fixed_sources_complete(intake,fields,turns,city_reference):
   evidence=intake.sources.get('fixed_items.'+str(index),intake.sources.get('fixed_items',[]))
   description=item['description']
   if not any(description in turn.text for turn in turns) or fixed_declaration.search(description) is None:return False
+  if intake.start_date is not None and sum(1 for _ in RANGE.finditer(re.sub(ISO,' ',description)))>1:return False
   details='\n'.join(ref['quote'] for ref in evidence if description not in ref['quote'])
   comparison=description+'\n'+details
   if first is not None:
-   def absolute_day(match):
-    raw=match[1] or match[2]
-    ordinal=int(raw) if raw.isascii() and raw.isdecimal() else NUMBERS.get(raw)
-    if ordinal is None:return match[0]
-    return (first+timedelta(days=ordinal-1)).isoformat()
-   comparison=re.sub(r'第([一二两三四五六七八九十0-9]{1,3})天|\bday\s+([1-9][0-9]?)\b',absolute_day,comparison,flags=re.I)
+   comparison=_absolute_fixed_days(comparison,first)
   expected=_fixed_item(comparison,first,city_reference.timezone,party)
   if expected is None:return False
   personal=re.search(r'我(?!们)|\bI (?:have|need|must|am)\b',description,re.I)
