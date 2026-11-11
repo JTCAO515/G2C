@@ -107,6 +107,16 @@ class SourcedIntake(unittest.TestCase):
             item['booking_evidence']=dict(status='booked',source_index=1,quote=statement)
             intake=parse_sourced(json.dumps(data),turns)
             self.assertEqual(intake.extraction['fields']['fixed_items'][0]['booking_status']['value'],'booked')
+
+    def test_booking_name_cannot_borrow_a_clock_from_a_longer_prefixed_name(self):
+        for locale,label,other,status in (('en','Hotel A','SuperHotel A',' is booked'),
+                                         ('zh','酒店甲','超级酒店甲','已预约')):
+            data,turns=self.sample(locale);item=data['fixed_items'][0];old=item['quote'];prior=item['label']
+            statement=label+status
+            item.update(label=label,quote=old.replace(prior,other)+'; '+statement,detail_refs=[])
+            turns=(turns[0],type(turns[1])(text=turns[1].text.replace(old,item['quote'],1),question_day=turns[1].question_day),turns[2])
+            item['booking_evidence']=dict(status='booked',source_index=1,quote=statement)
+            with self.subTest(label=label,other=other),self.assertRaises(InvalidInput):parse_sourced(json.dumps(data),turns)
         data,turns=self.sample();data['field_sources'][0]['quote']='not an original source'
         with self.assertRaises(InvalidInput):parse_sourced(json.dumps(data),turns)
 

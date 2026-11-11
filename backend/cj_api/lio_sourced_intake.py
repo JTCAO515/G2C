@@ -35,9 +35,10 @@ def _booking_source(item,booking,items,turns):
     assertion=re.sub(r'不可更改|不能改|不可修改|不能修改','',assertion).strip()
     tied=re.fullmatch(SUBJECT+'(?:'+label+LINK+'(?:'+status+')|(?:'+status+')'+LINK+label+')',assertion,re.I)
     timed=[part for part in CLAUSE.split(primary['quote'])[::2]if RANGE.search(re.sub(ISO,' ',part))]
+    preceding=r'(?:(?<!\w)|(?<=在)|(?<=于)|(?<=到)|(?<=为)|(?<=我)|(?<=我们)|(?<=本人)|(?<=全体)|(?<=大家))'
     following=r'(?=$|\s*(?:[，,。.!?！？；;:]|[0-9]|已|已经|预约|预订|集合|的|(?:is|was|has|have|from|at|on|for|meetup|meeting|appointment|booked)\b))'
     if (separator in ('?','？')or tied is None
-            or any(re.search(label+following,part,re.I)is None for part in timed)
+            or any(re.search(preceding+label+following,part,re.I)is None for part in timed)
             or any(other is not item and other['label']in clause for other in items)):
         raise InvalidInput('unique affirmative same-item booking source required')
 
