@@ -16,6 +16,9 @@ public struct LioHome<MenuContent: View>: View {
     @State private var conversation: LioConversation
     @State private var defaultTripPlan: LioTripPlan?
     @State private var selectedChat: LioChatSession?
+    @State private var restoringChat: Bool
+    @State private var restoreChatFailed = false
+    @State private var restoreChatRequest = 0
     @State private var draft = ""
     @State private var chatDrafts: [Data: String] = [:]
     @State private var menuOpen = false
@@ -62,6 +65,8 @@ public struct LioHome<MenuContent: View>: View {
         self.recordedMap = recordedMap
         _conversation = State(initialValue: LioConversation(service: service))
         _defaultTripPlan = State(initialValue: tripHistory.map { LioTripPlan(client: $0) })
+        _draft = State(initialValue: chatLibrary?.continuity?.draft ?? "")
+        _restoringChat = State(initialValue: chatLibrary?.continuity?.selectedID != nil)
     }
 
     private var chatID: Data? { selectedChat?.id ?? chatLibrary?.currentID }
@@ -80,7 +85,7 @@ public struct LioHome<MenuContent: View>: View {
     public var body: some View {
         let currentConversation = conversation
         let pending = conversation.pending
-        let canObserve = scenePhase == .active && pending == nil
+        let canObserve = scenePhase == .active && pending == nil && !restoringChat
         let tripCard = latestTripCard
         let tripPlan = tripPlan
         TabView(selection: $tab) {
@@ -99,6 +104,41 @@ public struct LioHome<MenuContent: View>: View {
                     .tag(Tab.memory)
             }
         }
+        .disabled(restoringChat)
+        .opacity(restoringChat ? 0 : 1)
+        .overlay {
+            if restoringChat {
+                VStack(spacing: 20) {
+                    if restoreChatFailed {
+                        Text(language.text("Couldn’t open your conversation. Try again when you’re connected.", "暂时无法打开对话，请联网后重试。"))
+                        Button(language.text("Try again", "重试")) { restoreChatRequest += 1 }
+                    } else {
+                        ProgressView(language.text("Opening your conversation…", "正在打开你的对话…"))
+                    }
+                }
+                .multilineTextAlignment(.center)
+                .padding(28)
+                .accessibilityIdentifier("lio.chat.recovery")
+            }
+        }
+        .task(id: restoreChatRequest) {
+            guard restoringChat else { return }
+            restoreChatFailed = false
+            do {
+                if let chat = try await chatLibrary?.restore?() {
+                    try Task.checkCancellation()
+                    selectedChat = chat
+                    conversation = LioConversation(service: chat.service)
+                    opening = .beforeNext
+                }
+                try Task.checkCancellation()
+                if let continuity = chatLibrary?.continuity { draft = continuity.draft }
+                restoringChat = false
+            } catch is CancellationError {
+                return
+            } catch { restoreChatFailed = true }
+        }
+        .onChange(of: draft) { _, value in chatLibrary?.continuity?.draft = value }
         .onChange(of: tab) { _, _ in typing = false }
         .task(id: Observation(active: canObserve, request: refreshRequest)) {
             if canObserve { await currentConversation.refreshTimeline() }
@@ -249,6 +289,7 @@ public struct LioHome<MenuContent: View>: View {
         if chat.id != chatID {
             if let chatID { chatDrafts[chatID] = draft }
             selectedChat = chat
+            chatLibrary?.continuity?.selectedID = chat.id
             conversation = LioConversation(service: chat.service)
             self.opening = opening
             draft = chatDrafts.removeValue(forKey: chat.id) ?? ""
@@ -356,6 +397,12 @@ public struct LioHome<MenuContent: View>: View {
         }
     }
 
+    private func recordPendingFirstQuestion() {
+        if let question = conversation.pending, let chatID, chatLibrary?.continuity?.blankIDs.contains(chatID) == true {
+            chatLibrary?.continuity?.firstQuestions[chatID] = question
+        }
+    }
+
     private var composer: some View {
         let placeholder = language.text("Start chatting", "开始聊天")
         let canSend = !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && conversation.pending == nil
@@ -368,6 +415,7 @@ public struct LioHome<MenuContent: View>: View {
             Button {
                 followsAnswer = true
                 conversation.send(draft, language: language)
+                recordPendingFirstQuestion()
                 if opening == .beforeNext, let id = conversation.pending?.id { opening = .before(id) }
                 draft = ""
                 typing = false
@@ -463,6 +511,7 @@ public struct LioHome<MenuContent: View>: View {
                     Button {
                         if turn.id == conversation.turns.last?.id { followsAnswer = true }
                         conversation.resend(turn.id)
+                        recordPendingFirstQuestion()
                     } label: {
                         Image(systemName: "exclamationmark.circle.fill")
                             .foregroundStyle(.red)
@@ -597,6 +646,7 @@ public struct LioHome<MenuContent: View>: View {
                 Button(language.text("Ask again", "重新问")) {
                     followsAnswer = true
                     conversation.askAgain(turn.id)
+                    recordPendingFirstQuestion()
                 }
                     .buttonStyle(.bordered)
                     .controlSize(.large)

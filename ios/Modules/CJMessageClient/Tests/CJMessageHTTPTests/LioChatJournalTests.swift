@@ -17,14 +17,17 @@ struct LioChatJournalTests {
         let first = try LioTimelineWire.Send(messageID: "first-chat", text: "Beijing trip",
                                              locale: .english, destination: .newChat)
         #expect(try client.savedChats().isEmpty)
+        #expect(try client.firstChatCanReturnToDraft(messageID: first.messageID))
         let outcome = try await client.submit(first)
         guard case .accepted(let id) = outcome else { Issue.record("First receipt not accepted"); return }
         #expect(id == ChatJournalExit.conversationID)
+        #expect(try !client.firstChatCanReturnToDraft(messageID: first.messageID))
         #expect(try client.savedChats().map(\.title) == ["Beijing trip"])
         #expect(await exit.originals == [first.originalUTF8])
 
         recovery.invalidate()
         #expect(throws: RecoveryError.inactive) { try client.savedChats() }
+        #expect(throws: RecoveryError.inactive) { try client.firstChatCanReturnToDraft(messageID: first.messageID) }
         let restored = MessageRecovery(storage: store)
         let restoredLease = try restored.activate(scope)
         let reopened = try makeClient(scope, restoredLease, recovery: restored, exit: exit)
@@ -33,7 +36,9 @@ struct LioChatJournalTests {
         let anotherLease = try restored.activate(another)
         let otherClient = try makeClient(another, anotherLease, recovery: restored, exit: exit)
         #expect(try otherClient.savedChats().isEmpty)
+        #expect(try otherClient.firstChatCanReturnToDraft(messageID: first.messageID))
         #expect(throws: RecoveryError.inactive) { try reopened.savedChats() }
+        #expect(throws: RecoveryError.inactive) { try reopened.firstChatCanReturnToDraft(messageID: first.messageID) }
     }
 
     @Test func lostFirstReceiptLeavesTheExactOriginalAndBlocksAnotherCreation() async throws {
@@ -49,6 +54,7 @@ struct LioChatJournalTests {
         let action = try recovery.action(messageID: first.messageID, lease: lease)
         let recorded = try #require(action)
         #expect(recorded.phase == .queryRequired && recorded.originalUTF8 == first.originalUTF8)
+        #expect(try !client.firstChatCanReturnToDraft(messageID: first.messageID))
         recovery.invalidate()
 
         let restored = MessageRecovery(storage: store)
@@ -56,6 +62,7 @@ struct LioChatJournalTests {
         let reopened = try makeClient(scope, restoredLease, recovery: restored, exit: exit)
         #expect(try await reopened.reconcileFirstChat() == nil)
         #expect(try restored.action(messageID: first.messageID, lease: restoredLease)?.phase == .notObserved)
+        #expect(try !reopened.firstChatCanReturnToDraft(messageID: first.messageID))
         let another = try LioTimelineWire.Send(messageID: "another-chat", text: "Shanghai trip",
                                                locale: .english, destination: .newChat)
         await #expect(throws: RecoveryError.queryOnly) { _ = try await reopened.submit(another) }
@@ -87,6 +94,7 @@ struct LioChatJournalTests {
             return
         }
         #expect(try recovery.action(messageID: first.messageID, lease: lease)?.phase == .notAccepted)
+        #expect(try client.firstChatCanReturnToDraft(messageID: first.messageID))
         #expect(try recovery.submissionRejection(messageID: first.messageID, lease: lease)?.httpStatus == 400)
         #expect(try client.savedChats().isEmpty)
         recovery.invalidate()

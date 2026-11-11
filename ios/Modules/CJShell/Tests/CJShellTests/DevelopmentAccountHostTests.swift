@@ -39,6 +39,34 @@ import CJSession
             verify: { await checks.check($0) }, activate: { _, _, _ in activate() }, invalidate: {})
     }
 
+    @Test func demoResumeSurvivesAnotherBackgroundDuringVerification() async throws {
+        let shell = try makeShell(), store = DevelopmentStore(), checks = DevelopmentChecks()
+        let material = try SessionMaterial(trustedSDKBytes: Data("synthetic-active-session".utf8))
+        var activations = 0
+        let host = DevelopmentAccountHost(shell: shell, choices: [], persistence: store, demoMode: true,
+            material: { _ in throw SessionFailure.invalidConfiguration }, verify: { await checks.check($0) },
+            activate: { _, _, _ in activations += 1 }, invalidate: {})
+        host.signIn { material }
+        await wait { checks.replies.count == 1 }
+        try #require(checks.replies.first).resume(returning: .accepted(account: "demo"))
+        await wait { host.state == .signedIn("demo") }
+
+        host.suspend()
+        host.resume()
+        await wait { checks.replies.count == 2 }
+        let stale = try #require(checks.replies.dropFirst().first)
+        #expect(host.state == .checking && shell.messageBindingBlocked)
+        host.suspend()
+        #expect(host.state == .paused && shell.messageBindingBlocked)
+        host.resume()
+        stale.resume(returning: .expired)
+        await wait { checks.replies.count == 3 }
+        #expect(host.state == .checking && activations == 1 && store.clears == 0)
+        try #require(checks.replies.dropFirst(2).first).resume(returning: .accepted(account: "demo"))
+        await wait { host.state == .signedIn("demo") }
+        #expect(activations == 2 && store.loads == 0 && store.clears == 0)
+    }
+
     @Test func demoExchangeSavesOnlyAfterVerificationAndRevocationClearsTheSlot() async throws {
         let shell = try makeShell(), store = DevelopmentStore(), checks = DevelopmentChecks()
         let material = try SessionMaterial(trustedSDKBytes: Data("synthetic-invite-session".utf8))
@@ -56,6 +84,136 @@ import CJSession
         checks.replies[1].resume(returning: .serverRejected)
         await recheck.value
         #expect(host.state == .rejected && store.value == nil && store.blocked && shell.messageBindingBlocked)
+    }
+
+    @Test func demoOfflineForegroundCanRetryAndOnlyAnAuthoritativeExpiryClearsSignIn() async throws {
+        let shell = try makeShell(), store = DevelopmentStore(), checks = DevelopmentChecks()
+        let material = try SessionMaterial(trustedSDKBytes: Data("synthetic-session".utf8))
+        var activations = 0
+        let host = DevelopmentAccountHost(shell: shell, choices: [], persistence: store, demoMode: true,
+            material: { _ in throw SessionFailure.invalidConfiguration }, verify: { await checks.check($0) },
+            activate: { _, _, _ in activations += 1 }, invalidate: {})
+        host.signIn { material }
+        await wait { checks.replies.count == 1 }
+        checks.replies[0].resume(returning: .accepted(account: "demo"))
+        await wait { host.state == .signedIn("demo") }
+        host.suspend(); host.resume()
+        await wait { checks.replies.count == 2 }
+        checks.replies[1].resume(returning: .networkUnknown)
+        await wait { host.state == .networkUnknown }
+        #expect(host.isResuming && shell.messageBindingBlocked && store.clears == 0)
+        host.suspend()
+        #expect(host.state == .paused)
+        host.resume()
+        await wait { checks.replies.count == 3 }
+        checks.replies[2].resume(returning: .networkUnknown)
+        await wait { host.state == .networkUnknown }
+        host.resume() // Explicit connection retry, without another Keychain load.
+        await wait { checks.replies.count == 4 }
+        checks.replies[3].resume(returning: .accepted(account: "demo"))
+        await wait { host.state == .signedIn("demo") }
+        #expect(!host.isResuming && activations == 2 && store.loads == 0 && store.clears == 0)
+        host.suspend(); host.resume()
+        await wait { checks.replies.count == 5 }
+        checks.replies[4].resume(returning: .expired)
+        await wait { host.state == .expired }
+        #expect(!host.isResuming && store.value == nil && store.clears == 1 && shell.messageBindingBlocked)
+    }
+
+    @Test func signOutDuringForegroundCheckCannotBeReversedByItsLateSuccess() async throws {
+        let shell = try makeShell(), store = DevelopmentStore(), checks = DevelopmentChecks()
+        let material = try SessionMaterial(trustedSDKBytes: Data("synthetic-session".utf8))
+        var activations = 0
+        let host = DevelopmentAccountHost(shell: shell, choices: [], persistence: store, demoMode: true,
+            material: { _ in throw SessionFailure.invalidConfiguration }, verify: { await checks.check($0) },
+            activate: { _, _, _ in activations += 1 }, invalidate: {})
+        host.signIn { material }
+        await wait { checks.replies.count == 1 }
+        checks.replies[0].resume(returning: .accepted(account: "demo"))
+        await wait { host.state == .signedIn("demo") }
+        host.suspend(); host.resume()
+        await wait { checks.replies.count == 2 }
+        host.signOut()
+        checks.replies[1].resume(returning: .accepted(account: "demo"))
+        for _ in 0..<30 { await Task.yield() }
+        host.resume()
+        #expect(host.state == .signedOut && !host.isResuming && activations == 1)
+        #expect(store.value == nil && store.clears == 1 && checks.replies.count == 2)
+    }
+
+    @Test func renewedMaterialIsVerifiedAndSavedEvenAfterAnotherBackground() async throws {
+        let shell = try makeShell(), store = DevelopmentStore(), checks = DevelopmentChecks()
+        let old = try SessionMaterial(trustedSDKBytes: Data("synthetic-old".utf8))
+        let renewed = try SessionMaterial(trustedSDKBytes: Data("synthetic-renewed".utf8))
+        var refreshes = 0
+        let host = DevelopmentAccountHost(shell: shell, choices: [], persistence: store, demoMode: true,
+            material: { _ in throw SessionFailure.invalidConfiguration }, verify: { await checks.check($0) },
+            refresh: { _ in refreshes += 1; return renewed },
+            activate: { _, _, _ in }, invalidate: {})
+        host.signIn { old }
+        await wait { checks.replies.count == 1 }
+        checks.replies[0].resume(returning: .accepted(account: "demo"))
+        await wait { host.state == .signedIn("demo") }
+        host.suspend(); host.resume()
+        await wait { checks.replies.count == 2 }
+        #expect(store.value?.withBytes { $0 } == old.withBytes { $0 })
+        host.suspend(); host.resume()
+        checks.replies[1].resume(returning: .serverRejected)
+        await wait { checks.replies.count == 3 }
+        #expect(host.isResuming && store.clears == 0 && refreshes == 1)
+        checks.replies[2].resume(returning: .accepted(account: "demo"))
+        await wait { host.state == .signedIn("demo") }
+        #expect(store.value?.withBytes { $0 } == renewed.withBytes { $0 })
+        #expect(store.loads == 0 && store.clears == 0)
+    }
+
+    @Test func renewalUnavailableKeepsTheOldCredentialButDoesNotSkipItsVerification() async throws {
+        let shell = try makeShell(), store = DevelopmentStore(), checks = DevelopmentChecks()
+        let material = try SessionMaterial(trustedSDKBytes: Data("synthetic-old".utf8))
+        var activations = 0, refreshes = 0
+        let host = DevelopmentAccountHost(shell: shell, choices: [], persistence: store, demoMode: true,
+            material: { _ in throw SessionFailure.invalidConfiguration }, verify: { candidate in
+                #expect(candidate.withBytes { $0 } == material.withBytes { $0 })
+                return await checks.check(candidate)
+            }, refresh: { _ in refreshes += 1; throw DemoAccountExchangeFailure.unavailable },
+            activate: { _, _, _ in activations += 1 }, invalidate: {})
+        host.signIn { material }
+        await wait { checks.replies.count == 1 }
+        checks.replies[0].resume(returning: .accepted(account: "demo"))
+        await wait { host.state == .signedIn("demo") }
+        host.suspend(); host.resume()
+        await wait { checks.replies.count == 2 }
+        #expect(host.state == .checking && activations == 1 && shell.messageBindingBlocked)
+        checks.replies[1].resume(returning: .networkUnknown)
+        await wait { host.state == .networkUnknown }
+        #expect(host.isResuming && store.clears == 0 && activations == 1)
+        host.resume()
+        await wait { checks.replies.count == 3 }
+        checks.replies[2].resume(returning: .accepted(account: "demo"))
+        await wait { host.state == .signedIn("demo") }
+        #expect(store.value?.withBytes { $0 } == material.withBytes { $0 } && store.clears == 0 && refreshes == 1)
+    }
+
+    @Test func lateRenewalAfterSignOutCannotSaveOrActivate() async throws {
+        let shell = try makeShell(), store = DevelopmentStore(), checks = DevelopmentChecks()
+        let material = try SessionMaterial(trustedSDKBytes: Data("synthetic-old".utf8))
+        var pending: CheckedContinuation<SessionMaterial?, Never>?
+        var activations = 0
+        let host = DevelopmentAccountHost(shell: shell, choices: [], persistence: store, demoMode: true,
+            material: { _ in throw SessionFailure.invalidConfiguration }, verify: { await checks.check($0) },
+            refresh: { _ in await withCheckedContinuation { pending = $0 } },
+            activate: { _, _, _ in activations += 1 }, invalidate: {})
+        host.signIn { material }
+        await wait { checks.replies.count == 1 }
+        checks.replies[0].resume(returning: .accepted(account: "demo"))
+        await wait { host.state == .signedIn("demo") }
+        host.suspend(); host.resume()
+        await wait { pending != nil }
+        host.signOut()
+        try #require(pending).resume(returning: material)
+        for _ in 0..<30 { await Task.yield() }
+        #expect(host.state == .signedOut && !host.isResuming && store.value == nil && store.clears == 1)
+        #expect(activations == 1 && checks.replies.count == 1)
     }
 
     @Test func demoRestoreRetiresAnExpiredSessionAndKeepsTheExpiryNotice() async throws {

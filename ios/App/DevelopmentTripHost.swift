@@ -1015,6 +1015,9 @@ private var developmentHostEnvironment: [String: String] {
     private let tokens: [String: String]
     private let persistence: KeychainSessionStore
     private let demoMode: Bool
+    #if G2C_DEMO_BETA
+    @ObservationIgnored private var lioChatContinuity: LioChatContinuity?
+    #endif
     @ObservationIgnored lazy var accounts: DevelopmentAccountHost = {
         DevelopmentAccountHost(shell: shell,
             choices: tokens.keys.sorted().map { .init(id: $0, label: $0) }, persistence: persistence, demoMode: demoMode,
@@ -1024,6 +1027,12 @@ private var developmentHostEnvironment: [String: String] {
             }, verify: { [weak self] material in
                 guard let self else { return .networkUnknown }
                 return await self.verify(material)
+            }, refresh: { material in
+                #if G2C_DEMO_BETA
+                return try await DemoInviteClient.renew(material)
+                #else
+                return nil
+                #endif
             }, activate: { [weak self] material, session, operation in
                 guard let self, let inputs = try self.sessionInputs(material) else { throw SessionFailure.invalidConfiguration }
                 let configuration = inputs.configuration
@@ -1036,6 +1045,12 @@ private var developmentHostEnvironment: [String: String] {
                     self.trip = try DevelopmentTripHost(configuration: configuration, shell: self.shell,
                         lease: DevelopmentSessionLease(session: session, operation: operation), offline: self.offline,
                         memoryExtensionsAllowed: self.cleanupWorkflow?.version == .v4, betaComposition: inputs.composition)
+                    #if G2C_DEMO_BETA
+                    if let current = self.trip?.messages.lioChats.continuity {
+                        if let previous = self.lioChatContinuity { current.inherit(previous) }
+                        self.lioChatContinuity = current
+                    }
+                    #endif
                     if let conversation = inputs.conversation {
                         _ = self.trip?.messages.messages.selectConversationForSending(conversation)
                     }
@@ -1048,7 +1063,12 @@ private var developmentHostEnvironment: [String: String] {
             }, invalidate: { [weak self] in self?.trip?.invalidate(); self?.trip = nil },
             clearOffline: offline == nil ? nil : { [weak self] in try self?.offline?.clearLocally() },
             serverRejected: offline == nil || cleanupEnabled ? nil : { [weak self] material in try self?.offline?.identityRejected(material: material) },
-            identityWillChange: { [weak self] in self?.cleanupWorkflow?.invalidate(); self?.cleanupWorkflow = nil; self?.cleanup = nil },
+            identityWillChange: { [weak self] in
+                #if G2C_DEMO_BETA
+                self?.lioChatContinuity = nil
+                #endif
+                self?.cleanupWorkflow?.invalidate(); self?.cleanupWorkflow = nil; self?.cleanup = nil
+            },
             rejectedContext: cleanupEnabled ? { [weak self] material, session, operation in
                 guard let self else { throw CleanupFailure.stale }
                 try await self.reconcileRejectedDevice(material: material, lease: .init(session: session, operation: operation))
@@ -1134,6 +1154,9 @@ private var developmentHostEnvironment: [String: String] {
     private func fenceCleanupBusiness() throws {
         guard let original = cleanupWorkflow else { throw CleanupFailure.stale }
         try original.requireCurrent()
+        #if G2C_DEMO_BETA
+        lioChatContinuity = nil
+        #endif
         trip?.invalidate()
         guard cleanupWorkflow === original else { throw CleanupFailure.stale }
         try original.requireCurrent(); offline?.hide()
