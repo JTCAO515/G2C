@@ -140,12 +140,15 @@ def final_metadata(payload):
         require(task['kind'] in STATE_RULES and nonempty(task['setup']), 'invalid controlled task setup/kind')
         fields(task['known_fields'], {'task_clock', 'travel'}, 'controlled known fields')
         known = task['known_fields']
+        require(type(known['task_clock']) is str, 'invalid task clock type')
         date.fromisoformat(known['task_clock'])
         fields(known['travel'], {'city', 'start_date', 'days', 'daily_budget_cny'}, 'controlled travel fields')
-        require(nonempty(known['travel']['city']) and type(known['travel']['days']) is int
-                and known['travel']['days'] > 0 and type(known['travel']['daily_budget_cny']) is int
-                and known['travel']['daily_budget_cny'] > 0, 'invalid controlled travel field values')
+        require(known['travel']['city'] is None or nonempty(known['travel']['city']), 'invalid known city')
+        for field in ('days', 'daily_budget_cny'):
+            value = known['travel'][field]
+            require(value is None or type(value) is int and value > 0, 'invalid known travel quantity')
         if known['travel']['start_date'] is not None:
+            require(type(known['travel']['start_date']) is str, 'invalid start date type')
             date.fromisoformat(known['travel']['start_date'])
         if task['kind'] == 'clarification':
             require(known['travel']['start_date'] is None, 'start-date clarification has a known start date')

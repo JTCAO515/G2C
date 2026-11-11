@@ -125,7 +125,7 @@
     "task_completion": {
       "minimum": 0.9,
       "per_language": true,
-      "denominator": "all planned first attempts including FAIL/UNKNOWN; UNRUN retained and prevents PASS"
+      "denominator": "PASS+FAIL+UNKNOWN among started first attempts, following the existing quality policy; planned N and UNRUN are reported separately; any UNRUN prevents PASS"
     },
     "serious_errors": {
       "maximum": 0,
