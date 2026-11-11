@@ -73,10 +73,9 @@ def display_answer(text, locale):
     chinese = locale == 'zh'
     text = _TECHNICAL_ADDRESS.sub('服务方' if chinese else 'the service provider', text)
     text = _UNKNOWN_LABEL.sub('暂未确认' if chinese else 'not yet verified', text)
-    if chinese:
-        text = _MEMORY_CLAIM_ZH.sub('我了解了', text)
-        return text.replace('查询', '查看').replace('核实', '确认')
-    return _MEMORY_CLAIM_EN.sub('I understand', text)
+    text = _MEMORY_CLAIM_ZH.sub('我了解了', text)
+    text = _MEMORY_CLAIM_EN.sub('I understand', text)
+    return text.replace('查询', '查看').replace('核实', '确认')
 
 
 @dataclass(frozen=True)
