@@ -76,6 +76,37 @@ class SourcedIntake(unittest.TestCase):
                 quote='已预约'if clipped and '已预约'in suffix else suffix
                 item['booking_evidence']=dict(status='booked',source_index=1,quote=quote)
                 with self.subTest(suffix=suffix,clipped=clipped),self.assertRaises(InvalidInput):parse_sourced(json.dumps(data),turns)
+
+    def test_questions_and_false_statements_are_not_booking_declarations(self):
+        for locale,statement in (('en','The sentence “hotel meetup is booked” is false'),
+                                 ('en','Is the hotel meetup booked?'),('zh','酒店集合已预约吗？')):
+            for clipped in (False,True):
+                data,turns=self.sample(locale);item=data['fixed_items'][0];old=item['quote']
+                item['quote']=old+'; '+statement;item['detail_refs']=[]
+                turns=(turns[0],type(turns[1])(text=turns[1].text.replace(old,item['quote'],1),question_day=turns[1].question_day),turns[2])
+                quote=item['label']if clipped else statement.rstrip('?？')
+                item['booking_evidence']=dict(status='booked',source_index=1,quote=quote)
+                with self.subTest(statement=statement,clipped=clipped),self.assertRaises(InvalidInput):parse_sourced(json.dumps(data),turns)
+
+    def test_target_prefix_is_not_the_same_arrangement(self):
+        for locale,label,other,statement in (('en','Hotel A','Hotel Airport','booked Hotel Airport'),
+                ('en','Hotel A','Hotel Airport','Hotel Airport is booked'),
+                ('zh','酒店甲','酒店甲乙','酒店甲乙已预订')):
+            data,turns=self.sample(locale);item=data['fixed_items'][0];old=item['quote'];prior=item['label']
+            item.update(label=label,quote=old.replace(prior,label)+'; '+statement,detail_refs=[])
+            turns=(turns[0],type(turns[1])(text=turns[1].text.replace(old,item['quote'],1),question_day=turns[1].question_day),turns[2])
+            item['booking_evidence']=dict(status='booked',source_index=1,quote=statement)
+            with self.subTest(label=label,other=other),self.assertRaises(InvalidInput):parse_sourced(json.dumps(data),turns)
+
+    def test_literal_names_and_lock_declarations_do_not_negate_booking(self):
+        for label in ('假日酒店集合','无锡酒店集合'):
+            data,turns=self.sample();item=data['fixed_items'][0];old=item['quote'];prior=item['label']
+            statement=label+'已预约不可更改'
+            item.update(label=label,quote=old.replace(prior,label)+'; '+statement,detail_refs=[])
+            turns=(turns[0],type(turns[1])(text=turns[1].text.replace(old,item['quote'],1),question_day=turns[1].question_day),turns[2])
+            item['booking_evidence']=dict(status='booked',source_index=1,quote=statement)
+            intake=parse_sourced(json.dumps(data),turns)
+            self.assertEqual(intake.extraction['fields']['fixed_items'][0]['booking_status']['value'],'booked')
         data,turns=self.sample();data['field_sources'][0]['quote']='not an original source'
         with self.assertRaises(InvalidInput):parse_sourced(json.dumps(data),turns)
 
