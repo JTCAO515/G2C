@@ -84,6 +84,10 @@ def parse_sourced(raw,turns):
         item['booking_status']=booking['status']
     result=compile_flat(data,turns)
     if result.intent in ('plan','save'):
+        for _,booking in bookings:
+            index=booking['source_index']
+            if index>=len(turns)or booking['quote']not in turns[index].text:
+                raise InvalidInput('field quote is not in the original message')
         try:
             for item,booking in bookings:_booking_source(item,booking,data['fixed_items'],turns)
         except InvalidInput as error:raise BookingSourceUnclear(result)from error

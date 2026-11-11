@@ -253,6 +253,19 @@ class NationalExecution(unittest.TestCase):
         self.assertFalse(any(kind=='registered'for kind,_ in events))
         self.assertTrue(any('哪一项确实已经预约' in text and '尚未保存' in text for kind,text in events if kind=='text_delta'))
 
+    def test_bad_booking_reference_is_unknown_before_city_or_execution(self):
+        from cj_agent.provider import ProviderUnknown
+        from test_lio_intake_start_schema import sample
+        from lio_flat_fixture import facts_fixture
+        for index,quote in ((99,'already booked'),(1,'not an original traveler quote')):
+            data,turns=sample('zh',True);wire=facts_fixture(data)
+            wire['fixed_items'][0]['booking_evidence']=dict(status='booked',source_index=index,quote=quote)
+            value=self.envelope(turns[-1].text)
+            with self.subTest(index=index),patch('lio_flat_fixture.facts_fixture',return_value=wire),\
+                 patch.object(NationalLioPlanning,'_previous_city')as downstream:
+                with self.assertRaises(ProviderUnknown):self.run_intake(value,turns=turns)
+                downstream.assert_not_called()
+
     def test_natural_fixed_day_number_keeps_explicit_self_and_unbooked_status(self):
         for declaration in ('第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变',
                             'On day 1 I have a fixed hotel meetup from 9 to 10 a.m., keep it unchanged',

@@ -156,3 +156,10 @@ class SourcedIntake(unittest.TestCase):
         self.assertIsNone(control.extraction);self.assertIsNone(control.duration_days)
         self.assertIsNone(control.start_date);self.assertEqual(control.sources,{})
         self.assertEqual(control.current_request,turns[-1].text)
+
+    def test_nonexistent_booking_source_is_not_a_semantic_clarification(self):
+        for index,quote in ((99,'already booked'),(1,'not an original traveler quote')):
+            data,turns=self.sample()
+            data['fixed_items'][0]['booking_evidence']=dict(status='booked',source_index=index,quote=quote)
+            with self.subTest(index=index),self.assertRaises(InvalidInput)as raised:parse_sourced(json.dumps(data),turns)
+            self.assertNotIsInstance(raised.exception,BookingSourceUnclear)
