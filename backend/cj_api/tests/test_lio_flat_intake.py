@@ -2,7 +2,7 @@
 from copy import deepcopy
 import json
 import unittest
-from jsonschema import Draft202012Validator
+from jsonschema import Draft202012Validator,ValidationError
 from cj_agent.lio_intake_flat_schema import response_format,SCHEMA
 from cj_api.lio_flat_intake import parse_flat
 from cj_api.lio_national_intake import fields_for,fixed_sources_complete,FixedTimezoneConflict
@@ -80,6 +80,37 @@ class FlatIntake(unittest.TestCase):
         value,turns=self.sample();item=value['fixed_items'][0];old=item['quote'];item['quote']+=' CET'
         turns=(turns[0],type(turns[1])(text=turns[1].text.replace(old,item['quote'],1),question_day=turns[1].question_day))
         with self.assertRaises(FixedTimezoneConflict):previous.prepared(parse_flat(json.dumps(value),turns),turns)
+
+    def test_published_participants_match_original_needs_identifiers(self):
+        value,turns=self.sample(party=True)
+        schema=response_format(len(turns)-1)['json_schema']['schema']
+        for participant in ('day-1','第一天','hotel','companion:','companion:/other'):
+            changed=deepcopy(value);changed['fixed_items'][0]['applies_to']=[participant]
+            with self.subTest(participant=participant):
+                with self.assertRaises(ValidationError):Draft202012Validator(schema).validate(changed)
+                with self.assertRaises(InvalidInput):parse_flat(json.dumps(changed),turns)
+        for participant in ('self','party','companion:traveler-2'):
+            changed=deepcopy(value);changed['fixed_items'][0]['applies_to']=[participant]
+            if participant.startswith('companion:'):
+                changed['extra_fields']['companions']={'traveler-2':'同行朋友'}
+                changed['field_sources']['companions']=[{'source_index':2,'quote':turns[2].text}]
+            Draft202012Validator(schema).validate(changed)
+            parse_flat(json.dumps(changed),turns)
+
+    def test_fixed_meetup_keeps_same_day_without_inventing_a_reservation(self):
+        for locale in ('zh','en'):
+            value,turns=self.sample(locale,party=True)
+            item=value['fixed_items'][0]
+            self.assertEqual(item['applies_to'],['self'])
+            self.assertEqual(item['start_date'],item['end_date'])
+            self.assertIsNone(item['booking_status'])
+            intake=parse_flat(json.dumps(value),turns)
+            self.assertTrue(fixed_sources_complete(intake,previous.prepared(intake,turns),turns,previous.CITY))
+            # A supplier's unsupported booking claim remains rejected by the
+            # independent original-source check, even when structurally valid.
+            item['booking_status']='booked'
+            intake=parse_flat(json.dumps(value),turns)
+            self.assertFalse(fixed_sources_complete(intake,previous.prepared(intake,turns),turns,previous.CITY))
 
     def test_vendor_schema_has_no_reference_conditional_or_union_combinators(self):
         def visit(value):
