@@ -33,6 +33,7 @@ CITIES=(('上海','Shanghai','310000'),('成都','Chengdu','510100'),('西安',"
         ('桂林','Guilin','450300'),('广州','Guangzhou','440100'),('杭州','Hangzhou','330100'))
 KEY='national-http-fixture-key-only'
 PREFERENCE='I prefer fewer stops in a day.'
+MISSING_REQUESTS={'去成都玩三天':('zh','成都','三天'), 'Plan a three-day trip to Chengdu.':('en','Chengdu','three-day')}
 
 
 def exercise(root,conninfo):
@@ -78,13 +79,21 @@ def exercise(root,conninfo):
         elif 'LIO-planning-intake.1' in system:
             text=body['messages'][-1]['content'];current['text']=text
             source_index=len([m for m in body['messages'][1:] if m['role']=='user' and not m['content'].startswith('Stored memory data')])-1
-            if text==PREFERENCE:
+            from cj_agent.lio_intake_schema import RESPONSE_FORMAT
+            assert body['response_format']==RESPONSE_FORMAT
+            if text in MISSING_REQUESTS:
+                _,mention,duration=MISSING_REQUESTS[text]
+                content=json.dumps(dict(version='LIO-planning-intake.1',intent='plan',reply='请补充日期和人数。',needs_tools=False,
+                    city=dict(query=mention,normalized_name=None,province=None,source_index=source_index,quote=mention),duration_days=3,
+                    extraction=dict(version='NEEDS-extraction.1',fields={},unresolved=[],long_term_requests=[]),
+                    field_sources={'duration_days':[dict(source_index=source_index,quote=duration)]},current_request=text),ensure_ascii=False)
+            elif text==PREFERENCE:
                 content=json.dumps(dict(version='LIO-planning-intake.1',intent='consult',reply='I can suggest a relaxed pace.',needs_tools=False,
                     city=None,duration_days=None,extraction=dict(version='NEEDS-extraction.1',fields={},unresolved=[],long_term_requests=[]),
                     field_sources={},current_request=text))
             else:
                 content=None
-            fields=dict(arrival=dict(date=dict(state='known',value='2026-11-20')),party_size=dict(state='known',value=2))
+            fields=dict(arrival=dict(date=dict(state='known',value='2026-11-20'),time=dict(state='missing'),timezone=dict(state='missing'),place=dict(state='missing')),party_size=dict(state='known',value=2))
             sources={k:[dict(source_index=source_index,quote=q)] for k,q in (
                 ('arrival.date','2026-11-20'),('party_size',current['party']),('duration_days',current['duration']))}
             if current.get('fixed_description') in text:
@@ -119,6 +128,10 @@ def exercise(root,conninfo):
             else:
                 content=json.dumps(dict(version='TRIP-lio-first-plan.1',title=current['en']+' trip',items=items,
                     proposed_subjects={item['id']:['party'] for item in items}),ensure_ascii=False)
+        if 'LIO-planning-intake.1' in system:
+            from cj_agent.lio_intake_schema import SCHEMA
+            from jsonschema import Draft202012Validator
+            Draft202012Validator(SCHEMA).validate(json.loads(content))
         identity=dict(id='fixture-national-'+str(len(wire)),model=M4_MODEL)
         events=[dict(**identity,choices=[dict(index=0,delta=dict(content=content),finish_reason=None)]),
                 dict(**identity,choices=[dict(index=0,delta={},finish_reason='stop')]),
@@ -148,6 +161,19 @@ def exercise(root,conninfo):
     register_typed_routes(app,database=database,auth_dir=auth,configuration=memory.collection)
     headers={'Authorization':'Bearer '+dev_auth.token(auth,SUBJECT,3600),'Content-Type':'application/octet-stream'}
     with TestClient(app) as api,patch('cj_api.lio_city._catalog_exchange',side_effect=city_exchange):
+        for index,(question,(locale,mention,duration)) in enumerate(MISSING_REQUESTS.items()):
+            current.update(zh='成都',en='Chengdu',locale=locale,mention=mention,party='两个人',duration=duration,fixed_description='not-present')
+            mid='missing-original-'+str(index)
+            clarification_request=dict(version='LIO-message.2',message_id=mid,text=question,locale=locale,new_conversation=True)
+            accepted=api.post('/v2/lio/messages',headers=headers,content=json.dumps(clarification_request).encode());assert accepted.status_code==200,accepted.text
+            assert [(o.message_id,o.status) for o in process()]==[(mid,'completed')]
+            rows=api.get('/v2/lio/timeline',headers=headers,params=dict(conversation_id=accepted.json()['conversation_id'])).json()['messages']
+            assert rows[-1]['trip'] is None and rows[-1]['status']=='completed' and rows[-1]['answer']
+            with database.connect(scope) as db:
+                assert db.execute('SELECT count(*) FROM cj_message_needs_binding WHERE message_scope=%s AND message_id=%s',(scope,mid)).fetchone()==(0,)
+                assert db.execute('SELECT count(*) FROM cj_trip_record').fetchone()==(0,)
+                assert db.execute('SELECT count(*) FROM cj_memory_item').fetchone()==(0,)
+            print('PASS signed exact missing-date/party clarification, zero NEEDS/Trip/active Memory',locale,flush=True)
         for zh,en,adcode in CITIES:
             for locale in ('zh','en'):
                 current.update(zh=zh,en=en,locale=locale,mention=zh if locale=='zh' else en,
@@ -229,7 +255,7 @@ def exercise(root,conninfo):
                 reply=read['messages'][-1]['answer']
                 assert ('fewer stops' in reply or '少安排' in reply) if saved else ("don't know you yet" in reply or '还不了解你' in reply)
         print('PASS national consultation retains Memory candidates and new-chat identity recalls only saved Memory',flush=True)
-    assert len(city_calls)==13
+    assert len(city_calls)==15
     assert all(row['state']=='RECEIVED' for row in journal.inspect())
     print('PASS 12 signed private PG chains, original model/tool receipts, no live vendor calls',flush=True)
 

@@ -593,6 +593,27 @@ class Boundaries(unittest.TestCase):
         with self.assertRaises(BudgetUnknown):prepared.bind_operation(foreign,lambda:True)
         self.assertEqual(len(self.sent),1)
 
+    def test_new_national_schema_profile_pins_actual_strict_wire_without_changing_old_mode(self):
+        from cj_agent.lio_intake_schema import PROFILE,RESPONSE_FORMAT,SCHEMA_SHA256
+        from cj_api.local_app import ISSUER,scope_for
+        provider=self.provider(sse());subjects=frozenset({'m4-synthetic-intake-schema'})
+        tools=RealTools(RealServices(provider,KEY,subjects,demo_subjects=subjects,national_subjects=subjects))
+        argument=([dict(role='user',content='去上海玩两天')],'JSON national extraction',provider)
+        new=tools.registrations['model.lio_intake.2'].prepare_input(argument)
+        declared=json.loads(new.original_bytes)
+        self.assertEqual(declared['structured_profile'],PROFILE)
+        self.assertEqual(declared['response_format_sha256'],SCHEMA_SHA256)
+        operation=SimpleNamespace(binding=SimpleNamespace(scope=scope_for(ISSUER,next(iter(subjects)))),command=SimpleNamespace(attempt_id='strict-intake'))
+        self.assertTrue(''.join(new.bind_operation(operation,lambda:True)()))
+        wire=json.loads(self.sent[0].content)
+        self.assertEqual(wire['response_format'],RESPONSE_FORMAT)
+        self.assertEqual(wire['model'],M4_MODEL)
+        self.assertLessEqual(wire['max_tokens'],M4_REAL_OUTPUT_TOKENS)
+        old=tools.registrations['model.lio_intake.1'].prepare_input(argument)
+        self.assertEqual(json.loads(old.original_bytes)['structured_profile'],'LIO-planning-intake.1')
+        self.assertNotIn('response_format_sha256',json.loads(old.original_bytes))
+        self.assertEqual(self.budget.inspect()[0]['state'],'RECEIVED')
+
     def test_national_tools_bind_actual_city_and_leave_the_legacy_query_unchanged(self):
         from cj_api.lio_city import CityReference
         from cj_api.lio_weather import decode_query as city_weather_query
