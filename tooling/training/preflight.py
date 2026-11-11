@@ -1,6 +1,6 @@
 """Read-only preparation checks. Never downloads a model or starts training.
 
-F owns the dataset schema. Until #768 is delivered, `dataset` fails closed.
+F owns the dataset schema. `dataset` requires the fixed #768 source and input pin.
 `swift-jsonl` checks ONLY the official OpenAI input subset, not F provenance/QC.
 """
 import argparse
@@ -161,14 +161,18 @@ def main(argv=None):
     dataset = commands.add_parser('dataset')
     dataset.add_argument('path', type=Path)
     dataset.add_argument('--version', required=True)
+    dataset.add_argument('--input-sha256')
     upstream = commands.add_parser('swift-jsonl')
     upstream.add_argument('path', type=Path)
     args = parser.parse_args(argv)
     if args.command == 'dataset':
-        print(json.dumps({'status': 'UNRUN', 'code': 'UNKNOWN_DATA_VERSION',
-                          'reason': 'F_SCHEMA_UNAVAILABLE: #768 has no delivered version/adapter; '
-                                    'no G2C dataset is accepted. See README missing-input list.'}))
-        return 2
+        from f_dataset import check_dataset
+        try:
+            result, code = check_dataset(args.path, args.version, args.input_sha256)
+        except (OSError, UnicodeError) as error:
+            result, code = {'status': 'FAIL', 'code': type(error).__name__}, 1
+        print(json.dumps(result))
+        return code
     try:
         if args.command == 'config':
             errors = check_config(read_json(args.path.read_text()))
