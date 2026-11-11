@@ -73,6 +73,35 @@ class Intake:
  current_request:str
 
 
+_DIAGNOSTIC_CODES={
+ 'unexpected or missing fields':'envelope_fields',
+ 'explicit nationwide intake required':'intake_discriminator',
+ 'bounded user-facing intake answer required':'intake_reply',
+ 'intake must bind the complete latest request':'current_request_binding',
+ 'original field evidence required':'field_sources_shape',
+ 'nonempty original field sources required':'field_sources_list',
+ 'field quote is not in the original message':'field_source_binding',
+ 'city query must preserve its original destination mention':'city_source_binding',
+ 'bounded proposed administrative name required':'city_name_shape',
+ 'original bounded duration required':'duration_source',
+ 'original NEEDS extraction required':'needs_envelope',
+ 'structured trip event required':'needs_event_shape',
+ 'unstated planning observation':'observation_source',
+ 'unstated planning collection':'collection_source',
+ 'unstated planning event field':'event_source',
+ 'date differs from its original quote':'date_source',
+ 'relative date differs from its original question day':'relative_date_source',
+ 'unsupported field or source':'needs_field_name',
+ 'invalid observation state':'observation_state',
+}
+
+
+def diagnostic_code(error):
+ # Arbitrary model/error values never reach an operational log. The private
+ # selected output carries its original bytes for subsequent diagnosis.
+ return _DIAGNOSTIC_CODES.get(str(error),'invalid_model_intake')
+
+
 def province_evidence(mentions,texts):
  """Latest literal province mention wins; an explicit denial revokes older data."""
  last=None

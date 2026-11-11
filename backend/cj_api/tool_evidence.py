@@ -84,6 +84,27 @@ class ToolEvidence:
             input_utf8=operation.original.input_bytes.decode('utf-8'),
             response_sha256=receipt['response_sha256'], result_utf8=raw.decode('utf-8'),
             receipt=dict(receipt), observed_at=datetime.fromtimestamp(now, timezone.utc).isoformat())
+        self._persist(operation,value)
+
+    def record_intake(self,operation,raw,receipt):
+        """Selected complete model output, explicitly separate from tool evidence."""
+        binding=operation.binding
+        if (binding.scope,binding.message_id) not in self.selected:return
+        now=self.clock()
+        if now>=self.expires_at:raise BudgetUnknown('original intake evidence window expired')
+        if operation.registration_id!='model.lio_intake.1' or operation.command.kind!='model':
+            raise BudgetUnknown('original intake registration required')
+        value=dict(version='G2C-lio-intake-evidence.1',capture_kind='model',source_commit=self.source_commit,
+            model_implementation_sha256=self.tool_sha256,scope_sha256=sha256(binding.scope.encode()).hexdigest(),
+            message_id=binding.message_id,run_id=binding.run_id,operation_key=operation.operation_key,
+            registration_id=operation.registration_id,attempt_id=operation.command.attempt_id,
+            operation_id=operation.command.operation_id,input_sha256=operation.command.input_digest,
+            response_sha256=sha256(raw).hexdigest(),result_utf8=raw.decode('utf-8'),receipt=dict(receipt),
+            observed_at=datetime.fromtimestamp(now,timezone.utc).isoformat())
+        self._persist(operation,value)
+
+    def _persist(self,operation,value):
+        binding=operation.binding
         identity = sha256(canonical([binding.scope, binding.run_id, operation.operation_key,
                                      operation.command.attempt_id])).hexdigest()
         descriptor = None
@@ -91,7 +112,7 @@ class ToolEvidence:
             descriptor = os.open(self.directory, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
             info = os.fstat(descriptor)
             if info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) != 0o700:
-                raise BudgetUnknown('tool evidence directory authority changed')
+                raise BudgetUnknown('selected evidence directory authority changed')
             target = os.open(identity + '.json', os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
                              0o600, dir_fd=descriptor)
             with os.fdopen(target, 'wb') as output:
@@ -100,7 +121,7 @@ class ToolEvidence:
                 os.fsync(output.fileno())
             os.fsync(descriptor)
         except OSError as error:
-            raise BudgetUnknown('original tool evidence unavailable; do not redispatch') from error
+            raise BudgetUnknown('original selected evidence unavailable; do not redispatch') from error
         finally:
             if descriptor is not None:
                 os.close(descriptor)
