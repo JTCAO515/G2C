@@ -132,6 +132,7 @@ public struct LioHome<MenuContent: View>: View {
                     opening = .beforeNext
                 }
                 try Task.checkCancellation()
+                if let continuity = chatLibrary?.continuity { draft = continuity.draft }
                 restoringChat = false
             } catch is CancellationError {
                 return
@@ -213,13 +214,6 @@ public struct LioHome<MenuContent: View>: View {
                 if followsAnswer, let pending, latest?.id == pending.id { scroll.scrollTo("lio.bottom", anchor: .bottom) }
             }
             .onChange(of: latest?.status) { _, status in
-                if let chatID {
-                    switch status {
-                    case .failed(.notSent), .failed(.invalidInput), .failed(.dailyLimit):
-                        chatLibrary?.continuity?.firstQuestions.removeValue(forKey: chatID)
-                    default: break
-                    }
-                }
                 if followsAnswer && status == .finished { scroll.scrollTo("lio.bottom", anchor: .bottom) }
             }
             .onChange(of: scenePhase) { _, phase in
@@ -404,8 +398,8 @@ public struct LioHome<MenuContent: View>: View {
     }
 
     private func recordPendingFirstQuestion() {
-        if let id = conversation.pending?.id, let chatID, chatLibrary?.continuity?.blankIDs.contains(chatID) == true {
-            chatLibrary?.continuity?.firstQuestions[chatID] = String(decoding: id, as: UTF8.self)
+        if let question = conversation.pending, let chatID, chatLibrary?.continuity?.blankIDs.contains(chatID) == true {
+            chatLibrary?.continuity?.firstQuestions[chatID] = question
         }
     }
 

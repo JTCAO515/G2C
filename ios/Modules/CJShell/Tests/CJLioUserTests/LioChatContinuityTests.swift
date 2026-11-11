@@ -40,7 +40,7 @@ import Testing
         position.selectedID = selected.id
         let original = try LioTimelineWire.Send(messageID: UUID().uuidString, text: "A synthetic question",
                                                locale: .english, destination: .newChat)
-        position.firstQuestions[selected.id] = original.messageID
+        position.firstQuestions[selected.id] = LioQuestion(messageID: original.messageID, text: "A synthetic question", language: .english)
         await fixture.transport.loseNextReceipt()
         do {
             _ = try await fixture.client().submit(original)
@@ -51,7 +51,7 @@ import Testing
         let renewed = try fixture.library(continuity: renewedPosition)
         await fixture.transport.holdLookup(true)
         await #expect(throws: MessageHTTPFailure.exchangeUnknown) { _ = try await renewed.restore?() }
-        #expect(renewedPosition.firstQuestions[selected.id] == original.messageID)
+        #expect(renewedPosition.firstQuestions[selected.id]?.messageID == original.messageID)
         await fixture.transport.holdLookup(false)
         let restored = try #require(try await renewed.restore?())
         #expect(restored.id == selected.id && renewedPosition.firstQuestions.isEmpty)
@@ -60,6 +60,23 @@ import Testing
         #expect(model.turns.last?.question.messageID == original.messageID)
         #expect(await fixture.transport.posts == 1)
         #expect(await fixture.transport.lookups == 2)
+    }
+
+    @Test func backgroundBeforeTheFirstActionIsStagedRestoresTheQuestionAsAnUnsentDraft() async throws {
+        let fixture = try ChatContinuityFixture()
+        let old = try fixture.library()
+        let selected = old.newChat()
+        let position = try #require(old.continuity)
+        position.selectedID = selected.id
+        let question = LioQuestion(messageID: UUID().uuidString, text: "An unsent synthetic question", language: .english)
+        position.firstQuestions[selected.id] = question // Background before the send task stages an action.
+        let restoredPosition = LioChatContinuity()
+        restoredPosition.inherit(position)
+        let restored = try fixture.library(continuity: restoredPosition)
+        #expect(try await restored.restore?()?.id == selected.id)
+        #expect(restoredPosition.draft == question.text && restoredPosition.firstQuestions.isEmpty)
+        #expect(await fixture.transport.posts == 0)
+        #expect(await fixture.transport.lookups == 0)
     }
 }
 

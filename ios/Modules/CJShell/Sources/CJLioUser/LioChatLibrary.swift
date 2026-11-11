@@ -32,7 +32,7 @@ final class LioChatTrips {
 @MainActor public final class LioChatContinuity {
     var selectedID: Data?
     var draft = ""
-    var firstQuestions: [Data: String] = [:]
+    var firstQuestions: [Data: LioQuestion] = [:]
     var localIDs: [Data: String] = [:]
     var blankIDs: Set<Data> = []
 
@@ -130,7 +130,12 @@ private final class LioSignedChatSessions {
 
     func restore(_ selected: Data) async throws -> LioChatSession {
         if let first = continuity.firstQuestions[selected] {
-            guard let id = try await client.reconcileFirstChat(messageID: first) else {
+            if try client.firstChatCanReturnToDraft(messageID: first.messageID) {
+                continuity.firstQuestions.removeValue(forKey: selected)
+                if continuity.draft.isEmpty { continuity.draft = first.text }
+                return blank(String(decoding: selected, as: UTF8.self))
+            }
+            guard let id = try await client.reconcileFirstChat(messageID: first.messageID) else {
                 throw MessageHTTPFailure.exchangeUnknown
             }
             continuity.localIDs[Data(id.utf8)] = String(decoding: selected, as: UTF8.self)

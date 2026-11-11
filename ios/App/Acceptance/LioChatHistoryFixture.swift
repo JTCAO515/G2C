@@ -44,6 +44,12 @@ private struct ChatHistoryClients {
 
     init(shell: ShellState) throws {
         try self.init(shell: shell, source: ChatHistorySource(shell: shell), continuity: LioChatContinuity())
+        if ProcessInfo.processInfo.arguments.contains("--lio-chat-before-stage-acceptance"), let continuity = library.continuity {
+            let selected = library.newChat()
+            continuity.selectedID = selected.id
+            continuity.firstQuestions[selected.id] = LioQuestion(messageID: UUID().uuidString,
+                text: shell.language.text("A question before staging", "还没发出的合成问题"), language: shell.language.lio)
+        }
     }
 
     private init(shell: ShellState, source: ChatHistorySource, continuity: LioChatContinuity) throws {
