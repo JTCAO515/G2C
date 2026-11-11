@@ -27,6 +27,23 @@ struct DemoBetaRootView: View {
                     Button(shell.language.text("Sign out", "退出登录")) { root.accounts.signOut() }
                 }
                 .id(trip.id)
+            } else if root.accounts.isResuming {
+                VStack(spacing: 20) {
+                    Text("Lio").font(.title2.bold())
+                    if root.accounts.state == .networkUnknown {
+                        Text(shell.language.text("Couldn’t connect. Your sign-in is still saved.", "暂时连接不上，登录信息仍已保留。"))
+                            .multilineTextAlignment(.center)
+                        Button(shell.language.text("Try again", "重试")) { root.accounts.resume() }
+                            .buttonStyle(.borderedProminent)
+                    } else {
+                        ProgressView(shell.language.text("Reconnecting…", "正在重新连接…"))
+                    }
+                    Button(shell.language.text("Sign out", "退出登录")) { root.accounts.signOut() }
+                }
+                .padding(28)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(uiColor: .systemBackground))
+                .accessibilityIdentifier("lio.session.recovery")
             } else {
                 DemoInviteView(shell: shell, accounts: root.accounts)
             }

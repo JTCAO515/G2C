@@ -580,6 +580,28 @@ class Boundaries(unittest.TestCase):
         self.assertEqual(display_answer('You prefer a slow pace.', 'en'), 'You prefer a slow pace.')
         self.assertEqual(display_answer('I saved time by walking.', 'en'), 'I saved time by walking.')
 
+    def test_lio_capabilities_normalize_actual_chinese_fragments_in_either_locale(self):
+        from cj_message.lio_context import display_answer
+
+        for locale in ('en', 'zh'):
+            with self.subTest(locale=locale):
+                self.assertEqual(display_answer('我是Lio，可以查询合成城市天气，并帮你核实出行信息。', locale),
+                                 '我是Lio，可以查看合成城市天气，并帮你确认出行信息。')
+                self.assertEqual(display_answer('I am Lio. 我可以查询合成城市天气。', locale),
+                                 'I am Lio. 我可以查看合成城市天气。')
+                self.assertIsNone(display_answer('RUN synthetic', locale))
+
+    def test_lio_memory_claims_are_neutralized_in_both_actual_languages(self):
+        from cj_message.lio_context import display_answer
+
+        for locale in ('en', 'zh'):
+            with self.subTest(locale=locale):
+                self.assertEqual(display_answer('我已经记住了，你偏好轻松旅行。', locale),
+                                 '我了解了，你偏好轻松旅行。')
+                self.assertEqual(display_answer("I've noted your preference for a slow pace.", locale),
+                                 'I understand your preference for a slow pace.')
+                self.assertEqual(display_answer('I saved time by walking.', locale), 'I saved time by walking.')
+
     def test_named_turn_answer_uses_the_existing_envelope_without_an_extra_call(self):
         reply={};receipt={}
         result=self.invoke(self.provider(turn_sse()),tools=TOOLS,receipt=receipt,native_reply=reply,

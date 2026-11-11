@@ -16,6 +16,9 @@ public struct LioHome<MenuContent: View>: View {
     @State private var conversation: LioConversation
     @State private var defaultTripPlan: LioTripPlan?
     @State private var selectedChat: LioChatSession?
+    @State private var restoringChat: Bool
+    @State private var restoreChatFailed = false
+    @State private var restoreChatRequest = 0
     @State private var draft = ""
     @State private var chatDrafts: [Data: String] = [:]
     @State private var menuOpen = false
@@ -62,6 +65,8 @@ public struct LioHome<MenuContent: View>: View {
         self.recordedMap = recordedMap
         _conversation = State(initialValue: LioConversation(service: service))
         _defaultTripPlan = State(initialValue: tripHistory.map { LioTripPlan(client: $0) })
+        _draft = State(initialValue: chatLibrary?.continuity?.draft ?? "")
+        _restoringChat = State(initialValue: chatLibrary?.continuity?.selectedID != nil)
     }
 
     private var chatID: Data? { selectedChat?.id ?? chatLibrary?.currentID }
@@ -80,7 +85,7 @@ public struct LioHome<MenuContent: View>: View {
     public var body: some View {
         let currentConversation = conversation
         let pending = conversation.pending
-        let canObserve = scenePhase == .active && pending == nil
+        let canObserve = scenePhase == .active && pending == nil && !restoringChat
         let tripCard = latestTripCard
         let tripPlan = tripPlan
         TabView(selection: $tab) {
@@ -99,6 +104,42 @@ public struct LioHome<MenuContent: View>: View {
                     .tag(Tab.memory)
             }
         }
+        .tint(LioTheme.vermilion)
+        .disabled(restoringChat)
+        .opacity(restoringChat ? 0 : 1)
+        .overlay {
+            if restoringChat {
+                VStack(spacing: 20) {
+                    if restoreChatFailed {
+                        Text(language.text("Couldn’t open your conversation. Try again when you’re connected.", "暂时无法打开对话，请联网后重试。"))
+                        Button(language.text("Try again", "重试")) { restoreChatRequest += 1 }
+                    } else {
+                        ProgressView(language.text("Opening your conversation…", "正在打开你的对话…"))
+                    }
+                }
+                .multilineTextAlignment(.center)
+                .padding(28)
+                .accessibilityIdentifier("lio.chat.recovery")
+            }
+        }
+        .task(id: restoreChatRequest) {
+            guard restoringChat else { return }
+            restoreChatFailed = false
+            do {
+                if let chat = try await chatLibrary?.restore?() {
+                    try Task.checkCancellation()
+                    selectedChat = chat
+                    conversation = LioConversation(service: chat.service)
+                    opening = .beforeNext
+                }
+                try Task.checkCancellation()
+                if let continuity = chatLibrary?.continuity { draft = continuity.draft }
+                restoringChat = false
+            } catch is CancellationError {
+                return
+            } catch { restoreChatFailed = true }
+        }
+        .onChange(of: draft) { _, value in chatLibrary?.continuity?.draft = value }
         .onChange(of: tab) { _, _ in typing = false }
         .task(id: Observation(active: canObserve, request: refreshRequest)) {
             if canObserve { await currentConversation.refreshTimeline() }
@@ -168,7 +209,7 @@ public struct LioHome<MenuContent: View>: View {
             .onChange(of: latest?.id) { _, _ in
                 guard followsAnswer else { return }
                 if reduceMotion { scroll.scrollTo("lio.bottom", anchor: .bottom) }
-                else { withAnimation(.easeOut(duration: 0.22)) { scroll.scrollTo("lio.bottom", anchor: .bottom) } }
+                else { withAnimation(LioTheme.Motion.change) { scroll.scrollTo("lio.bottom", anchor: .bottom) } }
             }
             .onChange(of: latest?.answer) { _, _ in
                 if followsAnswer, let pending, latest?.id == pending.id { scroll.scrollTo("lio.bottom", anchor: .bottom) }
@@ -185,13 +226,13 @@ public struct LioHome<MenuContent: View>: View {
                 if !conversation.turns.isEmpty, pending == nil { scroll.scrollTo("lio.bottom", anchor: .bottom) }
             }
         }
-        .background(Color(uiColor: .systemBackground))
+        .background(LioTheme.paper)
         .overlay(alignment: .top) {
             floatingControls
                 .background {
-                    Color(uiColor: .systemBackground)
+                    LioTheme.paper
                         .overlay(alignment: .bottom) {
-                            LinearGradient(colors: [Color(uiColor: .systemBackground), .clear],
+                            LinearGradient(colors: [LioTheme.paper, .clear],
                                            startPoint: .top, endPoint: .bottom)
                                 .frame(height: 12)
                                 .offset(y: 12)
@@ -206,6 +247,7 @@ public struct LioHome<MenuContent: View>: View {
                 List {
                     if isDemo {
                         Text(language.text("Sample replies only", "仅提供演示回答"))
+                            .lioRow()
                     }
                     if let chatLibrary {
                         Section {
@@ -225,9 +267,11 @@ public struct LioHome<MenuContent: View>: View {
                             }
                             .accessibilityIdentifier("lio.chat.history")
                         }
+                        .lioRow()
                     }
-                    menu
+                    menu.lioRow()
                 }
+                .lioPage()
                 .navigationTitle(language.text("Menu", "菜单"))
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -236,6 +280,7 @@ public struct LioHome<MenuContent: View>: View {
                     }
                 }
             }
+            .tint(LioTheme.vermilion)
         }
     }
 
@@ -249,6 +294,7 @@ public struct LioHome<MenuContent: View>: View {
         if chat.id != chatID {
             if let chatID { chatDrafts[chatID] = draft }
             selectedChat = chat
+            chatLibrary?.continuity?.selectedID = chat.id
             conversation = LioConversation(service: chat.service)
             self.opening = opening
             draft = chatDrafts.removeValue(forKey: chat.id) ?? ""
@@ -288,7 +334,7 @@ public struct LioHome<MenuContent: View>: View {
             }
             .padding(6)
             .padding(.trailing, 8)
-            .background(.regularMaterial, in: Capsule())
+            .lioCard(Capsule())
             .frame(maxWidth: .infinity)
             .accessibilityIdentifier("lio.name")
             Button {
@@ -298,7 +344,8 @@ public struct LioHome<MenuContent: View>: View {
                 Text("≋")
                     .font(.title3.weight(.medium))
                     .frame(width: 48, height: 48)
-                    .background(.regularMaterial, in: Circle())
+                    .foregroundStyle(LioTheme.ink)
+                    .lioCard(Circle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel(language.text("Menu", "菜单"))
@@ -317,13 +364,13 @@ public struct LioHome<MenuContent: View>: View {
     private func replyBubble(_ content: Text) -> some View {
         content
             .font(.body)
+            .foregroundStyle(LioTheme.ink)
             .lineSpacing(3)
             .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
-            .background(Color(uiColor: .secondarySystemBackground),
-                        in: UnevenRoundedRectangle(topLeadingRadius: 7, bottomLeadingRadius: 20,
-                                                   bottomTrailingRadius: 20, topTrailingRadius: 20))
+            .lioCard(UnevenRoundedRectangle(topLeadingRadius: LioTheme.Radius.tail, bottomLeadingRadius: LioTheme.Radius.card,
+                                            bottomTrailingRadius: LioTheme.Radius.card, topTrailingRadius: LioTheme.Radius.card))
             .padding(.trailing, dynamicTypeSize.isAccessibilitySize ? 0 : 22)
     }
 
@@ -332,7 +379,7 @@ public struct LioHome<MenuContent: View>: View {
             if isDemo {
                 Text(language.text("Try a sample question.", "可以先试一个示例问题。"))
                     .font(.subheadline)
-                    .foregroundStyle(Color.primary.opacity(0.78))
+                    .foregroundStyle(LioTheme.inkSecondary)
             }
             ForEach(Array(LioDemo.examples(language).enumerated()), id: \.offset) { index, example in
                 Button {
@@ -344,10 +391,11 @@ public struct LioHome<MenuContent: View>: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                         Image(systemName: "arrow.up.left").accessibilityHidden(true)
                     }
+                    .foregroundStyle(LioTheme.ink)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
                     .frame(minHeight: 48)
-                    .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
+                    .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.small))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(example)
@@ -356,11 +404,17 @@ public struct LioHome<MenuContent: View>: View {
         }
     }
 
+    private func recordPendingFirstQuestion() {
+        if let question = conversation.pending, let chatID, chatLibrary?.continuity?.blankIDs.contains(chatID) == true {
+            chatLibrary?.continuity?.firstQuestions[chatID] = question
+        }
+    }
+
     private var composer: some View {
         let placeholder = language.text("Start chatting", "开始聊天")
         let canSend = !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && conversation.pending == nil
         return HStack(alignment: .center, spacing: 10) {
-            TextField(placeholder, text: $draft, prompt: Text(placeholder).foregroundStyle(Color.primary.opacity(0.78)), axis: .vertical)
+            TextField(placeholder, text: $draft, prompt: Text(placeholder).foregroundStyle(LioTheme.inkSecondary), axis: .vertical)
                 .lineLimit(1...5)
                 .frame(minHeight: 44)
                 .focused($typing)
@@ -368,6 +422,7 @@ public struct LioHome<MenuContent: View>: View {
             Button {
                 followsAnswer = true
                 conversation.send(draft, language: language)
+                recordPendingFirstQuestion()
                 if opening == .beforeNext, let id = conversation.pending?.id { opening = .before(id) }
                 draft = ""
                 typing = false
@@ -375,8 +430,8 @@ public struct LioHome<MenuContent: View>: View {
                 Image(systemName: "arrow.up")
                     .font(.body.weight(.semibold))
                     .frame(width: 44, height: 44)
-                    .foregroundStyle(canSend ? Color(uiColor: .systemBackground) : Color.primary.opacity(0.72))
-                    .background(canSend ? Color.primary : Color(uiColor: .tertiarySystemFill), in: Circle())
+                    .foregroundStyle(canSend ? LioTheme.paper : LioTheme.inkSecondary)
+                    .background(canSend ? LioTheme.ink : LioTheme.surfaceSunken, in: Circle())
             }
             .disabled(!canSend)
             .buttonStyle(.plain)
@@ -385,12 +440,12 @@ public struct LioHome<MenuContent: View>: View {
         }
         .padding(.leading, 16)
         .padding(5)
-        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 27))
+        .lioCard(Capsule())
         .frame(maxWidth: 680)
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
         .frame(maxWidth: .infinity)
-        .background(Color(uiColor: .systemBackground))
+        .background(LioTheme.paper)
     }
 
     private func chooseMemory(_ choice: LioMemoryWire.Choice, tag: LioMemoryWire.Tag,
@@ -463,9 +518,10 @@ public struct LioHome<MenuContent: View>: View {
                     Button {
                         if turn.id == conversation.turns.last?.id { followsAnswer = true }
                         conversation.resend(turn.id)
+                        recordPendingFirstQuestion()
                     } label: {
                         Image(systemName: "exclamationmark.circle.fill")
-                            .foregroundStyle(.red)
+                            .foregroundStyle(LioTheme.danger)
                             .frame(width: 44, height: 44)
                     }
                     .buttonStyle(.plain)
@@ -474,11 +530,12 @@ public struct LioHome<MenuContent: View>: View {
                     .accessibilityIdentifier("lio.resend")
                 }
                 Text(turn.question.text)
+                    .foregroundStyle(LioTheme.ink)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
-                    .background(Color.accentColor.opacity(0.14),
-                                in: UnevenRoundedRectangle(topLeadingRadius: 20, bottomLeadingRadius: 20,
-                                                           bottomTrailingRadius: 20, topTrailingRadius: 7))
+                    .background(LioTheme.surfaceSunken,
+                                in: UnevenRoundedRectangle(topLeadingRadius: LioTheme.Radius.card, bottomLeadingRadius: LioTheme.Radius.card,
+                                                           bottomTrailingRadius: LioTheme.Radius.card, topTrailingRadius: LioTheme.Radius.tail))
                     .textSelection(.enabled)
                     .accessibilityIdentifier("lio.question")
             }
@@ -545,12 +602,16 @@ public struct LioHome<MenuContent: View>: View {
             Label {
                 RunReadableText(text: language.text("Remember: \(preference)?", "记住：\(preference)？"))
             } icon: {
-                Image(systemName: "bookmark").accessibilityHidden(true)
+                Image(systemName: "bookmark").foregroundStyle(LioTheme.gold).accessibilityHidden(true)
             }
             .font(.subheadline.weight(.semibold))
             actions {
-                Button(language.text("Remember", "记住")) {
+                Button {
                     Task { await chooseMemory(.remember, tag: tag, client: client) }
+                } label: {
+                    // White on the dark-mode vermilion fill is below 4.5:1, so the label uses onVermilion.
+                    Text(language.text("Remember", "记住"))
+                        .foregroundStyle(memoryBusy || memoryPending ? LioTheme.inkSecondary : LioTheme.onVermilion)
                 }
                 .buttonStyle(.borderedProminent)
                 .accessibilityIdentifier("lio.memory.remember")
@@ -565,7 +626,7 @@ public struct LioHome<MenuContent: View>: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
+        .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.small))
     }
 
     @ViewBuilder
@@ -591,12 +652,13 @@ public struct LioHome<MenuContent: View>: View {
             }
             Text(message)
                 .font(.footnote)
-                .foregroundStyle(Color.primary.opacity(0.78))
+                .foregroundStyle(LioTheme.inkSecondary)
                 .accessibilityIdentifier("lio.failure")
             if failure == .unfinished {
                 Button(language.text("Ask again", "重新问")) {
                     followsAnswer = true
                     conversation.askAgain(turn.id)
+                    recordPendingFirstQuestion()
                 }
                     .buttonStyle(.bordered)
                     .controlSize(.large)
@@ -617,7 +679,7 @@ public struct LioHome<MenuContent: View>: View {
                 .accessibilityHidden(true)
         }
             .font(.footnote)
-            .foregroundStyle(Color.primary.opacity(0.78))
+            .foregroundStyle(LioTheme.inkSecondary)
             .accessibilityIdentifier("lio.progress")
     }
 }
