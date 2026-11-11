@@ -184,7 +184,7 @@ class NationalExecution(unittest.TestCase):
                 value=self.envelope(text)
                 if not omit:
                     event={k:dict(state='missing') for k in ('date','time','timezone','place')}
-                    value['extraction']['fields']['fixed_items']=[dict(item_id='hotel',kind='hotel',description='我已订酒店',
+                    value['extraction']['fields']['fixed_items']=[dict(item_id='hotel',kind='hotel',description='酒店',
                         applies_to=['party'],locked=dict(state='known',value=True),booking_status=dict(state='known',value='booked'),
                         start=event,end=event)]
                     value['field_sources']['fixed_items']=[dict(source_index=0,quote='我已订酒店')]
@@ -214,7 +214,7 @@ class NationalExecution(unittest.TestCase):
         def event(day,clock):
             return dict(date=dict(state='known',value=day),time=dict(state='known',value=clock),
                 timezone=dict(state='known',value='Asia/Shanghai'),place=dict(state='missing'))
-        item=dict(item_id='hotel',kind='appointment',description=declaration,applies_to=['party'],
+        item=dict(item_id='hotel',kind='appointment',description='酒店集合',applies_to=['party'],
             locked=dict(state='known',value=True),booking_status=dict(state='known',value='booked'),
             start=event('2026-11-20','09:00'),end=event('2026-11-20','10:00'))
         value['extraction']['fields']['fixed_items']=[item]

@@ -43,5 +43,5 @@ def facts_fixture(value):
     for item in result['fixed_items']:
         status=item.pop('booking_status')
         item['booking_evidence']=None if status is None else dict(status=status,
-            source_index=item['source_index'],quote=item['quote'])
+            source_index=item['source_index'],quote=item['label'])
     return result

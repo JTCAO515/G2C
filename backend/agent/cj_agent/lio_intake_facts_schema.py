@@ -24,7 +24,7 @@ class Booking(Source):
 
 
 class SourcedFixed(Fixed):
-    booking_status:Booking|None=Field(alias='booking_evidence',description='Only an explicit original reservation/ticket or booking intention/cancellation quote. Fixed arrangements and hotel meetups are not reservation evidence: null.')
+    booking_status:Booking|None=Field(alias='booking_evidence',description='An original span in one unique affirmative clause naming this item beside its reservation predicate. No clipped negation, other item, or conditional claim. Fixed/confirmed arrangements or hotel meetups alone: null.')
 
 
 class SourcedIntake(FlatIntake):
@@ -54,5 +54,6 @@ SYSTEM=FLAT_SYSTEM.replace('LIO-planning-intake.5','LIO-planning-intake.6').repl
     'Each fixed item replaces booking_status with booking_evidence: null without explicit reservation evidence, '
     'otherwise {status,source_index,quote}. Fixed/confirmed arrangements and a hotel meetup do not mean a reservation. '
     'Its evidence must be an exact original span in that item primary/detail source and explicitly state the reservation status. '
+    'Use one unambiguous affirmative original clause tying the item name directly to its booking predicate, never a different item or clipped negation. '
     'This evidence does not grant permission to book, save or change anything.'
 )

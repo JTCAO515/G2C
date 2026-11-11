@@ -22,6 +22,22 @@ booking checks. Fixed, locked, confirmed, or a hotel meetup is not reservation
 evidence. A fabricated booked string or unrelated proof is rejected, never
 changed into a missing observation so execution can continue.
 
+The new boundary reads the full original atomic clause around the proof, not
+only its model-selected substring. Evidence must uniquely and affirmatively
+name this item next to its reservation predicate (the quoted span may locate
+the item, but the full original clause must contain the assertion); negative/conditional Chinese
+or English clauses, a different target, repeated ambiguous quotes, and a label
+that borrows another arrangement's clock are rejected. Clipping “已预约” out of
+“并非已预约” cannot hide the negation. Independent review found these two P1
+cases in the first candidate; their original failures and regression cases are
+retained. No received supplier response is rewritten by this rule.
+
+Support remains conservative: indirect wording, ambiguous clauses, or a later
+confirmation not supported by the existing final fixed-source checker can still
+require clarification. This version does not claim expanded booking capability;
+the old writer guard remains in place and no primary quote is fabricated to
+make a later confirmation pass.
+
 The DTO validates data6 once; the code-owned normalized facts enter the existing
 flat compiler and original data4/execution1 domain path. All start/date/source,
 scope/intent, fixed-item participants/unique details/clocks/timezones/bookings,
