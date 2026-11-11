@@ -61,7 +61,7 @@ SCHEMA=obj(dict(version=dict(const='LIO-planning-intake.1'),intent=dict(enum=['c
     extraction=obj(dict(version=dict(const='NEEDS-extraction.1'),fields=FIELDS,
         unresolved=dict(type='array',items=UNRESOLVED,maxItems=8),long_term_requests=dict(type='array',items=TEXT,maxItems=8))),
     field_sources=dict(type='object',additionalProperties=dict(type='array',items=SOURCE,minItems=1,maxItems=16),maxProperties=256),
-    current_request=TEXT),**{'$defs':DEFS})
+    current_request=dict(type='string',minLength=1,maxLength=12000)),**{'$defs':DEFS})
 RESPONSE_FORMAT=dict(type='json_schema',json_schema=dict(name='lio_planning_intake_v1',strict=True,schema=SCHEMA))
 SCHEMA_SHA256=sha256(json.dumps(RESPONSE_FORMAT,sort_keys=True,separators=(',',':')).encode()).hexdigest()
 GUIDANCE=(

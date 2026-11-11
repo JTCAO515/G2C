@@ -57,3 +57,12 @@ class IntakeSchema(unittest.TestCase):
         self.validator.validate(value)
         value['extraction']['fields']['party_size']={'state':'known','value':True}
         with self.assertRaises(ValidationError):self.validator.validate(value)
+
+
+    def test_complete_legal_original_request_is_not_truncated_by_wire_schema(self):
+        value=minimal();value['current_request']='去上海玩两天，先讨论，不保存 '+('x'*4100)
+        self.assertGreater(len(value['current_request']),4096)
+        self.assertLessEqual(len(value['current_request'].encode()),12000)
+        self.validator.validate(value)
+        turns=(SimpleNamespace(text=value['current_request'],question_day=date(2026,11,11)),)
+        self.assertEqual(parse(json.dumps(value),turns).current_request,value['current_request'])
