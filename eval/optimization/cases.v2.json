@@ -118,7 +118,7 @@
           "steps": [
             {
               "kind": "message",
-              "text": "请保存北京两天行程，2026年12月1日到12月2日，第一天09:00到10:00在酒店大堂见面的安排固定保留，第二天下午去景山公园。"
+              "text": "帮我规划北京行程。北京，2026-12-01 到 2026-12-02，2个人。第一天09:00到10:00酒店集合是固定安排。保存行程。"
             },
             {
               "kind": "message",
@@ -138,7 +138,7 @@
           "steps": [
             {
               "kind": "message",
-              "text": "Save a two-day Beijing itinerary for December 1 to December 2, 2026. Keep the hotel lobby meeting from 09:00 to 10:00 on day 1 fixed. Visit Jingshan Park on day 2 afternoon."
+              "text": "Plan a trip to Beijing from 2026-12-01 to 2026-12-02 for two people. The hotel meetup from 9 to 10 a.m. on the first day is fixed. Save this itinerary."
             },
             {
               "kind": "message",
@@ -275,7 +275,7 @@
           "steps": [
             {
               "kind": "message",
-              "text": "请保存北京两天行程，2026年12月15日到12月16日，第一天10:00到11:00在火车站见面的安排固定保留，第二天下午去故宫。"
+              "text": "帮我规划北京行程。北京，2026-12-15 到 2026-12-16，2个人。第一天10:00到11:00车站集合是固定安排。保存行程。"
             },
             {
               "kind": "message",
@@ -291,7 +291,7 @@
           "steps": [
             {
               "kind": "message",
-              "text": "Save a two-day Beijing itinerary for December 15 to December 16, 2026. Keep the railway station meeting from 10:00 to 11:00 on day 1 fixed. Visit the Forbidden City on day 2 afternoon."
+              "text": "Plan a trip to Beijing from 2026-12-15 to 2026-12-16 for two people. The train meetup from 10 to 11 a.m. on the first day is fixed. Save this itinerary."
             },
             {
               "kind": "message",

@@ -148,6 +148,25 @@ class LioV2ScoreTests(unittest.TestCase):
                     setup = variant['steps'][0]['text']
                     self.assertEqual(setups.setdefault(setup, task['split']), task['split'])
 
+    def test_public_setups_ground_actual_fixed_items_without_intake(self):
+        from eval.optimization import lio_probe, score_v2, examples_v2
+        document, _ = score_v2.dataset()
+        for task in document['tasks']:
+            if task['id'] in lio_probe.TASKS:
+                for language in ('zh', 'en'):
+                    with self.subTest(task=task['id'], language=language):
+                        lio_probe.grounded_setup(task, language)
+                        broken = deepcopy(task)
+                        broken['variants'][language]['steps'][0]['text'] = 'Save a two-day Beijing itinerary.'
+                        with self.assertRaises(AssertionError):
+                            lio_probe.grounded_setup(broken, language)
+        batch = examples_v2.example_batch('development', 'good')
+        record = next(row for row in batch['observations'] if row['task_id'] == 'dev-local-edit')
+        record['state']['values'].update(before_locked_item_count=0, locked_item_count=0)
+        row = next(row for row in score_v2.score('development', batch)['rows'] if row['attempt_id'] == record['attempt_id'])
+        failures = {check['name'] for check in row['checks'] if check['status'] == 'FAIL'}
+        self.assertTrue({'before_locked_item_count', 'locked_item_count'} <= failures)
+
     def test_v2_bilingual_controls_and_repeatability(self):
         from eval.optimization import score_v2, examples_v2
         for split, n in (('development', 12), ('validation', 8)):

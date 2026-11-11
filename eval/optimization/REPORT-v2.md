@@ -10,13 +10,14 @@
 | Lio修改、原生撤销、明确保存语义 | L0 | PASS | 合成正反状态控制和逐项评分回归，见下表；不是现役行为验收。 |
 | 双语全部控制逐项结果可重复 | L0 | PASS | 开发/验证×好/坏各用两个独立CLI进程，同一输入的完整JSON输出字节相等。 |
 | 错误保存、编造执行、越权、删除后召回硬失败 | L0 | PASS | 已知负控的实际评分为FAIL，缺同次证据为UNKNOWN；原v1边界回归保留。 |
+| 修改/撤销前置及原生版本链 | L1 | PASS | 私有PG+原签名Lio v2API+Fake，四个任务语言控制，实际固定项1、同Trip修改1→2/撤销1→2→3；见下方范围。 |
 | 完整B适配器可信采集 | L1 | UNRUN | #762第二部分未交合并SHA/完整接口及准入pin；完整20格未采集，不关闭#761。 |
 | 当前Lio v2产品质量 | L2/L3 | UNKNOWN | 合成控制不证明实际模型、服务和真机质量；沿#32/#702验收。 |
 | 匹配Lio v2的受控最终题 | L0 | UNRUN | 旧v1密文/拒读证据保留；旧最终题与预登记不适用v2，本轮未解密、重封或重测访问。 |
 | #765比较 | — | UNRUN | 只保留历史登记，不运行。 |
 
 运行 `uv run --locked python -B -m unittest eval.optimization.test_score`，
-20项测试全部PASS，包括原9项v1测试。无删除测试、无放宽断言，无删除边界检查。
+21项测试全部PASS，包括原9项v1测试。无删除测试、无放宽断言，无删除边界检查。
 新增外部观测/版本/摘要/字段校验仍fail-closed，内部复用原C judge和v1状态/分母函数。
 
 ## 双语逐题结果
@@ -49,10 +50,10 @@
 
 | split / control | PASS | FAIL | UNKNOWN | UNRUN | 硬失败格 | 两进程相同输出SHA-256 |
 |---|---:|---:|---:|---:|---:|---|
-| development / good | 12 | 0 | 0 | 0 | 0 | `f737aafaeffa5ef4bdc70546415684c706903214ee0c3a811b07c02946fa8d36` |
-| development / bad | 0 | 12 | 0 | 0 | 10 | `1de28b950999b32ccc4e16348c0ecaba090bcfce411a061d5f905713041a2b13` |
-| validation / good | 8 | 0 | 0 | 0 | 0 | `d2bd339e1ccf92979323bb329c0486f76fd758dc25fb0ac95315d85f887e5050` |
-| validation / bad | 0 | 8 | 0 | 0 | 8 | `df1a449f1d3c12839f83ef3f5e15a38dcb5f3e0afc31ec7263474045766e59f6` |
+| development / good | 12 | 0 | 0 | 0 | 0 | `484435ecd2f4de08c6c6c3d73d1d265301a81c7b9236cb814b3b4ea45e7eac68` |
+| development / bad | 0 | 12 | 0 | 0 | 10 | `4cb2cd8ac092609d278f691606ebd92d54eccb441a80b542313c39adb96708ce` |
+| validation / good | 8 | 0 | 0 | 0 | 0 | `16981cd8be8af8037e1491e8050c57d29a4ca39d45d26ff8b23a5c0fc0be70d9` |
+| validation / bad | 0 | 8 | 0 | 0 | 8 | `f4479b14718d9da17b87352ac0e93beb0675b0f4c401ff30f88bc1e73bfa4c8c` |
 
 不能把40个已知好坏控制的结果作为40格现役质量数据。每个候选实际运行仍分别保留
 开发12格、验证8格；同一完整旅行/双语及改写不跨split。v2五个改写任务和v1不作
@@ -61,3 +62,28 @@
 实际下游需按README取得B合并实现、完整任务setup、C0原件/三个文本槽、原Meter
 子限额与冻结版本。缺原安全writer、身份、计量准入或任何原件时不补造观测。
 R独立审查结论只以PR精确head评论为准；本报告不自认证新增规则或产品质量。
+
+## R HOLD后的前置修订与本机证据
+
+保留原候选4948a448的[R HOLD/P1](https://github.com/JTCAO515/G2C/pull/812#issuecomment-6791036925)：
+原四条“Save/请保存”起始句不被当前规划入口接纳，固定项未成立。合成good控制没有
+发现此问题。修订为C已接受的规划入口、ISO日期、两人主体、固定事件完整时间与明确保存，
+保留独立旅行日期、原末轮操作、family/split和12/8分母。新增末轮前后实际锁定项数各1
+的硬检查，空固定项即使`locked_items_changed=0`也FAIL。原v1不变。
+
+`G2C-lio-setup-probe.1`在私有Unix-socket PG运行四控制，原消息与原生撤销均经
+签名Lio v2 API；实际服务从原声明写入固定项，Fake只返回一个第二天下午的建议。
+纯grounding四条均可准入、两人/日期/锁定项来源齐全，不调用intake模型补造前置。
+
+| 任务/语言 | 实际正式版本 | 实际固定项 | 本机状态结论 |
+|---|---|---:|---|
+| dev-local-edit / zh | 1→2 | 1 | PASS，其他项不变、原固定项与历史内容保持 |
+| dev-local-edit / en | 1→2 | 1 | PASS，实际英文替换标签保留 |
+| val-undo / zh | 1→2→3 | 1 | PASS，原target/action撤销，v3内容等于v1，v2历史保留 |
+| val-undo / en | 1→2→3 | 1 | PASS，原生按钮路径，无伪造MESSAGE/RUN |
+
+每控制一个Fake规划调用，修改和按钮撤销不增加模型调用；真实模型/工具/费用0。
+原件和报告在忽略目录，公开程序/数据摘要在release-index。该次运行基于main d3c4435c
+及D工作树，报告同时记录当时Git提交、实际程序SHA与新数据SHA；提交后程序/数据按SHA核同。
+完整任务分母仍开发12、验证8，**四控制不是完整20格可信评分采集**，也不证明
+val-confirm-save跨轮保存上下文或其他线上任务已通过。该部分仍UNRUN等B #762 Part2。

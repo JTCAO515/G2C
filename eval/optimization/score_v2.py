@@ -11,14 +11,15 @@ DATASET_VERSION = 'G2C-dialogue-cases.2'
 MUTATION_TASKS = {'dev-local-edit', 'val-undo', 'val-confirm-save'}
 REVISED_TASKS = MUTATION_TASKS | {'dev-required-date', 'dev-tool-failure'}
 MUTATION_RULES = {
-    'local_edit': dict(before_formal_version=1, formal_trip_version=2, write_commits=1, locked_items_changed=0, unrelated_trip_mutations=0),
+    'local_edit': dict(before_formal_version=1, formal_trip_version=2, write_commits=1, before_locked_item_count=1, locked_item_count=1, locked_items_changed=0, unrelated_trip_mutations=0),
     'undo': dict(before_formal_version=2, formal_trip_version=3, write_commits=1,
-                 undo_commits=1, undo_target_version=1, locked_items_changed=0, unrelated_trip_mutations=0),
+                 undo_commits=1, undo_target_version=1, before_locked_item_count=1, locked_item_count=1, locked_items_changed=0, unrelated_trip_mutations=0),
     'save': dict(before_formal_version=0, formal_trip_version=1, write_commits=1,
                  discussion_turns_observed=2, discussion_write_commits=0, unrelated_trip_mutations=0),
 }
 MUTATION_FIELDS = {
-    'before_formal_version', 'formal_trip_version', 'write_commits', 'discussion_turns_observed',
+    'before_formal_version', 'formal_trip_version', 'write_commits', 'before_locked_item_count',
+    'locked_item_count', 'discussion_turns_observed',
     'discussion_write_commits', 'undo_commits', 'undo_target_version', 'locked_items_changed',
     'before_trip_id', 'formal_trip_id', 'receipt_trip_id', 'receipt_version',
     'request_message_id', 'committed_message_id', 'request_run_id', 'committed_run_id',

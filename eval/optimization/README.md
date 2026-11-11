@@ -77,6 +77,7 @@ MESSAGE/RUN、provider、工具和费用均计入原attempt、共享Meter及现�
 | `history_before`/`history_after` | 原受保护历史中版本字符串→完整内容SHA-256，核完整版本集合、旧版本不可变及最新版本字节；撤销还核v3内容等于旧v1。 |
 | `write_commits`、`discussion_turns_observed`、`discussion_write_commits` | 末轮实际提交数；保存题另逐轮核前两个讨论轮次及其零提交。不能仅因最后有一个Trip就断言前面没偷存。 |
 | `applied_patch`、`locked_items_changed` | 对完整前后业务内容计算实际diff，再投影规范路径（排除版本/时间等元数据）；不得只投影目标路径而漏掉其他改动。固定项必须不变。英文地名保留原英文标签。 |
+| `before_locked_item_count`/`locked_item_count` | 修改/撤销的末轮前后快照都须实际含1个锁定项，不能因固定项从未成立而以“变化0”取巧。 |
 | `unrelated_trip_mutations` | 受保护owner差异和所有原动作证明无无关Trip变更，不能过滤错误目标。 |
 | `weather_request_day`/`weather_query_day`、`weather_region` | 原问题服务器日期、已准入的实际规范化query日和区域；缺原日期为UNKNOWN，日期错或区域非beijing为FAIL。 |
 
@@ -84,6 +85,24 @@ MESSAGE/RUN、provider、工具和费用均计入原attempt、共享Meter及现�
 `trip_saved` 改核原Lio提交，不再接受旧M1 `confirmed_commits`/草稿恢复证明。
 错误保存、错误版本、越权、删除后召回和编造执行均为硬失败；缺同次证据为UNKNOWN。
 行为标注仍是辅助。无新增依赖或AgentEvals。
+
+## 修改/撤销前置的本机签名证明
+
+`lio_probe.py` 复用 C 的原规划grounding、签名Lio v2消息/撤销、worker和结构化历史读取。
+前置采用当前已接受的规划开头、ISO日期、两人主体与完整固定安排声明，并明确保存。
+FakeProvider仅给一个第二天下午的可变建议；**固定项由原服务从声明添加**，模型不返回
+固定项。实际检查同一Trip的v1→v2，以及撤销追加v3、恢复v1全内容和保留v2历史。
+
+```sh
+CJ_ENV=local CJ_PG_BINDIR=/path/to/postgresql17/bin \
+  uv run --locked python -B -m eval.optimization.lio_probe --output .local/lio-setup-new
+```
+
+输出位置拒绝覆盖。默认单测核四条前置的实际纯grounding和“锁定项为空”硬拒；
+该命令另建临时私有PG及本机测试身份/预算，随后所有任务写入均经原签名API，
+状态读取沿受限角色。不向HK做bootstrap/SQL预置或扩展现役profile。原始消息、
+回执、完整内容/历史摘要和Fake输入留在忽略目录，不保存认证token或密钥。
+这是两个公开任务的本机L1证明，完整B适配器、其他任务及实际模型仍未验。
 
 ## 下游冻结与受控集
 
