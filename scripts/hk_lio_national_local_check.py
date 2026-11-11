@@ -85,11 +85,20 @@ def exercise(root,conninfo):
             else:
                 content=None
             fields=dict(arrival=dict(date=dict(state='known',value='2026-11-20')),party_size=dict(state='known',value=2))
+            sources={k:[dict(source_index=source_index,quote=q)] for k,q in (
+                ('arrival.date','2026-11-20'),('party_size',current['party']),('duration_days',current['duration']))}
+            if current.get('fixed_description') in text:
+                def event(clock):
+                    return dict(date=dict(state='known',value='2026-11-20'),time=dict(state='known',value=clock),
+                        timezone=dict(state='known',value='Asia/Shanghai'),place=dict(state='missing'))
+                fields['fixed_items']=[dict(item_id='hotel',kind='appointment',description=current['fixed_description'],
+                    applies_to=['self'],locked=dict(state='known',value=True),booking_status=dict(state='unknown'),
+                    start=event('09:00'),end=event('10:00'))]
+                sources['fixed_items']=[dict(source_index=source_index,quote=current['fixed_description'])]
             content=content or json.dumps(dict(version='LIO-planning-intake.1',intent='plan',reply='I can arrange the trip.',needs_tools=False,
                 city=dict(query=current['mention'],normalized_name=None,province=None,source_index=source_index,quote=current['mention']),
                 duration_days=3,extraction=dict(version='NEEDS-extraction.1',fields=fields,unresolved=[],long_term_requests=[]),
-                field_sources={k:[dict(source_index=source_index,quote=q)] for k,q in (
-                    ('arrival.date','2026-11-20'),('party_size',current['party']),('duration_days',current['duration']))},current_request=text),ensure_ascii=False)
+                field_sources=sources,current_request=text),ensure_ascii=False)
         elif 'MEMORY-EXTRACT@2' in system:
             entries=[]
             source=json.loads(body['messages'][-1]['content'])['messages']
@@ -103,7 +112,7 @@ def exercise(root,conninfo):
             assert original['version']=='TRIP-source-input.2'
             assert original['fields']['arrival']['place']['value']==current['zh']+'市'
             assert original['fields']['destination_timezone']['value']=='Asia/Shanghai'
-            items=[dict(id='visit-'+str(i),text=current['en']+' Walk '+str(i),date='2026-11-'+str(19+i),
+            items=[dict(id='visit-'+str(i),text=(current['zh']+'散步'+str(i) if current['locale']=='zh' else current['en']+' Walk '+str(i)),date='2026-11-'+str(19+i),
                 start_time='19:00' if i==3 else '14:00',end_time='20:00' if i==3 else '15:00',timezone='Asia/Shanghai') for i in (1,2,3)]
             if original['current_trip'] is not None:
                 content=json.dumps(dict(version='TRIP-lio-replan-delta.3',items=[],proposed_subjects={}))
@@ -141,10 +150,13 @@ def exercise(root,conninfo):
     with TestClient(app) as api,patch('cj_api.lio_city._catalog_exchange',side_effect=city_exchange):
         for zh,en,adcode in CITIES:
             for locale in ('zh','en'):
-                current.update(zh=zh,en=en,mention=zh if locale=='zh' else en,
+                current.update(zh=zh,en=en,locale=locale,mention=zh if locale=='zh' else en,
+                    fixed_description=('第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变' if locale=='zh' else
+                        'On day 1 I have a fixed hotel meetup from 9 to 10 a.m.; keep it unchanged'),
                     party='两个人' if locale=='zh' else 'two people',duration='三天' if locale=='zh' else 'three-day')
                 text=(f'计划{zh}三天豪华游，从2026-11-20开始，两个人。' if locale=='zh' else
                       f'Plan a three-day trip to {en} for two people starting 2026-11-20.')
+                text+=current['fixed_description']+('。酒店名称和位置尚未确定。' if locale=='zh' else '. The hotel name and location are not known yet.')
                 mid='nation-'+adcode+'-'+locale
                 payload=dict(version='LIO-message.2',message_id=mid,text=text,locale=locale,new_conversation=True)
                 accepted=api.post('/v2/lio/messages',headers=headers,content=json.dumps(payload).encode())
@@ -153,8 +165,18 @@ def exercise(root,conninfo):
                 outcomes=process();assert [(o.message_id,o.status) for o in outcomes]==[(mid,'completed')],outcomes
                 saved=api.get('/v2/lio/trip',params=params,headers=headers).json();assert saved['current'] is not None and saved['history']==[],saved
                 initial=saved['current'];assert initial['days'][0]['date']=='2026-11-20',initial
+                fixed,=[item for day in initial['days'] for item in day['items'] if item['fixed']]
+                assert fixed['label']==current['fixed_description'] and (fixed['start_time'],fixed['end_time'])==('09:00','10:00')
+                with database.connect(scope) as db:
+                    initial_content=bytes(db.execute('SELECT content FROM cj_trip_record WHERE trip_id=%s',(initial['trip_id'],)).fetchone()[0])
+                # Consume the exact unchanged public C template with actual
+                # returned name/day/time, rather than simplifying its request.
+                target=initial['days'][1]['items'][0]
+                flow=json.loads((ROOT/'eval/lio_national_cases.v1.json').read_bytes())['common_flow'][2]
                 edit=dict(version='LIO-message.2',message_id=mid+'-edit',conversation_id=cid,locale=locale,
-                    text='把第二天下午换成“人民公园”。' if locale=='zh' else f'Replace {en} Walk 2 with "Riverside Park".')
+                    text=flow[locale].format(actual_item_name=target['label'],
+                        actual_time_range=target['start_time']+'–'+target['end_time'],
+                        replacement_query='人民公园' if locale=='zh' else 'Riverside Park'))
                 changed=api.post('/v2/lio/messages',headers=headers,content=json.dumps(edit).encode());assert changed.status_code==200,changed.text
                 outcomes=process();assert [(o.message_id,o.status) for o in outcomes]==[(mid+'-edit','completed')],outcomes
                 after=api.get('/v2/lio/trip',params=params,headers=headers).json();assert after['current']!=initial and after['history']==[initial],after
@@ -163,7 +185,8 @@ def exercise(root,conninfo):
                 final=api.get('/v2/lio/trip',params=params,headers=headers).json();assert final['current'] is not None,final
                 assert final['current']['days']==initial['days'] and len(final['history'])==2
                 with database.connect(scope) as db:
-                    assert db.execute('SELECT version FROM cj_trip_record WHERE trip_id=%s',(initial['trip_id'],)).fetchone()==(3,)
+                    record=db.execute('SELECT version,content FROM cj_trip_record WHERE trip_id=%s',(initial['trip_id'],)).fetchone()
+                    assert record[0]==3 and bytes(record[1])==initial_content
                     rows=db.execute('SELECT committed_version FROM cj_trip_receipt WHERE trip_id=%s ORDER BY committed_version',(initial['trip_id'],)).fetchall()
                     assert rows==[(1,),(2,),(3,)],rows
                 replay=api.post('/v2/lio/messages',headers=headers,content=json.dumps(payload).encode());assert replay.json()==accepted.json()

@@ -204,6 +204,14 @@ def fixed_sources_complete(intake,fields,turns,city_reference):
   spans=[(found.start(),found.end()) for item in items
          for found in re.finditer(re.escape(item['description']),turn.text)]
   for marker in fixed_declaration.finditer(turn.text):
+   # A separate bare 'keep it unchanged' refers to the preceding commitment;
+   # it is not an omitted second event. The original fixed intent still must
+   # be present and its values remain independently checked.
+   bare_keep=(re.fullmatch(r'keep (?:it|them|this|that) unchanged',marker[0],re.I) is not None
+       and turn.text[:marker.start()].rstrip().endswith((';','；'))
+       and re.match(r'\s*(?:[.。!！;；]|$)',turn.text[marker.end():]) is not None)
+   if bare_keep and any(end<=marker.start() and re.fullmatch(r'[\s;；.。!！?？]*',turn.text[end:marker.start()]) is not None
+                        for start,end in spans):continue
    if not any(start<=marker.start() and marker.end()<=end for start,end in spans):return False
  first=fields.get('arrival',{}).get('date',{})
  first=date.fromisoformat(first['value']) if first.get('state')=='known' else None
@@ -212,7 +220,7 @@ def fixed_sources_complete(intake,fields,turns,city_reference):
  for index,item in enumerate(items):
   evidence=intake.sources.get('fixed_items.'+str(index),intake.sources.get('fixed_items',[]))
   description=item['description']
-  if not any(description in clause for clause in declarations):return False
+  if not any(description in turn.text for turn in turns) or fixed_declaration.search(description) is None:return False
   details='\n'.join(ref['quote'] for ref in evidence if description not in ref['quote'])
   comparison=description+'\n'+details
   if first is not None:

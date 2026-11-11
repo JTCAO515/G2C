@@ -221,7 +221,8 @@ class NationalExecution(unittest.TestCase):
 
     def test_natural_fixed_day_number_keeps_explicit_self_and_unbooked_status(self):
         for declaration in ('第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变',
-                            'On day 1 I have a fixed hotel meetup from 9 to 10 a.m., keep it unchanged'):
+                            'On day 1 I have a fixed hotel meetup from 9 to 10 a.m., keep it unchanged',
+                            'On day 1 I have a fixed hotel meetup from 9 to 10 a.m.; keep it unchanged'):
             with self.subTest(declaration=declaration):
                 text='计划上海2026-11-20，仅我一人。'+declaration
                 value=self.envelope(text,party=1)
@@ -328,3 +329,10 @@ class NationalExecution(unittest.TestCase):
             previous=previous,resolution=dict(status='resolved',candidates=[ah],source={}))
         self.assertEqual(published,[])
         self.assertTrue(any('哪天' in v for k,v in events if k=='text_delta'))
+
+
+    def test_keep_unchanged_cannot_be_omitted_when_fixed_word_is_absent(self):
+        text='计划上海2026-11-20，两个人。On day 1 I have a hotel meetup from 9 to 10 a.m.; keep it unchanged'
+        published,events,_,_=self.run_intake(self.envelope(text))
+        self.assertEqual(published,[])
+        self.assertTrue(any('谁参加' in v for k,v in events if k=='text_delta'))
