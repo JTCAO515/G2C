@@ -84,10 +84,10 @@ def exercise(root,conninfo):
             else:
                 content=('You have shared that you prefer fewer stops in a day.' if has_saved else
                          "I don't know you yet. Would you like to introduce yourself?")
-        elif 'LIO-planning-intake.5' in system:
+        elif 'LIO-planning-intake.6' in system:
             text=body['messages'][-1]['content'];current['text']=text
             source_index=len([m for m in body['messages'][1:] if m['role']=='user' and not m['content'].startswith('Stored memory data')])-1
-            from cj_agent.lio_intake_flat_schema import response_format
+            from cj_agent.lio_intake_facts_schema import response_format
             assert body['response_format']==response_format(source_index)
             if current.get('clarification_flow'):
                 flow=CHENGDU_CASE['variants'][current['locale']]['turns'];fields={'party_size':dict(state='missing'),'fixed_items':[]}
@@ -165,7 +165,7 @@ def exercise(root,conninfo):
             else:
                 content=json.dumps(dict(version='TRIP-lio-first-plan.1',title=current['en']+' trip',items=items,
                     proposed_subjects={item['id']:['party'] for item in items}),ensure_ascii=False)
-        if 'LIO-planning-intake.5' in system:
+        if 'LIO-planning-intake.6' in system:
             data=json.loads(content)
             if 'start_date' not in data:
                 if data['intent'] in ('consult','discuss','cancel'):data['start_date']=None
@@ -181,8 +181,8 @@ def exercise(root,conninfo):
                             source_ref=next(ref for ref in data['field_sources']['fixed_items'] if ref['quote']==original),detail_refs=[])
                         for edge in ('start','end'):fixed[edge]['timezone']=dict(state='missing')
                 content=json.dumps(data,ensure_ascii=False)
-            from lio_flat_fixture import flat_fixture
-            content=json.dumps(flat_fixture(json.loads(content)),ensure_ascii=False)
+            from lio_flat_fixture import facts_fixture
+            content=json.dumps(facts_fixture(json.loads(content)),ensure_ascii=False)
             from jsonschema import Draft202012Validator
             Draft202012Validator(body['response_format']['json_schema']['schema']).validate(json.loads(content))
         identity=dict(id='fixture-national-'+str(len(wire)),model=M4_MODEL)

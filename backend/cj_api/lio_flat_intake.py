@@ -33,6 +33,11 @@ def parse_flat(raw,turns):
     try:dto=FlatIntake.model_validate(value)
     except ValidationError:raise InvalidInput('exact typed flat intake required') from None
     data=dto.model_dump(exclude_unset=True)
+    return compile_flat(data,turns)
+
+
+def compile_flat(data,turns):
+    """Compile an already validated, code-owned flat DTO representation."""
     core=_observations({key:data[key] for key in ('start_date','party_size')},data['unknown_fields'],data['uncertain_fields'])
     extra=data['extra_fields']
     extra_values={}
