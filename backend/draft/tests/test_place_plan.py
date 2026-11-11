@@ -29,8 +29,8 @@ class Capture:
     def records(self):return self.value
 
 
-def batch(keyword='synthetic',ref='original',producer=None):
-    config=Config(ORIGIN,4096,16384,5,60);query=Search(keyword,'synthetic',1,20)
+def batch(keyword='synthetic',ref='original',producer=None,*,city='synthetic'):
+    config=Config(ORIGIN,4096,16384,5,60);query=Search(keyword,city,1,20)
     producer=producer or LocalPlaceProducer(config);at=datetime.now(timezone.utc)
     request=prepare(config,query,ref,at);status,payload=producer._response(query)
     response=Response(request.binding_digest,request.origin,request.path,status,payload if type(payload) is bytes else packed(payload),at)

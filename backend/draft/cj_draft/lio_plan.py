@@ -1,10 +1,11 @@
 """Source-bound planning save for an explicitly admitted Lio publication."""
-from datetime import time
+from datetime import date, time
 import json
 
 from cj_agent.draft import DraftRejected, PROPOSAL_TTL_SECONDS, proposal_id_for
 from cj_feasibility.scoped_trip import check as check_scoped
 from cj_feasibility.trip_time_v2 import evaluate
+from cj_feasibility.time_checks import instant
 from cj_manual_edit.scoped import Request, preview, resolve
 from cj_needs.revision_lease import LeaseUnavailable
 from cj_trip.confirmation import ConfirmationSigner
@@ -15,9 +16,11 @@ from cj_trip.postgres import Repository
 from cj_trip.structured import FieldRejected, MAX_ITEMS, SourceRejected, _fields
 
 from .needs_context import ContextPublisher, ContextSource
+from .needs_publisher import _rejected
 
 
 COMPACT_INITIAL_PLAN = 'TRIP-lio-first-plan.1'
+SOURCE_WINDOW_POLICY = 'LIO-source-window.1'
 LIO_REPLAN_DELTA = 'TRIP-lio-replan-delta.1'
 LIO_REPLAN_DELTA_V2 = 'TRIP-lio-replan-delta.2'
 LIO_REPLAN_DELTA_V3 = 'TRIP-lio-replan-delta.3'
@@ -267,3 +270,64 @@ class LioPlanPublisher(ContextPublisher):
     def require_lio(self, binding, original, expected):
         if self.check_lio_original(binding, original, expected) is not True:
             raise LeaseUnavailable('original Lio publication admission required')
+
+
+class LioSourceWindowPublisher(LioPlanPublisher):
+    """Opt-in publication policy for an explicitly confirmed destination window."""
+
+    publication_policy = SOURCE_WINDOW_POLICY
+
+    def model_messages(self, binding, text, capture, messages):
+        result = super().model_messages(binding, text, capture, messages)
+        self.system += (
+            f' Publication policy {SOURCE_WINDOW_POLICY}: use only the captured arrival.date through '
+            'departure.date, inclusive, for planned activities. Copy destination_timezone exactly '
+            'for each new suggestion, and respect any known arrival/departure clock bounds. '
+            'Unknown original fixed fields remain unknown; do not fill '
+            'them or invent a booking, source, or observed UTC offset.'
+        )
+        return result
+
+    @staticmethod
+    def _source_window(fields):
+        destination = fields.get('destination_timezone')
+        if destination is None or destination['state'] != 'known':
+            raise SourceRejected('destination_timezone', 'confirmed destination timezone required')
+        zone = destination['value']
+        days = []
+        for key in ('arrival', 'departure'):
+            event = fields.get(key)
+            if event is None or event['date']['state'] != 'known':
+                raise SourceRejected(key + '.date', 'confirmed source planning date required')
+            if event['timezone']['state'] != 'known' or event['timezone']['value'] != zone:
+                raise SourceRejected(key + '.timezone', 'source bounds must use destination timezone')
+            days.append(date.fromisoformat(event['date']['value']))
+        if days[1] < days[0]:
+            raise SourceRejected('departure.date', 'source planning window is reversed')
+        return days[0], days[1], zone
+
+    def _save(self, binding, original, expected, capture, candidate, proposal, action_id, before_publish):
+        try:
+            snapshot, _ = capture.records()
+            first, last, zone = self._source_window(snapshot.fields)
+            lower, _, _ = instant(snapshot.fields['arrival'], 'arrival')
+            upper, _, _ = instant(snapshot.fields['departure'], 'departure')
+            if lower is not None and upper is not None and upper < lower:
+                raise SourceRejected('departure', 'source planning instants are reversed')
+            document = json.loads(proposal.content)
+            for index, item in enumerate(document['items']):
+                for edge in ('start', 'end'):
+                    event = item['schedule'][edge]
+                    path = f'items[{index}].schedule.{edge}'
+                    if (event['date']['state'] == 'known'
+                            and not first <= date.fromisoformat(event['date']['value']) <= last):
+                        raise SourceRejected(path + '.date', 'activity is outside the confirmed source window')
+                    if event['timezone']['state'] == 'known' and event['timezone']['value'] != zone:
+                        raise SourceRejected(path + '.timezone', 'activity differs from destination timezone')
+                    moment, _, _ = instant(event, path, utc_offset=event['utc_offset'])
+                    if moment is not None and ((lower is not None and moment < lower)
+                                               or (upper is not None and moment > upper)):
+                        raise SourceRejected(path, 'activity is outside the confirmed source instants')
+        except SourceRejected as error:
+            raise _rejected(binding, 'source_window', error.field, error.rule) from error
+        return super()._save(binding, original, expected, capture, candidate, proposal, action_id, before_publish)
