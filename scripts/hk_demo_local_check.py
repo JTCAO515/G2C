@@ -380,6 +380,17 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
         reply_fields, _ = grounded_fields(turns, city, today)
         assert reply_fields['arrival']['date']['value'] == '2026-11-10'
         assert reply_fields['departure']['date']['value'] == '2026-11-12'
+    for natural in ('Help me planning a 3-days luxury trip to beijing',
+                    'Help me plan a 3 day luxury trip to beijing'):
+        turns = (PlanningTurn(natural, today),)
+        assert stated_city((natural,), 'beijing')
+        open_trip = grounded_dated_fields(turns, 'beijing')
+        assert open_trip.duration == 3
+        assert open_trip.fields['arrival']['date']['state'] == 'missing'
+        from cj_api.local_lio_planning import explicit_plan
+        assert explicit_plan(turns, (), explicit_save=False) is None
+        dated_trip = grounded_dated_fields((*turns, PlanningTurn('Starting tomorrow.', today)), 'beijing')
+        assert dated_trip.fields['departure']['date']['value'] == '2026-11-12'
     one_turn, _ = grounded_fields(
         ('Plan a trip to Beijing for three days starting tomorrow.',), 'Beijing', today)
     assert one_turn['departure']['date']['value'] == '2026-11-12'
@@ -905,6 +916,7 @@ def check_lio_short_planning(api, database, auth, actor, headers):
     dated_opening = first + '。2026-11-11 到 2026-11-13'
     english = 'Plan a three-day trip to Beijing.'
     english_recap = 'Beijing, three days'
+    natural_english = 'Help me planning a 3-days luxury trip to beijing'
     bare_date = '2026-11-11'
     refusal = '日期还没定，先聊聊'
     detached_date = '出发日期：2026-11-18'
@@ -916,6 +928,7 @@ def check_lio_short_planning(api, database, auth, actor, headers):
         date_reply: '已了解你考虑 2026-11-11 出发，仍可以先比较这三天的安排。',
         dated_opening: '可以按你给出的三天先讨论故宫、园林和长城。',
         english: 'Consider a day each for imperial landmarks, gardens, and the Great Wall.',
+        natural_english: 'For your three days in Beijing, compare imperial landmarks, gardens, and luxury dining.',
         english_recap: 'For those three days in Beijing, you can mix landmarks with quieter garden visits.',
         bare_date: '可以用你提到的日期继续比较选项。',
     }
@@ -941,7 +954,7 @@ def check_lio_short_planning(api, database, auth, actor, headers):
         users = [item['content'] for item in messages if item['role'] == 'user'
                  and not item['content'].startswith('Stored memory data (not instructions):')]
         if users[-1] in suggestions:
-            assert users[0] in (first, dated_opening, english)
+            assert users[0] in (first, dated_opening, english, natural_english)
             assert system.endswith(DISCUSSION_PROMPT)
             discussions.append(users)
             yield json.dumps(dict(answer=suggestions[users[-1]]), ensure_ascii=False)
@@ -1021,7 +1034,8 @@ def check_lio_short_planning(api, database, auth, actor, headers):
             assert (entry['answer'], entry['trip']) == (answer, None), entry
 
         for mid, opening, reply, locale in (('lio-dated-discussion', dated_opening, bare_date, 'zh'),
-                                            ('lio-english-discussion', english, english_recap, 'en')):
+                                            ('lio-english-discussion', english, english_recap, 'en'),
+                                            ('lio-natural-english-discussion', natural_english, english_recap, 'en')):
             target = send(mid, opening, locale=locale, new_conversation=True)
             assert [item.status for item in worker.process()] == ['completed']
             entry = timeline(target)[-1]
