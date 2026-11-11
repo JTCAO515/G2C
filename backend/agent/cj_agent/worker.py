@@ -129,6 +129,7 @@ class RunWorker:
         self.lio_edit = lio_edit
         self.lio_memory = lio_memory
         self._lio_active = False
+        self._lio_answer_refs = ()
 
     def process(self, limit=20):
         outcomes = []
@@ -287,6 +288,7 @@ class RunWorker:
         yield from self._stream_source(binding,lambda:self.budget_exit.stream(prepared),draft=False)
 
     def _model_history(self,binding,messages,system,*,message_refs=()):
+        message_refs=(*self._lio_answer_refs,*message_refs)
         if self.memory_history and self.memory_run is not None:
             if message_refs:
                 self.memory_run=self.history_adapter.before_model(
@@ -441,6 +443,7 @@ class RunWorker:
         original = self.lio_original(binding) if self.lio_original is not None else None
         locale = original.locale if original is not None else None
         self._lio_active = original is not None
+        self._lio_answer_refs = ()
         state = self.runs.accept(binding)
         if self.budget_exit is not None:
             self.budget_exit = self.budget_exit.for_run(binding,state)
@@ -488,6 +491,8 @@ class RunWorker:
                     return self._finish(receipt, planning)
             inputs = ([{'role': 'user', 'content': text}] if self.memory_run is None
                       else self.memory_run.messages(text))
+            if locale is not None and self.lio_planning is not None:
+                inputs,self._lio_answer_refs=self.lio_planning.answer_context(binding,inputs)
             if self.message_context is not None:
                 inputs=self.message_context.answer_messages(binding,inputs)
             if locale is None:

@@ -391,6 +391,13 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
         assert explicit_plan(turns, (), explicit_save=False) is None
         dated_trip = grounded_dated_fields((*turns, PlanningTurn('Starting tomorrow.', today)), 'beijing')
         assert dated_trip.fields['departure']['date']['value'] == '2026-11-12'
+    for opening,correction,city in (
+            ('Plan a three-day trip to Beijing.', 'Make it four days.', 'Beijing'),
+            ('帮我规划三天的北京行程。', '改成四天。', '北京')):
+        corrected = grounded_dated_fields(tuple(PlanningTurn(text,today) for text in (opening,correction)),city)
+        assert corrected.duration==4
+        assert corrected.fields['arrival']['date']['state']=='missing'
+        assert not corrected.restart_needed
     one_turn, _ = grounded_fields(
         ('Plan a trip to Beijing for three days starting tomorrow.',), 'Beijing', today)
     assert one_turn['departure']['date']['value'] == '2026-11-12'
@@ -1096,6 +1103,24 @@ def check_lio_short_planning(api, database, auth, actor, headers):
         assert [item.status for item in worker.process()] == ['completed']
         entry = timeline(target)[-1]
         assert (entry['answer'], entry['trip']) == (detached_answer, None), entry
+    for language,opening,correction in (
+            ('en', 'Three days in Xi’an, staying near the Bell Tower, CNY 500 a day, and I’d like to see the Terracotta Army.',
+                   'Make it four days. Keep the other details and let’s discuss it first.'),
+            ('zh', '西安三天，住钟楼附近，预算每天 500 元，想看看兵马俑。',
+                   '改成四天。其他条件照旧，先聊聊。')):
+        actual_inputs=[]
+        def ordinary_reply(messages,system=None):
+            actual_inputs.append([item['content'] for item in messages if item['role']=='user'
+                                  and not item['content'].startswith('Stored memory data (not instructions):')])
+            yield 'A synthetic discussion reply.' if language=='en' else '合成讨论回复。'
+        with patch.object(model,'stream',side_effect=ordinary_reply):
+            target=send('lio-context-open-'+language,opening,locale=language,new_conversation=True)
+            assert [item.status for item in worker.process()]==['completed']
+            send('lio-context-correction-'+language,correction,locale=language,**target)
+            assert [item.status for item in worker.process()]==['completed']
+        assert actual_inputs==[[opening],[opening,correction]], (language,actual_inputs)
+        assert api.get('/v2/lio/trip',params=target,headers=owner).json()['current'] is None
+    print('PASS signed ordinary Lio correction retains exact prior city/hotel/budget/interest in same dialogue, no Trip write')
     assert not intake_attempts
     default_trip = api.get('/v1/lio/trip', headers=owner).json()
     assert default_trip['current'] is None and not default_trip['history']
@@ -1555,8 +1580,38 @@ def check_lio_memory(root, database, auth, path, context, foreign, actor, unknow
         with database.connect(scope) as db:
             edited_input = bytes(answer_input(db, edited_recall))
             assert updated.encode() in edited_input and quiet.encode() not in edited_input
+        from cj_api.local_app import load_confirmation_signer
+        context_model=MemoryModel()
+        context_worker=run_worker._worker_for_scope(database,context_model,auth,scope,checker_for(auth),
+            memory_configuration=runtime,demo_planning=True,lio_confirmation=load_confirmation_signer(auth))
+        contextual_opening='Three days in Xi’an, staying near the Bell Tower, CNY 500 a day.'
+        contextual_correction='Make it four days. Keep the other details.'
+        context_chat=api.post('/v2/lio/messages',headers=owner,content=encoded(dict(
+            version='LIO-message.2',message_id='lio-memory-context-open',text=contextual_opening,
+            locale='en',new_conversation=True))).json()['conversation_id']
+        assert [outcome.status for outcome in context_worker.process()]==['completed']
+        assert api.post('/v2/lio/messages',headers=owner,content=encoded(dict(
+            version='LIO-message.2',message_id='lio-memory-context-followup',text=contextual_correction,
+            locale='en',conversation_id=context_chat))).status_code==200
+        assert [outcome.status for outcome in context_worker.process()]==['completed']
+        with database.connect(scope) as db:
+            contextual_input=json.loads(bytes(answer_input(db,'lio-memory-context-followup')))
+            assert [m['content'] for m in contextual_input['messages'] if m['role']=='user'
+                    and not m['content'].startswith('Stored memory data (not instructions):')]==[
+                        contextual_opening,contextual_correction]
         check_lio_item_erasure(root,database,auth,path,context,scope,owner,
             chosen,_decode_target(dismiss['target']),consumer,quiet)
+        before_context_calls=context_model.calls
+        assert api.post('/v2/lio/messages',headers=owner,content=encoded(dict(
+            version='LIO-message.2',message_id='lio-memory-context-after-erasure',text='What else can we discuss?',
+            locale='en',conversation_id=context_chat))).status_code==200
+        assert [outcome.status for outcome in context_worker.process()]==['context_invalid']
+        assert context_model.calls==before_context_calls
+        with database.connect(scope) as db:
+            assert answer_input(db,'lio-memory-context-followup') is None
+            assert db.execute("SELECT count(*) FROM cj_run_metered_operation o JOIN cj_message_receipt m USING(scope,run_id) "
+                              "WHERE m.message_id='lio-memory-context-after-erasure'").fetchone()==(0,)
+        print('PASS signed ordinary dialogue original source references stay behind actual Memory erasure fence; zero post-erasure model/Meter call')
         after_erase = 'lio-after-item-erasure'
         assert api.post('/v1/lio/messages',headers=owner,content=encoded(dict(
             version='LIO-message.1',message_id=after_erase,text='What should I see near the metro?',locale='en'))).status_code == 200

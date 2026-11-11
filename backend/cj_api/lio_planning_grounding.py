@@ -27,6 +27,9 @@ DEPARTURE_REPLY = re.compile(rf'(?:出发日期?\s*[:：]\s*({ISO})|(?:从\s*)?(
 ZH_SHORT_TRIP = re.compile(
     rf'(?:请\s*)?(?:帮我\s*)?规划\s*(?:一下\s*)?北京\s*({NUMBER})\s*[日天]\s*(豪华)?\s*(?:旅游|旅行)')
 ZH_DURATION_REPLY = re.compile(rf'北京\s*[,，]?\s*({NUMBER})\s*[日天]')
+DURATION_CORRECTION = re.compile(
+    rf'(?:please\s+)?(?:make it|change (?:it|the (?:trip|itinerary))(?: to)?)\s+({NUMBER})\s+days?'
+    rf'|(?:请)?改(?:成|为)\s*({NUMBER})\s*天', re.I)
 DATE_REFUSAL = re.compile(
     r'(?:日期(?:还没定|未定|待定|先不定|先不说|暂不提供)|(?:先不|不想)(?:说|提供)日期)'
     r'(?:\s*[,，]\s*(?:先|继续)聊聊)?'
@@ -193,6 +196,7 @@ def discussion_reply(text):
     return any(CITY_REPLY.fullmatch(clause) or ZH_DURATION_REPLY.fullmatch(clause)
                or _timing_reply(clause, allow_departure=True) or DATE_REFUSAL.fullmatch(clause.rstrip('?？'))
                or DISCUSSION_REPLY.match(clause) or DISCUSSION_DETAIL.fullmatch(clause)
+               or DURATION_CORRECTION.fullmatch(clause)
                for clause in _clauses(text))
 
 
@@ -243,6 +247,10 @@ def _declared_durations(turns, city):
         for original in _clauses(turn.text):
             clause = _date_declaration(original)
             if clause is None or NEGATED.search(clause):
+                continue
+            correction = DURATION_CORRECTION.fullmatch(clause)
+            if correction is not None:
+                durations = {_number(correction[1] or correction[2])}
                 continue
             chinese = ZH_SHORT_TRIP.fullmatch(clause) or ZH_DURATION_REPLY.fullmatch(clause)
             if chinese is not None and city == '北京':

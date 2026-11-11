@@ -125,6 +125,32 @@ class LioPlanning:
         self.database = database
         self.plan_and_save = plan_and_save
 
+    def answer_context(self, binding, messages):
+        """Retain original traveler turns, never replay old assistant/tool output."""
+        if standalone_question(messages[-1]['content']):
+            return messages, ()
+        with self.database.connect(binding.scope) as connection:
+            prior = connection.execute(
+                'SELECT m.message_id,m.sequence,m.raw_input,m.input_sha256,m.demo_question_day,r.status, '
+                'EXISTS(SELECT 1 FROM cj_run_event e WHERE (e.scope,e.run_id)=(m.scope,m.run_id) '
+                "AND (e.kind IN ('draft_outcome','result_committed') OR e.kind='effect_committed' AND e.value IN (%s,%s,%s))) "
+                'FROM cj_message_receipt m JOIN cj_run_record r USING (scope,run_id) '
+                'WHERE m.scope=%s AND m.conversation_id=%s AND m.generation=%s '
+                'AND m.demo_dialogue_protocol=%s AND m.sequence<%s '
+                'ORDER BY m.sequence DESC LIMIT %s',
+                (ASK_MORE,DISCUSSION,BOUND_EFFECT,binding.scope,binding.conversation_id,binding.generation,LIO_VERSION,
+                 binding.message_sequence,MAX_CLARIFICATIONS)).fetchall()
+        turns=[]; references=[]
+        for *row,status,planning in prior:
+            if status!='completed' or planning:
+                break
+            turn, reference = _original_turn(binding, *row)
+            if planning_withdrawn(turn.text):
+                break
+            turns.append(dict(role='user',content=turn.text))
+            references.append(reference)
+        return [*messages[:-1],*reversed(turns),messages[-1]], tuple(reversed(references))
+
     def execute(self, worker, binding, state, text, original):
         if standalone_question(text):
             return None
@@ -196,6 +222,19 @@ class LioPlanSave:
         return worker._event(binding, state, 'completed')
 
 
+def _original_turn(binding, message_id, sequence, raw, digest, question_day):
+    if raw is None:
+        raise Unavailable('original Lio context was erased')
+    command = Command.parse_original(bytes(raw))
+    if ((command.conversation_id, command.message_id) != (binding.conversation_id, message_id)
+            or sha256(command.raw).hexdigest() != digest):
+        raise Unavailable('original Lio request changed')
+    turn = PlanningTurn(json.loads(command.raw)['text'], question_day)
+    reference = dict(conversation_id=binding.conversation_id,generation=binding.generation,
+        message_id=message_id,sequence=sequence,input_sha256=digest)
+    return turn, reference
+
+
 def planning_texts(database, binding, current):
     if PLAN_REQUEST.match(current.text):
         return (current,), (), ()
@@ -216,21 +255,18 @@ def planning_texts(database, binding, current):
     for message_id, sequence, raw, digest, question_day, status, marker in prior:
         if status != 'completed':
             break
-        command = Command.parse_original(bytes(raw))
-        if ((command.conversation_id, command.message_id) != (binding.conversation_id, message_id)
-                or sha256(command.raw).hexdigest() != digest):
-            raise Unavailable('original Lio request changed')
-        text = json.loads(command.raw)['text']
+        turn, reference = _original_turn(binding,message_id,sequence,raw,digest,
+                                         question_day or current.question_day)
+        text = turn.text
         if marker is None:
             # Independent answers neither end the current discussion nor become
             # inputs to a later signed itinerary.
             if standalone_question(text):
                 continue
             break
-        turns.append(PlanningTurn(text, question_day or current.question_day))
+        turns.append(turn)
         markers.append(marker)
-        references.append(dict(conversation_id=binding.conversation_id, generation=binding.generation,
-                               message_id=message_id, sequence=sequence, input_sha256=digest))
+        references.append(reference)
         if PLAN_REQUEST.match(text):
             break
     if not turns:
