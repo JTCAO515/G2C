@@ -125,6 +125,9 @@ class LioPlanning:
         self.database = database
         self.plan_and_save = plan_and_save
 
+    def answer_context(self,binding,messages):
+        return messages,()
+
     def execute(self, worker, binding, state, text, original):
         if standalone_question(text):
             return None
@@ -162,10 +165,11 @@ class LioPlanning:
 
 
 class LioPlanSave:
-    def __init__(self, database, context_publisher, confirmation):
+    def __init__(self, database, context_publisher, confirmation,*,source_window=False):
         self.database = database
         self.context_publisher = context_publisher
         self.confirmation = confirmation
+        self.source_window=source_window
 
     def __call__(self, worker, binding, state, details, locale):
         original = worker.messages.query(binding.message_id)
@@ -181,7 +185,11 @@ class LioPlanSave:
             return (candidate == binding and expected == head and stored == original
                     and worker.message_context.active_original(binding) == original)
 
-        publisher = LioPlanPublisher(self.context_publisher, self.confirmation,
+        publisher_class=LioPlanPublisher
+        if self.source_window:
+            from cj_draft.lio_plan import LioSourceWindowPublisher
+            publisher_class=LioSourceWindowPublisher
+        publisher = publisher_class(self.context_publisher, self.confirmation,
                                      original_needs, check_original, draft_guidance=COMPACT_DRAFT)
         previous = worker.drafts
         worker.drafts = publisher

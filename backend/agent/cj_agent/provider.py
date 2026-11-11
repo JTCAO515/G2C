@@ -445,7 +445,7 @@ class MeteredDashScopeProvider:
                 finally:loop.close()
 
     def invoke(self,messages,system,attempt,*,tools=None,receipt,guard,native_reply=None,tool_choice=None,
-               native_turn_profile=None,final_answer=False,release_after_send=False,lio_answer=False):
+               native_turn_profile=None,final_answer=False,release_after_send=False,lio_answer=False,structured_profile=None):
         from cj_usage.authorization_budget import canonical
         native_tools=tools or []
         buffered=native_turn_profile==M4_NATIVE_TURN_BUFFERED
@@ -457,6 +457,8 @@ class MeteredDashScopeProvider:
                 or (proxy or incremental) and (not native_tools or tool_choice is not None)
                 or final_answer and not (proxy or incremental)):
             raise ProviderFailed('explicit native turn transport required')
+        if structured_profile not in (None,'LIO-planning-intake.1') or structured_profile is not None and (native_tools or system is None):
+            raise ProviderFailed('explicit nationwide structured profile required')
         if release_after_send and (native_tools or system is None):
             raise ProviderFailed('explicit structured model input required')
         if tool_choice is not None and (tool_choice!='none' or not native_tools):
@@ -493,7 +495,7 @@ class MeteredDashScopeProvider:
             prompt+='\nReturn a single JSON object matching the requested output format.'
         body=dict(model=M4_MODEL,messages=[dict(role='system',content=prompt),*wire_messages],stream=True,
                   stream_options={'include_usage':True},enable_thinking=False,
-                  max_tokens=self.config.max_output_tokens if compact or incremental else min(1024,self.config.max_output_tokens))
+                  max_tokens=self.config.max_output_tokens if compact or incremental or structured_profile is not None else min(1024,self.config.max_output_tokens))
         if proxy:
             definition=(_m4_compact_turn_function(native_tools,final_answer) if compact else
                         _m4_turn_function(native_tools,final_answer))

@@ -112,7 +112,7 @@ def _require_memory_configuration(cursor, scope, configuration, travel):
         raise RuntimeDenied('existing memory requires explicit runtime configuration')
 
 
-def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,formal_memory_configuration=None,account_checker_builder=None,run_credential=False,assembly_planning=False,demo_planning=False,lio_confirmation=None,lio_memory_enabled=False):
+def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,formal_memory_configuration=None,account_checker_builder=None,run_credential=False,assembly_planning=False,demo_planning=False,lio_confirmation=None,lio_memory_enabled=False,national_planning=False):
     if draft_profile not in (None,'needs-structured.1','needs-current-trip.1'):
         raise CompositionUnavailable('unknown explicit draft profile')
     if place_draft_configuration is not None:
@@ -329,8 +329,12 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
         if lio_confirmation is not None:
             from cj_api.local_lio_edit import LioEdit
             from cj_api.local_lio_planning import LioPlanning, LioPlanSave
-            lio_planning = LioPlanning(database, LioPlanSave(database, drafts, lio_confirmation))
-            lio_edit = LioEdit(drafts, lio_confirmation)
+            if national_planning:
+                from cj_api.local_lio_national import NationalLioPlanning
+                lio_planning=NationalLioPlanning(database,LioPlanSave(database,drafts,lio_confirmation,source_window=True))
+            else:
+                lio_planning = LioPlanning(database, LioPlanSave(database, drafts, lio_confirmation))
+            lio_edit = LioEdit(drafts, lio_confirmation,source_window=national_planning)
     return RunWorker(scope=scope, messages=messages, runs=runs, provider=model, drafts=drafts,
         memory=memory,edit_publisher=None if edit_config is None else edit_config.publisher,edit_results=database.edit_results,
         memory_history=history is not None,history_adapter=history,
@@ -412,7 +416,9 @@ def run_once(database, model, auth_dir, *, memory_configuration=None,memory_conf
                                          account_checker_builder=account_checker_builder,run_credential=run_credential,
                                          assembly_planning=assembly_planning,demo_planning=scope in hk_demo_scopes,
                                          lio_confirmation=lio_confirmation,
-                                         lio_memory_enabled=scope in hk_demo_scopes).process()
+                                         lio_memory_enabled=scope in hk_demo_scopes,
+                                         national_planning=real_services is not None and scope in {
+                                             scope_for(ISSUER,s) for s in real_services.national_subjects}).process()
         except Exception as error:
             if failure is None: failure = error
     if background_jobs is not None:results+=background_jobs.run_once(model)

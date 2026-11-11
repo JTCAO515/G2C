@@ -8,6 +8,7 @@ from contextlib import closing,contextmanager
 from dataclasses import dataclass
 from datetime import datetime,timedelta,timezone
 import hashlib
+import httpx
 import json
 import logging
 import os
@@ -88,6 +89,13 @@ TOOLS=[
     _function('fact','Quote official NIA page excerpts for China only; eligibility and calendar applicability UNKNOWN.',dict(
         start_date=dict(type='string',format='date'),end_date=dict(type='string',format='date'))),
 ]
+NATIONAL_TOOLS=json.loads(json.dumps(TOOLS))
+for _tool in NATIONAL_TOOLS:
+    if _tool['function']['name']=='place_search':
+        _tool['function']['description']='Search one POI keyword within the server-confirmed administrative destination.'
+        _tool['function']['parameters']['properties']['city']={'type':'string','description':'Server-confirmed administrative code.'}
+    elif _tool['function']['name']=='weather':
+        _tool['function']['description']='Forecast for the server-confirmed administrative destination and ISO local dates. Returned provider dates only; never guaranteed.'
 NATIVE_TOOLS=frozenset(t['function']['name'] for t in TOOLS)
 NATIVE_REGISTRATION={'place_search':'place','place_detail':'place','place_route':'place','weather':'weather','fact':'fact'}
 
@@ -101,13 +109,18 @@ class ModelInput:
     final_answer:bool=False
     turn_profile:str=M4_NATIVE_TURN_PROFILE_V2
     lio_answer:bool=False
+    national:bool=False
 
 
-def canonical_tool(name,raw):
+def canonical_tool(name,raw,*,city=None):
     """Native argument data → existing strict domain codec; no new wire version."""
     value=json.loads(raw)
     fields=next(t['function']['parameters']['required'] for t in TOOLS if t['function']['name']==name)
     if type(value) is not dict or set(value)!=set(fields):raise ProviderUnknown('native tool argument fields invalid')
+    if name=='weather' and city is not None:
+        from .lio_weather import encode_query
+        return name,encode_query(city,value['start_date'],value['end_date'])
+    if name=='place_search' and city is not None:value['city']=city.adcode
     if name in ('weather','fact'):
         return name,canonical(dict(version='FACT-query.1',fact_key='weather' if name=='weather' else 'entry_notice',
             region='beijing' if name=='weather' else 'China',dates=dict(start=value['start_date'],end=value['end_date']),
@@ -264,7 +277,7 @@ class RealServices:
         return [scope for scope in scopes if scope in eligible]
 
     @classmethod
-    def from_environment(cls,auth_dir,*,authorization_guard=None,demo_subjects=frozenset()):
+    def from_environment(cls,auth_dir,*,authorization_guard=None,demo_subjects=frozenset(),national_subjects=frozenset()):
         # Keys enter via explicit files or environment; never run security from a
         # request/worker. The Mac operator exports Keychain values privately.
         def secret(name):
@@ -281,7 +294,7 @@ class RealServices:
         budget=AuthorizationBudget(root,authorization_guard=authorization_guard,demo=bool(demo_subjects))
         model=MeteredDashScopeProvider(DashScopeConfig(
             M4_BASE,M4_MODEL,secret('CJ_MODEL_API_KEY'),max_output_tokens=M4_REAL_OUTPUT_TOKENS),budget)
-        return cls(model,secret('CJ_AMAP_WEB_KEY'),subjects,demo_subjects)
+        return cls(model,secret('CJ_AMAP_WEB_KEY'),subjects,demo_subjects,national_subjects)
 
 
 class RealTools:
@@ -308,8 +321,10 @@ class RealTools:
             raise ValueError('explicit code-owned native tool subset required')
         self.names=allowed_native
         self.native_tools=[t for t in TOOLS if t['function']['name'] in allowed_native]
+        self.national_tools=[t for t in NATIONAL_TOOLS if t['function']['name'] in allowed_native]
         model=Registration('model',self._model_input)
         self.registrations=MappingProxyType({'model.answer':model,'model.draft':model,'model.tool_turn':model,
+            'model.lio_intake.1':Registration('model',self._lio_intake_input),
             'tool.lio_city.1':Registration('tool',self._city_input),
             'memory.lio_extract.1':Registration('memory',self._lio_memory_input),
             **{'tool.'+name:Registration('tool',lambda argument,name=name:self._tool_input(name,argument)) for name in {NATIVE_REGISTRATION[n] for n in allowed_native}}})
@@ -339,6 +354,8 @@ class RealTools:
                 budget.begin(operation.command.attempt_id,'place',raw)
                 try:
                     source=fetch_catalog(self.services.amap_key,admitted)
+                    if self.services.amap_key in json.dumps(json.loads(source),ensure_ascii=False):
+                        raise BudgetUnknown('administrative source secret echo rejected')
                     result=resolve(source,frozen['name'],frozen['province'],frozen['normalized_name'])
                     result['source']['observed_at']=datetime.now(timezone.utc).isoformat()
                     encoded=canonical(result)
@@ -354,10 +371,13 @@ class RealTools:
             return invoke
         return InvocationInput(raw,None,bind,_receipt(metadata))
 
+    def _lio_intake_input(self,argument):
+        return self._model_input(argument,national_intake=True)
+
     def _lio_memory_input(self, argument):
         return self._model_input(argument, release_after_send=True)
 
-    def _model_input(self,argument,*,release_after_send=False):
+    def _model_input(self,argument,*,release_after_send=False,national_intake=False):
         native_turn = type(argument) is ModelInput
         if native_turn:
             messages,system,provider=argument.messages,argument.system,argument.provider
@@ -371,13 +391,16 @@ class RealTools:
         if (provider.original if wrapped else provider) is not self.services.model:
             raise BudgetUnknown('M4 model registration mismatch')
         raw=canonical(dict(messages=messages,system=system,endpoint=M4_BASE,model=M4_MODEL,synthetic_only=True,
-                           native_tools=self.native_tools if native_turn else None,
+                           native_tools=(self.national_tools if argument.national else self.native_tools) if native_turn else None,
                            **({'response_mode':'lio-memory-json.1'} if release_after_send else {}),
+                           **({'structured_profile':'LIO-planning-intake.1'} if national_intake else {}),
                            **({'answer_format_profile':'lio-user.1'} if native_turn and argument.lio_answer else {}),
                            **({'native_turn_profile':turn_profile,'external_tools_disabled':final_answer} if native_turn else {})))
         inputs=json.loads(raw);metadata={}
         def bind(operation,guard):
             self.services.require_scope(operation.binding.scope)
+            if national_intake or native_turn and argument.national:
+                self._require_national(operation.binding.scope)
             if turn_profile==M4_NATIVE_TURN_STREAM and operation.binding.scope not in self.streaming_scopes:
                 raise BudgetUnknown('original model streaming subject not admitted')
             def admitted():
@@ -392,28 +415,41 @@ class RealTools:
                         tools=inputs['native_tools'],receipt=metadata,guard=checked,native_reply=native_reply,
                         native_turn_profile=inputs.get('native_turn_profile'),final_answer=inputs.get('external_tools_disabled',False),
                         release_after_send=inputs.get('response_mode')=='lio-memory-json.1',
-                        lio_answer=inputs.get('answer_format_profile')=='lio-user.1')
+                        lio_answer=inputs.get('answer_format_profile')=='lio-user.1',
+                        **({'structured_profile':inputs['structured_profile']} if 'structured_profile' in inputs else {}))
             return invoke
         return InvocationInput(raw,None,bind,_receipt(metadata))
 
+    def _require_national(self,scope):
+        from .local_app import ISSUER,scope_for
+        if scope not in {scope_for(ISSUER,s) for s in self.services.national_subjects}:
+            raise BudgetUnknown('national tools not enabled for this original identity')
+
     def _tool_input(self,name,argument):
-        raw_query,request_ref=argument
-        try:query=decode_query(raw_query) if name=='place' else fact_query(raw_query,evaluated_at=datetime.now(timezone.utc))
+        from .lio_weather import decode_query as city_weather_query
+        raw_query,request_ref,*destination=argument
+        city=destination[0] if destination else None
+        national=city is not None
+        try:query=(decode_query(raw_query) if name=='place' else city_weather_query(raw_query)
+                   if name=='weather' and national else fact_query(raw_query,evaluated_at=datetime.now(timezone.utc)))
         except (ValueError,FactFailure):raise ProviderUnknown('live model tool arguments unavailable') from None
         if name=='place':
-            if type(query) is Search and query.city not in ('北京','beijing','Beijing','110000'):
+            if type(query) is Search and query.city not in ((city.adcode,) if national else ('北京','beijing','Beijing','110000')):
                 raise ProviderUnknown('M4 Beijing query required')
         elif (name=='fact' and (query.fact_key!='entry_notice' or query.region!='China')
-              or name=='weather' and (query.fact_key!='weather' or query.region!='beijing')):
+              or name=='weather' and (query.fact_key!='weather' or query.region!=(city.adcode if national else 'beijing'))):
             raise ProviderUnknown('M4 fixed fact source required')
+        if national and name=='weather' and query.city!=city:raise ProviderUnknown('weather destination differs from original resolution')
         coordinate_route=name=='place' and type(query) is RouteQuery and self.coordinate_routes
         profile='basic-v3-coordinate-route-1' if coordinate_route else 'basic-v3-default-zh'
         original=canonical(dict(name=name,query=json.loads(raw_query),request_ref=request_ref,synthetic_only=True,
-                                place_profile=profile if name=='place' else None))
+                                place_profile=profile if name=='place' else None,
+                                **({'destination_adcode':city.adcode} if national else {})))
         metadata={};budget=self.services.model.authorization
         kind='place' if name=='place' and type(query) in (Search,Detail) else 'route' if name=='place' else name
         def bind(operation,guard):
             self.services.require_scope(operation.binding.scope)
+            if national:self._require_national(operation.binding.scope)
             def admitted():
                 valid=guard()
                 self.services.require_scope(operation.binding.scope)
@@ -434,7 +470,10 @@ class RealTools:
                             endpoint=ORIGIN+request.path;status=parsed.outcome.value
                             metadata['provider_code']=parsed.provider_code
                         elif name=='weather':
-                            outcome=weather(query,self.services.amap_key,guard=checked)
+                            if national:
+                                from cj_fact.live_source import weather_for_adcode
+                                outcome=weather_for_adcode(query,self.services.amap_key,guard=checked)
+                            else:outcome=weather(query,self.services.amap_key,guard=checked)
                             raw=canonical(outcome);endpoint=WEATHER_URL;status=outcome['status']
                         else:
                             outcome=asyncio.run(public_page(guard=checked))
@@ -452,9 +491,13 @@ class RealTools:
             return invoke
         return InvocationInput(original,None,bind,_receipt(metadata))
 
-    def answer(self,worker,binding,messages,*,lio_locale=None,lio_question_day=None):
+    def answer(self,worker,binding,messages,*,lio_locale=None,lio_question_day=None,message_refs=(),lio_city=None):
         self.services.require_scope(binding.scope)
         messages=list(messages);seen=set()
+        city=lio_city
+        from .local_app import ISSUER,scope_for
+        national=lio_locale is not None and binding.scope in {scope_for(ISSUER,s) for s in self.services.national_subjects}
+        tool_limit=MAX_TOOLS_PER_RUN-(1 if national and city is not None else 0)
         system = TOOL_SYSTEM
         weather_day = None
         transit_request = False
@@ -467,8 +510,8 @@ class RealTools:
             today = lio_question_day or datetime.now(ZoneInfo('Asia/Shanghai')).date()
             weather_day = _lio_weather_day(messages[-1]['content'], today)
             tomorrow = today + timedelta(days=1)
-            system += f' In Beijing, today is {today.isoformat()} and tomorrow is {tomorrow.isoformat()}.'
-            system += ' Use Beijing calendar dates for weather. Only cite links supplied as public sources.'
+            system += f' In China, today is {today.isoformat()} and tomorrow is {tomorrow.isoformat()}.'
+            system += (' Use the confirmed destination timezone and administrative code for tools: '+city.name+' '+city.adcode+'.' if city is not None else ' Use Beijing calendar dates for legacy weather.' if not national else ' No destination is confirmed. Do not call place or weather tools; ask for the destination first.')+' Only cite links supplied as public sources.'
             transit_request = _lio_transit_request(messages)
             if transit_request:
                 system += ' For current visa-free transit policy use the official entry notice before making policy claims.'
@@ -482,12 +525,13 @@ class RealTools:
         turns=5 if controlled else 8
         transit_evidence = False
         for round_index in range(turns):
-            worker._model_history(binding,messages,system)
+            if message_refs:worker._model_history(binding,messages,system,message_refs=message_refs)
+            else:worker._model_history(binding,messages,system)
             native_reply={}
             chunks=worker._registered_stream(binding,'model.tool_turn.'+str(round_index),'model.tool_turn',
                 ModelInput(messages,system,worker.provider,native_reply,
-                    final_answer=round_index==turns-1 or len(seen)==MAX_TOOLS_PER_RUN,turn_profile=profile,
-                    lio_answer=lio_locale is not None))
+                    final_answer=round_index==turns-1 or len(seen)==tool_limit,turn_profile=profile,
+                    lio_answer=lio_locale is not None,national=national))
             if incremental:
                 raw=None
                 saw_answer = False
@@ -512,7 +556,7 @@ class RealTools:
                 answer = turn.answer_zh if chinese else turn.answer_en
                 yield _lio_transit_answer(chinese, transit_evidence) if transit_request or transit_evidence else answer
                 return
-            if len(seen)+len(turn.calls)>MAX_TOOLS_PER_RUN:
+            if len(seen)+len(turn.calls)>tool_limit:
                 raise ProviderFailed('M4 per-run tool limit reached')
             assistant=native_reply['assistant']
             messages.append(assistant)
@@ -520,19 +564,24 @@ class RealTools:
             for index,call in enumerate(turn.calls):
                 key='tool.'+str(round_index)+'.'+str(index)
                 ref='op-'+hashlib.sha256((binding.run_id+'\0'+key).encode()).hexdigest()
-                name,arguments=canonical_tool(call.name,call.arguments)
+                if national and city is None and call.name not in ('fact',):
+                    raise ProviderUnknown('original destination must be confirmed before this tool')
+                name,arguments=canonical_tool(call.name,call.arguments,city=city if national else None)
                 if name == 'weather' and weather_day is not None:
-                    arguments = _weather_arguments_for_day(arguments, weather_day)
+                    if national:
+                        from .lio_weather import encode_query
+                        arguments=encode_query(city,weather_day.isoformat(),weather_day.isoformat())
+                    else:arguments = _weather_arguments_for_day(arguments, weather_day)
                 original_query=(name,arguments)
                 if original_query in seen:raise ProviderFailed('M4 original tool query already dispatched; no repeat')
                 seen.add(original_query)
                 if lio_locale is None:
-                    result=''.join(worker._registered_stream(binding,key,'tool.'+name,(arguments,ref)))
+                    result=''.join(worker._registered_stream(binding,key,'tool.'+name,(arguments,ref,city) if national and city is not None else (arguments,ref)))
                 else:
                     activity = {'place':'checking_places', 'weather':'checking_weather',
                                 'fact':'checking_travel_information'}[name]
                     pieces = []
-                    with closing(worker._registered_stream(binding,key,'tool.'+name,(arguments,ref),
+                    with closing(worker._registered_stream(binding,key,'tool.'+name,(arguments,ref,city) if national and city is not None else (arguments,ref),
                                                            progress=LioToolProgress(key, activity))) as stream:
                         for part in stream:
                             if isinstance(part, LioToolProgress):

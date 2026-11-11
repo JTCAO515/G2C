@@ -90,7 +90,7 @@ def _run_worker(runtime, *, tool_evidence=None):
     # Missing transferred journal is a configuration failure, never a new quota.
     if not (Path.home()/'.local/share/g2c/m4-real-services/m4-outflows.sqlite').is_file():
         raise ValueError('original_shared_authorization_journal_required')
-    services=RealServices.from_environment(runtime.auth,authorization_guard=authorization,demo_subjects=runtime.demo_subjects)
+    services=RealServices.from_environment(runtime.auth,authorization_guard=authorization,demo_subjects=runtime.demo_subjects,national_subjects=runtime.demo_subjects)
     with services.model.authorization.connect() as journal:services.model.authorization.require_producer(journal)
     probe=os.environ.get(ASSEMBLY_PROBE_MESSAGE)
     binding=None

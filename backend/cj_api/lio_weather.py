@@ -48,6 +48,10 @@ def decode_query(raw):
   for key in ('name','province','timezone'):
    if type(city[key]) is not str or not city[key] or len(city[key].encode())>256:
     raise ValueError('original city metadata required')
+  if city['parent_city'] is not None and (type(city['parent_city']) is not str or not city['parent_city'] or len(city['parent_city'].encode())>256):
+   raise ValueError('bounded parent city required')
+  from zoneinfo import ZoneInfo
+  ZoneInfo(city['timezone'])
   if city['level'] not in ('province','city','district'):raise ValueError('administrative destination level required')
   dates=value['dates']
   if type(dates) is not dict or dates.keys()!={'start','end'}:raise ValueError('explicit forecast dates required')
