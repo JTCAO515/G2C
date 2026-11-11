@@ -1,4 +1,5 @@
 """Explicit local structured discovery; original AUTH/operation/repository only."""
+from cj_strict_json import compact
 import json
 import os
 import re
@@ -78,7 +79,7 @@ def register_local_structured_read_routes(app,*,database,auth_dir,max_response_b
                     result['trips']=[summary(trip,content) for trip in scanned if (content:=structured(trip)) is not None]
                     # Cursor counts scanned formal records, including legacy ones.
                     result['next_after']=scanned[-1].trip_id if len(scanned)==limit else None
-                raw=json.dumps(result,ensure_ascii=False,separators=(',',':'),allow_nan=False).encode()
+                raw=compact(result)
                 if len(raw)>max_response_bytes:raise Denied('private response too large')
                 return raw
             return boundary.with_operation(token,encode)

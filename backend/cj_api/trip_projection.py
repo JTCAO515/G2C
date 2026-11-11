@@ -28,8 +28,6 @@ def parse_action(raw, domain):
 
 
 def receipt_projection(value, domain):
-    if type(value) is not domain.Receipt:
-        raise ValueError('Invalid internal Trip action receipt')
     if ((value.kind=='accept' and value.committed_version is None)
             or (value.kind=='reject' and value.committed_version is not None)):
         raise ValueError('Invalid receipt action/version relationship')
@@ -59,8 +57,6 @@ def content_projection(raw, domain, source_view=False, *, source_validated=False
 
 
 def trip_projection(value, domain, source_view=False):
-    if type(value) is not domain.Trip:
-        raise ValueError('Invalid internal Trip')
     document,encoded=content_projection(value.content,domain,source_view)
     model = SourceTripRecord if source_view else TripRecord
     return model.model_validate_json(json.dumps({'trip_id':value.trip_id,'version':value.version,
@@ -68,8 +64,6 @@ def trip_projection(value, domain, source_view=False):
 
 
 def proposal_projection(value, domain, source_view=False):
-    if type(value) is not domain.ProposalDetail or type(value.proposal) is not domain.Proposal:
-        raise ValueError('Invalid public proposal snapshot')
     proposal=value.proposal
     document,encoded=content_projection(proposal.content,domain,source_view,source_validated=True)
     # Digest belongs to producer's authenticated scope. Never reconstruct it from

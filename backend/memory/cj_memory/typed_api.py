@@ -1,4 +1,5 @@
 """Local typed MEMORY API; canonical AUTH/operation and B-owned current leases."""
+from cj_strict_json import compact
 import json
 from datetime import datetime,timezone
 from pathlib import Path
@@ -121,8 +122,7 @@ def _register_typed_routes(app,*,database,auth_dir,configuration,max_body_bytes,
         elif kind=='detail':result={'item':None if value is None else private_item(value)}
         elif kind=='list':result={'items':[private_item(item) for item in value]}
         else:raise ValueError('unsupported typed projection')
-        raw=json.dumps(dict(version='MEMORY-result.2',request_id=request.state.request_id,**result),
-                       ensure_ascii=False,separators=(',',':')).encode()
+        raw=compact(dict(version='MEMORY-result.2',request_id=request.state.request_id,**result), allow_nan=True)
         models={'save':MemorySaveV2Response,'query':MemoryReceiptV2Response,'detail':MemoryDetailV2Response,
                 'list':MemoryListV2Response,'manage':MemoryManagementApplyV2Response,
                 'withdraw':MemoryManagementApplyV2Response,'management_query':MemoryManagementReceiptV2Response}

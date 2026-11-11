@@ -4,7 +4,7 @@ from dataclasses import dataclass,replace
 from hashlib import sha256
 import json,time
 from cj_message.edit_protocol import PUBLISHER_ABI,PreparedEdit,EditConfiguration
-from cj_api.local_app import LocalDatabase,scope_for,ISSUER,AUDIENCE
+from cj_api.local_app import LocalDatabase,needs_lease_resolver,ISSUER,AUDIENCE
 from cj_api.local_needs import protected_reader
 from cj_needs.revision_lease import RevisionLease
 from cj_message.needs_binding import needs_scope_for
@@ -43,10 +43,7 @@ class ScopedPublisher:
         if language not in ('zh-Hans','en'):raise ValueError('explicit prompt language required')
         self.database,self.checker,self.credentials,self.memory=database,checker,credentials,memory
         self.confirmation,self.limits,self.language,self.clock=confirmation,limits,language,clock
-        def resolve_owner(principal):
-            owner=scope_for(principal.issuer,principal.subject)
-            return lambda:database.connect(owner),owner,needs_scope_for(owner)
-        self.needs_lease=RevisionLease(checker,resolve_owner,environment='local',issuer=ISSUER,audience=AUDIENCE)
+        self.needs_lease=RevisionLease(checker,needs_lease_resolver(database),environment='local',issuer=ISSUER,audience=AUDIENCE)
 
     def repository(self,owner):return Repository(lambda:self.database.connect(owner),trip_scope_for(owner),self.confirmation,structured=True)
 

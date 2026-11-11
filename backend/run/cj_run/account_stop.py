@@ -1,9 +1,10 @@
 """ACCOUNT-TASK-STOP@1: revoke publication and observe original worker ownership."""
-import hashlib,json,uuid
+from cj_strict_json import compact
+import hashlib,uuid
 
 
 def worker_key(chat):
-    raw=b'CJ-RUN-WORKER-LEASE@1\0'+json.dumps(chat,ensure_ascii=False,separators=(',',':')).encode()
+    raw=b'CJ-RUN-WORKER-LEASE@1\0'+compact(chat, allow_nan=True)
     value=int.from_bytes(hashlib.sha256(raw).digest()[:8],'big')
     return value if value<1<<63 else value-(1<<64)
 
