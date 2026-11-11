@@ -51,3 +51,9 @@ UNKNOWN保留原RUN语义；界面已显示failed/unavailable，但不能据此�
 C观察端preflight-r01（文件权限假设）与r02（只读Trip漏参）失败分别留存，新r03/r04通过；它们均无业务POST，不计入16轨迹。Memory响应request_id变动只属响应元数据；正式派发前修正比较完整items/version，旧程序和摘要保留。本次业务RUN UNKNOWN已由独立原账/原件读回，不因修观察器自动续派。
 
 下一步由B完成#822原因核查和修复，履行精确head审查/CI、同源部署，再明确交新阶段/正式窗口；本ec阶段原UNKNOWN、费用与16分母保留，不换ID补当前批。全国全部16轨迹认证PASS后，才另申请#32六格；六格全过后才正式66→JT审阅→#6。This report is a stopped acceptance batch, not product release approval.
+
+### B后续确认 / Subsequent B finding
+
+B在#823确认：本次913字节返回正文未持久，无法从原attempt恢复；原RUN UNKNOWN及费用不改。后续独立追加`G2C-lio-intake-evidence.1`与固定诊断码只是观测前置，未改validator或业务逻辑，不构成#822已修复。若需要新的不同诊断题/ID，由B独立登记，不替换C这16条或重放本MID；C仍STOP_NEW。原analysis-r01按当时证据保留，后续诊断单列。
+
+原national-01窗口随后已由B正式CLOSED，关闭原件核同仍为唯一上述RUN UNKNOWN、唯一1模型、账本1098；89个未提交消息与16个undo不作补派。关闭proof SHA `9a63b86bbc0c2a7837177b70d12306d6c1f7056d3c618830e1805d609565505f`。到点或B新独立诊断均不会重新授权本窗口。

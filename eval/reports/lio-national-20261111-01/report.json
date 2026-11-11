@@ -360,5 +360,33 @@
       "status": "PASS",
       "reason": "Actual ACTIVE readonly precheck, six GET200, no business dispatch"
     }
-  ]
+  ],
+  "followups": [
+    {
+      "owner_issue": "https://github.com/JTCAO515/G2C/issues/823",
+      "fact": "B confirmed original913-byte model text was not persisted and cannot be reconstructed from the original attempt.",
+      "observability_contract": "G2C-lio-intake-evidence.1",
+      "observability_is_business_fix": false,
+      "original_UNKNOWN_retained": true,
+      "diagnostic_questions_are_separate_from_C16": true
+    }
+  ],
+  "terminal_window_state": "CLOSED",
+  "closure": {
+    "version": "C-national-closure.1",
+    "window_state": "CLOSED",
+    "source": "ec7269cf49fb59ce4c7faa9d3fce2242cb231c36",
+    "only_original_run": "b5cebd0c-a86f-481f-8708-a778d7a2c017",
+    "original_run_status": "unknown",
+    "business_posts": 1,
+    "registered_model_attempts": 1,
+    "selected_message_total": 90,
+    "unsubmitted_selected_messages": 89,
+    "proof_sha256": "9a63b86bbc0c2a7837177b70d12306d6c1f7056d3c618830e1805d609565505f",
+    "window_sha256": "dcf2aaa992689e92399f2da6e6ff8846dd5d73407aab789126a38b40a9980c78",
+    "ledger": {
+      "count": 1098,
+      "sha256": "7ef48d05b8c0ef41da0fcad913619099c04eaaa00d7f5513a1f9cb114260c63f"
+    }
+  }
 }
