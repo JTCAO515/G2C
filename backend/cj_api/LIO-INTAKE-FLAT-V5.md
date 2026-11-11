@@ -19,6 +19,17 @@ missing keys, extra keys, bool-as-int, numeric/date string conversions and old
 versions are rejected. A malformed older response is not a flat DTO and cannot
 be upgraded or repaired.
 
+The B06 real second response used `applies_to: ["day-1"]`. Original NEEDS
+participant validation rejected it, leaving that original RUN UNKNOWN with no
+write. The published flat schema now expresses the same existing participant
+grammar: `self`, `party`, or `companion:<existing local id>`, for fixed items and
+temporary conditions. No day index is a participant; the host does not translate
+an invalid value. Booking/clarification/same-day range descriptions explain the
+existing source guards without changing them. A fixed hotel meetup is not a
+reservation, redundant primary-quote details do not need later detail refs, and
+a single dated clock range has the same start and end date. The B06 original,
+its fee and the two unsent steps remain separate from any later new-source run.
+
 ## Nullable values
 
 Core start_date/party_size and each fixed date/time/place/zone/lock/booking value
