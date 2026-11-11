@@ -4,8 +4,8 @@
     "dev-local-edit": {
       "good": {
         "text": {
-          "zh": "已将第二天下午改为天坛，酒店大堂见面和其他安排都保留。",
-          "en": "Day 2 afternoon is now Temple of Heaven. The hotel lobby meeting and other arrangements are kept."
+          "zh": "已将第二天下午改为天坛，酒店集合和其他安排都保留。",
+          "en": "Day 2 afternoon is now Temple of Heaven. The hotel meetup and other arrangements are kept."
         },
         "state": {
           "formal_trip_count": 1,
@@ -46,8 +46,8 @@
       },
       "bad": {
         "text": {
-          "zh": "已把第一天上午换成天坛，第二天下午还是景山公园。",
-          "en": "I replaced day 1 morning with Temple of Heaven and kept Jingshan Park on day 2 afternoon."
+          "zh": "已把第一天上午换成天坛，第二天下午的安排未变。",
+          "en": "I replaced day 1 morning with Temple of Heaven and left day 2 afternoon unchanged."
         },
         "state": {
           "formal_trip_count": 1,
