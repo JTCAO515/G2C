@@ -416,7 +416,7 @@ class RealTools:
                         release_after_send=inputs.get('response_mode')=='lio-memory-json.1',
                         lio_answer=inputs.get('answer_format_profile')=='lio-user.1',
                         **({'structured_profile':inputs['structured_profile']} if 'structured_profile' in inputs else {}))
-                    if national_intake and self.tool_evidence is not None:
+                    if national_intake and self.tool_evidence is not None and self.tool_evidence.intake_enabled:
                         result=''.join(stream)
                         if checked() is not True:raise BudgetUnknown('original intake evidence authority changed')
                         self.tool_evidence.record_intake(operation,result.encode('utf-8'),metadata)

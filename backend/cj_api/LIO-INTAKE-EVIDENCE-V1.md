@@ -13,7 +13,10 @@ It cannot reconstruct an earlier output that was never captured.
 
 There is no new public API, role, credential, database table, quota or financial
 journal. Capture is default off and reuses the existing operator-selected private
-synthetic-window manifest. Only a selected national-intake operation with a
+synthetic-window selection. The frozen tool-only window.1 does not enable model
+collection. Operators must explicitly use G2C-synthetic-evidence-window.2 with
+kinds:["lio_intake"] (or also "tool"); absent/unknown/duplicate kinds fail closed.
+Only a selected national-intake operation with a
 complete original supplier receipt can produce it. It runs before the intake
 parser and after the original provider exit, under the same worker execution and
 Memory fence. Revocation/cancellation/erasure/expiry prevent publication, without
