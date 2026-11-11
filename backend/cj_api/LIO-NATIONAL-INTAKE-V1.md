@@ -20,18 +20,29 @@ City is null or `{query,normalized_name,province,source_index,quote}`. Query equ
 the original destination quote. Every known field has original indexed source
 quotes; original per-message China question dates bind relative language. The
 server validates NEEDS types, calendar dates, participant references and duration,
-then derives the end date from the sourced start and duration. It supplies the
+then derives the end date from the sourced start and duration. Explicit ISO dates
+and today/tomorrow/day-after-tomorrow are checked against their particular
+original quote and original question day. Province hints must occur affirmatively
+in original traveler text; a later denial revokes an earlier affirmation. It supplies the
 confirmed city and timezone itself. Missing start/end, party or fixed-item details
-produce a question, without a Trip write. A changed city cannot inherit an earlier
+produce a question, without a Trip write. Fixed declaration spans must all be
+covered, including multiple commitments in one sentence. Their original dates,
+clock ranges, participants and locks are compared independently of the model
+clarification list; unverifiable values remain a question. Item-specific
+`fixed_items.N` source quotes keep different commitments separate. A changed city cannot inherit an earlier
 city's date evidence. Refusal, conditional/draft-only/discussion/cancel language
 wins over a model's proposed publication intent. A date-only answer can continue
 an outstanding positive request, but cannot recreate authority after discussion
 or a completed publication. All retained message refs join the existing Memory
-history fence before model dispatch.
+history fence before model dispatch. A directly answered consultation retains
+the original extract/complete/publish order for optional Memory candidates;
+only the explicit Remember action saves a preference.
 
 The model intake is registered as `model.lio_intake.1`. Its source record names the
 profile, actual endpoint/model and prompt. It uses the already configured output
-ceiling (Hong Kong 1536 tokens); it does not raise model, RUN or shared limits.
+ceiling (Hong Kong 1536 tokens); it does not raise model, RUN or shared limits. Administrative HTTP uses the existing
+narrow Amap TLS/framing reader, with no URL logger or automatic retry; premature
+EOF remains the original UNKNOWN and aborts the single connection.
 
 ## Administrative and weather sources
 
@@ -67,7 +78,13 @@ Both planning and conversational edit explicitly select C's
 timezones, known fixed commitments, original Trip head, locks, signature and
 publication fences remain mandatory. Undo follows the original action target,
 creates a new version, and keeps history. New city/period input cannot silently
-remove an existing Trip's commitments.
+remove an existing Trip's commitments. Replanning compares the adcode from the
+original resolved source bound to the exact captured NEEDS revision, including
+after edit or undo; equal district names do not establish equal destinations.
+A different or unprovable destination asks for a new conversation before
+registering new NEEDS. The legacy Beijing producer has only its known Beijing
+compatibility mapping. Unquoted national edit labels are separately selected;
+the unselected legacy parser and its original negative examples remain intact.
 
 `CJ_ENV=local python -B scripts/hk_lio_national_local_check.py` runs twelve signed
 private PG chains (six cities, both languages), original registered provider/tool
