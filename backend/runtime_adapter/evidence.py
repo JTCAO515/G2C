@@ -48,6 +48,7 @@ def check_snapshot(raw, *, request, binding, pins, original):
             action.get('client_step_id') == request['step_id'] and
             action.get('request_sha256') == digest(request) and
             action.get('message_id') == s['message_id'] and action.get('action_id') == s['action_id'] and
+            action.get('status') == s['status'] and
             action.get('run_ids') == s['run_ids'] and action.get('inventory') == s['inventory'] and
             action.get('result') == s['result'] and action.get('state_evidence') == s['state_evidence'],
             'ACTION_ORIGINAL_MISMATCH')
@@ -75,6 +76,10 @@ def check_snapshot(raw, *, request, binding, pins, original):
         meter = decode(read(op['meter']))
         require(type(meter) is dict and meter.get('attempt_id') == op['attempt_id'] and
                 meter.get('operation_id') == op['operation_id'] and
+                meter.get('run_id') == op['run_id'] and meter.get('registration_id') == op['registration_id'] and
+                meter.get('kind') == op['kind'] and meter.get('input_sha256') == op['input']['sha256'] and
+                'output_sha256' in meter and meter['output_sha256'] ==
+                (None if op['output'] is None else reference(op['output'])['sha256']) and
                 meter.get('binding_sha256') == binding.key and
                 meter.get('status') == op['meter_state'], 'METER_ORIGINAL_MISMATCH')
         if op['provider_state'] == 'NOT_SENT':
@@ -92,6 +97,8 @@ def check_snapshot(raw, *, request, binding, pins, original):
                         provider.get('input_sha256') == op['input']['sha256'] and
                         op['output'] is not None and provider.get('response_sha256') == op['output']['sha256'],
                         'PROVIDER_ORIGINAL_MISMATCH')
+                if op['kind'] in ('model', 'memory'):
+                    require(encode(provider.get('model')) == encode(op['model']), 'PROVIDER_MODEL_ORIGINAL_MISMATCH')
                 read(op['output'])
             else:
                 require(op['provider'] is None, 'INTENT_MUST_NOT_INVENT_RECEIPT')

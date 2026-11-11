@@ -94,8 +94,12 @@ class LocalBackend:
                 registration_id='model.runtime_reflection.1' if request['kind']=='reflection' else 'model.tool_turn',
                 kind='model', input=original, output=output,
                 meter=self.proof(dict(attempt_id=aid, operation_id=opid, binding_sha256=self.current.key,
+                                      run_id=run_ids[0], kind='model',
+                                      registration_id='model.runtime_reflection.1' if request['kind']=='reflection' else 'model.tool_turn',
+                                      input_sha256=original['sha256'], output_sha256=output['sha256'],
                                       status='SETTLED')),
                 provider=None if self.unsettled else self.proof(dict(attempt_id=aid,
+                    model=self.frozen.value['model'],
                     input_sha256=original['sha256'], response_sha256=output['sha256'])),
                 fee=self.proof(dict(attempt_id=aid, ledger_id=self.current.ledger_id,
                                     state='INTENT' if self.unsettled else 'RECEIVED')),
@@ -105,7 +109,10 @@ class LocalBackend:
         if request['kind']=='start_controlled_generation': status='RUNNING'
         if request['kind']=='cancel_original_run':
             for prior in self.snapshots.values():
-                if prior['status'] == 'RUNNING': prior['status'] = 'CANCELLED'
+                if prior['status'] == 'RUNNING':
+                    prior['status'] = 'CANCELLED'
+                    prior_request = next(row for row in self.sent if row['step_id'] == prior['step_id'])
+                    self.bind_action(prior, prior_request)
         result = operations[-1]['output'] if operations else None
         snapshot = dict(version=VERSION, attempt_id=request['attempt_id'], step_id=sid,
             request_sha256=digest(request), binding_sha256=self.current.key, pins_sha256=self.frozen.key,
@@ -123,7 +130,7 @@ class LocalBackend:
     def bind_action(self, snapshot, request):
         snapshot['action'] = self.proof(dict(binding_sha256=self.current.key,
             client_step_id=request['step_id'], request_sha256=digest(request),
-            **{key: snapshot[key] for key in ('message_id', 'action_id', 'run_ids',
+            **{key: snapshot[key] for key in ('status', 'message_id', 'action_id', 'run_ids',
                                              'inventory', 'result', 'state_evidence')}))
 
     def inspect(self, attempt_id, step_id, *, deadline):
@@ -356,6 +363,43 @@ def test_reflection_result_must_be_the_unique_original_provider_output(local):
     backend.bind_action(current, request)
     assert adapter.query('reflect')['status'] == 'UNKNOWN'
     assert len(backend.sent) == 1
+
+
+def test_original_failure_cannot_be_relabelled_as_pass_to_continue(local):
+    adapter, backend = local
+    dispatch = backend.dispatch
+    def rejected_original(raw, **kwargs):
+        dispatch(raw, **kwargs)
+        request = decode(raw)
+        current = backend.snapshots[request['step_id']]
+        current['status'] = 'FAIL'
+        backend.bind_action(current, request)
+        current['status'] = 'PASS'  # corrupt collector summary, original still FAIL
+    backend.dispatch = rejected_original
+    assert call(adapter, task='dev-local-edit')['status'] == 'UNKNOWN'
+    assert len(backend.sent) == 1
+    assert adapter.query('task-1')['status'] == 'UNKNOWN'
+
+
+@pytest.mark.parametrize('field', ['run_id', 'registration_id', 'kind', 'input', 'output', 'model'])
+def test_operation_metadata_and_model_are_bound_to_original_receipts(local, field):
+    adapter, backend = local
+    call(adapter)
+    current = backend.snapshots[backend.sent[-1]['step_id']]
+    operation = current['operations'][0]
+    if field == 'kind':
+        operation.update(kind='tool', registration_id='tool.different.1', model=None)
+    elif field == 'run_id': operation[field] = backend.sent[0]['step_id']
+    elif field == 'registration_id': operation[field] = 'model.some_other.1'
+    elif field in ('input', 'output'): operation[field] = backend.proof({'other': 'valid bytes'})
+    else:
+        # The envelope model matches Pins but the protected provider original
+        # reports different actual parameters; the summary cannot override it.
+        original = decode(backend.proofs[operation['provider']['ref']])
+        original['model']['parameters']['enable_thinking'] = True
+        operation['provider'] = backend.proof(original)
+    assert adapter.query('task-1')['status'] == 'UNKNOWN'
+    assert len(backend.sent) == 2
 
 
 def test_model_json_boolean_cannot_be_substituted_with_integer(local):

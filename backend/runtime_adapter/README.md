@@ -149,7 +149,8 @@ provider INTENT、未settle Meter、缺回执、找不到原件、坏hash或未�
 - 顶层：version、attempt_id、step_id、request_sha256、binding_sha256、pins_sha256、
   status、实际message_id/run_ids/action_id、action/inventory/result/state_evidence引用和operations。
 - action原件映射绑定client_step_id、request_sha256、原身份及实际message/action ID、完整run_ids，
-  以及inventory/result/state_evidence的原引用，不能串用同owner另一动作的RUN或状态。
+  生命周期status及inventory/result/state_evidence的原引用，不能串用同owner另一动作的RUN或状态，
+  也不能把原FAIL/CANCELLED改成PASS来继续后续步骤。
 - inventory原件映射独立绑定client_step_id、request_sha256、message/action ID、原身份、
   完整run_ids、有序完整operation_ids。由原存储关联枚举，不能信任客户端声明的RUN集合。
   action/inventory必须由B受保护的原client-step持久关联（或可核来源的只读映射）生成；
@@ -157,8 +158,11 @@ provider INTENT、未settle Meter、缺回执、找不到原件、坏hash或未�
 - 每operation：原operation_id/attempt_id/run_id/registration_id/kind、input/output/meter/provider/fee
   引用、provider_state/meter_state/fee_state和实际model配置。model/memory必须匹配模型pin。
 - 引用为 `{ref:<B opaque original>, sha256:<原字节>}`，解析器不支持任意URL或本机文件路径。
-  Meter映射绑定attempt/operation/owner/status，fee映射绑定原attempt/ledger/state，provider映射绑定
-  原attempt及输入/输出hash。INTENT不能伪造已收到回执，NOT_SENT不制造provider/fee回执。
+  Meter/原注册操作的只读关联映射绑定attempt/operation/run/registration/kind、input_sha256、
+  output_sha256（缺输出显式null）及owner/status；不能改kind/registration绕过模型pin。
+  fee映射绑定原attempt/ledger/state，provider映射绑定原attempt、输入/输出hash，model/memory还须
+  绑定实际model描述（原准备输入/实际provider回执所得，不抄待验envelope）。
+  INTENT不能伪造已收到回执，NOT_SENT不制造provider/fee回执。
 - reflection的output必须是原RegisteredExit流最终文本的原字节，provider回执映射绑定该输出hash；
   result必须与该唯一模型output为同一字节hash，再严格解析JSON。不能将另一份合法槽文本替作结果。
 - response缺失为null，不填空JSON或0费用。正式状态/全部Trip历史、undo_target、实际上下文/续接
