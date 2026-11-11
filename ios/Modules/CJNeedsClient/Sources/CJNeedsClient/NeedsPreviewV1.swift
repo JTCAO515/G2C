@@ -70,7 +70,9 @@ public struct NeedsPreviewV1: Sendable {
         guard try same(text(source["message_id"]), messageID), try same(text(source["run_id"]), runID),
               let original = Data(base64Encoded: base64), original.base64EncodedString() == base64,
               original == sourceTextUTF8, try same(text(source["text_sha256"]), digest) else { throw NeedsFailure.invalidResponse }
-        let fieldsBytes = try JSONSerialization.data(withJSONObject: root["fields"]!)
+        // JSONSerialization raises an uncatchable exception for a non-container root.
+        guard let wireFields = root["fields"] as? [String: Any] else { throw NeedsFailure.invalidResponse }
+        let fieldsBytes = try JSONSerialization.data(withJSONObject: wireFields)
         let fields = try JSONDecoder().decode(NeedsSchema.NeedsFields.self, from: fieldsBytes)
         try validateFields(fields, complete: true)
         if case .NeedsPartySizeObservationKnown(let value) = fields.party_size {

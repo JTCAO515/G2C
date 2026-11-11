@@ -1,7 +1,7 @@
 """RUN-owned immutable local step association. No provider dispatch authority."""
+from cj_strict_json import compact
 from dataclasses import dataclass
 import hashlib
-import json
 import uuid
 from cj_usage.core import Command, Config
 from .core import Denied
@@ -13,8 +13,7 @@ class OriginalStepOnly(Exception):
 
 
 def ledger_scope_for(message_scope, config):
-    raw=json.dumps([message_scope,config.unit,config.period_start,config.period_end],
-                   ensure_ascii=False,separators=(',',':')).encode('utf-8')
+    raw=compact([message_scope,config.unit,config.period_start,config.period_end], allow_nan=True)
     return 'u'+hashlib.sha256(raw).hexdigest()
 
 

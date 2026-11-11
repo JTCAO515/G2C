@@ -3,6 +3,7 @@
 The repository is supplied by canonical MESSAGE Boundary. No caller scope,
 credentials, Trip, conversation selection or memory facts are accepted here.
 """
+from cj_strict_json import compact
 from dataclasses import dataclass
 from contextlib import contextmanager
 from datetime import datetime
@@ -83,9 +84,9 @@ class ActionReceipt:
 
     @classmethod
     def build(cls, action, context):
-        raw = json.dumps(dict(version='TRAVEL-context-receipt.1', action_id=action.action_id,
+        raw = compact(dict(version='TRAVEL-context-receipt.1', action_id=action.action_id,
             operation=action.operation, travel_context=dict(id=context.id,
-            version=context.version, active=context.active)), separators=(',', ':')).encode()
+            version=context.version, active=context.active)), ensure_ascii=True, allow_nan=True)
         return cls(action.action_id, action.operation, context, raw)
 
 

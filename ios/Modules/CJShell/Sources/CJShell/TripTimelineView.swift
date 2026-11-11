@@ -111,14 +111,7 @@ struct TripTimelineView: View {
     private func event(_ value:StructuredTripEvent) -> String {
         [value.date,value.time,value.timezone,value.utcOffset].map(observation).joined(separator:" · ")
     }
-    private func observation(_ value:TripObservation<String>) -> String {
-        switch value {
-        case .known(let text): text
-        case .missing: language.text("Explicitly missing","明确缺失")
-        case .unknown: language.text("Unknown","未知")
-        case .uncertain(let note): language.text("Uncertain: ","不确定：")+note
-        }
-    }
+    private func observation(_ value:TripObservation<String>) -> String { tripObservationText(value,language:language) }
     private func span(_ value:TripTimelineSpan) -> String {
         switch value {
         case .sameLocalDay: language.text("Same declared local day","声明为同一当地日期")

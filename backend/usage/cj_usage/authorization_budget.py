@@ -5,6 +5,7 @@ Complete, priceable receipts use public list prices. Unresolved attempts retain
 their original hold, and a new attempt must fit its full hold before dispatch.
 The operator keeps this journal across releases/restores, outside database dumps.
 """
+from cj_strict_json import compact
 from contextlib import contextmanager,nullcontext
 from datetime import datetime
 import hashlib
@@ -51,7 +52,7 @@ HK_ANCHOR=Path('/control/budget/adoption.json')
 
 
 def canonical(value):
-    return json.dumps(value,ensure_ascii=False,sort_keys=True,separators=(',',':'),allow_nan=False).encode('utf8')
+    return compact(value, sort_keys=True)
 
 
 def journal_state(db):

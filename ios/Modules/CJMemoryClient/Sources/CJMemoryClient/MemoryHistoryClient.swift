@@ -61,7 +61,7 @@ struct MemoryHistoryRead: Sendable {
          pendingStore: MemoryHistoryPendingStore, interceptedTransport: any ClientTransport) {
         self.endpoint = endpoint; self.credentials = credentials; self.currentBinding = currentBinding
         self.currentConversation = currentConversation; store = pendingStore
-        factory = { validate in HistoryInterceptedTransport(underlying: interceptedTransport, validate: validate) }
+        factory = { validate in MemoryInterceptedTransport(underlying: interceptedTransport, validate: validate) }
         session = nil; sessionOperation = nil; intercepted = true
     }
     public func invalidate() { generation = UUID(); reading = [:]; availableReads = [:] }
@@ -251,19 +251,5 @@ private struct HistoryHTTPResult {
         let code = try historyString(error["code"], limit: 96)
         guard code.utf8.allSatisfy({ (65...90).contains($0) || (48...57).contains($0) || $0 == 95 }) else { throw MemoryFailure.invalidResponse }
         return (code, try historyString(error["recovery"], limit: 64), try historyString(error["outcome"], limit: 32))
-    }
-}
-
-/// Internal non-network seam mirrors the canonical live exit's last validator.
-private struct HistoryInterceptedTransport: ClientTransport {
-    let underlying: any ClientTransport
-    let validate: @MainActor @Sendable () throws -> Void
-    func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
-        let bytes: Data?
-        if let body { bytes = try await Data(collecting: body, upTo: 32768) } else { bytes = nil }
-        try await validate(); try Task.checkCancellation()
-        let value = try await underlying.send(request, body: bytes.map(HTTPBody.init), baseURL: baseURL, operationID: operationID)
-        try await validate(); try Task.checkCancellation()
-        return value
     }
 }

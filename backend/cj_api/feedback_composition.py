@@ -1,6 +1,6 @@
 """Fixed FEEDBACK + optional concrete MESSAGE/RUN reads, one canonical checker."""
 from dataclasses import dataclass
-from .composition import CompositionUnavailable,_internal_modules
+from .composition import CompositionUnavailable,_internal_modules,_strict_admission_checker
 
 @dataclass(frozen=True)
 class FeedbackWireConfiguration:
@@ -22,10 +22,8 @@ def build_feedback_boundary(*,environment,jwt_configuration,verification_keys,ac
                             resolve_message_repository=None,resolve_run=None,scope_binder=None,scope_current=None):
     if environment!='local' or None in (resolve,verification_keys,access_provider):
         raise CompositionUnavailable('Explicit local FEEDBACK AUTH/resolver required')
-    modules=_internal_modules('feedback');auth=modules['cj_auth.jwt_adapter']
-    if not isinstance(jwt_configuration,auth.JWTConfiguration) or jwt_configuration.profile is not auth.JWTProfile.STRICT_V1:
-        raise CompositionUnavailable('Fixed strict AUTH profile required')
-    checker=modules['cj_auth.admission'].AdmissionChecker(auth.PyJWTVerifier(jwt_configuration,verification_keys),access_provider)
+    modules=_internal_modules('feedback')
+    checker=_strict_admission_checker(modules,jwt_configuration,verification_keys,access_provider)
     sources=None
     if resolve_message_repository is not None or resolve_run is not None:
         if resolve_message_repository is None or resolve_run is None:

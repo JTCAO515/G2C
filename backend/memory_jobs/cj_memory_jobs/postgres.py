@@ -3,6 +3,7 @@
 No identity resolver, alternate AUTH, role switch, model call or automatic retry.
 Schema/registry/cleanup/runtime integration remain unactivated until their PR.
 """
+from cj_strict_json import compact
 from dataclasses import asdict, dataclass
 from hashlib import sha256
 import json
@@ -13,8 +14,7 @@ from . import lio_batch
 
 
 def encode(value):
-    return json.dumps(value, ensure_ascii=True, sort_keys=True,
-                      separators=(',', ':')).encode('ascii')
+    return compact(value, sort_keys=True, ensure_ascii=True, allow_nan=True)
 
 
 def stream_key(source, mode):

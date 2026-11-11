@@ -101,7 +101,7 @@ public enum MemoryCandidateResult: Sendable { case recorded(MemoryCandidateRecei
         self.endpoint = endpoint; self.credentials = credentials; self.currentBinding = currentBinding
         self.readWire = readWire
         self.currentConversation = currentConversation; self.session = session; self.sessionOperation = sessionOperation; store = pendingStore
-        factory = { CandidateInterceptedTransport(underlying: interceptedTransport, validate: $0) }
+        factory = { MemoryInterceptedTransport(underlying: interceptedTransport, validate: $0) }
     }
     public func invalidate() { generation = UUID(); discovery = [:]; projections = [:]; candidateReads = [:] }
     func retireReads() { discovery = [:]; projections = [:]; candidateReads = [:] }
@@ -353,7 +353,9 @@ private struct CandidateHTTPResult {
         return (code, try historyString(fields["outcome"], limit: 32), try historyString(fields["recovery"], limit: 64))
     }
 }
-private struct CandidateInterceptedTransport: ClientTransport {
+/// Non-network seam shared by the history, candidate and erasure clients: bounded body,
+/// host validation before and after the exchange, mirroring the live exit's last validator.
+struct MemoryInterceptedTransport: ClientTransport {
     let underlying: any ClientTransport
     let validate: @MainActor @Sendable () throws -> Void
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {

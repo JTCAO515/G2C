@@ -1,16 +1,16 @@
 """Local scoped diff/explicit action API; canonical AUTH and original act only."""
+from cj_strict_json import compact
 import json,os
 from fastapi import Request
 from fastapi.responses import Response
 from starlette.concurrency import run_in_threadpool
 from cj_api.app import create_app
 from cj_api.message_routes import BodyError,_body_error,_error,_read_octets,_token
-from cj_api.local_app import scope_for
+from cj_api.local_app import trip_resolver
 from .auth_boundary import Boundary
 from .scoped_actions import ScopedAction,ScopedActions
 from .scoped_discovery import parse_discovery_query
 from .domain import Conflict,Denied,identifier
-from cj_agent.draft import trip_scope_for
 
 
 def create_local_scoped_app(*,database,configuration,max_response_bytes=4_000_000):
@@ -18,9 +18,7 @@ def create_local_scoped_app(*,database,configuration,max_response_bytes=4_000_00
     if (os.environ.get('CJ_ENV')!='local' or database.edit_configuration is not configuration
             or type(max_response_bytes) is not int or max_response_bytes<1):raise CompositionUnavailable('explicit local C scoped host required')
     publisher=configuration.publisher;checker=publisher.checker
-    def resolve(principal):
-        owner=scope_for(principal.issuer,principal.subject)
-        return lambda:database.connect(owner),trip_scope_for(owner)
+    resolve=trip_resolver(database)
     class ScopedBoundary(Boundary):
         def _bind(self,token):
             repository,principal,guard=super()._bind(token)
@@ -38,7 +36,7 @@ def create_local_scoped_app(*,database,configuration,max_response_bytes=4_000_00
             candidate_hash=detail.candidate_hash,status=detail.status,expires_at=p.expires_at,content=json.loads(p.content),
             scope=json.loads(rows[0]),diff=json.loads(rows[1]),feasibility=json.loads(rows[2]))
     def encode(result):
-        raw=json.dumps(result,ensure_ascii=False,separators=(',',':'),allow_nan=False).encode()
+        raw=compact(result)
         if len(raw)>max_response_bytes:raise Denied('bounded private response required')
         return raw
     async def invoke(request,kind,arg):

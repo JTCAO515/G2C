@@ -1,11 +1,12 @@
 """Appended source-bound manual.2 HTTP host, original operation/Signer/act only."""
+from cj_strict_json import compact
 import json,os
 from pathlib import Path
 from fastapi import Request
 from fastapi.responses import Response
 from starlette.concurrency import run_in_threadpool
 from cj_api.app import create_app
-from cj_api.local_app import LocalDatabase,scope_for
+from cj_api.local_app import LocalDatabase,scope_for,trip_resolver
 from cj_api.local_account_admission_v2 import account_checker_for
 from cj_api.local_needs import protected_reader
 from cj_api.message_routes import _token,_error
@@ -15,7 +16,6 @@ from .current_needs_source import CurrentNeedsSource
 from .manual_needs_v2 import NeedsEditV2,NeedsSaveV2,NeedsEditsV2
 from .domain import Conflict,Denied,identifier
 from .scoped_discovery import parse_discovery_query
-from cj_agent.draft import trip_scope_for
 
 
 def create_local_place_manual_app(*,conninfo_path,auth_dir,run_context,confirmation_signer,max_response_bytes=1_000_000):
@@ -24,9 +24,7 @@ def create_local_place_manual_app(*,conninfo_path,auth_dir,run_context,confirmat
             or type(max_response_bytes) is not int or max_response_bytes<1):raise CompositionUnavailable('explicit local source-bound manual host required')
     database=LocalDatabase(conninfo_path,run_context=run_context,travel_context=True,needs_context=True)
     checker=account_checker_for(Path(auth_dir),database)
-    def resolve(principal):
-        owner=scope_for(principal.issuer,principal.subject)
-        return lambda:database.connect(owner),trip_scope_for(owner)
+    resolve=trip_resolver(database)
     class PlaceManualBoundary(Boundary):
         def _bind(self,token):
             repository,principal,guard=super()._bind(token)
@@ -59,7 +57,7 @@ def create_local_place_manual_app(*,conninfo_path,auth_dir,run_context,confirmat
                         if value['proposal'] is not None:
                             detail=value['proposal'];p=detail.proposal
                             value=dict(value,proposal=dict(proposal_id=p.proposal_id,trip_id=p.trip_id,expected_version=p.expected_version,candidate_hash=detail.candidate_hash,status=detail.status,expires_at=p.expires_at,content=json.loads(p.content)))
-                        raw=json.dumps(dict(version='TRIP-needs-discovery.2',request_id=request.state.request_id,discovery=value),ensure_ascii=False,separators=(',',':'),allow_nan=False).encode()
+                        raw=compact(dict(version='TRIP-needs-discovery.2',request_id=request.state.request_id,discovery=value))
                         if len(raw)>max_response_bytes:raise Denied('bounded private response required')
                         return raw
                     return ctx.discover_place_needs(value,project_discovery)
@@ -76,7 +74,7 @@ def create_local_place_manual_app(*,conninfo_path,auth_dir,run_context,confirmat
                         p=prepared.detail.proposal
                         result['preparation']=dict(proposal_id=p.proposal_id,trip_id=p.trip_id,expected_version=p.expected_version,candidate_hash=prepared.detail.candidate_hash,
                             status=prepared.detail.status,content=json.loads(p.content),diff=json.loads(prepared.diff))
-                raw=json.dumps(result,ensure_ascii=False,separators=(',',':'),allow_nan=False).encode()
+                raw=compact(result)
                 if len(raw)>max_response_bytes:raise Denied('bounded private response required')
                 return raw
             return boundary.with_operation(token,project)

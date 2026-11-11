@@ -1,6 +1,6 @@
 """Narrow read projection using canonical AUTH, original NEEDS readers and objects."""
 from dataclasses import dataclass
-import threading
+from cj_auth.operation_fence import new_state
 from .boundary import Metadata, Operation, _active
 from .domain import Denied, identifier
 from .postgres import Repository
@@ -44,8 +44,7 @@ class ProtectedReader:
             principal = context.principal
             if principal.issuer != config.issuer or principal.audience != config.audience:
                 raise Denied('NEEDS read identity profile changed')
-            state = dict(active=True, blocked=False, action_id=None, commit_possible=False,
-                         write_started=False, read_only=True, thread=threading.get_ident())
+            state = new_state(write_started=False, read_only=True)
             context_token = None
 
             def guard(stage=None):

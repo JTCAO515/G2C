@@ -3,10 +3,10 @@
 Decoded data never conveys ownership, freshness, collection or publication
 permission. Trusted hosts must retain original protected-reader/lease lifetimes.
 """
+from cj_strict_json import compact
 from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
-import json
 
 from cj_needs.contract_v1 import decode_snapshot, decode_revision
 from cj_needs.domain import InvalidInput
@@ -87,8 +87,7 @@ def _route_result(raw):
     dispatch/owner/freshness and never upgrades evidence.
     """
     value = decode_result(raw)
-    query = decode_query(json.dumps(dict(version=QUERY_VERSION, query=value['query']),
-        ensure_ascii=False, separators=(',', ':'), allow_nan=False).encode())
+    query = decode_query(compact(dict(version=QUERY_VERSION, query=value['query'])))
     if type(query) is not RouteQuery: raise ValueError('explicit formal route query required')
     def quantity(observed):
         state = FieldState(observed['state'])

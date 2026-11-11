@@ -1,4 +1,5 @@
 """Explicit accepted-Trip model-data preparation; no worker/dispatch writer."""
+from cj_strict_json import compact
 from hashlib import sha256
 import json
 
@@ -79,9 +80,8 @@ def prepared(tx,snapshot,decision_lease,policy,mode,*,max_payload_bytes):
     if not references:raise model_v2.NoEligibleSource('no permitted actual Trip discussion anchor')
     payload.update(version=DATA_VERSION,trip_decisions=references,decision_source_sha256=digest,
         source_fingerprint=sha256(encode([payload['source_fingerprint'],[ref['ref'] for ref in references]])).hexdigest())
-    data=json.dumps(payload,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode('utf-8')
+    data=compact(payload, sort_keys=True, allow_nan=True)
     if len(data)>max_payload_bytes:raise Unavailable('accepted decision model data exceeds explicit bound')
-    result=json.dumps(dict(system=SYSTEM,messages=[dict(role='user',content=data.decode('utf-8'))]),
-                      ensure_ascii=False,sort_keys=True,separators=(',',':')).encode('utf-8')
+    result=compact(dict(system=SYSTEM,messages=[dict(role='user',content=data.decode('utf-8'))]), sort_keys=True, allow_nan=True)
     decision_lease.check()
     return result,count

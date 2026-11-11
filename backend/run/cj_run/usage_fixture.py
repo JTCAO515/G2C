@@ -3,8 +3,8 @@
 Consumes CJ008 a6693615 core. No shared transaction exists between these domains.
 An arbitrary injected callable is trusted test code, NOT a network sandbox.
 """
+from cj_strict_json import compact
 from dataclasses import dataclass, asdict
-import json
 from cj_usage.core import Command, Receipt
 from .core import Binding, Event, State, Denied, Conflict
 from .usage_binding import UsageBinding
@@ -30,7 +30,7 @@ class SyntheticFirstStep:
         if type(original_binding) is not Binding or type(original_command) is not Command or original_command.run_id != original_binding.run_id:
             raise Conflict('fixed original fixture binding required')
         self.association = UsageBinding(
-            json.dumps(asdict(original_command), ensure_ascii=False, separators=(',', ':')).encode('utf-8'),
+            compact(asdict(original_command), allow_nan=True),
             original_input_bytes)
         self.original_binding, self.original_command = original_binding, original_command
         self._fresh_create_ack = False

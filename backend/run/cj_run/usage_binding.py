@@ -1,4 +1,5 @@
 """Immutable original bytes; validate raw input once, trust the internal value."""
+from cj_strict_json import compact
 from dataclasses import dataclass, asdict
 import hashlib
 import json
@@ -43,7 +44,7 @@ class UsageBinding:
         serializing and re-validating our own already validated Command.
         """
         value = object.__new__(cls)
-        object.__setattr__(value, 'command_bytes', json.dumps(asdict(command), sort_keys=True, separators=(',', ':')).encode('utf-8'))
+        object.__setattr__(value, 'command_bytes', compact(asdict(command), sort_keys=True, ensure_ascii=True, allow_nan=True))
         object.__setattr__(value, 'input_bytes', input_bytes)
         object.__setattr__(value, '_command', command)
         return value

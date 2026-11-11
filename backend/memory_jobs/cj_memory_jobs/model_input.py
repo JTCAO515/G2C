@@ -1,6 +1,6 @@
 """Bounded model data from a protected snapshot; no dispatch or source permit."""
+from cj_strict_json import compact
 from dataclasses import asdict
-import json
 
 from cj_message.source import SourceSnapshot
 from .extraction import CollectionPolicy,CollectionUnavailable
@@ -48,7 +48,7 @@ def prepare(snapshot: SourceSnapshot, policy: CollectionPolicy, mode: str, *, ma
         end=asdict(snapshot.end) if mode=='conversation_end' else None,
         messages=[dict(message_id=row.receipt.message_id,sequence=row.receipt.sequence,
                        input_sha256=row.receipt.input_sha256,text=row.text) for row in snapshot.messages])
-    raw=json.dumps(value,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode('utf-8')
+    raw=compact(value, sort_keys=True, allow_nan=True)
     if len(raw)>max_payload_bytes:
         raise CollectionUnavailable('model source exceeds explicit payload bound')
     return SYSTEM,[dict(role='user',content=raw.decode('utf-8'))]
@@ -56,5 +56,4 @@ def prepare(snapshot: SourceSnapshot, policy: CollectionPolicy, mode: str, *, ma
 
 def encoded(snapshot,policy,mode,*,max_payload_bytes):
     system,messages=prepare(snapshot,policy,mode,max_payload_bytes=max_payload_bytes)
-    return json.dumps(dict(system=system,messages=messages),ensure_ascii=False,
-                      sort_keys=True,separators=(',',':')).encode('utf-8')
+    return compact(dict(system=system,messages=messages), sort_keys=True, allow_nan=True)
