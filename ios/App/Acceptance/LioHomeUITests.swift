@@ -7,6 +7,53 @@ import XCTest
     func testInvitationEnglish() throws { try exerciseInvitation("en") }
     func testInvitationChinese() throws { try exerciseInvitation("zh-Hans") }
 
+    func testSessionRecoveryKeepsExplicitActionsInBothLanguagesAndAppearances() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        for language in ["en", "zh-Hans"] {
+            for appearance in ["light", "dark"] {
+                let chinese = language == "zh-Hans"
+                app.launchArguments = ["--lio-preview", "--lio-session-recovery-acceptance",
+                                       "-cj.ui.language.v1", language,
+                                       "-lio.ui.appearance.v1", appearance]
+                app.launch()
+                let recovery = app.descendants(matching: .any).matching(identifier: "lio.session.recovery").firstMatch
+                XCTAssertTrue(recovery.waitForExistence(timeout: 12))
+                XCTAssertTrue(app.staticTexts[chinese ? "正在恢复对话…" : "Restoring your chat…"].exists)
+                XCTAssertFalse(app.buttons["lio.session.retry"].exists)
+                XCTAssertFalse(app.secureTextFields["demo.invite.code"].exists)
+                XCTAssertFalse(app.staticTexts["lio.question"].exists)
+                XCTAssertFalse(app.staticTexts["lio.answer"].exists)
+                try app.performAccessibilityAudit(for: .all)
+                let loading = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+                loading.name = "Lio-session-loading-" + language + "-" + appearance
+                loading.lifetime = .keepAlways
+                add(loading)
+
+                app.buttons["synthetic.recovery.offline"].tap()
+                let retry = app.buttons["lio.session.retry"]
+                XCTAssertTrue(retry.waitForExistence(timeout: 5))
+                XCTAssertEqual(retry.label, chinese ? "重试" : "Try again")
+                XCTAssertEqual(app.staticTexts["lio.session.notice"].label,
+                               chinese ? "暂时连接不上，登录信息仍已保留。"
+                                   : "Couldn’t connect. Your sign-in is still saved.")
+                try app.performAccessibilityAudit(for: .all)
+                let offline = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+                offline.name = "Lio-session-offline-" + language + "-" + appearance
+                offline.lifetime = .keepAlways
+                add(offline)
+                retry.tap()
+                XCTAssertEqual(app.staticTexts["synthetic.recovery.retry-count"].label, "1")
+                XCTAssertFalse(retry.exists)
+                let signout = app.buttons["lio.session.signout"]
+                XCTAssertEqual(signout.label, chinese ? "退出登录" : "Sign out")
+                signout.tap()
+                XCTAssertTrue(app.staticTexts["synthetic.recovery.signedout"].waitForExistence(timeout: 5))
+                app.terminate()
+            }
+        }
+    }
+
     func testAppearanceBelowLanguagePersistsInBothLanguages() {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
