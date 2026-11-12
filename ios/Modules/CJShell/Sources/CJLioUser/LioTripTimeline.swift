@@ -54,7 +54,8 @@ struct LioTripTimeline: View {
             if let day {
                 if day.stops.contains(where: { $0.point != nil }) {
                     VStack(alignment: .leading, spacing: 8) {
-                        LioRouteMap(day: day, focusedStop: focusedStop, failed: { mapUnavailable = true })
+                        LioRouteMap(day: day, focusedStop: focusedStop,
+                                    failed: { mapUnavailable = true }, loaded: { mapUnavailable = false })
                             .frame(height: 220)
                             .clipShape(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
                             .accessibilityIdentifier("lio.trip.route-map")
@@ -165,11 +166,13 @@ private struct LioRouteMap: UIViewRepresentable {
     let day: LioItinerary.Day
     let focusedStop: String?
     let failed: () -> Void
+    let loaded: () -> Void
     @Environment(\.colorScheme) private var colorScheme
 
     func makeUIView(context: Context) -> LioRouteCanvas { LioRouteCanvas() }
     func updateUIView(_ map: LioRouteCanvas, context: Context) {
-        map.configure(day: day, focusedStop: focusedStop, style: colorScheme == .dark ? .dark : .light, failed: failed)
+        map.configure(day: day, focusedStop: focusedStop, style: colorScheme == .dark ? .dark : .light,
+                      failed: failed, loaded: loaded)
     }
     static func dismantleUIView(_ map: LioRouteCanvas, coordinator: ()) { map.retire() }
 }
@@ -184,6 +187,7 @@ private final class LioRouteCanvas: UIView {
     private var request: MKMapSnapshotter?
     private var markers: [UILabel] = []
     private var failed: (() -> Void)?
+    private var loaded: (() -> Void)?
     private var size = CGSize.zero
 
     override init(frame: CGRect) {
@@ -195,7 +199,7 @@ private final class LioRouteCanvas: UIView {
     required init?(coder: NSCoder) { fatalError("init(coder:) is unavailable") }
 
     func configure(day: LioItinerary.Day, focusedStop: String?, style: UIUserInterfaceStyle,
-                   failed: @escaping () -> Void) {
+                   failed: @escaping () -> Void, loaded: @escaping () -> Void) {
         if self.day != day || self.focusedStop != focusedStop || self.style != style {
             retire()
             self.day = day
@@ -205,6 +209,7 @@ private final class LioRouteCanvas: UIView {
             setNeedsLayout()
         }
         self.failed = failed
+        self.loaded = loaded
     }
 
     override func layoutSubviews() {
@@ -222,6 +227,7 @@ private final class LioRouteCanvas: UIView {
         markers.forEach { $0.removeFromSuperview() }
         markers = []
         failed = nil
+        loaded = nil
     }
 
     private func load() {
@@ -285,6 +291,7 @@ private final class LioRouteCanvas: UIView {
                 self.addSubview(marker)
                 self.markers.append(marker)
             }
+            self.loaded?()
         }
     }
 }
