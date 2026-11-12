@@ -39,7 +39,8 @@ private struct JourneyClients {
     init(shell: ShellState) throws {
         let language = shell.language.lio
         let backend = JourneyMemoryBackend(language: language)
-        let service = JourneyScenario(language: language, memoryBackend: backend)
+        let service = JourneyScenario(language: language, memoryBackend: backend,
+                                      memoryChanged: ProcessInfo.processInfo.arguments.contains("--lio-memory-changed-acceptance"))
         let environment = UUID(), account = UUID()
         let scope = try StorageScope(environment: environment.uuidString, account: account.uuidString)
         let recovery = MessageRecovery(storage: JourneyStorage())
@@ -69,6 +70,7 @@ private final class JourneyStorage: SecureMessageStorage {
 private actor JourneyScenario {
     private let language: LioLanguage
     private let memoryBackend: JourneyMemoryBackend
+    private let memoryChanged: Bool
     private let conversationID = "lio-dialogue-0123456789abcdef0123456789abcdef"
     private let clock = ContinuousClock()
     private var rows: [[String: Any]] = []
@@ -77,9 +79,10 @@ private actor JourneyScenario {
     private var undoBytes: Data?
     private var memoryBytes: Data?
 
-    init(language: LioLanguage, memoryBackend: JourneyMemoryBackend) {
+    init(language: LioLanguage, memoryBackend: JourneyMemoryBackend, memoryChanged: Bool) {
         self.language = language
         self.memoryBackend = memoryBackend
+        self.memoryChanged = memoryChanged
     }
 
     func submit(_ request: LioTimelineWire.Send) async throws -> LioService.SendResult {
@@ -173,13 +176,17 @@ private actor JourneyScenario {
     func submitMemory(_ action: LioMemoryWire.Action) async throws -> LioMemoryActionsClient.SubmissionResult {
         guard action.choice == .remember, memoryBytes == nil else { throw MessageHTTPFailure.invalidConfiguration }
         memoryBytes = action.originalUTF8
+        if memoryChanged {
+            for index in rows.indices { rows[index].removeValue(forKey: "memory") }
+            return .conflict(try json(["failure": "unavailable"]))
+        }
         await memoryBackend.remember()
         for index in rows.indices { rows[index].removeValue(forKey: "memory") }
         throw URLError(.networkConnectionLost)
     }
 
     func readMemory(_ action: LioMemoryWire.Action) throws -> Data {
-        guard action.originalUTF8 == memoryBytes else { throw MessageHTTPFailure.invalidConfiguration }
+        guard !memoryChanged, action.originalUTF8 == memoryBytes else { throw MessageHTTPFailure.invalidConfiguration }
         return try json(["version": "LIO-memory-action-receipt.1", "action_id": action.actionID, "status": "remembered"])
     }
 

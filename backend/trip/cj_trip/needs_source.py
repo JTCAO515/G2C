@@ -93,11 +93,21 @@ class NeedsSourceAuthority:
         return capture
 
     @contextmanager
+    def hold_additional_sources(self,binding,capture,message):
+        """Optional source-only lease, before NEEDS in the existing lock graph.
+
+        Legacy sources acquire nothing here. New source adapters must reuse the
+        actual MESSAGE lease, not acquire a MESSAGE/MEMORY lock after NEEDS.
+        """
+        yield
+
+    @contextmanager
     def hold_for_publication(self,binding):
         capture=self._captures.get(binding)
         if capture is None:raise Denied('original capture unavailable')
         token=self.token_supplier()
-        with self.message_context.hold_for_effect(binding) as message, self.revision_lease.hold(token,binding) as check:
+        with self.message_context.hold_for_effect(binding) as message, \
+                self.hold_additional_sources(binding,capture,message), self.revision_lease.hold(token,binding) as check:
             state=(binding,capture,check,threading.get_ident(),message)
             active=self._active.set(state)
             try:

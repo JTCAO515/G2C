@@ -114,7 +114,10 @@ def check(definition, value, fixtures, *, conversion_input=None):
         require(value['content_version'] == content['content_version'], 'protected content version mismatch')
         day = value['selection']['day']
         if day is not None:
-            if content['calendar']['state'] == 'undated':
+            if content['content_version'] != 'structured.3':
+                dates = {i['schedule'][edge]['date'].get('value') for i in content['items'] for edge in ('start', 'end')}
+                require('date' in day and day['date'] in dates, 'legacy selector must retain an original observed date')
+            elif content['calendar']['state'] == 'undated':
                 require('day_index' in day and 1 <= day['day_index'] <= len(content['days']), 'undated ordinal out of range/mode')
             else:
                 require('date' in day and day['date'] in {d['date'] for d in content['days']}, 'dated selector out of range/mode')
@@ -170,6 +173,13 @@ def check(definition, value, fixtures, *, conversion_input=None):
             require(type(value['trip_version']) is int and value['trip_version'] == source['expected_version'] + 1,
                     'conversion must append exactly one version')
             content = protected_content(value['content_sha256'], fixtures)
+            before = protected_content(source['original_hash'], fixtures)
+            require(all(content[k] == before[k] for k in ('content_version', 'title', 'items', 'sources')),
+                    'conversion changed original items, fixed intent, times or sources')
+            from datetime import date, timedelta
+            expected = [dict(day_index=d['day_index'], date=(date.fromisoformat(source['start_date'])
+                        + timedelta(days=d['day_index']-1)).isoformat()) for d in before['days']]
+            require(content['days'] == expected, 'conversion changed day count or ordinal mapping')
             require(content['calendar'] == value['calendar'] and content['calendar']['start_date'] == source['start_date']
                     and content['date_checks'] == value['date_checks'], 'committed conversion metadata mismatch')
             require(not any(c['kind'] == 'hard_fixed' for c in value['conflicts']), 'hard fixed conflict cannot commit')
@@ -212,6 +222,38 @@ class MessageContractChecks(unittest.TestCase):
             TripSelection.parse(selector)
         self.assertNotEqual(sha256(packed(self.examples['canonical_message'])).hexdigest(),
                             sha256(packed(self.examples['outer_message'])).hexdigest())
+
+    def test_recomputed_conversion_hash_does_not_authorize_changed_original_fields(self):
+        row = next(r for r in self.examples['positive'] if r['definition'] == 'DateReceipt' and r['value']['committed'] is True)
+        for field in ('text', 'fixed', 'schedule', 'source_refs'):
+            with self.subTest(field=field):
+                fixture, value = deepcopy(self.examples), deepcopy(row['value'])
+                content = deepcopy(protected_content(value['content_sha256'], fixture))
+                if field == 'text': content['items'][0]['text'] += ' forged'
+                elif field == 'fixed': content['items'][0]['fixed'] = dict(state='known', value=False)
+                elif field == 'schedule': content['items'][0]['schedule']['start']['time'] = dict(state='known', value='08:30')
+                else: content['items'][0]['source_refs'] = []
+                if content == protected_content(value['content_sha256'], fixture):
+                    content['items'][0]['text'] += ' changed'
+                fixture['protected_contents'].append(content)
+                value['content_sha256'] = sha256(packed(content)).hexdigest()
+                with self.assertRaises(ValueError):
+                    check('DateReceipt', value, fixture, conversion_input=row.get('conversion_input'))
+
+    def test_legacy_trip_reference_uses_legacy_dates_without_calendar_normalization(self):
+        row = next(r for r in self.examples['positive'] if r['definition'] == 'TripReference')
+        for version in ('structured.1', 'structured.2'):
+            fixture, value = deepcopy(self.examples), deepcopy(row['value'])
+            content = next(c for c in fixture['protected_contents'] if c['content_version'] == version)
+            content['items'][0]['schedule']['start']['date'] = dict(state='known', value='2026-12-01')
+            value.update(content_version=version, content_sha256=sha256(packed(content)).hexdigest())
+            fixture['reference_trip'] = {k: value[k] for k in fixture['reference_trip']}
+            day = content['items'][0]['schedule']['start']['date']['value']
+            value['selection']['day'] = dict(date=day, timezone=fixture['needs_basis']['fields']['destination_timezone']['value'])
+            check('TripReference', value, fixture)
+            value['selection']['day'] = dict(day_index=1)
+            with self.assertRaises(ValueError):
+                check('TripReference', value, fixture)
 
 
 if __name__ == '__main__':
