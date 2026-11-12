@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import SwiftUI
 import CJSession
 
 /// Non-secret choices supplied only by the DEBUG simulator composition root.
@@ -217,6 +218,17 @@ public enum DevelopmentAccountState: Equatable, Sendable {
         guard request == id, shell.generation == generation else { throw SessionFailure.staleOperation }
         guard result == .cleared else { state = .storageUnavailable; throw SessionFailure.storageUnavailable }
         state = .signedOut
+    }
+
+    /// A system interruption is still the same foreground session. Only a true
+    /// background transition retires its clients; the App masks interrupted UI.
+    public func sceneChanged(_ phase: ScenePhase) {
+        switch phase {
+        case .active: resume()
+        case .inactive: break
+        case .background: suspend()
+        @unknown default: suspend()
+        }
     }
 
     /// Backgrounding fences visible data; it never clears the Keychain credential.
