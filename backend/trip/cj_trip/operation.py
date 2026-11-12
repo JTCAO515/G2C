@@ -35,7 +35,8 @@ def _write_types():
     from .initialization import Initialization, InitializationSave
     from .source_initialization import SourceInitialization, SourceInitializationSave
     from .lio_history import Undo
-    return {'act': Action, 'save_manual': ManualSave, 'prepare_manual': ManualEdit,
+    from .calendar_history import CalendarUndo
+    return {'act': Action, 'undo_calendar': CalendarUndo, 'save_manual': ManualSave, 'prepare_manual': ManualEdit,
             'prepare_initialization': Initialization, 'save_initialization': InitializationSave,
             'act_needs': NeedsAction, 'act_scoped': ScopedAction, 'prepare_needs': NeedsEdit,
             'save_needs': NeedsSave, 'prepare_source_initialization': SourceInitialization,
@@ -77,11 +78,15 @@ class OperationContext(FencedOperation):
     def save_manual(self, save): return self._call('save_manual', save)
     def manual_preparation(self, request_id): return self._call('manual_preparation', request_id)
     def query_action(self, action_id): return self._call('query_action', action_id)
+    def calendar_conversion_receipt(self, request): return self._call('calendar_conversion_receipt', request)
+    def calendar_plan_receipt(self, binding): return self._call('calendar_plan_receipt', binding)
+    def calendar_edit_receipt(self, binding): return self._call('calendar_edit_receipt', binding)
     def lio_revisions(self, trip_id, *, before=None, limit=10): return self._call('lio_revisions', trip_id, before, limit)
     def lio_current_trip(self, needs_scope, needs_id): return self._call('lio_current_trip', needs_scope, needs_id)
     def lio_plan_receipt(self, binding): return self._call('lio_plan_receipt', binding)
     def lio_edit_receipt(self, binding): return self._call('lio_edit_receipt', binding)
     def undo_lio(self, request): return self._call('undo_lio', request)
+    def undo_calendar(self, request): return self._call('undo_calendar', request)
     def lio_undo_receipt(self, request): return self._call('lio_undo_receipt', request)
     def detail(self, trip_id): return self._call('detail', trip_id)
     def read_decision_source(self,query,project,*,max_source_bytes,max_result_bytes):

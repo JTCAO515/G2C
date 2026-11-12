@@ -72,15 +72,7 @@ class CalendarTransform:
     conflicts: tuple
 
 
-def converted_content(document, start, date_checks, fixed_fields):
-    """Internal builder over a validated original Trip and protected source fields.
-
-    The publication service must still hold original MESSAGE/NEEDS/Trip leases,
-    validate date-check provenance, then use the sole signed commit path.
-    """
-    if document['content_version'] != 'structured.3' or document['calendar']['state'] != 'undated':
-        raise Conflict('date conversion requires an undated calendar version')
-    dates = calendar_dates(start, len(document['days']))
+def fixed_date_conflicts(document, dates, fixed_fields):
     items = {i['id']: i for i in document['items']}
     conflicts = []
     for fixed in fixed_fields:
@@ -95,15 +87,25 @@ def converted_content(document, start, date_checks, fixed_fields):
                 conflicts.append(dict(kind='hard_fixed', code='FIXED_DATE_CONFLICT',
                     day_indices=[item['schedule'][edge]['day_index']], item_ids=[item['id']],
                     reason='requested start conflicts with the original fixed date', evidence_refs=[]))
+    return tuple(conflicts)
+
+
+def check_conflicts(date_checks):
+    return tuple(dict(kind='date_dependent', code='DATE_' + check['kind'].upper(),
+        day_indices=check['day_indices'], item_ids=check['item_ids'], reason=check['reason'],
+        evidence_refs=check['evidence_refs']) for check in date_checks if check['state'] == 'conflict')
+
+
+def converted_content(document, start, date_checks, fixed_fields):
+    """Internal builder; the caller still needs actual source/identity/commit leases."""
+    if document['content_version'] != 'structured.3' or document['calendar']['state'] != 'undated':
+        raise Conflict('date conversion requires an undated calendar version')
+    dates = calendar_dates(start, len(document['days']))
+    conflicts = fixed_date_conflicts(document, dates, fixed_fields)
     if conflicts:
-        return CalendarTransform(None, tuple(conflicts))
+        return CalendarTransform(None, conflicts)
     result = deepcopy(document)
     result['calendar'] = dict(state='dated', start_date=start.isoformat())
     result['days'] = [dict(day_index=i+1, date=d) for i, d in enumerate(dates)]
     result['date_checks'] = deepcopy(date_checks)
-    for check in date_checks:
-        if check['state'] == 'conflict':
-            conflicts.append(dict(kind='date_dependent', code='DATE_' + check['kind'].upper(),
-                day_indices=check['day_indices'], item_ids=check['item_ids'], reason=check['reason'],
-                evidence_refs=check['evidence_refs']))
-    return CalendarTransform(packed(result), tuple(conflicts))
+    return CalendarTransform(packed(result), check_conflicts(date_checks))

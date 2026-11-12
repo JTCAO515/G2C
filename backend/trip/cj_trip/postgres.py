@@ -103,6 +103,26 @@ class Repository:
         from .scoped_result_read import read
         return read(self.scoped_actions,self,result_id,encode)
 
+    def calendar_conversion_receipt(self, request):
+        if not self.calendar:
+            raise Denied('calendar receipt requires explicit versioned consumer')
+        from .calendar_receipts import query
+        return query(self, request)
+
+    def calendar_plan_receipt(self, binding):
+        if not self.calendar: raise Denied('explicit calendar consumer required')
+        from .lio_history import _message_receipt, plan_action_id
+        return _message_receipt(self, binding, plan_action_id(binding.run_id), 'lio-calendar-plan.1')
+
+    def calendar_edit_receipt(self, binding):
+        if not self.calendar: raise Denied('explicit calendar consumer required')
+        from .lio_history import _message_receipt, edit_action_id
+        return _message_receipt(self, binding, edit_action_id(binding.run_id), 'lio-calendar-edit.1')
+
+    def undo_calendar(self, request):
+        from .calendar_history import undo
+        return undo(self, request)
+
     def _content(self, content, *, validated=False):
         document = json.loads(content)
         if type(document) is dict and document.get('content_version') == 'structured.3':
