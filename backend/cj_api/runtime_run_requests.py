@@ -36,7 +36,7 @@ class RunRequests:
         text=REFLECTION_MESSAGE if request['kind']=='reflection' else request['payload']['text']
         def original(context):
             if context.scope!=binding.scope:raise Unavailable('RUNTIME_ORIGINAL_OWNER_CHANGED')
-            stored=context.query_message(binding.message_id)
+            stored=self.claims.query(context,binding.message_id)
             if stored is None or (stored.receipt.run_id,stored.receipt.conversation_id,
                     stored.receipt.generation,stored.receipt.sequence)!=(binding.run_id,
                     binding.conversation_id,binding.generation,binding.message_sequence):

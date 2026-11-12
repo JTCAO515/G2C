@@ -161,3 +161,9 @@ def test_plain_discussion_answer_consumes_style_only_without_changing_legacy_aut
     assert actual=={**original,'system':original['system'].replace(C0['prompt.answer_style'],candidate['prompt.answer_style'],1)}
     assert actual['system'].endswith(DISCUSSION_PROMPT)
     assert selected['model.draft'].prepare_input(argument).original_bytes==tools.registrations['model.draft'].prepare_input(argument).original_bytes
+    scene=' Travel scene: before the trip, Beijing today.'
+    extended=(argument[0],argument[1]+scene,argument[2])
+    extended_original=decode(tools.registrations['model.answer'].prepare_input(extended).original_bytes)
+    extended_actual=decode(selected['model.answer'].prepare_input(extended).original_bytes)
+    assert extended_actual=={**extended_original,'system':extended_original['system'].replace(
+        C0['prompt.answer_style'],candidate['prompt.answer_style'],1)}

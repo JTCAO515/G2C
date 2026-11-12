@@ -19,7 +19,7 @@ def routing():
     def read(*args,**kwargs):
         if not state['allowed']:raise Unavailable('ORIGINAL_AUTH_UNAVAILABLE')
         return encode(state['request'])
-    claims=SimpleNamespace(binding=SimpleNamespace(scope=bound.scope),read=read)
+    claims=SimpleNamespace(binding=SimpleNamespace(scope=bound.scope),read=read,query=lambda context,mid:context.query_message(mid))
     context=SimpleNamespace(scope=bound.scope,query_message=lambda mid:SimpleNamespace(
         receipt=SimpleNamespace(run_id=bound.run_id,conversation_id=bound.conversation_id,
             generation=bound.generation,sequence=bound.message_sequence),raw=encode({'text':state['text']})))

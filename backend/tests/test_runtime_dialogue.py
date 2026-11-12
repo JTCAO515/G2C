@@ -28,7 +28,8 @@ def recipe():
         stored[data['message_id']]=SimpleNamespace(receipt=receipt)
         return receipt
     boundary=SimpleNamespace(with_history_context=lambda token,callback:callback(context),receive_lio=receive)
-    claims=SimpleNamespace(binding=binding,pins=pins,read=lambda step,**kwargs:encode(setup))
+    claims=SimpleNamespace(binding=binding,pins=pins,read=lambda step,**kwargs:encode(setup),
+        query=lambda context,mid:context.query_message(mid))
     db=SimpleNamespace(travel_context=True,needs_context=True,trip_context=True,_provision_scope=lambda *args:None)
     dialogue=NativeDialogue(claims,boundary,db,lambda:'fixture-token',lambda receipt,deadline:waited.append(receipt),dataset_path=path)
     return dialogue,setup,task,stored,writes,waited,db

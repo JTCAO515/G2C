@@ -44,7 +44,7 @@ class NativeDialogue:
         cid='lio-dialogue-'+_identity(self.claims.binding.scope,'lio-new:'+first)
         def inspect(context):
             if context.scope!=self.claims.binding.scope:raise Unavailable('NATIVE_RECIPE_OWNER_CHANGED')
-            original=context.query_message(first)
+            original=self.claims.query(context,first)
             if original is not None and (original.receipt.conversation_id!=cid or original.receipt.sequence!=1):
                 raise Unavailable('NATIVE_FRESH_DIALOGUE_BINDING_CHANGED')
             return encode(dict(version='G2C-native-dialogue-readiness.1',
@@ -75,7 +75,7 @@ class NativeDialogue:
         admitted=self.boundary.receive_lio(self.token_supplier(),raw,
             prepare_scope=self.database._provision_scope,version=LIO_VERSION_V2)
         receipt=self.boundary.with_history_context(self.token_supplier(),
-            lambda context:context.query_message(request['step_id']).receipt)
+            lambda context:self.claims.query(context,request['step_id']).receipt)
         if (receipt.run_id,receipt.conversation_id)!=(admitted.run_id,admitted.conversation_id):
             raise Unavailable('NATIVE_ORIGINAL_ADMISSION_CHANGED')
         # The ordinary original worker consumes this receipt with its already

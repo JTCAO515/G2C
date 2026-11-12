@@ -19,7 +19,7 @@ def test_erased_input_withholds_old_state_result_and_opaque_reference(tmp_path):
     def inventory(token,message_id):
         return encode(dict(run_id='run',status='completed',operations=[dict(operation_id='operation',input_erased=state['erased'])]))
     originals=SimpleNamespace(inventory=inventory,boundary=SimpleNamespace(with_history_context=lambda token,project:project(context)))
-    claims=SimpleNamespace(binding=binding,read=lambda *args,**kwargs:encode(request))
+    claims=SimpleNamespace(binding=binding,read=lambda *args,**kwargs:encode(request),query=lambda context,mid:context.query_message(mid))
     def private_state(token,message_id):
         assert not state['erased'],'erased raw state must never be read'
         state['reads']+=1

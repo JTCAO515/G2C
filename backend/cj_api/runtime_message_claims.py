@@ -14,13 +14,22 @@ from .runtime_claims import CanonicalClaims
 
 
 class MessageClaims:
-    def __init__(self,directory,boundary,token_supplier,authority,pins):
+    def __init__(self,directory,boundary,token_supplier,authority,pins,*,history_profile='message.1'):
         self.boundary,self.token_supplier,self.authority=boundary,token_supplier,authority
         self.binding,self.pins=authority.binding(),pins
+        if history_profile not in ('message.1','lio.2'):raise ValueError('explicit original message history profile required')
+        self.history_profile=history_profile
         self._deadline=ContextVar('runtime_message_claim_deadline')
         self._transaction=ContextVar('runtime_message_claim_transaction')
         self.claims=CanonicalClaims(directory,self.binding,pins,guard=self._guard,
             original_exists=self._exists,admission_lock=self._admission)
+
+    def query(self,context,message_id):
+        # Keep the legacy MESSAGE.1 reader explicit for historical M4/local
+        # consumers. Production Demo composition selects Lio's source-bound
+        # reader; a rejected source never falls back to the legacy reader.
+        return (context.query_lio_message(message_id) if self.history_profile=='lio.2' else
+                context.query_message(message_id))
 
     def _guard(self,*,read_only):
         try:

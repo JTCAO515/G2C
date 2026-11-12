@@ -104,7 +104,7 @@ class RuntimeWorkerBindings:
                 return builder(retired_in_transaction(transaction.cur,scope))
             boundary=Boundary(checker,lambda principal:self.database.message_repository(scope_for(principal.issuer,principal.subject)),
                 lambda:str(uuid.uuid4()),checker_in_transaction=transaction_checker)
-            claims=MessageClaims(pinned_directory(entry['canonical_directory']),boundary,token,authority,self.pins)
+            claims=MessageClaims(pinned_directory(entry['canonical_directory']),boundary,token,authority,self.pins,history_profile='lio.2')
             routing=RunRequests(claims,boundary,token,tools,profile='national.2',clock=clock)
             session=dict(line=entry['line'],authority=authority,binding=binding,token=token,boundary=boundary,claims=claims,routing=routing,
                 references_directory=pinned_directory(entry['references_directory']),mapping_directory=pinned_directory(entry['mapping_directory']))
@@ -147,7 +147,7 @@ class RuntimeWorkerBindings:
         cards=LioTripCards(self.database,checker)
         trips=LioTripBoundary(self.database,checker,self.confirmation_signer)
         def read(token,mid):
-            snapshot=decode(display.read(token,mid))
+            snapshot=decode(display.read_travel_events(token,mid))
             request=decode(session['claims'].read(mid,deadline=self.clock()+30))
             if request['kind']=='reflection':return encode(snapshot)
             cid=snapshot['conversation_id']
@@ -185,12 +185,12 @@ class RuntimeWorkerBindings:
             claims=session['claims'];authority=session['authority'];token=session['token'];boundary=session['boundary']
             def guard(*,read_only,original=authority,binding=session['binding']):
                 original.require(binding=binding,pins_sha256=self.pins.key,purpose='query',deadline=self.clock()+30,read_only=read_only)
-            originals=RuntimeOriginals(boundary,self.database,self.services.model.authorization,evidence.directory)
+            originals=RuntimeOriginals(boundary,self.database,self.services.model.authorization,evidence.directory,query_original=claims.query)
             def wait(receipt,deadline,reader=originals,supplier=token):
                 while self.clock()<deadline:
                     try:value=decode(reader.inventory(supplier(),receipt.message_id))
                     except Unavailable as error:
-                        if str(error)!='ORIGINAL_RUN_UNAVAILABLE':raise
+                        if str(error) not in ('ORIGINAL_RUN_UNAVAILABLE','ORIGINAL_SNAPSHOT_CHANGED'):raise
                     else:
                         if value['status'] not in ('queued','running'):return
                     sleep(min(.1,max(0,deadline-self.clock())))

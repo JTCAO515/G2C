@@ -24,11 +24,12 @@ from .runtime_private import read_private,PrivateFileError
 
 
 class RuntimeOriginals:
-    def __init__(self,message_boundary,database,budget,artifact_directory):
+    def __init__(self,message_boundary,database,budget,artifact_directory,*,query_original=None):
         if type(message_boundary) is not Boundary:
             raise ValueError('original MESSAGE history boundary required')
         self.boundary,self.database,self.budget=message_boundary,database,budget
         self.directory=Path(artifact_directory)
+        self.query_original=(lambda context,mid:context.query_message(mid)) if query_original is None else query_original
 
     def _operations(self,scope,run_id):
         with self.database.connect(scope) as db:
@@ -42,13 +43,13 @@ class RuntimeOriginals:
 
     def _read(self,token,message_id,project):
         def operation(context):
-            original=context.query_message(message_id)
+            original=self.query_original(context,message_id)
             if original is None:raise Unavailable('ORIGINAL_MESSAGE_UNAVAILABLE')
             source=self._operations(context.scope,original.receipt.run_id)
             body=project(context.scope,original,source)
             # Storage/files/fee callbacks completed before the final same-source
             # check; Boundary then repeats canonical AUTH before bytes escape.
-            if context.query_message(message_id)!=original or self._operations(context.scope,original.receipt.run_id)!=source:
+            if self.query_original(context,message_id)!=original or self._operations(context.scope,original.receipt.run_id)!=source:
                 raise Unavailable('ORIGINAL_SNAPSHOT_CHANGED')
             return body
         try:return self.boundary.with_history_context(token,operation)

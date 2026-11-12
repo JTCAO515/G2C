@@ -478,7 +478,9 @@ class RealTools:
                     system,_=render(system,[],fragments,profile='answer')
                 elif answer_preparation and not native_turn:
                     from .local_lio_planning import DISCUSSION_PROMPT
-                    if system is not None and system.endswith(DISCUSSION_PROMPT):
+                    if system is not None and DISCUSSION_PROMPT in system:
+                        if system.count(DISCUSSION_PROMPT)!=1:
+                            raise BudgetUnknown('original runtime discussion baseline changed')
                         system,_=render(system,[],fragments,profile='answer')
                 if native_turn and argument.national:
                     _,selected_tools=render('',selected_tools,fragments,profile='authority')

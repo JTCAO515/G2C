@@ -849,7 +849,7 @@ def exercise(auth,conninfo):
         proposal=pool.submit(session['adapter'].propose,C0_NATIONAL_V2,feedback,['prompt.answer_style'],'factory-local-component-control',60)
         factory_mid='runtime-'+digest([factory_scope,'factory-local-component-control',0]);limit=time.monotonic()+30
         while True:
-            native=factory_boundary.with_history_context(factory_token,lambda context:context.query_message(factory_mid))
+            native=factory_boundary.with_history_context(factory_token,lambda context:context.query_lio_message(factory_mid))
             if native is not None:break
             assert time.monotonic()<limit
             time.sleep(.02)
@@ -857,7 +857,7 @@ def exercise(auth,conninfo):
             final=factory_worker._one(native.receipt)
         assert final.status=='completed'
         completed=proposal.result(timeout=30)
-    assert completed['status']=='PASS' and model.calls==calls+1,completed
+    assert completed['status']=='PASS' and model.calls==calls+1,(completed,session['adapter'].query('factory-local-component-control'))
     observed=json.loads(rpc.handle(request('query',{'attempt_id':'factory-local-component-control'})))
     assert observed['status']=='PASS' and model.calls==calls+1
     print('PASS actual private worker manifest/national.2 pins/canonical directory pin, concurrent G/native original worker, E/F full-setup gate before any intent or spend')

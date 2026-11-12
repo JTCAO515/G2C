@@ -44,7 +44,7 @@ class RuntimeCollector:
         # against the already admitted canonical action, rather than building a
         # proof from fields supplied in the envelope being checked.
         def binding(context):
-            stored=context.query_message(mid)
+            stored=self.claims.query(context,mid)
             if stored is None:raise Unavailable('ORIGINAL_MESSAGE_UNAVAILABLE')
             from cj_run.core import Binding
             r=stored.receipt
