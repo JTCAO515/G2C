@@ -250,6 +250,8 @@ private struct LioSavedMemoryDetail: View {
     @State private var draft: String?
     @State private var saving = false
     @State private var notice: String?
+    @FocusState private var editing: Bool
+    @Environment(\.scenePhase) private var phase
 
     var body: some View {
         Form {
@@ -259,6 +261,7 @@ private struct LioSavedMemoryDetail: View {
                               text: Binding(get: { self.draft ?? draft }, set: { self.draft = $0 }), axis: .vertical)
                         .lineLimit(3...8)
                         .disabled(saving)
+                        .focused($editing)
                         .accessibilityIdentifier("lio.memory.editor")
                     Button(language.text("Save", "保存")) { Task { await save(draft) } }
                         .disabled(saving || !(1...4096).contains(draft.unicodeScalars.count) ||
@@ -313,6 +316,9 @@ private struct LioSavedMemoryDetail: View {
         .navigationTitle(language.text("Memory", "记忆"))
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(saving)
+        .onChange(of: phase) { _, phase in
+            if phase != .active { editing = false }
+        }
         .task(id: Data(itemID.utf8)) { await load() }
         .refreshable {
             if !saving && draft == nil { await load() }
