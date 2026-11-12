@@ -85,14 +85,26 @@ def clarify(worker, binding, state, text):
     return worker._event(binding, state, 'completed')
 
 
-def discuss(worker, binding, state, locale, turns, references):
+def discuss(worker, binding, state, locale, turns, references, *, day_count=None):
     messages = [{'role': 'user', 'content': turn.text} for turn in turns]
     if worker.memory_run is not None:
         current = worker.memory_run.messages(turns[-1].text)
         messages = [*current[:-1], *messages]
     if worker.message_context is not None:
         messages = worker.message_context.answer_messages(binding, messages)
-    system = answer_prompt(locale) + DISCUSSION_PROMPT
+    system = answer_prompt(locale, turns[-1].text) + DISCUSSION_PROMPT
+    if day_count is not None:
+        system += (
+            ' The traveler requested a complete '+str(day_count)+'-day itinerary. '
+            'Cover every day from day 1 through day '+str(day_count)+', using day numbers, '
+            'concrete suggested activities and the supplied preferences. The itinerary has no start date. '
+            'Do not invent calendar dates, weather, prices, opening hours, bookings or a party size. '
+            'Dates and party size are optional: do not ask for them, even when unknown or undecided. '
+            'This is a conversational plan, not a saved trip. Do not claim it has been saved. '
+            'Do not introduce yourself or discuss knowing the traveler. '
+            'Use enough space and list items to cover every requested day; this overrides the usual brevity limits. '
+            'End with exactly one specific question about a useful adjustment, not date or party size.'
+        )
     raw = ''.join(worker._registered_stream(
         binding, 'model.lio_discussion.0', 'model.answer', (messages, system, worker.provider),
         message_refs=references))

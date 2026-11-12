@@ -503,7 +503,7 @@ class RunWorker:
             if locale is None:
                 chunks = self._stream(binding, inputs) if self.tools is None else self.tools.answer(self, binding, inputs)
             elif self.tools is None:
-                chunks = self._stream(binding, inputs, system=answer_prompt(locale), answer=True)
+                chunks = self._stream(binding, inputs, system=answer_prompt(locale,question=text), answer=True)
             else:
                 chunks = self.tools.answer(self, binding, inputs, lio_locale=locale, lio_question_day=original.question_day,**({'message_refs':message_refs} if message_refs else {}),
                                            **({'lio_city':self.lio_city_context} if self.lio_city_context is not None else {}))
