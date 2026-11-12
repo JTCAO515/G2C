@@ -118,3 +118,31 @@ def test_additional_source_extension_enters_before_needs_and_unwinds_after_it():
     assert events.index('needs-exit') < events.index('extra-exit') < events.index('message-exit')
     with pytest.raises(LeaseUnavailable):
         source.check(binding, capture)
+
+
+@pytest.mark.parametrize('change', [
+    lambda v: v['date_source']['reference'].update(conversation_id='other-dialogue'),
+    lambda v: v['date_source']['reference'].update(generation='other-generation'),
+    lambda v: v['date_source']['reference'].update(sequence=99),
+    lambda v: v.update(start_date='2026-12-02'),
+])
+def test_conversion_cannot_use_another_readable_original_or_different_compiled_date(change):
+    from types import SimpleNamespace
+    from unittest.mock import patch
+    from cj_trip.domain import Trip
+    from cj_draft.calendar_dates import convert
+    raw = deepcopy(FIXTURES['conversion_input'])
+    original = deepcopy(raw)
+    change(raw)
+    trip = Trip(original['trip_id'], original['expected_version'], packed(FIXTURES['protected_contents'][0]))
+    root = packed(dict(reference=original['date_source']['reference']))
+    capture = SimpleNamespace(basis=SimpleNamespace(fixed_bindings=root, start_date=original['start_date']))
+    message = object()
+    class Source:
+        contexts = {'binding': SimpleNamespace(trip=trip)}
+        calendar_active = SimpleNamespace(get=lambda: (capture, object()))
+        def check(self, *_): pass
+        def _original(self, *_): raise AssertionError('foreign source cannot be consulted')
+    publisher = SimpleNamespace(source=Source(), repository=object(), require_lio=lambda *_: None)
+    with patch('cj_draft.calendar_dates.query', return_value=None), pytest.raises(LeaseUnavailable):
+        convert(publisher, 'binding', message, message, packed(raw), capture, lambda **_: None)

@@ -29,6 +29,9 @@ def convert(publisher, binding, original, current, raw, capture, before_publish)
     publisher.require_lio(binding, original, expected)
     held = publisher.source.calendar_active.get()[1]
     reference = json.loads(request.source_reference)
+    root = json.loads(capture.basis.fixed_bindings)['reference']
+    if reference != root or request.start_date.isoformat() != capture.basis.start_date:
+        raise LeaseUnavailable('date conversion requires this original MESSAGE compiled date')
     command = publisher.source._original(held, reference)
     if (request.quote not in json.loads(command.raw)['text']
             or held.question_day(reference) != request.question_day
