@@ -165,10 +165,11 @@ private struct LioRouteMap: UIViewRepresentable {
     let day: LioItinerary.Day
     let focusedStop: String?
     let failed: () -> Void
+    @Environment(\.colorScheme) private var colorScheme
 
     func makeUIView(context: Context) -> LioRouteCanvas { LioRouteCanvas() }
     func updateUIView(_ map: LioRouteCanvas, context: Context) {
-        map.configure(day: day, focusedStop: focusedStop, failed: failed)
+        map.configure(day: day, focusedStop: focusedStop, style: colorScheme == .dark ? .dark : .light, failed: failed)
     }
     static func dismantleUIView(_ map: LioRouteCanvas, coordinator: ()) { map.retire() }
 }
@@ -179,6 +180,7 @@ private final class LioRouteCanvas: UIView {
     private let image = UIImageView()
     private var day: LioItinerary.Day?
     private var focusedStop: String?
+    private var style = UIUserInterfaceStyle.unspecified
     private var request: MKMapSnapshotter?
     private var markers: [UIButton] = []
     private var failed: (() -> Void)?
@@ -192,13 +194,17 @@ private final class LioRouteCanvas: UIView {
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) is unavailable") }
 
-    func configure(day: LioItinerary.Day, focusedStop: String?, failed: @escaping () -> Void) {
+    func configure(day: LioItinerary.Day, focusedStop: String?, style: UIUserInterfaceStyle,
+                   failed: @escaping () -> Void) {
+        if self.day != day || self.focusedStop != focusedStop || self.style != style {
+            retire()
+            self.day = day
+            self.focusedStop = focusedStop
+            self.style = style
+            size = .zero
+            setNeedsLayout()
+        }
         self.failed = failed
-        guard self.day != day || self.focusedStop != focusedStop else { return }
-        self.day = day
-        self.focusedStop = focusedStop
-        size = .zero
-        setNeedsLayout()
     }
 
     override func layoutSubviews() {
@@ -229,6 +235,7 @@ private final class LioRouteCanvas: UIView {
         }
         let options = MKMapSnapshotter.Options()
         options.size = bounds.size
+        options.traitCollection = UITraitCollection(userInterfaceStyle: style)
         options.pointOfInterestFilter = .excludingAll
         if let focused = stops.first(where: { $0.stop.id == focusedStop }) {
             options.region = MKCoordinateRegion(center: focused.coordinate, span: .init(latitudeDelta: 0.015, longitudeDelta: 0.015))
