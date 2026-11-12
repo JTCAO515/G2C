@@ -32,6 +32,18 @@ REGISTRY = HERE / 'teacher-known-bad.v1.json'
 
 
 @dataclass(frozen=True)
+class ProducerProfile:
+    candidate_version: str
+    prompt_version: str
+    handoff_version: str
+    data_version: str | None = None
+    source_paths: tuple[str, ...] = ()
+
+
+LEGACY_PROFILE = ProducerProfile(FAKE_VERSION, 'F768-public-scripts.1', HANDOFF_VERSION)
+
+
+@dataclass(frozen=True)
 class Limits:
     model: int = 400
     tool: int = 400
@@ -190,11 +202,12 @@ class LimitReached(Exception):
     pass
 
 
-def generate(case, batch, teacher, tools, counts, limits, bad, model_events, tool_events):
+def generate(case, batch, teacher, tools, counts, limits, bad, model_events, tool_events, profile=LEGACY_PROFILE):
     row = deepcopy(case.template)
     row.update(sample_id=case.name, messages=[], executions=[],
-               source=dict(kind='synthetic_fixture', source_id='fake/' + batch + '/' + case.name, revision=FAKE_VERSION))
-    row['versions'].update(model='FakeTeacher.1', prompt='F768-public-scripts.1', adapter=FAKE_VERSION)
+               source=dict(kind='synthetic_fixture', source_id='fake/' + batch + '/' + case.name,
+                           revision=profile.data_version if profile.data_version is not None else profile.candidate_version))
+    row['versions'].update(model='FakeTeacher.1', prompt=profile.prompt_version, adapter=FAKE_VERSION)
     row['run'] = dict(attempt_id='fake-task/' + batch + '/' + case.name, run_id='fake-run/' + batch + '/' + case.name,
                       status='unknown', answer_state='none', evidence_ref='tasks.json#' + case.name)
     start = dict(counts)
@@ -308,7 +321,7 @@ def write_jsonl(path, values):
     path.write_text(''.join(canonical(value) + '\n' for value in values))
 
 
-def run_fake(output, batch, plan, teacher, tools, limits=Limits()):
+def run_fake(output, batch, plan, teacher, tools, limits=Limits(), *, profile=LEGACY_PROFILE, extra_artifacts=None):
     if re.fullmatch('[A-Za-z0-9_-]{1,64}', batch) is None or not plan:
         raise Rejected('nonempty_fake_plan_and_bounded_batch_id_required')
     bad = registry()
@@ -324,7 +337,7 @@ def run_fake(output, batch, plan, teacher, tools, limits=Limits()):
                               processing_status='UNRUN', reason='batch_stopped', model_requests=0, tool_requests=0))
             continue
         before = dict(counts)
-        result, candidate, raw = generate(case, batch, teacher, tools, counts, limits, bad, model_events, tool_events)
+        result, candidate, raw = generate(case, batch, teacher, tools, counts, limits, bad, model_events, tool_events, profile)
         result.update(**identity, model_requests=counts['model'] - before['model'],
                       tool_requests=counts['tool'] - before['tool'])
         tasks.append(result)
@@ -364,11 +377,16 @@ def run_fake(output, batch, plan, teacher, tools, limits=Limits()):
     write_json(output / 'report.json', report)
     for purpose, rows in split.items():
         write_jsonl(output / (purpose + '.jsonl'), rows)
+    if extra_artifacts is not None:
+        for name, value in extra_artifacts.items():
+            if Path(name).name != name or name in {p.name for p in output.iterdir()} or name == 'handoff.json':
+                raise Rejected('extra_artifact_would_escape_or_overwrite')
+            write_json(output / name, value)
     files = {p.name: dict(sha256=sha(p.read_bytes()), bytes=p.stat().st_size) for p in sorted(output.iterdir())}
     original = load((HERE / 'manifest.v1.json').read_bytes())
     sources = [*original['source_hashes'], 'tooling/datasets/teacher.py', 'tooling/datasets/teacher-known-bad.v1.json',
-               'tooling/datasets/test_teacher.py', 'tooling/datasets/teacher-pipeline.md']
-    manifest = dict(version=HANDOFF_VERSION, mode='fake', batch_id=batch, candidate_version=FAKE_VERSION,
+               'tooling/datasets/test_teacher.py', 'tooling/datasets/teacher-pipeline.md', *profile.source_paths]
+    manifest = dict(version=profile.handoff_version, mode='fake', batch_id=batch, candidate_version=profile.candidate_version,
                     parent_issue=767, producer_issue=789, independent_quality_issue=788,
                     record_schema=VERSION, tools_sha256=TOOLS_HASH,
                     repository_revision=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
@@ -382,6 +400,8 @@ def run_fake(output, batch, plan, teacher, tools, limits=Limits()):
                     live_adapter_status='UNRUN', live_authorization_checked=False,
                     limits=dict(model_requests=limits.model, tool_requests=limits.tool, per_task=8),
                     semantic_quality='UNKNOWN')
+    if profile.data_version is not None:
+        manifest['data_version'] = profile.data_version
     write_json(output / 'handoff.json', manifest)
     return report
 
