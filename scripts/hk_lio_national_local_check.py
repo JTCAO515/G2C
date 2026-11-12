@@ -75,8 +75,20 @@ def exercise(root,conninfo):
     current={};wire=[];city_calls=[]
     def response(request):
         assert str(request.url)==M4_BASE+'/chat/completions'
-        body=json.loads(request.content);wire.append(body);system=body['messages'][0]['content']
-        if body.get('tools'):
+        body=json.loads(request.content);wire.append(body);system=body['messages'][0]['content'];visitor_call=None
+        if body.get('tools') and current.get('visitor_question'):
+            assert any(t['function']['name']=='visitor_fact'for t in body['tools'])
+            if body['messages'][-1]['role']=='tool':
+                results=json.loads(body['messages'][-1]['content'])['results']
+                result=results[0]['result'];assert result['data_origin']=='maintainer_summary'
+                assert result['entries'] and result['status']=='matched'
+                current['visitor_answer']=result['entries'][0]['text']
+                content=current['visitor_answer']+(' 你想先了解哪一步？'if current['locale']=='zh' else ' Which step would you like help with?')
+            else:
+                visitor_call=dict(index=0,id='visitor-original-'+str(len(wire)),type='function',
+                    function=dict(name='visitor_fact',arguments=json.dumps(dict(topic=current['visitor_topic'],city='Beijing'))))
+                content=None
+        elif body.get('tools'):
             # Identity is answered only with the actual saved Memory selection.
             visible=json.dumps(body['messages'],ensure_ascii=False)
             has_saved=PREFERENCE in visible
@@ -92,7 +104,12 @@ def exercise(root,conninfo):
             source_index=len([m for m in body['messages'][1:] if m['role']=='user' and not m['content'].startswith('Stored memory data')])-1
             from cj_agent.lio_intake_optional_schema import response_format
             assert body['response_format']==response_format(source_index)
-            if text in QUOTED_REQUESTS.values() or current.get('quoted_replay') and text in ('继续','Please continue.'):
+            if current.get('visitor_question'):
+                content=json.dumps(dict(version='LIO-planning-intake.4',intent='consult',reply='I can check the visitor guidance.',
+                    needs_tools=True,city=dict(query=current['mention'],normalized_name=None,province=None,
+                    source_index=source_index,quote=current['mention']),duration_days=None,start_date=None,
+                    extraction=None,field_sources={},current_source_index=source_index),ensure_ascii=False)
+            elif text in QUOTED_REQUESTS.values() or current.get('quoted_replay') and text in ('继续','Please continue.'):
                 from test_lio_planning_flow import flow as flow_fixture
                 quoted=text in QUOTED_REQUESTS.values()
                 if quoted:current['quoted_source_index']=source_index
@@ -214,8 +231,9 @@ def exercise(root,conninfo):
             from jsonschema import Draft202012Validator
             Draft202012Validator(body['response_format']['json_schema']['schema']).validate(json.loads(content))
         identity=dict(id='fixture-national-'+str(len(wire)),model=M4_MODEL)
-        events=[dict(**identity,choices=[dict(index=0,delta=dict(content=content),finish_reason=None)]),
-                dict(**identity,choices=[dict(index=0,delta={},finish_reason='stop')]),
+        delta=dict(tool_calls=[visitor_call])if visitor_call is not None else dict(content=content)
+        events=[dict(**identity,choices=[dict(index=0,delta=delta,finish_reason=None)]),
+                dict(**identity,choices=[dict(index=0,delta={},finish_reason='tool_calls'if visitor_call is not None else'stop')]),
                 dict(**identity,choices=[],usage=dict(prompt_tokens=40,completion_tokens=10,total_tokens=50))]
         raw=''.join('data: '+json.dumps(e)+'\n\n' for e in events)+'data: [DONE]\n\n'
         return httpx.Response(200,stream=httpx.ByteStream(raw.encode()))
@@ -231,7 +249,7 @@ def exercise(root,conninfo):
             raise
     model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),journal,transport=httpx.MockTransport(fixture_exchange))
     services=RealServices(model,KEY,subjects,demo_subjects=subjects,national_subjects=subjects)
-    tools=RealTools(services,buffered_streaming_subjects=subjects)
+    tools=RealTools(services,buffered_streaming_subjects=subjects,visitor_catalogue_directory=ROOT/'knowledge/visitor/entries')
     signer=load_confirmation_signer(auth)
     def process():
         return run_worker.run_once(database,model,auth,tools_configuration=tools,real_services=services,
@@ -434,6 +452,32 @@ def exercise(root,conninfo):
                 assert db.execute('SELECT count(*) FROM cj_memory_item').fetchone()==(0,)
             print('PASS original C wording: undated plan->relative start/fixed save without party->optional party no duplicate->edit->full-byte undo',locale,flush=True)
         current.pop('clarification_flow');current.pop('start_date')
+        for locale,topic,question in (
+            ('zh','payment','成都手机支付有哪些办法？'),
+            ('en','passport_booking','How do I verify my passport for a train ticket in Chengdu?')):
+            current.update(zh='成都',en='Chengdu',mention='成都'if locale=='zh'else'Chengdu',locale=locale,
+                           visitor_question=True,visitor_topic=topic)
+            mid='visitor-guidance-'+locale
+            message=dict(version='LIO-message.2',message_id=mid,text=question,locale=locale,new_conversation=True)
+            result=api.post('/v2/lio/messages',headers=headers,content=json.dumps(message).encode())
+            assert result.status_code==200,result.text
+            assert [(o.message_id,o.status)for o in process()]==[(mid,'completed')]
+            cid=result.json()['conversation_id']
+            timeline=api.get('/v2/lio/timeline',headers=headers,params=dict(conversation_id=cid)).json()['messages']
+            reply=timeline[-1]
+            assert reply['answer'].startswith(current['visitor_answer']) and reply['trip']is None
+            assert 'local:visitor-catalogue'not in reply['answer'] and 'restapi.amap.com'not in reply['answer']
+            assert any(source['url'] and source['url'].startswith('https://')for source in reply['sources'])
+            with database.connect(scope)as db:
+                operations=db.execute("SELECT attempt_id,input_bytes FROM cj_run_metered_operation WHERE scope=%s AND run_id=(SELECT run_id FROM cj_message_receipt WHERE scope=%s AND message_id=%s) AND registration_id='tool.visitor_fact'",(scope,scope,mid)).fetchall()
+                assert len(operations)==1
+                attempt,raw=operations[0]
+                assert json.loads(bytes(raw))['query']['city']=='510100'
+                assert attempt not in {row['attempt_id']for row in journal.inspect()}
+                assert db.execute('SELECT count(*) FROM cj_message_needs_binding WHERE message_scope=%s AND message_id=%s',(scope,mid)).fetchone()==(0,)
+            print('PASS signed local visitor FAQ, original registered tool/Meter and zero external visitor call',locale,topic,flush=True)
+        current.pop('visitor_question');current.pop('visitor_topic');current.pop('visitor_answer')
+
         # An unsaved candidate must not become personal identity in a new chat.
         preference=dict(version='LIO-message.2',message_id='nation-preference',text=PREFERENCE,locale='en',new_conversation=True)
         accepted=api.post('/v2/lio/messages',headers=headers,content=json.dumps(preference).encode());assert accepted.status_code==200,accepted.text
@@ -456,10 +500,9 @@ def exercise(root,conninfo):
                 reply=read['messages'][-1]['answer']
                 assert ('fewer stops' in reply or '少安排' in reply) if saved else ("don't know you yet" in reply or '还不了解你' in reply)
         print('PASS national consultation retains Memory candidates and new-chat identity recalls only saved Memory',flush=True)
-    # Undated destination/day-count requests now resolve a city for their plan.
-    # Two undated requests + twelve dated plans + one destination switch + two C flows.
-    # Parameter-only continuations reuse that original resolution; discussions do not resolve.
-    assert len(city_calls)==17,len(city_calls)
+    # Two undated requests + twelve dated plans + one destination switch + two C flows + two visitor FAQ destinations.
+    # Parameter-only continuations reuse the original resolution; discussions do not resolve.
+    assert len(city_calls)==19,len(city_calls)
     assert all(row['state']=='RECEIVED' for row in journal.inspect())
     print('PASS 12 signed private PG chains, original model/tool receipts, no live vendor calls',flush=True)
 
