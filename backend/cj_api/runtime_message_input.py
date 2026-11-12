@@ -6,6 +6,11 @@ REFLECTION_MESSAGE='Runtime reflection request.'
 
 
 def lio_input(scope,request,language=None):
+    if request['kind']=='task_setup':
+        from .runtime_preparation_input import preparation_text
+        return encode(dict(version=LIO_VERSION_V2,message_id=request['step_id'],
+            text=preparation_text(request['payload']['task_id'],request['payload']['language']),
+            locale=request['payload']['language'],new_conversation=True))
     if request['kind']=='reflection':
         return encode(dict(version=LIO_VERSION_V2,message_id=request['step_id'],
             text=REFLECTION_MESSAGE,locale='en',new_conversation=True))

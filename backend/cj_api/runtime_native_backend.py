@@ -41,7 +41,7 @@ class NativeRuntimeBackend:
     def claim(self,request,*,deadline):
         value=decode(request)
         if type(value) is not dict or (value.get('kind')!='reflection' and
-                (self.dialogue is None or value.get('kind') not in ('task_setup','message','lio_undo_current_trip','start_controlled_generation','cancel_original_run'))):
+                (self.dialogue is None or value.get('kind') not in ('task_setup','message','new_conversation_message','lio_undo_current_trip','start_controlled_generation','cancel_original_run'))):
             raise Unavailable('NATIVE_ACTION_NOT_CONNECTED')
         self.require_worker(self.claims.binding,self.claims.pins,deadline)
         return self.claims.claim(request,deadline=deadline)

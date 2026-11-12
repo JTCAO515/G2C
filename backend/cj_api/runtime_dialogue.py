@@ -1,8 +1,7 @@
-"""Native Lio dialogue recipes. No administrator setup, defaults or Trip writes.
+"""Native Lio recipes over existing source-bound producers.
 
-The first supported recipe is a fresh public consultation. Other recipes stay
-UNRUN until their actual legal setup is available; prose in a dataset is never
-interpreted as an administrator instruction or an observed state.
+Unconnected recipes remain UNRUN. Dataset prose is never an administrator
+instruction or an observed state, and no missing travel fact is invented.
 """
 from hashlib import sha256
 from pathlib import Path
@@ -14,7 +13,7 @@ from .runtime_message_input import lio_input
 
 class NativeDialogue:
     supported_tasks=frozenset({'dev-airport','dev-required-date','dev-change-mind','dev-local-edit','val-confirm-save'})
-    def __init__(self,claims,boundary,database,token_supplier,wait_original,*,dataset_path,trip_boundary=None,cancellation=None):
+    def __init__(self,claims,boundary,database,token_supplier,wait_original,*,dataset_path,trip_boundary=None,cancellation=None,memory_setup=None):
         self.claims,self.boundary,self.database=claims,boundary,database
         self.token_supplier,self.wait_original=token_supplier,wait_original
         raw=Path(dataset_path).read_bytes()
@@ -29,6 +28,8 @@ class NativeDialogue:
             from .runtime_undo import NativeUndo
             self.undo=NativeUndo(claims,boundary,trip_boundary,token_supplier)
             self.supported_tasks=self.supported_tasks|{'val-undo'}
+        self.memory_setup=memory_setup
+        if memory_setup is not None:self.supported_tasks=self.supported_tasks|{'val-deleted-recall'}
         self.cancellation=cancellation
         if cancellation is not None:self.supported_tasks=self.supported_tasks|{'dev-cancel'}
 
@@ -39,10 +40,11 @@ class NativeDialogue:
         expected={key:original[key] for key in ('id','split','trip_family','setup')}
         expected['variant']=original['variants'][language]
         if task!=expected:raise Unavailable('NATIVE_RECIPE_TEXT_CHANGED')
+        if task['id']=='val-deleted-recall':self.memory_setup.require_available()
         if not (self.database.travel_context and self.database.needs_context and self.database.trip_context):
             raise Unavailable('NATIVE_LIO_COMPOSITION_NOT_CONNECTED')
 
-    def setup(self,request,*,deadline):
+    def _setup_task(self,request):
         payload=request['payload']
         if payload['task_id'] not in self.supported_tasks:raise Unavailable('NATIVE_TASK_LEGAL_SETUP_NOT_CONNECTED')
         task=self.tasks[payload['task_id']]
@@ -51,6 +53,12 @@ class NativeDialogue:
             raise Unavailable('NATIVE_TASK_RECIPE_BINDING_CHANGED')
         if request['prior_step_ids']:
             raise Unavailable('NATIVE_SETUP_IS_NOT_FIRST')
+        return task
+
+    def setup(self,request,*,deadline):
+        task=self._setup_task(request)
+        payload=request['payload']
+        if task['id']=='val-deleted-recall':return self.memory_setup.proof(request,deadline=deadline)
         # The official Lio producer creates this new chat atomically with its
         # first MESSAGE. Do not pre-create an empty chat/Trip through SQL.
         first='runtime-'+digest([self.claims.binding.scope,request['attempt_id'],1])
@@ -73,6 +81,10 @@ class NativeDialogue:
 
     def dispatch(self,request,*,deadline):
         if request['kind']=='task_setup':
+            if request['payload']['task_id']=='val-deleted-recall':
+                self._setup_task(request)
+                self.memory_setup.dispatch(request,deadline=deadline)
+                return
             self.setup(request,deadline=deadline)
             return
         if request['kind']=='lio_undo_current_trip':
@@ -82,13 +94,12 @@ class NativeDialogue:
             if self.cancellation is None:raise Unavailable('NATIVE_CONTROL_NOT_CONNECTED')
             return self.cancellation.dispatch(request,deadline=deadline)
         controlled=request['kind']=='start_controlled_generation'
-        if request['kind']!='message' and not controlled:raise Unavailable('NATIVE_DIALOGUE_ACTION_NOT_CONNECTED')
+        if request['kind'] not in ('message','new_conversation_message') and not controlled:raise Unavailable('NATIVE_DIALOGUE_ACTION_NOT_CONNECTED')
         prior=request['prior_step_ids']
         if not prior:raise Unavailable('NATIVE_DIALOGUE_RECIPE_STEP_NOT_CONNECTED')
         setup=decode(self.claims.read(prior[0],deadline=deadline))
         if setup['kind']!='task_setup':raise Unavailable('NATIVE_DIALOGUE_SETUP_UNAVAILABLE')
-        self.setup(setup,deadline=deadline)
-        task=self.tasks[setup['payload']['task_id']]
+        task=self._setup_task(setup)
         variant=task['variants'][setup['payload']['language']]
         inputs=variant.get('steps')
         if inputs is None:inputs=[dict(text=text) for text in variant['turns']]

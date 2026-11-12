@@ -9,6 +9,7 @@ from time import monotonic
 from runtime_adapter.contract import VERSION,decode,digest,encode,Invalid,Unavailable
 
 from .runtime_original_refs import OriginalReferences
+from .runtime_preparation_input import preparatory_message
 
 
 class RuntimeCollector:
@@ -33,12 +34,13 @@ class RuntimeCollector:
 
     def _source(self,token,mid):
         request=decode(self.claims.read(mid,deadline=self.clock()+30))
-        if request['kind'] in ('task_setup','lio_undo_current_trip','cancel_original_run'):
+        prepared=preparatory_message(request)
+        if not prepared and request['kind'] in ('task_setup','lio_undo_current_trip','cancel_original_run'):
             if self.dialogue is None:raise Unavailable('NATIVE_DIALOGUE_TASK_RECIPES_NOT_CONNECTED')
             if request['kind']=='task_setup':self.dialogue.setup(request,deadline=self.clock()+30)
             else:self.dialogue.action_proof(request,deadline=self.clock()+30)
             return request,None
-        if request['kind'] not in ('message','new_conversation_message','start_controlled_generation','reflection'):
+        if not prepared and request['kind'] not in ('message','new_conversation_message','start_controlled_generation','reflection'):
             raise Unavailable('RUNTIME_COLLECTOR_ACTION_NOT_CONNECTED')
         inventory=decode(self.originals.inventory(token,mid))
         # Resolve the native binding and verify its original message content
@@ -141,6 +143,7 @@ class RuntimeCollector:
             raise Unavailable('ORIGINAL_PAYLOAD_ERASED')
         if kind=='state':return self.state_reader(token,mid)
         if kind=='result':
+            if preparatory_message(request):return self.dialogue.setup(request,deadline=self.clock()+30)
             if request['kind']=='reflection':
                 if len(inventory['operations'])!=1:raise Unavailable('REFLECTION_ORIGINAL_COUNT')
                 entry,=inventory['operations']
@@ -153,6 +156,11 @@ class RuntimeCollector:
         if kind!='action':raise Unavailable('RUNTIME_COLLECTOR_PROJECTION_NOT_CONNECTED')
         status={'completed':'PASS','failed':'FAIL','cancelled':'CANCELLED','running':'RUNNING',
                 'queued':'RUNNING','context_invalid':'FAIL','unknown':'UNKNOWN'}.get(inventory['status'],'UNKNOWN')
+        if status=='PASS' and preparatory_message(request):
+            if any(entry['input_erased'] for entry in inventory['operations']):status='UNKNOWN'
+            else:
+                try:status=decode(self.dialogue.setup(request,deadline=self.clock()+30))['status']
+                except (Unavailable,Invalid,OSError):status='UNKNOWN'
         result=None
         if status=='PASS':
             try:result=self._ref(token,'result',mid)

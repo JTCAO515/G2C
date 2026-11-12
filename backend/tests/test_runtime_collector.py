@@ -8,11 +8,13 @@ from runtime_adapter import Binding,Unavailable
 from runtime_adapter.contract import decode,encode
 
 
-def test_erased_input_withholds_old_state_result_and_opaque_reference(tmp_path):
+@pytest.mark.parametrize('kind',['message','task_setup'])
+def test_erased_input_withholds_old_state_result_and_opaque_reference(tmp_path,kind):
     tmp_path.chmod(0o700)
     binding=Binding('original-owner','original-session','original-ledger','original-producer')
     mid='runtime-'+'a'*64
-    request=dict(kind='message',step_id=mid,attempt_id='original-attempt',payload={'text':'Synthetic'},candidate={})
+    request=dict(kind=kind,step_id=mid,attempt_id='original-attempt',payload=({'text':'Synthetic'} if kind=='message' else
+        {'task_id':'val-deleted-recall','language':'en'}),candidate={})
     state=dict(erased=False,reads=0)
     stored=SimpleNamespace(receipt=SimpleNamespace(conversation_id='chat',generation='generation',sequence=1,run_id='run'))
     context=SimpleNamespace(scope=binding.scope,query_message=lambda message_id:stored)
@@ -24,8 +26,9 @@ def test_erased_input_withholds_old_state_result_and_opaque_reference(tmp_path):
         assert not state['erased'],'erased raw state must never be read'
         state['reads']+=1
         return encode({'private':'synthetic original value'})
+    def setup_proof(*args,**kwargs):raise AssertionError('erased preparation must not read old Memory action data')
     collector=RuntimeCollector(originals,claims,SimpleNamespace(request=lambda native:request),lambda:'fixture-token',
-        SimpleNamespace(key='b'*64),tmp_path,guard=lambda **kwargs:None,state_reader=private_state,model_reader=None)
+        SimpleNamespace(key='b'*64),tmp_path,guard=lambda **kwargs:None,state_reader=private_state,model_reader=None,dialogue=SimpleNamespace(setup=setup_proof))
     reference=collector.refs.issue('fixture-token',kind='state',message_id=mid)
     assert state['reads']==1 and b'synthetic original value' not in next(tmp_path.iterdir()).read_bytes()
     state['erased']=True
