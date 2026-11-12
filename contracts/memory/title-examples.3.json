@@ -1,0 +1,60 @@
+{
+  "version": "MEMORY-title-examples.3",
+  "synthetic_only": true,
+  "cases": [
+    {
+      "id": "zh",
+      "text": "我喜欢慢节奏旅行。",
+      "title": "慢节奏旅行",
+      "valid": true
+    },
+    {
+      "id": "en",
+      "text": "I prefer quiet entrances.",
+      "title": "Quiet entrances",
+      "valid": true
+    },
+    {
+      "id": "null",
+      "text": "I prefer quiet entrances.",
+      "title": null,
+      "valid": true
+    },
+    {
+      "id": "empty",
+      "text": "我喜欢慢节奏旅行。",
+      "title": "",
+      "valid": true
+    },
+    {
+      "id": "too-long-zh",
+      "text": "我喜欢慢节奏旅行。",
+      "title": "一二三四五六七八九十一",
+      "valid": false
+    },
+    {
+      "id": "too-long-en",
+      "text": "I prefer quiet entrances.",
+      "title": "one two three four five six",
+      "valid": false
+    },
+    {
+      "id": "wrong-language",
+      "text": "I prefer quiet entrances.",
+      "title": "安静入口",
+      "valid": false
+    },
+    {
+      "id": "internal",
+      "text": "I prefer quiet entrances.",
+      "title": "run_id",
+      "valid": false
+    },
+    {
+      "id": "punctuation",
+      "text": "I prefer quiet entrances.",
+      "title": "Quiet entrances.",
+      "valid": false
+    }
+  ]
+}

@@ -3737,6 +3737,136 @@
         ],
         "description": "Original lifecycle receipt read only, newly valid current AUTH/scope; absence never authorizes retry. Candidate factory closed pending independent gates."
       }
+    },
+    "/v3/memories": {
+      "get": {
+        "operationId": "listTitledMemories",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Source-current read-only title projection; original item remains authoritative.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemoryListV3Response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unified BASE error; see composition-proposal.md for conservative recovery mapping",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            }
+          }
+        ]
+      }
+    },
+    "/v3/memory-items": {
+      "get": {
+        "operationId": "getTitledMemoryItem",
+        "security": [
+          {
+            "CJBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Source-current read-only title projection; original item remains authoritative.",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemoryDetailV3Response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unified BASE error; see composition-proposal.md for conservative recovery mapping",
+            "headers": {
+              "X-Request-ID": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/RequestId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            }
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -9249,6 +9379,106 @@
                 "type": "null"
               }
             ]
+          }
+        }
+      },
+      "MemoryItemV3": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "command",
+          "version",
+          "status",
+          "recorded_at",
+          "title"
+        ],
+        "properties": {
+          "command": {
+            "$ref": "#/components/schemas/MemoryStoredCommandV2"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "candidate",
+              "disabled",
+              "withdrawn"
+            ]
+          },
+          "recorded_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4096,
+                "pattern": "^[^\\r\\n\\t]*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Server-derived same-language short title: Chinese <=10 characters, English <=5 words; null/empty means unavailable. Never source or execution authority."
+          }
+        }
+      },
+      "MemoryDetailV3Response": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "version",
+          "request_id",
+          "item"
+        ],
+        "properties": {
+          "version": {
+            "type": "string",
+            "const": "MEMORY-result.3"
+          },
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "item": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MemoryItemV3"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "MemoryListV3Response": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "version",
+          "request_id",
+          "items"
+        ],
+        "properties": {
+          "version": {
+            "type": "string",
+            "const": "MEMORY-result.3"
+          },
+          "request_id": {
+            "$ref": "#/components/schemas/RequestId"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemoryItemV3"
+            },
+            "maxItems": 100
           }
         }
       }
