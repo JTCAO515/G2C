@@ -494,7 +494,11 @@ import XCTest
                 disabled.tap()
                 XCTAssertTrue(app.staticTexts[body].waitForExistence(timeout: 8))
                 XCTAssertTrue(app.staticTexts[chinese ? "Lio 暂时不用这条记忆。" : "Lio isn’t using this memory."].exists)
-                XCTAssertTrue(app.buttons["lio.memory.edit"].exists)
+                let edit = app.buttons["lio.memory.edit"]
+                for _ in 0..<3 where !edit.isHittable { app.swipeUp() }
+                XCTAssertTrue(edit.isHittable)
+                edit.tap()
+                XCTAssertEqual(app.textViews["lio.memory.editor"].value as? String, body)
                 app.terminate()
             }
         }
