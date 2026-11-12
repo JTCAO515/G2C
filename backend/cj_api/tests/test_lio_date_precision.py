@@ -31,11 +31,45 @@ class DatePrecision(unittest.TestCase):
             for wrong in ('2026-11-19','2026-11-24'):
                 with self.subTest(phrase=phrase,wrong=wrong),self.assertRaises(InvalidInput):parsed(text,wrong,quote=phrase)
 
+    def test_range_quote_binds_start_without_matching_every_weekday(self):
+        phrase='下周二到周五，周二开始'
+        self.assertEqual(parsed('计划北京三天，一个人，'+phrase,'2026-11-17',quote=phrase).start_date['value'],'2026-11-17')
+
+    def test_week_after_next_is_not_a_next_week_substring(self):
+        phrase='下下周二出发'
+        self.assertEqual(parsed('计划北京三天，一个人，'+phrase,'2026-11-24',quote=phrase).start_date['value'],'2026-11-24')
+        with self.assertRaises(InvalidInput):parsed('计划北京三天，一个人，'+phrase,'2026-11-17',quote=phrase)
+
+    def test_weekend_without_a_day_is_not_an_exact_departure(self):
+        for phrase in ('next weekend','下周末','this weekend'):
+            with self.subTest(phrase=phrase),self.assertRaises(InvalidInput):
+                parsed('计划北京三天，一个人，'+phrase,'2026-12-01',quote=phrase)
+
+    def test_legacy_profile_compiler_stays_frozen(self):
+        from test_lio_national_execution import NationalExecution
+        from cj_api.lio_national_intake import parse
+        text='计划上海三天，下周二到周五，周二开始，两个人'
+        value=NationalExecution().envelope(text,start='2026-11-17')
+        for field in ('arrival.date','departure.date'):
+            value['field_sources'][field][0]['quote']='下周二到周五，周二开始'
+        result=parse(json.dumps(value),(PlanningTurn(text,date(2026,11,12)),))
+        self.assertEqual(result.extraction['fields']['arrival']['date']['value'],'2026-11-17')
+
     def test_coarse_week_stays_uncertain_and_does_not_block_intake(self):
         text='计划北京三天，一个人，下周去'
         result=parsed(text,None,quote='下周去',uncertain=True)
         self.assertEqual(result.start_date,dict(state='uncertain',note='下周去'))
         self.assertEqual(result.duration_days,3)
+
+    def test_weekday_uses_original_message_day_not_later_answer_day(self):
+        text='计划北京三天，一个人，下周二出发'
+        value=flow(text,city='北京',days=3,start='2026-11-17',party=1,questions=())
+        value.update(version='LIO-planning-intake.8',current_source_index=1)
+        turns=(PlanningTurn(text,date(2026,11,12)),PlanningTurn('继续',date(2026,11,19)))
+        result=parse_flow(json.dumps(value),turns,(dict(message_id='first'),),'second',None,schema=OptionalIntake)[0]
+        self.assertEqual(result.start_date['value'],'2026-11-17')
+        value['start_date']='2026-11-24'
+        with self.assertRaises(InvalidInput):parse_flow(json.dumps(value),turns,(dict(message_id='first'),),'second',None,schema=OptionalIntake)
 
     def test_explicit_iso_date_and_relative_tomorrow_remain_supported(self):
         for quote,expected in (('从2026-11-19开始','2026-11-19'),('从明天开始','2026-11-13')):

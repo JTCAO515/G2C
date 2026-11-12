@@ -55,6 +55,9 @@ def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake):
         error.control=replace(error.control,intent=intent,publication_hold=hold is not None,planning_request_index=request_index)
         raise
     intake=replace(intake,intent=intent,publication_hold=hold is not None,planning_request_index=request_index)
+    if dto.version=='LIO-planning-intake.8' and data['start_date'] is not None:
+        from .lio_national_intake import _week_source
+        _week_source(data['start_date'],[ref for ref in data['field_sources']if ref['field']=='start_date'],turns)
     if intent=='cancel':return intake,questions,{}
     # A previously classified ordinary consultation cannot later supply
     # execution facts merely because a model quotes it again on "continue".

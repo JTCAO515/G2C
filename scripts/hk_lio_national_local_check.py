@@ -343,9 +343,9 @@ def exercise(root,conninfo):
         assert after_replan['current']['days']==initial['days'] and len(after_replan['history'])==3
         from cj_message.lio_plan_needs import lio_needs_id
         from cj_api.local_needs import protected_reader
-        from cj_api.local_app import checker_for
+        from cj_api.local_account_admission_v2 import account_checker_for
         from cj_needs.contract_v1 import encode_snapshot
-        needs_reader=protected_reader(database,checker_for(auth))
+        needs_reader=protected_reader(database,account_checker_for(auth,database,selected_subjects=subjects))
         def current_needs():
             return needs_reader.read(headers['Authorization'].removeprefix('Bearer '),
                 lambda operation,context:encode_snapshot(operation.detail(lio_needs_id(scope,cid))))
@@ -364,7 +364,7 @@ def exercise(root,conninfo):
             assert api.get('/v2/lio/trip',params=params,headers=headers).json()==after_replan
             last=api.get('/v2/lio/timeline',params=dict(conversation_id=cid),headers=headers).json()['messages'][-1]
             assert last['status']=='completed'and last['trip']is None
-            assert ('不保存或替换原行程'in last['answer'])if conflict_locale=='zh'else('without saving or replacing'in last['answer'])
+            assert (('不保存或替换原行程'in last['answer'])if conflict_locale=='zh'else('without saving or replacing'in last['answer'])),last['answer']
             with database.connect(scope)as db:
                 assert db.execute('SELECT count(*) FROM cj_message_needs_binding WHERE message_scope=%s AND message_id=%s',
                     (scope,conflict_mid)).fetchone()==(0,)

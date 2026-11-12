@@ -155,32 +155,40 @@ def province_evidence(mentions,texts):
 
 
 _WEEKDAYS={'monday':0,'tuesday':1,'wednesday':2,'thursday':3,'friday':4,'saturday':5,'sunday':6}
-_WEEKDAY=re.compile(r'(?:周|星期|礼拜)([一二三四五六日天])|\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b',re.I)
-_WEEK_HINT=re.compile(r'(?:下|本|这)(?:个)?(?:周|星期|礼拜)|\b(?:next|this) week\b|\bnext (?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b',re.I)
-_NEXT_WEEK=re.compile(r'下(?:个)?(?:周|星期|礼拜)|\bnext week\b',re.I)
-_DAY_LITERAL=re.compile(r'(?<!\d)\d{4}-\d{2}-\d{2}(?!\d)|\d{1,2}月\d{1,2}[日号]')
+_WEEKDAY_WORD='|'.join(_WEEKDAYS)
+# Bind the weekday adjacent to its modifier, rather than every weekday in a
+# complete source quote (which may also contain the end of a date range).
+_WEEK_SOURCE=re.compile(
+ r'(?P<zh_modifier>下+|本|这)(?:个)?(?:周|星期|礼拜)(?P<zh_day>[一二三四五六日天])?'
+ r'|\b(?P<en_before>'+_WEEKDAY_WORD+r')\s+(?P<en_after_modifier>next|this) week\b'
+ r'|\b(?P<en_modifier>next|this) week(?:end)?\b(?:\s+(?P<en_day>'+_WEEKDAY_WORD+r')\b)?'
+ r'|\bnext (?P<next_day>'+_WEEKDAY_WORD+r')\b',re.I)
 
 
 def _week_source(value,references,turns):
  for ref in references:
-  quote=ref['quote']
-  if _WEEK_HINT.search(quote)is None:continue
-  weekdays=[('一二三四五六日天'.index(m[1])if m[1]not in ('日','天')else 6)
-            if m[1]else _WEEKDAYS[m[2].casefold()]for m in _WEEKDAY.finditer(quote)]
-  if not weekdays and _DAY_LITERAL.search(quote)is None:
-   raise InvalidInput('week without a day cannot authorize an exact date')
-  selected=date.fromisoformat(value);original=turns[ref['source_index']].question_day
-  if weekdays and any(selected.weekday()!=weekday for weekday in weekdays):
-   raise InvalidInput('date differs from its original weekday')
-  if _NEXT_WEEK.search(quote):
-   monday=original-timedelta(days=original.weekday())+timedelta(days=7)
+  for match in _WEEK_SOURCE.finditer(ref['quote']):
+   original=turns[ref['source_index']].question_day
+   selected=date.fromisoformat(value)
+   zh_day=match['zh_day'];en_day=match['en_before']or match['en_day']or match['next_day']
+   if zh_day is None and en_day is None:
+    # An explicitly supplied ISO date was already checked by _date_source.
+    # A week or weekend alone cannot grant a model-selected departure day.
+    if value not in re.findall(r'(?<!\d)\d{4}-\d{2}-\d{2}(?!\d)',ref['quote']):
+     raise InvalidInput('week without a day cannot authorize an exact date')
+    continue
+   weekday=(6 if zh_day in ('日','天')else '一二三四五六'.index(zh_day))if zh_day else _WEEKDAYS[en_day.casefold()]
+   if selected.weekday()!=weekday:
+    raise InvalidInput('date differs from its original weekday')
+   if match['next_day']:
+    if not 0<(selected-original).days<=7:
+     raise InvalidInput('date differs from its original next weekday')
+    continue
+   modifier=match['zh_modifier']or match['en_modifier']or match['en_after_modifier']
+   offset=(len(modifier)if modifier.startswith('下')else 1 if modifier.casefold()=='next'else 0)
+   monday=original-timedelta(days=original.weekday())+timedelta(days=7*offset)
    if not monday<=selected<monday+timedelta(days=7):
     raise InvalidInput('date differs from its original calendar week')
-  elif re.search(r'\bnext (?:'+ '|'.join(_WEEKDAYS)+r')\b',quote,re.I):
-   if not 0<(selected-original).days<=7:
-    raise InvalidInput('date differs from its original next weekday')
-  elif selected.isocalendar()[:2]!=original.isocalendar()[:2]:
-   raise InvalidInput('date differs from its original calendar week')
 
 
 def _date_source(value,references,turns):
@@ -195,7 +203,6 @@ def _date_source(value,references,turns):
    relative_dates.add((turns[ref['source_index']].question_day+timedelta(days=offset)).isoformat())
  if relative_dates and (len(relative_dates)!=1 or value not in relative_dates):
   raise InvalidInput('relative date differs from its original question day')
- _week_source(value,references,turns)
 
 
 def parse(raw,turns,*,version=VERSION):
