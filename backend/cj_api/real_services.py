@@ -14,6 +14,7 @@ import logging
 import os
 from pathlib import Path
 import re
+import sys
 from time import monotonic
 from types import MappingProxyType
 from urllib.parse import urlencode
@@ -96,6 +97,10 @@ for _tool in NATIONAL_TOOLS:
         _tool['function']['parameters']['properties']['city']={'type':'string','description':'Server-confirmed administrative code.'}
     elif _tool['function']['name']=='weather':
         _tool['function']['description']='Forecast for the server-confirmed administrative destination and ISO local dates. Returned provider dates only; never guaranteed.'
+VISITOR_TOOL=_function('visitor_fact','Read reviewed visitor guidance for the confirmed city: payment, passport booking, transport, internet or emergency. This is a local maintainer summary, not live policy or eligibility.',dict(
+    topic=dict(type='string',enum=['payment','passport_booking','transport','internet','emergency']),
+    city=dict(type='string',minLength=1,maxLength=128,description='The server-confirmed city; no default city.')))
+NATIONAL_TOOLS.append(VISITOR_TOOL)
 NATIVE_TOOLS=frozenset(t['function']['name'] for t in TOOLS)
 NATIVE_REGISTRATION={'place_search':'place','place_detail':'place','place_route':'place','weather':'weather','fact':'fact'}
 
@@ -115,6 +120,13 @@ class ModelInput:
 def canonical_tool(name,raw,*,city=None):
     """Native argument data → existing strict domain codec; no new wire version."""
     value=json.loads(raw)
+    if name=='visitor_fact':
+        from cj_fact.visitor import decode_query as visitor_query
+        if type(value)is not dict or value.keys()!={'topic','city'}:raise ProviderUnknown('visitor fact argument fields invalid')
+        raw=canonical(dict(version='FACT-query.2',topic=value['topic'],city=city.adcode if city is not None else value['city']))
+        try:visitor_query(raw)
+        except FactFailure:raise ProviderUnknown('visitor fact arguments unavailable')from None
+        return name,raw
     fields=next(t['function']['parameters']['required'] for t in TOOLS if t['function']['name']==name)
     if type(value) is not dict or set(value)!=set(fields):raise ProviderUnknown('native tool argument fields invalid')
     if name=='weather' and city is not None:
@@ -300,7 +312,7 @@ class RealServices:
 class RealTools:
     def __init__(self,services,*,allowed_native=NATIVE_TOOLS,coordinate_routes=True,streaming_subject=None,
                  assembly_streaming_subjects=frozenset(),buffered_streaming_subjects=frozenset(),controlled_probe=None,
-                 tool_evidence=None):
+                 tool_evidence=None,visitor_catalogue_directory=None):
         if type(coordinate_routes) is not bool:raise ValueError('explicit_coordinate_route_profile_required')
         self.services=services;self.coordinate_routes=coordinate_routes
         from .local_app import ISSUER,scope_for
@@ -317,11 +329,14 @@ class RealTools:
         self.buffered_streaming_scopes=frozenset(scope_for(ISSUER,subject) for subject in buffered_streaming_subjects)
         self.controlled_probe=controlled_probe
         self.tool_evidence=tool_evidence
+        self.visitor_catalogue_directory=(Path(sys.prefix)/'share/g2c/visitor/entries'
+            if visitor_catalogue_directory is None else visitor_catalogue_directory)
         if type(allowed_native) is not frozenset or not allowed_native or not allowed_native<=NATIVE_TOOLS:
             raise ValueError('explicit code-owned native tool subset required')
         self.names=allowed_native
         self.native_tools=[t for t in TOOLS if t['function']['name'] in allowed_native]
         self.national_tools=[t for t in NATIONAL_TOOLS if t['function']['name'] in allowed_native]
+        if 'fact'in allowed_native:self.national_tools.append(VISITOR_TOOL)
         self.runtime_fragments=None
         self.runtime_profile=None
         self.registrations=self._registrations()
@@ -340,7 +355,8 @@ class RealTools:
             'model.lio_intake.9':Registration('model',self._lio_intake_optional_input),
             'tool.lio_city.1':Registration('tool',self._city_input),
             'memory.lio_extract.1':Registration('memory',self._lio_memory_input),
-            **{'tool.'+name:Registration('tool',lambda argument,name=name:self._tool_input(name,argument)) for name in {NATIVE_REGISTRATION[n] for n in self.names}}})
+            **{'tool.'+name:Registration('tool',lambda argument,name=name:self._tool_input(name,argument)) for name in {NATIVE_REGISTRATION[n] for n in self.names}},
+            **({'tool.visitor_fact':Registration('tool',self._visitor_input)}if 'fact'in self.names else {})})
 
     def runtime_registrations(self, fragments,*,profile='national.1'):
         """One admitted RUN's immutable text candidate over the original exits.
@@ -546,6 +562,36 @@ class RealTools:
         if scope not in {scope_for(ISSUER,s) for s in self.services.national_subjects}:
             raise BudgetUnknown('national tools not enabled for this original identity')
 
+    def _visitor_input(self,argument):
+        from cj_fact.visitor import decode_query as visitor_query,lookup
+        raw_query,request_ref,city=argument
+        query=visitor_query(raw_query)
+        if query.city!=city.adcode:raise ProviderUnknown('visitor destination differs from original resolution')
+        original=canonical(dict(name='visitor_fact',query=json.loads(raw_query),request_ref=request_ref,
+                                destination_adcode=city.adcode,synthetic_only=True))
+        metadata={}
+        def bind(operation,guard):
+            def checked():
+                valid=guard()
+                self.services.require_scope(operation.binding.scope)
+                self._require_national(operation.binding.scope)
+                return valid
+            def invoke():
+                if checked()is not True:raise BudgetUnknown('original visitor authority unavailable')
+                try:
+                    raw=lookup(self.visitor_catalogue_directory,query,evaluated_at=datetime.now(timezone.utc),request_ref=request_ref)
+                except (FactFailure,ValueError):raise BudgetUnknown('original visitor catalogue unavailable')from None
+                if checked()is not True:raise BudgetUnknown('original visitor authority changed')
+                data=json.loads(raw)
+                metadata.update(endpoint='local:visitor-catalogue',response_sha256=hashlib.sha256(raw).hexdigest(),
+                                result_status=data['status'],actual_cost_cny='0',data_origin='maintainer_summary')
+                if self.tool_evidence is not None:self.tool_evidence.record(operation,'visitor_fact',raw,metadata)
+                yield raw.decode('utf8')
+            return invoke
+        def complete(attempt,unit,output):
+            return Receipt(attempt,'visitor-local:'+metadata['response_sha256'],unit,1,output)
+        return InvocationInput(original,None,bind,complete)
+
     def _tool_input(self,name,argument):
         from .lio_weather import decode_query as city_weather_query
         raw_query,request_ref,*destination=argument
@@ -673,7 +719,8 @@ class RealTools:
                         yield _lio_transit_answer(chinese, transit_evidence)
                     return
             else:raw=''.join(chunks)
-            try:turn=parse_turn(raw.encode(),self.names)
+            names=self.names|{'visitor_fact'}if national and 'fact'in self.names else self.names
+            try:turn=parse_turn(raw.encode(),names)
             except ValueError:raise ProviderUnknown('live model tool turn unavailable') from None
             if not turn.calls:
                 answer = turn.answer_zh if chinese else turn.answer_en
@@ -702,7 +749,7 @@ class RealTools:
                     result=''.join(worker._registered_stream(binding,key,'tool.'+name,(arguments,ref,city) if national and city is not None else (arguments,ref)))
                 else:
                     activity = {'place':'checking_places', 'weather':'checking_weather',
-                                'fact':'checking_travel_information'}[name]
+                                'fact':'checking_travel_information','visitor_fact':'checking_travel_information'}[name]
                     pieces = []
                     with closing(worker._registered_stream(binding,key,'tool.'+name,(arguments,ref,city) if national and city is not None else (arguments,ref),
                                                            progress=LioToolProgress(key, activity))) as stream:
@@ -719,6 +766,17 @@ class RealTools:
                 if name == 'place':
                     place_source = data.get('source')
                     source = place_source['endpoint'] if place_source is not None else None
+                elif name=='visitor_fact':
+                    for entry in data['entries']:
+                        label=('旅行信息（'+entry['checked_on']+'核对）'if chinese else 'Travel guidance (checked '+entry['checked_on']+')')
+                        yield LioCitation(key+':'+entry['id'],label,entry['source_urls'][0],None)
+                    model_result=dict(data_origin=data['data_origin'],status=data['status'],
+                        entries=[dict(text=entry['text_zh'if chinese else'text_en'],source_urls=entry['source_urls'],
+                                      checked_on=entry['checked_on'],expires_on=entry['expires_on'])for entry in data['entries']])
+                    if not data['entries']:
+                        system+=' No reviewed visitor entry matched this request; say what you can support from available evidence, explain the specific gap once in the first person, suggest the relevant official channel, and end with one useful question without inventing facts.'
+                    results.append(dict(index=index,name=call.name,tool=name,result=model_result))
+                    continue
                 else:
                     source = data['source_url']
                 public_source = None
