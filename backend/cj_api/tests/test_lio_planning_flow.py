@@ -1,7 +1,9 @@
 """Unified planning rule, original-source retention, and explicit no-save holds."""
+from contextlib import contextmanager
 from copy import deepcopy
 from datetime import date
 import json
+from hashlib import sha256
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
@@ -157,6 +159,38 @@ class PlanningFlow(unittest.TestCase):
         self.assertEqual((published,lookups),([],[]));self.assertEqual(answer(events),wire['reply'])
         self.assertEqual(context(events)['authority'],'plan')
         self.assertEqual(context(events)['status'],'needs_details')
+
+    def test_known_fact_older_than_recent_window_keeps_protected_original_and_erasure_fence(self):
+        from cj_message.domain import Unavailable
+        from cj_api.local_lio_national import CONTEXT
+        def row(n,erased=False):
+            raw=json.dumps(dict(version='MESSAGE-draft.1',conversation_id='chat',message_id='m'+str(n),
+                text='2026-11-20'if n==1 else '继续',trip_id=None,creation_intent='none')).encode()
+            return ('m'+str(n),n,None if erased else raw,sha256(raw).hexdigest(),date(2026,11,11),'completed')
+        previous=dict(authority='plan',status='needs_details',facts={'start_date':dict(value='2026-11-20',
+            sources=[dict(message_id='m1',quote='2026-11-20')])})
+        recent=[row(n)for n in range(9,1,-1)]
+        for erased,missing in ((False,False),(True,False),(False,True)):
+            test=self
+            class Database:
+                @contextmanager
+                def connect(self,scope):
+                    test.assertEqual(scope,'owner')
+                    yield self
+                def execute(self,sql,args):
+                    test.assertEqual(args[:3],('owner','chat','generation'))
+                    if 'LIMIT %s'in sql:return SimpleNamespace(fetchall=lambda:recent)
+                    if 'LIMIT 1'in sql:return SimpleNamespace(fetchone=lambda:('m9',CONTEXT+json.dumps(previous)))
+                    test.assertEqual(args[-1],['m1'])
+                    return SimpleNamespace(fetchall=lambda:[]if missing else[row(1,erased)])
+            binding=SimpleNamespace(scope='owner',conversation_id='chat',generation='generation',message_sequence=10)
+            planner=NationalLioPlanning(Database(),None)
+            if erased or missing:
+                with self.assertRaises(Unavailable):planner.context(binding,original('两个人'))
+            else:
+                turns,refs,stored=planner.context(binding,original('两个人'))
+                self.assertEqual(turns[0].text,'2026-11-20');self.assertEqual(refs[0]['message_id'],'m1')
+                self.assertEqual(stored,previous);self.assertEqual(len(turns),10)
 
     def test_capability_question_bypasses_planning_in_both_languages(self):
         planning=NationalLioPlanning(None,None)
