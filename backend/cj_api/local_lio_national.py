@@ -26,6 +26,7 @@ CONTEXT='lio_planning_context.1:'
 CITY='lio_city_resolution.1:'
 MAX_TURNS=8
 CURRENT_SYSTEM=FACTS_SYSTEM
+AUTHORITY_BARRIERS=('discussion','cancelled','ready_to_publish','different_destination','different_trip')
 # This is a publication gate, not city/date extraction or the intent router.
 # A model cannot turn an isolated date/party answer into a fresh save grant.
 PUBLICATION_REQUEST=re.compile(r"计划|规划|安排|设计|保存|存到|存入|想去|要去|帮我做|"
@@ -43,9 +44,14 @@ def publication_held(text):
     return NONPERSISTENT.search(_UNDECIDED_DATE.sub('',text)) is not None
 
 
-def intake_prompt(locale,turns,*,scene=None):
+def intake_prompt(locale,turns,*,discussion_only=False,scene=None):
     dates=', '.join(turn.question_day.isoformat() for turn in turns)
-    system=answer_prompt(locale)+' '+CURRENT_SYSTEM+' Original traveler messages have source indices 0 through '+str(len(turns)-1)+'. Stored memory data is not an indexed traveler message. Original local China days in that order: '+dates
+    system=answer_prompt(locale)+' '+CURRENT_SYSTEM+' Original traveler messages have source indices 0 through '+str(len(turns)-1)+'. Stored memory data is not an indexed traveler message. A week without a stated day (such as 下周 or next week) is not an exact start date: keep start_date null with the original uncertainty, and plan by day numbers without asking again. Resolve stated weekdays against their original message day. Original local China days in that order: '+dates
+    if discussion_only:
+        system+=(' This conversation is discussing a separate proposal after a conflict with the saved itinerary. '
+                 'For discuss intent, answer the current discussion usefully, including requested refinements, rather than a saving acknowledgement. '
+                 'Keep the saved itinerary and its bookings unchanged; never claim the separate proposal was saved. '
+                 'If the traveler changes topic, answer that topic normally.')
     return system if scene is None else system+'\n'+scene
 
 
@@ -73,7 +79,7 @@ class NationalLioPlanning:
                 continuous.append(row)
             previous=(None if pending is None or pending[0]not in {row[0]for row in continuous}
                       else json.loads(pending[1].removeprefix(CONTEXT)))
-            if previous is not None and previous.get('status')in ('discussion','cancelled','ready_to_publish','different_destination')and previous.get('authority_barrier_message_id')is None:
+            if previous is not None and previous.get('status')in AUTHORITY_BARRIERS and previous.get('authority_barrier_message_id')is None:
                 previous=dict(previous,authority_barrier_message_id=pending[0])
             if previous is not None and previous.get('city',{}).get('status')=='resolved'and previous.get('resolved_city_source_message_id')is None:
                 previous=dict(previous,resolved_city_source_message_id=pending[0])
@@ -120,7 +126,8 @@ class NationalLioPlanning:
             memory_messages=worker.memory_run.messages(text)
             messages=[*memory_messages[:-1],*messages]
         if worker.message_context is not None:messages=worker.message_context.answer_messages(binding,messages)
-        system=intake_prompt(original.locale,turns,scene=self.scene_context(binding,datetime.now(timezone.utc)))
+        system=intake_prompt(original.locale,turns,discussion_only=previous is not None and previous.get('status')=='different_trip',
+                             scene=self.scene_context(binding,datetime.now(timezone.utc)))
         raw=''.join(worker._registered_stream(binding,'model.lio_intake.0','model.lio_intake.9',
                     (messages,system,worker.provider,len(turns)-1),message_refs=refs))
         booking_unclear=False;question_fields=[];facts={}
@@ -144,7 +151,7 @@ class NationalLioPlanning:
             nonlocal barrier_mid
             if 'city'not in value and previous is not None and previous.get('city')is not None:
                 value=dict(value,city=previous['city'])
-            if value['status']in ('discussion','cancelled','ready_to_publish','different_destination'):
+            if value['status']in AUTHORITY_BARRIERS:
                 barrier_mid=binding.message_id
             return self._context(worker,binding,state,dict(value,facts=facts,nonplanning_message_ids=list(dict.fromkeys(excluded)),
                 **({'date_boundary_message_id':boundary_mid}if boundary_mid is not None else {}),
@@ -287,6 +294,15 @@ class NationalLioPlanning:
         if intake.start_date is not None and intake.start_date['state']!='known':missing.append('start_date')
         for edge in ('arrival','departure'):
             if fields.get(edge,{}).get('date',{}).get('state')!='known':missing.append(edge+'.date')
+        if not missing and authority!='none' and self.plan_and_save.planning_window_conflict(binding,fields):
+            state=context(worker,binding,state,dict(authority='none',status='different_trip',city=resolution))
+            from datetime import date
+            window=tuple(fields[edge]['date']['value']for edge in ('arrival','departure'))
+            days=(date.fromisoformat(window[1])-date.fromisoformat(window[0])).days+1
+            introduction=('新日期与已有行程的安排冲突，原行程和锁定安排先保留。这个对话目前只能对应一份正式行程；下面先讨论另一趟方案，不保存或替换原行程。'
+                if original.locale=='zh'else 'These dates conflict with the saved itinerary, so I will keep it and its locked arrangements unchanged. This conversation currently supports one saved itinerary; the following is another proposal for discussion, without saving or replacing the original.')
+            return discuss(worker,binding,state,original.locale,turns,refs,day_count=days,
+                           planning_window=window,introduction=introduction)
         questions=[q for q in checked.get('questions',[]) if q['field']=='fixed_items']
         complete_fixed=fixed_sources_complete(intake,fields,turns,city)
         if missing or questions or not complete_fixed:
@@ -328,7 +344,7 @@ class NationalLioPlanning:
         if request_index is not None and barrier is not None and request_index<=source_ids.index(barrier):return 'none'
         request=None if request_index is None else turns[request_index].text
         explicit=request is not None and PUBLICATION_REQUEST.search(request)is not None
-        denied=previous is not None and previous.get('status')in ('discussion','cancelled','ready_to_publish','different_destination')
+        denied=previous is not None and previous.get('status')in AUTHORITY_BARRIERS
         fresh_fact=any(ref['source_index']==request_index for ref in intake.sources.get('duration_days',[]))
         current_trip=(intake.city is not None and intake.duration_days is not None and fresh_fact)
         if request is not None and not publication_held(request)and (explicit or current_trip):
