@@ -930,6 +930,96 @@ import XCTest
         }
     }
 
+    func testRememberedFeedbackStaysWithItsReplyAndFades() throws {
+        try exerciseInlineMemoryFeedback(changed: false)
+    }
+
+    func testChangedMemoryFeedbackStaysWithItsReply() throws {
+        try exerciseInlineMemoryFeedback(changed: true)
+    }
+
+    func testLargestMemoryConfirmationKeepsBothActionsReachable() {
+        continueAfterFailure = false
+        for language in ["en", "zh-Hans"] {
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "--lio-journey-acceptance", "-cj.ui.language.v1", language,
+                                   "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+            app.launch()
+            XCTAssertTrue(app.buttons["lio.example.0"].waitForExistence(timeout: 12))
+            let input = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+            input.tap(); input.typeText(language == "en" ? "I prefer quiet hotels" : "我喜欢安静的酒店")
+            app.buttons["lio.send"].tap()
+            let remember = app.buttons["lio.memory.remember"]
+            let dismiss = app.buttons["lio.memory.dismiss"]
+            XCTAssertTrue(remember.waitForExistence(timeout: 10))
+            let jump = app.buttons["lio.jumpToLatest"]
+            if jump.waitForExistence(timeout: 2), jump.isHittable { jump.tap() }
+            for _ in 0..<8 {
+                if dismiss.isHittable && dismiss.frame.maxY <= input.frame.minY { break }
+                app.scrollViews.firstMatch.swipeUp()
+            }
+            XCTAssertTrue(remember.isHittable, app.debugDescription)
+            XCTAssertTrue(dismiss.isHittable, app.debugDescription)
+            XCTAssertLessThanOrEqual(remember.frame.maxY, dismiss.frame.minY)
+            XCTAssertLessThanOrEqual(dismiss.frame.maxY, input.frame.minY)
+            XCTAssertGreaterThanOrEqual(remember.frame.width, 44)
+            XCTAssertGreaterThanOrEqual(remember.frame.height, 44)
+            XCTAssertGreaterThanOrEqual(dismiss.frame.width, 44)
+            XCTAssertGreaterThanOrEqual(dismiss.frame.height, 44)
+            let shot = XCTAttachment(screenshot: app.screenshot())
+            shot.name = language + "-largest-memory-confirmation"
+            shot.lifetime = .keepAlways
+            add(shot)
+            app.terminate()
+        }
+    }
+
+    private func exerciseInlineMemoryFeedback(changed: Bool) throws {
+        continueAfterFailure = false
+        for language in ["en", "zh-Hans"] {
+            let english = language == "en"
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "--lio-journey-acceptance", "-cj.ui.language.v1", language]
+            if changed { app.launchArguments.append("--lio-memory-changed-acceptance") }
+            app.launch()
+            XCTAssertTrue(app.buttons["lio.example.0"].waitForExistence(timeout: 12))
+            let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+            composer.tap(); composer.typeText(english ? "I prefer quiet hotels" : "我喜欢安静的酒店")
+            app.buttons["lio.send"].tap()
+            let remember = app.buttons["lio.memory.remember"]
+            XCTAssertTrue(remember.waitForExistence(timeout: 10))
+            try auditMemoryConfirmation(in: app)
+            let followUp = english ? "Any other hotel advice?" : "还有其他酒店建议吗？"
+            composer.tap(); composer.typeText(followUp); app.buttons["lio.send"].tap()
+            let question = app.staticTexts[followUp]
+            XCTAssertTrue(question.waitForExistence(timeout: 8))
+            remember.tap()
+            let status = app.staticTexts[changed
+                ? (english ? "That suggestion changed." : "这条建议已有变化。")
+                : (english ? "Remembered" : "已记住")]
+            XCTAssertTrue(status.waitForExistence(timeout: 10), app.debugDescription)
+            XCTAssertLessThan(status.frame.maxY, question.frame.minY)
+            XCTAssertFalse(remember.exists)
+            if !changed {
+                let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: status)
+                XCTAssertEqual(XCTWaiter.wait(for: [gone], timeout: 5), .completed)
+                XCTAssertFalse(remember.exists)
+            }
+            app.terminate()
+        }
+    }
+
+    private func auditMemoryConfirmation(in app: XCUIApplication) throws {
+        try app.performAccessibilityAudit(for: .all) { issue in
+            let detail = XCTAttachment(string: String(describing: issue.auditType) + "\n" +
+                                       (issue.element?.debugDescription ?? "No element supplied by audit"))
+            detail.name = "Card and memory AX issue"
+            detail.lifetime = .keepAlways
+            self.add(detail)
+            return false
+        }
+    }
+
     private func exercise(_ language: String, question: String) throws {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
