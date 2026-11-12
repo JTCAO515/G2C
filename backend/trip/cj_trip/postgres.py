@@ -12,11 +12,14 @@ from .domain import Action, Proposal, ProposalDetail, Receipt, Trip, Conflict, D
 
 
 class Repository:
-    def __init__(self, connect, scope, confirm=None, guard=None, *, structured=False):
+    def __init__(self, connect, scope, confirm=None, guard=None, *, structured=False, calendar=False):
         self.connect, self.scope = connect, identifier(scope)
         self.confirm = confirm
         self.guard = guard or (lambda stage: None)
         self.structured = structured
+        if calendar and not structured:
+            raise ValueError('calendar consumer requires structured capability')
+        self.calendar = calendar
         self.manual_origin = None
         self.needs_actions = None
         self.needs_edits = None
@@ -102,6 +105,15 @@ class Repository:
 
     def _content(self, content, *, validated=False):
         document = json.loads(content)
+        if type(document) is dict and document.get('content_version') == 'structured.3':
+            if not self.calendar:
+                raise Denied('calendar Trip requires explicit versioned consumer')
+            if not validated:
+                from .structured_v3 import validate_document
+                from .domain import packed
+                validate_document(document)
+                if packed(document) != content: raise ValueError('canonical stored Trip required')
+            return content
         if type(document) is dict and document.get('content_version') in ('structured.1','structured.2'):
             if not self.structured:
                 raise Denied('structured Trip requires explicit versioned consumer')
