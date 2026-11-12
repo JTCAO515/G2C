@@ -25,13 +25,33 @@ uv run --locked python -B -m runtime_adapter.configuration
 ```
 
 源C0生成仅导入固定代码/读取公开输入，不创建 provider、读取凭据或打开费用库。
-默认根可编辑安装已暴露 `backend/`，可 `from runtime_adapter import RuntimeAdapter`；
-实际生产 wheel 的包含与 B 宿主挂接仍须 B 在其后续接线中显式完成。
+可编辑安装和生产 wheel 均暴露 `from runtime_adapter import RuntimeAdapter` 及原
+`cj_*` 领域导入名。镜像保留仓库相对根；非 editable wheel 的公开固定材料和策略源码
+安装在标准 data 目录 `share/g2c/runtime-source`，由 B 组合时显式传入。
 `configuration.source_c0()`还会从仓库相对根读取以下公开固定输入：
 `eval/optimization/cases.v2.json`、`eval/optimization/score_v2.py`、
-`tooling/optimization/uv.lock`。B须在生产wheel/镜像保留这些相对路径及全部被hash的策略源码，
-或另交显式版本化的资源根接口；当前Docker只COPY backend/scripts/deploy，不足以运行此配置读取。
-仅拷这三项公开固定输入，不拷最终题、私有原件、日志或凭据；打包由B补，本模块不改Docker。
+`tooling/optimization/uv.lock`。`source_c0(*, resource_root=None)` 与
+`freeze_pins(runtime_card, *, resource_root=None)` 保留旧默认 ROOT；可选根是 B 的部署配置，
+不接受模型/候选/HTTP任务输入，不指向身份/额度包。资源根下的策略源码须与实际导入源码
+逐字一致；缺文件或错源直接失败，不搜索目录或回退其他数据。adapter 摘要来自实际安装模块。
+构建只新增这三项明确公开输入，不复制其他 eval/tooling 文件、最终题、私有原件、日志或凭据。
+
+```python
+from pathlib import Path
+import sys
+from runtime_adapter.configuration import source_c0, freeze_pins
+
+public_root = Path(sys.prefix) / 'share/g2c/runtime-source'
+source = source_c0(resource_root=public_root)
+pins = freeze_pins(b_actual_runtime_card, resource_root=public_root)
+# Reuse the existing explicit dataset_path, without replacing the loader.
+adapter = RuntimeAdapter(b_registered_backend, b_original_binding, pins,
+                         private_mapping_directory,
+                         dataset_path=public_root / 'eval/optimization/cases.v2.json')
+```
+
+资源可读只证明打包/同源材料可用，不改变三槽、身份、费用、实际运行卡或宿主 UNRUN 状态；
+本切片不启用 national.2/profile2 或原本未连接的全国 clarification。
 
 ## C0 与固定材料
 
