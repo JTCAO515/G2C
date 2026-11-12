@@ -70,6 +70,14 @@ class DatePrecision(unittest.TestCase):
         phrase='下周二到下周五，周二开始'
         self.assertEqual(parsed('计划北京三天，一个人，'+phrase,'2026-11-17',quote=phrase).start_date['value'],'2026-11-17')
 
+    def test_denied_corrected_and_alternative_weekdays_cannot_grant_a_date(self):
+        for phrase in ('不是下周二，而是下下周二','下周二或下周五','not next Tuesday but next Friday'):
+            text='计划北京三天，一个人，'+phrase
+            with self.subTest(phrase=phrase),self.assertRaises(InvalidInput):
+                parsed(text,'2026-11-17',quote=phrase)
+        with self.assertRaises(InvalidInput):
+            parsed('计划北京三天，一个人，不是下周二','2026-11-17',quote='下周二')
+
     def test_coarse_week_stays_uncertain_and_does_not_block_intake(self):
         text='计划北京三天，一个人，下周去'
         result=parsed(text,None,quote='下周去',uncertain=True)

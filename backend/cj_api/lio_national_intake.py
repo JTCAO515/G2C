@@ -164,13 +164,23 @@ _WEEK_SOURCE=re.compile(
  r'|\b(?P<en_modifier>next|this) week(?:end)?\b(?:\s+(?P<en_day>'+_WEEKDAY_WORD+r')\b)?'
  r'|\bnext (?P<next_day>'+_WEEKDAY_WORD+r')\b',re.I)
 
+_WEEK_RANGE=re.compile(r'\s*(?:到|至|[-–—]|through|to|until)\s*',re.I)
+_WEEK_NONASSERTION=re.compile(r'不是|并非|不要|不在|而是|或者|或|\b(?:not|or|instead|rather)\b',re.I)
 
 def _week_source(value,references,turns,*,departure=False):
  for ref in references:
   matches=list(_WEEK_SOURCE.finditer(ref['quote']))
-  # Complete range quotes can contain both departure and return weekdays.
+  # Only an explicit range can select different endpoint anchors. Corrections
+  # and alternatives stay unclear rather than granting the first date.
+  if len(matches)>1 and (len(matches)!=2 or _WEEK_RANGE.fullmatch(ref['quote'][matches[0].end():matches[1].start()])is None):
+   raise InvalidInput('week without a day cannot authorize an exact date')
   selected_matches=matches[-1:]if departure else matches[:1]
   for match in selected_matches:
+   original_text=turns[ref['source_index']].text
+   position=original_text.index(ref['quote'])+match.start()
+   clause_prefix=re.split(r'[，,。.!?；;\n]',original_text[:position])[-1]
+   if _WEEK_NONASSERTION.search(clause_prefix):
+    raise InvalidInput('week without a day cannot authorize an exact date')
    original=turns[ref['source_index']].question_day
    selected=date.fromisoformat(value)
    zh_day=match['zh_day'];en_day=match['en_before']or match['en_day']or match['next_day']
