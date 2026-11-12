@@ -1,0 +1,100 @@
+[
+  {
+    "id": "visitor.beijing.metro-bank-card",
+    "topic": "transport",
+    "cities": [
+      "beijing"
+    ],
+    "text_zh": "北京城市轨道可用受理标识对应的境外银行卡拍卡过闸，也可在自助机拍卡买单程票；具体卡种看现场标识。",
+    "text_en": "Accepted overseas bank cards can be tapped at Beijing rail gates or used at ticket machines. Check the displayed card-network logos.",
+    "source_urls": [
+      "https://www.beijing.gov.cn/fuwu/bmfw/sy/jrts/202506/t20250616_4113709.html"
+    ],
+    "checked_on": "2026-11-12",
+    "expires_on": "2026-12-12"
+  },
+  {
+    "id": "visitor.chengdu.metro-qr",
+    "topic": "transport",
+    "cities": [
+      "chengdu"
+    ],
+    "text_zh": "成都公交和地铁提供支付宝、云闪付绑定境外卡后扫码乘车的方式；开通时按应用指引选择当地交通服务。",
+    "text_en": "For Chengdu buses and metro, Alipay and the UnionPay app (云闪付) offer travel QR codes linked to overseas bank cards. Follow the app instructions for the local transport service.",
+    "source_urls": [
+      "https://www.shanghai.gov.cn/nw4411/20240302/7979c0d640d04cd89075ca826218f0ae.html"
+    ],
+    "checked_on": "2026-11-12",
+    "expires_on": "2026-12-12"
+  },
+  {
+    "id": "visitor.shanghai.metro-service-center",
+    "topic": "transport",
+    "cities": [
+      "shanghai"
+    ],
+    "text_zh": "上海地铁服务中心提供小额兑币及境内外银行卡购票服务；不能正常进出站时找站员处理。柜台刷卡购票与拍卡过闸是不同流程。",
+    "text_en": "Shanghai Metro service centers provide small-change exchange and ticket purchase with domestic or overseas bank cards. Ask staff about gate problems. Counter ticket purchases and bank-card gate entry are separate processes.",
+    "source_urls": [
+      "https://www.shanghai.gov.cn/gwk/search/content/45e2177ec30648c696ad6f5b5b9739a1"
+    ],
+    "checked_on": "2026-11-12",
+    "expires_on": "2026-12-12"
+  },
+  {
+    "id": "visitor.chongqing.rail-physical-pass",
+    "topic": "transport",
+    "cities": [
+      "chongqing"
+    ],
+    "text_zh": "在重庆轨道交通车站售票亭，可询问实体计期票的现金或受理银行卡POS购票方式；本条不含璧铜线，票种和价格向站员确认。",
+    "text_en": "At Chongqing Rail Transit ticket booths, ask about cash or accepted bank-card POS payment for physical period passes. This guidance excludes the Bitong Line (璧铜线); confirm pass types and prices with staff.",
+    "source_urls": [
+      "https://www.cq.gov.cn/ywdt/jrcq/202501/t20250103_14043418.html"
+    ],
+    "checked_on": "2026-11-12",
+    "expires_on": "2026-12-12"
+  },
+  {
+    "id": "visitor.shenzhen.metro-pos-ticket",
+    "topic": "transport",
+    "cities": [
+      "shenzhen"
+    ],
+    "text_zh": "深圳地铁客服中心可用POS机受理的境外银行卡购票；先核对卡种，不把柜台刷卡购票等同于直接刷卡过闸。",
+    "text_en": "At Shenzhen Metro customer service centers, supported overseas bank cards can buy tickets through POS terminals. Check accepted card logos; buying a ticket is separate from tapping a card at a gate.",
+    "source_urls": [
+      "https://www.sz.gov.cn/en_szgov/news/infocus/SZCitywalk/NewsPolicies/Latestnews/content/post_11887532.html"
+    ],
+    "checked_on": "2026-11-12",
+    "expires_on": "2026-12-12"
+  },
+  {
+    "id": "visitor.beijing.badaling-passport",
+    "topic": "passport_booking",
+    "cities": [
+      "beijing"
+    ],
+    "text_zh": "八达岭长城的“长城内外”小程序支持护照信息订票，现场也有护照购检票渠道；出发前复核预约要求，不套用到其他景点。",
+    "text_en": "For Badaling Great Wall (八达岭长城), the Changcheng Neiwai (长城内外) mini program supports passport bookings, and on-site passport ticketing/checks are available. Recheck requirements before visiting; other attractions have separate rules.",
+    "source_urls": [
+      "https://www.beijing.gov.cn/fuwu/lqfw/ztzl/jrfw/shrl/202407/t20240725_3758812.html"
+    ],
+    "checked_on": "2026-11-12",
+    "expires_on": "2026-11-26"
+  },
+  {
+    "id": "visitor.chongqing.three-gorges-passport",
+    "topic": "passport_booking",
+    "cities": [
+      "chongqing"
+    ],
+    "text_zh": "重庆中国三峡博物馆的预约系统提供护照证件选项；按馆方当日预约说明办理，不将其套用到重庆所有场馆。",
+    "text_en": "The Chongqing China Three Gorges Museum (重庆中国三峡博物馆) reservation system accepts passports. Follow the museum’s current booking instructions; this does not establish the rules for other Chongqing venues.",
+    "source_urls": [
+      "https://www.cq.gov.cn/ywdt/jrcq/202504/t20250407_14493623.html"
+    ],
+    "checked_on": "2026-11-12",
+    "expires_on": "2026-11-26"
+  }
+]
