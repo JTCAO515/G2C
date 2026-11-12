@@ -194,7 +194,7 @@ class RuntimeWorkerBindings:
             originals=RuntimeOriginals(boundary,self.database,self.services.model.authorization,evidence.directory,query_original=claims.query)
             from .runtime_weather_fault import NativeWeatherFault
             weather_fault=NativeWeatherFault(claims,session['routing'],self.database,self.services.model.authorization,
-                evidence.directory,self.pins,token)
+                evidence.directory,self.pins)
             session['routing'].registry_transformer=weather_fault.wrap
             def wait(receipt,deadline,reader=originals,supplier=token):
                 while self.clock()<deadline:

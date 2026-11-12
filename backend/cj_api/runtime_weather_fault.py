@@ -39,9 +39,9 @@ def _directory(path):
 
 
 class NativeWeatherFault:
-    def __init__(self,claims,routing,database,budget,directory,pins,token_supplier):
+    def __init__(self,claims,routing,database,budget,directory,pins):
         self.claims,self.routing,self.database=claims,routing,database
-        self.budget,self.directory,self.pins,self.token_supplier=budget,Path(directory),pins,token_supplier
+        self.budget,self.directory,self.pins=budget,Path(directory),pins
         self.used=set()
 
     def _selected_request(self,request):

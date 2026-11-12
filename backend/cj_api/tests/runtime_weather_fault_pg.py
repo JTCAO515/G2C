@@ -76,7 +76,7 @@ def exercise(auth,database,session,pins,budget,subjects,subject,conninfo):
         expires_at=(datetime.now(timezone.utc)+timedelta(hours=1)).isoformat(),source_commit=pins.value['code_sha'],kinds=['model','tool'])))
     manifest.chmod(0o600)
     tools.tool_evidence=ToolEvidence.load(manifest,frozenset(subjects),runtime_selection=routing.selects)
-    fault=NativeWeatherFault(claims,routing,database,budget,directory,pins,lambda:token)
+    fault=NativeWeatherFault(claims,routing,database,budget,directory,pins)
     routing.registry_transformer=fault.wrap
     checker=session['authority'].checker
     worker=run_worker._worker_for_scope(database,model,auth,scope,checker,tools_configuration=tools,

@@ -32,7 +32,7 @@ def fixture(tmp_path,monkeypatch):
     claims=SimpleNamespace(read=lambda mid,**kwargs:encode(setup if mid=='root-setup' else message))
     routing=SimpleNamespace(request=lambda source:message,selects=lambda source:True,clock=lambda:1.)
     monkeypatch.setattr('cj_api.runtime_weather_fault.original_for',lambda database,source:SimpleNamespace(question_day=date(2026,11,12)))
-    control=NativeWeatherFault(claims,routing,None,budget,artifacts,SimpleNamespace(value={'code_sha':'a'*40}),lambda:'fixture-token')
+    control=NativeWeatherFault(claims,routing,None,budget,artifacts,SimpleNamespace(value={'code_sha':'a'*40}))
     def prepare(argument):
         raw=encode(dict(name='weather',query=dict(fact_key='weather',region='beijing',
             dates=dict(start=argument,end=argument),conditions={'calendar_timezone':'Asia/Shanghai'})))
