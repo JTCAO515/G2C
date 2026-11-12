@@ -52,7 +52,12 @@ class RuntimeRPC:
             'call':{'task','candidate','attempt_id','timeout'},
             'propose':{'candidate','feedback','components','attempt_id','timeout'}}
         require(type(method) is str and method in fields and set(params)==fields[method],'RUNTIME_RPC_METHOD')
-        if method in ('call','propose') and session['line'] in ('E','F') and set(adapter.tasks)!=set(session['dialogue'].supported_tasks):
+        if method in ('call','propose') and session['line']=='F':
+            # This fixed G cases/score release is E's dialogue evaluation, not
+            # F's separately admitted teacher corpus or first-phase write grant.
+            result=dict(version=VERSION,status='UNRUN',attempt_id=params['attempt_id'],
+                reason='F_TEACHER_SOURCE_ADAPTER_NOT_CONNECTED',quality_status='UNKNOWN')
+        elif method in ('call','propose') and session['line']=='E' and set(adapter.tasks)!=set(session['dialogue'].supported_tasks):
             # Existing funding is not a substitute for complete legal setup.
             # Incomplete E/F hosts stop before G writes an intent or pays setup.
             result=dict(version=VERSION,status='UNRUN',attempt_id=params['attempt_id'],
