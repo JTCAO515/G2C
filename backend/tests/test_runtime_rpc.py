@@ -83,3 +83,13 @@ def test_recreated_private_claim_directory_cannot_adopt_old_pin(tmp_path):
     assert pinned_directory(pin)==path
     path.rename(tmp_path/'retained-claims');path.mkdir(mode=0o700)
     with pytest.raises(Invalid,match='DIRECTORY_CHANGED'):pinned_directory(pin)
+
+
+def test_complete_e_dialogue_recipes_do_not_admit_f_teacher_source_or_writes(rpc_fixture):
+    bindings,state,request,token=rpc_fixture
+    session=next(iter(bindings.by_scope.values()));session['line']='F'
+    session['dialogue'].supported_tasks=set(session['adapter'].tasks)
+    result=decode(RuntimeRPC(bindings).handle(request('call',dict(task={'id':'dev-airport','language':'en'},
+        candidate={},attempt_id='f-source-not-admitted',timeout=60))))
+    assert result['status']=='UNRUN' and result['reason']=='F_TEACHER_SOURCE_ADAPTER_NOT_CONNECTED'
+    assert state['calls']==0
