@@ -135,6 +135,12 @@ class RuntimeWorkerBindings:
         session=self._session(binding)
         return False if session is None else session['routing'].selects(binding)
 
+    def exit_observer(self,binding):
+        session=self._session(binding)
+        if session is None:return None
+        request=session['routing'].request(binding)
+        return session['controls'] if request is not None and request['kind']=='start_controlled_generation' else None
+
     def _state_reader(self,session):
         from .lio_dialogue_routes import _timeline
         from .lio_memory_routes import LioMemoryCards
@@ -186,6 +192,10 @@ class RuntimeWorkerBindings:
             def guard(*,read_only,original=authority,binding=session['binding']):
                 original.require(binding=binding,pins_sha256=self.pins.key,purpose='query',deadline=self.clock()+30,read_only=read_only)
             originals=RuntimeOriginals(boundary,self.database,self.services.model.authorization,evidence.directory,query_original=claims.query)
+            from .runtime_controlled_generation import ControlledGeneration
+            from .runtime_cancel import NativeCancellation
+            controls=ControlledGeneration(clock=self.clock);session['controls']=controls
+            cancellation=NativeCancellation(claims,boundary,self.database,token,controls,originals)
             def wait(receipt,deadline,reader=originals,supplier=token):
                 while self.clock()<deadline:
                     try:value=decode(reader.inventory(supplier(),receipt.message_id))
@@ -197,7 +207,7 @@ class RuntimeWorkerBindings:
                 raise TimeoutError('original runtime deadline reached')
             dialogue=NativeDialogue(claims,boundary,self.database,token,wait,
                 dataset_path=self.public_root/'eval/optimization/cases.v2.json',
-                trip_boundary=self._trip_boundary(session))
+                trip_boundary=self._trip_boundary(session),cancellation=cancellation)
             collector=RuntimeCollector(originals,claims,session['routing'],token,self.pins,session['references_directory'],
                 guard=guard,state_reader=self._state_reader(session),model_reader=RuntimeModel(originals,self.services.model,
                     native_turn_profile=M4_NATIVE_TURN_BUFFERED),dialogue=dialogue,clock=self.clock)

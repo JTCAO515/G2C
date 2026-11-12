@@ -13,7 +13,7 @@ from runtime_adapter.contract import decode,digest,encode,require,Unavailable
 
 class NativeDialogue:
     supported_tasks=frozenset({'dev-airport','dev-required-date','dev-change-mind','dev-local-edit','val-confirm-save'})
-    def __init__(self,claims,boundary,database,token_supplier,wait_original,*,dataset_path,trip_boundary=None):
+    def __init__(self,claims,boundary,database,token_supplier,wait_original,*,dataset_path,trip_boundary=None,cancellation=None):
         self.claims,self.boundary,self.database=claims,boundary,database
         self.token_supplier,self.wait_original=token_supplier,wait_original
         raw=Path(dataset_path).read_bytes()
@@ -28,6 +28,8 @@ class NativeDialogue:
             from .runtime_undo import NativeUndo
             self.undo=NativeUndo(claims,boundary,trip_boundary,token_supplier)
             self.supported_tasks=self.supported_tasks|{'val-undo'}
+        self.cancellation=cancellation
+        if cancellation is not None:self.supported_tasks=self.supported_tasks|{'dev-cancel'}
 
     def prepare_task(self,task,language):
         if task['id'] not in self.supported_tasks:
@@ -75,7 +77,11 @@ class NativeDialogue:
         if request['kind']=='lio_undo_current_trip':
             if self.undo is None:raise Unavailable('NATIVE_UNDO_NOT_CONNECTED')
             return self.undo.dispatch(request,deadline=deadline)
-        if request['kind']!='message':raise Unavailable('NATIVE_DIALOGUE_ACTION_NOT_CONNECTED')
+        if request['kind']=='cancel_original_run':
+            if self.cancellation is None:raise Unavailable('NATIVE_CONTROL_NOT_CONNECTED')
+            return self.cancellation.dispatch(request,deadline=deadline)
+        controlled=request['kind']=='start_controlled_generation'
+        if request['kind']!='message' and not controlled:raise Unavailable('NATIVE_DIALOGUE_ACTION_NOT_CONNECTED')
         prior=request['prior_step_ids']
         if not prior:raise Unavailable('NATIVE_DIALOGUE_RECIPE_STEP_NOT_CONNECTED')
         setup=decode(self.claims.read(prior[0],deadline=deadline))
@@ -88,6 +94,9 @@ class NativeDialogue:
         index=len(prior)-1
         if index>=len(inputs) or request['payload']!=inputs[index]:
             raise Unavailable('NATIVE_RECIPE_TEXT_CHANGED')
+        if controlled:
+            if self.cancellation is None:raise Unavailable('NATIVE_CONTROL_NOT_CONNECTED')
+            self.cancellation.prepare(request,deadline=deadline)
         selection=dict(new_conversation=True)
         if index:
             def previous(context):
@@ -106,9 +115,13 @@ class NativeDialogue:
             raise Unavailable('NATIVE_ORIGINAL_ADMISSION_CHANGED')
         # The ordinary original worker consumes this receipt with its already
         # installed per-RUN candidate resolver. No second execution/fee exit.
-        self.wait_original(receipt,deadline)
+        if controlled:self.cancellation.wait_started(receipt,deadline=deadline)
+        else:self.wait_original(receipt,deadline)
 
     def action_proof(self,request,*,deadline):
+        if request['kind']=='cancel_original_run':
+            if self.cancellation is None:raise Unavailable('NATIVE_CONTROL_NOT_CONNECTED')
+            return self.cancellation.proof(request,deadline=deadline)
         if self.undo is None or request['kind']!='lio_undo_current_trip':
             raise Unavailable('NATIVE_ACTION_PROOF_NOT_CONNECTED')
         return self.undo.proof(request,deadline=deadline)

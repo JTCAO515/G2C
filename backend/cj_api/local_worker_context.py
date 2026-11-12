@@ -36,10 +36,11 @@ def checker_for(auth_dir, *, account_retired=None, selected_subjects=None):
 
 
 class LocalBudgetRouter:
-    def __init__(self, database, *, registrations=None, registrations_for_run=None):
+    def __init__(self, database, *, registrations=None, registrations_for_run=None,exit_observer_for_run=None):
         self.database=database
         self.registrations=MODEL_REGISTRY if registrations is None else registrations
         self.registrations_for_run=registrations_for_run
+        self.exit_observer_for_run=exit_observer_for_run
 
     def stop(self, binding):
         raise BudgetUnknown('original quota period unresolved; cleanup withheld')
@@ -78,8 +79,12 @@ class LocalBudgetRouter:
         if context.version=='CJ-LOCAL-RUN@2':
             registrations=(self.registrations if self.registrations_for_run is None else
                            self.registrations_for_run(binding))
-            return RegisteredExit(profile.meter,resolve,clock=time.time,output_limits=profile.output_limits,
-                                  environment='local',registrations=registrations)
+            options=dict(clock=time.time,output_limits=profile.output_limits,environment='local',registrations=registrations)
+            observer=None if self.exit_observer_for_run is None else self.exit_observer_for_run(binding)
+            if observer is not None:
+                from .runtime_controlled_generation import ControlledRegisteredExit
+                return ControlledRegisteredExit(profile.meter,resolve,observer=observer,**options)
+            return RegisteredExit(profile.meter,resolve,**options)
         return LocalProviderExit(profile.meter,resolve,clock=time.time,
                                  output_limits=profile.output_limits,environment='local')
 
