@@ -9,6 +9,7 @@ from pathlib import Path
 
 from cj_message.demo_dialogue import LIO_VERSION_V2,_identity
 from runtime_adapter.contract import decode,digest,encode,require,Unavailable
+from .runtime_message_input import lio_input
 
 
 class NativeDialogue:
@@ -97,16 +98,7 @@ class NativeDialogue:
         if controlled:
             if self.cancellation is None:raise Unavailable('NATIVE_CONTROL_NOT_CONNECTED')
             self.cancellation.prepare(request,deadline=deadline)
-        selection=dict(new_conversation=True)
-        if index:
-            def previous(context):
-                original=self.claims.query(context,prior[-1])
-                if original is None:raise Unavailable('NATIVE_PREVIOUS_ORIGINAL_UNAVAILABLE')
-                return original.receipt.conversation_id
-            cid=self.boundary.with_history_context(self.token_supplier(),previous)
-            selection=dict(conversation_id=cid)
-        raw=encode(dict(version=LIO_VERSION_V2,message_id=request['step_id'],
-            text=request['payload']['text'],locale=setup['payload']['language'],**selection))
+        raw=lio_input(self.claims.binding.scope,request,setup['payload']['language'])
         admitted=self.boundary.receive_lio(self.token_supplier(),raw,
             prepare_scope=self.database._provision_scope,version=LIO_VERSION_V2)
         receipt=self.boundary.with_history_context(self.token_supplier(),

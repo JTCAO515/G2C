@@ -856,7 +856,11 @@ def exercise(auth,conninfo):
         with patch.dict(os.environ,{'CJ_M4_BUDGET_PRODUCER':HK_PRODUCER}),factory_worker.execution_lease():
             final=factory_worker._one(native.receipt)
         assert final.status=='completed'
-        completed=proposal.result(timeout=30)
+        # The tested propose contract has a 60-second operation deadline and
+        # its final protected query has its own 30-second read deadline. The
+        # harness must observe that result, not impose an unrelated 30-second
+        # outer future timeout. Product guards/deadlines remain unchanged.
+        completed=proposal.result(timeout=90)
     assert completed['status']=='PASS' and model.calls==calls+1,(completed,session['adapter'].query('factory-local-component-control'))
     observed=json.loads(rpc.handle(request('query',{'attempt_id':'factory-local-component-control'})))
     assert observed['status']=='PASS' and model.calls==calls+1
