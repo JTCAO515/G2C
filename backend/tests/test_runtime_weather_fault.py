@@ -82,6 +82,14 @@ def test_one_original_dispatch_settles_meter_and_has_no_vendor_or_financial_atte
     originals=SimpleNamespace(directory=directory,database=None,_meter=lambda *args:encode(asdict(actual)))
     usage=SimpleNamespace(command=step.command,input_bytes=value.original_bytes)
     assert read_artifact(originals,binding.scope,stored,None,row,usage)==raw
+    filename.chmod(0o644)
+    with pytest.raises(Unavailable,match='ARTIFACT_AUTHORITY'):
+        read_artifact(originals,binding.scope,stored,None,row,usage)
+    filename.chmod(0o600)
+    filename.write_bytes(b'x'*65537)
+    with pytest.raises(Unavailable,match='ARTIFACT_BOUND'):
+        read_artifact(originals,binding.scope,stored,None,row,usage)
+    filename.write_bytes(raw)
     tampered=dict(record,result_utf8='forged forecast');filename.write_bytes(encode(tampered))
     with pytest.raises(Unavailable,match='OUTPUT_HASH_CHANGED'):
         read_artifact(originals,binding.scope,stored,None,row,usage)

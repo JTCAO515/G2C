@@ -18,7 +18,7 @@ from cj_usage.metered_exit import BudgetUnknown
 from cj_usage.registered_exit import InvocationInput,Registration
 from runtime_adapter.contract import decode,encode,require,Unavailable
 
-from .runtime_private import read_private
+from .runtime_private import read_private,PrivateFileError
 
 VERSION='G2C-runtime-weather-fault.1'
 PREFIX='fixture-weather-not-sent:'
@@ -121,7 +121,10 @@ def read_artifact(originals,scope,stored,snapshot,row,usage):
     if usage.command.kind!='tool' or row[1]!='tool.weather':
         raise Unavailable('UNSENT_OUTPUT_IS_NOT_WEATHER_FIXTURE')
     directory=_directory(originals.directory)
-    try:raw=read_private(artifact_name(scope,stored.receipt.run_id,row[0],usage.command.attempt_id),65536,directory_fd=directory)
+    try:
+        try:raw=read_private(artifact_name(scope,stored.receipt.run_id,row[0],usage.command.attempt_id),65536,directory_fd=directory)
+        except PrivateFileError as error:
+            raise Unavailable('WEATHER_FAULT_ARTIFACT_BOUND' if error.reason=='bound' else 'WEATHER_FAULT_ARTIFACT_AUTHORITY') from None
     finally:os.close(directory)
     value=decode(raw)
     fields={'version','source_commit','scope_sha256','message_id','run_id','operation_key','registration_id',
