@@ -23,8 +23,9 @@ def recipe():
     context=SimpleNamespace(scope=binding.scope,query_message=stored.get)
     def receive(token,raw,**options):
         data=decode(raw);writes.append((data,options))
-        cid='lio-dialogue-'+_identity(binding.scope,'lio-new:'+data['message_id'])
-        receipt=SimpleNamespace(conversation_id=cid,run_id='original-run',sequence=1,input_sha256=sha256(raw).hexdigest())
+        cid=data.get('conversation_id') or 'lio-dialogue-'+_identity(binding.scope,'lio-new:'+data['message_id'])
+        sequence=1+sum(item.receipt.conversation_id==cid for item in stored.values())
+        receipt=SimpleNamespace(conversation_id=cid,run_id='original-run-'+str(len(writes)),sequence=sequence,input_sha256=sha256(raw).hexdigest())
         stored[data['message_id']]=SimpleNamespace(receipt=receipt)
         return receipt
     boundary=SimpleNamespace(with_history_context=lambda token,callback:callback(context),receive_lio=receive)
@@ -37,7 +38,7 @@ def recipe():
 
 def execution(task,language='en'):
     return {**{key:task[key] for key in ('id','split','trip_family','setup')},
-        'variant':{'turns':task['variants'][language]['turns']}}
+        'variant':{key:task['variants'][language][key] for key in ('turns','steps') if key in task['variants'][language]}}
 
 
 def test_prepare_requires_actual_composition_and_exact_public_recipe(recipe):
@@ -72,7 +73,7 @@ def test_message_uses_original_lio_v2_new_chat_without_defaults_or_extra_turns(r
     assert options==dict(prepare_scope=db._provision_scope,version='LIO-message.2')
     assert len(writes)==len(waited)==1
     state=decode(dialogue.setup(setup,deadline=30))
-    assert state['first_original']['run_id']=='original-run' and state['trip_state']=='UNKNOWN'
+    assert state['first_original']['run_id']=='original-run-1' and state['trip_state']=='UNKNOWN'
 
 
 def test_changed_message_or_setup_metadata_stops_before_native_admission(recipe):
@@ -90,3 +91,28 @@ def test_wrong_source_dataset_is_rejected_before_recipe_use(recipe,tmp_path):
     with pytest.raises(Invalid,match='DATA_PIN_CHANGED'):
         NativeDialogue(dialogue.claims,dialogue.boundary,dialogue.database,dialogue.token_supplier,
             dialogue.wait_original,dataset_path=path)
+
+
+@pytest.mark.parametrize('task_id',['dev-required-date','dev-change-mind','dev-local-edit','val-confirm-save'])
+@pytest.mark.parametrize('language',['zh','en'])
+def test_public_multi_turn_inputs_continue_the_same_native_chat_without_added_information(recipe,task_id,language):
+    dialogue,setup,_,stored,writes,waited,db=recipe
+    task=dialogue.tasks[task_id]
+    dialogue.prepare_task(execution(task,language),language)
+    setup['payload'].update(task_id=task_id,language=language,setup=task['setup'])
+    variant=task['variants'][language]
+    inputs=variant.get('steps')
+    if inputs is None:inputs=[dict(text=text) for text in variant['turns']]
+    prior=[setup['step_id']]
+    for index,payload in enumerate(inputs,1):
+        request=dict(kind='message',step_id='runtime-'+digest([dialogue.claims.binding.scope,'attempt',index]),
+            payload=payload,prior_step_ids=list(prior))
+        dialogue.dispatch(request,deadline=30)
+        prior.append(request['step_id'])
+    assert len(writes)==len(waited)==len(inputs)
+    cid=waited[0].conversation_id
+    assert {receipt.conversation_id for receipt in waited}=={cid}
+    assert writes[0][0]['new_conversation'] is True
+    for (body,_),payload in zip(writes[1:],inputs[1:]):
+        assert set(body)=={'version','message_id','text','locale','conversation_id'}
+        assert body['text']==payload['text'] and body['locale']==language and body['conversation_id']==cid

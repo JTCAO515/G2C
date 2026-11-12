@@ -196,7 +196,8 @@ class RuntimeWorkerBindings:
                     sleep(min(.1,max(0,deadline-self.clock())))
                 raise TimeoutError('original runtime deadline reached')
             dialogue=NativeDialogue(claims,boundary,self.database,token,wait,
-                dataset_path=self.public_root/'eval/optimization/cases.v2.json')
+                dataset_path=self.public_root/'eval/optimization/cases.v2.json',
+                trip_boundary=self._trip_boundary(session))
             collector=RuntimeCollector(originals,claims,session['routing'],token,self.pins,session['references_directory'],
                 guard=guard,state_reader=self._state_reader(session),model_reader=RuntimeModel(originals,self.services.model,
                     native_turn_profile=M4_NATIVE_TURN_BUFFERED),dialogue=dialogue,clock=self.clock)
@@ -214,3 +215,7 @@ class RuntimeWorkerBindings:
             session['dialogue']=dialogue
             session['adapter']=RuntimeAdapter(backend,session['binding'],self.pins,session['mapping_directory'],
                 dataset_path=self.public_root/'eval/optimization/cases.v2.json')
+
+    def _trip_boundary(self,session):
+        from .lio_trip_routes import LioTripBoundary
+        return LioTripBoundary(self.database,session['authority'].checker,self.confirmation_signer)
