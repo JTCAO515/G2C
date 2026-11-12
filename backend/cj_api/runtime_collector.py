@@ -33,9 +33,10 @@ class RuntimeCollector:
 
     def _source(self,token,mid):
         request=decode(self.claims.read(mid,deadline=self.clock()+30))
-        if request['kind']=='task_setup':
+        if request['kind'] in ('task_setup','lio_undo_current_trip'):
             if self.dialogue is None:raise Unavailable('NATIVE_DIALOGUE_TASK_RECIPES_NOT_CONNECTED')
-            self.dialogue.setup(request,deadline=self.clock()+30)
+            if request['kind']=='task_setup':self.dialogue.setup(request,deadline=self.clock()+30)
+            else:self.dialogue.action_proof(request,deadline=self.clock()+30)
             return request,None
         if request['kind'] not in ('message','new_conversation_message','start_controlled_generation','reflection'):
             raise Unavailable('RUNTIME_COLLECTOR_ACTION_NOT_CONNECTED')
@@ -93,13 +94,16 @@ class RuntimeCollector:
     def projection(self,token,kind,mid,op):
         request,inventory=self._source(token,mid)
         if inventory is None:
-            if kind in ('state','result'):return self.dialogue.setup(request,deadline=self.clock()+30)
+            if kind in ('state','result'):
+                return (self.dialogue.setup(request,deadline=self.clock()+30) if request['kind']=='task_setup' else
+                    self.dialogue.action_proof(request,deadline=self.clock()+30))
             association=dict(binding_sha256=self.binding.key,client_step_id=mid,
                 request_sha256=digest(request),message_id=None,action_id=mid,run_ids=[])
             if kind=='protected_inventory':return encode(dict(**association,operation_ids=[]))
             if kind!='action':raise Unavailable('NATIVE_SETUP_HAS_NO_PROVIDER_OPERATION')
-            return encode(dict(**association,status='PASS',inventory=self._ref(token,'protected_inventory',mid),
-                result=self._ref(token,'result',mid),state_evidence=[self._ref(token,'state',mid)]))
+            status='PASS' if request['kind']=='task_setup' else decode(self.dialogue.action_proof(request,deadline=self.clock()+30))['status']
+            return encode(dict(**association,status=status,inventory=self._ref(token,'protected_inventory',mid),
+                result=self._ref(token,'result',mid) if status=='PASS' else None,state_evidence=[self._ref(token,'state',mid)]))
         if kind in ('output','meter_link','provider'):
             entry=next((e for e in inventory['operations'] if e['operation_id']==op),None)
             if entry is None:raise Unavailable('ORIGINAL_OPERATION_UNAVAILABLE')
