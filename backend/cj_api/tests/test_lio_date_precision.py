@@ -78,6 +78,12 @@ class DatePrecision(unittest.TestCase):
         with self.assertRaises(InvalidInput):
             parsed('计划北京三天，一个人，不是下周二','2026-11-17',quote='下周二')
 
+    def test_short_week_quote_cannot_clip_denial_after_it_or_select_a_repeat(self):
+        for text,quote in (('计划北京三天，一个人，下周二不行','下周二'),
+                           ('计划北京三天，一个人，next Tuesday is not possible','next Tuesday'),
+                           ('计划北京三天，一个人，下周二可以吗？不是下周二。','下周二')):
+            with self.subTest(text=text),self.assertRaises(InvalidInput):parsed(text,'2026-11-17',quote=quote)
+
     def test_coarse_week_stays_uncertain_and_does_not_block_intake(self):
         text='计划北京三天，一个人，下周去'
         result=parsed(text,None,quote='下周去',uncertain=True)
