@@ -60,14 +60,50 @@ class PlanningFlow(unittest.TestCase):
         self.assertEqual((published,lookups),([],[]));self.assertEqual(answer(events),wire['reply'])
         self.assertEqual(context(events)['authority'],'none');self.assertIsNotNone(result)
 
-    def test_optional_question_cannot_fall_through_to_weather_or_grant_save(self):
-        text='去成都玩三天';wire=flow(text)
-        wire['planning_request_index']=None
-        published,events,lookups,result=run(wire,text)
-        self.assertEqual(published,[]);self.assertEqual(len(lookups),1)
-        self.assertIn('第3天',answer(events));self.assertNotIn('2026-',answer(events))
-        self.assertNotIn('几个人',answer(events));self.assertNotIn('哪天开始',answer(events))
-        self.assertEqual(context(events)['authority'],'none');self.assertIsNotNone(result)
+    def test_question_fields_cannot_turn_nonplanning_input_into_a_plan(self):
+        text='请把“成都三天”翻译成英文。'
+        for questions in ((),('start_date',),('party_size',),('start_date','party_size')):
+            wire=flow(text,questions=questions,reply='Chengdu for three days.')
+            wire.update(planning_request_index=None,needs_tools=False)
+            published,events,lookups,result=run(wire,text)
+            self.assertEqual((published,lookups),([],[]))
+            self.assertEqual(answer(events),wire['reply'])
+            self.assertEqual(context(events)['authority'],'none')
+            self.assertEqual(context(events)['nonplanning_message_ids'],['national-message'])
+            self.assertIsNotNone(result)
+
+    def test_preview_translation_cannot_publish_or_supply_later_execution_facts(self):
+        from cj_api.lio_city import CityReference
+        city=CityReference('510100','成都市','四川省','成都市','city','Asia/Shanghai')
+        resolution=dict(status='resolved',candidates=[city.__dict__],requested_name='成都',source={})
+        for questions in ((),('start_date',),('party_size',),('start_date','party_size')):
+            with self.subTest(questions=questions):
+                first='去成都玩三天'
+                previous=context(run(flow(first),first,resolution=resolution)[1])
+                for item in previous['facts'].values():
+                    for ref in item['sources']:ref['message_id']='prior-0'
+                previous['resolved_city_source_message_id']='prior-0'
+                text='请把“从2026-11-20开始，两个人”翻译成英文。'
+                quoted=flow(text,city=None,days=None,start='2026-11-20',party=2,index=1,
+                            questions=questions,reply='Starting 2026-11-20, two people.')
+                quoted.update(planning_request_index=None,needs_tools=False)
+                history=(original(first),original(text))
+                published,events,lookups,_=run(quoted,text,turns=history,previous=previous,resolution=resolution)
+                self.assertEqual((published,lookups),([],[]));self.assertEqual(answer(events),quoted['reply'])
+                previous=context(events)
+                self.assertNotIn('start_date',previous['facts']);self.assertNotIn('party_size',previous['facts'])
+                self.assertIn('national-message',previous['nonplanning_message_ids'])
+                previous['nonplanning_message_ids']=['prior-1']
+                following='继续'
+                replay=flow(following,city=None,days=None,start='2026-11-20',party=2,index=2,questions=())
+                replay['planning_request_index']=0
+                replay['field_sources']=[dict(ref,source_index=1,quote=text)for ref in replay['field_sources']]
+                published,events,_,_=run(replay,following,turns=(*history,original(following)),
+                                         previous=previous,resolution=resolution)
+                self.assertEqual(published,[]);self.assertIn('第3天',answer(events))
+                self.assertNotIn('2026-11-20',answer(events))
+                self.assertNotIn('start_date',context(events)['facts'])
+                self.assertNotIn('party_size',context(events)['facts'])
 
     def test_given_relative_or_absolute_start_saves_without_party(self):
         for text,city,start,locale in [
