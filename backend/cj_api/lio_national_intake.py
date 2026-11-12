@@ -127,6 +127,10 @@ _DIAGNOSTIC_CODES={
  'unstated planning event field':'event_source',
  'date differs from its original quote':'date_source',
  'relative date differs from its original question day':'relative_date_source',
+ 'week without a day cannot authorize an exact date':'date_precision',
+ 'date differs from its original weekday':'weekday_source',
+ 'date differs from its original calendar week':'calendar_week_source',
+ 'date differs from its original next weekday':'weekday_source',
  'unsupported field or source':'needs_field_name',
  'invalid observation state':'observation_state',
 }
@@ -148,6 +152,58 @@ def province_evidence(mentions,texts):
    prefix=re.split(r'[，,。.!?；;\n]|\bbut\b|而是',text[:start],flags=re.I)[-1]
    last=re.search(r'不是|并非|不在|不要|排除|\bnot\b|\bexcept\b|\brather than\b',prefix,re.I) is None
  return last
+
+
+_WEEKDAYS={'monday':0,'tuesday':1,'wednesday':2,'thursday':3,'friday':4,'saturday':5,'sunday':6}
+_WEEKDAY_WORD='|'.join(_WEEKDAYS)
+# Bind the weekday adjacent to its modifier, rather than every weekday in a
+# complete source quote (which may also contain the end of a date range).
+_WEEK_SOURCE=re.compile(
+ r'(?P<zh_modifier>下+|本|这)(?:个)?(?:周|星期|礼拜)(?P<zh_day>[一二三四五六日天])?'
+ r'|\b(?P<en_before>'+_WEEKDAY_WORD+r')\s+(?P<en_after_modifier>next|this) week\b'
+ r'|\b(?P<en_modifier>next|this) week(?:end)?\b(?:\s+(?P<en_day>'+_WEEKDAY_WORD+r')\b)?'
+ r'|\bnext (?P<next_day>'+_WEEKDAY_WORD+r')\b',re.I)
+
+_WEEK_RANGE=re.compile(r'\s*(?:到|至|[-–—]|through|to|until)\s*',re.I)
+_WEEK_NONASSERTION=re.compile(r'不是|并非|不要|不在|不行|不能|不可以|而是|或者|或|\b(?:not|cannot|or|instead|rather)\b',re.I)
+
+def _week_source(value,references,turns,*,departure=False):
+ for ref in references:
+  matches=list(_WEEK_SOURCE.finditer(ref['quote']))
+  # Only an explicit range can select different endpoint anchors. Corrections
+  # and alternatives stay unclear rather than granting the first date.
+  if len(matches)>1 and (len(matches)!=2 or _WEEK_RANGE.fullmatch(ref['quote'][matches[0].end():matches[1].start()])is None):
+   raise InvalidInput('week without a day cannot authorize an exact date')
+  selected_matches=matches[-1:]if departure else matches[:1]
+  for match in selected_matches:
+   original_text=turns[ref['source_index']].text
+   for occurrence in re.finditer(re.escape(ref['quote']),original_text):
+    position=occurrence.start()+match.start()
+    clause=(re.split(r'[，,。.!?！？；;\n]',original_text[:position])[-1]+
+            re.split(r'[，,。.!?！？；;\n]',original_text[position:])[0])
+    if _WEEK_NONASSERTION.search(clause):
+     raise InvalidInput('week without a day cannot authorize an exact date')
+   original=turns[ref['source_index']].question_day
+   selected=date.fromisoformat(value)
+   zh_day=match['zh_day'];en_day=match['en_before']or match['en_day']or match['next_day']
+   if zh_day is None and en_day is None:
+    # An explicitly supplied ISO date was already checked by _date_source.
+    # A week or weekend alone cannot grant a model-selected departure day.
+    if value not in re.findall(r'(?<!\d)\d{4}-\d{2}-\d{2}(?!\d)',ref['quote']):
+     raise InvalidInput('week without a day cannot authorize an exact date')
+    continue
+   weekday=(6 if zh_day in ('日','天')else '一二三四五六'.index(zh_day))if zh_day else _WEEKDAYS[en_day.casefold()]
+   if selected.weekday()!=weekday:
+    raise InvalidInput('date differs from its original weekday')
+   if match['next_day']:
+    if not 0<(selected-original).days<=7:
+     raise InvalidInput('date differs from its original next weekday')
+    continue
+   modifier=match['zh_modifier']or match['en_modifier']or match['en_after_modifier']
+   offset=(len(modifier)if modifier.startswith('下')else 1 if modifier.casefold()=='next'else 0)
+   monday=original-timedelta(days=original.weekday())+timedelta(days=7*offset)
+   if not monday<=selected<monday+timedelta(days=7):
+    raise InvalidInput('date differs from its original calendar week')
 
 
 def _date_source(value,references,turns):
@@ -375,11 +431,11 @@ def fixed_sources_complete(intake,fields,turns,city_reference):
   comparison=description+'\n'+details
   if first is not None:
    comparison=_absolute_fixed_days(comparison,first)
-  expected=_fixed_item(comparison,first,city_reference.timezone,party)
-  if expected is None:return False
-  personal=re.search(r'我(?!们)|\bI (?:have|need|must|am)\b',description,re.I)
+  personal=re.search(r'本人|我参加|我(?=\s*(?:[0-9]|要|需|将|会|在))|\bI (?:have|need|must|am)\b',description,re.I)
   collective=re.search(r'全体|大家|我们|\b(?:for our party|for everyone|both of us|all of us)\b',description,re.I)
-  if personal and not collective:expected['applies_to']=['self']
+  expected=_fixed_item(comparison,first,city_reference.timezone,party,
+      explicit_self=bool(personal and not collective))
+  if expected is None:return False
   for edge in ('start','end'):
    for part in ('date','time','timezone'):
     if item[edge][part]!=expected[edge][part]:return False

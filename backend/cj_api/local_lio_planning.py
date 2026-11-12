@@ -85,14 +85,34 @@ def clarify(worker, binding, state, text):
     return worker._event(binding, state, 'completed')
 
 
-def discuss(worker, binding, state, locale, turns, references):
+def discuss(worker, binding, state, locale, turns, references, *, day_count=None, planning_window=None, introduction=None):
     messages = [{'role': 'user', 'content': turn.text} for turn in turns]
     if worker.memory_run is not None:
         current = worker.memory_run.messages(turns[-1].text)
         messages = [*current[:-1], *messages]
     if worker.message_context is not None:
         messages = worker.message_context.answer_messages(binding, messages)
-    system = answer_prompt(locale) + DISCUSSION_PROMPT
+    system = answer_prompt(locale, turns[-1].text) + DISCUSSION_PROMPT
+    if day_count is not None:
+        system += (
+            ' The traveler requested a complete '+str(day_count)+'-day itinerary. '
+            'Cover every day from day 1 through day '+str(day_count)+', using day numbers, '
+            'concrete suggested activities and the supplied preferences. '
+            'Do not invent weather, prices, opening hours, bookings or a party size. '
+            'Dates and party size are optional: do not ask for them, even when unknown or undecided. '
+            'This is a conversational plan, not a saved trip. Do not claim it has been saved. '
+            'Do not introduce yourself or discuss knowing the traveler. '
+            'Use enough space and list items to cover every requested day; this overrides the usual brevity limits. '
+            'End with exactly one specific question about a useful adjustment, not date or party size.'
+        )
+        if planning_window is None:
+            system+=' The itinerary has no start date. Use only day numbers and do not invent calendar dates.'
+        else:
+            system+=' The requested date window, compiled from the original traveler sources, is '+planning_window[0]+' through '+planning_window[1]+'. Use those dates or day numbers only.'
+    if introduction is not None:
+        system+=(' This is a separate read-only trip proposal. Keep the saved itinerary and its locked arrangements unchanged. '
+                 'Do not copy old bookings into the new dates or claim a second itinerary has been saved. '
+                 'End with one question offering to keep discussing another proposal here or adjust the existing trip.')
     raw = ''.join(worker._registered_stream(
         binding, 'model.lio_discussion.0', 'model.answer', (messages, system, worker.provider),
         message_refs=references))
@@ -106,7 +126,7 @@ def discuss(worker, binding, state, locale, turns, references):
     except (InvalidInput, UnicodeError) as exc:
         _LOGGER.warning('lio_planning_discussion_invalid run_id=%s', binding.run_id)
         raise ProviderUnknown('Lio discussion reply unavailable') from exc
-    state = worker._event(binding, state, 'text_delta', reply)
+    state = worker._event(binding, state, 'text_delta',reply if introduction is None else introduction+'\n\n'+reply)
     state = worker._event(binding, state, 'effect_committed', DISCUSSION)
     return worker._event(binding, state, 'completed')
 
@@ -212,6 +232,32 @@ class LioPlanSave:
         # create a Lio plan. Do not infer a code for any other legacy name.
         return (destination.get('state')=='known' and _normalize(destination['value']) in ('北京','北京市','beijing')
                 and city.adcode=='110000')
+
+    def planning_window_conflict(self,binding,fields):
+        """Avoid a paid draft when retained items cannot fit the new source window.
+
+        This is an advisory preflight; the original atomic publisher still
+        rechecks the actual head/source and rejects conflicts at publication.
+        """
+        from cj_trip.planning_context import read_current
+        from cj_message.lio_plan_needs import lio_needs_id
+        from cj_feasibility.time_checks import instant
+        current=read_current(self.context_publisher.repository,needs_scope_for(binding.scope),
+                             lio_needs_id(binding.scope,binding.conversation_id))
+        if current is None:return False
+        first,last=(fields[edge]['date']['value']for edge in ('arrival','departure'))
+        zone=fields['destination_timezone']['value']
+        lower=instant(fields['arrival'],'arrival')[0]
+        upper=instant(fields['departure'],'departure')[0]
+        for item in json.loads(current.trip.content)['items']:
+            for edge in ('start','end'):
+                event=item['schedule'][edge]
+                if event['date']['state']=='known'and not first<=event['date']['value']<=last:return True
+                if event['timezone']['state']=='known'and event['timezone']['value']!=zone:return True
+                moment=instant(event,edge,utc_offset=event['utc_offset'])[0]
+                if moment is not None and ((lower is not None and moment<lower)or(upper is not None and moment>upper)):
+                    return True
+        return False
 
     def __call__(self, worker, binding, state, details, locale):
         original = worker.messages.query(binding.message_id)

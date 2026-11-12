@@ -120,6 +120,7 @@ packages = [
 "backend/agent/cj_agent/lio_intake_flat_schema.py" = "share/g2c/runtime-source/backend/agent/cj_agent/lio_intake_flat_schema.py"
 "backend/agent/cj_agent/lio_intake_facts_schema.py" = "share/g2c/runtime-source/backend/agent/cj_agent/lio_intake_facts_schema.py"
 "backend/agent/cj_agent/lio_intake_flow_schema.py" = "share/g2c/runtime-source/backend/agent/cj_agent/lio_intake_flow_schema.py"
+"backend/agent/cj_agent/lio_intake_optional_schema.py" = "share/g2c/runtime-source/backend/agent/cj_agent/lio_intake_optional_schema.py"
 "backend/cj_api/lio_flow_intake.py" = "share/g2c/runtime-source/backend/cj_api/lio_flow_intake.py"
 "backend/cj_api/lio_flat_intake.py" = "share/g2c/runtime-source/backend/cj_api/lio_flat_intake.py"
 "backend/cj_api/lio_sourced_intake.py" = "share/g2c/runtime-source/backend/cj_api/lio_sourced_intake.py"
