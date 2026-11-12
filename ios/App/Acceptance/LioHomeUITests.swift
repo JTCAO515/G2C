@@ -490,6 +490,32 @@ import XCTest
         }
     }
 
+    func testTripListOnlyShowsTheSavedSummaryFields() throws {
+        continueAfterFailure = false
+        for language in ["en", "zh-Hans"] {
+            for appearance in ["light", "dark"] {
+                let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+                app.launchArguments = ["--lio-preview", "-cj.ui.language.v1", language,
+                                       "-lio.ui.appearance.v1", appearance]
+                app.launchEnvironment = ["G2C_LIO_PREVIEW_TRIP": "__LIO_RECORDED_TRIP_FIXTURE__"]
+                app.launch()
+                let tab = app.tabBars.buttons[language == "en" ? "Trips" : "行程"]
+                XCTAssertTrue(tab.waitForExistence(timeout: 12))
+                tab.tap()
+                let card = app.buttons["Draft"]
+                XCTAssertTrue(card.waitForExistence(timeout: 8))
+                XCTAssertEqual(card.label, "Draft")
+                XCTAssertFalse(app.descendants(matching: .any).matching(identifier: "lio.trip.route-map").firstMatch.exists)
+                try app.performAccessibilityAudit(for: .all)
+                let attachment = XCTAttachment(screenshot: app.screenshot())
+                attachment.name = "trip-list-\(language)-\(appearance)"
+                attachment.lifetime = .keepAlways
+                add(attachment)
+                app.terminate()
+            }
+        }
+    }
+
     func testTripEnglish() throws {
         try exerciseTrip("en", clarification: "For three days in Beijing", trips: "Trips", day: "Day 1", fixed: "Hotel check-in")
     }
