@@ -345,7 +345,18 @@ import XCTest
         let hotel = chinese ? "酒店入住" : "Hotel check-in"
         let park = chinese ? "公园散步" : "Park walk"
         let museum = chinese ? "美术馆" : "Art museum"
+        let card = app.buttons.containing(.staticText, identifier: chinese ? "北京行程" : "Beijing trip").firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 8))
+        card.tap()
+        func selectDay(_ number: Int) {
+            let button = app.buttons["lio.trip.select-day.\(number)"]
+            if !button.isHittable { app.swipeDown() }
+            XCTAssertTrue(button.isHittable)
+            button.tap()
+        }
+        selectDay(1)
         reply(hotel)
+        selectDay(2)
         reply(park)
         chat.tap()
 
@@ -354,14 +365,19 @@ import XCTest
         let undo = app.buttons["lio.chat.trip.undo"]
         XCTAssertTrue(undo.waitForExistence(timeout: 10), app.debugDescription)
         trips.tap()
+        selectDay(1)
         reply(hotel)
+        selectDay(2)
         reply(museum)
         XCTAssertFalse(app.staticTexts[park].exists)
         chat.tap()
         reveal(undo)
         undo.tap()
         trips.tap()
+        selectDay(2)
         reply(park)
+        XCTAssertFalse(app.staticTexts[museum].exists)
+        selectDay(1)
         reply(hotel)
         XCTAssertFalse(app.staticTexts[museum].exists)
         let previous = app.buttons["lio.trip.history"]
