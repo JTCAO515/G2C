@@ -22,7 +22,7 @@ from .calendar_commit import commit
 PLAN_BASIS = 'lio-calendar-plan.1'
 
 
-def needs_projection(document, capture, subjects, current):
+def needs_projection(document, capture, subjects, current, *, selected_ids=None, limits=None):
     """Only a constraint-validation copy; no derived calendar enters canonical NEEDS."""
     before, _ = capture.records()
     original = {i['item_id']: i for i in before.fields.get('fixed_items', ())}
@@ -47,6 +47,12 @@ def needs_projection(document, capture, subjects, current):
             item['fixed'] = deepcopy(adopted[item['id']]['locked'])
         else:
             item['fixed'] = dict(state='unknown')
+    if selected_ids is not None:
+        from cj_feasibility.scoped_trip import check
+        same_snapshot = json.loads(current.needs_source)['snapshot'] == json.loads(capture.raw)['snapshot']
+        candidate, report, _ = check(packed(projected), capture, json.loads(current.proposed),
+            frozenset(selected_ids), limits, retain_adopted=same_snapshot)
+        return candidate, report
     value = dict(version=MODEL_VERSION, title=document['title'], items=projected['items'], proposed_subjects=subjects)
     _, candidate, report = _build_model(value, capture, adopted)
     return candidate, report
@@ -127,4 +133,4 @@ class LioCalendarPublisher(LioPlanPublisher):
     def publish_edit_for_message(self, binding, original, current, request_raw, edit_raw, capture, *,
                                  limits, before_publish):
         from .calendar_edit import publish
-        return publish(self, binding, original, current, request_raw, edit_raw, capture, before_publish)
+        return publish(self, binding, original, current, request_raw, edit_raw, capture, limits, before_publish)

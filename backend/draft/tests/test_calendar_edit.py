@@ -79,3 +79,34 @@ def test_calendar_undo_is_new_version_and_protects_whole_fixed_item():
     protect_fixed(current, previous)
     fixed['items'][0]['schedule']['start']['time'] = dict(state='known', value='08:15')
     with pytest.raises(Conflict): protect_fixed(Trip('trip', 2, packed(fixed)), previous)
+
+
+def test_calendar_edit_keeps_the_independent_output_horizon_check_and_limits():
+    from datetime import datetime, timezone
+    from types import SimpleNamespace
+    from cj_needs.domain import Command, Revision, Snapshot
+    from cj_draft.calendar_plan import compose, FIRST_PLAN
+    from cj_draft.lio_calendar import needs_projection
+    from cj_feasibility.solver import Limits
+    fields = deepcopy(json.loads((ROOT/'contracts/message/trip-send-examples.2.json').read_bytes())['needs_basis']['fields'])
+    fields['fixed_items'][0]['locked'] = dict(state='known', value=False)
+    for edge in ('start', 'end'):
+        fields['fixed_items'][0][edge]['date'] = dict(state='known', value='2026-12-01')
+    command = Command(packed(dict(action_id='source', needs_id='visit', expected_version=0,
+        source=dict(kind='manual', text='explicit synthetic booked date'), changes=fields)))
+    snapshot = Snapshot('visit', 1, packed(fields))
+    revisions = (Revision('visit', 1, command.action_id, command.raw, snapshot.content),)
+    capture = SimpleNamespace(records=lambda: (snapshot, revisions), raw=packed(dict(snapshot='same')))
+    current = SimpleNamespace(proposed=snapshot.content, needs_source=capture.raw)
+    content, _ = compose(packed(dict(version=FIRST_PLAN, title='three days', items=[], proposed_subjects={})),
+        snapshot, {'hotel-meetup': (1,1)}, 3)
+    document = json.loads(content)
+    document['items'][0]['text'] = 'Original user replacement'
+    limits = Limits(datetime(2026,11,1,tzinfo=timezone.utc), 86400, 1, 10_000_000, 60,120,128,.05,.05,100)
+    with pytest.raises(Conflict, match='independent output invariants rejected'):
+        needs_projection(document, capture, {}, current, selected_ids={'hotel-meetup'}, limits=limits)
+    limits = Limits(datetime(2026,12,1,tzinfo=timezone.utc), 3*86400, 1, 10_000_000,60,120,128,.05,.05,100)
+    candidate, report = needs_projection(document, capture, {}, current,
+                                          selected_ids={'hotel-meetup'}, limits=limits)
+    assert json.loads(candidate.content)['fixed_items'][0]['description'] == 'Original user replacement'
+    assert any(c.code == 'PROTECTED_SCOPE_UNCHANGED' and c.status == 'PASS' for c in report.checks)

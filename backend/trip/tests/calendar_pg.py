@@ -24,7 +24,7 @@ from registered_host_support import RegisteredHost
 from cj_trip.local_calendar_read import create_local_calendar_read_app, VERSION
 from cj_trip.local_structured_read import create_local_structured_read_app
 from cj_trip.postgres import Repository
-from cj_trip.domain import Proposal, packed
+from cj_trip.domain import Conflict, Proposal, packed
 from cj_trip.confirmation import ConfirmationSigner
 from cj_agent.draft import trip_scope_for
 from cj_api.local_app import scope_for, ISSUER
@@ -139,7 +139,7 @@ class CalendarPublicationChecks(unittest.TestCase):
         cls.host = RegisteredHost(cls.auth/'calendar-publication', Path(CONNINFO),
                                  {s: (12, 2, 30000) for s in ('calendar-plan', 'calendar-stale', 'calendar-date',
                                   'calendar-edit', 'calendar-soft', 'calendar-hard', 'calendar-relative',
-                                  'calendar-rollback', 'calendar-ack', 'calendar-final')})
+                                  'calendar-rollback', 'calendar-ack', 'calendar-final', 'calendar-unselected')})
         cls.env = dict(CJ_LOCAL_NEEDS_PROFILE='manual-v1', CJ_LOCAL_TRAVEL_CONTEXT='message-travel.1')
         cls.signer = ConfirmationSigner(b'synthetic-calendar-publication-key-123456')
         for subject in cls.host.subjects:
@@ -147,12 +147,14 @@ class CalendarPublicationChecks(unittest.TestCase):
 
     tearDownClass = classmethod(Harness.tearDownClass.__func__)
 
-    def setup(self, subject, *, fixed_date=None):
+    def setup(self, subject, *, fixed_date=None, fixed_mutable=False):
         from cj_needs.domain import validate_fields
         fields = deepcopy(json.loads((ROOT/'contracts/message/trip-send-examples.2.json').read_bytes())['needs_basis']['fields'])
         if fixed_date is not None:
             for edge in ('start', 'end'):
                 fields['fixed_items'][0][edge]['date'] = dict(state='known', value=fixed_date)
+        if fixed_mutable:
+            fields['fixed_items'][0]['locked'] = dict(state='known', value=False)
         validate_fields(fields, complete=True)
         with patch.dict(__import__('os').environ, self.env), self.host.api(subject) as client:
             source = dict(action_id='source-'+subject, needs_id='visit', expected_version=0,
@@ -317,15 +319,15 @@ class CalendarPublicationChecks(unittest.TestCase):
         worker.fixture_database = database
         return worker
 
-    def followup(self, subject, before, text, *, operation='date', soft=False):
+    def followup(self, subject, before, text, *, operation='date', soft=False, needs_version=1):
         from cj_trip.lio_history import TripHead
         with patch.dict(__import__('os').environ, self.env), self.host.api(subject) as client:
             chat = client.put('/v1/conversations', params={'conversation_id': subject+'-followup'},
                               headers=self.host.headers[subject]).json()
             value = dict(version='MESSAGE-send.2', conversation_id=subject+'-followup', message_id='follow-'+subject,
-                text=text+' Plan Chengdu for 3 days. Day 1 hotel meetup 09:00-10:00.', trip_id=None,
+                text=text+' Plan Chengdu for 3 days. Day 1 hotel meetup.', trip_id=None,
                 creation_intent='consider_trip', expected_generation=chat['generation'], expected_sequence=0,
-                travel_context=None, needs_reference=dict(id='visit', expected_version=1))
+                travel_context=None, needs_reference=dict(id='visit', expected_version=needs_version))
             result = client.post('/v2/messages', content=packed(value), headers={
                 **self.host.headers[subject], 'Content-Type':'application/octet-stream'})
             self.assertEqual(result.status_code, 200, result.text)
@@ -451,6 +453,30 @@ class CalendarPublicationChecks(unittest.TestCase):
         worker.drafts.convert_for_message = lambda *args, **kwargs: original(*args, before_publish=lambda **kw: None)
         worker.process()
         self.assertEqual(worker.drafts.repository.detail(before.trip_id), before)
+
+    def test_newer_unselected_mutable_needs_cannot_be_restored_by_a_museum_edit(self):
+        from cj_trip.lio_history import edit_action_id
+        subject = 'calendar-unselected'
+        _, before = self.first_trip(subject, fixed_mutable=True)
+        fields = deepcopy(json.loads((ROOT/'contracts/message/trip-send-examples.2.json').read_bytes())['needs_basis']['fields'])
+        fixed = fields['fixed_items']
+        fixed[0]['locked'] = dict(state='known', value=False)
+        fixed[0]['start']['time'] = dict(state='known', value='11:00')
+        fixed[0]['end']['time'] = dict(state='known', value='12:00')
+        with patch.dict(__import__('os').environ, self.env), self.host.api(subject) as client:
+            response = client.post('/v1/needs-actions', content=packed(dict(action_id='correct-unselected',
+                needs_id='visit', expected_version=1, source=dict(kind='manual',text='Hotel is now 11 to 12'),
+                changes=dict(fixed_items=fixed))), headers={**self.host.headers[subject],
+                                                          'Content-Type':'application/octet-stream'})
+            self.assertEqual(response.status_code, 200, response.text)
+        worker = self.followup(subject, before, 'Replace Chengdu Museum with Renmin Park 人民公园.',
+                               operation='edit', needs_version=2)
+        with self.assertRaisesRegex(Conflict, 'current NEEDS/protected constraints rejected'):
+            worker.process()
+        repository = worker.drafts.repository
+        stored = worker.messages.query('follow-'+subject)
+        self.assertIsNone(repository.query_action(edit_action_id(stored.receipt.run_id)))
+        self.assertEqual(repository.detail(before.trip_id), before)
 
     def test_actual_worker_saves_undated_formal_trip_without_party_or_date(self):
         from cj_trip.lio_history import plan_action_id

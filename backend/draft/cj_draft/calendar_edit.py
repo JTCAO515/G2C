@@ -45,7 +45,7 @@ def replacement(trip, request, edit):
     return after
 
 
-def publish(publisher, binding, original, current, request_raw, edit_raw, capture, before_publish):
+def publish(publisher, binding, original, current, request_raw, edit_raw, capture, limits, before_publish):
     publisher.source.check(binding, capture)
     context = publisher.source.contexts[binding]
     if current is None or current != original or context is None or before_publish is None:
@@ -68,7 +68,7 @@ def publish(publisher, binding, original, current, request_raw, edit_raw, captur
     if any(c.code in ('ITEM_TIME_REVERSED', 'ITEM_RELATIVE_REVERSED') for c in evaluate(content).checks):
         raise Conflict('calendar edit interval conflict')
     from .lio_calendar import needs_projection
-    candidate, _ = needs_projection(document, capture, {}, context)
+    candidate, _ = needs_projection(document, capture, {}, context, selected_ids=request.selected, limits=limits)
     proposal = Proposal('lio-calendar-edit-'+binding.run_id, context.trip.trip_id, context.trip.version,
                         BASIS, int(publisher.clock())+300, content)
     return publisher._save(binding, original, expected, capture, candidate, proposal,

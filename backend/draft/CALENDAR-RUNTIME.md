@@ -49,6 +49,8 @@ TRIP-date-convert.1。相同 Trip 生成新版本，内容、锁定和来源不�
 字段沿 ManualEdit 的 request_id/trip_id/expected_version/original_hash/title/changes/order。
 仅 title=null、order=null、一个 text change；替换值必须出现在原消息中，且选区须由
 上面的真实编译来源证明。不能改固定/未知保护条目、时间段、日历或其他条目。
+修改投影复用原 scoped_trip.check 的精确 selected_ids、same_snapshot 和 limits/output
+检查；未选中的当前 NEEDS 修订不因保存的 Trip 较旧而被还原。
 已有 dated 旧格式仍用旧 publisher。新的 structured.3 dated 修改会重查日期依赖结果。
 
 最终回调必须执行原 `check_trip()`，且保留原身份/来源/预算 deadline 顺序。
