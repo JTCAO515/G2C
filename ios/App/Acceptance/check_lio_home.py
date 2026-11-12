@@ -57,7 +57,9 @@ def main():
     if app.count(preview) != 1:
         raise ValueError("Expected a single sample preview")
     fixture_routes = (
-        '        if ProcessInfo.processInfo.arguments.contains("--lio-session-recovery-acceptance") {\n'
+        '        if ProcessInfo.processInfo.arguments.contains("--lio-scene-privacy-acceptance") {\n'
+        '            LioScenePrivacyFixture(shell: shell)\n'
+        '        } else if ProcessInfo.processInfo.arguments.contains("--lio-session-recovery-acceptance") {\n'
         '            LioSessionRecoveryFixture(shell: shell)\n'
         '        } else if ProcessInfo.processInfo.arguments.contains("--lio-scroll-acceptance") {\n'
         '            LioScrollFixture(shell: shell)\n'
@@ -70,7 +72,7 @@ def main():
         '        } else ' + preview.lstrip()
     )
     fixtures = ("LioScrollFixture.swift", "LioTimelineFixture.swift", "LioJourneyFixture.swift",
-                "LioMemoryJourneyFixture.swift", "LioChatHistoryFixture.swift", "LioSessionRecoveryFixture.swift")
+                "LioMemoryJourneyFixture.swift", "LioChatHistoryFixture.swift", "LioSessionRecoveryFixture.swift", "LioScenePrivacyFixture.swift")
     generated_source.write_text(app.replace(preview, fixture_routes)
                                 .replace("import CJLioUser\n", "@testable import CJLioUser\n")
                                 + "\n" + "\n".join((HERE / name).read_text() for name in fixtures))
@@ -92,7 +94,7 @@ def main():
         subprocess.run(command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=600)
     summary = subprocess.check_output(["xcrun", "xcresulttool", "get", "test-results", "summary", "--path", str(result)])
     (output / "summary.json").write_bytes(summary)
-    assert json.loads(summary)["passedTests"] == (len(args.case) if args.case else 31), summary
+    assert json.loads(summary)["passedTests"] == (len(args.case) if args.case else 32), summary
 
 
 if __name__ == "__main__":
