@@ -628,6 +628,8 @@ class RealTools:
             from cj_message.lio_context import LioCitation, LioToolProgress, answer_prompt
             chinese = lio_locale == 'zh'
             system += ' ' + answer_prompt(lio_locale,question=messages[-1]['content'])
+            if worker.lio_planning is not None:
+                system += worker.lio_planning.scene_context(binding,datetime.now(timezone.utc))
             today = lio_question_day or datetime.now(ZoneInfo('Asia/Shanghai')).date()
             weather_day = _lio_weather_day(messages[-1]['content'], today)
             tomorrow = today + timedelta(days=1)

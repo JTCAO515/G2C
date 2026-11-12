@@ -157,6 +157,9 @@ class LioPlanning:
     def answer_context(self,binding,messages):
         return messages,()
 
+    def scene_context(self,binding,now):
+        return self.plan_and_save.scene_context(binding,now)
+
     def execute(self, worker, binding, state, text, original):
         if standalone_question(text):
             return None
@@ -199,6 +202,17 @@ class LioPlanSave:
         self.context_publisher = context_publisher
         self.confirmation = confirmation
         self.source_window=source_window
+
+    def scene_context(self,binding,now):
+        from cj_trip.planning_context import read_current
+        from cj_message.lio_plan_needs import lio_needs_id
+        from .lio_scene import scene_prompt
+        current=read_current(self.context_publisher.repository,needs_scope_for(binding.scope),
+                             lio_needs_id(binding.scope,binding.conversation_id))
+        # read_current checks the current accepted head and original source
+        # lineage and validates proposed NEEDS. Do not read a pending draft.
+        return scene_prompt(None if current is None else json.loads(current.proposed),now,
+            document=None if current is None else json.loads(current.trip.content))
 
     def supports_destination(self,binding,city):
         from base64 import b64decode
