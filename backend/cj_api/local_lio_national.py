@@ -290,6 +290,15 @@ class NationalLioPlanning:
         if intake.start_date is not None and intake.start_date['state']!='known':missing.append('start_date')
         for edge in ('arrival','departure'):
             if fields.get(edge,{}).get('date',{}).get('state')!='known':missing.append(edge+'.date')
+        if not missing and authority!='none' and self.plan_and_save.planning_window_conflict(binding,fields):
+            state=context(worker,binding,state,dict(authority='none',status='different_trip',city=resolution))
+            from datetime import date
+            window=tuple(fields[edge]['date']['value']for edge in ('arrival','departure'))
+            days=(date.fromisoformat(window[1])-date.fromisoformat(window[0])).days+1
+            introduction=('新日期与已有行程的安排冲突，原行程和锁定安排先保留。这个对话目前只能对应一份正式行程；下面先讨论另一趟方案，不保存或替换原行程。'
+                if original.locale=='zh'else 'These dates conflict with the saved itinerary, so I will keep it and its locked arrangements unchanged. This conversation currently supports one saved itinerary; the following is another proposal for discussion, without saving or replacing the original.')
+            return discuss(worker,binding,state,original.locale,turns,refs,day_count=days,
+                           planning_window=window,introduction=introduction)
         questions=[q for q in checked.get('questions',[]) if q['field']=='fixed_items']
         complete_fixed=fixed_sources_complete(intake,fields,turns,city)
         if missing or questions or not complete_fixed:
@@ -300,15 +309,6 @@ class NationalLioPlanning:
             if questions or not complete_fixed:required.append('fixed_items')
             return self._clarify(worker,binding,state,original.locale,intake.reply,question_fields,required)
         if authority=='none':return self._reply(worker,binding,state,intake.reply)
-        if self.plan_and_save.planning_window_conflict(binding,fields):
-            state=context(worker,binding,state,dict(authority='none',status='different_trip',city=resolution))
-            from datetime import date
-            window=tuple(fields[edge]['date']['value']for edge in ('arrival','departure'))
-            days=(date.fromisoformat(window[1])-date.fromisoformat(window[0])).days+1
-            introduction=('新日期与已有行程的安排冲突，原行程和锁定安排先保留。这个对话目前只能对应一份正式行程；下面先讨论另一趟方案，不保存或替换原行程。'
-                if original.locale=='zh'else 'These dates conflict with the saved itinerary, so I will keep it and its locked arrangements unchanged. This conversation currently supports one saved itinerary; the following is another proposal for discussion, without saving or replacing the original.')
-            return discuss(worker,binding,state,original.locale,turns,refs,day_count=days,
-                           planning_window=window,introduction=introduction)
         state=context(worker,binding,state,dict(authority='none',status='ready_to_publish',city=resolution))
         details=PlanningDetails(city.name,fields,None,refs)
         state=register(worker,binding,state,details)
