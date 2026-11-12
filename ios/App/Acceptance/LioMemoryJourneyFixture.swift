@@ -75,11 +75,16 @@ private actor JourneyMemoryBackend: ClientTransport {
     private let otherID = "aisle-seat"
     private let language: LioLanguage
     private var preference: String?
+    private let gridPreview: Bool
     private var version = 1
     private var editReceipt: [String: Any]?
     private var deletion: MemoryErasureAction?
 
-    init(language: LioLanguage) { self.language = language }
+    init(language: LioLanguage) {
+        self.language = language
+        gridPreview = ProcessInfo.processInfo.arguments.contains("--lio-memory-grid-acceptance")
+        if gridPreview { preference = language.text("You like quiet hotels", "你喜欢安静的酒店") }
+    }
 
     func remember() {
         preference = language.text("You like quiet hotels", "你喜欢安静的酒店")
@@ -98,7 +103,8 @@ private actor JourneyMemoryBackend: ClientTransport {
         switch operationID {
         case "listTypedMemories":
             try Task.checkCancellation()
-            let ids = [otherID, selectedID].filter { id in
+            let ids = (gridPreview ? [otherID, selectedID, "city-walks", "food-interest", "museum-stops", "train-seat"]
+                                   : [otherID, selectedID]).sorted().filter { id in
                 parameter("after").map { $0.utf8.lexicographicallyPrecedes(id.utf8) } ?? true
             }
             fields = ["items": ids.compactMap(item)]
@@ -157,10 +163,18 @@ private actor JourneyMemoryBackend: ClientTransport {
         } else if id == otherID {
             text = language.text("You prefer an aisle seat", "你偏好靠过道的座位")
             itemVersion = 1
+        } else if gridPreview && ["city-walks", "food-interest", "museum-stops", "train-seat"].contains(id) {
+            text = switch id {
+            case "city-walks": language.text("You enjoy long walks through quiet neighbourhoods, with time to pause for tea and explore small local shops at your own pace.", "你喜欢在安静的街区慢慢散步，随时停下来喝茶，在当地小店里逛逛，不希望把一天安排得太满。")
+            case "food-interest": language.text("You enjoy local food", "你喜欢尝试当地美食")
+            case "museum-stops": language.text("You enjoy art museums", "你喜欢参观美术馆")
+            default: language.text("You prefer a window seat on trains", "你喜欢火车上靠窗的座位")
+            }
+            itemVersion = 1
         } else {
             return nil
         }
-        return ["version": itemVersion, "status": "active", "recorded_at": "2026-11-03T00:00:00Z", "command": [
+        return ["version": itemVersion, "status": gridPreview && id == "city-walks" ? "disabled" : "active", "recorded_at": "2026-11-03T00:00:00Z", "command": [
             "operation_id": "remember-\(id)", "item_id": id, "subject": "self", "slot": id,
             "text": text, "occurred_at": "2026-11-03T00:00:00Z", "source_id": "source-\(id)-\(itemVersion)",
             "source_version": itemVersion, "kind": "preference", "extent": "long_term", "context": NSNull()

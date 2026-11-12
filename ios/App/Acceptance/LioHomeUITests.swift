@@ -389,9 +389,12 @@ import XCTest
         let preference = chinese ? "你喜欢安静的酒店" : "You like quiet hotels"
         let editedPreference = chinese ? "你喜欢安静且靠近地铁的酒店" : "You like quiet hotels near the metro"
         let otherPreference = chinese ? "你偏好靠过道的座位" : "You prefer an aisle seat"
-        reply(otherPreference)
-        let saved = app.buttons[preference]
+        let otherMemory = app.buttons["lio.memory.card.aisle-seat"]
+        XCTAssertTrue(otherMemory.waitForExistence(timeout: 8))
+        XCTAssertEqual(otherMemory.value as? String, otherPreference)
+        let saved = app.buttons["lio.memory.card.quiet-hotel"]
         XCTAssertTrue(saved.waitForExistence(timeout: 8), app.debugDescription)
+        XCTAssertEqual(saved.value as? String, preference)
         saved.tap()
         let edit = app.buttons["lio.memory.edit"]
         XCTAssertTrue(edit.waitForExistence(timeout: 8), app.debugDescription)
@@ -430,11 +433,71 @@ import XCTest
         reply(chinese ? "本机已清理这条记忆的保存和编辑记录。"
                       : "This device’s records of saving and editing this memory were cleared.")
         done.tap()
-        reply(otherPreference)
-        XCTAssertFalse(app.buttons[editedPreference].exists)
+        XCTAssertTrue(otherMemory.waitForExistence(timeout: 8))
+        XCTAssertEqual(otherMemory.value as? String, otherPreference)
+        XCTAssertFalse(app.buttons["lio.memory.card.quiet-hotel"].exists)
         chat.tap()
         ask(chinese ? "再说说我适合住哪种酒店" : "Remind me what kind of hotel suits me")
         reply(chinese ? "你喜欢什么样的酒店？" : "Tell me what kind of hotel you like.")
+    }
+
+    func testMemoryGridLayoutsKeepTheFullBodyAndDisabledState() throws {
+        continueAfterFailure = false
+        for language in ["en", "zh-Hans"] {
+            for style in ["light", "dark", "largest"] {
+                let chinese = language == "zh-Hans"
+                let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+                app.launchArguments = ["--lio-preview", "--lio-journey-acceptance", "--lio-memory-grid-acceptance",
+                                       "-cj.ui.language.v1", language, "-lio.ui.appearance.v1", style == "dark" ? "dark" : "light"]
+                if style == "largest" {
+                    app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+                }
+                app.launch()
+                let tab = app.tabBars.buttons[chinese ? "记忆" : "Memory"]
+                XCTAssertTrue(tab.waitForExistence(timeout: 12))
+                tab.tap()
+                let first = app.buttons["lio.memory.card.aisle-seat"]
+                let second = app.buttons["lio.memory.card.city-walks"]
+                XCTAssertTrue(first.waitForExistence(timeout: 8), app.debugDescription)
+                XCTAssertTrue(second.exists)
+                XCTAssertEqual(first.frame.width, second.frame.width, accuracy: 1)
+                XCTAssertEqual(first.frame.height, second.frame.height, accuracy: 1)
+                XCTAssertEqual(first.frame.height, first.frame.width, accuracy: 1)
+                for card in app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "lio.memory.card.")).allElementsBoundByIndex {
+                    XCTAssertEqual(card.frame.height, first.frame.height, accuracy: 1)
+                    XCTAssertEqual(card.frame.width, first.frame.width, accuracy: 1)
+                }
+                if style == "largest" {
+                    XCTAssertGreaterThan(second.frame.minY, first.frame.maxY)
+                } else {
+                    XCTAssertEqual(first.frame.minY, second.frame.minY, accuracy: 2)
+                    XCTAssertGreaterThan(second.frame.minX, first.frame.maxX)
+                }
+                try app.performAccessibilityAudit(for: .all) { issue in
+                    let detail = XCTAttachment(string: String(describing: issue.auditType) + "\n" +
+                                               (issue.element?.debugDescription ?? "No element supplied by audit") + "\n" + app.debugDescription)
+                    detail.name = "Memory grid AX diagnostic"
+                    detail.lifetime = .keepAlways
+                    self.add(detail)
+                    return false
+                }
+                let attachment = XCTAttachment(screenshot: app.screenshot())
+                attachment.name = "memory-grid-\(language)-\(style)"
+                attachment.lifetime = .keepAlways
+                add(attachment)
+                let disabled = app.buttons["lio.memory.card.city-walks"]
+                if !disabled.isHittable { app.swipeUp() }
+                XCTAssertTrue(disabled.isHittable)
+                let body = try XCTUnwrap(disabled.value as? String)
+                XCTAssertTrue(body.contains(chinese ? "当地小店" : "local shops"))
+                XCTAssertTrue(disabled.label.contains(chinese ? "已停用" : "Deactivated"))
+                disabled.tap()
+                XCTAssertTrue(app.staticTexts[body].waitForExistence(timeout: 8))
+                XCTAssertTrue(app.staticTexts[chinese ? "Lio 暂时不用这条记忆。" : "Lio isn’t using this memory."].exists)
+                XCTAssertTrue(app.buttons["lio.memory.edit"].exists)
+                app.terminate()
+            }
+        }
     }
 
     func testTripEnglish() throws {
