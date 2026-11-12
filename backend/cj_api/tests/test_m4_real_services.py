@@ -956,6 +956,36 @@ class Boundaries(unittest.TestCase):
                 self.assertEqual((output,receipt,reply),([],{},{}))
                 self.assertEqual(self.budget.inspect()[-1]['state'],'INTENT')
 
+    def test_lio_saved_scene_is_only_in_model_system_not_public_answer(self):
+        from cj_api.local_app import ISSUER,scope_for
+        from cj_api.lio_scene import scene_prompt
+        subject='m4-synthetic-one';provider=self.provider(sse())
+        tools=RealTools(RealServices(provider,KEY,frozenset({subject})))
+        binding=SimpleNamespace(scope=scope_for(ISSUER,subject),run_id='scene-original')
+        scene=scene_prompt(dict(arrival=dict(place=dict(state='known',value='成都市'),
+            date=dict(state='known',value='2026-11-11')),departure=dict(date=dict(state='known',value='2026-11-13'))),
+            datetime(2026,11,12,tzinfo=timezone.utc))
+        calls=[]
+        class Planning:
+            def scene_context(self,original,now):
+                assert original is binding and now.tzinfo is not None
+                return scene
+        class Worker:
+            lio_planning=Planning()
+            def _model_history(self,*args):pass
+            def _registered_stream(self,original,key,registration,argument,**kwargs):
+                assert original is binding and registration=='model.tool_turn'
+                calls.append(argument)
+                assert scene in argument.system
+                assert argument.messages==[dict(role='user',content='今天想轻松一点')]
+                yield json.dumps(dict(version='MODEL-tool-turn.1',kind='answer',
+                    answer=dict(zh='先去附近散步，想逛街区还是公园？',en='Try a nearby walk. A neighborhood or a park?'),calls=[]))
+        worker=Worker();worker.provider=provider
+        chunks=list(tools.answer(worker,binding,[dict(role='user',content='今天想轻松一点')],lio_locale='zh'))
+        self.assertEqual(chunks,['先去附近散步，想逛街区还是公园？'])
+        self.assertEqual(len(calls),1);self.assertEqual(self.sent,[])
+        self.assertNotIn('Saved-itinerary scene',''.join(chunks))
+
     def test_lio_weather_clock_and_missing_forecast_project_only_public_evidence(self):
         from cj_api.local_app import ISSUER, scope_for
         from cj_message.lio_context import LioCitation
@@ -972,6 +1002,7 @@ class Boundaries(unittest.TestCase):
                 return datetime(2026, 11, 10, 17, tzinfo=timezone.utc).astimezone(tz)
 
         class Worker:
+            lio_planning=None
             def _model_history(self, *args):
                 pass
 
@@ -1030,6 +1061,7 @@ class Boundaries(unittest.TestCase):
         request = dict(name='place_search',arguments=dict(keyword='park',city='北京',page=1,page_size=1))
 
         class Worker:
+            lio_planning=None
             def _model_history(self, *args):
                 pass
 
@@ -1072,6 +1104,7 @@ class Boundaries(unittest.TestCase):
             destination_coordinate_role='entrance', mode='walking'))
 
         class Worker:
+            lio_planning=None
             def _model_history(self, *args):
                 pass
 
@@ -1111,6 +1144,7 @@ class Boundaries(unittest.TestCase):
         request = dict(name='fact', arguments=dict(start_date='2026-11-10', end_date='2026-11-10'))
 
         class Worker:
+            lio_planning=None
             def _model_history(self, *args):
                 pass
 
@@ -1367,6 +1401,7 @@ class Boundaries(unittest.TestCase):
         call=dict(name='place_search',arguments=dict(keyword='synthetic',city='北京',page=1,page_size=1))
         turn=json.dumps(dict(version='MODEL-tool-turn.1',kind='tool',answer=None,calls=[call]))
         class Worker:
+            lio_planning=None
             provider=services.model
             def _model_history(self,*args):pass
             def _registered_stream(self,binding,key,registration,argument):
@@ -1393,6 +1428,7 @@ class Boundaries(unittest.TestCase):
                 for i in indices]))
 
         class Worker:
+            lio_planning=None
             provider=services.model
             def _model_history(self,*args):pass
             def _registered_stream(self,binding,key,registration,argument):
@@ -1420,6 +1456,7 @@ class Boundaries(unittest.TestCase):
         for message,rounds in (('approved-probe',5),('different-original',8)):
             flags=[];tools=[]
             class Worker:
+                lio_planning=None
                 provider=services.model
                 def _model_history(self,*args):pass
                 def _registered_stream(self,binding,key,registration,argument):
@@ -1450,6 +1487,7 @@ class Boundaries(unittest.TestCase):
                 final=json.dumps(dict(version='MODEL-tool-turn.1',kind='answer',answer=dict(zh='完成',en='Done'),calls=[]))
                 assistant=dict(role='assistant',content='Untrusted supplier preface',tool_calls=[dict(id='actual-wrapper-id',type='function',function=dict(name=M4_TURN_FUNCTION,arguments=initial))])
                 class Worker:
+                    lio_planning=None
                     provider=services.model
                     def _model_history(self,*args):pass
                     def _registered_stream(self,binding,key,registration,argument):

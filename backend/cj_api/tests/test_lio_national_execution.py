@@ -71,6 +71,7 @@ class NationalExecution(unittest.TestCase):
         class Save:
             def __call__(self,*args):published.append(args);return args[2]
             def supports_destination(self,binding,city):return same_destination
+            def scene_context(self,binding,now):return None
         planning=NationalLioPlanning(None,Save())
         planning.context=lambda *a:(turns,tuple(dict(message_id='prior-'+str(n))for n in range(len(turns)-1)),previous)
         binding=SimpleNamespace(message_id='national-message',run_id='national-run')

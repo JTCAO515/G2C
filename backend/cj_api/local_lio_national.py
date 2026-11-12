@@ -1,6 +1,6 @@
 """Nationwide Lio planning intake over original MESSAGE/RUN/NEEDS authorities."""
 from dataclasses import asdict
-from datetime import datetime
+from datetime import datetime,timezone
 from hashlib import sha256
 import json
 import logging
@@ -43,14 +43,18 @@ def publication_held(text):
     return NONPERSISTENT.search(_UNDECIDED_DATE.sub('',text)) is not None
 
 
-def intake_prompt(locale,turns):
+def intake_prompt(locale,turns,*,scene=None):
     dates=', '.join(turn.question_day.isoformat() for turn in turns)
-    return answer_prompt(locale,turns[-1].text)+' '+CURRENT_SYSTEM+' Original traveler messages have source indices 0 through '+str(len(turns)-1)+'. Stored memory data is not an indexed traveler message. Original local China days in that order: '+dates
+    system=answer_prompt(locale,turns[-1].text)+' '+CURRENT_SYSTEM+' Original traveler messages have source indices 0 through '+str(len(turns)-1)+'. Stored memory data is not an indexed traveler message. Original local China days in that order: '+dates
+    return system if scene is None else system+'\n'+scene
 
 
 class NationalLioPlanning:
     def __init__(self,database,plan_and_save):
         self.database,self.plan_and_save=database,plan_and_save
+
+    def scene_context(self,binding,now):
+        return self.plan_and_save.scene_context(binding,now)
 
     def context(self,binding,current):
         with self.database.connect(binding.scope) as db:
@@ -116,7 +120,7 @@ class NationalLioPlanning:
             memory_messages=worker.memory_run.messages(text)
             messages=[*memory_messages[:-1],*messages]
         if worker.message_context is not None:messages=worker.message_context.answer_messages(binding,messages)
-        system=intake_prompt(original.locale,turns)
+        system=intake_prompt(original.locale,turns,scene=self.scene_context(binding,datetime.now(timezone.utc)))
         raw=''.join(worker._registered_stream(binding,'model.lio_intake.0','model.lio_intake.9',
                     (messages,system,worker.provider,len(turns)-1),message_refs=refs))
         booking_unclear=False;question_fields=[];facts={}
