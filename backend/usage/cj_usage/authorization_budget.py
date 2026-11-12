@@ -157,10 +157,15 @@ class AuthorizationBudget:
         if self.producer==MAC_PRODUCER and (self.root/'transfer.json').exists():
             raise BudgetUnknown('M4 original Mac transfer is read only')
         if self.producer==HK_PRODUCER:
+            from .sublimits import ADOPTED,snapshot
             anchor=json.loads(HK_ANCHOR.read_bytes())
-            if (anchor['state']!='ADOPTED' or anchor['ledger_id']!=self.ledger_id
+            if (anchor['state'] not in ('ADOPTED',ADOPTED) or anchor['ledger_id']!=self.ledger_id
                     or journal_state(db)!=(anchor['attempt_count'],anchor['attempts_sha256'])):
                 raise BudgetUnknown('M4 non-restored adoption control differs')
+            allocations=snapshot(db)
+            if ((anchor['state']==ADOPTED)!=(allocations is not None) or
+                    allocations is not None and anchor.get('sublimits_sha256')!=allocations):
+                raise BudgetUnknown('M4 non-restored sublimit control differs')
             return anchor
 
     @contextmanager
@@ -176,10 +181,15 @@ class AuthorizationBudget:
                 anchor=self.require_producer(db)
                 yield db
                 if self.producer==HK_PRODUCER:
+                    from .sublimits import snapshot
                     count,digest=journal_state(db)
                     intent=dict(anchor,state='WRITE_INTENT',attempt_count=count,attempts_sha256=digest)
+                    allocations=snapshot(db)
+                    if allocations is not None:intent['sublimits_sha256']=allocations
                     save_anchor(intent)
-            if intent is not None:save_anchor(dict(intent,state='ADOPTED'))
+            if intent is not None:
+                from .sublimits import ADOPTED
+                save_anchor(dict(intent,state=ADOPTED if 'sublimits_sha256' in intent else 'ADOPTED'))
 
     def begin(self,attempt,kind,raw):
         self.check_date()
@@ -196,8 +206,11 @@ class AuthorizationBudget:
                     raise BudgetUnknown('M4 model authorization ceiling')
             elif sum(estimates[k]+holds[k] for k in LIMITS if k!='model')+reserve>min(TOOL_STOP_CNY,TOOL_TOTAL_CNY)*CNY_SCALE:
                 raise BudgetUnknown('M4 tool authorization ceiling')
+            from .sublimits import snapshot,admit
+            line=admit(db,attempt,kind) if snapshot(db) is not None else None
             db.execute('INSERT INTO attempt VALUES(?,?,?,\'INTENT\',NULL)',
                        (attempt,kind,hashlib.sha256(raw).hexdigest()))
+            if line is not None:db.execute('INSERT INTO attempt_sublimit VALUES(?,?)',(attempt,line))
 
     def finish(self,attempt,receipt):
         # The producer supplies bounded metadata only; keys/body/text never enter.
