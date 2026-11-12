@@ -13,9 +13,9 @@ VERSION='LIO-planning-intake.1'
 INTENTS=frozenset({'consult','discuss','plan','save','cancel'})
 NONPERSISTENT=re.compile(
  r"\b(?:do not|don't|never|without)\s+(?:save|store|publish)|\b(?:draft|preview|hypothetical|never mind)\b|"
- r"\b(?:wait for my|subject to my)\s+(?:approval|confirmation)|\bonly if\b|"
+ r"\b(?:just|only)\s+(?:discuss|chat|talk)\b|\b(?:keep|leave)\b[^.!?]{0,80}\bunsaved\b|\b(?:wait for my|subject to my)\s+(?:approval|confirmation)|\bonly if\b|"
  r"\b(?:do not|don't|never)\s+(?:plan|make|create|organize)\b|不要规划|别规划|先不安排|不用安排|"
- r'先不保存|不要保存|别保存|不想保存|先别存|先聊|先讨论|只讨论|先看草稿|等我确认|经我同意|先放一放|取消|算了|'
+ r'不用保存|暂不保存|暂时不保存|先不保存|不要保存|别保存|不想保存|先别存|先聊|先讨论|只讨论|先看草稿|等我确认|经我同意|先放一放|取消|算了|'
  r'如果|假设|假如|要是|倘若|日期.{0,4}(?:未定|没定|待定)|'
  r'\b(?:if|unless|whether|maybe|might|suppose|assuming|tentative|provided that|dates? (?:are |is )?undecided)\b',re.I)
 SYSTEM=(

@@ -29,7 +29,7 @@ class NationalExecution(unittest.TestCase):
             extraction=dict(version='NEEDS-extraction.1',fields=fields,unresolved=[],long_term_requests=[]),
             field_sources=sources,current_request=text)
 
-    def run_intake(self,value,*,turns=None,previous=None,resolution=None,same_destination=True,model_output=None):
+    def run_intake(self,value,*,turns=None,previous=None,resolution=None,same_destination=True,model_output=None,flow_output=None,locale='zh'):
         text=value['current_request'];turns=turns or (PlanningTurn(text,date(2026,11,11)),)
         city=CityReference('310000','上海市','上海市',None,'province','Asia/Shanghai')
         resolution=resolution or dict(status='resolved',candidates=[city.__dict__],requested_name='上海',source={})
@@ -51,10 +51,12 @@ class NationalExecution(unittest.TestCase):
         else:wire=model_output
         from lio_flat_fixture import facts_fixture
         wire=facts_fixture(wire)
+        wire.update(version='LIO-planning-intake.7',question_fields=[])
+        if flow_output is not None:wire=flow_output
         class Worker:
             memory_run=None;message_context=None;provider=object();lio_city_context=None;lio_memory=None
             def _registered_stream(self,binding,key,registration,argument,**kwargs):
-                assert registration=='model.lio_intake.7' and argument[3]==len(turns)-1
+                assert registration=='model.lio_intake.8' and argument[3]==len(turns)-1
                 yield json.dumps(wire,ensure_ascii=False)
             def _event(self,binding,state,kind,value='',**kwargs):
                 events.append((kind,value));return SimpleNamespace(sequence=state.sequence+1)
@@ -63,10 +65,10 @@ class NationalExecution(unittest.TestCase):
             def __call__(self,*args):published.append(args);return args[2]
             def supports_destination(self,binding,city):return same_destination
         planning=NationalLioPlanning(None,Save())
-        planning.context=lambda *a:(turns,(),previous)
+        planning.context=lambda *a:(turns,tuple(dict(message_id='prior-'+str(n))for n in range(len(turns)-1)),previous)
         binding=SimpleNamespace(message_id='national-message',run_id='national-run')
         with patch('cj_api.local_lio_national.register',side_effect=lambda w,b,s,d:events.append(('registered',BOUND_EFFECT)) or s):
-            result=planning.execute(worker,binding,SimpleNamespace(sequence=0),text,SimpleNamespace(question_day=date(2026,11,11),locale='zh'))
+            result=planning.execute(worker,binding,SimpleNamespace(sequence=0),text,SimpleNamespace(question_day=date(2026,11,11),locale=locale))
         return published,events,lookups,result
 
     def test_device_chinese_request_reaches_structured_intake_not_beijing_regex(self):

@@ -84,10 +84,10 @@ def exercise(root,conninfo):
             else:
                 content=('You have shared that you prefer fewer stops in a day.' if has_saved else
                          "I don't know you yet. Would you like to introduce yourself?")
-        elif 'LIO-planning-intake.6' in system:
+        elif 'LIO-planning-intake.7' in system:
             text=body['messages'][-1]['content'];current['text']=text
             source_index=len([m for m in body['messages'][1:] if m['role']=='user' and not m['content'].startswith('Stored memory data')])-1
-            from cj_agent.lio_intake_facts_schema import response_format
+            from cj_agent.lio_intake_flow_schema import response_format
             assert body['response_format']==response_format(source_index)
             if current.get('clarification_flow'):
                 flow=CHENGDU_CASE['variants'][current['locale']]['turns'];fields={'party_size':dict(state='missing'),'fixed_items':[]}
@@ -165,7 +165,7 @@ def exercise(root,conninfo):
             else:
                 content=json.dumps(dict(version='TRIP-lio-first-plan.1',title=current['en']+' trip',items=items,
                     proposed_subjects={item['id']:['party'] for item in items}),ensure_ascii=False)
-        if 'LIO-planning-intake.6' in system:
+        if 'LIO-planning-intake.7' in system:
             data=json.loads(content)
             if 'start_date' not in data:
                 if data['intent'] in ('consult','discuss','cancel'):data['start_date']=None
@@ -182,7 +182,9 @@ def exercise(root,conninfo):
                         for edge in ('start','end'):fixed[edge]['timezone']=dict(state='missing')
                 content=json.dumps(data,ensure_ascii=False)
             from lio_flat_fixture import facts_fixture
-            content=json.dumps(facts_fixture(json.loads(content)),ensure_ascii=False)
+            flow=facts_fixture(json.loads(content))
+            flow.update(version='LIO-planning-intake.7',question_fields=[])
+            content=json.dumps(flow,ensure_ascii=False)
             from jsonschema import Draft202012Validator
             Draft202012Validator(body['response_format']['json_schema']['schema']).validate(json.loads(content))
         identity=dict(id='fixture-national-'+str(len(wire)),model=M4_MODEL)
@@ -373,7 +375,9 @@ def exercise(root,conninfo):
                 reply=read['messages'][-1]['answer']
                 assert ('fewer stops' in reply or '少安排' in reply) if saved else ("don't know you yet" in reply or '还不了解你' in reply)
         print('PASS national consultation retains Memory candidates and new-chat identity recalls only saved Memory',flush=True)
-    assert len(city_calls)==19
+    # Incomplete parameter-only and discussion turns no longer resolve a city.
+    # Twelve initial plans + one destination switch + two completed C flows.
+    assert len(city_calls)==15,len(city_calls)
     assert all(row['state']=='RECEIVED' for row in journal.inspect())
     print('PASS 12 signed private PG chains, original model/tool receipts, no live vendor calls',flush=True)
 
