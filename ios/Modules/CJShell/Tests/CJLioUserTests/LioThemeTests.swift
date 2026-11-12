@@ -102,7 +102,9 @@ struct LioThemeTests {
         let lioFiles = enumerator.compactMap { $0 as? URL }
             .filter { $0.pathExtension == "swift" && $0.lastPathComponent != "LioTheme.swift" }
         #expect(lioFiles.count >= 10)
-        let files = lioFiles + [sources.appendingPathComponent("CJShell/LioSavedMemoryView.swift")]
+        let app = Self.shell.deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("App")
+        let files = lioFiles + [sources.appendingPathComponent("CJShell/LioSavedMemoryView.swift"),
+                               app.appendingPathComponent("DemoBetaApp.swift")]
         let forbidden = try NSRegularExpression(
             pattern: #"systemBackground|SystemBackground|accentColor|[Rr]adius\s*[:(]\s*[0-9]"#)
         let hits = try files.flatMap { file -> [String] in
