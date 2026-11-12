@@ -63,6 +63,8 @@ class NationalLioPlanning:
                       else json.loads(pending[1].removeprefix(CONTEXT)))
             if previous is not None and previous.get('status')in ('discussion','cancelled','ready_to_publish','different_destination')and previous.get('authority_barrier_message_id')is None:
                 previous=dict(previous,authority_barrier_message_id=pending[0])
+            if previous is not None and previous.get('city',{}).get('status')=='resolved'and previous.get('resolved_city_source_message_id')is None:
+                previous=dict(previous,resolved_city_source_message_id=pending[0])
             anchors=set()if previous is None else {ref['message_id']for fact in previous.get('facts',{}).values()for ref in fact['sources']}
             for key in ('date_boundary_message_id','resolved_city_source_message_id','authority_barrier_message_id'):
                 if previous is not None and previous.get(key)is not None:anchors.add(previous[key])

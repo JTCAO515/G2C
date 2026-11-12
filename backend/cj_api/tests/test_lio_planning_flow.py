@@ -402,6 +402,41 @@ class PlanningFlow(unittest.TestCase):
         published,_,_,_=run(last,following,turns=(original(first),original(text),original(following)),previous=previous,resolution=resolution)
         self.assertEqual(len(published),1);self.assertEqual(published[0][3].fields['arrival']['date']['value'],'2026-11-21')
 
+    def test_legacy_resolved_context_binds_its_actual_message_before_new_facts(self):
+        from cj_api.lio_city import CityReference
+        from cj_api.local_lio_national import CONTEXT
+        first='计划江苏Suzhou三天，从2026-11-20开始，两个人'
+        old=CityReference('320500','苏州市','江苏省','苏州市','city','Asia/Shanghai').__dict__
+        legacy=dict(authority='plan',status='needs_details',city=dict(status='resolved',candidates=[old],source={}))
+        raw=json.dumps(dict(version='MESSAGE-draft.1',conversation_id='chat',message_id='prior-0',text=first,trip_id=None,creation_intent='none')).encode()
+        test=self
+        class Database:
+            @contextmanager
+            def connect(self,scope):
+                test.assertEqual(scope,'owner');yield self
+            def execute(self,sql,args):
+                test.assertEqual(args[:3],('owner','chat','generation'))
+                if 'LIMIT %s'in sql:return SimpleNamespace(fetchall=lambda:[('prior-0',0,raw,sha256(raw).hexdigest(),date(2026,11,11),'completed')])
+                return SimpleNamespace(fetchone=lambda:('prior-0',CONTEXT+json.dumps(legacy)))
+        binding=SimpleNamespace(scope='owner',conversation_id='chat',generation='generation',message_sequence=1)
+        text='重新规划安徽Suzhou三天，从2026-11-21开始，人数未定'
+        _,_,previous=NationalLioPlanning(Database(),None).context(binding,original(text))
+        self.assertEqual(previous['resolved_city_source_message_id'],'prior-0');self.assertNotIn('facts',previous)
+        new=flow(text,city='Suzhou',start='2026-11-21',index=1,intent='plan',questions=('party_size',))
+        new['city']['province']='安徽';new['unknown_fields']=['party_size']
+        target=CityReference('341300','宿州市','安徽省','宿州市','city','Asia/Shanghai').__dict__
+        resolution=dict(status='resolved',candidates=[target],source={})
+        published,events,_,_=run(new,text,turns=(original(first),original(text)),previous=previous,resolution=resolution)
+        self.assertEqual(published,[]);previous=context(events)
+        for item in previous['facts'].values():
+            for ref in item['sources']:
+                if ref['message_id']=='national-message':ref['message_id']='prior-1'
+        following='两个人';last=flow(following,city=None,days=None,party=2,index=2,questions=())
+        last['planning_request_index']=1
+        published,events,_,_=run(last,following,turns=(original(first),original(text),original(following)),previous=previous,resolution=resolution)
+        self.assertEqual(len(published),1);self.assertEqual(published[0][3].fields['arrival']['date']['value'],'2026-11-21')
+        self.assertNotIn('哪天',answer(events))
+
     def test_capability_question_bypasses_planning_in_both_languages(self):
         planning=NationalLioPlanning(None,None)
         for text in ('你能干啥','What can you do?'):
