@@ -108,26 +108,34 @@ class TitleProjectionPG:
             self.assertIsNone(expired.json()['item']['title'])
 
     def _title_interleave(self, client, writer, item_id, action, endpoint):
-        entered,release=threading.Event(),threading.Event()
+        entered,release,writer_at_lock=threading.Event(),threading.Event(),threading.Event()
         validate=MemoryDetailV3Response.model_validate_json
-        result={}
+        lock_scope=Transaction.lock_scope
+        result={};writer_backend={}
         def encode(raw,**kwargs):
             entered.set()
-            if not release.wait(8):raise RuntimeError('test encoder release timed out')
+            if not release.wait(45):raise RuntimeError('test encoder release timed out')
             return validate(raw,**kwargs)
+        def locking(tx):
+            if entered.is_set() and not release.is_set():
+                writer_backend['pid']=tx.cur.connection.info.backend_pid
+                writer_at_lock.set()
+            return lock_scope(tx)
         def read():result['read']=self._title_get(client,item_id)
         def write():result['write']=writer.post(endpoint,content=json.dumps(action).encode(),
             headers={**self.headers('alice'),'Content-Type':'application/octet-stream'})
         config=json.loads(Path(os.environ['CJ_E2E_CONNINFO']).read_text())
-        with patch.object(MemoryDetailV3Response,'model_validate_json',side_effect=encode):
+        with patch.object(MemoryDetailV3Response,'model_validate_json',side_effect=encode),patch.object(Transaction,'lock_scope',locking):
             reader=threading.Thread(target=read);reader.start()
-            self.assertTrue(entered.wait(5))
+            self.assertTrue(entered.wait(30))
             editing=threading.Thread(target=write);editing.start()
             try:
+                self.assertTrue(writer_at_lock.wait(30),'writer must reach the original lock after AUTH/setup')
                 waiting=False
                 with psycopg.connect(**config,autocommit=True) as db:
-                    for _ in range(100):
-                        waiting=db.execute("SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE wait_event_type='Lock' AND query LIKE '%%cj_memory_scope%%FOR UPDATE%%')").fetchone()[0]
+                    deadline=time.monotonic()+8
+                    while time.monotonic()<deadline:
+                        waiting=db.execute("SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE pid=%s AND wait_event_type='Lock' AND query LIKE '%%cj_memory_scope%%FOR UPDATE%%')",(writer_backend['pid'],)).fetchone()[0]
                         if waiting or 'write' in result:break
                         time.sleep(.01)
                 self.assertTrue(waiting,'writer must actually wait on the original MEMORY scope lock')
