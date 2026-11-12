@@ -145,9 +145,10 @@ def exercise(root,conninfo):
                     field_sources={},current_source_index=source_index))
             else:
                 content=None
-            fields=dict(arrival=dict(date=dict(state='known',value='2026-11-20'),time=dict(state='missing'),timezone=dict(state='missing'),place=dict(state='missing')),party_size=dict(state='known',value=2))
+            requested_start=current.get('requested_start','2026-11-20')
+            fields=dict(arrival=dict(date=dict(state='known',value=requested_start),time=dict(state='missing'),timezone=dict(state='missing'),place=dict(state='missing')),party_size=dict(state='known',value=2))
             sources={k:[dict(source_index=source_index,quote=q)] for k,q in (
-                ('arrival.date','2026-11-20'),('party_size',current['party']),('duration_days',current['duration']))}
+                ('arrival.date',requested_start),('party_size',current['party']),('duration_days',current['duration']))}
             if current.get('fixed_description') in text:
                 def event(clock):
                     return dict(date=dict(state='known',value='2026-11-20'),time=dict(state='known',value=clock),
@@ -340,6 +341,37 @@ def exercise(root,conninfo):
         assert [o.status for o in process()]==['completed']
         after_replan=api.get('/v2/lio/trip',params=params,headers=headers).json()
         assert after_replan['current']['days']==initial['days'] and len(after_replan['history'])==3
+        from cj_message.lio_plan_needs import lio_needs_id
+        from cj_api.local_needs import protected_reader
+        from cj_api.local_account_admission_v2 import account_checker_for
+        from cj_needs.contract_v1 import encode_snapshot
+        needs_reader=protected_reader(database,account_checker_for(auth,database,selected_subjects=subjects))
+        def current_needs():
+            return needs_reader.read(headers['Authorization'].removeprefix('Bearer '),
+                lambda operation,context:encode_snapshot(operation.detail(lio_needs_id(scope,cid))))
+        before_needs=current_needs()
+        for conflict_locale in ('zh','en'):
+            current.update(locale=conflict_locale,mention='杭州'if conflict_locale=='zh'else'Hangzhou',
+                           party='两个人'if conflict_locale=='zh'else'two people',duration='三天'if conflict_locale=='zh'else'three-day',
+                           requested_start='2026-11-27')
+            conflict_mid='national-incompatible-window-'+conflict_locale
+            question=('计划杭州三天，从2026-11-27开始，两个人'if conflict_locale=='zh'else
+                      'Plan a three-day trip to Hangzhou for two people starting 2026-11-27.')
+            message=dict(version='LIO-message.2',message_id=conflict_mid,conversation_id=cid,locale=conflict_locale,text=question)
+            response_=api.post('/v2/lio/messages',headers=headers,content=json.dumps(message).encode())
+            assert response_.status_code==200,response_.text
+            assert [(o.message_id,o.status)for o in process()]==[(conflict_mid,'completed')]
+            assert api.get('/v2/lio/trip',params=params,headers=headers).json()==after_replan
+            last=api.get('/v2/lio/timeline',params=dict(conversation_id=cid),headers=headers).json()['messages'][-1]
+            assert last['status']=='completed'and last['trip']is None
+            assert (('不保存或替换原行程'in last['answer'])if conflict_locale=='zh'else('without saving or replacing'in last['answer'])),last['answer']
+            with database.connect(scope)as db:
+                assert db.execute('SELECT count(*) FROM cj_message_needs_binding WHERE message_scope=%s AND message_id=%s',
+                    (scope,conflict_mid)).fetchone()==(0,)
+                assert db.execute("SELECT count(*) FROM cj_run_metered_operation WHERE scope=%s AND run_id=(SELECT run_id FROM cj_message_receipt WHERE scope=%s AND message_id=%s) AND registration_id='model.draft'",(scope,scope,conflict_mid)).fetchone()==(0,)
+            assert current_needs()==before_needs
+            print('PASS signed incompatible window: read-only proposal, original NEEDS/Trip unchanged, no draft',conflict_locale,flush=True)
+        current.pop('requested_start')
         current.update(zh='上海',en='Shanghai',mention='Shanghai',party='two people',duration='three-day')
         switch=dict(version='LIO-message.2',message_id='national-other-destination',conversation_id=cid,locale='en',
             text='Plan a three-day trip to Shanghai for two people starting 2026-11-20.')
