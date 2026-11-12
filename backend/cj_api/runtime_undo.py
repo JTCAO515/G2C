@@ -1,7 +1,9 @@
 """One native Lio undo and protected original-action reconciliation, no model."""
 from hashlib import sha256
 
-from cj_trip.domain import packed
+from cj_trip.domain import packed,Denied,Conflict
+from cj_trip.operation import OperationWithheld
+from cj_needs.domain import Denied as NeedsDenied
 from cj_trip.lio_history import Undo
 from runtime_adapter.contract import decode,encode,Unavailable
 
@@ -11,6 +13,13 @@ from .lio_trip_routes import _apply,_history,_receipt
 class NativeUndo:
     def __init__(self,claims,message_boundary,trip_boundary,token_supplier):
         self.claims,self.messages,self.trips,self.token_supplier=claims,message_boundary,trip_boundary,token_supplier
+
+    def _with_trip(self,project):
+        try:return self.trips.with_operation(self.token_supplier(),project)
+        except OperationWithheld:
+            raise Unavailable('NATIVE_UNDO_ACK_UNCERTAIN_QUERY_ONLY') from None
+        except (Denied,Conflict,NeedsDenied):
+            raise Unavailable('NATIVE_UNDO_ORIGINAL_UNAVAILABLE') from None
 
     def conversation(self,request,*,deadline):
         if len(request['prior_step_ids'])!=3:raise Unavailable('NATIVE_UNDO_RECIPE_STEP_CHANGED')
@@ -32,7 +41,7 @@ class NativeUndo:
             return _apply(context,_undo(request['step_id'],history['undo_target']),cid)
         # Same public native operation, same original action ID and source
         # authority. A lost commit ACK is query-only, never a second application.
-        return self.trips.with_operation(self.token_supplier(),apply)
+        return self._with_trip(apply)
 
     def proof(self,request,*,deadline):
         cid=self.conversation(request,deadline=deadline)
@@ -55,4 +64,4 @@ class NativeUndo:
             return encode(dict(version='G2C-native-undo-original.1',action_id=request['step_id'],
                 conversation_id=cid,committed=committed,status='PASS' if committed else 'UNKNOWN',
                 history=decode(_history(context,None,cid))))
-        return self.trips.with_operation(self.token_supplier(),original)
+        return self._with_trip(original)

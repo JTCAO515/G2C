@@ -105,7 +105,7 @@ def test_public_multi_turn_inputs_continue_the_same_native_chat_without_added_in
     if inputs is None:inputs=[dict(text=text) for text in variant['turns']]
     prior=[setup['step_id']]
     for index,payload in enumerate(inputs,1):
-        request=dict(kind='message',step_id='runtime-'+digest([dialogue.claims.binding.scope,'attempt',index]),
+        request=dict(kind='message',attempt_id='attempt',step_id='runtime-'+digest([dialogue.claims.binding.scope,'attempt',index]),
             payload=payload,prior_step_ids=list(prior))
         dialogue.dispatch(request,deadline=30)
         prior.append(request['step_id'])
