@@ -51,7 +51,8 @@ class NativeMemorySetup:
         profile=self.configuration.collection.profiles[principal.subject]
         if (profile.expires_at<=datetime.now(timezone.utc) or 'self' not in profile.subjects or
                 'long_term' not in profile.extents or any(slot not in profile.slots or
-                not profile.slots[slot].collection_allowed or profile.slots[slot].kind!='preference' for slot in MEMORY_SLOTS)):
+                not profile.slots[slot].collection_allowed or not profile.slots[slot].semantic_resolved or
+                profile.slots[slot].kind!='preference' for slot in MEMORY_SLOTS)):
             raise Unavailable('NATIVE_MEMORY_LEGAL_PROFILE_NOT_AVAILABLE')
 
     def _bind(self,token,operation):
