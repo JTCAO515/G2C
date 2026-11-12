@@ -59,6 +59,7 @@ dev-mode-dirs = [
 # One distribution; each domain keeps its import name (cj_auth, cj_message, ...).
 packages = [
     "backend/cj_api",
+    "backend/runtime_adapter",
     "backend/agent/cj_agent",
     "backend/auth/cj_auth",
     "backend/cleanup/cj_cleanup",
@@ -79,3 +80,51 @@ packages = [
     "backend/trip/cj_trip",
     "backend/usage/cj_usage",
 ]
+
+[tool.hatch.build.targets.wheel.sources]
+# Preserve the accepted domain import names in non-editable installs too.
+"backend/cj_api" = "cj_api"
+"backend/runtime_adapter" = "runtime_adapter"
+"backend/agent/cj_agent" = "cj_agent"
+"backend/auth/cj_auth" = "cj_auth"
+"backend/cleanup/cj_cleanup" = "cj_cleanup"
+"backend/draft/cj_draft" = "cj_draft"
+"backend/fact/cj_fact" = "cj_fact"
+"backend/feasibility/cj_feasibility" = "cj_feasibility"
+"backend/feedback/cj_feedback" = "cj_feedback"
+"backend/manual_edit/cj_manual_edit" = "cj_manual_edit"
+"backend/memory/cj_memory" = "cj_memory"
+"backend/memory_jobs/cj_memory_jobs" = "cj_memory_jobs"
+"backend/memory_management/cj_memory_management" = "cj_memory_management"
+"backend/memory_withdrawal/cj_memory_withdrawal" = "cj_memory_withdrawal"
+"backend/message/cj_message" = "cj_message"
+"backend/needs/cj_needs" = "cj_needs"
+"backend/place/cj_place" = "cj_place"
+"backend/run/cj_run" = "cj_run"
+"backend/strict_json/cj_strict_json" = "cj_strict_json"
+"backend/trip/cj_trip" = "cj_trip"
+"backend/usage/cj_usage" = "cj_usage"
+
+[tool.hatch.build.targets.wheel.shared-data]
+# Only public fixed inputs and policy sources hashed by source_c0().
+"backend/agent/cj_agent/provider.py" = "share/g2c/runtime-source/backend/agent/cj_agent/provider.py"
+"backend/cj_api/real_services.py" = "share/g2c/runtime-source/backend/cj_api/real_services.py"
+"backend/cj_api/local_lio_planning.py" = "share/g2c/runtime-source/backend/cj_api/local_lio_planning.py"
+"backend/cj_api/local_lio_national.py" = "share/g2c/runtime-source/backend/cj_api/local_lio_national.py"
+"backend/cj_api/lio_national_intake.py" = "share/g2c/runtime-source/backend/cj_api/lio_national_intake.py"
+"backend/agent/cj_agent/lio_intake_schema.py" = "share/g2c/runtime-source/backend/agent/cj_agent/lio_intake_schema.py"
+"backend/agent/cj_agent/lio_intake_current_schema.py" = "share/g2c/runtime-source/backend/agent/cj_agent/lio_intake_current_schema.py"
+"backend/agent/cj_agent/lio_intake_modes_schema.py" = "share/g2c/runtime-source/backend/agent/cj_agent/lio_intake_modes_schema.py"
+"backend/cj_api/tool_evidence.py" = "share/g2c/runtime-source/backend/cj_api/tool_evidence.py"
+"backend/agent/cj_agent/lio_intake_start_schema.py" = "share/g2c/runtime-source/backend/agent/cj_agent/lio_intake_start_schema.py"
+"backend/agent/cj_agent/lio_intake_flat_schema.py" = "share/g2c/runtime-source/backend/agent/cj_agent/lio_intake_flat_schema.py"
+"backend/agent/cj_agent/lio_intake_facts_schema.py" = "share/g2c/runtime-source/backend/agent/cj_agent/lio_intake_facts_schema.py"
+"backend/agent/cj_agent/lio_intake_flow_schema.py" = "share/g2c/runtime-source/backend/agent/cj_agent/lio_intake_flow_schema.py"
+"backend/cj_api/lio_flow_intake.py" = "share/g2c/runtime-source/backend/cj_api/lio_flow_intake.py"
+"backend/cj_api/lio_flat_intake.py" = "share/g2c/runtime-source/backend/cj_api/lio_flat_intake.py"
+"backend/cj_api/lio_sourced_intake.py" = "share/g2c/runtime-source/backend/cj_api/lio_sourced_intake.py"
+"backend/message/cj_message/lio_context.py" = "share/g2c/runtime-source/backend/message/cj_message/lio_context.py"
+"backend/draft/cj_draft/lio_plan.py" = "share/g2c/runtime-source/backend/draft/cj_draft/lio_plan.py"
+"eval/optimization/cases.v2.json" = "share/g2c/runtime-source/eval/optimization/cases.v2.json"
+"eval/optimization/score_v2.py" = "share/g2c/runtime-source/eval/optimization/score_v2.py"
+"tooling/optimization/uv.lock" = "share/g2c/runtime-source/tooling/optimization/uv.lock"

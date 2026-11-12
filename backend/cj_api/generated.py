@@ -2384,3 +2384,42 @@ class MemoryManagementReceiptV2Response(BaseModel):
     version: Literal['MEMORY-result.2']
     request_id: RequestId
     receipt: MemoryManagementReceiptV2 | None
+
+
+class Status18(StrEnum):
+    active = 'active'
+    candidate = 'candidate'
+    disabled = 'disabled'
+    withdrawn = 'withdrawn'
+
+
+class MemoryItemV3(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    command: MemoryStoredCommandV2
+    version: conint(ge=1, le=9223372036854775807)
+    status: Status18
+    recorded_at: AwareDatetime
+    title: constr(pattern=r'^[^\r\n\t]*$', max_length=4096) | None = Field(
+        ...,
+        description='Server-derived same-language short title: Chinese <=10 characters, English <=5 words; null/empty means unavailable. Never source or execution authority.',
+    )
+
+
+class MemoryDetailV3Response(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    version: Literal['MEMORY-result.3']
+    request_id: RequestId
+    item: MemoryItemV3 | None
+
+
+class MemoryListV3Response(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    version: Literal['MEMORY-result.3']
+    request_id: RequestId
+    items: list[MemoryItemV3] = Field(..., max_length=100)

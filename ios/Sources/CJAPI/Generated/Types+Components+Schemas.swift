@@ -12108,6 +12108,286 @@ extension Components {
                 ])
             }
         }
+        /// - Remark: Generated from `#/components/schemas/MemoryItemV3`.
+        public struct MemoryItemV3: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemoryItemV3/command`.
+            public var command: Components.Schemas.MemoryStoredCommandV2
+            /// - Remark: Generated from `#/components/schemas/MemoryItemV3/version`.
+            public var version: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/MemoryItemV3/status`.
+            @frozen public enum statusPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case active = "active"
+                case candidate = "candidate"
+                case disabled = "disabled"
+                case withdrawn = "withdrawn"
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryItemV3/status`.
+            public var status: Components.Schemas.MemoryItemV3.statusPayload
+            /// - Remark: Generated from `#/components/schemas/MemoryItemV3/recorded_at`.
+            public var recorded_at: Foundation.Date
+            /// Server-derived same-language short title: Chinese <=10 characters, English <=5 words; null/empty means unavailable. Never source or execution authority.
+            ///
+            /// - Remark: Generated from `#/components/schemas/MemoryItemV3/title`.
+            public struct titlePayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/MemoryItemV3/title/value1`.
+                public var value1: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/MemoryItemV3/title/value2`.
+                public var value2: Components.Schemas.CJExplicitJSONNull?
+                /// Creates a new `titlePayload`.
+                ///
+                /// - Parameters:
+                ///   - value1:
+                ///   - value2:
+                public init(
+                    value1: Swift.String? = nil,
+                    value2: Components.Schemas.CJExplicitJSONNull? = nil
+                ) {
+                    self.value1 = value1
+                    self.value2 = value2
+                }
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self.value1 = try decoder.decodeFromSingleValueContainer()
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self.value2 = try .init(from: decoder)
+                    } catch {
+                        errors.append(error)
+                    }
+                    try Swift.DecodingError.verifyAtLeastOneSchemaIsNotNil(
+                        [
+                            self.value1,
+                            self.value2
+                        ],
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    try encoder.encodeFirstNonNilValueToSingleValueContainer([
+                        self.value1
+                    ])
+                    try self.value2?.encode(to: encoder)
+                }
+            }
+            /// Server-derived same-language short title: Chinese <=10 characters, English <=5 words; null/empty means unavailable. Never source or execution authority.
+            ///
+            /// - Remark: Generated from `#/components/schemas/MemoryItemV3/title`.
+            public var title: Components.Schemas.MemoryItemV3.titlePayload
+            /// Creates a new `MemoryItemV3`.
+            ///
+            /// - Parameters:
+            ///   - command:
+            ///   - version:
+            ///   - status:
+            ///   - recorded_at:
+            ///   - title: Server-derived same-language short title: Chinese <=10 characters, English <=5 words; null/empty means unavailable. Never source or execution authority.
+            public init(
+                command: Components.Schemas.MemoryStoredCommandV2,
+                version: Swift.Int,
+                status: Components.Schemas.MemoryItemV3.statusPayload,
+                recorded_at: Foundation.Date,
+                title: Components.Schemas.MemoryItemV3.titlePayload
+            ) {
+                self.command = command
+                self.version = version
+                self.status = status
+                self.recorded_at = recorded_at
+                self.title = title
+            }
+            public enum CodingKeys: String, CodingKey {
+                case command
+                case version
+                case status
+                case recorded_at
+                case title
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.command = try container.decode(
+                    Components.Schemas.MemoryStoredCommandV2.self,
+                    forKey: .command
+                )
+                self.version = try container.decode(
+                    Swift.Int.self,
+                    forKey: .version
+                )
+                self.status = try container.decode(
+                    Components.Schemas.MemoryItemV3.statusPayload.self,
+                    forKey: .status
+                )
+                self.recorded_at = try container.decode(
+                    Foundation.Date.self,
+                    forKey: .recorded_at
+                )
+                self.title = try container.decode(
+                    Components.Schemas.MemoryItemV3.titlePayload.self,
+                    forKey: .title
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "command",
+                    "version",
+                    "status",
+                    "recorded_at",
+                    "title"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MemoryDetailV3Response`.
+        public struct MemoryDetailV3Response: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemoryDetailV3Response/version`.
+            @frozen public enum versionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case MEMORY_hyphen_result_period_3 = "MEMORY-result.3"
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryDetailV3Response/version`.
+            public var version: Components.Schemas.MemoryDetailV3Response.versionPayload
+            /// - Remark: Generated from `#/components/schemas/MemoryDetailV3Response/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/MemoryDetailV3Response/item`.
+            public struct itemPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/MemoryDetailV3Response/item/value1`.
+                public var value1: Components.Schemas.MemoryItemV3?
+                /// - Remark: Generated from `#/components/schemas/MemoryDetailV3Response/item/value2`.
+                public var value2: Components.Schemas.CJExplicitJSONNull?
+                /// Creates a new `itemPayload`.
+                ///
+                /// - Parameters:
+                ///   - value1:
+                ///   - value2:
+                public init(
+                    value1: Components.Schemas.MemoryItemV3? = nil,
+                    value2: Components.Schemas.CJExplicitJSONNull? = nil
+                ) {
+                    self.value1 = value1
+                    self.value2 = value2
+                }
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self.value1 = try .init(from: decoder)
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self.value2 = try .init(from: decoder)
+                    } catch {
+                        errors.append(error)
+                    }
+                    try Swift.DecodingError.verifyAtLeastOneSchemaIsNotNil(
+                        [
+                            self.value1,
+                            self.value2
+                        ],
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    try self.value1?.encode(to: encoder)
+                    try self.value2?.encode(to: encoder)
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryDetailV3Response/item`.
+            public var item: Components.Schemas.MemoryDetailV3Response.itemPayload
+            /// Creates a new `MemoryDetailV3Response`.
+            ///
+            /// - Parameters:
+            ///   - version:
+            ///   - request_id:
+            ///   - item:
+            public init(
+                version: Components.Schemas.MemoryDetailV3Response.versionPayload,
+                request_id: Components.Schemas.RequestId,
+                item: Components.Schemas.MemoryDetailV3Response.itemPayload
+            ) {
+                self.version = version
+                self.request_id = request_id
+                self.item = item
+            }
+            public enum CodingKeys: String, CodingKey {
+                case version
+                case request_id
+                case item
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.version = try container.decode(
+                    Components.Schemas.MemoryDetailV3Response.versionPayload.self,
+                    forKey: .version
+                )
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.item = try container.decode(
+                    Components.Schemas.MemoryDetailV3Response.itemPayload.self,
+                    forKey: .item
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "version",
+                    "request_id",
+                    "item"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MemoryListV3Response`.
+        public struct MemoryListV3Response: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MemoryListV3Response/version`.
+            @frozen public enum versionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case MEMORY_hyphen_result_period_3 = "MEMORY-result.3"
+            }
+            /// - Remark: Generated from `#/components/schemas/MemoryListV3Response/version`.
+            public var version: Components.Schemas.MemoryListV3Response.versionPayload
+            /// - Remark: Generated from `#/components/schemas/MemoryListV3Response/request_id`.
+            public var request_id: Components.Schemas.RequestId
+            /// - Remark: Generated from `#/components/schemas/MemoryListV3Response/items`.
+            public var items: [Components.Schemas.MemoryItemV3]
+            /// Creates a new `MemoryListV3Response`.
+            ///
+            /// - Parameters:
+            ///   - version:
+            ///   - request_id:
+            ///   - items:
+            public init(
+                version: Components.Schemas.MemoryListV3Response.versionPayload,
+                request_id: Components.Schemas.RequestId,
+                items: [Components.Schemas.MemoryItemV3]
+            ) {
+                self.version = version
+                self.request_id = request_id
+                self.items = items
+            }
+            public enum CodingKeys: String, CodingKey {
+                case version
+                case request_id
+                case items
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.version = try container.decode(
+                    Components.Schemas.MemoryListV3Response.versionPayload.self,
+                    forKey: .version
+                )
+                self.request_id = try container.decode(
+                    Components.Schemas.RequestId.self,
+                    forKey: .request_id
+                )
+                self.items = try container.decode(
+                    [Components.Schemas.MemoryItemV3].self,
+                    forKey: .items
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "version",
+                    "request_id",
+                    "items"
+                ])
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/CJExplicitJSONNull`.
         public typealias CJExplicitJSONNull = ExplicitJSONNull
     }
