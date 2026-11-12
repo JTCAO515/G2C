@@ -1,6 +1,7 @@
 """Private PG/native Lio controls; FakeProvider only, never Hong Kong setup."""
 import json
 import time
+import uuid
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -42,7 +43,7 @@ def exercise(root,conninfo):
     owner,foreign=(dev_auth.token(auth,s,30) for s in subjects)
     scope=scope_for(ISSUER,subjects[0])
     boundary=Boundary(checker,lambda principal:database.message_repository(scope_for(principal.issuer,principal.subject)),
-        lambda:'unused-native-undo-generation')
+        lambda:str(uuid.uuid4()))
     app=create_local_app(conninfo_path=None,auth_dir=auth,database=database,run_context=context,
         confirmation_signer=signer,account_admission=True,demo_dialogue_subjects=frozenset(subjects),
         lio_dialogue_subjects=frozenset(subjects))
@@ -91,7 +92,97 @@ def exercise(root,conninfo):
     try:other.proof(request,deadline=time.monotonic()+30)
     except (Denied,Unavailable):pass
     else:raise AssertionError('foreign owner read the native undo original')
+    cancel_control(root,database,auth,checker,model,worker,boundary,owner,scope)
     print('PASS native runtime undo through signed Lio v2/API/Fake plan and edit, real PG Trip authority, lost ACK query-only, repeated proof zero model calls, foreign owner denied')
+
+
+def cancel_control(root,database,auth,checker,model,worker,boundary,token,scope):
+    from concurrent.futures import ThreadPoolExecutor
+    from datetime import datetime,timezone
+    from pathlib import Path
+    from cj_api.runtime_authority import RuntimeAuthority
+    from cj_api.runtime_message_claims import MessageClaims
+    from cj_api.runtime_dialogue import NativeDialogue
+    from cj_api.runtime_cancel import NativeCancellation
+    from cj_api.runtime_controlled_generation import ControlledGeneration
+    from cj_api.runtime_originals import RuntimeOriginals
+    from cj_api.runtime_native_backend import NativeRuntimeBackend
+    from cj_usage.authorization_budget import AuthorizationBudget,CNY_SCALE,journal_state
+    from cj_usage.sublimits import activate,scope_hash,operation_id
+    from runtime_adapter.contract import VERSION,digest
+    from runtime_adapter.profiles import C0
+    budget=AuthorizationBudget(root/'cancel-local-fees',clock=lambda:datetime(2026,11,12,tzinfo=timezone.utc))
+    budget.begin('retained-local-control','model',b'original pre-allocation fixture')
+    base=dict(cap=None,active_cap=None,model_cap=None,tool_cap=None,max_calls=None,model_calls=None,tool_calls=None)
+    grants={line:dict(base) for line in ('A','B','L','C','E','F')}
+    for line in ('L','C','E','F'):grants[line].update(cap=2*CNY_SCALE,active_cap=2*CNY_SCALE)
+    activate(budget,grants,{scope_hash(scope):'E'})
+    data=Path(__file__).resolve().parents[3]/'eval/optimization/cases.v2.json'
+    from hashlib import sha256
+    pins=SimpleNamespace(key='a'*64,raw=b'private-local-controls',value={
+        'task_sha256':sha256(data.read_bytes()).hexdigest(),'task_version':decode(data.read_bytes())['version']})
+    clock_state={'wall':datetime(2026,11,12,13,5,tzinfo=timezone.utc)}
+    authority=RuntimeAuthority(checker,lambda:token,budget,pins,lambda:pins.raw,line='E',wall_clock=lambda:clock_state['wall'])
+    directory=root/'cancel-canonical';directory.mkdir(mode=0o700)
+    claims=MessageClaims(directory,boundary,lambda:token,authority,pins,history_profile='lio.2')
+    artifacts=root/'cancel-evidence';artifacts.mkdir(mode=0o700)
+    originals=RuntimeOriginals(boundary,database,budget,artifacts,query_original=claims.query)
+    controls=ControlledGeneration()
+    cancellation=NativeCancellation(claims,boundary,database,lambda:token,controls,originals)
+    dialogue=NativeDialogue(claims,boundary,database,lambda:token,lambda receipt,deadline:None,
+        dataset_path=data,cancellation=cancellation)
+    # Exact public recipe, same original subject. The local financial holds
+    # below test denial only, and are not attributed to this FakeProvider RUN.
+    task=dialogue.tasks['dev-cancel'];attempt='native-cancel-control';prior=[]
+    def request(kind,payload):
+        return dict(version=VERSION,attempt_id=attempt,step_id='runtime-'+digest([scope,attempt,len(prior)]),
+            binding_sha256=claims.binding.key,pins_sha256=pins.key,kind=kind,payload=payload,candidate=C0,prior_step_ids=list(prior))
+    backend=NativeRuntimeBackend(authority,claims,None,boundary,lambda:token,
+        require_worker=lambda binding,pins,deadline:None,wait_original=lambda receipt,deadline:None,
+        admit_reflection=None,dialogue=dialogue)
+    def send(value,deadline):
+        raw=encode(value);fresh=backend.claim(raw,deadline=deadline)
+        assert fresh.fresh
+        backend.dispatch(raw,capability=fresh.capability,deadline=deadline)
+    deadline=time.monotonic()+15
+    setup=request('task_setup',dict(task_id='dev-cancel',language='en',setup=task['setup'],dataset_sha256=pins.value['task_sha256']))
+    send(setup,deadline);prior.append(setup['step_id'])
+    start=request('start_controlled_generation',{'text':task['variants']['en']['turns'][0]})
+    worker=run_worker._worker_for_scope(database,model,auth,scope,checker,demo_planning=True,
+        runtime_exit_observer_for_run=lambda binding:controls if binding.message_id==start['step_id'] else None)
+    calls=model.calls
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        dispatched=pool.submit(send,start,deadline)
+        native=None
+        while native is None:
+            native=boundary.with_history_context(token,lambda context:context.query_lio_message(start['step_id']))
+            assert time.monotonic()<deadline
+            if native is None:time.sleep(.01)
+        def process():
+            with worker.execution_lease():return worker._one(native.receipt)
+        running=pool.submit(process)
+        while not dispatched.done() and not running.done():time.sleep(.01)
+        if running.done():
+            result=running.result()
+            raise AssertionError(('native worker finished before controlled generation',result,model.calls,calls))
+        dispatched.result(timeout=60)
+        assert model.calls==calls+1
+        prior.append(start['step_id'])
+        for _ in range(2):budget.begin(operation_id(scope),'model',b'local allowance denial control')
+        clock_state['wall']=datetime(2026,11,12,13,52,tzinfo=timezone.utc)
+        with budget.connect() as db:before=journal_state(db)
+        try:authority.require(binding=claims.binding,pins_sha256=pins.key,purpose='call',deadline=deadline,read_only=False)
+        except Unavailable as error:assert str(error)=='ORIGINAL_LINE_ALLOWANCE_EXHAUSTED'
+        else:raise AssertionError('new work bypassed exhausted original allowance')
+        cancel=request('cancel_original_run',{'text':task['variants']['en']['turns'][1]})
+        send(cancel,deadline)
+        running.result(timeout=60)
+    proof=decode(cancellation.proof(cancel,deadline=time.monotonic()+30))
+    assert proof['status']=='CANCELLED' and model.calls==calls+1
+    assert decode(cancellation.proof(cancel,deadline=time.monotonic()+30))==proof
+    with budget.connect() as db:assert journal_state(db)==before
+    assert not claims.claim(encode(cancel),deadline=time.monotonic()+30).fresh
+    print('PASS actual native RUN controlled after original Meter settlement, canonical one-use cancel across STOP_NEW/exhausted allowance, original RUN-cancel.2, read-only repeat proof and zero new model or financial operations')
 
 
 if __name__=='__main__':

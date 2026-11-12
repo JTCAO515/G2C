@@ -31,10 +31,10 @@ class MessageClaims:
         return (context.query_lio_message(message_id) if self.history_profile=='lio.2' else
                 context.query_message(message_id))
 
-    def _guard(self,*,read_only):
+    def _guard(self,*,read_only,purpose='query'):
         try:
             self.authority.require(binding=self.binding,pins_sha256=self.pins.key,
-                purpose='query' if read_only else 'claim',deadline=self._deadline.get(),read_only=read_only)
+                purpose='query' if read_only else purpose,deadline=self._deadline.get(),read_only=read_only)
         except (BudgetUnknown,sqlite3.Error):
             raise Unavailable('ORIGINAL_FINANCIAL_AUTHORITY_UNAVAILABLE') from None
 
