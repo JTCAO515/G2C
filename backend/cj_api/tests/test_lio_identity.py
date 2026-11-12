@@ -45,7 +45,8 @@ class NationalLioIdentity(unittest.TestCase):
                 reply=_message(item,complete('我是 Lio，一个武士造型的旅行助手。'))
                 self.assert_public_copy(reply['answer'],EXPECTED_IDENTITY_ZH)
         self.assertIn('Use only saved memory',answer_prompt('zh'))
-        self.assertIn(EXPECTED_UNKNOWN_ZH,answer_prompt('zh'))
+        self.assertIn(EXPECTED_UNKNOWN_ZH,answer_prompt('zh',question='我是谁'))
+        self.assertNotIn(EXPECTED_UNKNOWN_ZH,answer_prompt('zh',question='没定日期 没定人数'))
         self.assertTrue(standalone_question('我是谁'))
 
     def test_english_identity_and_traveler_identity_stay_distinct(self):
@@ -55,7 +56,8 @@ class NationalLioIdentity(unittest.TestCase):
                 reply=_message(item,complete('I am Lio, a warrior-themed travel assistant.'))
                 self.assert_public_copy(reply['answer'],EXPECTED_IDENTITY_EN)
         self.assertIn('Use only saved memory',answer_prompt('en'))
-        self.assertIn(EXPECTED_UNKNOWN_EN,answer_prompt('en'))
+        self.assertIn(EXPECTED_UNKNOWN_EN,answer_prompt('en',question='Who am I?'))
+        self.assertNotIn(EXPECTED_UNKNOWN_EN,answer_prompt('en',question='I just want a luxury three-day Beijing itinerary.'))
         self.assertTrue(standalone_question('Who am I?'))
         user=TimelineMessage('user-en','original-run',1,'Who am I?','en')
         text='You have shared a preference for a slower pace.'
