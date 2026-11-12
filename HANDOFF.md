@@ -463,6 +463,8 @@ Lane B M4 第一轮历史: 本轮已完成，仅只读核实时2/496/30/32/495/2
 Lane B M4 内测组装与连接池交接。先 fetch 最新 main、核 #660/#662/#630/#663/#495 与文件锁。A 确认指定手机可用后才签发新 2h 0600 文件，复用原合成主体、原 Needs/Travel 种子；先中文后英文，原动作/回执和注销后旧凭据由 B 只读核。C 六格只按现役 pin、原锚和无 A 在途窗口，正式 66 保持停派。#630 超门槛已提 (b)，另批资源、费用/期限、域名、出口和原账本切换回退前不操作。原旧 UNKNOWN/INTENT、#32/200 FAIL、旧真机结果和冻结 SSE 保留；#659 只在 12-07/08。
 
 Lane D #788。本轮Fake交付完成，后续先读#788/#789实时输入。现支持唯一PR794旧冻结包和三个已知控制，不能自动把F全国handoff.2或真实teacher当已支持。实际真实小批/原件未交时第3框UNRUN；具备新版本明确范围/冻结来源后再做显式准入，首批完整家族全检、扩批至少ceil20%及语言×行为覆盖，C领域/R同数据版通过才有正式放行条件，训练仍须G独立资格。当前不等待JT操作，不运行真实调用/训练/#765；旧#761只读历史不自动恢复。
+
+Lane L：先重新核对实时 #495/6814548220、#702 B交接、#835/#830/#822、PR836、PR848、main及OPEN PR文件锁。B完成836部署并正式交接后，先核对统一规划原则已有实现和中英回归，不重复补默认值或覆盖合理追问；仅修实际缺口，部署只在B窗口按标准流程，之后通知C以全新阶段完整跑冻结全国16。再按JT本轮队列 #842 → #845 → #847（H1已合，正式事实与合成示例分开）→ #803（仅L部分，与C/A消费边界对齐）→ #735/#736/#738/#739/#680逐票核证，满足原验收才关闭。未交接前只读准备；不碰账本、额度或香港配置。
 - Expected observation: B 当前：#741 中英各有独立对话、模型实际读入原值和编辑值及删除后零注入。#743 签名修改和撤销读回核同。#744 两个新 v2 基准及连续五轮中英重规划 PASS，旧默认行程逐字节保留。JT 最新版独立真机全流程 UNRUN。
 
 C 当前全国验收预期：ZH/EN各8条、核心12/歧义4同源完整轨迹PASS，原输入/ID/失败/UNKNOWN保留，分别报告成功率、首进度/首正文/完成时间及保守/回执token估算/实付三栏（账单缺失UNKNOWN）。当前全部UNRUN，新Goal实际调用0。旧bad2仅一原MESSAGE/RUN，r01UNKNOWN及r02只读补证PASS共存，7attempt已结，估¥0.0170649不归新全国阶段；旧余5格未发。旧冻结66输入SHA2a5df582ee63f461afebe7a280cc5587e6281190f6aab05b458fa89f029d2e56、33对/11留出不改，后置新六格/66/JT/#6均UNRUN。模型¥10000/工具¥500、2026-12-31、仅合成及旧INTENT不变。
@@ -478,6 +480,8 @@ B M4 actual: M4 B本轮授权目标完成：2/PR507锁0a832462合751d607a、496/
 Lane B M4 内测组装与连接池交接。#662 409、原回执与新合成主体真实召回 PASS；同主体删除后不注入尚无新公网证据。#668 462B 正文、原草稿候选、3.14.10/现役镜像、原 Meter/ACK 核同。#630 目标网 23.565/137.365/160.602 秒 FAIL，C/App p95 及真实用户质量不从单例推断。#663 同形状一次真实模型复测 PASS，外部工具／Trip 写入 0，历史 #32/200 FAIL 保留。A 现场中文未完成、英文 UNRUN；C：首格 1 FAIL／后五格 UNRUN。原 v6 完整 254.034 秒、6/6 Meter 和 ACK 核同；SSE 只见来源前缀。当前 641 行／74 INTENT／567 RECEIVED，ADOPTED 29888178dd55f2bfde584ad300ca5b232f7467ef457fdc247ec761893066f25b，模型 ¥66.656821／工具 ¥0.537（估算＋占用）。B 源短凭据已清理，正式 66 UNRUN。
 
 Lane D。quality-input.1/rules.1/teacher-quality.1、G2C-quality-handoff.1；唯一Fake source21e/handoff SHA75d8655b3c2e5432e5a2a4dd86c2c4130c5b88d34e11426ec106e0fa23b34919。13制品/16源、21计划任务/31Fake模型/6本地工具、4坏隔离、17候选→16保留+1重复、8接受连通家族/11名义计划family、split12/2/2各自披露。未实际人工抽检，C/R真实数据版UNRUN。PASS仅自动Fake，training_allowed=false/training_samples=[]，FAIL整版rejected/UNKNOWN blocked_unknown，不改旧schema或挪分母。
+
+Lane L：B交接含精确已部署源与镜像、实际诊断及标准流程/窗口；本线随后分开记录代码、CI/审查、合并、部署、真实服务与真机。836本地证据不冒公网16或JT真机PASS，旧失败和未跑项保留。
 - Resume command: `# Lane C nationwide acceptance: read B818/final actual window before dispatch
 git fetch origin main
 gh issue view 815 --repo JTCAO515/G2C --comments
