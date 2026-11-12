@@ -112,6 +112,9 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v1/run-events`.
     /// - Remark: Generated from `#/paths//v1/run-events/get(streamRunEvents)`.
     func streamRunEvents(_ input: Operations.streamRunEvents.Input) async throws -> Operations.streamRunEvents.Output
+    /// - Remark: HTTP `GET /v2/run-events`.
+    /// - Remark: Generated from `#/paths//v2/run-events/get(streamTravelRunEvents)`.
+    func streamTravelRunEvents(_ input: Operations.streamTravelRunEvents.Input) async throws -> Operations.streamTravelRunEvents.Output
     /// Prepare a short-lived server-signed action bound to the authenticated owner and immutable proposal. This does not confirm or modify a Trip. Requires an explicitly configured issuer; default is unavailable.
     ///
     /// - Remark: HTTP `POST /v1/trip-confirmations`.
@@ -209,6 +212,12 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v2/memory-management-receipts`.
     /// - Remark: Generated from `#/paths//v2/memory-management-receipts/get(getTypedMemoryManagementReceipt)`.
     func getTypedMemoryManagementReceipt(_ input: Operations.getTypedMemoryManagementReceipt.Input) async throws -> Operations.getTypedMemoryManagementReceipt.Output
+    /// - Remark: HTTP `GET /v3/memories`.
+    /// - Remark: Generated from `#/paths//v3/memories/get(listTitledMemories)`.
+    func listTitledMemories(_ input: Operations.listTitledMemories.Input) async throws -> Operations.listTitledMemories.Output
+    /// - Remark: HTTP `GET /v3/memory-items`.
+    /// - Remark: Generated from `#/paths//v3/memory-items/get(getTitledMemoryItem)`.
+    func getTitledMemoryItem(_ input: Operations.getTitledMemoryItem.Input) async throws -> Operations.getTitledMemoryItem.Output
 }
 
 /// Convenience overloads for operation inputs.
@@ -574,6 +583,17 @@ extension APIProtocol {
             headers: headers
         ))
     }
+    /// - Remark: HTTP `GET /v2/run-events`.
+    /// - Remark: Generated from `#/paths//v2/run-events/get(streamTravelRunEvents)`.
+    public func streamTravelRunEvents(
+        query: Operations.streamTravelRunEvents.Input.Query,
+        headers: Operations.streamTravelRunEvents.Input.Headers = .init()
+    ) async throws -> Operations.streamTravelRunEvents.Output {
+        try await streamTravelRunEvents(Operations.streamTravelRunEvents.Input(
+            query: query,
+            headers: headers
+        ))
+    }
     /// Prepare a short-lived server-signed action bound to the authenticated owner and immutable proposal. This does not confirm or modify a Trip. Requires an explicitly configured issuer; default is unavailable.
     ///
     /// - Remark: HTTP `POST /v1/trip-confirmations`.
@@ -851,6 +871,28 @@ extension APIProtocol {
         headers: Operations.getTypedMemoryManagementReceipt.Input.Headers = .init()
     ) async throws -> Operations.getTypedMemoryManagementReceipt.Output {
         try await getTypedMemoryManagementReceipt(Operations.getTypedMemoryManagementReceipt.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `GET /v3/memories`.
+    /// - Remark: Generated from `#/paths//v3/memories/get(listTitledMemories)`.
+    public func listTitledMemories(
+        query: Operations.listTitledMemories.Input.Query,
+        headers: Operations.listTitledMemories.Input.Headers = .init()
+    ) async throws -> Operations.listTitledMemories.Output {
+        try await listTitledMemories(Operations.listTitledMemories.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `GET /v3/memory-items`.
+    /// - Remark: Generated from `#/paths//v3/memory-items/get(getTitledMemoryItem)`.
+    public func getTitledMemoryItem(
+        query: Operations.getTitledMemoryItem.Input.Query,
+        headers: Operations.getTitledMemoryItem.Input.Headers = .init()
+    ) async throws -> Operations.getTitledMemoryItem.Output {
+        try await getTitledMemoryItem(Operations.getTitledMemoryItem.Input(
             query: query,
             headers: headers
         ))

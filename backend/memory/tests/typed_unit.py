@@ -3,6 +3,7 @@ import json
 import unittest
 from cj_memory.domain import Command, InvalidInput
 from cj_memory.typed import ContextRef, parse_manual, parse_stored
+from test_title_projection import TitleProjection, TitleWireContract
 
 
 def raw(**changes):
