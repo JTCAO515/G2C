@@ -873,8 +873,8 @@ import XCTest
         XCTAssertTrue(app.staticTexts["Lio"].exists)
         let greeting = app.staticTexts["lio.opening"]
         XCTAssertTrue(greeting.exists)
-        XCTAssertEqual(greeting.label, language == "en" ? "Hi, I’m Lio, your personal travel agent. How can I help?"
-                       : "你好，我是 Lio，你的个人旅行助手。有什么可以帮你？")
+        XCTAssertEqual(greeting.label, language == "en" ? "Hi, I'm Lio. Tell me the city, how many days you have and what you enjoy, and I'll plan where to go and how to get around each day. Where are you headed?"
+                       : "你好，我是 Lio。告诉我城市、天数和喜好，我帮你排好每天去哪、怎么走。这次想去哪儿？")
         XCTAssertFalse(app.staticTexts["lio.question"].exists)
         XCTAssertFalse(app.navigationBars.firstMatch.exists)
         XCTAssertTrue(app.tabBars.buttons[language == "en" ? "Trips" : "行程"].exists)
