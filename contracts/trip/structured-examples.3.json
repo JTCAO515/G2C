@@ -1,0 +1,511 @@
+{
+  "version": "TRIP-structured-examples.3",
+  "synthetic_only": true,
+  "base": {
+    "content_version": "structured.3",
+    "title": "成都三日 / Chengdu three days",
+    "calendar": {
+      "state": "undated"
+    },
+    "days": [
+      {
+        "day_index": 1
+      },
+      {
+        "day_index": 2
+      },
+      {
+        "day_index": 3
+      }
+    ],
+    "items": [
+      {
+        "id": "hotel-meetup",
+        "text": "酒店集合 / hotel meetup",
+        "verification": "pending",
+        "evidence": [],
+        "schedule": {
+          "start": {
+            "day_index": 1,
+            "time": {
+              "state": "known",
+              "value": "09:00"
+            },
+            "timezone": {
+              "state": "known",
+              "value": "Asia/Shanghai"
+            },
+            "utc_offset": {
+              "state": "unknown"
+            }
+          },
+          "end": {
+            "day_index": 1,
+            "time": {
+              "state": "known",
+              "value": "10:00"
+            },
+            "timezone": {
+              "state": "known",
+              "value": "Asia/Shanghai"
+            },
+            "utc_offset": {
+              "state": "unknown"
+            }
+          }
+        },
+        "fixed": {
+          "state": "known",
+          "value": true
+        },
+        "source_category": "user_provided",
+        "source_refs": []
+      }
+    ],
+    "sources": [],
+    "date_checks": [
+      {
+        "kind": "weather",
+        "state": "not_checked",
+        "day_indices": [
+          1,
+          2,
+          3
+        ],
+        "item_ids": [],
+        "reason": "date_not_set",
+        "evidence_refs": []
+      },
+      {
+        "kind": "day_opening",
+        "state": "not_checked",
+        "day_indices": [
+          1,
+          2,
+          3
+        ],
+        "item_ids": [],
+        "reason": "date_not_set",
+        "evidence_refs": []
+      }
+    ]
+  },
+  "dated": {
+    "content_version": "structured.3",
+    "title": "成都三日 / Chengdu three days",
+    "calendar": {
+      "state": "dated",
+      "start_date": "2026-12-01"
+    },
+    "days": [
+      {
+        "day_index": 1,
+        "date": "2026-12-01"
+      },
+      {
+        "day_index": 2,
+        "date": "2026-12-02"
+      },
+      {
+        "day_index": 3,
+        "date": "2026-12-03"
+      }
+    ],
+    "items": [
+      {
+        "id": "hotel-meetup",
+        "text": "酒店集合 / hotel meetup",
+        "verification": "pending",
+        "evidence": [],
+        "schedule": {
+          "start": {
+            "day_index": 1,
+            "time": {
+              "state": "known",
+              "value": "09:00"
+            },
+            "timezone": {
+              "state": "known",
+              "value": "Asia/Shanghai"
+            },
+            "utc_offset": {
+              "state": "unknown"
+            }
+          },
+          "end": {
+            "day_index": 1,
+            "time": {
+              "state": "known",
+              "value": "10:00"
+            },
+            "timezone": {
+              "state": "known",
+              "value": "Asia/Shanghai"
+            },
+            "utc_offset": {
+              "state": "unknown"
+            }
+          }
+        },
+        "fixed": {
+          "state": "known",
+          "value": true
+        },
+        "source_category": "user_provided",
+        "source_refs": []
+      }
+    ],
+    "sources": [],
+    "date_checks": [
+      {
+        "kind": "weather",
+        "state": "unknown",
+        "day_indices": [
+          1,
+          2,
+          3
+        ],
+        "item_ids": [],
+        "reason": "evidence_unavailable",
+        "evidence_refs": []
+      },
+      {
+        "kind": "day_opening",
+        "state": "unknown",
+        "day_indices": [
+          1,
+          2,
+          3
+        ],
+        "item_ids": [],
+        "reason": "evidence_unavailable",
+        "evidence_refs": []
+      }
+    ]
+  },
+  "schema_reject": [
+    {
+      "name": "undated with calendar date",
+      "changes": [
+        {
+          "path": [
+            "days",
+            0,
+            "date"
+          ],
+          "value": "2026-12-01"
+        }
+      ]
+    },
+    {
+      "name": "dated missing one date",
+      "dated": true,
+      "changes": [
+        {
+          "path": [
+            "days",
+            1,
+            "date"
+          ],
+          "delete": true
+        }
+      ]
+    },
+    {
+      "name": "undated with start date",
+      "changes": [
+        {
+          "path": [
+            "calendar",
+            "start_date"
+          ],
+          "value": "2026-12-01"
+        }
+      ]
+    },
+    {
+      "name": "zero day",
+      "changes": [
+        {
+          "path": [
+            "days",
+            0,
+            "day_index"
+          ],
+          "value": 0
+        }
+      ]
+    },
+    {
+      "name": "boolean day",
+      "changes": [
+        {
+          "path": [
+            "days",
+            0,
+            "day_index"
+          ],
+          "value": true
+        }
+      ]
+    },
+    {
+      "name": "legacy schedule date mixed in",
+      "changes": [
+        {
+          "path": [
+            "items",
+            0,
+            "schedule",
+            "start",
+            "date"
+          ],
+          "value": {
+            "state": "unknown"
+          }
+        }
+      ]
+    }
+  ],
+  "semantic_reject": [
+    {
+      "name": "noncontinuous day",
+      "changes": [
+        {
+          "path": [
+            "days",
+            1,
+            "day_index"
+          ],
+          "value": 3
+        }
+      ]
+    },
+    {
+      "name": "date mapping mismatch",
+      "dated": true,
+      "changes": [
+        {
+          "path": [
+            "days",
+            1,
+            "date"
+          ],
+          "value": "2026-12-09"
+        }
+      ]
+    },
+    {
+      "name": "schedule unknown day",
+      "changes": [
+        {
+          "path": [
+            "items",
+            0,
+            "schedule",
+            "start",
+            "day_index"
+          ],
+          "value": 4
+        }
+      ]
+    },
+    {
+      "name": "undated claimed checked weather",
+      "changes": [
+        {
+          "path": [
+            "date_checks",
+            0,
+            "state"
+          ],
+          "value": "clear"
+        }
+      ]
+    },
+    {
+      "name": "duplicate date check kind",
+      "changes": [
+        {
+          "path": [
+            "date_checks",
+            1,
+            "kind"
+          ],
+          "value": "weather"
+        }
+      ]
+    },
+    {
+      "name": "dated success without evidence",
+      "dated": true,
+      "changes": [
+        {
+          "path": [
+            "date_checks",
+            0,
+            "state"
+          ],
+          "value": "clear"
+        }
+      ]
+    },
+    {
+      "name": "non-integer day token",
+      "changes": [
+        {
+          "path": [
+            "days",
+            0,
+            "day_index"
+          ],
+          "value": 1.0
+        }
+      ]
+    },
+    {
+      "name": "calendar overflow",
+      "dated": true,
+      "changes": [
+        {
+          "path": [
+            "calendar",
+            "start_date"
+          ],
+          "value": "9999-12-31"
+        }
+      ]
+    },
+    {
+      "name": "undated resolved offset",
+      "changes": [
+        {
+          "path": [
+            "items",
+            0,
+            "schedule",
+            "start",
+            "utc_offset"
+          ],
+          "value": {
+            "state": "known",
+            "value": "+08:00"
+          }
+        }
+      ]
+    }
+  ],
+  "frozen_files_sha256": {
+    "contracts/message/trip-schema.1.json": "7d152fa6830d56005f9dea80e32326bd3aa6d99f66b031009228b4ca4cbf24ff",
+    "contracts/message/trip-send-examples.1.json": "4a73eae0977e4cde4e388aba7722d0eb68c827a12a957bf82c4f8cf13a216ce9",
+    "contracts/trip/STRUCTURED-V1.md": "84800174e8f45a2d7cc9aaae8bbd8db1d47dbc176a8aabef3b915326dade3d0d"
+  },
+  "schema_accept": [
+    {
+      "name": "year boundary",
+      "dated": true,
+      "changes": [
+        {
+          "path": [
+            "calendar",
+            "start_date"
+          ],
+          "value": "2026-12-31"
+        },
+        {
+          "path": [
+            "days"
+          ],
+          "value": [
+            {
+              "day_index": 1,
+              "date": "2026-12-31"
+            },
+            {
+              "day_index": 2,
+              "date": "2027-01-01"
+            },
+            {
+              "day_index": 3,
+              "date": "2027-01-02"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "leap day",
+      "dated": true,
+      "changes": [
+        {
+          "path": [
+            "calendar",
+            "start_date"
+          ],
+          "value": "2028-02-28"
+        },
+        {
+          "path": [
+            "days"
+          ],
+          "value": [
+            {
+              "day_index": 1,
+              "date": "2028-02-28"
+            },
+            {
+              "day_index": 2,
+              "date": "2028-02-29"
+            },
+            {
+              "day_index": 3,
+              "date": "2028-03-01"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "reported closure is not fabricated clear",
+      "dated": true,
+      "changes": [
+        {
+          "path": [
+            "date_checks",
+            1,
+            "state"
+          ],
+          "value": "conflict"
+        },
+        {
+          "path": [
+            "date_checks",
+            1,
+            "reason"
+          ],
+          "value": "synthetic_closure"
+        },
+        {
+          "path": [
+            "date_checks",
+            1,
+            "item_ids"
+          ],
+          "value": [
+            "hotel-meetup"
+          ]
+        },
+        {
+          "path": [
+            "date_checks",
+            1,
+            "evidence_refs"
+          ],
+          "value": [
+            "synthetic:original-opening-receipt"
+          ]
+        }
+      ]
+    }
+  ]
+}
