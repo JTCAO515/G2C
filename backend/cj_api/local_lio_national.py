@@ -1,6 +1,6 @@
 """Nationwide Lio planning intake over original MESSAGE/RUN/NEEDS authorities."""
 from dataclasses import asdict
-from datetime import datetime
+from datetime import datetime,timezone
 from hashlib import sha256
 import json
 import logging
@@ -44,7 +44,7 @@ def publication_held(text):
     return NONPERSISTENT.search(_UNDECIDED_DATE.sub('',text)) is not None
 
 
-def intake_prompt(locale,turns,*,discussion_only=False):
+def intake_prompt(locale,turns,*,discussion_only=False,scene=None):
     dates=', '.join(turn.question_day.isoformat() for turn in turns)
     system=answer_prompt(locale)+' '+CURRENT_SYSTEM+' Original traveler messages have source indices 0 through '+str(len(turns)-1)+'. Stored memory data is not an indexed traveler message. A week without a stated day (such as 下周 or next week) is not an exact start date: keep start_date null with the original uncertainty, and plan by day numbers without asking again. Resolve stated weekdays against their original message day. Original local China days in that order: '+dates
     if discussion_only:
@@ -52,12 +52,15 @@ def intake_prompt(locale,turns,*,discussion_only=False):
                  'For discuss intent, answer the current discussion usefully, including requested refinements, rather than a saving acknowledgement. '
                  'Keep the saved itinerary and its bookings unchanged; never claim the separate proposal was saved. '
                  'If the traveler changes topic, answer that topic normally.')
-    return system
+    return system if scene is None else system+'\n'+scene
 
 
 class NationalLioPlanning:
     def __init__(self,database,plan_and_save):
         self.database,self.plan_and_save=database,plan_and_save
+
+    def scene_context(self,binding,now):
+        return self.plan_and_save.scene_context(binding,now)
 
     def context(self,binding,current):
         with self.database.connect(binding.scope) as db:
@@ -123,7 +126,8 @@ class NationalLioPlanning:
             memory_messages=worker.memory_run.messages(text)
             messages=[*memory_messages[:-1],*messages]
         if worker.message_context is not None:messages=worker.message_context.answer_messages(binding,messages)
-        system=intake_prompt(original.locale,turns,discussion_only=previous is not None and previous.get('status')=='different_trip')
+        system=intake_prompt(original.locale,turns,discussion_only=previous is not None and previous.get('status')=='different_trip',
+                             scene=self.scene_context(binding,datetime.now(timezone.utc)))
         raw=''.join(worker._registered_stream(binding,'model.lio_intake.0','model.lio_intake.9',
                     (messages,system,worker.provider,len(turns)-1),message_refs=refs))
         booking_unclear=False;question_fields=[];facts={}
