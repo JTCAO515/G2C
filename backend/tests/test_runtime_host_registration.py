@@ -38,7 +38,8 @@ def test_c0_prepared_bytes_equal_for_actual_answer_and_intake_profiles(tools,loc
     registry=tools.runtime_registrations(C0)
     native=ModelInput([dict(role='user',content='Hello')],TOOL_SYSTEM+' '+answer_prompt(locale),
                       tools.services.model,{},lio_answer=True,national=True)
-    for registration,argument in (('model.answer',native),('model.lio_intake.8',arguments(tools,locale))):
+    for registration,argument in (('model.answer',native),('model.lio_intake.8',arguments(tools,locale)),
+                                  ('model.lio_intake.9',arguments(tools,locale))):
         assert registry[registration].prepare_input(argument).original_bytes==tools.registrations[registration].prepare_input(argument).original_bytes
     assert 'model.runtime_reflection.1' not in tools.registrations
 
@@ -104,15 +105,16 @@ def test_each_owned_run_resolves_its_original_registry():
 
 
 @pytest.mark.parametrize('locale',['zh','en'])
-def test_national_v2_three_slot_baseline_is_noop_and_reply_authority_unchanged(tools,locale):
+@pytest.mark.parametrize('registration',['model.lio_intake.8','model.lio_intake.9'])
+def test_national_v2_three_slot_baseline_is_noop_and_reply_authority_unchanged(tools,locale,registration):
     from cj_api.runtime_text_slots import C0_NATIONAL_V2,REPLY_ANCHOR
     argument=arguments(tools,locale)
-    original=tools.registrations['model.lio_intake.8'].prepare_input(argument).original_bytes
+    original=tools.registrations[registration].prepare_input(argument).original_bytes
     baseline=tools.runtime_registrations(C0_NATIONAL_V2,profile='national.2')
-    assert baseline['model.lio_intake.8'].prepare_input(argument).original_bytes==original
+    assert baseline[registration].prepare_input(argument).original_bytes==original
     selected={**C0_NATIONAL_V2,'prompt.answer_style':'A different concise style.',
         'example.clarification':'reply briefly and ask one useful optional question'}
-    changed=decode(tools.runtime_registrations(selected,profile='national.2')['model.lio_intake.8'].prepare_input(argument).original_bytes)
+    changed=decode(tools.runtime_registrations(selected,profile='national.2')[registration].prepare_input(argument).original_bytes)
     before=decode(original)
     expected=before['system'].replace(C0_NATIONAL_V2['prompt.answer_style'],selected['prompt.answer_style'],1).replace(
         REPLY_ANCHOR,selected['example.clarification'],1)

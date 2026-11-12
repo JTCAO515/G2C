@@ -143,7 +143,7 @@ class ToolEvidence:
         now=self.clock()
         if now>=self.expires_at:raise BudgetUnknown('original intake evidence window expired')
         if legacy:
-            if operation.registration_id not in ('model.lio_intake.1','model.lio_intake.2','model.lio_intake.3','model.lio_intake.4','model.lio_intake.5','model.lio_intake.6','model.lio_intake.7','model.lio_intake.8') or operation.command.kind!='model':
+            if operation.registration_id not in ('model.lio_intake.1','model.lio_intake.2','model.lio_intake.3','model.lio_intake.4','model.lio_intake.5','model.lio_intake.6','model.lio_intake.7','model.lio_intake.8','model.lio_intake.9') or operation.command.kind!='model':
                 raise BudgetUnknown('original intake registration required')
         elif operation.command.kind not in ('model','memory'):
             raise BudgetUnknown('original model registration required')
