@@ -128,6 +128,8 @@ class NationalLioPlanning:
             if sources:resolved_mid=sources[0]['message_id']
         def context(worker,binding,state,value):
             nonlocal barrier_mid
+            if 'city'not in value and previous is not None and previous.get('city')is not None:
+                value=dict(value,city=previous['city'])
             if value['status']in ('discussion','cancelled','ready_to_publish','different_destination'):
                 barrier_mid=binding.message_id
             return self._context(worker,binding,state,dict(value,facts=facts,nonplanning_message_ids=list(dict.fromkeys(excluded)),
@@ -205,7 +207,7 @@ class NationalLioPlanning:
         from .lio_weather import CITY_EFFECT
         state=worker._event(binding,state,'effect_committed',CITY_EFFECT+json.dumps(asdict(city),ensure_ascii=False,separators=(',',':')))
         if not planning and intake.intent=='consult':
-            context(worker,binding,state,previous if authority!='none'else dict(authority='none',status='consult',city=resolution))
+            context(worker,binding,state,previous if authority!='none'else dict(authority='none',status='consult'))
             return None
         if not planning and intake.intent=='discuss':
             state=context(worker,binding,state,dict(authority='none',status='discussion',city=resolution))
@@ -255,6 +257,7 @@ class NationalLioPlanning:
             date_boundary=0
         if boundary_mid is not None:date_boundary=max(date_boundary,source_ids.index(boundary_mid))
         if date_boundary:
+            boundary_mid=source_ids[date_boundary]
             evidence=intake.sources.get('start_date',[])
             if evidence and all(ref['source_index']<date_boundary for ref in evidence):facts.pop('start_date',None)
             for edge in ('arrival','departure'):

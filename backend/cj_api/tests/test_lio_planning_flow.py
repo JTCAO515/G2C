@@ -338,6 +338,47 @@ class PlanningFlow(unittest.TestCase):
             published,_,_,_=run(new,text,turns=tuple(history),previous=previous)
             self.assertEqual(len(published),1)
 
+    def test_new_city_after_hold_and_consultation_never_revives_old_city_date(self):
+        from cj_api.lio_city import CityReference
+        first='计划江苏Suzhou三天，从2026-11-20开始，两个人'
+        initial=flow(first,city='Suzhou',start='2026-11-20',party=2,intent='plan',questions=())
+        initial['city']['province']='江苏'
+        _,_,facts=parse_flow(json.dumps(initial),(original(first),),(),'prior-0',None)
+        old=CityReference('320500','苏州市','江苏省','苏州市','city','Asia/Shanghai').__dict__
+        previous=dict(authority='plan',status='needs_details',facts=facts,city=dict(status='resolved',candidates=[old],source={}))
+        history=[original(first)]
+        def next_context(wire,text,n,resolution=None):
+            nonlocal previous
+            history.append(original(text))
+            result=run(wire,text,turns=tuple(history),previous=previous,resolution=resolution)
+            previous=context(result[1])
+            for item in previous['facts'].values():
+                for ref in item['sources']:
+                    if ref['message_id']=='national-message':ref['message_id']='prior-'+str(n)
+            for key in ('authority_barrier_message_id','date_boundary_message_id','resolved_city_source_message_id'):
+                if previous.get(key)=='national-message':previous[key]='prior-'+str(n)
+            previous['nonplanning_message_ids']=['prior-'+str(n)if mid=='national-message'else mid for mid in previous.get('nonplanning_message_ids',[])]
+            return result
+        text='先别自动保存';hold=flow(text,city=None,days=None,index=1,questions=())
+        hold.update(planning_request_index=None,publication_hold=dict(source_index=1,quote=text))
+        self.assertEqual(next_context(hold,text,1)[0],[])
+        text='酒店和青旅有什么区别？';consult=flow(text,city=None,days=None,index=2,questions=())
+        consult.update(planning_request_index=None,needs_tools=False)
+        self.assertEqual(next_context(consult,text,2)[0],[])
+        self.assertEqual(previous['city']['candidates'][0]['adcode'],'320500')
+        text='重新规划安徽Suzhou三天';new=flow(text,city='Suzhou',index=3,intent='plan',start='2026-11-20',party=2,questions=())
+        new['city']['province']='安徽'
+        new['field_sources']=[dict(ref,source_index=0,quote=first)if ref['field']in ('start_date','party_size')else ref for ref in new['field_sources']]
+        target=CityReference('341300','宿州市','安徽省','宿州市','city','Asia/Shanghai').__dict__
+        resolution=dict(status='resolved',candidates=[target],source={})
+        self.assertEqual(next_context(new,text,3,resolution)[0],[])
+        self.assertEqual(previous['date_boundary_message_id'],'prior-3')
+        text='继续';last=flow(text,city=None,days=None,index=4,intent='plan',start='2026-11-20',party=2,questions=())
+        last['planning_request_index']=3
+        last['field_sources']=[dict(ref,source_index=0,quote=first)for ref in last['field_sources']]
+        published,events,_,_=next_context(last,text,4,resolution)
+        self.assertEqual(published,[]);self.assertIn('哪天',answer(events));self.assertNotIn('start_date',previous['facts'])
+
     def test_capability_question_bypasses_planning_in_both_languages(self):
         planning=NationalLioPlanning(None,None)
         for text in ('你能干啥','What can you do?'):
