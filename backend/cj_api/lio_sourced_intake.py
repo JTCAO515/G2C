@@ -67,7 +67,7 @@ def _booking_source(item,booking,items,turns):
         raise InvalidInput('unique affirmative same-item booking source required')
 
 
-def parse_sourced(raw,turns,*,required_intent=None):
+def parse_sourced(raw,turns):
     value=decode(raw.encode() if type(raw)is str else raw)
     try:dto=SourcedIntake.model_validate(value)
     except ValidationError:raise InvalidInput('exact sourced facts intake required')from None
@@ -83,8 +83,6 @@ def parse_sourced(raw,turns,*,required_intent=None):
         bookings.append((item,booking))
         item['booking_status']=booking['status']
     result=compile_flat(data,turns)
-    if required_intent is not None and (result.intent!=required_intent or result.needs_tools):
-        raise InvalidInput('intake differs from the original direct trip request')
     if result.intent in ('plan','save'):
         for _,booking in bookings:
             index=booking['source_index']

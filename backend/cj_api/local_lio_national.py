@@ -8,7 +8,7 @@ import re
 from zoneinfo import ZoneInfo
 
 from cj_agent.provider import ProviderUnknown
-from cj_agent.lio_intake_request_schema import SYSTEM as REQUEST_SYSTEM
+from cj_agent.lio_intake_facts_schema import SYSTEM as FACTS_SYSTEM
 from cj_message.demo_dialogue import LIO_VERSION
 from cj_message.domain import Command,Unavailable
 from cj_message.lio_context import answer_prompt
@@ -24,7 +24,7 @@ from .local_lio_planning import PlanningDetails,register
 CONTEXT='lio_planning_context.1:'
 CITY='lio_city_resolution.1:'
 MAX_TURNS=8
-CURRENT_SYSTEM=REQUEST_SYSTEM
+CURRENT_SYSTEM=FACTS_SYSTEM
 # This is a publication gate, not city/date extraction or the intent router.
 # A model cannot turn an isolated date/party answer into a fresh save grant.
 PUBLICATION_REQUEST=re.compile(r"计划|规划|安排|设计|保存|存到|存入|想去|要去|帮我做|"
@@ -32,18 +32,6 @@ PUBLICATION_REQUEST=re.compile(r"计划|规划|安排|设计|保存|存到|存�
     r"\b(?:want|would like) to (?:go|visit|travel|spend)\b|"
     r"\b(?:i|we) would like\b[^.!?]{0,120}\b(?:itinerary|trip)\b|"
     r"去[^。！？?!.]{1,80}(?:玩|旅游|旅行|游)|排(?:个|一个|一份)?行程",re.I)
-
-BARE_TRIP=re.compile(r'去[\u3400-\u9fff]{1,32}玩(?:[1-9][0-9]{0,2}|[一二两三四五六七八九十百]{1,3})天[。!！]?')
-DIRECT_TRIP=re.compile(r'(?:please\s+)?(?:plan|build|create|organize|make)\s+[^。！？?!.]{0,96}\b(?:trip|itinerary)\s+(?:to|in|for)\s+[^。！？?!.]{1,160}[.!?。]?|(?:请|帮我)?(?:规划|计划|安排|设计)[^。！？?!.]{1,160}(?:行程|旅行|旅游|游|天)[。!！]?',re.I)
-INQUIRY=re.compile(r'哪里|哪儿|哪个|什么|怎么|如何|是否|怎么样|\b(?:meaning|means|sentence|quote|translate|grammar|word|why|whether|which|how|or)\b',re.I)
-
-
-def request_intent(text,turns,previous):
-    # This first-command constraint controls generation/routing only. It does
-    # not extract city/day/count values or grant publication. Other wording
-    # still uses the general model; prior discussion/refusal is never rewritten.
-    if len(turns)!=1 or previous is not None or NONPERSISTENT.search(text)or INQUIRY.search(text):return None
-    return 'plan'if BARE_TRIP.fullmatch(text.strip())or DIRECT_TRIP.fullmatch(text.strip())else None
 
 
 def intake_prompt(locale,turns):
@@ -97,11 +85,10 @@ class NationalLioPlanning:
             messages=[*memory_messages[:-1],*messages]
         if worker.message_context is not None:messages=worker.message_context.answer_messages(binding,messages)
         system=intake_prompt(original.locale,turns)
-        required_intent=request_intent(text,turns,previous)
-        raw=''.join(worker._registered_stream(binding,'model.lio_intake.0','model.lio_intake.8',
-                    (messages,system,worker.provider,len(turns)-1,required_intent),message_refs=refs))
+        raw=''.join(worker._registered_stream(binding,'model.lio_intake.0','model.lio_intake.7',
+                    (messages,system,worker.provider,len(turns)-1),message_refs=refs))
         booking_unclear=False
-        try:intake=parse_sourced(raw,turns,required_intent=required_intent)
+        try:intake=parse_sourced(raw,turns)
         except BookingSourceUnclear as error:
             intake=error.control;booking_unclear=True
         except (InvalidInput,ValueError,UnicodeError) as error:

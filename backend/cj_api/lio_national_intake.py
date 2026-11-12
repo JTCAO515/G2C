@@ -105,7 +105,6 @@ def _zone_text(quote):
 
 
 _DIAGNOSTIC_CODES={
- 'intake differs from the original direct trip request':'original_request_intent',
  'unexpected or missing fields':'envelope_fields',
  'explicit nationwide intake required':'intake_discriminator',
  'bounded user-facing intake answer required':'intake_reply',

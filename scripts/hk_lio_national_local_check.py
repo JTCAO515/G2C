@@ -87,10 +87,8 @@ def exercise(root,conninfo):
         elif 'LIO-planning-intake.6' in system:
             text=body['messages'][-1]['content'];current['text']=text
             source_index=len([m for m in body['messages'][1:] if m['role']=='user' and not m['content'].startswith('Stored memory data')])-1
-            from cj_agent.lio_intake_request_schema import response_format
-            required=body['response_format']['json_schema']['schema']['properties']['intent'].get('const')
-            assert body['response_format']==response_format(source_index,required)
-            if text in MISSING_REQUESTS:assert required=='plan'
+            from cj_agent.lio_intake_facts_schema import response_format
+            assert body['response_format']==response_format(source_index)
             if current.get('clarification_flow'):
                 flow=CHENGDU_CASE['variants'][current['locale']]['turns'];fields={'party_size':dict(state='missing'),'fixed_items':[]}
                 sources={'duration_days':[dict(source_index=0,quote='三天' if current['locale']=='zh' else 'three days')]}
