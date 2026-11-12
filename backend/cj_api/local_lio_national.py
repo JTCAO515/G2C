@@ -252,7 +252,7 @@ class NationalLioPlanning:
             same_target=any(candidate['adcode']==city.adcode or
                 candidate['level']=='province' and candidate['name']==city.province
                 for candidate in prior_city['candidates'])
-            date_boundary=0 if same_target else len(turns)-1
+            date_boundary=0 if same_target else (source_ids.index(boundary_mid)if boundary_mid is not None else len(turns)-1)
         elif previous is not None and previous.get('status')=='needs_city':
             date_boundary=0
         if boundary_mid is not None:date_boundary=max(date_boundary,source_ids.index(boundary_mid))

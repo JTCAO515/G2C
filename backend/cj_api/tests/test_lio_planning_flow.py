@@ -379,6 +379,29 @@ class PlanningFlow(unittest.TestCase):
         published,events,_,_=next_context(last,text,4,resolution)
         self.assertEqual(published,[]);self.assertIn('哪天',answer(events));self.assertNotIn('start_date',previous['facts'])
 
+    def test_new_destination_supplied_date_survives_later_party_answer(self):
+        from cj_api.lio_city import CityReference
+        first='计划江苏Suzhou三天，从2026-11-20开始，两个人'
+        initial=flow(first,city='Suzhou',start='2026-11-20',party=2,intent='plan',questions=())
+        initial['city']['province']='江苏'
+        _,_,facts=parse_flow(json.dumps(initial),(original(first),),(),'prior-0',None)
+        old=CityReference('320500','苏州市','江苏省','苏州市','city','Asia/Shanghai').__dict__
+        previous=dict(authority='plan',status='needs_details',facts=facts,city=dict(status='resolved',candidates=[old],source={}))
+        text='重新规划安徽Suzhou三天，从2026-11-21开始，人数未定'
+        new=flow(text,city='Suzhou',start='2026-11-21',index=1,intent='plan',questions=('party_size',))
+        new['city']['province']='安徽';new['unknown_fields']=['party_size']
+        target=CityReference('341300','宿州市','安徽省','宿州市','city','Asia/Shanghai').__dict__
+        resolution=dict(status='resolved',candidates=[target],source={})
+        published,events,_,_=run(new,text,turns=(original(first),original(text)),previous=previous,resolution=resolution)
+        self.assertEqual(published,[]);previous=context(events)
+        for item in previous['facts'].values():
+            for ref in item['sources']:
+                if ref['message_id']=='national-message':ref['message_id']='prior-1'
+        following='两个人';last=flow(following,city=None,days=None,party=2,index=2,questions=())
+        last['planning_request_index']=1
+        published,_,_,_=run(last,following,turns=(original(first),original(text),original(following)),previous=previous,resolution=resolution)
+        self.assertEqual(len(published),1);self.assertEqual(published[0][3].fields['arrival']['date']['value'],'2026-11-21')
+
     def test_capability_question_bypasses_planning_in_both_languages(self):
         planning=NationalLioPlanning(None,None)
         for text in ('你能干啥','What can you do?'):

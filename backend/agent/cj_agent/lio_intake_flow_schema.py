@@ -35,6 +35,7 @@ SYSTEM=FACTS_SYSTEM.replace('LIO-planning-intake.6','LIO-planning-intake.7')+(
     'Retain every previously supplied fact unless the traveler changes that fact; a short answer changes only related facts. '
     'Never default a start date to tomorrow or a party to one. Missing start date and party size must be asked together in ONE reply. '
     'If a date is already supplied, including from tomorrow, ask only party size; never ask the date again. '
+    'publication_hold concerns planning/saving authorization only. Keep a hotel meetup unchanged or do not claim a reservation are not publication holds. '
     'publication_hold records any original refusal or hold semantically, not just fixed phrases: e.g. 无需落盘, 先别自动保存, no need to persist. Never clear a hold on a bare parameter answer. '
     'question_fields lists exactly which facts your reply asks the traveler to supply or clarify; [] for a non-question. '
     'Use a concise natural clarification rather than an itinerary while a required fact is missing. '
