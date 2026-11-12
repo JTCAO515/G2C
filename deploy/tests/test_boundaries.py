@@ -120,6 +120,10 @@ def test_build_context_uses_committed_allowed_blobs_only(tmp_path):
     subprocess.run(['git','init','-q',str(repo)],check=True)
     (repo/'scripts/module.py').write_text('COMMITTED=True\n')
     (repo/'scripts/approved-name.pem').write_text('synthetic-secret')
+    for name in ('eval/optimization/cases.v2.json','eval/optimization/score_v2.py',
+                 'tooling/optimization/uv.lock','eval/optimization/private-input.json',
+                 'tooling/optimization/credentials.json'):
+        path=repo/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(name)
     subprocess.run(['git','add','.'],cwd=repo,check=True)
     subprocess.run(['git','-c','user.name=Synthetic','-c','user.email=synthetic@example.invalid','commit','-qm','fixture'],cwd=repo,check=True)
     (repo/'scripts/module.py').write_text('DIRTY=True\n')
@@ -128,3 +132,6 @@ def test_build_context_uses_committed_allowed_blobs_only(tmp_path):
     destination=tmp_path/'context';destination.mkdir();source_context(repo,destination)
     assert (destination/'scripts/module.py').read_text()=='COMMITTED=True\n'
     assert sorted(p.name for p in (destination/'scripts').iterdir())==['module.py']
+    assert sorted(str(path.relative_to(destination)) for path in destination.rglob('*') if path.is_file())==[
+        'eval/optimization/cases.v2.json','eval/optimization/score_v2.py',
+        'scripts/module.py','tooling/optimization/uv.lock']
