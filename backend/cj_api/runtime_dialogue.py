@@ -12,6 +12,7 @@ from runtime_adapter.contract import decode,digest,encode,require,Unavailable
 
 
 class NativeDialogue:
+    supported_tasks=frozenset({'dev-airport'})
     def __init__(self,claims,boundary,database,token_supplier,wait_original,*,dataset_path):
         self.claims,self.boundary,self.database=claims,boundary,database
         self.token_supplier,self.wait_original=token_supplier,wait_original

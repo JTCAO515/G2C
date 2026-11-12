@@ -5,8 +5,10 @@ claim remains query-only even if its MESSAGE never committed.
 """
 from contextlib import contextmanager
 from contextvars import ContextVar
+import sqlite3
 
 from runtime_adapter.contract import Unavailable
+from cj_usage.metered_exit import BudgetUnknown
 
 from .runtime_claims import CanonicalClaims
 
@@ -21,8 +23,11 @@ class MessageClaims:
             original_exists=self._exists,admission_lock=self._admission)
 
     def _guard(self,*,read_only):
-        self.authority.require(binding=self.binding,pins_sha256=self.pins.key,
-            purpose='query' if read_only else 'claim',deadline=self._deadline.get(),read_only=read_only)
+        try:
+            self.authority.require(binding=self.binding,pins_sha256=self.pins.key,
+                purpose='query' if read_only else 'claim',deadline=self._deadline.get(),read_only=read_only)
+        except (BudgetUnknown,sqlite3.Error):
+            raise Unavailable('ORIGINAL_FINANCIAL_AUTHORITY_UNAVAILABLE') from None
 
     @contextmanager
     def _admission(self):

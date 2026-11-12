@@ -13,6 +13,7 @@ from cj_message.demo_dialogue import message_id
 from cj_strict_json import reject_duplicates
 from cj_usage.authorization_budget import canonical
 from cj_usage.metered_exit import BudgetUnknown
+from .runtime_private import read_private,PrivateFileError
 
 
 @dataclass(frozen=True)
@@ -33,15 +34,10 @@ class ToolEvidence:
     def load(cls, path, subjects, *, clock=time.time,runtime_selection=None):
         from .local_app import ISSUER, scope_for
 
-        descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
-        with os.fdopen(descriptor, 'rb') as source:
-            info = os.fstat(source.fileno())
-            if (not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid()
-                    or stat.S_IMODE(info.st_mode) != 0o600):
-                raise ValueError('owned 0600 tool evidence manifest required')
-            raw = source.read(131073)
-        if len(raw) > 131072:
-            raise ValueError('tool evidence manifest bound exceeded')
+        try:raw=read_private(path,131072)
+        except PrivateFileError as error:
+            raise ValueError('tool evidence manifest bound exceeded' if error.reason=='bound' else
+                'owned 0600 tool evidence manifest required') from None
         data = json.loads(raw, object_pairs_hook=reject_duplicates(ValueError, 'duplicate tool evidence field'))
         legacy_keys={'version','directory','messages','expires_at','source_commit'}
         if type(data) is not dict:raise ValueError('explicit evidence window required')
@@ -93,6 +89,8 @@ class ToolEvidence:
         if self.runtime_selection is None:return (binding.scope,binding.message_id) in self.selected
         if binding.scope not in self.runtime_scopes:return False
         return self.runtime_selection(binding)
+
+    def captures_model(self,binding):return self.model_enabled and self.selects(binding)
 
     def record(self, operation, name, raw, receipt):
         if not self.tools_enabled:return

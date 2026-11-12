@@ -143,3 +143,21 @@ def test_national_v2_source_and_pins_are_explicit_and_do_not_activate_or_change_
     card=dict(code_sha='a'*40,image_digest='sha256:'+'b'*64,model=source['model'])
     pinned=freeze_national_v2(card)
     assert pinned.value['c0']==C0_NATIONAL_V2 and pinned.c0()['runtime_eligible'] is False
+
+
+@pytest.mark.parametrize('locale',['zh','en'])
+def test_plain_discussion_answer_consumes_style_only_without_changing_legacy_authority(tools,locale):
+    from cj_api.local_lio_planning import DISCUSSION_PROMPT
+    from cj_api.runtime_text_slots import C0_NATIONAL_V2
+    argument=([dict(role='user',content='Discuss three days in Chengdu')],
+        answer_prompt(locale)+DISCUSSION_PROMPT,tools.services.model)
+    before=tools.registrations['model.answer'].prepare_input(argument).original_bytes
+    baseline=tools.runtime_registrations(C0_NATIONAL_V2,profile='national.2')
+    assert baseline['model.answer'].prepare_input(argument).original_bytes==before
+    candidate={**C0_NATIONAL_V2,'prompt.answer_style':'Use a different concise style.',
+        'example.clarification':'reply with a useful optional question'}
+    selected=tools.runtime_registrations(candidate,profile='national.2')
+    original=decode(before);actual=decode(selected['model.answer'].prepare_input(argument).original_bytes)
+    assert actual=={**original,'system':original['system'].replace(C0['prompt.answer_style'],candidate['prompt.answer_style'],1)}
+    assert actual['system'].endswith(DISCUSSION_PROMPT)
+    assert selected['model.draft'].prepare_input(argument).original_bytes==tools.registrations['model.draft'].prepare_input(argument).original_bytes

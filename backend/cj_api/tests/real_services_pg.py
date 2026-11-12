@@ -13,7 +13,7 @@ import psycopg
 import uuid
 from fastapi.testclient import TestClient
 
-from cj_agent.provider import DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,M4_TURN_FUNCTION_V2
+from cj_agent.provider import DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,M4_TURN_FUNCTION_V2,M4_REAL_OUTPUT_TOKENS
 from cj_api.real_services import RealServices,RealTools
 from cj_api.tool_evidence import ToolEvidence
 from cj_api.local_app import LocalDatabase,app_from_environment,create_local_app,scope_for,ISSUER
@@ -34,7 +34,7 @@ def exercise(auth,conninfo):
     assembly_pair=tuple('m4-synthetic-660-0123456789ab-'+lang for lang in ('zh','en'))
     subjects.extend((*assembly_pair,'m4-synthetic-stream-buffered-mixed','m4-synthetic-stream-buffered-late-mixed'))
     original_subjects=tuple(subjects)
-    subjects.append('m4-synthetic-runtime-reflection')
+    subjects.extend(('m4-synthetic-runtime-reflection','m4-synthetic-runtime-factory'))
     harness.dev_auth.init(auth,subjects)
     now=int(time.time());profiles={}
     for subject in subjects:
@@ -527,7 +527,8 @@ def exercise(auth,conninfo):
             choices=[dict(index=0,delta={'content':output},finish_reason='stop')],
             usage=dict(prompt_tokens=10,completion_tokens=8,total_tokens=18))
         return httpx.Response(200,stream=httpx.ByteStream(('data: '+json.dumps(event)+'\n\ndata: [DONE]\n\n').encode()))
-    model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),budget,transport=httpx.MockTransport(reflection_response))
+    model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY,max_output_tokens=M4_REAL_OUTPUT_TOKENS),budget,
+        transport=httpx.MockTransport(reflection_response))
     services=RealServices(model,KEY,frozenset(subjects))
     reflection_directory=auth.parent/'reflection-evidence';reflection_directory.mkdir(mode=0o700)
     reflection_manifest=auth.parent/'reflection-evidence-window.json'
@@ -617,7 +618,7 @@ def exercise(auth,conninfo):
     base=dict(cap=None,active_cap=None,model_cap=None,tool_cap=None,max_calls=None,model_calls=None,tool_calls=None)
     grants={line:dict(base) for line in ('A','B','L','C','E','F')}
     for line in ('L','C','E','F'):grants[line].update(cap=50*CNY_SCALE,active_cap=50*CNY_SCALE)
-    activate(budget,grants,{scope_hash(scope):'E'})
+    activate(budget,grants,{scope_hash(scope):'E',scope_hash(scope_for(ISSUER,'m4-synthetic-runtime-factory')):'E'})
     pins=SimpleNamespace(key='a'*64,raw=b'local-control-pins')
     authority=RuntimeAuthority(account_checker_for(auth,db),lambda:token,budget,pins,lambda:pins.raw,
         line='E',wall_clock=lambda:datetime(2026,11,12,13,5,tzinfo=timezone.utc))
@@ -702,7 +703,8 @@ def exercise(auth,conninfo):
     # Fixture-only model pin is specified independently from the provider
     # projection; no production code/image card or live eligibility is claimed.
     pins.value={'model':dict(endpoint=M4_BASE,id=M4_MODEL,parameters=dict(stream=True,
-        stream_options={'include_usage':True},enable_thinking=False,max_tokens_by_profile=dict(answer=1024,intake=1024,reflection=1024),
+        stream_options={'include_usage':True},enable_thinking=False,
+        max_tokens_by_profile=dict(answer=M4_REAL_OUTPUT_TOKENS,intake=M4_REAL_OUTPUT_TOKENS,reflection=1024),
         native_turn_profile=M4_NATIVE_TURN_BUFFERED))}
     references=auth.parent/'collector-refs';references.mkdir(mode=0o700)
     collector=RuntimeCollector(reader,claims,routing,lambda:token,pins,references,
@@ -754,8 +756,12 @@ def exercise(auth,conninfo):
         with patch.dict(os.environ,{'CJ_M4_BUDGET_PRODUCER':HK_PRODUCER}),runtime_worker.execution_lease():
             completed=runtime_worker._one(original_receipt)
         assert completed.status=='completed'
+    def legacy_fixture_reflection(mid):
+        cid='fixture-reflection-'+digest([scope,mid]);head=boundary.open_conversation(token,cid)
+        return boundary.receive(token,encode(dict(version='MESSAGE-send.1',conversation_id=cid,message_id=mid,
+            text=REFLECTION_MESSAGE,trip_id=None,creation_intent='none',expected_generation=head.generation,expected_sequence=0)))
     backend=NativeRuntimeBackend(runtime_authority,runtime_claims,runtime_collector,boundary,lambda:token,
-        require_worker=require_worker,wait_original=wait_original)
+        require_worker=require_worker,wait_original=wait_original,admit_reflection=legacy_fixture_reflection)
     mappings=auth.parent/'g-original-mapping';mappings.mkdir(mode=0o700)
     adapter=RuntimeAdapter(backend,runtime_authority.binding(),runtime_pins,mappings)
     feedback=dict(split='development',dataset_sha256=runtime_pins.value['task_sha256'],rows=[
@@ -797,6 +803,64 @@ def exercise(auth,conninfo):
     stopped=adapter.call({'id':'dev-airport','language':'en'},C0,'native-no-task-recipes',60)
     assert stopped['status']=='UNRUN' and stopped['reason']=='NATIVE_DIALOGUE_TASK_RECIPES_NOT_CONNECTED'
     assert model.calls==calls
+    # Load the actual private worker composition/card, including a pinned
+    # non-restored claim directory. G dispatch and the existing worker run on
+    # different threads, as in the worker socket/main-loop deployment.
+    from cj_api.runtime_worker_bindings import RuntimeWorkerBindings
+    from cj_api.runtime_rpc import RuntimeRPC
+    from cj_api.runtime_text_slots import C0_NATIONAL_V2,source_c0_national_v2
+    factory_subject='m4-synthetic-runtime-factory';factory_scope=scope_for(ISSUER,factory_subject)
+    # Initial operator-only fixture configuration, before this new subject has
+    # any message. Not an experimental setup or an administrator-built Trip.
+    with psycopg.connect(**json.loads(conninfo.read_bytes())) as initializer:
+        initializer.execute("INSERT INTO cj_message_context_profile VALUES(%s,'message-travel.1')",(factory_scope,))
+    factory_db=LocalDatabase(conninfo,run_context=profiles[factory_subject][1],travel_context=True)
+    factory_token=headers[factory_subject]['Authorization'].removeprefix('Bearer ')
+    factory_boundary=Boundary(account_checker_for(auth,factory_db),
+        lambda principal:factory_db.message_repository(scope_for(principal.issuer,principal.subject)),lambda:str(uuid.uuid4()))
+    manifest=auth.parent/'runtime-host.json';token_file=auth.parent/'runtime-host.jwt'
+    token_file.write_text(factory_token);token_file.chmod(0o600)
+    def pinned(path):
+        path.mkdir(mode=0o700,exist_ok=True);info=path.stat()
+        return dict(path=str(path),device=info.st_dev,inode=info.st_ino)
+    directory_pins={key:pinned(auth.parent/name) for key,name in (
+        ('canonical_directory','factory-claims'),('references_directory','factory-references'),('mapping_directory','factory-mapping'))}
+    manifest.write_bytes(encode(dict(version='G2C-runtime-host.1',baseline='national.2',resource_root=str(harness.ROOT),
+        runtime_card=dict(code_sha='a'*40,image_digest='sha256:'+'a'*64,model=source_c0_national_v2()['model']),
+        evidence_manifest=str(reflection_manifest),lines=[dict(line='E',subject=factory_subject,token_file=str(token_file),**directory_pins)])))
+    manifest.chmod(0o600)
+    factory_tools=RealTools(services,buffered_streaming_subjects=frozenset({factory_subject}))
+    fixture_runtime=SimpleNamespace(auth=auth,database=lambda:factory_db,demo_subjects=frozenset({factory_subject}),memory_configuration_for_scope=lambda owner:None)
+    factory=RuntimeWorkerBindings(manifest,fixture_runtime,services,factory_tools,confirmation_signer=None,
+        wall_clock=lambda:datetime(2026,11,12,13,5,tzinfo=timezone.utc))
+    reflection_manifest.write_bytes(encode(dict(version='G2C-runtime-evidence-window.4',directory=str(reflection_directory),
+        subjects=[factory_subject],expires_at=(datetime.now(timezone.utc)+timedelta(hours=1)).isoformat(),source_commit='a'*40,kinds=['model'])))
+    factory.attach_evidence(ToolEvidence.load(reflection_manifest,frozenset(subjects),runtime_selection=factory.selects))
+    session=factory.by_scope[factory_scope];rpc=RuntimeRPC(factory)
+    request=lambda method,params:encode(dict(version='G2C-runtime-host.1',token=factory_token,method=method,params=params))
+    blocked=json.loads(rpc.handle(request('propose',dict(candidate=C0_NATIONAL_V2,feedback=feedback,
+        components=['prompt.answer_style'],attempt_id='factory-training-not-ready',timeout=60))))
+    assert blocked['status']=='UNRUN' and blocked['reason']=='ALL_TASK_LEGAL_SETUPS_NOT_CONNECTED' and model.calls==calls
+    assert list((auth.parent/'factory-mapping').iterdir())==[]
+    c0=json.loads(rpc.handle(request('c0',{})));assert c0['c0']['runtime_eligible'] is False and c0['training_status']=='UNRUN'
+    factory_worker=run_worker._worker_for_scope(factory_db,model,auth,factory_scope,account_checker_for(auth,factory_db),tools_configuration=factory_tools,
+        runtime_registrations_for_run=factory.registrations,runtime_reflection=factory.reflection)
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        proposal=pool.submit(session['adapter'].propose,C0_NATIONAL_V2,feedback,['prompt.answer_style'],'factory-local-component-control',60)
+        factory_mid='runtime-'+digest([factory_scope,'factory-local-component-control',0]);limit=time.monotonic()+30
+        while True:
+            native=factory_boundary.with_history_context(factory_token,lambda context:context.query_message(factory_mid))
+            if native is not None:break
+            assert time.monotonic()<limit
+            time.sleep(.02)
+        with patch.dict(os.environ,{'CJ_M4_BUDGET_PRODUCER':HK_PRODUCER}),factory_worker.execution_lease():
+            final=factory_worker._one(native.receipt)
+        assert final.status=='completed'
+        completed=proposal.result(timeout=30)
+    assert completed['status']=='PASS' and model.calls==calls+1,completed
+    observed=json.loads(rpc.handle(request('query',{'attempt_id':'factory-local-component-control'})))
+    assert observed['status']=='PASS' and model.calls==calls+1
+    print('PASS actual private worker manifest/national.2 pins/canonical directory pin, concurrent G/native original worker, E/F full-setup gate before any intent or spend')
     print('PASS public G propose/query -> concrete native MESSAGE/RUN/registered reflection/collector; repeated query zero sends, unavailable all-task recipe stops before paid setup')
     print('PASS canonical MESSAGE -> original leased RUN/candidate/reflection -> actual original collector envelope verified by G; fixture model/wire/Meter/fee, no copied expected state')
     print('PASS signed Boundary + actual MESSAGE scope lock/native original lookup; durable claim/reconstruction/native-existing reject, zero fees or provider sends')

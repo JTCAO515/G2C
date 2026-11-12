@@ -14,11 +14,13 @@ from psycopg import Error as DatabaseError
 from cj_message.auth_boundary import Boundary,AccessBlocked,IdentityChanged
 from cj_message.domain import Unavailable as MessageUnavailable,InvalidInput,CommitUnknown
 from cj_run.usage_binding import UsageBinding
+from cj_run.core import Denied as RunDenied
 from cj_run.step_usage import ledger_scope_for
 from cj_usage.codec import decode
 from cj_usage.authorization_budget import canonical
 from cj_usage.metered_exit import BudgetUnknown
 from runtime_adapter.contract import Unavailable,decode as original_json,require
+from .runtime_private import read_private,PrivateFileError
 
 
 class RuntimeOriginals:
@@ -52,16 +54,25 @@ class RuntimeOriginals:
         try:return self.boundary.with_history_context(token,operation)
         except (AccessBlocked,IdentityChanged):
             raise Unavailable('ORIGINAL_AUTH_UNAVAILABLE') from None
-        except (MessageUnavailable,InvalidInput,CommitUnknown,DatabaseError,BudgetUnknown):
+        except (MessageUnavailable,InvalidInput,CommitUnknown,DatabaseError,BudgetUnknown,RunDenied):
             raise Unavailable('ORIGINAL_PROTECTED_READ_UNAVAILABLE') from None
 
-    @staticmethod
-    def _operation(source,operation_id):
+    def _operation(self,scope,source,operation_id,*,allow_erased=False):
         rows=[row for row in source[2] if row[4]==operation_id]
         if len(rows)!=1:raise Unavailable('ORIGINAL_OPERATION_UNAVAILABLE')
         row=rows[0]
-        if row[7] is None:raise Unavailable('ORIGINAL_PAYLOAD_ERASED')
-        usage=UsageBinding(bytes(row[6]),bytes(row[7]));command=usage.command
+        if row[7] is None:
+            if not allow_erased:raise Unavailable('ORIGINAL_PAYLOAD_ERASED')
+            # Reuse the accepted permanent-erasure proof reader. Its header is
+            # accounting metadata only, never a fresh InvocationInput or raw
+            # payload reconstruction from an old artifact.
+            from cj_run.payload_evidence import erased_original
+            with self.database.connect(scope) as db:
+                db.execute('SET TRANSACTION READ ONLY')
+                with db.cursor() as cursor:
+                    usage=erased_original(cursor,scope,'cj_run_metered_operation',source[0][1],row[0],bytes(row[6]))
+        else:usage=UsageBinding(bytes(row[6]),bytes(row[7]))
+        command=usage.command
         if command.run_id!=source[0][1] or (command.kind,command.attempt_id,command.operation_id)!=(row[2],row[3],row[4]):
             raise Unavailable('ORIGINAL_OPERATION_BINDING_CHANGED')
         return row,usage
@@ -84,11 +95,11 @@ class RuntimeOriginals:
         return self._read(token,message_id,project)
 
     def input(self,token,message_id,operation_id):
-        return self._read(token,message_id,lambda scope,original,source:self._operation(source,operation_id)[1].input_bytes)
+        return self._read(token,message_id,lambda scope,original,source:self._operation(scope,source,operation_id)[1].input_bytes)
 
     def meter(self,token,message_id,operation_id):
         def project(scope,original,source):
-            row,usage=self._operation(source,operation_id);period=source[3]
+            row,usage=self._operation(scope,source,operation_id,allow_erased=True);period=source[3]
             if period is None:raise Unavailable('ORIGINAL_PERIOD_UNAVAILABLE')
             profiles=[p for p in self.database.run_context.profiles if
                 (ledger_scope_for(scope,p.meter),p.meter.unit,p.meter.period_start,p.meter.period_end)==tuple(period)]
@@ -104,7 +115,7 @@ class RuntimeOriginals:
 
     def fee(self,token,message_id,operation_id):
         def project(scope,original,source):
-            row,usage=self._operation(source,operation_id)
+            row,usage=self._operation(scope,source,operation_id,allow_erased=True)
             fee=self._financial(usage.command.attempt_id)
             return canonical(dict(attempt_id=usage.command.attempt_id,ledger_id=self.budget.ledger_id,
                 kind=fee[0],actual_wire_input_sha256=fee[1],state=fee[2],receipt_utf8=fee[3]))
@@ -112,7 +123,7 @@ class RuntimeOriginals:
 
     def artifact(self,token,message_id,operation_id,*,wire_input=False):
         def project(scope,original,source):
-            row,usage=self._operation(source,operation_id)
+            row,usage=self._operation(scope,source,operation_id)
             parts=[scope,original.receipt.run_id,row[0],usage.command.attempt_id]
             if wire_input:parts.append('model_wire_input')
             name=sha256(canonical(parts)).hexdigest()+'.json'
@@ -121,14 +132,10 @@ class RuntimeOriginals:
                 info=os.fstat(directory)
                 if info.st_uid!=os.getuid() or stat.S_IMODE(info.st_mode)!=0o700:
                     raise Unavailable('ORIGINAL_ARTIFACT_DIRECTORY_AUTHORITY')
-                fd=os.open(name,os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK,dir_fd=directory)
-                with os.fdopen(fd,'rb') as file:
-                    info=os.fstat(file.fileno())
-                    if not stat.S_ISREG(info.st_mode) or info.st_uid!=os.getuid() or stat.S_IMODE(info.st_mode)!=0o600:
-                        raise Unavailable('ORIGINAL_ARTIFACT_AUTHORITY')
-                    raw=file.read(1_048_577)
+                try:raw=read_private(name,1_048_576,directory_fd=directory)
+                except PrivateFileError as error:
+                    raise Unavailable('ORIGINAL_ARTIFACT_BOUND' if error.reason=='bound' else 'ORIGINAL_ARTIFACT_AUTHORITY') from None
             finally:os.close(directory)
-            if len(raw)>1_048_576:raise Unavailable('ORIGINAL_ARTIFACT_BOUND')
             data=original_json(raw)
             common={'version','message_id','run_id','attempt_id','operation_id','registration_id','scope_sha256'}
             require(type(data) is dict and common<=data.keys(),'ORIGINAL_ARTIFACT_FIELDS')

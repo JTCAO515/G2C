@@ -68,16 +68,18 @@ class RuntimeCollector:
         except FileNotFoundError:return None
 
     def _operation(self,token,mid,inventory,entry):
-        op=entry['operation_id'];fee=self._fee(token,mid,op)
+        op=entry['operation_id']
         def available(read):
             # A missing/bad component cannot hide other original operations or
             # their fee receipts. Null becomes a per-field UNKNOWN in G. Native
             # AUTH revocation/identity exceptions are deliberately not caught.
             try:return read()
             except (Unavailable,Invalid,OSError):return None
+        try:fee=self._fee(token,mid,op)
+        except (Unavailable,Invalid,OSError):fee=None;sent='UNKNOWN'
+        else:sent='NOT_SENT' if fee is None else fee['state']
         meter=available(lambda:decode(self.originals.meter(token,mid,op)))
         output=available(lambda:self._output(token,mid,op))
-        sent='NOT_SENT' if fee is None else fee['state']
         return dict(operation_id=op,attempt_id=entry['attempt_id'],run_id=inventory['run_id'],
             registration_id=entry['registration_id'],kind=entry['kind'],
             input=available(lambda:self._ref(token,'input',mid,op)),
@@ -107,7 +109,10 @@ class RuntimeCollector:
                 return raw
             if kind=='meter_link':
                 meter=decode(self.originals.meter(token,mid,op));command=meter['command']
-                output=self._output(token,mid,op)
+                try:output=self._output(token,mid,op)
+                except Unavailable as error:
+                    if str(error)!='ORIGINAL_PAYLOAD_ERASED':raise
+                    output=None
                 return encode(dict(attempt_id=entry['attempt_id'],operation_id=op,run_id=inventory['run_id'],
                     registration_id=entry['registration_id'],kind=entry['kind'],
                     input_sha256=command['input_digest'],output_sha256=None if output is None else sha256(output).hexdigest(),
@@ -128,6 +133,8 @@ class RuntimeCollector:
             request_sha256=digest(request),message_id=mid,action_id=None,run_ids=[inventory['run_id']])
         if kind=='protected_inventory':
             return encode(dict(**association,operation_ids=[e['operation_id'] for e in inventory['operations']]))
+        if kind in ('state','result') and any(e['input_erased'] for e in inventory['operations']):
+            raise Unavailable('ORIGINAL_PAYLOAD_ERASED')
         if kind=='state':return self.state_reader(token,mid)
         if kind=='result':
             if request['kind']=='reflection':

@@ -328,7 +328,7 @@ class RealTools:
 
     def _registrations(self):
         model=Registration('model',self._model_input)
-        return MappingProxyType({'model.answer':model,'model.draft':model,'model.tool_turn':model,
+        return MappingProxyType({'model.answer':Registration('model',self._answer_input),'model.draft':model,'model.tool_turn':model,
             'model.lio_intake.1':Registration('model',self._lio_intake_input),
             'model.lio_intake.2':Registration('model',self._lio_intake_schema_input),
             'model.lio_intake.3':Registration('model',self._lio_intake_current_input),
@@ -407,6 +407,9 @@ class RealTools:
     def _lio_intake_input(self,argument):
         return self._model_input(argument,national_intake=True)
 
+    def _answer_input(self,argument):
+        return self._model_input(argument,answer_preparation=True)
+
     def _lio_intake_schema_input(self,argument):
         return self._model_input(argument,national_intake=True,intake_profile='LIO-planning-intake.2')
 
@@ -431,7 +434,7 @@ class RealTools:
     def _lio_memory_input(self, argument):
         return self._model_input(argument, release_after_send=True)
 
-    def _model_input(self,argument,*,release_after_send=False,national_intake=False,intake_profile='LIO-planning-intake.1'):
+    def _model_input(self,argument,*,release_after_send=False,national_intake=False,intake_profile='LIO-planning-intake.1',answer_preparation=False):
         native_turn = type(argument) is ModelInput
         indexed=intake_profile in ('LIO-planning-intake.3','LIO-planning-intake.4','LIO-planning-intake.5','LIO-planning-intake.6','LIO-planning-intake.7','LIO-planning-intake.8')
         if indexed:
@@ -468,6 +471,10 @@ class RealTools:
                     system=render_national_intake(system,fragments)
                 elif national_intake or native_turn and argument.lio_answer:
                     system,_=render(system,[],fragments,profile='answer')
+                elif answer_preparation and not native_turn:
+                    from .local_lio_planning import DISCUSSION_PROMPT
+                    if system is not None and system.endswith(DISCUSSION_PROMPT):
+                        system,_=render(system,[],fragments,profile='answer')
                 if native_turn and argument.national:
                     _,selected_tools=render('',selected_tools,fragments,profile='authority')
             except Invalid:
@@ -497,8 +504,7 @@ class RealTools:
             def invoke():
                 self.services.require_scope(operation.binding.scope)
                 with _external_timing('model',operation,admitted) as checked:
-                    capture_model=(self.tool_evidence is not None and self.tool_evidence.model_enabled
-                                   and self.tool_evidence.selects(operation.binding))
+                    capture_model=self.tool_evidence is not None and self.tool_evidence.captures_model(operation.binding)
                     capture=({'wire_observer':lambda raw:self.tool_evidence.record_model_input(operation,raw)}
                              if capture_model else {})
                     stream=self.services.model.invoke(inputs['messages'],inputs['system'],operation.command.attempt_id,

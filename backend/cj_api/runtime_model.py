@@ -8,6 +8,15 @@ from cj_agent.provider import (M4_NATIVE_TURN_BUFFERED,M4_NATIVE_TURN_PROFILE_V2
 from runtime_adapter.contract import decode,Unavailable
 
 
+def configured_model(provider,native_turn_profile):
+    config=provider.config
+    return dict(endpoint=config.base_url,id=config.model_id,parameters=dict(stream=True,
+        stream_options={'include_usage':True},enable_thinking=False,
+        max_tokens_by_profile=dict(answer=config.max_output_tokens,intake=config.max_output_tokens,
+                                   reflection=min(1024,config.max_output_tokens)),
+        native_turn_profile=native_turn_profile))
+
+
 class RuntimeModel:
     def __init__(self,originals,provider,*,native_turn_profile):
         self.originals,self.provider=originals,provider
@@ -28,8 +37,4 @@ class RuntimeModel:
                 body['stream_options']!={'include_usage':True} or body['enable_thinking'] is not False or
                 body['max_tokens']!=maximum):
             raise Unavailable('ACTUAL_MODEL_WIRE_PARAMETERS_CHANGED')
-        return dict(endpoint=config.base_url,id=body['model'],parameters=dict(stream=body['stream'],
-            stream_options=body['stream_options'],enable_thinking=body['enable_thinking'],
-            max_tokens_by_profile=dict(answer=config.max_output_tokens,intake=config.max_output_tokens,
-                                       reflection=min(1024,config.max_output_tokens)),
-            native_turn_profile=self.native_turn_profile))
+        return configured_model(self.provider,self.native_turn_profile)

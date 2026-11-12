@@ -7,6 +7,7 @@ import re
 import stat
 
 from runtime_adapter.contract import decode,digest,encode,require,Unavailable
+from .runtime_private import read_private,PrivateFileError
 
 KINDS=frozenset({'inventory','input','meter','fee','artifact','wire_input',
     'action','protected_inventory','meter_link','provider','output','result','state'})
@@ -59,13 +60,10 @@ class OriginalReferences:
 
     @staticmethod
     def _record(directory,ref):
-        fd=os.open(ref+'.json',os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK,dir_fd=directory)
-        with os.fdopen(fd,'rb') as source:
-            info=os.fstat(source.fileno())
-            if not stat.S_ISREG(info.st_mode) or info.st_uid!=os.getuid() or stat.S_IMODE(info.st_mode)!=0o600:
-                raise Unavailable('ORIGINAL_REFERENCE_AUTHORITY')
-            raw=source.read(65537)
-        require(len(raw)<=65536,'ORIGINAL_REFERENCE_BOUND')
+        try:raw=read_private(ref+'.json',65536,directory_fd=directory)
+        except PrivateFileError as error:
+            if error.reason=='bound':require(False,'ORIGINAL_REFERENCE_BOUND')
+            raise Unavailable('ORIGINAL_REFERENCE_AUTHORITY') from None
         record=decode(raw)
         require(type(record) is dict and set(record)=={'source','sha256'} and
                 ref=='original-'+digest(record),'ORIGINAL_REFERENCE_INTEGRITY')

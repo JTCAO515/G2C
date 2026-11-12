@@ -9,17 +9,16 @@ import sqlite3
 from cj_usage.metered_exit import BudgetUnknown
 from cj_message.auth_boundary import AccessBlocked,IdentityChanged
 from cj_message.domain import CommitUnknown,Unavailable as MessageUnavailable,InvalidInput,InputConflict
-from runtime_adapter.contract import decode,digest,encode,Unavailable
-
-from .runtime_run_requests import REFLECTION_MESSAGE
+from runtime_adapter.contract import decode,Unavailable
 
 
 class NativeRuntimeBackend:
     def __init__(self,authority,claims,collector,boundary,token_supplier,*,
-                 require_worker,wait_original,dialogue=None):
+                 require_worker,wait_original,admit_reflection,dialogue=None):
         self.authority,self.claims,self.collector=authority,claims,collector
         self.boundary,self.token_supplier=boundary,token_supplier
         self.require_worker,self.wait_original=require_worker,wait_original
+        self.admit_reflection=admit_reflection
         self.dialogue=dialogue
 
     def binding(self):return self.authority.binding()
@@ -64,17 +63,7 @@ class NativeRuntimeBackend:
             if self.dialogue is None:raise Unavailable('NATIVE_ACTION_NOT_CONNECTED')
             self.dialogue.dispatch(original,deadline=deadline)
             return
-        # The conversation is created through the same authenticated domain as
-        # the existing API. Its ID comes from canonical original scope/step, not
-        # candidate text, a recovered mapping or a fresh random retry namespace.
-        cid='runtime-reflection-'+digest([self.claims.binding.scope,original['step_id']])
-        token=self.token_supplier()
-        head=self.boundary.open_conversation(token,cid)
-        if head.last_sequence!=0:raise Unavailable('NATIVE_REFLECTION_CHAT_NOT_FRESH')
-        raw=encode(dict(version='MESSAGE-send.1',conversation_id=cid,message_id=original['step_id'],
-            text=REFLECTION_MESSAGE,trip_id=None,creation_intent='none',
-            expected_generation=head.generation,expected_sequence=0))
-        receipt=self.boundary.receive(token,raw)
+        receipt=self.admit_reflection(original['step_id'])
         # This waits on the *same* original receipt using B's preconfigured
         # worker; it must never resend or select another account/provider/ID.
         self.wait_original(receipt,deadline)
