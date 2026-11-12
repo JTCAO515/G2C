@@ -49,5 +49,3 @@ def test_calendar_boundaries_and_reported_conflicts(case):
 def test_shape_and_calendar_semantic_rejections(case):
     with pytest.raises(ValueError):
         validate_document(materialize(case))
-
-

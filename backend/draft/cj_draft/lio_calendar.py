@@ -128,4 +128,3 @@ class LioCalendarPublisher(LioPlanPublisher):
                                  limits, before_publish):
         from .calendar_edit import publish
         return publish(self, binding, original, current, request_raw, edit_raw, capture, before_publish)
-

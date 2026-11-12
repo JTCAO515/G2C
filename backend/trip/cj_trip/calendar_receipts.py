@@ -71,4 +71,3 @@ def query(repository, request):
             original_version=request.expected_version, original_hash=request.original_hash, outcome='conflict',
             committed=False, trip_version=None, content_sha256=None, calendar=document['calendar'],
             date_checks=document['date_checks'], conflicts=conflicts)
-
