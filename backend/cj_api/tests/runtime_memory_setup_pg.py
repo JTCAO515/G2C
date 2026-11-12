@@ -102,7 +102,7 @@ def exercise(root,conninfo,language='en',*,lost_ack=False):
         with patch.object(native_stop,'execute',side_effect=lose_response):
             try:setup.dispatch(request,deadline=deadline)
             except Unavailable as error:
-                assert str(error)=='NATIVE_STOP_USE_ACK_UNCERTAIN_QUERY_ONLY' 
+                assert str(error)=='NATIVE_STOP_USE_ACK_UNCERTAIN_QUERY_ONLY'
             else:raise AssertionError('committed lost acknowledgement was hidden')
         assert len(writes)==1
     else:setup.dispatch(request,deadline=deadline)
