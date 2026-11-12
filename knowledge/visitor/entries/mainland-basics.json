@@ -40,7 +40,7 @@
     "expires_on": "2026-12-12"
   },
   {
-    "id": "visitor.mainland.metro-single-ticket",
+    "id": "visitor.mainland.transport-tickets",
     "topic": "transport",
     "cities": [
       "beijing",
@@ -51,8 +51,8 @@
       "chongqing",
       "shenzhen"
     ],
-    "text_zh": "乘地铁可在站内窗口或售票机购买单程票；具体支付方式看车站标识或询问工作人员。",
-    "text_en": "Metro single-journey tickets are available at station counters or ticket machines. Check local payment signs or ask staff.",
+    "text_zh": "地铁单程票可在站内窗口或售票机购买；乘铁路或高铁带购票证件原件，可按现场指引走人工核验通道。支付方式问站员。",
+    "text_en": "Buy metro single-journey tickets at station counters or machines. For mainland rail or high-speed trains, bring your original booking document; manual ticket checks are available. Ask staff about payment methods.",
     "source_urls": [
       "https://english.www.gov.cn/2025special/bizexpatsinchina2025"
     ],
