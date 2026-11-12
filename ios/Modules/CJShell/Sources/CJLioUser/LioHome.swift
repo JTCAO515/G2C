@@ -31,6 +31,8 @@ public struct LioHome<MenuContent: View>: View {
     @State private var memoryPending = false
     @State private var memoryNotice: String?
     @State private var activeMemory: LioMemoryWire.Tag?
+    @State private var activeMemoryTurn: Data?
+    @State private var memoryFeedback: [LioMemoryWire.Tag: LioMemoryFeedback] = [:]
     @State private var handledTags: Set<LioMemoryWire.Tag> = []
     @State private var refreshRequest = 0
     @State private var jumpRequest = 0
@@ -169,34 +171,45 @@ public struct LioHome<MenuContent: View>: View {
         }
     }
 
+    @ViewBuilder
+    private func chatMessages(_ scroll: ScrollViewProxy) -> some View {
+        let pending = conversation.pending
+        let earlierID = conversation.nextBefore.map { Data($0.utf8) }
+        if conversation.turns.isEmpty {
+            if opening == .beforeNext { openingMessage }
+            examples
+        }
+        ForEach(conversation.turns) { turn in
+            VStack(alignment: .leading, spacing: 22) {
+                if turn.id == earlierID { earlierMessages(scroll) }
+                if opening == .before(turn.id) { openingMessage }
+                turnView(turn)
+            }
+        }
+        if !conversation.turns.isEmpty, opening == .beforeNext, pending == nil {
+            openingMessage
+        }
+        if let memoryNotice { Text(memoryNotice).font(.footnote) }
+        if memoryPending, activeMemoryTurn == nil {
+            Text(language.text("Waiting to save your choice…", "正在等待保存你的选择…"))
+                .font(.footnote)
+                .accessibilityIdentifier("lio.memory.waiting")
+        }
+        Color.clear.frame(height: 1).id("lio.bottom")
+    }
+
     private var chat: some View {
         let pending = conversation.pending
         let latest = conversation.turns.last
-        let earlierID = conversation.nextBefore.map { Data($0.utf8) }
         return ScrollViewReader { scroll in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 22) {
-                    if conversation.turns.isEmpty {
-                        if opening == .beforeNext { openingMessage }
-                        examples
+                Group {
+                    if dynamicTypeSize.isAccessibilitySize {
+                        // Eager measurement keeps a tall card's bottom reachable at accessibility sizes.
+                        VStack(alignment: .leading, spacing: 22) { chatMessages(scroll) }
+                    } else {
+                        LazyVStack(alignment: .leading, spacing: 22) { chatMessages(scroll) }
                     }
-                    ForEach(conversation.turns) { turn in
-                        VStack(alignment: .leading, spacing: 22) {
-                            if turn.id == earlierID { earlierMessages(scroll) }
-                            if opening == .before(turn.id) { openingMessage }
-                            turnView(turn)
-                        }
-                    }
-                    if !conversation.turns.isEmpty, opening == .beforeNext, pending == nil {
-                        openingMessage
-                    }
-                    if let memoryNotice { Text(memoryNotice).font(.footnote) }
-                    if memoryPending {
-                        Text(language.text("Waiting to save your choice…", "正在等待保存你的选择…"))
-                            .font(.footnote)
-                            .accessibilityIdentifier("lio.memory.waiting")
-                    }
-                    Color.clear.frame(height: 1).id("lio.bottom")
                 }
                 .frame(maxWidth: 680)
                 .padding(.horizontal, 18)
@@ -204,6 +217,7 @@ public struct LioHome<MenuContent: View>: View {
                 .padding(.bottom, 12)
                 .frame(maxWidth: .infinity)
             }
+            .scrollClipDisabled(false)
             .scrollDismissesKeyboard(.interactively)
             .simultaneousGesture(DragGesture(minimumDistance: 12).onChanged { _ in
                 followsAnswer = false
@@ -531,23 +545,25 @@ public struct LioHome<MenuContent: View>: View {
         }
     }
 
-    private func chooseMemory(_ choice: LioMemoryWire.Choice, tag: LioMemoryWire.Tag,
+    private func chooseMemory(_ choice: LioMemoryWire.Choice, tag: LioMemoryWire.Tag, turnID: Data,
                               client: LioMemoryActionsClient) async {
         guard !memoryBusy, !memoryPending, !handledTags.contains(tag) else { return }
         memoryBusy = true
         defer { memoryBusy = false }
         memoryNotice = nil
+        memoryFeedback.removeValue(forKey: tag)
         do {
             if try client.hasPendingChoice() {
                 memoryPending = true
                 return
             }
             activeMemory = tag
+            activeMemoryTurn = turnID
             finishMemoryChoice(try await client.choose(choice, tag: tag))
         } catch is CancellationError {
             return
         } catch {
-            memoryNotice = language.text("Couldn’t save your choice right now.", "暂时无法保存你的选择。")
+            showMemoryFeedback(.saveUnavailable)
         }
     }
 
@@ -565,7 +581,7 @@ public struct LioHome<MenuContent: View>: View {
             } catch is CancellationError {
                 return
             } catch {
-                memoryNotice = language.text("Couldn’t show your saved choice.", "暂时无法显示你的选择。")
+                showMemoryFeedback(.readUnavailable)
             }
             do {
                 try await Task.sleep(for: .seconds(5))
@@ -581,16 +597,26 @@ public struct LioHome<MenuContent: View>: View {
             memoryPending = true
             return
         case .remembered:
-            memoryNotice = language.text("Remembered", "已记住")
+            showMemoryFeedback(.remembered)
         case .dismissed:
             memoryNotice = nil
         case .changed:
-            memoryNotice = language.text("That suggestion changed.", "这条建议已有变化。")
+            showMemoryFeedback(.changed)
         }
         if let activeMemory { handledTags.insert(activeMemory) }
         activeMemory = nil
+        activeMemoryTurn = nil
         memoryPending = false
         refreshRequest += 1
+    }
+
+    private func showMemoryFeedback(_ kind: LioMemoryFeedbackKind) {
+        if let activeMemory, let activeMemoryTurn {
+            memoryFeedback[activeMemory] = LioMemoryFeedback(tag: activeMemory, turnID: activeMemoryTurn, kind: kind)
+            memoryNotice = nil
+        } else {
+            memoryNotice = kind.text(language)
+        }
     }
 
     private func turnView(_ turn: LioTurn) -> some View {
@@ -643,8 +669,18 @@ public struct LioHome<MenuContent: View>: View {
             messageStatus(turn)
             if let memoryActions {
                 ForEach(turn.memoryTags.filter { !handledTags.contains($0) }) { tag in
-                    memorySuggestion(tag, client: memoryActions)
+                    memorySuggestion(tag, turnID: turn.id, client: memoryActions)
                 }
+                ForEach(memoryFeedback.values.filter {
+                    $0.turnID == turn.id && ($0.kind.replacesPrompt || !turn.memoryTags.contains($0.tag))
+                }.sorted { $0.tag.id < $1.tag.id }) { feedback in
+                    LioMemoryFeedbackView(feedback: feedback, language: language) {
+                        memoryFeedback.removeValue(forKey: feedback.tag)
+                    }
+                    .transition(.opacity)
+                }
+                .animation(LioTheme.Motion.animation(LioTheme.Motion.change, reduceMotion: reduceMotion),
+                           value: memoryFeedback.count)
             }
             if let itinerary = turn.itinerary {
                 let card = LioTripCard(turnID: turn.id, itinerary: itinerary)
@@ -679,41 +715,13 @@ public struct LioHome<MenuContent: View>: View {
         }
     }
 
-    private func memorySuggestion(_ tag: LioMemoryWire.Tag, client: LioMemoryActionsClient) -> some View {
-        let text = tag.text.trimmingCharacters(in: .whitespacesAndNewlines)
-        let preference = text.last.map { ".。!?！？".contains($0) } == true ? String(text.dropLast()) : text
-        let actions = dynamicTypeSize.isAccessibilitySize
-            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4))
-            : AnyLayout(HStackLayout(spacing: 10))
-        return VStack(alignment: .leading, spacing: 6) {
-            Label {
-                RunReadableText(text: language.text("Remember: \(preference)?", "记住：\(preference)？"))
-            } icon: {
-                Image(systemName: "bookmark").foregroundStyle(LioTheme.gold).accessibilityHidden(true)
-            }
-            .font(.subheadline.weight(.semibold))
-            actions {
-                Button {
-                    Task { await chooseMemory(.remember, tag: tag, client: client) }
-                } label: {
-                    // White on the dark-mode vermilion fill is below 4.5:1, so the label uses onVermilion.
-                    Text(language.text("Remember", "记住"))
-                        .foregroundStyle(memoryBusy || memoryPending ? LioTheme.inkSecondary : LioTheme.onVermilion)
-                }
-                .buttonStyle(.borderedProminent)
-                .accessibilityIdentifier("lio.memory.remember")
-                Button(language.text("Dismiss", "不用")) {
-                    Task { await chooseMemory(.dismiss, tag: tag, client: client) }
-                }
-                .buttonStyle(.borderless)
-                .accessibilityIdentifier("lio.memory.dismiss")
-            }
-            .controlSize(.large)
-            .disabled(memoryBusy || memoryPending)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.small))
+    private func memorySuggestion(_ tag: LioMemoryWire.Tag, turnID: Data,
+                                  client: LioMemoryActionsClient) -> some View {
+        LioMemoryConfirmation(text: tag.text, language: language, disabled: memoryBusy || memoryPending,
+                              waiting: memoryPending && activeMemory == tag,
+                              notice: memoryFeedback[tag]?.kind.text(language),
+                              remember: { Task { await chooseMemory(.remember, tag: tag, turnID: turnID, client: client) } },
+                              dismiss: { Task { await chooseMemory(.dismiss, tag: tag, turnID: turnID, client: client) } })
     }
 
     @ViewBuilder
