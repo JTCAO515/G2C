@@ -66,6 +66,7 @@ struct LioTripsView: View {
     @State private var saved: [StructuredTripSummary]?
     @State private var listUnavailable = false
     @State private var listAttempt = 0
+    @Environment(\.colorScheme) private var colorScheme
 
     private var shownItineraries: [LioItinerary] {
         guard let currentPlan else { return itineraries }
@@ -113,6 +114,9 @@ struct LioTripsView: View {
             }
             .lioPage()
             .navigationTitle(language.text("Trips", "行程"))
+            .toolbarBackground(LioTheme.paper, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarColorScheme(colorScheme, for: .navigationBar)
             .navigationDestination(for: LioTripRoute.self) { route in
                 if let library {
                     LioTripDetail(tripID: String(decoding: route.tripID, as: UTF8.self), library: library,
