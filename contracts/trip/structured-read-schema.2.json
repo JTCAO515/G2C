@@ -1,0 +1,1124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://go2china.space/contracts/trip/structured-read-schema.2.json",
+  "title": "Additive explicit calendar TRIP read projection (C #860 proposal)",
+  "$defs": {
+    "Id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+    },
+    "DayIndex": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9223372036854775807
+    },
+    "Date": {
+      "type": "string",
+      "format": "date"
+    },
+    "Time": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "const": "known"
+            },
+            "value": {
+              "type": "string",
+              "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9](?::[0-5][0-9])?$"
+            }
+          },
+          "required": [
+            "state",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "enum": [
+                "missing",
+                "unknown"
+              ]
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "const": "uncertain"
+            },
+            "note": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          },
+          "required": [
+            "state",
+            "note"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Zone": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "const": "known"
+            },
+            "value": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "not": {
+                "enum": [
+                  "localtime",
+                  "Factory"
+                ]
+              }
+            }
+          },
+          "required": [
+            "state",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "enum": [
+                "missing",
+                "unknown"
+              ]
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "const": "uncertain"
+            },
+            "note": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          },
+          "required": [
+            "state",
+            "note"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Offset": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "const": "known"
+            },
+            "value": {
+              "type": "string",
+              "pattern": "^[+-](?:[01][0-9]|2[0-3]):[0-5][0-9]$"
+            }
+          },
+          "required": [
+            "state",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "enum": [
+                "missing",
+                "unknown"
+              ]
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "const": "uncertain"
+            },
+            "note": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          },
+          "required": [
+            "state",
+            "note"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Fixed": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "const": "known"
+            },
+            "value": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "state",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "enum": [
+                "missing",
+                "unknown"
+              ]
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "const": "uncertain"
+            },
+            "note": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          },
+          "required": [
+            "state",
+            "note"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "UndatedDay": {
+      "type": "object",
+      "properties": {
+        "day_index": {
+          "$ref": "#/$defs/DayIndex"
+        }
+      },
+      "required": [
+        "day_index"
+      ],
+      "additionalProperties": false
+    },
+    "DatedDay": {
+      "type": "object",
+      "properties": {
+        "day_index": {
+          "$ref": "#/$defs/DayIndex"
+        },
+        "date": {
+          "$ref": "#/$defs/Date"
+        }
+      },
+      "required": [
+        "day_index",
+        "date"
+      ],
+      "additionalProperties": false
+    },
+    "Event": {
+      "type": "object",
+      "properties": {
+        "day_index": {
+          "$ref": "#/$defs/DayIndex"
+        },
+        "time": {
+          "$ref": "#/$defs/Time"
+        },
+        "timezone": {
+          "$ref": "#/$defs/Zone"
+        },
+        "utc_offset": {
+          "$ref": "#/$defs/Offset"
+        }
+      },
+      "required": [
+        "day_index",
+        "time",
+        "timezone",
+        "utc_offset"
+      ],
+      "additionalProperties": false
+    },
+    "Item": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "verification": {
+          "enum": [
+            "pending",
+            "verified"
+          ]
+        },
+        "evidence": {
+          "type": "array",
+          "maxItems": 40,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        },
+        "schedule": {
+          "type": "object",
+          "properties": {
+            "start": {
+              "$ref": "#/$defs/Event"
+            },
+            "end": {
+              "$ref": "#/$defs/Event"
+            }
+          },
+          "required": [
+            "start",
+            "end"
+          ],
+          "additionalProperties": false
+        },
+        "fixed": {
+          "$ref": "#/$defs/Fixed"
+        },
+        "source_category": {
+          "enum": [
+            "unknown",
+            "user_provided",
+            "queried",
+            "estimated"
+          ]
+        },
+        "source_refs": {
+          "type": "array",
+          "maxItems": 1,
+          "items": {
+            "$ref": "#/$defs/Id"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "text",
+        "verification",
+        "evidence",
+        "schedule",
+        "fixed",
+        "source_category",
+        "source_refs"
+      ],
+      "additionalProperties": false
+    },
+    "Source": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "kind": {
+          "enum": [
+            "message",
+            "place",
+            "route_estimate"
+          ]
+        },
+        "reference": {
+          "type": "string",
+          "minLength": 1
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "snapshot_utf8_base64": {
+          "type": "string",
+          "minLength": 4
+        },
+        "snapshot_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "evidence_level": {
+          "enum": [
+            "user_statement",
+            "synthetic",
+            "unverified_bytes"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "reference",
+        "text",
+        "snapshot_utf8_base64",
+        "snapshot_sha256",
+        "evidence_level"
+      ],
+      "additionalProperties": false
+    },
+    "Check": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "weather",
+            "day_opening"
+          ]
+        },
+        "state": {
+          "enum": [
+            "not_checked",
+            "unknown",
+            "clear",
+            "conflict"
+          ]
+        },
+        "day_indices": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/DayIndex"
+          }
+        },
+        "item_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Id"
+          }
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "evidence_refs": {
+          "type": "array",
+          "maxItems": 40,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        }
+      },
+      "required": [
+        "kind",
+        "state",
+        "day_indices",
+        "item_ids",
+        "reason",
+        "evidence_refs"
+      ],
+      "additionalProperties": false
+    },
+    "ContentV3": {
+      "type": "object",
+      "properties": {
+        "content_version": {
+          "const": "structured.3"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "calendar": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "state": {
+                  "const": "undated"
+                }
+              },
+              "required": [
+                "state"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "state": {
+                  "const": "dated"
+                },
+                "start_date": {
+                  "$ref": "#/$defs/Date"
+                }
+              },
+              "required": [
+                "state",
+                "start_date"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "days": {
+          "type": "array",
+          "minItems": 1
+        },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 60,
+          "items": {
+            "$ref": "#/$defs/Item"
+          }
+        },
+        "sources": {
+          "type": "array",
+          "maxItems": 40,
+          "items": {
+            "$ref": "#/$defs/Source"
+          }
+        },
+        "date_checks": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/Check"
+          }
+        }
+      },
+      "required": [
+        "content_version",
+        "title",
+        "calendar",
+        "days",
+        "items",
+        "sources",
+        "date_checks"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "calendar": {
+                "properties": {
+                  "state": {
+                    "const": "undated"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "days": {
+                "items": {
+                  "$ref": "#/$defs/UndatedDay"
+                }
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "days": {
+                "items": {
+                  "$ref": "#/$defs/DatedDay"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "LegacyEvent": {
+      "type": "object",
+      "properties": {
+        "date": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "state": {
+                  "const": "known"
+                },
+                "value": {
+                  "$ref": "#/$defs/Date"
+                }
+              },
+              "required": [
+                "state",
+                "value"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "state": {
+                  "enum": [
+                    "unknown",
+                    "missing"
+                  ]
+                }
+              },
+              "required": [
+                "state"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "state": {
+                  "const": "uncertain"
+                },
+                "note": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500
+                }
+              },
+              "required": [
+                "state",
+                "note"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "time": {
+          "$ref": "#/$defs/Time"
+        },
+        "timezone": {
+          "$ref": "#/$defs/Zone"
+        },
+        "utc_offset": {
+          "$ref": "#/$defs/Offset"
+        }
+      },
+      "required": [
+        "date",
+        "time",
+        "timezone",
+        "utc_offset"
+      ],
+      "additionalProperties": false
+    },
+    "LegacyItem": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "verification": {
+          "enum": [
+            "pending",
+            "verified"
+          ]
+        },
+        "evidence": {
+          "type": "array",
+          "maxItems": 40,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        },
+        "schedule": {
+          "type": "object",
+          "properties": {
+            "start": {
+              "$ref": "#/$defs/LegacyEvent"
+            },
+            "end": {
+              "$ref": "#/$defs/LegacyEvent"
+            }
+          },
+          "required": [
+            "start",
+            "end"
+          ],
+          "additionalProperties": false
+        },
+        "fixed": {
+          "$ref": "#/$defs/Fixed"
+        },
+        "source_category": {
+          "enum": [
+            "unknown",
+            "user_provided",
+            "queried",
+            "estimated"
+          ]
+        },
+        "source_refs": {
+          "type": "array",
+          "maxItems": 1,
+          "items": {
+            "$ref": "#/$defs/Id"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "text",
+        "verification",
+        "evidence",
+        "schedule",
+        "fixed",
+        "source_category",
+        "source_refs"
+      ],
+      "additionalProperties": false
+    },
+    "LegacyContent": {
+      "type": "object",
+      "properties": {
+        "content_version": {
+          "enum": [
+            "structured.1",
+            "structured.2"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 60,
+          "items": {
+            "$ref": "#/$defs/LegacyItem"
+          }
+        },
+        "sources": {
+          "type": "array",
+          "maxItems": 40,
+          "items": {
+            "$ref": "#/$defs/Source"
+          }
+        }
+      },
+      "required": [
+        "content_version",
+        "title",
+        "items",
+        "sources"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "content_version": {
+                "const": "structured.1"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "items": {
+                "items": {
+                  "properties": {
+                    "schedule": {
+                      "properties": {
+                        "start": {
+                          "properties": {
+                            "time": {
+                              "$ref": "#/$defs/LegacySeconds"
+                            }
+                          }
+                        },
+                        "end": {
+                          "properties": {
+                            "time": {
+                              "$ref": "#/$defs/LegacySeconds"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Summary": {
+      "type": "object",
+      "properties": {
+        "trip_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        },
+        "content_version": {
+          "enum": [
+            "structured.1",
+            "structured.2",
+            "structured.3"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "content_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "calendar": {
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "state": {
+                      "const": "undated"
+                    }
+                  },
+                  "required": [
+                    "state"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "state": {
+                      "const": "dated"
+                    },
+                    "start_date": {
+                      "$ref": "#/$defs/Date"
+                    }
+                  },
+                  "required": [
+                    "state",
+                    "start_date"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "day_count": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9223372036854775807
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "trip_id",
+        "version",
+        "content_version",
+        "title",
+        "content_sha256",
+        "calendar",
+        "day_count"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "content_version": {
+                "const": "structured.3"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "calendar": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "state": {
+                        "const": "undated"
+                      }
+                    },
+                    "required": [
+                      "state"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "state": {
+                        "const": "dated"
+                      },
+                      "start_date": {
+                        "$ref": "#/$defs/Date"
+                      }
+                    },
+                    "required": [
+                      "state",
+                      "start_date"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "day_count": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9223372036854775807
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "calendar": {
+                "type": "null"
+              },
+              "day_count": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "TripRecord": {
+      "type": "object",
+      "properties": {
+        "trip_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        },
+        "content_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "content": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/LegacyContent"
+            },
+            {
+              "$ref": "#/$defs/ContentV3"
+            }
+          ]
+        }
+      },
+      "required": [
+        "trip_id",
+        "version",
+        "content_sha256",
+        "content"
+      ],
+      "additionalProperties": false
+    },
+    "List": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": "TRIP-structured-read.2"
+        },
+        "request_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "trips": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/$defs/Summary"
+          }
+        },
+        "next_after": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "version",
+        "request_id",
+        "trips",
+        "next_after"
+      ],
+      "additionalProperties": false
+    },
+    "Detail": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": "TRIP-structured-read.2"
+        },
+        "request_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "trip": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TripRecord"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "version",
+        "request_id",
+        "trip"
+      ],
+      "additionalProperties": false
+    },
+    "LegacySeconds": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "const": "known"
+            },
+            "value": {
+              "type": "string",
+              "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$"
+            }
+          },
+          "required": [
+            "state",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "enum": [
+                "missing",
+                "unknown"
+              ]
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "const": "uncertain"
+            },
+            "note": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          },
+          "required": [
+            "state",
+            "note"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/List"
+    },
+    {
+      "$ref": "#/$defs/Detail"
+    }
+  ]
+}

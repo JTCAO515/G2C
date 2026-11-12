@@ -1,0 +1,200 @@
+{
+  "version": "G2C-teacher-quality-input.1",
+  "producer_commit": "21e66d5b19453708f70da44c87df48e655b4f74e",
+  "producer_head": "c68d6f4411cb9cda735c1e74cc715409d8466f27",
+  "producer_pr": 794,
+  "handoff_version": "G2C-teacher-handoff.1",
+  "batch_id": "f789-smoke-v1",
+  "source_hashes": {
+    "backend/agent/cj_agent/provider.py": "248bc6fe4e108ef6ffc6daea1151cf42b079074012a4aad66c2fcbb5cc330c1b",
+    "backend/cj_api/real_services.py": "c7555615b40a8bd8e4a4848a2f00cd32c58ea3bd4c28d08c0d13a0c2e8fc0268",
+    "backend/place/cj_place/contract_v1.py": "93f51aae5c72f198f8c6f81d2aabb721c9f30aa40e8a2b01db20a7e100bfe7ab",
+    "backend/run/cj_run/tool_turn.py": "6a6c060efe1b5ca8c7400d6a1d6efca8d6dc75fbe359b1d1c62abdd30bedb964",
+    "backend/strict_json/cj_strict_json/__init__.py": "d2c6889009707f24ef5dd234415162804dee8f74e2a0d04395889e22dfde527d",
+    "contracts/run/MODEL-TOOL-TURN-STREAM-V1.md": "cc02597f1be94161bce01ec6550030f5ecf06fba1f1de90bd0eb45e2ff2f8a7e",
+    "contracts/run/MODEL-TOOL-TURN-STREAM-V2.md": "7d01d3d4c7a7252213bd762c442c6170a1348c05932e32b7be052140b440797a",
+    "tooling/datasets/convert.py": "941f67a75f73f23f0f5ca3a0cc71f7fc384fe55f04c774349255d024af6d91c8",
+    "tooling/datasets/samples.py": "94cb0370c7c47d85343e51eca4ac7144acfec71c103e0993297f248b656bb7be",
+    "tooling/datasets/schema.v1.json": "2b5107224be5385042812e7d41cc3203d999cba8c755dd4748482c87d8ff8052",
+    "tooling/datasets/teacher-known-bad.v1.json": "38bd66f8d63c31cfd7811c2459a627458785c27e4223938f0045347f53e64c32",
+    "tooling/datasets/teacher-pipeline.md": "382a4435cc51b56215355b4bef14b05373c33432b3981118929638c5aa3b00aa",
+    "tooling/datasets/teacher.py": "ed1eac7edb7a65a25b755aacb2526f23d138cd581d35fe02da879b2a83da5582",
+    "tooling/datasets/test_convert.py": "49114cf3674a2aa9fae32d78a846f25baa42bad80750a6f0242af3ad68cbd88b",
+    "tooling/datasets/test_teacher.py": "b254a6d7e8189756d1df80aa452abcd63f6f4c281bc9fcd933993c702565ee96",
+    "uv.lock": "349e1473df91e1573fff399611bfb7a830425d43fee8f245233f9a92e47fde1f"
+  },
+  "reference_manifest_sha256": "42569e9b53f775f45937d6e5295b0caf909379ab80bb7422479610d8a2fb6203",
+  "controls": {
+    "smoke": {
+      "manifest_sha256": "75d8655b3c2e5432e5a2a4dd86c2c4130c5b88d34e11426ec106e0fa23b34919",
+      "artifacts": {
+        "candidates.jsonl": {
+          "bytes": 33634,
+          "sha256": "ae84aa1fc81c968ba6c5a9badfd98451634f5f80f433a5fbfbf86e4eafaaf401"
+        },
+        "known-bad.json": {
+          "bytes": 659,
+          "sha256": "643d3d0596270e0b2ae3d542b0f62f2b0c902485b296492a151d4f5d55a701ae"
+        },
+        "lineage.json": {
+          "bytes": 6734,
+          "sha256": "fbfba2be075df3455a57f84d6370e297f26a43b50767ab06eed7f818cc1d4f2b"
+        },
+        "models.jsonl": {
+          "bytes": 25342,
+          "sha256": "8eb86736d82fb7fbfd917c3593639b388555a4e30ccf29f9c99784e0479bddf2"
+        },
+        "planned-cases.json": {
+          "bytes": 6191,
+          "sha256": "eca4eee55afadb9c36351016f14519bc42193cabe5118bc6b71ade34a25f57ef"
+        },
+        "raw-candidates.jsonl": {
+          "bytes": 38263,
+          "sha256": "1006ab91837b1cbbf5dd31513fbfda39cedb272cd049b363cf91e33fac2ee7b7"
+        },
+        "rejected.json": {
+          "bytes": 1185,
+          "sha256": "ef9ebe799a1677ba283e57e5344ea531328bd8dd0cd09f398ac95f3c6388a865"
+        },
+        "report.json": {
+          "bytes": 2021,
+          "sha256": "4c78423db4bb262f0c06b5956e809b71f3c68194e9063ac9181cfea063ef288a"
+        },
+        "tasks.json": {
+          "bytes": 5688,
+          "sha256": "e0d85795df306e8e46e2472e65650b8ebbd78183865ade383cd4e688734f1503"
+        },
+        "test.jsonl": {
+          "bytes": 1924,
+          "sha256": "58558858da7cb582b2e77d394aa9514982a1a2bcbb3c9ec70c474ee0864cded5"
+        },
+        "tools.jsonl": {
+          "bytes": 16398,
+          "sha256": "0289ac782b594cb54900b0195fb5d202c4454f53939ca3587b8acf2357cee76b"
+        },
+        "train.jsonl": {
+          "bytes": 28531,
+          "sha256": "495dbca43c27aea32b1338808ef7c4d8dcd855713fde6cf7641fd51d03fd4573"
+        },
+        "validation.jsonl": {
+          "bytes": 2215,
+          "sha256": "1fa73d0719bba56ea483cf3e45fe04f019cf251ecc707b609116fb0fa76655b0"
+        }
+      }
+    },
+    "bad-receipt": {
+      "manifest_sha256": "d4241e2b387ca7fde2afca756281d4db165c09378235d7bbdf90fdfa3ab290db",
+      "artifacts": {
+        "candidates.jsonl": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "known-bad.json": {
+          "bytes": 659,
+          "sha256": "643d3d0596270e0b2ae3d542b0f62f2b0c902485b296492a151d4f5d55a701ae"
+        },
+        "lineage.json": {
+          "bytes": 3,
+          "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+        },
+        "models.jsonl": {
+          "bytes": 725,
+          "sha256": "7ba21e61bac10232e3c1bbd8b651abf52f378cb0ae829d7fd8a26dbc1b833544"
+        },
+        "planned-cases.json": {
+          "bytes": 589,
+          "sha256": "57f2e5c32862f45293409f0eb5851eca50c0e04e69de35a3d0a430c82f3846e3"
+        },
+        "raw-candidates.jsonl": {
+          "bytes": 3263,
+          "sha256": "81723cf81556454b07a9702229fb0cad38638cea6e06d5bfd41dd1896cf39fec"
+        },
+        "rejected.json": {
+          "bytes": 580,
+          "sha256": "ecd1446cc55303cfefafdd92b622b60bbbf608b9a02d81518068a8ce55b1fbfd"
+        },
+        "report.json": {
+          "bytes": 1447,
+          "sha256": "7b8dfa6213172f76c439c134ccc484457cd05d9c8d2bfb63094dfe96a6bc32c9"
+        },
+        "tasks.json": {
+          "bytes": 550,
+          "sha256": "1dace5009502c696db6704e19bea2229d6703228d590def3dd8b656a4b175d27"
+        },
+        "test.jsonl": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "tools.jsonl": {
+          "bytes": 3668,
+          "sha256": "947d8c4fef0cf459c99a1a1ce81d02ae7fe9ba91810b40e77f26dfd6d35e9520"
+        },
+        "train.jsonl": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "validation.jsonl": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    },
+    "unknown": {
+      "manifest_sha256": "82a46c9a6d72d2f08f7cfc7c6ba249efb729617d5d3ab3f4cb2f571365e13c1f",
+      "artifacts": {
+        "candidates.jsonl": {
+          "bytes": 4050,
+          "sha256": "edd52f86afae0f3c59d2e0d2c6bfe691072dbe4a6893b80052c29e20bd81d3a2"
+        },
+        "known-bad.json": {
+          "bytes": 659,
+          "sha256": "643d3d0596270e0b2ae3d542b0f62f2b0c902485b296492a151d4f5d55a701ae"
+        },
+        "lineage.json": {
+          "bytes": 384,
+          "sha256": "de04bd9ce00f7d95d4f7cbae9dba5e5529be071f986abce2d8d654edfd0a4d1a"
+        },
+        "models.jsonl": {
+          "bytes": 921,
+          "sha256": "5444c0fdcc6902c5640ad1c63c73e3014fa049ddd2209445ae402b6130f72e4d"
+        },
+        "planned-cases.json": {
+          "bytes": 586,
+          "sha256": "64e6962dae4500b32c5914e71524035b67f7f179e55c43f1ac5c8561a724f967"
+        },
+        "raw-candidates.jsonl": {
+          "bytes": 4116,
+          "sha256": "d9c7fc56810de16587cbbe6a1b060f2b3eaad69b17469b7b14cdd28cf66765d3"
+        },
+        "rejected.json": {
+          "bytes": 579,
+          "sha256": "c9196b49533b4cc542b8963d0fad355c8f5fd501aaacd4454ba0cf27bb151844"
+        },
+        "report.json": {
+          "bytes": 1494,
+          "sha256": "9789ace0173e874d1ade24b36ddb9d40f70f238e818d49066c5a89217a9dae82"
+        },
+        "tasks.json": {
+          "bytes": 549,
+          "sha256": "1ce8c23c7b64932144bb022592841393a7e229d0afe12f16132b8fad07987616"
+        },
+        "test.jsonl": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "tools.jsonl": {
+          "bytes": 5228,
+          "sha256": "b52263512144158ff3163273762ab2c2c3927ef97e0cb6157f3e1029e227d305"
+        },
+        "train.jsonl": {
+          "bytes": 4050,
+          "sha256": "edd52f86afae0f3c59d2e0d2c6bfe691072dbe4a6893b80052c29e20bd81d3a2"
+        },
+        "validation.jsonl": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    }
+  }
+}
