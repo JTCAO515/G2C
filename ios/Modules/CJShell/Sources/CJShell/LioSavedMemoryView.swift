@@ -166,7 +166,7 @@ public struct LioSavedMemoryView: View {
                                 .foregroundStyle(LioTheme.inkSecondary)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
-                                .background(LioTheme.surfaceSunken, in: RoundedRectangle(cornerRadius: 6))
+                                .background(LioTheme.surfaceSunken, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
                         }
                     }
                     ScrollView(.vertical) {
