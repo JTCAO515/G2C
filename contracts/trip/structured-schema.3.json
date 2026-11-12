@@ -1,0 +1,586 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://go2china.space/contracts/trip/structured-schema.3.json",
+  "title": "TRIP structured.3: explicit calendar with day ordinals (C #860 proposal)",
+  "$defs": {
+    "Id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+    },
+    "DayIndex": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9223372036854775807
+    },
+    "Date": {
+      "type": "string",
+      "format": "date"
+    },
+    "Time": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "const": "known"
+            },
+            "value": {
+              "type": "string",
+              "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9](?::[0-5][0-9])?$"
+            }
+          },
+          "required": [
+            "state",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "enum": [
+                "missing",
+                "unknown"
+              ]
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "const": "uncertain"
+            },
+            "note": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          },
+          "required": [
+            "state",
+            "note"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Zone": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "const": "known"
+            },
+            "value": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "not": {
+                "enum": [
+                  "localtime",
+                  "Factory"
+                ]
+              }
+            }
+          },
+          "required": [
+            "state",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "enum": [
+                "missing",
+                "unknown"
+              ]
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "const": "uncertain"
+            },
+            "note": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          },
+          "required": [
+            "state",
+            "note"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Offset": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "const": "known"
+            },
+            "value": {
+              "type": "string",
+              "pattern": "^[+-](?:[01][0-9]|2[0-3]):[0-5][0-9]$"
+            }
+          },
+          "required": [
+            "state",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "enum": [
+                "missing",
+                "unknown"
+              ]
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "const": "uncertain"
+            },
+            "note": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          },
+          "required": [
+            "state",
+            "note"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Fixed": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "const": "known"
+            },
+            "value": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "state",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "enum": [
+                "missing",
+                "unknown"
+              ]
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "const": "uncertain"
+            },
+            "note": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          },
+          "required": [
+            "state",
+            "note"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "UndatedDay": {
+      "type": "object",
+      "properties": {
+        "day_index": {
+          "$ref": "#/$defs/DayIndex"
+        }
+      },
+      "required": [
+        "day_index"
+      ],
+      "additionalProperties": false
+    },
+    "DatedDay": {
+      "type": "object",
+      "properties": {
+        "day_index": {
+          "$ref": "#/$defs/DayIndex"
+        },
+        "date": {
+          "$ref": "#/$defs/Date"
+        }
+      },
+      "required": [
+        "day_index",
+        "date"
+      ],
+      "additionalProperties": false
+    },
+    "Event": {
+      "type": "object",
+      "properties": {
+        "day_index": {
+          "$ref": "#/$defs/DayIndex"
+        },
+        "time": {
+          "$ref": "#/$defs/Time"
+        },
+        "timezone": {
+          "$ref": "#/$defs/Zone"
+        },
+        "utc_offset": {
+          "$ref": "#/$defs/Offset"
+        }
+      },
+      "required": [
+        "day_index",
+        "time",
+        "timezone",
+        "utc_offset"
+      ],
+      "additionalProperties": false
+    },
+    "Item": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "verification": {
+          "enum": [
+            "pending",
+            "verified"
+          ]
+        },
+        "evidence": {
+          "type": "array",
+          "maxItems": 40,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        },
+        "schedule": {
+          "type": "object",
+          "properties": {
+            "start": {
+              "$ref": "#/$defs/Event"
+            },
+            "end": {
+              "$ref": "#/$defs/Event"
+            }
+          },
+          "required": [
+            "start",
+            "end"
+          ],
+          "additionalProperties": false
+        },
+        "fixed": {
+          "$ref": "#/$defs/Fixed"
+        },
+        "source_category": {
+          "enum": [
+            "unknown",
+            "user_provided",
+            "queried",
+            "estimated"
+          ]
+        },
+        "source_refs": {
+          "type": "array",
+          "maxItems": 1,
+          "items": {
+            "$ref": "#/$defs/Id"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "text",
+        "verification",
+        "evidence",
+        "schedule",
+        "fixed",
+        "source_category",
+        "source_refs"
+      ],
+      "additionalProperties": false
+    },
+    "Source": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "kind": {
+          "enum": [
+            "message",
+            "place",
+            "route_estimate"
+          ]
+        },
+        "reference": {
+          "type": "string",
+          "minLength": 1
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "snapshot_utf8_base64": {
+          "type": "string",
+          "minLength": 4
+        },
+        "snapshot_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "evidence_level": {
+          "enum": [
+            "user_statement",
+            "synthetic",
+            "unverified_bytes"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "reference",
+        "text",
+        "snapshot_utf8_base64",
+        "snapshot_sha256",
+        "evidence_level"
+      ],
+      "additionalProperties": false
+    },
+    "Check": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "weather",
+            "day_opening"
+          ]
+        },
+        "state": {
+          "enum": [
+            "not_checked",
+            "unknown",
+            "clear",
+            "conflict"
+          ]
+        },
+        "day_indices": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/DayIndex"
+          }
+        },
+        "item_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Id"
+          }
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "evidence_refs": {
+          "type": "array",
+          "maxItems": 40,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        }
+      },
+      "required": [
+        "kind",
+        "state",
+        "day_indices",
+        "item_ids",
+        "reason",
+        "evidence_refs"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "type": "object",
+  "properties": {
+    "content_version": {
+      "const": "structured.3"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "calendar": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "const": "undated"
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "const": "dated"
+            },
+            "start_date": {
+              "$ref": "#/$defs/Date"
+            }
+          },
+          "required": [
+            "state",
+            "start_date"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "days": {
+      "type": "array",
+      "minItems": 1
+    },
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 60,
+      "items": {
+        "$ref": "#/$defs/Item"
+      }
+    },
+    "sources": {
+      "type": "array",
+      "maxItems": 40,
+      "items": {
+        "$ref": "#/$defs/Source"
+      }
+    },
+    "date_checks": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "$ref": "#/$defs/Check"
+      }
+    }
+  },
+  "required": [
+    "content_version",
+    "title",
+    "calendar",
+    "days",
+    "items",
+    "sources",
+    "date_checks"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "calendar": {
+            "properties": {
+              "state": {
+                "const": "undated"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "days": {
+            "items": {
+              "$ref": "#/$defs/UndatedDay"
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "days": {
+            "items": {
+              "$ref": "#/$defs/DatedDay"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

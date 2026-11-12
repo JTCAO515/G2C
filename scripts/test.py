@@ -87,6 +87,8 @@ def main():
     results.append(run('tooling/training F schema', ['-B', 'tooling/training/check_f_dataset.py', '-v']))
     results.append(run('ops/recovery-preflight', [*pytest, '.'], ROOT / 'ops/recovery-preflight'))
     results.append(run('contracts/api proposal', ['-B', '-m', 'unittest', 'contracts/api/check_trip_content_v2_schema_proposal.py']))
+    results.append(run('contracts/trip structured3', ['-B', 'contracts/trip/check_structured_v3.py']))
+    results.append(run('contracts/message calendar2', ['-B', 'contracts/message/check_trip_v2.py']))
     for script in CONTRACT_SCRIPTS:
         results.append(run(script, ['-B', script]))
     results.append(run('openapi', ['-m', 'openapi_spec_validator', 'contracts/api/openapi.json']))
