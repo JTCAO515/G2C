@@ -6,7 +6,9 @@ import pytest
 
 from cj_api.local_app import ISSUER
 from cj_api.runtime_undo import NativeUndo
-from cj_trip.domain import Trip,Denied
+from cj_trip.domain import Trip,Denied,Conflict
+from cj_trip.operation import OperationWithheld
+from runtime_adapter.contract import Unavailable
 from cj_trip.lio_history import TripHead
 from runtime_adapter.contract import decode,encode
 
@@ -46,4 +48,16 @@ def test_undo_queries_original_action_after_current_target_changes_and_never_rea
     assert len(proof['history']['history'])==2 and proof['history']['undo_target'] is not None
     assert decode(undo.proof(request,deadline=30))['committed'] and state['applied']==1
     state['current']=Trip('different-owned-trip',3,before.content)
-    with pytest.raises(Denied):undo.proof(request,deadline=30)
+    with pytest.raises(Unavailable,match='NATIVE_UNDO_ORIGINAL_UNAVAILABLE'):undo.proof(request,deadline=30)
+
+
+@pytest.mark.parametrize('error,code',[(OperationWithheld('original-action',True),'ACK_UNCERTAIN_QUERY_ONLY'),
+    (Denied(),'ORIGINAL_UNAVAILABLE'),(Conflict(),'ORIGINAL_UNAVAILABLE')])
+def test_native_trip_failures_are_projected_without_retry_or_private_bytes(error,code):
+    state=[]
+    def unavailable(token,project):
+        state.append(token)
+        raise error
+    control=NativeUndo(None,None,SimpleNamespace(with_operation=unavailable),lambda:'fixture-token')
+    with pytest.raises(Unavailable,match=code):control._with_trip(lambda context:b'private')
+    assert state==['fixture-token']

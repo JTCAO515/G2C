@@ -15,7 +15,6 @@ from cj_message.auth_boundary import Boundary
 from cj_message.travel import ABI
 from cj_trip import lio_history
 from cj_trip.domain import CommitUnknown,Denied
-from cj_trip.operation import OperationWithheld
 from runtime_adapter.contract import decode,encode,Unavailable
 import local_history_pg as harness
 import dev_auth
@@ -81,7 +80,7 @@ def exercise(root,conninfo):
         raise CommitUnknown('private native undo committed, response lost')
     with patch.object(lio_history,'_append_undo',side_effect=lose_ack) as writes:
         try:control.dispatch(request,deadline=time.monotonic()+30)
-        except OperationWithheld as error:assert error.commit_possible
+        except Unavailable as error:assert str(error)=='NATIVE_UNDO_ACK_UNCERTAIN_QUERY_ONLY'
         else:raise AssertionError('lost undo acknowledgement was hidden')
         assert writes.call_count==1
     proof=decode(control.proof(request,deadline=time.monotonic()+30))
