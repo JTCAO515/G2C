@@ -348,7 +348,7 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
         runtime_reflection=runtime_reflection,
         execution_guard=lambda binding: database.require_execution(binding.scope, binding, connection=execution_connection),
         needs_lease=needs_lease_for(database,checker,memory_credential if run_credential else token),
-        budget_exit=(LocalBudgetRouter(database) if tools_configuration is None else
+        budget_exit=(LocalBudgetRouter(database,exit_observer_for_run=runtime_exit_observer_for_run) if tools_configuration is None else
                      LocalBudgetRouter(database,registrations=tools_configuration.registrations,
                                        registrations_for_run=runtime_registrations_for_run,exit_observer_for_run=runtime_exit_observer_for_run)))
 

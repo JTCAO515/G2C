@@ -43,7 +43,7 @@ class NativeCancellation:
             # than releasing the worker to publish an unconfirmed late result.
             original=decode(self.originals.inventory(self.token_supplier(),mid))
             if original['status']=='cancelled':self.controls.release(mid)
-            raise
+            raise Unavailable('NATIVE_CANCEL_ACK_UNCERTAIN_QUERY_ONLY') from None
         if decode(result)['status']!='cancelled':raise Unavailable('ORIGINAL_CANCEL_NOT_CONFIRMED')
         self.controls.release(mid)
         return result
