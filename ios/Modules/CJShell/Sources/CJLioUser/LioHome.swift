@@ -145,6 +145,9 @@ public struct LioHome<MenuContent: View>: View {
         }
         .onChange(of: draft) { _, value in chatLibrary?.continuity?.draft = value }
         .onChange(of: tab) { _, _ in typing = false }
+        .onChange(of: scenePhase) { _, phase in
+            if phase != .active { typing = false }
+        }
         .task(id: Observation(active: canObserve, request: refreshRequest)) {
             if canObserve { await currentConversation.refreshTimeline() }
         }

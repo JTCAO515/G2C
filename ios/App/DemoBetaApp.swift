@@ -36,11 +36,7 @@ struct DemoBetaRootView: View {
                 DemoInviteView(shell: shell, accounts: root.accounts)
             }
         }
-        .overlay {
-            if phase == .inactive { LioTheme.paper.ignoresSafeArea() }
-        }
-        .accessibilityHidden(phase == .inactive)
-        .allowsHitTesting(phase != .inactive)
+        .lioScenePrivacy()
         .onChange(of: phase) { _, current in
             guard !root.finishingDemoCleanup else { return }
             root.accounts.sceneChanged(current)

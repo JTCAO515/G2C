@@ -7,6 +7,47 @@ import XCTest
     func testInvitationEnglish() throws { try exerciseInvitation("en") }
     func testInvitationChinese() throws { try exerciseInvitation("zh-Hans") }
 
+    func testInterruptionCoversPrivateRootAndPresentedSheet() throws {
+        continueAfterFailure = false
+        for appearance in ["light", "dark"] {
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "--lio-scene-privacy-acceptance", "-lio.ui.appearance.v1", appearance]
+            app.launch()
+            func verify(_ scope: String, expectedDraft: String) throws {
+                let text = app.staticTexts["privacy.\(scope).text"]
+                let field = app.textFields["privacy.\(scope).draft"]
+                let action = app.buttons["privacy.\(scope).action"]
+                XCTAssertTrue(text.waitForExistence(timeout: 10))
+                XCTAssertEqual(field.value as? String, expectedDraft)
+                let hit = action.frame
+                app.buttons["privacy.\(scope).interrupt"].tap()
+                XCTAssertFalse(text.exists)
+                XCTAssertFalse(field.exists)
+                XCTAssertFalse(action.exists)
+                XCTAssertFalse(app.navigationBars["Synthetic private \(scope) title"].exists)
+                XCTAssertFalse(app.staticTexts["privacy.root.text"].exists)
+                XCTAssertFalse(app.textFields["privacy.root.draft"].exists)
+                XCTAssertFalse(app.buttons["privacy.root.action"].exists)
+                app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: hit.midX, dy: hit.midY)).tap()
+                try app.performAccessibilityAudit(for: .all)
+                let image = XCTAttachment(screenshot: app.screenshot())
+                image.name = "scene-private-\(scope)-\(appearance)"
+                image.lifetime = .keepAlways
+                add(image)
+                app.buttons["lio.privacy.test.resume"].tap()
+                XCTAssertTrue(text.waitForExistence(timeout: 8))
+                XCTAssertEqual(app.staticTexts["privacy.\(scope).actions"].label, "0")
+                XCTAssertEqual(field.value as? String, expectedDraft)
+            }
+            try verify("root", expectedDraft: "Synthetic root draft")
+            app.buttons["privacy.open-sheet"].tap()
+            try verify("sheet", expectedDraft: "Synthetic sheet draft")
+            app.buttons["privacy.close-sheet"].tap()
+            XCTAssertTrue(app.staticTexts["privacy.root.text"].waitForExistence(timeout: 8))
+            app.terminate()
+        }
+    }
+
     func testSessionRecoveryKeepsExplicitActionsInBothLanguagesAndAppearances() throws {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
@@ -224,7 +265,7 @@ import XCTest
         let oldReply = app.staticTexts["An earlier reply."]
         let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
         XCTAssertTrue(oldReply.waitForExistence(timeout: 8))
-        XCTAssertTrue(app.staticTexts["lio.opening"].exists)
+        XCTAssertFalse(app.staticTexts["lio.opening"].exists)
         menu.tap()
         let newChat = app.buttons["lio.chat.new"]
         XCTAssertEqual(newChat.label, chinese ? "新对话" : "New chat")
