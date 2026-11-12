@@ -330,6 +330,7 @@ class RealTools:
             'model.lio_intake.5':Registration('model',self._lio_intake_start_input),
             'model.lio_intake.6':Registration('model',self._lio_intake_flat_input),
             'model.lio_intake.7':Registration('model',self._lio_intake_facts_input),
+            'model.lio_intake.8':Registration('model',self._lio_intake_request_input),
             'tool.lio_city.1':Registration('tool',self._city_input),
             'memory.lio_extract.1':Registration('memory',self._lio_memory_input),
             **{'tool.'+name:Registration('tool',lambda argument,name=name:self._tool_input(name,argument)) for name in {NATIVE_REGISTRATION[n] for n in allowed_native}}})
@@ -400,10 +401,17 @@ class RealTools:
     def _lio_memory_input(self, argument):
         return self._model_input(argument, release_after_send=True)
 
+    def _lio_intake_request_input(self,argument):
+        return self._model_input(argument,national_intake=True,intake_profile='LIO-planning-intake.8')
+
     def _model_input(self,argument,*,release_after_send=False,national_intake=False,intake_profile='LIO-planning-intake.1'):
         native_turn = type(argument) is ModelInput
-        indexed=intake_profile in ('LIO-planning-intake.3','LIO-planning-intake.4','LIO-planning-intake.5','LIO-planning-intake.6','LIO-planning-intake.7')
-        if indexed:
+        indexed=intake_profile in ('LIO-planning-intake.3','LIO-planning-intake.4','LIO-planning-intake.5','LIO-planning-intake.6','LIO-planning-intake.7','LIO-planning-intake.8')
+        required_intent=None
+        if intake_profile=='LIO-planning-intake.8':
+            messages,system,provider,source_index,required_intent=argument
+            native_reply=None;final_answer=False;turn_profile=M4_NATIVE_TURN_PROFILE_V2
+        elif indexed:
             messages,system,provider,source_index=argument
             native_reply=None;final_answer=False;turn_profile=M4_NATIVE_TURN_PROFILE_V2
         elif native_turn:
@@ -425,14 +433,19 @@ class RealTools:
         from cj_agent.lio_intake_facts_schema import response_format_sha256 as facts_sha256
         indexed_sha=(facts_sha256 if intake_profile=='LIO-planning-intake.7' else flat_sha256 if intake_profile=='LIO-planning-intake.6' else start_sha256 if intake_profile=='LIO-planning-intake.5' else
                      modes_sha256 if intake_profile=='LIO-planning-intake.4' else response_format_sha256)
+        if intake_profile=='LIO-planning-intake.8':
+            from cj_agent.lio_intake_request_schema import response_format_sha256 as request_sha256
+            schema_sha=request_sha256(source_index,required_intent)
+        elif indexed:schema_sha=indexed_sha(source_index)
         raw=canonical(dict(messages=messages,system=system,endpoint=M4_BASE,model=M4_MODEL,synthetic_only=True,
                            native_tools=(self.national_tools if argument.national else self.native_tools) if native_turn else None,
                            **({'response_mode':'lio-memory-json.1'} if release_after_send else {}),
                            **({'structured_profile':intake_profile} if national_intake else {}),
                            **({'response_format_sha256':SCHEMA_SHA256} if national_intake and intake_profile=='LIO-planning-intake.2' else {}),
                            **({'current_source_index':source_index,'response_format_sha256':
-                               indexed_sha(source_index)}
+                               schema_sha}
                               if indexed else {}),
+                           **({'required_intent':required_intent}if intake_profile=='LIO-planning-intake.8'else{}),
                            **({'answer_format_profile':'lio-user.1'} if native_turn and argument.lio_answer else {}),
                            **({'native_turn_profile':turn_profile,'external_tools_disabled':final_answer} if native_turn else {})))
         inputs=json.loads(raw);metadata={}
@@ -456,7 +469,8 @@ class RealTools:
                         release_after_send=inputs.get('response_mode')=='lio-memory-json.1',
                         lio_answer=inputs.get('answer_format_profile')=='lio-user.1',
                         **({'structured_profile':inputs['structured_profile']} if 'structured_profile' in inputs else {}),
-                        **({'intake_source_index':inputs['current_source_index']} if 'current_source_index' in inputs else {}))
+                        **({'intake_source_index':inputs['current_source_index']} if 'current_source_index' in inputs else {}),
+                        **({'intake_required_intent':inputs['required_intent']}if 'required_intent'in inputs else{}))
                     if national_intake and self.tool_evidence is not None and self.tool_evidence.intake_enabled:
                         result=''.join(stream)
                         if checked() is not True:raise BudgetUnknown('original intake evidence authority changed')

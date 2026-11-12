@@ -718,6 +718,28 @@ class Boundaries(unittest.TestCase):
         self.assertEqual(len(self.sent),1)
         self.assertEqual(self.budget.inspect()[0]['state'],'RECEIVED')
 
+    def test_request_bound_profile_keeps_constraints_in_one_original_wire(self):
+        from cj_agent.lio_intake_request_schema import PROFILE,response_format,response_format_sha256
+        from cj_api.local_app import ISSUER,scope_for
+        from cj_api.local_lio_national import intake_prompt
+        for mode in (None,'plan'):
+            with self.subTest(mode=mode):
+                provider=self.provider(sse().replace('chatcmpl-synthetic','chatcmpl-request-'+str(mode)));subjects=frozenset({'m4-synthetic-intake-request'})
+                tools=RealTools(RealServices(provider,KEY,subjects,demo_subjects=subjects,national_subjects=subjects))
+                prepared=tools.registrations['model.lio_intake.8'].prepare_input((
+                    [dict(role='user',content='Stored memory data: '+'m'*1000),dict(role='user',content='x'*12000)],
+                    intake_prompt('en',(SimpleNamespace(text='x'*12000,question_day=date(2026,11,12)),)),provider,0,mode))
+                inputs=json.loads(prepared.original_bytes);self.assertEqual(inputs['structured_profile'],PROFILE)
+                self.assertEqual(inputs['required_intent'],mode)
+                self.assertEqual(inputs['response_format_sha256'],response_format_sha256(0,mode))
+                operation=SimpleNamespace(binding=SimpleNamespace(scope=scope_for(ISSUER,next(iter(subjects)))),
+                    command=SimpleNamespace(attempt_id='request-intake-'+str(mode)))
+                before=len(self.sent);self.assertTrue(''.join(prepared.bind_operation(operation,lambda:True)()))
+                self.assertEqual(len(self.sent),before+1)
+                wire=json.loads(self.sent[-1].content);self.assertEqual(wire['response_format'],response_format(0,mode))
+                self.assertNotIn('required_intent',wire);self.assertLessEqual(len(self.sent[-1].content),32768)
+                self.assertTrue(all(row['state']=='RECEIVED'for row in self.budget.inspect()))
+
     def test_national_tools_bind_actual_city_and_leave_the_legacy_query_unchanged(self):
         from cj_api.lio_city import CityReference
         from cj_api.lio_weather import decode_query as city_weather_query

@@ -54,7 +54,7 @@ class NationalExecution(unittest.TestCase):
         class Worker:
             memory_run=None;message_context=None;provider=object();lio_city_context=None;lio_memory=None
             def _registered_stream(self,binding,key,registration,argument,**kwargs):
-                assert registration=='model.lio_intake.7' and argument[3]==len(turns)-1
+                assert registration=='model.lio_intake.8' and argument[3]==len(turns)-1
                 yield json.dumps(wire,ensure_ascii=False)
             def _event(self,binding,state,kind,value='',**kwargs):
                 events.append((kind,value));return SimpleNamespace(sequence=state.sequence+1)
@@ -252,6 +252,22 @@ class NationalExecution(unittest.TestCase):
         self.assertEqual(published,[])
         self.assertFalse(any(kind=='registered'for kind,_ in events))
         self.assertTrue(any('哪一项确实已经预约' in text and '尚未保存' in text for kind,text in events if kind=='text_delta'))
+
+    def test_original_bare_trip_request_cannot_fall_through_to_tool_advice(self):
+        from cj_agent.provider import ProviderUnknown
+        text='去成都玩三天'
+        value=self.envelope(text,city='成都',start=None,party=None);value['duration_days']=3
+        value['field_sources']={'duration_days':[dict(source_index=0,quote=text)]}
+        for intent,tools in (('consult',True),('discuss',False),('plan',True)):
+            bad=json.loads(json.dumps(value));bad.update(intent=intent,needs_tools=tools,
+                reply='请问大概什么时候出发？还有几个人一起去呢？')
+            with self.subTest(intent=intent,tools=tools),patch.object(NationalLioPlanning,'_previous_city')as downstream:
+                with self.assertRaises(ProviderUnknown):self.run_intake(bad)
+                downstream.assert_not_called()
+        published,events,_,result=self.run_intake(value)
+        self.assertEqual(published,[]);self.assertIsNotNone(result)
+        self.assertFalse(any(kind=='registered'for kind,_ in events))
+        self.assertTrue(any('哪天开始' in message for kind,message in events if kind=='text_delta'))
 
     def test_bad_booking_reference_is_unknown_before_city_or_execution(self):
         from cj_agent.provider import ProviderUnknown
