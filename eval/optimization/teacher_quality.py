@@ -147,6 +147,7 @@ def finish(checks, manifest_hash, pins, mode=None, counts=None, selection=None, 
             usage="public_fake_interface_control_only",
             release_eligibility=eligibility,
             training_allowed=False,
+            training_samples=[],
             real_teacher_admission="UNRUN",
             C_domain_review="UNRUN",
             R_dataset_review="UNRUN",
@@ -569,6 +570,14 @@ def audit(bundle, source_root, expected_manifest_hash):
             )
             query = decode_query(raw_query)
             require(kind == "place" and type(query) is Search, "unsupported_actual_codec")
+            required = {"query_started_at", "received_at", "binding_digest", "request_ref", "profile"}
+            if not required <= event.keys() or any(event[k] is None for k in required):
+                raise MissingEvidence("supplier_provenance_missing")
+            require(all(type(event[k]) is str for k in required), "invalid_supplier_provenance")
+            require(
+                event["profile"] == "basic-v3-default-zh" and event["response_state"] == "present",
+                "unsupported_supplier_profile_or_state",
+            )
             at = datetime.fromisoformat(event["query_started_at"])
             received = datetime.fromisoformat(event["received_at"])
             config = Config(ORIGIN, 8192, 65536, 20, 60)
@@ -715,10 +724,8 @@ def audit(bundle, source_root, expected_manifest_hash):
                 "wrong_model_visible_input",
             )
             if event["response_base64"] is None:
-                require(
-                    event["state"] in ("unknown", "failed"),
-                    "received_model_bytes_missing",
-                )
+                if event["state"] == "received":
+                    raise MissingEvidence("model_response_bytes_missing")
                 continue
             raw = base64.b64decode(event["response_base64"], validate=True)
             try:
@@ -906,7 +913,6 @@ def audit(bundle, source_root, expected_manifest_hash):
         )
         for task in tasks
     ]
-    report["g_handoff"]["training_samples"] = []
     return report
 
 

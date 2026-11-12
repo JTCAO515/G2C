@@ -99,10 +99,9 @@ raise SystemExit(main(sys.argv[2:]))"""
         )
         self.assertIn(result.returncode, (0, 2), result.stderr.decode())
         self.assertTrue((self.folder / (name + ".json")).exists(), result.stderr.decode())
-        return (
-            json.loads((self.folder / (name + ".json")).read_bytes()),
-            result.returncode,
-        )
+        report = json.loads((self.folder / (name + ".json")).read_bytes())
+        self.assertEqual(report["g_handoff"]["training_samples"], [])
+        return report, result.returncode
 
     def mutated(self, mutator):
         bundle = self.folder / "bundle"
@@ -227,6 +226,33 @@ raise SystemExit(main(sys.argv[2:]))"""
 
         r, _ = self.run_checker(self.mutated(change))
         self.assertTrue(any(x["reason"] == "request_denominator_mismatch" for x in r["checks"]))
+
+    def test_missing_received_provenance_and_null_result_produce_structured_rejection(self):
+        for label, change in [
+            (
+                "missing_time",
+                lambda b: self.edit_jsonl(b, "tools.jsonl", lambda rows: rows[0].pop("query_started_at")),
+            ),
+            (
+                "null_result",
+                lambda b: self.edit_jsonl(
+                    b,
+                    "candidates.jsonl",
+                    lambda rows: next(
+                        r for r in rows if r["executions"] and r["executions"][0]["status"] == "received"
+                    )["executions"][0]["result"].update(value=None),
+                ),
+            ),
+        ]:
+            with self.subTest(label=label):
+                bundle = self.mutated(change)
+                r, code = self.run_checker(bundle, label)
+                self.assertEqual(code, 2)
+                self.assertFalse(r["training_allowed"])
+                self.assertTrue(
+                    any(x["reason"] in ("supplier_provenance_missing", "schema_invalid") for x in r["checks"])
+                )
+                shutil.rmtree(bundle)
 
     def test_no_results_truthful_completion_and_fabricated_hit_are_distinct(self):
         def change(bundle):
