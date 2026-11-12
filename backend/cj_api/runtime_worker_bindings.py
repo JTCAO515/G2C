@@ -201,6 +201,10 @@ class RuntimeWorkerBindings:
             from .runtime_controlled_generation import ControlledGeneration
             from .runtime_cancel import NativeCancellation
             controls=ControlledGeneration(clock=self.clock);session['controls']=controls
+            from .runtime_weather_fault import NativeWeatherFault
+            weather_fault=NativeWeatherFault(claims,session['routing'],self.database,self.services.model.authorization,
+                evidence.directory,self.pins,token)
+            session['routing'].registry_transformer=weather_fault.wrap
             cancellation=NativeCancellation(claims,boundary,self.database,token,controls,originals)
             def wait(receipt,deadline,reader=originals,supplier=token):
                 while self.clock()<deadline:
@@ -219,7 +223,7 @@ class RuntimeWorkerBindings:
                 memory_setup=NativeMemorySetup(claims,boundary,self.database,token,configuration,candidates,memory_cards,wait)
             dialogue=NativeDialogue(claims,boundary,self.database,token,wait,
                 dataset_path=self.public_root/'eval/optimization/cases.v2.json',
-                trip_boundary=self._trip_boundary(session),cancellation=cancellation,memory_setup=memory_setup)
+                trip_boundary=self._trip_boundary(session),cancellation=cancellation,memory_setup=memory_setup,weather_fault=weather_fault)
             collector=RuntimeCollector(originals,claims,session['routing'],token,self.pins,session['references_directory'],
                 guard=guard,state_reader=self._state_reader(session),model_reader=RuntimeModel(originals,self.services.model,
                     native_turn_profile=M4_NATIVE_TURN_BUFFERED),dialogue=dialogue,clock=self.clock)

@@ -168,6 +168,13 @@ class RuntimeCollector:
         try:state_evidence=[self._ref(token,'state',mid)]
         except (Unavailable,Invalid,OSError):
             status='UNKNOWN';state_evidence=[]
+        for entry in inventory['operations']:
+            if entry['registration_id']=='tool.weather':
+                try:
+                    record=decode(self.originals.artifact(token,mid,entry['operation_id']))
+                    if record['version']=='G2C-runtime-weather-fault.1':
+                        state_evidence.append(self._ref(token,'artifact',mid,entry['operation_id']))
+                except (Unavailable,Invalid,OSError):pass
         return encode(dict(**association,status=status,inventory=self._ref(token,'protected_inventory',mid),
             result=result,state_evidence=state_evidence))
 

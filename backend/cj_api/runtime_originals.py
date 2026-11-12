@@ -98,20 +98,24 @@ class RuntimeOriginals:
     def input(self,token,message_id,operation_id):
         return self._read(token,message_id,lambda scope,original,source:self._operation(scope,source,operation_id)[1].input_bytes)
 
+    def _meter(self,scope,source,row,usage):
+        period=source[3]
+        if period is None:raise Unavailable('ORIGINAL_PERIOD_UNAVAILABLE')
+        profiles=[p for p in self.database.run_context.profiles if
+            (ledger_scope_for(scope,p.meter),p.meter.unit,p.meter.period_start,p.meter.period_end)==tuple(period)]
+        if len(profiles)!=1 or row[5]!=period[0]:raise Unavailable('ORIGINAL_PERIOD_NOT_RETAINED')
+        with self.database.connect(scope,usage_profile=profiles[0]) as db:
+            db.execute('SET TRANSACTION READ ONLY')
+            stored=db.execute('SELECT ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(row[5],)).fetchone()
+        if stored is None:raise Unavailable('ORIGINAL_METER_UNAVAILABLE')
+        attempt=decode(stored[0]).attempts.get(usage.command.attempt_id)
+        if attempt is None:raise Unavailable('ORIGINAL_METER_ATTEMPT_UNAVAILABLE')
+        return canonical(asdict(attempt))
+
     def meter(self,token,message_id,operation_id):
         def project(scope,original,source):
-            row,usage=self._operation(scope,source,operation_id,allow_erased=True);period=source[3]
-            if period is None:raise Unavailable('ORIGINAL_PERIOD_UNAVAILABLE')
-            profiles=[p for p in self.database.run_context.profiles if
-                (ledger_scope_for(scope,p.meter),p.meter.unit,p.meter.period_start,p.meter.period_end)==tuple(period)]
-            if len(profiles)!=1 or row[5]!=period[0]:raise Unavailable('ORIGINAL_PERIOD_NOT_RETAINED')
-            with self.database.connect(scope,usage_profile=profiles[0]) as db:
-                db.execute('SET TRANSACTION READ ONLY')
-                stored=db.execute('SELECT ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(row[5],)).fetchone()
-            if stored is None:raise Unavailable('ORIGINAL_METER_UNAVAILABLE')
-            attempt=decode(stored[0]).attempts.get(usage.command.attempt_id)
-            if attempt is None:raise Unavailable('ORIGINAL_METER_ATTEMPT_UNAVAILABLE')
-            return canonical(asdict(attempt))
+            row,usage=self._operation(scope,source,operation_id,allow_erased=True)
+            return self._meter(scope,source,row,usage)
         return self._read(token,message_id,project)
 
     def fee(self,token,message_id,operation_id):
@@ -125,6 +129,14 @@ class RuntimeOriginals:
     def artifact(self,token,message_id,operation_id,*,wire_input=False):
         def project(scope,original,source):
             row,usage=self._operation(scope,source,operation_id)
+            try:fee=self._financial(usage.command.attempt_id)
+            except Unavailable as error:
+                if str(error)!='ORIGINAL_FINANCIAL_ATTEMPT_UNAVAILABLE' or wire_input or usage.command.kind!='tool':raise
+                # A separately versioned fixture is not a missing vendor
+                # receipt fallback: it must prove NOT_SENT and bind the real
+                # settled Meter receipt before any original bytes are returned.
+                from .runtime_weather_fault import read_artifact
+                return read_artifact(self,scope,original,source,row,usage)
             parts=[scope,original.receipt.run_id,row[0],usage.command.attempt_id]
             if wire_input:parts.append('model_wire_input')
             name=sha256(canonical(parts)).hexdigest()+'.json'
@@ -155,7 +167,6 @@ class RuntimeOriginals:
                     'ORIGINAL_ARTIFACT_KIND_CHANGED')
             if (data['message_id'],data['run_id'],data['attempt_id'],data['operation_id'],data['registration_id'])!=(message_id,original.receipt.run_id,row[3],row[4],row[1]) or data['scope_sha256']!=sha256(scope.encode()).hexdigest():
                 raise Unavailable('ORIGINAL_ARTIFACT_BINDING_CHANGED')
-            fee=self._financial(usage.command.attempt_id)
             if wire_input:
                 if (data['logical_input_sha256']!=usage.command.input_digest or
                         sha256(data['wire_input_utf8'].encode()).hexdigest()!=data['wire_input_sha256'] or

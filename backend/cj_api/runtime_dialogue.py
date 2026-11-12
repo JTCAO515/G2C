@@ -13,7 +13,7 @@ from .runtime_message_input import lio_input
 
 class NativeDialogue:
     supported_tasks=frozenset({'dev-airport','dev-required-date','dev-change-mind','dev-local-edit','val-confirm-save'})
-    def __init__(self,claims,boundary,database,token_supplier,wait_original,*,dataset_path,trip_boundary=None,cancellation=None,memory_setup=None):
+    def __init__(self,claims,boundary,database,token_supplier,wait_original,*,dataset_path,trip_boundary=None,cancellation=None,memory_setup=None,weather_fault=None):
         self.claims,self.boundary,self.database=claims,boundary,database
         self.token_supplier,self.wait_original=token_supplier,wait_original
         raw=Path(dataset_path).read_bytes()
@@ -28,6 +28,8 @@ class NativeDialogue:
             from .runtime_undo import NativeUndo
             self.undo=NativeUndo(claims,boundary,trip_boundary,token_supplier)
             self.supported_tasks=self.supported_tasks|{'val-undo'}
+        self.weather_fault=weather_fault
+        if weather_fault is not None:self.supported_tasks=self.supported_tasks|{'dev-tool-failure'}
         self.memory_setup=memory_setup
         if memory_setup is not None:self.supported_tasks=self.supported_tasks|{'val-deleted-recall'}
         self.cancellation=cancellation
