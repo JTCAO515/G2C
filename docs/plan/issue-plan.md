@@ -199,6 +199,20 @@ JT 决定：Lio 用户版（[#495/6736601057](https://github.com/JTCAO515/G2C/is
 - 验收：#702 陌生人测试（JT 本人，之后一位朋友）；#32 在 Lio 后端上重新评测；#33 约 5 位朋友的外部 TestFlight 测试，开始前须 #225 定案、#714 同意界面、Apple Beta 审核与 JT 批准。#705 定位读取随 #225 结论决定。
 - 工作方式：非红线 PR 自检 + exact CI；红线 PR 每线合成一个并独立审查；每线每天在 #702 写一行进度；阻塞时核一次即交接；只在 goal 结束时写一次 handoff。
 
+### Lio 回答体系与事实库（JT 2026-11-12，插入 M4 剩余队列）
+
+规格见 [Lio 回答体系规划](../lio-voice.md)，总票 [#840](https://github.com/JTCAO515/G2C/issues/840)（Claude）。A/B/C 文件归属和锁规则不变；新开 D 线，占 8 条开发线中的 1 条。
+
+| 线 | 队列 | 拥有的文件 | 依赖 |
+|---|---|---|---|
+| A App | [#839](https://github.com/JTCAO515/G2C/issues/839) 开场文案（A 部分） | 不变 | #839 第 3 框等 B 部分合并 |
+| B 后端与平台 | PR836 → #839（B 部分）→ [#842](https://github.com/JTCAO515/G2C/issues/842) 人设重写与红线过滤 → [#845](https://github.com/JTCAO515/G2C/issues/845) 行程上下文注入 → [#847](https://github.com/JTCAO515/G2C/issues/847) 事实库接入 | 不变 | #847 等 #843 |
+| C 质量 | [#844](https://github.com/JTCAO515/G2C/issues/844) 回答体验集、代码检查与新旧对比，插在 C 现有队列中不受阻塞的空档 | 不变 | 第 4 框等 #842；真实调用按现有授权，无授权转 → L2 #32 |
+| D 事实库 | 父票 [#841](https://github.com/JTCAO515/G2C/issues/841)：[#843](https://github.com/JTCAO515/G2C/issues/843) 来源清单、条目格式与契约评估 → [#846](https://github.com/JTCAO515/G2C/issues/846) 首批条目 | `knowledge/visitor/**`（JT 2026-11-12 指定） | #846 等 JT 在 #843 确认来源清单 |
+
+- D 线只浏览官方公开网页，来源清单经 JT 确认后才收集；不调用付费接口、不建云资源、不新增凭据。D 不改 `backend/**` 与 `contracts/**`；若需新 FACT 版本，由 B 在 #847 按共享锁与红线流程处理。
+- 每周回答复盘（规格第 10 节）由 Claude 预标、JT 审阅；读取外部测试者对话须等 #225 定案和 #714 同意界面。
+
 ### M4 并行线（2026-11-04）
 
 本节替代 M3 并行线的队列，文件归属和锁规则不变。三条线均为新会话。
