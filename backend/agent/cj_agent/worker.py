@@ -218,7 +218,7 @@ class RunWorker:
                     if draft and state.draft_outcome is not None:
                         raise Conflict('draft result already recorded before invocation')
                     check_needs=None
-                    if draft and effect is not None and (self.drafts.content_version=='structured.2' or self.place_sources is not None):
+                    if draft and effect is not None and (self.drafts.content_version in ('structured.2','structured.3') or self.place_sources is not None):
                         check_needs=leases.enter_context(self.drafts.hold_for_publication(binding))
                         check_needs()
                     elif draft and self.needs_lease is not None:
@@ -343,7 +343,7 @@ class RunWorker:
             if self._lio_active and self.lio_planning is not None:
                 messages,planning_refs=self.lio_planning.answer_context(binding,messages)
             sources=None
-            structured=self.drafts.content_version=='structured.2' or self.place_sources is not None
+            structured=self.drafts.content_version in ('structured.2','structured.3') or self.place_sources is not None
             if structured:
                 if self.message_context is None:raise DraftRejected('canonical original message context required')
                 _,sources=self._step(binding,lambda:self.drafts.sources_for(binding),draft=True)

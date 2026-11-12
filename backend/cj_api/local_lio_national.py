@@ -45,7 +45,7 @@ def publication_held(text):
 
 def intake_prompt(locale,turns,*,scene=None):
     dates=', '.join(turn.question_day.isoformat() for turn in turns)
-    system=answer_prompt(locale,turns[-1].text)+' '+CURRENT_SYSTEM+' Original traveler messages have source indices 0 through '+str(len(turns)-1)+'. Stored memory data is not an indexed traveler message. Original local China days in that order: '+dates
+    system=answer_prompt(locale)+' '+CURRENT_SYSTEM+' Original traveler messages have source indices 0 through '+str(len(turns)-1)+'. Stored memory data is not an indexed traveler message. Original local China days in that order: '+dates
     return system if scene is None else system+'\n'+scene
 
 
@@ -135,7 +135,7 @@ class NationalLioPlanning:
         boundary_mid=None if previous is None else previous.get('date_boundary_message_id')
         barrier_mid=None if previous is None else previous.get('authority_barrier_message_id')
         excluded=[]if previous is None else [mid for mid in previous.get('nonplanning_message_ids',[])if mid in source_ids]
-        if intake.planning_request_index is None and not question_fields:excluded.append(binding.message_id)
+        if intake.planning_request_index is None:excluded.append(binding.message_id)
         resolved_mid=None if previous is None else previous.get('resolved_city_source_message_id')
         if resolved_mid is None and previous is not None and previous.get('city',{}).get('status')=='resolved':
             sources=previous.get('facts',{}).get('city',{}).get('sources',[])
@@ -157,12 +157,10 @@ class NationalLioPlanning:
         # Facts choose the planning flow; advisory intent/needs_tools cannot
         # discard a clarification and send an incomplete plan to native tools.
         planning=authority!='none'and intake.planning_request_index is not None
-        planning_question=(intake.city is not None and intake.duration_days is not None and
-                           bool(set(question_fields)&{'start_date','party_size'}))
-        if intake.publication_hold or publication_held(text) or not planning and not planning_question and intake.intent=='discuss':
+        if intake.publication_hold or publication_held(text) or not planning and intake.intent=='discuss':
             state=context(worker,binding,state,dict(authority='none',status='discussion'))
             return self._reply(worker,binding,state,intake.reply)
-        if (planning or planning_question)and not booking_unclear:
+        if planning and not booking_unclear:
             missing=[]
             if intake.city is None:missing.append('city')
             if intake.duration_days is None:
@@ -175,7 +173,7 @@ class NationalLioPlanning:
                     **({'city':previous['city']}if previous is not None and previous.get('city')is not None else {})))
                 return self._clarify(worker,binding,state,original.locale,intake.reply,question_fields,missing[:1],
                     arrival=intake.extraction['fields'].get('arrival',{}).get('date'))
-        if not planning and not planning_question and not (intake.intent=='consult'and intake.needs_tools):
+        if not planning and not (intake.intent=='consult'and intake.needs_tools):
             state=context(worker,binding,state,previous if authority!='none'else dict(authority='none',status='consult'))
             return self._reply(worker,binding,state,intake.reply,collect_memory=intake.intent=='consult')
         if intake.city is None:
@@ -220,10 +218,10 @@ class NationalLioPlanning:
         city=CityReference(**resolution['candidates'][0]);worker.lio_city_context=city
         from .lio_weather import CITY_EFFECT
         state=worker._event(binding,state,'effect_committed',CITY_EFFECT+json.dumps(asdict(city),ensure_ascii=False,separators=(',',':')))
-        if not planning and not planning_question and intake.intent=='consult':
+        if not planning and intake.intent=='consult':
             context(worker,binding,state,previous if authority!='none'else dict(authority='none',status='consult'))
             return None
-        if not planning and not planning_question and intake.intent=='discuss':
+        if not planning and intake.intent=='discuss':
             state=context(worker,binding,state,dict(authority='none',status='discussion',city=resolution))
             return self._reply(worker,binding,state,intake.reply)
         authority=self._authority(intake,previous,current_index=len(turns)-1,turns=turns,source_ids=source_ids)
