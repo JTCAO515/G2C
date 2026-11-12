@@ -392,8 +392,8 @@ public struct LioHome<MenuContent: View>: View {
 
     private var openingMessage: some View {
         lioReply {
-            replyText(Text(language.text("Hi, I’m Lio, your personal travel agent. How can I help?",
-                                         "你好，我是 Lio，你的个人旅行助手。有什么可以帮你？")))
+            replyText(Text(language.text("Hi, I'm Lio. Tell me the city, how many days you have and what you enjoy, and I'll plan where to go and how to get around each day. Where are you headed?",
+                                         "你好，我是 Lio。告诉我城市、天数和喜好，我帮你排好每天去哪、怎么走。这次想去哪儿？")))
                 .accessibilityIdentifier("lio.opening")
         }
     }
