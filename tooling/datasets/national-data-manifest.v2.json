@@ -1,0 +1,32 @@
+{
+  "artifacts": {
+    "national-catalog.v2.json": {
+      "bytes": 61094,
+      "sha256": "ee0767aa2ef9ffb26b43b86babfae97fe4e3f82aa2da4dd771a0269733ff27ee"
+    },
+    "national-coverage.v2.json": {
+      "bytes": 2693,
+      "sha256": "f05f91aaf04fe390f3e530bab103bd239caa43603ca57b7bd98bf4bd14ce229c"
+    },
+    "national-handoff.v2.json": {
+      "bytes": 17229,
+      "sha256": "b005bcd01cf09032ea9b482e23afefb8e39a97e2f2cf3b4cc14df47f469089f4"
+    },
+    "national-report.v2.json": {
+      "bytes": 1959,
+      "sha256": "bb0feb54de23dd73db16c38f26c26bcb2bb29b10474c9c85543b69b0488c6798"
+    },
+    "national-seeds.v2.jsonl": {
+      "bytes": 270578,
+      "sha256": "f6a1ed8c57e09d2acf58aa9d968cdb151bf23595deb2fe39d8572e9b7c5cfa29"
+    }
+  },
+  "data_version": "G2C-national-synthetic.2",
+  "formal_teacher_quality": "UNKNOWN",
+  "formal_teacher_release": "UNRUN",
+  "record_schema": "G2C-dataset.1",
+  "reference_legacy_version": "F789-fake.1",
+  "scope": "public_synthetic_engineering_dataset",
+  "training": "UNRUN",
+  "version": "G2C-national-data-manifest.2"
+}

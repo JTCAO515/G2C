@@ -1,0 +1,35 @@
+{
+  "version": "G2C-teacher-quality-rules.1",
+  "score_version": "G2C-teacher-quality.1",
+  "input_contract": "G2C-teacher-quality-input.1",
+  "seed": "D788-complete-family.1",
+  "automatic_fraction": 1,
+  "pilot_max_families": 10,
+  "pilot_fraction": 1,
+  "expansion_minimum_fraction": 0.2,
+  "stratification": [
+    "language",
+    "scenario"
+  ],
+  "sampling_unit": "connected_complete_family",
+  "known_no_results_replies": {
+    "zh": "没有匹配结果。",
+    "en": "There are no matching results."
+  },
+  "release": {
+    "fake": "fake_only_not_released",
+    "failure": "rejected",
+    "unknown": "blocked_unknown",
+    "training_allowed": false,
+    "real_teacher_supported": false,
+    "requires_future_real_release": [
+      "reviewed_teacher_admission",
+      "all_automatic_checks_PASS",
+      "D_complete_family_review_PASS",
+      "C_domain_review_PASS",
+      "R_dataset_review_PASS",
+      "same_manifest_and_report_hashes",
+      "separate_G_training_authorization"
+    ]
+  }
+}

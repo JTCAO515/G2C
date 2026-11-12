@@ -2,6 +2,7 @@
 from cj_strict_json import compact
 from dataclasses import dataclass
 import json
+import os
 from types import MappingProxyType
 from typing import Literal
 from psycopg import Error as DatabaseError
@@ -100,7 +101,11 @@ class RegisteredExit(MeteredExitCore):
             if available<1:raise BudgetExceeded(stage)
             output_limit=min(output_limit,available)
         try:
-            operation=OperationStore(runs,self.config).create(binding,operation_key,registration_id,
+            from .authorization_budget import HK_PRODUCER
+            from .sublimits import operation_id
+            extra=({'new_id':lambda:operation_id(binding.scope)}
+                   if os.environ.get('CJ_M4_BUDGET_PRODUCER')==HK_PRODUCER else {})
+            operation=OperationStore(runs,self.config,**extra).create(binding,operation_key,registration_id,
                 registration.kind,prepared_input.original_bytes,output_limit)
         except (OriginalStepOnly,RunCommitUnknown,DatabaseError,ValueError):
             raise BudgetUnknown('original operation preparation unavailable') from None
