@@ -15,7 +15,7 @@ from runtime_adapter.contract import decode,digest,Invalid,Unavailable
 from .runtime_message_input import REFLECTION_MESSAGE,lio_input
 
 
-MESSAGE_KINDS=frozenset({'message','new_conversation_message','start_controlled_generation','reflection'})
+MESSAGE_KINDS=frozenset({'task_setup','message','new_conversation_message','start_controlled_generation','reflection'})
 
 
 class RunRequests:
@@ -34,11 +34,16 @@ class RunRequests:
         request=decode(raw)
         if request['kind'] not in MESSAGE_KINDS:
             raise Unavailable('RUNTIME_ORIGINAL_ACTION_HAS_NO_MESSAGE')
-        text=REFLECTION_MESSAGE if request['kind']=='reflection' else request['payload']['text']
+        if request['kind']=='task_setup':
+            if self.claims.history_profile!='lio.2':raise Unavailable('RUNTIME_PREPARATION_REQUIRES_LIO_SOURCE')
+            text=decode(lio_input(binding.scope,request))['text']
+        else:text=REFLECTION_MESSAGE if request['kind']=='reflection' else request['payload']['text']
         expected_digest=None
         if self.claims.history_profile=='lio.2':
             language=None
-            if request['kind']!='reflection':
+            if request['kind']=='task_setup':
+                language=request['payload']['language']
+            elif request['kind']!='reflection':
                 if not request['prior_step_ids']:raise Unavailable('RUNTIME_ORIGINAL_SETUP_UNAVAILABLE')
                 setup=decode(self.claims.read(request['prior_step_ids'][0],deadline=self.clock()+30))
                 if setup['kind']!='task_setup':raise Unavailable('RUNTIME_ORIGINAL_SETUP_UNAVAILABLE')
