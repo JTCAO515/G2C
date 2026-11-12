@@ -39,7 +39,7 @@ class SavedItineraryScene(unittest.TestCase):
         self.assertIn('indices 0 through 0',result)
         self.assertIn('2026-11-12\n',result)
         self.assertTrue(result.endswith(scene))
-        self.assertIn('not treat it as an indexed user source',result)
+        self.assertIn('Never fill missing planning fields from them',result)
 
     def test_no_itinerary_upcoming_current_and_past(self):
         now=datetime(2026,11,12,4,tzinfo=timezone.utc)
@@ -63,9 +63,10 @@ class SavedItineraryScene(unittest.TestCase):
             result=scene_prompt(value,now)
             self.assertIn('no confirmed destination/date range',result)
             self.assertNotIn('starts in',result);self.assertNotIn('today is day',result)
-        self.assertIn('not the traveler\'s actual location',scene_prompt(fields(),now))
-        self.assertIn('not traveler instructions',scene_prompt(None,now))
-        self.assertIn('not treat it as an indexed user source',scene_prompt(fields(),now))
+        from cj_message.lio_context import PERSONA
+        self.assertIn('orientation, not traveler facts or actual location',PERSONA)
+        self.assertIn('Never fill missing planning fields from them',PERSONA)
+        self.assertIn('Keep scene labels out of replies',PERSONA)
 
     def test_explicit_undated_calendar_never_uses_known_arrival_as_trip_start(self):
         now=datetime(2026,11,12,tzinfo=timezone.utc)

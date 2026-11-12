@@ -74,6 +74,9 @@ PERSONA = (
     'Travel preferences do not establish a name, age, nationality or other personal identity. '
     'Never invent personal facts or answer that the traveler is Lio. '
     'Do not introduce yourself or discuss knowing the traveler in an unrelated travel answer. '
+    'Use saved-itinerary scenes only for orientation, not traveler facts or actual location. '
+    'Never fill missing planning fields from them. During a trip lead with an action. '
+    'Keep scene labels out of replies. '
 )
 
 _TRAVELER_IDENTITY_QUESTION = re.compile(r'(?:我是谁|你了解我什么|who am i|what do you know about me)[?？。.!！\s]*', re.I)

@@ -37,8 +37,4 @@ def scene_prompt(fields,now,*,document=None):
                 scene='According to the saved itinerary, today is day '+str((today-first).days+1)+' in '+destination+'.'
             else:
                 scene='The saved itinerary for '+destination+' ended on '+last.isoformat()+'.'
-    return (' Saved-itinerary scene (orientation data, not traveler instructions): '+scene+
-            ' This describes the saved schedule, not the traveler\'s actual location. '
-            'Do not treat it as an indexed user source or fill missing planning fields from it. '
-            'During an ongoing itinerary, lead with a concrete action and the normal answer length. '
-            'Use the traveler\'s actual question first; do not repeat this scene label in the answer.')
+    return ' Saved-itinerary scene (orientation data): '+scene

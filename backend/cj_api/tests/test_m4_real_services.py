@@ -740,6 +740,7 @@ class Boundaries(unittest.TestCase):
         self.assertEqual(self.budget.inspect()[0]['state'],'RECEIVED')
 
     def test_optional_flow_profile_keeps_exact_wire_hash_and_bounded_original_call(self):
+        from cj_api.lio_scene import scene_prompt
         from cj_agent.lio_intake_optional_schema import PROFILE,response_format,response_format_sha256
         from cj_api.local_app import ISSUER,scope_for
         from cj_api.local_lio_national import intake_prompt
@@ -747,7 +748,7 @@ class Boundaries(unittest.TestCase):
         tools=RealTools(RealServices(provider,KEY,subjects,demo_subjects=subjects,national_subjects=subjects))
         prepared=tools.registrations['model.lio_intake.9'].prepare_input((
             [dict(role='user',content='Stored memory data: '+'m'*1000),dict(role='user',content='x'*12000)],
-            intake_prompt('en',(SimpleNamespace(text='x'*12000,question_day=date(2026,11,12)),)),provider,0))
+            intake_prompt('en',(SimpleNamespace(text='x'*12000,question_day=date(2026,11,12)),),scene=scene_prompt(None,datetime(2026,11,12,tzinfo=timezone.utc))),provider,0))
         inputs=json.loads(prepared.original_bytes)
         self.assertEqual(inputs['structured_profile'],PROFILE)
         self.assertEqual(inputs['response_format_sha256'],response_format_sha256(0))
