@@ -109,10 +109,15 @@ final class LioConversation {
     private(set) var nextBefore: String?
     private(set) var loadingEarlier = false
     private(set) var earlierUnavailable = false
+    private(set) var hasLoadedTimeline: Bool
+    private(set) var timelineUnavailable = false
     private var sendGeneration = 0
     private var receiving = false
 
-    init(service: LioService) { self.service = service }
+    init(service: LioService) {
+        self.service = service
+        hasLoadedTimeline = service.updates == nil
+    }
 
     func send(_ text: String, language: LioLanguage) {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -185,6 +190,7 @@ final class LioConversation {
     func refreshTimeline() async {
         guard pending == nil, let updates = service.updates else { return }
         let generation = sendGeneration
+        timelineUnavailable = false
         let waiting = turns.compactMap { turn -> Data? in
             switch turn.status {
             case .thinking, .working, .answering, .failed(.waiting): turn.id
@@ -198,6 +204,9 @@ final class LioConversation {
                 && waiting.allSatisfy({ id in turns.contains { $0.id == id && $0.hasTimelineResult } }) {
                 return
             }
+        }
+        if !Task.isCancelled, generation == sendGeneration, pending == nil, !hasLoadedTimeline {
+            timelineUnavailable = true
         }
     }
 
@@ -242,6 +251,8 @@ final class LioConversation {
     }
 
     private func display(_ page: LioTimelinePage) {
+        hasLoadedTimeline = true
+        timelineUnavailable = false
         let visibleIDs = Set(page.turns.map(\.id))
         let existing = Dictionary(uniqueKeysWithValues: turns.map { ($0.id, $0.question) })
         let previous = turns.filter { $0.fromTimeline && !visibleIDs.contains($0.id) }

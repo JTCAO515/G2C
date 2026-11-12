@@ -29,7 +29,7 @@ class NationalExecution(unittest.TestCase):
             extraction=dict(version='NEEDS-extraction.1',fields=fields,unresolved=[],long_term_requests=[]),
             field_sources=sources,current_request=text)
 
-    def run_intake(self,value,*,turns=None,previous=None,resolution=None,same_destination=True,model_output=None,flow_output=None,locale='zh'):
+    def run_intake(self,value,*,turns=None,previous=None,resolution=None,same_destination=True,model_output=None,flow_output=None,locale='zh',source_conflict=False):
         text=value['current_request'];turns=turns or (PlanningTurn(text,date(2026,11,11)),)
         city=CityReference('310000','上海市','上海市',None,'province','Asia/Shanghai')
         resolution=resolution or dict(status='resolved',candidates=[city.__dict__],requested_name='上海',source={})
@@ -71,6 +71,8 @@ class NationalExecution(unittest.TestCase):
         class Save:
             def __call__(self,*args):published.append(args);return args[2]
             def supports_destination(self,binding,city):return same_destination
+            def scene_context(self,binding,now):return None
+            def planning_window_conflict(self,binding,fields):return source_conflict
         planning=NationalLioPlanning(None,Save())
         planning.context=lambda *a:(turns,tuple(dict(message_id='prior-'+str(n))for n in range(len(turns)-1)),previous)
         binding=SimpleNamespace(message_id='national-message',run_id='national-run')
@@ -106,6 +108,17 @@ class NationalExecution(unittest.TestCase):
                 value['field_sources']['departure.date']=[dict(source_index=0,quote='2026-11-20')]
                 published,_,_,_=self.run_intake(value,previous=dict(authority=authority,status='needs_details'))
                 self.assertEqual(len(published),expected)
+
+    def test_existing_window_conflict_does_not_register_needs_or_call_draft(self):
+        text='计划上海三天，从2026-11-20开始，两个人'
+        value=self.envelope(text);value['duration_days']=3
+        value['extraction']['fields'].pop('departure');value['field_sources'].pop('departure.date')
+        value['field_sources']['duration_days']=[dict(source_index=0,quote='三天')]
+        published,events,_,_=self.run_intake(value,source_conflict=True)
+        self.assertEqual(published,[])
+        self.assertFalse(any(kind=='registered'for kind,_ in events))
+        self.assertIn('另一趟',''.join(v for k,v in events if k=='text_delta'))
+        self.assertEqual(events[-1][0],'completed')
 
     def test_missing_party_is_optional_but_city_or_duration_remain_required(self):
         text='计划上海2026-11-20，两个人'

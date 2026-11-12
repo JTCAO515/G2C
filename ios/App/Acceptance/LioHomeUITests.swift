@@ -7,6 +7,47 @@ import XCTest
     func testInvitationEnglish() throws { try exerciseInvitation("en") }
     func testInvitationChinese() throws { try exerciseInvitation("zh-Hans") }
 
+    func testInterruptionCoversPrivateRootAndPresentedSheet() throws {
+        continueAfterFailure = false
+        for appearance in ["light", "dark"] {
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "--lio-scene-privacy-acceptance", "-lio.ui.appearance.v1", appearance]
+            app.launch()
+            func verify(_ scope: String, expectedDraft: String) throws {
+                let text = app.staticTexts["privacy.\(scope).text"]
+                let field = app.textFields["privacy.\(scope).draft"]
+                let action = app.buttons["privacy.\(scope).action"]
+                XCTAssertTrue(text.waitForExistence(timeout: 10))
+                XCTAssertEqual(field.value as? String, expectedDraft)
+                let hit = action.frame
+                app.buttons["privacy.\(scope).interrupt"].tap()
+                XCTAssertFalse(text.exists)
+                XCTAssertFalse(field.exists)
+                XCTAssertFalse(action.exists)
+                XCTAssertFalse(app.navigationBars["Synthetic private \(scope) title"].exists)
+                XCTAssertFalse(app.staticTexts["privacy.root.text"].exists)
+                XCTAssertFalse(app.textFields["privacy.root.draft"].exists)
+                XCTAssertFalse(app.buttons["privacy.root.action"].exists)
+                app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: hit.midX, dy: hit.midY)).tap()
+                try app.performAccessibilityAudit(for: .all)
+                let image = XCTAttachment(screenshot: app.screenshot())
+                image.name = "scene-private-\(scope)-\(appearance)"
+                image.lifetime = .keepAlways
+                add(image)
+                app.buttons["lio.privacy.test.resume"].tap()
+                XCTAssertTrue(text.waitForExistence(timeout: 8))
+                XCTAssertEqual(app.staticTexts["privacy.\(scope).actions"].label, "0")
+                XCTAssertEqual(field.value as? String, expectedDraft)
+            }
+            try verify("root", expectedDraft: "Synthetic root draft")
+            app.buttons["privacy.open-sheet"].tap()
+            try verify("sheet", expectedDraft: "Synthetic sheet draft")
+            app.buttons["privacy.close-sheet"].tap()
+            XCTAssertTrue(app.staticTexts["privacy.root.text"].waitForExistence(timeout: 8))
+            app.terminate()
+        }
+    }
+
     func testSessionRecoveryKeepsExplicitActionsInBothLanguagesAndAppearances() throws {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
@@ -107,29 +148,36 @@ import XCTest
 
     func testOpeningGreetingReturnsAfterBackgroundWithoutResettingTheChat() {
         continueAfterFailure = false
-        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
-        app.launchArguments = ["--lio-preview", "-cj.ui.language.v1", "en"]
-        app.launch()
-        defer { app.terminate() }
-
-        let greeting = app.staticTexts["lio.opening"]
-        XCTAssertTrue(greeting.waitForExistence(timeout: 12))
-        let sample = app.buttons["lio.example.0"]
-        enterSampleQuestion(in: app, index: 0)
-        app.buttons["lio.send"].tap()
-        let question = app.staticTexts["lio.question"]
-        let answer = app.staticTexts["lio.answer"]
-        XCTAssertTrue(answer.waitForExistence(timeout: 8))
-        XCTAssertLessThan(greeting.frame.minY, question.frame.minY)
-
-        XCUIDevice.shared.press(.home)
-        XCTAssertTrue(app.wait(for: .runningBackground, timeout: 5) || app.state == .runningBackgroundSuspended)
-        app.activate()
-        XCTAssertTrue(greeting.waitForExistence(timeout: 8))
-        XCTAssertTrue(question.exists)
-        XCTAssertTrue(answer.exists)
-        XCTAssertGreaterThan(greeting.frame.minY, answer.frame.minY)
-        XCTAssertEqual(app.staticTexts.matching(identifier: "lio.opening").count, 1)
+        for language in ["en", "zh-Hans"] {
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "-cj.ui.language.v1", language]
+            app.launch()
+            let greeting = app.staticTexts["lio.opening"]
+            XCTAssertTrue(greeting.waitForExistence(timeout: 12))
+            enterSampleQuestion(in: app, index: 0)
+            app.buttons["lio.send"].tap()
+            let question = app.staticTexts["lio.question"], answer = app.staticTexts["lio.answer"]
+            XCTAssertTrue(answer.waitForExistence(timeout: 8))
+            let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+            composer.tap(); composer.typeText("Unsent follow-up")
+            let sendReady = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: app.buttons["lio.send"])
+            XCTAssertEqual(XCTWaiter.wait(for: [sendReady], timeout: 8), .completed)
+            let sentText = question.label, replyText = answer.label
+            XCUIDevice.shared.press(.home)
+            XCTAssertTrue(app.wait(for: .runningBackground, timeout: 5) || app.state == .runningBackgroundSuspended)
+            app.activate()
+            XCTAssertTrue(question.waitForExistence(timeout: 8))
+            XCTAssertEqual(composer.value as? String, "Unsent follow-up")
+            app.scrollViews.firstMatch.swipeDown()
+            app.scrollViews.firstMatch.swipeDown()
+            XCTAssertTrue(greeting.exists)
+            XCTAssertEqual(question.label, sentText)
+            XCTAssertEqual(answer.label, replyText)
+            XCTAssertLessThan(greeting.frame.minY, question.frame.minY)
+            XCTAssertEqual(app.staticTexts.matching(identifier: "lio.opening").count, 1)
+            XCTAssertEqual(app.staticTexts.matching(identifier: "lio.question").count, 1)
+            app.terminate()
+        }
     }
 
     func testNewChatAndHistoryKeepMessagesAndDraftsSeparate() {
@@ -172,6 +220,7 @@ import XCTest
         XCTAssertFalse(app.staticTexts["An earlier reply."].exists)
         XCTAssertEqual(composer.value as? String, "My unsent follow-up")
         XCTAssertFalse(app.otherElements["lio.chat.recovery"].exists)
+        XCTAssertFalse(app.staticTexts["lio.opening"].exists)
     }
 
     func testNewChatCanAcceptAnotherMessageAfterAnInputRefusal() {
@@ -216,7 +265,7 @@ import XCTest
         let oldReply = app.staticTexts["An earlier reply."]
         let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
         XCTAssertTrue(oldReply.waitForExistence(timeout: 8))
-        XCTAssertTrue(app.staticTexts["lio.opening"].exists)
+        XCTAssertFalse(app.staticTexts["lio.opening"].exists)
         menu.tap()
         let newChat = app.buttons["lio.chat.new"]
         XCTAssertEqual(newChat.label, chinese ? "新对话" : "New chat")

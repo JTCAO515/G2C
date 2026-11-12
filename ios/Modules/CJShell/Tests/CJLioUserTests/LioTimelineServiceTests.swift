@@ -5,6 +5,45 @@ import Testing
 
 @MainActor
 struct LioTimelineServiceTests {
+    @Test func historyIsUnknownUntilARealSnapshotArrives() async throws {
+        let fixture = TimelineFixture()
+        let model = LioConversation(service: service(fixture))
+        #expect(!model.hasLoadedTimeline && !model.timelineUnavailable)
+        await model.refreshTimeline()
+        #expect(model.hasLoadedTimeline && !model.timelineUnavailable)
+        #expect(model.turns.map { $0.question.messageID } == ["previous"])
+    }
+
+    @Test func aKnownEmptyConversationCanShowItsFirstWelcome() async {
+        let service = LioService(updates: { _ in AsyncStream { $0.yield(.empty); $0.finish() } }) { _ in
+            Issue.record("Welcome checks cannot send a question")
+            return AsyncStream { $0.finish() }
+        }
+        let model = LioConversation(service: service)
+        await model.refreshTimeline()
+        #expect(model.hasLoadedTimeline && !model.timelineUnavailable && model.turns.isEmpty)
+    }
+
+    @Test func anObservationWithoutDataIsNotAnEmptyNewConversation() async {
+        let service = LioService(updates: { _ in AsyncStream { $0.finish() } }) { _ in
+            Issue.record("A failed history read cannot send")
+            return AsyncStream { $0.finish() }
+        }
+        let model = LioConversation(service: service)
+        await model.refreshTimeline()
+        #expect(!model.hasLoadedTimeline && model.timelineUnavailable && model.turns.isEmpty)
+    }
+
+    @Test func cancelledHistoryDoesNotInventAFailureOrAnEmptyHistory() async {
+        let service = LioService(updates: { _ in AsyncStream { _ in } }) { _ in AsyncStream { $0.finish() } }
+        let model = LioConversation(service: service)
+        let observation = Task { await model.refreshTimeline() }
+        await Task.yield()
+        observation.cancel()
+        await observation.value
+        #expect(!model.hasLoadedTimeline && !model.timelineUnavailable)
+    }
+
     @Test func missingSendResponseReadsTheSameQuestionWithoutPostingAgain() async throws {
         let fixture = TimelineFixture(loseResponse: true)
         let model = LioConversation(service: service(fixture))
