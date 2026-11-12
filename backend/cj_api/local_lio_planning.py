@@ -203,7 +203,8 @@ class LioPlanSave:
                              lio_needs_id(binding.scope,binding.conversation_id))
         # read_current checks the current accepted head and original source
         # lineage and validates proposed NEEDS. Do not read a pending draft.
-        return scene_prompt(None if current is None else json.loads(current.proposed),now)
+        return scene_prompt(None if current is None else json.loads(current.proposed),now,
+            document=None if current is None else json.loads(current.trip.content))
 
     def supports_destination(self,binding,city):
         from base64 import b64decode

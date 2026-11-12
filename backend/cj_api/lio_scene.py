@@ -1,13 +1,13 @@
 """Orientation from an accepted itinerary, never location or traveler authority."""
-from datetime import date
+from datetime import date,timedelta
 import json
 from zoneinfo import ZoneInfo
 
 CHINA=ZoneInfo('Asia/Shanghai')
 
 
-def scene_prompt(fields,now):
-    """fields are the validated proposed NEEDS of the selected accepted Trip."""
+def scene_prompt(fields,now,*,document=None):
+    """Use accepted NEEDS and, when supplied, the validated canonical Trip."""
     today=now.astimezone(CHINA).date()
     if fields is None:
         scene='No saved itinerary is bound to this conversation.'
@@ -17,6 +17,14 @@ def scene_prompt(fields,now):
         city=arrival.get('place',{})
         start=arrival.get('date',{})
         end=departure.get('date',{})
+        if document is not None and document['content_version']=='structured.3':
+            calendar=document['calendar']
+            if calendar['state']=='undated':
+                start=end=dict(state='unknown')
+            else:
+                first=date.fromisoformat(calendar['start_date'])
+                start=dict(state='known',value=first.isoformat())
+                end=dict(state='known',value=(first+timedelta(days=len(document['days'])-1)).isoformat())
         if city.get('state')!='known' or start.get('state')!='known' or end.get('state')!='known':
             scene='The saved itinerary has no confirmed destination/date range; do not infer its city, dates or current day.'
         else:

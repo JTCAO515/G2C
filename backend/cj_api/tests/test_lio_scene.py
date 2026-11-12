@@ -21,7 +21,8 @@ class SavedItineraryScene(unittest.TestCase):
         binding=SimpleNamespace(scope='owner',conversation_id='chat')
         repository=object();save=LioPlanSave(None,SimpleNamespace(repository=repository),None)
         now=datetime(2026,11,12,tzinfo=timezone.utc)
-        current=SimpleNamespace(proposed=json.dumps(fields()).encode())
+        current=SimpleNamespace(proposed=json.dumps(fields()).encode(),
+            trip=SimpleNamespace(content=json.dumps(dict(content_version='structured.2')).encode()))
         with patch('cj_trip.planning_context.read_current',return_value=current)as read:
             self.assertIn('starts in 1 day',save.scene_context(binding,now))
             read.assert_called_once_with(repository,needs_scope_for('owner'),lio_needs_id('owner','chat'))
@@ -65,6 +66,17 @@ class SavedItineraryScene(unittest.TestCase):
         self.assertIn('not the traveler\'s actual location',scene_prompt(fields(),now))
         self.assertIn('not traveler instructions',scene_prompt(None,now))
         self.assertIn('not treat it as an indexed user source',scene_prompt(fields(),now))
+
+    def test_explicit_undated_calendar_never_uses_known_arrival_as_trip_start(self):
+        now=datetime(2026,11,12,tzinfo=timezone.utc)
+        document=dict(content_version='structured.3',calendar=dict(state='undated'),
+                      days=[dict(day_index=i)for i in range(1,4)])
+        result=scene_prompt(fields('2026-11-11','2026-11-13'),now,document=document)
+        self.assertIn('no confirmed destination/date range',result)
+        self.assertNotIn('today is day',result)
+        document['calendar']=dict(state='dated',start_date='2026-11-11')
+        result=scene_prompt(fields('2026-12-01','2026-12-03'),now,document=document)
+        self.assertIn('day 2 in',result)
 
 
 if __name__=='__main__':unittest.main(verbosity=2)
