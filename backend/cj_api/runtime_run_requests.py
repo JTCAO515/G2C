@@ -6,14 +6,15 @@ global last candidate. Other original messages retain their ordinary registry.
 """
 import json
 import re
+from hashlib import sha256
 from time import monotonic
 
 from cj_message.auth_boundary import AccessBlocked,IdentityChanged
 from cj_usage.metered_exit import BudgetUnknown
 from runtime_adapter.contract import decode,digest,Invalid,Unavailable
+from .runtime_message_input import REFLECTION_MESSAGE,lio_input
 
 
-REFLECTION_MESSAGE='Runtime reflection request.'
 MESSAGE_KINDS=frozenset({'message','new_conversation_message','start_controlled_generation','reflection'})
 
 
@@ -34,6 +35,15 @@ class RunRequests:
         if request['kind'] not in MESSAGE_KINDS:
             raise Unavailable('RUNTIME_ORIGINAL_ACTION_HAS_NO_MESSAGE')
         text=REFLECTION_MESSAGE if request['kind']=='reflection' else request['payload']['text']
+        expected_digest=None
+        if self.claims.history_profile=='lio.2':
+            language=None
+            if request['kind']!='reflection':
+                if not request['prior_step_ids']:raise Unavailable('RUNTIME_ORIGINAL_SETUP_UNAVAILABLE')
+                setup=decode(self.claims.read(request['prior_step_ids'][0],deadline=self.clock()+30))
+                if setup['kind']!='task_setup':raise Unavailable('RUNTIME_ORIGINAL_SETUP_UNAVAILABLE')
+                language=setup['payload']['language']
+            expected_digest=sha256(lio_input(binding.scope,request,language)).hexdigest()
         def original(context):
             if context.scope!=binding.scope:raise Unavailable('RUNTIME_ORIGINAL_OWNER_CHANGED')
             stored=self.claims.query(context,binding.message_id)
@@ -43,6 +53,10 @@ class RunRequests:
                 raise Unavailable('RUNTIME_ORIGINAL_RUN_CHANGED')
             if json.loads(stored.raw)['text']!=text:
                 raise Unavailable('RUNTIME_ORIGINAL_MESSAGE_CHANGED')
+            if expected_digest is not None:
+                receipt=context.query_lio_receipt(binding.message_id)
+                if receipt is None or receipt.input_sha256!=expected_digest:
+                    raise Unavailable('RUNTIME_ORIGINAL_NATIVE_INPUT_CHANGED')
         self.boundary.with_history_context(self.token_supplier(),original)
         self.proved[binding]=(request['step_id'],digest(request))
         return request

@@ -9,6 +9,7 @@ from pathlib import Path
 
 from cj_message.demo_dialogue import LIO_VERSION_V2,_identity
 from runtime_adapter.contract import decode,digest,encode,require,Unavailable
+from .runtime_message_input import lio_input
 
 
 class NativeDialogue:
@@ -70,8 +71,7 @@ class NativeDialogue:
         self.setup(setup,deadline=deadline)
         if request['payload']!={'text':self.task['variants'][setup['payload']['language']]['turns'][0]}:
             raise Unavailable('NATIVE_RECIPE_TEXT_CHANGED')
-        raw=encode(dict(version=LIO_VERSION_V2,message_id=request['step_id'],
-            text=request['payload']['text'],locale=setup['payload']['language'],new_conversation=True))
+        raw=lio_input(self.claims.binding.scope,request,setup['payload']['language'])
         admitted=self.boundary.receive_lio(self.token_supplier(),raw,
             prepare_scope=self.database._provision_scope,version=LIO_VERSION_V2)
         receipt=self.boundary.with_history_context(self.token_supplier(),

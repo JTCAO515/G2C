@@ -30,7 +30,8 @@ from .runtime_model import configured_model,RuntimeModel
 from .runtime_native_backend import NativeRuntimeBackend
 from .runtime_originals import RuntimeOriginals
 from .runtime_private import read_private
-from .runtime_run_requests import RunRequests,REFLECTION_MESSAGE
+from .runtime_run_requests import RunRequests
+from .runtime_message_input import lio_input
 from .runtime_text_slots import freeze_national_v2
 
 
@@ -204,9 +205,9 @@ class RuntimeWorkerBindings:
                 require(binding==expected and pins.raw==self.pins.raw and self.artifact_directory is not None,
                     'RUNTIME_WORKER_BINDING_CHANGED')
                 if self.clock()>=deadline:raise Unavailable('DEADLINE_REACHED')
-            def admit_reflection(mid,original=boundary,supplier=token):
-                return original.receive_lio(supplier(),encode(dict(version=LIO_VERSION_V2,message_id=mid,
-                    text=REFLECTION_MESSAGE,locale='en',new_conversation=True)),
+            def admit_reflection(mid,original=boundary,supplier=token,source=claims):
+                request=decode(source.read(mid,deadline=self.clock()+30))
+                return original.receive_lio(supplier(),lio_input(source.binding.scope,request),
                     prepare_scope=self.database._provision_scope,version=LIO_VERSION_V2)
             backend=NativeRuntimeBackend(authority,claims,collector,boundary,token,
                 require_worker=require_worker,wait_original=wait,admit_reflection=admit_reflection,dialogue=dialogue)
