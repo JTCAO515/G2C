@@ -304,6 +304,40 @@ class PlanningFlow(unittest.TestCase):
         published,events,_,_=run(last,following,turns=(original(first),original(text),original(following),original(following)),previous=persisted,resolution=resolution)
         self.assertEqual(published,[]);self.assertNotIn('start_date',context(events)['facts'])
 
+    def test_revocation_survives_consultation_and_old_request_cannot_regrant(self):
+        for hold_text,hold_intent in [('先别自动保存','discuss'),('取消','cancel')]:
+            first='规划成都三天，从2026-11-20开始'
+            initial=flow(first,start='2026-11-20',questions=('party_size',),intent='plan')
+            previous=context(run(initial,first)[1])
+            def rekey(value,n):
+                for item in value['facts'].values():
+                    for ref in item['sources']:
+                        if ref['message_id']=='national-message':ref['message_id']='prior-'+str(n)
+                for key in ('authority_barrier_message_id','resolved_city_source_message_id','date_boundary_message_id'):
+                    if value.get(key)=='national-message':value[key]='prior-'+str(n)
+                value['nonplanning_message_ids']=['prior-'+str(n)if mid=='national-message'else mid for mid in value.get('nonplanning_message_ids',[])]
+            rekey(previous,0)
+            hold=flow(hold_text,city=None,days=None,index=1,intent=hold_intent,questions=())
+            hold.update(planning_request_index=None,publication_hold=dict(source_index=1,quote=hold_text))
+            history=[original(first),original(hold_text)]
+            previous=context(run(hold,hold_text,turns=tuple(history),previous=previous)[1]);rekey(previous,1)
+            text='酒店和青旅有什么区别？';consult=flow(text,city=None,days=None,index=2,questions=(),reply='青旅可能提供多人间。')
+            consult.update(planning_request_index=None,needs_tools=False)
+            history.append(original(text))
+            previous=context(run(consult,text,turns=tuple(history),previous=previous)[1]);rekey(previous,2)
+            self.assertEqual(previous['authority_barrier_message_id'],'prior-1')
+            text='两个人';last=flow(text,city=None,days=None,party=2,index=3,questions=())
+            last['planning_request_index']=0;history.append(original(text))
+            published,events,_,_=run(last,text,turns=tuple(history),previous=previous)
+            self.assertEqual(published,[]);self.assertEqual(context(events)['authority'],'none')
+            previous=context(events);rekey(previous,3)
+            # A genuine new current planning request can grant authority again.
+            text='重新规划成都三天，从2026-11-20开始，两个人'
+            new=flow(text,start='2026-11-20',party=2,index=4,questions=(),intent='plan')
+            history.append(original(text))
+            published,_,_,_=run(new,text,turns=tuple(history),previous=previous)
+            self.assertEqual(len(published),1)
+
     def test_capability_question_bypasses_planning_in_both_languages(self):
         planning=NationalLioPlanning(None,None)
         for text in ('你能干啥','What can you do?'):

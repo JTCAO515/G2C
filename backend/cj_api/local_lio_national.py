@@ -61,8 +61,10 @@ class NationalLioPlanning:
                 continuous.append(row)
             previous=(None if pending is None or pending[0]not in {row[0]for row in continuous}
                       else json.loads(pending[1].removeprefix(CONTEXT)))
+            if previous is not None and previous.get('status')in ('discussion','cancelled','ready_to_publish','different_destination')and previous.get('authority_barrier_message_id')is None:
+                previous=dict(previous,authority_barrier_message_id=pending[0])
             anchors=set()if previous is None else {ref['message_id']for fact in previous.get('facts',{}).values()for ref in fact['sources']}
-            for key in ('date_boundary_message_id','resolved_city_source_message_id'):
+            for key in ('date_boundary_message_id','resolved_city_source_message_id','authority_barrier_message_id'):
                 if previous is not None and previous.get(key)is not None:anchors.add(previous[key])
             older=anchors-{row[0]for row in continuous}
             if older:
@@ -117,6 +119,7 @@ class NationalLioPlanning:
             raise ProviderUnknown('nationwide structured intake unavailable') from error
         source_ids=[ref['message_id']for ref in refs]+[binding.message_id]
         boundary_mid=None if previous is None else previous.get('date_boundary_message_id')
+        barrier_mid=None if previous is None else previous.get('authority_barrier_message_id')
         excluded=[]if previous is None else [mid for mid in previous.get('nonplanning_message_ids',[])if mid in source_ids]
         if intake.planning_request_index is None and not question_fields:excluded.append(binding.message_id)
         resolved_mid=None if previous is None else previous.get('resolved_city_source_message_id')
@@ -124,10 +127,14 @@ class NationalLioPlanning:
             sources=previous.get('facts',{}).get('city',{}).get('sources',[])
             if sources:resolved_mid=sources[0]['message_id']
         def context(worker,binding,state,value):
+            nonlocal barrier_mid
+            if value['status']in ('discussion','cancelled','ready_to_publish','different_destination'):
+                barrier_mid=binding.message_id
             return self._context(worker,binding,state,dict(value,facts=facts,nonplanning_message_ids=list(dict.fromkeys(excluded)),
                 **({'date_boundary_message_id':boundary_mid}if boundary_mid is not None else {}),
-                **({'resolved_city_source_message_id':resolved_mid}if resolved_mid is not None else {})))
-        authority=self._authority(intake,previous,current_index=len(turns)-1,turns=turns)
+                **({'resolved_city_source_message_id':resolved_mid}if resolved_mid is not None else {}),
+                **({'authority_barrier_message_id':barrier_mid}if barrier_mid is not None else {})))
+        authority=self._authority(intake,previous,current_index=len(turns)-1,turns=turns,source_ids=source_ids)
         if intake.intent=='cancel':
             state=context(worker,binding,state,dict(authority='none',status='cancelled'))
             return self._answer(worker,binding,state,original.locale,'好，先不保存或修改行程。',"Okay, I won't save or change an itinerary.")
@@ -185,7 +192,7 @@ class NationalLioPlanning:
         if planning and resolution['status']=='resolved':
             resolved_mid=source_ids[max(intake.city['source_index'],intake.planning_request_index or 0)]
         if resolution['status']!='resolved':
-            state=context(worker,binding,state,dict(authority=self._authority(intake,previous,current_index=len(turns)-1,turns=turns),status=resolution['status'],city=resolution))
+            state=context(worker,binding,state,dict(authority=self._authority(intake,previous,current_index=len(turns)-1,turns=turns,source_ids=source_ids),status=resolution['status'],city=resolution))
             candidates=resolution['candidates']
             if candidates:
                 options='；'.join(c['province']+' '+c['name'] for c in candidates)
@@ -203,7 +210,7 @@ class NationalLioPlanning:
         if not planning and intake.intent=='discuss':
             state=context(worker,binding,state,dict(authority='none',status='discussion',city=resolution))
             return self._reply(worker,binding,state,intake.reply)
-        authority=self._authority(intake,previous,current_index=len(turns)-1,turns=turns)
+        authority=self._authority(intake,previous,current_index=len(turns)-1,turns=turns,source_ids=source_ids)
         if booking_unclear:
             state=context(worker,binding,state,dict(authority=authority,status='needs_details',city=resolution))
             return self._answer(worker,binding,state,original.locale,
@@ -295,11 +302,13 @@ class NationalLioPlanning:
         return None
 
     @staticmethod
-    def _authority(intake,previous,*,current_index=None,turns=()):
+    def _authority(intake,previous,*,current_index=None,turns=(),source_ids=()):
         if intake.intent=='cancel' or intake.publication_hold or NONPERSISTENT.search(intake.current_request):return 'none'
         # Publication still requires a traveler request, not a model label.
         # The semantic request is separate from facts mentioned in consultation.
         request_index=intake.planning_request_index
+        barrier=None if previous is None else previous.get('authority_barrier_message_id')
+        if request_index is not None and barrier is not None and request_index<=source_ids.index(barrier):return 'none'
         request=None if request_index is None else turns[request_index].text
         explicit=request is not None and PUBLICATION_REQUEST.search(request)is not None
         denied=previous is not None and previous.get('status')in ('discussion','cancelled','ready_to_publish','different_destination')
