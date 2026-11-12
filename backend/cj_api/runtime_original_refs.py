@@ -7,6 +7,11 @@ import re
 import stat
 
 from runtime_adapter.contract import decode,digest,encode,require,Unavailable
+from .runtime_private import read_private,PrivateFileError
+
+KINDS=frozenset({'inventory','input','meter','fee','artifact','wire_input',
+    'action','protected_inventory','meter_link','provider','output','result','state'})
+MESSAGE_KINDS=frozenset({'inventory','action','protected_inventory','result','state'})
 
 
 class OriginalReferences:
@@ -30,12 +35,14 @@ class OriginalReferences:
         if kind=='input':return self.reader.input(token,mid,op)
         if kind=='meter':return self.reader.meter(token,mid,op)
         if kind=='fee':return self.reader.fee(token,mid,op)
-        return self.reader.artifact(token,mid,op,wire_input=kind=='wire_input')
+        if kind in ('artifact','wire_input'):
+            return self.reader.artifact(token,mid,op,wire_input=kind=='wire_input')
+        return self.reader.projection(token,kind,mid,op)
 
     def issue(self,token,*,kind,message_id,operation_id=None):
-        require(kind in ('inventory','input','meter','fee','artifact','wire_input'),'ORIGINAL_REFERENCE_KIND')
-        require(type(message_id) is str and message_id and (kind=='inventory' and operation_id is None or
-            kind!='inventory' and type(operation_id) is str and operation_id),'ORIGINAL_REFERENCE_SOURCE')
+        require(kind in KINDS,'ORIGINAL_REFERENCE_KIND')
+        require(type(message_id) is str and message_id and (kind in MESSAGE_KINDS and operation_id is None or
+            kind not in MESSAGE_KINDS and type(operation_id) is str and operation_id),'ORIGINAL_REFERENCE_SOURCE')
         self.guard(read_only=True)
         descriptor=dict(binding_sha256=self.binding.key,kind=kind,message_id=message_id,operation_id=operation_id)
         raw=self._bytes(token,descriptor)
@@ -53,19 +60,16 @@ class OriginalReferences:
 
     @staticmethod
     def _record(directory,ref):
-        fd=os.open(ref+'.json',os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK,dir_fd=directory)
-        with os.fdopen(fd,'rb') as source:
-            info=os.fstat(source.fileno())
-            if not stat.S_ISREG(info.st_mode) or info.st_uid!=os.getuid() or stat.S_IMODE(info.st_mode)!=0o600:
-                raise Unavailable('ORIGINAL_REFERENCE_AUTHORITY')
-            raw=source.read(65537)
-        require(len(raw)<=65536,'ORIGINAL_REFERENCE_BOUND')
+        try:raw=read_private(ref+'.json',65536,directory_fd=directory)
+        except PrivateFileError as error:
+            if error.reason=='bound':require(False,'ORIGINAL_REFERENCE_BOUND')
+            raise Unavailable('ORIGINAL_REFERENCE_AUTHORITY') from None
         record=decode(raw)
         require(type(record) is dict and set(record)=={'source','sha256'} and
                 ref=='original-'+digest(record),'ORIGINAL_REFERENCE_INTEGRITY')
         descriptor=record['source']
         require(type(descriptor) is dict and set(descriptor)=={'binding_sha256','kind','message_id','operation_id'} and
-                descriptor['kind'] in ('inventory','input','meter','fee','artifact','wire_input'),'ORIGINAL_REFERENCE_DESCRIPTOR')
+                descriptor['kind'] in KINDS,'ORIGINAL_REFERENCE_DESCRIPTOR')
         return record
 
     def resolve(self,token,ref):
