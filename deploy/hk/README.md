@@ -2,7 +2,125 @@
 
 只用于 M4 条目5已在 main 生效后的指定 ECS、域名和 OSS；合并前不连接主机或桶。
 先核实实例仍在免费试用期、实际到期时间和收费提示。试用结束或出现收费提示即停止并向 JT 报告；
-不修改安全组、规格、计费，不购买资源。Supabase 仍是指定新加坡测试项目，只有5432 session模式。
+不修改安全组、规格、计费，不购买资源。现役应用使用香港本机 PG17／Unix socket，组合为
+`compose.yaml` + `compose.local-pg.yaml`。后文的新加坡 Supabase／5432 session 资料是历史兼容路径，
+不能作为日常 L 发布的数据库目标。
+
+## 日常 API/worker 发布（B/L 标准流程）
+
+职责以 [JT 的 B/L 决定](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6814548220) 为准。
+L 拥有 Lio 业务源码及对应测试，可以在 B 排定的窗口内自行执行 API/worker 镜像发布。
+B 拥有香港调度、账本与额度、运行配置、基础设施及发布入口；协调文件仍按 PR 文件锁使用。
+以下流程不授权新账号、延长邀请资格、改变预算、数据库迁移或新增云资源。
+
+### 1. B 签发部署包；L 固定构建源
+
+B 在 #759、#702 给出明确起止时间、执行人和允许操作。条件预留不是 ACTIVE；
+部署窗也不是模型／工具／MESSAGE 验收窗。包中固定：
+
+- 精确已审 head、合并提交与树／改动文件等价证据、精确 CI 和适用审查链接、main CI 状态；
+- 源提交、目标平台、目标实际镜像摘要、上一兼容镜像摘要，以及源码／依赖核对材料；
+- B 维护的固定发布脚本、gate、回退脚本／gate 的路径与摘要，以及当前配置和采集覆盖层；
+- 实时原账行数／锚、排空证明、账号资格与原限额，以及必要的 0600 合成凭据文件路径。
+
+L 只用 B 交接的既有访问入口与指定文件；不复制私钥、凭据或 `.env` 到仓库、镜像或聊天。
+不输出完整 `docker inspect`、`Config.Env`、`docker compose config`、Authorization header 或环境文件。
+如果包、许可、摘要、资格或窗口已失效，停止新操作，由 B 核同；不换身份、ID、端点或预算续跑。
+
+在独立、干净、已提交的工作树构建。`G2C_RELEASE_SOURCE` 和以下路径由 B 的部署包确定，
+不能取浮动 `main`／`latest` 或模型生成的命令。当前香港平台为 `linux/amd64`：
+
+```bash
+: "${G2C_RELEASE_SOURCE:?B-issued exact source required}"
+test "$(git rev-parse HEAD)" = "$G2C_RELEASE_SOURCE"
+test -z "$(git status --porcelain)"
+# 先读 PR 的原门禁结果；以下命令不会为你豁免尚未通过的检查。
+: "${CJ_PG_BINDIR:?explicit PG17 bindir required}"
+"$CJ_PG_BINDIR/postgres" --version
+uv sync --locked --group dev
+CJ_ENV=local PYTHONPATH=.:scripts uv run --locked python -B -m deploy.hk.build --platform linux/amd64
+docker image inspect "g2c-beta:$G2C_RELEASE_SOURCE" \
+  --format '{{.Architecture}} {{index .Config.Labels "org.opencontainers.image.revision"}}'
+```
+
+现有 builder 同时生成应用和 operator 镜像；日常 L 发布只传应用镜像，不启动／替换 operator、
+postgres、migrate、backup、rehearsal 或 caddy。构建／依赖失败不是许可跳过门禁的理由。
+B 若提供已审缓存构建配方，须证明锁文件／pyproject／Dockerfile 与其适用基线相符、
+源码完整覆盖且没有删除文件残留，并核依赖 Name/version/RECORD；不能自行拼接旧层冒充新源。
+
+### 2. 传输与现场核对
+
+只传到既有香港主机，不新建镜像仓库。`G2C_HK_SSH_KEY_FILE` 是安全文件路径，不能是私钥值；
+保留已有主机验签，不更改网络、代理、安全组或 SSH 校验设置：
+
+```bash
+set -o pipefail
+docker image save "g2c-beta:$G2C_RELEASE_SOURCE" | \
+  ssh -i "$G2C_HK_SSH_KEY_FILE" -o BatchMode=yes -o StrictHostKeyChecking=yes \
+  "$G2C_HK_HOST" 'docker image load'
+```
+
+加载 ACK 不明先只读查原镜像，不直接重复加载／切换。B 核服务端目标平台、实际 image ID 与 OCI revision，
+并在无网络、无秘密挂载的目标镜像中核已提交源码清单和实际 import 文件字节。
+标签、构建退出码或 Vercel 结果不能替代此证明。多平台索引摘要和服务器单平台配置摘要可能不同，
+记录各自真实值，不能把其中一个手填成另一个。依赖变更须对应已审锁文件／构建输入。
+新增运行资源必须进入已提交构建白名单；不能依赖开发工作树中的额外文件。
+
+B 用受保护只读入口核当前签名 release、数据库／schema 兼容性、运行角色与 owner 隔离、
+原账及全部在途。包括 MESSAGE 投递、queued/running RUN、queued/running/publishing 后台任务、
+pending/inflight Memory 任务；历史 UNKNOWN 原件和占用保留，不能为“排空”清数据、结算或重放。
+有在途先核原动作，不在运行途中切换源、模型、提示词、工具、候选或参数。
+需要迁移、配置／凭据／权限变更或新资源时，交 B 按其相应授权与红线流程处理。
+
+### 3. L 执行 B 的固定应用切换
+
+B 的发布脚本负责：互斥锁、窗口和精确源／镜像／门禁检查；关闭 API 入口后再次检查排空；
+停止旧 worker；应用 B 已批准的唯一镜像选择；只重建 API/worker；核同实际镜像和源码、
+API readiness 与 worker 存活。L 不手改 `compose.env`、任何秘密文件、Compose 或采集清单。
+镜像选择及临时覆盖层也由 B 预置，不允许 L 把任意参数传成另一套配置。
+
+```bash
+# 这两个路径及脚本摘要来自 B 当前部署包；只接受其批准的固定路径。
+ssh -i "$G2C_HK_SSH_KEY_FILE" -o BatchMode=yes -o StrictHostKeyChecking=yes \
+  "$G2C_HK_HOST" "python3 '$G2C_HK_RELEASE_SCRIPT' '$G2C_HK_RELEASE_GATE'"
+# 预检明确通过、仍在同一有效窗口后，执行一次：
+ssh -i "$G2C_HK_SSH_KEY_FILE" -o BatchMode=yes -o StrictHostKeyChecking=yes \
+  "$G2C_HK_HOST" "python3 '$G2C_HK_RELEASE_SCRIPT' '$G2C_HK_RELEASE_GATE' --apply"
+```
+
+只用部署包中已经存在且由 B 核同的入口，不能自行创建同名脚本／gate。
+宿主 Python 和镜像 Python 可能不同，B 须验证实际执行环境；不要在现场安装工具修环境。
+健康检查不调用付费模型。API/worker 必须同源；`/health/ready` 200 还需结合 worker、
+实际源码／镜像、资格、原账与身份回读判断。模型、工具、保存／修改／撤销和质量仍各自标注
+PASS / FAIL / UNKNOWN / UNRUN，不能从健康或本地 fixture 推导真实端到端 PASS。
+
+切换后由 B 只读核原账前后锚、运行角色、拥有的 Trip/Memory 行集和全局在途，交回可复核结果。
+L 在对应票和 #702 记录 source/image、检查层级、未跑项及 B 的账锚引用。
+同源 source 未经通知变化，旧评测包和剩余 ID 不得直接续用。
+
+### 4. 回退与未知结果
+
+新源启动／健康失败时，固定发布脚本先按原阶段记录恢复上一兼容应用镜像，保留所有业务数据、
+版本、回执、删除 fence、账本及未知 hold。旧采集窗口已经关闭／到期时，不能用其过期清单重启 worker；
+由 B 提供默认同源 worker 或当前合法覆盖层。已存在新数据／配置时先评估旧镜像兼容性，
+不能删字段、数据、凭据或放宽校验来让旧镜像起服务。不兼容时交 B 向前修复或保持安全关闭。
+
+SSH／启动 ACK 不明只读查原容器、脚本阶段记录与原回执；不再次执行 `--apply`、不换 ID 试第二次。
+需要后续回退时，L 只能在 B 批准的回退范围和入口执行已交付的回退脚本／gate，不能手工回滚数据库或账本。
+回退后同样核 API/worker 同源、ready、原账与在途；未核到的结果明确 UNKNOWN。
+
+### 5. 业务窗口由 B 另行开放
+
+正式业务按 **A → L/C → D/E** 串行，B 在 #759、#702 公布当前占用、下一时段、开始／停止新派发／结束时间。
+不能用 A agent 的零请求推断 JT 手机已暂停；部署前和窗口交接前均读实际在途。
+同一身份和行程不同时交两线修改；源／模型／提示词／工具 profile 和 C0/pin 在窗口内固定。
+仅在合法 setup、身份资格、原限额及用途子额均已到位后开放；D/E 还须满足其题集／独审等前置。
+E/F 登记预算或 source-only C0 不是可执行子额／实呼资格，也不能重置余额、释放未知占用或新建影子费用账。
+
+原件采集默认关闭。需要合成原件时由 B 给现役 worker 配置确切 source、主体、新 MESSAGE ID、
+0600 清单和 0700 输出目录；L 不改采集身份／范围／期限，不覆盖旧原件。
+结束时先停止新派发、核原动作／费用／在途，由 B 关闭租约并处理采集配置。
+发生 FAIL/UNKNOWN 立即 STOP_NEW，只读核原 attempt；不能把旧结果带入新分母或用新 ID 补跑。
 
 ## 配置与构建
 
