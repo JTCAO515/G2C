@@ -380,6 +380,9 @@ import XCTest
         selectDay(1)
         reply(hotel)
         XCTAssertFalse(app.staticTexts[museum].exists)
+        let backToTrips = app.navigationBars.buttons[chinese ? "行程" : "Trips"].firstMatch
+        XCTAssertTrue(backToTrips.isHittable)
+        backToTrips.tap()
         let previous = app.buttons["lio.trip.history"]
         XCTAssertTrue(previous.waitForExistence(timeout: 6))
         previous.tap()
