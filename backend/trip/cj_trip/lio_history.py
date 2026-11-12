@@ -185,7 +185,7 @@ def undo(repository, request):
         raise
 
 
-def _append_undo(repository, request, active, captured, check):
+def _append_undo(repository, request, active, captured, check, *, protect_fixed=None, basis_version='lio-undo.1'):
     action = pending = None
     def final(cur):
         check()
@@ -201,12 +201,12 @@ def _append_undo(repository, request, active, captured, check):
         if (active['needs_scope'], active['needs_id']) != (origin['needs_scope'], origin['needs_id']):
             raise Conflict('undo would restore a different Needs identity')
         NeedsEdits._selected(cur, repository, current, active)
-        _protect_fixed(current, previous)
+        (_protect_fixed if protect_fixed is None else protect_fixed)(current, previous)
         if active['needs_version'] != origin['needs_version']:
             _check_newer_needs(captured, origin)
         cur.execute('SELECT EXTRACT(EPOCH FROM clock_timestamp())')
         proposal = Proposal('lio-undo-' + sha256(request.raw).hexdigest(), current.trip_id,
-                            current.version, 'lio-undo.1', int(cur.fetchone()[0]) + 300, previous.content)
+                            current.version, basis_version, int(cur.fetchone()[0]) + 300, previous.content)
         digest = repository._publish_in_tx(cur, proposal)
         source_input = active['source']
         cur.execute('INSERT INTO cj_trip_needs_basis(scope,proposal_id,message_scope,run_id,needs_scope,needs_id,'
