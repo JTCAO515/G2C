@@ -45,7 +45,7 @@ def publication_held(text):
 
 def intake_prompt(locale,turns):
     dates=', '.join(turn.question_day.isoformat() for turn in turns)
-    return answer_prompt(locale,turns[-1].text)+' '+CURRENT_SYSTEM+' Original traveler messages have source indices 0 through '+str(len(turns)-1)+'. Stored memory data is not an indexed traveler message. Original local China days in that order: '+dates
+    return answer_prompt(locale)+' '+CURRENT_SYSTEM+' Original traveler messages have source indices 0 through '+str(len(turns)-1)+'. Stored memory data is not an indexed traveler message. Original local China days in that order: '+dates
 
 
 class NationalLioPlanning:
