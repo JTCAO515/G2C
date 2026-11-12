@@ -622,7 +622,7 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     assert [entry['status'] for entry in ready] == ['completed', 'completed']
     assert model.calls == 2 and all(entry['answer'] and entry['failure'] is None for entry in ready)
     assert prompts[0].endswith('Reply in Chinese.') and prompts[1].endswith('Reply in English.')
-    assert all(prompt.startswith('You are Lio, a Chinese xingshi (醒狮)') for prompt in prompts)
+    assert all(prompt.startswith('You are Lio, a travel assistant for visitors to China.') for prompt in prompts)
     assert all(set(entry) == {'message_id','text','answer','status','failure','activity','sources','trip','memory'} for entry in ready)
     assert api.get(timeline, params=dict(before='lio-second'), headers=owner).json()['messages'] == ready[:1]
     assert api.get(timeline, params=dict(before='first'), headers=owner).status_code == 400
@@ -903,6 +903,7 @@ def check_lio_undo(api, owner, foreign, cards):
 def check_lio_short_planning(api, database, auth, actor, headers):
     from cj_api.local_app import load_confirmation_signer
     from cj_api.local_lio_planning import ASK_MORE, DISCUSSION_PROMPT, SYSTEM, clarify
+    from cj_message.lio_context import IDENTITY_ZH, CAPABILITIES_ZH
 
     scope = scope_for(ISSUER, actor)
     owner = {**headers, 'Authorization': 'Bearer ' + dev_auth.token(auth, actor, 300)}
@@ -933,8 +934,8 @@ def check_lio_short_planning(api, database, auth, actor, headers):
         bare_date: '可以用你提到的日期继续比较选项。',
     }
     standalone = {
-        '你是谁': '我是 Lio，你的个人旅行助手。',
-        '你能做什么': '我可以比较旅行选项、提供路线建议和整理行程。',
+        '你是谁': IDENTITY_ZH,
+        '你能做什么': CAPABILITIES_ZH,
         '北京住国贸还是王府井': '国贸方便商务和购物，王府井离故宫及市中心景点更近。',
         '首都机场到国贸怎么走': '可以考虑机场快轨换乘地铁，也可以直接打车。',
     }
