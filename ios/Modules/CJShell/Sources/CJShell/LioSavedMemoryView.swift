@@ -22,90 +22,90 @@ public struct LioSavedMemoryView: View {
     }
 
     public var body: some View {
-            let listSurface = path.isEmpty ? surface : nil
-            NavigationStack(path: $path) {
-                GeometryReader { page in
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text(language.text("Memory", "记忆"))
-                            .font(LioTheme.display(.largeTitle))
-                            .foregroundStyle(LioTheme.ink)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .accessibilityAddTraits(.isHeader)
-                            .padding(.horizontal, 16)
-                            .padding(.top, 12)
-                            .padding(.bottom, 8)
-                        ScrollView {
-                            VStack(alignment: .leading, spacing: 20) {
-                                switch host.items {
-                                case .unconfigured, .loading:
-                                    ProgressView()
-                                case .failed:
-                                    Text(
-                                        language.text(
-                                            "Couldn’t show your memories. Pull down to try again.",
-                                            "暂时看不到你的记忆，下拉再试一次。"))
-                                case .loaded(let items):
-                                    let saved = items.filter { isSaved($0) }
-                                    if saved.isEmpty && !host.hasMore {
-                                        VStack(spacing: 16) {
-                                            LioPortrait(size: 80)
-                                            Text(
-                                                language.text(
-                                                    "Things you ask Lio to remember appear here.", "你让 Lio 记住的内容会出现在这里。"
-                                                )
+        let listSurface = path.isEmpty ? surface : nil
+        NavigationStack(path: $path) {
+            GeometryReader { page in
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(language.text("Memory", "记忆"))
+                        .font(LioTheme.display(.largeTitle))
+                        .foregroundStyle(LioTheme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityAddTraits(.isHeader)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 12)
+                        .padding(.bottom, 8)
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 20) {
+                            switch host.items {
+                            case .unconfigured, .loading:
+                                ProgressView()
+                            case .failed:
+                                Text(
+                                    language.text(
+                                        "Couldn’t show your memories. Pull down to try again.",
+                                        "暂时看不到你的记忆，下拉再试一次。"))
+                            case .loaded(let items):
+                                let saved = items.filter { isSaved($0) }
+                                if saved.isEmpty && !host.hasMore {
+                                    VStack(spacing: 16) {
+                                        LioPortrait(size: 80)
+                                        Text(
+                                            language.text(
+                                                "Things you ask Lio to remember appear here.", "你让 Lio 记住的内容会出现在这里。"
                                             )
-                                            .font(LioTheme.display(.title3))
-                                            .multilineTextAlignment(.center)
-                                        }
-                                        .padding(.vertical, 40)
-                                        .frame(maxWidth: .infinity)
+                                        )
+                                        .font(LioTheme.display(.title3))
+                                        .multilineTextAlignment(.center)
                                     }
-                                    LazyVGrid(
-                                        columns: Array(
-                                            repeating: GridItem(.flexible(), spacing: 12, alignment: .top),
-                                            count: typeSize.isAccessibilitySize ? 1 : 2),
-                                        spacing: typeSize.isAccessibilitySize ? 0 : 12
-                                    ) {
-                                        memoryCards(saved, pageHeight: page.size.height)
-                                    }
+                                    .padding(.vertical, 40)
+                                    .frame(maxWidth: .infinity)
+                                }
+                                LazyVGrid(
+                                    columns: Array(
+                                        repeating: GridItem(.flexible(), spacing: 12, alignment: .top),
+                                        count: typeSize.isAccessibilitySize ? 1 : 2),
+                                    spacing: typeSize.isAccessibilitySize ? 0 : 12
+                                ) {
+                                    memoryCards(saved, pageHeight: page.size.height)
                                 }
                             }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, typeSize.isAccessibilitySize ? 0 : 16)
-                            .frame(maxWidth: .infinity, alignment: .leading)
                         }
-                        .clipped()
-                        .refreshable { await host.loadItems(surface: surface) }
-                        if case .loaded = host.items, host.hasMore {
-                            Button {
-                                let current = surface
-                                Task { await host.loadItems(surface: current, more: true) }
-                            } label: {
-                                Text(language.text("More memories", "更多记忆"))
-                                    .foregroundStyle(LioTheme.ink)
-                                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                                    .contentShape(Rectangle())
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, typeSize.isAccessibilitySize ? 0 : 16)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .clipped()
+                    .refreshable { await host.loadItems(surface: surface) }
+                    if case .loaded = host.items, host.hasMore {
+                        Button {
+                            let current = surface
+                            Task { await host.loadItems(surface: current, more: true) }
+                        } label: {
+                            Text(language.text("More memories", "更多记忆"))
+                                .foregroundStyle(LioTheme.ink)
+                                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                                .contentShape(Rectangle())
                         }
-                        if let model = host.erasurePresentation, model.original != nil || !model.originals.isEmpty {
-                            Button {
-                                deletion = .history
-                            } label: {
-                                Text(language.text("Memory deletions", "记忆删除记录"))
-                                    .foregroundStyle(LioTheme.ink)
-                                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                                    .contentShape(Rectangle())
-                            }
-                            .disabled(model.state.isBusy)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                    }
+                    if let model = host.erasurePresentation, model.original != nil || !model.originals.isEmpty {
+                        Button {
+                            deletion = .history
+                        } label: {
+                            Text(language.text("Memory deletions", "记忆删除记录"))
+                                .foregroundStyle(LioTheme.ink)
+                                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                                .contentShape(Rectangle())
                         }
+                        .disabled(model.state.isBusy)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
                     }
                 }
-                .lioPage()
-                .navigationTitle("")
+            }
+            .lioPage()
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(LioTheme.paper, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
