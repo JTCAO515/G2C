@@ -2,9 +2,9 @@
 from copy import deepcopy
 import json
 
-from cj_agent.draft import PROPOSAL_TTL_SECONDS, proposal_id_for
+from cj_agent.draft import DraftRejected, PROPOSAL_TTL_SECONDS, proposal_id_for
 from cj_trip.confirmation import ConfirmationSigner
-from cj_trip.domain import Proposal, packed
+from cj_trip.domain import Conflict, Denied, Proposal, packed
 from cj_trip.lio_history import plan_action_id, TripHead
 from cj_trip.postgres import Repository
 from cj_trip.needs_plan import MODEL_VERSION, _build_model
@@ -133,4 +133,7 @@ class LioCalendarPublisher(LioPlanPublisher):
     def publish_edit_for_message(self, binding, original, current, request_raw, edit_raw, capture, *,
                                  limits, before_publish):
         from .calendar_edit import publish
-        return publish(self, binding, original, current, request_raw, edit_raw, capture, limits, before_publish)
+        try:
+            return publish(self, binding, original, current, request_raw, edit_raw, capture, limits, before_publish)
+        except (Conflict, Denied, ValueError) as error:
+            raise DraftRejected('Lio calendar edit refused') from error

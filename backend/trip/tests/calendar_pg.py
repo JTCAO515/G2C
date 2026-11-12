@@ -24,7 +24,7 @@ from registered_host_support import RegisteredHost
 from cj_trip.local_calendar_read import create_local_calendar_read_app, VERSION
 from cj_trip.local_structured_read import create_local_structured_read_app
 from cj_trip.postgres import Repository
-from cj_trip.domain import Conflict, Proposal, packed
+from cj_trip.domain import Proposal, packed
 from cj_trip.confirmation import ConfirmationSigner
 from cj_agent.draft import trip_scope_for
 from cj_api.local_app import scope_for, ISSUER
@@ -471,10 +471,12 @@ class CalendarPublicationChecks(unittest.TestCase):
             self.assertEqual(response.status_code, 200, response.text)
         worker = self.followup(subject, before, 'Replace Chengdu Museum with Renmin Park 人民公园.',
                                operation='edit', needs_version=2)
-        with self.assertRaisesRegex(Conflict, 'current NEEDS/protected constraints rejected'):
-            worker.process()
+        outcome = worker.process()[0]
+        self.assertEqual(outcome.status, 'completed')
         repository = worker.drafts.repository
         stored = worker.messages.query('follow-'+subject)
+        state = worker.fixture_database.run_repository(scope_for(ISSUER, subject)).snapshot_optional(worker._binding(stored.receipt))
+        self.assertEqual(state.draft_outcome, 'validation_failed')
         self.assertIsNone(repository.query_action(edit_action_id(stored.receipt.run_id)))
         self.assertEqual(repository.detail(before.trip_id), before)
 
