@@ -125,7 +125,7 @@ class NationalLioPlanning:
         city_reply=(previous is not None and previous.get('status')=='needs_city'and intake.city is not None
                     and intake.city['source_index']==len(turns)-1)
         planning=authority!='none'and (intake.intent in ('plan','save')or supplied or city_reply)
-        if NONPERSISTENT.search(text) or not planning and intake.intent=='discuss':
+        if intake.publication_hold or NONPERSISTENT.search(text) or not planning and intake.intent=='discuss':
             state=context(worker,binding,state,dict(authority='none',status='discussion'))
             return self._reply(worker,binding,state,intake.reply)
         if planning and not booking_unclear:
@@ -267,14 +267,15 @@ class NationalLioPlanning:
 
     @staticmethod
     def _authority(intake,previous,*,current_index=None):
-        if intake.intent=='cancel' or NONPERSISTENT.search(intake.current_request):return 'none'
+        if intake.intent=='cancel' or intake.publication_hold or NONPERSISTENT.search(intake.current_request):return 'none'
         # Publication still requires a traveler request, not a model label.
-        # A destination+duration supplied together is itself a planning request.
+        # The semantic request is separate from facts mentioned in consultation.
         explicit=PUBLICATION_REQUEST.search(intake.current_request)is not None
         denied=previous is not None and previous.get('status')in ('discussion','cancelled','ready_to_publish','different_destination')
         fresh_fact=any(ref['source_index']==current_index for ref in intake.sources.get('duration_days',[]))
-        current_trip=(intake.city is not None and intake.duration_days is not None and fresh_fact and (not denied or explicit))
-        if current_trip or intake.intent in ('plan','save') and explicit:
+        current_trip=(intake.city is not None and intake.duration_days is not None and fresh_fact)
+        requested=(intake.planning_request_index==current_index and current_index is not None)
+        if requested and (explicit or current_trip)and (not denied or explicit):
             return 'save'if intake.intent=='save'else'plan'
         if previous is not None and previous.get('status')in ('needs_city','needs_details','ambiguous','confirmation_required','not_found'):
             return previous['authority']

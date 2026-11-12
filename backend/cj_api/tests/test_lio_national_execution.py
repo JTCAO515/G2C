@@ -51,7 +51,7 @@ class NationalExecution(unittest.TestCase):
         else:wire=model_output
         from lio_flat_fixture import facts_fixture
         wire=facts_fixture(wire)
-        wire.update(version='LIO-planning-intake.7',question_fields=[])
+        wire.update(version='LIO-planning-intake.7',question_fields=[],publication_hold=None,planning_request_index=len(turns)-1 if value['intent']in ('plan','save')else None)
         if flow_output is not None:wire=flow_output
         class Worker:
             memory_run=None;message_context=None;provider=object();lio_city_context=None;lio_memory=None

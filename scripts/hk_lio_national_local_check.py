@@ -183,7 +183,8 @@ def exercise(root,conninfo):
                 content=json.dumps(data,ensure_ascii=False)
             from lio_flat_fixture import facts_fixture
             flow=facts_fixture(json.loads(content))
-            flow.update(version='LIO-planning-intake.7',question_fields=[])
+            flow.update(version='LIO-planning-intake.7',question_fields=[],publication_hold=None,
+                planning_request_index=source_index if flow['intent']in ('plan','save')else None)
             content=json.dumps(flow,ensure_ascii=False)
             from jsonschema import Draft202012Validator
             Draft202012Validator(body['response_format']['json_schema']['schema']).validate(json.loads(content))

@@ -21,7 +21,7 @@ def flow(text,*,city='成都',days=3,start=None,party=None,intent='consult',repl
     sources=[dict(field='duration_days',source_index=index,quote=text)]if days is not None else []
     if start:sources.append(dict(field='start_date',source_index=index,quote=text))
     if party:sources.append(dict(field='party_size',source_index=index,quote=text))
-    return dict(version='LIO-planning-intake.7',intent=intent,reply=reply,question_fields=list(questions),needs_tools=True,
+    return dict(version='LIO-planning-intake.7',intent=intent,reply=reply,question_fields=list(questions),publication_hold=None,planning_request_index=index if city is not None and days is not None else None,needs_tools=True,
         current_source_index=index,city=None if city is None else dict(query=city,normalized_name=None,province=None,source_index=index,quote=city),
         duration_days=days,start_date=start,party_size=party,unknown_fields=[],uncertain_fields={},
         field_sources=sources,fixed_items=[],extra_fields={},extra_unknown_fields=[],extra_uncertain_fields={},unresolved=[],long_term_requests=[])
@@ -111,6 +111,33 @@ class PlanningFlow(unittest.TestCase):
             next_wire=flow(following,city=None,days=None,start='2026-11-20',party=2,index=1,questions=())
             self.assertEqual(run(next_wire,following,turns=(original(text),original(following)),previous=previous)[0],[])
 
+    def test_semantic_hold_uses_original_span_and_never_grants_save(self):
+        for suffix in ('无需落盘','先别自动保存','no need to persist'):
+            text='规划成都三天，从2026-11-20开始，两个人; '+suffix
+            wire=flow(text,start='2026-11-20',party=2,intent='plan',questions=())
+            wire['publication_hold']=dict(source_index=0,quote=suffix)
+            published,events,_,_=run(wire,text)
+            self.assertEqual(published,[]);self.assertEqual(context(events)['authority'],'none')
+            bad=deepcopy(wire);bad['publication_hold']['quote']='not in the original'
+            with self.assertRaises(InvalidInput):parse_flow(json.dumps(bad),(original(text),),(),'current',None)
+
+    def test_ambiguous_booking_does_not_erase_an_original_publication_hold(self):
+        from lio_flat_fixture import facts_fixture
+        from test_lio_intake_start_schema import sample
+        from cj_api.lio_sourced_intake import BookingSourceUnclear
+        data,turns=sample('zh',True)
+        wire=facts_fixture(data)
+        hold='先别自动保存'
+        turns=(*turns,original(hold))
+        wire.update(version='LIO-planning-intake.7',current_source_index=3,question_fields=[],
+            publication_hold=dict(source_index=3,quote=hold),planning_request_index=None)
+        wire['fixed_items'][0]['booking_evidence']=dict(status='booked',source_index=1,quote='已确定')
+        refs=tuple(dict(message_id='prior-'+str(n))for n in range(3))
+        with self.assertRaises(BookingSourceUnclear)as caught:parse_flow(json.dumps(wire),turns,refs,'current',None)
+        self.assertTrue(caught.exception.control.publication_hold)
+        published,events,lookups,_=run(wire,hold,turns=turns,previous=dict(authority='plan',status='needs_details'))
+        self.assertEqual((published,lookups),([],[]));self.assertEqual(context(events)['authority'],'none')
+
     def test_original_date_missing_never_defaults_and_bad_model_defaults_are_rejected(self):
         text='去成都玩三天'
         for start in ('2026-11-12','2026-11-11'):
@@ -191,6 +218,17 @@ class PlanningFlow(unittest.TestCase):
                 turns,refs,stored=planner.context(binding,original('两个人'))
                 self.assertEqual(turns[0].text,'2026-11-20');self.assertEqual(refs[0]['message_id'],'m1')
                 self.assertEqual(stored,previous);self.assertEqual(len(turns),10)
+
+    def test_quoted_translation_and_sufficiency_consultation_never_publish(self):
+        for text,reply in [('请把“成都三天，从2026-11-20开始，两个人”翻译成英文。','Chengdu for three days, starting 2026-11-20, two people.'),
+                ('成都从2026-11-20开始两个人玩三天够吗？','三天可以先了解主要区域。'),
+                ('Translate "Chengdu for three days from 2026-11-20, two people".','成都三天。')]:
+            city='Chengdu'if 'Chengdu'in text else'成都'
+            wire=flow(text,city=city,start='2026-11-20',party=2,reply=reply,questions=())
+            wire.update(planning_request_index=None,needs_tools=False)
+            published,events,lookups,_=run(wire,text)
+            self.assertEqual((published,lookups),([],[]));self.assertEqual(answer(events),reply)
+            self.assertEqual(context(events)['authority'],'none')
 
     def test_capability_question_bypasses_planning_in_both_languages(self):
         planning=NationalLioPlanning(None,None)

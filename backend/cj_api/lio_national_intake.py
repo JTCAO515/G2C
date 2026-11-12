@@ -74,6 +74,8 @@ class Intake:
  current_request:str
  start_date:dict|None=None
  fixed_detail_ambiguous:bool=False
+ publication_hold:bool=False
+ planning_request_index:int|None=None
 
 
 class StartDateConflict(InvalidInput):

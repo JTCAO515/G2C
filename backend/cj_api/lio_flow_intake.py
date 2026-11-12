@@ -5,7 +5,7 @@ import re
 from pydantic import ValidationError
 from cj_agent.lio_intake_flow_schema import FlowIntake
 from cj_needs.domain import InvalidInput,decode
-from .lio_sourced_intake import parse_sourced
+from .lio_sourced_intake import parse_sourced,BookingSourceUnclear
 
 CORE=('start_date','duration_days','party_size')
 # Presence check only, never a date extractor or a default. The original
@@ -21,7 +21,10 @@ def parse_flow(raw,turns,refs,message_id,previous):
     try:dto=FlowIntake.model_validate(value)
     except ValidationError:raise InvalidInput('exact unified planning facts required')from None
     data=dto.model_dump(by_alias=True,exclude_unset=True)
-    intent=data['intent'];questions=data.pop('question_fields')
+    intent=data['intent'];questions=data.pop('question_fields');hold=data.pop('publication_hold');request_index=data.pop('planning_request_index')
+    if request_index is not None and request_index>=len(turns):raise InvalidInput('intake must bind the complete latest request')
+    if hold is not None and (hold['source_index']>=len(turns)or hold['quote']not in turns[hold['source_index']].text):
+        raise InvalidInput('field quote is not in the original message')
     source_ids=[ref['message_id']for ref in refs]+[message_id]
     # The stored context is scoped to the same conversation/generation. Reuse
     # only facts whose original MESSAGE is still present and checked by context.
@@ -45,11 +48,14 @@ def parse_flow(raw,turns,refs,message_id,previous):
     # The original compiler is reused unchanged; its temporary plan discriminator
     # grants nothing. The host determines authority only from traveler context.
     data.update(version='LIO-planning-intake.6',intent='plan'if intent!='cancel'else'cancel')
-    intake=parse_sourced(json.dumps(data,ensure_ascii=False),turns)
-    intake=replace(intake,intent=intent)
+    try:intake=parse_sourced(json.dumps(data,ensure_ascii=False),turns)
+    except BookingSourceUnclear as error:
+        error.control=replace(error.control,intent=intent,publication_hold=hold is not None,planning_request_index=request_index)
+        raise
+    intake=replace(intake,intent=intent,publication_hold=hold is not None,planning_request_index=request_index)
+    if intent=='cancel':return intake,questions,{}
     if data['start_date']is not None and not any(ref['field']=='start_date'and DATE_EVIDENCE.search(ref['quote'])for ref in data['field_sources']):
         raise InvalidInput('original trip start source required')
-    if intent=='cancel':return intake,questions,{}
     snapshot={}
     for field in ('city',*CORE):
         item=data[field]
