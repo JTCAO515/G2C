@@ -19,7 +19,7 @@ def test_erased_input_withholds_old_state_result_and_opaque_reference(tmp_path,k
     stored=SimpleNamespace(receipt=SimpleNamespace(conversation_id='chat',generation='generation',sequence=1,run_id='run'))
     context=SimpleNamespace(scope=binding.scope,query_message=lambda message_id:stored)
     def inventory(token,message_id):
-        return encode(dict(run_id='run',status='completed',operations=[dict(operation_id='operation',input_erased=state['erased'])]))
+        return encode(dict(run_id='run',status='completed',operations=[dict(operation_id='operation',registration_id='model.answer',input_erased=state['erased'])]))
     originals=SimpleNamespace(inventory=inventory,boundary=SimpleNamespace(with_history_context=lambda token,project:project(context)))
     claims=SimpleNamespace(binding=binding,read=lambda *args,**kwargs:encode(request),query=lambda context,mid:context.query_message(mid))
     def private_state(token,message_id):
