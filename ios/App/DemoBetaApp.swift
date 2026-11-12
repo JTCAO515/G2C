@@ -36,16 +36,20 @@ struct DemoBetaRootView: View {
                 DemoInviteView(shell: shell, accounts: root.accounts)
             }
         }
+        .overlay {
+            if phase == .inactive { LioTheme.paper.ignoresSafeArea() }
+        }
+        .accessibilityHidden(phase == .inactive)
+        .allowsHitTesting(phase != .inactive)
         .onChange(of: phase) { _, current in
             guard !root.finishingDemoCleanup else { return }
-            if current == .active { root.accounts.resume() }
-            else { root.accounts.suspend() }
+            root.accounts.sceneChanged(current)
         }
         .task(id: phase) {
             guard phase == .active else { return }
             while !Task.isCancelled {
-                do { try await Task.sleep(for: .seconds(20)) } catch { return }
                 if !root.finishingDemoCleanup { await root.accounts.recheckDemoSession() }
+                do { try await Task.sleep(for: .seconds(20)) } catch { return }
             }
         }
     }

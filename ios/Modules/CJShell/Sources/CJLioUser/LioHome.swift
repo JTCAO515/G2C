@@ -24,7 +24,6 @@ public struct LioHome<MenuContent: View>: View {
     @State private var menuOpen = false
     @State private var followsAnswer = true
     @State private var opening = Opening.beforeNext
-    @State private var didEnterBackground = false
     @State private var tab = Tab.chat
     @State private var tripPath: [LioTripRoute] = []
     @State private var memoryBusy = false
@@ -71,6 +70,7 @@ public struct LioHome<MenuContent: View>: View {
         _defaultTripPlan = State(initialValue: tripHistory.map { LioTripPlan(client: $0) })
         _draft = State(initialValue: chatLibrary?.continuity?.draft ?? "")
         _restoringChat = State(initialValue: chatLibrary?.continuity?.selectedID != nil)
+        _opening = State(initialValue: chatLibrary?.continuity?.selectedID == nil ? .beforeNext : .hidden)
     }
 
     private var chatID: Data? { selectedChat?.id ?? chatLibrary?.currentID }
@@ -134,7 +134,7 @@ public struct LioHome<MenuContent: View>: View {
                     try Task.checkCancellation()
                     selectedChat = chat
                     conversation = LioConversation(service: chat.service)
-                    opening = .beforeNext
+                    opening = .hidden
                 }
                 try Task.checkCancellation()
                 if let continuity = chatLibrary?.continuity { draft = continuity.draft }
@@ -176,8 +176,19 @@ public struct LioHome<MenuContent: View>: View {
         let pending = conversation.pending
         let earlierID = conversation.nextBefore.map { Data($0.utf8) }
         if conversation.turns.isEmpty {
-            if opening == .beforeNext { openingMessage }
-            examples
+            if conversation.hasLoadedTimeline {
+                if opening == .beforeNext { openingMessage }
+                examples
+            } else if conversation.timelineUnavailable {
+                Text(language.text("Couldn’t show earlier messages. Try again.", "暂时看不到更早的消息，请再试一次。"))
+                Button { refreshRequest += 1 } label: {
+                    Text(language.text("Try again", "再试一次"))
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                        .contentShape(Rectangle())
+                }
+            } else {
+                ProgressView().accessibilityLabel(language.text("Opening your conversation…", "正在打开你的对话…"))
+            }
         }
         ForEach(conversation.turns) { turn in
             VStack(alignment: .leading, spacing: 22) {
@@ -185,9 +196,6 @@ public struct LioHome<MenuContent: View>: View {
                 if opening == .before(turn.id) { openingMessage }
                 turnView(turn)
             }
-        }
-        if !conversation.turns.isEmpty, opening == .beforeNext, pending == nil {
-            openingMessage
         }
         if let memoryNotice { Text(memoryNotice).font(.footnote) }
         if memoryPending, activeMemoryTurn == nil {
@@ -238,14 +246,6 @@ public struct LioHome<MenuContent: View>: View {
                 withAnimation(LioTheme.Motion.animation(LioTheme.Motion.change, reduceMotion: reduceMotion)) {
                     scroll.scrollTo("lio.bottom", anchor: .bottom)
                 }
-            }
-            .onChange(of: scenePhase) { _, phase in
-                if phase == .background { didEnterBackground = true }
-                guard phase == .active, didEnterBackground else { return }
-                didEnterBackground = false
-                opening = .beforeNext
-                followsAnswer = true
-                if !conversation.turns.isEmpty, pending == nil { scroll.scrollTo("lio.bottom", anchor: .bottom) }
             }
         }
         .background(LioTheme.paper)
@@ -499,11 +499,13 @@ public struct LioHome<MenuContent: View>: View {
                 .focused($typing)
                 .accessibilityIdentifier("lio.composer")
             Button {
+                let showedWelcome = opening == .beforeNext && conversation.turns.isEmpty && conversation.hasLoadedTimeline
                 followsAnswer = true
                 sendCount += 1
                 conversation.send(draft, language: language)
                 recordPendingFirstQuestion()
-                if opening == .beforeNext, let id = conversation.pending?.id { opening = .before(id) }
+                if showedWelcome, let id = conversation.pending?.id { opening = .before(id) }
+                else if opening == .beforeNext { opening = .hidden }
                 draft = ""
                 typing = false
             } label: {
