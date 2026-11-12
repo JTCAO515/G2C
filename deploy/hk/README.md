@@ -6,6 +6,29 @@
 `compose.yaml` + `compose.local-pg.yaml`。后文的新加坡 Supabase／5432 session 资料是历史兼容路径，
 不能作为日常 L 发布的数据库目标。
 
+## #762 私有宿主组合（B-only）
+
+源码提供 `worker --runtime-manifest <B 的 0600 文件>` 的显式组合；默认 `worker` 保留原路径。
+这不是对公众新增的 App API，也不因源码合并而打开真实实验。B 按独审、精确 CI、实际镜像/导入源码、
+原账/全部在途及固定日窗核对后，才可配置 `compose.runtime.yaml`。L 不启用/编辑此覆盖层。
+
+- 原签名、AUTH、MESSAGE/RUN、注册出口、Meter 和唯一费用账本均复用；RPC 不接受账号、模型、账本或路径选择。
+  原 bearer 只定位其已绑定的原会话/子额度。call/propose/query 在原 worker 的私有 Unix socket 中组合，
+  provider 仍由同一个现役 worker 执行，RPC 线程不派第二个模型/工具出口。
+- B 的只读配置目录与可写合成原件目录分开挂载。身份文件 0600，原件/映射/claim 目录 0700；
+  canonical、reference、mapping 目录的 device/inode 由 B 固定。缺失/替换不自动重建，
+  不将非恢复 claim 控制目录用旧应用备份覆盖，也不清空映射绕 UNKNOWN。
+- `national.2` 是显式新增的三槽基线；旧默认 `national.1` 不变。
+  全国追问槽只含原 `reply is concise and useful`，后续规划/保存 authority 文本不属于槽。
+  源配置/fixture 的 UNRUN 和 `runtime_eligible=false` 不代表部署或训练资格。
+- v4 取证只接原 canonical claim、原 MESSAGE/RUN 与当前读取资格匹配的既有合成主体；
+  不逐次修改消息白名单。旧 v1/v2/v3 窗口不被扩大；并行的诊断窗口必须与 runtime 主体不重叠。
+- `python -m cj_api.runtime_client` 只连接固定私有 socket，读 0600 token/params 文件，
+  先写 UNKNOWN 回执再发送，结果保存在 0600 文件；不将 bearer 放 argv/日志，不自动重试。
+  丢 ACK 后以同一 logical attempt 查询。读原件仅解析 B 发出的 opaque ref，不支持任意路径或 URL。
+- 合法 task setup 未齐时 E/F 的 call/propose 在写 G intent 和付费前返回 UNRUN；
+  额度、健康检查、源 C0 或局部本地 PASS 都不能替代完整 setup、实际新 pins、独立判定及正式使用通知。
+
 ## 日常 API/worker 发布（B/L 标准流程）
 
 职责以 [JT 的 B/L 决定](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6814548220) 为准。
@@ -15,7 +38,10 @@ B 拥有香港调度、账本与额度、运行配置、基础设施及发布入
 
 ### 1. B 签发部署包；L 固定构建源
 
-B 在 #759、#702 给出明确起止时间、执行人和允许操作。条件预留不是 ACTIVE；
+B 在 #759、#702 给出固定日窗或临时变更、执行人和允许操作。已交付的固定日窗、独立身份、
+原账子额度及现役固定发布模板可在原范围内重复使用，不逐次等待 B 再发 ACTIVE。
+当前日窗和实际资源交付分别见 [窗口表](https://github.com/JTCAO515/G2C/issues/759#issuecomment-6818911393)
+及 [身份/子额度](https://github.com/JTCAO515/G2C/issues/759#issuecomment-6820312748)。条件预留不是 ACTIVE；
 部署窗也不是模型／工具／MESSAGE 验收窗。包中固定：
 
 - 精确已审 head、合并提交与树／改动文件等价证据、精确 CI 和适用审查链接、main CI 状态；
@@ -26,6 +52,8 @@ B 在 #759、#702 给出明确起止时间、执行人和允许操作。条件�
 L 只用 B 交接的既有访问入口与指定文件；不复制私钥、凭据或 `.env` 到仓库、镜像或聊天。
 不输出完整 `docker inspect`、`Config.Env`、`docker compose config`、Authorization header 或环境文件。
 如果包、许可、摘要、资格或窗口已失效，停止新操作，由 B 核同；不换身份、ID、端点或预算续跑。
+临时变更及配置/额度/基础设施仍只由 B 操作；用完按 #759 的原账锚、实际用量/占用、增额用途和预计调用量申请，
+不互借其他线身份或额度、不每日自动重置余额。
 
 在独立、干净、已提交的工作树构建。`G2C_RELEASE_SOURCE` 和以下路径由 B 的部署包确定，
 不能取浮动 `main`／`latest` 或模型生成的命令。当前香港平台为 `linux/amd64`：

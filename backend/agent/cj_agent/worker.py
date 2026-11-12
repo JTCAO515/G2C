@@ -102,7 +102,7 @@ class Outcome:
 
 
 class RunWorker:
-    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None, memory=None, message_context=None, tools=None, edit_publisher=None,edit_results=False,place_sources=None,memory_history=False,history_adapter=None,execution_lease=nullcontext,owned_transaction_lease=None,lio_original=None,lio_planning=None,lio_edit=None,lio_memory=None):
+    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None, memory=None, message_context=None, tools=None, edit_publisher=None,edit_results=False,place_sources=None,memory_history=False,history_adapter=None,execution_lease=nullcontext,owned_transaction_lease=None,lio_original=None,lio_planning=None,lio_edit=None,lio_memory=None,runtime_reflection=None):
         """`messages`: cj_message.domain.Service and `runs`: cj_run.core.Service, both bound to `scope`.
 
         `drafts`: optional cj_agent.draft.DraftPublisher for this user's TRIP scope; messages
@@ -130,6 +130,7 @@ class RunWorker:
         self.lio_edit = lio_edit
         self.lio_memory = lio_memory
         self._lio_active = False
+        self.runtime_reflection = runtime_reflection
 
     def process(self, limit=20):
         outcomes = []
@@ -405,6 +406,7 @@ class RunWorker:
                               lio_planning=self.lio_planning,
                               lio_edit=self.lio_edit,
                               lio_memory=self.lio_memory,
+                              runtime_reflection=self.runtime_reflection,
                               runs=Service(OwnedRepository(), runs.valid))
             if self.edit_publisher is not None:
                 with self.message_context.worker_repository(owned.runs.repository):
@@ -466,6 +468,12 @@ class RunWorker:
         stored = lio_original if lio_original is not None else self.messages.query(receipt.message_id)
         command = json.loads(stored.raw)
         text = command['text']
+        if self.runtime_reflection is not None:
+            reflection=self.runtime_reflection(binding)
+            if reflection is not None:
+                if command['creation_intent']!='none':
+                    raise BudgetUnknown('reflection cannot carry a publication intent')
+                return self._reflect_runtime(receipt,binding,state,reflection)
         if self.memory is not None:
             self.memory_run = (self.history_adapter.capture(binding) if self.memory_history
                                else self.memory.capture(binding))
@@ -530,3 +538,18 @@ class RunWorker:
         except ProviderUnknown:
             state = self._event(binding, self.runs.snapshot(binding), 'unknown')
         return self._finish(receipt, state, proposal_id)
+
+    def _reflect_runtime(self,receipt,binding,state,payload):
+        """One original registered model operation; no planning/tools/Memory."""
+        try:
+            for chunk in self._registered_stream(binding,'model.runtime_reflection.0',
+                                                  'model.runtime_reflection.1',payload):
+                state=self._event(binding,state,'text_delta',chunk)
+            state=self._event(binding,state,'completed')
+        except BudgetExceeded:
+            state=self._budget_rejection(binding,'answer')
+        except ProviderFailed:
+            state=self._event(binding,self.runs.snapshot(binding),'failed')
+        except ProviderUnknown:
+            state=self._event(binding,self.runs.snapshot(binding),'unknown')
+        return self._finish(receipt,state)

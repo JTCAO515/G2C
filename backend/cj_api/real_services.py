@@ -4,6 +4,7 @@ Ordinary RUN text stays ordinary text. Frozen synthetic PLACE/FACT transcripts,
 client modes and draft/confirmation semantics remain unchanged.
 """
 import asyncio
+from copy import copy
 from contextlib import closing,contextmanager
 from dataclasses import dataclass
 from datetime import datetime,timedelta,timezone
@@ -321,8 +322,13 @@ class RealTools:
         self.names=allowed_native
         self.native_tools=[t for t in TOOLS if t['function']['name'] in allowed_native]
         self.national_tools=[t for t in NATIONAL_TOOLS if t['function']['name'] in allowed_native]
+        self.runtime_fragments=None
+        self.runtime_profile=None
+        self.registrations=self._registrations()
+
+    def _registrations(self):
         model=Registration('model',self._model_input)
-        self.registrations=MappingProxyType({'model.answer':model,'model.draft':model,'model.tool_turn':model,
+        return MappingProxyType({'model.answer':Registration('model',self._answer_input),'model.draft':model,'model.tool_turn':model,
             'model.lio_intake.1':Registration('model',self._lio_intake_input),
             'model.lio_intake.2':Registration('model',self._lio_intake_schema_input),
             'model.lio_intake.3':Registration('model',self._lio_intake_current_input),
@@ -334,7 +340,28 @@ class RealTools:
             'model.lio_intake.9':Registration('model',self._lio_intake_optional_input),
             'tool.lio_city.1':Registration('tool',self._city_input),
             'memory.lio_extract.1':Registration('memory',self._lio_memory_input),
-            **{'tool.'+name:Registration('tool',lambda argument,name=name:self._tool_input(name,argument)) for name in {NATIVE_REGISTRATION[n] for n in allowed_native}}})
+            **{'tool.'+name:Registration('tool',lambda argument,name=name:self._tool_input(name,argument)) for name in {NATIVE_REGISTRATION[n] for n in self.names}}})
+
+    def runtime_registrations(self, fragments,*,profile='national.1'):
+        """One admitted RUN's immutable text candidate over the original exits.
+
+        The host resolves this RUN's candidate; no process-global selection or
+        mutable caller dictionary survives into preparation. This method neither
+        admits a RUN nor creates an identity, provider or financial account.
+        """
+        from runtime_adapter.contract import candidate,encode
+        from runtime_adapter.profiles import C0,reflection_registration
+        selected=candidate(fragments)
+        if profile not in ('national.1','national.2'):
+            raise BudgetUnknown('explicit national runtime baseline required')
+        if profile=='national.1' and selected['example.clarification']!=C0['example.clarification']:
+            raise BudgetUnknown('national clarification text hook is not connected')
+        bound=copy(self)
+        bound.runtime_fragments=encode(selected)
+        bound.runtime_profile=profile
+        registrations=dict(bound._registrations())
+        registrations['model.runtime_reflection.1']=reflection_registration(bound)
+        return MappingProxyType(registrations)
 
     def resolve_city(self,worker,binding,query):
         raw=''.join(worker._registered_stream(binding,'tool.lio_city.0','tool.lio_city.1',query))
@@ -381,6 +408,9 @@ class RealTools:
     def _lio_intake_input(self,argument):
         return self._model_input(argument,national_intake=True)
 
+    def _answer_input(self,argument):
+        return self._model_input(argument,answer_preparation=True)
+
     def _lio_intake_schema_input(self,argument):
         return self._model_input(argument,national_intake=True,intake_profile='LIO-planning-intake.2')
 
@@ -408,7 +438,7 @@ class RealTools:
     def _lio_memory_input(self, argument):
         return self._model_input(argument, release_after_send=True)
 
-    def _model_input(self,argument,*,release_after_send=False,national_intake=False,intake_profile='LIO-planning-intake.1'):
+    def _model_input(self,argument,*,release_after_send=False,national_intake=False,intake_profile='LIO-planning-intake.1',answer_preparation=False):
         native_turn = type(argument) is ModelInput
         indexed=intake_profile in ('LIO-planning-intake.3','LIO-planning-intake.4','LIO-planning-intake.5','LIO-planning-intake.6','LIO-planning-intake.7','LIO-planning-intake.8','LIO-planning-intake.9')
         if indexed:
@@ -435,8 +465,29 @@ class RealTools:
         from cj_agent.lio_intake_optional_schema import response_format_sha256 as optional_sha256
         indexed_sha=(optional_sha256 if intake_profile=='LIO-planning-intake.9' else flow_sha256 if intake_profile=='LIO-planning-intake.8' else facts_sha256 if intake_profile=='LIO-planning-intake.7' else flat_sha256 if intake_profile=='LIO-planning-intake.6' else start_sha256 if intake_profile=='LIO-planning-intake.5' else
                      modes_sha256 if intake_profile=='LIO-planning-intake.4' else response_format_sha256)
+        selected_tools=(self.national_tools if argument.national else self.native_tools) if native_turn else None
+        if self.runtime_fragments is not None:
+            from runtime_adapter.contract import decode,Invalid
+            from runtime_adapter.profiles import render
+            fragments=decode(self.runtime_fragments)
+            try:
+                if national_intake and self.runtime_profile=='national.2':
+                    from .runtime_text_slots import render_national_intake
+                    system=render_national_intake(system,fragments)
+                elif national_intake or native_turn and argument.lio_answer:
+                    system,_=render(system,[],fragments,profile='answer')
+                elif answer_preparation and not native_turn:
+                    from .local_lio_planning import DISCUSSION_PROMPT
+                    if system is not None and DISCUSSION_PROMPT in system:
+                        if system.count(DISCUSSION_PROMPT)!=1:
+                            raise BudgetUnknown('original runtime discussion baseline changed')
+                        system,_=render(system,[],fragments,profile='answer')
+                if native_turn and argument.national:
+                    _,selected_tools=render('',selected_tools,fragments,profile='authority')
+            except Invalid:
+                raise BudgetUnknown('original runtime text baseline changed') from None
         raw=canonical(dict(messages=messages,system=system,endpoint=M4_BASE,model=M4_MODEL,synthetic_only=True,
-                           native_tools=(self.national_tools if argument.national else self.native_tools) if native_turn else None,
+                           native_tools=selected_tools,
                            **({'response_mode':'lio-memory-json.1'} if release_after_send else {}),
                            **({'structured_profile':intake_profile} if national_intake else {}),
                            **({'response_format_sha256':SCHEMA_SHA256} if national_intake and intake_profile=='LIO-planning-intake.2' else {}),
@@ -460,14 +511,28 @@ class RealTools:
             def invoke():
                 self.services.require_scope(operation.binding.scope)
                 with _external_timing('model',operation,admitted) as checked:
+                    capture_model=self.tool_evidence is not None and self.tool_evidence.captures_model(operation.binding)
+                    capture=({'wire_observer':lambda raw:self.tool_evidence.record_model_input(operation,raw)}
+                             if capture_model else {})
                     stream=self.services.model.invoke(inputs['messages'],inputs['system'],operation.command.attempt_id,
                         tools=inputs['native_tools'],receipt=metadata,guard=checked,native_reply=native_reply,
                         native_turn_profile=inputs.get('native_turn_profile'),final_answer=inputs.get('external_tools_disabled',False),
                         release_after_send=inputs.get('response_mode')=='lio-memory-json.1',
                         lio_answer=inputs.get('answer_format_profile')=='lio-user.1',
                         **({'structured_profile':inputs['structured_profile']} if 'structured_profile' in inputs else {}),
-                        **({'intake_source_index':inputs['current_source_index']} if 'current_source_index' in inputs else {}))
-                    if national_intake and self.tool_evidence is not None and self.tool_evidence.intake_enabled:
+                        **({'intake_source_index':inputs['current_source_index']} if 'current_source_index' in inputs else {}),
+                        **capture)
+                    if capture_model:
+                        # Preserve streaming latency. A complete artifact is
+                        # written only after the original provider completes;
+                        # partial/failed streams retain their original UNKNOWN.
+                        chunks=[]
+                        for part in stream:
+                            chunks.append(part)
+                            yield part
+                        if checked() is not True:raise BudgetUnknown('original model evidence authority changed')
+                        self.tool_evidence.record_model(operation,''.join(chunks).encode('utf-8'),metadata)
+                    elif national_intake and self.tool_evidence is not None and self.tool_evidence.intake_enabled:
                         result=''.join(stream)
                         if checked() is not True:raise BudgetUnknown('original intake evidence authority changed')
                         self.tool_evidence.record_intake(operation,result.encode('utf-8'),metadata)

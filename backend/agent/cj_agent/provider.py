@@ -445,7 +445,7 @@ class MeteredDashScopeProvider:
                 finally:loop.close()
 
     def invoke(self,messages,system,attempt,*,tools=None,receipt,guard,native_reply=None,tool_choice=None,
-               native_turn_profile=None,final_answer=False,release_after_send=False,lio_answer=False,structured_profile=None,intake_source_index=None):
+               native_turn_profile=None,final_answer=False,release_after_send=False,lio_answer=False,structured_profile=None,intake_source_index=None,wire_observer=None):
         from cj_usage.authorization_budget import canonical
         native_tools=tools or []
         buffered=native_turn_profile==M4_NATIVE_TURN_BUFFERED
@@ -538,6 +538,9 @@ class MeteredDashScopeProvider:
         # A durable INTENT remains after any crash/cancel/timeout, even before the
         # first byte. No implicit retry, alternate region or replacement attempt.
         self.authorization.check_date()
+        if wire_observer is not None:
+            if guard() is not True:raise ProviderUnknown('original wire capture authority changed')
+            wire_observer(raw)
         self.calls+=1
         finished=False;done=False;response_ids=set();usage=None;calls={};texts=[];pending='';first_output=None
         observation=dict(http_status=None)
@@ -715,6 +718,10 @@ class MeteredDashScopeProvider:
                     if self.config.api_key in json.dumps(assistant,ensure_ascii=False):raise ProviderUnknown('native tool identity secret echo rejected')
                 metadata=dict(model_id=M4_MODEL,endpoint=M4_BASE,region='cn-beijing',usage=usage,
                               receipt_sha256=hashlib.sha256(next(iter(response_ids)).encode()).hexdigest(),actual_cost_cny='UNKNOWN')
+                if wire_observer is not None:
+                    original_output=encoded if native_tools and (not incremental or calls) else ''.join(texts)
+                    metadata.update(input_sha256=hashlib.sha256(raw).hexdigest(),
+                                    output_sha256=hashlib.sha256(original_output.encode('utf-8')).hexdigest())
                 if incremental and 'sent_at' in observation:
                     sent=observation['sent_at']
                     logging.getLogger('cj_usage.audit').info(

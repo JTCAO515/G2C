@@ -80,13 +80,13 @@ def worker_pulse():
     finally:stop.set();thread.join()
 
 
-def worker(runtime, *, tool_evidence=None):
+def worker(runtime, *, tool_evidence=None,runtime_manifest=None):
     from .demo_login import signing_socket
     with signing_socket(runtime):
-        _run_worker(runtime, tool_evidence=tool_evidence)
+        _run_worker(runtime, tool_evidence=tool_evidence,runtime_manifest=runtime_manifest)
 
 
-def _run_worker(runtime, *, tool_evidence=None):
+def _run_worker(runtime, *, tool_evidence=None,runtime_manifest=None):
     # Missing transferred journal is a configuration failure, never a new quota.
     if not (Path.home()/'.local/share/g2c/m4-real-services/m4-outflows.sqlite').is_file():
         raise ValueError('original_shared_authorization_journal_required')
@@ -110,6 +110,22 @@ def _run_worker(runtime, *, tool_evidence=None):
     lio_confirmation = None
     if runtime.demo_subjects and 'CJ_BETA_CONFIRMATION_B64' in os.environ:
         lio_confirmation = ConfirmationSigner(decoded('CJ_BETA_CONFIRMATION_B64', length=32))
+    if runtime_manifest is None:
+        return _worker_loop(runtime,services,tools,database,lio_confirmation)
+    from cj_api.runtime_worker_bindings import RuntimeWorkerBindings
+    from cj_api.runtime_rpc import runtime_socket
+    from cj_api.tool_evidence import ToolEvidence
+    bindings=RuntimeWorkerBindings(runtime_manifest,runtime,services,tools,confirmation_signer=lio_confirmation)
+    evidence=ToolEvidence.load(bindings.evidence_manifest,runtime.demo_subjects,runtime_selection=bindings.selects)
+    bindings.attach_evidence(evidence)
+    if tool_evidence is not None:
+        from cj_api.runtime_evidence_windows import EvidenceWindows
+        tools.tool_evidence=EvidenceWindows(evidence,tool_evidence)
+    with runtime_socket(bindings,Path('/run/g2c-demo/runtime.sock')):
+        return _worker_loop(runtime,services,tools,database,lio_confirmation,bindings)
+
+
+def _worker_loop(runtime,services,tools,database,lio_confirmation,bindings=None):
     while True:
         component='deployment_gate';status='unavailable'
         try:
@@ -122,7 +138,9 @@ def _run_worker(runtime, *, tool_evidence=None):
                     lio_confirmation=lio_confirmation,
                     hk_assembly_run_credential_scopes=frozenset(
                         scope_for(ISSUER,subject) for subject in runtime.assembly_run_credential_subjects),
-                    memory_configuration_for_scope=None if runtime.memory_runtime is None else runtime.memory_configuration_for_scope)
+                    memory_configuration_for_scope=None if runtime.memory_runtime is None else runtime.memory_configuration_for_scope,
+                    runtime_registrations_for_run=None if bindings is None else bindings.registrations,
+                    runtime_reflection=None if bindings is None else bindings.reflection)
             for outcome in outcomes:
                 if outcome.status in ('unknown','failed'):
                     print('ALERT run_'+outcome.status+' run_id='+outcome.run_id,file=sys.stderr,flush=True)
@@ -151,9 +169,12 @@ def initialize(runtime):
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('command',choices=['migrate','api','worker'])
     parser.add_argument('--tool-evidence-manifest',type=Path)
+    parser.add_argument('--runtime-manifest',type=Path)
     args=parser.parse_args();runtime=None
     if args.tool_evidence_manifest is not None and args.command!='worker':
         parser.error('tool evidence is available only on the existing synthetic worker')
+    if args.runtime_manifest is not None and args.command!='worker':
+        parser.error('runtime composition is available only on the existing synthetic worker')
     try:
         load_secret_environment(args.command)
         audit=logging.getLogger('cj_usage.audit');audit.setLevel(logging.INFO)
@@ -163,7 +184,7 @@ def main():
             from cj_api.tool_evidence import ToolEvidence
             evidence=(None if args.tool_evidence_manifest is None else
                       ToolEvidence.load(args.tool_evidence_manifest,runtime.demo_subjects))
-            worker(runtime,tool_evidence=evidence)
+            worker(runtime,tool_evidence=evidence,runtime_manifest=args.runtime_manifest)
         else:
             dict(migrate=initialize,api=api)[args.command](runtime)
     except (OSError,ValueError,KeyError,CompositionUnavailable,psycopg.Error):
