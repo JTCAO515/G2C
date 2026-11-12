@@ -750,6 +750,10 @@ import XCTest
         XCTAssertFalse(app.buttons["lio.source"].exists)
 
         step.tap()
+        let finished = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "label == %@", "北京明天有小雨。"), object: answer
+        )
+        XCTAssertEqual(XCTWaiter.wait(for: [finished], timeout: 8), .completed)
         XCTAssertEqual(answer.label, "北京明天有小雨。")
         XCTAssertFalse(app.buttons["lio.source"].exists)
         XCTAssertFalse(app.staticTexts["演示天气预报"].exists)
