@@ -18,7 +18,7 @@ def setup(profile,*,scope='original-owner'):
 
 def profile():
     return SimpleNamespace(expires_at=datetime.now(timezone.utc)+timedelta(hours=1),subjects={'self'},
-        extents={'long_term'},slots={name:SimpleNamespace(kind='preference',collection_allowed=True)
+        extents={'long_term'},slots={name:SimpleNamespace(kind='preference',collection_allowed=True,semantic_resolved=True)
             for name in ('quiet.entrance','travel.pace')})
 
 
@@ -27,6 +27,8 @@ def test_only_existing_nonsensitive_legal_profile_is_available():
     del current.slots['travel.pace']
     with pytest.raises(Unavailable,match='LEGAL_PROFILE_NOT_AVAILABLE'):setup(current).require_available()
     current=profile();current.slots['travel.pace'].collection_allowed=False
+    with pytest.raises(Unavailable,match='LEGAL_PROFILE_NOT_AVAILABLE'):setup(current).require_available()
+    current=profile();current.slots['travel.pace'].semantic_resolved=False
     with pytest.raises(Unavailable,match='LEGAL_PROFILE_NOT_AVAILABLE'):setup(current).require_available()
     current=profile();current.expires_at=datetime.now(timezone.utc)-timedelta(seconds=1)
     with pytest.raises(Unavailable,match='LEGAL_PROFILE_NOT_AVAILABLE'):setup(current).require_available()
