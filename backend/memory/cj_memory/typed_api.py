@@ -9,7 +9,8 @@ from starlette.concurrency import run_in_threadpool
 
 from cj_api.app import create_app
 from cj_api.generated import (MemorySaveV2Response,MemoryReceiptV2Response,MemoryDetailV2Response,
-    MemoryListV2Response,MemoryManagementApplyV2Response,MemoryManagementReceiptV2Response)
+    MemoryListV2Response,MemoryManagementApplyV2Response,MemoryManagementReceiptV2Response,
+    MemoryDetailV3Response,MemoryListV3Response)
 from cj_api.composition import CompositionUnavailable
 from cj_api.local_app import (LocalDatabase,scope_for,ISSUER,AUDIENCE,KEY_ID,InvitedSubjects)
 from cj_api.memory_boundary import (MemoryBoundary,MemoryBinding,MemoryAccessBlocked,
@@ -27,15 +28,18 @@ from .typed_local import TypedConfiguration
 
 
 class _RequestBoundary(MemoryBoundary):
-    def __init__(self, original, authority):
+    def __init__(self, original, authority, *, title_projection=None):
         super().__init__(original.checker,original.resolve_binding,original.source_policy,original.modules)
         self.authority=authority
+        self.title_projection=title_projection
 
     def _command(self, kind, argument):
         return parse_manual(argument) if kind=='save' else None
 
     def _context_value(self, context, kind, argument):
         if kind=='save':return context.save_manual_typed(argument,self.authority)
+        if self.title_projection is not None:
+            return context.project_titles(kind,argument,self.title_projection)
         return super()._context_value(context,kind,argument)
 
 
@@ -113,19 +117,28 @@ def _register_typed_routes(app,*,database,auth_dir,configuration,max_body_bytes,
                  expected_version=command.context_version if command.schema_version==2 else None))
         return dict(command=value,version=item.version,status=item.status,recorded_at=item.recorded_at.isoformat())
 
-    def project(request,kind,value):
+    def project(request,kind,value,*,titles=None):
+        def titled_item(item):
+            result=private_item(item)
+            result['title']=titles.get(item.command.item_id)
+            return result
+
+        render=private_item if titles is None else titled_item
         if kind in ('save','query'):
             result={'receipt':None if value is None else value.__dict__}
         elif kind in ('manage','withdraw','management_query'):
             result={'receipt':None if value is None else dict(action_id=value.operation_id,item_id=value.item_id,
                 version=value.version,status=value.status,input_sha256=value.input_sha256)}
-        elif kind=='detail':result={'item':None if value is None else private_item(value)}
-        elif kind=='list':result={'items':[private_item(item) for item in value]}
+        elif kind=='detail':result={'item':None if value is None else render(value)}
+        elif kind=='list':result={'items':[render(item) for item in value]}
         else:raise ValueError('unsupported typed projection')
-        raw=compact(dict(version='MEMORY-result.2',request_id=request.state.request_id,**result), allow_nan=True)
+        version='MEMORY-result.2' if titles is None else 'MEMORY-result.3'
+        raw=compact(dict(version=version,request_id=request.state.request_id,**result), allow_nan=True)
         models={'save':MemorySaveV2Response,'query':MemoryReceiptV2Response,'detail':MemoryDetailV2Response,
                 'list':MemoryListV2Response,'manage':MemoryManagementApplyV2Response,
                 'withdraw':MemoryManagementApplyV2Response,'management_query':MemoryManagementReceiptV2Response}
+        if titles is not None:
+            models.update(detail=MemoryDetailV3Response,list=MemoryListV3Response)
         models[kind].model_validate_json(raw,strict=True)
         if len(raw)>max_response_bytes:raise ValueError('private output exceeds explicit limit')
         return raw
@@ -142,7 +155,7 @@ def _register_typed_routes(app,*,database,auth_dir,configuration,max_body_bytes,
         return _error(request,503,'MEMORY_OUTCOME_UNKNOWN' if write else 'MEMORY_UNAVAILABLE','dependency','unknown',
                       'reconcile_original' if write else 'retry_safe_read')
 
-    async def invoke(request,kind,argument):
+    async def invoke(request,kind,argument,*,with_titles=False):
         token=_token(request)
         if token is None:return _error(request,401,'ACCESS_DENIED','access','failed','do_not_retry')
         def operation():
@@ -168,6 +181,10 @@ def _register_typed_routes(app,*,database,auth_dir,configuration,max_body_bytes,
                 if version!=expected:raise InvalidInput('typed operation endpoint/version mismatch')
                 return execute(service.repository,service.manual_policy,guard,authority,argument,
                                lambda value:project(request,kind,value))
+            if with_titles:
+                return _RequestBoundary(boundary,authority,
+                    title_projection=lambda value,titles:project(request,kind,value,titles=titles)
+                    ).invoke(token,kind,argument,lambda raw:raw)
             return _RequestBoundary(boundary,authority).invoke(token,kind,argument,lambda value:project(request,kind,value))
         try:return Response(content=await run_in_threadpool(operation),media_type='application/json')
         except Exception as error:return failure(request,kind in ('save','manage','withdraw'),error)
@@ -200,16 +217,26 @@ def _register_typed_routes(app,*,database,auth_dir,configuration,max_body_bytes,
         except (InvalidInput,UnicodeError):return _error(request,400,'INVALID_INPUT','input','failed','do_not_retry')
         return await invoke(request,'query',value['operation_id'])
 
-    @app.get('/v2/memory-items')
-    async def detail(request:Request):
+    async def detail_read(request,with_titles):
         try:value=query(request,('item_id',))
         except (InvalidInput,UnicodeError):return _error(request,400,'INVALID_INPUT','input','failed','do_not_retry')
-        return await invoke(request,'detail',value['item_id'])
+        return await invoke(request,'detail',value['item_id'],with_titles=with_titles)
 
-    @app.get('/v2/memories')
-    async def listing(request:Request):
+    async def list_read(request,with_titles):
         try:
             value=query(request,('after','limit') if 'after' in request.query_params else ('limit',));limit=int(value['limit'])
             if str(limit)!=value['limit'] or not 1<=limit<=100:raise InvalidInput('page bound')
         except (InvalidInput,ValueError,UnicodeError):return _error(request,400,'INVALID_INPUT','input','failed','do_not_retry')
-        return await invoke(request,'list',(value.get('after'),limit))
+        return await invoke(request,'list',(value.get('after'),limit),with_titles=with_titles)
+
+    @app.get('/v2/memory-items')
+    async def detail(request:Request):return await detail_read(request,False)
+
+    @app.get('/v2/memories')
+    async def listing(request:Request):return await list_read(request,False)
+
+    @app.get('/v3/memory-items')
+    async def detail_titled(request:Request):return await detail_read(request,True)
+
+    @app.get('/v3/memories')
+    async def listing_titled(request:Request):return await list_read(request,True)

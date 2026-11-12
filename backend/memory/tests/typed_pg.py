@@ -22,9 +22,10 @@ from cj_memory.manual import ManualPolicy
 from cj_memory.typed import ContextRef
 from cj_message.travel_reference import MessageContextAuthority
 from cj_message.travel import Selection
+from title_projection_pg import TitleProjectionPG
 
 
-class TypedStorageChecks(Harness):
+class TypedStorageChecks(TitleProjectionPG,Harness):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
