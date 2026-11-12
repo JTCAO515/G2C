@@ -27,7 +27,8 @@ def source_c0(*,resource_root=None):
              'backend/agent/cj_agent/lio_intake_start_schema.py',
              'backend/agent/cj_agent/lio_intake_flat_schema.py',
              'backend/agent/cj_agent/lio_intake_facts_schema.py',
-             'backend/agent/cj_agent/lio_intake_flow_schema.py', 'backend/cj_api/lio_flow_intake.py',
+             'backend/agent/cj_agent/lio_intake_flow_schema.py',
+             'backend/agent/cj_agent/lio_intake_optional_schema.py', 'backend/cj_api/lio_flow_intake.py',
              'backend/cj_api/lio_flat_intake.py', 'backend/cj_api/lio_sourced_intake.py',
              'backend/message/cj_message/lio_context.py',
              'backend/draft/cj_draft/lio_plan.py')
