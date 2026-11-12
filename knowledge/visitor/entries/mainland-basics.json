@@ -1,0 +1,102 @@
+[
+  {
+    "id": "visitor.mainland.payment-options",
+    "topic": "payment",
+    "cities": [
+      "beijing",
+      "chengdu",
+      "xian",
+      "shanghai",
+      "hangzhou",
+      "chongqing",
+      "shenzhen"
+    ],
+    "text_zh": "来华旅行可选择手机支付、银行卡或人民币现金；银行卡是否受理看商户标识，不把手机支付当唯一办法。",
+    "text_en": "In mainland China, payment options include mobile payments, bank cards and RMB cash. Check merchant acceptance signs; a payment app is not the only option.",
+    "source_urls": [
+      "https://english.www.gov.cn/news/202404/11/content_WS6617c858c6d0868f4e8e5f4d.html"
+    ],
+    "checked_on": "2026-11-12",
+    "expires_on": "2026-12-12"
+  },
+  {
+    "id": "visitor.mainland.rail-passport",
+    "topic": "passport_booking",
+    "cities": [
+      "beijing",
+      "chengdu",
+      "xian",
+      "shanghai",
+      "hangzhou",
+      "chongqing",
+      "shenzhen"
+    ],
+    "text_zh": "铁路票可用护照在12306英文网站或应用办理实名核验和购票，乘车带购票证件原件；景区预约规则另查。",
+    "text_en": "For mainland rail tickets, verify your passport through 12306 English and book there. Carry the original booking document. Attraction reservations have separate rules.",
+    "source_urls": [
+      "https://english.www.gov.cn/2025special/bizexpatsinchina2025"
+    ],
+    "checked_on": "2026-11-12",
+    "expires_on": "2026-12-12"
+  },
+  {
+    "id": "visitor.mainland.transport-tickets",
+    "topic": "transport",
+    "cities": [
+      "beijing",
+      "chengdu",
+      "xian",
+      "shanghai",
+      "hangzhou",
+      "chongqing",
+      "shenzhen"
+    ],
+    "text_zh": "地铁单程票可在站内窗口或售票机购买；乘铁路或高铁带购票证件原件，可按现场指引走人工核验通道。支付方式问站员。",
+    "text_en": "Buy metro single-journey tickets at station counters or machines. For mainland rail or high-speed trains, bring your original booking document; manual ticket checks are available. Ask staff about payment methods.",
+    "source_urls": [
+      "https://english.www.gov.cn/2025special/bizexpatsinchina2025"
+    ],
+    "checked_on": "2026-11-12",
+    "expires_on": "2026-12-12"
+  },
+  {
+    "id": "visitor.mainland.passport-sim",
+    "topic": "internet",
+    "cities": [
+      "beijing",
+      "chengdu",
+      "xian",
+      "shanghai",
+      "hangzhou",
+      "chongqing",
+      "shenzhen"
+    ],
+    "text_zh": "可带护照到电信、移动或联通营业厅申请手机卡；套餐和设备适用情况先问营业厅。",
+    "text_en": "Apply for a SIM with your passport at a China Telecom, China Mobile or China Unicom service office. Confirm the plan and device suitability there.",
+    "source_urls": [
+      "https://english.www.gov.cn/2025special/bizexpatsinchina2025"
+    ],
+    "checked_on": "2026-11-12",
+    "expires_on": "2027-01-11"
+  },
+  {
+    "id": "visitor.mainland.emergency-numbers",
+    "topic": "emergency",
+    "cities": [
+      "beijing",
+      "chengdu",
+      "xian",
+      "shanghai",
+      "hangzhou",
+      "chongqing",
+      "shenzhen"
+    ],
+    "text_zh": "在中国内地，遭人身侵害或财产案件拨110，火灾拨119，需要急救拨120。",
+    "text_en": "In mainland China, call 110 for assault or property crime, 119 for fire, and 120 for emergency medical help.",
+    "source_urls": [
+      "https://english.www.gov.cn/2025special/bizexpatsinchina2025"
+    ],
+    "checked_on": "2026-11-12",
+    "expires_on": "2027-02-10"
+  }
+]
