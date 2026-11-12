@@ -274,5 +274,8 @@ class LioV2ScoreTests(unittest.TestCase):
                 self.assertEqual(json.loads(first), scorer('validation', batch))
 
 
+# D-owned default CI seam: preserve the existing scorer tests and discover QA.
+from .test_teacher_quality import TeacherQualityTests
+
 if __name__ == '__main__':
     unittest.main()
