@@ -220,6 +220,14 @@ private final class LioRouteCanvas: UIView {
         load()
     }
 
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        if previousTraitCollection?.preferredContentSizeCategory != traitCollection.preferredContentSizeCategory {
+            size = .zero
+            setNeedsLayout()
+        }
+    }
+
     func retire() {
         request?.cancel()
         request = nil
@@ -285,8 +293,9 @@ private final class LioRouteCanvas: UIView {
                 marker.layer.cornerRadius = diameter / 2
                 marker.clipsToBounds = true
                 marker.frame = CGRect(x: point.x - diameter / 2, y: point.y - diameter / 2, width: diameter, height: diameter)
-                marker.isAccessibilityElement = true
-                marker.accessibilityLabel = stop.stop.name
+                // The timeline provides the full, actionable place names;
+                // these repeated counters only orient the visual map.
+                marker.isAccessibilityElement = false
                 marker.accessibilityIdentifier = "lio.trip.marker.\(stop.stop.id)"
                 self.addSubview(marker)
                 self.markers.append(marker)
