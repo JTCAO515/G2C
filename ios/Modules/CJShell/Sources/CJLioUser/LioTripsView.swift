@@ -75,7 +75,16 @@ struct LioTripsView: View {
 
     var body: some View {
         NavigationStack(path: $path) {
-            Group {
+            VStack(alignment: .leading, spacing: 0) {
+                Text(language.text("Trips", "行程"))
+                    .font(LioTheme.display(.largeTitle))
+                    .foregroundStyle(LioTheme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityAddTraits(.isHeader)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+                    .padding(.bottom, 8)
+                Group {
                 if library != nil {
                     if listUnavailable {
                         ContentUnavailableView {
@@ -111,9 +120,12 @@ struct LioTripsView: View {
                         }
                     }
                 }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .lioPage()
             .navigationTitle(language.text("Trips", "行程"))
+            .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(LioTheme.paper, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbarColorScheme(colorScheme, for: .navigationBar)
@@ -142,6 +154,8 @@ struct LioTripsView: View {
                 }
             }
             .toolbar {
+                // The full-size D5 title is in the page; navigation keeps its actions and back label.
+                ToolbarItem(placement: .principal) { Color.clear.frame(width: 1, height: 1).accessibilityHidden(true) }
                 if let tripPlan {
                     ToolbarItem(placement: .topBarTrailing) {
                         NavigationLink(language.text("Previous plans", "此前的安排")) {
@@ -173,6 +187,7 @@ struct LioTripsView: View {
             VStack(spacing: 16, content: content)
                 .padding(16)
         }
+        .clipped()
         .accessibilityIdentifier("lio.trip.list")
     }
 
