@@ -65,8 +65,13 @@ class CanonicalClaims:
         with self.admission_lock():
             return self._claim_locked(raw,request)
 
+    def _write_guard(self,request):
+        # Use only the validated canonical action, after consuming a capability
+        # on dispatch. A malformed/mismatched request cannot preserve its token.
+        self.guard(read_only=False,purpose='cancel_original' if request['kind']=='cancel_original_run' else 'claim')
+
     def _claim_locked(self,raw,request):
-        self.guard(read_only=False)
+        self._write_guard(request)
         if self.original_exists(request['step_id']):return PreparedOriginal(False,None)
         with self._directory() as directory:
             info=os.fstat(directory)
@@ -82,7 +87,7 @@ class CanonicalClaims:
             with os.fdopen(descriptor,'wb') as output:
                 output.write(raw);output.flush();os.fsync(output.fileno())
             os.fsync(directory)
-        self.guard(read_only=False)
+        self._write_guard(request)
         capability=object()
         self.capabilities[capability]=raw
         return PreparedOriginal(True,capability)
@@ -93,7 +98,7 @@ class CanonicalClaims:
         if original is None or original!=raw:
             raise Unavailable('CANONICAL_CAPABILITY_SPENT_OR_MISMATCH')
         request=decode(original)
-        self.guard(read_only=False)
+        self._write_guard(request)
         if self.read(request['step_id'])!=raw:
             raise Unavailable('CANONICAL_ORIGINAL_CHANGED')
         return request

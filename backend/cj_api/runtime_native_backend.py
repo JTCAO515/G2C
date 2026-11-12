@@ -58,7 +58,8 @@ class NativeRuntimeBackend:
     def _dispatch(self,request,*,capability,deadline):
         original=self.claims.consume(request,capability,deadline=deadline)
         self.require(binding=self.claims.binding,pins_sha256=self.claims.pins.key,
-            purpose='reflection',deadline=deadline,read_only=False)
+            purpose='cancel_original' if original['kind']=='cancel_original_run' else 'reflection',
+            deadline=deadline,read_only=False)
         if original['kind']!='reflection':
             if self.dialogue is None:raise Unavailable('NATIVE_ACTION_NOT_CONNECTED')
             self.dialogue.dispatch(original,deadline=deadline)
