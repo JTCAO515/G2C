@@ -437,6 +437,40 @@ import XCTest
         reply(chinese ? "你喜欢什么样的酒店？" : "Tell me what kind of hotel you like.")
     }
 
+    func testTripEmptyStateInvitesConversationInBothLanguages() throws {
+        for language in ["en", "zh-Hans"] {
+            let chinese = language == "zh-Hans"
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "-cj.ui.language.v1", language]
+            app.launch()
+            XCTAssertTrue(app.tabBars.buttons[chinese ? "行程" : "Trips"].waitForExistence(timeout: 12))
+            app.tabBars.buttons[chinese ? "行程" : "Trips"].tap()
+            XCTAssertTrue(app.staticTexts[chinese ? "还没有行程" : "No trips yet"].waitForExistence(timeout: 8))
+            let chat = app.buttons[chinese ? "和 Lio 聊聊" : "Chat with Lio"]
+            XCTAssertTrue(chat.isHittable)
+            try app.performAccessibilityAudit(for: .all)
+            let attachment = XCTAttachment(screenshot: app.screenshot())
+            attachment.name = "trip-empty-\(language)"
+            attachment.lifetime = .keepAlways
+            add(attachment)
+            chat.tap()
+            XCTAssertTrue(app.buttons["lio.example.0"].waitForExistence(timeout: 8))
+            app.terminate()
+        }
+    }
+
+    func testTripTimelineDarkAndLargestTypeInBothLanguages() throws {
+        for language in ["en", "zh-Hans"] {
+            for largest in [false, true] {
+                try exerciseTrip(language,
+                    clarification: language == "en" ? "For three days in Beijing" : "北京三天",
+                    trips: language == "en" ? "Trips" : "行程", day: language == "en" ? "Day 1" : "第 1 天",
+                    fixed: language == "en" ? "Hotel check-in" : "酒店入住", largest: largest,
+                    appearance: largest ? "light" : "dark")
+            }
+        }
+    }
+
     func testTripEnglish() throws {
         try exerciseTrip("en", clarification: "For three days in Beijing", trips: "Trips", day: "Day 1", fixed: "Hotel check-in")
     }
@@ -466,9 +500,12 @@ import XCTest
         let map = app.buttons["lio.trip.recorded-map"]
         if !map.isHittable { app.swipeUp() }
         XCTAssertTrue(map.isHittable, app.debugDescription)
-        XCTAssertFalse(app.staticTexts["Map unavailable"].exists)
+        let recordedFailure = app.staticTexts["lio.trip.recorded-map.unavailable"]
+        XCTAssertFalse(recordedFailure.exists)
+        XCTAssertTrue(app.staticTexts["lio.trip.route-map.unavailable"].exists)
+        XCTAssertTrue(schedule.exists)
         map.tap()
-        XCTAssertTrue(app.staticTexts["Map unavailable"].waitForExistence(timeout: 8))
+        XCTAssertTrue(recordedFailure.waitForExistence(timeout: 8))
         XCTAssertTrue(schedule.exists)
     }
 
@@ -489,7 +526,7 @@ import XCTest
         XCTAssertTrue(viewTrip.waitForExistence(timeout: 8))
         XCTAssertTrue(app.staticTexts["Earlier plan"].exists)
         viewTrip.tap()
-        XCTAssertTrue(app.navigationBars["Draft"].waitForExistence(timeout: 8), app.debugDescription)
+        XCTAssertTrue(app.staticTexts["Draft"].waitForExistence(timeout: 8), app.debugDescription)
         XCTAssertTrue(app.staticTexts["Date to be decided"].exists)
         XCTAssertFalse(app.staticTexts["Earlier plan"].exists)
         XCTAssertFalse(app.staticTexts["Earlier stop"].exists)
@@ -502,10 +539,13 @@ import XCTest
         XCTAssertFalse(app.staticTexts["Earlier stop"].exists)
     }
 
-    private func exerciseTrip(_ language: String, clarification: String, trips: String, day: String, fixed: String) throws {
+    private func exerciseTrip(_ language: String, clarification: String, trips: String, day: String, fixed: String,
+                              largest: Bool = false, appearance: String = "light") throws {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
         app.launchArguments = ["--lio-preview", "-cj.ui.language.v1", language]
+        app.launchArguments += ["-lio.ui.appearance.v1", appearance]
+        if largest { app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"] }
         app.launch()
         defer { app.terminate() }
 
@@ -533,9 +573,37 @@ import XCTest
         show.tap()
 
         XCTAssertTrue(app.navigationBars[trips].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.staticTexts[fixed].exists)
-        app.buttons["lio.trip.map.1"].tap()
-        XCTAssertTrue(app.navigationBars[day].waitForExistence(timeout: 8))
+        let chinese = language == "zh-Hans"
+        let trip = app.buttons.containing(.staticText, identifier: chinese ? "北京三日行" : "Three days in Beijing").firstMatch
+        XCTAssertTrue(trip.waitForExistence(timeout: 8), app.debugDescription)
+        trip.tap()
+        let routeMap = app.descendants(matching: .any).matching(identifier: "lio.trip.route-map").firstMatch
+        XCTAssertTrue(routeMap.waitForExistence(timeout: 8), app.debugDescription)
+        let hotel = app.staticTexts[fixed]
+        if !hotel.isHittable { app.swipeUp() }
+        XCTAssertTrue(hotel.waitForExistence(timeout: 8))
+        let walk = app.buttons["lio.trip.focus.old-town-walk"]
+        if !walk.isHittable { app.swipeDown() }
+        XCTAssertTrue(walk.isHittable, app.debugDescription)
+        walk.tap()
+        XCTAssertEqual(routeMap.value as? String, "old-town-walk")
+        let second = app.buttons["lio.trip.select-day.2"]
+        if !second.isHittable { app.swipeDown() }
+        second.tap()
+        XCTAssertTrue(app.buttons["lio.trip.focus.museum"].waitForExistence(timeout: 8))
+        XCTAssertFalse(hotel.exists)
+        XCTAssertTrue(app.buttons["lio.trip.focus.park"].exists)
+        app.buttons["lio.trip.select-day.1"].tap()
+        XCTAssertTrue(hotel.waitForExistence(timeout: 8))
+        let fixedStatus = app.staticTexts[chinese ? "固定安排" : "Fixed plan"]
+        if fixedStatus.frame.maxY > app.tabBars.firstMatch.frame.minY - 12 { app.swipeUp() }
+        XCTAssertTrue(fixedStatus.isHittable)
+        XCTAssertLessThanOrEqual(fixedStatus.frame.maxY, app.tabBars.firstMatch.frame.minY)
+        try app.performAccessibilityAudit(for: .all)
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = "trip-timeline-\(language)-\(appearance)-\(largest ? "largest" : "normal")"
+        attachment.lifetime = .keepAlways
+        add(attachment)
     }
 
     func testResendUsesTheSameQuestionAndQuotaStopsRetry() {
