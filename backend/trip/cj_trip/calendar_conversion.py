@@ -7,7 +7,7 @@ import re
 
 from .domain import Conflict, identifier, packed
 from .structured import _date, _fields, _text
-from .structured_v3 import calendar_dates
+from .structured_v3 import calendar_dates, legacy_validation_view
 
 
 def original_reference(value):
@@ -94,6 +94,52 @@ def check_conflicts(date_checks):
     return tuple(dict(kind='date_dependent', code='DATE_' + check['kind'].upper(),
         day_indices=check['day_indices'], item_ids=check['item_ids'], reason=check['reason'],
         evidence_refs=check['evidence_refs']) for check in date_checks if check['state'] == 'conflict')
+
+
+def source_window_conflicts(document, fields):
+    """Preserve known destination/window facts without inventing missing dates.
+
+    Inputs are the validated Trip and actual NEEDS snapshot. This is a pure
+    counterpart of the original SourceWindow publisher's date/zone/instant checks.
+    """
+    from cj_feasibility.time_checks import instant, known
+    zone = known(fields.get('destination_timezone', dict(state='unknown')))
+    bounds = [fields.get(key) for key in ('arrival', 'departure')]
+    dates = [None if event is None else known(event['date']) for event in bounds]
+    moments = [None if event is None else instant(event, key)[0]
+               for event, key in zip(bounds, ('arrival', 'departure'))]
+    conflicts = []
+
+    def conflict(code, reason, item=None, day_indices=None):
+        conflicts.append(dict(kind='hard_fixed', code=code,
+            day_indices=[] if day_indices is None else day_indices,
+            item_ids=[] if item is None else [item['id']], reason=reason, evidence_refs=[]))
+
+    if dates[0] is not None and dates[1] is not None and dates[1] < dates[0]:
+        conflict('SOURCE_WINDOW_REVERSED', 'confirmed source planning dates are reversed')
+    if moments[0] is not None and moments[1] is not None and moments[1] < moments[0]:
+        conflict('SOURCE_WINDOW_REVERSED', 'confirmed source planning instants are reversed')
+    for key, event in zip(('arrival', 'departure'), bounds):
+        if event is not None and zone is not None and known(event['timezone']) not in (None, zone):
+            conflict('SOURCE_TIMEZONE_CONFLICT', key+' differs from confirmed destination timezone')
+    if document['calendar']['state'] == 'dated':
+        for day in document['days']:
+            if ((dates[0] is not None and day['date'] < dates[0])
+                    or (dates[1] is not None and day['date'] > dates[1])):
+                conflict('SOURCE_DATE_WINDOW_CONFLICT', 'calendar day is outside confirmed source bounds',
+                         day_indices=[day['day_index']])
+    projected = legacy_validation_view(document)
+    for item, copy in zip(document['items'], projected['items']):
+        for edge in ('start', 'end'):
+            event = copy['schedule'][edge]
+            index = item['schedule'][edge]['day_index']
+            if zone is not None and known(event['timezone']) not in (None, zone):
+                conflict('SOURCE_TIMEZONE_CONFLICT', 'activity differs from confirmed destination timezone', item, [index])
+            moment = instant(event, edge, utc_offset=event['utc_offset'])[0]
+            if moment is not None and ((moments[0] is not None and moment < moments[0])
+                                      or (moments[1] is not None and moment > moments[1])):
+                conflict('SOURCE_TIME_WINDOW_CONFLICT', 'activity is outside confirmed source instants', item, [index])
+    return tuple(conflicts)
 
 
 def converted_content(document, start, date_checks, fixed_fields):

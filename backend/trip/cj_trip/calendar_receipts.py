@@ -4,7 +4,7 @@ from hashlib import sha256
 import json
 from cj_needs.contract_v1 import decode_snapshot
 from cj_feasibility.trip_time_v3 import evaluate
-from .calendar_conversion import converted_content, check_conflicts
+from .calendar_conversion import converted_content, check_conflicts, source_window_conflicts
 from .domain import Denied
 from .lio_history import _revision
 from .needs_action_store import NeedsActions
@@ -64,7 +64,8 @@ def query(repository, request):
         snapshot = decode_snapshot(base64.b64decode(source['snapshot'], validate=True))
         transformed = converted_content(document, request.start_date, _provisional(len(document['days'])),
                                         snapshot.fields.get('fixed_items', ()))
-        conflicts = list(transformed.conflicts) if transformed.content is None else _time_conflicts(transformed.content)
+        conflicts = list(transformed.conflicts) if transformed.content is None else (
+            _time_conflicts(transformed.content) + list(source_window_conflicts(json.loads(transformed.content), snapshot.fields)))
         if not conflicts:
             raise Denied('original conversion conflict evidence unavailable')
         return dict(version='TRIP-date-convert-receipt.1', action_id=request.action_id, trip_id=request.trip_id,

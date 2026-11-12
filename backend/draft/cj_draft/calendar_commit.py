@@ -7,6 +7,7 @@ import json
 
 from cj_needs.revision_lease import LeaseUnavailable
 from cj_trip.domain import Conflict, ProposalDetail
+from cj_trip.calendar_conversion import source_window_conflicts
 from cj_trip.needs_action_store import NeedsActions
 
 
@@ -48,6 +49,10 @@ def commit(publisher, binding, original, expected, capture, candidate, proposal,
                 return receipt
         publisher.source.check(binding, capture)
         publisher.check_trip_context(cursor, binding, capture)
+        if kind == 'accept':
+            snapshot, _ = capture.records()
+            if source_window_conflicts(json.loads(proposal.content), snapshot.fields):
+                raise Conflict('confirmed calendar source window rejected')
         digest = publisher.publish_candidate(cursor, proposal, binding, capture, candidate)
         action = repository.confirm.issue(repository.scope, ProposalDetail(proposal, digest, 'pending'),
             action_id=action_id, kind=kind, candidate_hash=digest).action

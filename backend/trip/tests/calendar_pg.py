@@ -139,7 +139,7 @@ class CalendarPublicationChecks(unittest.TestCase):
         cls.host = RegisteredHost(cls.auth/'calendar-publication', Path(CONNINFO),
                                  {s: (12, 2, 30000) for s in ('calendar-plan', 'calendar-stale', 'calendar-date',
                                   'calendar-edit', 'calendar-soft', 'calendar-hard', 'calendar-relative',
-                                  'calendar-rollback', 'calendar-ack', 'calendar-final', 'calendar-unselected')})
+                                  'calendar-rollback', 'calendar-ack', 'calendar-final', 'calendar-unselected', 'calendar-window')})
         cls.env = dict(CJ_LOCAL_NEEDS_PROFILE='manual-v1', CJ_LOCAL_TRAVEL_CONTEXT='message-travel.1')
         cls.signer = ConfirmationSigner(b'synthetic-calendar-publication-key-123456')
         for subject in cls.host.subjects:
@@ -147,7 +147,7 @@ class CalendarPublicationChecks(unittest.TestCase):
 
     tearDownClass = classmethod(Harness.tearDownClass.__func__)
 
-    def setup(self, subject, *, fixed_date=None, fixed_mutable=False):
+    def setup(self, subject, *, fixed_date=None, fixed_mutable=False, arrival=None):
         from cj_needs.domain import validate_fields
         fields = deepcopy(json.loads((ROOT/'contracts/message/trip-send-examples.2.json').read_bytes())['needs_basis']['fields'])
         if fixed_date is not None:
@@ -155,6 +155,8 @@ class CalendarPublicationChecks(unittest.TestCase):
                 fields['fixed_items'][0][edge]['date'] = dict(state='known', value=fixed_date)
         if fixed_mutable:
             fields['fixed_items'][0]['locked'] = dict(state='known', value=False)
+        if arrival is not None:
+            fields['arrival'] = arrival
         validate_fields(fields, complete=True)
         with patch.dict(__import__('os').environ, self.env), self.host.api(subject) as client:
             source = dict(action_id='source-'+subject, needs_id='visit', expected_version=0,
@@ -479,6 +481,21 @@ class CalendarPublicationChecks(unittest.TestCase):
         self.assertEqual(state.draft_outcome, 'validation_failed')
         self.assertIsNone(repository.query_action(edit_action_id(stored.receipt.run_id)))
         self.assertEqual(repository.detail(before.trip_id), before)
+
+    def test_converted_fixed_meetup_cannot_move_before_the_confirmed_arrival(self):
+        from cj_trip.calendar_conversion import DateConvert
+        arrival = dict(date=dict(state='known',value='2026-12-01'),time=dict(state='known',value='11:00'),
+                       timezone=dict(state='known',value='Asia/Shanghai'),place=dict(state='unknown'))
+        _, before = self.first_trip('calendar-window', arrival=arrival)
+        worker = self.followup('calendar-window', before, 'Start 2026-12-01.')
+        self.assertEqual(worker.process()[0].status, 'completed')
+        result = worker.drafts.date_result
+        self.assertIs(result['committed'], False)
+        self.assertEqual(result['outcome'], 'conflict')
+        self.assertTrue(any(c['code'] == 'SOURCE_TIME_WINDOW_CONFLICT' for c in result['conflicts']))
+        self.assertEqual(worker.drafts.date_reader.calls, 0)
+        self.assertEqual(worker.drafts.repository.detail(before.trip_id), before)
+        self.assertEqual(worker.drafts.repository.calendar_conversion_receipt(DateConvert.parse(worker.drafts.original_conversion)), result)
 
     def test_actual_worker_saves_undated_formal_trip_without_party_or_date(self):
         from cj_trip.lio_history import plan_action_id

@@ -5,7 +5,7 @@ import json
 from cj_feasibility.validator import Candidate
 from cj_feasibility.trip_time_v3 import evaluate
 from cj_needs.revision_lease import LeaseUnavailable
-from cj_trip.calendar_conversion import DateConvert, converted_content, check_conflicts
+from cj_trip.calendar_conversion import DateConvert, converted_content, source_window_conflicts
 from cj_trip.domain import CommitUnknown, Conflict, Denied, Proposal, packed
 from cj_trip.lio_history import TripHead
 from .calendar_commit import commit
@@ -44,6 +44,7 @@ def convert(publisher, binding, original, current, raw, capture, before_publish)
     conflicts = list(transformed.conflicts)
     if transformed.content is not None:
         conflicts += _time_conflicts(transformed.content)
+        conflicts += source_window_conflicts(json.loads(transformed.content), before.fields)
     kind = 'reject' if conflicts else 'accept'
     if kind == 'reject':
         content = context.trip.content

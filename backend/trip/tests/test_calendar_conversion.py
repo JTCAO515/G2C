@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from cj_trip.calendar_conversion import DateConvert, converted_content
+from cj_trip.calendar_conversion import DateConvert, converted_content, source_window_conflicts
 from cj_trip.domain import Conflict, Proposal, packed
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -78,3 +78,44 @@ def test_dated_or_overflow_is_not_an_implicit_replan():
         converted_content(TRIP['dated'], date(2026, 12, 1), TRIP['dated']['date_checks'], [])
     with pytest.raises(ValueError):
         converted_content(TRIP['base'], date(9999, 12, 31), TRIP['dated']['date_checks'], [])
+
+
+def window_event(day, wall):
+    return dict(date=dict(state='known', value=day), time=dict(state='known', value=wall),
+                timezone=dict(state='known', value='Asia/Shanghai'), place=dict(state='unknown'))
+
+
+@pytest.mark.parametrize('field,event,code', [
+    ('arrival', window_event('2026-12-02','00:00'), 'SOURCE_DATE_WINDOW_CONFLICT'),
+    ('departure', window_event('2026-12-02','23:59'), 'SOURCE_DATE_WINDOW_CONFLICT'),
+    ('arrival', window_event('2026-12-01','11:00'), 'SOURCE_TIME_WINDOW_CONFLICT'),
+    ('departure', window_event('2026-12-01','09:30'), 'SOURCE_TIME_WINDOW_CONFLICT'),
+])
+def test_known_single_source_bound_is_not_dropped_during_conversion(field, event, code):
+    fields = deepcopy(MESSAGE['needs_basis']['fields'])
+    fields[field] = event
+    result = source_window_conflicts(TRIP['dated'], fields)
+    assert any(c['code'] == code and c['kind'] == 'hard_fixed' for c in result)
+
+
+def test_source_window_equality_and_unknown_calendar_never_invent_dates():
+    fields = deepcopy(MESSAGE['needs_basis']['fields'])
+    fields.update(arrival=window_event('2026-12-01','09:00'), departure=window_event('2026-12-03','23:59'))
+    assert not source_window_conflicts(TRIP['dated'], fields)
+    before = packed(TRIP['base'])
+    fields['arrival']['time']['value'] = '11:00'
+    assert not source_window_conflicts(TRIP['base'], fields)
+    assert packed(TRIP['base']) == before
+
+
+def test_reversed_source_bounds_and_mixed_item_source_timezone_reject():
+    fields = deepcopy(MESSAGE['needs_basis']['fields'])
+    fields.update(arrival=window_event('2026-12-03','18:00'), departure=window_event('2026-12-01','09:00'))
+    assert any(c['code'] == 'SOURCE_WINDOW_REVERSED' for c in source_window_conflicts(TRIP['dated'], fields))
+    fields = deepcopy(MESSAGE['needs_basis']['fields'])
+    other = deepcopy(TRIP['base'])
+    other['items'][0]['schedule']['start']['timezone']['value'] = 'Europe/London'
+    assert any(c['code'] == 'SOURCE_TIMEZONE_CONFLICT' for c in source_window_conflicts(other, fields))
+    fields['arrival'] = window_event('2026-12-01','09:00')
+    fields['arrival']['timezone']['value'] = 'Europe/London'
+    assert any(c['code'] == 'SOURCE_TIMEZONE_CONFLICT' for c in source_window_conflicts(TRIP['base'], fields))
