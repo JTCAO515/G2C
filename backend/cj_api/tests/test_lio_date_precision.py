@@ -55,6 +55,21 @@ class DatePrecision(unittest.TestCase):
         result=parse(json.dumps(value),(PlanningTurn(text,date(2026,11,12)),))
         self.assertEqual(result.extraction['fields']['arrival']['date']['value'],'2026-11-17')
 
+    def test_coarse_departure_cannot_authorize_a_precise_saved_window(self):
+        text='计划上海从2026-11-13玩到下周'
+        value=flow(text,city='上海',days=None,start='2026-11-13',party=None,questions=())
+        value.update(version='LIO-planning-intake.8',planning_request_index=0)
+        value['extra_fields']={'departure':{'date':'2026-12-25','time':None,'timezone':None,'place':None}}
+        value['field_sources'].append(dict(field='departure.date',source_index=0,quote='下周'))
+        from test_lio_national_execution import NationalExecution
+        from cj_agent.provider import ProviderUnknown
+        with self.assertRaises(ProviderUnknown):
+            NationalExecution().run_intake(NationalExecution().envelope(text),flow_output=value)
+
+    def test_full_week_range_can_bind_each_endpoint(self):
+        phrase='下周二到下周五，周二开始'
+        self.assertEqual(parsed('计划北京三天，一个人，'+phrase,'2026-11-17',quote=phrase).start_date['value'],'2026-11-17')
+
     def test_coarse_week_stays_uncertain_and_does_not_block_intake(self):
         text='计划北京三天，一个人，下周去'
         result=parsed(text,None,quote='下周去',uncertain=True)

@@ -165,9 +165,12 @@ _WEEK_SOURCE=re.compile(
  r'|\bnext (?P<next_day>'+_WEEKDAY_WORD+r')\b',re.I)
 
 
-def _week_source(value,references,turns):
+def _week_source(value,references,turns,*,departure=False):
  for ref in references:
-  for match in _WEEK_SOURCE.finditer(ref['quote']):
+  matches=list(_WEEK_SOURCE.finditer(ref['quote']))
+  # Complete range quotes can contain both departure and return weekdays.
+  selected_matches=matches[-1:]if departure else matches[:1]
+  for match in selected_matches:
    original=turns[ref['source_index']].question_day
    selected=date.fromisoformat(value)
    zh_day=match['zh_day'];en_day=match['en_before']or match['en_day']or match['next_day']
