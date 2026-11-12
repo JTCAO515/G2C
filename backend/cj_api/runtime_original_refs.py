@@ -8,6 +8,10 @@ import stat
 
 from runtime_adapter.contract import decode,digest,encode,require,Unavailable
 
+KINDS=frozenset({'inventory','input','meter','fee','artifact','wire_input',
+    'action','protected_inventory','meter_link','provider','output','result','state'})
+MESSAGE_KINDS=frozenset({'inventory','action','protected_inventory','result','state'})
+
 
 class OriginalReferences:
     def __init__(self,directory,binding,reader,*,guard):
@@ -30,12 +34,14 @@ class OriginalReferences:
         if kind=='input':return self.reader.input(token,mid,op)
         if kind=='meter':return self.reader.meter(token,mid,op)
         if kind=='fee':return self.reader.fee(token,mid,op)
-        return self.reader.artifact(token,mid,op,wire_input=kind=='wire_input')
+        if kind in ('artifact','wire_input'):
+            return self.reader.artifact(token,mid,op,wire_input=kind=='wire_input')
+        return self.reader.projection(token,kind,mid,op)
 
     def issue(self,token,*,kind,message_id,operation_id=None):
-        require(kind in ('inventory','input','meter','fee','artifact','wire_input'),'ORIGINAL_REFERENCE_KIND')
-        require(type(message_id) is str and message_id and (kind=='inventory' and operation_id is None or
-            kind!='inventory' and type(operation_id) is str and operation_id),'ORIGINAL_REFERENCE_SOURCE')
+        require(kind in KINDS,'ORIGINAL_REFERENCE_KIND')
+        require(type(message_id) is str and message_id and (kind in MESSAGE_KINDS and operation_id is None or
+            kind not in MESSAGE_KINDS and type(operation_id) is str and operation_id),'ORIGINAL_REFERENCE_SOURCE')
         self.guard(read_only=True)
         descriptor=dict(binding_sha256=self.binding.key,kind=kind,message_id=message_id,operation_id=operation_id)
         raw=self._bytes(token,descriptor)
@@ -65,7 +71,7 @@ class OriginalReferences:
                 ref=='original-'+digest(record),'ORIGINAL_REFERENCE_INTEGRITY')
         descriptor=record['source']
         require(type(descriptor) is dict and set(descriptor)=={'binding_sha256','kind','message_id','operation_id'} and
-                descriptor['kind'] in ('inventory','input','meter','fee','artifact','wire_input'),'ORIGINAL_REFERENCE_DESCRIPTOR')
+                descriptor['kind'] in KINDS,'ORIGINAL_REFERENCE_DESCRIPTOR')
         return record
 
     def resolve(self,token,ref):
