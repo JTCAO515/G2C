@@ -457,7 +457,7 @@ class MeteredDashScopeProvider:
                 or (proxy or incremental) and (not native_tools or tool_choice is not None)
                 or final_answer and not (proxy or incremental)):
             raise ProviderFailed('explicit native turn transport required')
-        if structured_profile not in (None,'LIO-planning-intake.1','LIO-planning-intake.2','LIO-planning-intake.3','LIO-planning-intake.4','LIO-planning-intake.5','LIO-planning-intake.6','LIO-planning-intake.7','LIO-planning-intake.8') or structured_profile is not None and (native_tools or system is None):
+        if structured_profile not in (None,'LIO-planning-intake.1','LIO-planning-intake.2','LIO-planning-intake.3','LIO-planning-intake.4','LIO-planning-intake.5','LIO-planning-intake.6','LIO-planning-intake.7','LIO-planning-intake.8','LIO-planning-intake.9') or structured_profile is not None and (native_tools or system is None):
             raise ProviderFailed('explicit nationwide structured profile required')
         if release_after_send and (native_tools or system is None):
             raise ProviderFailed('explicit structured model input required')
@@ -507,7 +507,10 @@ class MeteredDashScopeProvider:
         if tool_choice is not None:body['tool_choice']=tool_choice
         if native_tools and not (proxy or incremental):body['response_format']=_m4_native_answer_format()
         elif not native_tools and system is not None:
-            if structured_profile=='LIO-planning-intake.8':
+            if structured_profile=='LIO-planning-intake.9':
+                from .lio_intake_optional_schema import response_format
+                body['response_format']=response_format(intake_source_index)
+            elif structured_profile=='LIO-planning-intake.8':
                 from .lio_intake_flow_schema import response_format
                 body['response_format']=response_format(intake_source_index)
             elif structured_profile=='LIO-planning-intake.7':

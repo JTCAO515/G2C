@@ -337,6 +337,7 @@ class RealTools:
             'model.lio_intake.6':Registration('model',self._lio_intake_flat_input),
             'model.lio_intake.7':Registration('model',self._lio_intake_facts_input),
             'model.lio_intake.8':Registration('model',self._lio_intake_flow_input),
+            'model.lio_intake.9':Registration('model',self._lio_intake_optional_input),
             'tool.lio_city.1':Registration('tool',self._city_input),
             'memory.lio_extract.1':Registration('memory',self._lio_memory_input),
             **{'tool.'+name:Registration('tool',lambda argument,name=name:self._tool_input(name,argument)) for name in {NATIVE_REGISTRATION[n] for n in self.names}}})
@@ -431,12 +432,15 @@ class RealTools:
     def _lio_intake_flow_input(self,argument):
         return self._model_input(argument,national_intake=True,intake_profile='LIO-planning-intake.8')
 
+    def _lio_intake_optional_input(self,argument):
+        return self._model_input(argument,national_intake=True,intake_profile='LIO-planning-intake.9')
+
     def _lio_memory_input(self, argument):
         return self._model_input(argument, release_after_send=True)
 
     def _model_input(self,argument,*,release_after_send=False,national_intake=False,intake_profile='LIO-planning-intake.1',answer_preparation=False):
         native_turn = type(argument) is ModelInput
-        indexed=intake_profile in ('LIO-planning-intake.3','LIO-planning-intake.4','LIO-planning-intake.5','LIO-planning-intake.6','LIO-planning-intake.7','LIO-planning-intake.8')
+        indexed=intake_profile in ('LIO-planning-intake.3','LIO-planning-intake.4','LIO-planning-intake.5','LIO-planning-intake.6','LIO-planning-intake.7','LIO-planning-intake.8','LIO-planning-intake.9')
         if indexed:
             messages,system,provider,source_index=argument
             native_reply=None;final_answer=False;turn_profile=M4_NATIVE_TURN_PROFILE_V2
@@ -458,7 +462,8 @@ class RealTools:
         from cj_agent.lio_intake_flat_schema import response_format_sha256 as flat_sha256
         from cj_agent.lio_intake_facts_schema import response_format_sha256 as facts_sha256
         from cj_agent.lio_intake_flow_schema import response_format_sha256 as flow_sha256
-        indexed_sha=(flow_sha256 if intake_profile=='LIO-planning-intake.8' else facts_sha256 if intake_profile=='LIO-planning-intake.7' else flat_sha256 if intake_profile=='LIO-planning-intake.6' else start_sha256 if intake_profile=='LIO-planning-intake.5' else
+        from cj_agent.lio_intake_optional_schema import response_format_sha256 as optional_sha256
+        indexed_sha=(optional_sha256 if intake_profile=='LIO-planning-intake.9' else flow_sha256 if intake_profile=='LIO-planning-intake.8' else facts_sha256 if intake_profile=='LIO-planning-intake.7' else flat_sha256 if intake_profile=='LIO-planning-intake.6' else start_sha256 if intake_profile=='LIO-planning-intake.5' else
                      modes_sha256 if intake_profile=='LIO-planning-intake.4' else response_format_sha256)
         selected_tools=(self.national_tools if argument.national else self.native_tools) if native_turn else None
         if self.runtime_fragments is not None:
@@ -620,7 +625,7 @@ class RealTools:
         else:
             from cj_message.lio_context import LioCitation, LioToolProgress, answer_prompt
             chinese = lio_locale == 'zh'
-            system += ' ' + answer_prompt(lio_locale)
+            system += ' ' + answer_prompt(lio_locale,question=messages[-1]['content'])
             today = lio_question_day or datetime.now(ZoneInfo('Asia/Shanghai')).date()
             weather_day = _lio_weather_day(messages[-1]['content'], today)
             tomorrow = today + timedelta(days=1)

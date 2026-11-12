@@ -375,11 +375,11 @@ def fixed_sources_complete(intake,fields,turns,city_reference):
   comparison=description+'\n'+details
   if first is not None:
    comparison=_absolute_fixed_days(comparison,first)
-  expected=_fixed_item(comparison,first,city_reference.timezone,party)
-  if expected is None:return False
-  personal=re.search(r'我(?!们)|\bI (?:have|need|must|am)\b',description,re.I)
+  personal=re.search(r'本人|我参加|我(?=\s*(?:[0-9]|要|需|将|会|在))|\bI (?:have|need|must|am)\b',description,re.I)
   collective=re.search(r'全体|大家|我们|\b(?:for our party|for everyone|both of us|all of us)\b',description,re.I)
-  if personal and not collective:expected['applies_to']=['self']
+  expected=_fixed_item(comparison,first,city_reference.timezone,party,
+      explicit_self=bool(personal and not collective))
+  if expected is None:return False
   for edge in ('start','end'):
    for part in ('date','time','timezone'):
     if item[edge][part]!=expected[edge][part]:return False
