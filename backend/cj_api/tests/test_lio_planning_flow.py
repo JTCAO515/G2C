@@ -21,7 +21,7 @@ def flow(text,*,city='成都',days=3,start=None,party=None,intent='consult',repl
     sources=[dict(field='duration_days',source_index=index,quote=text)]if days is not None else []
     if start:sources.append(dict(field='start_date',source_index=index,quote=text))
     if party:sources.append(dict(field='party_size',source_index=index,quote=text))
-    return dict(version='LIO-planning-intake.7',intent=intent,reply=reply,question_fields=list(questions),publication_hold=None,planning_request_index=index if city is not None and days is not None else None,needs_tools=True,
+    return dict(version='LIO-planning-intake.7',intent=intent,reply=reply,question_fields=list(questions),publication_hold=None,planning_request_index=(index if city is not None and days is not None else 0 if index>0 else None),needs_tools=True,
         current_source_index=index,city=None if city is None else dict(query=city,normalized_name=None,province=None,source_index=index,quote=city),
         duration_days=days,start_date=start,party_size=party,unknown_fields=[],uncertain_fields={},
         field_sources=sources,fixed_items=[],extra_fields={},extra_unknown_fields=[],extra_uncertain_fields={},unresolved=[],long_term_requests=[])
@@ -52,6 +52,23 @@ class PlanningFlow(unittest.TestCase):
                     self.assertEqual(context(events)['authority'],'plan')
                     self.assertEqual(context(events)['status'],'needs_details')
                     self.assertIsNotNone(result) # cannot fall through to native tools
+
+    def test_valid_question_is_preserved_even_when_advisory_request_index_is_temporarily_absent(self):
+        text='去成都玩三天';wire=flow(text)
+        wire['planning_request_index']=None
+        published,events,lookups,result=run(wire,text)
+        self.assertEqual((published,lookups),([],[]));self.assertEqual(answer(events),wire['reply'])
+        self.assertIsNotNone(result)
+        previous=context(events)
+        for item in previous['facts'].values():
+            for ref in item['sources']:ref['message_id']='prior-0'
+        following='从2026-11-20开始，两个人'
+        next_wire=flow(following,city=None,days=None,start='2026-11-20',party=2,index=1,questions=())
+        next_wire['planning_request_index']=0
+        next_wire['city']=wire['city'];next_wire['duration_days']=3
+        next_wire['field_sources'].append(dict(field='duration_days',source_index=0,quote=text))
+        published,_,_,_=run(next_wire,following,turns=(original(text),original(following)),previous=previous)
+        self.assertEqual(len(published),1)
 
     def test_given_relative_or_absolute_start_only_asks_party(self):
         for text,city,start,locale,reply in [
@@ -229,6 +246,63 @@ class PlanningFlow(unittest.TestCase):
             published,events,lookups,_=run(wire,text)
             self.assertEqual((published,lookups),([],[]));self.assertEqual(answer(events),reply)
             self.assertEqual(context(events)['authority'],'none')
+
+    def test_pending_plan_translation_cannot_supply_or_cache_execution_facts(self):
+        first='去成都玩三天';wire=flow(first)
+        previous=context(run(wire,first)[1])
+        for item in previous['facts'].values():
+            for ref in item['sources']:ref['message_id']='prior-0'
+        text='请把“从2026-11-20开始，两个人”翻译成英文。'
+        consult=flow(text,city=None,days=None,start='2026-11-20',party=2,index=1,questions=(),reply='Starting 2026-11-20, two people.')
+        consult.update(planning_request_index=None,needs_tools=False)
+        published,events,lookups,_=run(consult,text,turns=(original(first),original(text)),previous=previous)
+        self.assertEqual((published,lookups),([],[]));self.assertEqual(answer(events),consult['reply'])
+        retained=context(events)
+        self.assertNotIn('start_date',retained['facts']);self.assertNotIn('party_size',retained['facts'])
+        following='继续';next_wire=flow(following,city=None,days=None,index=2,questions=('start_date','party_size'))
+        published,events,lookups,_=run(next_wire,following,turns=(original(first),original(text),original(following)),previous=retained)
+        self.assertEqual((published,lookups),([],[]));self.assertIn('几个人',answer(events))
+        # The next model also cannot reuse the translation's valid quoted
+        # date/people sources as execution facts instead of using the cache.
+        retained['nonplanning_message_ids']=['prior-1']
+        next_wire.update(start_date='2026-11-20',party_size=2,question_fields=[])
+        next_wire['field_sources'].extend([dict(field=field,source_index=1,quote=text)for field in ('start_date','party_size')])
+        published,events,lookups,_=run(next_wire,following,turns=(original(first),original(text),original(following)),previous=retained)
+        self.assertEqual((published,lookups),([],[]));self.assertIn('几个人',answer(events))
+
+    def test_same_romanized_city_changed_province_does_not_cache_or_publish_old_date(self):
+        from cj_api.lio_city import CityReference
+        first='计划江苏Suzhou三天，从2026-11-20开始，两个人'
+        initial=flow(first,city='Suzhou',start='2026-11-20',party=2,intent='plan',questions=())
+        initial['city']['province']='江苏'
+        _,_,facts=parse_flow(json.dumps(initial),(original(first),),(),'prior-0',None)
+        old=CityReference('320500','苏州市','江苏省','苏州市','city','Asia/Shanghai').__dict__
+        previous=dict(authority='plan',status='needs_details',facts=facts,city=dict(status='resolved',candidates=[old],source={}))
+        text='重新规划安徽Suzhou三天'
+        new=flow(text,city='Suzhou',index=1,intent='plan',questions=('start_date',))
+        new['city']['province']='安徽'
+        target=CityReference('341300','宿州市','安徽省','宿州市','city','Asia/Shanghai').__dict__
+        resolution=dict(status='resolved',candidates=[target],source={})
+        published,events,_,_=run(new,text,turns=(original(first),original(text)),previous=previous,resolution=resolution)
+        self.assertEqual(published,[]);next_context=context(events)
+        self.assertNotIn('start_date',next_context['facts'])
+        for item in next_context['facts'].values():
+            for ref in item['sources']:
+                if ref['message_id']=='national-message':ref['message_id']='prior-1'
+        following='继续';last=flow(following,city=None,days=None,index=2,intent='plan',questions=('start_date',))
+        last['planning_request_index']=1
+        published,events,_,_=run(last,following,turns=(original(first),original(text),original(following)),previous=next_context,resolution=resolution)
+        self.assertEqual(published,[]);self.assertIn('哪天',answer(events));self.assertNotIn('start_date',context(events)['facts'])
+        # Even a later model re-emission from a valid old quote cannot restore
+        # the other province's date after the new adcode has been selected.
+        last['start_date']='2026-11-20'
+        last['field_sources'].append(dict(field='start_date',source_index=0,quote=first))
+        published,events,_,_=run(last,following,turns=(original(first),original(text),original(following)),previous=next_context,resolution=resolution)
+        self.assertEqual(published,[]);persisted=context(events)
+        self.assertEqual(persisted['date_boundary_message_id'],'prior-1')
+        last['current_source_index']=3
+        published,events,_,_=run(last,following,turns=(original(first),original(text),original(following),original(following)),previous=persisted,resolution=resolution)
+        self.assertEqual(published,[]);self.assertNotIn('start_date',context(events)['facts'])
 
     def test_capability_question_bypasses_planning_in_both_languages(self):
         planning=NationalLioPlanning(None,None)
