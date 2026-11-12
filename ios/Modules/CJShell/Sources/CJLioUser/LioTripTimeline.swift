@@ -174,7 +174,7 @@ private struct LioRouteMap: UIViewRepresentable {
     static func dismantleUIView(_ map: LioRouteCanvas, coordinator: ()) { map.retire() }
 }
 
-/// MapKit renders the map; 44pt numbered controls represent the known stops.
+/// MapKit renders the map; numbered labels represent the known stops.
 /// Like the existing recorded map, the image is kept only for this view's lifetime.
 private final class LioRouteCanvas: UIView {
     private let image = UIImageView()
@@ -182,7 +182,7 @@ private final class LioRouteCanvas: UIView {
     private var focusedStop: String?
     private var style = UIUserInterfaceStyle.unspecified
     private var request: MKMapSnapshotter?
-    private var markers: [UIButton] = []
+    private var markers: [UILabel] = []
     private var failed: (() -> Void)?
     private var size = CGSize.zero
 
@@ -265,19 +265,23 @@ private final class LioRouteCanvas: UIView {
             for stop in stops {
                 let point = snapshot.point(for: stop.coordinate)
                 let font = UIFont.preferredFont(forTextStyle: .footnote)
-                let diameter = max(44, ceil(font.lineHeight + 16))
+                let number = "\(stop.number)"
+                let textWidth = (number as NSString).size(withAttributes: [.font: font]).width
+                let diameter = max(44, ceil(max(font.lineHeight, textWidth) + 16))
                 guard self.bounds.insetBy(dx: diameter / 2, dy: diameter / 2).contains(point) else { continue }
-                let marker = UIButton(type: .system)
-                marker.setTitle("\(stop.number)", for: .normal)
-                marker.titleLabel?.font = font
-                marker.titleLabel?.adjustsFontForContentSizeCategory = true
-                marker.setTitleColor(UIColor(LioTheme.onVermilion), for: .normal)
+                let marker = UILabel()
+                marker.text = number
+                marker.font = font
+                marker.adjustsFontForContentSizeCategory = true
+                marker.textAlignment = .center
+                marker.textColor = UIColor(LioTheme.onVermilion)
                 marker.backgroundColor = UIColor(LioTheme.vermilion)
                 marker.layer.cornerRadius = diameter / 2
+                marker.clipsToBounds = true
                 marker.frame = CGRect(x: point.x - diameter / 2, y: point.y - diameter / 2, width: diameter, height: diameter)
+                marker.isAccessibilityElement = true
                 marker.accessibilityLabel = stop.stop.name
                 marker.accessibilityIdentifier = "lio.trip.marker.\(stop.stop.id)"
-                marker.addAction(UIAction { [weak marker] _ in marker?.isSelected.toggle() }, for: .touchUpInside)
                 self.addSubview(marker)
                 self.markers.append(marker)
             }
