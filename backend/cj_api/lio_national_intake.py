@@ -127,6 +127,10 @@ _DIAGNOSTIC_CODES={
  'unstated planning event field':'event_source',
  'date differs from its original quote':'date_source',
  'relative date differs from its original question day':'relative_date_source',
+ 'week without a day cannot authorize an exact date':'date_precision',
+ 'date differs from its original weekday':'weekday_source',
+ 'date differs from its original calendar week':'calendar_week_source',
+ 'date differs from its original next weekday':'weekday_source',
  'unsupported field or source':'needs_field_name',
  'invalid observation state':'observation_state',
 }
@@ -150,6 +154,35 @@ def province_evidence(mentions,texts):
  return last
 
 
+_WEEKDAYS={'monday':0,'tuesday':1,'wednesday':2,'thursday':3,'friday':4,'saturday':5,'sunday':6}
+_WEEKDAY=re.compile(r'(?:周|星期|礼拜)([一二三四五六日天])|\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b',re.I)
+_WEEK_HINT=re.compile(r'(?:下|本|这)(?:个)?(?:周|星期|礼拜)|\b(?:next|this) week\b|\bnext (?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b',re.I)
+_NEXT_WEEK=re.compile(r'下(?:个)?(?:周|星期|礼拜)|\bnext week\b',re.I)
+_DAY_LITERAL=re.compile(r'(?<!\d)\d{4}-\d{2}-\d{2}(?!\d)|\d{1,2}月\d{1,2}[日号]')
+
+
+def _week_source(value,references,turns):
+ for ref in references:
+  quote=ref['quote']
+  if _WEEK_HINT.search(quote)is None:continue
+  weekdays=[('一二三四五六日天'.index(m[1])if m[1]not in ('日','天')else 6)
+            if m[1]else _WEEKDAYS[m[2].casefold()]for m in _WEEKDAY.finditer(quote)]
+  if not weekdays and _DAY_LITERAL.search(quote)is None:
+   raise InvalidInput('week without a day cannot authorize an exact date')
+  selected=date.fromisoformat(value);original=turns[ref['source_index']].question_day
+  if weekdays and any(selected.weekday()!=weekday for weekday in weekdays):
+   raise InvalidInput('date differs from its original weekday')
+  if _NEXT_WEEK.search(quote):
+   monday=original-timedelta(days=original.weekday())+timedelta(days=7)
+   if not monday<=selected<monday+timedelta(days=7):
+    raise InvalidInput('date differs from its original calendar week')
+  elif re.search(r'\bnext (?:'+ '|'.join(_WEEKDAYS)+r')\b',quote,re.I):
+   if not 0<(selected-original).days<=7:
+    raise InvalidInput('date differs from its original next weekday')
+  elif selected.isocalendar()[:2]!=original.isocalendar()[:2]:
+   raise InvalidInput('date differs from its original calendar week')
+
+
 def _date_source(value,references,turns):
  # An explicit ISO date cannot be swapped for another model-selected date.
  dates={d for ref in references for d in re.findall(r'(?<!\d)\d{4}-\d{2}-\d{2}(?!\d)',ref['quote'])}
@@ -162,6 +195,7 @@ def _date_source(value,references,turns):
    relative_dates.add((turns[ref['source_index']].question_day+timedelta(days=offset)).isoformat())
  if relative_dates and (len(relative_dates)!=1 or value not in relative_dates):
   raise InvalidInput('relative date differs from its original question day')
+ _week_source(value,references,turns)
 
 
 def parse(raw,turns,*,version=VERSION):
