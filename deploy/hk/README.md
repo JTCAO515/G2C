@@ -32,7 +32,7 @@
 ## 日常 API/worker 发布（B/L 标准流程）
 
 职责以 [JT 的 B/L 决定](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6814548220) 为准。
-L 拥有 Lio 业务源码及对应测试，可以在 B 排定的窗口内自行执行 API/worker 镜像发布。
+L 拥有 Lio 业务源码及对应测试；其他线未实际占用时，可随时按标准流程自行部署可回退的 API/worker 应用镜像。
 B 拥有香港调度、账本与额度、运行配置、基础设施及发布入口；协调文件仍按 PR 文件锁使用。
 以下流程不授权新账号、延长邀请资格、改变预算、数据库迁移或新增云资源。
 
@@ -40,7 +40,8 @@ B 拥有香港调度、账本与额度、运行配置、基础设施及发布入
 
 B 在 #759、#702 给出固定日窗或临时变更、执行人和允许操作。已交付的固定日窗、独立身份、
 原账子额度及现役固定发布模板可在原范围内重复使用，不逐次等待 B 再发 ACTIVE。
-当前日窗和实际资源交付分别见 [窗口表](https://github.com/JTCAO515/G2C/issues/759#issuecomment-6818911393)
+L 闲时部署规则见 [JT 11-13 调整](https://github.com/JTCAO515/G2C/issues/759#issuecomment-6840048978)；原表保留其他线合成时段。今天 11-13 09:00–11:00 优先保障 L 发布已合 main，未合功能不阻挡已合修复上线。
+原合成日窗和实际资源交付分别见 [原窗口表](https://github.com/JTCAO515/G2C/issues/759#issuecomment-6818911393)
 及 [身份/子额度](https://github.com/JTCAO515/G2C/issues/759#issuecomment-6820312748)。条件预留不是 ACTIVE；
 部署窗也不是模型／工具／MESSAGE 验收窗。包中固定：
 
@@ -102,6 +103,7 @@ pending/inflight Memory 任务；历史 UNKNOWN 原件和占用保留，不能�
 
 ### 3. L 执行 B 的固定应用切换
 
+发布前核 #759/#702 无其他 ACTIVE 批次，公告本次开始/结束；活动轨迹未归还时不穿插。B 的版本化入口 `deploy.hk.application_release` 去掉固定小时限制，仍要求最长两小时的明确 gate 时段，保留部署互斥锁和全部在途检查。
 B 的发布脚本负责：互斥锁、窗口和精确源／镜像／门禁检查；关闭 API 入口后再次检查排空；
 停止旧 worker；应用 B 已批准的唯一镜像选择；只重建 API/worker；核同实际镜像和源码、
 API readiness 与 worker 存活。L 不手改 `compose.env`、任何秘密文件、Compose 或采集清单。
