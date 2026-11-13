@@ -201,3 +201,12 @@ def exploration_original_for(database,binding):
     if row[2]!=LIO_VERSION_V4:
         raise Unavailable('exploration worker requires an actual Lio4 original')
     return LioOriginal(row[0],row[1],LIO_VERSION_V4)
+
+
+def selected_lio_original_for(database,binding):
+    """Only the explicitly upgraded national factory installs this selector."""
+    row=_origin_row(database,binding)
+    if row is None:return None
+    if row[2] not in (None,LIO_VERSION_V3,LIO_VERSION_V4):
+        raise Unavailable('original Lio capability unavailable')
+    return LioOriginal(row[0],row[1],LIO_VERSION if row[2] is None else row[2])
