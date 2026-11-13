@@ -504,7 +504,15 @@ class PlanningFlow(unittest.TestCase):
 
     def test_capability_question_bypasses_planning_in_both_languages(self):
         planning=NationalLioPlanning(None,None)
-        for text in ('你能干啥','What can you do?'):
+        for text,locale in (('你能干啥','zh'),('你会干嘛','zh'),('你能帮我做什么','zh'),
+                            ('What can you do?','en'),('What can you help me with?','en')):
+            events=[]
+            class Worker:
+                def _event(self,binding,state,kind,value=''):
+                    events.append((kind,value))
+                    return SimpleNamespace(sequence=state.sequence+1)
             with patch.object(planning,'context')as lookup:
-                self.assertIsNone(planning.execute(None,None,None,text,None))
+                planning.execute(Worker(),None,SimpleNamespace(sequence=0),text,SimpleNamespace(locale=locale))
                 lookup.assert_not_called()
+                self.assertEqual([kind for kind,_ in events],['text_delta','completed'])
+                self.assertIn('排行程'if locale=='zh'else'Plan your days',events[0][1])
