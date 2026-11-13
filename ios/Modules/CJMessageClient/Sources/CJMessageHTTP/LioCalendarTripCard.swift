@@ -38,12 +38,24 @@ public struct LioCalendarTripCard: Equatable, Sendable {
     public let calendar: CalendarState?
     public let days: [Day]
     public let dateChecks: [DateCheck]?
-    public let originalUTF8: Data
+    /// Exact decoder input, including its enclosing response when read inside a timeline/history.
+    /// These bytes are retained for observation, not interpreted as a write source.
+    public let inputUTF8: Data
+
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.id == rhs.id && lhs.tripVersion == rhs.tripVersion && lhs.contentVersion == rhs.contentVersion
+            && lhs.contentSHA256 == rhs.contentSHA256 && lhs.title == rhs.title && lhs.calendar == rhs.calendar
+            && lhs.days == rhs.days && lhs.dateChecks == rhs.dateChecks
+    }
 
     public static func decode(_ bytes: Data) throws -> Self {
         guard !bytes.isEmpty, bytes.count <= 4_500_000 else { throw MessageHTTPFailure.invalidResponse }
         var reader = StrictJSON(bytes: Array(bytes))
         let root = try reader.document()
+        return try read(root, inputUTF8: bytes)
+    }
+
+    static func read(_ root: StrictJSONValue, inputUTF8: Data) throws -> Self {
         let f = try CardJSON.fields(root, "version trip_id trip_version content_version content_sha256 title calendar days date_checks")
         guard try CardJSON.text(f["version"]) == "LIO-trip-card.2",
               let version = ContentVersion(rawValue: try CardJSON.text(f["content_version"])) else {
@@ -148,11 +160,11 @@ public struct LioCalendarTripCard: Equatable, Sendable {
         return try Self(id: CardJSON.identifier(f["trip_id"]), tripVersion: CardJSON.integer(f["trip_version"]),
                         contentVersion: version, contentSHA256: CardJSON.hash(f["content_sha256"]),
                         title: CardJSON.text(f["title"], maximum: 120), calendar: calendar, days: days,
-                        dateChecks: checks, originalUTF8: bytes)
+                        dateChecks: checks, inputUTF8: inputUTF8)
     }
 }
 
-private enum CardJSON {
+enum CardJSON {
     static func object(_ value: StrictJSONValue?) throws -> [String: StrictJSONValue] {
         guard case .object(let result) = value else { throw MessageHTTPFailure.invalidResponse }
         return result

@@ -75,6 +75,12 @@ public struct StructuredTripDocument: Sendable {
         var parser = StrictTripJSON(bytes: Array(bytes)); let node = try parser.document()
         try factBounds(node, maxDepth: 32, maxNodes: 32768)
         guard tripCanonicalJSON(node) == bytes else { throw TripFailure.invalidResponse }
+        return try readFields(node, originalUTF8: bytes)
+    }
+
+    /// Internal field grammar for a parsed canonical input or C's validation-only view.
+    /// External callers must still use decode and its unchanged byte/token boundary.
+    static func readFields(_ node: TripJSONValue, originalUTF8: Data) throws -> Self {
         let f = try node.fields("content_version title items sources")
         guard let version = StructuredTripVersion(rawValue: try f.required("content_version").text()) else { throw TripFailure.invalidResponse }
         let title = try boundedTripText(f.required("title"), maximum: 120)
@@ -115,7 +121,7 @@ public struct StructuredTripDocument: Sendable {
                 }, sourceCategory: category, sourceReferences: refs)
         }
         guard used == Set(sourceMap.keys) else { throw TripFailure.invalidResponse }
-        return .init(version: version, title: title, items: items, sources: sources, originalUTF8: bytes)
+        return .init(version: version, title: title, items: items, sources: sources, originalUTF8: originalUTF8)
     }
 }
 

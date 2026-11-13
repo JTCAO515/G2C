@@ -105,6 +105,10 @@ extension LioItinerary {
 
 extension LioItinerary {
     init(_ saved: LioTimelineWire.SavedTrip) {
+        if let summary = saved.calendarSummary {
+            self.init(summary)
+            return
+        }
         self.init(id: saved.id, title: saved.title, description: nil,
                   days: saved.days.enumerated().map { index, day in
             Day(number: index + 1, stops: day.items.map { item in
@@ -117,20 +121,52 @@ extension LioItinerary {
 
 
 public struct LioTripLibrary {
-    let list: @MainActor () async throws -> [StructuredTripSummary]
-    let detail: @MainActor (String) async throws -> StructuredTripRecord?
+    struct Entry: Sendable {
+        let tripID: String
+        let title: String
+        let calendar: LioItinerary.CalendarState?
+        let dayCount: Int?
+    }
+    enum Record: Sendable {
+        case legacy(StructuredTripRecord), calendar(CalendarStructuredTripRecord)
+        var title: String {
+            switch self { case .legacy(let value): value.document.title; case .calendar(let value): value.content.title }
+        }
+    }
+    let list: @MainActor () async throws -> [Entry]
+    let detail: @MainActor (String) async throws -> Record?
 
     public init(list: @escaping @MainActor () async throws -> [StructuredTripSummary],
                 detail: @escaping @MainActor (String) async throws -> StructuredTripRecord?) {
-        self.list = list
-        self.detail = detail
+        self.list = { try await list().map { Entry(tripID: $0.tripID, title: $0.title, calendar: nil, dayCount: nil) } }
+        self.detail = { try await detail($0).map(Record.legacy) }
+    }
+
+    public init(calendarList: @escaping @MainActor () async throws -> [CalendarStructuredTripSummary],
+                calendarDetail: @escaping @MainActor (String) async throws -> CalendarStructuredTripRecord?) {
+        list = {
+            try await calendarList().map {
+                let calendar: LioItinerary.CalendarState?
+                switch $0.calendar {
+                case .undated: calendar = .undated
+                case .dated(let date): calendar = .dated(startDate: date)
+                case nil: calendar = nil
+                }
+                return Entry(tripID: $0.tripID, title: $0.title, calendar: calendar, dayCount: $0.dayCount)
+            }
+        }
+        detail = { try await calendarDetail($0).map(Record.calendar) }
     }
 }
 
 extension LioItinerary {
     init(_ saved: StructuredTripRecord, places: [TripPlaceProjection] = []) {
+        self.init(id: saved.tripID, document: saved.document, places: places)
+    }
+
+    private init(id: String, document: StructuredTripDocument, places: [TripPlaceProjection]) {
         var stopsByDate: [String?: [Stop]] = [:]
-        for item in saved.document.items {
+        for item in document.items {
             let startDate = item.start.date.lioValue
             let endDate = item.end.date.lioValue
             let coordinate = places.first { item.sourceReferences.contains($0.id) }?.markerCoordinate
@@ -146,10 +182,35 @@ extension LioItinerary {
         }
         var dates: [String?] = stopsByDate.keys.compactMap { $0 }.sorted().map(Optional.some)
         if stopsByDate.keys.contains(nil) { dates.append(nil) }
-        self.init(id: saved.tripID, title: saved.document.title, description: nil,
+        self.init(id: id, title: document.title, description: nil,
                   days: dates.enumerated().map { index, date in
             Day(number: index + 1, stops: stopsByDate[date, default: []], date: date, datePending: date == nil)
         })
+    }
+
+    init(_ saved: CalendarStructuredTripRecord, places: [TripPlaceProjection] = []) {
+        switch saved.content {
+        case .legacy(let document): self.init(id: saved.tripID, document: document, places: places)
+        case .calendar(let document):
+            let calendar: CalendarState
+            switch document.calendar {
+            case .undated: calendar = .undated
+            case .dated(let date): calendar = .dated(startDate: date)
+            }
+            self.init(id: saved.tripID, title: document.title, description: nil,
+                      days: document.days.map { day in
+                Day(number: day.index, stops: document.items.filter { $0.startDayIndex == day.index }.map { entry in
+                    let item = entry.value
+                    let coordinate = places.first { item.sourceReferences.contains($0.id) }?.markerCoordinate
+                    let point = coordinate.map { Point(latitude: NSDecimalNumber(decimal: $0.latitude.value).doubleValue,
+                                                       longitude: NSDecimalNumber(decimal: $0.longitude.value).doubleValue) }
+                    let endingDate = document.days[entry.endDayIndex - 1].date
+                    return Stop(id: item.id, name: item.text, time: item.start.time.lioValue, point: point,
+                                fixed: item.fixed.lioValue, endTime: item.end.time.lioValue,
+                                endDate: endingDate == day.date ? nil : endingDate)
+                }, date: day.date)
+            }, calendar: calendar)
+        }
     }
 }
 

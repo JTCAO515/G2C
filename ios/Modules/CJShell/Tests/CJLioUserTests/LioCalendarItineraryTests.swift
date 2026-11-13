@@ -1,6 +1,7 @@
 import Foundation
 import Testing
 import CJMessageHTTP
+import CJTripClient
 @testable import CJLioUser
 
 struct LioCalendarItineraryTests {
@@ -12,6 +13,30 @@ struct LioCalendarItineraryTests {
         let values = try #require(examples["positive"] as? [[String: Any]])
         let value = try #require(values.first { $0["name"] as? String == name }?["value"])
         return try LioItinerary(LioCalendarTripCard.decode(JSONSerialization.data(withJSONObject: value)))
+    }
+
+    @Test(arguments: ["base detail", "dated detail"])
+    func protectedDetailRetainsEveryCalendarDayAndFixedTime(_ name: String) throws {
+        var root = URL(fileURLWithPath: #filePath)
+        for _ in 0..<6 { root.deleteLastPathComponent() }
+        let bytes = try Data(contentsOf: root.appendingPathComponent("contracts/trip/structured-read-examples.2.json"))
+        let file = try #require(JSONSerialization.jsonObject(with: bytes) as? [String: Any])
+        let values = try #require(file["positive"] as? [[String: Any]])
+        let value = try #require(values.first { $0["name"] as? String == name }?["value"])
+        let record = try #require(try CalendarStructuredTripReadV2.detail(JSONSerialization.data(withJSONObject: value),
+            requestID: "00000000-0000-4000-8000-000000000001"))
+        let plan = LioItinerary(record)
+        #expect(plan.days.map(\.number) == [1, 2, 3])
+        #expect(plan.days.map { $0.stops.count } == [1, 0, 0])
+        #expect(plan.days[0].stops[0].time == "09:00")
+        #expect(plan.days[0].stops[0].fixed == true)
+        if name == "base detail" {
+            #expect(plan.calendar == .undated)
+            #expect(plan.days[2].title(.chinese, calendar: plan.calendar) == "第 3 天")
+        } else {
+            #expect(plan.calendar == .dated(startDate: "2026-12-01"))
+            #expect(plan.days[2].date == "2026-12-03")
+        }
     }
 
     @Test func undatedIncludesEmptyRestDaysWithBilingualOrdinals() throws {

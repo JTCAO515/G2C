@@ -65,7 +65,7 @@ struct LioTripsView: View {
     let recordedMap: (@MainActor (StructuredTripDocument) -> AnyView)?
     @Binding var path: [LioTripRoute]
     let openChat: () -> Void
-    @State private var saved: [StructuredTripSummary]?
+    @State private var saved: [LioTripLibrary.Entry]?
     @State private var listUnavailable = false
     @State private var listAttempt = 0
     @Environment(\.colorScheme) private var colorScheme
@@ -101,7 +101,8 @@ struct LioTripsView: View {
                             tripList {
                                 ForEach(saved, id: \.tripID) { trip in
                                     NavigationLink(value: LioTripRoute(id: trip.tripID)) {
-                                        LioTripListCard(title: trip.title, itinerary: nil, language: language)
+                                        LioTripListCard(title: trip.title, itinerary: nil, language: language,
+                                                       calendar: trip.calendar, dayCount: trip.dayCount)
                                     }
                                     .buttonStyle(.plain)
                                 }
@@ -216,7 +217,7 @@ private struct LioTripDetail: View {
     let library: LioTripLibrary
     let language: LioLanguage
     let recordedMap: (@MainActor (StructuredTripDocument) -> AnyView)?
-    @State private var record: StructuredTripRecord?
+    @State private var record: LioTripLibrary.Record?
     @State private var unavailable = false
     @State private var attempt = 0
 
@@ -225,14 +226,20 @@ private struct LioTripDetail: View {
             if let record {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
-                        Text(record.document.title)
+                        Text(record.title)
                             .font(LioTheme.display(.title))
                             .foregroundStyle(LioTheme.ink)
                             .background(LioTheme.paper)
                             .fixedSize(horizontal: false, vertical: true)
                             .accessibilityAddTraits(.isHeader)
-                        LioSavedTripTimeline(record: record, language: language)
-                        if let recordedMap { recordedMap(record.document) }
+                        switch record {
+                        case .legacy(let value):
+                            LioSavedTripTimeline(record: value, language: language)
+                            if let recordedMap { recordedMap(value.document) }
+                        case .calendar(let value):
+                            LioCalendarSavedTripTimeline(record: value, language: language)
+                            if case .legacy(let document) = value.content, let recordedMap { recordedMap(document) }
+                        }
                     }
                     .padding(16)
                 }
@@ -269,6 +276,33 @@ private struct LioTripDetail: View {
     }
 }
 
+private struct LioCalendarSavedTripTimeline: View {
+    let record: CalendarStructuredTripRecord
+    let language: LioLanguage
+    private let places: Result<[TripPlaceProjection], any Error>
+
+    init(record: CalendarStructuredTripRecord, language: LioLanguage) {
+        self.record = record
+        self.language = language
+        places = Result {
+            switch record.content {
+            case .legacy(let document): try TripPlaceProjection.read(from: document)
+            case .calendar(let document): try TripPlaceProjection.read(from: document)
+            }
+        }
+    }
+
+    var body: some View {
+        switch places {
+        case .success(let places):
+            LioTripTimeline(itinerary: LioItinerary(record, places: places), language: language)
+        case .failure:
+            Text(language.text("Map unavailable", "暂时无法显示地图"))
+            LioTripTimeline(itinerary: LioItinerary(record), language: language)
+        }
+    }
+}
+
 private struct LioSavedTripTimeline: View {
     let record: StructuredTripRecord
     let language: LioLanguage
@@ -297,9 +331,10 @@ struct LioTripDays: View {
     let showMap: (LioItinerary.Day) -> Void
 
     var body: some View {
+        LioTripCalendarLabel(calendar: itinerary.calendar, language: language)
         ForEach(itinerary.days) { day in
             VStack(alignment: .leading, spacing: 10) {
-                Text(dayTitle(day, language))
+                Text(dayTitle(day, language, calendar: itinerary.calendar))
                     .font(.headline)
                     .accessibilityAddTraits(.isHeader)
                 LioDayStops(day: day, language: language)

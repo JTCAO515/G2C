@@ -6,6 +6,63 @@ import Testing
 
 @MainActor
 struct LioTimelineTransportTests {
+    @Test func v3UsesExplicitCalendarRoutesAndKeepsOlderLookupRoutes() async throws {
+        let endpoint = try endpoint()
+        let exit = LioExit()
+        let transport = try NoRedirectTransport(interceptedTransport: exit, messageEndpoint: endpoint,
+                                                validateMessage: {}, lio: true)
+        let conversation = "lio-dialogue-0123456789abcdef0123456789abcdef"
+        let original = try LioTimelineWire.Send(messageID: "calendar", text: "三天的想法", locale: .chinese,
+                                               destination: .newChat, version: .v3)
+        let older = try LioTimelineWire.Send(messageID: "older", text: "Earlier", locale: .english,
+                                            destination: .newChat)
+        let hash = String(repeating: "0", count: 64)
+        let card = """
+            {"version":"LIO-trip-card.2","trip_id":"trip","trip_version":2,"content_version":"structured.1",
+             "content_sha256":"\(hash)","title":"Trip","calendar":null,"date_checks":null,
+             "days":[{"date":null,"items":[]}]}
+            """
+        let history = Data("""
+            {"version":"LIO-trip-history.3","conversation_id":"\(conversation)","current":\(card),
+             "history":[\(card)],"undo_target":"fixture_target","next_before":null}
+            """.utf8)
+        let page = try LioTripHistoryWire.decodePage(history, conversationID: conversation, version: .v3)
+        let undo = try LioTripHistoryWire.Undo(target: #require(page.undoTarget))
+        _ = try await transport.sendLio(original, bearer: "fixture")
+        _ = try await transport.readLio(conversationID: conversation, before: nil, bearer: "fixture", version: .v3)
+        _ = try await transport.readLioFirstReceipt(original, inputSHA256: hash, bearer: "fixture")
+        _ = try await transport.readLioTrip(before: nil, bearer: "fixture", conversationID: conversation, version: .v3)
+        _ = try await transport.sendLioUndo(undo, bearer: "fixture")
+        _ = try await transport.readLioUndo(undo, bearer: "fixture")
+        _ = try await transport.readLioFirstReceipt(older, inputSHA256: hash, bearer: "fixture")
+        let calls = await exit.calls
+        #expect(calls.map(\.path) == [
+            "/v3/lio/messages", "/v3/lio/timeline?conversation_id=\(conversation)",
+            "/v3/lio/messages?message_id=calendar&input_sha256=\(hash)",
+            "/v3/lio/trip?conversation_id=\(conversation)", "/v3/lio/trip-undos",
+            "/v3/lio/trip-undo-receipts?action_id=\(undo.actionID)&target=fixture_target&conversation_id=\(conversation)",
+            "/v2/lio/messages?message_id=older&input_sha256=\(hash)"
+        ])
+        #expect(calls[0].body == original.originalUTF8)
+        #expect(calls[4].body == undo.originalUTF8)
+        await #expect(throws: MessageHTTPFailure.productionActivationUnavailable) {
+            _ = try await transport.send(HTTPRequest(method: .post, scheme: nil, authority: nil, path: "/v3/lio/messages"),
+                                         body: HTTPBody(original.originalUTF8), baseURL: endpoint.url, operationID: "sendLioMessageV3")
+        }
+    }
+
+    @Test func revokedCalendarCapabilityMakesNoRequest() async throws {
+        let exit = LioExit()
+        let transport = try NoRedirectTransport(interceptedTransport: exit, messageEndpoint: endpoint(),
+            validateMessage: { throw MessageHTTPFailure.credentialsUnavailable }, lio: true)
+        let original = try LioTimelineWire.Send(messageID: "calendar", text: "Plan", locale: .english,
+                                               destination: .newChat, version: .v3)
+        await #expect(throws: MessageHTTPFailure.credentialsUnavailable) {
+            _ = try await transport.sendLio(original, bearer: "fixture")
+        }
+        #expect(await exit.calls.isEmpty)
+    }
+
     @Test func scopedTransportPreservesTheWriteAndEscapesTheReadCursor() async throws {
         let endpoint = try endpoint()
         let exit = LioExit()

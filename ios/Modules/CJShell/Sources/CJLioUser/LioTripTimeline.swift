@@ -6,6 +6,8 @@ struct LioTripListCard: View {
     let title: String
     let itinerary: LioItinerary?
     let language: LioLanguage
+    var calendar: LioItinerary.CalendarState? = nil
+    var dayCount: Int? = nil
 
     var body: some View {
         HStack(alignment: .top, spacing: 16) {
@@ -24,6 +26,12 @@ struct LioTripListCard: View {
                     let stops = itinerary.days.reduce(0) { $0 + $1.stops.count }
                     Text(language.text("\(days) days · \(stops) stops", "\(days) 天 · \(stops) 项安排"))
                         .font(.subheadline)
+                } else {
+                    LioTripCalendarLabel(calendar: calendar, language: language)
+                    if let dayCount {
+                        Text(language.text("\(dayCount) days", "\(dayCount) 天"))
+                            .font(.subheadline)
+                    }
                 }
             }
             Spacer(minLength: 0)

@@ -45,7 +45,100 @@ public struct StructuredTripList: Sendable {
     public let next: StructuredTripCursor?
 }
 
+public struct CalendarStructuredTripCursor: Sendable {
+    fileprivate let base: StructuredTripCursor
+}
+public struct CalendarStructuredTripPageRequest: Sendable {
+    fileprivate let base: StructuredTripPageRequest
+}
+public struct CalendarStructuredTripDetailRequest: Sendable {
+    fileprivate let base: StructuredTripDetailRequest
+}
+public struct CalendarStructuredTripList: Sendable {
+    public let trips: [CalendarStructuredTripSummary]
+    public let next: CalendarStructuredTripCursor?
+}
+
+/// A current protected read only; deliberately a different type from the legacy editing source.
+public final class CalendarStructuredTripSnapshot: Sendable, CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable {
+    fileprivate let request: StructuredTripDetailRequest
+    fileprivate let responseUTF8: Data
+    fileprivate let record: CalendarStructuredTripRecord
+    fileprivate let requestID: String
+    fileprivate init(request: StructuredTripDetailRequest, responseUTF8: Data, record: CalendarStructuredTripRecord, requestID: String) {
+        self.request = request; self.responseUTF8 = responseUTF8; self.record = record; self.requestID = requestID
+    }
+    public var description: String { "<protected calendar Trip read>" }
+    public var debugDescription: String { description }
+    public var customMirror: Mirror { Mirror(self, children: [:]) }
+}
+
 extension TripClient {
+    public func prepareCalendarStructuredDetail(id: String, binding: TripBinding) throws -> CalendarStructuredTripDetailRequest {
+        CalendarStructuredTripDetailRequest(base: try prepareStructuredDetail(id: id, binding: binding))
+    }
+
+    public func calendarStructuredDetail(for request: CalendarStructuredTripDetailRequest) async throws -> CalendarStructuredTripSnapshot? {
+        let request = request.base
+        try checkStructuredDetail(request)
+        guard startedDetailSnapshotSource != request.source else { throw TripFailure.staleBinding }
+        startedDetailSnapshotSource = request.source
+        let (bytes, trace) = try await structuredGET(path: "/v6/trip-structured", query: [.init(name: "trip_id", value: request.tripID)],
+            operation: "readStructuredTripV2", binding: request.binding, validate: { [self] in try checkStructuredDetail(request) })
+        let record: CalendarStructuredTripRecord?
+        do { record = try CalendarStructuredTripReadV2.detail(bytes, requestID: trace) }
+        catch { try checkStructuredDetail(request); throw TripFailure.invalidResponse }
+        try checkStructuredDetail(request)
+        guard let record else { return nil }
+        guard same(record.tripID, request.tripID) else { throw TripFailure.invalidResponse }
+        return CalendarStructuredTripSnapshot(request: request, responseUTF8: bytes, record: record, requestID: trace)
+    }
+
+    public func withCurrentCalendarStructuredSnapshot<T>(_ source: CalendarStructuredTripSnapshot,
+        _ read: (Data, CalendarStructuredTripRecord, String, TripBinding) throws -> T) throws -> T {
+        try checkStructuredDetail(source.request)
+        do {
+            let value = try read(source.responseUTF8, source.record, source.requestID, source.request.binding)
+            try checkStructuredDetail(source.request)
+            return value
+        } catch { try checkStructuredDetail(source.request); throw error }
+    }
+
+    public func prepareCalendarStructuredPage(limit: Int, after: CalendarStructuredTripCursor? = nil,
+                                               binding: TripBinding) throws -> CalendarStructuredTripPageRequest {
+        CalendarStructuredTripPageRequest(base: try prepareStructuredPage(limit: limit, after: after?.base, binding: binding))
+    }
+
+    public func calendarStructuredPage(for request: CalendarStructuredTripPageRequest) async throws -> CalendarStructuredTripList {
+        let request = request.base
+        try checkStructuredPage(request)
+        guard startedStructuredPageWork != request.work else { throw TripFailure.staleBinding }
+        startedStructuredPageWork = request.work
+        var query = [URLQueryItem(name: "limit", value: String(request.limit))]
+        if let after = request.after { query.append(.init(name: "after", value: after)) }
+        let (bytes, trace) = try await structuredGET(path: "/v2/trip-structured-list", query: query,
+            operation: "listStructuredTripsV2", binding: request.binding, validate: { [self] in try checkStructuredPage(request) })
+        let page: CalendarStructuredTripPage
+        do { page = try CalendarStructuredTripReadV2.page(bytes, requestID: trace) }
+        catch { try checkStructuredPage(request); throw TripFailure.invalidResponse }
+        try checkStructuredPage(request)
+        guard page.trips.count <= request.limit else { throw TripFailure.invalidResponse }
+        var previous = request.after
+        for item in page.trips {
+            if let previous, !previous.utf8.lexicographicallyPrecedes(item.tripID.utf8) { throw TripFailure.invalidResponse }
+            previous = item.tripID
+        }
+        if let next = page.nextAfter {
+            if let after = request.after, !after.utf8.lexicographicallyPrecedes(next.utf8) { throw TripFailure.invalidResponse }
+            if let last = page.trips.last, next.utf8.lexicographicallyPrecedes(last.tripID.utf8) { throw TripFailure.invalidResponse }
+        }
+        let next = page.nextAfter.map {
+            CalendarStructuredTripCursor(base: StructuredTripCursor(owner: owner, generation: request.generation,
+                epoch: request.epoch, binding: request.binding, after: $0))
+        }
+        return CalendarStructuredTripList(trips: page.trips, next: next)
+    }
+
     public func prepareStructuredDetail(id: String, binding: TripBinding) throws -> StructuredTripDetailRequest {
         guard tripID(id) else { throw TripFailure.invalidInput }
         let previous = detailSnapshotSource, token = try capture(binding)

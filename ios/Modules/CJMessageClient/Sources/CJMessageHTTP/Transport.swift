@@ -218,8 +218,13 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
 
     func sendLio(_ original: LioTimelineWire.Send, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
         guard let messages, messages.wire == .lio else { throw MessageHTTPFailure.productionActivationUnavailable }
-        let path = original.version == .v1 ? messages.wire.path : "/v2/lio/messages"
-        let operation = original.version == .v1 ? messages.wire.operation : "sendLioMessageV2"
+        let path: String
+        let operation: String
+        switch original.version {
+        case .v1: (path, operation) = (messages.wire.path, messages.wire.operation)
+        case .v2: (path, operation) = ("/v2/lio/messages", "sendLioMessageV2")
+        case .v3: (path, operation) = ("/v3/lio/messages", "sendLioMessageV3")
+        }
         var request = HTTPRequest(method: .post, scheme: nil, authority: nil, path: path)
         request.headerFields[.authorization] = "Bearer " + bearer
         request.headerFields[.contentType] = "application/octet-stream"
@@ -246,13 +251,15 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
 
     func readLioFirstReceipt(_ original: LioTimelineWire.Send, inputSHA256: String,
                              bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
-        try await lioRead(path: "/v2/lio/messages", query: [
+        let version = original.version == .v3 ? 3 : 2
+        return try await lioRead(path: "/v\(version)/lio/messages", query: [
             URLQueryItem(name: "message_id", value: original.messageID),
             URLQueryItem(name: "input_sha256", value: inputSHA256)
-        ], operation: "readLioMessageV2", bearer: bearer)
+        ], operation: "readLioMessageV\(version)", bearer: bearer)
     }
 
-    func readLioTrip(before: String?, bearer: String, conversationID: String? = nil) async throws -> (HTTPResponse, HTTPBody?) {
+    func readLioTrip(before: String?, bearer: String, conversationID: String? = nil,
+                     version requestedVersion: LioTimelineWire.Version? = nil) async throws -> (HTTPResponse, HTTPBody?) {
         if let before, !LioTripHistoryWire.validCursor(before) { throw MessageHTTPFailure.invalidConfiguration }
         var query: [URLQueryItem] = []
         if let conversationID {
@@ -260,14 +267,16 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
             query.append(URLQueryItem(name: "conversation_id", value: conversationID))
         }
         if let before { query.append(URLQueryItem(name: "before", value: before)) }
-        let version = conversationID == nil ? 1 : 2
+        let version = requestedVersion?.rawValue ?? (conversationID == nil ? 1 : 2)
+        if version == 3, conversationID == nil { throw MessageHTTPFailure.invalidConfiguration }
         return try await lioRead(path: "/v\(version)/lio/trip", query: query,
                                  operation: "readLioTripHistoryV\(version)", bearer: bearer)
     }
 
     func sendLioUndo(_ undo: LioTripHistoryWire.Undo, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
         guard let messages, messages.wire == .lio else { throw MessageHTTPFailure.productionActivationUnavailable }
-        var request = HTTPRequest(method: .post, scheme: nil, authority: nil, path: "/v\(undo.version)/lio/trip/undo")
+        let path = undo.version == 3 ? "/v3/lio/trip-undos" : "/v\(undo.version)/lio/trip/undo"
+        var request = HTTPRequest(method: .post, scheme: nil, authority: nil, path: path)
         request.headerFields[.authorization] = "Bearer " + bearer
         request.headerFields[.contentType] = "application/octet-stream"
         request.headerFields[.accept] = "application/json"
@@ -282,7 +291,8 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
             URLQueryItem(name: "target", value: undo.target)
         ]
         if let id = undo.conversationID { query.append(URLQueryItem(name: "conversation_id", value: id)) }
-        return try await lioRead(path: "/v\(undo.version)/lio/trip/undo", query: query,
+        let path = undo.version == 3 ? "/v3/lio/trip-undo-receipts" : "/v\(undo.version)/lio/trip/undo"
+        return try await lioRead(path: path, query: query,
                                  operation: "readLioTripUndoV\(undo.version)", bearer: bearer)
     }
 

@@ -81,6 +81,7 @@ extension LioService {
     }
 
     public static func signedConversation(_ client: LioTimelineHTTP, destination: LioTimelineWire.V2Destination,
+                                          version: LioTimelineWire.Version = .v2,
                                           didCreate: @escaping @Sendable (String) async -> Void) -> LioService {
         timeline(send: { original in
             switch try await client.submit(original) {
@@ -90,8 +91,8 @@ extension LioService {
             case .rejected: .rejected
             }
         }, read: { id, before in
-            try await client.timeline(conversationID: id, before: before, version: .v2)
-        }, destination: destination, recoverFirst: { id in
+            try await client.timeline(conversationID: id, before: before, version: version)
+        }, destination: destination, scopedVersion: version, recoverFirst: { id in
             try await client.reconcileFirstChat(messageID: id)
         }, didCreate: didCreate)
     }
@@ -107,13 +108,14 @@ extension LioService {
         send: @escaping @Sendable (LioTimelineWire.Send) async throws -> SendResult,
         read: @escaping @Sendable (String?, String?) async throws -> LioTimelineWire.Page,
         destination: LioTimelineWire.V2Destination? = nil,
+        scopedVersion: LioTimelineWire.Version = .v2,
         recoverFirst: @escaping @Sendable (String) async throws -> String? = { _ in nil },
         didCreate: @escaping @Sendable (String) async -> Void = { _ in },
         pollInterval: Duration = .seconds(2),
         observationWindow: Duration = .seconds(90),
         recoveryInterval: Duration = .seconds(15)
     ) -> LioService {
-        let session = LioTimelineSession(send: send, read: read, destination: destination,
+        let session = LioTimelineSession(send: send, read: read, destination: destination, scopedVersion: scopedVersion,
                                          recoverFirst: recoverFirst, didCreate: didCreate)
         return LioService(updates: { waiting in
             session.observe(waiting: waiting, interval: pollInterval, window: observationWindow,
@@ -160,6 +162,7 @@ private actor LioTimelineSession {
     let send: @Sendable (LioTimelineWire.Send) async throws -> LioService.SendResult
     let read: @Sendable (String?, String?) async throws -> LioTimelineWire.Page
     let destination: LioTimelineWire.V2Destination?
+    let scopedVersion: LioTimelineWire.Version
     let recoverFirst: @Sendable (String) async throws -> String?
     let didCreate: @Sendable (String) async -> Void
     private var conversationID: String?
@@ -174,11 +177,13 @@ private actor LioTimelineSession {
     init(send: @escaping @Sendable (LioTimelineWire.Send) async throws -> LioService.SendResult,
          read: @escaping @Sendable (String?, String?) async throws -> LioTimelineWire.Page,
          destination: LioTimelineWire.V2Destination?,
+         scopedVersion: LioTimelineWire.Version,
          recoverFirst: @escaping @Sendable (String) async throws -> String?,
          didCreate: @escaping @Sendable (String) async -> Void) {
         self.send = send
         self.read = read
         self.destination = destination
+        self.scopedVersion = scopedVersion
         self.recoverFirst = recoverFirst
         self.didCreate = didCreate
         if case .some(.existing(let id)) = destination { conversationID = id }
@@ -200,7 +205,8 @@ private actor LioTimelineSession {
             let locale: LioTimelineWire.Locale = question.language == .english ? .english : .chinese
             if let destination {
                 original = try LioTimelineWire.Send(messageID: question.messageID, text: question.text, locale: locale,
-                                                    destination: conversationID.map(LioTimelineWire.V2Destination.existing) ?? destination)
+                                                    destination: conversationID.map(LioTimelineWire.V2Destination.existing) ?? destination,
+                                                    version: scopedVersion)
             } else {
                 original = try LioTimelineWire.Send(messageID: question.messageID, text: question.text,
                                                     locale: locale, conversationID: conversationID)

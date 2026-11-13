@@ -29,7 +29,7 @@ struct LioCalendarTripCardTests {
         #expect(card.days[0].items[0].startTime == "09:00")
         #expect(card.days[0].items[0].fixed == true)
         #expect(card.dateChecks?.allSatisfy { $0.state == .notChecked } == true)
-        #expect(card.originalUTF8 == data)
+        #expect(card.inputUTF8 == data)
     }
 
     @Test func datedConversionKeepsIdentityAndChangesVersionWithoutInventingChecks() throws {
