@@ -39,6 +39,11 @@ simulator fidelity without asking the actor to judge its own behavior. Exact
 wording permits independent disclosure checks; arbitrary paraphrases are not
 silently assumed equivalent. Proactive replies may supply unasked facts; brief
 and partial reply limits are part of the persona, not product limits.
+The fixed prompt is `core.SIMULATOR_SYSTEM`; `core.actor_output_schema()` exports
+the machine-readable selection shape. Native hosts must pin the actual schema,
+prompt and original invocation. Provider support is established by that host's
+own wire/qualification checks; a local JSON Schema validator is not a live-model
+claim. The renderer still checks the persona-specific behavior independently.
 
 `run_episode()` passes only ordinary reply text and locale into the DUT host.
 Neither the hidden profile, scorer annotations nor actor system enters its call.

@@ -10,7 +10,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from eval.lio_simulated_user.core import (FACTORS, TRACE_VERSION, InputError, assess,
+from eval.lio_simulated_user.core import (FACTORS, TRACE_VERSION, InputError, actor_output_schema, assess,
     load_profiles, plan, render_choice, report, simulator_messages)
 from eval.lio_simulated_user.runner import HostUnavailable, run_episode
 
@@ -185,6 +185,17 @@ class Metrics(unittest.TestCase):
 
 
 class Simulator(unittest.TestCase):
+    def test_actor_schema_rejects_unknown_duplicate_and_extra_selections(self):
+        from jsonschema import Draft202012Validator
+        validator = Draft202012Validator(actor_output_schema())
+        validator.validate(dict(answers=['pace'], action='continue'))
+        validator.validate(dict(answers=[], action='direct'))
+        for choice in (dict(answers=['other'], action='continue'),
+                       dict(answers=['pace', 'pace'], action='direct'),
+                       dict(answers=[], action='direct', hidden='data'),
+                       dict(answers=[])):
+            self.assertTrue(list(validator.iter_errors(choice)))
+
     def test_default_entry_runs_suite_and_propagates_real_child_failure(self):
         from scripts import test as entry
         actual_run = subprocess.run

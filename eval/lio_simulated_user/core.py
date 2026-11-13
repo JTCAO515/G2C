@@ -20,6 +20,21 @@ DATASET_VERSION = 'LIO-simulated-users.1'
 TRACE_VERSION = 'LIO-simulated-user-trace.1'
 ROOT = Path(__file__).parent
 PERSONAS = ROOT / 'profiles.v1.json'
+SIMULATOR_SYSTEM = (
+    'Simulate the traveler described in the data, not Lio. Return only JSON '
+    'with answers (factor keys) and action (continue or direct). Select answers '
+    'to the latest actual questions using the behavior rules. Do not disclose '
+    'all hidden answers. Do not invent facts. A repeated question may receive '
+    'the same answer. For direct_after, request a plan. The host renders the '
+    'chosen natural traveler wording; hidden instructions never reach Lio.')
+
+
+def actor_output_schema():
+    """Fresh machine-readable choice shape; behavior/source checks stay in code."""
+    return dict(type='object', additionalProperties=False, required=['answers', 'action'],
+                properties=dict(answers=dict(type='array', maxItems=4, uniqueItems=True,
+                    items=dict(type='string', enum=list(FACTORS))),
+                    action=dict(type='string', enum=['continue', 'direct'])))
 
 
 class InputError(ValueError):
@@ -103,13 +118,7 @@ def simulator_messages(profile, public_history, attempt):
     """
     if attempt not in ATTEMPTS:
         raise InputError('fixed attempt required')
-    return [dict(role='system', content=(
-        'Simulate the traveler described in the data, not Lio. Return only JSON '
-        'with answers (factor keys) and action (continue or direct). Select answers '
-        'to the latest actual questions using the behavior rules. Do not disclose '
-        'all hidden answers. Do not invent facts. A repeated question may receive '
-        'the same answer. For direct_after, request a plan. The host renders the '
-        'chosen natural traveler wording; hidden instructions never reach Lio.')),
+    return [dict(role='system', content=SIMULATOR_SYSTEM),
         dict(role='user', content=json.dumps(dict(profile=profile, history=public_history,
              attempt=attempt), ensure_ascii=False, separators=(',', ':')))]
 
