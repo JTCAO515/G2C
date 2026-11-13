@@ -463,7 +463,7 @@
 - Lane C #859当前依赖停点：861已合，但L862实时仍OPEN且前置858未交；待L交实际LIO3编排/补日期/新undo/card/timeline、来源读取/部署pin与collector后，C才执行864。C已在864/6824665258记一次停点，不重复空查；全Goal未完成。#844独立前置PR848仍OPEN（main无lio-voice规范）、JT20条尚未标注；准备表已备，人工一致率UNRUN0/20。不是重新申请已有预算或凭据，也不是把旧FAIL或C0冒新运行通过。
 - Lane C 11-13当前：B v3 model capture耗尽后guard越出Memory advance lease，L实件context_invalid、financial RECEIVED/Meterunknown；源340f/85f上的C05已封16 UNRUN，不把平台前置缺陷算C已跑FAIL。B修复候选9f744ee1本地/R检查已过，但缺最终C0派生/精确CI/独审/同源部署；等正式新source后另冻新stage/IDs。另需L启Grouped、L862原子wire-origin/capability及v3接口合并部署；PR894仍OPEN，JT20标签未交。连续三个Goal回合这些外部前置未满足，无C可安全派发项；Goal未完成，按规则blocked，不重复空查/不新增资源或请JT重批原额度。
 - Lane E #764：连续三轮仍缺B/D/R确定的protected metadata-view referent body字段/关联合同；original入口签名及D definition/use schema不足以证明X01–X12。局部可独立实现/审查修复已做完；不把声明/hash当来源证据，不开未完成实现PR。L908两文件租约有效，之后还须L national.2 reply-only、D评分适用性/新登记R复核、全部合法setup和匹配新代码的B实际运行资格；既有50元不是待JT重批。等待期间不新增其他实现。
-- Lane B 当前：#630 L2/新C55依赖L #919修复、新exact审查/CI/实际部署与C独立判定，旧失败/UNKNOWN不重放。#762 metadata缺具体ref.body来源合同/publisher、动态核权/registry/fence/全量scan，D/R只读对齐中，完整legal setup/teacher未交。#862 schema53已有真实旧消费者回退不兼容负证，不借普通应用许可迁移。没有新的JT待批事项。
+- Lane B 当前：#630 L2/新C55依赖L #919修复、新exact审查/CI/实际部署与C独立判定，旧失败/UNKNOWN不重放。#762 metadata缺具体ref.body来源合同/publisher、动态核权/registry/fence/全量scan，D/R只读对齐中，完整legal setup/teacher未交。#862 schema53已有旧应用实码+私有PG本地回退不兼容负证（非香港），不借普通应用许可迁移。没有新的JT待批事项。
 
 ## Risks
 
