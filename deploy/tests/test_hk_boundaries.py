@@ -20,6 +20,40 @@ from scripts.m4_budget_transfer import seal,adopt
 from scripts import m4_budget_transfer as transfer
 
 
+def test_schema53_readiness_requires_its_completed_signed_anchor_and_keeps_quota_gate(tmp_path,monkeypatch):
+    from deploy.hk import demo_quota,entrypoint
+    from contextlib import nullcontext
+    key=Ed25519PrivateKey.generate()
+    monkeypatch.setenv('CJ_BETA_RECOVERY_PRIVATE_B64',base64.b64encode(
+        key.private_bytes(serialization.Encoding.Raw,serialization.PrivateFormat.Raw,
+                          serialization.NoEncryption())).decode())
+    monkeypatch.setenv('CJ_BETA_RECOVERY_PUBLIC_B64',base64.b64encode(
+        key.public_key().public_bytes(serialization.Encoding.Raw,serialization.PublicFormat.Raw)).decode())
+    raw=json.dumps({'current':{'meter':{'budget':800}}})
+    policy=tmp_path/'context.json';policy.write_text(raw)
+    runtime=SimpleNamespace(context_path=policy,context=SimpleNamespace(
+        current=SimpleNamespace(meter=SimpleNamespace(budget=800))))
+    database=SimpleNamespace(_open_runtime_connection=lambda:nullcontext(object()))
+    monkeypatch.setattr(entrypoint,'authorization',lambda:None)
+    monkeypatch.setattr(entrypoint,'local_database_target',lambda:True)
+    monkeypatch.setattr(entrypoint,'control',lambda:tmp_path)
+    monkeypatch.setattr(entrypoint.local_postgres,'require_serving',lambda control:None)
+    monkeypatch.setattr(checkpoint,'require_release',lambda db,control:{'lineage':'original-lineage'})
+    monkeypatch.setattr(checkpoint,'versions',lambda:list(range(1,54)))
+    checkpoint.atomic(tmp_path/'demo-schema52.json',dict(state='COMPLETE',lineage='original-lineage',
+        quota_policy_sha256=demo_quota.policy_digest(raw,800)))
+    for marker in ({'state':'INTENT','lineage':'original-lineage'},
+                   {'state':'COMPLETE','lineage':'foreign-lineage'}):
+        checkpoint.atomic(tmp_path/'demo-schema53.json',marker)
+        with pytest.raises(ValueError,match='wire-origin cutover incomplete'):
+            entrypoint._runtime_gate(database,runtime)
+    checkpoint.atomic(tmp_path/'demo-schema53.json',dict(state='COMPLETE',lineage='original-lineage'))
+    entrypoint._runtime_gate(database,runtime)
+    runtime.context.current.meter.budget=80
+    with pytest.raises(ValueError,match='quota cutover incomplete'):
+        entrypoint._runtime_gate(database,runtime)
+
+
 def test_typed_policy_encodings_preserve_bytes_and_reject_ambiguous_configuration(monkeypatch):
     raw=b'{"version":"local-memory-typed.1","same":"policy bytes"}'
     monkeypatch.delenv(configuration.TYPED_POLICY,raising=False)
