@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import hashlib
 import json
 
-from .demo_dialogue import LIO_VERSION, admitted_dialogue, lio_conversation
+from .demo_dialogue import LIO_VERSION, LIO_VERSION_V3, admitted_dialogue, lio_conversation
 from .domain import Command, InvalidInput, Unavailable
 from .travel_reference import read_reference
 
@@ -18,6 +18,7 @@ class TimelineMessage:
     sequence: int
     text: str
     locale: str
+    protocol: str = LIO_VERSION
 
 
 @dataclass(frozen=True)
@@ -80,12 +81,12 @@ def read_in_transaction(tx, conversation_id, before, *, multiple=False):
             raise InvalidInput('invalid timeline cursor')
         sequence = cursor[0]
     rows = tx.cur.execute(
-        'SELECT message_id,run_id,sequence,raw_input,input_sha256,demo_dialogue_locale FROM cj_message_receipt '
+        'SELECT message_id,run_id,sequence,raw_input,input_sha256,demo_dialogue_locale,lio_wire_protocol FROM cj_message_receipt '
         'WHERE scope=%s AND conversation_id=%s AND generation=%s AND demo_dialogue_protocol=%s '
         'AND (%s::bigint IS NULL OR sequence<%s) ORDER BY sequence DESC LIMIT %s',
         (*params, sequence, sequence, PAGE_SIZE + 1)).fetchall()
     messages = []
-    for mid, run_id, position, raw_input, digest, locale in reversed(rows[:PAGE_SIZE]):
+    for mid, run_id, position, raw_input, digest, locale, protocol in reversed(rows[:PAGE_SIZE]):
         raw = bytes(raw_input)
         try:
             command = Command.parse_original(raw)
@@ -94,6 +95,9 @@ def read_in_transaction(tx, conversation_id, before, *, multiple=False):
         if ((command.message_id, command.conversation_id) != (mid, conversation)
                 or hashlib.sha256(raw).hexdigest() != digest):
             raise Unavailable('original dialogue binding changed')
-        messages.append(TimelineMessage(mid, run_id, position, json.loads(command.raw)['text'], locale))
+        if protocol not in (None, LIO_VERSION_V3):
+            raise Unavailable('original Lio wire capability unavailable')
+        messages.append(TimelineMessage(mid, run_id, position, json.loads(command.raw)['text'], locale,
+                                       LIO_VERSION if protocol is None else protocol))
     return TimelinePage(conversation, head.generation, tuple(messages),
                         messages[0].message_id if len(rows) > PAGE_SIZE else None)

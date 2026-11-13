@@ -13,6 +13,7 @@ from .travel import ABI, Action, Service as TravelService
 MESSAGE_VERSION = 'DEMO-dialogue-message.1'
 LIO_VERSION = 'LIO-message.1'
 LIO_VERSION_V2 = 'LIO-message.2'
+LIO_VERSION_V3 = 'LIO-message.3'
 RECEIPT_VERSION = 'DEMO-dialogue-receipt.1'
 CHAT_PATTERN = re.compile(r'demo-dialogue-[0-9a-f]{32}')
 LIO_CHAT_PATTERN = re.compile(r'lio-dialogue-[0-9a-f]{32}')
@@ -34,6 +35,7 @@ class DialogueMessage:
     new_conversation: bool
     input_sha256: str
     protocol: str = MESSAGE_VERSION
+    wire_input: bytes | None = None
 
     @classmethod
     def parse(cls, raw, *, version=MESSAGE_VERSION):
@@ -55,7 +57,8 @@ class DialogueMessage:
             if 'conversation_id' in value and (type(conversation) is not str or not pattern.fullmatch(conversation)):
                 raise InvalidInput('invalid dialogue conversation identifier')
             return cls(message_id(value['message_id']), text, value['locale'], conversation,
-                       value.get('new_conversation', False), hashlib.sha256(raw).hexdigest(), value['version'])
+                       value.get('new_conversation', False), hashlib.sha256(raw).hexdigest(), value['version'],
+                       raw if version == LIO_VERSION_V3 else None)
         except (UnicodeError, ValueError) as exc:
             raise InvalidInput('invalid dialogue message') from exc
 
@@ -66,6 +69,7 @@ class DialogueReceipt:
     conversation_id: str
     run_id: str
     input_sha256: str
+    protocol: str = LIO_VERSION
 
 
 def _identity(scope, purpose):
@@ -86,9 +90,9 @@ def _original_digest(tx, mid):
     return row[0] if row is not None else None
 
 
-def _receipt(stored, digest):
+def _receipt(stored, digest, protocol=LIO_VERSION):
     receipt = stored.receipt
-    return DialogueReceipt(receipt.message_id, receipt.conversation_id, receipt.run_id, digest)
+    return DialogueReceipt(receipt.message_id, receipt.conversation_id, receipt.run_id, digest, protocol)
 
 
 def _travel(tx, repository):
@@ -136,7 +140,7 @@ def _receive(service, command, *, prepare_scope=None):
             if digest != command.input_sha256:
                 raise InputConflict()
             tx.chat(stored.receipt.conversation_id, stored.receipt.generation)
-            return _receipt(stored, digest)
+            return _receipt(stored, digest, LIO_VERSION_V3 if command.protocol==LIO_VERSION_V3 else LIO_VERSION)
 
         conversation = command.conversation_id
         if command.protocol == LIO_VERSION:
@@ -144,7 +148,7 @@ def _receive(service, command, *, prepare_scope=None):
             if conversation is not None and conversation != default:
                 raise InvalidInput('invalid Lio conversation identifier')
             conversation = default
-        elif command.protocol == LIO_VERSION_V2 and conversation is None:
+        elif command.protocol in (LIO_VERSION_V2, LIO_VERSION_V3) and conversation is None:
             conversation = ('lio-dialogue-' + _identity(tx.scope, 'lio-new:' + command.id)
                             if command.new_conversation else lio_conversation(tx.scope))
         elif conversation is None:
@@ -153,18 +157,25 @@ def _receive(service, command, *, prepare_scope=None):
         chat = tx.active_head(conversation)
         if chat is None:
             if command.conversation_id is not None:
-                if command.protocol == LIO_VERSION_V2:
+                if command.protocol in (LIO_VERSION_V2, LIO_VERSION_V3):
                     raise InvalidInput('invalid Lio conversation identifier')
                 raise Unavailable('dialogue conversation unavailable')
             chat = tx.open_chat(conversation, uuid.uuid4().hex)
             if chat is None:
                 raise Unavailable('dialogue conversation unavailable')
         elif command.conversation_id is not None or chat.last_sequence or (
-                command.protocol == LIO_VERSION_V2 and command.new_conversation):
+                command.protocol in (LIO_VERSION_V2, LIO_VERSION_V3) and command.new_conversation):
             if not admitted_dialogue(tx, conversation, chat.generation, lio=command.protocol != MESSAGE_VERSION):
-                if command.protocol == LIO_VERSION_V2 and command.conversation_id is not None:
+                if command.protocol in (LIO_VERSION_V2, LIO_VERSION_V3) and command.conversation_id is not None:
                     raise InvalidInput('invalid Lio conversation identifier')
                 raise Unavailable('dialogue conversation unavailable')
+
+        if command.protocol in (LIO_VERSION, LIO_VERSION_V2):
+            calendar = tx.cur.execute('SELECT 1 FROM cj_message_receipt WHERE scope=%s '
+                'AND conversation_id=%s AND generation=%s AND lio_wire_protocol=%s LIMIT 1',
+                (tx.scope, conversation, chat.generation, LIO_VERSION_V3)).fetchone()
+            if calendar is not None:
+                raise InvalidInput('calendar conversation requires the new Lio capability')
 
         tx.cur.execute("SELECT set_config('cj.message_context_abi',%s,true)", (ABI,))
         selection = _travel(tx, service.repository)
@@ -173,7 +184,8 @@ def _receive(service, command, *, prepare_scope=None):
             expected_generation=chat.generation, expected_sequence=chat.last_sequence,
             travel_context=selection, needs_reference=None)))
         receipt = service.accept_new(tx, inner, travel=True, dialogue=command)
-        return DialogueReceipt(receipt.message_id, receipt.conversation_id, receipt.run_id, command.input_sha256)
+        return DialogueReceipt(receipt.message_id, receipt.conversation_id, receipt.run_id, command.input_sha256,
+                               LIO_VERSION_V3 if command.protocol==LIO_VERSION_V3 else LIO_VERSION)
 
 
 def admitted_dialogue(tx, conversation, generation, *, lio):
@@ -196,4 +208,6 @@ def query(service, mid, *, lio=False):
         if (LIO_CHAT_PATTERN.fullmatch(stored.receipt.conversation_id) is not None) != lio:
             return None
         tx.chat(stored.receipt.conversation_id, stored.receipt.generation)
-        return _receipt(stored, digest)
+        protocol=tx.cur.execute('SELECT lio_wire_protocol FROM cj_message_receipt '
+            'WHERE scope=%s AND message_id=%s',(tx.scope,mid)).fetchone()[0]
+        return _receipt(stored, digest, LIO_VERSION if protocol is None else protocol)
