@@ -71,6 +71,13 @@ def exercise(root,conninfo):
     locale='zh';current_text='';wire=[];fault=None
     def response(request):
         body=json.loads(request.content);wire.append(body)
+        if 'response_format' not in body:
+            identity=dict(id='native4-practical-'+str(len(wire)),model=M4_MODEL)
+            chunks=[dict(**identity,choices=[dict(index=0,delta=dict(content='先看站内线路图，确认目的地站名和方向。'),finish_reason=None)]),
+                dict(**identity,choices=[dict(index=0,delta={},finish_reason='stop')]),
+                dict(**identity,choices=[],usage=dict(prompt_tokens=50,completion_tokens=20,total_tokens=70))]
+            raw=''.join('data: '+json.dumps(chunk)+'\n\n'for chunk in chunks)+'data: [DONE]\n\n'
+            return httpx.Response(200,stream=httpx.ByteStream(raw.encode()))
         schema=body['response_format']['json_schema']['schema']
         version=schema['properties']['version']['const']
         extra=json.loads(body['messages'][-1]['content'])
@@ -80,7 +87,8 @@ def exercise(root,conninfo):
                 updates=[packet('pace','relaxed','轻松' if locale=='zh' else 'relaxed',index=index)]
             elif current_text.startswith('规划三天北京'):
                 updates=[packet('city','北京','北京',index=index),packet('duration_days',3,'三天',index=index),packet('party_type','两个人','两个人',index=index)]
-            value=dict(version=version,intent='explore',current_source_index=index,updates=updates)
+            intent='emergency' if current_text=='有人受伤需要急救' else 'practical' if current_text=='在北京怎么坐地铁' else 'explore'
+            value=dict(version=version,intent=intent,current_source_index=index,updates=updates)
         elif version==RESPONSE:
             if extra['scene']=='plan_now_preview':
                 content='\n'.join(('第'+str(day)+'天：博物馆、街区和当地餐饮建议。' if locale=='zh' else
@@ -112,20 +120,20 @@ def exercise(root,conninfo):
         lio_calendar_subjects=subjects,lio_exploration_subjects=subjects,lio_memory_factory=cards)
     register_typed_routes(app,database=database,auth_dir=auth,configuration=memory.collection)
     headers={'Authorization':'Bearer '+dev_auth.token(auth,SUBJECT,3600),'Content-Type':'application/octet-stream'}
-    def process():
+    def process(expected='completed'):
         outcomes=run_worker.run_once(database,model,auth,tools_configuration=tools,real_services=services,
             memory_configuration_for_scope=lambda owner:memory if owner==scope else None,
             account_admission=True,hk_demo_scopes=frozenset({scope}),lio_confirmation=signer)
-        assert [outcome.status for outcome in outcomes]==['completed'],outcomes
+        assert [outcome.status for outcome in outcomes]==[expected],outcomes
     with TestClient(app) as api:
-        def send(mid,text,cid=None):
+        def send(mid,text,cid=None,*,expected='completed'):
             nonlocal current_text
             current_text=text
             raw=json.dumps(dict(version='LIO-message.4',message_id=mid,text=text,locale=locale,
                 **({'conversation_id':cid}if cid else {'new_conversation':True})),ensure_ascii=False).encode()
             response=api.post('/v4/lio/messages',headers=headers,content=raw)
             assert response.status_code==200,response.text
-            validate(response.json());process();cid=response.json()['conversation_id']
+            validate(response.json());process(expected);cid=response.json()['conversation_id']
             timeline=api.get('/v4/lio/timeline',headers=headers,params=dict(conversation_id=cid))
             assert timeline.status_code==200,timeline.text
             validate(timeline.json());message=timeline.json()['messages'][-1]
@@ -153,9 +161,38 @@ def exercise(root,conninfo):
         _,message=send('flow4-jt-original','规划三天北京豪华游 26.12.01出发 两个人')
         assert len(message['question_groups'])==4
         assert not {'city','duration_days','party_type'}&{group['factor_key']for group in message['question_groups']}
+        fault=None
+        _,message=send('flow4-practical','在北京怎么坐地铁')
+        assert message['question_groups']==[] and message['exits']==[]
+        _,message=send('flow4-emergency','有人受伤需要急救')
+        assert message['question_groups']==[] and message['answer'].startswith('请立即拨打120')
+        with patch.dict(os.environ,{'CJ_LIO_EXPLORATION_ENABLED':'0'}):
+            _,message=send('flow4-rollback','我想去中国玩几天')
+        assert message['question_groups']==[] and message['exits']==[]
+        memory_input=dict(version='MEMORY-manual.2',operation_id='flow4-memory',item_id='flow4-memory',subject='self',
+            slot='travel.pace',kind='preference',text='I prefer a slow travel pace.',extent='long_term',occurred_at='date unknown',context=None)
+        saved=api.post('/v2/memories',headers=headers,content=json.dumps(memory_input).encode())
+        assert saved.status_code==200,saved.text
+        from cj_api.local_lio_exploration import ExplorationPlanning
+        actual_model=ExplorationPlanning._model;paused=[]
+        def revoke_after_model(host,*args,**kwargs):
+            value=actual_model(host,*args,**kwargs)
+            if not paused:
+                action=dict(version='MEMORY-management.2',action_id='flow4-pause-race',operation='pause',
+                    item_id='flow4-memory',expected_version=1,expected_source_version=1)
+                result=api.post('/v2/memory-management-actions',headers=headers,content=json.dumps(action).encode())
+                assert result.status_code==200,result.text
+                paused.append(True)
+            return value
+        with patch.object(ExplorationPlanning,'_model',revoke_after_model):
+            race_cid,message=send('flow4-memory-race','我想去中国玩几天',expected='context_invalid')
+        assert message['status']=='failed' and message['profile']==[] and not message['answer']
+        _,message=send('flow4-after-pause','我想去中国玩几天')
+        assert all(factor['state']!='memory'for factor in message['profile'])
         assert all(record['state']=='RECEIVED'for record in journal.inspect())
         with database.connect(scope)as db:assert db.execute('SELECT count(*)FROM cj_trip_record').fetchone()[0]==0
         print('PASS native4 supplied parameters are not reasked; invalid question output uses finite bank; zero Trip writes, HTTP suppliers remain fixture-only',flush=True)
+        print('PASS native4 practical/emergency/rollback zero groups, phone-first emergency, actual Memory revocation after registered model yields context_invalid/zero final body/profile; next RUN does not revive old Memory',flush=True)
 
 def main():
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
