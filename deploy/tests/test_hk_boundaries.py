@@ -32,16 +32,37 @@ def test_typed_policy_encodings_preserve_bytes_and_reject_ambiguous_configuratio
     assert configuration.typed_policy_bytes()==raw
 
 
-def test_compressed_typed_policy_retains_existing_decoded_bound_and_integrity(monkeypatch):
-    monkeypatch.delenv(configuration.TYPED_POLICY,raising=False)
+@pytest.mark.parametrize('plain,field,decoder',[
+    (configuration.TYPED_POLICY,configuration.TYPED_POLICY_GZIP,configuration.typed_policy_bytes),
+    (configuration.MEMORY_RUN_POLICY,configuration.MEMORY_RUN_POLICY_GZIP,configuration.memory_run_policy_bytes)])
+def test_compressed_typed_policy_retains_existing_decoded_bound_and_integrity(monkeypatch,plain,field,decoder):
+    monkeypatch.delenv(plain,raising=False)
     exact=b'X'*262144;packed=gzip.compress(exact)
-    monkeypatch.setenv(configuration.TYPED_POLICY_GZIP,base64.b64encode(packed).decode())
-    assert configuration.typed_policy_bytes()==exact
+    monkeypatch.setenv(field,base64.b64encode(packed).decode())
+    assert decoder()==exact
     bad=[gzip.compress(exact+b'X'),packed[:-4],packed+packed,packed+b'junk',b'not-gzip']
     corrupt=bytearray(packed);corrupt[-8]^=1;bad.append(bytes(corrupt))
     for value in bad:
-        monkeypatch.setenv(configuration.TYPED_POLICY_GZIP,base64.b64encode(value).decode())
-        with pytest.raises(ValueError):configuration.typed_policy_bytes()
+        monkeypatch.setenv(field,base64.b64encode(value).decode())
+        with pytest.raises(ValueError):decoder()
+
+
+def test_worker_policy_encoding_is_explicit_and_stays_worker_only(tmp_path,monkeypatch):
+    raw=b'{"same":"worker runtime policy"}'
+    plain=base64.b64encode(raw).decode();packed=base64.b64encode(gzip.compress(raw)).decode()
+    with patch.dict(os.environ,{configuration.MEMORY_RUN_POLICY:plain},clear=True):
+        assert configuration.memory_run_policy_bytes()==raw
+        monkeypatch.setenv(configuration.MEMORY_RUN_POLICY_GZIP,packed)
+        with pytest.raises(ValueError,match='one_memory_run'):configuration.memory_run_policy_bytes()
+    for role in ('worker','api'):
+        text=''.join(name+'=fixture-only\n'for name in sorted(configuration.SECRET_FILES[role][role]))
+        path=tmp_path/(role+'.env');path.write_text(text+configuration.MEMORY_RUN_POLICY_GZIP+'='+packed+'\n');path.chmod(0o600)
+        with patch.dict(os.environ,{},clear=True):
+            if role=='api':
+                with pytest.raises(ValueError):configuration.load_secret_environment(role,root=tmp_path)
+            else:
+                configuration.load_secret_environment(role,root=tmp_path)
+                assert configuration.memory_run_policy_bytes()==raw
 
 
 def test_compressed_policy_enters_only_through_api_owned_secret_file(tmp_path):
@@ -82,6 +103,19 @@ def test_full_205_profile_policy_fits_secret_bound_without_changing_permissions(
         configuration.load_secret_environment('api',root=tmp_path)
         decoded=TypedConfiguration.from_bytes(configuration.typed_policy_bytes())
     assert decoded==original and len(decoded.collection.profiles)==205
+    from cj_memory.typed_runtime import TypedRuntimeConfiguration
+    runtime=dict(version='local-memory-run.2',collection=value,selections={
+        s:dict(subject='self',slots=list(profile['slots']),max_bytes=1000)for s in subjects})
+    runtime_raw=json.dumps(runtime,separators=(',',':')).encode()
+    assert len(base64.b64encode(runtime_raw))>65536
+    text=''.join(name+'=fixture-only\n'for name in sorted(configuration.SECRET_FILES['worker']['worker']))
+    text+=configuration.MEMORY_RUN_POLICY_GZIP+'='+base64.b64encode(gzip.compress(runtime_raw)).decode()+'\n'
+    assert len(text.encode())<=65536
+    path=tmp_path/'worker.env';path.write_text(text);path.chmod(0o600)
+    with patch.dict(os.environ,{},clear=True):
+        configuration.load_secret_environment('worker',root=tmp_path)
+        decoded_runtime=TypedRuntimeConfiguration.from_bytes(configuration.memory_run_policy_bytes())
+    assert decoded_runtime==TypedRuntimeConfiguration.from_bytes(runtime_raw)
 
 
 class Clock(datetime):
