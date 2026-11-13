@@ -884,6 +884,41 @@ import XCTest
         XCTAssertFalse(app.buttons["lio.source"].exists)
     }
 
+    func testFloatingControlsStayAccessibleInBothAppearancesAndLanguages() throws {
+        continueAfterFailure = false
+        for language in ["en", "zh-Hans"] {
+            for appearance in ["light", "dark"] {
+                let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+                app.launchArguments = ["--lio-preview", "--lio-chat-history-acceptance",
+                                       "-cj.ui.language.v1", language, "-lio.ui.appearance.v1", appearance]
+                app.launch()
+                XCTAssertTrue(app.staticTexts["An earlier reply."].waitForExistence(timeout: 12))
+                let menu = app.buttons["lio.menu"]
+                let newChat = app.buttons["lio.chat.newShortcut"]
+                for button in [menu, newChat] {
+                    XCTAssertTrue(button.isHittable)
+                    XCTAssertGreaterThanOrEqual(button.frame.width, 44)
+                    XCTAssertGreaterThanOrEqual(button.frame.height, 44)
+                }
+                try app.performAccessibilityAudit(for: .all)
+                let image = XCTAttachment(screenshot: app.screenshot())
+                image.name = "floating-controls-\(language)-\(appearance)"
+                image.lifetime = .keepAlways
+                add(image)
+                newChat.tap()
+                XCTAssertTrue(app.buttons["lio.example.0"].waitForExistence(timeout: 8))
+                XCTAssertFalse(app.staticTexts["An earlier reply."].exists)
+                try app.performAccessibilityAudit(for: .all)
+                let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+                composer.tap()
+                let draft = language == "en" ? "My draft" : "我的草稿"
+                composer.typeText(draft)
+                XCTAssertEqual(composer.value as? String, draft)
+                app.terminate()
+            }
+        }
+    }
+
     func testTopControlsCenterLioAndStartANewChat() throws {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
