@@ -64,6 +64,16 @@ class ExplorationContract(unittest.TestCase):
         groups[0]['multiple']=False
         with self.assertRaises(ValueError):joint_reply(groups,{'interests':['interests.food','interests.nature']})
 
+    def test_option_and_exit_text_cannot_inject_joint_reply_lines(self):
+        for section in ('option','exit'):
+            for text in ('History\n','History\r','History\r\n','History\nFood',
+                         'History\u0085Food','History\u2028Food','History\u2029Food','   ','\t'):
+                value=deepcopy(EXAMPLES['en']);message=value['messages'][0]
+                target=(message['question_groups'][0]['options'][0] if section=='option'
+                        else message['exits'][0])
+                target['send_text']=text
+                with self.subTest(section=section,text=repr(text)),self.assertRaises(ValidationError):validate(value)
+
     def test_plain_text_projection_has_one_order_and_is_not_a_second_bubble(self):
         for locale in ('zh','en'):
             message=EXAMPLES[locale]['messages'][0]

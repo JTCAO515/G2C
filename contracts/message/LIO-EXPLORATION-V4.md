@@ -40,6 +40,10 @@ Legacy messages projected into a v4 timeline keep their original answer and have
 empty new arrays and progress=null; their original versions are not rewritten.
 Old endpoints continue their original plain-text behavior.
 
+Each poll is a complete message snapshot. Replace the presentation from that
+snapshot; if a question group or its options change, clear its prior local
+selections rather than submitting stale option text or duplicating bubbles.
+
 Choose any subset of questions. For multiple choice, preserve option wire order,
 not tap order. Join selected send_text values with one newline, in group wire
 order, and send one ordinary message through the existing send boundary. Single
@@ -71,7 +75,9 @@ TripProposal, confirmation, billing or UNKNOWN recovery guards.
 
 Question groups have at most four groups and exactly three or four options;
 notices at most two, exits at most four. Presentation text remains bounded and
-option send_text is single-line so joint replies have one unambiguous separator.
+option and exit send_text is nonblank and explicitly excludes CR, LF and Unicode
+line separators, including a trailing separator. Joint replies therefore have
+one unambiguous separator; a regex end anchor alone is insufficient.
 These transport bounds do not replace #922's language/scene lengths, dynamic
 question counts, candidate-factor restrictions, code-generated notices, defaults
 or safety filters; WP3/WP4/WP8 enforce those production policies.
