@@ -49,6 +49,20 @@ async result is checked against its original scope/attempt/profile before use;
 publication reacquires real source leases in the existing order. No concurrent
 worker or new payment/ledger writer is added.
 
+Step4 freezes the proposed order/adjacency for step5. Step6 may adjust times
+within those same pairs; it must not move a stop while retaining a route for an
+old pair. If actual route duration cannot fit the protected windows, return the
+conflict/adjustment suggestion. A future explicit reordering pass must invalidate
+all affected legs and count every replacement route attempt within the same45
+budget; this design does not add an unbounded route/reorder loop.
+
+The current solver's `_prepare` accepts the existing NEEDS item set with the same
+IDs, aware dates and known booking status. New sights and undated day-index plans
+cannot be fed directly into that legacy `Problem` by fabricating dates or booking
+facts. WP9 must introduce an explicit new problem/adapter version and independently
+validate its output against structured.4, preserving the old `Problem`, validators
+and negative cases. Sharing the CP-SAT engine does not share a write grant.
+
 ## Richness and calendar rules
 
 Pace is a typed server choice from the protected profile, with the explicit
@@ -84,6 +98,10 @@ read eligibility are retained; they are not new evidence for another date/query.
 The existing registered exit, per-RUN/account/global authorization and UNKNOWN
 holds remain the spending boundary. WP0's larger approved totals are not a new
 secret, actor, lease, accounting period or automatic balance reset.
+The generation count begins with the admitted plan trigger and includes its
+understanding call through final presentation. Earlier exploration calls are
+reported separately in full conversation cost, not hidden from the account
+ledger; a failed/UNKNOWN original cannot reset its count through a new action.
 
 | Operation | Maximum | Allocation |
 | --- | --- | --- |
@@ -108,8 +126,11 @@ C's long-trip controls must assert both full coverage and the actual ceilings.
 
 G5 is measured separately for exploration's first visible segment p95≤6s.
 G9 measures generation's first visible text p95≤8s and complete plan p95≤30s.
-A code-rendered brief/progress comes from the actual admitted planning state; an
-empty SSE event, timer-only skeleton or unrelated cached answer is not first text.
+Progress/loading is recorded separately and never substitutes for first body.
+Record distinct first_progress, first_brief, first_body and completed-receipt
+timestamps. A code-generated brief with actual sourced content can be identified
+separately for C's preregistered acceptance classification; an empty SSE event,
+timer-only skeleton or unrelated cached answer cannot count as first body.
 
 The design budget is: understand/brief0–3s, skeleton3–6s, parallel lookup6–12s,
 selection12–13s, bounded parallel routes13–20s, final schedule20–21s,
@@ -145,6 +166,18 @@ receipt timestamps for a preregistered cohort, with all FAIL/UNKNOWN/UNRUN intac
 - Venue opening hours must be machine-readable/confirmed before enforcing a hard
   conflict. An unparsed provider string is unknown. No H entry or model memory
   substitutes for actual date-dependent evidence.
+
+H's exact interface is [WP12-FORMAT.md](../../knowledge/visitor/WP12-FORMAT.md),
+already accepted in PR942. All five condition fields retain their original
+semantics: reservation_required, closed_weekdays (ISO Monday1–Sunday7),
+closed_weekdays_public_holiday_exception, advance_booking_days and
+advance_booking_rule. `window_max` is a maximum booking window, not
+`minimum_lead`; an optional7-day booking channel must not become “book at least7
+days ahead.” Minimum lead applies only when reservation_required=true. A statutory
+holiday exception is distinct from an ordinary weekend or adjusted working day.
+Match the exact subject and applicability scope, with checked/expiry dates; a
+city or fuzzy name cannot attach a venue rule to a different site. Unknown and
+expired conditions never become clear/false or a zero-day lead.
 - Public `progress`/exits use WP2's additive LIO-message.4. Backend operation IDs,
   source hashes, tool names and private custody metadata stay out of UI text.
 
