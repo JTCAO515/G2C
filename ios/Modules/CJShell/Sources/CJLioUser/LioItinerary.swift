@@ -143,6 +143,12 @@ public struct LioTripLibrary {
     let list: @MainActor () async throws -> [Entry]
     let detail: @MainActor (String) async throws -> Record?
 
+    init(entries: @escaping @MainActor () async throws -> [Entry],
+         record: @escaping @MainActor (String) async throws -> Record?) {
+        list = entries
+        detail = record
+    }
+
     public init(list: @escaping @MainActor () async throws -> [StructuredTripSummary],
                 detail: @escaping @MainActor (String) async throws -> StructuredTripRecord?) {
         self.list = { try await list().map { Entry(tripID: $0.tripID, title: $0.title, calendar: nil, dayCount: nil) } }

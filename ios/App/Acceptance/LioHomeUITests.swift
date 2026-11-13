@@ -1600,4 +1600,61 @@ import XCTest
         if let mode { app.launchArguments.append(mode) }
         app.launch()
     }
+
+ func testCalendarWireEnglish() throws { try exerciseCalendarWire(false) }
+ func testCalendarWireChinese() throws { try exerciseCalendarWire(true) }
+ private func exerciseCalendarWire(_ chinese:Bool) throws {
+  continueAfterFailure = false
+  let app = XCUIApplication(bundleIdentifier:"space.go2china.lio.acceptance")
+  app.launchArguments = ["--lio-preview", "--lio-calendar-wire-acceptance", "-cj.ui.language.v1", chinese ? "zh-Hans" : "en"]
+  app.launch(); defer { app.terminate() }
+  let composer = app.descendants(matching:.any).matching(identifier:"lio.composer").firstMatch
+  XCTAssertTrue(composer.waitForExistence(timeout:12),app.debugDescription)
+  func ask(_ text:String) {
+   composer.tap(); composer.typeText(text); app.buttons["lio.send"].tap()
+  }
+  func reveal(_ control:XCUIElement) {
+   for _ in 0..<6 { if control.isHittable { return }; app.swipeUp() }
+   XCTAssertTrue(control.isHittable,app.debugDescription)
+  }
+  let pending = app.staticTexts[chinese ? "出发日期待定":"Start date not set"]
+  let chat = app.tabBars.buttons[chinese ? "聊天":"Chat"]
+  ask("Plan three days, dates not set")
+  XCTAssertTrue(pending.waitForExistence(timeout:12),app.debugDescription)
+  captureCalendarWire(app,"calendar-http-card-before-audit",chinese)
+  try app.performAccessibilityAudit(for:.all)
+  captureCalendarWire(app,"calendar-http-card",chinese)
+  let show = app.buttons["lio.trip.show"].firstMatch; reveal(show); show.tap()
+  XCTAssertTrue(pending.waitForExistence(timeout:10))
+  let third = app.buttons["lio.trip.select-day.3"]
+  XCTAssertTrue(third.waitForExistence(timeout:10),app.debugDescription)
+  XCTAssertEqual(third.label,chinese ? "第 3 天":"Day 3")
+  third.tap(); XCTAssertTrue(app.staticTexts["lio.trip.day.empty"].exists)
+  try app.performAccessibilityAudit(for:.all)
+  captureCalendarWire(app,"calendar-http-trip",chinese)
+  chat.tap()
+  ask("Start on December 1")
+  let undo = app.buttons["lio.chat.trip.undo"]
+  XCTAssertTrue(undo.waitForExistence(timeout:12),app.debugDescription)
+  let latest = app.buttons.matching(identifier:"lio.trip.show").allElementsBoundByIndex.last!
+  reveal(latest); latest.tap()
+  XCTAssertTrue(third.waitForExistence(timeout:10))
+  XCTAssertEqual(third.label,"2026-12-03")
+  try app.performAccessibilityAudit(for:.all)
+  captureCalendarWire(app,"calendar-http-dated",chinese)
+  chat.tap(); reveal(undo); undo.tap()
+  // The first read can reconcile before XCTest observes the transient spinner.
+  XCTAssertTrue(pending.waitForExistence(timeout:16),app.debugDescription)
+  reveal(latest); latest.tap()
+  XCTAssertTrue(pending.waitForExistence(timeout:10),app.debugDescription)
+  XCTAssertEqual(third.label,chinese ? "第 3 天":"Day 3")
+  captureCalendarWire(app,"calendar-http-undone",chinese)
+  chat.tap(); app.buttons["lio.menu"].tap()
+  let counts = app.staticTexts["fixture.counts"]
+  XCTAssertTrue(counts.waitForExistence(timeout:5))
+  XCTAssertEqual(counts.label,"sends=2 undoPosts=1 undoReads=1 details=3")
+ }
+ private func captureCalendarWire(_ app:XCUIApplication,_ label:String,_ chinese:Bool) {
+  let shot=XCTAttachment(screenshot:app.screenshot());shot.name=label+(chinese ? "-zh":"-en");shot.lifetime = .keepAlways;add(shot)
+ }
 }

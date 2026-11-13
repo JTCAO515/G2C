@@ -16,7 +16,7 @@ private struct LioTimelineFixture: View {
             let fixture = ProcessInfo.processInfo.environment["G2C_LIO_PREVIEW_TRIP"]!
             let library = try! LioPreviewTripFixture.library(fixture)
             var opens = 0
-            _tripLibrary = State(initialValue: LioTripLibrary(list: library.list, detail: { id in
+            _tripLibrary = State(initialValue: LioTripLibrary(entries: library.list, record: { id in
                 opens += 1
                 if opens == 1 { return try await library.detail(id) }
                 throw URLError(.networkConnectionLost)
