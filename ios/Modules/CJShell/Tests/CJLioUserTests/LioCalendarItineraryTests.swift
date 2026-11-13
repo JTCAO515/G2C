@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 import Testing
 import CJMessageHTTP
 import CJTripClient
@@ -37,6 +38,38 @@ struct LioCalendarItineraryTests {
             #expect(plan.calendar == .dated(startDate: "2026-12-01"))
             #expect(plan.days[2].date == "2026-12-03")
         }
+    }
+
+    @Test func undatedOvernightDetailKeepsTheActualEndingDay() throws {
+        var root = URL(fileURLWithPath: #filePath)
+        for _ in 0..<6 { root.deleteLastPathComponent() }
+        let bytes = try Data(contentsOf: root.appendingPathComponent("contracts/trip/structured-read-examples.2.json"))
+        let file = try #require(JSONSerialization.jsonObject(with: bytes) as? [String: Any])
+        let examples = try #require(file["positive"] as? [[String: Any]])
+        var value = try #require(examples.first { $0["name"] as? String == "base detail" }?["value"] as? [String: Any])
+        var trip = try #require(value["trip"] as? [String: Any])
+        var content = try #require(trip["content"] as? [String: Any])
+        var items = try #require(content["items"] as? [[String: Any]])
+        var schedule = try #require(items[0]["schedule"] as? [String: Any])
+        var start = try #require(schedule["start"] as? [String: Any])
+        var end = try #require(schedule["end"] as? [String: Any])
+        start["time"] = ["state": "known", "value": "22:00"]
+        end["day_index"] = 2
+        end["time"] = ["state": "known", "value": "02:00"]
+        schedule["start"] = start; schedule["end"] = end; items[0]["schedule"] = schedule
+        content["items"] = items
+        let contentBytes = try JSONSerialization.data(withJSONObject: content, options: [.sortedKeys, .withoutEscapingSlashes])
+        trip["content"] = content
+        trip["content_sha256"] = SHA256.hash(data: contentBytes).map { String(format: "%02x", $0) }.joined()
+        value["trip"] = trip
+        let record = try #require(try CalendarStructuredTripReadV2.detail(JSONSerialization.data(withJSONObject: value),
+            requestID: "00000000-0000-4000-8000-000000000001"))
+        let stop = try #require(LioItinerary(record).days.first?.stops.first)
+        #expect(stop.time == "22:00")
+        #expect(stop.endDayNumber == 2)
+        #expect(stop.endDate == nil)
+        #expect(stop.endingText(.english) == "Day 2 02:00")
+        #expect(stop.endingText(.chinese) == "第 2 天 02:00")
     }
 
     @Test func undatedIncludesEmptyRestDaysWithBilingualOrdinals() throws {

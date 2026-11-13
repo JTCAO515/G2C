@@ -19,9 +19,10 @@ struct LioItinerary: Equatable, Identifiable, Sendable {
         let fixed: Bool?
         let endTime: String?
         let endDate: String?
+        let endDayNumber: Int?
 
         init(id: String, name: String, time: String?, point: Point?, fixed: Bool?,
-             endTime: String? = nil, endDate: String? = nil) {
+             endTime: String? = nil, endDate: String? = nil, endDayNumber: Int? = nil) {
             self.id = id
             self.name = name
             self.time = time
@@ -29,6 +30,12 @@ struct LioItinerary: Equatable, Identifiable, Sendable {
             self.fixed = fixed
             self.endTime = endTime
             self.endDate = endDate
+            self.endDayNumber = endDayNumber
+        }
+
+        func endingText(_ language: LioLanguage) -> String {
+            let day = endDayNumber.map { language.text("Day \($0)", "第 \($0) 天") }
+            return [endDate ?? day, endTime].compactMap { $0 }.joined(separator: " ")
         }
     }
 
@@ -207,7 +214,8 @@ extension LioItinerary {
                     let endingDate = document.days[entry.endDayIndex - 1].date
                     return Stop(id: item.id, name: item.text, time: item.start.time.lioValue, point: point,
                                 fixed: item.fixed.lioValue, endTime: item.end.time.lioValue,
-                                endDate: endingDate == day.date ? nil : endingDate)
+                                endDate: endingDate == day.date ? nil : endingDate,
+                                endDayNumber: calendar == .undated && entry.endDayIndex != day.index ? entry.endDayIndex : nil)
                 }, date: day.date)
             }, calendar: calendar)
         }
