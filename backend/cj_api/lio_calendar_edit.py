@@ -7,7 +7,7 @@ import json
 from cj_manual_edit.scoped import Request
 from cj_trip.domain import packed
 
-from .lio_edit_selection import (_COMPOUND_EN, _COMPOUND_ZH, _STOP_QUOTES, _dated_slot,
+from .lio_edit_selection import (_COMPOUND_EN, _COMPOUND_ZH, _dated_slot,
     _edit_parts, _known, _national_replacement, _replacement_label, _slot, match_edit)
 
 
@@ -23,7 +23,7 @@ def _select(document, target):
     items = document['items']
     compound = _COMPOUND_ZH.fullmatch(target) or _COMPOUND_EN.fullmatch(target)
     if compound is not None:
-        if _STOP_QUOTES[compound['open']] != compound['close']:
+        if {"'":"'",'"':'"','“':'”','「':'」'}[compound['open']] != compound['close']:
             return []
         return [item for item in _select(document, compound['slot'].strip())
                 if item['text'].casefold() == compound['name'].strip().casefold()

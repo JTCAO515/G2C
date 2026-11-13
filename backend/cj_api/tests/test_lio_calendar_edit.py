@@ -46,6 +46,19 @@ class CalendarEdit(unittest.TestCase):
         for text in ('把第二天下午换成人民公园', 'Replace the afternoon of day 2 with People Park.'):
             self.assertEqual(select_calendar_edit(trip(), text, 'en', 'edit').status, 'clarify')
 
+    def test_compound_selection_supports_all_existing_quote_pairs(self):
+        original=trip()
+        for opening,closing in (("'","'"),('"','"'),('“','”'),('「','」')):
+            text=f'Replace {opening}City Museum{closing} on the afternoon of day 3 (13:00-14:00) with People Park.'
+            selected=select_calendar_edit(original,text,'en','quoted-edit')
+            self.assertEqual(selected.status,'preview')
+            self.assertEqual(selected.selected_ids,('museum',))
+            after=replacement(original,selected.request,ManualEdit._parse(selected.edit,VERSION))
+            self.assertEqual(after['items'][0]['text'],'People Park')
+        for opening,closing in (("'",'"'),('“',"'"),('「','”')):
+            text=f'Replace {opening}City Museum{closing} on the afternoon of day 3 (13:00-14:00) with People Park.'
+            self.assertEqual(select_calendar_edit(original,text,'en','quoted-edit').status,'clarify')
+
     def test_duplicate_names_and_periods_do_not_expand_selection(self):
         for text in ('Replace City Museum with People Park.',
                      'Replace the afternoon of day 3 with People Park.'):
