@@ -12,6 +12,7 @@ ROOT=Path(__file__).resolve().parents[3]
 sys.path[:0]=[str(ROOT),str(ROOT/'scripts')]
 import psycopg
 from fastapi.testclient import TestClient
+from fastapi import FastAPI
 from cj_api.local_app import LocalDatabase,create_local_app,scope_for,ISSUER
 from cj_api.local_run_context import load_run_context
 from cj_message.travel import ABI
@@ -32,9 +33,15 @@ def exercise(work,config):
     captured={}
     def capture_routes(*args,**kwargs):
         captured['boundary']=args[1];captured['prepare_scope']=kwargs['prepare_scope']
+        captured['args']=args;captured['kwargs']=dict(kwargs)
         return register_lio_dialogue_routes(*args,**kwargs)
     with patch('cj_api.lio_dialogue_routes.register_lio_dialogue_routes',side_effect=capture_routes):
         app=create_local_app(conninfo_path=None,auth_dir=auth,database=database,run_context=context,account_admission=True,demo_dialogue_subjects=frozenset(subjects),lio_dialogue_subjects=frozenset(subjects),cleanup_configuration=options)
+    # Keep the original legacy-consumer contract test even when the newer
+    # application explicitly installs its separate calendar routes.
+    legacy_app=FastAPI()
+    legacy_options={key:value for key,value in captured['kwargs'].items() if key!='calendar_cards'}
+    register_lio_dialogue_routes(legacy_app,*captured['args'][1:],**legacy_options)
     def dump():
         # Logical exact-byte dump of all protected business/ledger/deletion-fence rows.
         tables=('cj_message_receipt','cj_message_chat','cj_message_delivery','cj_message_needs_binding','cj_trip_record','cj_trip_proposal','cj_trip_receipt','cj_trip_needs_basis','cj_trip_needs_action','cj_usage_ledger_candidate','cj_run_record','cj_run_event','cj_run_step_usage','cj_run_metered_operation','cj_memory_scope','cj_memory_item','cj_account_fence','cj_cleanup_operation','cj_cleanup_request')
@@ -72,7 +79,9 @@ def exercise(work,config):
                 ('empty_older_page','/v2/lio/timeline',dict(conversation_id=seed['cid'],before='compat-earlier-v2'))):
                 r=api.get(url,headers=headers[subjects[0]],params=params);statuses[name]=r.status_code;assert r.status_code==400,r.text
             r=api.post('/v2/lio/messages',headers=headers[subjects[0]],content=encode(dict(version='LIO-message.2',message_id='compat-denied-v2',text='MUST_NOT_APPEND',locale='en',conversation_id=seed['cid'])));statuses['append']=r.status_code;assert r.status_code==400,r.text
-            r=api.post('/v3/lio/messages',headers=headers[subjects[0]],content=(evidence/'original.wire.bin').read_bytes());statuses['v3_route_absent']=r.status_code;assert r.status_code==404,r.text
+            with TestClient(legacy_app) as legacy_api:
+                r=legacy_api.post('/v3/lio/messages',headers=headers[subjects[0]],content=(evidence/'original.wire.bin').read_bytes())
+                statuses['legacy_v3_route_absent']=r.status_code;assert r.status_code==404,r.text
             # Real production factory + real native receipt + actual _one/worker lease.
             from cj_api.local_account_admission_v2 import account_checker_for
             from cj_agent.provider import FakeProvider
