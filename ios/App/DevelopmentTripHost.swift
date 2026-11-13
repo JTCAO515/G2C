@@ -2180,3 +2180,141 @@ private func developmentCleanupHash(_ value: Data) -> String {
 }
 
 #endif
+
+#if DEBUG && G2C_DEMO_BETA && targetEnvironment(simulator)
+/// Local-only evidence of the actual Beta cleanup coordinator. No public API,
+/// remote host, real credential, deletion, or seven-day elapsed-time claim.
+struct DemoCleanupRenewalProbeResult: Codable {
+    let scenario: String
+    let renewalAccepted: Bool
+    let originalStateRefUnchanged: Bool
+    let originalControlsUnchanged: Bool
+    let manifestChangeIsOnlyRenewedSDKHash: Bool
+}
+
+@MainActor enum DemoCleanupRenewalProbe {
+    static let scenarios = ["ready", "registrationUnknown", "enrolled", "preparedUnregister",
+                            "preparationUnknown", "foreignOwner", "confirmationDispatched", "verifiedRefusal"]
+    static func run(endpoint: URL, scenario: String) async throws -> DemoCleanupRenewalProbeResult {
+        guard endpoint.scheme == "http", endpoint.host == "127.0.0.1", endpoint.port != nil,
+              scenarios.contains(scenario) else { throw CleanupFailure.unavailable }
+        return try await DevelopmentCleanupWorkflow.probeCredentialRenewal(endpoint: endpoint, scenario: scenario)
+    }
+}
+
+private extension DevelopmentCleanupWorkflow {
+    struct RenewalControlSnapshot: Equatable {
+        let manifest: Data?
+        let device: Data?
+        let account: Data?
+        let execution: Data?
+        let selection: Data?
+        let sdk: Data?
+    }
+    func renewalControlSnapshot() throws -> RenewalControlSnapshot {
+        try .init(manifest: manifestStore.load()?.withBytes { $0 },
+                  device: deviceStore.load()?.withBytes { $0 },
+                  account: accountStore.load()?.withBytes { $0 },
+                  execution: executionStore.load()?.withBytes { $0 },
+                  selection: indexStore.load()?.withBytes { $0 },
+                  sdk: sdkStore.load()?.withBytes { $0 })
+    }
+    static func probeCredentialRenewal(endpoint: URL, scenario: String) async throws -> DemoCleanupRenewalProbeResult {
+        let environment = UUID(), owner = UUID()
+        let scope = AccountCleanupScope(environment: environment, account: owner, generation: UUID())
+        let sdk = try slot(environment: environment, suffix: "B691.SyntheticSDK." + owner.uuidString)
+        let oldToken = "SDK.SYNTHETIC.B691." + scenario
+        let oldMaterial = try SessionMaterial(trustedSDKBytes: Data(oldToken.utf8))
+        let oldSession = SessionLifecycle(persistence: sdk, restorePolicy: .userInitiatedOnly)
+        let oldOperation = try oldSession.beginTrustedSDKSave()
+        try oldSession.save(oldMaterial, for: oldOperation)
+        let originalConfiguration = DevelopmentSessionConfiguration(endpoint: endpoint, token: oldToken,
+            proposalID: nil, environmentID: environment, accountID: owner, subject: "synthetic-" + scenario,
+            expiresAt: Date().addingTimeInterval(7200).timeIntervalSince1970)
+        let support = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask,
+                                                   appropriateFor: nil, create: true)
+        let directory = support.appendingPathComponent("B691SyntheticOffline", isDirectory: true)
+            .appendingPathComponent(environment.uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true,
+                                                attributes: [.posixPermissions: 0o700])
+        let offline = try OfflineTripController(environment: environment,
+            applicationIdentifier: DevelopmentKeychainIdentity.read(), directory: directory,
+            sdkMaterial: sdk.load, policy: .acceptedTrip, clock: { nil })
+        let original = try Self(scope: scope, endpoint: endpoint, sdkStore: sdk, offline: offline,
+            ordinary: (originalConfiguration, .init(session: oldSession, operation: oldOperation), oldMaterial.withBytes(developmentCleanupHash)),
+            preferredVersion: .v4, quiesce: {}, clearSDK: { throw CleanupFailure.unavailable })
+        defer { original.invalidate() }
+        try original.prepareResources()
+        guard let manifest = original.manifest, let device = original.device, let account = original.account else {
+            throw CleanupFailure.unavailable
+        }
+        if scenario == "registrationUnknown" {
+            _ = try device.prepareRegistration(stateRef: manifest.stateRef)
+            guard case .registrationUnknown = device.state else { throw CleanupFailure.unavailable }
+        } else if ["enrolled", "preparedUnregister", "preparationUnknown", "confirmationDispatched", "verifiedRefusal"].contains(scenario) {
+            _ = try await device.perform(device.prepareRegistration(stateRef: manifest.stateRef))
+            guard case .enrolled = device.state else { throw CleanupFailure.unavailable }
+            if ["preparedUnregister", "preparationUnknown", "confirmationDispatched"].contains(scenario) {
+                try account.adoptDeviceEnrollment(device.acceptedEnrollment())
+                let preparation = try account.prepareAccountDeletion()
+                if scenario == "preparationUnknown" {
+                    guard case .preparationUnknown = account.state else { throw CleanupFailure.unavailable }
+                } else {
+                    try await account.perform(preparation)
+                    guard case .awaitingConfirmation(let prepared) = account.state else { throw CleanupFailure.unavailable }
+                    if scenario == "confirmationDispatched" {
+                        let confirmation = try account.prepareConfirmation(operationID: prepared.operationID,
+                            registryDigest: prepared.registryDigest, confirmation: "DELETE_ACCOUNT")
+                        do {
+                            try await account.perform(confirmation)
+                            throw CleanupFailure.unavailable
+                        } catch CleanupFailure.exchangeUnknown { }
+                        guard try account.requiresRestrictedProgress else { throw CleanupFailure.unavailable }
+                    }
+                }
+            } else if scenario == "verifiedRefusal" {
+                guard case .identityRefused = try await device.perform(device.prepareIdentityVerification()),
+                      try device.hasVerifiedIdentityRefusal else { throw CleanupFailure.unavailable }
+            }
+        } else {
+            guard case .ready = device.state, case .ready = account.state else { throw CleanupFailure.unavailable }
+        }
+        // A verified new SDK save is the fixture input to the same production
+        // coordinator init; its existing pin guard remains the decision maker.
+        original.invalidate()
+        let newToken = oldToken + ".renewed"
+        let material = try SessionMaterial(trustedSDKBytes: Data(newToken.utf8))
+        let session = SessionLifecycle(persistence: sdk, restorePolicy: .userInitiatedOnly)
+        let operation = try session.beginTrustedSDKSave()
+        try session.save(material, for: operation)
+        let configuration = DevelopmentSessionConfiguration(endpoint: endpoint, token: newToken,
+            proposalID: nil, environmentID: environment, accountID: scenario == "foreignOwner" ? UUID() : owner,
+            subject: "synthetic-" + scenario, expiresAt: Date().addingTimeInterval(604800).timeIntervalSince1970)
+        let before = try original.renewalControlSnapshot()
+        let shouldAccept = !["foreignOwner", "confirmationDispatched", "verifiedRefusal"].contains(scenario)
+        var accepted = false
+        do {
+            let renewed = try Self(scope: scope, endpoint: endpoint, sdkStore: sdk, offline: offline,
+                ordinary: (configuration, .init(session: session, operation: operation), material.withBytes(developmentCleanupHash)),
+                preferredVersion: .v4, quiesce: {}, clearSDK: { throw CleanupFailure.unavailable })
+            defer { renewed.invalidate() }
+            accepted = true
+        } catch CleanupFailure.stale {
+            guard !shouldAccept else { throw CleanupFailure.stale }
+        }
+        guard accepted == shouldAccept else { throw CleanupFailure.unavailable }
+        let after = try original.renewalControlSnapshot()
+        guard before.device == after.device, before.account == after.account,
+              before.execution == after.execution, before.selection == after.selection,
+              before.sdk == after.sdk, let actualManifest = after.manifest else { throw CleanupFailure.unavailable }
+        let actual = try JSONDecoder().decode(DevelopmentNativeManifest.self, from: actualManifest)
+        var expected = manifest
+        if accepted { expected.renewedSDKHash = material.withBytes(developmentCleanupHash) }
+        guard actualManifest == (try expected.encoded()), try actual.stateRef == manifest.stateRef else {
+            throw CleanupFailure.unavailable
+        }
+        return .init(scenario: scenario, renewalAccepted: accepted, originalStateRefUnchanged: true,
+                     originalControlsUnchanged: true, manifestChangeIsOnlyRenewedSDKHash: true)
+    }
+}
+#endif
