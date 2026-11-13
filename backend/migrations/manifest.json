@@ -426,6 +426,14 @@
       "sha256": "1d9bb398904f68b1df88198f04fe2433d7ab8e1ca11f57b4ce0cd3708d162b1b",
       "down": "backend/migrations/down/0053_lio_wire_origin.down.sql",
       "down_sha256": "7686cc2d2d225884723da3faacd48317783abfc566e04edd891ea986055fa3b9"
+    },
+    {
+      "version": 54,
+      "name": "lio_exploration_origin",
+      "file": "backend/migrations/0054_lio_exploration_origin.sql",
+      "sha256": "9ce0e0bd561140aa6cdfa8fc35247e34e867cd78b39f5281686cb9b305a5848c",
+      "down": "backend/migrations/down/0054_lio_exploration_origin.down.sql",
+      "down_sha256": "0aba252ef447a9979fe903066e6275c8eff147b862690f43101d974ebe959833"
     }
   ]
 }
