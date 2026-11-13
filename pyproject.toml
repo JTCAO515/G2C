@@ -5,6 +5,7 @@ description = "G2C / CJ Agent backend: API composition and domain modules (singl
 requires-python = ">=3.12,<3.15"
 dependencies = [
     "alibabacloud-oss-v2==1.4.1",
+    "chinese-calendar==1.12.1",
     "cryptography==50.0.2",
     "fastapi>=0.156.8",
     "h11==0.16.0",
