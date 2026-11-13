@@ -818,6 +818,7 @@ import XCTest
         trip.tap()
         let routeMap = app.descendants(matching: .any).matching(identifier: "lio.trip.route-map").firstMatch
         XCTAssertTrue(routeMap.waitForExistence(timeout: 8), app.debugDescription)
+        XCTAssertEqual(routeMap.label, language == "zh-Hans" ? "行程地图" : "Trip map")
         let hotel = app.staticTexts[fixed]
         if !hotel.isHittable { app.swipeUp() }
         XCTAssertTrue(hotel.waitForExistence(timeout: 8))
@@ -825,10 +826,12 @@ import XCTest
         if !walk.isHittable { app.swipeDown() }
         XCTAssertTrue(walk.isHittable, app.debugDescription)
         walk.tap()
-        XCTAssertEqual(routeMap.value as? String, "old-town-walk")
+        XCTAssertEqual(routeMap.value as? String, walk.label)
+        XCTAssertNotEqual(routeMap.value as? String, "old-town-walk")
         let second = app.buttons["lio.trip.select-day.2"]
         if !second.isHittable { app.swipeDown() }
         second.tap()
+        XCTAssertTrue((routeMap.value as? String ?? "").isEmpty)
         XCTAssertTrue(app.buttons["lio.trip.focus.museum"].waitForExistence(timeout: 8))
         XCTAssertFalse(hotel.exists)
         XCTAssertTrue(app.buttons["lio.trip.focus.park"].exists)

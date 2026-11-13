@@ -52,6 +52,7 @@ struct LioTripTimeline: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             if let day {
+                let focusedName = day.stops.first { $0.id == focusedStop }?.name
                 if day.stops.contains(where: { $0.point != nil }) {
                     VStack(alignment: .leading, spacing: 8) {
                         LioRouteMap(day: day, focusedStop: focusedStop,
@@ -59,7 +60,9 @@ struct LioTripTimeline: View {
                             .frame(height: 220)
                             .clipShape(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
                             .accessibilityIdentifier("lio.trip.route-map")
-                            .accessibilityValue(focusedStop ?? "")
+                            .accessibilityLabel(language.text("Trip map", "行程地图"))
+                            .accessibilityValue(focusedName ?? "")
+                            .accessibilityAddTraits(.isImage)
                         if mapUnavailable {
                             Text(language.text("Map unavailable", "暂时无法显示地图"))
                                 .accessibilityIdentifier("lio.trip.route-map.unavailable")

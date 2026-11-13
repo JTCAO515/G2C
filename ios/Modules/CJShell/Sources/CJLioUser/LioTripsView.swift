@@ -226,6 +226,7 @@ private struct LioTripDetail: View {
                         Text(record.document.title)
                             .font(LioTheme.display(.title))
                             .foregroundStyle(LioTheme.ink)
+                            .background(LioTheme.paper)
                             .fixedSize(horizontal: false, vertical: true)
                             .accessibilityAddTraits(.isHeader)
                         LioSavedTripTimeline(record: record, language: language)
