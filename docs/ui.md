@@ -2,6 +2,8 @@
 
 ## Lio 用户版（#702）
 
+App 对外名称统一为 **Go2China**（JT 2026-11-13）；桌面名称和用户文案使用全名。
+
 以 [JT 的 2026-11-09 决定](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6736601057)及 [#702 修订](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6736604817)为准。Beta 和正式版进入独立的 Lio 外壳；CJShell 的页面、开发 profile 和负例留给 Debug。旧规格保留在附录。
 
 ### 助手对话

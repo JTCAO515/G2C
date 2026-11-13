@@ -67,7 +67,7 @@ def _booking_source(item,booking,items,turns):
         raise InvalidInput('unique affirmative same-item booking source required')
 
 
-def parse_sourced(raw,turns):
+def parse_sourced(raw,turns,*,current_dates=False):
     value=decode(raw.encode() if type(raw)is str else raw)
     try:dto=SourcedIntake.model_validate(value)
     except ValidationError:raise InvalidInput('exact sourced facts intake required')from None
@@ -82,7 +82,7 @@ def parse_sourced(raw,turns):
         if booking is None:continue
         bookings.append((item,booking))
         item['booking_status']=booking['status']
-    result=compile_flat(data,turns)
+    result=compile_flat(data,turns,current_dates=current_dates)
     if result.intent in ('plan','save'):
         for _,booking in bookings:
             index=booking['source_index']
