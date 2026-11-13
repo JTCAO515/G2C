@@ -20,7 +20,7 @@ def source_c0(*,resource_root=None):
     from cj_message.lio_context import PERSONA
     from cj_draft.lio_plan import INITIAL_SYSTEM, REPLAN_SYSTEM
     from cj_draft.grouped_plan import system_for
-    policy_files = ('backend/agent/cj_agent/provider.py', 'backend/cj_api/real_services.py',
+    policy_files = ('backend/agent/cj_agent/provider.py', 'backend/agent/cj_agent/worker.py', 'backend/cj_api/real_services.py',
              'backend/cj_api/local_lio_planning.py', 'backend/cj_api/local_lio_national.py',
              'backend/cj_api/lio_scene.py',
              'backend/fact/cj_fact/visitor.py',
