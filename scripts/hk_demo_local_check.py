@@ -2052,12 +2052,11 @@ if __name__=='__main__':
         with pg_suites.cluster('demo',port=55649,role='cj_demo_init',root=root/'pg',socket=root/'s') as conninfo:
             with psycopg.connect(**conninfo,autocommit=True) as connection:
                 migrations=migrate.load();migrate.up(connection,migrations,migrations[-1]['version'])
-            for version in (50,51):
+            for version in (50,51,52):
                 with patch.object(migrate,'load',return_value=migrations[:version]):
                     with pg_suites.cluster('old-blueprint',port=55651,role='cj_demo_blueprint',
                             root=root/'old-blueprint',socket=root/'old-blueprint-s') as previous:
                         with psycopg.connect(**previous,autocommit=True) as connection:
                             migrate.up(connection,migrations,version)
                         verify_upgrade(root/f'upgrade-{version}',previous,version)
-            verify_upgrade(root/'upgrade-52',conninfo,52)
             exercise(root,conninfo)

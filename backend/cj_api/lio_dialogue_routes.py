@@ -6,7 +6,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
 
-from cj_message.demo_dialogue import LIO_CHAT_PATTERN, LIO_VERSION, LIO_VERSION_V2, message_id
+from cj_message.demo_dialogue import LIO_CHAT_PATTERN, LIO_VERSION, LIO_VERSION_V2, LIO_VERSION_V3, message_id
 from cj_message.domain import InvalidInput
 from cj_message.lio_context import SOURCE_EFFECT, TOOL_EFFECT, display_answer, self_description
 from cj_message.lio_plan_needs import BOUND_EFFECT, EDIT_BOUND_EFFECT
@@ -109,6 +109,8 @@ def _timeline(boundary, resolve_runs, trip_cards, memory_cards, token, conversat
 
     def project(context):
         page = context.lio_timeline(conversation_id, before, multiple=multiple)
+        if page.requires_new_lio:
+            raise InvalidInput('calendar conversation requires its selected reader')
         # An empty page never needed a MESSAGE owner row. Keep that path and
         # its final page/AUTH checks; existing originals get one protected frame.
         if not page.messages:
@@ -190,6 +192,8 @@ def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, pre
             return _failure(message_failure(request, exc, False).status_code)
         value = None
         if receipt is not None:
+            if receipt.requires_new_lio:
+                return _failure(400)
             if receipt.input_sha256 != digest:
                 return _failure(409)
             value = dict(version='LIO-message-receipt.2', message_id=receipt.message_id,

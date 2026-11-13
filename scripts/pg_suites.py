@@ -665,6 +665,15 @@ def group_lio_projection():
 GROUPS.update(lio_projection=group_lio_projection)
 
 
+def group_lio_origin_compat():
+    pg=Path(os.environ.get('CJ_PG17_BINDIR',bindir()))
+    return script('backend/cj_api/tests/lio_origin_compat_pg.py',
+                  env=dict(clean_env(),CJ_PG_BINDIR=str(pg),PATH=str(pg)+os.pathsep+os.environ['PATH']))
+
+
+GROUPS.update(lio_origin_compat=group_lio_origin_compat)
+
+
 def main(argv):
     if argv[:1] == ['--shard']:
         index, count = map(int, argv[1].split('/'))
