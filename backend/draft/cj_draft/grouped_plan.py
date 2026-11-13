@@ -41,7 +41,7 @@ def response_format(profile):
 
 
 def response_format_sha256(profile):
-    return sha256(json.dumps(response_format(profile), sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+    return sha256(packed(response_format(profile))).hexdigest()
 
 
 @dataclass(frozen=True, repr=False)
@@ -65,8 +65,7 @@ def grouped_input(publisher, capture, messages, provider):
     else:
         return None
     profile = delta if publisher.source.contexts[capture.binding] is not None else first
-    return GroupedDraftInput(json.dumps(messages, ensure_ascii=False, separators=(',', ':')).encode(),
-                             publisher.system, provider, profile)
+    return GroupedDraftInput(packed(messages), publisher.system, provider, profile)
 
 
 def system_for(*, retained, ordinal, guidance=''):
