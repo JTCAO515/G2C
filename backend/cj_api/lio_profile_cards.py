@@ -58,5 +58,8 @@ class LioProfileCards:
             else:display=_value(factor.factor_key,value,locale)
             safe=display_answer(label+': '+display,locale)
             if safe is not None:
+                # Presentation only; retain the complete value and provenance
+                # in context.2. An ellipsis never becomes an editable authority.
+                if len(safe)>500:safe=safe[:499]+'…'
                 rows.append(dict(factor_key=factor.factor_key,display_text=safe,state=factor.state))
         return rows

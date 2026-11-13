@@ -446,7 +446,7 @@ class MeteredDashScopeProvider:
 
     def invoke(self,messages,system,attempt,*,tools=None,receipt,guard,native_reply=None,tool_choice=None,
                native_turn_profile=None,final_answer=False,release_after_send=False,lio_answer=False,structured_profile=None,intake_source_index=None,wire_observer=None,
-               draft_profile=None,draft_schema_sha256=None):
+               draft_profile=None,draft_schema_sha256=None,exploration_schema_sha256=None):
         from cj_usage.authorization_budget import canonical
         native_tools=tools or []
         buffered=native_turn_profile==M4_NATIVE_TURN_BUFFERED
@@ -458,7 +458,14 @@ class MeteredDashScopeProvider:
                 or (proxy or incremental) and (not native_tools or tool_choice is not None)
                 or final_answer and not (proxy or incremental)):
             raise ProviderFailed('explicit native turn transport required')
-        if structured_profile not in (None,'LIO-planning-intake.1','LIO-planning-intake.2','LIO-planning-intake.3','LIO-planning-intake.4','LIO-planning-intake.5','LIO-planning-intake.6','LIO-planning-intake.7','LIO-planning-intake.8','LIO-planning-intake.9') or structured_profile is not None and (native_tools or system is None):
+        from cj_message.lio_exploration_schema import PROFILES as exploration_profiles,response_format as exploration_format,response_format_sha256 as exploration_sha
+        exploration=structured_profile in exploration_profiles
+        if exploration and (exploration_schema_sha256!=exploration_sha(structured_profile) or
+                native_turn_profile is not None or release_after_send or lio_answer or native_reply is not None):
+            raise ProviderFailed('explicit source-bound exploration schema required')
+        if exploration_schema_sha256 is not None and not exploration:
+            raise ProviderFailed('unexpected exploration schema')
+        if structured_profile not in (None,'LIO-planning-intake.1','LIO-planning-intake.2','LIO-planning-intake.3','LIO-planning-intake.4','LIO-planning-intake.5','LIO-planning-intake.6','LIO-planning-intake.7','LIO-planning-intake.8','LIO-planning-intake.9',*exploration_profiles) or structured_profile is not None and (native_tools or system is None):
             raise ProviderFailed('explicit nationwide structured profile required')
         grouped_format=None
         rich_draft=False
@@ -521,6 +528,8 @@ class MeteredDashScopeProvider:
         elif not native_tools and system is not None:
             if grouped_format is not None:
                 body['response_format']=grouped_format
+            elif exploration:
+                body['response_format']=exploration_format(structured_profile)
             elif structured_profile=='LIO-planning-intake.9':
                 from .lio_intake_optional_schema import response_format
                 body['response_format']=response_format(intake_source_index)

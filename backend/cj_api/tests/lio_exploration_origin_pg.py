@@ -128,6 +128,86 @@ def exercise(root,conninfo):
         except AccessBlocked:pass
         else:raise AssertionError('revoked identity published a new4 page')
     finally:roster.write_bytes(saved)
+    from contracts.message.check_lio_v4 import validate
+    app=create_local_app(conninfo_path=None,auth_dir=auth,database=database,run_context=context,account_admission=True,
+        confirmation_signer=load_confirmation_signer(auth),demo_dialogue_subjects=subjects,
+        lio_dialogue_subjects=subjects,lio_calendar_subjects=subjects,lio_exploration_subjects=subjects)
+    headers={'Authorization':'Bearer '+token,'Content-Type':'application/octet-stream'}
+    with TestClient(app) as api:
+        lookup=api.get('/v4/lio/messages',params=dict(message_id=receipt.message_id,input_sha256=sha256(raw4).hexdigest()),headers=headers)
+        assert lookup.status_code==200,lookup.text
+        validate(lookup.json())
+        queued=api.get('/v4/lio/timeline',params=dict(conversation_id=receipt.conversation_id),headers=headers)
+        assert queued.status_code==200,queued.text
+        validate(queued.json())
+        assert queued.json()['messages'][-1]['progress']['kind']=='waiting'
+        assert api.get('/v3/lio/timeline',params=dict(conversation_id=receipt.conversation_id),headers=headers).status_code!=200
+        assert api.get('/v3/lio/messages',params=dict(message_id=old.message_id,input_sha256=sha256(raw3).hexdigest()),headers=headers).status_code==400
+        assert api.get('/v4/lio/messages',params=dict(message_id=old.message_id,input_sha256=sha256(raw3).hexdigest()),headers=headers).status_code==400
+        assert api.get('/v4/lio/timeline',params=dict(conversation_id=receipt.conversation_id)).status_code==401
+        outside={'Authorization':'Bearer '+dev_auth.token(auth,OUTSIDE,3600)}
+        assert api.get('/v4/lio/timeline',params=dict(conversation_id=receipt.conversation_id),headers=outside).status_code==403
+        new_raw=json.dumps(dict(version=LIO_VERSION_V4,message_id='origin4-http',text='Travel pace: Relaxed',locale='en',new_conversation=True)).encode()
+        sent=api.post('/v4/lio/messages',content=new_raw,headers=headers)
+        assert sent.status_code==200,sent.text
+        validate(sent.json())
+    generic=create_local_app(conninfo_path=None,auth_dir=auth,database=database,run_context=context,account_admission=True,
+        confirmation_signer=load_confirmation_signer(auth),demo_dialogue_subjects=subjects,
+        lio_dialogue_subjects=subjects,lio_calendar_subjects=subjects)
+    with TestClient(generic) as api:
+        assert api.get('/v4/lio/timeline',headers=headers).status_code==404
+    # A real stored outer4 is required even for preparing the private model
+    # packet. The supplier itself is an HTTP fixture, not a live-model proof.
+    from types import SimpleNamespace
+    from cj_message.lio_wire import ExplorationOrigin
+    from cj_message.lio_exploration_schema import (ExplorationInput,PROFILES,response_format,response_format_sha256)
+    from cj_usage.local_provider_exit import BudgetUnknown
+    stored4=boundary.with_history_context(token,lambda context:context.query_lio_message(receipt.message_id))
+    r=stored4.receipt
+    binding4=Binding(scope,r.conversation_id,r.generation,r.message_id,r.run_id,r.sequence)
+    stored3=boundary.with_history_context(token,lambda context:context.query_lio_message(old.message_id))
+    r3=stored3.receipt;binding3=Binding(scope,r3.conversation_id,r3.generation,r3.message_id,r3.run_id,r3.sequence)
+    wire=[]
+    def response(request):
+        body=json.loads(request.content);wire.append(body)
+        version=body['response_format']['json_schema']['schema']['properties']['version']['const']
+        value=(dict(version=version,intent='explore',current_source_index=0,updates=[])
+               if version==PROFILES[0] else dict(version=version,groups=[]))
+        identity=dict(id='native4-fixture-'+str(len(wire)),model=M4_MODEL)
+        chunks=[dict(**identity,choices=[dict(index=0,delta=dict(content=json.dumps(value)),finish_reason=None)]),
+                dict(**identity,choices=[dict(index=0,delta={},finish_reason='stop')]),
+                dict(**identity,choices=[],usage=dict(prompt_tokens=30,completion_tokens=10,total_tokens=40))]
+        raw=''.join('data: '+json.dumps(chunk)+'\n\n' for chunk in chunks)+'data: [DONE]\n\n'
+        return httpx.Response(200,stream=httpx.ByteStream(raw.encode()))
+    journal=AuthorizationBudget(root/'native4-model-journal',clock=lambda:datetime(2026,11,9,tzinfo=timezone.utc))
+    for limit in (768,1536):
+        model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY,max_output_tokens=limit),journal,
+                                      transport=httpx.MockTransport(response))
+        services=RealServices(model,KEY,subjects,demo_subjects=subjects,national_subjects=subjects)
+        tools=RealTools(services,buffered_streaming_subjects=subjects)
+        registration=tools.registrations['model.lio_exploration.1']
+        origin=ExplorationOrigin(database,binding4,stored4)
+        for profile in PROFILES:
+            packet=ExplorationInput(profile,json.dumps([dict(role='user',content='Travel pace: Relaxed')]).encode(),
+                'Extract only the supplied synthetic data.',model,origin)
+            prepared=registration.prepare_input(packet)
+            declared=json.loads(prepared.original_bytes)
+            assert declared['structured_profile']==profile and declared['response_format_sha256']==response_format_sha256(profile)
+            assert declared['lio_origin']['input_sha256']==stored4.receipt.input_sha256
+            operation=SimpleNamespace(binding=binding4,command=SimpleNamespace(attempt_id=profile+'-'+str(limit)))
+            result=json.loads(''.join(prepared.bind_operation(operation,lambda:True)()))
+            assert result['version']==profile
+            assert wire[-1]['max_tokens']==limit and wire[-1]['response_format']==response_format(profile)
+        before=len(wire)
+        for argument in (dict(profile=PROFILES[0],client_enabled=True),
+            ExplorationInput('LIO-exploration-unknown.1',b'[]','unknown',model,origin),
+            ExplorationInput(PROFILES[0],b'[]','old3',model,ExplorationOrigin(database,binding3,stored3))):
+            try:registration.prepare_input(argument)
+            except (BudgetUnknown,Unavailable):pass
+            else:raise AssertionError('client/unknown/old3 enabled the new model profile')
+        assert len(wire)==before
+    assert len(wire)==4 and all(row['state']=='RECEIVED' for row in journal.inspect())
+    print('PASS two explicit native4 model profiles use genuine4 origin/declared schema/actual wire at1536 and768; dict flags, unknown profile and old3 refuse before vendor; HTTP fixture only',flush=True)
     with psycopg.connect(**conninfo,autocommit=True) as db:
         try:migrate.down(db,migrate.load(),53)
         except psycopg.Error:pass
@@ -141,7 +221,7 @@ def exercise(root,conninfo):
             else:raise AssertionError('immutable actual4 original changed')
         assert bytes(db.execute('SELECT lio_wire_input FROM cj_message_receipt WHERE scope=%s AND message_id=%s',(scope,receipt.message_id)).fetchone()[0])==raw4
     print(json.dumps(dict(mid=receipt.message_id,cid=receipt.conversation_id,run_id=receipt.run_id,outer4_sha256=sha256(raw4).hexdigest(),core_sha256=row[3])),flush=True)
-    print('PASS genuine4 bytes/hash/core binding, old3 separation, selected guarded page, expired/revoked/foreign frame, immutable origin, data-bearing down54 refusal; no HTTP4 or supplier claim',flush=True)
+    print('PASS genuine4 bytes/hash/core binding, selected HTTP4/lookup/page validated by frozen schema, old3 separation, expired/revoked/foreign frame, immutable origin, data-bearing down54 refusal; producer/supplier UNRUN',flush=True)
 
 def main():
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey

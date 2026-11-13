@@ -68,5 +68,18 @@ class ProfileCardsTests(unittest.TestCase):
         self.assertEqual(cards.project(context,'token',binding,state,'en'),[])
         self.assertEqual(calls,[])
 
+    def test_long_opaque_labels_stay_within_wire_limit_without_changing_the_original(self):
+        text='x'*2000
+        original=Original('mid',1,text)
+        raw=json.dumps(dict(version='LIO-profile-update.1',updates=[dict(factor_key='pace',value=text,state='known',
+            sources=[dict(source_index=0,quote=text)])]))
+        profile=merge({},parse_updates(raw,(original,)))
+        state=SimpleNamespace(status='completed',effects=(CONTEXT+json.dumps(snapshot(profile,memory_epoch=3)),))
+        cards,context,binding,stored,calls=self.fixture(3)
+        stored.raw=json.dumps(dict(text=text)).encode()
+        rows=cards.project(context,'token',binding,state,'en')
+        self.assertLessEqual(len(rows[0]['display_text']),500)
+        self.assertEqual(profile['pace'].value,text)
+
 
 if __name__=='__main__':unittest.main()

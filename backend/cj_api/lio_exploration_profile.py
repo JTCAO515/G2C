@@ -6,9 +6,11 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from cj_needs.domain import InvalidInput, decode
+from cj_message.lio_exploration_schema import ProfileUpdate
 
 from .lio_exploration_factors import BY_KEY, LABELS, defaults
 from .lio_planning_grounding import NUMBERS
+from .lio_positive_trip import supports as positive_trip_support,city_literal
 
 CONTEXT = 'lio_planning_context.2:'
 VERSION = 'lio_planning_context.2'
@@ -103,21 +105,9 @@ class _DTO(BaseModel):
     model_config = ConfigDict(extra='forbid', strict=True, frozen=True)
 
 
-class _Quote(_DTO):
-    source_index: int = Field(ge=0)
-    quote: str = Field(min_length=1, max_length=4000)
-
-
-class _Update(_DTO):
-    factor_key: str
-    value: str | int | bool | list[str] | None
-    state: Literal['known', 'not_needed', 'inferred']
-    sources: list[_Quote] = Field(min_length=1, max_length=8)
-
-
 class _Updates(_DTO):
     version: Literal['LIO-profile-update.1']
-    updates: list[_Update] = Field(max_length=28)
+    updates: list[ProfileUpdate] = Field(max_length=28)
 
 
 _ALIASES = {
@@ -170,7 +160,7 @@ def _canonical(key, text):
     return (payload,) if BY_KEY[key].multiple else payload
 
 
-def _supported_source(update, clause, quote):
+def _supported_source(update, clause, quote,cities=()):
     key=update.factor_key
     if _DECLINED.fullmatch(quote.strip()):
         return _positive_payload(key,clause).casefold() == quote.strip().casefold()
@@ -183,6 +173,7 @@ def _supported_source(update, clause, quote):
             if whole == part and (isinstance(part,str) and part in allowed or
                     isinstance(part,tuple) and set(part) <= allowed):return True
         return False
+    if positive_trip_support(key,clause,quote,cities):return True
     whole,part=_canonical(key,clause),_canonical(key,quote)
     if BY_KEY[key].multiple and isinstance(whole,tuple) and isinstance(part,tuple):
         return set(part) <= set(whole)
@@ -228,6 +219,8 @@ def parse_updates(raw, originals):
     except ValidationError:
         raise InvalidInput('exact sourced profile updates required') from None
     facts = []
+    cities=tuple(ref.quote for update in packet.updates if update.factor_key=='city' and update.state=='known'
+        for ref in update.sources if update.value==ref.quote and city_literal(ref.quote))
     for update in packet.updates:
         factor = BY_KEY.get(update.factor_key)
         if factor is None:
@@ -239,7 +232,7 @@ def parse_updates(raw, originals):
             original = originals[ref.source_index]
             offsets = [match.start() for match in re.finditer(re.escape(ref.quote), original.text)]
             if not offsets or any(not _supported_source(update,
-                    _source_clause(original.text,offset,ref.quote),ref.quote) for offset in offsets):
+                    _source_clause(original.text,offset,ref.quote),ref.quote,cities) for offset in offsets):
                 raise InvalidInput('profile quote is absent or negated')
             sources.append(Source(original.message_id, original.sequence, ref.quote, offsets[-1]))
         # The code recognizes explicit refusal regardless of a model's state

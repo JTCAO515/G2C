@@ -3,6 +3,7 @@
 This is source data, never a replacement for an active MESSAGE lease.
 """
 from hashlib import sha256
+from dataclasses import dataclass
 import json
 
 from .demo_dialogue import DialogueMessage, LIO_VERSION, LIO_VERSION_V3, LIO_VERSION_V4
@@ -15,6 +16,26 @@ def original_protocol(cursor, binding, stored):
 
 def exploration_original_protocol(cursor,binding,stored):
     return _original_protocol(cursor,binding,stored,LIO_VERSION_V4)
+
+
+@dataclass(frozen=True)
+class ExplorationOrigin:
+    """Actual immutable origin witness, not AUTH, a client flag or a write grant."""
+    database:object
+    binding:object
+    stored:object
+
+    def check(self,binding):
+        if binding!=self.binding:
+            raise Unavailable('exploration input belongs to a different original RUN')
+        with self.database.connect(binding.scope) as connection:
+            exploration_original_protocol(connection.cursor(),binding,self.stored)
+
+    def descriptor(self):
+        receipt=self.stored.receipt
+        return dict(protocol=LIO_VERSION_V4,message_id=receipt.message_id,run_id=receipt.run_id,
+                    conversation_id=receipt.conversation_id,generation=receipt.generation,
+                    sequence=receipt.sequence,input_sha256=receipt.input_sha256)
 
 
 def _original_protocol(cursor,binding,stored,selected):
