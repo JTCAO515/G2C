@@ -13,6 +13,21 @@ from .lio_plan import LioSourceWindowPublisher
 from .rich_schema import Pace, PROFILES, SIGHT_COUNTS
 
 
+def rich_system_for(*, ordinal, pace, guidance=''):
+    """The same actual generation text is available to source-manifest assembly."""
+    legacy = system_for(retained=False, ordinal=ordinal, guidance=guidance)
+    shape = legacy.index(' Exact output has only ')
+    return legacy[:shape] + (
+        f' Exact output has only version,title,days; version="{PROFILES[ordinal, pace]}". '
+        f'Each day is [date_or_day_index,sights,meals], with exactly {SIGHT_COUNTS[pace]} '
+        'sights and exactly two meals (lunch and dinner). Each row is exactly '
+        '[id,place_name,start_time,end_time,subjects], HH:MM local times, explicit subjects. '
+        'Cover every captured requested day; use complete place names in the question language. '
+        'Use distinct stops in the sights and meals groups; supply neither extra fields nor explanations. '
+        'The server sorts the rows by start time; close the complete JSON object.'
+    )
+
+
 def normalize(raw, capture, *, ordinal, pace):
     """Validate the model boundary, then reuse original grouped/source guards."""
     if type(raw) is not bytes or not 0 < len(raw) <= 1_000_000:
@@ -81,18 +96,8 @@ class _RichFirst:
         if self._rich_first(capture):
             # Preserve all original source/subjects instructions, replacing only
             # the generation shape. The factory supplies a grounded/default pace.
-            legacy = system_for(retained=False, ordinal=self.ordinal,
-                                guidance='' if self.ordinal else self.draft_guidance)
-            shape = legacy.index(' Exact output has only ')
-            self.system = legacy[:shape] + (
-                f' Exact output has only version,title,days; version="{self.generation_profile(capture)}". '
-                f'Each day is [date_or_day_index,sights,meals], with exactly {SIGHT_COUNTS[self.pace]} '
-                'sights and exactly two meals (lunch and dinner). Each row is exactly '
-                '[id,place_name,start_time,end_time,subjects], HH:MM local times, explicit subjects. '
-                'Cover every captured requested day; use complete place names in the question language. '
-                'Use distinct stops in the sights and meals groups; supply neither extra fields nor explanations. '
-                'The server sorts the rows by start time; close the complete JSON object.'
-            )
+            self.system = rich_system_for(ordinal=self.ordinal, pace=self.pace,
+                                          guidance='' if self.ordinal else self.draft_guidance)
         return result
 
 

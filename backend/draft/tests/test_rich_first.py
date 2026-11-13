@@ -10,7 +10,7 @@ import pytest
 
 from cj_draft.grouped_plan import (GENERATION_PROFILES, LioGroupedPlanPublisher, grouped_input,
                                   response_format, response_format_sha256)
-from cj_draft.rich_first import LioRichFirstCalendarPublisher, LioRichFirstPlanPublisher, normalize
+from cj_draft.rich_first import LioRichFirstCalendarPublisher, LioRichFirstPlanPublisher, normalize, rich_system_for
 from cj_draft.rich_schema import Pace, PROFILES, SIGHT_COUNTS
 from cj_trip.domain import Trip, packed
 from grouped_draft_fixtures import START, source, reply
@@ -56,6 +56,7 @@ def test_full_four_five_days_preserve_names_participants_and_canonical_versions(
     messages = host.model_messages('original', 'plan', capture, [])
     packet = grouped_input(host, capture, messages, object())
     assert packet.profile == value['version'] and value['version'] in packet.system
+    assert packet.system == rich_system_for(ordinal=ordinal, pace=pace)
     assert response_format_sha256(packet.profile) != response_format_sha256(reply(days, language, ordinal=ordinal)['version'])
     content, candidate, _ = host.build_plan(packed(value), capture)
     document = json.loads(content)

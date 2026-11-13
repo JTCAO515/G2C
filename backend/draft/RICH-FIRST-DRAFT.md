@@ -14,6 +14,8 @@ L 从受保护的画像事实编译这个枚举；缺省由 L 显式选 MODERATE
 `grouped_input` 仍冻结实际 publisher、捕获的 source context、system、messages、provider；
 原 worker / model.draft 注册出口使用同一个 packet。原件声明和供应商 wire 使用
 `grouped_plan.response_format` 与 `response_format_sha256` 的同一选定 profile。
+实际生成 system 可通过 `rich_first.rich_system_for(ordinal=...,pace=...,guidance=...)`
+同源派生，装配来源清单时使用相同的真实 guidance；此函数不激活策略或授予调用资格。
 新增六个生成版本，旧四个版本和 response_format 字节保持不变：
 
 | 日历 | 版本（`<pace>` 为 relaxed / moderate / packed） |
