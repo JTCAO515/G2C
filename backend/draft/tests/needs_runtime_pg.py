@@ -271,4 +271,146 @@ class NeedsPlanChecks(Harness):
             self.assertEqual(conn.execute('SELECT count(*) FROM cj_trip_record').fetchone()[0],0)
 
 
+class GroupedPlanChecks(unittest.TestCase):
+    """Original worker/NEEDS leases/signer/act; fixture L admission, no real provider."""
+    worker = NeedsPlanChecks.worker
+
+    @classmethod
+    def setUpClass(cls):
+        Harness.setUpClass.__func__(cls)
+        subjects = ('group-4-zh','group-4-en','group-5-zh','group-5-en','group-length','group-window','group-empty-party')
+        cls.host = RegisteredHost(cls.auth/'grouped-plans',Path(CONNINFO),{s:(12,2,30000) for s in subjects})
+        cls.env = dict(CJ_LOCAL_NEEDS_PROFILE='manual-v1',CJ_LOCAL_TRAVEL_CONTEXT='message-travel.1')
+        from cj_trip.confirmation import ConfirmationSigner
+        cls.signer = ConfirmationSigner(b'synthetic-grouped-plan-signer-1234567')
+        cls.admitted = {}
+        for subject in subjects:
+            dev_auth.activate_travel(Path(CONNINFO),subject,cls.host.profiles[subject][1],ABI)
+
+    tearDownClass = classmethod(Harness.tearDownClass.__func__)
+
+    def send(self, subject, number, *, fields=None):
+        with patch.dict(os.environ,self.env),self.host.api(subject) as client:
+            if fields is not None:
+                response=client.post('/v1/needs-actions',content=json.dumps(dict(action_id='source-'+subject,
+                    needs_id='visit',expected_version=0,source=dict(kind='manual',text='Explicit synthetic source'),
+                    changes=fields)).encode(),headers={**self.host.headers[subject],'Content-Type':'application/octet-stream'})
+                self.assertEqual(response.status_code,200,response.text)
+            conversation=client.put('/v1/conversations',params={'conversation_id':subject},headers=self.host.headers[subject]).json()
+            value=dict(version='MESSAGE-send.2',conversation_id=subject,message_id=subject+'-'+str(number),
+                text='北京多天，每天上午下午；保留酒店集合。' if number==1 else 'Keep every saved item; add one concise suggestion per period.',
+                trip_id=None,creation_intent='consider_trip',expected_generation=conversation['generation'],
+                expected_sequence=number-1,travel_context=None,needs_reference=dict(id='visit',expected_version=1))
+            response=client.post('/v2/messages',content=json.dumps(value).encode(),headers={
+                **self.host.headers[subject],'Content-Type':'application/octet-stream'})
+            self.assertEqual(response.status_code,200,response.text)
+            return response.json()['receipt']
+
+    def configured(self, subject, value, *, truncated=False):
+        from cj_agent.provider import ProviderUnknown
+        from cj_draft.grouped_plan import LioGroupedPlanPublisher, DATED_FIRST, DATED_DELTA
+        from cj_draft.needs_context import publisher as context_publisher
+        class Model(FakeProvider):
+            def stream(self,messages,system=None):
+                if system is None or not any(v in system for v in (DATED_FIRST,DATED_DELTA)):
+                    yield from super().stream(messages,system);return
+                self.calls+=1
+                raw=json.dumps(value,ensure_ascii=False,separators=(',',':'))
+                if truncated:
+                    yield raw[:120]
+                    raise ProviderUnknown('synthetic finish_reason=length')
+                yield raw
+        def original_needs(cursor,binding):
+            cursor.execute('SELECT needs_id,needs_version,content_sha256 FROM cj_message_needs_binding '
+                'WHERE message_scope=%s AND message_id=%s AND run_id=%s',
+                (binding.scope,binding.message_id,binding.run_id))
+            return cursor.fetchone()
+        class FixturePublisher(LioGroupedPlanPublisher):
+            def publish_for_message(self,*args,before_publish):
+                def final(*,check_trip):
+                    check_trip()
+                    before_publish()
+                return super().publish_for_message(*args,before_publish=final)
+        worker,database=self.worker(subject,Model())
+        owner=scope_for(ISSUER,subject)
+        base=context_publisher(database,checker_for(self.host.auth),worker.message_context,
+            lambda:self.host.headers[subject]['Authorization'][7:],owner)
+        worker.drafts=FixturePublisher(base,self.signer,original_needs,
+            lambda binding,original,expected: binding.message_id in self.admitted
+                and self.admitted[binding.message_id]==expected and original.receipt.run_id==binding.run_id)
+        return worker,database
+
+    def test_four_five_days_bilingual_signed_first_and_same_window_replan(self):
+        from cj_trip.lio_history import plan_action_id, TripHead
+        from grouped_draft_fixtures import source, reply
+        for days in (4,5):
+            for language in ('zh','en'):
+                with self.subTest(days=days,language=language):
+                    subject=f'group-{days}-{language}'
+                    snapshot,_=source(days,language)
+                    message=self.send(subject,1,fields=snapshot.fields)
+                    self.admitted[message['message_id']]=None
+                    value=reply(days,language)
+                    self.assertLess(len(json.dumps(value,ensure_ascii=False,separators=(',',':')).encode()),1024)
+                    worker,_=self.configured(subject,value)
+                    self.assertEqual(worker.process()[0].status,'completed')
+                    repository=worker.drafts.repository
+                    receipt=repository.query_action(plan_action_id(message['run_id']))
+                    self.assertEqual(receipt.committed_version,1)
+                    before=repository.detail(receipt.trip_id)
+                    initial=json.loads(before.content)
+                    self.assertEqual(len(initial['items']),1+days*2)
+                    self.assertEqual([i['text'] for i in initial['items'][1:]],
+                                     [r[1] for _,rows in value['days'] for r in rows])
+                    second=self.send(subject,2)
+                    self.admitted[second['message_id']]=TripHead.from_trip(before)
+                    worker,_=self.configured(subject,reply(days,language,delta=True))
+                    self.assertEqual(worker.process()[0].status,'completed')
+                    after=worker.drafts.repository.detail(before.trip_id)
+                    self.assertEqual(after.version,2)
+                    self.assertEqual(json.loads(after.content)['items'][:len(initial['items'])],initial['items'])
+                    self.assertEqual(json.loads(after.content)['title'],initial['title'])
+                    self.assertEqual([t.content for t in worker.drafts.repository.lio_revisions(before.trip_id,None,10)],
+                                     [after.content,before.content])
+
+    def test_length_still_withholds_all_formal_writes(self):
+        from grouped_draft_fixtures import source, reply
+        from cj_trip.lio_history import plan_action_id
+        subject='group-length';snapshot,_=source(5,'en')
+        message=self.send(subject,1,fields=snapshot.fields);self.admitted[message['message_id']]=None
+        worker,database=self.configured(subject,reply(5,'en'),truncated=True)
+        self.assertEqual(worker.process()[0].status,'completed')
+        binding=worker._binding(worker.messages.query(message['message_id']).receipt)
+        state=database.run_repository(binding.scope).snapshot_optional(binding)
+        self.assertEqual(state.draft_outcome,'provider_unknown')
+        self.assertEqual(worker.drafts.repository.list_trips(),[])
+        self.assertIsNone(worker.drafts.repository.query_action(plan_action_id(message['run_id'])))
+
+    def test_empty_fixed_items_three_people_and_all_fifteen_periods_save_without_defaults(self):
+        from grouped_draft_fixtures import source, reply
+        from cj_trip.lio_history import plan_action_id
+        subject='group-empty-party';snapshot,_=source(5,'en',party=3,with_fixed=False)
+        message=self.send(subject,1,fields=snapshot.fields);self.admitted[message['message_id']]=None
+        value=reply(5,'en',party=3,periods=3)
+        self.assertLess(len(json.dumps(value,ensure_ascii=False,separators=(',',':')).encode()),1024)
+        worker,_=self.configured(subject,value)
+        self.assertEqual(worker.process()[0].status,'completed')
+        receipt=worker.drafts.repository.query_action(plan_action_id(message['run_id']))
+        self.assertEqual(receipt.committed_version,1)
+        content=json.loads(worker.drafts.repository.detail(receipt.trip_id).content)
+        self.assertEqual(len(content['items']),15)
+        self.assertTrue(all(i['fixed']==known(False) for i in content['items']))
+
+    def test_original_source_window_rejection_is_not_relaxed(self):
+        from grouped_draft_fixtures import source, reply
+        from cj_trip.lio_history import plan_action_id
+        subject='group-window';snapshot,_=source(4,'en')
+        message=self.send(subject,1,fields=snapshot.fields);self.admitted[message['message_id']]=None
+        value=reply(4,'en');value['days'][-1][0]='2026-12-31'
+        worker,_=self.configured(subject,value)
+        self.assertEqual(worker.process()[0].status,'completed')
+        self.assertEqual(worker.drafts.repository.list_trips(),[])
+        self.assertIsNone(worker.drafts.repository.query_action(plan_action_id(message['run_id'])))
+
+
 if __name__=='__main__':unittest.main(verbosity=2)
