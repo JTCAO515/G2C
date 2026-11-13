@@ -263,7 +263,7 @@ JT 决定依据不向用户展示。用户无法核对出处，所以措辞的�
 
 | 线 | 做什么 | 文件 |
 |---|---|---|
-| **新开 H 线：事实库**（Codex，占 8 条开发线中的 1 条） | 收集和维护条目：来源、核对日期、失效时间、适用城市、中英文正文；到期复核 | 新目录，建议 `knowledge/visitor/**`，由 JT 指定归 D 线 |
+| **新开 H 线：事实库**（Codex，占 8 条开发线中的 1 条） | 收集和维护条目：来源、核对日期、失效时间、适用城市、中英文正文；到期复核 | 新目录 `knowledge/visitor/**`，JT 2026-11-12 指定归 H 线 |
 | L 线 | 把条目接入事实工具，让 Lio 能检索 | `backend/fact/**`（JT 2026-11-12 拆分后归 L 线） |
 | C 线 | 为高频事实建评测用例，检查回答是否与条目一致 | `eval/**` |
 
@@ -280,8 +280,8 @@ JT 决定依据不向用户展示。用户无法核对出处，所以措辞的�
 | 阶段 | 时间 | 内容 | 负责 | 完成标准 |
 |---|---|---|---|---|
 | 0 | 进行中 | 自我介绍与开场文案（已按问句结尾更新） | A、B（[#839](https://github.com/JTCAO515/G2C/issues/839)） | #839 关闭 |
-| 1 | #33 外部内测前 | ① L 按附录 A 重写人设提示词并补齐红线过滤（[#842](https://github.com/JTCAO515/G2C/issues/842)） ② L 注入行程上下文（[#845](https://github.com/JTCAO515/G2C/issues/845)） ③ C 建回答体验集和代码检查，跑新旧对比（[#844](https://github.com/JTCAO515/G2C/issues/844)） | B、C | 红线零失败；第 9.1 节代码检查项通过率 ≥90%；JT 抽检通过 |
-| 1′ | 与阶段 1 并行 | 事实库（[#841](https://github.com/JTCAO515/G2C/issues/841)）：H 来源清单与格式（[#843](https://github.com/JTCAO515/G2C/issues/843)）→ 首批条目（[#846](https://github.com/JTCAO515/G2C/issues/846)，北京及 #815 六城 × 五主题）；B 接入（[#847](https://github.com/JTCAO515/G2C/issues/847)） | D、B | 首批条目带来源和日期，Lio 能检索并引用 |
+| 1 | #33 外部内测前 | ① L 按附录 A 重写人设提示词并补齐红线过滤（[#842](https://github.com/JTCAO515/G2C/issues/842)） ② L 注入行程上下文（[#845](https://github.com/JTCAO515/G2C/issues/845)） ③ C 建回答体验集和代码检查，跑新旧对比（[#844](https://github.com/JTCAO515/G2C/issues/844)） | L、C | 红线零失败；第 9.1 节代码检查项通过率 ≥90%；JT 抽检通过 |
+| 1′ | 与阶段 1 并行 | 事实库（[#841](https://github.com/JTCAO515/G2C/issues/841)）：H 来源清单与格式（[#843](https://github.com/JTCAO515/G2C/issues/843)）→ 首批条目（[#846](https://github.com/JTCAO515/G2C/issues/846)，北京及 #815 六城 × 五主题）；L 接入（[#847](https://github.com/JTCAO515/G2C/issues/847)） | H、L | 首批条目带来源和日期，Lio 能检索并引用 |
 | 2 | 内测期间 | 每周复盘（第 10 节），按数据调整长度档位和结尾问句规则 | Claude 预标，JT 审阅，各线修改 | 每轮调整都有评测对比 |
 
 L 线的顺序（B 线拆分前由 B 承担）：#839 → [#858](https://github.com/JTCAO515/G2C/issues/858)（规划不再强制日期和人数，JT 2026-11-12 TestFlight（29）反馈）→ [#862](https://github.com/JTCAO515/G2C/issues/862)（无日期行程保存，等 C 的 #860、#861）→ #842 → #845 → #847。每线同一时间最多一个开着的 PR。
