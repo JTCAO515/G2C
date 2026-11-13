@@ -64,5 +64,26 @@ class DateFormats(unittest.TestCase):
         for text in ('26.12','12.01','126.12.01','26.12.011','2026.12/01'):
             with self.subTest(text=text):self.assertEqual(literal_dates(text),[])
 
+    def test_start_range_uses_first_endpoint_even_when_model_quotes_the_end(self):
+        for text,quote in (
+            ('规划北京三天，两个人，从26.12.01到26.12.03','从26.12.01到26.12.03'),
+            ('Plan Beijing for three days from 26.12.01 to 26.12.03 for two people.','26.12.01 to 26.12.03'),
+            ('规划北京三天，两个人，从26.12.01到26.12.03','26.12.03'),
+        ):
+            with self.subTest(text=text,quote=quote),self.assertRaises(InvalidInput):
+                parsed(text,'2026-12-03',quote=quote)
+        self.assertEqual(parsed('规划北京三天，两个人，从26.12.01到26.12.03','2026-12-01',
+                                quote='从26.12.01到26.12.03').start_date['value'],'2026-12-01')
+
+    def test_quotes_cannot_clip_the_original_year_or_relative_modifier(self):
+        for text,quote,wrong in (
+            ('规划北京三天，两个人，2028年12月1日出发','12月1日','2026-12-01'),
+            ('Plan Beijing for three days starting Dec 1, 2028 for two people.','Dec 1','2026-12-01'),
+            ('规划北京三天，两个人，大后天出发','后天','2026-11-15'),
+            ('Plan Beijing for three days, two people, the day after tomorrow.','tomorrow','2026-11-14'),
+            ('Plan Beijing for three days, two people, Dec 1, 2026 is not possible.','Dec 1, 2026','2026-12-01'),
+        ):
+            with self.subTest(text=text),self.assertRaises(InvalidInput):parsed(text,wrong,quote=quote)
+
 
 if __name__=='__main__':unittest.main()

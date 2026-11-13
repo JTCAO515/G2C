@@ -221,16 +221,20 @@ def exercise(root,conninfo):
             if current.get('build31_case'):
                 assert original['fields']['fixed_items']==[],original['fields']
                 assert original['fields']['party_size']==dict(state='known',value=current['build31_case']['party'])
+                periods=(('am','09:00','11:00'),('pm','14:00','16:00'),('eve','19:00','20:00'))[:current['build31_case'].get('periods',2)]
                 items=[dict(id=f'visit-{day}-{period}',text=(current['zh']+'国家博物馆' if current['locale']=='zh' else current['en']+' National Museum'),
                     date=(date.fromisoformat(first)+timedelta(days=day-1)).isoformat(),start_time=start,end_time=end,timezone='Asia/Shanghai')
-                    for day in range(1,count+1) for period,start,end in (('am','09:00','11:00'),('pm','14:00','16:00'))]
+                    for day in range(1,count+1) for period,start,end in periods]
             assert body['max_tokens']==1024
             if original['current_trip'] is not None:
                 content=json.dumps(dict(version='TRIP-lio-replan-delta.4',days=[]))
             else:
                 dates={}
                 for item in items:
-                    dates.setdefault(item['date'],[]).append([item['id'],item['text'],item['start_time'],item['end_time'],['party']])
+                    dates.setdefault(item['date'],[]).append([item['id'],item['text'],item['start_time'],item['end_time'],
+                        current.get('build31_case',{}).get('bad_subjects',['party'])])
+                if current.get('build31_case',{}).get('long_id'):
+                    next(iter(dates.values()))[0][0]='x'*97
                 content=json.dumps(dict(version='TRIP-lio-first-plan.2',title=current['en']+' trip',days=list(dates.items())),ensure_ascii=False)
         if 'LIO-planning-intake.8' in system:
             data=json.loads(content)
@@ -556,7 +560,19 @@ def exercise(root,conninfo):
             cases.append(dict(locale=locale,zh='上海',en='Shanghai',first=f'规划上海{zh_word}天豪华游 2026-12-01出发 两个人'if locale=='zh'else
                 f'Plan a {word}-day luxury trip to Shanghai starting 2026-12-01 for two people.',reply=None,count=count,party=2,start='2026-12-01',opening_days=True,
                 duration_quote=zh_word+'天'if locale=='zh'else word+'-day',date_quote='2026-12-01',party_quote='两个人'if locale=='zh'else'two people'))
+        cases.append(dict(locale=locale,zh='北京',en='Beijing',first='规划北京三天，明天开始，每天上午下午晚上都要安排，两个人'if locale=='zh'else
+            'Plan Beijing three days from tomorrow, morning/afternoon/evening each day, two people.',reply=None,count=3,party=2,start=tomorrow,opening_days=True,
+            duration_quote='三天'if locale=='zh'else'three days',date_quote='明天'if locale=='zh'else'tomorrow',party_quote='两个人'if locale=='zh'else'two people',periods=3))
+        for count,word,zh_word in ((6,'six','六'),(7,'seven','七')):
+            cases.append(dict(locale=locale,zh='广州',en='Guangzhou',first=f'规划广州{zh_word}天豪华游，没定日期，没定人数'if locale=='zh'else
+                f'Plan {word} days in Guangzhou, luxury, no dates yet.',reply=None,count=count,party=None,start=None,opening_days=True,
+                duration_quote=zh_word+'天'if locale=='zh'else word+' days',date_quote=None,party_quote=None,expect_preview=True))
     with TestClient(app)as api,patch('cj_api.lio_city._catalog_exchange',side_effect=city_exchange):
+        for bad_subjects in ([],['all'],['companion:1']):
+            cases.append(dict(locale='zh',zh='北京',en='Beijing',first='规划三天北京豪华游 26.12.01出发 三个人',reply=None,count=3,party=3,start='2026-12-01',
+                opening_days=True,duration_quote='三天',date_quote='26.12.01',party_quote='三个人',bad_subjects=bad_subjects,expect_reject=True))
+        cases.append(dict(locale='en',zh='北京',en='Beijing',first='Plan a three-day luxury trip to Beijing starting 26.12.01 for three people.',reply=None,count=3,party=3,start='2026-12-01',
+            opening_days=True,duration_quote='three-day',date_quote='26.12.01',party_quote='three people',long_id=True,expect_reject=True))
         for number,case in enumerate(cases):
             current.clear();current.update(case,locale=case['locale'],mention=case['zh']if case['locale']=='zh'else case['en'],
                 fixed_description='not-present',build31_case=case)
@@ -573,9 +589,27 @@ def exercise(root,conninfo):
                 received=api.post('/v2/lio/messages',headers=headers,content=json.dumps(payload).encode());assert received.status_code==200,received.text
                 outcomes=process();assert[o.status for o in outcomes]==['completed'],outcomes
             saved=api.get('/v2/lio/trip',headers=headers,params=params).json()
+            if case.get('expect_reject'):
+                assert saved['current']is None and saved['history']==[],saved
+                shown=api.get('/v2/lio/timeline',params=params,headers=headers).json()['messages'][-1]
+                assert shown['status']=='failed'and shown['trip']is None,shown
+                with database.connect(scope)as db:
+                    assert db.execute('SELECT count(*) FROM cj_trip_needs_basis WHERE message_scope=%s AND run_id='
+                        '(SELECT run_id FROM cj_message_receipt WHERE scope=%s AND message_id=%s)',(scope,scope,mid)).fetchone()==(0,)
+                print('PASS signed empty original fixed source does not authorize invalid proposed subjects or oversized NEEDS ID',number,flush=True)
+                continue
+            if case.get('expect_preview'):
+                assert saved['current']is None and saved['history']==[],saved
+                shown=api.get('/v2/lio/timeline',params=params,headers=headers).json()['messages'][-1]
+                assert shown['status']=='completed'and shown['trip']is None,shown
+                for day in range(1,case['count']+1):
+                    assert ('第'+str(day)+'天'if case['locale']=='zh'else'Day '+str(day))in shown['answer']
+                assert '2026-'not in shown['answer']
+                print('PASS signed six/seven-day preview, no dates/party defaults or saved Trip',case['locale'],case['count'],flush=True)
+                continue
             card=saved['current'];assert card is not None and saved['history']==[],saved
             assert len(card['days'])==case['count'] and card['days'][0]['date']==case['start'],card
-            assert len([item for day in card['days']for item in day['items']])==case['count']*2
+            assert len([item for day in card['days']for item in day['items']])==case['count']*case.get('periods',2)
             with database.connect(scope)as db:
                 original=db.execute('SELECT n.content FROM cj_message_needs_binding b JOIN cj_needs_revision n '
                     'ON(n.scope,n.needs_id,n.version)=(b.needs_scope,b.needs_id,b.needs_version) WHERE b.message_scope=%s AND b.message_id=%s',
@@ -583,7 +617,7 @@ def exercise(root,conninfo):
                 fields=json.loads(bytes(original[0]));assert fields['fixed_items']==[] and fields['party_size']==dict(state='known',value=case['party'])
                 projected=db.execute('SELECT proposed_input FROM cj_trip_needs_basis WHERE message_scope=%s AND run_id='
                     '(SELECT run_id FROM cj_message_receipt WHERE scope=%s AND message_id=%s)',(scope,scope,mid)).fetchone()
-                proposed=json.loads(bytes(projected[0]));assert len(proposed['fixed_items'])==case['count']*2
+                proposed=json.loads(bytes(projected[0]));assert len(proposed['fixed_items'])==case['count']*case.get('periods',2)
                 assert all(item['kind']=='intent'and item['applies_to']==['party']for item in proposed['fixed_items'])
             timeline=api.get('/v2/lio/timeline',params=params,headers=headers).json()
             assert timeline['messages'][-1]['trip']==card and timeline['messages'][-1]['status']=='completed'

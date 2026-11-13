@@ -485,8 +485,8 @@ _RELATIVE_DAY=re.compile(r'(?<!大)大后天|(?<![大后])后天|明天|今天|'
     r'\b(?:the )?day after tomorrow\b|\btomorrow\b|\btoday\b|'
     r'(?<![0-9])(?P<zh_days>[0-9]{1,3}|[一二两三四五六七八九十])天(?:之|以)?后|'
     r'\bin (?P<en_days>[0-9]{1,3}|one|two|three|four|five|six|seven|eight|nine|ten) days?\b',re.I)
-_HOLIDAY=re.compile(r'(?:(?P<year>[0-9]{4})年?)?(?P<name>元旦|国庆(?:节)?|月底)|'
-    r"\b(?P<en_name>new year['’]s day|national day)\b(?:\s+(?P<en_year>[0-9]{4}))?",re.I)
+_HOLIDAY=re.compile(r'(?<![0-9])(?:(?P<year>[0-9]{4})\s*年?\s*)?(?P<name>元旦|国庆(?:节)?|月底)|'
+    r"\b(?P<en_name>new year['’]s day|national day)\b(?:,?\s*(?P<en_year>[0-9]{4})(?![0-9]))?",re.I)
 _BARE_WEEK=re.compile(r'(?:周|星期|礼拜)(?P<zh_day>[一二三四五六日天])|\b(?P<en_day>'+_WEEKDAY_WORD+r')\b',re.I)
 
 
@@ -551,18 +551,34 @@ def _current_date_source(value,references,turns,*,departure=False):
         if len(anchors)>1 and (len(anchors)!=2 or
                 _WEEK_RANGE.fullmatch(quote[anchors[0][0].end():anchors[1][0].start()])is None):
             raise InvalidInput('ambiguous original calendar dates')
-        for match,day in anchors:
+        for index,(match,day) in enumerate(anchors):
             for occurrence in re.finditer(re.escape(quote),turn.text):
                 position=occurrence.start()+match.start()
                 end=occurrence.start()+match.end()
+                complete=_complete_date_anchor(turn.text,position,end)
+                actual_day=day
+                if complete is not None:
+                    position,end=complete.span()
+                    if _WEEK_SOURCE.fullmatch(complete[0])is not None:
+                        _week_source(value,[dict(reference,quote=complete[0])],turns,departure=departure)
+                        actual_day=value
+                    else:
+                        actual_day=_current_date_anchors(complete[0],turn.question_day)[0][1]
                 neighbor=_range_neighbor(turn.text,position,end,before=not departure)
                 if neighbor is not None and (neighbor[1]<=occurrence.start() if not departure else neighbor[0]>=occurrence.end()):
                     raise InvalidInput('date quote clips the requested range endpoint')
                 separator=r'[，,。!?！？；;\n]|\.(?![0-9])'
-                clause=re.split(separator,turn.text[:position])[-1]+re.split(separator,turn.text[position:])[0]
+                masked=turn.text[:position]+re.sub('[,，]',' ',turn.text[position:end])+turn.text[end:]
+                clause=re.split(separator,masked[:position])[-1]+re.split(separator,masked[position:])[0]
                 if _WEEK_NONASSERTION.search(clause):raise InvalidInput('nonaffirmative original calendar date')
-        expected.add(anchors[-1 if departure else 0][1])
+                if index==(len(anchors)-1 if departure else 0):expected.add(actual_day)
     if expected!={value}:raise InvalidInput('date differs from original calendar notation')
+
+
+def _complete_date_anchor(text,start,end):
+    matches=[match for pattern in (LITERAL_DATE,_MONTH_DAY,_RELATIVE_DAY,_HOLIDAY,_WEEK_SOURCE)
+             for match in pattern.finditer(text) if match.start()<=start and match.end()>=end]
+    return max(matches,key=lambda match:match.end()-match.start())if matches else None
 
 
 def _range_neighbor(text,start,end,*,before):

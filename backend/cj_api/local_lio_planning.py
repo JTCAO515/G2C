@@ -50,6 +50,8 @@ NATIONAL_GROUPED_DRAFT = (
     'A fixed commitment covers only its actual period. If no periods were requested, '
     'use an afternoon stop on each date and an evening stop on the final date of a trip of three or more days. '
     'Use the traveler\'s requested luxury, pace and other preferences without inventing prices or bookings. '
+    'Use short ASCII stop IDs of at most 96 characters. Use only self, party or companion IDs actually present in the source; '
+    'when planning for a stated party, party denotes that proposed group, not a fabricated companion or booking. '
 )
 SYSTEM = (
     'Extract only information provided by the traveler for this trip. Return JSON with exactly '
