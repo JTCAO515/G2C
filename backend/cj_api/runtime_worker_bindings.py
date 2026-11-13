@@ -192,6 +192,10 @@ class RuntimeWorkerBindings:
             def guard(*,read_only,original=authority,binding=session['binding']):
                 original.require(binding=binding,pins_sha256=self.pins.key,purpose='query',deadline=self.clock()+30,read_only=read_only)
             originals=RuntimeOriginals(boundary,self.database,self.services.model.authorization,evidence.directory,query_original=claims.query)
+            from .runtime_weather_fault import NativeWeatherFault
+            weather_fault=NativeWeatherFault(claims,session['routing'],self.database,self.services.model.authorization,
+                evidence.directory,self.pins)
+            session['routing'].registry_transformer=weather_fault.wrap
             def wait(receipt,deadline,reader=originals,supplier=token):
                 while self.clock()<deadline:
                     try:value=decode(reader.inventory(supplier(),receipt.message_id))
@@ -209,7 +213,7 @@ class RuntimeWorkerBindings:
                 memory_setup=NativeMemorySetup(claims,boundary,self.database,token,configuration,candidates,memory_cards,wait)
             dialogue=NativeDialogue(claims,boundary,self.database,token,wait,
                 dataset_path=self.public_root/'eval/optimization/cases.v2.json',
-                trip_boundary=self._trip_boundary(session),memory_setup=memory_setup)
+                trip_boundary=self._trip_boundary(session),memory_setup=memory_setup,weather_fault=weather_fault)
             collector=RuntimeCollector(originals,claims,session['routing'],token,self.pins,session['references_directory'],
                 guard=guard,state_reader=self._state_reader(session),model_reader=RuntimeModel(originals,self.services.model,
                     native_turn_profile=M4_NATIVE_TURN_BUFFERED),dialogue=dialogue,clock=self.clock)

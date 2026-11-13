@@ -1,19 +1,15 @@
 """Project the historical version proven by a Lio save receipt."""
 import json
 
-from cj_agent.draft import trip_scope_for
 from cj_trip.auth_boundary import Boundary
 from cj_trip.domain import Denied, packed
 
-from .local_app import scope_for
+from .local_app import trip_resolver
 
 
 class LioTripCards:
     def __init__(self, database, checker):
-        def resolve(principal):
-            owner = scope_for(principal.issuer, principal.subject)
-            return lambda: database.connect(owner), trip_scope_for(owner)
-
+        resolve = trip_resolver(database)
         self.boundary = Boundary(checker, resolve, structured=True)
 
     def read(self, token, binding, *, edit=False):

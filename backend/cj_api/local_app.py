@@ -51,11 +51,19 @@ def scope_for(issuer, subject):
     return f'local:{issuer}:{subject}'
 
 
-def trip_resolver(database):
-    """TRIP boundary resolver: the principal's own connection and derived Trip scope."""
+def trip_resolver(database, *, provision=False):
+    """TRIP boundary resolver: the principal's own connection and derived Trip scope.
+
+    provision registers the Trip scope first (existing host provisioning only;
+    no formal record or Proposal is created).
+    """
     def resolve(principal):
         owner = scope_for(principal.issuer, principal.subject)
-        return lambda: database.connect(owner), trip_scope_for(owner)
+        scope = trip_scope_for(owner)
+        if provision:
+            with database.connect(owner) as conn:
+                conn.execute('INSERT INTO cj_trip_scope(scope) VALUES(%s) ON CONFLICT DO NOTHING', (scope,))
+        return lambda: database.connect(owner), scope
     return resolve
 
 
