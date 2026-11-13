@@ -1,0 +1,19 @@
+[
+  {
+    "format_version": "visitor-name.1",
+    "id": "visitor.example.name",
+    "place_key": "synthetic.place",
+    "wikidata_qid": "Q1",
+    "name_zh": "合成标签",
+    "name_en": "Synthetic Label",
+    "cities": [
+      "beijing"
+    ],
+    "source_urls": [
+      "https://www.wikidata.org/wiki/Q1"
+    ],
+    "checked_on": "2026-11-13",
+    "expires_on": "2026-11-27",
+    "license": "CC0-1.0"
+  }
+]
