@@ -1351,4 +1351,80 @@ import XCTest
         XCTAssertFalse(app.navigationBars.firstMatch.exists)
         XCTAssertFalse(app.links.firstMatch.exists)
     }
+    func testExplorationQuestionsEnglish() throws { try exerciseQuestionControls(chinese: false) }
+    func testExplorationQuestionsChinese() throws { try exerciseQuestionControls(chinese: true) }
+
+    private func exerciseQuestionControls(chinese: Bool) throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        for dark in [false, true] {
+            app.launchArguments = ["--lio-preview", "--lio-question-controls-acceptance", "-cj.ui.language.v1", chinese ? "zh-Hans" : "en", "-lio.ui.appearance.v1", dark ? "dark" : "light"]
+            app.launch()
+            let submit = app.buttons["lio.questions.continue"]
+            let history = app.buttons["lio.questions.one.interests.history"]
+            let food = app.buttons["lio.questions.one.interests.food"]
+            let slow = app.buttons["lio.questions.one.pace.slow"]
+            let active = app.buttons["lio.questions.one.pace.active"]
+            XCTAssertTrue(submit.waitForExistence(timeout: 10))
+            XCTAssertEqual(submit.label, chinese ? "好了，继续" : "Done, continue")
+            XCTAssertFalse(submit.isEnabled)
+            food.tap()
+            history.tap()
+            XCTAssertTrue(food.isSelected)
+            XCTAssertTrue(history.isSelected)
+            XCTAssertEqual(app.staticTexts["fixture.send-count"].label, "0")
+            app.buttons["fixture.refresh"].tap()
+            XCTAssertTrue(food.isSelected)
+            XCTAssertTrue(history.isSelected)
+            try app.performAccessibilityAudit(for: .all)
+            let image = XCTAttachment(screenshot: app.screenshot())
+            image.name = "questions-\(chinese ? "zh" : "en")-\(dark ? "dark" : "light")"
+            image.lifetime = .keepAlways
+            add(image)
+            submit.tap()
+            XCTAssertEqual(app.staticTexts["fixture.send-count"].label, "1")
+            XCTAssertEqual(app.staticTexts["fixture.sent"].label, "Interests: History\nInterests: Food")
+            slow.tap()
+            active.tap()
+            XCTAssertFalse(slow.isSelected)
+            XCTAssertTrue(active.isSelected)
+            history.tap()
+            submit.tap()
+            XCTAssertEqual(app.staticTexts["fixture.send-count"].label, "2")
+            XCTAssertEqual(app.staticTexts["fixture.sent"].label, "Interests: Food\nPace: Active")
+            app.buttons["fixture.read-only"].tap()
+            XCTAssertFalse(submit.isEnabled)
+            XCTAssertFalse(food.isEnabled)
+            XCTAssertEqual(app.staticTexts["fixture.send-count"].label, "2")
+            app.terminate()
+        }
+    }
+
+    func testExplorationQuestionsLargeText() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        for chinese in [false, true] {
+            app.launchArguments = ["--lio-preview", "--lio-question-controls-acceptance", "-cj.ui.language.v1", chinese ? "zh-Hans" : "en", "-lio.ui.appearance.v1", "light", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+            app.launch()
+            let history = app.buttons["lio.questions.one.interests.history"]
+            XCTAssertTrue(history.waitForExistence(timeout: 10))
+            XCTAssertGreaterThanOrEqual(history.frame.height, 44)
+            let food = app.buttons["lio.questions.one.interests.food"]
+            XCTAssertGreaterThanOrEqual(food.frame.minY, history.frame.maxY)
+            history.tap()
+            let submit = app.buttons["lio.questions.continue"]
+            for _ in 0..<4 {
+                if submit.isHittable { break }
+                app.swipeUp()
+            }
+            XCTAssertTrue(submit.isHittable)
+            XCTAssertTrue(submit.isEnabled)
+            try app.performAccessibilityAudit(for: .all)
+            let image = XCTAttachment(screenshot: app.screenshot())
+            image.name = "questions-large-\(chinese ? "zh" : "en")"
+            image.lifetime = .keepAlways
+            add(image)
+            app.terminate()
+        }
+    }
 }
