@@ -1,5 +1,5 @@
 """Actual Beta workflow/Keychain with a local HTTP fixture; no real service."""
-import argparse,hashlib,importlib.util,json,os,plistlib,subprocess,threading
+import argparse,base64,hashlib,importlib.util,json,os,plistlib,subprocess,threading
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit,parse_qs
@@ -10,12 +10,16 @@ TRACE='69169169-1691-4691-8691-691691691691'
 
 def main():
  p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
+ p.add_argument('--root-lifecycle',action='store_true')
+ p.add_argument('--refusal',choices=['no-marker','wrong-bundle'])
  p.add_argument('--build-dir',type=Path,required=True);p.add_argument('--simulator');p.add_argument('--port',type=int,default=0)
  modes=p.add_mutually_exclusive_group();modes.add_argument('--prepare-only',action='store_true');modes.add_argument('--serve-only',action='store_true');a=p.parse_args()
+ global BUNDLE
+ if a.root_lifecycle and a.refusal!='wrong-bundle':BUNDLE='space.go2china.app'
  output=a.output.resolve();build=a.build_dir.resolve()
  if output.is_relative_to(ROOT)or build.is_relative_to(ROOT):p.error('keep generated project/build/evidence outside repository')
  output.mkdir(parents=True,exist_ok=False);os.chmod(output,0o700)
- report={'status':'UNRUN','layer':'actual Beta coordinator/Keychain/native clients/local HTTP fixture','real_server':'UNRUN','natural_seven_day_elapsed':'UNRUN','results':{},'requests':[],'source_sha256':{str(f.relative_to(ROOT)):hashlib.sha256(f.read_bytes()).hexdigest()for f in (Path(__file__),HERE/'DemoCleanupRenewalFixture.swift',HERE/'DemoCleanupRenewalUITests.swift',ROOT/'ios/App/DevelopmentTripHost.swift',ROOT/'ios/App/DevelopmentSessionConfiguration.swift')}}
+ report={'status':'UNRUN','layer':'actual Beta coordinator/Keychain/native clients/local HTTP fixture','real_server':'UNRUN','natural_seven_day_elapsed':'UNRUN','results':{},'root_results':{},'requests':[],'source_sha256':{str(f.relative_to(ROOT)):hashlib.sha256(f.read_bytes()).hexdigest()for f in (Path(__file__),HERE/'DemoCleanupRenewalFixture.swift',HERE/'DemoCleanupRenewalUITests.swift',ROOT/'ios/App/DevelopmentTripHost.swift',ROOT/'ios/App/DevelopmentSessionConfiguration.swift',ROOT/'ios/App/DemoBetaConfiguration.swift',ROOT/'ios/Modules/CJMessageClient/Sources/CJMessageHTTP/Transport.swift')}}
  def save():
   path=output/'report.json';path.write_text(json.dumps(report,indent=2));path.chmod(0o600)
  save()
@@ -25,8 +29,18 @@ def main():
    raw=json.dumps({'request_id':TRACE,**value},separators=(',',':')).encode();self.send_response(status)
    for k,v in [('Content-Type','application/json'),('X-Request-ID',TRACE),('Cache-Control','no-store'),('Content-Length',str(len(raw)))]:self.send_header(k,v)
    self.end_headers();self.wfile.write(raw)
+  def authorization(self):
+   auth=self.headers.get('Authorization','')
+   if not auth.startswith('Bearer b691fixture.'):return auth
+   token=auth.removeprefix('Bearer ');payload=token.split('.')[1]
+   try:claims=json.loads(base64.urlsafe_b64decode(payload+'='*(-len(payload)%4)))
+   except (ValueError,KeyError):return ''
+   if claims.get('b691_scenario')not in SCENARIOS or not claims.get('sub','').startswith('m4-synthetic-demo-'):return ''
+   return 'Bearer SDK.SYNTHETIC.B691.'+claims['b691_scenario']+('.renewed'if claims['b691_renewed']else '')
   def do_GET(self):
-   path=urlsplit(self.path).path;query=parse_qs(urlsplit(self.path).query);auth=self.headers.get('Authorization','')
+   path=urlsplit(self.path).path;query=parse_qs(urlsplit(self.path).query);auth=self.authorization()
+   if path=='/v1/message-receipts'and query.get('message_id',[''])[0].startswith('session-'):
+    report['requests'].append({'method':'GET','path':path,'scenario':auth.removeprefix('Bearer SDK.SYNTHETIC.B691.'),'root_verification':True});save();self.send(200,{'receipt':None});return
    if path=='/v1/message-receipts' and auth=='Bearer SDK.SYNTHETIC.B691.verifiedRefusal':
     report['requests'].append({'method':'GET','path':path,'scenario':'verifiedRefusal'});save()
     self.send(403,{'error':{'code':'ACCESS_DENIED','category':'access','message_en':'Unavailable','message_zh':'不可用','outcome':'failed','recovery':'do_not_retry'}});return
@@ -72,6 +86,13 @@ def main():
     raw=self.rfile.read(length)
    else:self.send_error(400);return
    body=json.loads(raw);path=urlsplit(self.path).path
+   if path=='/fixture-admission-result':
+    if body!={'mode':a.refusal,'result':'DENIED'}:self.send_error(400);return
+    report['fixture_admission']=body;report['status']='PASS';save();self.send(200,{'accepted':True});return
+   if path=='/root-probe-result':
+    scenario=body.get('scenario')
+    if scenario not in SCENARIOS:self.send_error(400);return
+    report['root_results'][scenario]=body;report['status']='PASS'if len(report['root_results'])==6 else 'RUNNING';save();self.send(200,{'accepted':True});return
    if path=='/probe-result':
     scenario=body['scenario']
     if scenario not in SCENARIOS or scenario in report['results']:self.send_error(409);return
@@ -88,7 +109,7 @@ def main():
      if scenario!='preparedUnregister'and query.get('action_id')!=[body['recoveryOriginalActionID']]:self.send_error(409);return
      if scenario in ('registrationUnknown','enrolled')and query.get('input_sha256')!=[body['recoveryOriginalRequestSha256']]:self.send_error(409);return
     report['results'][scenario]=body;report['status']='PASS'if len(report['results'])==8 else 'RUNNING';save();self.send(200,{'accepted':True});return
-   auth=self.headers.get('Authorization','')
+   auth=self.authorization()
    prefix='Bearer SDK.SYNTHETIC.B691.'
    if not auth.startswith(prefix):self.send_error(403);return
    scenario=auth[len(prefix):]
@@ -106,7 +127,7 @@ def main():
   endpoint='http://127.0.0.1:'+str(server.server_port)
   spec=importlib.util.spec_from_file_location('original_acceptance_builder',ROOT/'scripts/check_ios_trip_confirm.py');module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
   builder=object.__new__(module.XCTestDriver);builder.directory=output;builder.write_project(0)
-  (output/'G2CControl.swift').write_text((HERE/'DemoCleanupRenewalUITests.swift').read_text().replace('__B691_LOCAL_ENDPOINT__',endpoint))
+  (output/'G2CControl.swift').write_text((HERE/'DemoCleanupRenewalUITests.swift').read_text().replace('__B691_LOCAL_ENDPOINT__',endpoint).replace('__B691_ROOT_MODE__','1'if a.root_lifecycle else '0').replace('__B691_REFUSAL_MODE__',a.refusal or '').replace('space.go2china.b691.acceptance',BUNDLE))
   project=output/'G2CAcceptance.xcodeproj';pbx=project/'project.pbxproj';text=pbx.read_text()
   source=json.dumps(str(ROOT/'ios/App/CJProbeApp.swift'))
   if text.count(source)!=1:raise ValueError('one actual app entry expected')
@@ -120,6 +141,10 @@ def main():
   if text.count(condition)!=1:raise ValueError('one Debug app compilation condition expected')
   text=text.replace(condition,condition.replace('DEBUG G2C_LIO_APP','DEBUG G2C_LIO_APP G2C_DEMO_BETA'))
   text=text.replace('space.go2china.foundation.local',BUNDLE).replace('space.go2china.foundation.control',BUNDLE+'.control')
+  info=output/'B691.Info.plist';properties=plistlib.loads((ROOT/'ios/App/Info.plist').read_bytes())
+  if a.root_lifecycle:properties.update(G2CDemoBeta=True)
+  if a.root_lifecycle and a.refusal!='no-marker':properties.update(G2CB691LocalFixture=True)
+  info.write_bytes(plistlib.dumps(properties));text=text.replace(json.dumps(str(ROOT/'ios/App/Info.plist')),json.dumps(str(info)))
   entitlement=output/'B691.entitlements';entitlement.write_bytes(plistlib.dumps({'application-identifier':BUNDLE,'keychain-access-groups':[BUNDLE]}))
   text=text.replace(json.dumps(str(ROOT/'ios/App/Development.entitlements')),json.dumps(str(entitlement)));pbx.write_text(text)
   print(json.dumps({'project':str(project),'scheme':'G2CControl','endpoint':endpoint,'report':str(output/'report.json')}),flush=True)
@@ -129,7 +154,7 @@ def main():
   if not a.simulator:p.error('--simulator required to run existing native harness')
   cmd=['xcodebuild','-project',str(project),'-scheme','G2CControl','-configuration','Debug','-destination','platform=iOS Simulator,id='+a.simulator,'-derivedDataPath',str(build),'-resultBundlePath',str(output/'b691.xcresult'),'-onlyUsePackageVersionsFromResolvedFile','-parallel-testing-enabled','NO','ARCHS=arm64','ONLY_ACTIVE_ARCH=YES','CODE_SIGNING_ALLOWED=YES','CODE_SIGN_IDENTITY=-','-only-testing:G2CControl/DemoCleanupRenewalUITests','test']
   with (output/'xcodebuild.log').open('w')as log:subprocess.run(cmd,cwd=ROOT,stdout=log,stderr=subprocess.STDOUT,check=True,timeout=600)
-  if report['status']!='PASS':raise ValueError('eight actual coordinator results required')
+  if report['status']!='PASS':raise ValueError('complete actual Root results required'if a.root_lifecycle else 'eight actual coordinator results required')
  finally:server.shutdown();server.server_close()
 
 if __name__=='__main__':main()
