@@ -106,10 +106,13 @@ packages = [
 "backend/usage/cj_usage" = "cj_usage"
 
 [tool.hatch.build.targets.wheel.shared-data]
+"backend/fact/cj_fact/visitor.py" = "share/g2c/runtime-source/backend/fact/cj_fact/visitor.py"
+"knowledge/visitor/entries" = "share/g2c/visitor/entries"
 # Only public fixed inputs and policy sources hashed by source_c0().
 "backend/agent/cj_agent/provider.py" = "share/g2c/runtime-source/backend/agent/cj_agent/provider.py"
 "backend/cj_api/real_services.py" = "share/g2c/runtime-source/backend/cj_api/real_services.py"
 "backend/cj_api/local_lio_planning.py" = "share/g2c/runtime-source/backend/cj_api/local_lio_planning.py"
+"backend/cj_api/lio_scene.py" = "share/g2c/runtime-source/backend/cj_api/lio_scene.py"
 "backend/cj_api/local_lio_national.py" = "share/g2c/runtime-source/backend/cj_api/local_lio_national.py"
 "backend/cj_api/lio_national_intake.py" = "share/g2c/runtime-source/backend/cj_api/lio_national_intake.py"
 "backend/agent/cj_agent/lio_intake_schema.py" = "share/g2c/runtime-source/backend/agent/cj_agent/lio_intake_schema.py"
@@ -120,6 +123,7 @@ packages = [
 "backend/agent/cj_agent/lio_intake_flat_schema.py" = "share/g2c/runtime-source/backend/agent/cj_agent/lio_intake_flat_schema.py"
 "backend/agent/cj_agent/lio_intake_facts_schema.py" = "share/g2c/runtime-source/backend/agent/cj_agent/lio_intake_facts_schema.py"
 "backend/agent/cj_agent/lio_intake_flow_schema.py" = "share/g2c/runtime-source/backend/agent/cj_agent/lio_intake_flow_schema.py"
+"backend/agent/cj_agent/lio_intake_optional_schema.py" = "share/g2c/runtime-source/backend/agent/cj_agent/lio_intake_optional_schema.py"
 "backend/cj_api/lio_flow_intake.py" = "share/g2c/runtime-source/backend/cj_api/lio_flow_intake.py"
 "backend/cj_api/lio_flat_intake.py" = "share/g2c/runtime-source/backend/cj_api/lio_flat_intake.py"
 "backend/cj_api/lio_sourced_intake.py" = "share/g2c/runtime-source/backend/cj_api/lio_sourced_intake.py"

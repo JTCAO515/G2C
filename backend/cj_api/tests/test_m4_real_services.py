@@ -739,6 +739,111 @@ class Boundaries(unittest.TestCase):
         self.assertEqual(len(self.sent),1)
         self.assertEqual(self.budget.inspect()[0]['state'],'RECEIVED')
 
+    def test_local_visitor_exit_preserves_original_scope_and_has_no_external_call(self):
+        from cj_api.lio_city import CityReference
+        from cj_api.local_app import ISSUER,scope_for
+        subject='m4-synthetic-one';subjects=frozenset({subject})
+        provider=self.provider(sse())
+        directory=Path(__file__).resolve().parents[3]/'knowledge/visitor/entries'
+        tools=RealTools(RealServices(provider,KEY,subjects,demo_subjects=subjects,national_subjects=subjects),
+                        visitor_catalogue_directory=directory)
+        city=CityReference('510100','成都市','四川省','成都市','city','Asia/Shanghai')
+        name,query=canonical_tool('visitor_fact',json.dumps(dict(topic='payment',city='Beijing')),city=city)
+        self.assertEqual((name,json.loads(query)['city']),('visitor_fact','510100'))
+        prepared=tools.registrations['tool.visitor_fact'].prepare_input((query,'original-ref',city))
+        original=json.loads(prepared.original_bytes)
+        self.assertEqual(original['destination_adcode'],'510100')
+        operation=SimpleNamespace(binding=SimpleNamespace(scope=scope_for(ISSUER,subject)))
+        before=self.budget.inspect()
+        result=json.loads(''.join(prepared.bind_operation(operation,lambda:True)()))
+        self.assertEqual(result['data_origin'],'maintainer_summary')
+        self.assertEqual(result['request_ref'],'original-ref')
+        self.assertEqual(result['status'],'matched')
+        self.assertEqual(self.budget.inspect(),before);self.assertEqual(self.sent,[])
+        with self.assertRaises(BudgetUnknown):list(prepared.bind_operation(operation,lambda:False)())
+        foreign=SimpleNamespace(binding=SimpleNamespace(scope=scope_for(ISSUER,'m4-synthetic-foreign')))
+        with self.assertRaises(BudgetUnknown):list(prepared.bind_operation(foreign,lambda:True)())
+        with self.assertRaises(ProviderUnknown):
+            tools.registrations['tool.visitor_fact'].prepare_input((query.replace(b'510100',b'110000'),'original-ref',city))
+        self.assertNotIn('visitor_fact',{t['function']['name']for t in tools.native_tools})
+        self.assertIn('visitor_fact',{t['function']['name']for t in tools.national_tools})
+
+    def test_visitor_no_match_retains_uncertainty_and_no_source_claim(self):
+        from cj_api.lio_city import CityReference
+        from cj_api.local_app import ISSUER,scope_for
+        from cj_fact.visitor import decode_query as visitor_query,lookup
+        subject='m4-synthetic-one';subjects=frozenset({subject});provider=self.provider(sse())
+        tools=RealTools(RealServices(provider,KEY,subjects,demo_subjects=subjects,national_subjects=subjects))
+        city=CityReference('440100','广州市','广东省','广州市','city','Asia/Shanghai')
+        directory=Path(__file__).resolve().parents[3]/'knowledge/visitor/entries'
+        binding=SimpleNamespace(scope=scope_for(ISSUER,subject),run_id='visitor-no-match')
+        recorded=[]
+        class Worker:
+            lio_planning=None
+            def _model_history(self,*args):pass
+            def _registered_stream(self,original,key,registration,argument,**kwargs):
+                if registration=='tool.visitor_fact':
+                    raw,ref,actual_city=argument
+                    assert actual_city==city
+                    yield lookup(directory,visitor_query(raw),evaluated_at=datetime.now(timezone.utc),request_ref=ref).decode()
+                elif key=='model.tool_turn.0':
+                    argument.native_reply['assistant']=dict(tool_calls=[dict(id='visitor-no-match-tool')])
+                    yield json.dumps(dict(version='MODEL-tool-turn.1',kind='tool',answer=None,
+                        calls=[dict(name='visitor_fact',arguments=dict(topic='payment',city='Beijing'))]))
+                else:
+                    recorded.append(argument)
+                    result=json.loads(argument.messages[-1]['content'])['results'][0]['result']
+                    assert result['status']=='no_match'and result['entries']==[]
+                    assert 'No reviewed visitor entry matched'in argument.system
+                    yield json.dumps(dict(version='MODEL-tool-turn.1',kind='answer',calls=[],
+                        answer=dict(zh='这部分我暂不能确认。你想先查看哪个官方渠道？',en='I cannot confirm that detail yet. Which official channel would you like to check?')))
+        worker=Worker();worker.provider=provider
+        chunks=list(tools.answer(worker,binding,[dict(role='user',content='How can I pay in Guangzhou?')],lio_locale='en',lio_city=city))
+        self.assertEqual(len(recorded),1)
+        from cj_message.lio_context import LioCitation,LioToolProgress
+        self.assertEqual([part for part in chunks if type(part)is str],['I cannot confirm that detail yet. Which official channel would you like to check?'])
+        self.assertIn(LioToolProgress('tool.0.0',None),chunks)
+        self.assertFalse(any(isinstance(part,LioCitation)for part in chunks))
+        self.assertEqual(self.sent,[])
+
+    def test_invalid_visitor_resource_is_not_successful_no_match(self):
+        from cj_api.lio_city import CityReference
+        from cj_api.local_app import ISSUER,scope_for
+        subject='m4-synthetic-one';subjects=frozenset({subject});provider=self.provider(sse())
+        with tempfile.TemporaryDirectory()as folder:
+            directory=Path(folder);(directory/'broken.json').write_text('{bad JSON')
+            tools=RealTools(RealServices(provider,KEY,subjects,demo_subjects=subjects,national_subjects=subjects),
+                            visitor_catalogue_directory=directory)
+            city=CityReference('510100','成都市','四川省','成都市','city','Asia/Shanghai')
+            _,raw=canonical_tool('visitor_fact',json.dumps(dict(topic='payment',city='chengdu')),city=city)
+            prepared=tools.registrations['tool.visitor_fact'].prepare_input((raw,'original-ref',city))
+            original=SimpleNamespace(binding=SimpleNamespace(scope=scope_for(ISSUER,subject)))
+            with self.assertRaises(BudgetUnknown):list(prepared.bind_operation(original,lambda:True)())
+            self.assertEqual(self.sent,[]);self.assertEqual(self.budget.inspect(),[])
+
+    def test_optional_flow_profile_keeps_exact_wire_hash_and_bounded_original_call(self):
+        from cj_api.lio_scene import scene_prompt
+        from cj_agent.lio_intake_optional_schema import PROFILE,response_format,response_format_sha256
+        from cj_api.local_app import ISSUER,scope_for
+        from cj_api.local_lio_national import intake_prompt
+        provider=self.provider(sse());subjects=frozenset({'m4-synthetic-intake-facts'})
+        tools=RealTools(RealServices(provider,KEY,subjects,demo_subjects=subjects,national_subjects=subjects))
+        prepared=tools.registrations['model.lio_intake.9'].prepare_input((
+            [dict(role='user',content='Stored memory data: '+'m'*1000),dict(role='user',content='x'*12000)],
+            intake_prompt('en',(SimpleNamespace(text='x'*12000,question_day=date(2026,11,12)),),scene=scene_prompt(None,datetime(2026,11,12,tzinfo=timezone.utc))),provider,0))
+        inputs=json.loads(prepared.original_bytes)
+        self.assertEqual(inputs['structured_profile'],PROFILE)
+        self.assertEqual(inputs['response_format_sha256'],response_format_sha256(0))
+        operation=SimpleNamespace(binding=SimpleNamespace(scope=scope_for(ISSUER,next(iter(subjects)))),
+                                  command=SimpleNamespace(attempt_id='optional-intake'))
+        self.assertTrue(''.join(prepared.bind_operation(operation,lambda:True)()))
+        wire=json.loads(self.sent[0].content)
+        self.assertEqual(wire['response_format'],response_format(0))
+        self.assertLessEqual(len(self.sent[0].content),32768)
+        self.assertEqual(len(self.sent),1)
+        self.assertEqual(self.budget.inspect()[0]['state'],'RECEIVED')
+
+
     def test_national_tools_bind_actual_city_and_leave_the_legacy_query_unchanged(self):
         from cj_api.lio_city import CityReference
         from cj_api.lio_weather import decode_query as city_weather_query
@@ -934,6 +1039,36 @@ class Boundaries(unittest.TestCase):
                 self.assertEqual((output,receipt,reply),([],{},{}))
                 self.assertEqual(self.budget.inspect()[-1]['state'],'INTENT')
 
+    def test_lio_saved_scene_is_only_in_model_system_not_public_answer(self):
+        from cj_api.local_app import ISSUER,scope_for
+        from cj_api.lio_scene import scene_prompt
+        subject='m4-synthetic-one';provider=self.provider(sse())
+        tools=RealTools(RealServices(provider,KEY,frozenset({subject})))
+        binding=SimpleNamespace(scope=scope_for(ISSUER,subject),run_id='scene-original')
+        scene=scene_prompt(dict(arrival=dict(place=dict(state='known',value='成都市'),
+            date=dict(state='known',value='2026-11-11')),departure=dict(date=dict(state='known',value='2026-11-13'))),
+            datetime(2026,11,12,tzinfo=timezone.utc))
+        calls=[]
+        class Planning:
+            def scene_context(self,original,now):
+                assert original is binding and now.tzinfo is not None
+                return scene
+        class Worker:
+            lio_planning=Planning()
+            def _model_history(self,*args):pass
+            def _registered_stream(self,original,key,registration,argument,**kwargs):
+                assert original is binding and registration=='model.tool_turn'
+                calls.append(argument)
+                assert scene in argument.system
+                assert argument.messages==[dict(role='user',content='今天想轻松一点')]
+                yield json.dumps(dict(version='MODEL-tool-turn.1',kind='answer',
+                    answer=dict(zh='先去附近散步，想逛街区还是公园？',en='Try a nearby walk. A neighborhood or a park?'),calls=[]))
+        worker=Worker();worker.provider=provider
+        chunks=list(tools.answer(worker,binding,[dict(role='user',content='今天想轻松一点')],lio_locale='zh'))
+        self.assertEqual(chunks,['先去附近散步，想逛街区还是公园？'])
+        self.assertEqual(len(calls),1);self.assertEqual(self.sent,[])
+        self.assertNotIn('Saved-itinerary scene',''.join(chunks))
+
     def test_lio_weather_clock_and_missing_forecast_project_only_public_evidence(self):
         from cj_api.local_app import ISSUER, scope_for
         from cj_message.lio_context import LioCitation
@@ -950,6 +1085,7 @@ class Boundaries(unittest.TestCase):
                 return datetime(2026, 11, 10, 17, tzinfo=timezone.utc).astimezone(tz)
 
         class Worker:
+            lio_planning=None
             def _model_history(self, *args):
                 pass
 
@@ -1008,6 +1144,7 @@ class Boundaries(unittest.TestCase):
         request = dict(name='place_search',arguments=dict(keyword='park',city='北京',page=1,page_size=1))
 
         class Worker:
+            lio_planning=None
             def _model_history(self, *args):
                 pass
 
@@ -1050,6 +1187,7 @@ class Boundaries(unittest.TestCase):
             destination_coordinate_role='entrance', mode='walking'))
 
         class Worker:
+            lio_planning=None
             def _model_history(self, *args):
                 pass
 
@@ -1089,6 +1227,7 @@ class Boundaries(unittest.TestCase):
         request = dict(name='fact', arguments=dict(start_date='2026-11-10', end_date='2026-11-10'))
 
         class Worker:
+            lio_planning=None
             def _model_history(self, *args):
                 pass
 
@@ -1345,6 +1484,7 @@ class Boundaries(unittest.TestCase):
         call=dict(name='place_search',arguments=dict(keyword='synthetic',city='北京',page=1,page_size=1))
         turn=json.dumps(dict(version='MODEL-tool-turn.1',kind='tool',answer=None,calls=[call]))
         class Worker:
+            lio_planning=None
             provider=services.model
             def _model_history(self,*args):pass
             def _registered_stream(self,binding,key,registration,argument):
@@ -1371,6 +1511,7 @@ class Boundaries(unittest.TestCase):
                 for i in indices]))
 
         class Worker:
+            lio_planning=None
             provider=services.model
             def _model_history(self,*args):pass
             def _registered_stream(self,binding,key,registration,argument):
@@ -1398,6 +1539,7 @@ class Boundaries(unittest.TestCase):
         for message,rounds in (('approved-probe',5),('different-original',8)):
             flags=[];tools=[]
             class Worker:
+                lio_planning=None
                 provider=services.model
                 def _model_history(self,*args):pass
                 def _registered_stream(self,binding,key,registration,argument):
@@ -1428,6 +1570,7 @@ class Boundaries(unittest.TestCase):
                 final=json.dumps(dict(version='MODEL-tool-turn.1',kind='answer',answer=dict(zh='完成',en='Done'),calls=[]))
                 assistant=dict(role='assistant',content='Untrusted supplier preface',tool_calls=[dict(id='actual-wrapper-id',type='function',function=dict(name=M4_TURN_FUNCTION,arguments=initial))])
                 class Worker:
+                    lio_planning=None
                     provider=services.model
                     def _model_history(self,*args):pass
                     def _registered_stream(self,binding,key,registration,argument):

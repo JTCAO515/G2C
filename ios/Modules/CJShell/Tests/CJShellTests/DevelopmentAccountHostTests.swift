@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import SwiftUI
 import CJSession
 @testable import CJShell
 
@@ -37,6 +38,49 @@ import CJSession
         DevelopmentAccountHost(shell: shell, choices: [.init(id: "A", label: "A"), .init(id: "B", label: "B")],
             persistence: store, material: { try SessionMaterial(trustedSDKBytes: Data($0.utf8)) },
             verify: { await checks.check($0) }, activate: { _, _, _ in activate() }, invalidate: {})
+    }
+
+    @Test func interruptionRetainsTheVerifiedClientAndBackgroundStillFencesIt() async throws {
+        let shell = try makeShell(), store = DevelopmentStore(), checks = DevelopmentChecks()
+        let material = try SessionMaterial(trustedSDKBytes: Data("synthetic-interruption".utf8))
+        var activations = 0, invalidations = 0
+        let host = DevelopmentAccountHost(shell: shell, choices: [], persistence: store, demoMode: true,
+            material: { _ in throw SessionFailure.invalidConfiguration }, verify: { await checks.check($0) },
+            activate: { _, _, _ in activations += 1 }, invalidate: { invalidations += 1 })
+        host.signIn { material }
+        await wait { checks.replies.count == 1 }
+        checks.replies[0].resume(returning: .accepted(account: "demo"))
+        await wait { host.state == .signedIn("demo") }
+        let generation = shell.generation, before = invalidations
+        host.sceneChanged(.inactive)
+        host.sceneChanged(.active)
+        #expect(host.state == .signedIn("demo") && shell.generation == generation)
+        #expect(activations == 1 && invalidations == before && store.loads == 0)
+        let recheck = Task { await host.recheckDemoSession() }
+        await wait { checks.replies.count == 2 }
+        checks.replies[1].resume(returning: .accepted(account: "demo"))
+        await recheck.value
+        #expect(activations == 1 && shell.generation == generation)
+        host.sceneChanged(.background)
+        #expect(host.state == .paused && shell.messageBindingBlocked && invalidations == before + 1)
+        host.sceneChanged(.active)
+        await wait { checks.replies.count == 3 }
+        host.sceneChanged(.inactive)
+        #expect(host.state == .checking && shell.messageBindingBlocked)
+        host.signOut()
+        checks.replies[2].resume(returning: .accepted(account: "demo"))
+        for _ in 0..<20 { await Task.yield() }
+        #expect(host.state == .signedOut && activations == 1 && store.value == nil)
+    }
+
+    @Test func sceneActivationNeverRestoresKeychainWithoutTheUser() throws {
+        let shell = try makeShell(), store = DevelopmentStore(), checks = DevelopmentChecks()
+        store.value = try SessionMaterial(trustedSDKBytes: Data("synthetic-saved-account".utf8))
+        let host = make(shell, store, checks)
+        host.sceneChanged(.active)
+        host.sceneChanged(.inactive)
+        host.sceneChanged(.active)
+        #expect(host.state == .signedOut && store.loads == 0 && checks.replies.isEmpty)
     }
 
     @Test func demoResumeSurvivesAnotherBackgroundDuringVerification() async throws {

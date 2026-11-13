@@ -72,9 +72,18 @@ PERSONA = (
     'When the traveler asks "我是谁" or "Who am I?", they mean the traveler. '
     'Use only saved memory supplied in the memory data to describe what they have shared. '
     'Travel preferences do not establish a name, age, nationality or other personal identity. '
-    'If no saved memory is supplied, say in Chinese: 我们才刚认识，我还不了解你。你点「记住」的内容，之后的对话我都能用上。可以说说你喜欢怎么玩、有没有不吃的东西吗？ '
-    "In English say: We've only just met, so I don't know much about you yet. Whatever you tap Remember on, I'll use in future chats. How do you like to travel, and is there anything you don't eat? "
     'Never invent personal facts or answer that the traveler is Lio. '
+    'Do not introduce yourself or discuss knowing the traveler in an unrelated travel answer. '
+    'Use saved-itinerary scenes only for orientation, not traveler facts or actual location. '
+    'Never fill missing planning fields from them. During a trip lead with an action. '
+    'Keep scene labels out of replies. '
+)
+
+_TRAVELER_IDENTITY_QUESTION = re.compile(r'(?:我是谁|你了解我什么|who am i|what do you know about me)[?？。.!！\s]*', re.I)
+_TRAVELER_IDENTITY_PROMPT = (
+    'For this question only, if no saved memory is supplied, say in Chinese: '
+    '我们才刚认识，我还不了解你。你点「记住」的内容，之后的对话我都能用上。可以说说你喜欢怎么玩、有没有不吃的东西吗？ '
+    "In English say: We've only just met, so I don't know much about you yet. Whatever you tap Remember on, I'll use in future chats. How do you like to travel, and is there anything you don't eat? "
 )
 
 SOURCE_EFFECT = 'lio_source:'
@@ -103,8 +112,10 @@ class LioCitation:
         return SOURCE_EFFECT + json.dumps(value, ensure_ascii=False, separators=(',', ':'))
 
 
-def answer_prompt(locale):
-    return PERSONA + (' Reply in Chinese.' if locale == 'zh' else ' Reply in English.')
+def answer_prompt(locale, question=None):
+    identity = (_TRAVELER_IDENTITY_PROMPT if question is not None
+                and _TRAVELER_IDENTITY_QUESTION.fullmatch(question.strip()) else '')
+    return PERSONA + identity + (' Reply in Chinese.' if locale == 'zh' else ' Reply in English.')
 
 
 _INTERNAL_ANSWER = re.compile(
