@@ -394,7 +394,7 @@ def _absolute_fixed_days(text,first):
  return re.sub(r'第([一二两三四五六七八九十0-9]{1,3})天|\bday\s+([1-9][0-9]?)\b',replace,text,flags=re.I)
 
 
-def fixed_sources_complete(intake,fields,turns,city_reference):
+def fixed_sources_complete(intake,fields,turns,city_reference,*,ordinal_days=None):
  """Check the model's fixed values against original declarations, before save.
 
  The existing city-independent fixed-source reader supplies a conservative
@@ -429,12 +429,16 @@ def fixed_sources_complete(intake,fields,turns,city_reference):
   if intake.start_date is not None and sum(1 for _ in RANGE.finditer(re.sub(ISO,' ',description)))>1:return False
   details='\n'.join(ref['quote'] for ref in evidence if description not in ref['quote'])
   comparison=description+'\n'+details
+  if first is None and ordinal_days is not None:
+   from .lio_calendar_ordinals import fixed_ordinals
+   try:fixed_ordinals(description,ordinal_days)
+   except InvalidInput:return False
   if first is not None:
    comparison=_absolute_fixed_days(comparison,first)
   personal=re.search(r'本人|我参加|我(?=\s*(?:[0-9]|要|需|将|会|在))|\bI (?:have|need|must|am)\b',description,re.I)
   collective=re.search(r'全体|大家|我们|\b(?:for our party|for everyone|both of us|all of us)\b',description,re.I)
   expected=_fixed_item(comparison,first,city_reference.timezone,party,
-      explicit_self=bool(personal and not collective))
+      explicit_self=bool(personal and not collective),undated=first is None and ordinal_days is not None)
   if expected is None:return False
   for edge in ('start','end'):
    for part in ('date','time','timezone'):

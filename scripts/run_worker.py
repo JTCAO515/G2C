@@ -331,10 +331,16 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
             from cj_api.local_lio_planning import LioPlanning, LioPlanSave
             if national_planning:
                 from cj_api.local_lio_national import NationalLioPlanning
-                lio_planning=NationalLioPlanning(database,LioPlanSave(database,drafts,lio_confirmation,source_window=True))
+                from cj_api.local_lio_calendar import LioCalendar
+                calendar=LioCalendar(database,drafts,lio_confirmation)
+                lio_planning=NationalLioPlanning(database,LioPlanSave(database,drafts,lio_confirmation,
+                    source_window=True,calendar_reads=True),calendar=calendar)
             else:
                 lio_planning = LioPlanning(database, LioPlanSave(database, drafts, lio_confirmation))
             lio_edit = LioEdit(drafts, lio_confirmation,source_window=national_planning)
+            if national_planning:
+                from cj_api.local_lio_calendar_edit import LioCalendarEdit
+                lio_edit=LioCalendarEdit(calendar,lio_edit)
     return RunWorker(scope=scope, messages=messages, runs=runs, provider=model, drafts=drafts,
         memory=memory,edit_publisher=None if edit_config is None else edit_config.publisher,edit_results=database.edit_results,
         memory_history=history is not None,history_adapter=history,
