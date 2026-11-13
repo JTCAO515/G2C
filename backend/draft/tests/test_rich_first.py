@@ -56,6 +56,7 @@ def test_full_four_five_days_preserve_names_participants_and_canonical_versions(
     messages = host.model_messages('original', 'plan', capture, [])
     packet = grouped_input(host, capture, messages, object())
     assert packet.profile == value['version'] and value['version'] in packet.system
+    assert host.generation_used == packet.profile
     assert packet.system == rich_system_for(ordinal=ordinal, pace=pace)
     assert response_format_sha256(packet.profile) != response_format_sha256(reply(days, language, ordinal=ordinal)['version'])
     content, candidate, _ = host.build_plan(packed(value), capture)
@@ -75,6 +76,7 @@ def test_full_four_five_days_preserve_names_participants_and_canonical_versions(
     host.model_messages('original', 'add', capture, [])
     delta = reply(days, language, ordinal=ordinal, delta=True)
     assert grouped_input(host, capture, [], object()).profile == delta['version']
+    assert host.generation_used == delta['version']
     after, _, _ = host.build_plan(packed(delta), capture)
     assert json.loads(after)['items'][:len(document['items'])] == document['items']
 
@@ -85,6 +87,7 @@ def test_fixed_source_uses_old_profile_and_never_guesses_or_discards_a_kind(ordi
     old = reply(4, 'en', ordinal=ordinal)
     host.model_messages('original', 'plan', capture, [])
     assert grouped_input(host, capture, [], object()).profile == old['version']
+    assert host.generation_used == old['version']
     content, _, _ = host.build_plan(packed(old), capture)
     assert json.loads(content)['items'][0]['id'] == 'hotel'
     assert json.loads(content)['items'][0]['fixed'] == dict(state='known', value=True)

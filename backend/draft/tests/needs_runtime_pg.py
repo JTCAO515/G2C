@@ -359,7 +359,9 @@ class GroupedPlanChecks(unittest.TestCase):
                     self.admitted[message['message_id']]=None
                     value=rich_reply(days,language,False,pace)
                     worker,_=self.configured(subject,value,rich_pace=pace)
+                    self.assertIsNone(worker.drafts.generation_used)
                     self.assertEqual(worker.process()[0].status,'completed')
+                    self.assertEqual(worker.drafts.generation_used,value['version'])
                     repository=worker.drafts.repository
                     receipt=repository.query_action(plan_action_id(message['run_id']))
                     self.assertIsNotNone(receipt)

@@ -81,6 +81,7 @@ class _RichFirst:
         if type(pace) is not Pace:
             raise ValueError('trusted code must supply a typed Pace')
         self.pace = pace
+        self.generation_used = None
         super().__init__(*args, **kwargs)
 
     def _rich_first(self, capture):
@@ -98,6 +99,7 @@ class _RichFirst:
             # the generation shape. The factory supplies a grounded/default pace.
             self.system = rich_system_for(ordinal=self.ordinal, pace=self.pace,
                                           guidance='' if self.ordinal else self.draft_guidance)
+        self.generation_used = self.generation_profile(capture)
         return result
 
 
