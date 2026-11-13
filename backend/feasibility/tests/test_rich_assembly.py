@@ -82,6 +82,25 @@ def test_bad_reason_states_are_removed_for_items_and_lodging_before_candidate_va
         assemble(case['content'],**args)
 
 
+@pytest.mark.parametrize('locale',['zh','en'])
+def test_invalid_factor_also_removes_the_associated_reason_prose(locale):
+    case=deepcopy(CASES['unconfirmed'])
+    item=case['content']['items'][0]
+    item['reason_refs']=['interests','city']  # city is a code default.
+    item['note']='按你说的城市来安排。' if locale=='zh' else 'Chosen because you said this city.'
+    hotel=case['content']['lodging']['recommendations'][0]
+    hotel['reason_refs']=['pace','arrival']  # arrival remains unknown.
+    hotel['note']='根据你的到达时间选择。' if locale=='zh' else 'Chosen for your stated arrival time.'
+    original=deepcopy(case)
+    result=assemble(case['content'],**arguments(case,locale=locale))
+    value=json.loads(result.content)
+    assert next(i for i in value['items'] if i['id']==item['id'])['note'] is None
+    assert value['lodging']['recommendations'][0]['note'] is None
+    assert next(i for i in value['items'] if i['id']==item['id'])['reason_refs']==['interests']
+    assert value['lodging']['recommendations'][0]['reason_refs']==['pace']
+    assert case==original
+
+
 @pytest.mark.parametrize('name',['protected_fixed','retained_verified'])
 def test_original_protected_or_retained_item_is_complete_and_byte_exact(name):
     case = deepcopy(CASES[name])
