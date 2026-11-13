@@ -370,7 +370,9 @@ class NationalLioPlanning:
         if request_index is not None and barrier is not None and request_index<=source_ids.index(barrier):return 'none'
         request=None if request_index is None else turns[request_index].text
         explicit=request is not None and PUBLICATION_REQUEST.search(request)is not None
-        denied=previous is not None and previous.get('status')in AUTHORITY_BARRIERS
+        # A harmless intervening reply may change the display status. It does
+        # not revoke an original refusal or create a fresh publication grant.
+        denied=barrier is not None or previous is not None and previous.get('status')in AUTHORITY_BARRIERS
         fresh_fact=any(ref['source_index']==request_index for ref in intake.sources.get('duration_days',[]))
         current_trip=(intake.city is not None and intake.duration_days is not None and fresh_fact)
         if request is not None and not publication_held(request)and (explicit or current_trip):

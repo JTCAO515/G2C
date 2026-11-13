@@ -77,6 +77,21 @@ class ReadOnlyQuestion(unittest.TestCase):
                         turns=(PlanningTurn(first,date(2026,11,13)),PlanningTurn(followup,date(2026,11,13))),previous=deepcopy(previous))
                     self.assertEqual(len(published),0 if held else 1)
                     self.assertEqual(any(kind=='registered'for kind,_ in events),not held)
+                    if held:
+                        continued=json.loads(next(value.removeprefix(CONTEXT)for kind,value in events if value.startswith(CONTEXT)))
+                        for fact in continued['facts'].values():
+                            for ref in fact['sources']:
+                                if ref['message_id']=='national-message':ref['message_id']='prior-1'
+                        for third,expected in (
+                            (followup,0),
+                            (('现在保存北京行程，'+followup)if locale=='zh'else'Save the Beijing itinerary now. '+followup,1),
+                        ):
+                            again=deepcopy(wire);again.update(current_source_index=2,planning_request_index=2)
+                            again['field_sources']=[dict(ref,source_index=2,quote=third)for ref in again['field_sources']]
+                            published,events,_,_=runner.run_intake(runner.envelope(third),flow_output=again,locale=locale,
+                                turns=tuple(PlanningTurn(t,date(2026,11,13))for t in (first,followup,third)),previous=deepcopy(continued))
+                            self.assertEqual(len(published),expected)
+                            self.assertEqual(any(kind=='registered'for kind,_ in events),bool(expected))
 
     def test_any_executable_value_or_constraint_keeps_the_original_strict_parser(self):
         original=response();text='规划北京行程'
