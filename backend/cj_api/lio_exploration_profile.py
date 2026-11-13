@@ -145,6 +145,11 @@ def _canonical(key, text):
     payload = _positive_payload(key,text)
     aliases = _ALIASES.get(key, {})
     words = {word.casefold():value for value,forms in aliases.items() for word in forms}
+    if aliases:
+        # The finite bank's complete display expressions are also valid whole
+        # answers. Do not fall back to substring matching for contextual labels.
+        words.update({text.casefold():option.key for option in BY_KEY[key].options
+                      for text in (option.zh,option.en)})
     if key == 'dietary':
         words.update({word:'mild' for word in ('i do not eat spicy food',"i don't eat spicy food",'do not eat spicy food')})
     if payload.casefold() in words:
