@@ -21,8 +21,12 @@ from this read projection. The ordinary context methods, writer/processing paths
 Memory `current` signature, direct actions and original receipts keep their
 existing behavior outside this explicitly selected frame.
 
-The timeline materializes its existing fields and checks its page again before
-returning. Empty pages keep the old path: an absent owner namespace is not newly
+The timeline captures RUN snapshots once. Only a configured Memory projection
+with at least one completed row selects the protected frame; classification and
+composition consume those exact same snapshots. Queued/running/failed/unknown
+rows alone, and hosts without Memory cards, keep their original path without a
+new M acquisition. The timeline materializes its existing fields and checks its
+page again before returning. Empty pages keep the old path: an absent owner namespace is not newly
 required merely to display an empty history. Candidate eligibility, Memory
 transaction/fence, current origin/source filtering and explicit decisions remain
 C's existing authority. A pending tag or a historical original never authorizes

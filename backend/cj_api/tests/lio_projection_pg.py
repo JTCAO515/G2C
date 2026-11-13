@@ -64,6 +64,14 @@ def exercise(root,conninfo):
         assert api.get('/v1/lio/timeline',headers=headers).json()['messages']==[]
         for mid,text in [('projection-empty','Tell me about a park.'),('projection-tags','I prefer fewer stops in a day.')]:
             assert api.post('/v1/lio/messages',headers=headers,content=encode(dict(version='LIO-message.1',message_id=mid,text=text,locale='en'))).status_code==200
+            if mid=='projection-empty':
+                with database.connect(scope)as db:
+                    db.execute('SELECT scope FROM cj_message_scope WHERE scope=%s FOR UPDATE',(scope,))
+                    # A queued-only page has no original-memory projection and
+                    # must keep its old progress path while a worker owns M.
+                    pending=api.get('/v1/lio/timeline',headers=headers)
+                    assert pending.status_code==200,pending.text
+                    assert pending.json()['messages'][-1]['status']=='sending'
             assert [o.status for o in worker.process()]==['completed']
             calls=model.calls
             with patch.object(HistoryReadContext,'with_lio_timeline_projection',lambda ctx,operation:operation()),patch.object(Transaction,'lock_scope',lock):
