@@ -1,9 +1,12 @@
 """One validated cumulative fact flow; no defaults and no model write capability."""
-from dataclasses import replace
+from dataclasses import dataclass,replace
 import json
 import re
-from pydantic import ValidationError
+from typing import Literal
+from pydantic import ConfigDict,Field,ValidationError
 from cj_agent.lio_intake_flow_schema import FlowIntake
+from cj_agent.lio_intake_optional_schema import OptionalIntake
+from cj_agent.lio_intake_flat_schema import DTO,City
 from cj_needs.domain import InvalidInput,decode
 from .lio_sourced_intake import parse_sourced,BookingSourceUnclear
 
@@ -16,8 +19,65 @@ DATE_EVIDENCE=re.compile(r'\d{4}[-/年]\d{1,2}|[0-9一二三四五六七八九�
     r"january|february|march|april|may|june|july|august|september|october|november|december|"
     r"jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)\b|\b[0-9]+[/-][0-9]+\b|\bin [a-z0-9 -]+ days?\b",re.I)
 
+
+@dataclass(frozen=True)
+class ReadOnlyPlanningQuestion:
+    reply:str
+
+
+class _MissingDurationQuestion(DTO):
+    # A control-only view. Source/unknown metadata is not accepted as facts;
+    # the executable DTO and compiler below retain their original checks.
+    model_config=ConfigDict(strict=True,extra='ignore',frozen=True)
+    version:Literal['LIO-planning-intake.8']
+    intent:Literal['plan','save','consult','discuss']
+    reply:str=Field(min_length=1,max_length=12000)
+    question_fields:list[Literal['duration_days']]=Field(min_length=1,max_length=1)
+    current_source_index:int=Field(ge=0,le=0)
+    planning_request_index:int=Field(ge=0,le=0)
+    city:City
+    duration_days:None
+    start_date:None
+    party_size:None
+    publication_hold:None
+    needs_tools:bool
+    fixed_items:list=Field(max_length=0)
+    extra_fields:dict=Field(max_length=0)
+    extra_unknown_fields:list=Field(max_length=0)
+    extra_uncertain_fields:dict=Field(max_length=0)
+    unresolved:list=Field(max_length=0)
+    long_term_requests:list=Field(max_length=0)
+
+
+def _missing_duration_question(value,turns,refs,message_id,previous,schema):
+    if (schema is not OptionalIntake or previous is not None or refs or len(turns)!=1
+            or type(value)is not dict or value.keys()!=OptionalIntake.model_fields.keys()):
+        return None
+    try:control=_MissingDurationQuestion.model_validate(value)
+    except ValidationError:return None
+    text=turns[0].text;city=control.city
+    if (city.source_index!=0 or not city.query.strip()or not city.quote.strip()
+            or city.quote not in text or city.query not in city.quote):return None
+    query=re.escape(city.query)
+    direct=(re.fullmatch(r'\s*(?:(?:请|麻烦)\s*)?(?:(?:帮|给|为)(?:我|我们)\s*)?'
+        r'(?:规划|安排|设计)\s*'+query+r'\s*的?(?:行程|旅行|旅游)\s*[。.!！?？]*',text,re.I)
+        or re.fullmatch(r'\s*(?:please\s+)?(?:plan|organize|create)\s+'
+        r'(?:(?:(?:a|my|our|the)\s+)?(?:trip|itinerary)\s+(?:to|in|for)\s+)?'+query+
+        r'(?:\s+(?:trip|itinerary))?\s*[.?!]*',text,re.I))
+    if direct is None or not control.reply.strip():return None
+    try:reply_bytes=control.reply.encode('utf-8')
+    except UnicodeError:return None
+    if len(reply_bytes)>12000:return None
+    # Only the literal query is retained, never proposed province/name or any
+    # ignored execution metadata. Actual city resolution remains a later tool.
+    fact=dict(value=dict(query=city.query,normalized_name=None,province=None,source_index=0,quote=city.quote),
+              sources=[dict(message_id=message_id,quote=city.quote)])
+    return ReadOnlyPlanningQuestion(control.reply),['duration_days'],{'city':fact}
+
 def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake):
     value=decode(raw.encode() if type(raw)is str else raw)
+    question=_missing_duration_question(value,turns,refs,message_id,previous,schema)
+    if question is not None:return question
     try:dto=schema.model_validate(value)
     except ValidationError:raise InvalidInput('exact unified planning facts required')from None
     data=dto.model_dump(by_alias=True,exclude_unset=True)
