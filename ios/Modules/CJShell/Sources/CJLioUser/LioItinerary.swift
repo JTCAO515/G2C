@@ -3,6 +3,9 @@ import CJTripClient
 import Foundation
 
 struct LioItinerary: Equatable, Identifiable, Sendable {
+    enum CalendarState: Equatable, Sendable {
+        case undated, dated(startDate: String)
+    }
     struct Point: Equatable, Sendable {
         let latitude: Double
         let longitude: Double
@@ -42,12 +45,28 @@ struct LioItinerary: Equatable, Identifiable, Sendable {
             self.date = date
             self.datePending = datePending
         }
+
+        func title(_ language: LioLanguage, calendar: CalendarState? = nil) -> String {
+            if calendar == .undated { return language.text("Day \(number)", "第 \(number) 天") }
+            if let date { return date }
+            if datePending { return language.text("Date to be decided", "日期待定") }
+            return language.text("Day \(number)", "第 \(number) 天")
+        }
     }
 
     let id: String
     let title: String
     let description: String?
     let days: [Day]
+    let calendar: CalendarState?
+
+    init(id: String, title: String, description: String?, days: [Day], calendar: CalendarState? = nil) {
+        self.id = id
+        self.title = title
+        self.description = description
+        self.days = days
+        self.calendar = calendar
+    }
 
     func planningIntroduction(_ language: LioLanguage) -> String? {
         if let description { return description }
@@ -61,6 +80,26 @@ struct LioItinerary: Equatable, Identifiable, Sendable {
             return language.text("I planned a \(count)-day trip with the dates left open.", "我先安排了 \(count) 天行程，日期可以之后再定。")
         }
         return language.text("I planned a \(count)-day trip and left some dates open.", "我安排了 \(count) 天行程，有些日期可以之后再定。")
+    }
+}
+
+extension LioItinerary {
+    /// The caller supplies a validated summary; this projection is display data, not a saved-source permit.
+    init(_ card: LioCalendarTripCard) {
+        let calendar: CalendarState?
+        switch card.calendar {
+        case .undated: calendar = .undated
+        case .dated(let date): calendar = .dated(startDate: date)
+        case nil: calendar = nil
+        }
+        self.init(id: card.id, title: card.title, description: nil,
+                  days: card.days.enumerated().map { position, day in
+            Day(number: day.index.map(Int.init) ?? position + 1,
+                stops: day.items.map { item in
+                    Stop(id: item.id, name: item.label, time: item.startTime, point: nil,
+                         fixed: item.fixed, endTime: item.endTime)
+                }, date: day.date, datePending: calendar == nil && day.date == nil)
+        }, calendar: calendar)
     }
 }
 

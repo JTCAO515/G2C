@@ -19,12 +19,14 @@ struct LioItineraryCard<Actions: View>: View {
                 .foregroundStyle(LioTheme.ink)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
+            LioTripCalendarLabel(calendar: itinerary.calendar, language: language)
             ForEach(itinerary.days) { day in
                 DisclosureGroup {
                     LioDayStops(day: day, language: language)
                         .padding(.vertical, 6)
                 } label: {
-                    Text(dayTitle(day, language))
+                    Text(dayTitle(day, language, calendar: itinerary.calendar))
+                        .foregroundStyle(LioTheme.ink)
                         .frame(minHeight: 44, alignment: .leading)
                 }
                 .accessibilityIdentifier("lio.trip.day.\(day.number)")
@@ -344,9 +346,7 @@ private struct LioDayStops: View {
     }
 }
 
-func dayTitle(_ day: LioItinerary.Day, _ language: LioLanguage) -> String {
-    if let date = day.date { return date }
-    if day.datePending { return language.text("Date to be decided", "日期待定") }
-    return language.text("Day \(day.number)", "第 \(day.number) 天")
+func dayTitle(_ day: LioItinerary.Day, _ language: LioLanguage, calendar: LioItinerary.CalendarState? = nil) -> String {
+    day.title(language, calendar: calendar)
 }
 #endif

@@ -15,6 +15,7 @@ struct LioTripListCard: View {
                     .foregroundStyle(LioTheme.ink)
                     .fixedSize(horizontal: false, vertical: true)
                 if let itinerary {
+                    LioTripCalendarLabel(calendar: itinerary.calendar, language: language)
                     if let first = itinerary.days.first?.date, let last = itinerary.days.last?.date {
                         Text(first == last ? first : "\(first) – \(last)")
                             .font(.subheadline)
@@ -51,6 +52,7 @@ struct LioTripTimeline: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
+            LioTripCalendarLabel(calendar: itinerary.calendar, language: language)
             if let day {
                 let focusedName = day.stops.first { $0.id == focusedStop }?.name
                 if day.stops.contains(where: { $0.point != nil }) {
@@ -87,7 +89,7 @@ struct LioTripTimeline: View {
                                 focusedStop = nil
                                 mapUnavailable = false
                             } label: {
-                                Text(dayTitle(choice, language))
+                                Text(dayTitle(choice, language, calendar: itinerary.calendar))
                                     .font(.subheadline.weight(.semibold))
                                     .padding(.horizontal, 16)
                                     .frame(minHeight: 44)
@@ -104,9 +106,14 @@ struct LioTripTimeline: View {
                     .padding(.vertical, 2)
                 }
                 .scrollIndicators(.hidden)
-                Text(dayTitle(day, language))
+                Text(dayTitle(day, language, calendar: itinerary.calendar))
                     .font(LioTheme.display(.title2))
                     .accessibilityAddTraits(.isHeader)
+                if day.stops.isEmpty {
+                    Text(language.text("No plans for this day yet.", "这一天还没有安排。"))
+                        .foregroundStyle(LioTheme.inkSecondary)
+                        .accessibilityIdentifier("lio.trip.day.empty")
+                }
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach(Array(day.stops.enumerated()), id: \.element.id) { index, stop in
                         timelineStop(stop, number: index + 1, last: index == day.stops.count - 1)
