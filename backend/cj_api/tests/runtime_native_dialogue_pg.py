@@ -92,11 +92,11 @@ def exercise(root,conninfo):
     try:other.proof(request,deadline=time.monotonic()+30)
     except (Denied,Unavailable):pass
     else:raise AssertionError('foreign owner read the native undo original')
-    cancel_control(root,database,auth,checker,model,worker,boundary,owner,scope)
+    cancel_control(root,database,auth,checker,model,worker,boundary,owner,foreign,scope)
     print('PASS native runtime undo through signed Lio v2/API/Fake plan and edit, real PG Trip authority, lost ACK query-only, repeated proof zero model calls, foreign owner denied')
 
 
-def cancel_control(root,database,auth,checker,model,worker,boundary,token,scope):
+def cancel_control(root,database,auth,checker,model,worker,boundary,token,foreign,scope):
     from concurrent.futures import ThreadPoolExecutor
     from datetime import datetime,timezone
     from pathlib import Path
@@ -175,6 +175,14 @@ def cancel_control(root,database,auth,checker,model,worker,boundary,token,scope)
         except Unavailable as error:assert str(error)=='ORIGINAL_LINE_ALLOWANCE_EXHAUSTED'
         else:raise AssertionError('new work bypassed exhausted original allowance')
         cancel=request('cancel_original_run',{'text':task['variants']['en']['turns'][1]})
+        from cj_run.cancellation import CancellationUnavailable
+        from cj_message.auth_boundary import AccessBlocked,IdentityChanged
+        other=NativeCancellation(claims,boundary,database,lambda:foreign,controls,originals)
+        try:other.dispatch(cancel,deadline=deadline)
+        except (Unavailable,CancellationUnavailable,AccessBlocked,IdentityChanged):pass
+        else:raise AssertionError('foreign owner cancelled the controlled original')
+        assert decode(originals.inventory(token,start['step_id']))['status']=='running'
+        assert not controls.pauses[start['step_id']].release.is_set()
         from threading import Event
         from cj_message.domain import Service as MessageService
         ack_entered,allow_ack=Event(),Event()
@@ -198,9 +206,30 @@ def cancel_control(root,database,auth,checker,model,worker,boundary,token,scope)
     proof=decode(cancellation.proof(cancel,deadline=time.monotonic()+30))
     assert proof['status']=='CANCELLED' and proof['delivery_acknowledged'] is True and model.calls==calls+1
     assert decode(cancellation.proof(cancel,deadline=time.monotonic()+30))==proof
+    try:other.proof(cancel,deadline=time.monotonic()+30)
+    except (Unavailable,AccessBlocked,IdentityChanged):pass
+    else:raise AssertionError('foreign owner read cancellation proof')
+    # Withdraw actual local invite qualification after the scoped ACK SELECT,
+    # while the native history boundary still owes its final AUTH/source check.
+    import psycopg
+    invited=auth/'invited.json';invited_before=invited.read_bytes();execute=psycopg.Connection.execute
+    revoked=[]
+    def revoke_at_ack(connection,query,*args,**kwargs):
+        result=execute(connection,query,*args,**kwargs)
+        if isinstance(query,str) and query.startswith('SELECT acknowledged FROM cj_message_delivery'):
+            invited.write_text('[]\n');revoked.append(True)
+        return result
+    try:
+        with patch.object(psycopg.Connection,'execute',revoke_at_ack):
+            try:cancellation.proof(cancel,deadline=time.monotonic()+30)
+            except (Unavailable,AccessBlocked,IdentityChanged):pass
+            else:raise AssertionError('cancel proof escaped qualification withdrawal during ACK read')
+        assert revoked
+    finally:invited.write_bytes(invited_before)
+    assert decode(cancellation.proof(cancel,deadline=time.monotonic()+30))==proof
     with budget.connect() as db:assert journal_state(db)==before
     assert not claims.claim(encode(cancel),deadline=time.monotonic()+30).fresh
-    print('PASS actual native RUN controlled after original Meter settlement, canonical one-use cancel across STOP_NEW/exhausted allowance, original RUN-cancel.2, proof withheld until original worker ACK, read-only repeat proof and zero new model or financial operations')
+    print('PASS actual native RUN controlled after original Meter settlement, canonical one-use cancel across STOP_NEW/exhausted allowance, original RUN-cancel.2, proof withheld until original worker ACK, foreign cancel/read denied, qualification withdrawal during ACK read withheld, read-only repeat proof and zero new model or financial operations')
 
 
 if __name__=='__main__':
