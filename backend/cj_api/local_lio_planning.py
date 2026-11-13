@@ -108,7 +108,11 @@ def discuss(worker, binding, state, locale, turns, references, *, day_count=None
             'Dates and party size are optional: do not ask for them, even when unknown or undecided. '
             'This is a conversational plan, not a saved trip. Do not claim it has been saved. '
             'Do not introduce yourself or discuss knowing the traveler. '
-            'Use enough space and list items to cover every requested day; this overrides the usual brevity limits. '
+            'Use one compact line per day, naming one concrete stop and a short activity; '
+            'use at most 20 Chinese characters or 12 English words per day when no periods were requested. '
+            'When morning/afternoon/evening periods were requested, cover every requested period with '
+            'one complete place name and a short activity, without explanations or shortened place names. '
+            'Keep the JSON compact, omit introductions and repeated summaries; the day lines override only the usual three-item limit. '
             'End with exactly one specific question about a useful adjustment, not date or party size.'
         )
         if planning_window is None:

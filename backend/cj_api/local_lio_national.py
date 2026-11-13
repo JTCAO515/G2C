@@ -11,14 +11,14 @@ from cj_agent.provider import ProviderUnknown
 from cj_agent.lio_intake_optional_schema import SYSTEM as FACTS_SYSTEM,OptionalIntake
 from cj_message.demo_dialogue import LIO_VERSION
 from cj_message.domain import Command,Unavailable
-from cj_message.lio_context import answer_prompt
+from cj_message.lio_context import answer_prompt,self_description
 from cj_message.lio_plan_needs import BOUND_EFFECT
 from cj_needs.domain import InvalidInput
 
 from .lio_city import CityReference,forms,_normalize
 from .lio_sourced_intake import BookingSourceUnclear
 from .lio_flow_intake import parse_flow
-from .lio_national_intake import NONPERSISTENT,fields_for,fixed_sources_complete,province_evidence,diagnostic_code,StartDateConflict,FixedTimezoneConflict
+from .lio_national_intake import NONPERSISTENT,fields_for,fixed_sources_complete,province_evidence,diagnostic_code,StartDateConflict,FixedTimezoneConflict,DateDurationConflict
 from .lio_planning_grounding import PlanningTurn,standalone_question
 from .local_lio_planning import PlanningDetails,register,discuss
 
@@ -124,6 +124,9 @@ class NationalLioPlanning:
         return [*messages[:-1],*(dict(role='user',content=t.text) for t in turns)],refs
 
     def execute(self,worker,binding,state,text,original):
+        fixed=self_description(text,original.locale)
+        if fixed is not None:return self._reply(worker,binding,state,fixed)
+        if re.fullmatch(r'\s*(?:第一次来中国(?:旅行)?(?:建议|应该|可以)?怎么玩|first time in china[,，]?\s*(?:any tips|any advice))[?？。.!！\s]*',text,re.I):return None
         if re.fullmatch(r'\s*(?:你是谁|你是什么|我是谁|你了解我什么|你能做什么|你能干啥|你有什么能力|who are you|what are you|who am i|what do you know about me|what can you do)[?？。.!！\s]*',text,re.I):return None
         today=original.question_day or datetime.now(ZoneInfo('Asia/Shanghai')).date()
         turns,refs,previous=self.context(binding,PlanningTurn(text,today))
@@ -261,6 +264,11 @@ class NationalLioPlanning:
             return self._answer(worker,binding,state,original.locale,
                 '这项固定安排的时区与目的地不同或不明确，请确认应使用哪个时区；尚未保存。',
                 'The fixed arrangement has a different or unclear timezone. Please confirm which timezone to use; nothing has been saved.')
+        except DateDurationConflict:
+            state=context(worker,binding,state,dict(authority=authority,status='needs_details',city=resolution))
+            return self._answer(worker,binding,state,original.locale,
+                '起止日期和天数对不上，你想按这个日期范围，还是按说的天数来安排？',
+                'The date range and day count do not match. Should I use the date range or the number of days you gave?')
         except (InvalidInput,ValueError) as error:
             raise ProviderUnknown('original nationwide planning fields unavailable') from error
         if not self.plan_and_save.supports_destination(binding,city):

@@ -82,6 +82,10 @@ class StartDateConflict(InvalidInput):
  pass
 
 
+class DateDurationConflict(InvalidInput):
+ pass
+
+
 class FixedTimezoneConflict(InvalidInput):
  pass
 
@@ -220,7 +224,7 @@ def _date_source(value,references,turns):
   raise InvalidInput('relative date differs from its original question day')
 
 
-def parse(raw,turns,*,version=VERSION):
+def parse(raw,turns,*,version=VERSION,current_dates=False):
  value=decode(raw.encode() if type(raw) is str else raw)
  canonical_start=version=='LIO-planning-intake.4'
  current_index=version in ('LIO-planning-intake.2','LIO-planning-intake.3','LIO-planning-intake.4')
@@ -322,14 +326,16 @@ def parse(raw,turns,*,version=VERSION):
     if observation['state']!='known':continue
     if source_key not in sources:raise InvalidInput('unstated planning event field')
     if part=='date':
-     _date_source(observation['value'],sources[source_key],turns)
+     if current_dates:_current_date_source(observation['value'],sources[source_key],turns,departure=source_key=='departure.date')
+     else:_date_source(observation['value'],sources[source_key],turns)
  start=None
  if canonical_start:
   start=value['start_date']
   validate_fields({'arrival':dict(date=start,time=dict(state='missing'),timezone=dict(state='missing'),place=dict(state='missing'))},complete=True)
   if start['state']=='known':
    if 'start_date' not in sources:raise InvalidInput('original trip start source required')
-   _date_source(start['value'],sources['start_date'],turns)
+   if current_dates:_current_date_source(start['value'],sources['start_date'],turns)
+   else:_date_source(start['value'],sources['start_date'],turns)
    sources={**sources,'arrival.date':sources['start_date']}
  intent='discuss' if value['intent'] in ('plan','save') and NONPERSISTENT.search(turns[-1].text) else value['intent']
  return Intake(intent,value['reply'],value['needs_tools'],city,days,extraction,sources,current_request,start,ambiguous)
@@ -361,7 +367,7 @@ def fields_for(intake,city_reference,*,message_id,run_id,source_text):
    derived=(first+timedelta(days=intake.duration_days-1)).isoformat()
    explicit_end=fields['departure'].get('date',{})
    if explicit_end.get('state')=='known' and explicit_end['value']!=derived:
-    raise InvalidInput('explicit dates and duration disagree')
+    raise DateDurationConflict('explicit dates and duration disagree')
    fields['departure']['date']=known(derived)
  for index,item in enumerate(fields.get('fixed_items',[])):
   description=item['description']
@@ -466,23 +472,113 @@ def literal_dates(text):
     return results
 
 
-def check_date_source(value,references,turns):
-    accepted=set()
+_MONTHS={name:number for number,names in enumerate((
+    ('january','jan'),('february','feb'),('march','mar'),('april','apr'),('may',),('june','jun'),
+    ('july','jul'),('august','aug'),('september','sept','sep'),('october','oct'),('november','nov'),('december','dec')),1)
+    for name in names}
+_MONTH_WORDS='|'.join(sorted(_MONTHS,key=len,reverse=True))
+_MONTH_DAY=re.compile(r'(?<![0-9])(?P<month>[0-9]{1,2})月(?P<day>[0-9]{1,2})[日号]?|'
+    r'(?<![0-9./-])(?P<slash_month>[0-9]{1,2})[./-](?P<slash_day>[0-9]{1,2})(?![0-9./-])|'
+    r'\b(?P<word>'+_MONTH_WORDS+r')\.?\s*(?P<en_day>[0-9]{1,2})(?:st|nd|rd|th)?'
+    r'(?:,?\s+(?P<en_year>[0-9]{4}|[0-9]{2})(?![0-9]))?',re.I)
+_RELATIVE_DAY=re.compile(r'(?<!大)大后天|(?<![大后])后天|明天|今天|'
+    r'\b(?:the )?day after tomorrow\b|\btomorrow\b|\btoday\b|'
+    r'(?<![0-9])(?P<zh_days>[0-9]{1,3}|[一二两三四五六七八九十])天(?:之|以)?后|'
+    r'\bin (?P<en_days>[0-9]{1,3}|one|two|three|four|five|six|seven|eight|nine|ten) days?\b',re.I)
+_HOLIDAY=re.compile(r'(?:(?P<year>[0-9]{4})年?)?(?P<name>元旦|国庆(?:节)?|月底)|'
+    r"\b(?P<en_name>new year['’]s day|national day)\b(?:\s+(?P<en_year>[0-9]{4}))?",re.I)
+_BARE_WEEK=re.compile(r'(?:周|星期|礼拜)(?P<zh_day>[一二三四五六日天])|\b(?P<en_day>'+_WEEKDAY_WORD+r')\b',re.I)
+
+
+def _upcoming_date(month,day,question_day,year=None):
+    try:
+        selected=date(question_day.year if year is None else year,month,day)
+        if year is None and selected<question_day:selected=date(question_day.year+1,month,day)
+        return selected.isoformat()
+    except ValueError:raise InvalidInput('invalid original calendar date')from None
+
+
+def _current_date_anchors(quote,question_day):
+    anchors=literal_dates(quote)
+    def covered(match):return any(old.start()<=match.start()and match.end()<=old.end()for old,_ in anchors)
+    for match in _MONTH_DAY.finditer(quote):
+        if covered(match):continue
+        month=_MONTHS[match['word'].casefold()]if match['word']else int(match['month']or match['slash_month'])
+        day=int(match['day']or match['slash_day']or match['en_day'])
+        raw=match['en_year'];year=None if raw is None else int(raw)+(2000 if len(raw)==2 else 0)
+        anchors.append((match,_upcoming_date(month,day,question_day,year)))
+    for match in _RELATIVE_DAY.finditer(quote):
+        if covered(match):continue
+        word=match[0].casefold();raw=match['zh_days']or match['en_days']
+        if raw is not None:
+            from .lio_planning_grounding import _number
+            offset=_number(raw)
+        else:offset=3 if word=='大后天'else 2 if word in ('后天','day after tomorrow','the day after tomorrow')else 1 if word in ('明天','tomorrow')else 0
+        anchors.append((match,(question_day+timedelta(days=offset)).isoformat()))
+    for match in _HOLIDAY.finditer(quote):
+        if covered(match):continue
+        name=(match['name']or match['en_name']).casefold();raw=match['year']or match['en_year']
+        if name=='月底':
+            from calendar import monthrange
+            day=monthrange(question_day.year,question_day.month)[1]
+            selected=date(question_day.year,question_day.month,day).isoformat()
+        else:selected=_upcoming_date(1 if name in ('元旦',"new year's day",'new year’s day')else 10,1,question_day,None if raw is None else int(raw))
+        anchors.append((match,selected))
+    if not anchors and _WEEK_SOURCE.search(quote)is None:
+        for match in _BARE_WEEK.finditer(quote):
+            if match['zh_day']:
+                weekday=6 if match['zh_day']in ('日','天')else'一二三四五六'.index(match['zh_day'])
+            else:
+                weekday=_WEEKDAYS[match['en_day'].casefold()]
+            anchors.append((match,(question_day+timedelta(days=(weekday-question_day.weekday())%7)).isoformat()))
+    return sorted(anchors,key=lambda item:item[0].start())
+
+
+def _current_date_source(value,references,turns,*,departure=False):
+    """Data8 only: validate the model's date against exact original date notation.
+
+    Month/day and holidays mean their next occurrence at the original question
+    day. No unmentioned start, yearless today, or party size is supplied.
+    """
+    expected=set()
     for reference in references:
-        quote=reference['quote'];dates=literal_dates(quote)
-        if not dates:continue
-        if len(dates)>1 and (len(dates)!=2 or
-                _WEEK_RANGE.fullmatch(quote[dates[0][0].end():dates[1][0].start()])is None):
+        quote=reference['quote'];turn=turns[reference['source_index']]
+        anchors=_current_date_anchors(quote,turn.question_day)
+        if _WEEK_SOURCE.search(quote)is not None:
+            _week_source(value,[reference],turns,departure=departure)
+            expected.add(value)
+        if not anchors:continue
+        if len(anchors)>1 and (len(anchors)!=2 or
+                _WEEK_RANGE.fullmatch(quote[anchors[0][0].end():anchors[1][0].start()])is None):
             raise InvalidInput('ambiguous original calendar dates')
-        original=turns[reference['source_index']].text
-        for match,day in dates:
-            for occurrence in re.finditer(re.escape(quote),original):
+        for match,day in anchors:
+            for occurrence in re.finditer(re.escape(quote),turn.text):
                 position=occurrence.start()+match.start()
-                # Dots within a year-first date are not sentence boundaries.
+                end=occurrence.start()+match.end()
+                neighbor=_range_neighbor(turn.text,position,end,before=not departure)
+                if neighbor is not None and (neighbor[1]<=occurrence.start() if not departure else neighbor[0]>=occurrence.end()):
+                    raise InvalidInput('date quote clips the requested range endpoint')
                 separator=r'[，,。!?！？；;\n]|\.(?![0-9])'
-                clause=re.split(separator,original[:position])[-1]+re.split(separator,original[position:])[0]
-                if _WEEK_NONASSERTION.search(clause):
-                    raise InvalidInput('nonaffirmative original calendar date')
-            accepted.add(day)
-    if accepted and value not in accepted:
-        raise InvalidInput('date differs from original calendar notation')
+                clause=re.split(separator,turn.text[:position])[-1]+re.split(separator,turn.text[position:])[0]
+                if _WEEK_NONASSERTION.search(clause):raise InvalidInput('nonaffirmative original calendar date')
+        expected.add(anchors[-1 if departure else 0][1])
+    if expected!={value}:raise InvalidInput('date differs from original calendar notation')
+
+
+def _range_neighbor(text,start,end,*,before):
+    patterns=(LITERAL_DATE,_MONTH_DAY,_RELATIVE_DAY,_HOLIDAY,_BARE_WEEK,_WEEK_SOURCE)
+    if before:
+        link=re.search(_WEEK_RANGE.pattern+'$',text[:start],re.I)
+        if link is None:return None
+        prefix=text[:link.start()].rstrip()
+        for pattern in patterns:
+            for match in pattern.finditer(prefix):
+                if match.end()==len(prefix):return match.span()
+    else:
+        link=_WEEK_RANGE.match(text[end:])
+        if link is None:return None
+        tail=end+link.end()
+        for pattern in patterns:
+            match=pattern.match(text[tail:])
+            if match is not None:return tail+match.start(),tail+match.end()
+    return None
