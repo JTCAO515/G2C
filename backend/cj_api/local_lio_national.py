@@ -152,8 +152,12 @@ class NationalLioPlanning:
                 binding.run_id,diagnostic_code(error),sha256(raw.encode('utf-8','surrogatepass')).hexdigest(),len(raw.encode('utf-8','surrogatepass')))
             raise ProviderUnknown('nationwide structured intake unavailable') from error
         if isinstance(intake,ReadOnlyPlanningQuestion):
-            state=self._context(worker,binding,state,dict(authority='plan',status='needs_details',facts=facts,
-                nonplanning_message_ids=[]))
+            held=publication_held(text)
+            # A control-only question grants no publication authority. A later
+            # full intake must ground any grant in the original traveler text.
+            state=self._context(worker,binding,state,dict(authority='none',
+                status='discussion'if held else'needs_details',facts=facts,nonplanning_message_ids=[],
+                **({'authority_barrier_message_id':binding.message_id}if held else {})))
             return self._reply(worker,binding,state,intake.reply)
         source_ids=[ref['message_id']for ref in refs]+[binding.message_id]
         boundary_mid=None if previous is None else previous.get('date_boundary_message_id')

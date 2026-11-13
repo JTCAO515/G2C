@@ -7,6 +7,7 @@ import unittest
 from cj_agent.lio_intake_optional_schema import OptionalIntake
 from cj_api.lio_flow_intake import ReadOnlyPlanningQuestion,parse_flow
 from cj_api.lio_planning_grounding import PlanningTurn
+from cj_api.local_lio_national import CONTEXT
 from cj_needs.domain import InvalidInput
 import test_lio_national_execution as execution
 from test_lio_planning_flow import flow
@@ -48,6 +49,34 @@ class ReadOnlyQuestion(unittest.TestCase):
             self.assertFalse(any(kind=='registered'for kind,_ in events))
             self.assertEqual(''.join(value for kind,value in events if kind=='text_delta'),wire['reply'])
             self.assertEqual(events[-1][0],'completed')
+
+    def test_question_never_grants_authority_and_raw_hold_survives_parameter_followup(self):
+        for first,query,locale,held in (
+            ('规划北京行程','北京','zh',False),
+            ('Plan a trip to Beijing.','Beijing','en',False),
+            ('规划北京，不要保存行程','北京，不要保存','zh',True),
+            ('Plan a trip to Beijing, do not save itinerary.','Beijing, do not save','en',True),
+        ):
+            with self.subTest(first=first):
+                runner=execution.NationalExecution()
+                _,events,_,_=runner.run_intake(runner.envelope(first),flow_output=response(first,query,locale),locale=locale)
+                previous=json.loads(next(value.removeprefix(CONTEXT)for kind,value in events if value.startswith(CONTEXT)))
+                self.assertEqual(previous['authority'],'none')
+                self.assertEqual(previous['status'],'discussion'if held else'needs_details')
+                # The harness assigns prior-0 to the first original on turn two.
+                if held:previous['authority_barrier_message_id']='prior-0'
+                for fact in previous['facts'].values():
+                    for ref in fact['sources']:ref['message_id']='prior-0'
+                followup='四天，2026-12-01开始，一人'if locale=='zh'else'Four days, starting 2026-12-01, one person.'
+                for request_index in (0,1):
+                    wire=flow(followup,city=None,days=4,start='2026-12-01',party=1,index=1,questions=(),intent='plan')
+                    wire.update(version='LIO-planning-intake.8',planning_request_index=request_index,
+                        city=dict(query='北京'if locale=='zh'else'Beijing',normalized_name=None,province=None,
+                                  source_index=0,quote='北京'if locale=='zh'else'Beijing'))
+                    published,events,_,_=runner.run_intake(runner.envelope(followup),flow_output=wire,locale=locale,
+                        turns=(PlanningTurn(first,date(2026,11,13)),PlanningTurn(followup,date(2026,11,13))),previous=deepcopy(previous))
+                    self.assertEqual(len(published),0 if held else 1)
+                    self.assertEqual(any(kind=='registered'for kind,_ in events),not held)
 
     def test_any_executable_value_or_constraint_keeps_the_original_strict_parser(self):
         original=response();text='规划北京行程'
