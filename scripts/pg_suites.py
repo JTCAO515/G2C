@@ -704,6 +704,13 @@ def group_runtime_fixture_observer():
 GROUPS.update(runtime_fixture_observer=group_runtime_fixture_observer)
 
 
+def group_runtime_release_witness():
+    return script('backend/cj_api/tests/runtime_release_witness_pg.py')
+
+
+GROUPS.update(runtime_release_witness=group_runtime_release_witness)
+
+
 def main(argv):
     if argv[:1] == ['--shard']:
         index, count = map(int, argv[1].split('/'))
