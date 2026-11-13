@@ -1,13 +1,11 @@
 """Opaque original references; persist descriptors/hashes, never escaped AUTH bytes."""
-from contextlib import contextmanager
 from hashlib import sha256
 import os
 from pathlib import Path
 import re
-import stat
 
 from runtime_adapter.contract import decode,digest,encode,require,Unavailable
-from .runtime_private import read_private,PrivateFileError
+from .runtime_private import read_private,private_directory,PrivateFileError
 
 KINDS=frozenset({'inventory','input','meter','fee','artifact','wire_input',
     'action','protected_inventory','meter_link','provider','output','result','state'})
@@ -19,15 +17,8 @@ class OriginalReferences:
         self.directory=Path(directory);self.binding=binding;self.reader=reader;self.guard=guard
         with self._directory():pass
 
-    @contextmanager
     def _directory(self):
-        fd=os.open(self.directory,os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW)
-        try:
-            info=os.fstat(fd)
-            if info.st_uid!=os.getuid() or stat.S_IMODE(info.st_mode)!=0o700:
-                raise Unavailable('ORIGINAL_REFERENCE_DIRECTORY_AUTHORITY')
-            yield fd
-        finally:os.close(fd)
+        return private_directory(self.directory,Unavailable('ORIGINAL_REFERENCE_DIRECTORY_AUTHORITY'))
 
     def _bytes(self,token,descriptor):
         kind=descriptor['kind'];mid=descriptor['message_id'];op=descriptor['operation_id']

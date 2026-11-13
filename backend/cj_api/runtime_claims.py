@@ -4,13 +4,12 @@ The B host supplies an existing protected directory, original-auth guard and
 original-operation lookup. This records no fees and dispatches nothing. B must
 retain this directory across releases/restores; it is not an experiment folder.
 """
-from contextlib import contextmanager
 import os
 from pathlib import Path
-import stat
 
 from runtime_adapter.contract import VERSION, candidate, decode, digest, encode, label, require, Unavailable
 from runtime_adapter.ports import PreparedOriginal
+from .runtime_private import PrivateFileError,private_directory,read_private
 
 
 class CanonicalClaims:
@@ -24,15 +23,8 @@ class CanonicalClaims:
             info=os.fstat(descriptor)
             self.directory_identity=(info.st_dev,info.st_ino)
 
-    @contextmanager
     def _directory(self):
-        descriptor=os.open(self.directory,os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW)
-        try:
-            info=os.fstat(descriptor)
-            if info.st_uid!=os.getuid() or stat.S_IMODE(info.st_mode)!=0o700:
-                raise Unavailable('CANONICAL_DIRECTORY_AUTHORITY')
-            yield descriptor
-        finally:os.close(descriptor)
+        return private_directory(self.directory,Unavailable('CANONICAL_DIRECTORY_AUTHORITY'))
 
     def _request(self,raw):
         require(type(raw) is bytes and len(raw)<=131072,'CANONICAL_REQUEST_BOUND')
@@ -105,13 +97,10 @@ class CanonicalClaims:
             info=os.fstat(directory)
             if (info.st_dev,info.st_ino)!=self.directory_identity:
                 raise Unavailable('CANONICAL_DIRECTORY_CHANGED')
-            descriptor=os.open(self._name(step),os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK,dir_fd=directory)
-            with os.fdopen(descriptor,'rb') as source:
-                info=os.fstat(source.fileno())
-                if (not stat.S_ISREG(info.st_mode) or info.st_uid!=os.getuid()
-                        or stat.S_IMODE(info.st_mode)!=0o600):
-                    raise Unavailable('CANONICAL_ORIGINAL_AUTHORITY')
-                raw=source.read(131073)
+            try:raw=read_private(self._name(step),131072,directory_fd=directory)
+            except PrivateFileError as error:
+                if error.reason=='bound':require(False,'CANONICAL_REQUEST_BOUND')
+                raise Unavailable('CANONICAL_ORIGINAL_AUTHORITY') from None
         request=self._request(raw)
         require(request['step_id']==step,'CANONICAL_ORIGINAL_STEP')
         self.guard(read_only=True)
