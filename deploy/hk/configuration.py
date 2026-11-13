@@ -35,6 +35,7 @@ SECRET_FILES={
 TYPED_POLICY='CJ_BETA_TYPED_MEMORY_POLICY_B64'
 TYPED_POLICY_GZIP='CJ_BETA_TYPED_MEMORY_POLICY_GZIP_B64'
 MEMORY_RUN_POLICY='CJ_BETA_MEMORY_RUN_POLICY_B64'
+MEMORY_RUN_POLICY_GZIP='CJ_BETA_MEMORY_RUN_POLICY_GZIP_B64'
 TYPED_MESSAGE_SUBJECTS='CJ_BETA_TYPED_MESSAGE_SUBJECTS_JSON'
 MODEL_STREAM_SUBJECT='CJ_BETA_MODEL_STREAM_SUBJECT'
 ASSEMBLY_SUBJECTS='CJ_BETA_ASSEMBLY_SUBJECTS_JSON'
@@ -50,7 +51,7 @@ def load_secret_environment(role,*,root=Path('/run/secrets')):
     expected=SECRET_FILES[role];values={}
     for file,names in expected.items():
         optional=({TYPED_POLICY,TYPED_POLICY_GZIP,TYPED_MESSAGE_SUBJECTS}|ASSEMBLY_CLEANUP if role=='api' and file=='api' else
-                  {MEMORY_RUN_POLICY,MODEL_STREAM_SUBJECT,ASSEMBLY_RUN_CREDENTIAL_SUBJECTS,ASSEMBLY_MODEL_STREAM_SUBJECTS,
+                  {MEMORY_RUN_POLICY,MEMORY_RUN_POLICY_GZIP,MODEL_STREAM_SUBJECT,ASSEMBLY_RUN_CREDENTIAL_SUBJECTS,ASSEMBLY_MODEL_STREAM_SUBJECTS,
                    ASSEMBLY_PROBE_MESSAGE,'CJ_BETA_CONFIRMATION_B64'}
                   if role=='worker' and file=='worker' else set())
         allowed=names|optional
@@ -80,18 +81,27 @@ def decoded(name,*,length=None):
     return value
 
 
-def typed_policy_bytes():
-    """Two explicit encodings of the same bounded, fully validated policy."""
-    if TYPED_POLICY in os.environ and TYPED_POLICY_GZIP in os.environ:
-        raise ValueError('one_typed_memory_policy_encoding_required')
-    if TYPED_POLICY_GZIP not in os.environ:return decoded(TYPED_POLICY)
+def _policy_bytes(plain,gzip,label):
+    if plain in os.environ and gzip in os.environ:
+        raise ValueError('one_'+label+'_encoding_required')
+    if gzip not in os.environ:return decoded(plain)
     inflater=zlib.decompressobj(16+zlib.MAX_WBITS)
-    try:raw=inflater.decompress(decoded(TYPED_POLICY_GZIP),262145)
-    except zlib.error:raise ValueError('invalid_typed_memory_policy_gzip') from None
-    if len(raw)>262144:raise ValueError('bounded_typed_memory_policy_required')
+    try:raw=inflater.decompress(decoded(gzip),262145)
+    except zlib.error:raise ValueError('invalid_'+label+'_gzip') from None
+    if len(raw)>262144:raise ValueError('bounded_'+label+'_required')
     if not inflater.eof or inflater.unused_data:
-        raise ValueError('complete_single_typed_memory_policy_gzip_required')
+        raise ValueError('complete_single_'+label+'_gzip_required')
     return raw
+
+
+def typed_policy_bytes():
+    """API-only encodings of the same bounded, fully validated policy."""
+    return _policy_bytes(TYPED_POLICY,TYPED_POLICY_GZIP,'typed_memory_policy')
+
+
+def memory_run_policy_bytes():
+    """Worker-only encodings; the original runtime policy validates the result."""
+    return _policy_bytes(MEMORY_RUN_POLICY,MEMORY_RUN_POLICY_GZIP,'memory_run_policy')
 
 
 def authorization():
@@ -198,10 +208,10 @@ class Runtime:
             if not frozenset(typed_memory.collection.profiles)<=frozenset(subjects):
                 raise ValueError('typed_memory_policy_outside_beta_invites')
         memory_runtime=None
-        if MEMORY_RUN_POLICY in os.environ:
+        if MEMORY_RUN_POLICY in os.environ or MEMORY_RUN_POLICY_GZIP in os.environ:
             if not worker:raise ValueError('memory_run_policy_is_worker_only')
             from cj_memory.typed_runtime import TypedRuntimeConfiguration
-            memory_runtime=TypedRuntimeConfiguration.from_bytes(decoded(MEMORY_RUN_POLICY))
+            memory_runtime=TypedRuntimeConfiguration.from_bytes(memory_run_policy_bytes())
             selected=frozenset(memory_runtime.selections)
             if (selected!=frozenset(memory_runtime.collection.collection.profiles)
                     or not selected<=frozenset(subjects)):
