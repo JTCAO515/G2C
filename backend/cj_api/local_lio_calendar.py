@@ -6,6 +6,7 @@ import re
 from cj_agent.draft import DraftRejected
 from cj_agent.provider import ProviderUnknown
 from cj_draft.grouped_plan import LioGroupedCalendarPublisher
+from cj_draft.rich_schema import GENERATION_PROFILES as RICH_GENERATION_PROFILES
 from cj_message.lio_plan_needs import lio_needs_id, original_needs
 from cj_message.needs_binding import needs_scope_for
 from cj_trip.domain import packed
@@ -16,6 +17,7 @@ from cj_usage.local_provider_exit import BudgetExceeded
 
 from .local_lio_calendar_source import LioCalendarSource, LioDateEvidence
 from .local_lio_edit import _bind_current
+from .lio_plan_pace import saved_summary
 from .lio_national_intake import LITERAL_DATE, _MONTH_DAY, _RELATIVE_DAY, _WEEK_SOURCE, _BARE_WEEK
 
 
@@ -49,13 +51,17 @@ class LioCalendar:
         return read_current(self.repository, needs_scope_for(binding.scope),
                             lio_needs_id(binding.scope, binding.conversation_id))
 
-    def _publisher(self, worker, binding, original, context, source):
+    def _publisher(self, worker, binding, original, context, source,*,pace=None):
         expected = None if context is None else TripHead.from_trip(context.trip)
 
         def check_original(candidate, stored, head):
             return (candidate == binding and stored == original and head == expected
                     and worker.message_context.active_original(binding) == original)
 
+        if pace is not None:
+            from cj_draft.rich_first import LioRichFirstCalendarPublisher
+            return LioRichFirstCalendarPublisher(self.context_publisher,self.confirmation,original_needs,
+                check_original,source,LioDateEvidence(),pace=pace)
         return LioGroupedCalendarPublisher(self.context_publisher, self.confirmation, original_needs,
                                           check_original, source, LioDateEvidence())
 
@@ -68,7 +74,10 @@ class LioCalendar:
                 'This chat has an older itinerary. Start a new chat to save a day-by-day itinerary. Shall we keep discussing the original here?')
         source = LioCalendarSource(self.database, worker.message_context, day_count=day_count,
             start_date=start_date, references=details.references)
-        publisher = self._publisher(worker, binding, original, context, source)
+        rich_first=(context is None and details.fields.get('fixed_items')==[]
+                    and details.pace is not None and details.pace.value is not None)
+        publisher = self._publisher(worker, binding, original, context, source,
+                                    pace=details.pace.value if rich_first else None)
         previous = worker.drafts
         worker.drafts = publisher
         try:
@@ -76,12 +85,9 @@ class LioCalendar:
         finally:
             worker.drafts = previous
         if committed is not None:
-            state = worker._event(binding, state, 'text_delta',
-                ('行程已按每天保存，出发日期待定。日期定了告诉我，我把每天对上日期。想先调整哪一天？'
-                 if locale == 'zh' else 'Your day-by-day itinerary is saved with the start date open. Tell me when it is set and I will add the dates. Which day would you like to adjust?')
-                if start_date is None else
-                ('行程已经保存好了。想先调整哪一天？' if locale == 'zh' else
-                 'Your itinerary is saved. Which day would you like to adjust?'))
+            state = worker._event(binding,state,'text_delta',saved_summary(locale,day_count,
+                details.pace,dated=start_date is not None,retained=context is not None,
+                rich_applied=rich_first and publisher.generation_used in RICH_GENERATION_PROFILES))
         return worker._event(binding, state, 'completed')
 
     def convert(self, worker, binding, state, intake, original, turns, references):
