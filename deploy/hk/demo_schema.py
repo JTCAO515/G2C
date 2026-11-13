@@ -99,6 +99,10 @@ def upgrade(control,backups,*,target=49,schema_root=None):
                 or checkpoint.identity(db)!=(release['instance'],release['lineage'])
                 or migrate.applied(db)!=expected[:-1]):
             raise ValueError('reconcile original Demo schema action before retry')
+        if target==53:
+            quota=checkpoint.verified(control/'demo-schema52.json')
+            if quota['state']!='COMPLETE' or quota['lineage']!=release['lineage']:
+                raise ValueError('complete original quota upgrade before schema53')
         _require_idle(db)
         intent=dict(state='INTENT',lineage=release['lineage'],original_fences=checkpoint.local.fence_state(db))
         if target in (52,53):

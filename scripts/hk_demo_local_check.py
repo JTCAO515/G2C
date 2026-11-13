@@ -222,6 +222,15 @@ def check_schema53_resume(control,backups,operator,schema_root):
     """Interrupt the same real PG action before/after commit and publication."""
     marker=control/'demo-schema53.json'
     destination=backups/'demo-schema53'
+    lineage=checkpoint.verified(control/'release.json')['lineage']
+    for quota in (dict(state='INTENT',lineage=lineage),dict(state='COMPLETE',lineage='foreign')):
+        checkpoint.atomic(control/'demo-schema52.json',quota)
+        try:demo_schema.upgrade(control,backups,target=53,schema_root=schema_root)
+        except ValueError as exc:assert 'complete original quota upgrade' in str(exc)
+        else:raise AssertionError('schema53 crossed an incomplete original quota release')
+        assert not marker.exists() and not destination.exists()
+        with operator() as (db,_):assert migrate.applied(db)==list(range(1,53))
+    checkpoint.atomic(control/'demo-schema52.json',dict(state='COMPLETE',lineage=lineage))
     with patch.object(migrate,'up',side_effect=OSError('synthetic schema53 rollback')):
         try:demo_schema.upgrade(control,backups,target=53,schema_root=schema_root)
         except OSError as exc:assert str(exc)=='synthetic schema53 rollback'
