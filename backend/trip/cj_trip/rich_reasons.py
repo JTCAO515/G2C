@@ -37,6 +37,18 @@ def filter_reasons(refs, facts):
     return tuple(result),tuple(removed)
 
 
+def filter_reason_text(note, refs, facts):
+    """Project a proposed reason after wording, not just its factor-key list.
+
+    Free prose has no reliable clause-to-factor mapping. If any declared basis
+    is invalid, discard the whole associated sentence instead of leaving the
+    unsupported claim behind a sanitized key list. This does not certify the
+    semantic accuracy of surviving prose or grant factual/write authority.
+    """
+    kept, removed = filter_reasons(refs, facts)
+    return None if removed else note, kept, removed
+
+
 def brief(facts, *, locale, first_day_full=False):
     labels=dict(zip(FACTORS,LABELS_ZH if locale=='zh' else LABELS_EN))
     ordered={fact.key:fact for fact in facts}
