@@ -3,6 +3,7 @@ from datetime import datetime,timezone
 import json
 import hashlib
 import io
+import gzip
 import os
 from unittest.mock import patch
 from pathlib import Path
@@ -17,6 +18,70 @@ from cj_usage import authorization_budget as budget_module
 from deploy.hk import configuration,checkpoint,oss_backup
 from scripts.m4_budget_transfer import seal,adopt
 from scripts import m4_budget_transfer as transfer
+
+
+def test_typed_policy_encodings_preserve_bytes_and_reject_ambiguous_configuration(monkeypatch):
+    raw=b'{"version":"local-memory-typed.1","same":"policy bytes"}'
+    monkeypatch.delenv(configuration.TYPED_POLICY,raising=False)
+    monkeypatch.delenv(configuration.TYPED_POLICY_GZIP,raising=False)
+    monkeypatch.setenv(configuration.TYPED_POLICY,base64.b64encode(raw).decode())
+    assert configuration.typed_policy_bytes()==raw
+    monkeypatch.setenv(configuration.TYPED_POLICY_GZIP,base64.b64encode(gzip.compress(raw)).decode())
+    with pytest.raises(ValueError,match='one_typed'):configuration.typed_policy_bytes()
+    monkeypatch.delenv(configuration.TYPED_POLICY)
+    assert configuration.typed_policy_bytes()==raw
+
+
+def test_compressed_typed_policy_retains_existing_decoded_bound_and_integrity(monkeypatch):
+    monkeypatch.delenv(configuration.TYPED_POLICY,raising=False)
+    exact=b'X'*262144;packed=gzip.compress(exact)
+    monkeypatch.setenv(configuration.TYPED_POLICY_GZIP,base64.b64encode(packed).decode())
+    assert configuration.typed_policy_bytes()==exact
+    bad=[gzip.compress(exact+b'X'),packed[:-4],packed+packed,packed+b'junk',b'not-gzip']
+    corrupt=bytearray(packed);corrupt[-8]^=1;bad.append(bytes(corrupt))
+    for value in bad:
+        monkeypatch.setenv(configuration.TYPED_POLICY_GZIP,base64.b64encode(value).decode())
+        with pytest.raises(ValueError):configuration.typed_policy_bytes()
+
+
+def test_compressed_policy_enters_only_through_api_owned_secret_file(tmp_path):
+    raw=b'{"same":"bounded policy"}'
+    packed=base64.b64encode(gzip.compress(raw)).decode()
+    def secret(role):
+        names=configuration.SECRET_FILES[role][role]
+        text=''.join(name+'=fixture-only\n'for name in sorted(names))
+        path=tmp_path/(role+'.env')
+        path.write_text(text+configuration.TYPED_POLICY_GZIP+'='+packed+'\n')
+        path.chmod(0o600)
+    secret('api')
+    with patch.dict(os.environ,{},clear=True):
+        configuration.load_secret_environment('api',root=tmp_path)
+        assert configuration.typed_policy_bytes()==raw
+    secret('worker')
+    with patch.dict(os.environ,{},clear=True),pytest.raises(ValueError):
+        configuration.load_secret_environment('worker',root=tmp_path)
+
+
+def test_full_205_profile_policy_fits_secret_bound_without_changing_permissions(tmp_path):
+    from cj_memory.typed_local import TypedConfiguration
+    profile=dict(subjects=['self'],extents=['long_term','current'],context_ids=[],slots={
+        name:dict(kind='preference',collection_allowed=True,semantic_resolved=True)
+        for name in ('travel.pace','travel.budget','lodging.style','travel.interests','diet.taste')})
+    subjects=['m4-synthetic-demo-'+format(i,'012x')for i in range(205)]
+    value=dict(version='local-memory-typed.1',collection=dict(version='local-memory-policy.1',
+        expires_at='2026-12-31T00:00:00+00:00',profiles={s:profile for s in subjects}),
+        travel_contexts={s:[]for s in subjects})
+    raw=json.dumps(value,separators=(',',':')).encode()
+    assert len(base64.b64encode(raw))>65536
+    original=TypedConfiguration.from_bytes(raw)
+    text=''.join(name+'=fixture-only\n'for name in sorted(configuration.SECRET_FILES['api']['api']))
+    text+=configuration.TYPED_POLICY_GZIP+'='+base64.b64encode(gzip.compress(raw)).decode()+'\n'
+    assert len(text.encode())<=65536
+    path=tmp_path/'api.env';path.write_text(text);path.chmod(0o600)
+    with patch.dict(os.environ,{},clear=True):
+        configuration.load_secret_environment('api',root=tmp_path)
+        decoded=TypedConfiguration.from_bytes(configuration.typed_policy_bytes())
+    assert decoded==original and len(decoded.collection.profiles)==205
 
 
 class Clock(datetime):
