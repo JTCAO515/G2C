@@ -17,7 +17,7 @@ from cj_needs.domain import InvalidInput
 
 from .lio_city import CityReference,forms,_normalize
 from .lio_sourced_intake import BookingSourceUnclear
-from .lio_flow_intake import parse_flow
+from .lio_flow_intake import ReadOnlyPlanningQuestion,parse_flow
 from .lio_national_intake import NONPERSISTENT,fields_for,fixed_sources_complete,province_evidence,diagnostic_code,StartDateConflict,FixedTimezoneConflict,DateDurationConflict,DateSourceUnclear
 from .lio_planning_grounding import PlanningTurn,standalone_question
 from .local_lio_planning import PlanningDetails,register,discuss
@@ -151,6 +151,14 @@ class NationalLioPlanning:
             logging.getLogger('cj_usage.audit').warning('LIO_INTAKE_REJECTED run_id=%s code=%s output_sha256=%s output_bytes=%s',
                 binding.run_id,diagnostic_code(error),sha256(raw.encode('utf-8','surrogatepass')).hexdigest(),len(raw.encode('utf-8','surrogatepass')))
             raise ProviderUnknown('nationwide structured intake unavailable') from error
+        if isinstance(intake,ReadOnlyPlanningQuestion):
+            held=publication_held(text)
+            # A control-only question grants no publication authority. A later
+            # full intake must ground any grant in the original traveler text.
+            state=self._context(worker,binding,state,dict(authority='none',
+                status='discussion'if held else'needs_details',facts=facts,nonplanning_message_ids=[],
+                **({'authority_barrier_message_id':binding.message_id}if held else {})))
+            return self._reply(worker,binding,state,intake.reply)
         source_ids=[ref['message_id']for ref in refs]+[binding.message_id]
         boundary_mid=None if previous is None else previous.get('date_boundary_message_id')
         barrier_mid=None if previous is None else previous.get('authority_barrier_message_id')
@@ -362,7 +370,9 @@ class NationalLioPlanning:
         if request_index is not None and barrier is not None and request_index<=source_ids.index(barrier):return 'none'
         request=None if request_index is None else turns[request_index].text
         explicit=request is not None and PUBLICATION_REQUEST.search(request)is not None
-        denied=previous is not None and previous.get('status')in AUTHORITY_BARRIERS
+        # A harmless intervening reply may change the display status. It does
+        # not revoke an original refusal or create a fresh publication grant.
+        denied=barrier is not None or previous is not None and previous.get('status')in AUTHORITY_BARRIERS
         fresh_fact=any(ref['source_index']==request_index for ref in intake.sources.get('duration_days',[]))
         current_trip=(intake.city is not None and intake.duration_days is not None and fresh_fact)
         if request is not None and not publication_held(request)and (explicit or current_trip):
