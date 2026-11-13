@@ -286,5 +286,5 @@ uv run --locked python -B -m eval.optimization.custody deny-probe \
 #764 的独立证据类型为 [G2C-cross-binding-fixture.1](fixtures/CROSS-BINDING-FIXTURE-v1.md)。
 definition 固定 C 准备来源/原账，use 关联 E 探针与受保护观察；沿既有 state_evidence 引用，
 不改 G 外层 schema。v1 不提供跨 session 重绑。schema 与公开合成对照由默认
-`python -B -m unittest eval.optimization.test_score` 验证；18 个语义向量是交给 E 的实现要求，
+`python -B -m unittest eval.optimization.test_score` 验证；19 个语义向量是交给 E 的实现要求，
 其受保护运行验收仍 UNRUN。结构 PASS 不授予实验起工、真实 fixture 或训练资格。

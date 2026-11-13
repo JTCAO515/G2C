@@ -79,6 +79,21 @@ class CrossBindingFixtureSpecTests(unittest.TestCase):
         row["evidence_status"] = "PASS"
         self.assertFalse(VALIDATOR.is_valid(row))
 
+    def test_known_check_or_coverage_failure_dominates_root_status(self):
+        for group in ("checks", "coverage"):
+            for field in EXAMPLES["use"][group]:
+                with self.subTest(group=group, field=field):
+                    row = deepcopy(EXAMPLES["use"])
+                    if group == "checks":
+                        row[group][field].update(status="FAIL", reason="ASSOCIATION_MISMATCH")
+                    else:
+                        row[group][field] = "FAIL"
+                    for root_status in ("PASS", "UNKNOWN"):
+                        row["evidence_status"] = root_status
+                        self.assertFalse(VALIDATOR.is_valid(row))
+                    row["evidence_status"] = "FAIL"
+                    VALIDATOR.validate(row)
+
     def test_unrun_is_unstarted_not_fabricated_probe(self):
         row = deepcopy(EXAMPLES["use"])
         row.update(evidence_status="UNRUN", stage="NOT_STARTED", observer=None)

@@ -174,6 +174,15 @@
         "X06"
       ],
       "condition": "C* is declared cheaper solely by switching preparation attribution after results, or prior original charge is omitted; keep historical billing and require predeclared consistent reporting."
+    },
+    {
+      "id": "known-local-fail-dominates",
+      "expected": "FAIL",
+      "rule_ids": [
+        "X10",
+        "X12"
+      ],
+      "condition": "Any authenticated coverage or check is FAIL, including a write-interface failure or independent semantic disclosure failure. Root evidence_status must be FAIL; UNKNOWN/UNRUN coverage alone may remain alongside bounded evidence PASS and must not be upgraded."
     }
   ]
 }

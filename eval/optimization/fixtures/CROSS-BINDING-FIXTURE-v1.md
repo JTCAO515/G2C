@@ -1,6 +1,7 @@
 # G2C-cross-binding-fixture.1 · #764 证据规格
 
-状态：D/R冻结候选；本文件、schema、合成对照只定义合同，不是宿主实现、真实fixture、
+冻结条件：R精确head独审APPROVE、适用CI及锁head合并，发布证据以#764记录为准。
+本文件、schema、合成对照只定义合同，不是宿主实现、真实fixture、
 准备调用、实验起工或训练授权。#788真实D抽检/C领域/R数据版仍UNRUN。
 
 依据：[B跨binding停点](https://github.com/JTCAO515/G2C/issues/762#issuecomment-6831885750)、
@@ -48,7 +49,7 @@ inventory关联，包含失败、取消、UNKNOWN和所有准备/观察provider�
 fixture准备用途、C资源与窗口须已有明确授权；本规格不将C评测额度转为E实验授权。
 
 **X03 baseline**：producer.status=PASS须独立证明合法保存完成；baseline的Trip hash/版本/
-内容hash来自受保护正式读回，sentinel_set_ref原件只给获准observer，不给E正文或哨兵。
+内容hash来自受保护正式读回，private_sentinel_set_ref原件只给获准observer，不给E正文或哨兵。
 trip_id_sha256只用于受保护比较，不是访问资格，也不承诺hash匿名性。
 源准备/成本/对象资格不明时不能付费试造；E未启动任务记UNRUN，producer未知仍保留UNKNOWN。
 
@@ -129,6 +130,9 @@ definition先生成；probe原件仅向前引用definition；最后use由observe
 不是生产者可选的成功子集。status只是待验声明，E须用protected reader核所有X规则后重算。
 任何已知篡改/错绑定/不兼容/重复计费/实际泄漏或越权FAIL；原件缺失或暂不可核、未知hold、缺资格/完整scan为
 UNKNOWN；原任务未开始则UNRUN，不抹成已观察0。已知FAIL优先，不被UNKNOWN覆盖。
+同一use内任一checks.status或coverage为FAIL，evidence_status必须FAIL，包括写接口负例
+失败或独立语义泄漏核对失败；消费方核验原件后须重算此优先级，最终安全/质量结果也不得
+因根证据完整或其他项PASS而抹去该FAIL。UNKNOWN/UNRUN只表示未验，和已知FAIL分开。
 宣称PASS时schema要求COMPLETE、非空观察与原件引用、各检查PASS、三个观察数为0；
 这些结构条件仍不足以证明真实性。真实任务的评分由独立D归一化/标注，不能由G或B自评分替代。coverage为UNKNOWN/UNRUN的接口或语义项目不得借
 evidence_status=PASS补成该项通过；完整评分须依其实际必查范围保留UNKNOWN/UNRUN。

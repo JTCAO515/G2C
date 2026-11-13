@@ -1337,6 +1337,44 @@
               }
             }
           }
+        },
+        {
+          "description": "Any declared check or coverage FAIL requires root FAIL; authenticity still requires protected runtime verification.",
+          "if": {
+            "not": {
+              "properties": {
+                "coverage": {
+                  "additionalProperties": {
+                    "enum": [
+                      "PASS",
+                      "UNKNOWN",
+                      "UNRUN"
+                    ]
+                  }
+                },
+                "checks": {
+                  "additionalProperties": {
+                    "properties": {
+                      "status": {
+                        "enum": [
+                          "PASS",
+                          "UNKNOWN",
+                          "UNRUN"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "evidence_status": {
+                "const": "FAIL"
+              }
+            }
+          }
         }
       ]
     },
