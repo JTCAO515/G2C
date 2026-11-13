@@ -683,6 +683,13 @@ def group_lio_calendar():
 GROUPS.update(lio_calendar=group_lio_calendar)
 
 
+def group_runtime_fixture_registry():
+    return script('backend/cj_api/tests/runtime_fixture_registry_pg.py')
+
+
+GROUPS.update(runtime_fixture_registry=group_runtime_fixture_registry)
+
+
 def group_runtime_cancel():
     return script('backend/cj_api/tests/runtime_native_dialogue_pg.py')
 
