@@ -149,6 +149,14 @@ def exercise(root,conninfo):
         updates[:]=[packet('pace','packed','invented quote')]
         _,events=send('profile-bad-quote','我喜欢轻松','zh',expected='unknown')
         assert not events
+        for tag,text,locale,key,value,quote in (
+            ('negative-en','not packed','en','pace','packed','not packed'),
+            ('negative-zh','不要紧凑','zh','pace','packed','不要紧凑'),
+            ('negative-city','I do not want Beijing','en','city','Beijing','Beijing'),
+            ('negative-days','not 3 days','en','duration_days',3,'not 3 days')):
+            updates[:]=[packet(key,value,quote)]
+            _,events=send('profile-'+tag,text,locale,expected='unknown')
+            assert not events
         raw.update(operation_id='profile-memory-race',item_id='profile-memory-race')
         saved=api.post('/v2/memories',content=json.dumps(raw).encode(),headers=headers)
         assert saved.status_code==200,saved.text

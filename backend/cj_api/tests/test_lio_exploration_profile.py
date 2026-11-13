@@ -208,6 +208,59 @@ class ExplorationProfileTests(unittest.TestCase):
         self.assertFalse(any(f.key=='pace' for f in default_proposals(refused,Original('mid',2,'Plan now'))))
         self.assertEqual(refused['pace'].state,'not_needed')
 
+    def test_complete_negative_and_conditional_sources_never_become_affirmative_known(self):
+        cases=[('pace','packed','not packed','not packed'),
+            ('pace','packed','不要紧凑','不要紧凑'),
+            ('pace','packed','I do not want a packed pace','I do not want a packed pace'),
+            ('pace','packed','packed','I do not want a packed pace'),
+            ('duration_days',3,'not 3 days','not 3 days'),
+            ('city','Beijing','Beijing','I do not want Beijing'),
+            ('city','Beijing','Beijing','Shanghai rather than Beijing'),
+            ('city','Beijing','Beijing','Shanghai instead of Beijing'),
+            ('first_visit',True,'first time','This is not my first time'),
+            ('pace','packed','packed','If I chose a packed pace'),
+            ('pace','packed','紧凑','如果选紧凑'),
+            ('pace','packed','packed','Not very packed')]
+        for key,value,quote,text in cases:
+            with self.subTest(text=text),self.assertRaises(InvalidInput):
+                parse([packet(key,value,quote)],text)
+
+    def test_negative_memory_is_retained_opaque_and_never_inverted(self):
+        for text in ('not packed',"I don't like a packed pace",'不要紧凑','If I chose packed','“packed”'):
+            with self.subTest(text=text):
+                fact=memory_prefill(memory(text))[0]
+                self.assertEqual(fact.value,text)
+                self.assertEqual(fact.sources[0].text,text)
+                self.assertEqual(fact.state,'memory')
+
+    def test_supported_absence_phrases_keep_their_defined_meaning(self):
+        for text in ('no spicy food','I do not eat spicy food','不吃辣'):
+            self.assertEqual(parse([packet('dietary',['mild'],text)],text)[0].value,('mild',))
+            self.assertEqual(memory_prefill(memory(text,slot='diet.spicy'))[0].value,('mild',))
+        for text in ('not no spicy food','if no spicy food','不喜欢不吃辣'):
+            with self.subTest(text=text),self.assertRaises(InvalidInput):
+                parse([packet('dietary',['mild'],text)],text)
+        self.assertEqual(parse([packet('first_visit',False,'not my first time')],'This is not my first time')[0].value,False)
+        self.assertEqual(parse([packet('first_visit',False,'不是第一次')],'不是第一次')[0].value,False)
+
+    def test_original_explicit_fact_and_current_memory_outrank_a_preexisting_inference(self):
+        earlier=parse([packet('pace','packed','packed')],'packed')
+        inferred=parse([packet('pace','relaxed','with children',state='inferred',index=1)],'packed','with children')
+        before=merge({},inferred)
+        self.assertEqual(merge(before,earlier)['pace'].state,'known')
+        self.assertEqual(merge(before,earlier)['pace'].value,'packed')
+        saved=memory_prefill(memory('I prefer packed travel.'))
+        self.assertEqual(merge(before,(),saved)['pace'].state,'memory')
+        self.assertEqual(merge(before,(),saved)['pace'].value,'packed')
+
+    def test_code_classifies_refusal_even_if_model_claims_known_or_inferred(self):
+        for key in ('pace','dietary','mobility','first_visit'):
+            for text in ('随便','anything','no preference'):
+                for state in ('known','inferred'):
+                    with self.subTest(key=key,text=text,state=state):
+                        row=parse([packet(key,text,text,state=state)],text)[0]
+                        self.assertEqual((row.state,row.value),('not_needed',None))
+
 
 if __name__ == '__main__':
     unittest.main()

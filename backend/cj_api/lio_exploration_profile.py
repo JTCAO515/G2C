@@ -15,7 +15,37 @@ VERSION = 'lio_planning_context.2'
 POLICY = '922-profile.1'
 _DECLINED = re.compile(r'随便|都行|无所谓|不需要|不想回答|不想说|'
     r'no preference|anything|whatever|either is fine|prefer not to (?:say|answer)', re.I)
-_NEGATED = re.compile(r'(?:不是|并非|不要|不选|不想|不喜欢|not|never|rather than)\s*$', re.I)
+_NONASSERTION = re.compile(r"\b(?:not|never|no|don't|doesn't|didn't|cannot|can't|won't|"
+    r"if|unless|maybe|might|perhaps|hypothetical|example|rather than|instead of)\b|"
+    r'不是|并非|不要|不选|不想|不喜欢|不太|不很|不够|不算|未必|不确定|'
+    r'如果|假如|要是|可能|也许|例如|假设', re.I)
+_CLAUSE = re.compile(r'[，,。！？!?；;\n]|\.(?=\s|$)|\b(?:but|however|instead(?!\s+of\b))\b|而是|不过|但是|但', re.I)
+_DIETARY_ABSENCE = re.compile(r'不吃辣|无饮食限制|\b(?:no spicy food|do not eat spicy(?: food)?|'
+    r"don't eat spicy(?: food)?|avoid spicy(?: food)?|no dietary restrictions)\b", re.I)
+_MOBILITY_ABSENCE = re.compile(r'无行动限制|\bno mobility restrictions\b', re.I)
+_RETURN_VISIT = re.compile(r'不是第一次(?:来)?|\bnot (?:my |our |the )?first (?:visit|time)\b', re.I)
+
+
+def _assertion(key, text, *, quote=None, value=None, declined=False):
+    # Negative dietary/mobility statements have a positive, defined meaning for
+    # these factors. Exempt only a whole supported phrase actually in the quote;
+    # outer negation/conditions remain visible ("not no spicy food" is rejected).
+    allowed = (_DECLINED if declined else
+               _DIETARY_ABSENCE if key == 'dietary' else
+               _MOBILITY_ABSENCE if key == 'mobility' else
+               _RETURN_VISIT if key == 'first_visit' and value is False else None)
+    selected = text
+    if allowed is not None:
+        quoted = text if quote is None else quote
+        for match in allowed.finditer(quoted):
+            selected = selected.replace(match[0], ' ', 1)
+    return _NONASSERTION.search(selected) is None
+
+
+def _source_clause(original, offset, quote):
+    before = _CLAUSE.split(original[:offset])[-1]
+    after = _CLAUSE.split(original[offset+len(quote):])[0]
+    return before+quote+after
 
 
 @dataclass(frozen=True)
@@ -109,6 +139,10 @@ def _has(text, phrase):
 
 
 def _canonical(key, text):
+    # Memory can retain an opaque negative/conditional preference, but cannot
+    # invert it into an affirmative canonical value.
+    if not _assertion(key,text) or re.search(r'[“”"「」]|\b(?:quoted?|example|said|says?)\b',text,re.I):
+        return (text,) if BY_KEY[key].multiple else text
     aliases = _ALIASES.get(key, {})
     values = tuple(value for value, words in aliases.items() if any(_has(text, w) for w in words))
     if BY_KEY[key].multiple:
@@ -129,6 +163,7 @@ def _known_value(update, sources):
     elif update.factor_key == 'first_visit':
         choices = {True for quote in quotes if re.fullmatch(r'第一次(?:来)?|first visit|first time', quote, re.I)}
         choices |= {False for quote in quotes if re.fullmatch(r'来过中国|来过了|returning to china|been to china', quote, re.I)}
+        choices |= {False for quote in quotes if _RETURN_VISIT.search(quote)}
         if type(value) is bool and choices == {value}:
             return value
     elif type(value) is str or isinstance(value, tuple):
@@ -159,14 +194,21 @@ def parse_updates(raw, originals):
                 raise InvalidInput('original profile quote required')
             original = originals[ref.source_index]
             offsets = [match.start() for match in re.finditer(re.escape(ref.quote), original.text)]
-            if not offsets or any(_NEGATED.search(original.text[:offset]) for offset in offsets):
+            declined = _DECLINED.fullmatch(ref.quote.strip()) is not None
+            if not offsets or any(not _assertion(update.factor_key,
+                    _source_clause(original.text,offset,ref.quote),quote=ref.quote,
+                    value=update.value,declined=declined) for offset in offsets):
                 raise InvalidInput('profile quote is absent or negated')
             sources.append(Source(original.message_id, original.sequence, ref.quote, offsets[-1]))
-        if update.state == 'not_needed':
-            if update.value is not None or not all(_DECLINED.fullmatch(s.quote.strip()) for s in sources):
+        # The code recognizes explicit refusal regardless of a model's state
+        # label, so "随便" cannot be smuggled back as known or inferred.
+        declined = all(_DECLINED.fullmatch(s.quote.strip()) for s in sources)
+        state = 'not_needed' if declined else update.state
+        if state == 'not_needed':
+            if not declined:
                 raise InvalidInput('explicit profile refusal required')
             value = None
-        elif update.state == 'inferred':
+        elif state == 'inferred':
             if not factor.inferable or update.value is None:
                 raise InvalidInput('factor cannot be inferred')
             value = tuple(update.value) if isinstance(update.value, list) else update.value
@@ -176,7 +218,7 @@ def parse_updates(raw, originals):
                 raise InvalidInput('bounded inferred factor value required')
         else:
             value = _known_value(update, sources)
-        facts.append(Fact(factor.key, value, update.state, tuple(sources)))
+        facts.append(Fact(factor.key, value, state, tuple(sources)))
     return tuple(facts)
 
 
@@ -206,14 +248,16 @@ def merge(previous, updates, memory=()):
     """Code, not the model, determines precedence. Never writes long-term Memory."""
     result = {key: fact for key, fact in previous.items() if fact.state != 'memory'}
     for fact in memory:
-        if fact.key not in result or result[fact.key].state == 'default':
+        if fact.key not in result or result[fact.key].state in ('default','inferred'):
             result[fact.key] = fact
     for fact in sorted(updates, key=lambda fact: fact.order):
         old = result.get(fact.key)
         if old is not None:
             if fact.state == 'inferred' and old.state in ('known','not_needed','memory'):
                 continue
-            if old.state in ('known','not_needed','inferred') and fact.order < old.order:
+            if old.state in ('known','not_needed') and fact.state in ('known','not_needed') and fact.order < old.order:
+                continue
+            if old.state == fact.state == 'inferred' and fact.order < old.order:
                 continue
         result[fact.key] = fact
     return result
