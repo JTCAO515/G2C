@@ -38,6 +38,7 @@ public struct LioHome<MenuContent: View>: View {
     @State private var sendCount = 0
     @State private var entering: Set<LioEntranceKey> = []
     @State private var chatFading = false
+    @State private var timing = LioTimingLog()
     private struct Observation: Equatable {
         let active: Bool
         let request: Int
@@ -245,6 +246,7 @@ public struct LioHome<MenuContent: View>: View {
                 if followsAnswer, let pending, latest?.id == pending.id { scroll.scrollTo("lio.bottom", anchor: .bottom) }
             }
             .onChange(of: latest?.status) { _, status in
+                if status == .finished, let id = latest?.id { timing.mark(.finished, id) }
                 if followsAnswer && status == .finished { scroll.scrollTo("lio.bottom", anchor: .bottom) }
             }
             .onChange(of: jumpRequest) { _, _ in
@@ -306,6 +308,8 @@ public struct LioHome<MenuContent: View>: View {
             .tint(LioTheme.vermilion)
         }
     }
+
+    private var timingLanguage: String { language == .english ? "en" : "zh-Hans" }
 
     private var canSwitchChat: Bool {
         scenePhase == .active && conversation.pending == nil && !memoryBusy && !memoryPending
@@ -527,6 +531,7 @@ public struct LioHome<MenuContent: View>: View {
                 sendCount += 1
                 conversation.send(draft, language: language)
                 if let id = conversation.pending?.id {
+                    timing.start(id, language: timingLanguage)
                     entering.formUnion([LioEntranceKey(turn: id, part: .question), LioEntranceKey(turn: id, part: .answer)])
                 }
                 recordPendingFirstQuestion()
@@ -655,6 +660,7 @@ public struct LioHome<MenuContent: View>: View {
                     Button {
                         if turn.id == conversation.turns.last?.id { followsAnswer = true }
                         conversation.resend(turn.id)
+                        timing.start(turn.id, language: timingLanguage)
                         recordPendingFirstQuestion()
                     } label: {
                         Image(systemName: "exclamationmark.circle.fill")
@@ -700,6 +706,7 @@ public struct LioHome<MenuContent: View>: View {
                     }
                 }
                 .lioEntrance(.fade, active: entering.contains(answerKey)) { entering.remove(answerKey) }
+                .onAppear { timing.mark(.firstText, turn.id) }
             }
             messageStatus(turn)
             if let memoryActions {
@@ -763,7 +770,8 @@ public struct LioHome<MenuContent: View>: View {
     private func messageStatus(_ turn: LioTurn) -> some View {
         switch turn.status {
         case .thinking, .working:
-            statusLine(language.text("Lio is replying…", "Lio 正在回复…"))
+            LioThinkingIndicator(since: timing.indicatorStart(turn.id), progress: nil, planningDays: nil,
+                                 language: language) { timing.mark(.indicator, turn.id) }
         case .failed(let failure):
             let message = switch failure {
             case .notSent: language.text("Message couldn’t be sent. Check your connection and tap to try again.",
@@ -788,6 +796,7 @@ public struct LioHome<MenuContent: View>: View {
                 Button(language.text("Ask again", "重新问")) {
                     followsAnswer = true
                     conversation.askAgain(turn.id)
+                    timing.start(turn.id, language: timingLanguage)
                     recordPendingFirstQuestion()
                 }
                     .buttonStyle(.bordered)
@@ -798,22 +807,6 @@ public struct LioHome<MenuContent: View>: View {
         case .answering, .finished:
             EmptyView()
         }
-    }
-
-    /// Waiting for Lio: the avatar and moving dots where the reply will appear. Read aloud as the title.
-    private func statusLine(_ title: String) -> some View {
-        HStack(spacing: LioTheme.Spacing.xs) {
-            LioPortrait(size: 22)
-            Image(systemName: "ellipsis")
-                .font(.title3.weight(.bold))
-                .foregroundStyle(LioTheme.inkSecondary)
-                .symbolEffect(.variableColor.iterative, options: .repeating, isActive: !reduceMotion)
-        }
-        .frame(minHeight: 28)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(title)
-        .accessibilityAddTraits(.isStaticText)
-        .accessibilityIdentifier("lio.progress")
     }
 }
 #endif
