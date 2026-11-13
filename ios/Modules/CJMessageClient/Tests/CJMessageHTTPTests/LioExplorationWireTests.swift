@@ -133,6 +133,21 @@ struct LioExplorationWireTests {
         #expect(throws: Error.self) { try LioExplorationWire.decodePage(data(change(value, path: row + ["notices", 0, "item_ids"], to: ["stop.1", "stop.1"]))) }
     }
 
+    @Test func citationDatesMustBeWholeRealRFC3339Values() throws {
+        let base = try example("waiting")
+        for date in ["2026-11-14T00:00:00Z", "2024-02-29t23:59:59.123456789z", "2026-11-14T00:00:00+23:59"] {
+            let source: [String: Any] = ["title": "Guidance", "url": NSNull(), "observed_at": date]
+            _ = try LioExplorationWire.decodePage(data(change(base, path: row + ["sources"], to: [source])))
+        }
+        for date in ["2026-02-30T00:00:00Z", "2026-11-14T00:00:00Zgarbage", "2025-02-29T00:00:00Z", "2026-11-14T24:00:00Z", "2026-11-14T00:00:60Z", "2026-11-14T00:00:00+24:00", "2026-11-14 00:00:00Z", "2026-11-14T00:00:00Z\n"] {
+            let source: [String: Any] = ["title": "Guidance", "url": NSNull(), "observed_at": date]
+            #expect(throws: Error.self) { try LioExplorationWire.decodePage(data(change(base, path: row + ["sources"], to: [source]))) }
+            let notice: [String: Any] = ["id": "weather.1", "type": "weather", "severity": "info", "item_ids": [], "text": "A weather note.", "source": source]
+            let withNotice = try change(base, path: row + ["notices"], to: [notice])
+            #expect(throws: Error.self) { try LioExplorationWire.decodePage(data(change(withNotice, path: row + ["answer"], to: "A weather note."))) }
+        }
+    }
+
     @Test func traceBindingAndRawOriginalsRemainSeparateFromDisplayData() throws {
         let input = try data(example("en"))
         #expect(throws: Error.self) { try LioExplorationWire.decodePage(input, for: "lio-dialogue-00000000000000000000000000000000") }

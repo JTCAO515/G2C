@@ -225,12 +225,10 @@ public enum LioExplorationWire {
         if let url { guard URL(string: url)?.scheme?.isEmpty == false else { throw MessageHTTPFailure.invalidResponse } }
         let observed = try optionalText(f["observed_at"])
         if let observed {
-            let parser = ISO8601DateFormatter()
-            parser.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            if parser.date(from: observed) == nil {
-                parser.formatOptions = [.withInternetDateTime]
-                guard parser.date(from: observed) != nil else { throw MessageHTTPFailure.invalidResponse }
-            }
+            let syntax = #"[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt](?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](?:\.[0-9]+)?(?:[Zz]|[+-](?:[01][0-9]|2[0-3]):[0-5][0-9])"#
+            guard let range = observed.range(of: syntax, options: .regularExpression),
+                  range == observed.startIndex..<observed.endIndex else { throw MessageHTTPFailure.invalidResponse }
+            _ = try CardDate(String(observed.prefix(10)))
         }
         return Citation(title: title, rawURL: url, observedAt: observed)
     }
