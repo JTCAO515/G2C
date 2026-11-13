@@ -9,7 +9,7 @@ from zoneinfo import ZoneInfo
 
 from cj_agent.provider import ProviderUnknown
 from cj_agent.lio_intake_optional_schema import SYSTEM as FACTS_SYSTEM,OptionalIntake
-from cj_message.demo_dialogue import LIO_VERSION
+from cj_message.demo_dialogue import LIO_VERSION, LIO_VERSION_V3
 from cj_message.domain import Command,Unavailable
 from cj_message.lio_context import answer_prompt,self_description
 from cj_message.lio_plan_needs import BOUND_EFFECT
@@ -62,8 +62,9 @@ def intake_prompt(locale,turns,*,discussion_only=False,scene=None):
 
 
 class NationalLioPlanning:
-    def __init__(self,database,plan_and_save):
+    def __init__(self,database,plan_and_save,*,calendar=None):
         self.database,self.plan_and_save=database,plan_and_save
+        self.calendar=calendar
 
     def scene_context(self,binding,now):
         return self.plan_and_save.scene_context(binding,now)
@@ -159,6 +160,10 @@ class NationalLioPlanning:
                 status='discussion'if held else'needs_details',facts=facts,nonplanning_message_ids=[],
                 **({'authority_barrier_message_id':binding.message_id}if held else {})))
             return self._reply(worker,binding,state,intake.reply)
+        calendar=self.calendar if self.calendar is not None and original.protocol==LIO_VERSION_V3 else None
+        if calendar is not None:
+            converted=calendar.convert(worker,binding,state,intake,original,turns,refs)
+            if converted is not None:return converted
         source_ids=[ref['message_id']for ref in refs]+[binding.message_id]
         boundary_mid=None if previous is None else previous.get('date_boundary_message_id')
         barrier_mid=None if previous is None else previous.get('authority_barrier_message_id')
@@ -312,15 +317,16 @@ class NationalLioPlanning:
                     evidence=intake.sources.get('arrival.date',[])or intake.sources.get('start_date',[])
                 if evidence and all(ref['source_index']<date_boundary for ref in evidence):
                     fields[edge]['date']=dict(state='missing')
-        if intake.duration_days is not None and (intake.start_date is None
-                or intake.start_date['state']!='known' or fields['arrival']['date']['state']!='known'):
+        undated=intake.duration_days is not None and (intake.start_date is None
+                or intake.start_date['state']!='known' or fields['arrival']['date']['state']!='known')
+        if undated and calendar is None:
             state=context(worker,binding,state,dict(authority=authority,status='plan_preview',city=resolution))
             return discuss(worker,binding,state,original.locale,turns,refs,day_count=intake.duration_days)
         missing=[]
-        if intake.start_date is not None and intake.start_date['state']!='known':missing.append('start_date')
+        if calendar is None and intake.start_date is not None and intake.start_date['state']!='known':missing.append('start_date')
         for edge in ('arrival','departure'):
-            if fields.get(edge,{}).get('date',{}).get('state')!='known':missing.append(edge+'.date')
-        if not missing and authority!='none' and self.plan_and_save.planning_window_conflict(binding,fields):
+            if calendar is None and fields.get(edge,{}).get('date',{}).get('state')!='known':missing.append(edge+'.date')
+        if not undated and not missing and authority!='none' and self.plan_and_save.planning_window_conflict(binding,fields):
             state=context(worker,binding,state,dict(authority='none',status='different_trip',city=resolution))
             from datetime import date
             window=tuple(fields[edge]['date']['value']for edge in ('arrival','departure'))
@@ -330,7 +336,8 @@ class NationalLioPlanning:
             return discuss(worker,binding,state,original.locale,turns,refs,day_count=days,
                            planning_window=window,introduction=introduction)
         questions=[q for q in checked.get('questions',[]) if q['field']=='fixed_items']
-        complete_fixed=fixed_sources_complete(intake,fields,turns,city)
+        complete_fixed=fixed_sources_complete(intake,fields,turns,city,
+            ordinal_days=intake.duration_days if calendar is not None and undated else None)
         if missing or questions or not complete_fixed:
             state=context(worker,binding,state,dict(authority=authority,status='needs_details',city=resolution))
             required=[]
@@ -342,6 +349,14 @@ class NationalLioPlanning:
         state=context(worker,binding,state,dict(authority='none',status='ready_to_publish',city=resolution))
         details=PlanningDetails(city.name,fields,None,refs)
         state=register(worker,binding,state,details)
+        if calendar is not None:
+            from datetime import date
+            start=fields['arrival']['date']
+            start=start['value'] if start['state']=='known' else None
+            count=intake.duration_days
+            if count is None:
+                count=(date.fromisoformat(fields['departure']['date']['value'])-date.fromisoformat(start)).days+1
+            return calendar.plan(worker,binding,state,details,original.locale,day_count=count,start_date=start)
         return self.plan_and_save(worker,binding,state,details,original.locale)
 
     @staticmethod

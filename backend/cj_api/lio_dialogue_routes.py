@@ -84,21 +84,26 @@ def _message(item, state, *, expired=False, trip=None, memory=None):
                 failure=failure, activity=activity, sources=sources, trip=trip, memory=memory)
 
 
-def _timeline(boundary, resolve_runs, trip_cards, memory_cards, token, conversation_id, before, multiple=False):
+def _timeline(boundary, resolve_runs, trip_cards, memory_cards, token, conversation_id, before, multiple=False,calendar=False):
     def compose(context, page, bindings, snapshots):
         messages = []
         if page.messages:
             for item, binding, (state, expired) in zip(page.messages, bindings, snapshots, strict=True):
                 trip = None
                 if state is not None:
-                    if EDIT_BOUND_EFFECT in state.effects:
+                    if calendar:
+                        from .local_lio_calendar import DATE_ATTEMPT
+                        if EDIT_BOUND_EFFECT in state.effects or BOUND_EFFECT in state.effects:
+                            trip=trip_cards.read(token,binding,edit=EDIT_BOUND_EFFECT in state.effects,
+                                                 protocol=item.protocol,conversion=DATE_ATTEMPT in state.effects)
+                    elif EDIT_BOUND_EFFECT in state.effects:
                         trip = trip_cards.read(token, binding, edit=True)
                     elif BOUND_EFFECT in state.effects:
                         trip = trip_cards.read(token, binding)
                 memory = (memory_cards.project(context, token, item.message_id, binding.run_id)
                           if memory_cards is not None and state is not None and state.status == 'completed' else None)
                 messages.append(_message(item, state, expired=expired, trip=trip, memory=memory))
-        version = 'LIO-timeline.2' if multiple else TIMELINE_VERSION
+        version = 'LIO-timeline.3' if calendar else 'LIO-timeline.2' if multiple else TIMELINE_VERSION
         response = _json(dict(version=version, conversation_id=page.conversation_id,
                               messages=messages, next_before=page.next_before))
         if len(response.body) > 4_500_000:
@@ -109,7 +114,7 @@ def _timeline(boundary, resolve_runs, trip_cards, memory_cards, token, conversat
 
     def project(context):
         page = context.lio_timeline(conversation_id, before, multiple=multiple)
-        if page.requires_new_lio:
+        if not calendar and page.requires_new_lio:
             raise InvalidInput('calendar conversation requires its selected reader')
         # An empty page never needed a MESSAGE owner row. Keep that path and
         # its final page/AUTH checks; existing originals get one protected frame.
@@ -129,7 +134,7 @@ def _timeline(boundary, resolve_runs, trip_cards, memory_cards, token, conversat
     return boundary.with_history_context(token, project)
 
 
-def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, prepare_scope, memory_cards=None):
+def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, prepare_scope, memory_cards=None,calendar_cards=None,calendar_boundary=None):
     async def send(request, version, receipt_version):
         token = _token(request)
         if token is None:
@@ -138,7 +143,8 @@ def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, pre
             return _failure(400)
         try:
             raw = await _read_body(request, 16384)
-            receipt = await run_in_threadpool(boundary.receive_lio, token, raw, prepare_scope=prepare_scope,
+            selected = calendar_boundary if version == LIO_VERSION_V3 else boundary
+            receipt = await run_in_threadpool(selected.receive_lio, token, raw, prepare_scope=prepare_scope,
                                               version=version)
         except BodyError as exc:
             return _failure(exc.status)
@@ -147,7 +153,7 @@ def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, pre
         return _json(dict(version=receipt_version, message_id=receipt.message_id,
                           conversation_id=receipt.conversation_id))
 
-    async def timeline(request, multiple):
+    async def timeline(request, multiple,calendar=False):
         token = _token(request)
         if token is None:
             return _failure(401)
@@ -160,8 +166,9 @@ def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, pre
         except (ValueError, UnicodeError):
             return _failure(400)
         try:
-            return await run_in_threadpool(_timeline, boundary, resolve_runs, trip_cards, memory_cards, token,
-                                           conversation, before, multiple)
+            return await run_in_threadpool(_timeline, calendar_boundary if calendar else boundary, resolve_runs,
+                                           calendar_cards if calendar else trip_cards, memory_cards, token,
+                                           conversation, before, multiple,calendar)
         except Exception as exc:
             return _failure(message_failure(request, exc, False).status_code)
 
@@ -173,8 +180,24 @@ def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, pre
     async def send_conversation(request: Request):
         return await send(request, LIO_VERSION_V2, 'LIO-message-receipt.2')
 
+    if calendar_cards is not None:
+        @app.post('/v3/lio/messages')
+        async def send_calendar(request: Request):
+            return await send(request,LIO_VERSION_V3,'LIO-message-receipt.3')
+
+        @app.get('/v3/lio/timeline')
+        async def timeline_calendar(request: Request):
+            return await timeline(request,True,True)
+
+        @app.get('/v3/lio/messages')
+        async def read_calendar_receipt(request: Request):
+            return await lookup(request,True)
+
     @app.get('/v2/lio/messages')
     async def read_original_receipt(request: Request):
+        return await lookup(request,False)
+
+    async def lookup(request,calendar):
         token = _token(request)
         if token is None:
             return _failure(401)
@@ -187,18 +210,19 @@ def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, pre
         except (ValueError, UnicodeError):
             return _failure(400)
         try:
-            receipt = await run_in_threadpool(boundary.query_lio, token, original_id)
+            selected = calendar_boundary if calendar else boundary
+            receipt = await run_in_threadpool(selected.query_lio, token, original_id)
         except Exception as exc:
             return _failure(message_failure(request, exc, False).status_code)
         value = None
         if receipt is not None:
-            if receipt.requires_new_lio:
+            if not calendar and receipt.requires_new_lio:
                 return _failure(400)
             if receipt.input_sha256 != digest:
                 return _failure(409)
-            value = dict(version='LIO-message-receipt.2', message_id=receipt.message_id,
+            value = dict(version='LIO-message-receipt.3' if calendar else 'LIO-message-receipt.2', message_id=receipt.message_id,
                          conversation_id=receipt.conversation_id)
-        return _json(dict(version='LIO-message-lookup.2', receipt=value))
+        return _json(dict(version='LIO-message-lookup.3' if calendar else 'LIO-message-lookup.2', receipt=value))
 
     @app.get('/v1/lio/timeline')
     async def timeline_default(request: Request):
