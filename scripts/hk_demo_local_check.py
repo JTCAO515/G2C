@@ -257,6 +257,16 @@ def check_schema53_resume(control,backups,operator,schema_root):
         try:demo_schema.resume_schema53(control,backups,schema_root=schema_root)
         except OSError as exc:assert str(exc)=='synthetic schema53 marker'
         else:raise AssertionError('schema53 marker interruption hidden')
+    with operator() as (db,_):
+        scope,revision=db.execute('SELECT scope_id,revision FROM cj_usage_ledger_candidate ORDER BY scope_id LIMIT 1').fetchone()
+        db.execute('UPDATE cj_usage_ledger_candidate SET revision=revision+1 WHERE scope_id=%s',(scope,))
+    with patch.object(checkpoint,'export',side_effect=AssertionError('late data must not create another backup')):
+        try:demo_schema.resume_schema53(control,backups,schema_root=schema_root)
+        except ValueError as exc:assert 'database differs from signed backup' in str(exc)
+        else:raise AssertionError('schema53 late write hidden by published release')
+    assert checkpoint.verified(marker)['state']=='INTENT'
+    with operator() as (db,_):
+        db.execute('UPDATE cj_usage_ledger_candidate SET revision=%s WHERE scope_id=%s',(revision,scope))
     marker.with_suffix('.tmp').write_bytes(b'interrupted schema53 marker')
     with patch.object(checkpoint,'export',side_effect=AssertionError('published schema53 archive repeated')):
         demo_schema.resume_schema53(control,backups,schema_root=schema_root)

@@ -61,6 +61,9 @@ def _resume_publication(db,control,destination,intent,release,instance):
     actual=checkpoint.verified(latest) if latest.exists() else None
     if actual not in (desired,intent['original_latest']):
         raise ValueError('original quota latest checkpoint mismatch')
+    if (manifest['tables']!=migrate.inventory(db) or staging.state(db,manifest['tables'])!=manifest['row_state']
+            or staging.sequence_state(db,staging.sequence_names(db))!=manifest['sequences']):
+        raise ValueError('original quota database differs from signed backup')
     if (release['instance'],release['checkpoint'])==(instance,digest):
         if actual!=desired:
             raise ValueError('original quota backup publication incomplete')
@@ -68,9 +71,6 @@ def _resume_publication(db,control,destination,intent,release,instance):
           and instance!=intent['original_instance']):
         # The original export rotated the database identity before publishing
         # its release. Reconcile that exact signed archive against the live data.
-        if (manifest['tables']!=migrate.inventory(db) or staging.state(db,manifest['tables'])!=manifest['row_state']
-                or staging.sequence_state(db,staging.sequence_names(db))!=manifest['sequences']):
-            raise ValueError('original quota database differs from signed backup')
         for path in (latest,control/'release.json'):
             pending=path.with_suffix('.tmp')
             if pending.exists():
