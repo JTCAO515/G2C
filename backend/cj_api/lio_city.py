@@ -12,7 +12,6 @@ from cj_fact.live_source import tls
 from cj_place.https_transport import _read_response,_WireFailure
 from pypinyin import lazy_pinyin
 from cj_strict_json import reject_duplicates
-from cj_usage.authorization_budget import canonical
 from cj_usage.metered_exit import BudgetUnknown
 
 VERSION='LIO-city-resolution.1'
