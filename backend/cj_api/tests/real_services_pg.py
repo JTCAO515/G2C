@@ -864,6 +864,8 @@ def exercise(auth,conninfo):
     assert completed['status']=='PASS' and model.calls==calls+1,(completed,session['adapter'].query('factory-local-component-control'))
     observed=json.loads(rpc.handle(request('query',{'attempt_id':'factory-local-component-control'})))
     assert observed['status']=='PASS' and model.calls==calls+1
+    import runtime_weather_fault_pg
+    runtime_weather_fault_pg.standalone(auth.parent/'weather-fault-native-auth',conninfo)
     import runtime_native_dialogue_pg
     runtime_native_dialogue_pg.exercise(auth.parent/'native-dialogue-controls',conninfo)
     import runtime_memory_setup_pg
