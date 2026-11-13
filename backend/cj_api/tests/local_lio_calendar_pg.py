@@ -1,6 +1,6 @@
 """Signed LIO3 calendar chains with actual PG authorities and HTTP supplier fixtures."""
 from contextlib import contextmanager
-from datetime import datetime,timedelta,timezone
+from datetime import date,datetime,timedelta,timezone
 from hashlib import sha256
 import json
 import os
@@ -28,6 +28,10 @@ from deploy.hk.configuration import Runtime
 import dev_auth,local_run_context,migrate,pg_suites,run_worker
 from test_lio_city import data as city_catalog
 from test_lio_planning_flow import flow
+from cj_draft.rich_schema import PROFILES,SIGHT_COUNTS,Pace
+from cj_draft.rich_first import rich_system_for
+from cj_draft.grouped_plan import response_format
+from cj_api.local_lio_planning import RICH_FIRST_DRAFT
 
 SUBJECT='m4-synthetic-demo-0123456789ab'
 OUTSIDE='calendar-unselected-subject'
@@ -61,7 +65,7 @@ def exercise(root,conninfo):
             (sha256(invite.encode()).hexdigest(),datetime.now(timezone.utc)+timedelta(hours=1)))
         demo_accounts.manage(runtime,'insert',SUBJECT,control,operation)
     journal=AuthorizationBudget(root/'original-journal',clock=lambda:datetime(2026,11,9,tzinfo=timezone.utc))
-    wire=[];locale='zh'
+    wire=[];locale='zh';fixture_days=3;fixture_pace=None;fixture_start=None
     def response(request):
         assert str(request.url)==M4_BASE+'/chat/completions'
         body=json.loads(request.content);wire.append(body);system=body['messages'][0]['content']
@@ -79,10 +83,33 @@ def exercise(root,conninfo):
                 value=flow(text,city=None,days=None,start=selected.isoformat(),party=None,index=index,questions=(),intent='consult')
                 value.update(planning_request_index=None,needs_tools=False)
             else:
-                value=flow(text,city='成都' if locale=='zh' else 'Chengdu',days=3,party=None,index=index,
+                value=flow(text,city='成都' if locale=='zh' else 'Chengdu',days=fixture_days,party=None,index=index,start=fixture_start,
                            questions=(),intent='plan',reply='可以，先按天安排。' if locale=='zh' else 'I can plan by day.')
+                if fixture_pace is not None:
+                    value['extra_fields']['pace']=fixture_pace
+                    value['field_sources'].append(dict(field='pace',source_index=index,quote=fixture_pace))
             value['version']='LIO-planning-intake.8'
             content=json.dumps(value,ensure_ascii=False)
+        elif any(profile in system for profile in PROFILES.values()):
+            profile=body['response_format']['json_schema']['schema']['properties']['version']['const']
+            ordinal,pace=next(key for key,name in PROFILES.items()if name==profile)
+            assert body['response_format']==response_format(profile)
+            assert system==rich_system_for(ordinal=ordinal,pace=pace,guidance=''if ordinal else RICH_FIRST_DRAFT)+PROVIDER_GUARD
+            assert body['max_tokens']==1536 and not body.get('tools')
+            days=[]
+            for day in range(1,fixture_days+1):
+                sights=[[f'stop-{day}','人民公园'if locale=='zh'else'People Park（人民公园）','14:00','15:00',['self']]]
+                for n in range(SIGHT_COUNTS[pace]-1):
+                    start,end=(('09:00','10:00'),('10:30','11:30'),('16:00','17:00'))[n]
+                    names=(('成都博物馆','Chengdu Museum（成都博物馆）'),
+                           ('文殊院','Wenshu Monastery（文殊院）'),('锦里','Jinli（锦里）'))
+                    name=names[n][0 if locale=='zh' else 1]
+                    sights.append([f'sight-{day}-{n}',name,start,end,['self']])
+                meals=[[f'lunch-{day}','午餐'if locale=='zh'else'Lunch（午餐）','12:00','13:00',['self']],
+                       [f'dinner-{day}','晚餐'if locale=='zh'else'Dinner（晚餐）','18:00','19:00',['self']]]
+                selected_day=day if ordinal else(date.fromisoformat(fixture_start)+timedelta(days=day-1)).isoformat()
+                days.append([selected_day,sights,meals])
+            content=json.dumps(dict(version=profile,title='成都行程'if locale=='zh'else'Chengdu（成都） itinerary',days=days),ensure_ascii=False)
         elif 'TRIP-lio-day-plan.2' in system:
             from cj_draft.grouped_plan import system_for
             assert system==system_for(retained=False,ordinal=True)+PROVIDER_GUARD
@@ -109,10 +136,12 @@ def exercise(root,conninfo):
                 dict(**identity,choices=[],usage=dict(prompt_tokens=40,completion_tokens=10,total_tokens=50))]
         raw=''.join('data: '+json.dumps(e)+'\n\n' for e in events)+'data: [DONE]\n\n'
         return httpx.Response(200,stream=httpx.ByteStream(raw.encode()))
-    model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),journal,transport=httpx.MockTransport(response))
+    model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY,max_output_tokens=1536),journal,transport=httpx.MockTransport(response))
     services=RealServices(model,KEY,subjects,demo_subjects=subjects,national_subjects=subjects)
     tools=RealTools(services,buffered_streaming_subjects=subjects,visitor_catalogue_directory=ROOT/'knowledge/visitor/entries')
     signer=load_confirmation_signer(auth)
+    # Actual HK selects the already-authorized global1536 ceiling; only new
+    # rich profiles use it. Old grouped calls stay at their original1024 cap.
     def process(expected_status='completed'):
         from cj_agent.worker import RunWorker
         execute=RunWorker._execute
@@ -152,16 +181,16 @@ def exercise(root,conninfo):
             assert connection.execute('SELECT (SELECT count(*) FROM cj_message_receipt),(SELECT count(*) FROM cj_run_record),(SELECT count(*) FROM cj_usage_ledger_candidate)').fetchone()==before
         assert not wire
         print('PASS valid local identity outside the calendar roster is rejected before MESSAGE/RUN/Meter/model')
-        def read(cid):
-            value=api.get('/v3/lio/trip',params={'conversation_id':cid},headers=headers)
+        def read(cid,*,calendar=True):
+            value=api.get('/v3/lio/trip'if calendar else'/v2/lio/trip',params={'conversation_id':cid},headers=headers)
             assert value.status_code==200,value.text
             return value.json()
         for language in ('zh','en'):
             locale=language
-            def send(mid,text,cid=None,*,expected_status='completed'):
-                raw=json.dumps(dict(version='LIO-message.3',message_id=mid,text=text,locale=locale,
+            def send(mid,text,cid=None,*,expected_status='completed',calendar=True):
+                raw=json.dumps(dict(version='LIO-message.3'if calendar else'LIO-message.2',message_id=mid,text=text,locale=locale,
                     **({'conversation_id':cid} if cid else {'new_conversation':True})),ensure_ascii=False).encode()
-                result=api.post('/v3/lio/messages',content=raw,headers=headers)
+                result=api.post('/v3/lio/messages'if calendar else'/v2/lio/messages',content=raw,headers=headers)
                 assert result.status_code==200,result.text
                 process(expected_status)
                 with psycopg.connect(**conninfo) as connection:
@@ -181,10 +210,16 @@ def exercise(root,conninfo):
             lookup=api.get('/v3/lio/messages',params={'message_id':'calendar-'+locale+'-plan','input_sha256':sha256(raw).hexdigest()},headers=headers)
             assert lookup.status_code==200 and lookup.json()['receipt']['version']=='LIO-message-receipt.3'
             _,_=send('calendar-'+locale+'-edit','把第二天下午换成「成都博物馆」' if locale=='zh' else 'Replace the afternoon of day 2 with "Chengdu Museum".',cid)
+            assert read(cid)==planned
+            _,_=send('calendar-'+locale+'-edit-exact',
+                '把第二天下午「人民公园」（14:00-15:00）换成「成都博物馆」'if locale=='zh'else
+                'Replace "People Park（人民公园）" on the afternoon of day 2 (14:00-15:00) with "Chengdu Museum".',cid)
             edited=read(cid);assert edited['current']['trip_version']==2,edited
             before=[item for day in card['days'] for item in day['items']]
             after=[item for day in edited['current']['days'] for item in day['items']]
-            assert [item['label'] for item in after]==[before[0]['label'],'成都博物馆' if locale=='zh' else 'Chengdu Museum',before[2]['label']]
+            expected_labels={item['item_id']:item['label']for item in before}
+            expected_labels['stop-2']='成都博物馆'if locale=='zh'else'Chengdu Museum'
+            assert {item['item_id']:item['label']for item in after}==expected_labels
             _,_=send('calendar-'+locale+'-date','明天开始' if locale=='zh' else 'Start tomorrow',cid)
             dated=read(cid);assert dated['current']['trip_version']==3,dated
             assert dated['current']['calendar']['state']=='dated'
@@ -207,7 +242,7 @@ def exercise(root,conninfo):
             replanned=read(cid)['current']
             assert replanned['trip_id']==card['trip_id'] and replanned['trip_version']==5
             assert replanned['title']==edited['current']['title']
-            assert sum(len(day['items'])for day in replanned['days'])==6
+            assert sum(len(day['items'])for day in replanned['days'])==len(after)+3
             for prior_day,new_day in zip(edited['current']['days'],replanned['days'],strict=True):
                 assert all(item in new_day['items']for item in prior_day['items'])
             print('PASS native '+locale+' ordinal replan retains original title/items and uses the pinned actual replan system',flush=True)
@@ -219,6 +254,26 @@ def exercise(root,conninfo):
             assert month_dated['calendar']['state']=='dated' and month_dated['calendar']['start_date'].endswith('-12-01')
             assert len(wire)>count
             print('PASS signed LIO3 '+locale+' explicit month/day reply converts the existing undated Trip',flush=True)
+            for pace in Pace:
+                fixture_days=5 if pace is Pace.PACKED else 4
+                fixture_pace=({Pace.RELAXED:'轻松',Pace.MODERATE:'适中',Pace.PACKED:'紧凑'}[pace]if locale=='zh'else pace.value)
+                fixture_start='2026-12-01'if locale=='zh'else None
+                calendar=locale=='en'
+                text=(f'规划成都{fixture_days}天，节奏{fixture_pace}，2026-12-01出发'if locale=='zh'else
+                      f'Plan {fixture_days} days in Chengdu at a {fixture_pace} pace')
+                rich_cid,_=send('rich-'+locale+'-'+pace.value,text,calendar=calendar)
+                rich=read(rich_cid,calendar=calendar)['current']
+                assert len(rich['days'])==fixture_days
+                assert all(len(day['items'])==SIGHT_COUNTS[pace]+2 for day in rich['days'])
+                from cj_agent.draft import trip_scope_for
+                with psycopg.connect(**conninfo) as connection:
+                    version,content=connection.execute('SELECT version,content FROM cj_trip_record WHERE scope=%s AND trip_id=%s',(trip_scope_for(scope),rich['trip_id'])).fetchone()
+                assert version==1 and json.loads(bytes(content))['content_version']==('structured.3'if calendar else'structured.2')
+                timeline=api.get('/v3/lio/timeline'if calendar else'/v2/lio/timeline',params={'conversation_id':rich_cid},headers=headers).json()
+                answer=timeline['messages'][-1]['answer']
+                assert fixture_pace in answer and answer.endswith('？'if locale=='zh'else'?')
+                print('PASS native WP1 '+locale+' '+pace.value+' '+str(fixture_days)+' days, actual factory/wire/signed save/summary',flush=True)
+            fixture_days=3;fixture_pace=None;fixture_start=None
         # The native v3 host must keep C's original confirmation verifier;
         # having reached an authenticated model draft cannot grant a save.
         from cj_trip.confirmation import ConfirmationSigner
