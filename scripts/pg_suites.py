@@ -665,6 +665,13 @@ def group_lio_projection():
 GROUPS.update(lio_projection=group_lio_projection)
 
 
+def group_runtime_cancel():
+    return script('backend/cj_api/tests/runtime_native_dialogue_pg.py')
+
+
+GROUPS.update(runtime_cancel=group_runtime_cancel)
+
+
 def main(argv):
     if argv[:1] == ['--shard']:
         index, count = map(int, argv[1].split('/'))

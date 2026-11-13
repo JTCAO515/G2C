@@ -21,6 +21,9 @@ def test_uncertain_cancel_never_replays_or_releases_unconfirmed_worker():
     assert state['calls']==1 and state['releases']==[]
     assert decode(cancel.proof(request,deadline=30))['status']=='UNKNOWN'
     state['status']='cancelled'
+    cancel._acknowledged=lambda mid,run_id:False
+    with pytest.raises(Unavailable,match='NATIVE_CANCEL_DELIVERY_PENDING'):cancel.proof(request,deadline=30)
+    cancel._acknowledged=lambda mid,run_id:True
     assert decode(cancel.proof(request,deadline=30))['status']=='CANCELLED'
     assert state['calls']==1 and state['releases']==[]  # query stays read-only
 

@@ -175,14 +175,32 @@ def cancel_control(root,database,auth,checker,model,worker,boundary,token,scope)
         except Unavailable as error:assert str(error)=='ORIGINAL_LINE_ALLOWANCE_EXHAUSTED'
         else:raise AssertionError('new work bypassed exhausted original allowance')
         cancel=request('cancel_original_run',{'text':task['variants']['en']['turns'][1]})
-        send(cancel,deadline)
+        from threading import Event
+        from cj_message.domain import Service as MessageService
+        ack_entered,allow_ack=Event(),Event()
+        acknowledge=MessageService.acknowledge
+        def delayed_ack(service,receipt):
+            if receipt.message_id==start['step_id']:
+                ack_entered.set()
+                if not allow_ack.wait(5):raise AssertionError('cancel ACK test was not released')
+            return acknowledge(service,receipt)
+        with patch.object(MessageService,'acknowledge',delayed_ack):
+            cancellation_sent=pool.submit(send,cancel,deadline)
+            try:
+                assert ack_entered.wait(5)
+                try:cancellation.proof(cancel,deadline=deadline)
+                except Unavailable as error:assert str(error)=='NATIVE_CANCEL_DELIVERY_PENDING'
+                else:raise AssertionError('cancel proof escaped before original worker ACK')
+                assert not cancellation_sent.done()
+            finally:allow_ack.set()
+            cancellation_sent.result(timeout=60)
         running.result(timeout=60)
     proof=decode(cancellation.proof(cancel,deadline=time.monotonic()+30))
-    assert proof['status']=='CANCELLED' and model.calls==calls+1
+    assert proof['status']=='CANCELLED' and proof['delivery_acknowledged'] is True and model.calls==calls+1
     assert decode(cancellation.proof(cancel,deadline=time.monotonic()+30))==proof
     with budget.connect() as db:assert journal_state(db)==before
     assert not claims.claim(encode(cancel),deadline=time.monotonic()+30).fresh
-    print('PASS actual native RUN controlled after original Meter settlement, canonical one-use cancel across STOP_NEW/exhausted allowance, original RUN-cancel.2, read-only repeat proof and zero new model or financial operations')
+    print('PASS actual native RUN controlled after original Meter settlement, canonical one-use cancel across STOP_NEW/exhausted allowance, original RUN-cancel.2, proof withheld until original worker ACK, read-only repeat proof and zero new model or financial operations')
 
 
 if __name__=='__main__':

@@ -1,12 +1,15 @@
 """Controlled generation and the existing source-bound original RUN cancel."""
+from time import monotonic,sleep
+
 from cj_run.cancellation import CancellationHandler,TravelCancelCommand,CancellationUnknown
 from runtime_adapter.contract import decode,encode,Unavailable
 
 
 class NativeCancellation:
-    def __init__(self,claims,boundary,database,token_supplier,controls,originals):
+    def __init__(self,claims,boundary,database,token_supplier,controls,originals,*,clock=monotonic):
         self.claims,self.boundary,self.database=claims,boundary,database
         self.token_supplier,self.controls,self.originals=token_supplier,controls,originals
+        self.clock=clock
         self.handler=CancellationHandler(boundary,lambda principal,scope:database.run_repository(scope))
 
     def prepare(self,request,*,deadline):
@@ -46,11 +49,40 @@ class NativeCancellation:
             raise Unavailable('NATIVE_CANCEL_ACK_UNCERTAIN_QUERY_ONLY') from None
         if decode(result)['status']!='cancelled':raise Unavailable('ORIGINAL_CANCEL_NOT_CONFIRMED')
         self.controls.release(mid)
-        return result
+        while self.clock()<deadline:
+            try:proof=decode(self.proof(request,deadline=deadline))
+            except Unavailable as error:
+                if str(error)!='NATIVE_CANCEL_DELIVERY_PENDING':raise
+                sleep(min(.05,max(0,deadline-self.clock())))
+            else:
+                if proof['status']!='CANCELLED':raise Unavailable('NATIVE_CANCEL_SOURCE_CHANGED')
+                return result
+        raise Unavailable('NATIVE_CANCEL_DRAIN_UNCONFIRMED_QUERY_ONLY')
+
+    def _acknowledged(self,mid,run_id):
+        def read(context):
+            original=self.claims.query(context,mid)
+            if original is None or original.receipt.run_id!=run_id:
+                raise Unavailable('NATIVE_CANCEL_SOURCE_UNAVAILABLE')
+            with self.database.connect(context.scope) as db:
+                db.execute('SET TRANSACTION READ ONLY')
+                row=db.execute('SELECT acknowledged FROM cj_message_delivery '
+                    'WHERE scope=%s AND message_id=%s AND run_id=%s',
+                    (context.scope,mid,run_id)).fetchone()
+            if row is None or type(row[0]) is not bool:
+                raise Unavailable('NATIVE_CANCEL_DELIVERY_UNAVAILABLE')
+            if self.claims.query(context,mid)!=original:
+                raise Unavailable('NATIVE_CANCEL_SOURCE_CHANGED')
+            return row[0]
+        return self.boundary.with_history_context(self.token_supplier(),read)
 
     def proof(self,request,*,deadline):
         mid=self.target(request,deadline=deadline)
         inventory=decode(self.originals.inventory(self.token_supplier(),mid))
+        cancelled=inventory['status']=='cancelled'
+        if cancelled and not self._acknowledged(mid,inventory['run_id']):
+            raise Unavailable('NATIVE_CANCEL_DELIVERY_PENDING')
         return encode(dict(version='G2C-native-cancel-original.1',action_id=request['step_id'],message_id=mid,
-            run_id=inventory['run_id'],status='CANCELLED' if inventory['status']=='cancelled' else 'UNKNOWN',
-            original_status=inventory['status'],events=inventory['events']))
+            run_id=inventory['run_id'],status='CANCELLED' if cancelled else 'UNKNOWN',
+            original_status=inventory['status'],events=inventory['events'],
+            delivery_acknowledged=True if cancelled else None))
