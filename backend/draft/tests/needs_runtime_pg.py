@@ -307,7 +307,7 @@ class GroupedPlanChecks(unittest.TestCase):
             self.assertEqual(response.status_code,200,response.text)
             return response.json()['receipt']
 
-    def configured(self, subject, value, *, truncated=False, rich_pace=None):
+    def configured(self, subject, value, *, truncated=False, rich_pace=None, rich_guidance=None, draft_guidance=''):
         from cj_agent.provider import ProviderUnknown
         from cj_draft.grouped_plan import LioGroupedPlanPublisher, DATED_FIRST, DATED_DELTA
         from cj_draft.rich_first import LioRichFirstPlanPublisher
@@ -341,7 +341,8 @@ class GroupedPlanChecks(unittest.TestCase):
         worker.drafts=FixturePublisher(base,self.signer,original_needs,
             lambda binding,original,expected: binding.message_id in self.admitted
                 and self.admitted[binding.message_id]==expected and original.receipt.run_id==binding.run_id,
-            **({} if rich_pace is None else dict(pace=rich_pace)))
+            draft_guidance=draft_guidance,
+            **({} if rich_pace is None else dict(pace=rich_pace,rich_guidance=rich_guidance)))
         return worker,database
 
     def test_rich_first_three_paces_bilingual_signed_source_and_single_commit(self):
@@ -358,10 +359,15 @@ class GroupedPlanChecks(unittest.TestCase):
                     message=self.send(subject,1,fields=snapshot.fields)
                     self.admitted[message['message_id']]=None
                     value=rich_reply(days,language,False,pace)
-                    worker,_=self.configured(subject,value,rich_pace=pace)
+                    rich_guidance='Separate rich guidance.' if pace is Pace.RELAXED else None
+                    worker,_=self.configured(subject,value,rich_pace=pace,rich_guidance=rich_guidance,
+                                             draft_guidance='Original legacy guidance.')
                     self.assertIsNone(worker.drafts.generation_used)
+                    expected_guidance=rich_guidance if rich_guidance is not None else 'Original legacy guidance.'
+                    self.assertEqual(worker.drafts.rich_guidance,expected_guidance)
                     self.assertEqual(worker.process()[0].status,'completed')
                     self.assertEqual(worker.drafts.generation_used,value['version'])
+                    self.assertIn(expected_guidance,worker.drafts.system)
                     repository=worker.drafts.repository
                     receipt=repository.query_action(plan_action_id(message['run_id']))
                     self.assertIsNotNone(receipt)

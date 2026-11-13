@@ -4,11 +4,12 @@ from datetime import timedelta
 from hashlib import sha256
 import json
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from jsonschema import Draft202012Validator, ValidationError
 import pytest
 
-from cj_draft.grouped_plan import (GENERATION_PROFILES, LioGroupedPlanPublisher, grouped_input,
+from cj_draft.grouped_plan import (GENERATION_PROFILES, LioGroupedCalendarPublisher, LioGroupedPlanPublisher, grouped_input,
                                   response_format, response_format_sha256)
 from cj_draft.rich_first import LioRichFirstCalendarPublisher, LioRichFirstPlanPublisher, normalize, rich_system_for
 from cj_draft.rich_schema import Pace, PROFILES, SIGHT_COUNTS
@@ -26,6 +27,7 @@ def publisher(days, language, ordinal, pace, *, fixed=False):
     host.pace = pace
     host.source = SimpleNamespace(contexts={'original': None})
     host.draft_guidance = ''
+    host.rich_guidance = ''
     return host, capture
 
 
@@ -93,6 +95,29 @@ def test_fixed_source_uses_old_profile_and_never_guesses_or_discards_a_kind(ordi
     assert json.loads(content)['items'][0]['fixed'] == dict(state='known', value=True)
     with pytest.raises(ValueError):
         host.build_plan(packed(rich_reply(4, 'en', ordinal, Pace.MODERATE)), capture)
+
+
+def test_actual_fixed_capture_keeps_old_guidance_even_if_factory_expected_a_rich_first():
+    host, capture = publisher(4, 'en', False, Pace.MODERATE, fixed=True)
+    host.draft_guidance = 'Original legacy morning and afternoon guidance.'
+    host.rich_guidance = 'Separate rich sights and meals guidance.'
+    messages = host.model_messages('original', 'plan', capture, [])
+    packet = grouped_input(host, capture, messages, object())
+    assert packet.profile == host.generation_used == GENERATION_PROFILES[0]
+    assert host.draft_guidance in packet.system and host.rich_guidance not in packet.system
+    host, capture = publisher(4, 'en', False, Pace.MODERATE)
+    host.draft_guidance = 'Original legacy morning and afternoon guidance.'
+    host.rich_guidance = 'Separate rich sights and meals guidance.'
+    host.model_messages('original', 'plan', capture, [])
+    assert host.rich_guidance in host.system and host.draft_guidance not in host.system
+
+
+def test_calendar_constructor_default_guidance_stays_empty_without_a_dated_guidance_field():
+    with patch.object(LioGroupedCalendarPublisher, '__init__', lambda self: None):
+        host = LioRichFirstCalendarPublisher(pace=Pace.MODERATE)
+        assert host.rich_guidance == ''
+        explicit = LioRichFirstCalendarPublisher(pace=Pace.MODERATE, rich_guidance='Ordinal rich guidance.')
+        assert explicit.rich_guidance == 'Ordinal rich guidance.'
 
 
 @pytest.mark.parametrize('change', [

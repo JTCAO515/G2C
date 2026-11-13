@@ -11,6 +11,11 @@
 L 从受保护的画像事实编译这个枚举；缺省由 L 显式选 MODERATE，并向用户说明。
 不得把 prompt 中的版本字符串或客户端 flag 当作选择格式、修改来源或授权发布的依据。
 
+可显式传 `rich_guidance` 给新首份格式；dated 的 `draft_guidance` 保留给旧路径。
+捕获的 source 如包含历史固定项，调用前选择旧 profile 和原 `draft_guidance`，即使 factory
+先前曾预期首份无固定项，也不把 rich 提示送给旧格式。未传 `rich_guidance` 时保持原构造行为：
+dated 沿用 `draft_guidance`，ordinal 使用空串；没有供应商失败后换格式或重试。
+
 `grouped_input` 仍冻结实际 publisher、捕获的 source context、system、messages、provider；
 原 worker / model.draft 注册出口使用同一个 packet。原件声明和供应商 wire 使用
 `grouped_plan.response_format` 与 `response_format_sha256` 的同一选定 profile。
@@ -54,6 +59,8 @@ C 的私有 PG 组合还覆盖三档节奏中英各 3 条：4/5 天首份经过�
 真实 Trip signer 与唯一 act 保存，逐项核同顺序/名称、版本 1 和原动作回执；重处理无新工作/新版本。
 这里的 pace 来自测试装配、模型为 FakeProvider；不证明 L 的画像 grounding、新正式 factory、
 供应商 wire 或输出 token 预算，不代替 L 在实际装配后负责的中英各 3 条签名组合。
-供应商的输出上限本切片不改（现有 grouped wire 为 1024 tokens）；必须用真实新配置证明多日输出完整，
+同一 #924 集成切片由 L 为新六个 profile 接线 1536 tokens 上限，旧四个仍精确保持 1024；
+更低的配置优先，例如配置 768 时新格式 wire 必须为 768。C 的独立 wire 子例分别精确断言，
+不以笼统的「不超过 1536」掩盖旧四个的回归。必须用真实新配置证明多日输出完整，
 不能用 fixture UTF-8 长度或格式正确性推断供应商 token 数、延迟或全国规划通过。
 L 装配、部署、真实模型、#815 新窗口和 JT 复测仍单列 UNRUN；只用 WP0 合并后的原额度。

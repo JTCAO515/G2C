@@ -77,12 +77,13 @@ def normalize(raw, capture, *, ordinal, pace):
 class _RichFirst:
     ordinal = False
 
-    def __init__(self, *args, pace, **kwargs):
+    def __init__(self, *args, pace, rich_guidance=None, **kwargs):
         if type(pace) is not Pace:
             raise ValueError('trusted code must supply a typed Pace')
         self.pace = pace
         self.generation_used = None
         super().__init__(*args, **kwargs)
+        self.rich_guidance = ('' if self.ordinal else self.draft_guidance) if rich_guidance is None else rich_guidance
 
     def _rich_first(self, capture):
         before, _ = capture.records()
@@ -98,7 +99,7 @@ class _RichFirst:
             # Preserve all original source/subjects instructions, replacing only
             # the generation shape. The factory supplies a grounded/default pace.
             self.system = rich_system_for(ordinal=self.ordinal, pace=self.pace,
-                                          guidance='' if self.ordinal else self.draft_guidance)
+                                          guidance=self.rich_guidance)
         self.generation_used = self.generation_profile(capture)
         return result
 
