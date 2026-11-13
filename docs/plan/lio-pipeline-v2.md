@@ -16,6 +16,14 @@ Explicit plan-now selects the next generation round, with no required city,
 days/date/party questionnaire. An undated calendar remains undated. The new
 mode's documented defaults do not enter the old v1/v2/v3 execution paths.
 
+New-mode code defaults carry provenance from the actual plan-now original/MID
+and a fixed policy/version, distinct from explicit user statements and explicitly
+authorized saved Memory. Code must never invent a user quote for a default; the
+model cannot grant itself default provenance. WP7 introduces an explicit new
+source type accepting the actual LIO-message.4 original and this code-default
+provenance. The NEEDS contract and old data8 source guards remain unchanged;
+neither a default nor a .4 original may be relabeled to pass an old guard.
+
 Factory selection is server code over actual source capability, never a prompt
 marker, user option id, DTO hash or a global calendar flag. The server exploration
 rollback switch defaults on for the new mode; turning it off selects the retained

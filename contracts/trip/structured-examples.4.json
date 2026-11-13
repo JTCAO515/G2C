@@ -1,0 +1,5731 @@
+{
+  "version": "TRIP-structured-examples.4",
+  "synthetic_only": true,
+  "scope": "Contract/binding examples, not provider, physical feasibility or G6 quality evidence.",
+  "cases": {
+    "unconfirmed": {
+      "content": {
+        "content_version": "structured.4",
+        "title": "合成双语两日 / Synthetic bilingual two-day plan",
+        "calendar": {
+          "state": "undated"
+        },
+        "days": [
+          {
+            "day_index": 1,
+            "theme": "演示主题 / Demonstration theme",
+            "area": "演示片区 / Demonstration area"
+          },
+          {
+            "day_index": 2,
+            "theme": "演示主题 / Demonstration theme",
+            "area": "演示片区 / Demonstration area"
+          }
+        ],
+        "items": [
+          {
+            "id": "item-1",
+            "text": "演示地点1 / demonstration stop 1",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "10:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "11:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "sight",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点1",
+              "name_en": "Demonstration stop 1",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-2",
+            "text": "演示地点2 / demonstration stop 2",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "12:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "13:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "meal",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点2",
+              "name_en": "Demonstration stop 2",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-3",
+            "text": "演示地点3 / demonstration stop 3",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "14:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "15:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "sight",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点3",
+              "name_en": "Demonstration stop 3",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-4",
+            "text": "演示地点4 / demonstration stop 4",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "18:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "19:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "meal",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点4",
+              "name_en": "Demonstration stop 4",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-5",
+            "text": "演示地点5 / demonstration stop 5",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "10:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "11:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "sight",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点5",
+              "name_en": "Demonstration stop 5",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-6",
+            "text": "演示地点6 / demonstration stop 6",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "12:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "13:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "meal",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点6",
+              "name_en": "Demonstration stop 6",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-7",
+            "text": "演示地点7 / demonstration stop 7",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "14:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "15:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "sight",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点7",
+              "name_en": "Demonstration stop 7",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-8",
+            "text": "演示地点8 / demonstration stop 8",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "18:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "19:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "meal",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点8",
+              "name_en": "Demonstration stop 8",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          }
+        ],
+        "sources": [],
+        "date_checks": [
+          {
+            "kind": "weather",
+            "state": "not_checked",
+            "day_indices": [
+              1,
+              2
+            ],
+            "item_ids": [],
+            "reason": "date_not_set",
+            "evidence_refs": []
+          },
+          {
+            "kind": "day_opening",
+            "state": "not_checked",
+            "day_indices": [
+              1,
+              2
+            ],
+            "item_ids": [],
+            "reason": "date_not_set",
+            "evidence_refs": []
+          }
+        ],
+        "legs": [
+          {
+            "day_index": 1,
+            "from_item_id": "item-1",
+            "to_item_id": "item-2",
+            "state": "unconfirmed",
+            "mode": null,
+            "duration_seconds": null,
+            "distance_m": null,
+            "source": null,
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          },
+          {
+            "day_index": 1,
+            "from_item_id": "item-2",
+            "to_item_id": "item-3",
+            "state": "unconfirmed",
+            "mode": null,
+            "duration_seconds": null,
+            "distance_m": null,
+            "source": null,
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          },
+          {
+            "day_index": 1,
+            "from_item_id": "item-3",
+            "to_item_id": "item-4",
+            "state": "unconfirmed",
+            "mode": null,
+            "duration_seconds": null,
+            "distance_m": null,
+            "source": null,
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          },
+          {
+            "day_index": 2,
+            "from_item_id": "item-5",
+            "to_item_id": "item-6",
+            "state": "unconfirmed",
+            "mode": null,
+            "duration_seconds": null,
+            "distance_m": null,
+            "source": null,
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          },
+          {
+            "day_index": 2,
+            "from_item_id": "item-6",
+            "to_item_id": "item-7",
+            "state": "unconfirmed",
+            "mode": null,
+            "duration_seconds": null,
+            "distance_m": null,
+            "source": null,
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          },
+          {
+            "day_index": 2,
+            "from_item_id": "item-7",
+            "to_item_id": "item-8",
+            "state": "unconfirmed",
+            "mode": null,
+            "duration_seconds": null,
+            "distance_m": null,
+            "source": null,
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          }
+        ],
+        "lodging": {
+          "area": "演示住宿片区 / Demonstration lodging area",
+          "recommendations": [
+            {
+              "place": {
+                "state": "unconfirmed",
+                "amap_id": null,
+                "name_zh": "演示地点hotel-1",
+                "name_en": "Demonstration stop hotel-1",
+                "name_en_source": null,
+                "coordinate": null,
+                "coordinate_role": null,
+                "address": null,
+                "source": null
+              },
+              "note": null,
+              "reason_refs": [
+                "pace"
+              ]
+            },
+            {
+              "place": {
+                "state": "unconfirmed",
+                "amap_id": null,
+                "name_zh": "演示地点hotel-2",
+                "name_en": "Demonstration stop hotel-2",
+                "name_en_source": null,
+                "coordinate": null,
+                "coordinate_role": null,
+                "address": null,
+                "source": null
+              },
+              "note": null,
+              "reason_refs": [
+                "pace"
+              ]
+            }
+          ]
+        }
+      },
+      "source": {
+        "version": "TRIP-rich-source.1",
+        "original": {
+          "protocol": "LIO-message.4",
+          "message_id": "synthetic-plan-now",
+          "run_id": "synthetic-run",
+          "input_sha256": "da381ef36d441db6211d2cfe7b27c94e031831bcdf4c579e27d1f3003a0faec6",
+          "question_day": "2026-11-14"
+        },
+        "plan_now": {
+          "kind": "plan_now",
+          "original": {
+            "protocol": "LIO-message.4",
+            "message_id": "synthetic-plan-now",
+            "run_id": "synthetic-run",
+            "input_sha256": "da381ef36d441db6211d2cfe7b27c94e031831bcdf4c579e27d1f3003a0faec6",
+            "question_day": "2026-11-14"
+          },
+          "policy": {
+            "id": "synthetic-installed-policy",
+            "sha256": "51f5c0b893c0462f70c26b76b78cebc34d84acab1dd7e8beb3d8a42eab44798c"
+          }
+        },
+        "policy": {
+          "id": "synthetic-installed-policy",
+          "sha256": "51f5c0b893c0462f70c26b76b78cebc34d84acab1dd7e8beb3d8a42eab44798c"
+        },
+        "profile_states": {
+          "interests": "known",
+          "pace": "memory",
+          "city": "default",
+          "duration_days": "default",
+          "arrival": "unknown"
+        },
+        "records": [
+          {
+            "provider": "checks",
+            "kind": "weather",
+            "reference": "synthetic:code-weather",
+            "sha256": "4ff4a88e70d419683ce7acb535ccb3f92284a506199555660d0c81beb5dd66df",
+            "payload": {
+              "kind": "weather",
+              "state": "not_checked",
+              "day_indices": [
+                1,
+                2
+              ],
+              "item_ids": [],
+              "reason": "date_not_set",
+              "evidence_refs": []
+            }
+          },
+          {
+            "provider": "checks",
+            "kind": "day_opening",
+            "reference": "synthetic:code-day_opening",
+            "sha256": "432dd43f045d8c4ae5e22e32f60ec98d95b5451dd54426ee9e9a8921450c0f98",
+            "payload": {
+              "kind": "day_opening",
+              "state": "not_checked",
+              "day_indices": [
+                1,
+                2
+              ],
+              "item_ids": [],
+              "reason": "date_not_set",
+              "evidence_refs": []
+            }
+          }
+        ]
+      },
+      "host_expected": {
+        "expected_original": {
+          "protocol": "LIO-message.4",
+          "message_id": "synthetic-plan-now",
+          "run_id": "synthetic-run",
+          "input_sha256": "da381ef36d441db6211d2cfe7b27c94e031831bcdf4c579e27d1f3003a0faec6",
+          "question_day": "2026-11-14"
+        },
+        "expected_policy": {
+          "id": "synthetic-installed-policy",
+          "sha256": "51f5c0b893c0462f70c26b76b78cebc34d84acab1dd7e8beb3d8a42eab44798c"
+        },
+        "accepted_profile_states": {
+          "interests": "known",
+          "pace": "memory",
+          "city": "default",
+          "duration_days": "default",
+          "arrival": "unknown"
+        },
+        "eligible_records": [
+          {
+            "provider": "checks",
+            "kind": "weather",
+            "reference": "synthetic:code-weather",
+            "sha256": "4ff4a88e70d419683ce7acb535ccb3f92284a506199555660d0c81beb5dd66df",
+            "payload": {
+              "kind": "weather",
+              "state": "not_checked",
+              "day_indices": [
+                1,
+                2
+              ],
+              "item_ids": [],
+              "reason": "date_not_set",
+              "evidence_refs": []
+            }
+          },
+          {
+            "provider": "checks",
+            "kind": "day_opening",
+            "reference": "synthetic:code-day_opening",
+            "sha256": "432dd43f045d8c4ae5e22e32f60ec98d95b5451dd54426ee9e9a8921450c0f98",
+            "payload": {
+              "kind": "day_opening",
+              "state": "not_checked",
+              "day_indices": [
+                1,
+                2
+              ],
+              "item_ids": [],
+              "reason": "date_not_set",
+              "evidence_refs": []
+            }
+          }
+        ],
+        "expected_plan_now": {
+          "kind": "plan_now",
+          "original": {
+            "protocol": "LIO-message.4",
+            "message_id": "synthetic-plan-now",
+            "run_id": "synthetic-run",
+            "input_sha256": "da381ef36d441db6211d2cfe7b27c94e031831bcdf4c579e27d1f3003a0faec6",
+            "question_day": "2026-11-14"
+          },
+          "policy": {
+            "id": "synthetic-installed-policy",
+            "sha256": "51f5c0b893c0462f70c26b76b78cebc34d84acab1dd7e8beb3d8a42eab44798c"
+          }
+        }
+      }
+    },
+    "matched": {
+      "content": {
+        "content_version": "structured.4",
+        "title": "合成双语两日 / Synthetic bilingual two-day plan",
+        "calendar": {
+          "state": "undated"
+        },
+        "days": [
+          {
+            "day_index": 1,
+            "theme": "演示主题 / Demonstration theme",
+            "area": "演示片区 / Demonstration area"
+          },
+          {
+            "day_index": 2,
+            "theme": "演示主题 / Demonstration theme",
+            "area": "演示片区 / Demonstration area"
+          }
+        ],
+        "items": [
+          {
+            "id": "item-1",
+            "text": "演示地点1 / demonstration stop 1",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "10:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "11:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "sight",
+            "place": {
+              "state": "matched",
+              "amap_id": "synthetic-poi-1",
+              "name_zh": "演示地点1",
+              "name_en": "Demonstration stop 1",
+              "name_en_source": {
+                "provider": "wikidata",
+                "kind": "name",
+                "reference": "synthetic:reviewed-name",
+                "sha256": "9f134cdd0008ec4b0bc8c80273cec547453cbaf970fa371f65db6ec74e120eb2"
+              },
+              "coordinate": {
+                "raw": "116.300000,39.900000",
+                "longitude": "116.300000",
+                "latitude": "39.900000",
+                "crs": "GCJ-02"
+              },
+              "coordinate_role": "poi_center",
+              "address": "合成地址 / Synthetic address",
+              "source": {
+                "provider": "amap",
+                "kind": "place",
+                "reference": "synthetic:place-1",
+                "sha256": "7130d976cb9cb9d4a6f6d3cf07e865cfe55d841afebb3d9c6f89db341ee5de4d"
+              }
+            },
+            "note": null,
+            "tip": {
+              "text": "这是一条合成提示 / This is a synthetic tip.",
+              "source": {
+                "provider": "visitor",
+                "kind": "tip",
+                "reference": "synthetic:visitor-entry",
+                "sha256": "7179de0add3b180973c81aca8a667951a1513ede5dfaea0b82ed431231ac2ae3"
+              }
+            },
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-2",
+            "text": "演示地点2 / demonstration stop 2",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "12:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "13:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "meal",
+            "place": {
+              "state": "matched",
+              "amap_id": "synthetic-poi-2",
+              "name_zh": "演示地点2",
+              "name_en": "Demonstration stop 2",
+              "name_en_source": null,
+              "coordinate": {
+                "raw": "116.300001,39.900001",
+                "longitude": "116.300001",
+                "latitude": "39.900001",
+                "crs": "GCJ-02"
+              },
+              "coordinate_role": "poi_center",
+              "address": "合成地址 / Synthetic address",
+              "source": {
+                "provider": "amap",
+                "kind": "place",
+                "reference": "synthetic:place-2",
+                "sha256": "7b3b3e9fab7e8426fdb3fc5c1161a8e481dd47c4ff768d7d8a06a4f44ccd484e"
+              }
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-3",
+            "text": "演示地点3 / demonstration stop 3",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "14:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "15:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "sight",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点3",
+              "name_en": "Demonstration stop 3",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-4",
+            "text": "演示地点4 / demonstration stop 4",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "18:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "19:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "meal",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点4",
+              "name_en": "Demonstration stop 4",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-5",
+            "text": "演示地点5 / demonstration stop 5",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "10:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "11:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "sight",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点5",
+              "name_en": "Demonstration stop 5",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-6",
+            "text": "演示地点6 / demonstration stop 6",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "12:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "13:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "meal",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点6",
+              "name_en": "Demonstration stop 6",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-7",
+            "text": "演示地点7 / demonstration stop 7",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "14:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "15:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "sight",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点7",
+              "name_en": "Demonstration stop 7",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-8",
+            "text": "演示地点8 / demonstration stop 8",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "18:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "19:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "meal",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点8",
+              "name_en": "Demonstration stop 8",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          }
+        ],
+        "sources": [],
+        "date_checks": [
+          {
+            "kind": "weather",
+            "state": "not_checked",
+            "day_indices": [
+              1,
+              2
+            ],
+            "item_ids": [],
+            "reason": "date_not_set",
+            "evidence_refs": []
+          },
+          {
+            "kind": "day_opening",
+            "state": "not_checked",
+            "day_indices": [
+              1,
+              2
+            ],
+            "item_ids": [],
+            "reason": "date_not_set",
+            "evidence_refs": []
+          }
+        ],
+        "legs": [
+          {
+            "day_index": 1,
+            "from_item_id": "item-1",
+            "to_item_id": "item-2",
+            "state": "estimated",
+            "mode": "walking",
+            "duration_seconds": 900,
+            "distance_m": 900,
+            "source": {
+              "provider": "amap",
+              "kind": "route",
+              "reference": "synthetic:route-1",
+              "sha256": "9993fd073926df46bc2a11aa07894ae722b89f482c475898455e8da43901beb8"
+            },
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          },
+          {
+            "day_index": 1,
+            "from_item_id": "item-2",
+            "to_item_id": "item-3",
+            "state": "unconfirmed",
+            "mode": null,
+            "duration_seconds": null,
+            "distance_m": null,
+            "source": null,
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          },
+          {
+            "day_index": 1,
+            "from_item_id": "item-3",
+            "to_item_id": "item-4",
+            "state": "unconfirmed",
+            "mode": null,
+            "duration_seconds": null,
+            "distance_m": null,
+            "source": null,
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          },
+          {
+            "day_index": 2,
+            "from_item_id": "item-5",
+            "to_item_id": "item-6",
+            "state": "unconfirmed",
+            "mode": null,
+            "duration_seconds": null,
+            "distance_m": null,
+            "source": null,
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          },
+          {
+            "day_index": 2,
+            "from_item_id": "item-6",
+            "to_item_id": "item-7",
+            "state": "unconfirmed",
+            "mode": null,
+            "duration_seconds": null,
+            "distance_m": null,
+            "source": null,
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          },
+          {
+            "day_index": 2,
+            "from_item_id": "item-7",
+            "to_item_id": "item-8",
+            "state": "unconfirmed",
+            "mode": null,
+            "duration_seconds": null,
+            "distance_m": null,
+            "source": null,
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          }
+        ],
+        "lodging": {
+          "area": "演示住宿片区 / Demonstration lodging area",
+          "recommendations": [
+            {
+              "place": {
+                "state": "unconfirmed",
+                "amap_id": null,
+                "name_zh": "演示地点hotel-1",
+                "name_en": "Demonstration stop hotel-1",
+                "name_en_source": null,
+                "coordinate": null,
+                "coordinate_role": null,
+                "address": null,
+                "source": null
+              },
+              "note": null,
+              "reason_refs": [
+                "pace"
+              ]
+            },
+            {
+              "place": {
+                "state": "unconfirmed",
+                "amap_id": null,
+                "name_zh": "演示地点hotel-2",
+                "name_en": "Demonstration stop hotel-2",
+                "name_en_source": null,
+                "coordinate": null,
+                "coordinate_role": null,
+                "address": null,
+                "source": null
+              },
+              "note": null,
+              "reason_refs": [
+                "pace"
+              ]
+            }
+          ]
+        }
+      },
+      "source": {
+        "version": "TRIP-rich-source.1",
+        "original": {
+          "protocol": "LIO-message.4",
+          "message_id": "synthetic-plan-now",
+          "run_id": "synthetic-run",
+          "input_sha256": "da381ef36d441db6211d2cfe7b27c94e031831bcdf4c579e27d1f3003a0faec6",
+          "question_day": "2026-11-14"
+        },
+        "plan_now": {
+          "kind": "plan_now",
+          "original": {
+            "protocol": "LIO-message.4",
+            "message_id": "synthetic-plan-now",
+            "run_id": "synthetic-run",
+            "input_sha256": "da381ef36d441db6211d2cfe7b27c94e031831bcdf4c579e27d1f3003a0faec6",
+            "question_day": "2026-11-14"
+          },
+          "policy": {
+            "id": "synthetic-installed-policy",
+            "sha256": "51f5c0b893c0462f70c26b76b78cebc34d84acab1dd7e8beb3d8a42eab44798c"
+          }
+        },
+        "policy": {
+          "id": "synthetic-installed-policy",
+          "sha256": "51f5c0b893c0462f70c26b76b78cebc34d84acab1dd7e8beb3d8a42eab44798c"
+        },
+        "profile_states": {
+          "interests": "known",
+          "pace": "memory",
+          "city": "default",
+          "duration_days": "default",
+          "arrival": "unknown"
+        },
+        "records": [
+          {
+            "provider": "amap",
+            "kind": "place",
+            "reference": "synthetic:place-1",
+            "sha256": "7130d976cb9cb9d4a6f6d3cf07e865cfe55d841afebb3d9c6f89db341ee5de4d",
+            "payload": {
+              "amap_id": "synthetic-poi-1",
+              "name_zh": "演示地点1",
+              "coordinate": {
+                "raw": "116.300000,39.900000",
+                "longitude": "116.300000",
+                "latitude": "39.900000",
+                "crs": "GCJ-02"
+              },
+              "coordinate_role": "poi_center",
+              "address": "合成地址 / Synthetic address"
+            }
+          },
+          {
+            "provider": "amap",
+            "kind": "place",
+            "reference": "synthetic:place-2",
+            "sha256": "7b3b3e9fab7e8426fdb3fc5c1161a8e481dd47c4ff768d7d8a06a4f44ccd484e",
+            "payload": {
+              "amap_id": "synthetic-poi-2",
+              "name_zh": "演示地点2",
+              "coordinate": {
+                "raw": "116.300001,39.900001",
+                "longitude": "116.300001",
+                "latitude": "39.900001",
+                "crs": "GCJ-02"
+              },
+              "coordinate_role": "poi_center",
+              "address": "合成地址 / Synthetic address"
+            }
+          },
+          {
+            "provider": "wikidata",
+            "kind": "name",
+            "reference": "synthetic:reviewed-name",
+            "sha256": "9f134cdd0008ec4b0bc8c80273cec547453cbaf970fa371f65db6ec74e120eb2",
+            "payload": {
+              "name_zh": "演示地点1",
+              "name_en": "Demonstration stop 1"
+            }
+          },
+          {
+            "provider": "visitor",
+            "kind": "tip",
+            "reference": "synthetic:visitor-entry",
+            "sha256": "7179de0add3b180973c81aca8a667951a1513ede5dfaea0b82ed431231ac2ae3",
+            "payload": {
+              "entry_id": "synthetic-entry",
+              "entry_sha256": "98052024a6e542e9a1e7e0c1b17dc691bfedcfce199065f8679da6eebcd9709d",
+              "checked_on": "2026-11-14",
+              "expires_on": "2026-12-14",
+              "subject_key": "synthetic.site",
+              "item_ids": [
+                "item-1"
+              ],
+              "amap_ids": [
+                "synthetic-poi-1"
+              ]
+            }
+          },
+          {
+            "provider": "amap",
+            "kind": "route",
+            "reference": "synthetic:route-1",
+            "sha256": "9993fd073926df46bc2a11aa07894ae722b89f482c475898455e8da43901beb8",
+            "payload": {
+              "from_amap_id": "synthetic-poi-1",
+              "to_amap_id": "synthetic-poi-2",
+              "from_coordinate": {
+                "raw": "116.300000,39.900000",
+                "longitude": "116.300000",
+                "latitude": "39.900000",
+                "crs": "GCJ-02"
+              },
+              "to_coordinate": {
+                "raw": "116.300001,39.900001",
+                "longitude": "116.300001",
+                "latitude": "39.900001",
+                "crs": "GCJ-02"
+              },
+              "from_coordinate_role": "poi_center",
+              "to_coordinate_role": "poi_center",
+              "mode": "walking",
+              "duration_seconds": 900,
+              "distance_m": 900
+            }
+          },
+          {
+            "provider": "checks",
+            "kind": "weather",
+            "reference": "synthetic:code-weather",
+            "sha256": "4ff4a88e70d419683ce7acb535ccb3f92284a506199555660d0c81beb5dd66df",
+            "payload": {
+              "kind": "weather",
+              "state": "not_checked",
+              "day_indices": [
+                1,
+                2
+              ],
+              "item_ids": [],
+              "reason": "date_not_set",
+              "evidence_refs": []
+            }
+          },
+          {
+            "provider": "checks",
+            "kind": "day_opening",
+            "reference": "synthetic:code-day_opening",
+            "sha256": "432dd43f045d8c4ae5e22e32f60ec98d95b5451dd54426ee9e9a8921450c0f98",
+            "payload": {
+              "kind": "day_opening",
+              "state": "not_checked",
+              "day_indices": [
+                1,
+                2
+              ],
+              "item_ids": [],
+              "reason": "date_not_set",
+              "evidence_refs": []
+            }
+          }
+        ]
+      },
+      "host_expected": {
+        "expected_original": {
+          "protocol": "LIO-message.4",
+          "message_id": "synthetic-plan-now",
+          "run_id": "synthetic-run",
+          "input_sha256": "da381ef36d441db6211d2cfe7b27c94e031831bcdf4c579e27d1f3003a0faec6",
+          "question_day": "2026-11-14"
+        },
+        "expected_policy": {
+          "id": "synthetic-installed-policy",
+          "sha256": "51f5c0b893c0462f70c26b76b78cebc34d84acab1dd7e8beb3d8a42eab44798c"
+        },
+        "accepted_profile_states": {
+          "interests": "known",
+          "pace": "memory",
+          "city": "default",
+          "duration_days": "default",
+          "arrival": "unknown"
+        },
+        "eligible_records": [
+          {
+            "provider": "amap",
+            "kind": "place",
+            "reference": "synthetic:place-1",
+            "sha256": "7130d976cb9cb9d4a6f6d3cf07e865cfe55d841afebb3d9c6f89db341ee5de4d",
+            "payload": {
+              "amap_id": "synthetic-poi-1",
+              "name_zh": "演示地点1",
+              "coordinate": {
+                "raw": "116.300000,39.900000",
+                "longitude": "116.300000",
+                "latitude": "39.900000",
+                "crs": "GCJ-02"
+              },
+              "coordinate_role": "poi_center",
+              "address": "合成地址 / Synthetic address"
+            }
+          },
+          {
+            "provider": "amap",
+            "kind": "place",
+            "reference": "synthetic:place-2",
+            "sha256": "7b3b3e9fab7e8426fdb3fc5c1161a8e481dd47c4ff768d7d8a06a4f44ccd484e",
+            "payload": {
+              "amap_id": "synthetic-poi-2",
+              "name_zh": "演示地点2",
+              "coordinate": {
+                "raw": "116.300001,39.900001",
+                "longitude": "116.300001",
+                "latitude": "39.900001",
+                "crs": "GCJ-02"
+              },
+              "coordinate_role": "poi_center",
+              "address": "合成地址 / Synthetic address"
+            }
+          },
+          {
+            "provider": "wikidata",
+            "kind": "name",
+            "reference": "synthetic:reviewed-name",
+            "sha256": "9f134cdd0008ec4b0bc8c80273cec547453cbaf970fa371f65db6ec74e120eb2",
+            "payload": {
+              "name_zh": "演示地点1",
+              "name_en": "Demonstration stop 1"
+            }
+          },
+          {
+            "provider": "visitor",
+            "kind": "tip",
+            "reference": "synthetic:visitor-entry",
+            "sha256": "7179de0add3b180973c81aca8a667951a1513ede5dfaea0b82ed431231ac2ae3",
+            "payload": {
+              "entry_id": "synthetic-entry",
+              "entry_sha256": "98052024a6e542e9a1e7e0c1b17dc691bfedcfce199065f8679da6eebcd9709d",
+              "checked_on": "2026-11-14",
+              "expires_on": "2026-12-14",
+              "subject_key": "synthetic.site",
+              "item_ids": [
+                "item-1"
+              ],
+              "amap_ids": [
+                "synthetic-poi-1"
+              ]
+            }
+          },
+          {
+            "provider": "amap",
+            "kind": "route",
+            "reference": "synthetic:route-1",
+            "sha256": "9993fd073926df46bc2a11aa07894ae722b89f482c475898455e8da43901beb8",
+            "payload": {
+              "from_amap_id": "synthetic-poi-1",
+              "to_amap_id": "synthetic-poi-2",
+              "from_coordinate": {
+                "raw": "116.300000,39.900000",
+                "longitude": "116.300000",
+                "latitude": "39.900000",
+                "crs": "GCJ-02"
+              },
+              "to_coordinate": {
+                "raw": "116.300001,39.900001",
+                "longitude": "116.300001",
+                "latitude": "39.900001",
+                "crs": "GCJ-02"
+              },
+              "from_coordinate_role": "poi_center",
+              "to_coordinate_role": "poi_center",
+              "mode": "walking",
+              "duration_seconds": 900,
+              "distance_m": 900
+            }
+          },
+          {
+            "provider": "checks",
+            "kind": "weather",
+            "reference": "synthetic:code-weather",
+            "sha256": "4ff4a88e70d419683ce7acb535ccb3f92284a506199555660d0c81beb5dd66df",
+            "payload": {
+              "kind": "weather",
+              "state": "not_checked",
+              "day_indices": [
+                1,
+                2
+              ],
+              "item_ids": [],
+              "reason": "date_not_set",
+              "evidence_refs": []
+            }
+          },
+          {
+            "provider": "checks",
+            "kind": "day_opening",
+            "reference": "synthetic:code-day_opening",
+            "sha256": "432dd43f045d8c4ae5e22e32f60ec98d95b5451dd54426ee9e9a8921450c0f98",
+            "payload": {
+              "kind": "day_opening",
+              "state": "not_checked",
+              "day_indices": [
+                1,
+                2
+              ],
+              "item_ids": [],
+              "reason": "date_not_set",
+              "evidence_refs": []
+            }
+          }
+        ],
+        "expected_plan_now": {
+          "kind": "plan_now",
+          "original": {
+            "protocol": "LIO-message.4",
+            "message_id": "synthetic-plan-now",
+            "run_id": "synthetic-run",
+            "input_sha256": "da381ef36d441db6211d2cfe7b27c94e031831bcdf4c579e27d1f3003a0faec6",
+            "question_day": "2026-11-14"
+          },
+          "policy": {
+            "id": "synthetic-installed-policy",
+            "sha256": "51f5c0b893c0462f70c26b76b78cebc34d84acab1dd7e8beb3d8a42eab44798c"
+          }
+        }
+      }
+    },
+    "dated": {
+      "content": {
+        "content_version": "structured.4",
+        "title": "合成双语两日 / Synthetic bilingual two-day plan",
+        "calendar": {
+          "state": "dated",
+          "start_date": "2026-12-01"
+        },
+        "days": [
+          {
+            "day_index": 1,
+            "theme": "演示主题 / Demonstration theme",
+            "area": "演示片区 / Demonstration area",
+            "date": "2026-12-01"
+          },
+          {
+            "day_index": 2,
+            "theme": "演示主题 / Demonstration theme",
+            "area": "演示片区 / Demonstration area",
+            "date": "2026-12-02"
+          }
+        ],
+        "items": [
+          {
+            "id": "item-1",
+            "text": "演示地点1 / demonstration stop 1",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "10:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "11:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "sight",
+            "place": {
+              "state": "matched",
+              "amap_id": "synthetic-poi-1",
+              "name_zh": "演示地点1",
+              "name_en": "Demonstration stop 1",
+              "name_en_source": {
+                "provider": "wikidata",
+                "kind": "name",
+                "reference": "synthetic:reviewed-name",
+                "sha256": "9f134cdd0008ec4b0bc8c80273cec547453cbaf970fa371f65db6ec74e120eb2"
+              },
+              "coordinate": {
+                "raw": "116.300000,39.900000",
+                "longitude": "116.300000",
+                "latitude": "39.900000",
+                "crs": "GCJ-02"
+              },
+              "coordinate_role": "poi_center",
+              "address": "合成地址 / Synthetic address",
+              "source": {
+                "provider": "amap",
+                "kind": "place",
+                "reference": "synthetic:place-1",
+                "sha256": "7130d976cb9cb9d4a6f6d3cf07e865cfe55d841afebb3d9c6f89db341ee5de4d"
+              }
+            },
+            "note": null,
+            "tip": {
+              "text": "这是一条合成提示 / This is a synthetic tip.",
+              "source": {
+                "provider": "visitor",
+                "kind": "tip",
+                "reference": "synthetic:visitor-entry",
+                "sha256": "7179de0add3b180973c81aca8a667951a1513ede5dfaea0b82ed431231ac2ae3"
+              }
+            },
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-2",
+            "text": "演示地点2 / demonstration stop 2",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "12:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "13:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "meal",
+            "place": {
+              "state": "matched",
+              "amap_id": "synthetic-poi-2",
+              "name_zh": "演示地点2",
+              "name_en": "Demonstration stop 2",
+              "name_en_source": null,
+              "coordinate": {
+                "raw": "116.300001,39.900001",
+                "longitude": "116.300001",
+                "latitude": "39.900001",
+                "crs": "GCJ-02"
+              },
+              "coordinate_role": "poi_center",
+              "address": "合成地址 / Synthetic address",
+              "source": {
+                "provider": "amap",
+                "kind": "place",
+                "reference": "synthetic:place-2",
+                "sha256": "7b3b3e9fab7e8426fdb3fc5c1161a8e481dd47c4ff768d7d8a06a4f44ccd484e"
+              }
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-3",
+            "text": "演示地点3 / demonstration stop 3",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "14:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "15:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "sight",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点3",
+              "name_en": "Demonstration stop 3",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-4",
+            "text": "演示地点4 / demonstration stop 4",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "18:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "19:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "meal",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点4",
+              "name_en": "Demonstration stop 4",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-5",
+            "text": "演示地点5 / demonstration stop 5",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "10:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "11:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "sight",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点5",
+              "name_en": "Demonstration stop 5",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-6",
+            "text": "演示地点6 / demonstration stop 6",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "12:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "13:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "meal",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点6",
+              "name_en": "Demonstration stop 6",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-7",
+            "text": "演示地点7 / demonstration stop 7",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "14:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "15:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "sight",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点7",
+              "name_en": "Demonstration stop 7",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-8",
+            "text": "演示地点8 / demonstration stop 8",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "18:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "19:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "meal",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点8",
+              "name_en": "Demonstration stop 8",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          }
+        ],
+        "sources": [],
+        "date_checks": [
+          {
+            "kind": "weather",
+            "state": "unknown",
+            "day_indices": [
+              1,
+              2
+            ],
+            "item_ids": [],
+            "reason": "date_evidence_unavailable",
+            "evidence_refs": []
+          },
+          {
+            "kind": "day_opening",
+            "state": "unknown",
+            "day_indices": [
+              1,
+              2
+            ],
+            "item_ids": [],
+            "reason": "date_evidence_unavailable",
+            "evidence_refs": []
+          }
+        ],
+        "legs": [
+          {
+            "day_index": 1,
+            "from_item_id": "item-1",
+            "to_item_id": "item-2",
+            "state": "estimated",
+            "mode": "walking",
+            "duration_seconds": 900,
+            "distance_m": 900,
+            "source": {
+              "provider": "amap",
+              "kind": "route",
+              "reference": "synthetic:route-1",
+              "sha256": "9993fd073926df46bc2a11aa07894ae722b89f482c475898455e8da43901beb8"
+            },
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          },
+          {
+            "day_index": 1,
+            "from_item_id": "item-2",
+            "to_item_id": "item-3",
+            "state": "unconfirmed",
+            "mode": null,
+            "duration_seconds": null,
+            "distance_m": null,
+            "source": null,
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          },
+          {
+            "day_index": 1,
+            "from_item_id": "item-3",
+            "to_item_id": "item-4",
+            "state": "unconfirmed",
+            "mode": null,
+            "duration_seconds": null,
+            "distance_m": null,
+            "source": null,
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          },
+          {
+            "day_index": 2,
+            "from_item_id": "item-5",
+            "to_item_id": "item-6",
+            "state": "unconfirmed",
+            "mode": null,
+            "duration_seconds": null,
+            "distance_m": null,
+            "source": null,
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          },
+          {
+            "day_index": 2,
+            "from_item_id": "item-6",
+            "to_item_id": "item-7",
+            "state": "unconfirmed",
+            "mode": null,
+            "duration_seconds": null,
+            "distance_m": null,
+            "source": null,
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          },
+          {
+            "day_index": 2,
+            "from_item_id": "item-7",
+            "to_item_id": "item-8",
+            "state": "unconfirmed",
+            "mode": null,
+            "duration_seconds": null,
+            "distance_m": null,
+            "source": null,
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          }
+        ],
+        "lodging": {
+          "area": "演示住宿片区 / Demonstration lodging area",
+          "recommendations": [
+            {
+              "place": {
+                "state": "unconfirmed",
+                "amap_id": null,
+                "name_zh": "演示地点hotel-1",
+                "name_en": "Demonstration stop hotel-1",
+                "name_en_source": null,
+                "coordinate": null,
+                "coordinate_role": null,
+                "address": null,
+                "source": null
+              },
+              "note": null,
+              "reason_refs": [
+                "pace"
+              ]
+            },
+            {
+              "place": {
+                "state": "unconfirmed",
+                "amap_id": null,
+                "name_zh": "演示地点hotel-2",
+                "name_en": "Demonstration stop hotel-2",
+                "name_en_source": null,
+                "coordinate": null,
+                "coordinate_role": null,
+                "address": null,
+                "source": null
+              },
+              "note": null,
+              "reason_refs": [
+                "pace"
+              ]
+            }
+          ]
+        }
+      },
+      "source": {
+        "version": "TRIP-rich-source.1",
+        "original": {
+          "protocol": "LIO-message.4",
+          "message_id": "synthetic-plan-now",
+          "run_id": "synthetic-run",
+          "input_sha256": "da381ef36d441db6211d2cfe7b27c94e031831bcdf4c579e27d1f3003a0faec6",
+          "question_day": "2026-11-14"
+        },
+        "plan_now": {
+          "kind": "plan_now",
+          "original": {
+            "protocol": "LIO-message.4",
+            "message_id": "synthetic-plan-now",
+            "run_id": "synthetic-run",
+            "input_sha256": "da381ef36d441db6211d2cfe7b27c94e031831bcdf4c579e27d1f3003a0faec6",
+            "question_day": "2026-11-14"
+          },
+          "policy": {
+            "id": "synthetic-installed-policy",
+            "sha256": "51f5c0b893c0462f70c26b76b78cebc34d84acab1dd7e8beb3d8a42eab44798c"
+          }
+        },
+        "policy": {
+          "id": "synthetic-installed-policy",
+          "sha256": "51f5c0b893c0462f70c26b76b78cebc34d84acab1dd7e8beb3d8a42eab44798c"
+        },
+        "profile_states": {
+          "interests": "known",
+          "pace": "memory",
+          "city": "default",
+          "duration_days": "default",
+          "arrival": "unknown"
+        },
+        "records": [
+          {
+            "provider": "amap",
+            "kind": "place",
+            "reference": "synthetic:place-1",
+            "sha256": "7130d976cb9cb9d4a6f6d3cf07e865cfe55d841afebb3d9c6f89db341ee5de4d",
+            "payload": {
+              "amap_id": "synthetic-poi-1",
+              "name_zh": "演示地点1",
+              "coordinate": {
+                "raw": "116.300000,39.900000",
+                "longitude": "116.300000",
+                "latitude": "39.900000",
+                "crs": "GCJ-02"
+              },
+              "coordinate_role": "poi_center",
+              "address": "合成地址 / Synthetic address"
+            }
+          },
+          {
+            "provider": "amap",
+            "kind": "place",
+            "reference": "synthetic:place-2",
+            "sha256": "7b3b3e9fab7e8426fdb3fc5c1161a8e481dd47c4ff768d7d8a06a4f44ccd484e",
+            "payload": {
+              "amap_id": "synthetic-poi-2",
+              "name_zh": "演示地点2",
+              "coordinate": {
+                "raw": "116.300001,39.900001",
+                "longitude": "116.300001",
+                "latitude": "39.900001",
+                "crs": "GCJ-02"
+              },
+              "coordinate_role": "poi_center",
+              "address": "合成地址 / Synthetic address"
+            }
+          },
+          {
+            "provider": "wikidata",
+            "kind": "name",
+            "reference": "synthetic:reviewed-name",
+            "sha256": "9f134cdd0008ec4b0bc8c80273cec547453cbaf970fa371f65db6ec74e120eb2",
+            "payload": {
+              "name_zh": "演示地点1",
+              "name_en": "Demonstration stop 1"
+            }
+          },
+          {
+            "provider": "visitor",
+            "kind": "tip",
+            "reference": "synthetic:visitor-entry",
+            "sha256": "7179de0add3b180973c81aca8a667951a1513ede5dfaea0b82ed431231ac2ae3",
+            "payload": {
+              "entry_id": "synthetic-entry",
+              "entry_sha256": "98052024a6e542e9a1e7e0c1b17dc691bfedcfce199065f8679da6eebcd9709d",
+              "checked_on": "2026-11-14",
+              "expires_on": "2026-12-14",
+              "subject_key": "synthetic.site",
+              "item_ids": [
+                "item-1"
+              ],
+              "amap_ids": [
+                "synthetic-poi-1"
+              ]
+            }
+          },
+          {
+            "provider": "amap",
+            "kind": "route",
+            "reference": "synthetic:route-1",
+            "sha256": "9993fd073926df46bc2a11aa07894ae722b89f482c475898455e8da43901beb8",
+            "payload": {
+              "from_amap_id": "synthetic-poi-1",
+              "to_amap_id": "synthetic-poi-2",
+              "from_coordinate": {
+                "raw": "116.300000,39.900000",
+                "longitude": "116.300000",
+                "latitude": "39.900000",
+                "crs": "GCJ-02"
+              },
+              "to_coordinate": {
+                "raw": "116.300001,39.900001",
+                "longitude": "116.300001",
+                "latitude": "39.900001",
+                "crs": "GCJ-02"
+              },
+              "from_coordinate_role": "poi_center",
+              "to_coordinate_role": "poi_center",
+              "mode": "walking",
+              "duration_seconds": 900,
+              "distance_m": 900
+            }
+          },
+          {
+            "provider": "checks",
+            "kind": "weather",
+            "reference": "synthetic:code-weather",
+            "sha256": "c3badb6bbfc0eb6203a5ff59687aecd4b13578b4b6885e72acfa587ea7365d59",
+            "payload": {
+              "kind": "weather",
+              "state": "unknown",
+              "day_indices": [
+                1,
+                2
+              ],
+              "item_ids": [],
+              "reason": "date_evidence_unavailable",
+              "evidence_refs": []
+            }
+          },
+          {
+            "provider": "checks",
+            "kind": "day_opening",
+            "reference": "synthetic:code-day_opening",
+            "sha256": "5554381951de43eaf60441d91ae7cd2ba79f0da48fa4303ca61e1d4a9d5e2d66",
+            "payload": {
+              "kind": "day_opening",
+              "state": "unknown",
+              "day_indices": [
+                1,
+                2
+              ],
+              "item_ids": [],
+              "reason": "date_evidence_unavailable",
+              "evidence_refs": []
+            }
+          }
+        ]
+      },
+      "host_expected": {
+        "expected_original": {
+          "protocol": "LIO-message.4",
+          "message_id": "synthetic-plan-now",
+          "run_id": "synthetic-run",
+          "input_sha256": "da381ef36d441db6211d2cfe7b27c94e031831bcdf4c579e27d1f3003a0faec6",
+          "question_day": "2026-11-14"
+        },
+        "expected_policy": {
+          "id": "synthetic-installed-policy",
+          "sha256": "51f5c0b893c0462f70c26b76b78cebc34d84acab1dd7e8beb3d8a42eab44798c"
+        },
+        "accepted_profile_states": {
+          "interests": "known",
+          "pace": "memory",
+          "city": "default",
+          "duration_days": "default",
+          "arrival": "unknown"
+        },
+        "eligible_records": [
+          {
+            "provider": "amap",
+            "kind": "place",
+            "reference": "synthetic:place-1",
+            "sha256": "7130d976cb9cb9d4a6f6d3cf07e865cfe55d841afebb3d9c6f89db341ee5de4d",
+            "payload": {
+              "amap_id": "synthetic-poi-1",
+              "name_zh": "演示地点1",
+              "coordinate": {
+                "raw": "116.300000,39.900000",
+                "longitude": "116.300000",
+                "latitude": "39.900000",
+                "crs": "GCJ-02"
+              },
+              "coordinate_role": "poi_center",
+              "address": "合成地址 / Synthetic address"
+            }
+          },
+          {
+            "provider": "amap",
+            "kind": "place",
+            "reference": "synthetic:place-2",
+            "sha256": "7b3b3e9fab7e8426fdb3fc5c1161a8e481dd47c4ff768d7d8a06a4f44ccd484e",
+            "payload": {
+              "amap_id": "synthetic-poi-2",
+              "name_zh": "演示地点2",
+              "coordinate": {
+                "raw": "116.300001,39.900001",
+                "longitude": "116.300001",
+                "latitude": "39.900001",
+                "crs": "GCJ-02"
+              },
+              "coordinate_role": "poi_center",
+              "address": "合成地址 / Synthetic address"
+            }
+          },
+          {
+            "provider": "wikidata",
+            "kind": "name",
+            "reference": "synthetic:reviewed-name",
+            "sha256": "9f134cdd0008ec4b0bc8c80273cec547453cbaf970fa371f65db6ec74e120eb2",
+            "payload": {
+              "name_zh": "演示地点1",
+              "name_en": "Demonstration stop 1"
+            }
+          },
+          {
+            "provider": "visitor",
+            "kind": "tip",
+            "reference": "synthetic:visitor-entry",
+            "sha256": "7179de0add3b180973c81aca8a667951a1513ede5dfaea0b82ed431231ac2ae3",
+            "payload": {
+              "entry_id": "synthetic-entry",
+              "entry_sha256": "98052024a6e542e9a1e7e0c1b17dc691bfedcfce199065f8679da6eebcd9709d",
+              "checked_on": "2026-11-14",
+              "expires_on": "2026-12-14",
+              "subject_key": "synthetic.site",
+              "item_ids": [
+                "item-1"
+              ],
+              "amap_ids": [
+                "synthetic-poi-1"
+              ]
+            }
+          },
+          {
+            "provider": "amap",
+            "kind": "route",
+            "reference": "synthetic:route-1",
+            "sha256": "9993fd073926df46bc2a11aa07894ae722b89f482c475898455e8da43901beb8",
+            "payload": {
+              "from_amap_id": "synthetic-poi-1",
+              "to_amap_id": "synthetic-poi-2",
+              "from_coordinate": {
+                "raw": "116.300000,39.900000",
+                "longitude": "116.300000",
+                "latitude": "39.900000",
+                "crs": "GCJ-02"
+              },
+              "to_coordinate": {
+                "raw": "116.300001,39.900001",
+                "longitude": "116.300001",
+                "latitude": "39.900001",
+                "crs": "GCJ-02"
+              },
+              "from_coordinate_role": "poi_center",
+              "to_coordinate_role": "poi_center",
+              "mode": "walking",
+              "duration_seconds": 900,
+              "distance_m": 900
+            }
+          },
+          {
+            "provider": "checks",
+            "kind": "weather",
+            "reference": "synthetic:code-weather",
+            "sha256": "c3badb6bbfc0eb6203a5ff59687aecd4b13578b4b6885e72acfa587ea7365d59",
+            "payload": {
+              "kind": "weather",
+              "state": "unknown",
+              "day_indices": [
+                1,
+                2
+              ],
+              "item_ids": [],
+              "reason": "date_evidence_unavailable",
+              "evidence_refs": []
+            }
+          },
+          {
+            "provider": "checks",
+            "kind": "day_opening",
+            "reference": "synthetic:code-day_opening",
+            "sha256": "5554381951de43eaf60441d91ae7cd2ba79f0da48fa4303ca61e1d4a9d5e2d66",
+            "payload": {
+              "kind": "day_opening",
+              "state": "unknown",
+              "day_indices": [
+                1,
+                2
+              ],
+              "item_ids": [],
+              "reason": "date_evidence_unavailable",
+              "evidence_refs": []
+            }
+          }
+        ],
+        "expected_plan_now": {
+          "kind": "plan_now",
+          "original": {
+            "protocol": "LIO-message.4",
+            "message_id": "synthetic-plan-now",
+            "run_id": "synthetic-run",
+            "input_sha256": "da381ef36d441db6211d2cfe7b27c94e031831bcdf4c579e27d1f3003a0faec6",
+            "question_day": "2026-11-14"
+          },
+          "policy": {
+            "id": "synthetic-installed-policy",
+            "sha256": "51f5c0b893c0462f70c26b76b78cebc34d84acab1dd7e8beb3d8a42eab44798c"
+          }
+        }
+      }
+    },
+    "retained_verified": {
+      "content": {
+        "content_version": "structured.4",
+        "title": "合成双语两日 / Synthetic bilingual two-day plan",
+        "calendar": {
+          "state": "undated"
+        },
+        "days": [
+          {
+            "day_index": 1,
+            "theme": "演示主题 / Demonstration theme",
+            "area": "演示片区 / Demonstration area"
+          },
+          {
+            "day_index": 2,
+            "theme": "演示主题 / Demonstration theme",
+            "area": "演示片区 / Demonstration area"
+          }
+        ],
+        "items": [
+          {
+            "id": "item-1",
+            "text": "演示地点1 / demonstration stop 1",
+            "verification": "verified",
+            "evidence": [
+              "synthetic retained evidence"
+            ],
+            "schedule": {
+              "start": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "10:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "11:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "sight",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点1",
+              "name_en": "Demonstration stop 1",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-2",
+            "text": "演示地点2 / demonstration stop 2",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "12:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "13:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "meal",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点2",
+              "name_en": "Demonstration stop 2",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-3",
+            "text": "演示地点3 / demonstration stop 3",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "14:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "15:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "sight",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点3",
+              "name_en": "Demonstration stop 3",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-4",
+            "text": "演示地点4 / demonstration stop 4",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "18:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "19:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "meal",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点4",
+              "name_en": "Demonstration stop 4",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-5",
+            "text": "演示地点5 / demonstration stop 5",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "10:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "11:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "sight",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点5",
+              "name_en": "Demonstration stop 5",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-6",
+            "text": "演示地点6 / demonstration stop 6",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "12:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "13:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "meal",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点6",
+              "name_en": "Demonstration stop 6",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-7",
+            "text": "演示地点7 / demonstration stop 7",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "14:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "15:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "sight",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点7",
+              "name_en": "Demonstration stop 7",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-8",
+            "text": "演示地点8 / demonstration stop 8",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "18:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "19:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "meal",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点8",
+              "name_en": "Demonstration stop 8",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          }
+        ],
+        "sources": [],
+        "date_checks": [
+          {
+            "kind": "weather",
+            "state": "not_checked",
+            "day_indices": [
+              1,
+              2
+            ],
+            "item_ids": [],
+            "reason": "date_not_set",
+            "evidence_refs": []
+          },
+          {
+            "kind": "day_opening",
+            "state": "not_checked",
+            "day_indices": [
+              1,
+              2
+            ],
+            "item_ids": [],
+            "reason": "date_not_set",
+            "evidence_refs": []
+          }
+        ],
+        "legs": [
+          {
+            "day_index": 1,
+            "from_item_id": "item-1",
+            "to_item_id": "item-2",
+            "state": "unconfirmed",
+            "mode": null,
+            "duration_seconds": null,
+            "distance_m": null,
+            "source": null,
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          },
+          {
+            "day_index": 1,
+            "from_item_id": "item-2",
+            "to_item_id": "item-3",
+            "state": "unconfirmed",
+            "mode": null,
+            "duration_seconds": null,
+            "distance_m": null,
+            "source": null,
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          },
+          {
+            "day_index": 1,
+            "from_item_id": "item-3",
+            "to_item_id": "item-4",
+            "state": "unconfirmed",
+            "mode": null,
+            "duration_seconds": null,
+            "distance_m": null,
+            "source": null,
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          },
+          {
+            "day_index": 2,
+            "from_item_id": "item-5",
+            "to_item_id": "item-6",
+            "state": "unconfirmed",
+            "mode": null,
+            "duration_seconds": null,
+            "distance_m": null,
+            "source": null,
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          },
+          {
+            "day_index": 2,
+            "from_item_id": "item-6",
+            "to_item_id": "item-7",
+            "state": "unconfirmed",
+            "mode": null,
+            "duration_seconds": null,
+            "distance_m": null,
+            "source": null,
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          },
+          {
+            "day_index": 2,
+            "from_item_id": "item-7",
+            "to_item_id": "item-8",
+            "state": "unconfirmed",
+            "mode": null,
+            "duration_seconds": null,
+            "distance_m": null,
+            "source": null,
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          }
+        ],
+        "lodging": {
+          "area": "演示住宿片区 / Demonstration lodging area",
+          "recommendations": [
+            {
+              "place": {
+                "state": "unconfirmed",
+                "amap_id": null,
+                "name_zh": "演示地点hotel-1",
+                "name_en": "Demonstration stop hotel-1",
+                "name_en_source": null,
+                "coordinate": null,
+                "coordinate_role": null,
+                "address": null,
+                "source": null
+              },
+              "note": null,
+              "reason_refs": [
+                "pace"
+              ]
+            },
+            {
+              "place": {
+                "state": "unconfirmed",
+                "amap_id": null,
+                "name_zh": "演示地点hotel-2",
+                "name_en": "Demonstration stop hotel-2",
+                "name_en_source": null,
+                "coordinate": null,
+                "coordinate_role": null,
+                "address": null,
+                "source": null
+              },
+              "note": null,
+              "reason_refs": [
+                "pace"
+              ]
+            }
+          ]
+        }
+      },
+      "source": {
+        "version": "TRIP-rich-source.1",
+        "original": {
+          "protocol": "LIO-message.4",
+          "message_id": "synthetic-plan-now",
+          "run_id": "synthetic-run",
+          "input_sha256": "da381ef36d441db6211d2cfe7b27c94e031831bcdf4c579e27d1f3003a0faec6",
+          "question_day": "2026-11-14"
+        },
+        "plan_now": {
+          "kind": "plan_now",
+          "original": {
+            "protocol": "LIO-message.4",
+            "message_id": "synthetic-plan-now",
+            "run_id": "synthetic-run",
+            "input_sha256": "da381ef36d441db6211d2cfe7b27c94e031831bcdf4c579e27d1f3003a0faec6",
+            "question_day": "2026-11-14"
+          },
+          "policy": {
+            "id": "synthetic-installed-policy",
+            "sha256": "51f5c0b893c0462f70c26b76b78cebc34d84acab1dd7e8beb3d8a42eab44798c"
+          }
+        },
+        "policy": {
+          "id": "synthetic-installed-policy",
+          "sha256": "51f5c0b893c0462f70c26b76b78cebc34d84acab1dd7e8beb3d8a42eab44798c"
+        },
+        "profile_states": {
+          "interests": "known",
+          "pace": "memory",
+          "city": "default",
+          "duration_days": "default",
+          "arrival": "unknown"
+        },
+        "records": [
+          {
+            "provider": "checks",
+            "kind": "weather",
+            "reference": "synthetic:code-weather",
+            "sha256": "4ff4a88e70d419683ce7acb535ccb3f92284a506199555660d0c81beb5dd66df",
+            "payload": {
+              "kind": "weather",
+              "state": "not_checked",
+              "day_indices": [
+                1,
+                2
+              ],
+              "item_ids": [],
+              "reason": "date_not_set",
+              "evidence_refs": []
+            }
+          },
+          {
+            "provider": "checks",
+            "kind": "day_opening",
+            "reference": "synthetic:code-day_opening",
+            "sha256": "432dd43f045d8c4ae5e22e32f60ec98d95b5451dd54426ee9e9a8921450c0f98",
+            "payload": {
+              "kind": "day_opening",
+              "state": "not_checked",
+              "day_indices": [
+                1,
+                2
+              ],
+              "item_ids": [],
+              "reason": "date_not_set",
+              "evidence_refs": []
+            }
+          },
+          {
+            "provider": "trip",
+            "kind": "retained_item",
+            "reference": "synthetic:retained-item",
+            "sha256": "7396edaed4ad8a841f8a931461f1a43ca87447f9b257f933a7bfb55897df7b8b",
+            "payload": {
+              "trip_id": "synthetic-existing-trip",
+              "trip_version": 2,
+              "content_sha256": "faecfec2aa3973d64cbcfe4522c3d1d05b044f650968bebc48011fc8624cdb0d",
+              "item": {
+                "id": "item-1",
+                "text": "演示地点1 / demonstration stop 1",
+                "verification": "verified",
+                "evidence": [
+                  "synthetic retained evidence"
+                ],
+                "schedule": {
+                  "start": {
+                    "day_index": 1,
+                    "time": {
+                      "state": "known",
+                      "value": "10:00"
+                    },
+                    "timezone": {
+                      "state": "known",
+                      "value": "Asia/Shanghai"
+                    },
+                    "utc_offset": {
+                      "state": "unknown"
+                    }
+                  },
+                  "end": {
+                    "day_index": 1,
+                    "time": {
+                      "state": "known",
+                      "value": "11:00"
+                    },
+                    "timezone": {
+                      "state": "known",
+                      "value": "Asia/Shanghai"
+                    },
+                    "utc_offset": {
+                      "state": "unknown"
+                    }
+                  }
+                },
+                "fixed": {
+                  "state": "known",
+                  "value": false
+                },
+                "source_category": "unknown",
+                "source_refs": []
+              }
+            }
+          }
+        ]
+      },
+      "host_expected": {
+        "expected_original": {
+          "protocol": "LIO-message.4",
+          "message_id": "synthetic-plan-now",
+          "run_id": "synthetic-run",
+          "input_sha256": "da381ef36d441db6211d2cfe7b27c94e031831bcdf4c579e27d1f3003a0faec6",
+          "question_day": "2026-11-14"
+        },
+        "expected_policy": {
+          "id": "synthetic-installed-policy",
+          "sha256": "51f5c0b893c0462f70c26b76b78cebc34d84acab1dd7e8beb3d8a42eab44798c"
+        },
+        "accepted_profile_states": {
+          "interests": "known",
+          "pace": "memory",
+          "city": "default",
+          "duration_days": "default",
+          "arrival": "unknown"
+        },
+        "eligible_records": [
+          {
+            "provider": "checks",
+            "kind": "weather",
+            "reference": "synthetic:code-weather",
+            "sha256": "4ff4a88e70d419683ce7acb535ccb3f92284a506199555660d0c81beb5dd66df",
+            "payload": {
+              "kind": "weather",
+              "state": "not_checked",
+              "day_indices": [
+                1,
+                2
+              ],
+              "item_ids": [],
+              "reason": "date_not_set",
+              "evidence_refs": []
+            }
+          },
+          {
+            "provider": "checks",
+            "kind": "day_opening",
+            "reference": "synthetic:code-day_opening",
+            "sha256": "432dd43f045d8c4ae5e22e32f60ec98d95b5451dd54426ee9e9a8921450c0f98",
+            "payload": {
+              "kind": "day_opening",
+              "state": "not_checked",
+              "day_indices": [
+                1,
+                2
+              ],
+              "item_ids": [],
+              "reason": "date_not_set",
+              "evidence_refs": []
+            }
+          },
+          {
+            "provider": "trip",
+            "kind": "retained_item",
+            "reference": "synthetic:retained-item",
+            "sha256": "7396edaed4ad8a841f8a931461f1a43ca87447f9b257f933a7bfb55897df7b8b",
+            "payload": {
+              "trip_id": "synthetic-existing-trip",
+              "trip_version": 2,
+              "content_sha256": "faecfec2aa3973d64cbcfe4522c3d1d05b044f650968bebc48011fc8624cdb0d",
+              "item": {
+                "id": "item-1",
+                "text": "演示地点1 / demonstration stop 1",
+                "verification": "verified",
+                "evidence": [
+                  "synthetic retained evidence"
+                ],
+                "schedule": {
+                  "start": {
+                    "day_index": 1,
+                    "time": {
+                      "state": "known",
+                      "value": "10:00"
+                    },
+                    "timezone": {
+                      "state": "known",
+                      "value": "Asia/Shanghai"
+                    },
+                    "utc_offset": {
+                      "state": "unknown"
+                    }
+                  },
+                  "end": {
+                    "day_index": 1,
+                    "time": {
+                      "state": "known",
+                      "value": "11:00"
+                    },
+                    "timezone": {
+                      "state": "known",
+                      "value": "Asia/Shanghai"
+                    },
+                    "utc_offset": {
+                      "state": "unknown"
+                    }
+                  }
+                },
+                "fixed": {
+                  "state": "known",
+                  "value": false
+                },
+                "source_category": "unknown",
+                "source_refs": []
+              }
+            }
+          }
+        ],
+        "expected_plan_now": {
+          "kind": "plan_now",
+          "original": {
+            "protocol": "LIO-message.4",
+            "message_id": "synthetic-plan-now",
+            "run_id": "synthetic-run",
+            "input_sha256": "da381ef36d441db6211d2cfe7b27c94e031831bcdf4c579e27d1f3003a0faec6",
+            "question_day": "2026-11-14"
+          },
+          "policy": {
+            "id": "synthetic-installed-policy",
+            "sha256": "51f5c0b893c0462f70c26b76b78cebc34d84acab1dd7e8beb3d8a42eab44798c"
+          }
+        }
+      }
+    },
+    "protected_fixed": {
+      "content": {
+        "content_version": "structured.4",
+        "title": "合成双语两日 / Synthetic bilingual two-day plan",
+        "calendar": {
+          "state": "undated"
+        },
+        "days": [
+          {
+            "day_index": 1,
+            "theme": "演示主题 / Demonstration theme",
+            "area": "演示片区 / Demonstration area"
+          },
+          {
+            "day_index": 2,
+            "theme": "演示主题 / Demonstration theme",
+            "area": "演示片区 / Demonstration area"
+          }
+        ],
+        "items": [
+          {
+            "id": "item-1",
+            "text": "演示地点1 / demonstration stop 1",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "10:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "11:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": true
+            },
+            "source_category": "user_provided",
+            "source_refs": [],
+            "kind": "sight",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点1",
+              "name_en": "Demonstration stop 1",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-2",
+            "text": "演示地点2 / demonstration stop 2",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "12:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "13:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "meal",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点2",
+              "name_en": "Demonstration stop 2",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-3",
+            "text": "演示地点3 / demonstration stop 3",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "14:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "15:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "sight",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点3",
+              "name_en": "Demonstration stop 3",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-4",
+            "text": "演示地点4 / demonstration stop 4",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "18:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "19:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "meal",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点4",
+              "name_en": "Demonstration stop 4",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-5",
+            "text": "演示地点5 / demonstration stop 5",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "10:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "11:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "sight",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点5",
+              "name_en": "Demonstration stop 5",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-6",
+            "text": "演示地点6 / demonstration stop 6",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "12:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "13:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "meal",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点6",
+              "name_en": "Demonstration stop 6",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-7",
+            "text": "演示地点7 / demonstration stop 7",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "14:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "15:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "sight",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点7",
+              "name_en": "Demonstration stop 7",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-8",
+            "text": "演示地点8 / demonstration stop 8",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "18:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "19:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "meal",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点8",
+              "name_en": "Demonstration stop 8",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          }
+        ],
+        "sources": [],
+        "date_checks": [
+          {
+            "kind": "weather",
+            "state": "not_checked",
+            "day_indices": [
+              1,
+              2
+            ],
+            "item_ids": [],
+            "reason": "date_not_set",
+            "evidence_refs": []
+          },
+          {
+            "kind": "day_opening",
+            "state": "not_checked",
+            "day_indices": [
+              1,
+              2
+            ],
+            "item_ids": [],
+            "reason": "date_not_set",
+            "evidence_refs": []
+          }
+        ],
+        "legs": [
+          {
+            "day_index": 1,
+            "from_item_id": "item-1",
+            "to_item_id": "item-2",
+            "state": "unconfirmed",
+            "mode": null,
+            "duration_seconds": null,
+            "distance_m": null,
+            "source": null,
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          },
+          {
+            "day_index": 1,
+            "from_item_id": "item-2",
+            "to_item_id": "item-3",
+            "state": "unconfirmed",
+            "mode": null,
+            "duration_seconds": null,
+            "distance_m": null,
+            "source": null,
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          },
+          {
+            "day_index": 1,
+            "from_item_id": "item-3",
+            "to_item_id": "item-4",
+            "state": "unconfirmed",
+            "mode": null,
+            "duration_seconds": null,
+            "distance_m": null,
+            "source": null,
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          },
+          {
+            "day_index": 2,
+            "from_item_id": "item-5",
+            "to_item_id": "item-6",
+            "state": "unconfirmed",
+            "mode": null,
+            "duration_seconds": null,
+            "distance_m": null,
+            "source": null,
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          },
+          {
+            "day_index": 2,
+            "from_item_id": "item-6",
+            "to_item_id": "item-7",
+            "state": "unconfirmed",
+            "mode": null,
+            "duration_seconds": null,
+            "distance_m": null,
+            "source": null,
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          },
+          {
+            "day_index": 2,
+            "from_item_id": "item-7",
+            "to_item_id": "item-8",
+            "state": "unconfirmed",
+            "mode": null,
+            "duration_seconds": null,
+            "distance_m": null,
+            "source": null,
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          }
+        ],
+        "lodging": {
+          "area": "演示住宿片区 / Demonstration lodging area",
+          "recommendations": [
+            {
+              "place": {
+                "state": "unconfirmed",
+                "amap_id": null,
+                "name_zh": "演示地点hotel-1",
+                "name_en": "Demonstration stop hotel-1",
+                "name_en_source": null,
+                "coordinate": null,
+                "coordinate_role": null,
+                "address": null,
+                "source": null
+              },
+              "note": null,
+              "reason_refs": [
+                "pace"
+              ]
+            },
+            {
+              "place": {
+                "state": "unconfirmed",
+                "amap_id": null,
+                "name_zh": "演示地点hotel-2",
+                "name_en": "Demonstration stop hotel-2",
+                "name_en_source": null,
+                "coordinate": null,
+                "coordinate_role": null,
+                "address": null,
+                "source": null
+              },
+              "note": null,
+              "reason_refs": [
+                "pace"
+              ]
+            }
+          ]
+        }
+      },
+      "source": {
+        "version": "TRIP-rich-source.1",
+        "original": {
+          "protocol": "LIO-message.4",
+          "message_id": "synthetic-plan-now",
+          "run_id": "synthetic-run",
+          "input_sha256": "da381ef36d441db6211d2cfe7b27c94e031831bcdf4c579e27d1f3003a0faec6",
+          "question_day": "2026-11-14"
+        },
+        "plan_now": {
+          "kind": "plan_now",
+          "original": {
+            "protocol": "LIO-message.4",
+            "message_id": "synthetic-plan-now",
+            "run_id": "synthetic-run",
+            "input_sha256": "da381ef36d441db6211d2cfe7b27c94e031831bcdf4c579e27d1f3003a0faec6",
+            "question_day": "2026-11-14"
+          },
+          "policy": {
+            "id": "synthetic-installed-policy",
+            "sha256": "51f5c0b893c0462f70c26b76b78cebc34d84acab1dd7e8beb3d8a42eab44798c"
+          }
+        },
+        "policy": {
+          "id": "synthetic-installed-policy",
+          "sha256": "51f5c0b893c0462f70c26b76b78cebc34d84acab1dd7e8beb3d8a42eab44798c"
+        },
+        "profile_states": {
+          "interests": "known",
+          "pace": "memory",
+          "city": "default",
+          "duration_days": "default",
+          "arrival": "unknown"
+        },
+        "records": [
+          {
+            "provider": "checks",
+            "kind": "weather",
+            "reference": "synthetic:code-weather",
+            "sha256": "4ff4a88e70d419683ce7acb535ccb3f92284a506199555660d0c81beb5dd66df",
+            "payload": {
+              "kind": "weather",
+              "state": "not_checked",
+              "day_indices": [
+                1,
+                2
+              ],
+              "item_ids": [],
+              "reason": "date_not_set",
+              "evidence_refs": []
+            }
+          },
+          {
+            "provider": "checks",
+            "kind": "day_opening",
+            "reference": "synthetic:code-day_opening",
+            "sha256": "432dd43f045d8c4ae5e22e32f60ec98d95b5451dd54426ee9e9a8921450c0f98",
+            "payload": {
+              "kind": "day_opening",
+              "state": "not_checked",
+              "day_indices": [
+                1,
+                2
+              ],
+              "item_ids": [],
+              "reason": "date_not_set",
+              "evidence_refs": []
+            }
+          },
+          {
+            "provider": "needs",
+            "kind": "fixed_item",
+            "reference": "synthetic:fixed-item",
+            "sha256": "0f847df530dc735525e4a76e8a08285ea0ebf5fd7bdcf830d69612af1b7561f5",
+            "payload": {
+              "needs_id": "synthetic-needs",
+              "needs_version": 1,
+              "content_sha256": "6dca1a0132663535b68c764020b33a398ddadf3cc1730b4f48615758142cfd74",
+              "item": {
+                "id": "item-1",
+                "text": "演示地点1 / demonstration stop 1",
+                "verification": "pending",
+                "evidence": [],
+                "schedule": {
+                  "start": {
+                    "day_index": 1,
+                    "time": {
+                      "state": "known",
+                      "value": "10:00"
+                    },
+                    "timezone": {
+                      "state": "known",
+                      "value": "Asia/Shanghai"
+                    },
+                    "utc_offset": {
+                      "state": "unknown"
+                    }
+                  },
+                  "end": {
+                    "day_index": 1,
+                    "time": {
+                      "state": "known",
+                      "value": "11:00"
+                    },
+                    "timezone": {
+                      "state": "known",
+                      "value": "Asia/Shanghai"
+                    },
+                    "utc_offset": {
+                      "state": "unknown"
+                    }
+                  }
+                },
+                "fixed": {
+                  "state": "known",
+                  "value": true
+                },
+                "source_category": "user_provided",
+                "source_refs": []
+              }
+            }
+          }
+        ]
+      },
+      "host_expected": {
+        "expected_original": {
+          "protocol": "LIO-message.4",
+          "message_id": "synthetic-plan-now",
+          "run_id": "synthetic-run",
+          "input_sha256": "da381ef36d441db6211d2cfe7b27c94e031831bcdf4c579e27d1f3003a0faec6",
+          "question_day": "2026-11-14"
+        },
+        "expected_policy": {
+          "id": "synthetic-installed-policy",
+          "sha256": "51f5c0b893c0462f70c26b76b78cebc34d84acab1dd7e8beb3d8a42eab44798c"
+        },
+        "accepted_profile_states": {
+          "interests": "known",
+          "pace": "memory",
+          "city": "default",
+          "duration_days": "default",
+          "arrival": "unknown"
+        },
+        "eligible_records": [
+          {
+            "provider": "checks",
+            "kind": "weather",
+            "reference": "synthetic:code-weather",
+            "sha256": "4ff4a88e70d419683ce7acb535ccb3f92284a506199555660d0c81beb5dd66df",
+            "payload": {
+              "kind": "weather",
+              "state": "not_checked",
+              "day_indices": [
+                1,
+                2
+              ],
+              "item_ids": [],
+              "reason": "date_not_set",
+              "evidence_refs": []
+            }
+          },
+          {
+            "provider": "checks",
+            "kind": "day_opening",
+            "reference": "synthetic:code-day_opening",
+            "sha256": "432dd43f045d8c4ae5e22e32f60ec98d95b5451dd54426ee9e9a8921450c0f98",
+            "payload": {
+              "kind": "day_opening",
+              "state": "not_checked",
+              "day_indices": [
+                1,
+                2
+              ],
+              "item_ids": [],
+              "reason": "date_not_set",
+              "evidence_refs": []
+            }
+          },
+          {
+            "provider": "needs",
+            "kind": "fixed_item",
+            "reference": "synthetic:fixed-item",
+            "sha256": "0f847df530dc735525e4a76e8a08285ea0ebf5fd7bdcf830d69612af1b7561f5",
+            "payload": {
+              "needs_id": "synthetic-needs",
+              "needs_version": 1,
+              "content_sha256": "6dca1a0132663535b68c764020b33a398ddadf3cc1730b4f48615758142cfd74",
+              "item": {
+                "id": "item-1",
+                "text": "演示地点1 / demonstration stop 1",
+                "verification": "pending",
+                "evidence": [],
+                "schedule": {
+                  "start": {
+                    "day_index": 1,
+                    "time": {
+                      "state": "known",
+                      "value": "10:00"
+                    },
+                    "timezone": {
+                      "state": "known",
+                      "value": "Asia/Shanghai"
+                    },
+                    "utc_offset": {
+                      "state": "unknown"
+                    }
+                  },
+                  "end": {
+                    "day_index": 1,
+                    "time": {
+                      "state": "known",
+                      "value": "11:00"
+                    },
+                    "timezone": {
+                      "state": "known",
+                      "value": "Asia/Shanghai"
+                    },
+                    "utc_offset": {
+                      "state": "unknown"
+                    }
+                  }
+                },
+                "fixed": {
+                  "state": "known",
+                  "value": true
+                },
+                "source_category": "user_provided",
+                "source_refs": []
+              }
+            }
+          }
+        ],
+        "expected_plan_now": {
+          "kind": "plan_now",
+          "original": {
+            "protocol": "LIO-message.4",
+            "message_id": "synthetic-plan-now",
+            "run_id": "synthetic-run",
+            "input_sha256": "da381ef36d441db6211d2cfe7b27c94e031831bcdf4c579e27d1f3003a0faec6",
+            "question_day": "2026-11-14"
+          },
+          "policy": {
+            "id": "synthetic-installed-policy",
+            "sha256": "51f5c0b893c0462f70c26b76b78cebc34d84acab1dd7e8beb3d8a42eab44798c"
+          }
+        }
+      }
+    },
+    "no_default_adjustment": {
+      "content": {
+        "content_version": "structured.4",
+        "title": "合成双语两日 / Synthetic bilingual two-day plan",
+        "calendar": {
+          "state": "undated"
+        },
+        "days": [
+          {
+            "day_index": 1,
+            "theme": "演示主题 / Demonstration theme",
+            "area": "演示片区 / Demonstration area"
+          },
+          {
+            "day_index": 2,
+            "theme": "演示主题 / Demonstration theme",
+            "area": "演示片区 / Demonstration area"
+          }
+        ],
+        "items": [
+          {
+            "id": "item-1",
+            "text": "演示地点1 / demonstration stop 1",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "10:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "11:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "sight",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点1",
+              "name_en": "Demonstration stop 1",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-2",
+            "text": "演示地点2 / demonstration stop 2",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "12:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "13:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "meal",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点2",
+              "name_en": "Demonstration stop 2",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-3",
+            "text": "演示地点3 / demonstration stop 3",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "14:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "15:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "sight",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点3",
+              "name_en": "Demonstration stop 3",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-4",
+            "text": "演示地点4 / demonstration stop 4",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "18:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 1,
+                "time": {
+                  "state": "known",
+                  "value": "19:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "meal",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点4",
+              "name_en": "Demonstration stop 4",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-5",
+            "text": "演示地点5 / demonstration stop 5",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "10:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "11:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "sight",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点5",
+              "name_en": "Demonstration stop 5",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-6",
+            "text": "演示地点6 / demonstration stop 6",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "12:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "13:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "meal",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点6",
+              "name_en": "Demonstration stop 6",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-7",
+            "text": "演示地点7 / demonstration stop 7",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "14:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "15:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "sight",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点7",
+              "name_en": "Demonstration stop 7",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          },
+          {
+            "id": "item-8",
+            "text": "演示地点8 / demonstration stop 8",
+            "verification": "pending",
+            "evidence": [],
+            "schedule": {
+              "start": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "18:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              },
+              "end": {
+                "day_index": 2,
+                "time": {
+                  "state": "known",
+                  "value": "19:00"
+                },
+                "timezone": {
+                  "state": "known",
+                  "value": "Asia/Shanghai"
+                },
+                "utc_offset": {
+                  "state": "unknown"
+                }
+              }
+            },
+            "fixed": {
+              "state": "known",
+              "value": false
+            },
+            "source_category": "unknown",
+            "source_refs": [],
+            "kind": "meal",
+            "place": {
+              "state": "unconfirmed",
+              "amap_id": null,
+              "name_zh": "演示地点8",
+              "name_en": "Demonstration stop 8",
+              "name_en_source": null,
+              "coordinate": null,
+              "coordinate_role": null,
+              "address": null,
+              "source": null
+            },
+            "note": null,
+            "tip": null,
+            "reason_refs": [
+              "interests"
+            ]
+          }
+        ],
+        "sources": [],
+        "date_checks": [
+          {
+            "kind": "weather",
+            "state": "not_checked",
+            "day_indices": [
+              1,
+              2
+            ],
+            "item_ids": [],
+            "reason": "date_not_set",
+            "evidence_refs": []
+          },
+          {
+            "kind": "day_opening",
+            "state": "not_checked",
+            "day_indices": [
+              1,
+              2
+            ],
+            "item_ids": [],
+            "reason": "date_not_set",
+            "evidence_refs": []
+          }
+        ],
+        "legs": [
+          {
+            "day_index": 1,
+            "from_item_id": "item-1",
+            "to_item_id": "item-2",
+            "state": "unconfirmed",
+            "mode": null,
+            "duration_seconds": null,
+            "distance_m": null,
+            "source": null,
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          },
+          {
+            "day_index": 1,
+            "from_item_id": "item-2",
+            "to_item_id": "item-3",
+            "state": "unconfirmed",
+            "mode": null,
+            "duration_seconds": null,
+            "distance_m": null,
+            "source": null,
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          },
+          {
+            "day_index": 1,
+            "from_item_id": "item-3",
+            "to_item_id": "item-4",
+            "state": "unconfirmed",
+            "mode": null,
+            "duration_seconds": null,
+            "distance_m": null,
+            "source": null,
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          },
+          {
+            "day_index": 2,
+            "from_item_id": "item-5",
+            "to_item_id": "item-6",
+            "state": "unconfirmed",
+            "mode": null,
+            "duration_seconds": null,
+            "distance_m": null,
+            "source": null,
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          },
+          {
+            "day_index": 2,
+            "from_item_id": "item-6",
+            "to_item_id": "item-7",
+            "state": "unconfirmed",
+            "mode": null,
+            "duration_seconds": null,
+            "distance_m": null,
+            "source": null,
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          },
+          {
+            "day_index": 2,
+            "from_item_id": "item-7",
+            "to_item_id": "item-8",
+            "state": "unconfirmed",
+            "mode": null,
+            "duration_seconds": null,
+            "distance_m": null,
+            "source": null,
+            "time_semantics": "provider_estimate_at_query_time",
+            "future_guaranteed": false
+          }
+        ],
+        "lodging": {
+          "area": "演示住宿片区 / Demonstration lodging area",
+          "recommendations": [
+            {
+              "place": {
+                "state": "unconfirmed",
+                "amap_id": null,
+                "name_zh": "演示地点hotel-1",
+                "name_en": "Demonstration stop hotel-1",
+                "name_en_source": null,
+                "coordinate": null,
+                "coordinate_role": null,
+                "address": null,
+                "source": null
+              },
+              "note": null,
+              "reason_refs": [
+                "pace"
+              ]
+            },
+            {
+              "place": {
+                "state": "unconfirmed",
+                "amap_id": null,
+                "name_zh": "演示地点hotel-2",
+                "name_en": "Demonstration stop hotel-2",
+                "name_en_source": null,
+                "coordinate": null,
+                "coordinate_role": null,
+                "address": null,
+                "source": null
+              },
+              "note": null,
+              "reason_refs": [
+                "pace"
+              ]
+            }
+          ]
+        }
+      },
+      "source": {
+        "version": "TRIP-rich-source.1",
+        "original": {
+          "protocol": "LIO-message.4",
+          "message_id": "synthetic-plan-now",
+          "run_id": "synthetic-run",
+          "input_sha256": "da381ef36d441db6211d2cfe7b27c94e031831bcdf4c579e27d1f3003a0faec6",
+          "question_day": "2026-11-14"
+        },
+        "plan_now": null,
+        "policy": {
+          "id": "synthetic-installed-policy",
+          "sha256": "51f5c0b893c0462f70c26b76b78cebc34d84acab1dd7e8beb3d8a42eab44798c"
+        },
+        "profile_states": {
+          "interests": "known",
+          "pace": "memory",
+          "city": "known",
+          "duration_days": "known",
+          "arrival": "unknown"
+        },
+        "records": [
+          {
+            "provider": "checks",
+            "kind": "weather",
+            "reference": "synthetic:code-weather",
+            "sha256": "4ff4a88e70d419683ce7acb535ccb3f92284a506199555660d0c81beb5dd66df",
+            "payload": {
+              "kind": "weather",
+              "state": "not_checked",
+              "day_indices": [
+                1,
+                2
+              ],
+              "item_ids": [],
+              "reason": "date_not_set",
+              "evidence_refs": []
+            }
+          },
+          {
+            "provider": "checks",
+            "kind": "day_opening",
+            "reference": "synthetic:code-day_opening",
+            "sha256": "432dd43f045d8c4ae5e22e32f60ec98d95b5451dd54426ee9e9a8921450c0f98",
+            "payload": {
+              "kind": "day_opening",
+              "state": "not_checked",
+              "day_indices": [
+                1,
+                2
+              ],
+              "item_ids": [],
+              "reason": "date_not_set",
+              "evidence_refs": []
+            }
+          }
+        ]
+      },
+      "host_expected": {
+        "expected_original": {
+          "protocol": "LIO-message.4",
+          "message_id": "synthetic-plan-now",
+          "run_id": "synthetic-run",
+          "input_sha256": "da381ef36d441db6211d2cfe7b27c94e031831bcdf4c579e27d1f3003a0faec6",
+          "question_day": "2026-11-14"
+        },
+        "expected_policy": {
+          "id": "synthetic-installed-policy",
+          "sha256": "51f5c0b893c0462f70c26b76b78cebc34d84acab1dd7e8beb3d8a42eab44798c"
+        },
+        "accepted_profile_states": {
+          "interests": "known",
+          "pace": "memory",
+          "city": "known",
+          "duration_days": "known",
+          "arrival": "unknown"
+        },
+        "eligible_records": [
+          {
+            "provider": "checks",
+            "kind": "weather",
+            "reference": "synthetic:code-weather",
+            "sha256": "4ff4a88e70d419683ce7acb535ccb3f92284a506199555660d0c81beb5dd66df",
+            "payload": {
+              "kind": "weather",
+              "state": "not_checked",
+              "day_indices": [
+                1,
+                2
+              ],
+              "item_ids": [],
+              "reason": "date_not_set",
+              "evidence_refs": []
+            }
+          },
+          {
+            "provider": "checks",
+            "kind": "day_opening",
+            "reference": "synthetic:code-day_opening",
+            "sha256": "432dd43f045d8c4ae5e22e32f60ec98d95b5451dd54426ee9e9a8921450c0f98",
+            "payload": {
+              "kind": "day_opening",
+              "state": "not_checked",
+              "day_indices": [
+                1,
+                2
+              ],
+              "item_ids": [],
+              "reason": "date_not_set",
+              "evidence_refs": []
+            }
+          }
+        ],
+        "expected_plan_now": null
+      }
+    }
+  },
+  "reject": [
+    {
+      "name": "hotel-price",
+      "case": "unconfirmed",
+      "path": [
+        "lodging",
+        "recommendations",
+        0,
+        "price"
+      ],
+      "value": "999"
+    },
+    {
+      "name": "hotel-booking",
+      "case": "unconfirmed",
+      "path": [
+        "lodging",
+        "recommendations",
+        0,
+        "booking_status"
+      ],
+      "value": "booked"
+    },
+    {
+      "name": "coordinate-conversion-tag",
+      "case": "matched",
+      "path": [
+        "items",
+        0,
+        "place",
+        "coordinate",
+        "crs"
+      ],
+      "value": "WGS-84"
+    },
+    {
+      "name": "forged-source",
+      "case": "matched",
+      "path": [
+        "items",
+        0,
+        "place",
+        "source",
+        "reference"
+      ],
+      "value": "forged-source"
+    },
+    {
+      "name": "wrong-source-digest",
+      "case": "matched",
+      "path": [
+        "items",
+        0,
+        "place",
+        "source",
+        "sha256"
+      ],
+      "value": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "name": "converted-coordinates",
+      "case": "matched",
+      "path": [
+        "items",
+        0,
+        "place",
+        "coordinate"
+      ],
+      "value": {
+        "raw": "116.2,39.8",
+        "longitude": "116.2",
+        "latitude": "39.8",
+        "crs": "GCJ-02"
+      }
+    },
+    {
+      "name": "nonadjacent-leg",
+      "case": "matched",
+      "path": [
+        "legs",
+        0,
+        "to_item_id"
+      ],
+      "value": "item-3"
+    },
+    {
+      "name": "invented-duration",
+      "case": "matched",
+      "path": [
+        "legs",
+        0,
+        "duration_seconds"
+      ],
+      "value": 100
+    },
+    {
+      "name": "unconfirmed-place-with-provider-id",
+      "case": "unconfirmed",
+      "path": [
+        "items",
+        0,
+        "place",
+        "amap_id"
+      ],
+      "value": "invented"
+    },
+    {
+      "name": "unconfirmed-route-with-estimate",
+      "case": "unconfirmed",
+      "path": [
+        "legs",
+        0,
+        "duration_seconds"
+      ],
+      "value": 5
+    },
+    {
+      "name": "default-not-user-reason",
+      "case": "matched",
+      "path": [
+        "items",
+        0,
+        "reason_refs"
+      ],
+      "value": [
+        "city"
+      ]
+    },
+    {
+      "name": "unknown-not-user-reason",
+      "case": "matched",
+      "path": [
+        "items",
+        0,
+        "reason_refs"
+      ],
+      "value": [
+        "arrival"
+      ]
+    },
+    {
+      "name": "absent-not-user-reason",
+      "case": "matched",
+      "path": [
+        "items",
+        0,
+        "reason_refs"
+      ],
+      "value": [
+        "dietary"
+      ]
+    },
+    {
+      "name": "wrong-reviewed-name",
+      "case": "matched",
+      "path": [
+        "items",
+        0,
+        "place",
+        "name_en"
+      ],
+      "value": "Invented official name"
+    },
+    {
+      "name": "forged-date-evidence",
+      "case": "dated",
+      "path": [
+        "date_checks",
+        0
+      ],
+      "value": {
+        "kind": "weather",
+        "state": "clear",
+        "day_indices": [
+          1,
+          2
+        ],
+        "item_ids": [],
+        "reason": "invented",
+        "evidence_refs": [
+          "invented"
+        ]
+      }
+    },
+    {
+      "name": "missing-lodging-area",
+      "case": "matched",
+      "path": [
+        "lodging",
+        "area"
+      ],
+      "value": ""
+    },
+    {
+      "name": "three-days-as-two",
+      "case": "dated",
+      "path": [
+        "days",
+        1,
+        "date"
+      ],
+      "value": "2026-12-03"
+    },
+    {
+      "name": "legacy-version-cannot-carry-rich-fields",
+      "case": "matched",
+      "path": [
+        "content_version"
+      ],
+      "value": "structured.3"
+    },
+    {
+      "name": "model-self-verification",
+      "case": "matched",
+      "path": [
+        "items",
+        0,
+        "verification"
+      ],
+      "value": "verified",
+      "also": [
+        {
+          "path": [
+            "items",
+            0,
+            "evidence"
+          ],
+          "value": [
+            "invented verification"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "H-tip-on-wrong-item",
+      "case": "matched",
+      "path": [
+        "items",
+        1,
+        "tip"
+      ],
+      "value": {
+        "text": "这是一条合成提示 / This is a synthetic tip.",
+        "source": {
+          "provider": "visitor",
+          "kind": "tip",
+          "reference": "synthetic:visitor-entry",
+          "sha256": "7179de0add3b180973c81aca8a667951a1513ede5dfaea0b82ed431231ac2ae3"
+        }
+      }
+    },
+    {
+      "name": "H-tip-on-wrong-venue",
+      "case": "matched",
+      "path": [
+        "items",
+        0,
+        "place"
+      ],
+      "value": {
+        "state": "matched",
+        "amap_id": "synthetic-poi-2",
+        "name_zh": "演示地点2",
+        "name_en": "Demonstration stop 2",
+        "name_en_source": null,
+        "coordinate": {
+          "raw": "116.300001,39.900001",
+          "longitude": "116.300001",
+          "latitude": "39.900001",
+          "crs": "GCJ-02"
+        },
+        "coordinate_role": "poi_center",
+        "address": "合成地址 / Synthetic address",
+        "source": {
+          "provider": "amap",
+          "kind": "place",
+          "reference": "synthetic:place-2",
+          "sha256": "7b3b3e9fab7e8426fdb3fc5c1161a8e481dd47c4ff768d7d8a06a4f44ccd484e"
+        }
+      },
+      "also": [
+        {
+          "path": [
+            "legs",
+            0,
+            "state"
+          ],
+          "value": "unconfirmed"
+        },
+        {
+          "path": [
+            "legs",
+            0,
+            "mode"
+          ],
+          "value": null
+        },
+        {
+          "path": [
+            "legs",
+            0,
+            "duration_seconds"
+          ],
+          "value": null
+        },
+        {
+          "path": [
+            "legs",
+            0,
+            "distance_m"
+          ],
+          "value": null
+        },
+        {
+          "path": [
+            "legs",
+            0,
+            "source"
+          ],
+          "value": null
+        }
+      ]
+    },
+    {
+      "name": "model-cannot-claim-user-intent",
+      "case": "unconfirmed",
+      "path": [
+        "items",
+        0,
+        "source_category"
+      ],
+      "value": "user_provided"
+    },
+    {
+      "name": "model-cannot-lock-a-proposal",
+      "case": "unconfirmed",
+      "path": [
+        "items",
+        0,
+        "fixed"
+      ],
+      "value": {
+        "state": "known",
+        "value": true
+      }
+    }
+  ],
+  "frozen_files_sha256": {
+    "contracts/trip/INITIALIZE-V1.md": "e0fb25b6c88a3eaefd5d8644c7ccb05fca7a8ade047a09919386f7d0ca5fb519",
+    "contracts/trip/MANUAL-ORIGIN-V1.md": "27fac486e38a8d94dab59daf3636c608d18fd7de347f44d298b0d7a4f49531cb",
+    "contracts/trip/NEEDS-PLAN-V1.md": "8ce5f990aebebfcdc45c9470a8a0f15ee2dfc4d78297e8095e455a683ad55532",
+    "contracts/trip/OPERATION.md": "ce4ab83d7606139a604820d4545fda02ce2749fdb90295b32eac444714f42ea9",
+    "contracts/trip/PROPOSAL-READ.md": "860e5cf5d5ef75682b493cb7ccaf02f846eaef631057faf8a34cfa42bac1b361",
+    "contracts/trip/README.md": "ce3304cb71ea67d83c9c35cdeac3c72df6f6232ea4a09284b92d0836638bf169",
+    "contracts/trip/STRUCTURED-V1.md": "84800174e8f45a2d7cc9aaae8bbd8db1d47dbc176a8aabef3b915326dade3d0d",
+    "contracts/trip/STRUCTURED-V3.md": "2c355fde6ba395a40d507c0adfcb3048b6c890351debd6b42a1fb20e0ee3d507",
+    "contracts/trip/check_structured_v3.py": "abcf360b3893e538576cbfa206391801b597eb5161bdc5b38251ae2e5dcac9e0",
+    "contracts/trip/structured-examples.3.json": "42d61cfb46ade738a47ecf3f52f98ace36aa8219907bc52574bff6ef41d4554e",
+    "contracts/trip/structured-read-examples.2.json": "bc5590ec39a43279e77a87fdf95255d57380a60d3889976957a668e02c1c709e",
+    "contracts/trip/structured-read-schema.2.json": "7f00e58950c675468ea55d517830e926278f678832390c8af5a367f8de95f979",
+    "contracts/trip/structured-schema.3.json": "78c449b5ac1926ecd286cd601fef2df7744090477ff0cf9824ec72ee97358fb2",
+    "backend/trip/cj_trip/structured.py": "6eecd19e3cee085c73e2fad5b5265e138da308a78b49522895be3d1a91f297f3",
+    "backend/trip/cj_trip/structured_v2.py": "dd1e83a3ecc8f0234e5d65e94f8e034c4dd651f369aad5b7c606a61d86b95a57",
+    "backend/trip/cj_trip/structured_v3.py": "e56445f2957b81bd1753a3c13e9c43f17d389b758114c15d82f295e7ca5c1723"
+  },
+  "source_reject": [
+    {
+      "name": "old-protocol-not-relabeled",
+      "path": [
+        "original",
+        "protocol"
+      ],
+      "value": "LIO-message.3"
+    },
+    {
+      "name": "wrong-original-message",
+      "path": [
+        "original",
+        "message_id"
+      ],
+      "value": "foreign-message"
+    },
+    {
+      "name": "wrong-original-hash",
+      "path": [
+        "original",
+        "input_sha256"
+      ],
+      "value": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "name": "wrong-plan-now-trigger",
+      "path": [
+        "plan_now",
+        "original",
+        "message_id"
+      ],
+      "value": "not-the-trigger"
+    },
+    {
+      "name": "model-policy",
+      "path": [
+        "policy",
+        "id"
+      ],
+      "value": "model-chosen-policy"
+    },
+    {
+      "name": "model-policy-hash",
+      "path": [
+        "policy",
+        "sha256"
+      ],
+      "value": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "name": "code-default-is-not-user-known",
+      "path": [
+        "profile_states",
+        "city"
+      ],
+      "value": "known"
+    },
+    {
+      "name": "default-with-forged-quote",
+      "path": [
+        "policy",
+        "quote"
+      ],
+      "value": "The user supposedly said this"
+    },
+    {
+      "name": "forged-observation-registry",
+      "path": [
+        "records",
+        0,
+        "reference"
+      ],
+      "value": "foreign-observation"
+    }
+  ]
+}
