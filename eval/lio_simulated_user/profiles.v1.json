@@ -1,0 +1,2128 @@
+{
+  "version": "LIO-simulated-users.1",
+  "issue": 936,
+  "specification": "https://github.com/JTCAO515/G2C/issues/922",
+  "attempts": [
+    1,
+    2,
+    3
+  ],
+  "profiles": [
+    {
+      "id": "p01-zh",
+      "locale": "zh",
+      "city": "beijing",
+      "opening": "帮我想想怎么玩。 想去北京。 计划玩5天。 喜欢历史和美食。",
+      "initial_disclosures": [
+        {
+          "factor": "city",
+          "value": "beijing",
+          "state": "known",
+          "quote": "想去北京。"
+        },
+        {
+          "factor": "duration_days",
+          "value": 5,
+          "state": "known",
+          "quote": "计划玩5天。"
+        },
+        {
+          "factor": "interests",
+          "value": [
+            "history",
+            "food"
+          ],
+          "state": "known",
+          "quote": "喜欢历史和美食。"
+        }
+      ],
+      "hidden_answers": {
+        "city": {
+          "value": "beijing",
+          "state": "known",
+          "text": "想去北京。"
+        },
+        "duration_days": {
+          "value": 5,
+          "state": "known",
+          "text": "计划玩5天。"
+        },
+        "season": {
+          "value": "autumn",
+          "state": "known",
+          "text": "秋天去。"
+        },
+        "first_visit": {
+          "value": false,
+          "state": "known",
+          "text": "以前来过中国。"
+        },
+        "party_type": {
+          "value": "two_adults",
+          "state": "known",
+          "text": "两个成人同行。"
+        },
+        "interests": {
+          "value": [
+            "history",
+            "food"
+          ],
+          "state": "known",
+          "text": "喜欢历史和美食。"
+        },
+        "pace": {
+          "value": "relaxed",
+          "state": "known",
+          "text": "节奏要轻松。"
+        },
+        "lodging_tier": {
+          "value": "comfortable",
+          "state": "known",
+          "text": "住舒适型酒店。"
+        },
+        "dietary": {
+          "value": "no_restriction",
+          "state": "known",
+          "text": "吃饭没有限制。"
+        },
+        "must_see": {
+          "value": [
+            "palace_museum"
+          ],
+          "state": "known",
+          "text": "一定想看故宫。"
+        },
+        "avoid": {
+          "value": [
+            "nightclubs"
+          ],
+          "state": "known",
+          "text": "避开夜店。"
+        },
+        "mobility": {
+          "value": "no_restriction",
+          "state": "known",
+          "text": "走路没有限制。"
+        },
+        "arrival": {
+          "value": null,
+          "state": "default",
+          "text": "到达时间还不知道。"
+        },
+        "departure": {
+          "value": null,
+          "state": "default",
+          "text": "离开时间还不知道。"
+        }
+      },
+      "behavior": {
+        "reply_style": "full",
+        "direct_after": 3,
+        "rules": "只按隐藏答案作答，按画像逐步回复，到轮次主动要方案。"
+      }
+    },
+    {
+      "id": "p01-en",
+      "locale": "en",
+      "city": "beijing",
+      "opening": "Help me think through this trip. I want to visit Beijing. I have 5 days. I enjoy history, food.",
+      "initial_disclosures": [
+        {
+          "factor": "city",
+          "value": "beijing",
+          "state": "known",
+          "quote": "I want to visit Beijing."
+        },
+        {
+          "factor": "duration_days",
+          "value": 5,
+          "state": "known",
+          "quote": "I have 5 days."
+        },
+        {
+          "factor": "interests",
+          "value": [
+            "history",
+            "food"
+          ],
+          "state": "known",
+          "quote": "I enjoy history, food."
+        }
+      ],
+      "hidden_answers": {
+        "city": {
+          "value": "beijing",
+          "state": "known",
+          "text": "I want to visit Beijing."
+        },
+        "duration_days": {
+          "value": 5,
+          "state": "known",
+          "text": "I have 5 days."
+        },
+        "season": {
+          "value": "autumn",
+          "state": "known",
+          "text": "I am traveling in autumn."
+        },
+        "first_visit": {
+          "value": false,
+          "state": "known",
+          "text": "I have visited China before."
+        },
+        "party_type": {
+          "value": "two_adults",
+          "state": "known",
+          "text": "There are two adults."
+        },
+        "interests": {
+          "value": [
+            "history",
+            "food"
+          ],
+          "state": "known",
+          "text": "I enjoy history, food."
+        },
+        "pace": {
+          "value": "relaxed",
+          "state": "known",
+          "text": "I want a relaxed pace."
+        },
+        "lodging_tier": {
+          "value": "comfortable",
+          "state": "known",
+          "text": "I prefer comfortable hotels."
+        },
+        "dietary": {
+          "value": "no_restriction",
+          "state": "known",
+          "text": "I have no dietary restrictions."
+        },
+        "must_see": {
+          "value": [
+            "palace_museum"
+          ],
+          "state": "known",
+          "text": "I would especially like to see the Palace Museum."
+        },
+        "avoid": {
+          "value": [
+            "nightclubs"
+          ],
+          "state": "known",
+          "text": "Please avoid nightclubs."
+        },
+        "mobility": {
+          "value": "no_restriction",
+          "state": "known",
+          "text": "I have no mobility limitations."
+        },
+        "arrival": {
+          "value": null,
+          "state": "default",
+          "text": "I do not know my arrival time yet."
+        },
+        "departure": {
+          "value": null,
+          "state": "default",
+          "text": "I do not know my departure time yet."
+        }
+      },
+      "behavior": {
+        "reply_style": "full",
+        "direct_after": 3,
+        "rules": "Use only hidden answers, follow the reply style, reveal incrementally, and request a plan at the specified round."
+      }
+    },
+    {
+      "id": "p02-zh",
+      "locale": "zh",
+      "city": "shanghai",
+      "opening": "帮我想想怎么玩。 想去上海。 这次独自旅行。",
+      "initial_disclosures": [
+        {
+          "factor": "city",
+          "value": "shanghai",
+          "state": "known",
+          "quote": "想去上海。"
+        },
+        {
+          "factor": "party_type",
+          "value": "solo",
+          "state": "inferred",
+          "quote": "这次独自旅行。"
+        }
+      ],
+      "hidden_answers": {
+        "city": {
+          "value": "shanghai",
+          "state": "known",
+          "text": "想去上海。"
+        },
+        "duration_days": {
+          "value": 3,
+          "state": "known",
+          "text": "计划玩3天。"
+        },
+        "season": {
+          "value": "winter",
+          "state": "known",
+          "text": "冬天去。"
+        },
+        "first_visit": {
+          "value": true,
+          "state": "known",
+          "text": "第一次来中国。"
+        },
+        "party_type": {
+          "value": "solo",
+          "state": "known",
+          "text": "这次独自旅行。"
+        },
+        "interests": {
+          "value": [
+            "architecture",
+            "shopping"
+          ],
+          "state": "known",
+          "text": "喜欢建筑和购物。"
+        },
+        "pace": {
+          "value": "moderate",
+          "state": "known",
+          "text": "节奏适中就好。"
+        },
+        "lodging_tier": {
+          "value": "budget",
+          "state": "known",
+          "text": "住经济型就行。"
+        },
+        "dietary": {
+          "value": "vegetarian",
+          "state": "known",
+          "text": "我吃素。"
+        },
+        "must_see": {
+          "value": [
+            "bund"
+          ],
+          "state": "known",
+          "text": "一定想看外滩。"
+        },
+        "avoid": {
+          "value": [
+            "queues"
+          ],
+          "state": "known",
+          "text": "避开排长队。"
+        },
+        "mobility": {
+          "value": "no_restriction",
+          "state": "known",
+          "text": "走路没有限制。"
+        },
+        "arrival": {
+          "value": null,
+          "state": "default",
+          "text": "到达时间还不知道。"
+        },
+        "departure": {
+          "value": null,
+          "state": "default",
+          "text": "离开时间还不知道。"
+        }
+      },
+      "behavior": {
+        "reply_style": "brief",
+        "direct_after": 2,
+        "rules": "只按隐藏答案作答，按画像逐步回复，到轮次主动要方案。"
+      }
+    },
+    {
+      "id": "p02-en",
+      "locale": "en",
+      "city": "shanghai",
+      "opening": "Help me think through this trip. I want to visit Shanghai. I am traveling solo.",
+      "initial_disclosures": [
+        {
+          "factor": "city",
+          "value": "shanghai",
+          "state": "known",
+          "quote": "I want to visit Shanghai."
+        },
+        {
+          "factor": "party_type",
+          "value": "solo",
+          "state": "inferred",
+          "quote": "I am traveling solo."
+        }
+      ],
+      "hidden_answers": {
+        "city": {
+          "value": "shanghai",
+          "state": "known",
+          "text": "I want to visit Shanghai."
+        },
+        "duration_days": {
+          "value": 3,
+          "state": "known",
+          "text": "I have 3 days."
+        },
+        "season": {
+          "value": "winter",
+          "state": "known",
+          "text": "I am traveling in winter."
+        },
+        "first_visit": {
+          "value": true,
+          "state": "known",
+          "text": "This is my first visit to China."
+        },
+        "party_type": {
+          "value": "solo",
+          "state": "known",
+          "text": "I am traveling solo."
+        },
+        "interests": {
+          "value": [
+            "architecture",
+            "shopping"
+          ],
+          "state": "known",
+          "text": "I enjoy architecture, shopping."
+        },
+        "pace": {
+          "value": "moderate",
+          "state": "known",
+          "text": "A moderate pace suits me."
+        },
+        "lodging_tier": {
+          "value": "budget",
+          "state": "known",
+          "text": "Budget accommodation is fine."
+        },
+        "dietary": {
+          "value": "vegetarian",
+          "state": "known",
+          "text": "I am vegetarian."
+        },
+        "must_see": {
+          "value": [
+            "bund"
+          ],
+          "state": "known",
+          "text": "I would especially like to see the Bund."
+        },
+        "avoid": {
+          "value": [
+            "queues"
+          ],
+          "state": "known",
+          "text": "Please avoid long queues."
+        },
+        "mobility": {
+          "value": "no_restriction",
+          "state": "known",
+          "text": "I have no mobility limitations."
+        },
+        "arrival": {
+          "value": null,
+          "state": "default",
+          "text": "I do not know my arrival time yet."
+        },
+        "departure": {
+          "value": null,
+          "state": "default",
+          "text": "I do not know my departure time yet."
+        }
+      },
+      "behavior": {
+        "reply_style": "brief",
+        "direct_after": 2,
+        "rules": "Use only hidden answers, follow the reply style, reveal incrementally, and request a plan at the specified round."
+      }
+    },
+    {
+      "id": "p03-zh",
+      "locale": "zh",
+      "city": "chengdu",
+      "opening": "帮我想想怎么玩。 想去成都。 口味随便，不用再问。",
+      "initial_disclosures": [
+        {
+          "factor": "city",
+          "value": "chengdu",
+          "state": "known",
+          "quote": "想去成都。"
+        },
+        {
+          "factor": "dietary",
+          "value": null,
+          "state": "not_needed",
+          "quote": "口味随便，不用再问。"
+        }
+      ],
+      "hidden_answers": {
+        "city": {
+          "value": "chengdu",
+          "state": "known",
+          "text": "想去成都。"
+        },
+        "duration_days": {
+          "value": 4,
+          "state": "known",
+          "text": "计划玩4天。"
+        },
+        "season": {
+          "value": "spring",
+          "state": "known",
+          "text": "春天去。"
+        },
+        "first_visit": {
+          "value": true,
+          "state": "known",
+          "text": "第一次来中国。"
+        },
+        "party_type": {
+          "value": "family_with_child",
+          "state": "known",
+          "text": "两个大人带一个小孩。"
+        },
+        "interests": {
+          "value": [
+            "food",
+            "nature"
+          ],
+          "state": "known",
+          "text": "喜欢美食和自然风光。"
+        },
+        "pace": {
+          "value": "moderate",
+          "state": "known",
+          "text": "节奏适中就好。"
+        },
+        "lodging_tier": {
+          "value": "comfortable",
+          "state": "known",
+          "text": "住舒适型酒店。"
+        },
+        "dietary": {
+          "value": null,
+          "state": "not_needed",
+          "text": "口味随便，不用再问。"
+        },
+        "must_see": {
+          "value": [
+            "pandas"
+          ],
+          "state": "known",
+          "text": "一定想看熊猫。"
+        },
+        "avoid": {
+          "value": [],
+          "state": "known",
+          "text": "没有特别想避开的。"
+        },
+        "mobility": {
+          "value": "no_restriction",
+          "state": "known",
+          "text": "走路没有限制。"
+        },
+        "arrival": {
+          "value": null,
+          "state": "default",
+          "text": "到达时间还不知道。"
+        },
+        "departure": {
+          "value": null,
+          "state": "default",
+          "text": "离开时间还不知道。"
+        }
+      },
+      "behavior": {
+        "reply_style": "partial",
+        "direct_after": 3,
+        "rules": "只按隐藏答案作答，按画像逐步回复，到轮次主动要方案。"
+      }
+    },
+    {
+      "id": "p03-en",
+      "locale": "en",
+      "city": "chengdu",
+      "opening": "Help me think through this trip. I want to visit Chengdu. Any food is fine; please do not ask again.",
+      "initial_disclosures": [
+        {
+          "factor": "city",
+          "value": "chengdu",
+          "state": "known",
+          "quote": "I want to visit Chengdu."
+        },
+        {
+          "factor": "dietary",
+          "value": null,
+          "state": "not_needed",
+          "quote": "Any food is fine; please do not ask again."
+        }
+      ],
+      "hidden_answers": {
+        "city": {
+          "value": "chengdu",
+          "state": "known",
+          "text": "I want to visit Chengdu."
+        },
+        "duration_days": {
+          "value": 4,
+          "state": "known",
+          "text": "I have 4 days."
+        },
+        "season": {
+          "value": "spring",
+          "state": "known",
+          "text": "I am traveling in spring."
+        },
+        "first_visit": {
+          "value": true,
+          "state": "known",
+          "text": "This is my first visit to China."
+        },
+        "party_type": {
+          "value": "family_with_child",
+          "state": "known",
+          "text": "Two adults are traveling with a child."
+        },
+        "interests": {
+          "value": [
+            "food",
+            "nature"
+          ],
+          "state": "known",
+          "text": "I enjoy food, nature."
+        },
+        "pace": {
+          "value": "moderate",
+          "state": "known",
+          "text": "A moderate pace suits me."
+        },
+        "lodging_tier": {
+          "value": "comfortable",
+          "state": "known",
+          "text": "I prefer comfortable hotels."
+        },
+        "dietary": {
+          "value": null,
+          "state": "not_needed",
+          "text": "Any food is fine; please do not ask again."
+        },
+        "must_see": {
+          "value": [
+            "pandas"
+          ],
+          "state": "known",
+          "text": "I would especially like to see pandas."
+        },
+        "avoid": {
+          "value": [],
+          "state": "known",
+          "text": "There is nothing I specifically want to avoid."
+        },
+        "mobility": {
+          "value": "no_restriction",
+          "state": "known",
+          "text": "I have no mobility limitations."
+        },
+        "arrival": {
+          "value": null,
+          "state": "default",
+          "text": "I do not know my arrival time yet."
+        },
+        "departure": {
+          "value": null,
+          "state": "default",
+          "text": "I do not know my departure time yet."
+        }
+      },
+      "behavior": {
+        "reply_style": "partial",
+        "direct_after": 3,
+        "rules": "Use only hidden answers, follow the reply style, reveal incrementally, and request a plan at the specified round."
+      }
+    },
+    {
+      "id": "p04-zh",
+      "locale": "zh",
+      "city": "hangzhou",
+      "opening": "帮我想想怎么玩。 想去杭州。 出门要用轮椅。",
+      "initial_disclosures": [
+        {
+          "factor": "city",
+          "value": "hangzhou",
+          "state": "known",
+          "quote": "想去杭州。"
+        },
+        {
+          "factor": "mobility",
+          "value": "wheelchair",
+          "state": "inferred",
+          "quote": "出门要用轮椅。"
+        }
+      ],
+      "hidden_answers": {
+        "city": {
+          "value": "hangzhou",
+          "state": "known",
+          "text": "想去杭州。"
+        },
+        "duration_days": {
+          "value": 4,
+          "state": "known",
+          "text": "计划玩4天。"
+        },
+        "season": {
+          "value": "autumn",
+          "state": "known",
+          "text": "秋天去。"
+        },
+        "first_visit": {
+          "value": false,
+          "state": "known",
+          "text": "以前来过中国。"
+        },
+        "party_type": {
+          "value": "two_adults",
+          "state": "known",
+          "text": "两个成人同行。"
+        },
+        "interests": {
+          "value": [
+            "nature"
+          ],
+          "state": "known",
+          "text": "喜欢自然风光。"
+        },
+        "pace": {
+          "value": "relaxed",
+          "state": "known",
+          "text": "节奏要轻松。"
+        },
+        "lodging_tier": {
+          "value": "comfortable",
+          "state": "known",
+          "text": "住舒适型酒店。"
+        },
+        "dietary": {
+          "value": "no_spicy",
+          "state": "known",
+          "text": "我不能吃辣。"
+        },
+        "must_see": {
+          "value": [
+            "west_lake"
+          ],
+          "state": "known",
+          "text": "一定想看西湖。"
+        },
+        "avoid": {
+          "value": [
+            "steep_hills"
+          ],
+          "state": "known",
+          "text": "避开陡坡。"
+        },
+        "mobility": {
+          "value": "wheelchair",
+          "state": "known",
+          "text": "出门要用轮椅。"
+        },
+        "arrival": {
+          "value": null,
+          "state": "default",
+          "text": "到达时间还不知道。"
+        },
+        "departure": {
+          "value": null,
+          "state": "default",
+          "text": "离开时间还不知道。"
+        }
+      },
+      "behavior": {
+        "reply_style": "full",
+        "direct_after": 3,
+        "rules": "只按隐藏答案作答，按画像逐步回复，到轮次主动要方案。"
+      }
+    },
+    {
+      "id": "p04-en",
+      "locale": "en",
+      "city": "hangzhou",
+      "opening": "Help me think through this trip. I want to visit Hangzhou. I use a wheelchair when going out.",
+      "initial_disclosures": [
+        {
+          "factor": "city",
+          "value": "hangzhou",
+          "state": "known",
+          "quote": "I want to visit Hangzhou."
+        },
+        {
+          "factor": "mobility",
+          "value": "wheelchair",
+          "state": "inferred",
+          "quote": "I use a wheelchair when going out."
+        }
+      ],
+      "hidden_answers": {
+        "city": {
+          "value": "hangzhou",
+          "state": "known",
+          "text": "I want to visit Hangzhou."
+        },
+        "duration_days": {
+          "value": 4,
+          "state": "known",
+          "text": "I have 4 days."
+        },
+        "season": {
+          "value": "autumn",
+          "state": "known",
+          "text": "I am traveling in autumn."
+        },
+        "first_visit": {
+          "value": false,
+          "state": "known",
+          "text": "I have visited China before."
+        },
+        "party_type": {
+          "value": "two_adults",
+          "state": "known",
+          "text": "There are two adults."
+        },
+        "interests": {
+          "value": [
+            "nature"
+          ],
+          "state": "known",
+          "text": "I enjoy nature."
+        },
+        "pace": {
+          "value": "relaxed",
+          "state": "known",
+          "text": "I want a relaxed pace."
+        },
+        "lodging_tier": {
+          "value": "comfortable",
+          "state": "known",
+          "text": "I prefer comfortable hotels."
+        },
+        "dietary": {
+          "value": "no_spicy",
+          "state": "known",
+          "text": "I cannot eat spicy food."
+        },
+        "must_see": {
+          "value": [
+            "west_lake"
+          ],
+          "state": "known",
+          "text": "I would especially like to see West Lake."
+        },
+        "avoid": {
+          "value": [
+            "steep_hills"
+          ],
+          "state": "known",
+          "text": "Please avoid steep hills."
+        },
+        "mobility": {
+          "value": "wheelchair",
+          "state": "known",
+          "text": "I use a wheelchair when going out."
+        },
+        "arrival": {
+          "value": null,
+          "state": "default",
+          "text": "I do not know my arrival time yet."
+        },
+        "departure": {
+          "value": null,
+          "state": "default",
+          "text": "I do not know my departure time yet."
+        }
+      },
+      "behavior": {
+        "reply_style": "full",
+        "direct_after": 3,
+        "rules": "Use only hidden answers, follow the reply style, reveal incrementally, and request a plan at the specified round."
+      }
+    },
+    {
+      "id": "p05-zh",
+      "locale": "zh",
+      "city": "xian",
+      "opening": "帮我想想怎么玩。 想去西安。 喜欢历史和艺术。",
+      "initial_disclosures": [
+        {
+          "factor": "city",
+          "value": "xian",
+          "state": "known",
+          "quote": "想去西安。"
+        },
+        {
+          "factor": "interests",
+          "value": [
+            "history",
+            "art"
+          ],
+          "state": "known",
+          "quote": "喜欢历史和艺术。"
+        }
+      ],
+      "hidden_answers": {
+        "city": {
+          "value": "xian",
+          "state": "known",
+          "text": "想去西安。"
+        },
+        "duration_days": {
+          "value": 3,
+          "state": "known",
+          "text": "计划玩3天。"
+        },
+        "season": {
+          "value": "summer",
+          "state": "known",
+          "text": "夏天去。"
+        },
+        "first_visit": {
+          "value": true,
+          "state": "known",
+          "text": "第一次来中国。"
+        },
+        "party_type": {
+          "value": "friends",
+          "state": "known",
+          "text": "和三位朋友一起。"
+        },
+        "interests": {
+          "value": [
+            "history",
+            "art"
+          ],
+          "state": "known",
+          "text": "喜欢历史和艺术。"
+        },
+        "pace": {
+          "value": "packed",
+          "state": "known",
+          "text": "想玩得紧凑些。"
+        },
+        "lodging_tier": {
+          "value": "upscale",
+          "state": "known",
+          "text": "想住高档一点。"
+        },
+        "dietary": {
+          "value": "no_restriction",
+          "state": "known",
+          "text": "吃饭没有限制。"
+        },
+        "must_see": {
+          "value": [
+            "terracotta_army"
+          ],
+          "state": "known",
+          "text": "一定想看兵马俑。"
+        },
+        "avoid": {
+          "value": [],
+          "state": "known",
+          "text": "没有特别想避开的。"
+        },
+        "mobility": {
+          "value": "no_restriction",
+          "state": "known",
+          "text": "走路没有限制。"
+        },
+        "arrival": {
+          "value": null,
+          "state": "default",
+          "text": "到达时间还不知道。"
+        },
+        "departure": {
+          "value": null,
+          "state": "default",
+          "text": "离开时间还不知道。"
+        }
+      },
+      "behavior": {
+        "reply_style": "proactive",
+        "direct_after": 4,
+        "rules": "只按隐藏答案作答，按画像逐步回复，到轮次主动要方案。"
+      }
+    },
+    {
+      "id": "p05-en",
+      "locale": "en",
+      "city": "xian",
+      "opening": "Help me think through this trip. I want to visit Xi'an. I enjoy history, art.",
+      "initial_disclosures": [
+        {
+          "factor": "city",
+          "value": "xian",
+          "state": "known",
+          "quote": "I want to visit Xi'an."
+        },
+        {
+          "factor": "interests",
+          "value": [
+            "history",
+            "art"
+          ],
+          "state": "known",
+          "quote": "I enjoy history, art."
+        }
+      ],
+      "hidden_answers": {
+        "city": {
+          "value": "xian",
+          "state": "known",
+          "text": "I want to visit Xi'an."
+        },
+        "duration_days": {
+          "value": 3,
+          "state": "known",
+          "text": "I have 3 days."
+        },
+        "season": {
+          "value": "summer",
+          "state": "known",
+          "text": "I am traveling in summer."
+        },
+        "first_visit": {
+          "value": true,
+          "state": "known",
+          "text": "This is my first visit to China."
+        },
+        "party_type": {
+          "value": "friends",
+          "state": "known",
+          "text": "I am going with three friends."
+        },
+        "interests": {
+          "value": [
+            "history",
+            "art"
+          ],
+          "state": "known",
+          "text": "I enjoy history, art."
+        },
+        "pace": {
+          "value": "packed",
+          "state": "known",
+          "text": "I would like a packed itinerary."
+        },
+        "lodging_tier": {
+          "value": "upscale",
+          "state": "known",
+          "text": "I prefer upscale accommodation."
+        },
+        "dietary": {
+          "value": "no_restriction",
+          "state": "known",
+          "text": "I have no dietary restrictions."
+        },
+        "must_see": {
+          "value": [
+            "terracotta_army"
+          ],
+          "state": "known",
+          "text": "I would especially like to see the Terracotta Army."
+        },
+        "avoid": {
+          "value": [],
+          "state": "known",
+          "text": "There is nothing I specifically want to avoid."
+        },
+        "mobility": {
+          "value": "no_restriction",
+          "state": "known",
+          "text": "I have no mobility limitations."
+        },
+        "arrival": {
+          "value": null,
+          "state": "default",
+          "text": "I do not know my arrival time yet."
+        },
+        "departure": {
+          "value": null,
+          "state": "default",
+          "text": "I do not know my departure time yet."
+        }
+      },
+      "behavior": {
+        "reply_style": "proactive",
+        "direct_after": 4,
+        "rules": "Use only hidden answers, follow the reply style, reveal incrementally, and request a plan at the specified round."
+      }
+    },
+    {
+      "id": "p06-zh",
+      "locale": "zh",
+      "city": "guilin",
+      "opening": "帮我想想怎么玩。 想去桂林。 酒店档次随便，不用再问。",
+      "initial_disclosures": [
+        {
+          "factor": "city",
+          "value": "guilin",
+          "state": "known",
+          "quote": "想去桂林。"
+        },
+        {
+          "factor": "lodging_tier",
+          "value": null,
+          "state": "not_needed",
+          "quote": "酒店档次随便，不用再问。"
+        }
+      ],
+      "hidden_answers": {
+        "city": {
+          "value": "guilin",
+          "state": "known",
+          "text": "想去桂林。"
+        },
+        "duration_days": {
+          "value": 5,
+          "state": "known",
+          "text": "计划玩5天。"
+        },
+        "season": {
+          "value": "spring",
+          "state": "known",
+          "text": "春天去。"
+        },
+        "first_visit": {
+          "value": true,
+          "state": "known",
+          "text": "第一次来中国。"
+        },
+        "party_type": {
+          "value": "solo",
+          "state": "known",
+          "text": "这次独自旅行。"
+        },
+        "interests": {
+          "value": [
+            "nature",
+            "photography"
+          ],
+          "state": "known",
+          "text": "喜欢自然风光和摄影。"
+        },
+        "pace": {
+          "value": "relaxed",
+          "state": "known",
+          "text": "节奏要轻松。"
+        },
+        "lodging_tier": {
+          "value": null,
+          "state": "not_needed",
+          "text": "酒店档次随便，不用再问。"
+        },
+        "dietary": {
+          "value": "no_restriction",
+          "state": "known",
+          "text": "吃饭没有限制。"
+        },
+        "must_see": {
+          "value": [
+            "li_river"
+          ],
+          "state": "known",
+          "text": "一定想看漓江。"
+        },
+        "avoid": {
+          "value": [
+            "early_starts"
+          ],
+          "state": "known",
+          "text": "避开早起。"
+        },
+        "mobility": {
+          "value": "no_restriction",
+          "state": "known",
+          "text": "走路没有限制。"
+        },
+        "arrival": {
+          "value": null,
+          "state": "default",
+          "text": "到达时间还不知道。"
+        },
+        "departure": {
+          "value": null,
+          "state": "default",
+          "text": "离开时间还不知道。"
+        }
+      },
+      "behavior": {
+        "reply_style": "brief",
+        "direct_after": 2,
+        "rules": "只按隐藏答案作答，按画像逐步回复，到轮次主动要方案。"
+      }
+    },
+    {
+      "id": "p06-en",
+      "locale": "en",
+      "city": "guilin",
+      "opening": "Help me think through this trip. I want to visit Guilin. Any hotel tier is fine; please do not ask again.",
+      "initial_disclosures": [
+        {
+          "factor": "city",
+          "value": "guilin",
+          "state": "known",
+          "quote": "I want to visit Guilin."
+        },
+        {
+          "factor": "lodging_tier",
+          "value": null,
+          "state": "not_needed",
+          "quote": "Any hotel tier is fine; please do not ask again."
+        }
+      ],
+      "hidden_answers": {
+        "city": {
+          "value": "guilin",
+          "state": "known",
+          "text": "I want to visit Guilin."
+        },
+        "duration_days": {
+          "value": 5,
+          "state": "known",
+          "text": "I have 5 days."
+        },
+        "season": {
+          "value": "spring",
+          "state": "known",
+          "text": "I am traveling in spring."
+        },
+        "first_visit": {
+          "value": true,
+          "state": "known",
+          "text": "This is my first visit to China."
+        },
+        "party_type": {
+          "value": "solo",
+          "state": "known",
+          "text": "I am traveling solo."
+        },
+        "interests": {
+          "value": [
+            "nature",
+            "photography"
+          ],
+          "state": "known",
+          "text": "I enjoy nature, photography."
+        },
+        "pace": {
+          "value": "relaxed",
+          "state": "known",
+          "text": "I want a relaxed pace."
+        },
+        "lodging_tier": {
+          "value": null,
+          "state": "not_needed",
+          "text": "Any hotel tier is fine; please do not ask again."
+        },
+        "dietary": {
+          "value": "no_restriction",
+          "state": "known",
+          "text": "I have no dietary restrictions."
+        },
+        "must_see": {
+          "value": [
+            "li_river"
+          ],
+          "state": "known",
+          "text": "I would especially like to see the Li River."
+        },
+        "avoid": {
+          "value": [
+            "early_starts"
+          ],
+          "state": "known",
+          "text": "Please avoid early starts."
+        },
+        "mobility": {
+          "value": "no_restriction",
+          "state": "known",
+          "text": "I have no mobility limitations."
+        },
+        "arrival": {
+          "value": null,
+          "state": "default",
+          "text": "I do not know my arrival time yet."
+        },
+        "departure": {
+          "value": null,
+          "state": "default",
+          "text": "I do not know my departure time yet."
+        }
+      },
+      "behavior": {
+        "reply_style": "brief",
+        "direct_after": 2,
+        "rules": "Use only hidden answers, follow the reply style, reveal incrementally, and request a plan at the specified round."
+      }
+    },
+    {
+      "id": "p07-zh",
+      "locale": "zh",
+      "city": "guangzhou",
+      "opening": "帮我想想怎么玩。 想去广州。 季节随便，不用再问。",
+      "initial_disclosures": [
+        {
+          "factor": "city",
+          "value": "guangzhou",
+          "state": "known",
+          "quote": "想去广州。"
+        },
+        {
+          "factor": "season",
+          "value": null,
+          "state": "not_needed",
+          "quote": "季节随便，不用再问。"
+        }
+      ],
+      "hidden_answers": {
+        "city": {
+          "value": "guangzhou",
+          "state": "known",
+          "text": "想去广州。"
+        },
+        "duration_days": {
+          "value": 3,
+          "state": "known",
+          "text": "计划玩3天。"
+        },
+        "season": {
+          "value": null,
+          "state": "not_needed",
+          "text": "季节随便，不用再问。"
+        },
+        "first_visit": {
+          "value": false,
+          "state": "known",
+          "text": "以前来过中国。"
+        },
+        "party_type": {
+          "value": "two_adults",
+          "state": "known",
+          "text": "两个成人同行。"
+        },
+        "interests": {
+          "value": [
+            "food"
+          ],
+          "state": "known",
+          "text": "喜欢美食。"
+        },
+        "pace": {
+          "value": "moderate",
+          "state": "known",
+          "text": "节奏适中就好。"
+        },
+        "lodging_tier": {
+          "value": "comfortable",
+          "state": "known",
+          "text": "住舒适型酒店。"
+        },
+        "dietary": {
+          "value": "no_spicy",
+          "state": "known",
+          "text": "我不能吃辣。"
+        },
+        "must_see": {
+          "value": [
+            "morning_tea"
+          ],
+          "state": "known",
+          "text": "一定想看早茶。"
+        },
+        "avoid": {
+          "value": [
+            "crowds"
+          ],
+          "state": "known",
+          "text": "避开拥挤。"
+        },
+        "mobility": {
+          "value": "no_restriction",
+          "state": "known",
+          "text": "走路没有限制。"
+        },
+        "arrival": {
+          "value": null,
+          "state": "default",
+          "text": "到达时间还不知道。"
+        },
+        "departure": {
+          "value": null,
+          "state": "default",
+          "text": "离开时间还不知道。"
+        }
+      },
+      "behavior": {
+        "reply_style": "partial",
+        "direct_after": 2,
+        "rules": "只按隐藏答案作答，按画像逐步回复，到轮次主动要方案。"
+      }
+    },
+    {
+      "id": "p07-en",
+      "locale": "en",
+      "city": "guangzhou",
+      "opening": "Help me think through this trip. I want to visit Guangzhou. Any season is fine; please do not ask again.",
+      "initial_disclosures": [
+        {
+          "factor": "city",
+          "value": "guangzhou",
+          "state": "known",
+          "quote": "I want to visit Guangzhou."
+        },
+        {
+          "factor": "season",
+          "value": null,
+          "state": "not_needed",
+          "quote": "Any season is fine; please do not ask again."
+        }
+      ],
+      "hidden_answers": {
+        "city": {
+          "value": "guangzhou",
+          "state": "known",
+          "text": "I want to visit Guangzhou."
+        },
+        "duration_days": {
+          "value": 3,
+          "state": "known",
+          "text": "I have 3 days."
+        },
+        "season": {
+          "value": null,
+          "state": "not_needed",
+          "text": "Any season is fine; please do not ask again."
+        },
+        "first_visit": {
+          "value": false,
+          "state": "known",
+          "text": "I have visited China before."
+        },
+        "party_type": {
+          "value": "two_adults",
+          "state": "known",
+          "text": "There are two adults."
+        },
+        "interests": {
+          "value": [
+            "food"
+          ],
+          "state": "known",
+          "text": "I enjoy food."
+        },
+        "pace": {
+          "value": "moderate",
+          "state": "known",
+          "text": "A moderate pace suits me."
+        },
+        "lodging_tier": {
+          "value": "comfortable",
+          "state": "known",
+          "text": "I prefer comfortable hotels."
+        },
+        "dietary": {
+          "value": "no_spicy",
+          "state": "known",
+          "text": "I cannot eat spicy food."
+        },
+        "must_see": {
+          "value": [
+            "morning_tea"
+          ],
+          "state": "known",
+          "text": "I would especially like to see morning tea."
+        },
+        "avoid": {
+          "value": [
+            "crowds"
+          ],
+          "state": "known",
+          "text": "Please avoid crowds."
+        },
+        "mobility": {
+          "value": "no_restriction",
+          "state": "known",
+          "text": "I have no mobility limitations."
+        },
+        "arrival": {
+          "value": null,
+          "state": "default",
+          "text": "I do not know my arrival time yet."
+        },
+        "departure": {
+          "value": null,
+          "state": "default",
+          "text": "I do not know my departure time yet."
+        }
+      },
+      "behavior": {
+        "reply_style": "partial",
+        "direct_after": 2,
+        "rules": "Use only hidden answers, follow the reply style, reveal incrementally, and request a plan at the specified round."
+      }
+    },
+    {
+      "id": "p08-zh",
+      "locale": "zh",
+      "city": "kunming",
+      "opening": "帮我想想怎么玩。 想去昆明。 节奏要轻松。",
+      "initial_disclosures": [
+        {
+          "factor": "city",
+          "value": "kunming",
+          "state": "known",
+          "quote": "想去昆明。"
+        },
+        {
+          "factor": "pace",
+          "value": "relaxed",
+          "state": "known",
+          "quote": "节奏要轻松。"
+        }
+      ],
+      "hidden_answers": {
+        "city": {
+          "value": "kunming",
+          "state": "known",
+          "text": "想去昆明。"
+        },
+        "duration_days": {
+          "value": 4,
+          "state": "known",
+          "text": "计划玩4天。"
+        },
+        "season": {
+          "value": "summer",
+          "state": "known",
+          "text": "夏天去。"
+        },
+        "first_visit": {
+          "value": true,
+          "state": "known",
+          "text": "第一次来中国。"
+        },
+        "party_type": {
+          "value": "friends",
+          "state": "known",
+          "text": "和三位朋友一起。"
+        },
+        "interests": {
+          "value": [
+            "nature",
+            "culture"
+          ],
+          "state": "known",
+          "text": "喜欢自然风光和文化。"
+        },
+        "pace": {
+          "value": "relaxed",
+          "state": "known",
+          "text": "节奏要轻松。"
+        },
+        "lodging_tier": {
+          "value": "budget",
+          "state": "known",
+          "text": "住经济型就行。"
+        },
+        "dietary": {
+          "value": "vegetarian",
+          "state": "known",
+          "text": "我吃素。"
+        },
+        "must_see": {
+          "value": [
+            "green_lake"
+          ],
+          "state": "known",
+          "text": "一定想看翠湖。"
+        },
+        "avoid": {
+          "value": [],
+          "state": "known",
+          "text": "没有特别想避开的。"
+        },
+        "mobility": {
+          "value": "no_restriction",
+          "state": "known",
+          "text": "走路没有限制。"
+        },
+        "arrival": {
+          "value": null,
+          "state": "default",
+          "text": "到达时间还不知道。"
+        },
+        "departure": {
+          "value": null,
+          "state": "default",
+          "text": "离开时间还不知道。"
+        }
+      },
+      "behavior": {
+        "reply_style": "proactive",
+        "direct_after": 4,
+        "rules": "只按隐藏答案作答，按画像逐步回复，到轮次主动要方案。"
+      }
+    },
+    {
+      "id": "p08-en",
+      "locale": "en",
+      "city": "kunming",
+      "opening": "Help me think through this trip. I want to visit Kunming. I want a relaxed pace.",
+      "initial_disclosures": [
+        {
+          "factor": "city",
+          "value": "kunming",
+          "state": "known",
+          "quote": "I want to visit Kunming."
+        },
+        {
+          "factor": "pace",
+          "value": "relaxed",
+          "state": "known",
+          "quote": "I want a relaxed pace."
+        }
+      ],
+      "hidden_answers": {
+        "city": {
+          "value": "kunming",
+          "state": "known",
+          "text": "I want to visit Kunming."
+        },
+        "duration_days": {
+          "value": 4,
+          "state": "known",
+          "text": "I have 4 days."
+        },
+        "season": {
+          "value": "summer",
+          "state": "known",
+          "text": "I am traveling in summer."
+        },
+        "first_visit": {
+          "value": true,
+          "state": "known",
+          "text": "This is my first visit to China."
+        },
+        "party_type": {
+          "value": "friends",
+          "state": "known",
+          "text": "I am going with three friends."
+        },
+        "interests": {
+          "value": [
+            "nature",
+            "culture"
+          ],
+          "state": "known",
+          "text": "I enjoy nature, culture."
+        },
+        "pace": {
+          "value": "relaxed",
+          "state": "known",
+          "text": "I want a relaxed pace."
+        },
+        "lodging_tier": {
+          "value": "budget",
+          "state": "known",
+          "text": "Budget accommodation is fine."
+        },
+        "dietary": {
+          "value": "vegetarian",
+          "state": "known",
+          "text": "I am vegetarian."
+        },
+        "must_see": {
+          "value": [
+            "green_lake"
+          ],
+          "state": "known",
+          "text": "I would especially like to see Green Lake."
+        },
+        "avoid": {
+          "value": [],
+          "state": "known",
+          "text": "There is nothing I specifically want to avoid."
+        },
+        "mobility": {
+          "value": "no_restriction",
+          "state": "known",
+          "text": "I have no mobility limitations."
+        },
+        "arrival": {
+          "value": null,
+          "state": "default",
+          "text": "I do not know my arrival time yet."
+        },
+        "departure": {
+          "value": null,
+          "state": "default",
+          "text": "I do not know my departure time yet."
+        }
+      },
+      "behavior": {
+        "reply_style": "proactive",
+        "direct_after": 4,
+        "rules": "Use only hidden answers, follow the reply style, reveal incrementally, and request a plan at the specified round."
+      }
+    },
+    {
+      "id": "p09-zh",
+      "locale": "zh",
+      "city": "nanjing",
+      "opening": "帮我想想怎么玩。 想去南京。 第一天上午九点飞机到。",
+      "initial_disclosures": [
+        {
+          "factor": "city",
+          "value": "nanjing",
+          "state": "known",
+          "quote": "想去南京。"
+        },
+        {
+          "factor": "arrival",
+          "value": {
+            "mode": "flight",
+            "day": 1,
+            "time": "09:00"
+          },
+          "state": "known",
+          "quote": "第一天上午九点飞机到。"
+        }
+      ],
+      "hidden_answers": {
+        "city": {
+          "value": "nanjing",
+          "state": "known",
+          "text": "想去南京。"
+        },
+        "duration_days": {
+          "value": 3,
+          "state": "known",
+          "text": "计划玩3天。"
+        },
+        "season": {
+          "value": "autumn",
+          "state": "known",
+          "text": "秋天去。"
+        },
+        "first_visit": {
+          "value": true,
+          "state": "known",
+          "text": "第一次来中国。"
+        },
+        "party_type": {
+          "value": "two_adults",
+          "state": "known",
+          "text": "两个成人同行。"
+        },
+        "interests": {
+          "value": [
+            "history"
+          ],
+          "state": "known",
+          "text": "喜欢历史。"
+        },
+        "pace": {
+          "value": "moderate",
+          "state": "known",
+          "text": "节奏适中就好。"
+        },
+        "lodging_tier": {
+          "value": "upscale",
+          "state": "known",
+          "text": "想住高档一点。"
+        },
+        "dietary": {
+          "value": "no_restriction",
+          "state": "known",
+          "text": "吃饭没有限制。"
+        },
+        "must_see": {
+          "value": [
+            "nanjing_museum"
+          ],
+          "state": "known",
+          "text": "一定想看南京博物院。"
+        },
+        "avoid": {
+          "value": [
+            "late_nights"
+          ],
+          "state": "known",
+          "text": "避开熬夜。"
+        },
+        "mobility": {
+          "value": "no_restriction",
+          "state": "known",
+          "text": "走路没有限制。"
+        },
+        "arrival": {
+          "value": {
+            "mode": "flight",
+            "day": 1,
+            "time": "09:00"
+          },
+          "state": "known",
+          "text": "第一天上午九点飞机到。"
+        },
+        "departure": {
+          "value": {
+            "mode": "rail",
+            "day": 3,
+            "time": "17:00"
+          },
+          "state": "known",
+          "text": "第3天下午五点坐高铁离开。"
+        }
+      },
+      "behavior": {
+        "reply_style": "full",
+        "direct_after": 3,
+        "rules": "只按隐藏答案作答，按画像逐步回复，到轮次主动要方案。"
+      }
+    },
+    {
+      "id": "p09-en",
+      "locale": "en",
+      "city": "nanjing",
+      "opening": "Help me think through this trip. I want to visit Nanjing. My flight arrives at 9 am on day one.",
+      "initial_disclosures": [
+        {
+          "factor": "city",
+          "value": "nanjing",
+          "state": "known",
+          "quote": "I want to visit Nanjing."
+        },
+        {
+          "factor": "arrival",
+          "value": {
+            "mode": "flight",
+            "day": 1,
+            "time": "09:00"
+          },
+          "state": "known",
+          "quote": "My flight arrives at 9 am on day one."
+        }
+      ],
+      "hidden_answers": {
+        "city": {
+          "value": "nanjing",
+          "state": "known",
+          "text": "I want to visit Nanjing."
+        },
+        "duration_days": {
+          "value": 3,
+          "state": "known",
+          "text": "I have 3 days."
+        },
+        "season": {
+          "value": "autumn",
+          "state": "known",
+          "text": "I am traveling in autumn."
+        },
+        "first_visit": {
+          "value": true,
+          "state": "known",
+          "text": "This is my first visit to China."
+        },
+        "party_type": {
+          "value": "two_adults",
+          "state": "known",
+          "text": "There are two adults."
+        },
+        "interests": {
+          "value": [
+            "history"
+          ],
+          "state": "known",
+          "text": "I enjoy history."
+        },
+        "pace": {
+          "value": "moderate",
+          "state": "known",
+          "text": "A moderate pace suits me."
+        },
+        "lodging_tier": {
+          "value": "upscale",
+          "state": "known",
+          "text": "I prefer upscale accommodation."
+        },
+        "dietary": {
+          "value": "no_restriction",
+          "state": "known",
+          "text": "I have no dietary restrictions."
+        },
+        "must_see": {
+          "value": [
+            "nanjing_museum"
+          ],
+          "state": "known",
+          "text": "I would especially like to see Nanjing Museum."
+        },
+        "avoid": {
+          "value": [
+            "late_nights"
+          ],
+          "state": "known",
+          "text": "Please avoid late nights."
+        },
+        "mobility": {
+          "value": "no_restriction",
+          "state": "known",
+          "text": "I have no mobility limitations."
+        },
+        "arrival": {
+          "value": {
+            "mode": "flight",
+            "day": 1,
+            "time": "09:00"
+          },
+          "state": "known",
+          "text": "My flight arrives at 9 am on day one."
+        },
+        "departure": {
+          "value": {
+            "mode": "rail",
+            "day": 3,
+            "time": "17:00"
+          },
+          "state": "known",
+          "text": "My train leaves at 5 pm on day 3."
+        }
+      },
+      "behavior": {
+        "reply_style": "full",
+        "direct_after": 3,
+        "rules": "Use only hidden answers, follow the reply style, reveal incrementally, and request a plan at the specified round."
+      }
+    },
+    {
+      "id": "p10-zh",
+      "locale": "zh",
+      "city": "xiamen",
+      "opening": "帮我想想怎么玩。 以前来过中国。 喜欢美食和海边。",
+      "initial_disclosures": [
+        {
+          "factor": "first_visit",
+          "value": false,
+          "state": "known",
+          "quote": "以前来过中国。"
+        },
+        {
+          "factor": "interests",
+          "value": [
+            "food",
+            "coast"
+          ],
+          "state": "known",
+          "quote": "喜欢美食和海边。"
+        }
+      ],
+      "hidden_answers": {
+        "city": {
+          "value": "xiamen",
+          "state": "known",
+          "text": "想去厦门。"
+        },
+        "duration_days": {
+          "value": 4,
+          "state": "known",
+          "text": "计划玩4天。"
+        },
+        "season": {
+          "value": "winter",
+          "state": "known",
+          "text": "冬天去。"
+        },
+        "first_visit": {
+          "value": false,
+          "state": "known",
+          "text": "以前来过中国。"
+        },
+        "party_type": {
+          "value": "solo",
+          "state": "known",
+          "text": "这次独自旅行。"
+        },
+        "interests": {
+          "value": [
+            "food",
+            "coast"
+          ],
+          "state": "known",
+          "text": "喜欢美食和海边。"
+        },
+        "pace": {
+          "value": "relaxed",
+          "state": "known",
+          "text": "节奏要轻松。"
+        },
+        "lodging_tier": {
+          "value": "comfortable",
+          "state": "known",
+          "text": "住舒适型酒店。"
+        },
+        "dietary": {
+          "value": "no_seafood",
+          "state": "known",
+          "text": "我不吃海鲜。"
+        },
+        "must_see": {
+          "value": [
+            "gulangyu"
+          ],
+          "state": "known",
+          "text": "一定想看鼓浪屿。"
+        },
+        "avoid": {
+          "value": [
+            "long_walks"
+          ],
+          "state": "known",
+          "text": "避开长距离步行。"
+        },
+        "mobility": {
+          "value": "no_restriction",
+          "state": "known",
+          "text": "走路没有限制。"
+        },
+        "arrival": {
+          "value": null,
+          "state": "default",
+          "text": "到达时间还不知道。"
+        },
+        "departure": {
+          "value": null,
+          "state": "default",
+          "text": "离开时间还不知道。"
+        }
+      },
+      "behavior": {
+        "reply_style": "brief",
+        "direct_after": 1,
+        "rules": "只按隐藏答案作答，按画像逐步回复，到轮次主动要方案。"
+      }
+    },
+    {
+      "id": "p10-en",
+      "locale": "en",
+      "city": "xiamen",
+      "opening": "Help me think through this trip. I have visited China before. I enjoy food, the coast.",
+      "initial_disclosures": [
+        {
+          "factor": "first_visit",
+          "value": false,
+          "state": "known",
+          "quote": "I have visited China before."
+        },
+        {
+          "factor": "interests",
+          "value": [
+            "food",
+            "coast"
+          ],
+          "state": "known",
+          "quote": "I enjoy food, the coast."
+        }
+      ],
+      "hidden_answers": {
+        "city": {
+          "value": "xiamen",
+          "state": "known",
+          "text": "I want to visit Xiamen."
+        },
+        "duration_days": {
+          "value": 4,
+          "state": "known",
+          "text": "I have 4 days."
+        },
+        "season": {
+          "value": "winter",
+          "state": "known",
+          "text": "I am traveling in winter."
+        },
+        "first_visit": {
+          "value": false,
+          "state": "known",
+          "text": "I have visited China before."
+        },
+        "party_type": {
+          "value": "solo",
+          "state": "known",
+          "text": "I am traveling solo."
+        },
+        "interests": {
+          "value": [
+            "food",
+            "coast"
+          ],
+          "state": "known",
+          "text": "I enjoy food, the coast."
+        },
+        "pace": {
+          "value": "relaxed",
+          "state": "known",
+          "text": "I want a relaxed pace."
+        },
+        "lodging_tier": {
+          "value": "comfortable",
+          "state": "known",
+          "text": "I prefer comfortable hotels."
+        },
+        "dietary": {
+          "value": "no_seafood",
+          "state": "known",
+          "text": "I do not eat seafood."
+        },
+        "must_see": {
+          "value": [
+            "gulangyu"
+          ],
+          "state": "known",
+          "text": "I would especially like to see Gulangyu."
+        },
+        "avoid": {
+          "value": [
+            "long_walks"
+          ],
+          "state": "known",
+          "text": "Please avoid long walks."
+        },
+        "mobility": {
+          "value": "no_restriction",
+          "state": "known",
+          "text": "I have no mobility limitations."
+        },
+        "arrival": {
+          "value": null,
+          "state": "default",
+          "text": "I do not know my arrival time yet."
+        },
+        "departure": {
+          "value": null,
+          "state": "default",
+          "text": "I do not know my departure time yet."
+        }
+      },
+      "behavior": {
+        "reply_style": "brief",
+        "direct_after": 1,
+        "rules": "Use only hidden answers, follow the reply style, reveal incrementally, and request a plan at the specified round."
+      }
+    }
+  ]
+}
