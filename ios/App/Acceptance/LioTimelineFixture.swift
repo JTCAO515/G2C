@@ -5,7 +5,7 @@ import Observation
 
 private struct LioTimelineFixture: View {
     let shell: ShellState
-    let tripLibrary: LioTripLibrary?
+    @State private var tripLibrary: LioTripLibrary?
     @State private var server: TimelineAcceptanceServer
     @State private var service: LioService
 
@@ -16,13 +16,13 @@ private struct LioTimelineFixture: View {
             let fixture = ProcessInfo.processInfo.environment["G2C_LIO_PREVIEW_TRIP"]!
             let library = try! LioPreviewTripFixture.library(fixture)
             var opens = 0
-            tripLibrary = LioTripLibrary(list: library.list, detail: { id in
+            _tripLibrary = State(initialValue: LioTripLibrary(list: library.list, detail: { id in
                 opens += 1
                 if opens == 1 { return try await library.detail(id) }
                 throw URLError(.networkConnectionLost)
-            })
+            }))
         } else {
-            tripLibrary = nil
+            _tripLibrary = State(initialValue: nil)
         }
         let acceptedFailure: String? = if ProcessInfo.processInfo.arguments.contains("--lio-accepted-limit-acceptance") {
             "quota"
