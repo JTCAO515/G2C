@@ -94,6 +94,8 @@ def exercise(root,conninfo):
     else:raise AssertionError('foreign owner read the native undo original')
     cancel_control(root,database,auth,checker,model,worker,boundary,owner,foreign,scope)
     print('PASS native runtime undo through signed Lio v2/API/Fake plan and edit, real PG Trip authority, lost ACK query-only, repeated proof zero model calls, foreign owner denied')
+    return SimpleNamespace(database=database,messages=boundary,trips=trip,checker=checker,
+        auth=auth,token=owner,foreign_token=foreign,scope=scope,model=model)
 
 
 def cancel_control(root,database,auth,checker,model,worker,boundary,token,foreign,scope):
