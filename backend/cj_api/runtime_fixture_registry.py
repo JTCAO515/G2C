@@ -189,3 +189,13 @@ class FixtureUseRegistry:
     def reservation_identity(self,raw):
         record=self.read(raw)
         return self._name(record['use']).removesuffix('.json')
+
+    def original_use(self,use_sha256):
+        """Locate a retained use, never reconstruct one from reader assertions."""
+        hash256(use_sha256);self._current(read_only=True)
+        with self._directory()as directory:records=self._records(directory)
+        selected=[encode(r['use'])for r in records.values()
+            if r['policy_sha256']==self.policy_sha256 and sha256(encode(r['use'])).hexdigest()==use_sha256]
+        if len(selected)!=1:raise Unavailable('FIXTURE_ORIGINAL_USE_UNAVAILABLE')
+        self.read(selected[0])
+        return selected[0]

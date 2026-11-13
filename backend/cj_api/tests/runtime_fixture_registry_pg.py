@@ -17,6 +17,7 @@ from cj_api.local_app import LocalDatabase,app_from_environment,ISSUER,scope_for
 from cj_api.local_worker_context import checker_for
 from cj_api.runtime_fixture_registry import FixtureUseRegistry,VERSION
 from cj_api.runtime_fixture_originals import FixtureOriginalReferences
+from cj_api.runtime_collector import RuntimeCollector
 from cj_auth.interfaces import AdmissionStatus
 from cj_message.auth_boundary import Boundary,AccessBlocked
 from runtime_adapter import Binding,Unavailable
@@ -117,6 +118,11 @@ def exercise(auth,conninfo):
         assert second.issue(tokens['fixture-E'],'registry')==policy_ref
         assert second.issue(tokens['fixture-E'],'reservation')!=reservation_ref
         assert len(list(directory.iterdir()))==2
+        legacy=root/'legacy-refs';legacy.mkdir(mode=0o700)
+        collector=RuntimeCollector(None,SimpleNamespace(binding=consumer),None,lambda:tokens['fixture-E'],
+            pins,legacy,guard=build().guard,state_reader=None,model_reader=None,
+            fixture_originals=FixtureOriginalReferences(references,build()))
+        assert decode(collector.original(reservation_ref['ref'],deadline=time.monotonic()+30))==build().read(request('first'))
         try:originals.resolve(tokens['fixture-foreign'],reservation_ref['ref'])
         except Unavailable:pass
         else:raise AssertionError('foreign session resolved an original metadata source')
@@ -148,6 +154,9 @@ def exercise(auth,conninfo):
         try:originals.resolve(tokens['fixture-E'],policy_ref['ref'])
         except Unavailable:pass
         else:raise AssertionError('withdrawn producer returned cached policy metadata')
+        try:collector.original(policy_ref['ref'],deadline=time.monotonic()+30)
+        except Unavailable:pass
+        else:raise AssertionError('collector exposed withdrawn producer metadata')
     print('PASS private PG signed owner/foreign/revoked AUTH, native MESSAGE row waiter, '
         'idempotent concurrent reservation, actual registry/reservation originals and withdrawn refs withheld; '
         'full source/cost/isolation/paid execution UNRUN')

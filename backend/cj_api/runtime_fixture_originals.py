@@ -18,7 +18,7 @@ KINDS=frozenset({'registry','reservation'})
 
 
 class FixtureOriginalReferences:
-    def __init__(self,directory,registry,use):
+    def __init__(self,directory,registry,use=None):
         self.directory,self.registry,self.use=Path(directory),registry,use
         self.binding=registry.consumer
         with self._directory()as fd:
@@ -31,15 +31,19 @@ class FixtureOriginalReferences:
         if sha256(token.encode()).hexdigest()!=self.binding.auth_session_id:
             raise Unavailable('FIXTURE_REFERENCE_SESSION_CHANGED')
 
-    def _bytes(self,kind):
+    def _bytes(self,kind,use=None):
         if kind=='registry':return self.registry.policy_source()
-        return encode(self.registry.read(self.use))
+        selected=self.use if use is None else use
+        if selected is None:raise Unavailable('FIXTURE_REFERENCE_USE_REQUIRED')
+        return encode(self.registry.read(selected))
 
-    def _source(self,kind):
+    def _source(self,kind,use=None):
         require(kind in KINDS,'FIXTURE_REFERENCE_KIND')
+        selected=self.use if use is None else use
+        if kind=='reservation'and selected is None:raise Unavailable('FIXTURE_REFERENCE_USE_REQUIRED')
         return dict(version=VERSION,binding_sha256=self.binding.key,kind=kind,
             policy_sha256=self.registry.policy_sha256,
-            use_sha256=None if kind=='registry'else sha256(self.use).hexdigest())
+            use_sha256=None if kind=='registry'else sha256(selected).hexdigest())
 
     def issue(self,token,kind):
         self._token(token);source=self._source(kind);raw=self._bytes(kind)
@@ -73,18 +77,35 @@ class FixtureOriginalReferences:
         source=value['source']
         require(type(source)is dict and set(source)=={'version','binding_sha256','kind','policy_sha256','use_sha256'}
             and type(source['kind'])is str and source['kind']in KINDS,'FIXTURE_REFERENCE_DESCRIPTOR')
-        if source!=self._source(source['kind']):raise Unavailable('FIXTURE_REFERENCE_ORIGINAL_USE_CHANGED')
+        if source['kind']=='reservation'and self.use is None:
+            hash256(source['use_sha256'])
+            expected=dict(version=VERSION,binding_sha256=self.binding.key,kind='reservation',
+                policy_sha256=self.registry.policy_sha256,use_sha256=source['use_sha256'])
+        else:expected=self._source(source['kind'])
+        if source!=expected:raise Unavailable('FIXTURE_REFERENCE_ORIGINAL_USE_CHANGED')
         return value
+
+    def contains(self,token,ref):
+        """Route only by an existing owned descriptor; unreadable is not absent."""
+        require(type(ref)is str and re.fullmatch('original-[a-f0-9]{64}',ref)is not None,'FIXTURE_REFERENCE_ID')
+        self._token(token)
+        with self._directory()as fd:
+            self._identity(fd)
+            try:read_private(ref+'.json',65536,directory_fd=fd)
+            except FileNotFoundError:return False
+        return True
 
     def resolve(self,token,ref):
         require(type(ref)is str and re.fullmatch('original-[a-f0-9]{64}',ref)is not None,'FIXTURE_REFERENCE_ID')
         self._token(token)
         with self._directory()as fd:
             self._identity(fd);record=self._record(fd,ref)
-        raw=self._bytes(record['source']['kind'])
+        kind=record['source']['kind']
+        use=self.registry.original_use(record['source']['use_sha256'])if kind=='reservation'and self.use is None else self.use
+        raw=self._bytes(kind,use)
         if sha256(raw).hexdigest()!=record['sha256']:
             raise Unavailable('FIXTURE_REFERENCE_SOURCE_CHANGED')
-        if self._bytes(record['source']['kind'])!=raw:
+        if self._bytes(kind,use)!=raw:
             raise Unavailable('FIXTURE_REFERENCE_SOURCE_CHANGED')
         self._token(token)
         return raw

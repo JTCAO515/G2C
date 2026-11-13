@@ -3,7 +3,8 @@
 `FixtureOriginalReferences` adds a separately versioned private descriptor for
 the two existing B source bodies. It does not change the frozen G envelope,
 the legacy `OriginalReferences` format/kinds or the original body formats.
-There is no production router or fixture publisher activation in this slice.
+The collector gains an explicit optional router; the production worker factory
+does not configure it in this slice. No fixture publisher is activated.
 
 The trusted host supplies an existing qualified `FixtureUseRegistry`, its
 selected original use bytes and an existing owned 0700 descriptor directory.
@@ -27,6 +28,14 @@ descriptor is integrity metadata, never cached ALLOWED or a bearer capability.
 Files are 0600 O_EXCL/NOFOLLOW with fsync; the pinned directory identity cannot
 be silently replaced. Partial/corrupt/unknown-ACK originals are retained and
 never repaired into another reservation, dispatch or fee.
+
+A resolver without a selected use locates the original use by its hash in the
+actual retained reservation records, then applies the normal qualified read.
+It can reconstruct older references after a process restart without a RAM-only
+index. The collector selects metadata only when its owned descriptor exists;
+only a missing descriptor permits legacy routing. Corruption, revocation or a
+denied metadata read never falls back to another source. C metadata withdrawal
+does not block unrelated E originals in the separate legacy directory.
 
 `reservation_identity` derives the durable original namespace from the already
 read actual reservation. It is independent of a policy's possibly repeated

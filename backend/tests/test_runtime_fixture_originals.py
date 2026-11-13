@@ -9,6 +9,7 @@ import pytest
 from runtime_adapter import Invalid,Unavailable
 from runtime_adapter.contract import encode,decode
 from cj_api.runtime_fixture_originals import FixtureOriginalReferences
+from cj_api.runtime_collector import RuntimeCollector
 from test_runtime_fixture_registry import fixture
 
 
@@ -106,3 +107,38 @@ def test_private_directory_and_no_payload_or_credential_descriptors(source,tmp_p
     assert source.token.encode()not in raw and b'body'not in raw
     source.directory.rename(tmp_path/'retained');source.directory.mkdir(mode=0o700)
     with pytest.raises(Unavailable):reader.issue(source.token,'registry')
+
+
+def test_restarted_resolver_reconstructs_each_use_from_actual_retained_records(source):
+    source.registry.reserve(source.raw)
+    first=source.refs().issue(source.token,'reservation')
+    other=decode(source.raw);other['attempt_id']='second';other=encode(other)
+    source.registry.reserve(other);second=source.refs(other).issue(source.token,'reservation')
+    resolver=FixtureOriginalReferences(source.directory,source.registry)
+    assert decode(resolver.resolve(source.token,first['ref']))==source.registry.read(source.raw)
+    assert decode(resolver.resolve(source.token,second['ref']))==source.registry.read(other)
+    with pytest.raises(Unavailable):resolver.issue(source.token,'reservation')
+    assert len(list(source.fixture.directory.iterdir()))==2
+
+
+def test_collector_routes_metadata_without_reinterpreting_or_falling_back(source,tmp_path):
+    source.registry.reserve(source.raw)
+    ref=source.refs().issue(source.token,'reservation')
+    legacy=tmp_path/'legacy';legacy.mkdir(mode=0o700)
+    calls=[]
+    def inventory(*args):calls.append(args);return b'original-own-inventory'
+    collector=RuntimeCollector(SimpleNamespace(inventory=inventory),
+        SimpleNamespace(binding=source.registry.consumer),None,lambda:source.token,source.fixture.pins,legacy,
+        guard=source.registry.guard,state_reader=None,model_reader=None,
+        fixture_originals=FixtureOriginalReferences(source.directory,source.registry),clock=lambda:1)
+    old=collector.refs.issue(source.token,kind='inventory',message_id='own-original')
+    assert collector.original(ref['ref'],deadline=10)==encode(source.registry.read(source.raw))
+    source.fixture.state['source_allowed']=False
+    with pytest.raises(Unavailable):collector.original(ref['ref'],deadline=10)
+    # Withdrawal of C metadata is not withdrawal of E's own historical bytes.
+    assert collector.original(old['ref'],deadline=10)==b'original-own-inventory'
+    source.fixture.state['source_allowed']=True
+    path=source.directory/(ref['ref']+'.json');path.write_bytes(b'{')
+    count=len(calls)
+    with pytest.raises(ValueError):collector.original(ref['ref'],deadline=10)
+    assert len(calls)==count
