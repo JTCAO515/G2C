@@ -92,6 +92,8 @@ def exercise(root,conninfo):
     except (Denied,Unavailable):pass
     else:raise AssertionError('foreign owner read the native undo original')
     print('PASS native runtime undo through signed Lio v2/API/Fake plan and edit, real PG Trip authority, lost ACK query-only, repeated proof zero model calls, foreign owner denied')
+    return SimpleNamespace(database=database,messages=boundary,trips=trip,checker=checker,
+        auth=auth,token=owner,foreign_token=foreign,scope=scope,model=model)
 
 
 if __name__=='__main__':
