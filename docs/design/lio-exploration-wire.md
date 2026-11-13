@@ -31,3 +31,18 @@ Its original byte observations grant no source or write permission. Actual
 normal-chat wiring waits for the shared Home file lock and WP4 deployment.
 Synthetic fixture/module/code-review results are separate from actual HTTP4,
 source eligibility, voice-reader walkthrough, HK/device and JT G12 results.
+
+## Display bridge and local acceptance
+
+A separate display projection maps these validated fields into the existing
+segment/profile/notice/exit view and question draft. It preserves wire order,
+uses the existing public-text/service-host filters, and never sends automatically.
+Profile edits and selected options remain ordinary text callbacks. The explicit
+legacy projection keeps only real old/plain answer fields; it does not synthesize
+new profile/progress values. No normal Home or actual API4 is enabled.
+
+The decoded synthetic fixture exercises both languages and light/dark with full
+AX. The existing question/large-text/reply methods remain. The disabled Continue
+button now owns its D5 colours through a native ButtonStyle instead of unreadable
+system dimming; its disabled behavior and empty-selection gate are unchanged.
+Earlier selector/setup and disabled-contrast failure records remain external.
