@@ -1,7 +1,8 @@
 """Signed private PG origin/legacy/rollback/cleanup guards, no provider calls.
 
 The test's future-wire producer calls the real authenticated admission service;
-production HTTP v3 stays absent. Full Part2-to-Part1 app evidence is separate.
+the application without an explicitly selected calendar consumer has no HTTP v3.
+Full calendar-to-compatibility application evidence is separate.
 """
 import json,time,tempfile
 from pathlib import Path

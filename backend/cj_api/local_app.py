@@ -432,7 +432,7 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
                      memory_configuration=None, run_context=None, travel_context=False, needs_profile=None, trip_context=False,edit_configuration=None,
                      cleanup_configuration=None,formal_memory_configuration=None,database=None,account_admission=False,message_subjects=None,
                      existing_display_reads=False,cleanup_subjects=None,demo_dialogue_subjects=None,
-                     lio_dialogue_subjects=None,lio_memory_factory=None):
+                     lio_dialogue_subjects=None,lio_memory_factory=None,lio_calendar_subjects=None):
     if os.environ.get('CJ_ENV') != 'local':
         raise CompositionUnavailable('CJ_ENV must explicitly be local')
     auth_dir = Path(auth_dir)
@@ -640,6 +640,9 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
         trip_confirmation_signer=confirmation_signer)
     if lio_dialogue_subjects and (not demo_dialogue_subjects or not lio_dialogue_subjects <= demo_dialogue_subjects):
         raise CompositionUnavailable('Lio subjects must belong to the admitted Demo scope')
+    if lio_calendar_subjects and (type(lio_calendar_subjects) is not frozenset
+            or not lio_dialogue_subjects or not lio_calendar_subjects <= lio_dialogue_subjects):
+        raise CompositionUnavailable('calendar subjects require an explicit admitted Lio consumer')
     if demo_dialogue_subjects:
         if not account_admission or not database.travel_context or database.run_context is None:
             raise CompositionUnavailable('Demo dialogue requires original Travel and account admission')
@@ -671,20 +674,25 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
         if lio_dialogue_subjects:
             lio_boundary, lio_checker = dialogue_binding(lio_dialogue_subjects)
             memory_cards = lio_memory_factory(lio_boundary) if lio_memory_factory is not None else None
+            calendar_boundary, calendar_checker = (dialogue_binding(lio_calendar_subjects)
+                if lio_calendar_subjects else (None,None))
             register_lio_dialogue_routes(app, lio_boundary, database.run_repository,
                                          LioTripCards(database, lio_checker), prepare_scope=database._provision_scope,
-                                         memory_cards=memory_cards,calendar_cards=LioTripCards(database,lio_checker,calendar=True))
+                                         memory_cards=memory_cards,calendar_boundary=calendar_boundary,
+                                         calendar_cards=(LioTripCards(database,calendar_checker,calendar=True)
+                                             if lio_calendar_subjects else None))
             if memory_cards is not None:
                 from .lio_memory_routes import register_lio_memory_routes
                 register_lio_memory_routes(app, memory_cards)
             if confirmation_signer is not None:
                 from .lio_trip_routes import LioTripBoundary, register_lio_trip_routes
                 register_lio_trip_routes(app, LioTripBoundary(database, lio_checker, confirmation_signer))
-                from .lio_calendar_trip_routes import register_lio_calendar_trip_routes
-                from cj_trip.local_calendar_read import register_local_calendar_read_routes
-                register_lio_calendar_trip_routes(app,LioTripBoundary(database,lio_checker,confirmation_signer,calendar=True))
-                register_local_calendar_read_routes(app,database=database,auth_dir=auth_dir,
-                                                   selected_subjects=lio_dialogue_subjects)
+                if lio_calendar_subjects:
+                    from .lio_calendar_trip_routes import register_lio_calendar_trip_routes
+                    from cj_trip.local_calendar_read import register_local_calendar_read_routes
+                    register_lio_calendar_trip_routes(app,LioTripBoundary(database,calendar_checker,confirmation_signer,calendar=True))
+                    register_local_calendar_read_routes(app,database=database,auth_dir=auth_dir,
+                                                       selected_subjects=lio_calendar_subjects)
     if database.edit_results:
         from .run_display_composition import build_run_display_reader
         from .scoped_result_routes import register_scoped_result_routes

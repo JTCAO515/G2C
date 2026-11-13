@@ -134,7 +134,7 @@ def _timeline(boundary, resolve_runs, trip_cards, memory_cards, token, conversat
     return boundary.with_history_context(token, project)
 
 
-def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, prepare_scope, memory_cards=None,calendar_cards=None):
+def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, prepare_scope, memory_cards=None,calendar_cards=None,calendar_boundary=None):
     async def send(request, version, receipt_version):
         token = _token(request)
         if token is None:
@@ -143,7 +143,8 @@ def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, pre
             return _failure(400)
         try:
             raw = await _read_body(request, 16384)
-            receipt = await run_in_threadpool(boundary.receive_lio, token, raw, prepare_scope=prepare_scope,
+            selected = calendar_boundary if version == LIO_VERSION_V3 else boundary
+            receipt = await run_in_threadpool(selected.receive_lio, token, raw, prepare_scope=prepare_scope,
                                               version=version)
         except BodyError as exc:
             return _failure(exc.status)
@@ -165,7 +166,7 @@ def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, pre
         except (ValueError, UnicodeError):
             return _failure(400)
         try:
-            return await run_in_threadpool(_timeline, boundary, resolve_runs,
+            return await run_in_threadpool(_timeline, calendar_boundary if calendar else boundary, resolve_runs,
                                            calendar_cards if calendar else trip_cards, memory_cards, token,
                                            conversation, before, multiple,calendar)
         except Exception as exc:
@@ -209,7 +210,8 @@ def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, pre
         except (ValueError, UnicodeError):
             return _failure(400)
         try:
-            receipt = await run_in_threadpool(boundary.query_lio, token, original_id)
+            selected = calendar_boundary if calendar else boundary
+            receipt = await run_in_threadpool(selected.query_lio, token, original_id)
         except Exception as exc:
             return _failure(message_failure(request, exc, False).status_code)
         value = None
