@@ -4,6 +4,31 @@ import CJAPI
 
 struct ExplicitJSONNullTests {
     let trace="6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+    @Test func requiredNullAnyOfMemoryFieldsSurviveDecodeAndEncode() throws {
+        let raw=Data("null".utf8)
+        let title=try JSONDecoder().decode(Components.Schemas.MemoryItemV3.titlePayload.self,from:raw)
+        #expect(title.value1 == nil && title.value2 != nil)
+        #expect(try JSONEncoder().encode(title)==raw)
+        let bytes=Data("{\"version\":\"MEMORY-result.3\",\"request_id\":\"\(trace)\",\"item\":null}".utf8)
+        let detail=try JSONDecoder().decode(Components.Schemas.MemoryDetailV3Response.self,from:bytes)
+        #expect(detail.item.value1 == nil && detail.item.value2 != nil)
+        let encoded=try JSONSerialization.jsonObject(with:JSONEncoder().encode(detail)) as! [String:Any]
+        #expect(encoded["item"] is NSNull)
+        let missing=Data("{\"version\":\"MEMORY-result.3\",\"request_id\":\"\(trace)\"}".utf8)
+        #expect(throws:(any Error).self) { try JSONDecoder().decode(Components.Schemas.MemoryDetailV3Response.self,from:missing) }
+    }
+    @Test func titledMemoryAnyOfDoesNotTreatInvalidObjectsAsNull() throws {
+        for text in ["true","false","0","{}","[]"] {
+            let bytes=Data(text.utf8)
+            #expect(throws:(any Error).self) { try JSONDecoder().decode(Components.Schemas.MemoryItemV3.titlePayload.self,from:bytes) }
+            #expect(throws:(any Error).self) { try JSONDecoder().decode(Components.Schemas.MemoryDetailV3Response.itemPayload.self,from:bytes) }
+        }
+        for text in ["豪华出行","Luxury travel","cafe\u{301}"] {
+            let value=try JSONDecoder().decode(Components.Schemas.MemoryItemV3.titlePayload.self,from:JSONEncoder().encode(text))
+            #expect(value.value1.map { Data($0.utf8) } == Data(text.utf8))
+            #expect(value.value2 == nil)
+        }
+    }
     @Test func nullCodecRejectsEveryNonNullJSONType() throws {
         let value=try JSONDecoder().decode(ExplicitJSONNull.self,from:Data("null".utf8))
         #expect(try JSONEncoder().encode(value)==Data("null".utf8))
