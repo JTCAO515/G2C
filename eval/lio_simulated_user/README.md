@@ -146,3 +146,32 @@ actor binding/source and ordinary current qualifications/window/capture, using
 the existing C sublimit. No new account, budget or provider permission is granted
 by these files. The authorization document alone does not implement the host or
 prove that its actual limits, source and observation capabilities are ready.
+
+## Local native custody controls
+
+`local_controls.py` reuses the repository's fresh private Unix-socket PG, signed
+Lio2 API, actual national-planning worker, Typed Memory history, registered PG
+Meter, fixture-only financial journal, and protected original-input/wire/output/
+Meter/Fee readers. It does not read ambient credentials or use Hong Kong data.
+All model HTTP is `httpx.MockTransport`; TCP connects are blocked. Each selected
+persona gets three actual new native conversations and ordinary generated user
+messages. Foreign-conversation reads must be rejected; actual logical and wire
+payloads are checked for actor-only data. An operationally incomplete control
+stops further dispatch and retains the full 60-slot denominator.
+
+```sh
+CJ_ENV=local CJ_PG_BINDIR=/path/to/postgresql/bin \
+  uv run --locked python -B -m eval.lio_simulated_user.local_controls \
+  --output .local/eval/c936-local-r01
+```
+
+`--only p01-zh p01-en` is debugging only; all other slots remain UNRUN.
+The actor here is explicitly **scripted**, with zero actor model calls. The HTTP
+fixture deliberately repeats an interests question, so G2 can show observed
+failures; it never supplies an accepted complete profile, so G3 stays UNKNOWN.
+Those are deterministic L1 custody/reporting controls, **not the current real
+model baseline**, and do not complete either remaining #936 L1 box. All three
+monetary columns stay UNKNOWN for the fixture. Native model-call counts refer to
+the fixture requests and their actual private PG Meter rows, not paid suppliers.
+Real actor/DUT quality and original production accounting still wait for the
+approved B host, then reuse the unchanged cohort, thresholds and runner.
