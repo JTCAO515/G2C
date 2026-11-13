@@ -85,16 +85,9 @@ def _message(item, state, *, expired=False, trip=None, memory=None):
 
 
 def _timeline(boundary, resolve_runs, trip_cards, memory_cards, token, conversation_id, before, multiple=False,calendar=False):
-    def project(context):
-        page = context.lio_timeline(conversation_id, before, multiple=multiple)
-        if not calendar and any(item.protocol==LIO_VERSION_V3 for item in page.messages):
-            raise InvalidInput('calendar conversation requires new Lio timeline')
+    def compose(context, page, bindings, snapshots):
         messages = []
         if page.messages:
-            repository = resolve_runs(context.scope)
-            bindings = [Binding(context.scope, page.conversation_id, page.generation,
-                                item.message_id, item.run_id, item.sequence) for item in page.messages]
-            snapshots = repository.lio_timeline(bindings)
             for item, binding, (state, expired) in zip(page.messages, bindings, snapshots, strict=True):
                 trip = None
                 if state is not None:
@@ -118,6 +111,25 @@ def _timeline(boundary, resolve_runs, trip_cards, memory_cards, token, conversat
         if context.lio_timeline(conversation_id, before, multiple=multiple) != page:
             return _failure(503)
         return response
+
+    def project(context):
+        page = context.lio_timeline(conversation_id, before, multiple=multiple)
+        if not calendar and any(item.protocol==LIO_VERSION_V3 for item in page.messages):
+            raise InvalidInput('calendar conversation requires new Lio timeline')
+        # An empty page never needed a MESSAGE owner row. Keep that path and
+        # its final page/AUTH checks; existing originals get one protected frame.
+        if not page.messages:
+            return compose(context, page, (), ())
+        bindings = [Binding(context.scope, page.conversation_id, page.generation,
+                            item.message_id, item.run_id, item.sequence) for item in page.messages]
+        snapshots = resolve_runs(context.scope).lio_timeline(bindings)
+        # Classify and compose from the same snapshots: a pending-only page
+        # must not gain an M lock, or later slip into an unlocked Memory read.
+        requires_original = memory_cards is not None and any(
+            state is not None and state.status == 'completed' for state, _ in snapshots)
+        if requires_original:
+            return context.with_lio_timeline_projection(lambda: compose(context, page, bindings, snapshots))
+        return compose(context, page, bindings, snapshots)
 
     return boundary.with_history_context(token, project)
 

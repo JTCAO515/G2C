@@ -32,62 +32,72 @@ class TimelinePage:
 def original(service, message_id):
     with service.repository.transaction() as tx:
         tx.lock_scope()
-        row = tx.cur.execute(
-            'SELECT conversation_id,generation FROM cj_message_receipt WHERE scope=%s '
-            'AND message_id=%s AND demo_dialogue_protocol=%s',
-            (tx.scope, message_id, LIO_VERSION)).fetchone()
-        if row is None:
-            return None
-        tx.chat(*row)
-        stored = tx.find(message_id)
-        read_reference(tx, stored)
-        return stored
+        return original_in_transaction(tx, message_id)
+
+
+def original_in_transaction(tx, message_id):
+    """Read under the caller's existing canonical MESSAGE scope protection."""
+    row = tx.cur.execute(
+        'SELECT conversation_id,generation FROM cj_message_receipt WHERE scope=%s '
+        'AND message_id=%s AND demo_dialogue_protocol=%s',
+        (tx.scope, message_id, LIO_VERSION)).fetchone()
+    if row is None:
+        return None
+    tx.chat(*row)
+    stored = tx.find(message_id)
+    read_reference(tx, stored)
+    return stored
 
 
 def read(service, conversation_id, before, *, multiple=False):
     with service.repository.transaction() as tx:
-        conversation = lio_conversation(tx.scope)
-        if conversation_id is not None and conversation_id != conversation:
-            if not multiple:
-                raise InvalidInput('invalid Lio conversation identifier')
-            conversation = conversation_id
-            head = tx.active_head(conversation)
-            if head is None or not admitted_dialogue(tx, conversation, head.generation, lio=True):
-                raise InvalidInput('invalid Lio conversation identifier')
-        else:
-            head = tx.active_head(conversation)
-        if head is None:
-            if before is not None:
-                raise InvalidInput('invalid timeline cursor')
-            return TimelinePage(None, None, (), None)
-        params = (tx.scope, conversation, head.generation, LIO_VERSION)
-        sequence = None
+        return read_in_transaction(tx, conversation_id, before, multiple=multiple)
+
+
+def read_in_transaction(tx, conversation_id, before, *, multiple=False):
+    """The same page validation for ordinary and protected projection reads."""
+    conversation = lio_conversation(tx.scope)
+    if conversation_id is not None and conversation_id != conversation:
+        if not multiple:
+            raise InvalidInput('invalid Lio conversation identifier')
+        conversation = conversation_id
+        head = tx.active_head(conversation)
+        if head is None or not admitted_dialogue(tx, conversation, head.generation, lio=True):
+            raise InvalidInput('invalid Lio conversation identifier')
+    else:
+        head = tx.active_head(conversation)
+    if head is None:
         if before is not None:
-            cursor = tx.cur.execute(
-                'SELECT sequence FROM cj_message_receipt WHERE scope=%s AND conversation_id=%s '
-                'AND generation=%s AND demo_dialogue_protocol=%s AND message_id=%s',
-                (*params, before)).fetchone()
-            if cursor is None:
-                raise InvalidInput('invalid timeline cursor')
-            sequence = cursor[0]
-        rows = tx.cur.execute(
-            'SELECT message_id,run_id,sequence,raw_input,input_sha256,demo_dialogue_locale,lio_wire_protocol FROM cj_message_receipt '
-            'WHERE scope=%s AND conversation_id=%s AND generation=%s AND demo_dialogue_protocol=%s '
-            'AND (%s::bigint IS NULL OR sequence<%s) ORDER BY sequence DESC LIMIT %s',
-            (*params, sequence, sequence, PAGE_SIZE + 1)).fetchall()
-        messages = []
-        for mid, run_id, position, raw_input, digest, locale, protocol in reversed(rows[:PAGE_SIZE]):
-            raw = bytes(raw_input)
-            try:
-                command = Command.parse_original(raw)
-            except (ValueError, UnicodeError, KeyError) as exc:
-                raise Unavailable('invalid original dialogue message') from exc
-            if ((command.message_id, command.conversation_id) != (mid, conversation)
-                    or hashlib.sha256(raw).hexdigest() != digest):
-                raise Unavailable('original dialogue binding changed')
-            if protocol not in (None,LIO_VERSION_V3):
-                raise Unavailable('original Lio wire capability unavailable')
-            messages.append(TimelineMessage(mid, run_id, position, json.loads(command.raw)['text'], locale,
-                                           LIO_VERSION if protocol is None else protocol))
-        return TimelinePage(conversation, head.generation, tuple(messages),
-                            messages[0].message_id if len(rows) > PAGE_SIZE else None)
+            raise InvalidInput('invalid timeline cursor')
+        return TimelinePage(None, None, (), None)
+    params = (tx.scope, conversation, head.generation, LIO_VERSION)
+    sequence = None
+    if before is not None:
+        cursor = tx.cur.execute(
+            'SELECT sequence FROM cj_message_receipt WHERE scope=%s AND conversation_id=%s '
+            'AND generation=%s AND demo_dialogue_protocol=%s AND message_id=%s',
+            (*params, before)).fetchone()
+        if cursor is None:
+            raise InvalidInput('invalid timeline cursor')
+        sequence = cursor[0]
+    rows = tx.cur.execute(
+        'SELECT message_id,run_id,sequence,raw_input,input_sha256,demo_dialogue_locale,lio_wire_protocol FROM cj_message_receipt '
+        'WHERE scope=%s AND conversation_id=%s AND generation=%s AND demo_dialogue_protocol=%s '
+        'AND (%s::bigint IS NULL OR sequence<%s) ORDER BY sequence DESC LIMIT %s',
+        (*params, sequence, sequence, PAGE_SIZE + 1)).fetchall()
+    messages = []
+    for mid, run_id, position, raw_input, digest, locale, protocol in reversed(rows[:PAGE_SIZE]):
+        raw = bytes(raw_input)
+        try:
+            command = Command.parse_original(raw)
+        except (ValueError, UnicodeError, KeyError) as exc:
+            raise Unavailable('invalid original dialogue message') from exc
+        if ((command.message_id, command.conversation_id) != (mid, conversation)
+                or hashlib.sha256(raw).hexdigest() != digest):
+            raise Unavailable('original dialogue binding changed')
+        if protocol not in (None, LIO_VERSION_V3):
+            raise Unavailable('original Lio wire capability unavailable')
+        messages.append(TimelineMessage(mid, run_id, position, json.loads(command.raw)['text'], locale,
+                                       LIO_VERSION if protocol is None else protocol))
+    return TimelinePage(conversation, head.generation, tuple(messages),
+                        messages[0].message_id if len(rows) > PAGE_SIZE else None)

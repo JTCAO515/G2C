@@ -69,4 +69,35 @@ struct LioSavedTripTests {
         #expect(stop.time == nil && stop.endTime == nil && stop.fixed == nil && stop.point == nil)
     }
 
+    @Test func markersOnlyUseThePlaceBoundToThatSavedStop() throws {
+        struct Example: Decodable {
+            let name: String
+            let canonical_utf8_base64: String
+            let sha256: String
+        }
+        let path = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+            .appendingPathComponent("../../../CJTripClient/Tests/CJTripClientTests/Fixtures/STRUCTURED-V1.json")
+            .standardizedFileURL
+        let examples = try JSONDecoder().decode([Example].self, from: Data(contentsOf: path))
+        let example = try #require(examples.first { $0.name == "sources" })
+        let bytes = try #require(Data(base64Encoded: example.canonical_utf8_base64))
+        let trace = "B35279D6-8B42-466D-A55D-8A16B64BB270"
+        let response = Data("""
+            {"version":"TRIP-structured-read.1","request_id":"\(trace)","trip":{"trip_id":"trip:source-map","version":1,
+             "content_sha256":"\(example.sha256)","content":\(String(decoding: bytes, as: UTF8.self))}}
+            """.utf8)
+        let parsed = try StructuredTripReadV1.detail(response, requestID: trace)
+        let record = try #require(parsed)
+        let places = try TripPlaceProjection.read(from: record.document)
+        let itinerary = LioItinerary(record, places: places)
+        let stops = itinerary.days.flatMap(\.stops)
+        let mapped = try #require(stops.first { $0.id == "source-item-2" })
+        let coordinate = try #require(places.first { $0.id == "source-2" }?.markerCoordinate)
+        #expect(mapped.point == .init(latitude: NSDecimalNumber(decimal: coordinate.latitude.value).doubleValue,
+                                      longitude: NSDecimalNumber(decimal: coordinate.longitude.value).doubleValue))
+        #expect(stops.filter { $0.id != "source-item-2" }.allSatisfy { $0.point == nil })
+        #expect(LioItinerary(record).days.flatMap(\.stops).allSatisfy { $0.point == nil })
+        #expect(itinerary.days.flatMap(\.stops).map(\.name) == record.document.items.map(\.text))
+    }
+
 }
