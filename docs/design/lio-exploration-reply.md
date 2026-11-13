@@ -1,10 +1,11 @@
 # Exploration reply presentation (#933)
 
 This local preparation uses the field design acknowledged in
-[#925](https://github.com/JTCAO515/G2C/issues/925#issuecomment-6857856938).
+[#925](https://github.com/JTCAO515/G2C/issues/925#issuecomment-6860683052),
+at draft `0adcb54848cb15f9415e781bfa6091c92c1b480e`.
 It does not install a wire decoder, HTTP endpoint or normal App entry. Runtime
 integration still requires the merged WP2 contract and WP4 deployment. The later
-[Card3 proposal](https://github.com/JTCAO515/G2C/issues/925#issuecomment-6859697924)
+[Card3 summary](https://github.com/JTCAO515/G2C/issues/925#issuecomment-6860683052)
 has a design acknowledgement only; it does not enable structured.4 consumption.
 
 ## Display and ordinary messages
