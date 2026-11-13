@@ -30,11 +30,12 @@ from test_lio_city import data as city_catalog
 from test_lio_planning_flow import flow
 
 SUBJECT='m4-synthetic-demo-0123456789ab'
+OUTSIDE='calendar-unselected-subject'
 KEY='calendar-http-fixture-only'
 
 
 def exercise(root,conninfo):
-    auth=root/'auth';dev_auth.init(auth,[SUBJECT])
+    auth=root/'auth';dev_auth.init(auth,[SUBJECT,OUTSIDE])
     config=root/'connection.json';config.write_text(json.dumps(conninfo));now=int(time.time())
     meter=root/'meter.json';meter.write_text(json.dumps(dict(version='CJ-LOCAL-RUN@2',current=dict(meter=dict(
         unit='provider_call',budget=200,period_start=now-60,period_end=int(DEMO_DEADLINE.timestamp()),
@@ -123,10 +124,18 @@ def exercise(root,conninfo):
     print('PASS generic application without an explicit calendar consumer has no v3 admission or writes')
     app=create_local_app(conninfo_path=None,auth_dir=auth,database=database,run_context=context,account_admission=True,
         confirmation_signer=signer,demo_dialogue_subjects=subjects,lio_dialogue_subjects=subjects,lio_calendar_subjects=subjects)
+    outside_headers={'Authorization':'Bearer '+dev_auth.token(auth,OUTSIDE,3600),'Content-Type':'application/octet-stream'}
     async def exchange(key,guard):
         assert key==KEY and guard() is True
         return city_catalog()
     with TestClient(app) as api,patch('cj_api.lio_city._catalog_exchange',side_effect=exchange):
+        denied=json.dumps(dict(version='LIO-message.3',message_id='calendar-unselected',text='Plan three days in Chengdu',locale='en',new_conversation=True)).encode()
+        assert api.post('/v3/lio/messages',content=denied,headers=outside_headers).status_code==403
+        assert api.get('/v3/lio/timeline',headers=outside_headers).status_code==403
+        with psycopg.connect(**conninfo) as connection:
+            assert connection.execute('SELECT (SELECT count(*) FROM cj_message_receipt),(SELECT count(*) FROM cj_run_record),(SELECT count(*) FROM cj_usage_ledger_candidate)').fetchone()==before
+        assert not wire
+        print('PASS valid local identity outside the calendar roster is rejected before MESSAGE/RUN/Meter/model')
         def read(cid):
             value=api.get('/v3/lio/trip',params={'conversation_id':cid},headers=headers)
             assert value.status_code==200,value.text
