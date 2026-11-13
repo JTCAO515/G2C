@@ -61,6 +61,8 @@ class Problem:
     visits: tuple[Visit, ...]
     transfers: tuple[Transfer, ...]
     frozen_order: tuple[str, ...] = ()
+    time_quantum: int = 1
+    precedence: tuple[tuple[str, str], ...] = ()
 
     def __post_init__(self):
         if type(self.day_count) is not int or not 1 <= self.day_count <= 1_000_000 // 16:
@@ -81,6 +83,13 @@ class Problem:
         if type(self.frozen_order) is not tuple or self.frozen_order and (
                 len(self.frozen_order) != len(ids) or set(self.frozen_order) != ids):
             raise ValueError('frozen order must contain every original visit once')
+        if type(self.time_quantum) is not int or not 1 <= self.time_quantum <= 3600 or DAY % self.time_quantum:
+            raise ValueError('explicit clock quantum dividing a day required')
+        if (type(self.precedence) is not tuple or any(type(pair) is not tuple or len(pair)!=2
+                or pair[0] not in ids or pair[1] not in ids or pair[0]==pair[1]
+                or by_id[pair[0]].day_index!=by_id[pair[1]].day_index for pair in self.precedence)
+                or len(set(self.precedence))!=len(self.precedence)):
+            raise ValueError('distinct same-day precedence pairs required')
 
 
 @dataclass(frozen=True)
@@ -126,6 +135,7 @@ def verify(problem, placements):
     for p in placements:
         v = original[p.item_id]
         if (type(p.start) is not int or type(p.end) is not int or type(p.day_index) is not int or p.day_index != v.day_index
+                or p.start % problem.time_quantum
                 or p.end != p.start + v.duration or p.end >= problem.day_count*DAY
                 or not (v.day_index-1)*DAY <= p.start < v.day_index*DAY
                 or not any(w.start <= p.start and p.end <= w.end for w in v.windows)
@@ -136,6 +146,8 @@ def verify(problem, placements):
         for b in placements[index+1:]:
             if a.end > a.start and b.end > b.start and max(a.start,b.start) < min(a.end,b.end): return False
     transfer = {(t.origin,t.destination): t.seconds for t in problem.transfers}
+    order={p.item_id:index for index,p in enumerate(placements)}
+    if any(order[a]>=order[b] for a,b in problem.precedence):return False
     for day in range(1, problem.day_count+1):
         sequence = [p for p in placements if p.day_index == day]
         if problem.frozen_order and tuple(p.item_id for p in sequence) != tuple(
@@ -162,6 +174,9 @@ def solve(problem: Problem, limits: Limits, *, stop: Event):
     for v in problem.visits:
         start = model.new_int_var((v.day_index-1)*DAY, v.day_index*DAY-1, v.item_id)
         starts[v.item_id] = start
+        if problem.time_quantum != 1:
+            tick = model.new_int_var(0,horizon//problem.time_quantum,'tick-'+v.item_id)
+            model.add(start == tick*problem.time_quantum)
         end = model.new_int_var(0,horizon,'end-'+v.item_id)
         model.add(end == start+v.duration)
         intervals.append(model.new_interval_var(start,v.duration,end,'interval-'+v.item_id))
@@ -173,6 +188,9 @@ def solve(problem: Problem, limits: Limits, *, stop: Event):
         model.add_exactly_one(options)
         if v.fixed_start is not None:model.add(start == v.fixed_start)
     model.add_no_overlap(intervals)
+    by_id={v.item_id:v for v in problem.visits}
+    for a,b in problem.precedence:
+        model.add(starts[b] >= starts[a]+by_id[a].duration)
     for day in range(1,problem.day_count+1):
         nodes=[v for v in problem.visits if v.day_index==day]
         if not nodes:continue

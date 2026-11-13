@@ -65,6 +65,22 @@ def test_zero_duration_endpoints_have_a_real_selected_circuit_order():
     assert {x.item_id for x in result.placements}=={'a','b'}
 
 
+def test_explicit_minute_quantum_is_enforced_before_projecting_hh_mm():
+    p=Problem(1,(Visit('a',1,60,(Window(61,240),)),),(),time_quantum=60)
+    result=run(p)
+    assert result.status=='CONDITIONAL_SCHEDULE' and result.placements[0].start%60==0
+    assert not verify(p,(Placement('a',1,61,121),))
+
+
+def test_explicit_same_day_precedence_cannot_be_inverted_by_ordering():
+    visits=(Visit('sight',1,60,(Window(100,1000),)),Visit('dinner',1,60,(Window(100,1000),)))
+    p=Problem(1,visits,(),precedence=(('sight','dinner'),))
+    result=run(p)
+    assert [v.item_id for v in result.placements]==['sight','dinner']
+    assert not verify(p,tuple(reversed(result.placements)))
+    assert run(replace(p,frozen_order=('dinner','sight'))).status=='CONFLICT'
+
+
 def test_independent_checker_rejects_missing_changed_fixed_and_wrong_travel_outputs():
     p=Problem(1,(Visit('a',1,10,(Window(100,200),),100),Visit('b',1,10,(Window(100,200),))),
               (Transfer('a','b',20),),('a','b'))
