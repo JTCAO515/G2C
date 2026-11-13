@@ -102,7 +102,7 @@ def exercise(root,conninfo):
     services=RealServices(model,KEY,subjects,demo_subjects=subjects,national_subjects=subjects)
     tools=RealTools(services,buffered_streaming_subjects=subjects,visitor_catalogue_directory=ROOT/'knowledge/visitor/entries')
     signer=load_confirmation_signer(auth)
-    def process():
+    def process(expected_status='completed'):
         from cj_agent.worker import RunWorker
         execute=RunWorker._execute
         def traced(worker,*args):
@@ -114,7 +114,7 @@ def exercise(root,conninfo):
             outcomes=run_worker.run_once(database,model,auth,tools_configuration=tools,real_services=services,
                 memory_configuration_for_scope=lambda owner:memory if owner==scope else None,
                 account_admission=True,hk_demo_scopes=frozenset({scope}),lio_confirmation=signer)
-        assert [item.status for item in outcomes]==['completed'],outcomes
+        assert [item.status for item in outcomes]==[expected_status],outcomes
     legacy_app=create_local_app(conninfo_path=None,auth_dir=auth,database=database,run_context=context,account_admission=True,
         confirmation_signer=signer,demo_dialogue_subjects=subjects,lio_dialogue_subjects=subjects)
     headers={'Authorization':'Bearer '+dev_auth.token(auth,SUBJECT,3600),'Content-Type':'application/octet-stream'}
@@ -147,12 +147,12 @@ def exercise(root,conninfo):
             return value.json()
         for language in ('zh','en'):
             locale=language
-            def send(mid,text,cid=None):
+            def send(mid,text,cid=None,*,expected_status='completed'):
                 raw=json.dumps(dict(version='LIO-message.3',message_id=mid,text=text,locale=locale,
                     **({'conversation_id':cid} if cid else {'new_conversation':True})),ensure_ascii=False).encode()
                 result=api.post('/v3/lio/messages',content=raw,headers=headers)
                 assert result.status_code==200,result.text
-                process()
+                process(expected_status)
                 with psycopg.connect(**conninfo) as connection:
                     identity=connection.execute('SELECT run_id,sequence,input_sha256,demo_dialogue_input_sha256 FROM cj_message_receipt WHERE scope=%s AND message_id=%s',(scope,mid)).fetchone()
                 print(json.dumps(dict(mid=mid,cid=result.json()['conversation_id'],run_id=identity[0],sequence=identity[1],core_sha256=identity[2],outer_sha256=identity[3])),flush=True)
@@ -216,6 +216,37 @@ def exercise(root,conninfo):
             with psycopg.connect(**conninfo) as connection:
                 assert connection.execute('SELECT (SELECT count(*) FROM cj_trip_record),(SELECT count(*) FROM cj_trip_proposal),(SELECT count(*) FROM cj_trip_receipt)').fetchone()==prior
             print('PASS native LIO3 '+fault+' confirmation refuses save; Trip/proposal/receipt counts unchanged',flush=True)
+        ack_cid,_=send('calendar-ack-plan','Plan three days in Chengdu')
+        ack_base=read(ack_cid)['current']
+        connect=LocalDatabase.connect
+        class Cursor:
+            def __init__(self,base,connection):self.base,self.connection=base,connection
+            def __getattr__(self,name):return getattr(self.base,name)
+            def execute(self,query,*args,**kwargs):
+                if query.startswith('INSERT INTO cj_trip_needs_action'):self.connection.saved=True
+                self.base.execute(query,*args,**kwargs)
+                return self
+        class Connection:
+            def __init__(self,base):self.base,self.saved=base,False
+            def __getattr__(self,name):return getattr(self.base,name)
+            def __enter__(self):return self.base.__enter__()
+            def __exit__(self,*args):return self.base.__exit__(*args)
+            def cursor(self,*args,**kwargs):return Cursor(self.base.cursor(*args,**kwargs),self)
+            def commit(self):
+                self.base.commit()
+                if self.saved:raise OSError('synthetic native conversion ACK loss')
+        models=len(wire)
+        with patch.object(LocalDatabase,'connect',lambda database,*a,**k:Connection(connect(database,*a,**k))):
+            send('calendar-ack-date','Start tomorrow',ack_cid,expected_status='unknown')
+        observed=read(ack_cid)
+        assert observed['current']['trip_id']==ack_base['trip_id'] and observed['current']['trip_version']==2
+        assert observed['current']['calendar']['state']=='dated' and len(wire)==models+1
+        with psycopg.connect(**conninfo) as connection:
+            attempt=connection.execute('SELECT run_id FROM cj_message_receipt WHERE scope=%s AND message_id=%s',(scope,'calendar-ack-date')).fetchone()[0]
+            original=connection.execute('SELECT original_input FROM cj_trip_needs_action WHERE action_id=%s',('lio-date-'+attempt,)).fetchone()
+            assert original is not None and json.loads(bytes(original[0]))['date_source']['reference']['message_id']=='calendar-ack-date'
+        assert read(ack_cid)==observed and len(wire)==models+1
+        print('PASS native date ACK loss retains UNKNOWN RUN and the same conversion action; readback proves one version without replay',flush=True)
     assert all(row['state']=='RECEIVED' for row in journal.inspect())
 
 
