@@ -412,7 +412,7 @@ Typed 保存、管理及既有 `/v1/memory-erasures` 不安装 V1 记忆写入�
 
 ### Demo 邀请码
 
-按 #685 指定的代号配置 `CJ_BETA_DEMO_SUBJECTS_JSON`，至多十个
+按 #685 指定的代号配置 `CJ_BETA_DEMO_SUBJECTS_JSON`，至多十二个
 `m4-synthetic-demo-<12位代号>`，同时纳入原邀请、Typed API 策略和 worker 记忆选择。
 创建 UID10001 所有的 0700 `/srv/g2c-beta/demo-auth-socket`，worker 保留原签名私钥，
 API 只读挂载 Unix socket 目录。公网 `POST /v1/demo-invite-sessions` 的接口见 #685。
@@ -430,6 +430,10 @@ Lio 的本机追加迁移使用 `python -B -m deploy.hk.demo_schema --target 51`
 `python -B -m deploy.hk.demo_accounts bootstrap <subject> --digest <sha256> --expires-at <RFC3339>`，
 再运行 `insert <subject>` 做原 canonical Typed 预检和单次 profile 激活。
 邀请码原文只在开发 Mac 的 0600 文件，服务端仅保存摘要。
+长码 `D1-<12位账号代号>.<22位凭据>` 保持兼容。短码仅接受区分大小写的
+`G2C@<三位数字>` 和 `CJ_Tester@<三位数字>`；账号代号取完整短码 ASCII
+SHA-256 的前十二位十六进制。只有已配置主体且原数据库中的完整邀请码摘要、
+资格期限和撤销状态全部匹配时才签发会话；短码格式本身不创建账号或授予资格。
 
 `revoke <subject>` 立即拒绝原邀请码和会话；确认原 scope 无在途后，`rotate <subject>` 可登记
 新摘要与有效期，旧会话继续拒绝，每日计数保留。结果不明先 `inspect <subject>` 和原动作日志。
