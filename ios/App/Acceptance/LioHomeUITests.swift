@@ -342,6 +342,7 @@ import XCTest
 
     func testJourneyEnglish() throws { try exerciseJourney("en") }
     func testJourneyChinese() throws { try exerciseJourney("zh-Hans") }
+
     func testTitledMemoryJourneyEnglish() throws { try exerciseJourney("en", titledReads: true) }
     func testTitledMemoryJourneyChinese() throws { try exerciseJourney("zh-Hans", titledReads: true) }
 
@@ -516,7 +517,6 @@ import XCTest
         reply(chinese ? "你喜欢什么样的酒店？" : "Tell me what kind of hotel you like.")
     }
 
-<<<<<<< HEAD
     func testTripEmptyStateInvitesConversationInBothLanguages() throws {
         for language in ["en", "zh-Hans"] {
             let chinese = language == "zh-Hans"
@@ -572,7 +572,11 @@ import XCTest
                 attachment.name = "trip-list-\(language)-\(appearance)"
                 attachment.lifetime = .keepAlways
                 add(attachment)
-=======
+                app.terminate()
+            }
+        }
+    }
+
     func testMemoryTitlesShowServiceTextAndKeepCompleteOriginals() throws {
         continueAfterFailure = false
         for language in ["en", "zh-Hans"] {
@@ -617,14 +621,11 @@ import XCTest
                 edit.tap()
                 let editor = app.descendants(matching: .any).matching(identifier: "lio.memory.editor").firstMatch
                 XCTAssertEqual(editor.value as? String, original)
->>>>>>> origin/main
                 app.terminate()
             }
         }
     }
 
-<<<<<<< HEAD
-=======
     func testInvalidMemoryTitleDoesNotBecomeASuccessfulBodyFallback() throws {
         continueAfterFailure = false
         for language in ["en", "zh-Hans"] {
@@ -645,7 +646,6 @@ import XCTest
         }
     }
 
->>>>>>> origin/main
     func testMemoryGridLayoutsKeepTheFullBodyAndDisabledState() throws {
         continueAfterFailure = false
         for language in ["en", "zh-Hans"] {
