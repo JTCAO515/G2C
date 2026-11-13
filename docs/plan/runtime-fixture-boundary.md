@@ -44,6 +44,15 @@ running the entire physical account-erasure workflow.
 Financial pins and the consumer-purpose predicate remain explicit local fixtures;
 they do not prove real E registration or budget admission.
 
+The actual current worker pool was independently observed as six, without any
+configuration change. An additional private control uses a real six-connection
+psycopg pool and the accepted native runtime lease, including an outer consumer
+MESSAGE admission and fresh producer/consumer account checks. It measures a
+peak of six and complete lease return. This single-operation test does not prove
+arbitrary concurrent host capacity. Four holders plus transient authorization
+reads cannot fit a pool of four; host activation must verify its actual complete
+nesting/concurrency instead of silently raising limits or bypassing the pool.
+
 This boundary is never held across model/tool/provider/network work. It is a
 short source projection and one prerequisite for immutable-version admission,
 not a complete fixture use. It does not enumerate all E surfaces, close E late

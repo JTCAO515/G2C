@@ -18,6 +18,7 @@ import runtime_native_dialogue_pg as native
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives import serialization
 import psycopg
+from psycopg_pool import ConnectionPool
 
 from cj_api.runtime_fixture_boundary import FixtureSourceBoundary
 from cj_api.runtime_release_witness import NativeReleaseWitness
@@ -25,6 +26,7 @@ from cj_api.local_app import load_confirmation_signer,scope_for
 from cj_api.local_account_admission_v2 import account_checker_for,retired_in_transaction
 from cj_api.local_worker_context import checker_factory_for
 from cj_api.lio_trip_routes import LioTripBoundary
+from cj_api.supabase_test_database import _RuntimeLease
 from cj_auth.interfaces import AdmissionStatus
 from cj_message.auth_boundary import Boundary
 from cj_memory_jobs.service import Service as HistoryService
@@ -57,6 +59,8 @@ def exercise(auth,conninfo):
     def qualify(deadline):
         assert time.monotonic()<deadline
         if not state['qualified']:raise Unavailable('LOCAL_CONSUMER_WITHHELD')
+        if f.checker.check(f.foreign_token).status is not AdmissionStatus.ALLOWED:
+            raise Unavailable('LOCAL_CONSUMER_AUTH_WITHHELD')
     def guard():authority.require(binding=binding,pins_sha256=pins.key,purpose='query',deadline=time.monotonic()+30,read_only=True)
     control=auth.parent/'composite-control';control.mkdir(mode=0o700)
     key=Ed25519PrivateKey.generate()
@@ -126,6 +130,32 @@ def exercise(auth,conninfo):
                 return b'encoded-local-projection'
             assert source.with_current(before,check_holders,deadline=time.monotonic()+30)==b'encoded-local-projection'
             assert sorted(item.result(timeout=10)for item in pending)==[0,1,2]
+
+        # The actual current HK worker value is six. Exercise a real bounded
+        # psycopg pool/native lease, including the outer consumer M admission;
+        # the preceding three-writer test remains independent/unpooled.
+        checkout=f.database._open_runtime_connection
+        occupancy=dict(active=0,peak=0)
+        with ConnectionPool(kwargs=dict(f.database.conninfo,autocommit=True,prepare_threshold=None,
+                options='-c statement_timeout=10000 -c lock_timeout=5000'),min_size=0,max_size=6,
+                max_waiting=32,timeout=2)as pool:
+            class Lease(_RuntimeLease):
+                def close(self):
+                    if not self._returned:occupancy['active']-=1
+                    return super().close()
+            def pooled():
+                connection=pool.getconn()
+                connection.autocommit=True
+                occupancy['active']+=1;occupancy['peak']=max(occupancy.values())
+                return Lease(pool,connection)
+            f.database._open_runtime_connection=pooled
+            try:
+                with f.messages._service(f.foreign_token).repository.transaction()as outer:
+                    outer.lock_scope()
+                    assert source.with_current(before,lambda state,private:b'pooled-six-projection',
+                        deadline=time.monotonic()+30)==b'pooled-six-projection'
+                assert occupancy['active']==0 and occupancy['peak']==6
+            finally:f.database._open_runtime_connection=checkout
 
         state['pins']=b'changed-current-source'
         try:source.with_current(before,lambda *args:b'not-reached',deadline=time.monotonic()+30)
