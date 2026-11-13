@@ -106,6 +106,8 @@ packages = [
 "backend/usage/cj_usage" = "cj_usage"
 
 [tool.hatch.build.targets.wheel.shared-data]
+"backend/fact/cj_fact/visitor.py" = "share/g2c/runtime-source/backend/fact/cj_fact/visitor.py"
+"knowledge/visitor/entries" = "share/g2c/visitor/entries"
 # Only public fixed inputs and policy sources hashed by source_c0().
 "backend/agent/cj_agent/provider.py" = "share/g2c/runtime-source/backend/agent/cj_agent/provider.py"
 "backend/cj_api/real_services.py" = "share/g2c/runtime-source/backend/cj_api/real_services.py"
