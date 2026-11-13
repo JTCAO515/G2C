@@ -330,7 +330,8 @@ class Runtime:
             account_admission=True,needs_profile=needs_profile,message_subjects=message_subjects,
             existing_display_reads=True,cleanup_configuration=cleanup,
             cleanup_subjects=planning or None,demo_dialogue_subjects=planning or None,
-            lio_dialogue_subjects=self.demo_subjects or None,lio_memory_factory=lio_memory_factory)
+            lio_dialogue_subjects=self.demo_subjects or None,lio_memory_factory=lio_memory_factory,
+            lio_calendar_subjects=self.demo_subjects or None)
         if self.typed_memory is not None:
             from cj_memory.typed_api import register_typed_routes
             typed_memory=self.typed_memory

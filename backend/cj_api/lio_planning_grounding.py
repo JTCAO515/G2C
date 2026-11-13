@@ -501,7 +501,7 @@ def _event(day, *, time=None, zone=None, place=None):
                 timezone=_known(zone), place=_known(place))
 
 
-def _fixed_item(clause, first, zone, party, *, reply='', explicit_self=False):
+def _fixed_item(clause, first, zone, party, *, reply='', explicit_self=False, undated=False):
     details = f'{clause}\n{reply}' if reply else clause
     if NEGATED.search(details) or OTHER.search(details) or zone is None:
         return None
@@ -519,9 +519,9 @@ def _fixed_item(clause, first, zone, party, *, reply='', explicit_self=False):
         return None
     if first and re.search(r'第一天|\b(?:the )?first day\b', details, re.I):
         dates.add(first)
-    if len(ranges) != 1 or len(dates) != 1:
+    if len(ranges) != 1 or (len(dates) != 1 and not (undated and not dates)):
         return None
-    day = dates.pop()
+    day = dates.pop() if dates else None
     start, end = ranges.pop()
     party_explicit = re.search(r'全体|大家|\b(?:for our party|for everyone|for both of us|we have tickets?)\b', details, re.I)
     self_explicit = explicit_self or re.search(r'本人|我参加|\b(?:for myself|for me only|only me)\b', details, re.I)

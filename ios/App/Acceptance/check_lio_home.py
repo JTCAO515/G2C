@@ -57,7 +57,9 @@ def main():
     if app.count(preview) != 1:
         raise ValueError("Expected a single sample preview")
     fixture_routes = (
-        '        if ProcessInfo.processInfo.arguments.contains("--lio-question-controls-acceptance") {\n'
+        '        if ProcessInfo.processInfo.arguments.contains("--lio-exploration-reply-acceptance") {\n'
+        '            LioExplorationReplyFixture(chinese: UserDefaults.standard.string(forKey: "cj.ui.language.v1") == "zh-Hans")\n'
+        '        } else if ProcessInfo.processInfo.arguments.contains("--lio-question-controls-acceptance") {\n'
         '            LioExplorationQuestionsFixture(chinese: UserDefaults.standard.string(forKey: "cj.ui.language.v1") == "zh-Hans")\n'
         '        } else if ProcessInfo.processInfo.arguments.contains("--lio-scene-privacy-acceptance") {\n'
         '            LioScenePrivacyFixture(shell: shell)\n'
@@ -75,7 +77,7 @@ def main():
     )
     fixtures = ("LioScrollFixture.swift", "LioTimelineFixture.swift", "LioJourneyFixture.swift",
                 "LioMemoryJourneyFixture.swift", "LioChatHistoryFixture.swift", "LioSessionRecoveryFixture.swift",
-                "LioScenePrivacyFixture.swift", "LioExplorationQuestionsFixture.swift")
+                "LioScenePrivacyFixture.swift", "LioExplorationQuestionsFixture.swift", "LioExplorationReplyFixture.swift")
     generated_source.write_text(app.replace(preview, fixture_routes)
                                 .replace("import CJLioUser\n", "@testable import CJLioUser\n")
                                 + "\n" + "\n".join((HERE / name).read_text() for name in fixtures))
@@ -97,7 +99,7 @@ def main():
         subprocess.run(command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=600)
     summary = subprocess.check_output(["xcrun", "xcresulttool", "get", "test-results", "summary", "--path", str(result)])
     (output / "summary.json").write_bytes(summary)
-    assert json.loads(summary)["passedTests"] == (len(args.case) if args.case else 44), summary
+    assert json.loads(summary)["passedTests"] == (len(args.case) if args.case else 51), summary
 
 
 if __name__ == "__main__":
