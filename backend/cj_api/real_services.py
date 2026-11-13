@@ -5,7 +5,7 @@ client modes and draft/confirmation semantics remain unchanged.
 """
 import asyncio
 from copy import copy
-from contextlib import closing,contextmanager
+from contextlib import closing,contextmanager,nullcontext
 from dataclasses import dataclass
 from datetime import datetime,timedelta,timezone
 import hashlib
@@ -52,11 +52,11 @@ def _external_timing(kind, operation, admit):
     checks=0
     admission_time=0.0
 
-    def measured_admission():
+    def measured_admission(**kwargs):
         nonlocal checks,admission_time
         checked=monotonic()
         try:
-            return admit()
+            return admit(**kwargs)
         finally:
             checks+=1
             admission_time+=monotonic()-checked
@@ -503,8 +503,10 @@ class RealTools:
                 self._require_national(operation.binding.scope)
             if turn_profile==M4_NATIVE_TURN_STREAM and operation.binding.scope not in self.streaming_scopes:
                 raise BudgetUnknown('original model streaming subject not admitted')
-            def admitted():
-                if wrapped:provider._check()
+            def admitted(*,memory_check=None):
+                if wrapped:
+                    if memory_check is None:provider._check()
+                    else:memory_check()
                 valid=guard()
                 self.services.require_scope(operation.binding.scope)
                 return valid
@@ -530,8 +532,15 @@ class RealTools:
                         for part in stream:
                             chunks.append(part)
                             yield part
-                        if checked() is not True:raise BudgetUnknown('original model evidence authority changed')
-                        self.tool_evidence.record_model(operation,''.join(chunks).encode('utf-8'),metadata)
+                        # The worker releases its first-advance Memory lease
+                        # before draining the rest of this original stream.
+                        # Reacquire that same snapshot and source fence for the
+                        # complete artifact, retaining it through the write.
+                        lease=provider.memory.hold(operation.binding) if wrapped else nullcontext(None)
+                        with lease as memory_check:
+                            if checked(memory_check=memory_check) is not True:
+                                raise BudgetUnknown('original model evidence authority changed')
+                            self.tool_evidence.record_model(operation,''.join(chunks).encode('utf-8'),metadata)
                     elif national_intake and self.tool_evidence is not None and self.tool_evidence.intake_enabled:
                         result=''.join(stream)
                         if checked() is not True:raise BudgetUnknown('original intake evidence authority changed')
