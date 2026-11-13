@@ -67,9 +67,14 @@ def exercise(root,conninfo):
             text=body['messages'][-1]['content']
             users=[m for m in body['messages'][1:] if m['role']=='user' and not m['content'].startswith('Stored memory data')]
             index=len(users)-1
-            if text in ('明天开始','Start tomorrow'):
-                tomorrow=(datetime.now(ZoneInfo('Asia/Shanghai')).date()+timedelta(days=1)).isoformat()
-                value=flow(text,city=None,days=None,start=tomorrow,party=None,index=index,questions=(),intent='consult')
+            if text in ('明天开始','Start tomorrow','12月1日出发','Start Dec 1'):
+                question_day=datetime.now(ZoneInfo('Asia/Shanghai')).date()
+                if text in ('明天开始','Start tomorrow'):
+                    selected=question_day+timedelta(days=1)
+                else:
+                    selected=question_day.replace(month=12,day=1)
+                    if selected<question_day:selected=selected.replace(year=selected.year+1)
+                value=flow(text,city=None,days=None,start=selected.isoformat(),party=None,index=index,questions=(),intent='consult')
                 value.update(planning_request_index=None,needs_tools=False)
             else:
                 value=flow(text,city='成都' if locale=='zh' else 'Chengdu',days=3,party=None,
@@ -187,6 +192,14 @@ def exercise(root,conninfo):
             params={key:action[key] for key in ('action_id','conversation_id','target')}
             assert api.get('/v3/lio/trip-undo-receipts',params=params,headers=headers).json()['committed'] is True
             print('PASS signed LIO3 '+locale+' undated save -> precise edit -> date conversion -> append-only undo; legacy rejection, exact lookup and zero model undo',flush=True)
+            month_cid,_=send('calendar-'+locale+'-month-plan','去成都玩三天' if locale=='zh' else 'Plan three days in Chengdu')
+            month_base=read(month_cid)['current']
+            send('calendar-'+locale+'-month-date','12月1日出发' if locale=='zh' else 'Start Dec 1',month_cid)
+            month_dated=read(month_cid)['current']
+            assert month_dated['trip_id']==month_base['trip_id'] and month_dated['trip_version']==2
+            assert month_dated['calendar']['state']=='dated' and month_dated['calendar']['start_date'].endswith('-12-01')
+            assert len(wire)>count
+            print('PASS signed LIO3 '+locale+' explicit month/day reply converts the existing undated Trip',flush=True)
     assert all(row['state']=='RECEIVED' for row in journal.inspect())
 
 

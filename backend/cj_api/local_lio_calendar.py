@@ -16,20 +16,27 @@ from cj_usage.local_provider_exit import BudgetExceeded
 
 from .local_lio_calendar_source import LioCalendarSource, LioDateEvidence
 from .local_lio_edit import _bind_current
+from .lio_national_intake import LITERAL_DATE, _MONTH_DAY, _RELATIVE_DAY, _WEEK_SOURCE, _BARE_WEEK
 
 
 DATE_ATTEMPT = 'lio_calendar_date_attempt'
-_WEEKDAY = r'(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)'
-_YEAR_DATE = r'(?:[0-9]{4}|[0-9]{2})(?:[-./][0-9]{1,2}[-./][0-9]{1,2}|年[0-9]{1,2}月[0-9]{1,2}[日号])'
-_DATE_REPLY = re.compile(r'(?:从|就|那就|定在|出发日期(?:定在|是)|开始日期(?:定在|是)|行程从)?\s*'
-    r'(?:今天|明天|后天|(?:下下|下|这|本)?(?:周|星期)[一二三四五六日天]|'
-    +_YEAR_DATE+r')\s*(?:开始|出发)?|'
-    r'(?:(?:please )?(?:start(?: (?:the )?trip)?(?: on)?|from|set (?:the )?start date to)\s+)?'
-    r'(?:today|tomorrow|(?:the )?day after tomorrow|(?:next )?'+_WEEKDAY+r'|'+_YEAR_DATE+r')', re.I)
+_DATE_PREFIX = re.compile(r'^(?:(?:从|就|那就|定在|出发日期(?:定在|是)|开始日期(?:定在|是)|行程从)\s*|'
+    r'(?:(?:please )?(?:start(?: (?:the )?trip)?(?: on)?|from|set (?:the )?start date to))\s+)',re.I)
 
 
 def date_completion(text):
-    return _DATE_REPLY.fullmatch(text.strip().rstrip('。.!！').strip()) is not None
+    value=_DATE_PREFIX.sub('',text.strip().rstrip('。.!！').strip(),count=1)
+    value=re.sub(r'\s*(?:开始|出发)$','',value).strip()
+    # Reuse the sourced intake's date grammar; this only selects the operation.
+    # Its original quote/question_day and exact numeric value are still checked
+    # by data8 before conversion. Bare numeric month/day remains unselected.
+    if LITERAL_DATE.fullmatch(value) or _RELATIVE_DAY.fullmatch(value) or _BARE_WEEK.fullmatch(value):
+        return True
+    week=_WEEK_SOURCE.fullmatch(value)
+    if week is not None:
+        return any(week[key] is not None for key in ('zh_day','en_before','en_day','next_day'))
+    month=_MONTH_DAY.fullmatch(value)
+    return month is not None and month['slash_month'] is None
 
 
 class LioCalendar:
