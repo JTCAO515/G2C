@@ -96,6 +96,7 @@ class ProfileContext:
                 if (current is None or current[0] is None or current[1] != ref['input_sha256'] or
                         sha256(bytes(current[0])).hexdigest() != ref['input_sha256']):
                     raise RuntimeDenied('profile original source changed before publication')
-        event = CONTEXT+json.dumps(snapshot(profile),ensure_ascii=False,separators=(',',':'))
+        epoch=None if worker.memory_run is None else worker.memory_run.snapshot.epoch
+        event = CONTEXT+json.dumps(snapshot(profile,memory_epoch=epoch),ensure_ascii=False,separators=(',',':'))
         state = worker._event(binding,state,'effect_committed',event,mutation=check_sources)
         return state,profile

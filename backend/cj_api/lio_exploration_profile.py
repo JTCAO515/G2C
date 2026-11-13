@@ -319,7 +319,7 @@ def default_proposals(profile, original):
                  if key not in profile or profile[key].state == 'default')
 
 
-def snapshot(profile):
+def snapshot(profile,*,memory_epoch=None):
     """Plain internal event data, not a NEEDS contract or a save receipt."""
     def source(row):
         if isinstance(row, Source):
@@ -329,7 +329,7 @@ def snapshot(profile):
             return dict(kind='memory', slot=row.slot, source_id=row.source_id,
                         source_version=row.source_version, version=row.version, text=row.text)
         return dict(kind='default', message_id=row.message_id, policy=row.policy)
-    return dict(version=VERSION, factors=[dict(factor_key=fact.key, value=fact.value,
+    return dict(version=VERSION,memory_epoch=memory_epoch, factors=[dict(factor_key=fact.key, value=fact.value,
         state=fact.state, sources=[source(s) for s in fact.sources]) for fact in profile.values()])
 
 
@@ -366,6 +366,7 @@ class _StoredFact(_DTO):
 class _Snapshot(_DTO):
     version: Literal['lio_planning_context.2']
     factors: list[_StoredFact] = Field(max_length=14)
+    memory_epoch:int | None=Field(default=None,ge=0)
 
 
 def decode_context(raw):
@@ -376,6 +377,14 @@ def decode_context(raw):
         raise InvalidInput('exact planning context.2 required') from None
     if len({fact.factor_key for fact in stored.factors}) != len(stored.factors):
         raise InvalidInput('duplicate profile factor')
+    for fact in stored.factors:
+        factor=BY_KEY.get(fact.factor_key)
+        if factor is None:raise InvalidInput('unknown exploration factor')
+        expected=(_StoredMemory if fact.state=='memory' else _StoredDefault if fact.state=='default' else _StoredSource)
+        if any(not isinstance(source,expected) for source in fact.sources):
+            raise InvalidInput('profile source kind differs from state')
+        if fact.state=='memory' and any(source.slot not in factor.memory_slots for source in fact.sources):
+            raise InvalidInput('profile Memory slot differs from factor')
     return stored
 
 
@@ -393,16 +402,11 @@ def restore_context(stored, originals, memory_run=None):
     by_mid = {original.message_id: index for index,original in enumerate(originals)}
     updates = []
     for fact in stored.factors:
-        if fact.factor_key not in BY_KEY:
-            raise InvalidInput('unknown exploration factor')
         if fact.state in ('memory','default'):
-            expected = _StoredMemory if fact.state == 'memory' else _StoredDefault
-            if any(not isinstance(source,expected) for source in fact.sources):
-                raise InvalidInput('profile source kind differs from state')
             continue
         refs = []
         for source in fact.sources:
-            if not isinstance(source,_StoredSource) or source.message_id not in by_mid:
+            if source.message_id not in by_mid:
                 raise InvalidInput('protected original profile source unavailable')
             index = by_mid[source.message_id]
             original = originals[index]
