@@ -283,11 +283,21 @@ wheels = [
 ]
 
 [[package]]
+name = "chinese-calendar"
+version = "1.12.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/4d/7b/f5f66c5d2d01610fc23a4619923d59d94523ef5c70b67c1aadb9234de05a/chinese_calendar-1.12.1.tar.gz", hash = "sha256:9355e6398cd360100fab75262971dd28e1ca61cac994ccb3768cfb84b77466fe", size = 18123, upload-time = "2026-11-05T10:32:32.973Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e8/c7/152a1cc368ff364cdf7917198bd78dcd56267a5b1dc2cf44d2dbd752e971/chinese_calendar-1.12.1-py3-none-any.whl", hash = "sha256:201168423c879a9584b5cd13054f039a2ff34dad9cf5f822dd1133379983a79e", size = 12412, upload-time = "2026-11-05T10:32:30.604Z" },
+]
+
+[[package]]
 name = "cj"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "alibabacloud-oss-v2" },
+    { name = "chinese-calendar" },
     { name = "cryptography" },
     { name = "fastapi" },
     { name = "h11" },
@@ -312,6 +322,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "alibabacloud-oss-v2", specifier = "==1.4.1" },
+    { name = "chinese-calendar", specifier = "==1.12.1" },
     { name = "cryptography", specifier = "==50.0.2" },
     { name = "fastapi", specifier = ">=0.156.8" },
     { name = "h11", specifier = "==0.16.0" },
