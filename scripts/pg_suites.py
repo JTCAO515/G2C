@@ -697,6 +697,13 @@ def group_runtime_cancel():
 GROUPS.update(runtime_cancel=group_runtime_cancel)
 
 
+def group_runtime_fixture_observer():
+    return script('backend/cj_api/tests/runtime_fixture_observer_pg.py')
+
+
+GROUPS.update(runtime_fixture_observer=group_runtime_fixture_observer)
+
+
 def group_runtime_release_witness():
     return script('backend/cj_api/tests/runtime_release_witness_pg.py')
 
