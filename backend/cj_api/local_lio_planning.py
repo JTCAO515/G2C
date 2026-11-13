@@ -209,18 +209,23 @@ class LioPlanning:
 
 
 class LioPlanSave:
-    def __init__(self, database, context_publisher, confirmation,*,source_window=False,grouped=False):
+    def __init__(self, database, context_publisher, confirmation,*,source_window=False,grouped=False,calendar_reads=False):
         self.database = database
         self.context_publisher = context_publisher
         self.confirmation = confirmation
         self.source_window=source_window
         self.grouped=grouped
+        self.read_repository=context_publisher.repository
+        if calendar_reads:
+            from cj_trip.postgres import Repository
+            self.read_repository=Repository(context_publisher.repository.connect,context_publisher.repository.scope,
+                                           confirmation,structured=True,calendar=True)
 
     def scene_context(self,binding,now):
         from cj_trip.planning_context import read_current
         from cj_message.lio_plan_needs import lio_needs_id
         from .lio_scene import scene_prompt
-        current=read_current(self.context_publisher.repository,needs_scope_for(binding.scope),
+        current=read_current(self.read_repository,needs_scope_for(binding.scope),
                              lio_needs_id(binding.scope,binding.conversation_id))
         # read_current checks the current accepted head and original source
         # lineage and validates proposed NEEDS. Do not read a pending draft.
@@ -233,7 +238,7 @@ class LioPlanSave:
         from cj_message.lio_plan_needs import lio_needs_id
         from cj_needs.contract_v1 import decode_snapshot
         from .lio_city import _normalize
-        current=read_current(self.context_publisher.repository,needs_scope_for(binding.scope),
+        current=read_current(self.read_repository,needs_scope_for(binding.scope),
                              lio_needs_id(binding.scope,binding.conversation_id))
         if current is None:return True
         try:
@@ -269,9 +274,12 @@ class LioPlanSave:
         from cj_trip.planning_context import read_current
         from cj_message.lio_plan_needs import lio_needs_id
         from cj_feasibility.time_checks import instant
-        current=read_current(self.context_publisher.repository,needs_scope_for(binding.scope),
+        current=read_current(self.read_repository,needs_scope_for(binding.scope),
                              lio_needs_id(binding.scope,binding.conversation_id))
         if current is None:return False
+        if json.loads(current.trip.content)['content_version']=='structured.3':
+            from cj_trip.calendar_conversion import source_window_conflicts
+            return bool(source_window_conflicts(json.loads(current.trip.content),fields))
         first,last=(fields[edge]['date']['value']for edge in ('arrival','departure'))
         zone=fields['destination_timezone']['value']
         lower=instant(fields['arrival'],'arrival')[0]

@@ -5,7 +5,8 @@ from datetime import date
 import json
 import re
 
-from .demo_dialogue import LIO_VERSION
+from .demo_dialogue import LIO_VERSION, LIO_VERSION_V3
+from .domain import Unavailable
 
 
 IDENTITY_ZH = '我是 Lio，帮来中国旅行的人出主意。从“三天怎么玩”到“今天下雨了还能去哪”，都可以问我。你这次打算去哪儿？'
@@ -162,6 +163,7 @@ def display_answer(text, locale):
 class LioOriginal:
     locale: str
     question_day: date | None
+    protocol: str = LIO_VERSION
 
 
 def original_for(database, binding):
@@ -177,3 +179,18 @@ def original_for(database, binding):
     if row[2] is not None:
         raise Unavailable('newer Lio original requires its selected calendar worker')
     return LioOriginal(row[0], row[1])
+
+
+def calendar_original_for(database, binding):
+    with database.connect(binding.scope) as connection:
+        row = connection.execute(
+            'SELECT demo_dialogue_locale,demo_question_day,lio_wire_protocol FROM cj_message_receipt WHERE scope=%s AND '
+            'conversation_id=%s AND generation=%s AND message_id=%s AND run_id=%s AND '
+            'demo_dialogue_protocol=%s',
+            (binding.scope, binding.conversation_id, binding.generation, binding.message_id,
+             binding.run_id, LIO_VERSION)).fetchone()
+    if row is None:
+        return None
+    if row[2] not in (None, LIO_VERSION_V3):
+        raise Unavailable('original Lio capability unavailable')
+    return LioOriginal(row[0], row[1], LIO_VERSION if row[2] is None else row[2])
