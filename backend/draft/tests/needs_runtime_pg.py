@@ -278,7 +278,8 @@ class GroupedPlanChecks(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         Harness.setUpClass.__func__(cls)
-        subjects = ('group-4-zh','group-4-en','group-5-zh','group-5-en','group-length','group-window','group-empty-party')
+        subjects = ('group-4-zh','group-4-en','group-5-zh','group-5-en','group-length','group-window','group-empty-party',
+                    *(f'group-rich-{pace}-{language}' for pace in ('relaxed','moderate','packed') for language in ('zh','en')))
         cls.host = RegisteredHost(cls.auth/'grouped-plans',Path(CONNINFO),{s:(12,2,30000) for s in subjects})
         cls.env = dict(CJ_LOCAL_NEEDS_PROFILE='manual-v1',CJ_LOCAL_TRAVEL_CONTEXT='message-travel.1')
         from cj_trip.confirmation import ConfirmationSigner
@@ -306,13 +307,14 @@ class GroupedPlanChecks(unittest.TestCase):
             self.assertEqual(response.status_code,200,response.text)
             return response.json()['receipt']
 
-    def configured(self, subject, value, *, truncated=False):
+    def configured(self, subject, value, *, truncated=False, rich_pace=None):
         from cj_agent.provider import ProviderUnknown
         from cj_draft.grouped_plan import LioGroupedPlanPublisher, DATED_FIRST, DATED_DELTA
+        from cj_draft.rich_first import LioRichFirstPlanPublisher
         from cj_draft.needs_context import publisher as context_publisher
         class Model(FakeProvider):
             def stream(self,messages,system=None):
-                if system is None or not any(v in system for v in (DATED_FIRST,DATED_DELTA)):
+                if system is None or not any(v in system for v in (DATED_FIRST,DATED_DELTA,value['version'])):
                     yield from super().stream(messages,system);return
                 self.calls+=1
                 raw=json.dumps(value,ensure_ascii=False,separators=(',',':'))
@@ -325,7 +327,8 @@ class GroupedPlanChecks(unittest.TestCase):
                 'WHERE message_scope=%s AND message_id=%s AND run_id=%s',
                 (binding.scope,binding.message_id,binding.run_id))
             return cursor.fetchone()
-        class FixturePublisher(LioGroupedPlanPublisher):
+        selected = LioGroupedPlanPublisher if rich_pace is None else LioRichFirstPlanPublisher
+        class FixturePublisher(selected):
             def publish_for_message(self,*args,before_publish):
                 def final(*,check_trip):
                     check_trip()
@@ -337,8 +340,43 @@ class GroupedPlanChecks(unittest.TestCase):
             lambda:self.host.headers[subject]['Authorization'][7:],owner)
         worker.drafts=FixturePublisher(base,self.signer,original_needs,
             lambda binding,original,expected: binding.message_id in self.admitted
-                and self.admitted[binding.message_id]==expected and original.receipt.run_id==binding.run_id)
+                and self.admitted[binding.message_id]==expected and original.receipt.run_id==binding.run_id,
+            **({} if rich_pace is None else dict(pace=rich_pace)))
         return worker,database
+
+    def test_rich_first_three_paces_bilingual_signed_source_and_single_commit(self):
+        from cj_draft.rich_schema import Pace, SIGHT_COUNTS
+        from cj_trip.lio_history import plan_action_id
+        from test_rich_first import rich_reply
+        from grouped_draft_fixtures import source
+        for pace in Pace:
+            for language in ('zh','en'):
+                with self.subTest(pace=pace.value,language=language):
+                    subject=f'group-rich-{pace.value}-{language}'
+                    days=5 if pace is Pace.PACKED else 4
+                    snapshot,_=source(days,language,with_fixed=False)
+                    message=self.send(subject,1,fields=snapshot.fields)
+                    self.admitted[message['message_id']]=None
+                    value=rich_reply(days,language,False,pace)
+                    worker,_=self.configured(subject,value,rich_pace=pace)
+                    self.assertEqual(worker.process()[0].status,'completed')
+                    repository=worker.drafts.repository
+                    receipt=repository.query_action(plan_action_id(message['run_id']))
+                    self.assertIsNotNone(receipt)
+                    self.assertEqual(receipt.committed_version,1)
+                    saved=repository.detail(receipt.trip_id)
+                    document=json.loads(saved.content)
+                    self.assertEqual(document['content_version'],'structured.2')
+                    self.assertEqual(len(document['items']),days*(SIGHT_COUNTS[pace]+2))
+                    expected=[row for _,sights,meals in value['days'] for row in sorted(sights+meals,key=lambda r:r[2])]
+                    self.assertEqual([item['id'] for item in document['items']],[row[0] for row in expected])
+                    self.assertEqual([item['text'] for item in document['items']],[row[1] for row in expected])
+                    # Reprocessing has no remaining work; the original action
+                    # receipt and sole saved revision remain exactly the same.
+                    self.assertEqual(worker.process(),[])
+                    self.assertEqual(repository.query_action(plan_action_id(message['run_id'])),receipt)
+                    self.assertEqual([item.content for item in repository.lio_revisions(receipt.trip_id,None,10)],
+                                     [saved.content])
 
     def test_four_five_days_bilingual_signed_first_and_same_window_replan(self):
         from cj_trip.lio_history import plan_action_id, TripHead
