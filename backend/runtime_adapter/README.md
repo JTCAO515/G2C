@@ -9,6 +9,32 @@
 本轮没有香港操作、原账操作或真实模型/工具请求。B 组合和实际运行镜像/子限额未交时，
 真实调用必须保持 UNRUN；本地受控 backend 不是线上接线或数据质量证据。
 
+## 跨 binding fixture v1：记录边界与已知未交部分
+
+`fixture_records.py` 固定消费 D/R PR900 的 `G2C-cross-binding-fixture.1`，
+来源提交 `929db2b28abc2f0c75ab0a49ba0ac82219213afa`，schema SHA256
+`488ab9357fd15b6188207a714e07e109ec942435144eaad8dc2f440bdc0340aa`。
+`decode_record(raw)` 复用既有严格 JSON codec，接受 canonical UTF-8 definition/use，
+拒绝未知版本/字段、重复键、错误 null/状态和非法 UTF-8；沿冻结规范处理 FAIL 优先级。
+复用已有运行依赖 Pydantic，运行时不加载开发目录或依赖 dev-only JSON Schema validator。
+
+`link_records(definition_raw, use_raw, binding=..., pins=..., request=...)` 仅验证声明之间
+及其与已建立 G 消费上下文的一致性：原定义字节 hash、fixture 标识、E binding/owner、
+pins、完整 request hash/原 ID、observer 的原 producer Binding.key、原 charge/batch。
+它不解析 C 的 ref、不获取 C 资格，也不返回真实性 PASS。`LinkedRecords` 保留原 wire，
+不能把规范化模型重新序列化后的 hash 冒作原件 hash。不同 metadata ref 可以描述同一
+observer Binding.key；v1 不允许用同 owner 的新 session 替换原 producer。
+
+当前这部分**尚未接入 G 自动证据判定**。真实 metadata-only producer/observer、其各引用
+原件的受保护返回形状、动态资格与身份/费用/时间/隔离/扫描核对仍须 B 提供和组合；
+不能仅凭 ref 存在、hash、producer/check 标签或上述声明关联宣称完成 X01–X12。
+19 个 protected 语义向量、完整 fixture 验证与实际运行资格仍 UNRUN；原 G 外层和
+single-binding 校验不变，`quality_status` 仍是 UNKNOWN。
+
+```sh
+uv run --locked python -B -m pytest backend/tests/test_cross_binding_fixture_adapter.py -q
+```
+
 ## 文件与默认验证
 
 - `contract.py`：不可变 Binding/Pins、候选/输入边界；复用 `cj_strict_json`。
