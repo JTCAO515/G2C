@@ -224,6 +224,19 @@ def check_schema53_resume(control,backups,operator,schema_root):
     destination=backups/'demo-schema53'
     lineage=checkpoint.verified(control/'release.json')['lineage']
     original_quota=checkpoint.verified(control/'demo-schema52.json')
+    context_path=control.parent/'schema53-runtime.json'
+    context_path.write_text(os.environ['CJ_BETA_RUN_CONTEXT_JSON'])
+    runtime=SimpleNamespace(context_path=context_path,context=SimpleNamespace(
+        current=SimpleNamespace(meter=SimpleNamespace(budget=800))))
+    @contextmanager
+    def connection():
+        with operator() as (db,_):yield db
+    database=SimpleNamespace(_open_runtime_connection=connection)
+    def gate(ready):
+        try:entrypoint._runtime_gate(database,runtime)
+        except ValueError as exc:
+            assert not ready and str(exc) in ('beta_database_not_released','HK wire-origin cutover incomplete')
+        else:assert ready
     for quota in (dict(state='INTENT',lineage=lineage),dict(state='COMPLETE',lineage='foreign')):
         checkpoint.atomic(control/'demo-schema52.json',quota)
         try:demo_schema.upgrade(control,backups,target=53,schema_root=schema_root)
@@ -249,6 +262,7 @@ def check_schema53_resume(control,backups,operator,schema_root):
         except OSError as exc:assert str(exc)=='synthetic schema53 export interruption'
         else:raise AssertionError('schema53 export interruption hidden')
     with operator() as (db,_):assert migrate.applied(db)==list(range(1,54))
+    gate(False)
     atomic=checkpoint.atomic
     for name in ('latest','release'):
         def interrupt(path,value,**kwargs):
@@ -261,6 +275,7 @@ def check_schema53_resume(control,backups,operator,schema_root):
             except OSError as exc:assert str(exc)=='synthetic schema53 '+name
             else:raise AssertionError('schema53 publication interruption hidden')
         assert checkpoint.verified(marker)['state']=='INTENT'
+        gate(False)
     preserved,=backups.glob('demo-schema53.unpublished-*')
     assert (preserved/'database.dump').read_bytes()==b'original interrupted schema53 export'
     with patch.object(demo_schema,'_complete',side_effect=OSError('synthetic schema53 marker')):
@@ -281,6 +296,7 @@ def check_schema53_resume(control,backups,operator,schema_root):
     with patch.object(checkpoint,'export',side_effect=AssertionError('published schema53 archive repeated')):
         demo_schema.resume_schema53(control,backups,schema_root=schema_root)
     assert checkpoint.verified(marker)['state']=='COMPLETE'
+    gate(True)
     assert destination.joinpath('manifest.json').exists()
     assert {p.read_bytes() for p in control.glob('demo-schema53.tmp.unpublished-*')}=={b'interrupted schema53 marker'}
     with operator() as (db,_):checkpoint.require_release(db,control)
