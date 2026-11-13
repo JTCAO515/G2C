@@ -163,12 +163,15 @@ public struct LioSavedMemoryView: View {
                         Spacer(minLength: 4)
                         if deactivated {
                             Text(language.text("Deactivated", "已停用"))
-                                .font(.subheadline.weight(.semibold))
+                                .accessibilityIdentifier("lio.memory.deactivated.\(item.command.item_id)")
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
                                 .fixedSize(horizontal: false, vertical: true)
                                 .foregroundStyle(LioTheme.inkSecondary)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
                                 .background(LioTheme.surfaceSunken, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
+                                .id(typeSize)
                         }
                     }
                     ScrollView(.vertical) {
@@ -262,6 +265,7 @@ private struct LioSavedMemoryDetail: View {
     @State private var notice: String?
     @FocusState private var editing: Bool
     @Environment(\.scenePhase) private var phase
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         Form {
@@ -296,7 +300,14 @@ private struct LioSavedMemoryDetail: View {
                                     notice = nil
                                     draft = item.command.text
                                 }
+                                .disabled(saving || host.busy)
                                 .accessibilityIdentifier("lio.memory.edit")
+                                Button(language.text(item.status == .disabled ? "Reactivate" : "Deactivate",
+                                                     item.status == .disabled ? "继续使用" : "暂停使用")) {
+                                    Task { await change(item.status == .disabled ? .resume : .pause) }
+                                }
+                                .disabled(saving || host.busy)
+                                .accessibilityIdentifier(item.status == .disabled ? "lio.memory.resume" : "lio.memory.pause")
                             }
                             if let model = host.erasurePresentation {
                                 Button(language.text("Delete memory", "删除记忆"), role: .destructive) {
@@ -307,7 +318,8 @@ private struct LioSavedMemoryDetail: View {
                                         notice = language.text("Couldn’t open memory deletion.", "暂时无法删除这条记忆。")
                                     }
                                 }
-                                .disabled(model.state.isBusy || host.busy)
+                                .disabled(saving || model.state.isBusy || host.busy)
+                                .foregroundStyle(LioTheme.vermilion)
                                 .accessibilityIdentifier("lio.memory.delete")
                             }
                         } else {
@@ -325,7 +337,17 @@ private struct LioSavedMemoryDetail: View {
         .lioPage()
         .navigationTitle(language.text("Memory", "记忆"))
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(LioTheme.paper, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarColorScheme(colorScheme, for: .navigationBar)
         .navigationBarBackButtonHidden(saving)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text(language.text("Memory", "记忆"))
+                    .font(.headline)
+                    .foregroundStyle(LioTheme.ink)
+            }
+        }
         .onChange(of: phase) { _, phase in
             if phase != .active { editing = false }
         }
@@ -340,6 +362,10 @@ private struct LioSavedMemoryDetail: View {
     }
 
     private func save(_ text: String) async {
+        await change(.edit, text: text)
+    }
+
+    private func change(_ operation: TypedMemoryOperation, text: String? = nil) async {
         guard !saving else { return }
         saving = true
         defer { saving = false }
@@ -350,7 +376,7 @@ private struct LioSavedMemoryDetail: View {
             return
         }
         do {
-            let work = try host.prepareManagement(.edit, text: text, surface: surface)
+            let work = try host.prepareManagement(operation, text: text, surface: surface)
             await host.performManagement(work)
         } catch MemoryFailure.pendingRequiresQuery {
             await recoverAndReload()
@@ -377,7 +403,10 @@ private struct LioSavedMemoryDetail: View {
         draft = nil
         switch host.managementState {
         case .historical:
-            notice = language.text("Saved.", "已保存。")
+            switch operation {
+            case .pause, .resume: notice = nil
+            default: notice = language.text("Saved.", "已保存。")
+            }
         case .rejected:
             notice = language.text("Couldn’t save this change.", "暂时无法保存这次修改。")
         default:

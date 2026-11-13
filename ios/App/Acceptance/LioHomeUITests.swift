@@ -546,6 +546,45 @@ import XCTest
         }
     }
 
+    func testMemoryDeactivationRecoversTheOriginalActionAndKeepsTheBody() throws {
+        continueAfterFailure = false
+        for (language, appearance) in [("en", "light"), ("en", "dark"), ("zh-Hans", "light"), ("zh-Hans", "dark")] {
+            let chinese = language == "zh-Hans"
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "--lio-journey-acceptance", "--lio-memory-grid-acceptance",
+                                   "--lio-memory-titled-acceptance", "-cj.ui.language.v1", language,
+                                   "-lio.ui.appearance.v1", appearance]
+            app.launch()
+            let memory = app.tabBars.buttons[chinese ? "记忆" : "Memory"]
+            XCTAssertTrue(memory.waitForExistence(timeout: 12))
+            memory.tap()
+            let card = app.buttons["lio.memory.card.quiet-hotel"]
+            XCTAssertTrue(card.waitForExistence(timeout: 8))
+            let original = try XCTUnwrap(card.value as? String)
+            for deactivated in [true, false] {
+                for _ in 0..<3 where !card.isHittable { app.swipeUp() }
+                card.tap()
+                XCTAssertTrue(app.staticTexts[original].waitForExistence(timeout: 8))
+                let action = app.buttons[deactivated ? "lio.memory.pause" : "lio.memory.resume"]
+                for _ in 0..<3 where !action.isHittable { app.swipeUp() }
+                XCTAssertTrue(action.isHittable)
+                action.tap()
+                let next = app.buttons[deactivated ? "lio.memory.resume" : "lio.memory.pause"]
+                XCTAssertTrue(next.waitForExistence(timeout: 12), app.debugDescription)
+                XCTAssertTrue(app.staticTexts[original].exists)
+                XCTAssertEqual(app.staticTexts[chinese ? "Lio 暂时不用这条记忆。"
+                    : "Lio isn’t using this memory."].exists, deactivated)
+                try app.performAccessibilityAudit(for: .all)
+                app.navigationBars.buttons.element(boundBy: 0).tap()
+                XCTAssertTrue(card.waitForExistence(timeout: 8))
+                XCTAssertEqual(card.value as? String, original)
+                XCTAssertEqual(card.label.contains(chinese ? "已停用" : "Deactivated"), deactivated)
+                try app.performAccessibilityAudit(for: .all)
+            }
+            app.terminate()
+        }
+    }
+
     func testInvalidMemoryTitleDoesNotBecomeASuccessfulBodyFallback() throws {
         continueAfterFailure = false
         for language in ["en", "zh-Hans"] {
