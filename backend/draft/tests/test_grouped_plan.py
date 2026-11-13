@@ -95,6 +95,7 @@ def test_five_days_three_periods_and_empty_fixed_items_are_valid_with_explicit_p
     capture.records=lambda:(snapshot,revisions)
     capture.basis.day_indices=lambda:{}
     value=reply(5,'en',ordinal=ordinal,party=3,periods=3)
+    assert len(packed(value)) < 1024
     content,candidate,_=host.build_plan(packed(value),capture)
     document=json.loads(content)
     assert len(document['items'])==15

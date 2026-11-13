@@ -391,7 +391,9 @@ class GroupedPlanChecks(unittest.TestCase):
         from cj_trip.lio_history import plan_action_id
         subject='group-empty-party';snapshot,_=source(5,'en',party=3,with_fixed=False)
         message=self.send(subject,1,fields=snapshot.fields);self.admitted[message['message_id']]=None
-        worker,_=self.configured(subject,reply(5,'en',party=3,periods=3))
+        value=reply(5,'en',party=3,periods=3)
+        self.assertLess(len(json.dumps(value,ensure_ascii=False,separators=(',',':')).encode()),1024)
+        worker,_=self.configured(subject,value)
         self.assertEqual(worker.process()[0].status,'completed')
         receipt=worker.drafts.repository.query_action(plan_action_id(message['run_id']))
         self.assertEqual(receipt.committed_version,1)
