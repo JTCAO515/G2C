@@ -5,6 +5,8 @@ database. Artifact references are resolved from original operation IDs, not path
 or URLs supplied by the adapter. Deleted input payloads cannot expose old files.
 """
 from dataclasses import asdict
+from datetime import datetime
+import re
 from hashlib import sha256
 import os
 from pathlib import Path
@@ -98,20 +100,24 @@ class RuntimeOriginals:
     def input(self,token,message_id,operation_id):
         return self._read(token,message_id,lambda scope,original,source:self._operation(scope,source,operation_id)[1].input_bytes)
 
+    def _meter(self,scope,source,row,usage):
+        period=source[3]
+        if period is None:raise Unavailable('ORIGINAL_PERIOD_UNAVAILABLE')
+        profiles=[p for p in self.database.run_context.profiles if
+            (ledger_scope_for(scope,p.meter),p.meter.unit,p.meter.period_start,p.meter.period_end)==tuple(period)]
+        if len(profiles)!=1 or row[5]!=period[0]:raise Unavailable('ORIGINAL_PERIOD_NOT_RETAINED')
+        with self.database.connect(scope,usage_profile=profiles[0]) as db:
+            db.execute('SET TRANSACTION READ ONLY')
+            stored=db.execute('SELECT ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(row[5],)).fetchone()
+        if stored is None:raise Unavailable('ORIGINAL_METER_UNAVAILABLE')
+        attempt=decode(stored[0]).attempts.get(usage.command.attempt_id)
+        if attempt is None:raise Unavailable('ORIGINAL_METER_ATTEMPT_UNAVAILABLE')
+        return canonical(asdict(attempt))
+
     def meter(self,token,message_id,operation_id):
         def project(scope,original,source):
-            row,usage=self._operation(scope,source,operation_id,allow_erased=True);period=source[3]
-            if period is None:raise Unavailable('ORIGINAL_PERIOD_UNAVAILABLE')
-            profiles=[p for p in self.database.run_context.profiles if
-                (ledger_scope_for(scope,p.meter),p.meter.unit,p.meter.period_start,p.meter.period_end)==tuple(period)]
-            if len(profiles)!=1 or row[5]!=period[0]:raise Unavailable('ORIGINAL_PERIOD_NOT_RETAINED')
-            with self.database.connect(scope,usage_profile=profiles[0]) as db:
-                db.execute('SET TRANSACTION READ ONLY')
-                stored=db.execute('SELECT ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(row[5],)).fetchone()
-            if stored is None:raise Unavailable('ORIGINAL_METER_UNAVAILABLE')
-            attempt=decode(stored[0]).attempts.get(usage.command.attempt_id)
-            if attempt is None:raise Unavailable('ORIGINAL_METER_ATTEMPT_UNAVAILABLE')
-            return canonical(asdict(attempt))
+            row,usage=self._operation(scope,source,operation_id,allow_erased=True)
+            return self._meter(scope,source,row,usage)
         return self._read(token,message_id,project)
 
     def fee(self,token,message_id,operation_id):
@@ -122,9 +128,44 @@ class RuntimeOriginals:
                 kind=fee[0],actual_wire_input_sha256=fee[1],state=fee[2],receipt_utf8=fee[3]))
         return self._read(token,message_id,project)
 
+    def _local_visitor(self,scope,source,row,usage,data):
+        receipt=data['receipt']
+        require(data['version']=='G2C-tool-evidence.1' and data.get('tool')=='visitor_fact' and
+            row[1]=='tool.visitor_fact' and receipt.get('endpoint')=='local:visitor-catalogue' and
+            receipt.get('actual_cost_cny')=='0' and receipt.get('data_origin')=='maintainer_summary' and
+            receipt.get('response_sha256')==data['response_sha256'],'ORIGINAL_LOCAL_VISITOR_SOURCE')
+        logical=original_json(usage.input_bytes);result=original_json(data['result_utf8'])
+        require(type(logical) is dict and logical.get('name')=='visitor_fact' and
+            type(result) is dict and result.get('version')=='FACT-result.2' and
+            type(result.get('catalogue_sha256')) is str and re.fullmatch('[a-f0-9]{64}',result['catalogue_sha256']) is not None and
+            result.get('query')==logical.get('query') and result.get('request_ref')==logical.get('request_ref') and
+            result.get('data_origin')=='maintainer_summary' and type(result.get('evaluated_at')) is str,
+            'ORIGINAL_LOCAL_VISITOR_RESULT')
+        try:observed=datetime.fromisoformat(result['evaluated_at'])
+        except ValueError:raise Unavailable('ORIGINAL_LOCAL_VISITOR_OBSERVATION_TIME') from None
+        require(observed.tzinfo is not None,'ORIGINAL_LOCAL_VISITOR_OBSERVATION_TIME')
+        meter=original_json(self._meter(scope,source,row,usage));settled=meter['receipt']
+        if (meter['state']!='settled' or settled is None or settled['attempt_id']!=row[3] or
+                settled['receipt_id']!='visitor-local:'+data['response_sha256'] or settled['actual']!=1 or
+                settled['output']!=len(data['result_utf8'])):
+            raise Unavailable('ORIGINAL_LOCAL_VISITOR_METER_RECEIPT')
+
     def artifact(self,token,message_id,operation_id,*,wire_input=False):
         def project(scope,original,source):
             row,usage=self._operation(scope,source,operation_id)
+            try:fee=self._financial(usage.command.attempt_id)
+            except Unavailable as error:
+                if str(error)!='ORIGINAL_FINANCIAL_ATTEMPT_UNAVAILABLE' or wire_input or usage.command.kind!='tool':raise
+                # A separately versioned fixture is not a missing vendor
+                # receipt fallback: it must prove NOT_SENT and bind the real
+                # settled Meter receipt before any original bytes are returned.
+                if row[1]=='tool.weather':
+                    from .runtime_weather_fault import read_artifact
+                    return read_artifact(self,scope,original,source,row,usage)
+                if row[1]!='tool.visitor_fact':raise
+                fee=None
+            if row[1]=='tool.visitor_fact' and fee is not None:
+                raise Unavailable('ORIGINAL_LOCAL_VISITOR_HAS_FINANCIAL_ATTEMPT')
             parts=[scope,original.receipt.run_id,row[0],usage.command.attempt_id]
             if wire_input:parts.append('model_wire_input')
             name=sha256(canonical(parts)).hexdigest()+'.json'
@@ -155,7 +196,6 @@ class RuntimeOriginals:
                     'ORIGINAL_ARTIFACT_KIND_CHANGED')
             if (data['message_id'],data['run_id'],data['attempt_id'],data['operation_id'],data['registration_id'])!=(message_id,original.receipt.run_id,row[3],row[4],row[1]) or data['scope_sha256']!=sha256(scope.encode()).hexdigest():
                 raise Unavailable('ORIGINAL_ARTIFACT_BINDING_CHANGED')
-            fee=self._financial(usage.command.attempt_id)
             if wire_input:
                 if (data['logical_input_sha256']!=usage.command.input_digest or
                         sha256(data['wire_input_utf8'].encode()).hexdigest()!=data['wire_input_sha256'] or
@@ -166,11 +206,14 @@ class RuntimeOriginals:
                         'input_utf8' in data and data['input_utf8'].encode()!=usage.input_bytes or
                         sha256(data['result_utf8'].encode()).hexdigest()!=data['response_sha256']):
                     raise Unavailable('ORIGINAL_RESULT_HASH_CHANGED')
-                if fee[3] is None or original_json(fee[3])!=data['receipt']:
-                    raise Unavailable('ORIGINAL_VENDOR_RECEIPT_CHANGED')
-                receipt=data['receipt']
-                output_hash=receipt.get('output_sha256') if usage.command.kind in ('model','memory') else receipt.get('response_sha256')
-                if output_hash!=data['response_sha256']:
-                    raise Unavailable('ORIGINAL_VENDOR_OUTPUT_HASH_UNAVAILABLE')
+                if fee is None:
+                    self._local_visitor(scope,source,row,usage,data)
+                else:
+                    if fee[3] is None or original_json(fee[3])!=data['receipt']:
+                        raise Unavailable('ORIGINAL_VENDOR_RECEIPT_CHANGED')
+                    receipt=data['receipt']
+                    output_hash=receipt.get('output_sha256') if usage.command.kind in ('model','memory') else receipt.get('response_sha256')
+                    if output_hash!=data['response_sha256']:
+                        raise Unavailable('ORIGINAL_VENDOR_OUTPUT_HASH_UNAVAILABLE')
             return raw
         return self._read(token,message_id,project)

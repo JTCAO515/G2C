@@ -142,12 +142,18 @@ class RuntimeWorkerBindings:
         request=session['routing'].request(binding)
         return session['controls'] if request is not None and request['kind']=='start_controlled_generation' else None
 
+    def _memory_services(self,session):
+        from .lio_memory_routes import LioMemoryCards
+        from .local_lio_memory import lio_candidates
+        configuration=self.runtime.memory_configuration_for_scope(session['binding'].scope)
+        if configuration is None:return None
+        candidates=lio_candidates(self.database,session['boundary'],self.runtime.demo_subjects,configuration.collection)
+        return configuration.collection,candidates,LioMemoryCards(candidates.collection,candidates.current)
+
     def _state_reader(self,session):
         from .lio_dialogue_routes import _timeline
-        from .lio_memory_routes import LioMemoryCards
         from .lio_trip_cards import LioTripCards
         from .lio_trip_routes import LioTripBoundary,_head,_history
-        from .local_lio_memory import lio_candidates
         boundary=session['boundary'];checker=session['authority'].checker
         display=DisplaySnapshotReader(boundary,lambda principal,scope:self.database.run_repository(scope),
             configuration=DisplaySnapshotConfiguration(512000,1_048_576))
@@ -159,10 +165,9 @@ class RuntimeWorkerBindings:
             if request['kind']=='reflection':return encode(snapshot)
             cid=snapshot['conversation_id']
             if re.fullmatch(r'lio-dialogue-[a-f0-9]{32}',cid) is None:return encode(snapshot)
-            memory_configuration=self.runtime.memory_configuration_for_scope(session['binding'].scope)
-            if memory_configuration is None:raise Unavailable('RUNTIME_TYPED_MEMORY_NOT_CONFIGURED')
-            candidates=lio_candidates(self.database,boundary,self.runtime.demo_subjects,memory_configuration.collection)
-            memory_cards=LioMemoryCards(candidates.collection,candidates.current)
+            memory_services=session['memory_services']
+            if memory_services is None:raise Unavailable('RUNTIME_TYPED_MEMORY_NOT_CONFIGURED')
+            _,_,memory_cards=memory_services
             timeline=_timeline(boundary,self.database.run_repository,cards,memory_cards,token,cid,None,True)
             require(timeline.status_code==200,'RUNTIME_NATIVE_TIMELINE_UNAVAILABLE')
             def history(context):
@@ -197,6 +202,11 @@ class RuntimeWorkerBindings:
             from .runtime_cancel import NativeCancellation
             controls=ControlledGeneration(clock=self.clock);session['controls']=controls
             cancellation=NativeCancellation(claims,boundary,self.database,token,controls,originals)
+
+            from .runtime_weather_fault import NativeWeatherFault
+            weather_fault=NativeWeatherFault(claims,session['routing'],self.database,self.services.model.authorization,
+                evidence.directory,self.pins)
+            session['routing'].registry_transformer=weather_fault.wrap
             def wait(receipt,deadline,reader=originals,supplier=token):
                 while self.clock()<deadline:
                     try:value=decode(reader.inventory(supplier(),receipt.message_id))
@@ -206,9 +216,15 @@ class RuntimeWorkerBindings:
                         if value['status'] not in ('queued','running'):return
                     sleep(min(.1,max(0,deadline-self.clock())))
                 raise TimeoutError('original runtime deadline reached')
+            session['memory_services']=self._memory_services(session)
+            memory_setup=None
+            if session['memory_services'] is not None:
+                from .runtime_memory_setup import NativeMemorySetup
+                configuration,candidates,memory_cards=session['memory_services']
+                memory_setup=NativeMemorySetup(claims,boundary,self.database,token,configuration,candidates,memory_cards,wait)
             dialogue=NativeDialogue(claims,boundary,self.database,token,wait,
                 dataset_path=self.public_root/'eval/optimization/cases.v2.json',
-                trip_boundary=self._trip_boundary(session),cancellation=cancellation)
+                trip_boundary=self._trip_boundary(session),cancellation=cancellation,memory_setup=memory_setup,weather_fault=weather_fault)
             collector=RuntimeCollector(originals,claims,session['routing'],token,self.pins,session['references_directory'],
                 guard=guard,state_reader=self._state_reader(session),model_reader=RuntimeModel(originals,self.services.model,
                     native_turn_profile=M4_NATIVE_TURN_BUFFERED),dialogue=dialogue,clock=self.clock)

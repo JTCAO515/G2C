@@ -864,8 +864,13 @@ def exercise(auth,conninfo):
     assert completed['status']=='PASS' and model.calls==calls+1,(completed,session['adapter'].query('factory-local-component-control'))
     observed=json.loads(rpc.handle(request('query',{'attempt_id':'factory-local-component-control'})))
     assert observed['status']=='PASS' and model.calls==calls+1
+    import runtime_weather_fault_pg
+    runtime_weather_fault_pg.standalone(auth.parent/'weather-fault-native-auth',conninfo)
     import runtime_native_dialogue_pg
     runtime_native_dialogue_pg.exercise(auth.parent/'native-dialogue-controls',conninfo)
+    import runtime_memory_setup_pg
+    for language in ('zh','en'):
+        runtime_memory_setup_pg.exercise(auth.parent/('native-memory-controls-'+language),conninfo,language,lost_ack=language=='zh')
     print('PASS actual private worker manifest/national.2 pins/canonical directory pin, concurrent G/native original worker, E/F full-setup gate before any intent or spend')
     print('PASS public G propose/query -> concrete native MESSAGE/RUN/registered reflection/collector; repeated query zero sends, unavailable all-task recipe stops before paid setup')
     print('PASS canonical MESSAGE -> original leased RUN/candidate/reflection -> actual original collector envelope verified by G; fixture model/wire/Meter/fee, no copied expected state')
