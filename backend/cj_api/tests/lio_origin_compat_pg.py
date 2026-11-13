@@ -40,7 +40,12 @@ def exercise(work,config):
         tables=('cj_message_receipt','cj_message_chat','cj_message_delivery','cj_message_needs_binding','cj_trip_record','cj_trip_proposal','cj_trip_receipt','cj_trip_needs_basis','cj_trip_needs_action','cj_usage_ledger_candidate','cj_run_record','cj_run_event','cj_run_step_usage','cj_run_metered_operation','cj_memory_scope','cj_memory_item','cj_account_fence','cj_cleanup_operation','cj_cleanup_request')
         with psycopg.connect(**config) as db:return {t:[r[0] for r in db.execute('SELECT row_to_json(t)::text FROM '+t+' t ORDER BY row_to_json(t)::text')] for t in tables}
     with TestClient(app) as api:
-            raw=json.dumps(dict(version='LIO-message.3',message_id='compat-original-v3',text='SYNTHETIC_FUTURE_WIRE',locale='en',new_conversation=True),indent=1).encode()
+            older=encode(dict(version='LIO-message.2',message_id='compat-earlier-v2',text='EARLIER_V2',locale='en',new_conversation=True))
+            earlier=api.post('/v2/lio/messages',headers=headers[subjects[0]],content=older)
+            assert earlier.status_code==200,earlier.text
+            mixed_cid=earlier.json()['conversation_id']
+            assert api.get('/v2/lio/messages',headers=headers[subjects[0]],params=dict(message_id='compat-earlier-v2',input_sha256=sha256(older).hexdigest())).status_code==200
+            raw=json.dumps(dict(version='LIO-message.3',message_id='compat-original-v3',text='SYNTHETIC_FUTURE_WIRE',locale='en',conversation_id=mixed_cid),indent=1).encode()
             captured['boundary'].receive_lio(dev_auth.token(auth,subjects[0],300),raw,prepare_scope=captured['prepare_scope'],version='LIO-message.3')
             with psycopg.connect(**config) as db:
                 row=db.execute('SELECT conversation_id,generation,sequence,run_id,input_sha256,raw_input,demo_dialogue_protocol,lio_wire_protocol,lio_wire_input FROM cj_message_receipt WHERE scope=%s AND message_id=%s',(owner,'compat-original-v3')).fetchone()
@@ -60,6 +65,11 @@ def exercise(work,config):
             seed=json.loads((evidence/'seed.json').read_text());before=dump();(evidence/'before-denials.json').write_text(json.dumps(before,indent=2))
             statuses={}
             for name,url,params in (('lookup','/v2/lio/messages',dict(message_id=seed['mid'],input_sha256=seed['outer_sha256'])),('timeline','/v2/lio/timeline',dict(conversation_id=seed['cid']))):
+                r=api.get(url,headers=headers[subjects[0]],params=params);statuses[name]=r.status_code;assert r.status_code==400,r.text
+            for name,url,params in (
+                ('older_lookup','/v2/lio/messages',dict(message_id='compat-earlier-v2',input_sha256=sha256(older).hexdigest())),
+                ('older_page','/v2/lio/timeline',dict(conversation_id=seed['cid'],before=seed['mid'])),
+                ('empty_older_page','/v2/lio/timeline',dict(conversation_id=seed['cid'],before='compat-earlier-v2'))):
                 r=api.get(url,headers=headers[subjects[0]],params=params);statuses[name]=r.status_code;assert r.status_code==400,r.text
             r=api.post('/v2/lio/messages',headers=headers[subjects[0]],content=encode(dict(version='LIO-message.2',message_id='compat-denied-v2',text='MUST_NOT_APPEND',locale='en',conversation_id=seed['cid'])));statuses['append']=r.status_code;assert r.status_code==400,r.text
             r=api.post('/v3/lio/messages',headers=headers[subjects[0]],content=(evidence/'original.wire.bin').read_bytes());statuses['v3_route_absent']=r.status_code;assert r.status_code==404,r.text

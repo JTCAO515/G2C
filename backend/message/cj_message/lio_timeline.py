@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import hashlib
 import json
 
-from .demo_dialogue import LIO_VERSION, LIO_VERSION_V3, admitted_dialogue, lio_conversation
+from .demo_dialogue import LIO_VERSION, LIO_VERSION_V3, admitted_dialogue, lio_conversation, has_new_lio_wire
 from .domain import Command, InvalidInput, Unavailable
 from .travel_reference import read_reference
 
@@ -27,6 +27,7 @@ class TimelinePage:
     generation: str | None
     messages: tuple[TimelineMessage, ...]
     next_before: str | None
+    requires_new_lio: bool = False
 
 
 def original(service, message_id):
@@ -100,4 +101,5 @@ def read_in_transaction(tx, conversation_id, before, *, multiple=False):
         messages.append(TimelineMessage(mid, run_id, position, json.loads(command.raw)['text'], locale,
                                        LIO_VERSION if protocol is None else protocol))
     return TimelinePage(conversation, head.generation, tuple(messages),
-                        messages[0].message_id if len(rows) > PAGE_SIZE else None)
+                        messages[0].message_id if len(rows) > PAGE_SIZE else None,
+                        has_new_lio_wire(tx, conversation, head.generation))

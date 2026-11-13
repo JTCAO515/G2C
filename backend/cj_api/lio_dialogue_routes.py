@@ -109,7 +109,7 @@ def _timeline(boundary, resolve_runs, trip_cards, memory_cards, token, conversat
 
     def project(context):
         page = context.lio_timeline(conversation_id, before, multiple=multiple)
-        if any(item.protocol==LIO_VERSION_V3 for item in page.messages):
+        if page.requires_new_lio:
             raise InvalidInput('calendar conversation requires its selected reader')
         # An empty page never needed a MESSAGE owner row. Keep that path and
         # its final page/AUTH checks; existing originals get one protected frame.
@@ -192,7 +192,7 @@ def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, pre
             return _failure(message_failure(request, exc, False).status_code)
         value = None
         if receipt is not None:
-            if receipt.protocol==LIO_VERSION_V3:
+            if receipt.requires_new_lio:
                 return _failure(400)
             if receipt.input_sha256 != digest:
                 return _failure(409)
