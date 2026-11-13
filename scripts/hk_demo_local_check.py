@@ -223,6 +223,7 @@ def check_schema53_resume(control,backups,operator,schema_root):
     marker=control/'demo-schema53.json'
     destination=backups/'demo-schema53'
     lineage=checkpoint.verified(control/'release.json')['lineage']
+    original_quota=checkpoint.verified(control/'demo-schema52.json')
     for quota in (dict(state='INTENT',lineage=lineage),dict(state='COMPLETE',lineage='foreign')):
         checkpoint.atomic(control/'demo-schema52.json',quota)
         try:demo_schema.upgrade(control,backups,target=53,schema_root=schema_root)
@@ -230,7 +231,7 @@ def check_schema53_resume(control,backups,operator,schema_root):
         else:raise AssertionError('schema53 crossed an incomplete original quota release')
         assert not marker.exists() and not destination.exists()
         with operator() as (db,_):assert migrate.applied(db)==list(range(1,53))
-    checkpoint.atomic(control/'demo-schema52.json',dict(state='COMPLETE',lineage=lineage))
+    checkpoint.atomic(control/'demo-schema52.json',original_quota)
     with patch.object(migrate,'up',side_effect=OSError('synthetic schema53 rollback')):
         try:demo_schema.upgrade(control,backups,target=53,schema_root=schema_root)
         except OSError as exc:assert str(exc)=='synthetic schema53 rollback'
@@ -304,7 +305,7 @@ def verify_upgrade(root, blueprint, target):
         quota_fixture(root,env) if target in (52,53) else (lambda _:None,None,None,None))
     with pg_suites.cluster('demo-upgrade',port=55650,role='cj_demo_upgrade',root=root/'old',socket=root/'old-s') as config:
         with psycopg.connect(**config,autocommit=True) as db:
-            migrate.up(db,migrate.load(),target-1)
+            migrate.up(db,migrate.load(),51 if target==53 else target-1)
             original=checkpoint.local.fence_state(db)
 
         @contextmanager
@@ -313,14 +314,34 @@ def verify_upgrade(root, blueprint, target):
                 yield db,config
 
         with patch.dict(os.environ,env),patch.object(checkpoint,'operator',operator),                patch.object(staging,'PG17',pg_suites.bindir()):
-            with patch.object(checkpoint,'versions',return_value=list(range(1,target))):
+            with patch.object(checkpoint,'versions',return_value=list(range(1,52 if target==53 else target))):
                 checkpoint.bootstrap(control,initialize)
+            checkpoint.atomic(control/'b2.json',dict(version='g2c-hk-local.1',state='FORWARD_ONLY'))
             if target in (52,53):
                 with operator() as (db,_):
                     negative(db)
+            if target==53:
+                migrations=migrate.load()
+                with patch.object(migrate,'load',return_value=migrations[:52]):
+                    with pg_suites.cluster('quota-blueprint',port=55652,role='cj_quota_blueprint',
+                            root=root/'quota-blueprint',socket=root/'quota-blueprint-s') as quota_blueprint:
+                        with psycopg.connect(**quota_blueprint,autocommit=True) as db:
+                            migrate.up(db,migrate.load(),52)
+                        quota_schema=root/'quota-schema'
+                        schema.generate(quota_blueprint,quota_schema)
+                    demo_schema.upgrade(control,backups,target=52,schema_root=quota_schema)
+                raw=json.loads(os.environ['CJ_BETA_RUN_CONTEXT_JSON'])
+                raw['current']['meter']['budget']=800
+                os.environ['CJ_BETA_RUN_CONTEXT_JSON']=json.dumps(raw)
+                assert checkpoint.verified(control/'demo-schema52.json')['state']=='COMPLETE'
+            if target in (52,53):
+                with operator() as (db,_):
                     prior_quota=snapshot(db)
+                    if target==53:
+                        assert all(row[2]['config']['budget']==800 for row in prior_quota)
+                        assert any(row[2]['attempts'].get('original-attempt',{}).get('state')=='unknown'
+                                   for row in prior_quota)
             old=checkpoint.verified(control/'release.json')
-            checkpoint.atomic(control/'b2.json',dict(version='g2c-hk-local.1',state='FORWARD_ONLY'))
             checkpoint.atomic(prior/'manifest.json',dict(schema=list(range(1,target)),
                 lineage=old['lineage'],fences=original))
             if target==52:
