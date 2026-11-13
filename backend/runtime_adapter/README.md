@@ -32,7 +32,7 @@ observer Binding.key；v1 不允许用同 owner 的新 session 替换原 produce
 single-binding 校验不变，`quality_status` 仍是 UNKNOWN。
 
 ```sh
-uv run --locked python -B -m pytest backend/tests/test_cross_binding_fixture_adapter.py -q
+UV_PROJECT_ENVIRONMENT=.local/optimization/fixture-evidence-venv uv run --locked python -B -m pytest backend/tests/test_cross_binding_fixture_adapter.py -q
 ```
 
 ## 文件与默认验证

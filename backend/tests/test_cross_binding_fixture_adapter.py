@@ -99,7 +99,11 @@ def test_unknown_and_unstarted_are_not_filled_with_observed_zero():
     assert accepted(record).stage == 'NOT_STARTED'
 
 
-@pytest.mark.parametrize('value', ['2026-11-13T13:02:03', 'yesterday', '2026-11-31T00:00:00Z'])
+@pytest.mark.parametrize('value', [
+    '2026-11-13T13:02:03', 'yesterday', '2026-11-31T00:00:00Z',
+    '2026-11-13T12:00:00+00:60', '2026-11-13T12:00:00+01:99',
+    '2026-11-13T12:00:00-00:99', '2026-11-13T12:00:00+24:00',
+])
 def test_date_time_requires_an_actual_aware_instant(value):
     record = deepcopy(EXAMPLES['use'])
     record['published_at'] = value

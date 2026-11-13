@@ -38,7 +38,7 @@ Count = Annotated[int, BeforeValidator(_json_integer), Field(ge=0)]
 def _timestamp(value):
     if type(value) is not str or re.fullmatch(
             r'[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt][0-9]{2}:[0-9]{2}:[0-9]{2}'
-            r'(?:\.[0-9]+)?(?:Z|[+-][0-9]{2}:[0-9]{2})', value) is None:
+            r'(?:\.[0-9]+)?(?:Z|[+-](?:[01][0-9]|2[0-3]):[0-5][0-9])', value) is None:
         raise ValueError('aware RFC3339 instant required')
     datetime.fromisoformat(value)
     return value
