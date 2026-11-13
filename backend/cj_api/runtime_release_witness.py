@@ -54,7 +54,8 @@ class NativeReleaseWitness:
                     cursor.execute("SET LOCAL statement_timeout='10s'")
                     # Set timeouts before the host's bind hook can take the
                     # same native shared release barrier.
-                    connection.bind_scope(cursor)
+                    try:connection.bind_scope(cursor)
+                    except ValueError:raise Unavailable('ORIGINAL_DATABASE_RELEASE_UNAVAILABLE')from None
                     try:self.release.runtime_transaction(cursor,self.control)
                     except ValueError:raise Unavailable('ORIGINAL_DATABASE_RELEASE_UNAVAILABLE')from None
                     before=self._read(connection)

@@ -21,7 +21,7 @@ from cj_api.local_worker_context import checker_for
 from cj_api.runtime_release_witness import NativeReleaseWitness
 from cj_auth.interfaces import AdmissionStatus
 import local_history_pg as harness
-from deploy.hk import checkpoint
+from deploy.hk import checkpoint,configuration
 from runtime_adapter import Unavailable
 import dev_auth
 
@@ -36,11 +36,15 @@ def exercise(auth,conninfo):
         @classmethod
         def now(cls,tz=None):return datetime(2026,11,14,tzinfo=timezone.utc)
     environment=dict(CJ_ENV='local',CJ_DEPLOY_TARGET='hk-beta',CJ_M4_SYNTHETIC_ONLY='1',
+        CJ_DEPLOY_CONTROL=str(control),
         CJ_TRIAL_VALID_UNTIL='2026-11-15T00:00:00+00:00',
         CJ_BETA_RECOVERY_PRIVATE_B64=base64.b64encode(key.private_bytes(serialization.Encoding.Raw,
             serialization.PrivateFormat.Raw,serialization.NoEncryption())).decode(),
         CJ_BETA_RECOVERY_PUBLIC_B64=base64.b64encode(key.public_key().public_bytes(
             serialization.Encoding.Raw,serialization.PublicFormat.Raw)).decode())
+    # Use the actual HK before_scope hook too: it verifies the release during
+    # bind, before the reader's explicit second verification.
+    database._before_scope=configuration.runtime_transaction
     def guard():
         decision=checker.check(token)
         if decision.status is not AdmissionStatus.ALLOWED:
