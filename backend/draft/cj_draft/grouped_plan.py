@@ -12,6 +12,7 @@ from cj_trip.structured import FieldRejected, MAX_ITEMS, MAX_TEXT, MAX_TITLE, So
 from .calendar_plan import FIRST_PLAN, REPLAN_DELTA
 from .lio_calendar import LioCalendarPublisher
 from .lio_plan import LioSourceWindowPublisher, _expand_compact
+from . import rich_schema
 
 DATED_FIRST = 'TRIP-lio-first-plan.2'
 DATED_DELTA = 'TRIP-lio-replan-delta.4'
@@ -19,10 +20,12 @@ ORDINAL_FIRST = 'TRIP-lio-day-plan.2'
 ORDINAL_DELTA = 'TRIP-lio-day-delta.2'
 _GENERATION_KINDS = {DATED_FIRST: (False, False), DATED_DELTA: (True, False),
                      ORDINAL_FIRST: (False, True), ORDINAL_DELTA: (True, True)}
-GENERATION_PROFILES = tuple(_GENERATION_KINDS)
+GENERATION_PROFILES = tuple(_GENERATION_KINDS) + rich_schema.GENERATION_PROFILES
 
 
 def response_format(profile):
+    if profile in rich_schema.GENERATION_PROFILES:
+        return rich_schema.response_format(profile)
     retained, ordinal = _GENERATION_KINDS[profile]
     clock = dict(type='string', pattern=r'^(?:[01][0-9]|2[0-3]):[0-5][0-9]$')
     row = dict(type='array', minItems=5, maxItems=5, prefixItems=[
@@ -58,13 +61,9 @@ class GroupedDraftInput:
 
 
 def grouped_input(publisher, capture, messages, provider):
-    if isinstance(publisher, LioGroupedCalendarPublisher):
-        first, delta = ORDINAL_FIRST, ORDINAL_DELTA
-    elif isinstance(publisher, LioGroupedPlanPublisher):
-        first, delta = DATED_FIRST, DATED_DELTA
-    else:
+    if not isinstance(publisher, (LioGroupedCalendarPublisher, LioGroupedPlanPublisher)):
         return None
-    profile = delta if publisher.source.contexts[capture.binding] is not None else first
+    profile = publisher.generation_profile(capture)
     return GroupedDraftInput(packed(messages), publisher.system, provider, profile)
 
 
@@ -152,6 +151,9 @@ def expand(raw, capture, *, retained, ordinal):
 
 class LioGroupedPlanPublisher(LioSourceWindowPublisher):
     """Explicit dated opt-in. Retains the original source-window/signer/sole act."""
+    def generation_profile(self, capture):
+        return DATED_DELTA if self.source.contexts[capture.binding] is not None else DATED_FIRST
+
     def model_messages(self, binding, text, capture, messages):
         result = super().model_messages(binding, text, capture, messages)
         self.system = system_for(retained=self.source.contexts[binding] is not None,
@@ -172,6 +174,9 @@ class LioGroupedPlanPublisher(LioSourceWindowPublisher):
 
 class LioGroupedCalendarPublisher(LioCalendarPublisher):
     """Explicit ordinal opt-in; calendar source leases and commit guards are unchanged."""
+    def generation_profile(self, capture):
+        return ORDINAL_DELTA if self.source.contexts[capture.binding] is not None else ORDINAL_FIRST
+
     def model_messages(self, binding, text, capture, messages):
         result = super().model_messages(binding, text, capture, messages)
         self.system = system_for(retained=self.source.contexts[binding] is not None, ordinal=True)
