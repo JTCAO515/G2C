@@ -53,5 +53,25 @@ class PlanPaceTests(unittest.TestCase):
             self.assertIn('原有安排已保留'if locale=='zh'else'keeping the original arrangements',retained)
             self.assertNotIn('先按适中'if locale=='zh'else'used a moderate pace',retained)
 
+    def test_fixed_first_legacy_profile_keeps_pace_facts_without_claiming_rich_density(self):
+        for locale in ('zh','en'):
+            for fields in ({},{'pace':dict(state='known',value='紧凑')}):
+                pace=from_needs_fields(fields)
+                text=saved_summary(locale,3,pace,dated=True,rich_applied=False)
+                self.assertNotIn('紧凑'if locale=='zh'else'packed',text)
+                self.assertNotIn('先按适中'if locale=='zh'else'used a moderate pace',text)
+                self.assertEqual(pace,from_needs_fields(fields))
+
+    def test_national_tool_descriptions_use_the_confirmed_city_and_keep_legacy_scope(self):
+        from cj_api.real_services import NATIONAL_TOOLS,TOOLS
+        national={tool['function']['name']:tool['function']for tool in NATIONAL_TOOLS}
+        legacy={tool['function']['name']:tool['function']for tool in TOOLS}
+        for name in ('place_search','weather'):
+            self.assertNotIn('beijing',national[name]['description'].casefold())
+            self.assertNotIn('北京',national[name]['description'])
+        self.assertNotIn('enum',national['place_search']['parameters']['properties']['city'])
+        self.assertNotIn('default',national['place_search']['parameters']['properties']['city'])
+        self.assertIn('北京',legacy['place_search']['parameters']['properties']['city']['enum'])
+
 
 if __name__=='__main__':unittest.main()

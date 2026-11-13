@@ -34,21 +34,23 @@ def from_needs_fields(fields):
     return PlanPace(Pace.MODERATE,True)
 
 
-def saved_summary(locale,days,pace,*,dated,retained=False):
+def saved_summary(locale,days,pace,*,dated,retained=False,rich_applied=True):
     """Called only after an actual save receipt, with the captured duration."""
     if retained:
-        return ('新建议已保存为行程的新版本，原有安排已保留。还可以继续调整地点或时段。想先调整哪一天？'
+        return ('行程的新版本已保存，原有安排已保留。还可以继续调整地点或时段。想先调整哪一天？'
                 if locale=='zh' else
-                'The new suggestions are saved in a new itinerary version, keeping the original arrangements. You can adjust stops or times. Which day would you like to change?')
+                'A new itinerary version is saved, keeping the original arrangements. You can adjust stops or times. Which day would you like to change?')
     if locale=='zh':
         opening=f'行程已保存，共{days}天。'
-        style=('节奏未定，先按适中安排。'if pace.defaulted else
+        style=('还可以继续调整地点或时段。'if not rich_applied else
+               '节奏未定，先按适中安排。'if pace.defaulted else
                '还可以继续调整地点或时段。'if pace.value is None else
                '已按'+{Pace.RELAXED:'轻松',Pace.MODERATE:'适中',Pace.PACKED:'紧凑'}[pace.value]+'节奏安排。')
         ending=('想先调整哪一天？'if dated else'出发日期定了告诉我，我把每天对上日期；想先调整哪一天？')
     else:
         opening=f'Your {days}-day itinerary is saved. '
-        style=('I used a moderate pace because the pace is not settled. 'if pace.defaulted else
+        style=('You can adjust the stops or timing. 'if not rich_applied else
+               'I used a moderate pace because the pace is not settled. 'if pace.defaulted else
                'You can adjust the stops or timing. 'if pace.value is None else
                'It follows a '+{Pace.RELAXED:'relaxed',Pace.MODERATE:'moderate',Pace.PACKED:'packed'}[pace.value]+' pace. ')
         ending=('Which day would you like to adjust?'if dated else
