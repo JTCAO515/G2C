@@ -7,7 +7,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from cj_needs.domain import InvalidInput, decode
 
-from .lio_exploration_factors import BY_KEY, defaults
+from .lio_exploration_factors import BY_KEY, LABELS, defaults
 from .lio_planning_grounding import NUMBERS
 
 CONTEXT = 'lio_planning_context.2:'
@@ -15,31 +15,39 @@ VERSION = 'lio_planning_context.2'
 POLICY = '922-profile.1'
 _DECLINED = re.compile(r'随便|都行|无所谓|不需要|不想回答|不想说|'
     r'no preference|anything|whatever|either is fine|prefer not to (?:say|answer)', re.I)
-_NONASSERTION = re.compile(r"\b(?:not|never|no|don't|doesn't|didn't|cannot|can't|won't|"
-    r"if|unless|maybe|might|perhaps|hypothetical|example|rather than|instead of)\b|"
-    r'不是|并非|不要|不选|不想|不喜欢|不太|不很|不够|不算|未必|不确定|'
-    r'如果|假如|要是|可能|也许|例如|假设', re.I)
-_CLAUSE = re.compile(r'[，,。！？!?；;\n]|\.(?=\s|$)|\b(?:but|however|instead(?!\s+of\b))\b|而是|不过|但是|但', re.I)
-_DIETARY_ABSENCE = re.compile(r'不吃辣|无饮食限制|\b(?:no spicy food|do not eat spicy(?: food)?|'
-    r"don't eat spicy(?: food)?|avoid spicy(?: food)?|no dietary restrictions)\b", re.I)
-_MOBILITY_ABSENCE = re.compile(r'无行动限制|\bno mobility restrictions\b', re.I)
+_CLAUSE = re.compile(r'[，,。；;\n]|\.(?=\s|$)|\b(?:but|however)\b|而是|不过|但是|但', re.I)
 _RETURN_VISIT = re.compile(r'不是第一次(?:来)?|\bnot (?:my |our |the )?first (?:visit|time)\b', re.I)
 
 
-def _assertion(key, text, *, quote=None, value=None, declined=False):
-    # Negative dietary/mobility statements have a positive, defined meaning for
-    # these factors. Exempt only a whole supported phrase actually in the quote;
-    # outer negation/conditions remain visible ("not no spicy food" is rejected).
-    allowed = (_DECLINED if declined else
-               _DIETARY_ABSENCE if key == 'dietary' else
-               _MOBILITY_ABSENCE if key == 'mobility' else
-               _RETURN_VISIT if key == 'first_visit' and value is False else None)
-    selected = text
-    if allowed is not None:
-        quoted = text if quote is None else quote
-        for match in allowed.finditer(quoted):
-            selected = selected.replace(match[0], ' ', 1)
-    return _NONASSERTION.search(selected) is None
+def _positive_payload(key, text):
+    """Only recognized affirmative wrappers can normalize a whole statement.
+
+    Everything else stays literal. This is deliberately an allow-list, not a
+    list of supposedly exhaustive negative/conditional words.
+    """
+    text = text.strip().rstrip('。.!！').strip()
+    label = '|'.join(re.escape(v) for v in LABELS[key])
+    selected = re.fullmatch(r'(?:'+label+r')\s*(?:改为|换成|是|[:：])\s*[:：]?\s*(.+)',text,re.I)
+    if selected:
+        return selected[1].strip()
+    if key == 'city':
+        selected = re.fullmatch(r'(?:I|we) (?:want|would like) to (?:visit|go to|travel to) (.+)|(?:我|我们)?想去(.+)',text,re.I)
+        if selected:return selected[1] or selected[2]
+    for pattern in (
+        r'(?:I|we)\s+(?:(?:now|usually|always|generally)\s+)?(?:prefer|like|enjoy|want)\s+(.+)',
+        r'(?:我|我们)?(?:更|通常|平时|比较)?(?:喜欢|偏好|想要|想体验|希望体验|选择)\s*(.+)'):
+        selected = re.fullmatch(pattern,text,re.I)
+        if selected:
+            return re.sub(r'^(?:a|an|the)\s+','',selected[1],flags=re.I)
+    if key == 'pace':
+        selected = re.fullmatch(r'change (?:my |our )?(?:travel )?pace to (.+)',text,re.I)
+        if selected:return selected[1]
+        selected = re.fullmatch(r'(?:先|后来(?:改为|换成))(.+)',text)
+        if selected:return selected[1]
+    if key == 'first_visit':
+        selected = re.fullmatch(r'this is (?:my |our )?(.+)',text,re.I)
+        if selected:return selected[1]
+    return text
 
 
 def _source_clause(original, offset, quote):
@@ -131,23 +139,49 @@ _ALIASES = {
 }
 
 
-def _has(text, phrase):
-    pattern = re.escape(phrase)
-    if phrase.isascii():
-        pattern = r'(?<![A-Za-z])'+pattern+r'(?![A-Za-z])'
-    return re.search(pattern, text, re.I) is not None
-
-
 def _canonical(key, text):
-    # Memory can retain an opaque negative/conditional preference, but cannot
-    # invert it into an affirmative canonical value.
-    if not _assertion(key,text) or re.search(r'[“”"「」]|\b(?:quoted?|example|said|says?)\b',text,re.I):
-        return (text,) if BY_KEY[key].multiple else text
+    # Map only a complete supported expression, never a keyword found inside an
+    # arbitrary statement. Unknown Memory stays the exact opaque original text.
+    payload = _positive_payload(key,text)
     aliases = _ALIASES.get(key, {})
-    values = tuple(value for value, words in aliases.items() if any(_has(text, w) for w in words))
-    if BY_KEY[key].multiple:
-        return values or (text,)
-    return values[0] if len(values) == 1 else text
+    words = {word.casefold():value for value,forms in aliases.items() for word in forms}
+    if key == 'dietary':
+        words.update({word:'mild' for word in ('i do not eat spicy food',"i don't eat spicy food",'do not eat spicy food')})
+    if payload.casefold() in words:
+        value=words[payload.casefold()]
+        return (value,) if BY_KEY[key].multiple else value
+    if aliases:
+        form='|'.join(re.escape(word) for word in sorted(words,key=len,reverse=True))
+        # A bounded positive noun suffix does not admit "dislike", a question,
+        # quoted examples, negation or conditional clauses around a keyword.
+        suffix=r'(?:\s+(?:travel|trip|trips|pace|travel pace|travel experiences)|旅行节奏|旅行|行程|节奏)?'
+        pattern=r'(?:'+form+r')'+suffix
+        if BY_KEY[key].multiple:
+            pattern+=r'(?:(?:\s*(?:and|和|与|、|&)\s*)(?:'+form+r'))*'
+        if re.fullmatch(pattern,payload,re.I):
+            values=tuple(dict.fromkeys(words[m[0].casefold()] for m in re.finditer(form,payload,re.I)))
+            return values if BY_KEY[key].multiple else values[0]
+        return (text,) if BY_KEY[key].multiple else text
+    return (payload,) if BY_KEY[key].multiple else payload
+
+
+def _supported_source(update, clause, quote):
+    key=update.factor_key
+    if _DECLINED.fullmatch(quote.strip()):
+        return _positive_payload(key,clause).casefold() == quote.strip().casefold()
+    if update.state == 'inferred':
+        # Inference can cite a recognized affirmative source fact (for example
+        # "with children"), but not an arbitrary phrase containing its keyword.
+        for factor in BY_KEY.values():
+            whole=_canonical(factor.key,clause);part=_canonical(factor.key,quote)
+            allowed={option.key for option in factor.options}
+            if whole == part and (isinstance(part,str) and part in allowed or
+                    isinstance(part,tuple) and set(part) <= allowed):return True
+        return False
+    whole,part=_canonical(key,clause),_canonical(key,quote)
+    if BY_KEY[key].multiple and isinstance(whole,tuple) and isinstance(part,tuple):
+        return set(part) <= set(whole)
+    return whole == part
 
 
 def _known_value(update, sources):
@@ -155,20 +189,25 @@ def _known_value(update, sources):
     value = tuple(update.value) if isinstance(update.value, list) else update.value
     quotes = [source.quote for source in sources]
     if update.factor_key == 'duration_days':
-        counts = {int(raw) if raw.isascii() and raw.isdecimal() else NUMBERS[raw.casefold()]
-                  for quote in quotes for raw in re.findall(
-                      r'(?<![A-Za-z0-9])([0-9]{1,3}|one|two|three|four|five|six|seven|eight|nine|ten|[一二两三四五六七八九十])\s*(?:天|日|days?)(?![A-Za-z])', quote, re.I)}
+        matches=[re.fullmatch(r'([0-9]{1,3}|one|two|three|four|five|six|seven|eight|nine|ten|[一二两三四五六七八九十])\s*(?:天|日|days?)',
+                 _positive_payload('duration_days',quote),re.I) for quote in quotes]
+        if any(match is None for match in matches):
+            raise InvalidInput('affirmative original duration required')
+        counts = {int(match[1]) if match[1].isascii() and match[1].isdecimal() else NUMBERS[match[1].casefold()] for match in matches}
         if type(value) is int and 1 <= value <= 366 and counts == {value}:
             return value
     elif update.factor_key == 'first_visit':
-        choices = {True for quote in quotes if re.fullmatch(r'第一次(?:来)?|first visit|first time', quote, re.I)}
-        choices |= {False for quote in quotes if re.fullmatch(r'来过中国|来过了|returning to china|been to china', quote, re.I)}
-        choices |= {False for quote in quotes if _RETURN_VISIT.search(quote)}
+        choices=set()
+        for quote in quotes:
+            payload=_positive_payload('first_visit',quote)
+            if re.fullmatch(r'第一次(?:来)?|first visit|first time',payload,re.I):choices.add(True)
+            elif re.fullmatch(r'来过中国|来过了|returning to china|been to china',payload,re.I) or _RETURN_VISIT.fullmatch(payload):choices.add(False)
+            else:raise InvalidInput('affirmative original visit statement required')
         if type(value) is bool and choices == {value}:
             return value
     elif type(value) is str or isinstance(value, tuple):
         expected = [_canonical(update.factor_key, quote) for quote in quotes]
-        if value in expected:
+        if all(value == candidate for candidate in expected):
             return value
         if BY_KEY[update.factor_key].multiple and isinstance(value, tuple) and value and len(set(value)) == len(value):
             combined = tuple(dict.fromkeys(v for group in expected for v in group))
@@ -194,10 +233,8 @@ def parse_updates(raw, originals):
                 raise InvalidInput('original profile quote required')
             original = originals[ref.source_index]
             offsets = [match.start() for match in re.finditer(re.escape(ref.quote), original.text)]
-            declined = _DECLINED.fullmatch(ref.quote.strip()) is not None
-            if not offsets or any(not _assertion(update.factor_key,
-                    _source_clause(original.text,offset,ref.quote),quote=ref.quote,
-                    value=update.value,declined=declined) for offset in offsets):
+            if not offsets or any(not _supported_source(update,
+                    _source_clause(original.text,offset,ref.quote),ref.quote) for offset in offsets):
                 raise InvalidInput('profile quote is absent or negated')
             sources.append(Source(original.message_id, original.sequence, ref.quote, offsets[-1]))
         # The code recognizes explicit refusal regardless of a model's state

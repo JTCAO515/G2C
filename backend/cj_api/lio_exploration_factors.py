@@ -29,7 +29,7 @@ class Factor:
         return dict(factor_key=self.key, question=self.question_zh if zh else self.question_en,
                     multiple=self.multiple, options=[dict(id=self.key+'.'+o.key,
                     display_text=o.zh if zh else o.en,
-                    send_text=(self.question_zh+' '+o.zh if zh else self.question_en+' '+o.en))
+                    send_text=(LABELS[self.key][0]+': '+o.zh if zh else LABELS[self.key][1]+': '+o.en))
                     for o in self.options])
 
 
@@ -98,6 +98,14 @@ FACTORS = (
                  ('evening','晚上离开','Leave in the evening'))),
 )
 BY_KEY = {factor.key: factor for factor in FACTORS}
+LABELS = {
+    'city': ('目的地','Destination','City'), 'duration_days': ('天数','Trip length','Duration'),
+    'season': ('季节','Season'), 'first_visit': ('来华经历','Previous visits'),
+    'party_type': ('同行人','Travel party'), 'interests': ('兴趣','Interests'),
+    'pace': ('节奏','Travel pace','Pace'), 'lodging_tier': ('住宿','Accommodation'),
+    'dietary': ('饮食','Dietary preferences'), 'must_see': ('必去','Must see'),
+    'avoid': ('避开','Avoid'), 'mobility': ('行动需求','Mobility'),
+    'arrival': ('到达','Arrival'), 'departure': ('离开','Departure')}
 
 
 def defaults(profile):

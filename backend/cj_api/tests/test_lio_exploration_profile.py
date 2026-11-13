@@ -221,12 +221,17 @@ class ExplorationProfileTests(unittest.TestCase):
             ('pace','packed','packed','If I chose a packed pace'),
             ('pace','packed','紧凑','如果选紧凑'),
             ('pace','packed','packed','Not very packed')]
+        cases += [('pace','packed',quote,text) for quote,text in (
+            ('I dislike packed trips','I dislike packed trips'),
+            ('我不爱紧凑行程','我不爱紧凑行程'),
+            ('packed','Do I want a packed pace?'), ('packed','Translate "packed"'))]
         for key,value,quote,text in cases:
             with self.subTest(text=text),self.assertRaises(InvalidInput):
                 parse([packet(key,value,quote)],text)
 
     def test_negative_memory_is_retained_opaque_and_never_inverted(self):
-        for text in ('not packed',"I don't like a packed pace",'不要紧凑','If I chose packed','“packed”'):
+        for text in ('not packed',"I don't like a packed pace",'不要紧凑','If I chose packed','“packed”',
+                     'I dislike packed trips','我不爱紧凑行程','Do I want a packed pace?','Translate "packed"'):
             with self.subTest(text=text):
                 fact=memory_prefill(memory(text))[0]
                 self.assertEqual(fact.value,text)
@@ -260,6 +265,18 @@ class ExplorationProfileTests(unittest.TestCase):
                     with self.subTest(key=key,text=text,state=state):
                         row=parse([packet(key,text,text,state=state)],text)[0]
                         self.assertEqual((row.state,row.value),('not_needed',None))
+
+    def test_a_newer_source_that_does_not_support_the_value_cannot_lend_its_order(self):
+        for quotes in (('packed','relaxed'),('3 days','4 days')):
+            key='pace' if quotes[0]=='packed' else 'duration_days'
+            value='packed' if key=='pace' else 3
+            update=packet(key,value,quotes[0])
+            update['sources'].append(dict(source_index=1,quote=quotes[1]))
+            with self.subTest(key=key),self.assertRaises(InvalidInput):
+                parse([update],*quotes)
+        update=packet('interests',['history','food'],'history')
+        update['sources'].append(dict(source_index=0,quote='food'))
+        self.assertEqual(parse([update],'history and food')[0].value,('history','food'))
 
 
 if __name__ == '__main__':

@@ -152,6 +152,10 @@ def exercise(root,conninfo):
         for tag,text,locale,key,value,quote in (
             ('negative-en','not packed','en','pace','packed','not packed'),
             ('negative-zh','不要紧凑','zh','pace','packed','不要紧凑'),
+            ('dislike-en','I dislike packed trips','en','pace','packed','I dislike packed trips'),
+            ('dislike-zh','我不爱紧凑行程','zh','pace','packed','我不爱紧凑行程'),
+            ('question-en','Do I want a packed pace?','en','pace','packed','packed'),
+            ('quotation-en','Translate "packed"','en','pace','packed','packed'),
             ('negative-city','I do not want Beijing','en','city','Beijing','Beijing'),
             ('negative-days','not 3 days','en','duration_days',3,'not 3 days')):
             updates[:]=[packet(key,value,quote)]
