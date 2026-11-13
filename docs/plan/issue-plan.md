@@ -184,6 +184,27 @@
 
 以上不新增队列或文件归属；不把局部原语、布局fixture或接口ABI当作正式App组合。当前可恢复字段与逐项缺口看各父票及A handoff；接口到达后沿24→15→23→26→27推进，#27由最后交付线关闭，M3里程碑不在本线关闭。
 
+### 现行线与文件归属（JT 2026-11-12，优先于下方各节）
+
+依据：8 条开发线、无常驻 Main、Claude 统一规划（[#495/6813752426](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6813752426)）；B 拆为 B/L（[#495/6814548220](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6814548220)）；线程名称（[#495/6814680193](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6814680193)）。里程碑：M4（受邀内测）、M5（公开首发）、T1（训练，条件研发）、Harness（不阻断内测）。下方旧节保留为历史；冲突时以本节和实时 Issue 为准。
+
+| 线 | 线程名称 | 拥有的文件 | 当前队列 |
+|---|---|---|---|
+| A | G2C - A - iOS App | `ios/**`、`docs/ui.md`、`docs/design/**` | Lio UI 重设计 #806、#872、#878、#880 → 无日期行程显示 #863；每次可见变化上传内部 TestFlight |
+| B | G2C - B - 平台运维 | `deploy/**`、`backend/usage/**`、`backend/run/**`、`backend/auth/**`、`backend/agent/**`、`backend/migrations/**`（共享锁）；协调文件 `backend/cj_api/real_services.py`、`backend/agent/cj_agent/worker.py`、`backend/agent/cj_agent/provider.py`、`backend/cj_api/local_app.py` | 香港窗口与子额度、实际 source/image 观测冻结 → #691 → #630 → #766（等 #765） |
+| C | G2C - C - 质量验收 | `eval/**`（D 的 `eval/optimization/**` 除外）、`backend/trip/**`、`backend/draft/**`、`backend/feasibility/**`、`backend/memory*/**`、`backend/manual_edit/**` | #815 全国 16 条 → #864 无日期评测 → #844 回答体验集 → #32 六格、正式 66、JT 审阅 → #6 |
+| D | G2C - D - 对话评分 | `eval/optimization/**`（模块归属见 [eval 模块清单](eval-module-ownership-2026-11-11.md)） | #764 跨 binding fixture 证据规格冻结（与 R）→ #788 真实质检 → #765 |
+| E | G2C - E - 提示词优化 | `tooling/optimization/**`、`backend/runtime_adapter/**`（G 暂停后接手） | fixture 证据类型实现 → #764 有限实验 |
+| F | G2C - F - 训练数据 | `tooling/datasets/**` | #789 真实小批（等真实入口与教师来源准入） |
+| G | G2C - G - 训练环境 | `tooling/training/**` | 暂停；训练恢复时另开 |
+| H | G2C - H - 预设知识 | `knowledge/visitor/**` | #841 30 天复核（下次 2026-11-25 前）；新增城市/主题须 JT 确认来源 |
+| L | G2C - L - 对话优化 | `backend/cj_api/lio_*`、`backend/cj_api/local_lio_*`、`backend/message/cj_message/lio_*`、`backend/message/cj_message/demo_dialogue.py`、`backend/fact/**` | #847 事实工具 → #862 无日期保存与补日期 → #739、#680 |
+| R | G2C - R - 独立审查 | 无（只读，不占开发名额） | 按需审查 |
+
+- **共享文件**：`contracts/**` 与生成代码、`backend/migrations/**`、`scripts/test.py`、`scripts/pg_suites.py`、`docs/plan/**`、`docs/handoff.json` 与 `HANDOFF.md`，同一时间只允许一个开放 PR 修改。修改他线协调文件须在 PR 中声明并遵守文件锁。
+- **香港资源**：B 是窗口、账本、子额度与基础设施配置的唯一执行者；各线在 B 公布的固定窗口和自身子额度内使用，L 按 `deploy/hk/README.md` 自行部署 API/worker 镜像。
+- **Lio 回答体系**：规格见 [Lio 回答体系规划](../lio-voice.md)（#840，JT 2026-11-12 确认）。人设、场景注入、事实工具归 L；事实条目归 H；回答评测归 C。
+
 ### M4 剩余队列：Lio 用户版 → 正式评测 → 受邀内测（JT 2026-11-09，优先于下方各节）
 
 JT 决定：Lio 用户版（[#495/6736601057](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6736601057)，跟踪票 [#702](https://github.com/JTCAO515/G2C/issues/702)，修订见 [#702/6736604817](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6736604817)）是 #33 受邀内测的前提；剩余路线图见 [#495/6737151903](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6737151903)。三条线为新会话；文件归属和锁规则不变。已完成的 Demo 快线（#685，已关闭）保留为历史。
