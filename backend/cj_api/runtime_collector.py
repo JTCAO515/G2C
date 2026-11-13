@@ -199,11 +199,15 @@ class RuntimeCollector:
 
     def original(self,reference,*,deadline):
         if self.clock()>=deadline:raise Unavailable('DEADLINE_REACHED')
-        self.guard(read_only=True)
         token=self.token_supplier()
-        if self.fixture_originals is not None and self.fixture_originals.contains(token,reference):
-            body=self.fixture_originals.resolve(token,reference)
-        else:body=self.refs.resolve(token,reference)
-        self.guard(read_only=True)
+        if self.fixture_originals is None:
+            body=self.refs.resolve(token,reference)
+        else:
+            # Qualify before consulting the optional source index. Each chosen
+            # resolver owns the current checks around its actual body read.
+            self.guard(read_only=True)
+            if self.fixture_originals.contains(token,reference):
+                body=self.fixture_originals.resolve(token,reference)
+            else:body=self.refs.resolve(token,reference)
         if self.clock()>=deadline:raise Unavailable('DEADLINE_REACHED')
         return body
