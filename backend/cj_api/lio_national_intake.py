@@ -86,6 +86,10 @@ class DateDurationConflict(InvalidInput):
  pass
 
 
+class DateSourceUnclear(InvalidInput):
+ pass
+
+
 class FixedTimezoneConflict(InvalidInput):
  pass
 
@@ -455,8 +459,8 @@ def fixed_sources_complete(intake,fields,turns,city_reference):
 
 # Current data8 notation compiler; legacy parse functions above remain unchanged.
 LITERAL_DATE=re.compile(r'(?<![0-9])(?P<year>[0-9]{4}|[0-9]{2})(?:'
-    r'(?P<separator>[-/.])(?P<month>[0-9]{1,2})(?P=separator)(?P<day>[0-9]{1,2})|'
-    r'年(?P<cn_month>[0-9]{1,2})月(?P<cn_day>[0-9]{1,2})[日号]?)(?![0-9])')
+    r'\s*(?P<separator>[-/.])\s*(?P<month>[0-9]{1,2})\s*(?P=separator)\s*(?P<day>[0-9]{1,2})|'
+    r'\s*年(?:的)?\s*(?P<cn_month>[0-9]{1,2})月(?P<cn_day>[0-9]{1,2})[日号]?)(?![0-9])')
 
 
 def literal_dates(text):
@@ -488,6 +492,13 @@ _RELATIVE_DAY=re.compile(r'(?<!大)大后天|(?<![大后])后天|明天|今天|'
 _HOLIDAY=re.compile(r'(?<![0-9])(?:(?P<year>[0-9]{4})\s*年?\s*)?(?P<name>元旦|国庆(?:节)?|月底)|'
     r"\b(?P<en_name>new year['’]s day|national day)\b(?:,?\s*(?P<en_year>[0-9]{4})(?![0-9]))?",re.I)
 _BARE_WEEK=re.compile(r'(?:周|星期|礼拜)(?P<zh_day>[一二三四五六日天])|\b(?P<en_day>'+_WEEKDAY_WORD+r')\b',re.I)
+_UNSUPPORTED_DATE_PREFIX=re.compile(r'(?:明|后|去|前|今)年(?:的)?\s*$|'
+    r'(?:上+|下+)(?:一?个)?(?:月(?:的)?)?\s*$|'
+    r'\b(?:last|previous|following|next|this)\s+(?:year\s+|month\s+)?$|'
+    r'[0-9零〇一二三四五六七八九十]{2,4}\s*年(?:的)?\s*$|'
+    r'\b[0-9]{2,4}(?:[’\x27]s)?\s*$|'
+    r'(?:大约|大概|可能|差不多|预计|暂定)\s*$|\b(?:around|about|approximately|maybe)\s*$',re.I)
+_DATE_APPROX_SUFFIX=re.compile(r'\s*(?:左右|前后|上下|以后|之前|之后|以前|or\b|around\b)',re.I)
 
 
 def _upcoming_date(month,day,question_day,year=None):
@@ -545,6 +556,11 @@ def _current_date_source(value,references,turns,*,departure=False):
         quote=reference['quote'];turn=turns[reference['source_index']]
         anchors=_current_date_anchors(quote,turn.question_day)
         if _WEEK_SOURCE.search(quote)is not None:
+            for occurrence in re.finditer(re.escape(quote),turn.text):
+                for match in _WEEK_SOURCE.finditer(quote):
+                    position=occurrence.start()+match.start();end=occurrence.start()+match.end()
+                    if (_UNSUPPORTED_DATE_PREFIX.search(turn.text[:position])or _DATE_APPROX_SUFFIX.match(turn.text[end:])):
+                        raise DateSourceUnclear('original date modifier needs explicit clarification')
             _week_source(value,[reference],turns,departure=departure)
             expected.add(value)
         if not anchors:continue
@@ -564,6 +580,8 @@ def _current_date_source(value,references,turns,*,departure=False):
                         actual_day=value
                     else:
                         actual_day=_current_date_anchors(complete[0],turn.question_day)[0][1]
+                if _UNSUPPORTED_DATE_PREFIX.search(turn.text[:position])or _DATE_APPROX_SUFFIX.match(turn.text[end:]):
+                    raise DateSourceUnclear('original date modifier needs explicit clarification')
                 neighbor=_range_neighbor(turn.text,position,end,before=not departure)
                 if neighbor is not None and (neighbor[1]<=occurrence.start() if not departure else neighbor[0]>=occurrence.end()):
                     raise InvalidInput('date quote clips the requested range endpoint')

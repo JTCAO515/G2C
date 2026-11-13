@@ -85,5 +85,20 @@ class DateFormats(unittest.TestCase):
         ):
             with self.subTest(text=text),self.assertRaises(InvalidInput):parsed(text,wrong,quote=quote)
 
+    def test_explicit_unsupported_modifiers_cannot_be_discarded_for_a_bare_date(self):
+        for expression,quote,wrong in (
+            ('明年12月1日','12月1日','2026-12-01'),('明年12月1日','明年12月1日','2026-12-01'),
+            ('2028年的12月1日','12月1日','2026-12-01'),
+            ('上周二','周二','2026-11-17'),('last Tuesday','Tuesday','2026-11-17'),
+            ('下月底','月底','2026-11-30'),('下个月底','月底','2026-11-30'),
+            ('next year Dec 1','Dec 1','2026-12-01'),
+            ('明年下周二','下周二','2026-11-17'),
+            ('大约12月1日','12月1日','2026-12-01'),('12月1日左右','12月1日','2026-12-01'),
+        ):
+            with self.subTest(expression=expression),self.assertRaises(InvalidInput):
+                parsed('规划北京三天，两个人，'+expression,wrong,quote=quote)
+        self.assertEqual(parsed('规划北京三天，两个人，2028年的12月1日出发','2028-12-01',
+                                quote='12月1日').start_date['value'],'2028-12-01')
+
 
 if __name__=='__main__':unittest.main()

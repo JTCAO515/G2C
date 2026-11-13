@@ -16,9 +16,10 @@ def source_c0(*,resource_root=None):
     root=ROOT if resource_root is None else Path(resource_root)
     from cj_agent.provider import M4_BASE, M4_MODEL, M4_REAL_OUTPUT_TOKENS, M4_NATIVE_TURN_BUFFERED
     from cj_api.real_services import NATIONAL_TOOLS, TOOL_SYSTEM
-    from cj_api.local_lio_planning import DISCUSSION_PROMPT
+    from cj_api.local_lio_planning import DISCUSSION_PROMPT,NATIONAL_GROUPED_DRAFT
     from cj_message.lio_context import PERSONA
     from cj_draft.lio_plan import INITIAL_SYSTEM, REPLAN_SYSTEM
+    from cj_draft.grouped_plan import system_for
     policy_files = ('backend/agent/cj_agent/provider.py', 'backend/cj_api/real_services.py',
              'backend/cj_api/local_lio_planning.py', 'backend/cj_api/local_lio_national.py',
              'backend/cj_api/lio_scene.py',
@@ -33,7 +34,7 @@ def source_c0(*,resource_root=None):
              'backend/agent/cj_agent/lio_intake_optional_schema.py', 'backend/cj_api/lio_flow_intake.py',
              'backend/cj_api/lio_flat_intake.py', 'backend/cj_api/lio_sourced_intake.py',
              'backend/message/cj_message/lio_context.py',
-             'backend/draft/cj_draft/lio_plan.py')
+             'backend/draft/cj_draft/lio_plan.py', 'backend/draft/cj_draft/grouped_plan.py')
     files = (*policy_files,
              'eval/optimization/cases.v2.json',
              'eval/optimization/score_v2.py', 'tooling/optimization/uv.lock')
@@ -45,6 +46,9 @@ def source_c0(*,resource_root=None):
                      for path in sorted(Path(__file__).parent.glob('*.py'))}
     policies = dict(tool_system=TOOL_SYSTEM, persona=PERSONA, discussion=DISCUSSION_PROMPT,
                     initial=INITIAL_SYSTEM, replan=REPLAN_SYSTEM, reflection=REFLECTION_SYSTEM,
+                    national_grouped_guidance=NATIONAL_GROUPED_DRAFT,
+                    national_dated_initial=system_for(retained=False,ordinal=False,guidance=NATIONAL_GROUPED_DRAFT),
+                    national_dated_replan=system_for(retained=True,ordinal=False,guidance=NATIONAL_GROUPED_DRAFT),
                     policy_source_sha256={name:sha256((root/name).read_bytes()).hexdigest() for name in policy_files})
     return dict(version=VERSION, configuration='C0-source-national.1', activation_status='UNRUN',
         source_hashes={name: sha256((root/name).read_bytes()).hexdigest() for name in files},

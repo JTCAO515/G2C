@@ -18,7 +18,7 @@ from cj_needs.domain import InvalidInput
 from .lio_city import CityReference,forms,_normalize
 from .lio_sourced_intake import BookingSourceUnclear
 from .lio_flow_intake import parse_flow
-from .lio_national_intake import NONPERSISTENT,fields_for,fixed_sources_complete,province_evidence,diagnostic_code,StartDateConflict,FixedTimezoneConflict,DateDurationConflict
+from .lio_national_intake import NONPERSISTENT,fields_for,fixed_sources_complete,province_evidence,diagnostic_code,StartDateConflict,FixedTimezoneConflict,DateDurationConflict,DateSourceUnclear
 from .lio_planning_grounding import PlanningTurn,standalone_question
 from .local_lio_planning import PlanningDetails,register,discuss
 
@@ -141,6 +141,10 @@ class NationalLioPlanning:
                     (messages,system,worker.provider,len(turns)-1),message_refs=refs))
         booking_unclear=False;question_fields=[];facts={}
         try:intake,question_fields,facts=parse_flow(raw,turns,refs,binding.message_id,previous,schema=OptionalIntake)
+        except DateSourceUnclear:
+            return self._answer(worker,binding,state,original.locale,
+                '这个日期表达我还拿不准，可以给出具体的年月日吗？',
+                'I am not sure which date that expression means. Could you give the year, month and day?')
         except BookingSourceUnclear as error:
             intake=error.control;booking_unclear=True
         except (InvalidInput,ValueError,UnicodeError) as error:
