@@ -20,11 +20,12 @@ from .local_lio_edit import _bind_current
 
 DATE_ATTEMPT = 'lio_calendar_date_attempt'
 _WEEKDAY = r'(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)'
+_YEAR_DATE = r'(?:[0-9]{4}|[0-9]{2})(?:[-./][0-9]{1,2}[-./][0-9]{1,2}|年[0-9]{1,2}月[0-9]{1,2}[日号])'
 _DATE_REPLY = re.compile(r'(?:从|就|那就|定在|出发日期(?:定在|是)|开始日期(?:定在|是)|行程从)?\s*'
     r'(?:今天|明天|后天|(?:下下|下|这|本)?(?:周|星期)[一二三四五六日天]|'
-    r'[0-9]{4}(?:-[0-9]{2}-[0-9]{2}|年[0-9]{1,2}月[0-9]{1,2}[日号]))\s*(?:开始|出发)?|'
+    +_YEAR_DATE+r')\s*(?:开始|出发)?|'
     r'(?:(?:please )?(?:start(?: (?:the )?trip)?(?: on)?|from|set (?:the )?start date to)\s+)?'
-    r'(?:today|tomorrow|(?:the )?day after tomorrow|(?:next )?'+_WEEKDAY+r'|[0-9]{4}-[0-9]{2}-[0-9]{2})', re.I)
+    r'(?:today|tomorrow|(?:the )?day after tomorrow|(?:next )?'+_WEEKDAY+r'|'+_YEAR_DATE+r')', re.I)
 
 
 def date_completion(text):
