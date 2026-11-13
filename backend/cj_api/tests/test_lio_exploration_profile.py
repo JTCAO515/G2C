@@ -6,7 +6,7 @@ import unittest
 from cj_needs.domain import InvalidInput
 from cj_api.lio_exploration_factors import FACTORS, BY_KEY, defaults
 from cj_api.lio_exploration_profile import (Original, Source, MemorySource,
-    parse_updates, memory_prefill, merge, snapshot, restore)
+    parse_updates, memory_prefill, merge, snapshot, restore, default_proposals)
 
 
 def packet(key, value, quote, *, state='known', index=0):
@@ -190,6 +190,23 @@ class ExplorationProfileTests(unittest.TestCase):
         fresh=restore(json.dumps(saved),(),memory('I prefer packed travel.',version=2))
         self.assertEqual(fresh['pace'].value,'packed')
         self.assertEqual(fresh['pace'].sources[0].version,2)
+
+    def test_default_state_has_policy_and_real_exit_mid_never_a_fabricated_quote(self):
+        for text in ('直接出方案','Plan now'):
+            original=Original('real-plan-now-mid',4,text)
+            proposed=default_proposals({},original)
+            self.assertEqual(len(proposed),14)
+            self.assertTrue(all(fact.state=='default' for fact in proposed))
+            for fact in snapshot({fact.key:fact for fact in proposed})['factors']:
+                self.assertEqual(fact['sources'][0],dict(kind='default',message_id=original.message_id,policy='922-profile.1'))
+            self.assertIsNone(next(f.value for f in proposed if f.key=='arrival'))
+        for text in ('Maybe plan now','Do not plan now','go ahead'):
+            with self.subTest(text=text),self.assertRaises(InvalidInput):
+                default_proposals({},Original('real-mid',1,text))
+        refused=merge({},parse([packet('pace',None,'都行',state='not_needed')],'都行'))
+        self.assertEqual(defaults(refused)['pace'],'moderate')
+        self.assertFalse(any(f.key=='pace' for f in default_proposals(refused,Original('mid',2,'Plan now'))))
+        self.assertEqual(refused['pace'].state,'not_needed')
 
 
 if __name__ == '__main__':

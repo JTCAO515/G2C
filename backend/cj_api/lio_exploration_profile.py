@@ -7,7 +7,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from cj_needs.domain import InvalidInput, decode
 
-from .lio_exploration_factors import BY_KEY
+from .lio_exploration_factors import BY_KEY, defaults
 from .lio_planning_grounding import NUMBERS
 
 CONTEXT = 'lio_planning_context.2:'
@@ -219,6 +219,20 @@ def merge(previous, updates, memory=()):
     return result
 
 
+def default_proposals(profile, original):
+    """Label planning defaults separately from user quotes and refusals.
+
+    A literal exit supplies provenance for these proposals only. WP4/WP8 must
+    still require the actual selected native4 policy before publishing a Trip;
+    neither this data nor its policy string grants source/write authority.
+    """
+    if original.text.strip().casefold() not in ('直接出方案','plan now'):
+        raise InvalidInput('original plan-now message required for default proposals')
+    source = DefaultSource(original.message_id,POLICY)
+    return tuple(Fact(key,value,'default',(source,)) for key,value in defaults(profile).items()
+                 if key not in profile or profile[key].state == 'default')
+
+
 def snapshot(profile):
     """Plain internal event data, not a NEEDS contract or a save receipt."""
     def source(row):
@@ -260,7 +274,7 @@ class _StoredFact(_DTO):
     factor_key: str
     value: str | int | bool | list[str] | None
     state: Literal['known','not_needed','inferred','default','memory']
-    sources: list[_StoredSource | _StoredMemory | _StoredDefault] = Field(min_length=1, max_length=8)
+    sources: list[_StoredSource | _StoredMemory | _StoredDefault] = Field(min_length=1, max_length=256)
 
 
 class _Snapshot(_DTO):
@@ -268,19 +282,28 @@ class _Snapshot(_DTO):
     factors: list[_StoredFact] = Field(max_length=14)
 
 
-def restore(raw, originals, memory_run=None):
-    """Read persisted state at the boundary; rebind all retained user evidence.
-
-    Stored memory/default projections never become fresh user authority. Memory
-    is rebuilt from the current admitted capture; defaults must be recomputed and
-    disclosed for the actual new planning selection by WP4/WP8.
-    """
+def decode_context(raw):
+    """Validate persisted context at its read boundary, once."""
     try:
         stored = _Snapshot.model_validate(decode(raw.encode() if isinstance(raw, str) else raw))
     except ValidationError:
         raise InvalidInput('exact planning context.2 required') from None
     if len({fact.factor_key for fact in stored.factors}) != len(stored.factors):
         raise InvalidInput('duplicate profile factor')
+    return stored
+
+
+def restore(raw, originals, memory_run=None):
+    return restore_context(decode_context(raw),originals,memory_run)
+
+
+def restore_context(stored, originals, memory_run=None):
+    """Rebind validated context to current protected originals/Memory.
+
+    Stored memory/default projections never become fresh user authority. Memory
+    is rebuilt from the current admitted capture; defaults must be recomputed and
+    disclosed for the actual new planning selection by WP4/WP8.
+    """
     by_mid = {original.message_id: index for index,original in enumerate(originals)}
     updates = []
     for fact in stored.factors:

@@ -106,7 +106,8 @@ def defaults(profile):
     These are not user facts, precise dates, NEEDS input or permission to save.
     WP4/WP8 own disclosure and the protected publication boundary.
     """
-    values = {factor.key: factor.default for factor in FACTORS if factor.key not in profile}
+    values = {factor.key: factor.default for factor in FACTORS
+              if factor.key not in profile or profile[factor.key].state in ('not_needed','default')}
     if 'city' in values:
         interests = profile.get('interests')
         if interests is not None:
