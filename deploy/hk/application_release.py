@@ -97,7 +97,7 @@ def main(argv=None):
       os.chmod(rollback,metadata.st_mode&0o777);os.chown(rollback,metadata.st_uid,metadata.st_gid);rollback.replace(p)
      if worker_stopped or changed or not inspect('g2c-beta-worker-1')['State']['Running']:
       command([*BASE,'up','-d','--no-deps','api','worker'])
-     else:command([*BASE,'start','api'])
+     else:command([*BASE,'up','-d','--no-deps','api'])
      raise
     post=proof();assert empty(post) and post['ledger']==before['ledger'] and (ROOT/'control/budget/adoption.json').read_bytes()==control_before
     print(json.dumps(dict(stage='CUTOVER_PASS',source=SOURCE,image=gate['image_id'],api_health='healthy',worker_running=True,collector='disabled; previous window closed',ledger_before=before['ledger'],ledger_after=post['ledger'],ledger_unchanged=before['ledger']==post['ledger'],pending=post['global_pending'],active=post['global_active'],background_states=post['background_states'],memory_states=post['memory_states'],rollback_source=OLD)),flush=True)
