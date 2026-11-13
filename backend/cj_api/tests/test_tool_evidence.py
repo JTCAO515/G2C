@@ -1,4 +1,5 @@
 from dataclasses import replace
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 import json
@@ -23,6 +24,21 @@ from cj_usage.metered_exit import BudgetUnknown
 NOW = datetime(2026, 11, 11, tzinfo=timezone.utc)
 SUBJECT = 'm4-synthetic-evidence'
 KEY = 'synthetic-evidence-key-not-live'
+
+
+class HeldModelMemory:
+    """Controlled first-advance lifetime; the PG test uses native Memory."""
+    def __init__(self):self.active=True;self.revoked=False;self.holds=0
+    def check(self):
+        from cj_memory.runtime import RuntimeDenied
+        if not self.active or self.revoked:raise RuntimeDenied('memory lease not held or source revoked')
+    @contextmanager
+    def hold(self,binding):
+        prior=self.active;self.active=True;self.holds+=1
+        try:
+            self.check()
+            yield self.check
+        finally:self.active=prior
 
 
 class ToolEvidenceTest(unittest.TestCase):
@@ -347,6 +363,68 @@ class ToolEvidenceTest(unittest.TestCase):
                     self.assertEqual(list(directory.iterdir()),[wire_path])
                     self.assertEqual(budget.inspect()[0]['state'],'INTENT')
                 self.assertEqual(len(sent),1)
+
+    def test_buffered_intake_capture_reholds_original_memory_after_first_advance(self):
+        from test_m4_real_services import sse
+        from cj_agent.worker import _MemoryProvider
+        import httpx
+        budget=AuthorizationBudget(self.root/'memory-stream',clock=lambda:NOW)
+        sent=[]
+        def response(request):
+            sent.append(request)
+            return httpx.Response(200,stream=httpx.ByteStream(sse().encode()))
+        provider=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),budget,
+            transport=httpx.MockTransport(response))
+        memory=HeldModelMemory();wrapped=_MemoryProvider(provider,memory)
+        subjects=frozenset({SUBJECT})
+        tools=RealTools(RealServices(provider,KEY,subjects,demo_subjects=subjects,national_subjects=subjects),
+            tool_evidence=self.load_runtime())
+        prepared=tools._model_input(([dict(role='user',content='Synthetic original')],
+            'Synthetic intake',wrapped,0),national_intake=True,intake_profile='LIO-planning-intake.9')
+        operation=replace(self.intake_operation(prepared.original_bytes),registration_id='model.lio_intake.9')
+        stream=prepared.bind_operation(operation,lambda:True)()
+        first=next(stream)
+        self.assertTrue(first)
+        self.assertEqual(budget.inspect()[0]['state'],'RECEIVED')
+        # Actual worker._stream_source exits its first _step before draining.
+        memory.active=False
+        self.assertEqual(''.join(stream),'')
+        self.assertEqual(memory.holds,1)
+        self.assertFalse(memory.active)
+        records=[json.loads(path.read_bytes())for path in self.directory.iterdir()]
+        record,=[r for r in records if r['version']=='G2C-model-evidence.1']
+        self.assertEqual(record['result_utf8'],first)
+        self.assertEqual(record['input_utf8'].encode(),prepared.original_bytes)
+        self.assertEqual(record['receipt'],budget.inspect()[0]['receipt'])
+        self.assertEqual(len(sent),1)
+
+    def test_capture_rehold_never_accepts_revoked_memory_or_failed_original_guard(self):
+        from test_m4_real_services import sse
+        from cj_agent.worker import _MemoryProvider
+        from cj_memory.runtime import RuntimeDenied
+        import httpx
+        for revoke_memory in (True,False):
+            with self.subTest(revoke_memory=revoke_memory):
+                directory=self.directory/str(revoke_memory);directory.mkdir(mode=0o700)
+                evidence=replace(self.load_runtime(),directory=directory)
+                budget=AuthorizationBudget(self.root/('guard-'+str(revoke_memory)),clock=lambda:NOW)
+                provider=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),budget,
+                    transport=httpx.MockTransport(lambda request:httpx.Response(200,stream=httpx.ByteStream(sse().encode()))))
+                memory=HeldModelMemory();wrapped=_MemoryProvider(provider,memory);allow=[True]
+                subjects=frozenset({SUBJECT})
+                tools=RealTools(RealServices(provider,KEY,subjects,demo_subjects=subjects,national_subjects=subjects),tool_evidence=evidence)
+                prepared=tools._model_input(([dict(role='user',content='Synthetic original')],
+                    'Synthetic intake',wrapped,0),national_intake=True,intake_profile='LIO-planning-intake.9')
+                operation=self.intake_operation(prepared.original_bytes)
+                stream=prepared.bind_operation(operation,lambda:allow[0])()
+                self.assertTrue(next(stream));memory.active=False
+                if revoke_memory:memory.revoked=True
+                else:allow[0]=False
+                with self.assertRaises(RuntimeDenied if revoke_memory else BudgetUnknown):''.join(stream)
+                self.assertEqual(budget.inspect()[0]['state'],'RECEIVED')
+                self.assertEqual(provider.calls,1)
+                self.assertEqual([json.loads(path.read_bytes())['version']for path in directory.iterdir()],
+                    ['G2C-model-wire-input.1'])
 
     def test_old_windows_never_enable_generic_model_capture(self):
         for evidence in (self.load(),self.load_intake()):

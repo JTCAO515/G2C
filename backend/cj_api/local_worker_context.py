@@ -4,7 +4,6 @@ from psycopg import Error as DatabaseError
 from cj_usage.codec import CorruptLedger
 from cj_auth.admission import AdmissionChecker
 from cj_auth.jwt_adapter import PyJWTVerifier, JWTConfiguration, StaticPublicKeys, VerificationKey
-from cj_message.needs_binding import needs_scope_for
 from cj_needs.revision_lease import RevisionLease, LeaseUnavailable
 from cj_run.step_usage import ledger_scope_for
 from cj_run.operation_usage import ABI as REGISTERED_ABI
@@ -12,7 +11,7 @@ from cj_usage.core import Meter
 from cj_usage.postgres import PostgresRepository
 from cj_usage.local_provider_exit import LocalProviderExit, BudgetUnknown
 from cj_usage.registered_exit import RegisteredExit, MODEL_REGISTRY
-from .local_app import ISSUER, AUDIENCE, KEY_ID, scope_for, InvitedSubjects
+from .local_app import ISSUER, AUDIENCE, KEY_ID, InvitedSubjects, needs_lease_resolver
 
 
 def checker_factory_for(auth_dir, *, selected_subjects=None):
@@ -90,10 +89,7 @@ class LocalBudgetRouter:
 
 
 def needs_lease_for(database, checker, token_supplier):
-    def resolve(principal):
-        scope=scope_for(principal.issuer,principal.subject)
-        return lambda:database.connect(scope),scope,needs_scope_for(scope)
-    lease=RevisionLease(checker,resolve,environment='local',issuer=ISSUER,audience=AUDIENCE)
+    lease=RevisionLease(checker,needs_lease_resolver(database),environment='local',issuer=ISSUER,audience=AUDIENCE)
     def hold(binding):
         try: token=token_supplier()
         except (OSError,ValueError): raise LeaseUnavailable('local worker identity unavailable') from None

@@ -331,7 +331,7 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
             from cj_api.local_lio_planning import LioPlanning, LioPlanSave
             if national_planning:
                 from cj_api.local_lio_national import NationalLioPlanning
-                lio_planning=NationalLioPlanning(database,LioPlanSave(database,drafts,lio_confirmation,source_window=True))
+                lio_planning=NationalLioPlanning(database,LioPlanSave(database,drafts,lio_confirmation,source_window=True,grouped=True))
             else:
                 lio_planning = LioPlanning(database, LioPlanSave(database, drafts, lio_confirmation))
             lio_edit = LioEdit(drafts, lio_confirmation,source_window=national_planning)

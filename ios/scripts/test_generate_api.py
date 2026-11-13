@@ -3,10 +3,31 @@ import copy
 import json
 from pathlib import Path
 import unittest
-from generate_api import generator_input,NULL_NAME
+from generate_api import generator_input,NULL_NAME,concrete_null_constructors
 
 
 class GeneratorInputTests(unittest.TestCase):
+    def test_required_nullable_anyof_uses_concrete_codec_without_changing_shape(self):
+        source='''public struct titlePayload: Codable {
+    public var value1: Swift.String?
+    public var value2: Components.Schemas.CJExplicitJSONNull?
+    public init(from decoder: any Swift.Decoder) throws {
+        self.value1 = try decoder.decodeFromSingleValueContainer()
+        self.value2 = try .init(from: decoder)
+        try Swift.DecodingError.verifyAtLeastOneSchemaIsNotNil([])
+    }
+}'''
+        result,count=concrete_null_constructors(source)
+        self.assertEqual(count,1)
+        self.assertEqual(result,source.replace('self.value2 = try .init(from: decoder)',
+            'self.value2 = try Components.Schemas.CJExplicitJSONNull(from: decoder)'))
+        self.assertEqual(concrete_null_constructors(result),(result,0))
+
+    def test_oneof_and_unknown_generated_shapes_are_not_rewritten(self):
+        oneof='case CJExplicitJSONNull(Components.Schemas.CJExplicitJSONNull)'
+        self.assertEqual(concrete_null_constructors(oneof),(oneof,0))
+        with self.assertRaises(ValueError):
+            concrete_null_constructors('public var value2: Components.Schemas.CJExplicitJSONNull?')
     def test_nullable_marker_becomes_strict_codec_reference(self):
         source={'components':{'schemas':{'Status':{'type':'object','additionalProperties':False,
             'required':['value'],'properties':{'value':{'oneOf':[{'type':'integer'},{'type':'null'}]}}}}}}

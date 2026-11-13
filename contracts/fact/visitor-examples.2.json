@@ -1,0 +1,87 @@
+{
+  "note": "Synthetic wire-format cases only; never visitor facts.",
+  "cases": [
+    {
+      "id": "query",
+      "valid": true,
+      "value": {
+        "version": "FACT-query.2",
+        "topic": "payment",
+        "city": "chengdu"
+      }
+    },
+    {
+      "id": "empty-result",
+      "valid": true,
+      "value": {
+        "version": "FACT-result.2",
+        "request_ref": "synthetic-format-original-ref",
+        "query": {
+          "version": "FACT-query.2",
+          "topic": "payment",
+          "city": "chengdu"
+        },
+        "data_origin": "maintainer_summary",
+        "status": "no_match",
+        "evaluated_at": "2026-11-12T04:00:00.000000+00:00",
+        "catalogue_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "entries": []
+      }
+    },
+    {
+      "id": "old-query-not-v2",
+      "valid": false,
+      "value": {
+        "version": "FACT-query.1",
+        "topic": "payment",
+        "city": "chengdu"
+      }
+    },
+    {
+      "id": "authority-field",
+      "valid": false,
+      "value": {
+        "version": "FACT-query.2",
+        "topic": "payment",
+        "city": "chengdu",
+        "owner": "foreign"
+      }
+    },
+    {
+      "id": "false-origin",
+      "valid": false,
+      "value": {
+        "version": "FACT-result.2",
+        "request_ref": "synthetic-format-original-ref",
+        "query": {
+          "version": "FACT-query.2",
+          "topic": "payment",
+          "city": "chengdu"
+        },
+        "data_origin": "official_excerpt",
+        "status": "no_match",
+        "evaluated_at": "2026-11-12T04:00:00.000000+00:00",
+        "catalogue_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "entries": []
+      }
+    },
+    {
+      "id": "false-match",
+      "valid": false,
+      "value": {
+        "version": "FACT-result.2",
+        "request_ref": "synthetic-format-original-ref",
+        "query": {
+          "version": "FACT-query.2",
+          "topic": "payment",
+          "city": "chengdu"
+        },
+        "data_origin": "maintainer_summary",
+        "status": "matched",
+        "evaluated_at": "2026-11-12T04:00:00.000000+00:00",
+        "catalogue_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "entries": []
+      }
+    }
+  ]
+}
