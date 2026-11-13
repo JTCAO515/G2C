@@ -11,14 +11,14 @@ from cj_agent.provider import ProviderUnknown
 from cj_agent.lio_intake_optional_schema import SYSTEM as FACTS_SYSTEM,OptionalIntake
 from cj_message.demo_dialogue import LIO_VERSION, LIO_VERSION_V3
 from cj_message.domain import Command,Unavailable
-from cj_message.lio_context import answer_prompt
+from cj_message.lio_context import answer_prompt,self_description
 from cj_message.lio_plan_needs import BOUND_EFFECT
 from cj_needs.domain import InvalidInput
 
 from .lio_city import CityReference,forms,_normalize
 from .lio_sourced_intake import BookingSourceUnclear
 from .lio_flow_intake import parse_flow
-from .lio_national_intake import NONPERSISTENT,fields_for,fixed_sources_complete,province_evidence,diagnostic_code,StartDateConflict,FixedTimezoneConflict
+from .lio_national_intake import NONPERSISTENT,fields_for,fixed_sources_complete,province_evidence,diagnostic_code,StartDateConflict,FixedTimezoneConflict,DateDurationConflict,DateSourceUnclear
 from .lio_planning_grounding import PlanningTurn,standalone_question
 from .local_lio_planning import PlanningDetails,register,discuss
 
@@ -47,6 +47,12 @@ def publication_held(text):
 def intake_prompt(locale,turns,*,discussion_only=False,scene=None):
     dates=', '.join(turn.question_day.isoformat() for turn in turns)
     system=answer_prompt(locale)+' '+CURRENT_SYSTEM+' Original traveler messages have source indices 0 through '+str(len(turns)-1)+'. Stored memory data is not an indexed traveler message. A week without a stated day (such as 下周 or next week) is not an exact start date: keep start_date null with the original uncertainty, and plan by day numbers without asking again. Resolve stated weekdays against their original message day. Original local China days in that order: '+dates
+    system+=('\nYear-first dates 26.12.01 and 26年12月1日 both mean 2026-12-01; YY denotes 20YY. '
+             'Return every supplied day count with its own field_sources entry: for 三天, '
+             'duration_days=3 and {field:"duration_days",source_index:<its original index>,quote:"三天"}. '
+             'A known duration without that exact original source entry is invalid. '
+             'Likewise return original start_date and party_size source entries for supplied dates and people. '
+             'No fixed commitments means fixed_items:[]; luxury describes a preference, not a fixed booking.')
     if discussion_only:
         system+=(' This conversation is discussing a separate proposal after a conflict with the saved itinerary. '
                  'For discuss intent, answer the current discussion usefully, including requested refinements, rather than a saving acknowledgement. '
@@ -119,6 +125,9 @@ class NationalLioPlanning:
         return [*messages[:-1],*(dict(role='user',content=t.text) for t in turns)],refs
 
     def execute(self,worker,binding,state,text,original):
+        fixed=self_description(text,original.locale)
+        if fixed is not None:return self._reply(worker,binding,state,fixed)
+        if re.fullmatch(r'\s*(?:第一次来中国(?:旅行)?(?:建议|应该|可以)?怎么玩|first time in china[,，]?\s*(?:any tips|any advice))[?？。.!！\s]*',text,re.I):return None
         if re.fullmatch(r'\s*(?:你是谁|你是什么|我是谁|你了解我什么|你能做什么|你能干啥|你有什么能力|who are you|what are you|who am i|what do you know about me|what can you do)[?？。.!！\s]*',text,re.I):return None
         today=original.question_day or datetime.now(ZoneInfo('Asia/Shanghai')).date()
         turns,refs,previous=self.context(binding,PlanningTurn(text,today))
@@ -133,6 +142,10 @@ class NationalLioPlanning:
                     (messages,system,worker.provider,len(turns)-1),message_refs=refs))
         booking_unclear=False;question_fields=[];facts={}
         try:intake,question_fields,facts=parse_flow(raw,turns,refs,binding.message_id,previous,schema=OptionalIntake)
+        except DateSourceUnclear:
+            return self._answer(worker,binding,state,original.locale,
+                '这个日期表达我还拿不准，可以给出具体的年月日吗？',
+                'I am not sure which date that expression means. Could you give the year, month and day?')
         except BookingSourceUnclear as error:
             intake=error.control;booking_unclear=True
         except (InvalidInput,ValueError,UnicodeError) as error:
@@ -260,6 +273,11 @@ class NationalLioPlanning:
             return self._answer(worker,binding,state,original.locale,
                 '这项固定安排的时区与目的地不同或不明确，请确认应使用哪个时区；尚未保存。',
                 'The fixed arrangement has a different or unclear timezone. Please confirm which timezone to use; nothing has been saved.')
+        except DateDurationConflict:
+            state=context(worker,binding,state,dict(authority=authority,status='needs_details',city=resolution))
+            return self._answer(worker,binding,state,original.locale,
+                '起止日期和天数对不上，你想按这个日期范围，还是按说的天数来安排？',
+                'The date range and day count do not match. Should I use the date range or the number of days you gave?')
         except (InvalidInput,ValueError) as error:
             raise ProviderUnknown('original nationwide planning fields unavailable') from error
         if not self.plan_and_save.supports_destination(binding,city):

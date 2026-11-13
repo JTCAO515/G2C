@@ -29,7 +29,7 @@ I can't book or pay for anything — you'll need to do that through official cha
 
 _SELF_QUESTION = re.compile(r'(?:你是谁|你是什么|介绍一下你自己|who are you|what are you)[?？。.!！\s]*', re.I)
 
-_CAPABILITY_QUESTION = re.compile(r'(?:你能做什么|你可以做什么|你会什么|你有什么能力|what can you do|what do you do)[?？。.!！\s]*', re.I)
+_CAPABILITY_QUESTION = re.compile(r'(?:你能做什么|你能干啥|你会干嘛|你能帮我做什么|你可以做什么|你会什么|你有什么能力|what can you do|what do you do|what can you help me with)[?？。.!！\s]*', re.I)
 
 
 def self_description(question, locale):

@@ -334,7 +334,7 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
                 from cj_api.local_lio_calendar import LioCalendar
                 calendar=LioCalendar(database,drafts,lio_confirmation)
                 lio_planning=NationalLioPlanning(database,LioPlanSave(database,drafts,lio_confirmation,
-                    source_window=True,calendar_reads=True),calendar=calendar)
+                    source_window=True,grouped=True,calendar_reads=True),calendar=calendar)
             else:
                 lio_planning = LioPlanning(database, LioPlanSave(database, drafts, lio_confirmation))
             lio_edit = LioEdit(drafts, lio_confirmation,source_window=national_planning)
