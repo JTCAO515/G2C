@@ -658,6 +658,13 @@ def group_hk_typed_worker():
 GROUPS.update(hk_typed_worker=group_hk_typed_worker)
 
 
+def group_lio_projection():
+    return script('backend/cj_api/tests/lio_projection_pg.py')
+
+
+GROUPS.update(lio_projection=group_lio_projection)
+
+
 def main(argv):
     if argv[:1] == ['--shard']:
         index, count = map(int, argv[1].split('/'))

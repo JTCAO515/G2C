@@ -85,8 +85,7 @@ def _message(item, state, *, expired=False, trip=None, memory=None):
 
 
 def _timeline(boundary, resolve_runs, trip_cards, memory_cards, token, conversation_id, before, multiple=False):
-    def project(context):
-        page = context.lio_timeline(conversation_id, before, multiple=multiple)
+    def compose(context, page):
         messages = []
         if page.messages:
             repository = resolve_runs(context.scope)
@@ -111,6 +110,14 @@ def _timeline(boundary, resolve_runs, trip_cards, memory_cards, token, conversat
         if context.lio_timeline(conversation_id, before, multiple=multiple) != page:
             return _failure(503)
         return response
+
+    def project(context):
+        page = context.lio_timeline(conversation_id, before, multiple=multiple)
+        # An empty page never needed a MESSAGE owner row. Keep that path and
+        # its final page/AUTH checks; existing originals get one protected frame.
+        if not page.messages:
+            return compose(context, page)
+        return context.with_lio_timeline_projection(lambda: compose(context, page))
 
     return boundary.with_history_context(token, project)
 
