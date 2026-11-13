@@ -278,6 +278,16 @@ class ExplorationProfileTests(unittest.TestCase):
         update['sources'].append(dict(source_index=0,quote='food'))
         self.assertEqual(parse([update],'history and food')[0].value,('history','food'))
 
+    def test_every_canonical_bank_option_roundtrips_as_a_complete_affirmative_expression(self):
+        for key in ('pace','party_type','season','lodging_tier','interests','dietary'):
+            factor=BY_KEY[key]
+            for locale in ('zh','en'):
+                for option,wire in zip(factor.options,factor.question(locale)['options'],strict=True):
+                    value=[option.key] if factor.multiple else option.key
+                    with self.subTest(key=key,locale=locale,option=option.key):
+                        result=parse([packet(key,value,wire['display_text'])],wire['send_text'])[0]
+                        self.assertEqual(result.value,tuple(value) if factor.multiple else value)
+
 
 if __name__ == '__main__':
     unittest.main()
