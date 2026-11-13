@@ -1,11 +1,13 @@
 """Opt-in grouped draft profiles; original publication/validation stays authoritative."""
 import json
+from dataclasses import dataclass
+from hashlib import sha256
 
 from cj_needs.domain import subjects as validate_subjects
 from cj_strict_json import reject_duplicates
 from cj_trip.domain import identifier, packed
 from cj_trip.needs_plan import MODEL_VERSION
-from cj_trip.structured import FieldRejected, MAX_ITEMS, SourceRejected, _date, _fields
+from cj_trip.structured import FieldRejected, MAX_ITEMS, MAX_TEXT, MAX_TITLE, SourceRejected, _date, _fields
 
 from .calendar_plan import FIRST_PLAN, REPLAN_DELTA
 from .lio_calendar import LioCalendarPublisher
@@ -15,6 +17,56 @@ DATED_FIRST = 'TRIP-lio-first-plan.2'
 DATED_DELTA = 'TRIP-lio-replan-delta.4'
 ORDINAL_FIRST = 'TRIP-lio-day-plan.2'
 ORDINAL_DELTA = 'TRIP-lio-day-delta.2'
+_GENERATION_KINDS = {DATED_FIRST: (False, False), DATED_DELTA: (True, False),
+                     ORDINAL_FIRST: (False, True), ORDINAL_DELTA: (True, True)}
+GENERATION_PROFILES = tuple(_GENERATION_KINDS)
+
+
+def response_format(profile):
+    retained, ordinal = _GENERATION_KINDS[profile]
+    clock = dict(type='string', pattern=r'^(?:[01][0-9]|2[0-3]):[0-5][0-9]$')
+    row = dict(type='array', minItems=5, maxItems=5, prefixItems=[
+        dict(type='string', pattern=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$'),
+        dict(type='string', minLength=1, maxLength=MAX_TEXT), clock, clock,
+        dict(type='array', minItems=1, maxItems=32, items=dict(type='string',
+            pattern=r'^(?:self|party|companion:[A-Za-z0-9][A-Za-z0-9_.:-]{0,95})$'))])
+    day = (dict(type='integer', minimum=1) if ordinal else
+           dict(type='string', pattern=r'^[0-9]{4}-[0-9]{2}-[0-9]{2}$'))
+    fields = dict(version=dict(type='string', const=profile), days=dict(type='array', items=dict(
+        type='array', minItems=2, maxItems=2, prefixItems=[day, dict(type='array', maxItems=MAX_ITEMS, items=row)])))
+    if not retained:
+        fields['title'] = dict(type='string', minLength=1, maxLength=MAX_TITLE)
+    return dict(type='json_schema', json_schema=dict(name=profile.replace('-', '_').replace('.', '_'),
+        strict=True, schema=dict(type='object', properties=fields, required=list(fields), additionalProperties=False)))
+
+
+def response_format_sha256(profile):
+    return sha256(json.dumps(response_format(profile), sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+
+
+@dataclass(frozen=True, repr=False)
+class GroupedDraftInput:
+    messages_json: bytes
+    system: str
+    provider: object
+    profile: str
+
+    @property
+    def messages(self):
+        # Each consumer gets a private materialization of the same frozen call.
+        return json.loads(self.messages_json)
+
+
+def grouped_input(publisher, capture, messages, provider):
+    if isinstance(publisher, LioGroupedCalendarPublisher):
+        first, delta = ORDINAL_FIRST, ORDINAL_DELTA
+    elif isinstance(publisher, LioGroupedPlanPublisher):
+        first, delta = DATED_FIRST, DATED_DELTA
+    else:
+        return None
+    profile = delta if publisher.source.contexts[capture.binding] is not None else first
+    return GroupedDraftInput(json.dumps(messages, ensure_ascii=False, separators=(',', ':')).encode(),
+                             publisher.system, provider, profile)
 
 
 def system_for(*, retained, ordinal, guidance=''):
