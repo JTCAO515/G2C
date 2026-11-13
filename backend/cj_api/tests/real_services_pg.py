@@ -713,6 +713,20 @@ def exercise(auth,conninfo):
     snapshot=collector.inspect(route['attempt_id'],mid,deadline=time.monotonic()+30)
     verified=check_snapshot(snapshot,request=route,binding=authority.binding(),pins=pins,
         original=lambda ref:collector.original(ref,deadline=time.monotonic()+30))
+    # The old three-profile card must remain invalid: the actual observer now
+    # reports all ten typed draft caps, even for this original reflection. Keep
+    # this negative rather than copying the observer into its expected pin.
+    assert verified['status']=='UNKNOWN'
+    assert any(error['reason']=='ACTUAL_MODEL_PIN_MISMATCH'
+        for operation_check in verified['operation_checks'] for error in operation_check['errors'])
+    from cj_draft.grouped_plan import GENERATION_PROFILES as all_draft_profiles
+    from cj_draft.rich_schema import GENERATION_PROFILES as rich_profiles
+    pins.value['model']['parameters']['max_tokens_by_profile'].update({
+        profile:M4_REAL_OUTPUT_TOKENS if profile in rich_profiles else 1024
+        for profile in all_draft_profiles})
+    snapshot=collector.inspect(route['attempt_id'],mid,deadline=time.monotonic()+30)
+    verified=check_snapshot(snapshot,request=route,binding=authority.binding(),pins=pins,
+        original=lambda ref:collector.original(ref,deadline=time.monotonic()+30))
     assert verified['status']=='PASS' and verified['result']==json.loads(output)
     assert len(verified['operation_checks'])==1 and verified['operation_checks'][0]['status']=='PASS'
     assert model.calls==original_calls+1

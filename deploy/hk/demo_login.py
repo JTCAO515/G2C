@@ -34,6 +34,7 @@ RENEW_VERSION='DEMO-session-renewal.1'
 ROLLING_SECONDS=7*24*60*60
 SOCKET=Path('/run/g2c-demo/login.sock')
 CODE=re.compile(r'D1-([a-z0-9]{12})[.]([A-Za-z0-9_-]{22})')
+SHORT_CODE=re.compile(r'(?:G2C|CJ_Tester)@(?:0[1-9]|[1-9][0-9])')
 MAX_REQUEST=512
 MAX_RESPONSE=4096
 MAX_SOCKET_REQUEST=8192
@@ -65,10 +66,20 @@ def _grant(runtime,subject,row,version,*,parent_expires_at=None):
         expires_at=datetime.fromtimestamp(claims['exp'],timezone.utc).isoformat().replace('+00:00','Z'))
 
 
-def exchange(runtime,code,*,version=VERSION):
+def invitation_subject(code):
     match=CODE.fullmatch(code)
-    if match is None:return None
-    subject='m4-synthetic-demo-'+match[1]
+    if match is not None:
+        suffix=match[1]
+    elif SHORT_CODE.fullmatch(code) is not None:
+        suffix=hashlib.sha256(code.encode('ascii')).hexdigest()[:12]
+    else:
+        return None
+    return 'm4-synthetic-demo-'+suffix
+
+
+def exchange(runtime,code,*,version=VERSION):
+    subject=invitation_subject(code)
+    if subject is None:return None
     if subject not in runtime.demo_subjects:return None
     scope=scope_for(ISSUER,subject)
     digest=hashlib.sha256(code.encode('ascii')).hexdigest()
@@ -213,7 +224,7 @@ def register_demo_login(app):
         except (BodyError,ValueError,UnicodeError):
             return failure(request,400,'INVALID_INPUT','Invalid request or demo rules not accepted','请求无效或未确认演示规则')
         code=value['invite_code']
-        if CODE.fullmatch(code) is None:
+        if invitation_subject(code) is None:
             return failure(request,401,'DEMO_INVITE_DENIED','Invite code unavailable','邀请码不可用')
         try:
             result=await run_in_threadpool(socket_exchange,code,version=version)

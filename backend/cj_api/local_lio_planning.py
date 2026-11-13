@@ -1,6 +1,6 @@
 """Lio planning intake reuses the bounded NEEDS extractor without saving a draft."""
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date,datetime
 from hashlib import sha256
 import json
 import logging
@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo
 from psycopg import Error as DatabaseError
 from cj_agent.provider import ProviderUnknown
 from cj_draft.lio_plan import LioPlanPublisher
+from cj_draft.rich_schema import GENERATION_PROFILES as RICH_GENERATION_PROFILES
 from cj_message.demo_dialogue import LIO_VERSION
 from cj_message.domain import Command, Unavailable
 from cj_message.lio_context import answer_prompt
@@ -17,6 +18,7 @@ from cj_message.lio_plan_needs import BOUND_EFFECT, attach, original_needs
 from cj_message.needs_binding import needs_scope_for
 from cj_needs.domain import InvalidInput, decode, exact
 from cj_needs.preview import encode, preview
+from .lio_plan_pace import PlanPace,saved_summary
 from cj_run.postgres import CommitUnknown
 
 from .lio_planning_grounding import (PLAN_REQUEST, PlanningTurn, discussion_reply, grounded_fields,
@@ -53,6 +55,11 @@ NATIONAL_GROUPED_DRAFT = (
     'Use short ASCII stop IDs of at most 96 characters. Use only self, party or companion IDs actually present in the source; '
     'when planning for a stated party, party denotes that proposed group, not a fabricated companion or booking. '
 )
+RICH_FIRST_DRAFT = (
+    ' Follow the captured pace and other trip preferences. Include lunch and dinner every day. '
+    'Use complete place names in the question language without inventing prices, bookings or sources. '
+    'Use short ASCII item IDs of at most 96 characters and only actual source participants. '
+)
 SYSTEM = (
     'Extract only information provided by the traveler for this trip. Return JSON with exactly '
     'city (an exact substring of the user text or null), continues_trip (boolean), and extraction. '
@@ -85,6 +92,7 @@ class PlanningDetails:
     fields: dict
     clarification: str | None
     references: tuple
+    pace: PlanPace | None = None
 
 
 def clarify(worker, binding, state, text):
@@ -209,18 +217,23 @@ class LioPlanning:
 
 
 class LioPlanSave:
-    def __init__(self, database, context_publisher, confirmation,*,source_window=False,grouped=False):
+    def __init__(self, database, context_publisher, confirmation,*,source_window=False,grouped=False,calendar_reads=False):
         self.database = database
         self.context_publisher = context_publisher
         self.confirmation = confirmation
         self.source_window=source_window
         self.grouped=grouped
+        self.read_repository=context_publisher.repository
+        if calendar_reads:
+            from cj_trip.postgres import Repository
+            self.read_repository=Repository(context_publisher.repository.connect,context_publisher.repository.scope,
+                                           confirmation,structured=True,calendar=True)
 
     def scene_context(self,binding,now):
         from cj_trip.planning_context import read_current
         from cj_message.lio_plan_needs import lio_needs_id
         from .lio_scene import scene_prompt
-        current=read_current(self.context_publisher.repository,needs_scope_for(binding.scope),
+        current=read_current(self.read_repository,needs_scope_for(binding.scope),
                              lio_needs_id(binding.scope,binding.conversation_id))
         # read_current checks the current accepted head and original source
         # lineage and validates proposed NEEDS. Do not read a pending draft.
@@ -233,7 +246,7 @@ class LioPlanSave:
         from cj_message.lio_plan_needs import lio_needs_id
         from cj_needs.contract_v1 import decode_snapshot
         from .lio_city import _normalize
-        current=read_current(self.context_publisher.repository,needs_scope_for(binding.scope),
+        current=read_current(self.read_repository,needs_scope_for(binding.scope),
                              lio_needs_id(binding.scope,binding.conversation_id))
         if current is None:return True
         try:
@@ -269,9 +282,12 @@ class LioPlanSave:
         from cj_trip.planning_context import read_current
         from cj_message.lio_plan_needs import lio_needs_id
         from cj_feasibility.time_checks import instant
-        current=read_current(self.context_publisher.repository,needs_scope_for(binding.scope),
+        current=read_current(self.read_repository,needs_scope_for(binding.scope),
                              lio_needs_id(binding.scope,binding.conversation_id))
         if current is None:return False
+        if json.loads(current.trip.content)['content_version']=='structured.3':
+            from cj_trip.calendar_conversion import source_window_conflicts
+            return bool(source_window_conflicts(json.loads(current.trip.content),fields))
         first,last=(fields[edge]['date']['value']for edge in ('arrival','departure'))
         zone=fields['destination_timezone']['value']
         lower=instant(fields['arrival'],'arrival')[0]
@@ -307,8 +323,17 @@ class LioPlanSave:
             if self.grouped:
                 from cj_draft.grouped_plan import LioGroupedPlanPublisher
                 publisher_class=LioGroupedPlanPublisher
-        publisher = publisher_class(self.context_publisher, self.confirmation,
-                                     original_needs, check_original, draft_guidance=NATIONAL_GROUPED_DRAFT if self.grouped else NATIONAL_COMPACT_DRAFT if self.source_window else COMPACT_DRAFT)
+        rich_first=(self.source_window and self.grouped and head is None
+                    and details.fields.get('fixed_items')==[]
+                    and details.pace is not None and details.pace.value is not None)
+        if rich_first:
+            from cj_draft.rich_first import LioRichFirstPlanPublisher
+            publisher=LioRichFirstPlanPublisher(self.context_publisher,self.confirmation,
+                original_needs,check_original,pace=details.pace.value,
+                draft_guidance=NATIONAL_GROUPED_DRAFT,rich_guidance=RICH_FIRST_DRAFT)
+        else:
+            publisher = publisher_class(self.context_publisher, self.confirmation,
+                                         original_needs, check_original, draft_guidance=NATIONAL_GROUPED_DRAFT if self.grouped else NATIONAL_COMPACT_DRAFT if self.source_window else COMPACT_DRAFT)
         previous = worker.drafts
         worker.drafts = publisher
         try:
@@ -318,6 +343,11 @@ class LioPlanSave:
             worker.drafts = previous
         if committed is not None:
             answer = '行程已经保存好了。' if locale == 'zh' else 'I saved your itinerary.'
+            if self.source_window:
+                first,last=(date.fromisoformat(details.fields[edge]['date']['value'])for edge in ('arrival','departure'))
+                answer=saved_summary(locale,(last-first).days+1,
+                    details.pace,dated=True,retained=head is not None,
+                    rich_applied=rich_first and publisher.generation_used in RICH_GENERATION_PROFILES)
             state = worker._event(binding, state, 'text_delta', answer)
         return worker._event(binding, state, 'completed')
 

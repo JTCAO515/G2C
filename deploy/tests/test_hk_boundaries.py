@@ -3,6 +3,7 @@ from datetime import datetime,timezone
 import json
 import hashlib
 import io
+import gzip
 import os
 from unittest.mock import patch
 from pathlib import Path
@@ -17,6 +18,138 @@ from cj_usage import authorization_budget as budget_module
 from deploy.hk import configuration,checkpoint,oss_backup
 from scripts.m4_budget_transfer import seal,adopt
 from scripts import m4_budget_transfer as transfer
+
+
+def test_schema53_readiness_requires_its_completed_signed_anchor_and_keeps_quota_gate(tmp_path,monkeypatch):
+    from deploy.hk import demo_quota,entrypoint
+    from contextlib import nullcontext
+    key=Ed25519PrivateKey.generate()
+    monkeypatch.setenv('CJ_BETA_RECOVERY_PRIVATE_B64',base64.b64encode(
+        key.private_bytes(serialization.Encoding.Raw,serialization.PrivateFormat.Raw,
+                          serialization.NoEncryption())).decode())
+    monkeypatch.setenv('CJ_BETA_RECOVERY_PUBLIC_B64',base64.b64encode(
+        key.public_key().public_bytes(serialization.Encoding.Raw,serialization.PublicFormat.Raw)).decode())
+    raw=json.dumps({'current':{'meter':{'budget':800}}})
+    policy=tmp_path/'context.json';policy.write_text(raw)
+    runtime=SimpleNamespace(context_path=policy,context=SimpleNamespace(
+        current=SimpleNamespace(meter=SimpleNamespace(budget=800))))
+    database=SimpleNamespace(_open_runtime_connection=lambda:nullcontext(object()))
+    monkeypatch.setattr(entrypoint,'authorization',lambda:None)
+    monkeypatch.setattr(entrypoint,'local_database_target',lambda:True)
+    monkeypatch.setattr(entrypoint,'control',lambda:tmp_path)
+    monkeypatch.setattr(entrypoint.local_postgres,'require_serving',lambda control:None)
+    monkeypatch.setattr(checkpoint,'require_release',lambda db,control:{'lineage':'original-lineage'})
+    monkeypatch.setattr(checkpoint,'versions',lambda:list(range(1,54)))
+    checkpoint.atomic(tmp_path/'demo-schema52.json',dict(state='COMPLETE',lineage='original-lineage',
+        quota_policy_sha256=demo_quota.policy_digest(raw,800)))
+    for marker in ({'state':'INTENT','lineage':'original-lineage'},
+                   {'state':'COMPLETE','lineage':'foreign-lineage'}):
+        checkpoint.atomic(tmp_path/'demo-schema53.json',marker)
+        with pytest.raises(ValueError,match='wire-origin cutover incomplete'):
+            entrypoint._runtime_gate(database,runtime)
+    checkpoint.atomic(tmp_path/'demo-schema53.json',dict(state='COMPLETE',lineage='original-lineage'))
+    entrypoint._runtime_gate(database,runtime)
+    runtime.context.current.meter.budget=80
+    with pytest.raises(ValueError,match='quota cutover incomplete'):
+        entrypoint._runtime_gate(database,runtime)
+
+
+def test_typed_policy_encodings_preserve_bytes_and_reject_ambiguous_configuration(monkeypatch):
+    raw=b'{"version":"local-memory-typed.1","same":"policy bytes"}'
+    monkeypatch.delenv(configuration.TYPED_POLICY,raising=False)
+    monkeypatch.delenv(configuration.TYPED_POLICY_GZIP,raising=False)
+    monkeypatch.setenv(configuration.TYPED_POLICY,base64.b64encode(raw).decode())
+    assert configuration.typed_policy_bytes()==raw
+    monkeypatch.setenv(configuration.TYPED_POLICY_GZIP,base64.b64encode(gzip.compress(raw)).decode())
+    with pytest.raises(ValueError,match='one_typed'):configuration.typed_policy_bytes()
+    monkeypatch.delenv(configuration.TYPED_POLICY)
+    assert configuration.typed_policy_bytes()==raw
+
+
+@pytest.mark.parametrize('plain,field,decoder',[
+    (configuration.TYPED_POLICY,configuration.TYPED_POLICY_GZIP,configuration.typed_policy_bytes),
+    (configuration.MEMORY_RUN_POLICY,configuration.MEMORY_RUN_POLICY_GZIP,configuration.memory_run_policy_bytes)])
+def test_compressed_typed_policy_retains_existing_decoded_bound_and_integrity(monkeypatch,plain,field,decoder):
+    monkeypatch.delenv(plain,raising=False)
+    exact=b'X'*262144;packed=gzip.compress(exact)
+    monkeypatch.setenv(field,base64.b64encode(packed).decode())
+    assert decoder()==exact
+    bad=[gzip.compress(exact+b'X'),packed[:-4],packed+packed,packed+b'junk',b'not-gzip']
+    corrupt=bytearray(packed);corrupt[-8]^=1;bad.append(bytes(corrupt))
+    for value in bad:
+        monkeypatch.setenv(field,base64.b64encode(value).decode())
+        with pytest.raises(ValueError):decoder()
+
+
+def test_worker_policy_encoding_is_explicit_and_stays_worker_only(tmp_path,monkeypatch):
+    raw=b'{"same":"worker runtime policy"}'
+    plain=base64.b64encode(raw).decode();packed=base64.b64encode(gzip.compress(raw)).decode()
+    with patch.dict(os.environ,{configuration.MEMORY_RUN_POLICY:plain},clear=True):
+        assert configuration.memory_run_policy_bytes()==raw
+        monkeypatch.setenv(configuration.MEMORY_RUN_POLICY_GZIP,packed)
+        with pytest.raises(ValueError,match='one_memory_run'):configuration.memory_run_policy_bytes()
+    for role in ('worker','api'):
+        text=''.join(name+'=fixture-only\n'for name in sorted(configuration.SECRET_FILES[role][role]))
+        path=tmp_path/(role+'.env');path.write_text(text+configuration.MEMORY_RUN_POLICY_GZIP+'='+packed+'\n');path.chmod(0o600)
+        with patch.dict(os.environ,{},clear=True):
+            if role=='api':
+                with pytest.raises(ValueError):configuration.load_secret_environment(role,root=tmp_path)
+            else:
+                configuration.load_secret_environment(role,root=tmp_path)
+                assert configuration.memory_run_policy_bytes()==raw
+
+
+def test_compressed_policy_enters_only_through_api_owned_secret_file(tmp_path):
+    raw=b'{"same":"bounded policy"}'
+    packed=base64.b64encode(gzip.compress(raw)).decode()
+    def secret(role):
+        names=configuration.SECRET_FILES[role][role]
+        text=''.join(name+'=fixture-only\n'for name in sorted(names))
+        path=tmp_path/(role+'.env')
+        path.write_text(text+configuration.TYPED_POLICY_GZIP+'='+packed+'\n')
+        path.chmod(0o600)
+    secret('api')
+    with patch.dict(os.environ,{},clear=True):
+        configuration.load_secret_environment('api',root=tmp_path)
+        assert configuration.typed_policy_bytes()==raw
+    secret('worker')
+    with patch.dict(os.environ,{},clear=True),pytest.raises(ValueError):
+        configuration.load_secret_environment('worker',root=tmp_path)
+
+
+def test_full_205_profile_policy_fits_secret_bound_without_changing_permissions(tmp_path):
+    from cj_memory.typed_local import TypedConfiguration
+    profile=dict(subjects=['self'],extents=['long_term','current'],context_ids=[],slots={
+        name:dict(kind='preference',collection_allowed=True,semantic_resolved=True)
+        for name in ('travel.pace','travel.budget','lodging.style','travel.interests','diet.taste')})
+    subjects=['m4-synthetic-demo-'+format(i,'012x')for i in range(205)]
+    value=dict(version='local-memory-typed.1',collection=dict(version='local-memory-policy.1',
+        expires_at='2026-12-31T00:00:00+00:00',profiles={s:profile for s in subjects}),
+        travel_contexts={s:[]for s in subjects})
+    raw=json.dumps(value,separators=(',',':')).encode()
+    assert len(base64.b64encode(raw))>65536
+    original=TypedConfiguration.from_bytes(raw)
+    text=''.join(name+'=fixture-only\n'for name in sorted(configuration.SECRET_FILES['api']['api']))
+    text+=configuration.TYPED_POLICY_GZIP+'='+base64.b64encode(gzip.compress(raw)).decode()+'\n'
+    assert len(text.encode())<=65536
+    path=tmp_path/'api.env';path.write_text(text);path.chmod(0o600)
+    with patch.dict(os.environ,{},clear=True):
+        configuration.load_secret_environment('api',root=tmp_path)
+        decoded=TypedConfiguration.from_bytes(configuration.typed_policy_bytes())
+    assert decoded==original and len(decoded.collection.profiles)==205
+    from cj_memory.typed_runtime import TypedRuntimeConfiguration
+    runtime=dict(version='local-memory-run.2',collection=value,selections={
+        s:dict(subject='self',slots=list(profile['slots']),max_bytes=1000)for s in subjects})
+    runtime_raw=json.dumps(runtime,separators=(',',':')).encode()
+    assert len(base64.b64encode(runtime_raw))>65536
+    text=''.join(name+'=fixture-only\n'for name in sorted(configuration.SECRET_FILES['worker']['worker']))
+    text+=configuration.MEMORY_RUN_POLICY_GZIP+'='+base64.b64encode(gzip.compress(runtime_raw)).decode()+'\n'
+    assert len(text.encode())<=65536
+    path=tmp_path/'worker.env';path.write_text(text);path.chmod(0o600)
+    with patch.dict(os.environ,{},clear=True):
+        configuration.load_secret_environment('worker',root=tmp_path)
+        decoded_runtime=TypedRuntimeConfiguration.from_bytes(configuration.memory_run_policy_bytes())
+    assert decoded_runtime==TypedRuntimeConfiguration.from_bytes(runtime_raw)
 
 
 class Clock(datetime):

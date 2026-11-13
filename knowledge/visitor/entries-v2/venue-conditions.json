@@ -1,0 +1,33 @@
+[
+  {
+    "format_version": "visitor-entry.2",
+    "id": "visitor.v2.chongqing.sports-museum",
+    "entry_kind": "fact",
+    "topic": "passport_booking",
+    "cities": [
+      "chongqing"
+    ],
+    "text_zh": "重庆体育博物馆的常规散客基本参观可凭有效证件免预约；通常周一闭馆，国家法定节假日除外。仍可选择预约，最多可提前7天；这不是必须提前7天的要求。团队、特展和临时活动另查。",
+    "text_en": "For regular individual general admission, Chongqing Sports Museum allows visits with a valid ID without mandatory booking. It normally closes on Mondays except statutory public holidays. Optional reservations may be made up to seven days ahead; this is not a seven-day minimum. Check group, special-exhibition and temporary-event arrangements separately.",
+    "source_urls": [
+      "https://www.cq.gov.cn/zwgk/zfxxgkml/zdlyxxgk/ggwh/wh/zxdt/202507/t20250714_14813861.html"
+    ],
+    "checked_on": "2026-11-13",
+    "expires_on": "2026-11-20",
+    "subject": {
+      "key": "chongqing.sports-museum",
+      "name_zh": "重庆体育博物馆",
+      "name_en": "Chongqing Sports Museum",
+      "wikidata_qid": null
+    },
+    "conditions": {
+      "reservation_required": false,
+      "closed_weekdays": [
+        1
+      ],
+      "closed_weekdays_public_holiday_exception": true,
+      "advance_booking_days": 7,
+      "advance_booking_rule": "window_max"
+    }
+  }
+]
