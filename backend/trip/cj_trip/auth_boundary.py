@@ -5,16 +5,20 @@ from .postgres import Repository
 
 
 class Boundary:
-    def __init__(self, checker=None, resolve=None, confirm=None, *, structured=False, calendar=False):
+    def __init__(self, checker=None, resolve=None, confirm=None, *, structured=False, calendar=False, rich=False):
         self.checker, self.resolve, self.confirm = checker, resolve, confirm
         self.structured = structured
         self.calendar = calendar
+        if rich and not (structured and calendar):
+            raise ValueError('rich consumer requires explicit structured/calendar capabilities')
+        self.rich = rich
 
     def _bind(self, token):
         if self.checker is None or self.resolve is None: raise Denied('AUTH unconfigured')
         checker, resolve, confirm = self.checker, self.resolve, self.confirm
         structured = self.structured
         calendar = self.calendar
+        rich = self.rich
         first = checker.check(token)
         if first.status is not AdmissionStatus.ALLOWED or not isinstance(first.principal, TrustedPrincipal): raise Denied('AUTH denied or unknown')
         # Only trusted host maps verified principal + environment to connect/scope.
@@ -24,6 +28,7 @@ class Boundary:
                     or self.confirm is not confirm or self.structured is not structured
                     or repository.structured is not structured or self.calendar is not calendar
                     or repository.calendar is not calendar or repository.scope != scope
+                    or self.rich is not rich or repository.rich is not rich
                     or repository.connect is not connect or repository.confirm is not confirm):
                 raise Denied('TRIP binding changed')
             current = checker.check(token)
@@ -31,13 +36,14 @@ class Boundary:
                     or self.confirm is not confirm or self.structured is not structured
                     or repository.structured is not structured or self.calendar is not calendar
                     or repository.calendar is not calendar or repository.scope != scope
+                    or self.rich is not rich or repository.rich is not rich
                     or repository.connect is not connect or repository.confirm is not confirm):
                 raise Denied('TRIP binding changed')
             if current.status is not AdmissionStatus.ALLOWED or current.principal != first.principal:
                 error = Denied('AUTH changed')
                 error.commit_possible = stage == 'return'
                 raise error
-        repository = (Repository(connect, scope, confirm, guard, structured=True, calendar=calendar) if structured
+        repository = (Repository(connect, scope, confirm, guard, structured=True, calendar=calendar, rich=rich) if structured
                       else Repository(connect, scope, confirm, guard))
         return repository, first.principal, guard
 
