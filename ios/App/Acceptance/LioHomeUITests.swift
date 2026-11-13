@@ -575,6 +575,12 @@ import XCTest
                 XCTAssertEqual(app.staticTexts[chinese ? "Lio 暂时不用这条记忆。"
                     : "Lio isn’t using this memory."].exists, deactivated)
                 try app.performAccessibilityAudit(for: .all)
+                if deactivated {
+                    let image = XCTAttachment(screenshot: app.screenshot())
+                    image.name = "memory-control-\(language)-\(appearance)"
+                    image.lifetime = .keepAlways
+                    add(image)
+                }
                 app.navigationBars.buttons.element(boundBy: 0).tap()
                 XCTAssertTrue(card.waitForExistence(timeout: 8))
                 XCTAssertEqual(card.value as? String, original)

@@ -269,6 +269,7 @@ private struct LioSavedMemoryDetail: View {
 
     var body: some View {
         Form {
+            Section {
             Group {
                 if let draft {
                     TextField(language.text("Memory", "记忆"),
@@ -290,11 +291,11 @@ private struct LioSavedMemoryDetail: View {
                     case .loaded(let entry):
                         if let entry, isSaved(entry) {
                             let item = entry.item.value
-                            Text(item.command.text)
                             if item.status == .disabled {
                                 Text(language.text("Lio isn’t using this memory.", "Lio 暂时不用这条记忆。"))
                                     .foregroundStyle(LioTheme.inkSecondary)
                             }
+                            Text(item.command.text)
                             if entry.item.scope == .longTerm, item.command.kind != .inference {
                                 Button(language.text("Edit", "编辑")) {
                                     notice = nil
@@ -333,20 +334,23 @@ private struct LioSavedMemoryDetail: View {
                 if saving { ProgressView() }
             }
             .lioRow()
+            } header: {
+                Text(language.text("Memory", "记忆"))
+                    .font(LioTheme.display(.title2))
+                    .foregroundStyle(LioTheme.ink)
+                    .textCase(nil)
+                    .accessibilityAddTraits(.isHeader)
+            }
         }
         .lioPage()
-        .navigationTitle(language.text("Memory", "记忆"))
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(LioTheme.paper, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
         .toolbarColorScheme(colorScheme, for: .navigationBar)
         .navigationBarBackButtonHidden(saving)
         .toolbar {
-            ToolbarItem(placement: .principal) {
-                Text(language.text("Memory", "记忆"))
-                    .font(.headline)
-                    .foregroundStyle(LioTheme.ink)
-            }
+            ToolbarItem(placement: .principal) { Color.clear.frame(width: 1, height: 1).accessibilityHidden(true) }
         }
         .onChange(of: phase) { _, phase in
             if phase != .active { editing = false }
