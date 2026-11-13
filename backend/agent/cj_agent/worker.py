@@ -25,7 +25,7 @@ from cj_memory.runtime import RuntimeDenied, RuntimeUnknown
 from cj_place.draft_source import PlaceSourceUnavailable
 
 from .draft import DRAFT_SYSTEM, DraftRejected
-from .provider import FakeProvider, ProviderFailed, ProviderUnknown
+from .provider import FakeProvider, MeteredDashScopeProvider, ProviderFailed, ProviderUnknown
 
 FLUSH_CHARS = 24
 _END = object()
@@ -356,7 +356,9 @@ class RunWorker:
                 _,sources=self._step(binding,lambda:self.drafts.sources_for(binding),draft=True)
                 messages=self.drafts.model_messages(binding,text,sources,messages)
             grouped=None
-            if structured:
+            original_provider=(self.provider.original if type(self.provider) in (_MemoryProvider,_EditMemoryProvider)
+                               else self.provider)
+            if structured and type(original_provider) is MeteredDashScopeProvider:
                 from cj_draft.grouped_plan import grouped_input
                 grouped=grouped_input(self.drafts,sources,messages,self.provider)
             system=grouped.system if grouped is not None else self.drafts.system if structured else DRAFT_SYSTEM
