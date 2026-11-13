@@ -718,6 +718,17 @@ def group_runtime_fixture_boundary():
 GROUPS.update(runtime_fixture_boundary=group_runtime_fixture_boundary)
 
 
+def group_lio_exploration():
+    pg=Path(os.environ.get('CJ_PG17_BINDIR',bindir()))
+    env=dict(clean_env(),CJ_PG_BINDIR=str(pg),PATH=str(pg)+os.pathsep+os.environ['PATH'])
+    results=[script('backend/cj_api/tests/'+name,env=env) for name in
+             ('lio_exploration_origin_pg.py','lio_exploration_flow_pg.py')]
+    return max(results)
+
+
+GROUPS.update(lio_exploration=group_lio_exploration)
+
+
 def main(argv):
     if argv[:1] == ['--shard']:
         index, count = map(int, argv[1].split('/'))
