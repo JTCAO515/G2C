@@ -43,6 +43,68 @@ class Database:
         return self.row
 
 
+@pytest.mark.parametrize('code',('G2C@99','CJ_Tester@98'))
+def test_short_invite_real_socket_http_and_original_qualification(tmp_path,monkeypatch,code):
+    monkeypatch.setenv('CJ_ENV','local')
+    subject='m4-synthetic-demo-'+sha256(code.encode('ascii')).hexdigest()[:12]
+    assert demo_login.invitation_subject(code)==subject
+    auth=tmp_path/'auth';dev_auth.init(auth,[subject,OTHER])
+    database=Database((sha256(code.encode('ascii')).hexdigest(),int(time.time())+8*86400,0))
+    runtime=SimpleNamespace(auth=auth,demo_subjects=frozenset({subject}),database=lambda:database)
+    original=database.row
+    database.row=(sha256(b'different invitation').hexdigest(),original[1],0)
+    assert demo_login.exchange(runtime,code) is None
+    database.row=original
+    runtime.demo_subjects=frozenset({OTHER})
+    assert demo_login.exchange(runtime,code) is None
+    runtime.demo_subjects=frozenset({subject})
+    with tempfile.TemporaryDirectory(prefix='g2c-short-',dir='/tmp') as directory:
+        app=FastAPI()
+        @app.middleware('http')
+        async def request_id(request:Request,call_next):
+            request.state.request_id=str(uuid4())
+            return await call_next(request)
+        demo_login.register_demo_login(app)
+        with patch.object(demo_login,'SOCKET',Path(directory)/'login.sock'),demo_login.signing_socket(runtime),TestClient(app) as api:
+            for version,path in ((demo_login.VERSION,'v1'),(demo_login.ROLLING_VERSION,'v2')):
+                response=api.post('/'+path+'/demo-invite-sessions',json=dict(version=version,invite_code=code,consent=True))
+                assert response.status_code==200
+                result=response.json();token=claims(result['access_token'])
+                assert result['subject']==subject and result['version']==version
+                assert token['sub']==subject and token['exp']<=database.row[1]
+                assert response.headers['cache-control']=='no-store' and code not in response.text
+            database.row=None
+            denied=api.post('/v2/demo-invite-sessions',json=dict(version=demo_login.ROLLING_VERSION,invite_code=code,consent=True))
+            assert denied.status_code==401 and code not in denied.text
+    assert set(database.scopes)=={scope_for(ISSUER,subject)}
+
+
+@pytest.mark.parametrize('code',('G2C@00','G2C@1','G2C@123','g2c@12','CJ_Tester@00','CJ_Tester@1','CJ_Tester@123','CJ_TESTER@12',' G2C@12','G2C@12\n','G2C@１２','OTHER@12'))
+def test_short_invite_exact_format(code):
+    assert demo_login.invitation_subject(code) is None
+
+
+def test_all_198_short_invites_map_to_distinct_subjects():
+    codes=[prefix+'@'+format(i,'02d')for prefix in ('G2C','CJ_Tester')for i in range(1,100)]
+    subjects=[demo_login.invitation_subject(code)for code in codes]
+    assert len(subjects)==198 and None not in subjects and len(set(subjects))==198
+    assert all(subject=='m4-synthetic-demo-'+sha256(code.encode('ascii')).hexdigest()[:12]
+               for code,subject in zip(codes,subjects,strict=True))
+
+
+def test_205_explicit_demo_subjects_remain_bounded(monkeypatch):
+    from deploy.hk import configuration
+    monkeypatch.setattr(configuration,'local_database_target',lambda:True)
+    subjects=['m4-synthetic-demo-'+format(i,'012x') for i in range(205)]
+    monkeypatch.setenv('CJ_BETA_SUBJECTS_JSON',json.dumps(subjects))
+    monkeypatch.setenv(configuration.DEMO_SUBJECTS,json.dumps(subjects))
+    assert configuration.beta_subjects()==(subjects,frozenset(subjects))
+    subjects.append('m4-synthetic-demo-ffffffffffff')
+    monkeypatch.setenv('CJ_BETA_SUBJECTS_JSON',json.dumps(subjects))
+    monkeypatch.setenv(configuration.DEMO_SUBJECTS,json.dumps(subjects))
+    with pytest.raises(ValueError,match='demo invitation subjects'):configuration.beta_subjects()
+
+
 @pytest.fixture
 def session_runtime(tmp_path,monkeypatch):
     monkeypatch.setenv('CJ_ENV','local')
