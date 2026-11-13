@@ -200,6 +200,22 @@ def exercise(root,conninfo):
             assert month_dated['calendar']['state']=='dated' and month_dated['calendar']['start_date'].endswith('-12-01')
             assert len(wire)>count
             print('PASS signed LIO3 '+locale+' explicit month/day reply converts the existing undated Trip',flush=True)
+        # The native v3 host must keep C's original confirmation verifier;
+        # having reached an authenticated model draft cannot grant a save.
+        from cj_trip.confirmation import ConfirmationSigner
+        for fault,alternate in (
+                ('wrong-key',ConfirmationSigner(b'calendar-negative-wrong-key-000000')),
+                ('expired',ConfirmationSigner(signer.key,clock=lambda:time.time()-1000))):
+            with psycopg.connect(**conninfo) as connection:
+                prior=connection.execute('SELECT (SELECT count(*) FROM cj_trip_record),(SELECT count(*) FROM cj_trip_proposal),(SELECT count(*) FROM cj_trip_receipt)').fetchone()
+            issue=alternate.issue
+            with patch.object(ConfirmationSigner,'issue',side_effect=issue):
+                failed_cid,_=send('calendar-'+fault+'-plan','Plan three days in Chengdu')
+            failed=read(failed_cid)
+            assert failed['current'] is None and failed['history']==[]
+            with psycopg.connect(**conninfo) as connection:
+                assert connection.execute('SELECT (SELECT count(*) FROM cj_trip_record),(SELECT count(*) FROM cj_trip_proposal),(SELECT count(*) FROM cj_trip_receipt)').fetchone()==prior
+            print('PASS native LIO3 '+fault+' confirmation refuses save; Trip/proposal/receipt counts unchanged',flush=True)
     assert all(row['state']=='RECEIVED' for row in journal.inspect())
 
 
