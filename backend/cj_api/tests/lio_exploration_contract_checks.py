@@ -66,13 +66,44 @@ class ExplorationContract(unittest.TestCase):
 
     def test_option_and_exit_text_cannot_inject_joint_reply_lines(self):
         for section in ('option','exit'):
-            for text in ('History\n','History\r','History\r\n','History\nFood',
-                         'History\u0085Food','History\u2028Food','History\u2029Food','   ','\t'):
+            for text in ('History\n','History\r','History\r\n','History\nFood','History\vFood','History\fFood',
+                         'History\u0085Food','History\u2028Food','History\u2029Food','History\x00Food','   ','\t'):
                 value=deepcopy(EXAMPLES['en']);message=value['messages'][0]
                 target=(message['question_groups'][0]['options'][0] if section=='option'
                         else message['exits'][0])
                 target['send_text']=text
                 with self.subTest(section=section,text=repr(text)),self.assertRaises(ValidationError):validate(value)
+
+    def test_new_card3_keeps_s4_identity_and_rest_days_without_changing_card2(self):
+        for name in ('structured4_undated','structured4_dated','legacy_card2'):
+            validate(EXAMPLES[name])
+        undated=EXAMPLES['structured4_undated']['messages'][0]['trip']
+        self.assertEqual([day['day_index']for day in undated['days']],[1,2,3])
+        self.assertEqual([len(day['items'])for day in undated['days']],[1,0,0])
+        legacy=EXAMPLES['legacy_card2']['messages'][0]['trip']
+        self.assertIsNone(legacy['calendar']);self.assertIsNone(legacy['date_checks'])
+        old=Draft202012Validator({'$defs':LEGACY['$defs'],'$ref':'#/$defs/Card2'})
+        old.validate(legacy)
+        with self.assertRaises(ValidationError):old.validate(undated)
+
+    def test_card3_is_closed_and_does_not_relabel_other_content(self):
+        for change in ({'version':'LIO-trip-card.2'},{'content_version':'structured.3'},
+                       {'calendar':None},{'date_checks':None},{'price':100},{'booking_status':'confirmed'},
+                       {'content_sha256':'not-a-hash'}):
+            value=deepcopy(EXAMPLES['structured4_undated']);value['messages'][0]['trip'].update(change)
+            with self.subTest(change=change),self.assertRaises(ValidationError):validate(value)
+
+    def test_card3_calendar_checks_preserve_unknown_and_refuse_fabricated_clear(self):
+        for name,change in (
+                ('structured4_undated',lambda c:c['days'][1].update(day_index=3)),
+                ('structured4_dated',lambda c:c['days'][1].update(date='2026-12-09')),
+                ('structured4_undated',lambda c:c['date_checks'][0].update(state='clear')),
+                ('structured4_dated',lambda c:c['date_checks'][0].update(state='clear')),
+                ('structured4_dated',lambda c:c['date_checks'][0].update(state='not_checked')),
+                ('structured4_dated',lambda c:c['date_checks'][0].update(day_indices=[4])),
+                ('structured4_dated',lambda c:c['date_checks'][0].update(item_ids=['foreign-item']))):
+            value=deepcopy(EXAMPLES[name]);change(value['messages'][0]['trip'])
+            with self.subTest(name=name),self.assertRaises(ValueError):validate(value)
 
     def test_plain_text_projection_has_one_order_and_is_not_a_second_bubble(self):
         for locale in ('zh','en'):

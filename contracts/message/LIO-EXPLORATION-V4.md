@@ -76,14 +76,32 @@ TripProposal, confirmation, billing or UNKNOWN recovery guards.
 Question groups have at most four groups and exactly three or four options;
 notices at most two, exits at most four. Presentation text remains bounded and
 option and exit send_text is nonblank and explicitly excludes CR, LF and Unicode
-line separators, including a trailing separator. Joint replies therefore have
+line separators and C0/C1 control characters, including a trailing separator. Joint replies therefore have
 one unambiguous separator; a regex end anchor alone is insufficient.
 These transport bounds do not replace #922's language/scene lengths, dynamic
 question counts, candidate-factor restrictions, code-generated notices, defaults
 or safety filters; WP3/WP4/WP8 enforce those production policies.
 
-The old card/source/memory shapes refer to the frozen v3 schema. This draft does
-not claim structured.4 support or substitute new presentation fields for the
-protected original content. WP7/WP8 will add their explicit contract and producer.
+The trip field is a strict union of frozen LIO-trip-card.2, new
+LIO-trip-card.3, and null. Card2 remains byte-for-byte unchanged for
+structured.1–3. Card3 explicitly summarizes structured.4 with the existing
+trip_id/trip_version/content_version/content_sha256/title/calendar/days/date_checks
+fields. Its calendar and checks cannot be legacy null; day_index stays contiguous,
+empty rest days remain, and dated days follow the stated start date. The four
+date-check states retain v3's original meaning: undated is not_checked/date_not_set,
+dated unobserved is unknown, and clear/conflict requires actual evidence.
+
+Card3 adds no opaque data, price, booking status, geometry, theme/area, legs or
+lodging fields. WP7/WP11's explicitly versioned protected detail read supplies
+kind/place/note/tip/reason_refs, adjacent legs, day theme/area and lodging.
+Consumers match ID/version/content hash before showing that detail and do not
+put structured.4 through old edit or undo payloads. Old source/memory types still
+refer to the frozen v3 schema. The new summary cannot reconstruct or authenticate
+full canonical content, source authority, factual accuracy or a save receipt.
+
+The non-null summary examples are explicitly synthetic; their demonstration
+hashes do not claim a real protected structured.4 document. WP7/WP8 still owe the
+actual document, source, publisher, read/undo versions and native proofs. This
+draft enables no structured.4 writer or native v4 admission.
 The exploration rollback switch belongs to the server, defaults on for the new
 mode, and is not a client-controlled flag or A/B assignment.

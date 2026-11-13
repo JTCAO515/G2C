@@ -179,5 +179,283 @@
       }
     ],
     "next_before": null
+  },
+  "structured4_undated": {
+    "version": "LIO-timeline.4",
+    "conversation_id": "lio-dialogue-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "messages": [
+      {
+        "message_id": "s4-summary",
+        "text": "Show the itinerary",
+        "answer": "This synthetic example demonstrates the itinerary summary.\n\nMake it more relaxed / More food / Change a day",
+        "status": "completed",
+        "failure": null,
+        "activity": null,
+        "sources": [],
+        "trip": {
+          "version": "LIO-trip-card.3",
+          "trip_id": "synthetic-s4-trip",
+          "trip_version": 1,
+          "content_version": "structured.4",
+          "content_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+          "title": "Synthetic S4 summary",
+          "calendar": {
+            "state": "undated"
+          },
+          "days": [
+            {
+              "day_index": 1,
+              "items": [
+                {
+                  "item_id": "s4-one",
+                  "label": "Museum（博物馆）",
+                  "start_time": "14:00",
+                  "end_time": "15:00",
+                  "fixed": false
+                }
+              ]
+            },
+            {
+              "day_index": 2,
+              "items": []
+            },
+            {
+              "day_index": 3,
+              "items": []
+            }
+          ],
+          "date_checks": [
+            {
+              "kind": "weather",
+              "state": "not_checked",
+              "day_indices": [
+                1,
+                2,
+                3
+              ],
+              "item_ids": [],
+              "reason": "date_not_set",
+              "evidence_refs": []
+            },
+            {
+              "kind": "day_opening",
+              "state": "not_checked",
+              "day_indices": [
+                1,
+                2,
+                3
+              ],
+              "item_ids": [],
+              "reason": "date_not_set",
+              "evidence_refs": []
+            }
+          ]
+        },
+        "memory": null,
+        "segments": [
+          {
+            "purpose": "summary",
+            "text": "This synthetic example demonstrates the itinerary summary."
+          }
+        ],
+        "question_groups": [],
+        "profile": [],
+        "notices": [],
+        "exits": [
+          {
+            "id": "adjust.pace",
+            "display_text": "Make it more relaxed",
+            "send_text": "Make it more relaxed"
+          },
+          {
+            "id": "adjust.food",
+            "display_text": "More food",
+            "send_text": "More food"
+          },
+          {
+            "id": "adjust.day",
+            "display_text": "Change a day",
+            "send_text": "Change a day"
+          }
+        ],
+        "progress": null
+      }
+    ],
+    "next_before": null
+  },
+  "structured4_dated": {
+    "version": "LIO-timeline.4",
+    "conversation_id": "lio-dialogue-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "messages": [
+      {
+        "message_id": "s4-summary",
+        "text": "Show the itinerary",
+        "answer": "This synthetic example demonstrates the itinerary summary.\n\nMake it more relaxed / More food / Change a day",
+        "status": "completed",
+        "failure": null,
+        "activity": null,
+        "sources": [],
+        "trip": {
+          "version": "LIO-trip-card.3",
+          "trip_id": "synthetic-s4-trip",
+          "trip_version": 2,
+          "content_version": "structured.4",
+          "content_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+          "title": "Synthetic S4 summary",
+          "calendar": {
+            "state": "dated",
+            "start_date": "2026-12-01"
+          },
+          "days": [
+            {
+              "day_index": 1,
+              "items": [
+                {
+                  "item_id": "s4-one",
+                  "label": "Museum（博物馆）",
+                  "start_time": "14:00",
+                  "end_time": "15:00",
+                  "fixed": false
+                }
+              ],
+              "date": "2026-12-01"
+            },
+            {
+              "day_index": 2,
+              "items": [],
+              "date": "2026-12-02"
+            },
+            {
+              "day_index": 3,
+              "items": [],
+              "date": "2026-12-03"
+            }
+          ],
+          "date_checks": [
+            {
+              "kind": "weather",
+              "state": "unknown",
+              "day_indices": [
+                1,
+                2,
+                3
+              ],
+              "item_ids": [],
+              "reason": "date_evidence_not_collected",
+              "evidence_refs": []
+            },
+            {
+              "kind": "day_opening",
+              "state": "unknown",
+              "day_indices": [
+                1,
+                2,
+                3
+              ],
+              "item_ids": [],
+              "reason": "date_evidence_not_collected",
+              "evidence_refs": []
+            }
+          ]
+        },
+        "memory": null,
+        "segments": [
+          {
+            "purpose": "summary",
+            "text": "This synthetic example demonstrates the itinerary summary."
+          }
+        ],
+        "question_groups": [],
+        "profile": [],
+        "notices": [],
+        "exits": [
+          {
+            "id": "adjust.pace",
+            "display_text": "Make it more relaxed",
+            "send_text": "Make it more relaxed"
+          },
+          {
+            "id": "adjust.food",
+            "display_text": "More food",
+            "send_text": "More food"
+          },
+          {
+            "id": "adjust.day",
+            "display_text": "Change a day",
+            "send_text": "Change a day"
+          }
+        ],
+        "progress": null
+      }
+    ],
+    "next_before": null
+  },
+  "legacy_card2": {
+    "version": "LIO-timeline.4",
+    "conversation_id": "lio-dialogue-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "messages": [
+      {
+        "message_id": "s4-summary",
+        "text": "Show the itinerary",
+        "answer": "This synthetic example demonstrates the itinerary summary.\n\nMake it more relaxed / More food / Change a day",
+        "status": "completed",
+        "failure": null,
+        "activity": null,
+        "sources": [],
+        "trip": {
+          "version": "LIO-trip-card.2",
+          "trip_id": "legacy-trip",
+          "trip_version": 7,
+          "content_version": "structured.2",
+          "content_sha256": "986d90376b57cc4fa2d46dd4678bb572566715d606d435e2d5dc687bd7d26b1b",
+          "title": "原有行程 / old trip",
+          "calendar": null,
+          "date_checks": null,
+          "days": [
+            {
+              "date": null,
+              "items": [
+                {
+                  "item_id": "hotel-meetup",
+                  "label": "酒店集合 / hotel meetup",
+                  "start_time": "09:00:00",
+                  "end_time": "09:00:00",
+                  "fixed": true
+                }
+              ]
+            }
+          ]
+        },
+        "memory": null,
+        "segments": [
+          {
+            "purpose": "summary",
+            "text": "This synthetic example demonstrates the itinerary summary."
+          }
+        ],
+        "question_groups": [],
+        "profile": [],
+        "notices": [],
+        "exits": [
+          {
+            "id": "adjust.pace",
+            "display_text": "Make it more relaxed",
+            "send_text": "Make it more relaxed"
+          },
+          {
+            "id": "adjust.food",
+            "display_text": "More food",
+            "send_text": "More food"
+          },
+          {
+            "id": "adjust.day",
+            "display_text": "Change a day",
+            "send_text": "Change a day"
+          }
+        ],
+        "progress": null
+      }
+    ],
+    "next_before": null
   }
 }
