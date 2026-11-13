@@ -178,3 +178,14 @@ class FixtureUseRegistry:
         require(record['use']==use,'FIXTURE_ORIGINAL_USE_CHANGED')
         if self._current(read_only=True)!=definition:raise Unavailable('FIXTURE_ORIGINAL_DEFINITION_CHANGED')
         return record
+
+    def policy_source(self):
+        """Original canonical B policy bytes, under current read qualification."""
+        definition=self._current(read_only=True)
+        if self._current(read_only=True)!=definition:
+            raise Unavailable('FIXTURE_ORIGINAL_DEFINITION_CHANGED')
+        return self.raw
+
+    def reservation_identity(self,raw):
+        record=self.read(raw)
+        return self._name(record['use']).removesuffix('.json')
