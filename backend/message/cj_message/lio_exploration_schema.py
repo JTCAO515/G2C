@@ -7,8 +7,8 @@ from typing import Literal
 from pydantic import BaseModel,ConfigDict,Field
 
 UNDERSTANDING='LIO-exploration-understanding.1'
-QUESTIONS='LIO-exploration-questions.1'
-PROFILES=(UNDERSTANDING,QUESTIONS)
+RESPONSE='LIO-exploration-response.1'
+PROFILES=(UNDERSTANDING,RESPONSE)
 
 
 class DTO(BaseModel):
@@ -45,13 +45,14 @@ class QuestionGroup(DTO):
     options:list[QuestionOption]=Field(min_length=3,max_length=4)
 
 
-class QuestionWording(DTO):
-    version:Literal['LIO-exploration-questions.1']
+class ExplorationResponse(DTO):
+    version:Literal['LIO-exploration-response.1']
+    body:str=Field(max_length=12000)
     groups:list[QuestionGroup]=Field(max_length=4)
 
 
 def response_format(profile):
-    model={UNDERSTANDING:Understanding,QUESTIONS:QuestionWording}[profile]
+    model={UNDERSTANDING:Understanding,RESPONSE:ExplorationResponse}[profile]
     return dict(type='json_schema',json_schema=dict(name=profile.replace('-','_').replace('.','_'),
         strict=True,schema=model.model_json_schema()))
 

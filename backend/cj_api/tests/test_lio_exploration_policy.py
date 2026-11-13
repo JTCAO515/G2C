@@ -10,6 +10,12 @@ from cj_api.lio_exploration_policy import (Scene,choose_scene,next_question_coun
     candidates,questions,exits,emergency_opening)
 
 
+def model_groups(selected,locale):
+    return [dict(factor_key=factor.key,question=factor.question(locale)['question'],options=[
+        dict(id=option['id'],display_text=option['display_text']) for option in factor.question(locale)['options']])
+        for factor in selected]
+
+
 class ExplorationPolicyTests(unittest.TestCase):
     def test_scene_priority_and_nonexploration_groups_are_always_empty(self):
         for intent,phase,expected in (
@@ -48,16 +54,18 @@ class ExplorationPolicyTests(unittest.TestCase):
     def test_valid_reworded_questions_keep_code_option_meanings_in_both_languages(self):
         selected=candidates({},4)
         for locale in ('zh','en'):
-            groups=[factor.question(locale) for factor in selected]
+            groups=model_groups(selected,locale)
             groups[0]['question']='先看看哪一座城市？' if locale=='zh' else 'Which city should we look at first?'
             accepted=questions(Scene.EXPLORATION,selected,groups,locale)
             self.assertFalse(accepted.used_question_bank)
-            self.assertEqual(accepted.groups,tuple(groups))
+            expected=[factor.question(locale) for factor in selected]
+            expected[0]['question']=groups[0]['question']
+            self.assertEqual(accepted.groups,tuple(expected))
 
     def test_invalid_model_questions_fall_back_to_exact_bank(self):
         selected=candidates({},4)
         for locale in ('zh','en'):
-            original=[factor.question(locale) for factor in selected]
+            original=model_groups(selected,locale)
             bad=[]
             bad.append(original+original[:1])
             bad.append(original[:-1])
@@ -75,7 +83,7 @@ class ExplorationPolicyTests(unittest.TestCase):
                 with self.subTest(locale=locale,groups=groups):
                     result=questions(Scene.EXPLORATION,selected,groups,locale)
                     self.assertTrue(result.used_question_bank)
-                    self.assertEqual(result.groups,tuple(original))
+                    self.assertEqual(result.groups,tuple(factor.question(locale) for factor in selected))
 
     def test_exploration_exits_are_always_present_and_literal_plan_now_is_stable(self):
         for locale in ('zh','en'):

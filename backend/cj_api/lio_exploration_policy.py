@@ -4,6 +4,7 @@ from enum import Enum
 import re
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from cj_message.lio_exploration_schema import QuestionGroup as ModelQuestionGroup
 
 from .lio_exploration_factors import BY_KEY, FACTORS
 
@@ -90,9 +91,9 @@ def questions(scene, selected, proposed, locale):
     allowed={factor.key:factor for factor in selected};groups=[];seen=set()
     try:
         for raw in proposed:
-            group=_Group.model_validate(raw)
+            group=ModelQuestionGroup.model_validate(raw)
             factor=allowed.get(group.factor_key)
-            if factor is None or group.factor_key in seen or group.multiple!=factor.multiple:
+            if factor is None or group.factor_key in seen:
                 return Questions(fallback,True)
             bank={option['id']:option for option in factor.question(locale)['options']}
             option_ids=[option.id for option in group.options]
@@ -101,10 +102,11 @@ def questions(scene, selected, proposed, locale):
             if not _bounded(group.question,locale):return Questions(fallback,True)
             for option in group.options:
                 if (not _bounded(option.display_text,locale) or
-                        option.display_text.strip().casefold() in ('other','其他') or
-                        option.send_text!=bank[option.id]['send_text']):
+                        option.display_text.strip().casefold() in ('other','其他')):
                     return Questions(fallback,True)
-            seen.add(group.factor_key);groups.append(group.model_dump())
+            seen.add(group.factor_key)
+            groups.append(dict(factor_key=group.factor_key,question=group.question,multiple=factor.multiple,
+                options=[dict(id=option.id,display_text=option.display_text,send_text=bank[option.id]['send_text']) for option in group.options]))
     except ValidationError:
         return Questions(fallback,True)
     return Questions(tuple(groups),False)

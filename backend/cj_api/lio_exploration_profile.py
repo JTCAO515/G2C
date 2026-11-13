@@ -114,7 +114,7 @@ _ALIASES = {
     'pace': {'relaxed': ('轻松','悠闲','慢节奏','relaxed','leisurely','slow'),
              'moderate': ('适中','中等','moderate','balanced'),
              'packed': ('紧凑','密集','packed','fast')},
-    'party_type': {'solo': ('一个人','一人','solo','alone'),
+    'party_type': {'solo': ('一个人','一人','solo','alone','1 person','one person'),
                    'two_adults': ('两个成人','two adults'),
                    'family': ('带孩子','with children'), 'friends': ('和朋友','with friends')},
     'season': {'spring': ('春季','春天','spring'), 'summer': ('夏季','夏天','summer'),

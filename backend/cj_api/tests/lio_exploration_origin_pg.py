@@ -172,7 +172,7 @@ def exercise(root,conninfo):
         body=json.loads(request.content);wire.append(body)
         version=body['response_format']['json_schema']['schema']['properties']['version']['const']
         value=(dict(version=version,intent='explore',current_source_index=0,updates=[])
-               if version==PROFILES[0] else dict(version=version,groups=[]))
+               if version==PROFILES[0] else dict(version=version,body='',groups=[]))
         identity=dict(id='native4-fixture-'+str(len(wire)),model=M4_MODEL)
         chunks=[dict(**identity,choices=[dict(index=0,delta=dict(content=json.dumps(value)),finish_reason=None)]),
                 dict(**identity,choices=[dict(index=0,delta={},finish_reason='stop')]),
