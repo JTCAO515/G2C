@@ -137,8 +137,9 @@ class RuntimeAdapter:
                           binding_sha256=self.binding.key, pins_sha256=self.pins.key)
             self.store.write(record)
             for index, action in enumerate(plan):
+                step_purpose = 'cancel_original' if action['kind'] == 'cancel_original_run' else purpose
                 try:
-                    self._guard(purpose, deadline, read_only=False)
+                    self._guard(step_purpose, deadline, read_only=False)
                 except Unavailable as error:
                     return self._result('UNKNOWN', attempt, str(error))
                 request = dict(version=VERSION, attempt_id=attempt,
@@ -155,7 +156,7 @@ class RuntimeAdapter:
                     prepared = self.backend.claim(encode(request), deadline=deadline)
                     if not prepared.fresh:
                         return self._result('UNKNOWN', attempt, 'B_ORIGINAL_ALREADY_EXISTS_QUERY_ONLY')
-                    self._guard(purpose, deadline, read_only=False)
+                    self._guard(step_purpose, deadline, read_only=False)
                     self.backend.dispatch(encode(request), capability=prepared.capability, deadline=deadline)
                     result = self._read_step(request, deadline)
                 except (Unavailable, Invalid, TimeoutError, OSError):

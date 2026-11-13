@@ -663,3 +663,42 @@ def test_corrupt_local_mapping_and_lock_not_accepted(local):
     path.write_bytes(raw)
     with adapter.store.locked():
         with pytest.raises(Invalid,match='ADAPTER_BUSY'): call(adapter,aid='new')
+
+
+def test_cancel_guards_preserve_original_control_after_new_work_stops(local):
+    adapter,backend=local
+    state={'new_work':True}
+    original_dispatch,original_require=backend.dispatch,backend.require
+    def dispatch(raw,**kwargs):
+        original_dispatch(raw,**kwargs)
+        if decode(raw)['kind']=='start_controlled_generation':state['new_work']=False
+    def require(**kwargs):
+        original_require(**kwargs)
+        if not kwargs['read_only'] and not state['new_work'] and kwargs['purpose']!='cancel_original':
+            raise Unavailable('NEW_WORK_STOPPED')
+    backend.dispatch,backend.require=dispatch,require
+    result=call(adapter,task='dev-cancel')
+    assert result['status']=='CANCELLED'
+    assert [v['kind']for v in backend.sent]==['task_setup','start_controlled_generation','cancel_original_run']
+    guards=[v for v in backend.guards if v['purpose']=='cancel_original']
+    assert len(guards)==2 and all(v['read_only'] is False for v in guards)
+    assert all(v['binding']==adapter.binding and v['pins_sha256']==adapter.pins.key for v in guards)
+    before=len(backend.sent)
+    assert call(adapter,aid='new-task')['status']=='UNRUN'
+    assert len(backend.sent)==before
+    assert call(adapter,task='dev-cancel')['status']=='CANCELLED'
+    assert len(backend.sent)==before
+
+
+def test_cancel_guard_denial_leaves_original_query_only(local):
+    adapter,backend=local
+    original_require=backend.require
+    def require(**kwargs):
+        original_require(**kwargs)
+        if kwargs['purpose']=='cancel_original':raise Unavailable('ORIGINAL_CANCEL_AUTH_UNAVAILABLE')
+    backend.require=require
+    assert call(adapter,task='dev-cancel')['status']=='UNKNOWN'
+    assert [v['kind']for v in backend.sent]==['task_setup','start_controlled_generation']
+    before=len(backend.sent)
+    assert call(adapter,task='dev-cancel')['status']=='UNKNOWN'
+    assert len(backend.sent)==before

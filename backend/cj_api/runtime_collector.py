@@ -35,7 +35,7 @@ class RuntimeCollector:
     def _source(self,token,mid):
         request=decode(self.claims.read(mid,deadline=self.clock()+30))
         prepared=preparatory_message(request)
-        if not prepared and request['kind'] in ('task_setup','lio_undo_current_trip'):
+        if not prepared and request['kind'] in ('task_setup','lio_undo_current_trip','cancel_original_run'):
             if self.dialogue is None:raise Unavailable('NATIVE_DIALOGUE_TASK_RECIPES_NOT_CONNECTED')
             if request['kind']=='task_setup':self.dialogue.setup(request,deadline=self.clock()+30)
             else:self.dialogue.action_proof(request,deadline=self.clock()+30)

@@ -690,6 +690,13 @@ def group_runtime_fixture_registry():
 GROUPS.update(runtime_fixture_registry=group_runtime_fixture_registry)
 
 
+def group_runtime_cancel():
+    return script('backend/cj_api/tests/runtime_native_dialogue_pg.py')
+
+
+GROUPS.update(runtime_cancel=group_runtime_cancel)
+
+
 def group_runtime_fixture_observer():
     return script('backend/cj_api/tests/runtime_fixture_observer_pg.py')
 
