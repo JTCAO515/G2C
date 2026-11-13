@@ -34,6 +34,13 @@ are removed. The code brief separates what the user said, saved preferences and
 explicit defaults, plus a requested first-day override. Model prose/public profile
 projection must not be used as the protected fact input.
 
+`filter_reason_text` also clears the associated proposed `note` whenever any
+basis is removed: free prose cannot be safely split into one clause per key.
+The host applies this same projection after the final wording stage, before
+validating/committing the new candidate. Surviving prose still needs semantic
+evaluation against actual factor values; valid keys alone do not certify it.
+This changes no stored/history bytes, protected base fields or H tip data.
+
 ## Dependency license inspection (no production activation)
 
 WP0 PR940 authorized the local chinese-calendar project. Pin:

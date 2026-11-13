@@ -1,6 +1,6 @@
 import pytest
 
-from cj_trip.rich_reasons import ProfileFact, brief, filter_reasons
+from cj_trip.rich_reasons import ProfileFact, brief, filter_reason_text, filter_reasons
 
 
 def test_only_accepted_known_and_memory_references_remain_and_duplicates_are_reported():
@@ -30,3 +30,19 @@ def test_default_only_is_not_quoted_as_a_user_statement_and_input_is_unchanged()
     text=brief(facts,locale='zh')
     assert '按你说的' not in text and '默认' in text and facts[0].state=='default'
     with pytest.raises(ValueError):brief(facts+facts,locale='zh')
+
+
+@pytest.mark.parametrize('bad_state',['default','inferred','unknown','not_needed'])
+def test_invalid_basis_removes_prose_even_when_another_factor_is_valid(bad_state):
+    facts=(ProfileFact('interests','known','history'),ProfileFact('pace',bad_state,'relaxed'))
+    text='Synthetic proposed sentence referring to both factors.'
+    assert filter_reason_text(text,['interests','pace'],facts)==(None,('interests',),('pace',))
+    assert filter_reason_text(text,['absent'],facts)==(None,(),('absent',))
+
+
+def test_valid_prose_is_preserved_and_absent_prose_is_not_invented():
+    facts=(ProfileFact('interests','known','history'),ProfileFact('pace','memory','relaxed'))
+    text='Synthetic proposed sentence with valid factor references.'
+    assert filter_reason_text(text,['interests','pace'],facts)==(text,('interests','pace'),())
+    assert filter_reason_text(None,['interests'],facts)==(None,('interests',),())
+    assert filter_reason_text('Generic unpersonalized note.',[],facts)==('Generic unpersonalized note.',(),())
