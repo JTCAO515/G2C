@@ -455,9 +455,16 @@ class RealTools:
         return self._model_input(argument, release_after_send=True)
 
     def _model_input(self,argument,*,release_after_send=False,national_intake=False,intake_profile='LIO-planning-intake.1',answer_preparation=False):
+        from cj_draft.grouped_plan import GroupedDraftInput,response_format_sha256 as grouped_schema_sha256
+        grouped=type(argument) is GroupedDraftInput
         native_turn = type(argument) is ModelInput
         indexed=intake_profile in ('LIO-planning-intake.3','LIO-planning-intake.4','LIO-planning-intake.5','LIO-planning-intake.6','LIO-planning-intake.7','LIO-planning-intake.8','LIO-planning-intake.9')
-        if indexed:
+        if grouped:
+            if release_after_send or national_intake or answer_preparation:
+                raise BudgetUnknown('explicit grouped draft registration required')
+            messages,system,provider=argument.messages,argument.system,argument.provider
+            native_reply=None;final_answer=False;turn_profile=M4_NATIVE_TURN_PROFILE_V2
+        elif indexed:
             messages,system,provider,source_index=argument
             native_reply=None;final_answer=False;turn_profile=M4_NATIVE_TURN_PROFILE_V2
         elif native_turn:
@@ -504,6 +511,7 @@ class RealTools:
                 raise BudgetUnknown('original runtime text baseline changed') from None
         raw=canonical(dict(messages=messages,system=system,endpoint=M4_BASE,model=M4_MODEL,synthetic_only=True,
                            native_tools=selected_tools,
+                           **({'draft_profile':argument.profile,'response_format_sha256':grouped_schema_sha256(argument.profile)} if grouped else {}),
                            **({'response_mode':'lio-memory-json.1'} if release_after_send else {}),
                            **({'structured_profile':intake_profile} if national_intake else {}),
                            **({'response_format_sha256':SCHEMA_SHA256} if national_intake and intake_profile=='LIO-planning-intake.2' else {}),
@@ -515,7 +523,7 @@ class RealTools:
         inputs=json.loads(raw);metadata={}
         def bind(operation,guard):
             self.services.require_scope(operation.binding.scope)
-            if national_intake or native_turn and argument.national:
+            if grouped or national_intake or native_turn and argument.national:
                 self._require_national(operation.binding.scope)
             if turn_profile==M4_NATIVE_TURN_STREAM and operation.binding.scope not in self.streaming_scopes:
                 raise BudgetUnknown('original model streaming subject not admitted')
@@ -539,6 +547,7 @@ class RealTools:
                         lio_answer=inputs.get('answer_format_profile')=='lio-user.1',
                         **({'structured_profile':inputs['structured_profile']} if 'structured_profile' in inputs else {}),
                         **({'intake_source_index':inputs['current_source_index']} if 'current_source_index' in inputs else {}),
+                        **({'draft_profile':inputs['draft_profile'],'draft_schema_sha256':inputs['response_format_sha256']}if 'draft_profile' in inputs else {}),
                         **capture)
                     if capture_model:
                         # Preserve streaming latency. A complete artifact is
