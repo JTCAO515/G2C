@@ -22,7 +22,16 @@
       ]
     },
     "Id": {
-      "$ref": "https://go2china.space/contracts/message/trip-schema.2.json#/$defs/Id"
+      "allOf": [
+        {
+          "$ref": "https://go2china.space/contracts/message/trip-schema.2.json#/$defs/Id"
+        },
+        {
+          "not": {
+            "pattern": "[\\u0000-\\u001f\\u007f-\\u009f\\u2028\\u2029]"
+          }
+        }
+      ]
     },
     "Segment": {
       "type": "object",
@@ -543,7 +552,7 @@
           "const": "LIO-trip-card.3"
         },
         "trip_id": {
-          "$ref": "https://go2china.space/contracts/message/trip-schema.2.json#/$defs/Id"
+          "$ref": "#/$defs/Id"
         },
         "trip_version": {
           "type": "integer",
@@ -555,7 +564,10 @@
         },
         "content_sha256": {
           "type": "string",
-          "pattern": "^[0-9a-f]{64}$"
+          "pattern": "^[0-9a-f]{64}$",
+          "not": {
+            "pattern": "[\\u0000-\\u001f\\u007f-\\u009f\\u2028\\u2029]"
+          }
         },
         "title": {
           "type": "string",
@@ -612,7 +624,7 @@
             {
               "type": "array",
               "items": {
-                "$ref": "https://go2china.space/contracts/message/trip-schema.2.json#/$defs/Check"
+                "$ref": "#/$defs/DateCheck3"
               },
               "minItems": 2,
               "maxItems": 2
@@ -696,7 +708,7 @@
                 "properties": {
                   "days": {
                     "items": {
-                      "$ref": "https://go2china.space/contracts/message/trip-schema.2.json#/$defs/UndatedCardDay"
+                      "$ref": "#/$defs/UndatedCardDay3"
                     }
                   }
                 }
@@ -705,13 +717,76 @@
                 "properties": {
                   "days": {
                     "items": {
-                      "$ref": "https://go2china.space/contracts/message/trip-schema.2.json#/$defs/DatedCardDay"
+                      "$ref": "#/$defs/DatedCardDay3"
                     }
                   }
                 }
               }
             }
           ]
+        }
+      ]
+    },
+    "CardItem3": {
+      "allOf": [
+        {
+          "$ref": "https://go2china.space/contracts/message/trip-schema.2.json#/$defs/CardItem"
+        },
+        {
+          "properties": {
+            "item_id": {
+              "$ref": "#/$defs/Id"
+            }
+          }
+        }
+      ]
+    },
+    "UndatedCardDay3": {
+      "allOf": [
+        {
+          "$ref": "https://go2china.space/contracts/message/trip-schema.2.json#/$defs/UndatedCardDay"
+        },
+        {
+          "properties": {
+            "items": {
+              "items": {
+                "$ref": "#/$defs/CardItem3"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "DatedCardDay3": {
+      "allOf": [
+        {
+          "$ref": "https://go2china.space/contracts/message/trip-schema.2.json#/$defs/DatedCardDay"
+        },
+        {
+          "properties": {
+            "items": {
+              "items": {
+                "$ref": "#/$defs/CardItem3"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "DateCheck3": {
+      "allOf": [
+        {
+          "$ref": "https://go2china.space/contracts/message/trip-schema.2.json#/$defs/Check"
+        },
+        {
+          "properties": {
+            "evidence_refs": {
+              "items": {
+                "type": "string",
+                "pattern": "\\S"
+              }
+            }
+          }
         }
       ]
     }

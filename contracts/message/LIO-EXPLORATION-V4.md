@@ -31,6 +31,9 @@ There is no inferred interleaving or matching by text. Each notice has a stable 
 for replacement/deduplication. Question factors, profile factors, notice ids and
 exit ids are unique in their respective arrays. An option id begins with its
 factor_key and a dot and is unique within that group.
+New v4 identifiers and Card3 hashes explicitly reject control characters rather
+than relying on an end anchor. Card3 evidence references must contain nonblank
+text; their presence still does not authenticate source evidence.
 
 Every response still contains answer. In a v4 presentation it is the plain-text
 projection: segment texts, each question plus its display options, notice texts,

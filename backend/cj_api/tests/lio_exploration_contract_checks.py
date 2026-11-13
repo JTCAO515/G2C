@@ -129,6 +129,25 @@ class ExplorationContract(unittest.TestCase):
             value=deepcopy(EXAMPLES[name]);change(value['messages'][0]['trip'])
             with self.subTest(name=name),self.assertRaises(ValueError):validate(value)
 
+    def test_new_identifiers_and_hashes_reject_trailing_control_characters(self):
+        for change in (
+                lambda m:m['question_groups'][0]['options'][0].update(id='interests.history\n'),
+                lambda m:m['exits'][0].update(id='plan_now\n')):
+            value=deepcopy(EXAMPLES['en']);change(value['messages'][0])
+            with self.assertRaises(ValidationError):validate(value)
+        for change in (
+                lambda c:c.update(trip_id='synthetic-s4-trip\n'),
+                lambda c:c.update(content_sha256='4'*64+'\n'),
+                lambda c:c['days'][0]['items'][0].update(item_id='s4-one\n')):
+            value=deepcopy(EXAMPLES['structured4_undated']);change(value['messages'][0]['trip'])
+            with self.assertRaises(ValidationError):validate(value)
+
+    def test_card3_evidence_reference_cannot_be_only_whitespace(self):
+        for state in ('clear','conflict'):
+            value=deepcopy(EXAMPLES['structured4_dated'])
+            value['messages'][0]['trip']['date_checks'][0].update(state=state,evidence_refs=[' '])
+            with self.subTest(state=state),self.assertRaises(ValidationError):validate(value)
+
     def test_plain_text_projection_has_one_order_and_is_not_a_second_bubble(self):
         for locale in ('zh','en'):
             message=EXAMPLES[locale]['messages'][0]
