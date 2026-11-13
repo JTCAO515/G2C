@@ -40,7 +40,7 @@ installs a private profile-only consumer over existing signed LIO3 transport;
 this proves real MESSAGE/RUN/Memory transactions, not production native4 routing,
 Trip signatures, supplier behaviour or App integration.
 
-Validation: the registered `lio_profile` PG17 group runs ZH/EN two chains each,
+Validation: the existing `lio_calendar` PG17 group also runs ZH/EN two profile chains each,
 real saved Memory prefill, ordinary correction/refusal/inference, actual pause,
 bad quote UNKNOWN/zero profile, and a pause between capture and commit producing
 context_invalid/zero profile. JWT/API/PG are real local components, extraction is

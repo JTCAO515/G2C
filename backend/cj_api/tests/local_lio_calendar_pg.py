@@ -341,4 +341,7 @@ def main():
             with patch.dict(os.environ,env):exercise(root,conninfo)
 
 
-if __name__=='__main__':main()
+if __name__=='__main__':
+    main()
+    from lio_exploration_profile_pg import main as profile_main
+    profile_main()
