@@ -150,6 +150,8 @@ public struct LioSavedMemoryView: View {
     private func memoryCards(_ saved: [TypedMemoryRead], pageHeight: CGFloat) -> some View {
         ForEach(saved.indices, id: \.self) { index in
             let item = saved[index].item.value
+            let displayText: String = saved[index].item.title ?? item.command.text
+            let accessibilityText = memoryAccessibilityLabel(saved[index])
             let id = Data(item.command.item_id.utf8)
             let deactivated = item.status == .disabled
             let card = NavigationLink(value: id) {
@@ -170,7 +172,7 @@ public struct LioSavedMemoryView: View {
                         }
                     }
                     ScrollView(.vertical) {
-                        Text(item.command.text)
+                        Text(displayText)
                             .font(LioTheme.display(.headline))
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .fixedSize(horizontal: false, vertical: true)
@@ -191,7 +193,7 @@ public struct LioSavedMemoryView: View {
             }
             .buttonStyle(.plain)
             .aspectRatio(1, contentMode: .fit)
-            .accessibilityLabel(memoryCategory(saved[index]) + (deactivated ? " · " + language.text("Deactivated", "已停用") : ""))
+            .accessibilityLabel(accessibilityText)
             .accessibilityValue(item.command.text)
             .accessibilityIdentifier("lio.memory.card.\(item.command.item_id)")
             VStack(spacing: 0) {
@@ -201,6 +203,14 @@ public struct LioSavedMemoryView: View {
             .padding(.vertical, typeSize.isAccessibilitySize ? 16 : 0)
             .frame(height: typeSize.isAccessibilitySize ? pageHeight : nil)
         }
+    }
+
+    private func memoryAccessibilityLabel(_ read: TypedMemoryRead) -> String {
+        var parts: [String] = []
+        if let title = read.item.title { parts.append(title) }
+        parts.append(memoryCategory(read))
+        if read.item.value.status == .disabled { parts.append(language.text("Deactivated", "已停用")) }
+        return parts.joined(separator: " · ")
     }
 
     private func memoryCategory(_ read: TypedMemoryRead) -> String {

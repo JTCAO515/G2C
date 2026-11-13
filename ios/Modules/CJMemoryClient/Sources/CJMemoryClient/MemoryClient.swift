@@ -20,6 +20,7 @@ struct MemoryTransport: ClientTransport {
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
         let legacyPaths = ["saveMemory": "/v1/memories", "listMemories": "/v1/memories", "queryMemoryReceipt": "/v1/memory-receipts", "listMemoryGroups": "/v1/memory-groups", "getMemoryItem": "/v1/memory-items", "applyMemoryManagementAction": "/v1/memory-management-actions", "queryMemoryManagementReceipt": "/v1/memory-management-receipts", "applyMemoryEditAction": "/v1/memory-edit-actions", "applyMemoryStopUseAction": "/v1/memory-withdrawal-actions", "getMemoryStopUseReceipt": "/v1/memory-withdrawal-receipts"]
         let typedPaths = ["saveTypedMemory":"/v2/memories","listTypedMemories":"/v2/memories",
+            "listTitledMemories":"/v3/memories","getTitledMemoryItem":"/v3/memory-items",
             "getTypedMemoryReceipt":"/v2/memory-receipts","getTypedMemoryItem":"/v2/memory-items",
             "applyTypedMemoryManagement":"/v2/memory-management-actions","applyTypedMemoryStopUse":"/v2/memory-withdrawal-actions",
             "getTypedMemoryManagementReceipt":"/v2/memory-management-receipts"]
@@ -57,16 +58,25 @@ struct MemoryTransport: ClientTransport {
             // floating token during decoding. Preserve the frozen integer-token
             // boundary before that conversion; domains validate the other fields.
             let items: [(Any?,[String])]
-            if operationID == "listTypedMemories" {
+            if operationID == "listTypedMemories" || operationID == "listTitledMemories" {
                 guard let values = object["items"] as? [Any] else { throw MemoryFailure.invalidResponse }
                 items = values.enumerated().map { ($0.element,["items",String($0.offset)]) }
-            } else if operationID == "getTypedMemoryItem" { items = [(object["item"],["item"])] }
+            } else if operationID == "getTypedMemoryItem" || operationID == "getTitledMemoryItem" { items = [(object["item"],["item"])] }
             else { items = [] }
             for (value,path) in items {
                 if value is NSNull { continue }
                 guard let item = value as? [String:Any],let command = item["command"] as? [String:Any],
                       let version = strict.unsignedIntegers[path + ["version"]],version > 0,
                       let source = strict.unsignedIntegers[path + ["command","source_version"]],source > 0 else { throw MemoryFailure.invalidResponse }
+                if operationID == "listTitledMemories" || operationID == "getTitledMemoryItem" {
+                    // The generator decodes the shape; enforce the frozen
+                    // string length and pattern on the untrusted response.
+                    guard let title = item["title"] else { throw MemoryFailure.invalidResponse }
+                    if !(title is NSNull) {
+                        guard let title = title as? String, title.unicodeScalars.count <= 4096,
+                              !title.unicodeScalars.contains(where: { $0.value == 13 || $0.value == 10 || $0.value == 9 }) else { throw MemoryFailure.invalidResponse }
+                    }
+                }
                 if let context = command["context"] as? [String:Any],context["kind"] as? String == "travel" {
                     guard let version = strict.unsignedIntegers[path + ["command","context","expected_version"]],version > 0 else { throw MemoryFailure.invalidResponse }
                 }
