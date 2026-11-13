@@ -1,0 +1,62 @@
+[
+  {
+    "format_version": "visitor-entry.2",
+    "entry_kind": "official_channel",
+    "topic": "visa_entry",
+    "cities": [
+      "beijing",
+      "chengdu",
+      "xian",
+      "shanghai",
+      "hangzhou",
+      "chongqing",
+      "shenzhen"
+    ],
+    "checked_on": "2026-11-13",
+    "expires_on": "2026-12-13",
+    "subject": null,
+    "conditions": {
+      "reservation_required": null,
+      "closed_weekdays": null,
+      "advance_booking_days": null,
+      "closed_weekdays_public_holiday_exception": null,
+      "advance_booking_rule": null
+    },
+    "id": "visitor.v2.visa-free.official-channel",
+    "text_zh": "免签问题请到国家移民管理局官网的政策解读栏目查询官方说明，并向主管机关确认个人适用情况；本条不概括资格条件。",
+    "text_en": "For visa-free entry questions, consult the National Immigration Administration’s official policy-explanation channel and confirm your circumstances with the competent authority. This entry does not summarize eligibility rules.",
+    "source_urls": [
+      "https://www.nia.gov.cn/n741440/n741577/index.html"
+    ]
+  },
+  {
+    "format_version": "visitor-entry.2",
+    "entry_kind": "official_channel",
+    "topic": "visa_entry",
+    "cities": [
+      "beijing",
+      "chengdu",
+      "xian",
+      "shanghai",
+      "hangzhou",
+      "chongqing",
+      "shenzhen"
+    ],
+    "checked_on": "2026-11-13",
+    "expires_on": "2026-12-13",
+    "subject": null,
+    "conditions": {
+      "reservation_required": null,
+      "closed_weekdays": null,
+      "advance_booking_days": null,
+      "closed_weekdays_public_holiday_exception": null,
+      "advance_booking_rule": null
+    },
+    "id": "visitor.v2.entry.official-channel",
+    "text_zh": "入境要求请通过国家移民管理局官方入口查询，并向主管机关确认；本条不判断你是否可以入境，也不列停留期限或材料清单。",
+    "text_en": "For entry requirements, use the National Immigration Administration’s official channel and confirm with the competent authority. This entry does not decide admissibility or list stay limits or required documents.",
+    "source_urls": [
+      "https://www.nia.gov.cn/index.html"
+    ]
+  }
+]
