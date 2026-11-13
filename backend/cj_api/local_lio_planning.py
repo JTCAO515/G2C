@@ -45,6 +45,14 @@ NATIONAL_COMPACT_DRAFT = (
     'keep utc_offset unknown. Never assert a booking or an observed source for a suggestion. '
     'Use short labels in the question language and return only compact JSON.'
 )
+NATIONAL_GROUPED_DRAFT = (
+    ' Cover each requested morning/afternoon/evening period. '
+    'A fixed commitment covers only its actual period. If no periods were requested, '
+    'use an afternoon stop on each date and an evening stop on the final date of a trip of three or more days. '
+    'Use the traveler\'s requested luxury, pace and other preferences without inventing prices or bookings. '
+    'Use short ASCII stop IDs of at most 96 characters. Use only self, party or companion IDs actually present in the source; '
+    'when planning for a stated party, party denotes that proposed group, not a fabricated companion or booking. '
+)
 SYSTEM = (
     'Extract only information provided by the traveler for this trip. Return JSON with exactly '
     'city (an exact substring of the user text or null), continues_trip (boolean), and extraction. '
@@ -102,7 +110,11 @@ def discuss(worker, binding, state, locale, turns, references, *, day_count=None
             'Dates and party size are optional: do not ask for them, even when unknown or undecided. '
             'This is a conversational plan, not a saved trip. Do not claim it has been saved. '
             'Do not introduce yourself or discuss knowing the traveler. '
-            'Use enough space and list items to cover every requested day; this overrides the usual brevity limits. '
+            'Use one compact line per day, naming one concrete stop and a short activity; '
+            'use at most 20 Chinese characters or 12 English words per day when no periods were requested. '
+            'When morning/afternoon/evening periods were requested, cover every requested period with '
+            'one complete place name and a short activity, without explanations or shortened place names. '
+            'Keep the JSON compact, omit introductions and repeated summaries; the day lines override only the usual three-item limit. '
             'End with exactly one specific question about a useful adjustment, not date or party size.'
         )
         if planning_window is None:
@@ -197,11 +209,12 @@ class LioPlanning:
 
 
 class LioPlanSave:
-    def __init__(self, database, context_publisher, confirmation,*,source_window=False):
+    def __init__(self, database, context_publisher, confirmation,*,source_window=False,grouped=False):
         self.database = database
         self.context_publisher = context_publisher
         self.confirmation = confirmation
         self.source_window=source_window
+        self.grouped=grouped
 
     def scene_context(self,binding,now):
         from cj_trip.planning_context import read_current
@@ -291,8 +304,11 @@ class LioPlanSave:
         if self.source_window:
             from cj_draft.lio_plan import LioSourceWindowPublisher
             publisher_class=LioSourceWindowPublisher
+            if self.grouped:
+                from cj_draft.grouped_plan import LioGroupedPlanPublisher
+                publisher_class=LioGroupedPlanPublisher
         publisher = publisher_class(self.context_publisher, self.confirmation,
-                                     original_needs, check_original, draft_guidance=NATIONAL_COMPACT_DRAFT if self.source_window else COMPACT_DRAFT)
+                                     original_needs, check_original, draft_guidance=NATIONAL_GROUPED_DRAFT if self.grouped else NATIONAL_COMPACT_DRAFT if self.source_window else COMPACT_DRAFT)
         previous = worker.drafts
         worker.drafts = publisher
         try:
