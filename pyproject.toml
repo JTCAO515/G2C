@@ -129,6 +129,7 @@ packages = [
 "backend/cj_api/lio_sourced_intake.py" = "share/g2c/runtime-source/backend/cj_api/lio_sourced_intake.py"
 "backend/message/cj_message/lio_context.py" = "share/g2c/runtime-source/backend/message/cj_message/lio_context.py"
 "backend/draft/cj_draft/lio_plan.py" = "share/g2c/runtime-source/backend/draft/cj_draft/lio_plan.py"
+"backend/draft/cj_draft/grouped_plan.py" = "share/g2c/runtime-source/backend/draft/cj_draft/grouped_plan.py"
 "eval/optimization/cases.v2.json" = "share/g2c/runtime-source/eval/optimization/cases.v2.json"
 "eval/optimization/score_v2.py" = "share/g2c/runtime-source/eval/optimization/score_v2.py"
 "tooling/optimization/uv.lock" = "share/g2c/runtime-source/tooling/optimization/uv.lock"

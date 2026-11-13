@@ -12153,7 +12153,7 @@ extension Components {
                         errors.append(error)
                     }
                     do {
-                        self.value2 = try .init(from: decoder)
+                        self.value2 = try Components.Schemas.CJExplicitJSONNull(from: decoder)
                     } catch {
                         errors.append(error)
                     }
@@ -12273,7 +12273,7 @@ extension Components {
                         errors.append(error)
                     }
                     do {
-                        self.value2 = try .init(from: decoder)
+                        self.value2 = try Components.Schemas.CJExplicitJSONNull(from: decoder)
                     } catch {
                         errors.append(error)
                     }
