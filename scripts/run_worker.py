@@ -324,8 +324,8 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
         lio_memory = LioMemoryExtraction(database, candidates, memory_credential)
     if demo_planning:
         from functools import partial
-        from cj_message.lio_context import original_for
-        lio_original = partial(original_for, database)
+        from cj_message.lio_context import original_for, calendar_original_for
+        lio_original = partial(calendar_original_for if national_planning else original_for, database)
         if lio_confirmation is not None:
             from cj_api.local_lio_edit import LioEdit
             from cj_api.local_lio_planning import LioPlanning, LioPlanSave

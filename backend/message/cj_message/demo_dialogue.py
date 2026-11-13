@@ -70,6 +70,7 @@ class DialogueReceipt:
     run_id: str
     input_sha256: str
     protocol: str = LIO_VERSION
+    requires_new_lio: bool = False
 
 
 def _identity(scope, purpose):
@@ -90,9 +91,15 @@ def _original_digest(tx, mid):
     return row[0] if row is not None else None
 
 
-def _receipt(stored, digest, protocol=LIO_VERSION):
+def _receipt(stored, digest, protocol=LIO_VERSION, *, requires_new_lio=False):
     receipt = stored.receipt
-    return DialogueReceipt(receipt.message_id, receipt.conversation_id, receipt.run_id, digest, protocol)
+    return DialogueReceipt(receipt.message_id, receipt.conversation_id, receipt.run_id, digest, protocol, requires_new_lio)
+
+
+def has_new_lio_wire(tx, conversation, generation):
+    return tx.cur.execute('SELECT 1 FROM cj_message_receipt WHERE scope=%s '
+        'AND conversation_id=%s AND generation=%s AND lio_wire_protocol IS NOT NULL LIMIT 1',
+        (tx.scope, conversation, generation)).fetchone() is not None
 
 
 def _travel(tx, repository):
@@ -171,10 +178,7 @@ def _receive(service, command, *, prepare_scope=None):
                 raise Unavailable('dialogue conversation unavailable')
 
         if command.protocol in (LIO_VERSION, LIO_VERSION_V2):
-            calendar = tx.cur.execute('SELECT 1 FROM cj_message_receipt WHERE scope=%s '
-                'AND conversation_id=%s AND generation=%s AND lio_wire_protocol=%s LIMIT 1',
-                (tx.scope, conversation, chat.generation, LIO_VERSION_V3)).fetchone()
-            if calendar is not None:
+            if has_new_lio_wire(tx, conversation, chat.generation):
                 raise InvalidInput('calendar conversation requires the new Lio capability')
 
         tx.cur.execute("SELECT set_config('cj.message_context_abi',%s,true)", (ABI,))
@@ -210,4 +214,5 @@ def query(service, mid, *, lio=False):
         tx.chat(stored.receipt.conversation_id, stored.receipt.generation)
         protocol=tx.cur.execute('SELECT lio_wire_protocol FROM cj_message_receipt '
             'WHERE scope=%s AND message_id=%s',(tx.scope,mid)).fetchone()[0]
-        return _receipt(stored, digest, LIO_VERSION if protocol is None else protocol)
+        return _receipt(stored, digest, LIO_VERSION if protocol is None else protocol,
+            requires_new_lio=lio and has_new_lio_wire(tx, stored.receipt.conversation_id, stored.receipt.generation))

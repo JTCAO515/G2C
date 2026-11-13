@@ -25,7 +25,7 @@ from cj_memory.runtime import RuntimeDenied, RuntimeUnknown
 from cj_place.draft_source import PlaceSourceUnavailable
 
 from .draft import DRAFT_SYSTEM, DraftRejected
-from .provider import FakeProvider, ProviderFailed, ProviderUnknown
+from .provider import FakeProvider, MeteredDashScopeProvider, ProviderFailed, ProviderUnknown
 
 FLUSH_CHARS = 24
 _END = object()
@@ -266,13 +266,19 @@ class RunWorker:
             raise
         return state, result
 
-    def _stream(self, binding, messages, system=None, *, answer=False):
+    def _stream(self, binding, messages, system=None, *, answer=False, grouped_input=None):
+        if grouped_input is not None:
+            messages,system=grouped_input.messages,grouped_input.system
         self._model_history(binding,messages,system)
         draft = system is not None and not answer
         prepared = None
         if self.budget_exit is not None:
-            prepared = self.budget_exit.prepare(self.runs,binding,'draft' if draft else 'answer',
-                                                messages,system,self.provider)
+            if grouped_input is not None:
+                prepared=self.budget_exit.prepare_operation(self.runs,binding,'model.draft','model.draft',
+                    grouped_input,stage='draft')
+            else:
+                prepared = self.budget_exit.prepare(self.runs,binding,'draft' if draft else 'answer',
+                                                    messages,system,self.provider)
         def source():
             return (self.budget_exit.stream(prepared) if prepared is not None else
                     self.provider.stream(messages) if system is None else self.provider.stream(messages,system=system))
@@ -349,8 +355,15 @@ class RunWorker:
                 if self.message_context is None:raise DraftRejected('canonical original message context required')
                 _,sources=self._step(binding,lambda:self.drafts.sources_for(binding),draft=True)
                 messages=self.drafts.model_messages(binding,text,sources,messages)
-            if planning_refs:self._model_history(binding,messages,self.drafts.system if structured else DRAFT_SYSTEM,message_refs=planning_refs)
-            reply = ''.join(self._stream(binding, messages, system=self.drafts.system if structured else DRAFT_SYSTEM))
+            grouped=None
+            original_provider=(self.provider.original if type(self.provider) in (_MemoryProvider,_EditMemoryProvider)
+                               else self.provider)
+            if structured and type(original_provider) is MeteredDashScopeProvider:
+                from cj_draft.grouped_plan import grouped_input
+                grouped=grouped_input(self.drafts,sources,messages,self.provider)
+            system=grouped.system if grouped is not None else self.drafts.system if structured else DRAFT_SYSTEM
+            if planning_refs:self._model_history(binding,messages,system,message_refs=planning_refs)
+            reply = ''.join(self._stream(binding,messages,system=system,**({'grouped_input':grouped}if grouped is not None else {})))
             if self.drafts.content_version == 'legacy':
                 def publish():
                     check=self._publication_check or (self.memory_run.check if self.memory_run is not None else None)

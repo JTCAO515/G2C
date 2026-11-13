@@ -1,3 +1,4 @@
+-- local runtime only: explicit Lio wire origin compatibility.
 -- Explicit LIO3 outer capability; original core MESSAGE and LIO1 execution tag stay unchanged.
 -- Columns inherit the existing receipt's forced RLS, minimal ACL, source fence and account cleanup.
 ALTER TABLE public.cj_message_receipt

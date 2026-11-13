@@ -73,6 +73,8 @@ def main():
                            BACKEND / directory, BACKEND / directory))
     results.append(run('evaluation/cj028', [*pytest, 'tests'], ROOT / 'evaluation/cj028', ROOT / 'evaluation/cj028'))
     results.append(run('eval/optimization', ['-B', '-m', 'unittest', '-v', 'eval.optimization.test_score']))
+    results.append(run('eval/lio_simulated_user',
+                       ['-B', '-m', 'unittest', 'discover', '-s', 'eval/lio_simulated_user/tests', '-v']))
     results.append(run('tooling/datasets',
                        ['-B', '-m', 'unittest', 'discover', '-s', 'tooling/datasets',
                         '-t', '.', '-p', 'test_*.py', '-v']))

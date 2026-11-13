@@ -423,9 +423,9 @@
       "version": 53,
       "name": "lio_wire_origin",
       "file": "backend/migrations/0053_lio_wire_origin.sql",
-      "sha256": "547a597804486e4e0f4229edc50c23b3dfa679530eb85e6a83fd8dfd3b9accda",
+      "sha256": "1d9bb398904f68b1df88198f04fe2433d7ab8e1ca11f57b4ce0cd3708d162b1b",
       "down": "backend/migrations/down/0053_lio_wire_origin.down.sql",
-      "down_sha256": "bb7ce2525e25c45854486ad994e34f88f5e4c99f732b9f78be302c47119e353d"
+      "down_sha256": "7686cc2d2d225884723da3faacd48317783abfc566e04edd891ea986055fa3b9"
     }
   ]
 }

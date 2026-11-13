@@ -1,3 +1,4 @@
+-- local runtime only: explicit Lio wire origin compatibility.
 DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM public.cj_message_receipt WHERE lio_wire_protocol IS NOT NULL) THEN

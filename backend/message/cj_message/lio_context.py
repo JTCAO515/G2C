@@ -1,5 +1,6 @@
 """Trusted Lio origin metadata and user-facing answer prompt."""
 from dataclasses import dataclass
+from .domain import Unavailable
 from datetime import date
 import json
 import re
@@ -166,6 +167,21 @@ class LioOriginal:
 
 
 def original_for(database, binding):
+    with database.connect(binding.scope) as connection:
+        row = connection.execute(
+            'SELECT demo_dialogue_locale,demo_question_day,lio_wire_protocol FROM cj_message_receipt WHERE scope=%s AND '
+            'conversation_id=%s AND generation=%s AND message_id=%s AND run_id=%s AND '
+            'demo_dialogue_protocol=%s',
+            (binding.scope, binding.conversation_id, binding.generation, binding.message_id,
+             binding.run_id, LIO_VERSION)).fetchone()
+    if row is None:
+        return None
+    if row[2] is not None:
+        raise Unavailable('newer Lio original requires its selected calendar worker')
+    return LioOriginal(row[0], row[1])
+
+
+def calendar_original_for(database, binding):
     with database.connect(binding.scope) as connection:
         row = connection.execute(
             'SELECT demo_dialogue_locale,demo_question_day,lio_wire_protocol FROM cj_message_receipt WHERE scope=%s AND '
