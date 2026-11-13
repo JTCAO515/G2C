@@ -2,6 +2,7 @@
 from copy import deepcopy
 import json
 from pathlib import Path
+from types import SimpleNamespace
 import sys
 import unittest
 
@@ -14,6 +15,29 @@ EXAMPLES = json.loads((ROOT/'contracts/message/lio-exploration-examples.4.json')
 
 
 class ExplorationContract(unittest.TestCase):
+    def test_legacy_native_envelopes_remain_valid_and_do_not_accept_presentation_fields(self):
+        from cj_message.demo_dialogue import DialogueMessage
+        from cj_message.domain import InvalidInput
+        for version in ('LIO-message.1','LIO-message.2','LIO-message.3'):
+            value=dict(version=version,message_id='legacy-envelope',text='Plain original text',locale='en')
+            raw=json.dumps(value).encode()
+            parsed=DialogueMessage.parse(raw,version=version)
+            self.assertEqual((parsed.protocol,parsed.text),(version,value['text']))
+            for extra in ({'segments':[]},{'profile':[]},{'progress':None}):
+                with self.subTest(version=version,extra=extra),self.assertRaises(InvalidInput):
+                    DialogueMessage.parse(json.dumps(dict(value,**extra)).encode(),version=version)
+
+    def test_existing_plain_text_projection_retains_the_merged_answer_without_new_fields(self):
+        from cj_api.lio_dialogue_routes import _message
+        for locale in ('zh','en'):
+            value=EXAMPLES[locale]['messages'][0]
+            item=SimpleNamespace(message_id=value['message_id'],text=value['text'],locale=locale)
+            state=SimpleNamespace(status='completed',draft_outcome=None,text=value['answer'],effects=())
+            projected=_message(item,state)
+            self.assertEqual(projected['answer'],value['answer'])
+            self.assertEqual(set(projected),set(LEGACY['$defs']['TimelineMessage3']['properties']))
+            Draft202012Validator({'$defs':LEGACY['$defs'],'$ref':'#/$defs/TimelineMessage3'}).validate(projected)
+
     def test_schema_and_bilingual_progress_examples(self):
         Draft202012Validator.check_schema(SCHEMA)
         for name, value in EXAMPLES.items():
