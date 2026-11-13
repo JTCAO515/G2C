@@ -45,6 +45,12 @@ NATIONAL_COMPACT_DRAFT = (
     'keep utc_offset unknown. Never assert a booking or an observed source for a suggestion. '
     'Use short labels in the question language and return only compact JSON.'
 )
+NATIONAL_GROUPED_DRAFT = (
+    ' Cover each requested morning/afternoon/evening period. '
+    'A fixed commitment covers only its actual period. If no periods were requested, '
+    'use an afternoon stop on each date and an evening stop on the final date of a trip of three or more days. '
+    'Use the traveler\'s requested luxury, pace and other preferences without inventing prices or bookings. '
+)
 SYSTEM = (
     'Extract only information provided by the traveler for this trip. Return JSON with exactly '
     'city (an exact substring of the user text or null), continues_trip (boolean), and extraction. '
@@ -197,11 +203,12 @@ class LioPlanning:
 
 
 class LioPlanSave:
-    def __init__(self, database, context_publisher, confirmation,*,source_window=False):
+    def __init__(self, database, context_publisher, confirmation,*,source_window=False,grouped=False):
         self.database = database
         self.context_publisher = context_publisher
         self.confirmation = confirmation
         self.source_window=source_window
+        self.grouped=grouped
 
     def scene_context(self,binding,now):
         from cj_trip.planning_context import read_current
@@ -291,8 +298,11 @@ class LioPlanSave:
         if self.source_window:
             from cj_draft.lio_plan import LioSourceWindowPublisher
             publisher_class=LioSourceWindowPublisher
+            if self.grouped:
+                from cj_draft.grouped_plan import LioGroupedPlanPublisher
+                publisher_class=LioGroupedPlanPublisher
         publisher = publisher_class(self.context_publisher, self.confirmation,
-                                     original_needs, check_original, draft_guidance=NATIONAL_COMPACT_DRAFT if self.source_window else COMPACT_DRAFT)
+                                     original_needs, check_original, draft_guidance=NATIONAL_GROUPED_DRAFT if self.grouped else NATIONAL_COMPACT_DRAFT if self.source_window else COMPACT_DRAFT)
         previous = worker.drafts
         worker.drafts = publisher
         try:

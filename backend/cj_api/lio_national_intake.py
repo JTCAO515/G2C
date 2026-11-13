@@ -445,3 +445,44 @@ def fixed_sources_complete(intake,fields,turns,city_reference):
       r'已(?:预订|订|预约)|已经(?:买票|预订|订|预约)|\b(?:booked|have tickets|has tickets)\b',description,re.I) is None):
    return False
  return True
+
+
+# Current data8 notation compiler; legacy parse functions above remain unchanged.
+LITERAL_DATE=re.compile(r'(?<![0-9])(?P<year>[0-9]{4}|[0-9]{2})(?:'
+    r'(?P<separator>[-/.])(?P<month>[0-9]{1,2})(?P=separator)(?P<day>[0-9]{1,2})|'
+    r'年(?P<cn_month>[0-9]{1,2})月(?P<cn_day>[0-9]{1,2})[日号]?)(?![0-9])')
+
+
+def literal_dates(text):
+    results=[]
+    for match in LITERAL_DATE.finditer(text):
+        raw=match['year']
+        # The explicit contemporary travel shorthand YY is 20YY; no clock,
+        # missing year, start date or party size is filled by this compiler.
+        year=2000+int(raw) if len(raw)==2 else int(raw)
+        try:value=date(year,int(match['month']or match['cn_month']),int(match['day']or match['cn_day']))
+        except ValueError:raise InvalidInput('invalid original calendar date') from None
+        results.append((match,value.isoformat()))
+    return results
+
+
+def check_date_source(value,references,turns):
+    accepted=set()
+    for reference in references:
+        quote=reference['quote'];dates=literal_dates(quote)
+        if not dates:continue
+        if len(dates)>1 and (len(dates)!=2 or
+                _WEEK_RANGE.fullmatch(quote[dates[0][0].end():dates[1][0].start()])is None):
+            raise InvalidInput('ambiguous original calendar dates')
+        original=turns[reference['source_index']].text
+        for match,day in dates:
+            for occurrence in re.finditer(re.escape(quote),original):
+                position=occurrence.start()+match.start()
+                # Dots within a year-first date are not sentence boundaries.
+                separator=r'[，,。!?！？；;\n]|\.(?![0-9])'
+                clause=re.split(separator,original[:position])[-1]+re.split(separator,original[position:])[0]
+                if _WEEK_NONASSERTION.search(clause):
+                    raise InvalidInput('nonaffirmative original calendar date')
+            accepted.add(day)
+    if accepted and value not in accepted:
+        raise InvalidInput('date differs from original calendar notation')

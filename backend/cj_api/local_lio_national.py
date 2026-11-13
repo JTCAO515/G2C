@@ -47,6 +47,12 @@ def publication_held(text):
 def intake_prompt(locale,turns,*,discussion_only=False,scene=None):
     dates=', '.join(turn.question_day.isoformat() for turn in turns)
     system=answer_prompt(locale)+' '+CURRENT_SYSTEM+' Original traveler messages have source indices 0 through '+str(len(turns)-1)+'. Stored memory data is not an indexed traveler message. A week without a stated day (such as 下周 or next week) is not an exact start date: keep start_date null with the original uncertainty, and plan by day numbers without asking again. Resolve stated weekdays against their original message day. Original local China days in that order: '+dates
+    system+=('\nYear-first dates 26.12.01 and 26年12月1日 both mean 2026-12-01; YY denotes 20YY. '
+             'Return every supplied day count with its own field_sources entry: for 三天, '
+             'duration_days=3 and {field:"duration_days",source_index:<its original index>,quote:"三天"}. '
+             'A known duration without that exact original source entry is invalid. '
+             'Likewise return original start_date and party_size source entries for supplied dates and people. '
+             'No fixed commitments means fixed_items:[]; luxury describes a preference, not a fixed booking.')
     if discussion_only:
         system+=(' This conversation is discussing a separate proposal after a conflict with the saved itinerary. '
                  'For discuss intent, answer the current discussion usefully, including requested refinements, rather than a saving acknowledgement. '

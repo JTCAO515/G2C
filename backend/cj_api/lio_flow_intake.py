@@ -57,12 +57,15 @@ def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake):
     intake=replace(intake,intent=intent,publication_hold=hold is not None,planning_request_index=request_index)
     if dto.version=='LIO-planning-intake.8':
         from .lio_national_intake import _week_source
+        from .lio_national_intake import check_date_source
         if intake.start_date is not None and intake.start_date['state']=='known':
+            check_date_source(intake.start_date['value'],intake.sources['start_date'],turns)
             _week_source(intake.start_date['value'],intake.sources['start_date'],turns)
         for edge in (()if intake.extraction is None else ('arrival','departure','overseas_departure')):
             event=intake.extraction['fields'].get(edge)
             if event is not None and event['date']['state']=='known':
                 references=intake.sources.get(edge+'.date',[])
+                check_date_source(event['date']['value'],references,turns)
                 _week_source(event['date']['value'],references,turns,departure=edge=='departure')
     if intent=='cancel':return intake,questions,{}
     # A previously classified ordinary consultation cannot later supply
@@ -88,7 +91,10 @@ def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake):
         if any(field.startswith('fixed_items')for field in blocked):blocked.update(field for field in intake.sources if field.startswith('fixed_items'))
         intake=replace(intake,**changes,extraction=dict(intake.extraction,fields=fields),
             sources={field:sources for field,sources in intake.sources.items()if field not in blocked})
-    if data['start_date']is not None and not any(ref['field']=='start_date'and DATE_EVIDENCE.search(ref['quote'])for ref in data['field_sources']):
+    from .lio_national_intake import LITERAL_DATE
+    if data['start_date']is not None and not any(ref['field']=='start_date'and
+            (DATE_EVIDENCE.search(ref['quote']) or dto.version=='LIO-planning-intake.8'and LITERAL_DATE.search(ref['quote']))
+            for ref in data['field_sources']):
         raise InvalidInput('original trip start source required')
     snapshot={}
     for field in ('city',*CORE):
