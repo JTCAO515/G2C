@@ -112,6 +112,8 @@ def assemble(document, *, source, facts, activities, edges: EdgeWindows, phase,
         raise ValueError('exact source constraint set for all items required')
     if edges.status in ('CONFLICT','UNKNOWN'):
         return Assembly(edges.status, 'EDGE_WINDOWS_'+edges.status)
+    if edges.unknowns:
+        return Assembly('UNKNOWN','EDGE_CONSTRAINTS_UNCONFIRMED')
     if any(check['kind']=='day_opening' and check['state']=='conflict' for check in value['date_checks']):
         return Assembly('CONFLICT','KNOWN_OPENING_CONFLICT')
     proposed = [item for item in value['items'] if item['id'] not in protected and item['kind'] in ('sight','meal','free_time')]

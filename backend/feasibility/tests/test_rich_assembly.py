@@ -193,3 +193,6 @@ def test_exact_activity_set_and_conflicting_edge_windows_are_not_silently_repair
         assemble(case['content'],**dict(args,activities=args['activities'][:-1]))
     conflict=replace(args['edges'],status='CONFLICT')
     assert assemble(case['content'],**dict(args,edges=conflict)).status=='CONFLICT'
+    unknown_mode=activity_windows(2,arrival_clock=0,departure_clock=15*3600)
+    result=assemble(case['content'],**dict(args,edges=unknown_mode))
+    assert result.status=='UNKNOWN' and result.reason=='EDGE_CONSTRAINTS_UNCONFIRMED' and result.content is None
