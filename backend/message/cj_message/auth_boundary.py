@@ -141,6 +141,19 @@ class HistoryReadContext:
         self._check()
         return result
 
+    def lio_exploration_timeline(self, conversation_id, before):
+        """Explicit server-selected v4 reader; retains the original frame/guards."""
+        from .lio_timeline import read_exploration, read_exploration_in_transaction
+        self._check()
+        if self._lio_projection_tx is None:
+            result = read_exploration(self._service, conversation_id, before)
+        else:
+            self._admission_guard('lio_projection_page')
+            result = read_exploration_in_transaction(self._lio_projection_tx, conversation_id, before)
+            self._admission_guard('lio_projection_page_return')
+        self._check()
+        return result
+
     def query_lio_receipt(self, message_id):
         from .demo_dialogue import query
         self._check()

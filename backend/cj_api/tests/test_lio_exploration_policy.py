@@ -1,9 +1,11 @@
 """Code-owned scene/question gates; these are not native4 or real-model tests."""
 from copy import deepcopy
+import json
 from types import SimpleNamespace
 import unittest
 
 from cj_api.lio_exploration_factors import FACTORS
+from cj_api.lio_exploration_profile import Original,parse_updates
 from cj_api.lio_exploration_policy import (Scene,choose_scene,next_question_count,
     candidates,questions,exits,emergency_opening)
 
@@ -89,6 +91,15 @@ class ExplorationPolicyTests(unittest.TestCase):
         for locale in ('zh','en'):
             self.assertIn('120',emergency_opening('I cannot breathe',locale).split('。' if locale=='zh' else '.')[0])
             self.assertIn('110',emergency_opening('My bag was stolen',locale).split('。' if locale=='zh' else '.')[0])
+
+    def test_city_first_option_preserves_explicit_returning_to_china_in_both_languages(self):
+        factor=next(factor for factor in FACTORS if factor.key=='first_visit')
+        for locale,quote in (('zh','来过中国'),('en','Returning to China')):
+            text=factor.question(locale)['options'][2]['send_text']
+            raw=dict(version='LIO-profile-update.1',updates=[dict(factor_key='first_visit',value=False,state='known',
+                sources=[dict(source_index=0,quote=quote)])])
+            profile=parse_updates(json.dumps(raw),(Original('actual-option-message',1,text),))
+            self.assertIs(profile[0].value,False)
 
 
 if __name__=='__main__':unittest.main()

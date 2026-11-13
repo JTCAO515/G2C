@@ -216,6 +216,8 @@ def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, pre
             return _failure(message_failure(request, exc, False).status_code)
         value = None
         if receipt is not None:
+            if receipt.requires_exploration:
+                return _failure(400)
             if not calendar and receipt.requires_new_lio:
                 return _failure(400)
             if receipt.input_sha256 != digest:

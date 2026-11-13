@@ -151,15 +151,15 @@ class Transaction:
         if dialogue is not None:
             columns += ', demo_dialogue_input_sha256, demo_dialogue_locale'
             values += (dialogue.input_sha256, dialogue.locale)
-            from .demo_dialogue import LIO_VERSION, LIO_VERSION_V2, LIO_VERSION_V3
-            if dialogue.protocol in (LIO_VERSION, LIO_VERSION_V2, LIO_VERSION_V3):
+            from .demo_dialogue import LIO_VERSION, LIO_VERSION_V2, LIO_VERSION_V3, LIO_VERSION_V4
+            if dialogue.protocol in (LIO_VERSION, LIO_VERSION_V2, LIO_VERSION_V3, LIO_VERSION_V4):
                 columns += ', demo_dialogue_protocol'
                 # Both HTTP versions use the same persisted Lio execution
                 # protocol. The input digest still covers the exact wire version.
                 values += (LIO_VERSION,)
-            if dialogue.protocol == LIO_VERSION_V3:
+            if dialogue.protocol in (LIO_VERSION_V3,LIO_VERSION_V4):
                 columns += ', lio_wire_protocol, lio_wire_input'
-                values += (LIO_VERSION_V3, dialogue.wire_input)
+                values += (dialogue.protocol, dialogue.wire_input)
         placeholders = ','.join(['%s'] * len(values))
         self.cur.execute(f'INSERT INTO cj_message_receipt ({columns}) VALUES ({placeholders})', values)
         if protected:
