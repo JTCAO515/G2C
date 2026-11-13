@@ -23,6 +23,7 @@ class RunRequests:
         self.claims,self.boundary,self.token_supplier,self.tools=claims,boundary,token_supplier,tools
         self.clock=clock
         self.profile=profile
+        self.registry_transformer=None
         self.proved={}
         self.rejected=set()
 
@@ -69,8 +70,10 @@ class RunRequests:
     def registrations(self,binding):
         try:
             request=self.request(binding)
-            return (self.tools.registrations if request is None else
-                    self.tools.runtime_registrations(request['candidate'],profile=self.profile))
+            if request is None:return self.tools.registrations
+            registrations=self.tools.runtime_registrations(request['candidate'],profile=self.profile)
+            return (registrations if self.registry_transformer is None else
+                    self.registry_transformer(registrations,binding,request))
         except (Unavailable,Invalid,OSError,AccessBlocked,IdentityChanged,BudgetUnknown):
             # No fallback registry/candidate is ever used. The original period
             # is already resolved; an empty registry cannot dispatch anything.
