@@ -148,6 +148,9 @@ def exercise(root,conninfo):
                 result=api.post('/v3/lio/messages',content=raw,headers=headers)
                 assert result.status_code==200,result.text
                 process()
+                with psycopg.connect(**conninfo) as connection:
+                    identity=connection.execute('SELECT run_id,sequence,input_sha256,demo_dialogue_input_sha256 FROM cj_message_receipt WHERE scope=%s AND message_id=%s',(scope,mid)).fetchone()
+                print(json.dumps(dict(mid=mid,cid=result.json()['conversation_id'],run_id=identity[0],sequence=identity[1],core_sha256=identity[2],outer_sha256=identity[3])),flush=True)
                 return result.json()['conversation_id'],raw
             cid,raw=send('calendar-'+locale+'-plan','去成都玩三天' if locale=='zh' else 'Plan three days in Chengdu')
             planned=read(cid)
