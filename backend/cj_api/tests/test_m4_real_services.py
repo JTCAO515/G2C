@@ -739,6 +739,88 @@ class Boundaries(unittest.TestCase):
         self.assertEqual(len(self.sent),1)
         self.assertEqual(self.budget.inspect()[0]['state'],'RECEIVED')
 
+    def test_local_visitor_exit_preserves_original_scope_and_has_no_external_call(self):
+        from cj_api.lio_city import CityReference
+        from cj_api.local_app import ISSUER,scope_for
+        subject='m4-synthetic-one';subjects=frozenset({subject})
+        provider=self.provider(sse())
+        directory=Path(__file__).resolve().parents[3]/'knowledge/visitor/entries'
+        tools=RealTools(RealServices(provider,KEY,subjects,demo_subjects=subjects,national_subjects=subjects),
+                        visitor_catalogue_directory=directory)
+        city=CityReference('510100','成都市','四川省','成都市','city','Asia/Shanghai')
+        name,query=canonical_tool('visitor_fact',json.dumps(dict(topic='payment',city='Beijing')),city=city)
+        self.assertEqual((name,json.loads(query)['city']),('visitor_fact','510100'))
+        prepared=tools.registrations['tool.visitor_fact'].prepare_input((query,'original-ref',city))
+        original=json.loads(prepared.original_bytes)
+        self.assertEqual(original['destination_adcode'],'510100')
+        operation=SimpleNamespace(binding=SimpleNamespace(scope=scope_for(ISSUER,subject)))
+        before=self.budget.inspect()
+        result=json.loads(''.join(prepared.bind_operation(operation,lambda:True)()))
+        self.assertEqual(result['data_origin'],'maintainer_summary')
+        self.assertEqual(result['request_ref'],'original-ref')
+        self.assertEqual(result['status'],'matched')
+        self.assertEqual(self.budget.inspect(),before);self.assertEqual(self.sent,[])
+        with self.assertRaises(BudgetUnknown):list(prepared.bind_operation(operation,lambda:False)())
+        foreign=SimpleNamespace(binding=SimpleNamespace(scope=scope_for(ISSUER,'m4-synthetic-foreign')))
+        with self.assertRaises(BudgetUnknown):list(prepared.bind_operation(foreign,lambda:True)())
+        with self.assertRaises(ProviderUnknown):
+            tools.registrations['tool.visitor_fact'].prepare_input((query.replace(b'510100',b'110000'),'original-ref',city))
+        self.assertNotIn('visitor_fact',{t['function']['name']for t in tools.native_tools})
+        self.assertIn('visitor_fact',{t['function']['name']for t in tools.national_tools})
+
+    def test_visitor_no_match_retains_uncertainty_and_no_source_claim(self):
+        from cj_api.lio_city import CityReference
+        from cj_api.local_app import ISSUER,scope_for
+        from cj_fact.visitor import decode_query as visitor_query,lookup
+        subject='m4-synthetic-one';subjects=frozenset({subject});provider=self.provider(sse())
+        tools=RealTools(RealServices(provider,KEY,subjects,demo_subjects=subjects,national_subjects=subjects))
+        city=CityReference('440100','广州市','广东省','广州市','city','Asia/Shanghai')
+        directory=Path(__file__).resolve().parents[3]/'knowledge/visitor/entries'
+        binding=SimpleNamespace(scope=scope_for(ISSUER,subject),run_id='visitor-no-match')
+        recorded=[]
+        class Worker:
+            lio_planning=None
+            def _model_history(self,*args):pass
+            def _registered_stream(self,original,key,registration,argument,**kwargs):
+                if registration=='tool.visitor_fact':
+                    raw,ref,actual_city=argument
+                    assert actual_city==city
+                    yield lookup(directory,visitor_query(raw),evaluated_at=datetime.now(timezone.utc),request_ref=ref).decode()
+                elif key=='model.tool_turn.0':
+                    argument.native_reply['assistant']=dict(tool_calls=[dict(id='visitor-no-match-tool')])
+                    yield json.dumps(dict(version='MODEL-tool-turn.1',kind='tool',answer=None,
+                        calls=[dict(name='visitor_fact',arguments=dict(topic='payment',city='Beijing'))]))
+                else:
+                    recorded.append(argument)
+                    result=json.loads(argument.messages[-1]['content'])['results'][0]['result']
+                    assert result['status']=='no_match'and result['entries']==[]
+                    assert 'No reviewed visitor entry matched'in argument.system
+                    yield json.dumps(dict(version='MODEL-tool-turn.1',kind='answer',calls=[],
+                        answer=dict(zh='这部分我暂不能确认。你想先查看哪个官方渠道？',en='I cannot confirm that detail yet. Which official channel would you like to check?')))
+        worker=Worker();worker.provider=provider
+        chunks=list(tools.answer(worker,binding,[dict(role='user',content='How can I pay in Guangzhou?')],lio_locale='en',lio_city=city))
+        self.assertEqual(len(recorded),1)
+        from cj_message.lio_context import LioCitation,LioToolProgress
+        self.assertEqual([part for part in chunks if type(part)is str],['I cannot confirm that detail yet. Which official channel would you like to check?'])
+        self.assertIn(LioToolProgress('tool.0.0',None),chunks)
+        self.assertFalse(any(isinstance(part,LioCitation)for part in chunks))
+        self.assertEqual(self.sent,[])
+
+    def test_invalid_visitor_resource_is_not_successful_no_match(self):
+        from cj_api.lio_city import CityReference
+        from cj_api.local_app import ISSUER,scope_for
+        subject='m4-synthetic-one';subjects=frozenset({subject});provider=self.provider(sse())
+        with tempfile.TemporaryDirectory()as folder:
+            directory=Path(folder);(directory/'broken.json').write_text('{bad JSON')
+            tools=RealTools(RealServices(provider,KEY,subjects,demo_subjects=subjects,national_subjects=subjects),
+                            visitor_catalogue_directory=directory)
+            city=CityReference('510100','成都市','四川省','成都市','city','Asia/Shanghai')
+            _,raw=canonical_tool('visitor_fact',json.dumps(dict(topic='payment',city='chengdu')),city=city)
+            prepared=tools.registrations['tool.visitor_fact'].prepare_input((raw,'original-ref',city))
+            original=SimpleNamespace(binding=SimpleNamespace(scope=scope_for(ISSUER,subject)))
+            with self.assertRaises(BudgetUnknown):list(prepared.bind_operation(original,lambda:True)())
+            self.assertEqual(self.sent,[]);self.assertEqual(self.budget.inspect(),[])
+
     def test_optional_flow_profile_keeps_exact_wire_hash_and_bounded_original_call(self):
         from cj_api.lio_scene import scene_prompt
         from cj_agent.lio_intake_optional_schema import PROFILE,response_format,response_format_sha256

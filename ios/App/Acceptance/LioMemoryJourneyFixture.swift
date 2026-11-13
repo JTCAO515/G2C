@@ -34,7 +34,8 @@ private func journeyMemoryHost(shell: ShellState, backend: JourneyMemoryBackend,
     let memoryEndpoint = try MemoryEndpoint(url: url, maximumRequestBytes: 32_768, maximumResponseBytes: 100_000)
     let messageEndpoint = try MessageEndpoint(url: url, maximumRequestBytes: 32_768, maximumResponseBytes: 100_000)
     let reader = TypedMemoryClient(endpoint: memoryEndpoint, credentials: { _ in "SYNTHETIC" },
-                                   currentBinding: { binding }, pendingStore: typed, interceptedTransport: backend)
+                                   currentBinding: { binding }, pendingStore: typed, interceptedTransport: backend,
+                                   readVersion: ProcessInfo.processInfo.arguments.contains("--lio-memory-titled-acceptance") ? .v3 : .v2)
     let message = MessageHTTPClient(recovery: recovery, scope: scope, endpoint: messageEndpoint,
                                     credentials: JourneyCredentials(), interceptedTestTransport: backend)
     let travel = try TravelSelectionModel(ids: [], client: message, lease: lease, isCurrent: { true })
@@ -75,11 +76,18 @@ private actor JourneyMemoryBackend: ClientTransport {
     private let otherID = "aisle-seat"
     private let language: LioLanguage
     private var preference: String?
+    private let gridPreview: Bool
+    private let titledPreview: Bool
     private var version = 1
     private var editReceipt: [String: Any]?
     private var deletion: MemoryErasureAction?
 
-    init(language: LioLanguage) { self.language = language }
+    init(language: LioLanguage) {
+        self.language = language
+        gridPreview = ProcessInfo.processInfo.arguments.contains("--lio-memory-grid-acceptance")
+        titledPreview = ProcessInfo.processInfo.arguments.contains("--lio-memory-titled-acceptance")
+        if gridPreview { preference = language.text("You like quiet hotels", "你喜欢安静的酒店") }
+    }
 
     func remember() {
         preference = language.text("You like quiet hotels", "你喜欢安静的酒店")
@@ -96,13 +104,16 @@ private actor JourneyMemoryBackend: ClientTransport {
         let fields: [String: Any]
         var responseVersion = "MEMORY-result.2"
         switch operationID {
-        case "listTypedMemories":
+        case "listTypedMemories", "listTitledMemories":
+            if operationID == "listTitledMemories" { responseVersion = "MEMORY-result.3" }
             try Task.checkCancellation()
-            let ids = [otherID, selectedID].filter { id in
+            let ids = (gridPreview ? [otherID, selectedID, "city-walks", "food-interest", "museum-stops", "train-seat"]
+                                   : [otherID, selectedID]).sorted().filter { id in
                 parameter("after").map { $0.utf8.lexicographicallyPrecedes(id.utf8) } ?? true
             }
             fields = ["items": ids.compactMap(item)]
-        case "getTypedMemoryItem":
+        case "getTypedMemoryItem", "getTitledMemoryItem":
+            if operationID == "getTitledMemoryItem" { responseVersion = "MEMORY-result.3" }
             fields = ["item": parameter("item_id").flatMap(item).map { $0 as Any } ?? NSNull()]
         case "applyTypedMemoryManagement":
             guard let body, preference != nil, editReceipt == nil else { throw MemoryFailure.invalidInput }
@@ -157,14 +168,37 @@ private actor JourneyMemoryBackend: ClientTransport {
         } else if id == otherID {
             text = language.text("You prefer an aisle seat", "你偏好靠过道的座位")
             itemVersion = 1
+        } else if gridPreview && ["city-walks", "food-interest", "museum-stops", "train-seat"].contains(id) {
+            text = switch id {
+            case "city-walks": language.text("You enjoy long walks through quiet neighbourhoods, with time to pause for tea and explore small local shops at your own pace.", "你喜欢在安静的街区慢慢散步，随时停下来喝茶，在当地小店里逛逛，不希望把一天安排得太满。")
+            case "food-interest": language.text("You enjoy local food", "你喜欢尝试当地美食")
+            case "museum-stops": language.text("You enjoy art museums", "你喜欢参观美术馆")
+            default: language.text("You prefer a window seat on trains", "你喜欢火车上靠窗的座位")
+            }
+            itemVersion = 1
         } else {
             return nil
         }
-        return ["version": itemVersion, "status": "active", "recorded_at": "2026-11-03T00:00:00Z", "command": [
+        var result: [String: Any] = ["version": itemVersion, "status": gridPreview && id == "city-walks" ? "disabled" : "active", "recorded_at": "2026-11-03T00:00:00Z", "command": [
             "operation_id": "remember-\(id)", "item_id": id, "subject": "self", "slot": id,
             "text": text, "occurred_at": "2026-11-03T00:00:00Z", "source_id": "source-\(id)-\(itemVersion)",
             "source_version": itemVersion, "kind": "preference", "extent": "long_term", "context": NSNull()
         ]]
+        if titledPreview {
+            // Fixed sample service responses, not client-generated summaries.
+            result["title"] = switch id {
+            case otherID: language.text("Aisle seat", "过道座位") as Any
+            case selectedID: language.text("Quiet hotels", "安静酒店") as Any
+            case "city-walks": language.text("Slow walks", "慢慢散步") as Any
+            case "food-interest": NSNull()
+            case "museum-stops": ""
+            default: language.text("Window seat", "靠窗座位") as Any
+            }
+            if id == "food-interest", ProcessInfo.processInfo.arguments.contains("--lio-memory-titled-invalid-acceptance") {
+                result["title"] = true
+            }
+        }
+        return result
     }
 }
 #endif

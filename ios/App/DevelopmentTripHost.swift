@@ -707,8 +707,13 @@ private var developmentHostEnvironment: [String: String] {
         let transport = try NoRedirectTransport.developmentTypedMemory(endpoint:endpoint,requestTimeout:10,resourceTimeout:20,validate:{
             guard current() == binding else { throw MemoryFailure.staleBinding }
         })
+        #if G2C_DEMO_BETA
+        let memoryReadVersion: TypedMemoryReadVersion = .v3
+        #else
+        let memoryReadVersion: TypedMemoryReadVersion = .v2
+        #endif
         let client = try TypedMemoryClient(localEndpoint:endpoint,credentials:credentials,currentBinding:current,pendingStore:store,
-            localTransport:transport,validatePriorOriginals:{
+            localTransport:transport,readVersion:memoryReadVersion,validatePriorOriginals:{
                 if try legacy.requiresOriginalReconciliation(binding:binding) { throw MemoryFailure.pendingRequiresQuery }
             })
         var options: [TypedMemoryManualOption] = []

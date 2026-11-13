@@ -871,6 +871,8 @@ def exercise(auth,conninfo):
     import runtime_memory_setup_pg
     for language in ('zh','en'):
         runtime_memory_setup_pg.exercise(auth.parent/('native-memory-controls-'+language),conninfo,language,lost_ack=language=='zh')
+    import runtime_model_capture_pg
+    runtime_model_capture_pg.exercise(auth.parent/'native-model-capture',conninfo)
     print('PASS actual private worker manifest/national.2 pins/canonical directory pin, concurrent G/native original worker, E/F full-setup gate before any intent or spend')
     print('PASS public G propose/query -> concrete native MESSAGE/RUN/registered reflection/collector; repeated query zero sends, unavailable all-task recipe stops before paid setup')
     print('PASS canonical MESSAGE -> original leased RUN/candidate/reflection -> actual original collector envelope verified by G; fixture model/wire/Meter/fee, no copied expected state')
