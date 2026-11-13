@@ -2,7 +2,7 @@
 import argparse,hashlib,importlib.util,json,os,plistlib,subprocess,threading
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit,parse_qs
 ROOT=Path(__file__).resolve().parents[3];HERE=Path(__file__).parent
 BUNDLE='space.go2china.b691.acceptance'
 SCENARIOS=['ready','registrationUnknown','enrolled','preparedUnregister','preparationUnknown','foreignOwner','confirmationDispatched','verifiedRefusal']
@@ -26,10 +26,29 @@ def main():
    for k,v in [('Content-Type','application/json'),('X-Request-ID',TRACE),('Cache-Control','no-store'),('Content-Length',str(len(raw)))]:self.send_header(k,v)
    self.end_headers();self.wfile.write(raw)
   def do_GET(self):
-   if urlsplit(self.path).path!='/v1/message-receipts':self.send_error(404);return
-   if self.headers.get('Authorization')!='Bearer SDK.SYNTHETIC.B691.verifiedRefusal':self.send_error(403);return
-   report['requests'].append({'method':'GET','path':'/v1/message-receipts','scenario':'verifiedRefusal'});save()
-   self.send(403,{'error':{'code':'ACCESS_DENIED','category':'access','message_en':'Unavailable','message_zh':'不可用','outcome':'failed','recovery':'do_not_retry'}})
+   path=urlsplit(self.path).path;query=parse_qs(urlsplit(self.path).query);auth=self.headers.get('Authorization','')
+   if path=='/v1/message-receipts' and auth=='Bearer SDK.SYNTHETIC.B691.verifiedRefusal':
+    report['requests'].append({'method':'GET','path':path,'scenario':'verifiedRefusal'});save()
+    self.send(403,{'error':{'code':'ACCESS_DENIED','category':'access','message_en':'Unavailable','message_zh':'不可用','outcome':'failed','recovery':'do_not_retry'}});return
+   if path=='/v1/account-cleanup-operations/operation-b691-preparedUnregister':
+    if auth!='Cleanup PROGRESS.SYNTHETIC.B691.preparedUnregister':self.send_error(403);return
+    report['requests'].append({'method':'GET','path':path,'scenario':'preparedUnregister','credential_kind':'original_progress','query':query});save()
+    self.send(200,{'version':'CLEANUP-API@1','operation_id':'operation-b691-preparedUnregister','phase':'prepared','status':'awaiting_confirmation','revision':0,'steps':[]});return
+   prefix='Bearer SDK.SYNTHETIC.B691.'
+   if not auth.startswith(prefix) or not auth.endswith('.renewed'):self.send_error(403);return
+   scenario=auth[len(prefix):-len('.renewed')]
+   if scenario not in ('registrationUnknown','enrolled','preparationUnknown'):self.send_error(403);return
+   report['requests'].append({'method':'GET','path':path,'scenario':scenario,'credential_kind':'renewed_sdk','query':query});save()
+   if path=='/v4/cleanup-device-registrations' and set(query)=={'action_id','input_sha256'}:
+    registration=None
+    if scenario=='enrolled':
+     original=next(row['body']for row in report['requests']if row['method']=='POST'and row['path']=='/v4/cleanup-devices'and row['scenario']==scenario)
+     if query['action_id']!=[original['action_id']]:self.send_error(409);return
+     registration={'version':'CLEANUP-DEVICE@4','binding_id':'binding-b691-'+scenario,'device_id':original['device_id'],'state_ref':original['state_ref'],'scope_digest':'a'*64,'device_token':'DEVICE.SYNTHETIC.B691.'+scenario,'server_time':1000,'business_access':'not_granted'}
+    self.send(200,{'version':'CLEANUP-DEVICE@4','action_id':query['action_id'][0],'input_sha256':query['input_sha256'][0],'registration':registration});return
+   if path=='/v1/account-cleanup-preparations' and set(query)=={'action_id'}:
+    self.send(200,{'version':'CLEANUP-API@1','preparation':None});return
+   self.send_error(404)
   def do_POST(self):
    transfer=self.headers.get('Transfer-Encoding','').lower()
    if transfer=='chunked' and 'Content-Length'not in self.headers:
@@ -57,7 +76,17 @@ def main():
     scenario=body['scenario']
     if scenario not in SCENARIOS or scenario in report['results']:self.send_error(409);return
     expected=scenario not in ('foreignOwner','confirmationDispatched','verifiedRefusal')
-    if body!={'scenario':scenario,'renewalAccepted':expected,'originalStateRefUnchanged':True,'originalControlsUnchanged':True,'manifestChangeIsOnlyRenewedSDKHash':True}:self.send_error(400);return
+    expected_base={'scenario':scenario,'renewalAccepted':expected,'originalStateRefUnchanged':True,'originalControlsUnchanged':True,'manifestChangeIsOnlyRenewedSDKHash':True}
+    if any(body.get(k)!=v for k,v in expected_base.items()):self.send_error(400);return
+    recovered=scenario in ('registrationUnknown','enrolled','preparedUnregister','preparationUnknown')
+    status='PASS'if recovered else 'NOT_APPLICABLE_NO_ORIGINAL'if scenario=='ready'else 'UNRUN_DENIED'
+    if body.get('recoveryStatus')!=status:self.send_error(400);return
+    if recovered:
+     observed=[row for row in report['requests']if row['method']=='GET'and row['scenario']==scenario]
+     if len(observed)!=1:self.send_error(400);return
+     query=observed[0]['query']
+     if scenario!='preparedUnregister'and query.get('action_id')!=[body['recoveryOriginalActionID']]:self.send_error(409);return
+     if scenario in ('registrationUnknown','enrolled')and query.get('input_sha256')!=[body['recoveryOriginalRequestSha256']]:self.send_error(409);return
     report['results'][scenario]=body;report['status']='PASS'if len(report['results'])==8 else 'RUNNING';save();self.send(200,{'accepted':True});return
    auth=self.headers.get('Authorization','')
    prefix='Bearer SDK.SYNTHETIC.B691.'

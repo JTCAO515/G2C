@@ -2190,6 +2190,9 @@ struct DemoCleanupRenewalProbeResult: Codable {
     let originalStateRefUnchanged: Bool
     let originalControlsUnchanged: Bool
     let manifestChangeIsOnlyRenewedSDKHash: Bool
+    let recoveryStatus: String
+    let recoveryOriginalActionID: String?
+    let recoveryOriginalRequestSha256: String?
 }
 
 @MainActor enum DemoCleanupRenewalProbe {
@@ -2218,6 +2221,13 @@ private extension DevelopmentCleanupWorkflow {
                   execution: executionStore.load()?.withBytes { $0 },
                   selection: indexStore.load()?.withBytes { $0 },
                   sdk: sdkStore.load()?.withBytes { $0 })
+    }
+    static func probeOriginalRequest(_ record: Data?, field: String) throws -> Data {
+        guard let record, let fields = try JSONSerialization.jsonObject(with: record) as? [String: Any],
+              let encoded = fields[field] as? String, let raw = Data(base64Encoded: encoded), !raw.isEmpty else {
+            throw CleanupFailure.unavailable
+        }
+        return raw
     }
     static func probeCredentialRenewal(endpoint: URL, scenario: String) async throws -> DemoCleanupRenewalProbeResult {
         let environment = UUID(), owner = UUID()
@@ -2293,17 +2303,56 @@ private extension DevelopmentCleanupWorkflow {
         let before = try original.renewalControlSnapshot()
         let shouldAccept = !["foreignOwner", "confirmationDispatched", "verifiedRefusal"].contains(scenario)
         var accepted = false
+        var afterRenewal: RenewalControlSnapshot?
+        var recovery = "UNRUN_DENIED"
+        var originalActionID: String?
+        var originalRequestHash: String?
         do {
             let renewed = try Self(scope: scope, endpoint: endpoint, sdkStore: sdk, offline: offline,
                 ordinary: (configuration, .init(session: session, operation: operation), material.withBytes(developmentCleanupHash)),
                 preferredVersion: .v4, quiesce: {}, clearSDK: { throw CleanupFailure.unavailable })
             defer { renewed.invalidate() }
             accepted = true
+            afterRenewal = try renewed.renewalControlSnapshot()
+            if scenario == "ready" {
+                recovery = "NOT_APPLICABLE_NO_ORIGINAL"
+            } else {
+                let registration = ["registrationUnknown", "enrolled"].contains(scenario)
+                let request = try probeOriginalRequest(registration ? before.device : before.account,
+                                                       field: registration ? "registration" : "preparation")
+                guard let fields = try JSONSerialization.jsonObject(with: request) as? [String: Any],
+                      let actionID = fields["action_id"] as? String else { throw CleanupFailure.unavailable }
+                originalActionID = actionID; originalRequestHash = developmentCleanupHash(request)
+                guard let currentDevice = renewed.device, let currentAccount = renewed.account else {
+                    throw CleanupFailure.unavailable
+                }
+                if registration {
+                    let result = try await currentDevice.perform(currentDevice.prepareRegistrationQuery())
+                    if scenario == "registrationUnknown" {
+                        guard case .notObserved = result else { throw CleanupFailure.unavailable }
+                    } else {
+                        guard case .enrolled = result else { throw CleanupFailure.unavailable }
+                    }
+                } else {
+                    let result = try await currentAccount.read(currentAccount.prepareOriginalRead())
+                    if scenario == "preparationUnknown" {
+                        guard case .notObserved = result else { throw CleanupFailure.unavailable }
+                    } else {
+                        guard case .progress(let progress) = result,
+                              progress.status == .awaitingConfirmation else { throw CleanupFailure.unavailable }
+                    }
+                }
+                let afterRead = try renewed.renewalControlSnapshot()
+                guard try probeOriginalRequest(registration ? afterRead.device : afterRead.account,
+                    field: registration ? "registration" : "preparation") == request else { throw CleanupFailure.unavailable }
+                recovery = "PASS"
+            }
         } catch CleanupFailure.stale {
             guard !shouldAccept else { throw CleanupFailure.stale }
+            afterRenewal = try original.renewalControlSnapshot()
         }
         guard accepted == shouldAccept else { throw CleanupFailure.unavailable }
-        let after = try original.renewalControlSnapshot()
+        guard let after = afterRenewal else { throw CleanupFailure.unavailable }
         guard before.device == after.device, before.account == after.account,
               before.execution == after.execution, before.selection == after.selection,
               before.sdk == after.sdk, let actualManifest = after.manifest else { throw CleanupFailure.unavailable }
@@ -2314,7 +2363,9 @@ private extension DevelopmentCleanupWorkflow {
             throw CleanupFailure.unavailable
         }
         return .init(scenario: scenario, renewalAccepted: accepted, originalStateRefUnchanged: true,
-                     originalControlsUnchanged: true, manifestChangeIsOnlyRenewedSDKHash: true)
+                     originalControlsUnchanged: true, manifestChangeIsOnlyRenewedSDKHash: true,
+                     recoveryStatus: recovery, recoveryOriginalActionID: originalActionID,
+                     recoveryOriginalRequestSha256: originalRequestHash)
     }
 }
 #endif
