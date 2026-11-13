@@ -138,9 +138,10 @@ class RuntimeWorkerBindings:
 
     def exit_observer(self,binding):
         session=self._session(binding)
-        if session is None:return None
-        request=session['routing'].request(binding)
-        return session['controls'] if request is not None and request['kind']=='start_controlled_generation' else None
+        # Only canonical controlled-start admission creates a Pause. Ordinary
+        # runtime operations are no-ops in completed(); source rejection stays
+        # on registrations/reflection's existing UNKNOWN path before dispatch.
+        return None if session is None else session['controls']
 
     def _memory_services(self,session):
         from .lio_memory_routes import LioMemoryCards
