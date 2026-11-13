@@ -1,4 +1,5 @@
 from dataclasses import replace
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 import json
@@ -23,6 +24,21 @@ from cj_usage.metered_exit import BudgetUnknown
 NOW = datetime(2026, 11, 11, tzinfo=timezone.utc)
 SUBJECT = 'm4-synthetic-evidence'
 KEY = 'synthetic-evidence-key-not-live'
+
+
+class HeldModelMemory:
+    """Controlled first-advance lifetime; the PG test uses native Memory."""
+    def __init__(self):self.active=True;self.revoked=False;self.holds=0
+    def check(self):
+        from cj_memory.runtime import RuntimeDenied
+        if not self.active or self.revoked:raise RuntimeDenied('memory lease not held or source revoked')
+    @contextmanager
+    def hold(self,binding):
+        prior=self.active;self.active=True;self.holds+=1
+        try:
+            self.check()
+            yield self.check
+        finally:self.active=prior
 
 
 class ToolEvidenceTest(unittest.TestCase):
@@ -271,3 +287,192 @@ class ToolEvidenceTest(unittest.TestCase):
         self.data=dict(original,version='G2C-synthetic-evidence-window.2')
         self.write_manifest()
         with self.assertRaises(ValueError):self.load()
+
+    def load_runtime(self):
+        self.data=dict(self.data,version='G2C-runtime-evidence-window.3',kinds=['tool','model'])
+        self.write_manifest()
+        return self.load()
+
+    def test_runtime_model_artifacts_cover_original_answer_draft_reflection_and_memory(self):
+        evidence=self.load_runtime()
+        for index,(registration,kind) in enumerate((('model.answer','model'),('model.draft','model'),
+                ('model.lio_intake.8','model'),('model.runtime_reflection.1','model'),('memory.lio_extract.1','memory'))):
+            raw=b'original serialized model input';original=self.intake_operation(raw)
+            command=Command('original-attempt-'+str(index),'original-operation-'+str(index),original.binding.run_id,
+                            kind,sha256(raw).hexdigest(),1,12000)
+            operation=RegisteredOperation(original.binding,registration,registration,original.ledger_scope,
+                original.period,UsageBinding.from_command(command,raw))
+            evidence.record_model(operation,b'complete original output',{'original_receipt':'synthetic'})
+        records=[json.loads(path.read_bytes()) for path in self.directory.iterdir()]
+        self.assertEqual(len(records),5)
+        self.assertEqual({record['registration_id'] for record in records},
+            {'model.answer','model.draft','model.lio_intake.8','model.runtime_reflection.1','memory.lio_extract.1'})
+        for record in records:
+            self.assertEqual(record['version'],'G2C-model-evidence.1')
+            self.assertEqual(record['input_sha256'],sha256(record['input_utf8'].encode()).hexdigest())
+            self.assertEqual(record['response_sha256'],sha256(record['result_utf8'].encode()).hexdigest())
+        with self.assertRaises(BudgetUnknown):evidence.record_model(operation,b'new output',{})
+        self.assertEqual(len(list(self.directory.iterdir())),5)
+
+    def test_runtime_capture_keeps_streaming_and_requires_complete_original_receipt(self):
+        from test_m4_real_services import sse
+        from cj_api.real_services import ModelInput,TOOL_SYSTEM
+        from cj_agent.provider import M4_NATIVE_TURN_STREAM,ProviderUnknown
+        import httpx
+        for complete in (True,False):
+            with self.subTest(complete=complete):
+                directory=self.directory/str(complete);directory.mkdir(mode=0o700)
+                evidence=replace(self.load_runtime(),directory=directory)
+                budget=AuthorizationBudget(self.root/('stream-'+str(complete)),clock=lambda:NOW)
+                events=sse(done=complete).splitlines(keepends=True)
+                first=json.loads(events[0][6:]);first['choices'][0]['delta']['content']='Visible before final usage. '*40
+                events[0]='data: '+json.dumps(first)+'\n'
+                sent=[]
+                def response(request):
+                    sent.append(request)
+                    return httpx.Response(200,stream=httpx.ByteStream(''.join(events).encode()))
+                provider=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),budget,
+                                                  transport=httpx.MockTransport(response))
+                tools=RealTools(RealServices(provider,KEY,frozenset({SUBJECT})),
+                                streaming_subject=SUBJECT,tool_evidence=evidence)
+                argument=ModelInput([dict(role='user',content='Synthetic original')],TOOL_SYSTEM,provider,{},
+                                    turn_profile=M4_NATIVE_TURN_STREAM)
+                prepared=tools._model_input(argument)
+                operation=replace(self.intake_operation(prepared.original_bytes),registration_id='model.tool_turn')
+                stream=prepared.bind_operation(operation,lambda:True)()
+                first_chunk=next(stream)
+                self.assertTrue(first_chunk)
+                wire_path,=directory.iterdir();wire=json.loads(wire_path.read_bytes())
+                self.assertEqual(wire['version'],'G2C-model-wire-input.1')
+                self.assertEqual(wire['logical_input_sha256'],operation.command.input_digest)
+                self.assertEqual(wire['wire_input_utf8'].encode(),sent[0].content)
+                self.assertEqual(wire['wire_input_sha256'],budget.inspect()[0]['input_sha'])
+                self.assertNotIn(KEY,wire_path.read_text())
+                self.assertEqual(budget.inspect()[0]['state'],'INTENT')
+                if complete:
+                    result=first_chunk+''.join(stream)
+                    records=[json.loads(path.read_bytes()) for path in directory.iterdir()]
+                    record,=[r for r in records if r['version']=='G2C-model-evidence.1']
+                    self.assertEqual(record['input_utf8'].encode(),prepared.original_bytes)
+                    self.assertEqual(record['result_utf8'],result)
+                    self.assertEqual(record['receipt'],budget.inspect()[0]['receipt'])
+                    self.assertEqual(budget.inspect()[0]['state'],'RECEIVED')
+                    self.assertEqual(len(records),2)
+                else:
+                    with self.assertRaises(ProviderUnknown):''.join(stream)
+                    self.assertEqual(list(directory.iterdir()),[wire_path])
+                    self.assertEqual(budget.inspect()[0]['state'],'INTENT')
+                self.assertEqual(len(sent),1)
+
+    def test_buffered_intake_capture_reholds_original_memory_after_first_advance(self):
+        from test_m4_real_services import sse
+        from cj_agent.worker import _MemoryProvider
+        import httpx
+        budget=AuthorizationBudget(self.root/'memory-stream',clock=lambda:NOW)
+        sent=[]
+        def response(request):
+            sent.append(request)
+            return httpx.Response(200,stream=httpx.ByteStream(sse().encode()))
+        provider=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),budget,
+            transport=httpx.MockTransport(response))
+        memory=HeldModelMemory();wrapped=_MemoryProvider(provider,memory)
+        subjects=frozenset({SUBJECT})
+        tools=RealTools(RealServices(provider,KEY,subjects,demo_subjects=subjects,national_subjects=subjects),
+            tool_evidence=self.load_runtime())
+        prepared=tools._model_input(([dict(role='user',content='Synthetic original')],
+            'Synthetic intake',wrapped,0),national_intake=True,intake_profile='LIO-planning-intake.9')
+        operation=replace(self.intake_operation(prepared.original_bytes),registration_id='model.lio_intake.9')
+        stream=prepared.bind_operation(operation,lambda:True)()
+        first=next(stream)
+        self.assertTrue(first)
+        self.assertEqual(budget.inspect()[0]['state'],'RECEIVED')
+        # Actual worker._stream_source exits its first _step before draining.
+        memory.active=False
+        self.assertEqual(''.join(stream),'')
+        self.assertEqual(memory.holds,1)
+        self.assertFalse(memory.active)
+        records=[json.loads(path.read_bytes())for path in self.directory.iterdir()]
+        record,=[r for r in records if r['version']=='G2C-model-evidence.1']
+        self.assertEqual(record['result_utf8'],first)
+        self.assertEqual(record['input_utf8'].encode(),prepared.original_bytes)
+        self.assertEqual(record['receipt'],budget.inspect()[0]['receipt'])
+        self.assertEqual(len(sent),1)
+
+    def test_capture_rehold_never_accepts_revoked_memory_or_failed_original_guard(self):
+        from test_m4_real_services import sse
+        from cj_agent.worker import _MemoryProvider
+        from cj_memory.runtime import RuntimeDenied
+        import httpx
+        for revoke_memory in (True,False):
+            with self.subTest(revoke_memory=revoke_memory):
+                directory=self.directory/str(revoke_memory);directory.mkdir(mode=0o700)
+                evidence=replace(self.load_runtime(),directory=directory)
+                budget=AuthorizationBudget(self.root/('guard-'+str(revoke_memory)),clock=lambda:NOW)
+                provider=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),budget,
+                    transport=httpx.MockTransport(lambda request:httpx.Response(200,stream=httpx.ByteStream(sse().encode()))))
+                memory=HeldModelMemory();wrapped=_MemoryProvider(provider,memory);allow=[True]
+                subjects=frozenset({SUBJECT})
+                tools=RealTools(RealServices(provider,KEY,subjects,demo_subjects=subjects,national_subjects=subjects),tool_evidence=evidence)
+                prepared=tools._model_input(([dict(role='user',content='Synthetic original')],
+                    'Synthetic intake',wrapped,0),national_intake=True,intake_profile='LIO-planning-intake.9')
+                operation=self.intake_operation(prepared.original_bytes)
+                stream=prepared.bind_operation(operation,lambda:allow[0])()
+                self.assertTrue(next(stream));memory.active=False
+                if revoke_memory:memory.revoked=True
+                else:allow[0]=False
+                with self.assertRaises(RuntimeDenied if revoke_memory else BudgetUnknown):''.join(stream)
+                self.assertEqual(budget.inspect()[0]['state'],'RECEIVED')
+                self.assertEqual(provider.calls,1)
+                self.assertEqual([json.loads(path.read_bytes())['version']for path in directory.iterdir()],
+                    ['G2C-model-wire-input.1'])
+
+    def test_old_windows_never_enable_generic_model_capture(self):
+        for evidence in (self.load(),self.load_intake()):
+            self.assertFalse(evidence.model_enabled)
+            evidence.record_model(self.intake_operation(b'input'),b'output',{})
+        self.assertEqual(list(self.directory.iterdir()),[])
+
+    def test_wire_capture_failure_keeps_original_hold_and_never_sends(self):
+        import httpx
+        from test_m4_real_services import sse
+        budget=AuthorizationBudget(self.root/'wire-failure',clock=lambda:NOW);sent=[]
+        def response(request):
+            sent.append(request);return httpx.Response(200,stream=httpx.ByteStream(sse().encode()))
+        provider=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),budget,
+                                          transport=httpx.MockTransport(response))
+        tools=RealTools(RealServices(provider,KEY,frozenset({SUBJECT})),tool_evidence=self.load_runtime())
+        prepared=tools._model_input(([dict(role='user',content='Synthetic')],'JSON only',provider))
+        operation=self.intake_operation(prepared.original_bytes)
+        with patch('cj_api.tool_evidence.os.fsync',side_effect=OSError('controlled fsync loss')):
+            with self.assertRaises(BudgetUnknown):''.join(prepared.bind_operation(operation,lambda:True)())
+        self.assertEqual(sent,[])
+        self.assertEqual(provider.calls,0)
+        self.assertEqual(budget.inspect()[0]['state'],'INTENT')
+
+    def test_v4_requires_trusted_runtime_selection_and_keeps_old_windows_narrow(self):
+        old=dict(self.data)
+        selector=lambda binding:True
+        with self.assertRaises(ValueError):
+            ToolEvidence.load(self.manifest,frozenset({SUBJECT}),clock=lambda:NOW.timestamp(),runtime_selection=selector)
+        self.data={key:value for key,value in old.items() if key!='messages'}
+        self.data.update(version='G2C-runtime-evidence-window.4',subjects=[SUBJECT],kinds=['tool','model'],
+            expires_at=(NOW+timedelta(days=7)).isoformat())
+        self.write_manifest()
+        with self.assertRaises(ValueError):self.load()
+        seen=[]
+        def admitted(binding):
+            seen.append(binding)
+            if binding.message_id=='revoked':raise BudgetUnknown('original runtime auth revoked')
+            return binding.message_id=='claimed-runtime-original'
+        evidence=ToolEvidence.load(self.manifest,frozenset({SUBJECT}),clock=lambda:NOW.timestamp(),runtime_selection=admitted)
+        original=self.operation(b'input',message='claimed-runtime-original')
+        self.assertTrue(evidence.selects(original.binding))
+        self.assertFalse(evidence.selects(self.operation(b'input',message='ordinary-message').binding))
+        foreign=self.operation(b'input');foreign.binding.scope=scope_for(ISSUER,'other-owner')
+        before=len(seen);self.assertFalse(evidence.selects(foreign.binding));self.assertEqual(len(seen),before)
+        with self.assertRaises(BudgetUnknown):evidence.selects(self.operation(b'input',message='revoked').binding)
+        evidence.record(original,'weather',b'{}',{'response_sha256':sha256(b'{}').hexdigest()})
+        self.assertEqual(len(list(self.directory.iterdir())),1)
+        self.data['expires_at']=(NOW+timedelta(days=7,seconds=1)).isoformat();self.write_manifest()
+        with self.assertRaises(ValueError):
+            ToolEvidence.load(self.manifest,frozenset({SUBJECT}),clock=lambda:NOW.timestamp(),runtime_selection=admitted)

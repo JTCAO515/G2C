@@ -16,9 +16,9 @@ DATE_EVIDENCE=re.compile(r'\d{4}[-/年]\d{1,2}|[0-9一二三四五六七八九�
     r"january|february|march|april|may|june|july|august|september|october|november|december|"
     r"jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)\b|\b[0-9]+[/-][0-9]+\b|\bin [a-z0-9 -]+ days?\b",re.I)
 
-def parse_flow(raw,turns,refs,message_id,previous):
+def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake):
     value=decode(raw.encode() if type(raw)is str else raw)
-    try:dto=FlowIntake.model_validate(value)
+    try:dto=schema.model_validate(value)
     except ValidationError:raise InvalidInput('exact unified planning facts required')from None
     data=dto.model_dump(by_alias=True,exclude_unset=True)
     intent=data['intent'];questions=data.pop('question_fields');hold=data.pop('publication_hold');request_index=data.pop('planning_request_index')
@@ -55,6 +55,15 @@ def parse_flow(raw,turns,refs,message_id,previous):
         error.control=replace(error.control,intent=intent,publication_hold=hold is not None,planning_request_index=request_index)
         raise
     intake=replace(intake,intent=intent,publication_hold=hold is not None,planning_request_index=request_index)
+    if dto.version=='LIO-planning-intake.8':
+        from .lio_national_intake import _week_source
+        if intake.start_date is not None and intake.start_date['state']=='known':
+            _week_source(intake.start_date['value'],intake.sources['start_date'],turns)
+        for edge in (()if intake.extraction is None else ('arrival','departure','overseas_departure')):
+            event=intake.extraction['fields'].get(edge)
+            if event is not None and event['date']['state']=='known':
+                references=intake.sources.get(edge+'.date',[])
+                _week_source(event['date']['value'],references,turns,departure=edge=='departure')
     if intent=='cancel':return intake,questions,{}
     # A previously classified ordinary consultation cannot later supply
     # execution facts merely because a model quotes it again on "continue".

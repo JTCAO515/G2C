@@ -21,13 +21,16 @@ def source_c0(*,resource_root=None):
     from cj_draft.lio_plan import INITIAL_SYSTEM, REPLAN_SYSTEM
     policy_files = ('backend/agent/cj_agent/provider.py', 'backend/cj_api/real_services.py',
              'backend/cj_api/local_lio_planning.py', 'backend/cj_api/local_lio_national.py',
+             'backend/cj_api/lio_scene.py',
+             'backend/fact/cj_fact/visitor.py',
              'backend/cj_api/lio_national_intake.py', 'backend/agent/cj_agent/lio_intake_schema.py',
              'backend/agent/cj_agent/lio_intake_current_schema.py',
              'backend/agent/cj_agent/lio_intake_modes_schema.py', 'backend/cj_api/tool_evidence.py',
              'backend/agent/cj_agent/lio_intake_start_schema.py',
              'backend/agent/cj_agent/lio_intake_flat_schema.py',
              'backend/agent/cj_agent/lio_intake_facts_schema.py',
-             'backend/agent/cj_agent/lio_intake_flow_schema.py', 'backend/cj_api/lio_flow_intake.py',
+             'backend/agent/cj_agent/lio_intake_flow_schema.py',
+             'backend/agent/cj_agent/lio_intake_optional_schema.py', 'backend/cj_api/lio_flow_intake.py',
              'backend/cj_api/lio_flat_intake.py', 'backend/cj_api/lio_sourced_intake.py',
              'backend/message/cj_message/lio_context.py',
              'backend/draft/cj_draft/lio_plan.py')

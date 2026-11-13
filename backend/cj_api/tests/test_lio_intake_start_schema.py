@@ -51,7 +51,7 @@ def prepared(intake,turns):return fields_for(intake,CITY,message_id='start-date'
 
 
 class StartSchema(unittest.TestCase):
-    def test_bilingual_start_is_not_lost_inside_fixed_item_and_missing_person_only_is_asked(self):
+    def test_bilingual_start_and_explicit_self_fixed_item_save_with_unknown_party(self):
         for locale in ('zh','en'):
             with self.subTest(locale=locale):
                 value,turns=sample(locale);original=deepcopy(value)
@@ -64,9 +64,12 @@ class StartSchema(unittest.TestCase):
                 legacy=fixtures.NationalExecution().envelope(turns[-1].text,start=None,party=None)
                 published,events,_,_=fixtures.NationalExecution().run_intake(legacy,turns=turns,
                     previous=dict(authority='plan',status='needs_details'),model_output=value)
-                self.assertEqual(published,[])
-                self.assertTrue(any('几个人' in text for kind,text in events if kind=='text_delta'))
-                self.assertFalse(any('哪天开始' in text for kind,text in events if kind=='text_delta'))
+                self.assertEqual(len(published),1)
+                self.assertEqual(published[0][3].fields['party_size'],{'state':'missing'})
+                fixed,=published[0][3].fields['fixed_items']
+                self.assertEqual(fixed['applies_to'],['self'])
+                self.assertTrue(fixed['locked']['value'])
+                self.assertFalse(any('几个人' in text or '哪天开始' in text for kind,text in events if kind=='text_delta'))
 
     def test_person_answer_then_fixed_source_and_missing_timezone_compile_without_invention(self):
         for locale in ('zh','en'):
@@ -99,7 +102,9 @@ class StartSchema(unittest.TestCase):
         published,events,_,_=fixtures.NationalExecution().run_intake(legacy,turns=turns,
             previous=dict(authority='plan',status='needs_details'),model_output=value)
         self.assertEqual(published,[])
-        self.assertTrue(any('行程也从这天开始吗' in text for kind,text in events if kind=='text_delta'))
+        reply=''.join(text for kind,text in events if kind=='text_delta')
+        self.assertIn('第3天',reply);self.assertNotIn('2026-11-13',reply)
+        self.assertNotIn('从这天开始吗',reply)
 
     def test_conflicting_arrival_asks_and_does_not_overwrite_or_register(self):
         value,turns=sample('zh',True);value['extraction']['fields']['arrival']={k:dict(state='missing') for k in ('date','time','timezone','place')}

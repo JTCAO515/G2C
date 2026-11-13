@@ -7,7 +7,6 @@ import re
 from fastapi import Request
 from starlette.concurrency import run_in_threadpool
 
-from cj_agent.draft import trip_scope_for
 from cj_message.demo_dialogue import LIO_CHAT_PATTERN, lio_conversation
 from cj_message.domain import unique_fields
 from cj_message.lio_plan_needs import lio_needs_id
@@ -23,7 +22,7 @@ from cj_trip.operation import OperationWithheld
 from .history_routes import _query
 from .lio_dialogue_routes import _failure, _json
 from .lio_trip_cards import _card
-from .local_app import scope_for
+from .local_app import scope_for, trip_resolver
 from .local_needs import protected_reader
 from .message_routes import BodyError, _read_body, _token
 
@@ -53,10 +52,7 @@ class LioTripBoundary(Boundary):
         self.database = database
         self.reader = protected_reader(database, checker)
 
-        def resolve(principal):
-            owner = scope_for(principal.issuer, principal.subject)
-            return lambda: database.connect(owner), trip_scope_for(owner)
-
+        resolve = trip_resolver(database)
         super().__init__(checker, resolve, confirmation_signer, structured=True)
 
     def _bind(self, token):

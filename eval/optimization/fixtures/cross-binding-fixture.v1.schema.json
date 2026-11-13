@@ -1,0 +1,1452 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:g2c:cross-binding-fixture:1",
+  "title": "G2C-cross-binding-fixture.1 metadata only; authenticity requires protected readers",
+  "$defs": {
+    "origin": {
+      "type": "object",
+      "properties": {
+        "ref": {
+          "type": "string",
+          "pattern": "^original-[a-f0-9]{64}$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "ref",
+        "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "binding": {
+      "type": "object",
+      "properties": {
+        "binding_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "binding_ref": {
+          "$ref": "#/$defs/origin"
+        },
+        "owner_scope_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "binding_sha256",
+        "binding_ref",
+        "owner_scope_sha256"
+      ],
+      "additionalProperties": false
+    },
+    "snapshot": {
+      "type": "object",
+      "properties": {
+        "observed_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "(?:Z|[+-][0-9]{2}:[0-9]{2})$"
+        },
+        "trip_id_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "trip_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "content_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "state_ref": {
+          "$ref": "#/$defs/origin"
+        }
+      },
+      "required": [
+        "observed_at",
+        "trip_id_sha256",
+        "trip_version",
+        "content_sha256",
+        "state_ref"
+      ],
+      "additionalProperties": false
+    },
+    "definition": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": "G2C-cross-binding-fixture.1"
+        },
+        "kind": {
+          "const": "definition"
+        },
+        "fixture_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[^\\s\\x00]+$"
+        },
+        "fixture_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "task_id": {
+          "const": "val-owner"
+        },
+        "source": {
+          "const": "authorized_synthetic_native_trip"
+        },
+        "frozen_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "(?:Z|[+-][0-9]{2}:[0-9]{2})$"
+        },
+        "producer": {
+          "type": "object",
+          "properties": {
+            "binding": {
+              "$ref": "#/$defs/binding"
+            },
+            "status": {
+              "enum": [
+                "PASS",
+                "FAIL",
+                "UNKNOWN",
+                "UNRUN"
+              ]
+            },
+            "purpose_authorization_ref": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/origin"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "window_ref": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/origin"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "original_request_inventory_ref": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/origin"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "original_action_inventory_ref": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/origin"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "meter_inventory_ref": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/origin"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "fee_inventory_ref": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/origin"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "trip_receipt_ref": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/origin"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "completed_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "(?:Z|[+-][0-9]{2}:[0-9]{2})$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "binding",
+            "status",
+            "purpose_authorization_ref",
+            "window_ref",
+            "original_request_inventory_ref",
+            "original_action_inventory_ref",
+            "meter_inventory_ref",
+            "fee_inventory_ref",
+            "trip_receipt_ref",
+            "completed_at"
+          ],
+          "additionalProperties": false
+        },
+        "baseline": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "(?:Z|[+-][0-9]{2}:[0-9]{2})$"
+                },
+                "trip_id_sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "trip_version": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "content_sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "state_ref": {
+                  "$ref": "#/$defs/origin"
+                }
+              },
+              "required": [
+                "observed_at",
+                "trip_id_sha256",
+                "trip_version",
+                "content_sha256",
+                "state_ref"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "private_sentinel_set_ref": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/origin"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preparation_cost": {
+          "type": "object",
+          "properties": {
+            "charge_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^[^\\s\\x00]+$"
+            },
+            "charged_batch_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^[^\\s\\x00]+$"
+            },
+            "ledger_id_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "original_cost_anchor_ref": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/origin"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "cost_inventory_ref": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/origin"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "allocation_ref": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/origin"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "mode": {
+              "const": "original_ledger_read_only"
+            }
+          },
+          "required": [
+            "charge_id",
+            "charged_batch_id",
+            "ledger_id_sha256",
+            "original_cost_anchor_ref",
+            "cost_inventory_ref",
+            "allocation_ref",
+            "mode"
+          ],
+          "additionalProperties": false
+        },
+        "reuse_policy": {
+          "type": "object",
+          "properties": {
+            "registry_ref": {
+              "$ref": "#/$defs/origin"
+            },
+            "consumer_registration_ref": {
+              "$ref": "#/$defs/origin"
+            },
+            "valid_from": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "(?:Z|[+-][0-9]{2}:[0-9]{2})$"
+            },
+            "valid_until": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "(?:Z|[+-][0-9]{2}:[0-9]{2})$"
+            },
+            "maximum_uses": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "baseline_mutation": {
+              "const": "forbidden"
+            },
+            "preparation_charge": {
+              "const": "original_charge_once_references_on_reuse"
+            }
+          },
+          "required": [
+            "registry_ref",
+            "consumer_registration_ref",
+            "valid_from",
+            "valid_until",
+            "maximum_uses",
+            "baseline_mutation",
+            "preparation_charge"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "version",
+        "kind",
+        "fixture_id",
+        "fixture_revision",
+        "task_id",
+        "source",
+        "frozen_at",
+        "producer",
+        "baseline",
+        "private_sentinel_set_ref",
+        "preparation_cost",
+        "reuse_policy"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "producer": {
+                "properties": {
+                  "status": {
+                    "const": "PASS"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "producer": {
+                "properties": {
+                  "purpose_authorization_ref": {
+                    "not": {
+                      "type": "null"
+                    }
+                  },
+                  "window_ref": {
+                    "not": {
+                      "type": "null"
+                    }
+                  },
+                  "original_request_inventory_ref": {
+                    "not": {
+                      "type": "null"
+                    }
+                  },
+                  "original_action_inventory_ref": {
+                    "not": {
+                      "type": "null"
+                    }
+                  },
+                  "meter_inventory_ref": {
+                    "not": {
+                      "type": "null"
+                    }
+                  },
+                  "fee_inventory_ref": {
+                    "not": {
+                      "type": "null"
+                    }
+                  },
+                  "trip_receipt_ref": {
+                    "not": {
+                      "type": "null"
+                    }
+                  },
+                  "completed_at": {
+                    "not": {
+                      "type": "null"
+                    }
+                  }
+                }
+              },
+              "baseline": {
+                "type": "object"
+              },
+              "private_sentinel_set_ref": {
+                "type": "object"
+              },
+              "preparation_cost": {
+                "properties": {
+                  "original_cost_anchor_ref": {
+                    "not": {
+                      "type": "null"
+                    }
+                  },
+                  "cost_inventory_ref": {
+                    "not": {
+                      "type": "null"
+                    }
+                  },
+                  "allocation_ref": {
+                    "not": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "use": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": "G2C-cross-binding-fixture.1"
+        },
+        "kind": {
+          "const": "use"
+        },
+        "use_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[^\\s\\x00]+$"
+        },
+        "definition_ref": {
+          "$ref": "#/$defs/origin"
+        },
+        "fixture_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[^\\s\\x00]+$"
+        },
+        "fixture_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "reservation_ref": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/origin"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "consumer": {
+          "type": "object",
+          "properties": {
+            "binding": {
+              "$ref": "#/$defs/binding"
+            },
+            "pins_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "experiment_ref": {
+              "$ref": "#/$defs/origin"
+            },
+            "public_release_ref": {
+              "$ref": "#/$defs/origin"
+            },
+            "batch_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^[^\\s\\x00]+$"
+            },
+            "candidate_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^[^\\s\\x00]+$"
+            },
+            "task_id": {
+              "const": "val-owner"
+            },
+            "language": {
+              "enum": [
+                "zh",
+                "en"
+              ]
+            },
+            "attempt_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^[^\\s\\x00]+$"
+            },
+            "step_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^[^\\s\\x00]+$"
+            },
+            "request_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "request_association_ref": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/origin"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "inventory_ref": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/origin"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "probes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "probe_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256,
+                    "pattern": "^[^\\s\\x00]+$"
+                  },
+                  "operation_kind": {
+                    "enum": [
+                      "foreign_read",
+                      "foreign_mutation",
+                      "task_message"
+                    ]
+                  },
+                  "original_request_ref": {
+                    "$ref": "#/$defs/origin"
+                  },
+                  "original_response_ref": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/$defs/origin"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "association_ref": {
+                    "$ref": "#/$defs/origin"
+                  },
+                  "request_sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "sent_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "(?:Z|[+-][0-9]{2}:[0-9]{2})$"
+                  },
+                  "terminal_at": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "(?:Z|[+-][0-9]{2}:[0-9]{2})$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "result": {
+                    "enum": [
+                      "DENIED",
+                      "NO_DISPATCH",
+                      "RETURNED",
+                      "UNKNOWN",
+                      "UNRUN"
+                    ]
+                  }
+                },
+                "required": [
+                  "probe_id",
+                  "operation_kind",
+                  "original_request_ref",
+                  "original_response_ref",
+                  "association_ref",
+                  "request_sha256",
+                  "sent_at",
+                  "terminal_at",
+                  "result"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 0,
+              "maxItems": 256,
+              "uniqueItems": true
+            },
+            "task_terminal_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "(?:Z|[+-][0-9]{2}:[0-9]{2})$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "binding",
+            "pins_sha256",
+            "experiment_ref",
+            "public_release_ref",
+            "batch_id",
+            "candidate_id",
+            "task_id",
+            "language",
+            "attempt_id",
+            "step_id",
+            "request_sha256",
+            "request_association_ref",
+            "inventory_ref",
+            "probes",
+            "task_terminal_at"
+          ],
+          "additionalProperties": false
+        },
+        "observer": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "binding": {
+                  "$ref": "#/$defs/binding"
+                },
+                "qualification_ref": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/origin"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "pre_authority_ref": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/origin"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "post_authority_ref": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/origin"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "publication_authority_ref": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/origin"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "before": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "observed_at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "(?:Z|[+-][0-9]{2}:[0-9]{2})$"
+                        },
+                        "trip_id_sha256": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "trip_version": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "content_sha256": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "state_ref": {
+                          "$ref": "#/$defs/origin"
+                        }
+                      },
+                      "required": [
+                        "observed_at",
+                        "trip_id_sha256",
+                        "trip_version",
+                        "content_sha256",
+                        "state_ref"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "after": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "observed_at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "(?:Z|[+-][0-9]{2}:[0-9]{2})$"
+                        },
+                        "trip_id_sha256": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "trip_version": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "content_sha256": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "state_ref": {
+                          "$ref": "#/$defs/origin"
+                        }
+                      },
+                      "required": [
+                        "observed_at",
+                        "trip_id_sha256",
+                        "trip_version",
+                        "content_sha256",
+                        "state_ref"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "disclosure_scan_ref": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/origin"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "consumer_evidence_inventory_ref": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/origin"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "foreign_read_rows": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                },
+                "foreign_mutations": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                },
+                "private_visible_hits": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                },
+                "checked_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "(?:Z|[+-][0-9]{2}:[0-9]{2})$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "dispatch_authority_ref": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/origin"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "binding",
+                "qualification_ref",
+                "pre_authority_ref",
+                "post_authority_ref",
+                "publication_authority_ref",
+                "before",
+                "after",
+                "disclosure_scan_ref",
+                "consumer_evidence_inventory_ref",
+                "foreign_read_rows",
+                "foreign_mutations",
+                "private_visible_hits",
+                "checked_at",
+                "dispatch_authority_ref"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cost_attribution": {
+          "type": "object",
+          "properties": {
+            "charge_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^[^\\s\\x00]+$"
+            },
+            "charged_batch_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^[^\\s\\x00]+$"
+            },
+            "allocation_ref": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/origin"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "treatment": {
+              "enum": [
+                "first_attribution",
+                "reuse_reference",
+                "UNKNOWN",
+                "UNRUN"
+              ]
+            },
+            "batch_cost_report_ref": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/origin"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "charge_id",
+            "charged_batch_id",
+            "allocation_ref",
+            "treatment",
+            "batch_cost_report_ref"
+          ],
+          "additionalProperties": false
+        },
+        "stage": {
+          "enum": [
+            "NOT_STARTED",
+            "PROBE_STARTED",
+            "COMPLETE"
+          ]
+        },
+        "evidence_status": {
+          "enum": [
+            "PASS",
+            "FAIL",
+            "UNKNOWN",
+            "UNRUN"
+          ]
+        },
+        "checks": {
+          "type": "object",
+          "properties": {
+            "producer_chain": {
+              "$ref": "#/$defs/check"
+            },
+            "fixture_identity": {
+              "$ref": "#/$defs/check"
+            },
+            "reuse_admission": {
+              "$ref": "#/$defs/check"
+            },
+            "observer_authority": {
+              "$ref": "#/$defs/check"
+            },
+            "consumer_probe_binding": {
+              "$ref": "#/$defs/check"
+            },
+            "consumer_inventory": {
+              "$ref": "#/$defs/check"
+            },
+            "foreign_read_observation": {
+              "$ref": "#/$defs/check"
+            },
+            "foreign_write_observation": {
+              "$ref": "#/$defs/check"
+            },
+            "before_after_consistency": {
+              "$ref": "#/$defs/check"
+            },
+            "private_disclosure_scan": {
+              "$ref": "#/$defs/check"
+            },
+            "cost_accounting": {
+              "$ref": "#/$defs/check"
+            }
+          },
+          "required": [
+            "producer_chain",
+            "fixture_identity",
+            "reuse_admission",
+            "observer_authority",
+            "consumer_probe_binding",
+            "consumer_inventory",
+            "foreign_read_observation",
+            "foreign_write_observation",
+            "before_after_consistency",
+            "private_disclosure_scan",
+            "cost_accounting"
+          ],
+          "additionalProperties": false
+        },
+        "published_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "(?:Z|[+-][0-9]{2}:[0-9]{2})$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "isolation_ref": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/origin"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "coverage": {
+          "type": "object",
+          "properties": {
+            "foreign_read_interface": {
+              "enum": [
+                "PASS",
+                "FAIL",
+                "UNKNOWN",
+                "UNRUN"
+              ]
+            },
+            "foreign_write_interface": {
+              "enum": [
+                "PASS",
+                "FAIL",
+                "UNKNOWN",
+                "UNRUN"
+              ]
+            },
+            "model_visible_exact_scan": {
+              "enum": [
+                "PASS",
+                "FAIL",
+                "UNKNOWN",
+                "UNRUN"
+              ]
+            },
+            "user_visible_exact_scan": {
+              "enum": [
+                "PASS",
+                "FAIL",
+                "UNKNOWN",
+                "UNRUN"
+              ]
+            },
+            "semantic_disclosure_review": {
+              "enum": [
+                "PASS",
+                "FAIL",
+                "UNKNOWN",
+                "UNRUN"
+              ]
+            }
+          },
+          "required": [
+            "foreign_read_interface",
+            "foreign_write_interface",
+            "model_visible_exact_scan",
+            "user_visible_exact_scan",
+            "semantic_disclosure_review"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "version",
+        "kind",
+        "use_id",
+        "definition_ref",
+        "fixture_id",
+        "fixture_revision",
+        "reservation_ref",
+        "consumer",
+        "observer",
+        "cost_attribution",
+        "stage",
+        "evidence_status",
+        "checks",
+        "published_at",
+        "isolation_ref",
+        "coverage"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "evidence_status": {
+                "const": "PASS"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "stage": {
+                "const": "COMPLETE"
+              },
+              "reservation_ref": {
+                "type": "object"
+              },
+              "published_at": {
+                "type": "string"
+              },
+              "consumer": {
+                "properties": {
+                  "request_association_ref": {
+                    "not": {
+                      "type": "null"
+                    }
+                  },
+                  "inventory_ref": {
+                    "not": {
+                      "type": "null"
+                    }
+                  },
+                  "task_terminal_at": {
+                    "not": {
+                      "type": "null"
+                    }
+                  },
+                  "probes": {
+                    "minItems": 1
+                  }
+                }
+              },
+              "observer": {
+                "type": "object",
+                "properties": {
+                  "qualification_ref": {
+                    "not": {
+                      "type": "null"
+                    }
+                  },
+                  "pre_authority_ref": {
+                    "not": {
+                      "type": "null"
+                    }
+                  },
+                  "post_authority_ref": {
+                    "not": {
+                      "type": "null"
+                    }
+                  },
+                  "publication_authority_ref": {
+                    "not": {
+                      "type": "null"
+                    }
+                  },
+                  "before": {
+                    "not": {
+                      "type": "null"
+                    }
+                  },
+                  "after": {
+                    "not": {
+                      "type": "null"
+                    }
+                  },
+                  "disclosure_scan_ref": {
+                    "not": {
+                      "type": "null"
+                    }
+                  },
+                  "consumer_evidence_inventory_ref": {
+                    "not": {
+                      "type": "null"
+                    }
+                  },
+                  "checked_at": {
+                    "not": {
+                      "type": "null"
+                    }
+                  },
+                  "foreign_read_rows": {
+                    "const": 0
+                  },
+                  "foreign_mutations": {
+                    "const": 0
+                  },
+                  "private_visible_hits": {
+                    "const": 0
+                  },
+                  "dispatch_authority_ref": {
+                    "type": "object"
+                  }
+                }
+              },
+              "cost_attribution": {
+                "properties": {
+                  "treatment": {
+                    "enum": [
+                      "first_attribution",
+                      "reuse_reference"
+                    ]
+                  },
+                  "allocation_ref": {
+                    "not": {
+                      "type": "null"
+                    }
+                  },
+                  "batch_cost_report_ref": {
+                    "not": {
+                      "type": "null"
+                    }
+                  }
+                }
+              },
+              "checks": {
+                "properties": {
+                  "producer_chain": {
+                    "$ref": "#/$defs/pass_check"
+                  },
+                  "fixture_identity": {
+                    "$ref": "#/$defs/pass_check"
+                  },
+                  "reuse_admission": {
+                    "$ref": "#/$defs/pass_check"
+                  },
+                  "observer_authority": {
+                    "$ref": "#/$defs/pass_check"
+                  },
+                  "consumer_probe_binding": {
+                    "$ref": "#/$defs/pass_check"
+                  },
+                  "consumer_inventory": {
+                    "$ref": "#/$defs/pass_check"
+                  },
+                  "foreign_read_observation": {
+                    "$ref": "#/$defs/pass_check"
+                  },
+                  "foreign_write_observation": {
+                    "$ref": "#/$defs/pass_check"
+                  },
+                  "before_after_consistency": {
+                    "$ref": "#/$defs/pass_check"
+                  },
+                  "private_disclosure_scan": {
+                    "$ref": "#/$defs/pass_check"
+                  },
+                  "cost_accounting": {
+                    "$ref": "#/$defs/pass_check"
+                  }
+                }
+              },
+              "isolation_ref": {
+                "type": "object"
+              },
+              "coverage": {
+                "properties": {
+                  "foreign_read_interface": {
+                    "const": "PASS"
+                  },
+                  "model_visible_exact_scan": {
+                    "const": "PASS"
+                  },
+                  "user_visible_exact_scan": {
+                    "const": "PASS"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "evidence_status": {
+                "const": "UNRUN"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "stage": {
+                "const": "NOT_STARTED"
+              },
+              "consumer": {
+                "properties": {
+                  "probes": {
+                    "maxItems": 0
+                  },
+                  "task_terminal_at": {
+                    "type": "null"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "description": "Any declared check or coverage FAIL requires root FAIL; authenticity still requires protected runtime verification.",
+          "if": {
+            "not": {
+              "properties": {
+                "coverage": {
+                  "additionalProperties": {
+                    "enum": [
+                      "PASS",
+                      "UNKNOWN",
+                      "UNRUN"
+                    ]
+                  }
+                },
+                "checks": {
+                  "additionalProperties": {
+                    "properties": {
+                      "status": {
+                        "enum": [
+                          "PASS",
+                          "UNKNOWN",
+                          "UNRUN"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "evidence_status": {
+                "const": "FAIL"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "check": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "PASS",
+            "FAIL",
+            "UNKNOWN",
+            "UNRUN"
+          ]
+        },
+        "reason": {
+          "enum": [
+            null,
+            "MISSING_ORIGINAL",
+            "ASSOCIATION_MISMATCH",
+            "AUTHORITY_UNAVAILABLE",
+            "FIXTURE_CHANGED",
+            "PRIVATE_DISCLOSURE",
+            "COST_UNRESOLVED",
+            "NOT_STARTED",
+            "UNSUPPORTED_RELEASE",
+            "INCOMPLETE_INVENTORY"
+          ]
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/origin"
+          },
+          "minItems": 0,
+          "maxItems": 256,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "status",
+        "reason",
+        "evidence_refs"
+      ],
+      "additionalProperties": false
+    },
+    "pass_check": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/check"
+        },
+        {
+          "properties": {
+            "status": {
+              "const": "PASS"
+            },
+            "reason": {
+              "type": "null"
+            },
+            "evidence_refs": {
+              "minItems": 1
+            }
+          }
+        }
+      ]
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/definition"
+    },
+    {
+      "$ref": "#/$defs/use"
+    }
+  ]
+}

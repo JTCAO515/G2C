@@ -29,7 +29,7 @@ class NationalExecution(unittest.TestCase):
             extraction=dict(version='NEEDS-extraction.1',fields=fields,unresolved=[],long_term_requests=[]),
             field_sources=sources,current_request=text)
 
-    def run_intake(self,value,*,turns=None,previous=None,resolution=None,same_destination=True,model_output=None,flow_output=None,locale='zh'):
+    def run_intake(self,value,*,turns=None,previous=None,resolution=None,same_destination=True,model_output=None,flow_output=None,locale='zh',source_conflict=False):
         text=value['current_request'];turns=turns or (PlanningTurn(text,date(2026,11,11)),)
         city=CityReference('310000','上海市','上海市',None,'province','Asia/Shanghai')
         resolution=resolution or dict(status='resolved',candidates=[city.__dict__],requested_name='上海',source={})
@@ -56,14 +56,23 @@ class NationalExecution(unittest.TestCase):
         class Worker:
             memory_run=None;message_context=None;provider=object();lio_city_context=None;lio_memory=None
             def _registered_stream(self,binding,key,registration,argument,**kwargs):
-                assert registration=='model.lio_intake.8' and argument[3]==len(turns)-1
-                yield json.dumps(wire,ensure_ascii=False)
+                if registration=='model.answer':
+                    events.append(('discussion_input',json.dumps(argument[:2],ensure_ascii=False)))
+                    days=wire['duration_days'] or previous['facts']['duration_days']['value']
+                    reply=('；'.join('第'+str(n)+'天：博物馆与街区散步' for n in range(1,days+1))+'。想先调整哪一天？'
+                           if locale=='zh' else '\n'.join('Day '+str(n)+': a museum and neighborhood walk.' for n in range(1,days+1))+' Which day would you like to adjust?')
+                    yield json.dumps(dict(answer=reply),ensure_ascii=False)
+                    return
+                assert registration=='model.lio_intake.9' and argument[3]==len(turns)-1
+                yield json.dumps(dict(wire,version='LIO-planning-intake.8'),ensure_ascii=False)
             def _event(self,binding,state,kind,value='',**kwargs):
                 events.append((kind,value));return SimpleNamespace(sequence=state.sequence+1)
         worker=Worker();worker.tools=SimpleNamespace(resolve_city=lambda *a:(lookups.append(a) or resolution))
         class Save:
             def __call__(self,*args):published.append(args);return args[2]
             def supports_destination(self,binding,city):return same_destination
+            def scene_context(self,binding,now):return None
+            def planning_window_conflict(self,binding,fields):return source_conflict
         planning=NationalLioPlanning(None,Save())
         planning.context=lambda *a:(turns,tuple(dict(message_id='prior-'+str(n))for n in range(len(turns)-1)),previous)
         binding=SimpleNamespace(message_id='national-message',run_id='national-run')
@@ -100,13 +109,26 @@ class NationalExecution(unittest.TestCase):
                 published,_,_,_=self.run_intake(value,previous=dict(authority=authority,status='needs_details'))
                 self.assertEqual(len(published),expected)
 
-    def test_missing_party_or_start_asks_without_publication(self):
-        for start,party in [(None,2),('2026-11-20',None)]:
-            with self.subTest(start=start,party=party):
-                text='计划上海2026-11-20，两个人'
-                published,events,_,_=self.run_intake(self.envelope(text,start=start,party=party))
-                self.assertEqual(published,[])
-                self.assertTrue(any(kind=='text_delta' and ('几个人' in value or '哪天' in value) for kind,value in events))
+    def test_existing_window_conflict_does_not_register_needs_or_call_draft(self):
+        text='计划上海三天，从2026-11-20开始，两个人'
+        value=self.envelope(text);value['duration_days']=3
+        value['extraction']['fields'].pop('departure');value['field_sources'].pop('departure.date')
+        value['field_sources']['duration_days']=[dict(source_index=0,quote='三天')]
+        published,events,_,_=self.run_intake(value,source_conflict=True)
+        self.assertEqual(published,[])
+        self.assertFalse(any(kind=='registered'for kind,_ in events))
+        self.assertIn('另一趟',''.join(v for k,v in events if k=='text_delta'))
+        self.assertEqual(events[-1][0],'completed')
+
+    def test_missing_party_is_optional_but_city_or_duration_remain_required(self):
+        text='计划上海2026-11-20，两个人'
+        published,events,_,_=self.run_intake(self.envelope(text,start='2026-11-20',party=None))
+        self.assertEqual(len(published),1)
+        self.assertEqual(published[0][3].fields['party_size'],{'state':'missing'})
+        self.assertFalse(any(kind=='text_delta' and '几个人' in value for kind,value in events))
+        published,events,_,_=self.run_intake(self.envelope(text,start=None,party=2))
+        self.assertEqual(published,[])
+        self.assertTrue(any(kind=='text_delta' and '几天' in value for kind,value in events))
 
     def test_ambiguous_city_never_publishes_or_chooses_first(self):
         value=self.envelope('计划上海2026-11-20，两个人')

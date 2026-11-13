@@ -102,7 +102,7 @@ class Outcome:
 
 
 class RunWorker:
-    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None, memory=None, message_context=None, tools=None, edit_publisher=None,edit_results=False,place_sources=None,memory_history=False,history_adapter=None,execution_lease=nullcontext,owned_transaction_lease=None,lio_original=None,lio_planning=None,lio_edit=None,lio_memory=None):
+    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None, memory=None, message_context=None, tools=None, edit_publisher=None,edit_results=False,place_sources=None,memory_history=False,history_adapter=None,execution_lease=nullcontext,owned_transaction_lease=None,lio_original=None,lio_planning=None,lio_edit=None,lio_memory=None,runtime_reflection=None):
         """`messages`: cj_message.domain.Service and `runs`: cj_run.core.Service, both bound to `scope`.
 
         `drafts`: optional cj_agent.draft.DraftPublisher for this user's TRIP scope; messages
@@ -130,6 +130,7 @@ class RunWorker:
         self.lio_edit = lio_edit
         self.lio_memory = lio_memory
         self._lio_active = False
+        self.runtime_reflection = runtime_reflection
 
     def process(self, limit=20):
         outcomes = []
@@ -218,7 +219,7 @@ class RunWorker:
                     if draft and state.draft_outcome is not None:
                         raise Conflict('draft result already recorded before invocation')
                     check_needs=None
-                    if draft and effect is not None and (self.drafts.content_version=='structured.2' or self.place_sources is not None):
+                    if draft and effect is not None and (self.drafts.content_version in ('structured.2','structured.3') or self.place_sources is not None):
                         check_needs=leases.enter_context(self.drafts.hold_for_publication(binding))
                         check_needs()
                     elif draft and self.needs_lease is not None:
@@ -278,8 +279,8 @@ class RunWorker:
         yield from self._stream_source(binding,source,draft=draft)
 
     def _registered_stream(self,binding,key,registration,argument,*,progress=None,message_refs=()):
-        if self.memory_history and registration in ('model.answer','model.draft','model.lio_intake.1','model.lio_intake.2','model.lio_intake.3','model.lio_intake.4','model.lio_intake.5','model.lio_intake.6','model.lio_intake.7','model.lio_intake.8'):
-            if registration in ('model.lio_intake.3','model.lio_intake.4','model.lio_intake.5','model.lio_intake.6','model.lio_intake.7','model.lio_intake.8'):messages,system,_,_=argument
+        if self.memory_history and registration in ('model.answer','model.draft','model.lio_intake.1','model.lio_intake.2','model.lio_intake.3','model.lio_intake.4','model.lio_intake.5','model.lio_intake.6','model.lio_intake.7','model.lio_intake.8','model.lio_intake.9'):
+            if registration in ('model.lio_intake.3','model.lio_intake.4','model.lio_intake.5','model.lio_intake.6','model.lio_intake.7','model.lio_intake.8','model.lio_intake.9'):messages,system,_,_=argument
             else:messages,system,_=argument
             self._model_history(binding,messages,system,message_refs=message_refs)
         options={'reserve_final_model':True} if self._lio_active and registration.startswith('tool.') else {}
@@ -343,7 +344,7 @@ class RunWorker:
             if self._lio_active and self.lio_planning is not None:
                 messages,planning_refs=self.lio_planning.answer_context(binding,messages)
             sources=None
-            structured=self.drafts.content_version=='structured.2' or self.place_sources is not None
+            structured=self.drafts.content_version in ('structured.2','structured.3') or self.place_sources is not None
             if structured:
                 if self.message_context is None:raise DraftRejected('canonical original message context required')
                 _,sources=self._step(binding,lambda:self.drafts.sources_for(binding),draft=True)
@@ -405,6 +406,7 @@ class RunWorker:
                               lio_planning=self.lio_planning,
                               lio_edit=self.lio_edit,
                               lio_memory=self.lio_memory,
+                              runtime_reflection=self.runtime_reflection,
                               runs=Service(OwnedRepository(), runs.valid))
             if self.edit_publisher is not None:
                 with self.message_context.worker_repository(owned.runs.repository):
@@ -466,6 +468,12 @@ class RunWorker:
         stored = lio_original if lio_original is not None else self.messages.query(receipt.message_id)
         command = json.loads(stored.raw)
         text = command['text']
+        if self.runtime_reflection is not None:
+            reflection=self.runtime_reflection(binding)
+            if reflection is not None:
+                if command['creation_intent']!='none':
+                    raise BudgetUnknown('reflection cannot carry a publication intent')
+                return self._reflect_runtime(receipt,binding,state,reflection)
         if self.memory is not None:
             self.memory_run = (self.history_adapter.capture(binding) if self.memory_history
                                else self.memory.capture(binding))
@@ -503,7 +511,7 @@ class RunWorker:
             if locale is None:
                 chunks = self._stream(binding, inputs) if self.tools is None else self.tools.answer(self, binding, inputs)
             elif self.tools is None:
-                chunks = self._stream(binding, inputs, system=answer_prompt(locale), answer=True)
+                chunks = self._stream(binding, inputs, system=answer_prompt(locale,question=text), answer=True)
             else:
                 chunks = self.tools.answer(self, binding, inputs, lio_locale=locale, lio_question_day=original.question_day,**({'message_refs':message_refs} if message_refs else {}),
                                            **({'lio_city':self.lio_city_context} if self.lio_city_context is not None else {}))
@@ -530,3 +538,18 @@ class RunWorker:
         except ProviderUnknown:
             state = self._event(binding, self.runs.snapshot(binding), 'unknown')
         return self._finish(receipt, state, proposal_id)
+
+    def _reflect_runtime(self,receipt,binding,state,payload):
+        """One original registered model operation; no planning/tools/Memory."""
+        try:
+            for chunk in self._registered_stream(binding,'model.runtime_reflection.0',
+                                                  'model.runtime_reflection.1',payload):
+                state=self._event(binding,state,'text_delta',chunk)
+            state=self._event(binding,state,'completed')
+        except BudgetExceeded:
+            state=self._budget_rejection(binding,'answer')
+        except ProviderFailed:
+            state=self._event(binding,self.runs.snapshot(binding),'failed')
+        except ProviderUnknown:
+            state=self._event(binding,self.runs.snapshot(binding),'unknown')
+        return self._finish(receipt,state)

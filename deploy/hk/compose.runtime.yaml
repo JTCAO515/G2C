@@ -1,0 +1,9 @@
+# B-owned opt-in. Use only after reviewed source, original ledger allocation,
+# actual image/card verification and the private directory pins are delivered.
+# Existing API/operator/database/signing credentials are not replaced here.
+services:
+  worker:
+    command: [worker, --runtime-manifest, /runtime-config/manifest.json]
+    volumes:
+      - /srv/g2c-beta/runtime-host/config:/runtime-config:ro
+      - /srv/g2c-beta/runtime-host/state:/runtime-state
