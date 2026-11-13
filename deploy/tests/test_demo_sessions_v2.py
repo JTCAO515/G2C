@@ -43,7 +43,7 @@ class Database:
         return self.row
 
 
-@pytest.mark.parametrize('code',('G2C@999','CJ_Tester@998'))
+@pytest.mark.parametrize('code',('G2C@99','CJ_Tester@98'))
 def test_short_invite_real_socket_http_and_original_qualification(tmp_path,monkeypatch,code):
     monkeypatch.setenv('CJ_ENV','local')
     subject='m4-synthetic-demo-'+sha256(code.encode('ascii')).hexdigest()[:12]
@@ -79,15 +79,23 @@ def test_short_invite_real_socket_http_and_original_qualification(tmp_path,monke
     assert set(database.scopes)=={scope_for(ISSUER,subject)}
 
 
-@pytest.mark.parametrize('code',('G2C@12','G2C@1234','g2c@123','CJ_Tester@12','CJ_Tester@1234','CJ_TESTER@123',' G2C@123','G2C@123\n','G2C@１２３','OTHER@123'))
+@pytest.mark.parametrize('code',('G2C@00','G2C@1','G2C@123','g2c@12','CJ_Tester@00','CJ_Tester@1','CJ_Tester@123','CJ_TESTER@12',' G2C@12','G2C@12\n','G2C@１２','OTHER@12'))
 def test_short_invite_exact_format(code):
     assert demo_login.invitation_subject(code) is None
 
 
-def test_twelve_explicit_demo_subjects_remain_bounded(monkeypatch):
+def test_all_198_short_invites_map_to_distinct_subjects():
+    codes=[prefix+'@'+format(i,'02d')for prefix in ('G2C','CJ_Tester')for i in range(1,100)]
+    subjects=[demo_login.invitation_subject(code)for code in codes]
+    assert len(subjects)==198 and None not in subjects and len(set(subjects))==198
+    assert all(subject=='m4-synthetic-demo-'+sha256(code.encode('ascii')).hexdigest()[:12]
+               for code,subject in zip(codes,subjects,strict=True))
+
+
+def test_205_explicit_demo_subjects_remain_bounded(monkeypatch):
     from deploy.hk import configuration
     monkeypatch.setattr(configuration,'local_database_target',lambda:True)
-    subjects=['m4-synthetic-demo-'+format(i,'012x') for i in range(12)]
+    subjects=['m4-synthetic-demo-'+format(i,'012x') for i in range(205)]
     monkeypatch.setenv('CJ_BETA_SUBJECTS_JSON',json.dumps(subjects))
     monkeypatch.setenv(configuration.DEMO_SUBJECTS,json.dumps(subjects))
     assert configuration.beta_subjects()==(subjects,frozenset(subjects))
