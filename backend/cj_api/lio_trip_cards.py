@@ -47,7 +47,7 @@ class LioTripCards:
 
 def _card(trip):
     value = json.loads(trip.content)
-    if value['content_version'] == 'structured.3':
+    if value.get('content_version') == 'structured.3':
         raise Denied('calendar itinerary requires the new Lio reader')
     days = {}
     for item in value['items']:

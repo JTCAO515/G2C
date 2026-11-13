@@ -19,6 +19,10 @@ def revision(content):
 
 
 class CalendarCards(unittest.TestCase):
+    def test_original_unversioned_card_keeps_its_legacy_projection(self):
+        original=revision(dict(title='Original legacy Trip',items=[]))
+        self.assertEqual(_card(original),dict(trip_id=original.trip_id,title='Original legacy Trip',days=[]))
+
     def test_undated_rest_days_remain_distinct_without_dates(self):
         original = revision(EXAMPLES['base'])
         card = calendar_card(original)
