@@ -697,6 +697,27 @@ def group_runtime_cancel():
 GROUPS.update(runtime_cancel=group_runtime_cancel)
 
 
+def group_runtime_fixture_observer():
+    return script('backend/cj_api/tests/runtime_fixture_observer_pg.py')
+
+
+GROUPS.update(runtime_fixture_observer=group_runtime_fixture_observer)
+
+
+def group_runtime_release_witness():
+    return script('backend/cj_api/tests/runtime_release_witness_pg.py')
+
+
+GROUPS.update(runtime_release_witness=group_runtime_release_witness)
+
+
+def group_runtime_fixture_boundary():
+    return script('backend/cj_api/tests/runtime_fixture_boundary_pg.py')
+
+
+GROUPS.update(runtime_fixture_boundary=group_runtime_fixture_boundary)
+
+
 def main(argv):
     if argv[:1] == ['--shard']:
         index, count = map(int, argv[1].split('/'))
