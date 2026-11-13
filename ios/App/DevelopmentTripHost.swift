@@ -2449,6 +2449,9 @@ struct DemoCleanupRootProbeResult: Codable {
         let beforeManifest = try JSONDecoder().decode(DevelopmentNativeManifest.self, from: try unwrapProbeManifest(before.manifest))
         let afterManifest = try JSONDecoder().decode(DevelopmentNativeManifest.self, from: try unwrapProbeManifest(after.manifest))
         let selectedAccount = scenario == "foreignOwner" ? try candidate.withBytes { try DevelopmentSessionConfiguration.demo(DemoInviteSession.decode($0)).accountID } : scope.account
+        var expectedManifest = beforeManifest
+        if accepted, scenario != "foreignOwner" { expectedManifest.renewedSDKHash = candidate.withBytes(developmentCleanupHash) }
+        let expectedSelection = scenario == "foreignOwner" ? root.cleanupWorkflow?.probeScope : scope
         let ownsCleanup = !accepted || root.cleanupWorkflow?.probeOwner == selectedAccount
         let ownsTrip = !accepted || root.trip?.probeOwner == selectedAccount
         var independentReadDenied = true
@@ -2458,11 +2461,11 @@ struct DemoCleanupRootProbeResult: Codable {
         }
         let selectionUnchanged: Bool
         if let bytes = after.selection, case .original(let actualScope) = try CleanupControlSelection(bytes: bytes) {
-            selectionUnchanged = actualScope.account == selectedAccount && actualScope.environment == scope.environment
+            selectionUnchanged = actualScope == expectedSelection
         } else { selectionUnchanged = false }
         let blocked = shell.messageBindingBlocked
         guard accepted == shouldAccept, shouldAccept || (blocked && root.trip == nil),
-              try beforeManifest.stateRef == afterManifest.stateRef,
+              try beforeManifest.stateRef == afterManifest.stateRef, after.manifest == (try expectedManifest.encoded()),
               before.device == after.device, before.account == after.account, before.execution == after.execution,
               selectionUnchanged, ownsCleanup, ownsTrip, independentReadDenied,
               try root.persistence.load()?.withBytes({ $0 }) == candidate.withBytes({ $0 }) else {
@@ -2479,7 +2482,7 @@ struct DemoCleanupRootProbeResult: Codable {
         } else { recovery = ("UNRUN_DENIED_OR_INDEPENDENT_OWNER", nil, nil) }
         let result = DemoCleanupRootProbeResult(scenario: scenario, state: scenario == "foreignOwner" ? "independentOwnerSignedIn" : accepted ? "signedIn" : "blocked",
             ordinaryBlocked: blocked, tripAbsent: root.trip == nil, originalStateRefUnchanged: true,
-            originalRequestsUnchanged: true, originalSelectionUnchanged: scenario != "foreignOwner", savedNewMaterial: true,
+            originalRequestsUnchanged: true, originalSelectionUnchanged: before.selection == after.selection, savedNewMaterial: true,
             recoveryStatus: recovery.0, recoveryOriginalActionID: recovery.1, recoveryOriginalRequestSha256: recovery.2, activeAccountOwnsCleanup: ownsCleanup, activeAccountOwnsTrip: ownsTrip, independentOwnerCannotReadOriginal: independentReadDenied)
         // Only fixture-owned exact records, after retiring every writer. No
         // production terminal-cleanup authority or remote erase is exercised.
@@ -2498,6 +2501,7 @@ private struct DemoCleanupRootProbeFailure: Error, CustomStringConvertible {
 private extension DevelopmentCleanupWorkflow {
     var probeEnrollmentInFlight: Bool { enrolling }
     var probeOwner: UUID { lifetime.scope.account }
+    var probeScope: AccountCleanupScope { lifetime.scope }
     func probeOriginalReadUnavailable() throws -> Bool {
         guard let account else { throw CleanupFailure.unavailable }
         do { _ = try account.prepareOriginalRead(); return false }
