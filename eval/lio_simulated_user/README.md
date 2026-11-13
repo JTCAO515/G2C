@@ -48,6 +48,12 @@ claim. The renderer still checks the persona-specific behavior independently.
 `run_episode()` passes only ordinary reply text and locale into the DUT host.
 Neither the hidden profile, scorer annotations nor actor system enters its call.
 The model may choose which answers to reveal, but cannot alter hidden values.
+Actor selection/decoding failures retain a failed trace, the selection when
+available, and the original fee read; they never cause another actor/DUT call.
+These are operational failures: the batch host stops new dispatch, while an
+expected G2/G3 measurement failure is retained without selecting a better trial.
+Unavailable accounting retains the observed dialogue with UNKNOWN amounts and
+an explicit accounting status. Programming exceptions still propagate.
 The evaluator's finite bound is the declared user exit plus its response; reaching
 it before an observed exploration end is UNKNOWN. It is **not** an exploration
 round limit in Lio. A native host UNKNOWN stops that episode without resubmission;

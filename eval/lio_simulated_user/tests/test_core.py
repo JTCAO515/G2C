@@ -239,6 +239,62 @@ class Simulator(unittest.TestCase):
         full = DATA['profiles'][0]
         with self.assertRaises(InputError):
             render_choice(full, dict(answers=[], action='continue'), [dict(factor='pace')], 1)
+        with self.assertRaises(InputError):
+            render_choice(full, dict(answers=[], action='direct'), [], 1)
+
+    def test_invalid_actor_choice_retains_failure_trace_cost_and_original_selection(self):
+        p = DATA['profiles'][0];calls = []
+        choice = dict(answers=['unknown-factor'], action='continue')
+        class Dut:
+            def reply(self, *args, **kwargs):calls.append('dut');return assistant(p, complete=False)
+        class Actor:
+            def choose(self, messages):calls.append('actor');return choice
+        def cost():
+            calls.append('cost')
+            return dict(conservative_cny='1', token_estimate_cny='0.00001', actual_paid_cny=None)
+        value = run_episode(p, 1, DIGEST, 'test', 'L0', Dut(), Actor(), cost)
+        self.assertEqual(calls, ['dut', 'actor', 'cost'])
+        self.assertEqual(value['outcome'], 'failed')
+        self.assertEqual(value['failure_owner'], 'simulator')
+        self.assertEqual(value['actor_observations'][0]['choice'], choice)
+        result = report(DATA, DIGEST, [value])
+        self.assertEqual(result['overall']['outcomes'], {'failed': 1, 'UNRUN': 59})
+        self.assertEqual(result['results'][0]['cost']['conservative_cny'], '1')
+
+    def test_actor_decode_failure_still_reads_original_cost_once(self):
+        p = DATA['profiles'][0];calls = []
+        class Dut:
+            def reply(self, *args, **kwargs):return assistant(p, complete=False)
+        class Actor:
+            def choose(self, messages):raise InputError('invalid decoded actor response')
+        def cost():
+            calls.append(1)
+            return dict(conservative_cny=None, token_estimate_cny=None, actual_paid_cny=None)
+        value = run_episode(p, 1, DIGEST, 'test', 'L0', Dut(), Actor(), cost)
+        self.assertEqual(calls, [1]);self.assertEqual(value['outcome'], 'failed')
+        self.assertFalse(value['actor_observations'][0]['received'])
+
+    def test_unavailable_accounting_keeps_observed_turns_and_unknown_cost(self):
+        p = DATA['profiles'][0]
+        class Dut:
+            def reply(self, *args, **kwargs):return assistant(p)
+        class Actor:
+            def choose(self, messages):raise AssertionError('no actor call expected')
+        def cost():raise HostUnavailable()
+        value = run_episode(p, 1, DIGEST, 'test', 'L0', Dut(), Actor(), cost)
+        self.assertEqual(value['outcome'], 'unknown')
+        self.assertEqual(value['accounting_status'], 'UNKNOWN')
+        self.assertEqual(len(value['turns']), 2)
+        self.assertTrue(all(v is None for v in value['cost'].values()))
+
+    def test_programming_exception_is_not_converted_to_model_failure(self):
+        p = DATA['profiles'][0]
+        class Dut:
+            def reply(self, *args, **kwargs):return assistant(p, complete=False)
+        class Actor:
+            def choose(self, messages):raise RuntimeError('host program bug')
+        with self.assertRaises(RuntimeError):
+            run_episode(p, 1, DIGEST, 'test', 'L0', Dut(), Actor(), lambda: {})
 
     def test_native_unknown_stops_without_a_second_submit(self):
         p = DATA['profiles'][0];calls = []

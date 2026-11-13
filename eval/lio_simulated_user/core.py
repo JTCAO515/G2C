@@ -9,6 +9,7 @@ from hashlib import sha256
 import json
 from pathlib import Path
 import re
+from cj_strict_json import compact, reject_duplicates
 
 FACTORS = ('city', 'duration_days', 'season', 'first_visit', 'party_type',
            'interests', 'pace', 'lodging_tier', 'dietary', 'must_see', 'avoid',
@@ -41,15 +42,6 @@ class InputError(ValueError):
     pass
 
 
-def _object(pairs):
-    result = {}
-    for key, value in pairs:
-        if key in result:
-            raise InputError('duplicate JSON field')
-        result[key] = value
-    return result
-
-
 def _nonfinite(_):
     raise InputError('nonfinite JSON')
 
@@ -58,7 +50,8 @@ def read_json(path):
     raw = Path(path).read_bytes()
     if len(raw) > 4_000_000:
         raise InputError('bounded evaluation file required')
-    return raw, json.loads(raw, object_pairs_hook=_object, parse_constant=_nonfinite)
+    return raw, json.loads(raw, object_pairs_hook=reject_duplicates(InputError, 'duplicate JSON field'),
+                           parse_constant=_nonfinite)
 
 
 def _facts(facts, text):
@@ -119,8 +112,8 @@ def simulator_messages(profile, public_history, attempt):
     if attempt not in ATTEMPTS:
         raise InputError('fixed attempt required')
     return [dict(role='system', content=SIMULATOR_SYSTEM),
-        dict(role='user', content=json.dumps(dict(profile=profile, history=public_history,
-             attempt=attempt), ensure_ascii=False, separators=(',', ':')))]
+        dict(role='user', content=compact(dict(profile=profile, history=public_history,
+             attempt=attempt)).decode('utf-8'))]
 
 
 def render_choice(profile, choice, questions, round_number):
@@ -149,6 +142,8 @@ def render_choice(profile, choice, questions, round_number):
             raise InputError('simulator did not follow its declared answer behavior')
     if round_number >= profile['behavior']['direct_after'] and choice['action'] != 'direct':
         raise InputError('simulator did not honor its declared exit behavior')
+    if round_number < profile['behavior']['direct_after'] and choice['action'] == 'direct':
+        raise InputError('simulator exited before its declared behavior point')
     pieces, facts = [], []
     for key in keys:
         answer = profile['hidden_answers'][key]
@@ -352,6 +347,9 @@ def report(dataset, dataset_sha256, traces):
                 raise InputError('cost must be an exact nonnegative decimal string or unavailable')
         result['evidence_refs'] = ([] if trace is None else
             [turn['observation_ref'] for turn in trace['turns'] if turn['speaker'] == 'assistant'])
+        result['end_reason'] = None if trace is None else trace.get('end_reason')
+        result['failure_owner'] = None if trace is None else trace.get('failure_owner')
+        result['accounting_status'] = 'UNRUN' if trace is None else trace.get('accounting_status', 'provided')
         rows.append(dict(slot, **result))
 
     def group(values):
