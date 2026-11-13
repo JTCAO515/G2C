@@ -9,18 +9,18 @@ struct LioExplorationQuestionsFixture: View {
 
     init(chinese: Bool) {
         self.chinese = chinese
-        func option(_ id: String, _ en: String, _ zh: String, _ send: String) -> LioQuestionOption {
-            LioQuestionOption(id: id, displayText: chinese ? zh : en, sendText: send)
+        func option(_ id: String, _ en: String, _ zh: String, _ send: String, _ sendChinese: String) -> LioQuestionOption {
+            LioQuestionOption(id: id, displayText: chinese ? zh : en, sendText: chinese ? sendChinese : send)
         }
         _draft = State(initialValue: LioQuestionDraft(messageID: "one", questions: [
             LioQuestionGroup(id: "interests", question: chinese ? "你想体验哪些？" : "What sounds interesting?", multiple: true,
-                        options: [option("interests.history", "History", "历史文化", "Interests: History"),
-                                  option("interests.food", "Food", "当地美食", "Interests: Food"),
-                                  option("interests.nature", "Nature", "自然风光", "Interests: Nature")]),
+                        options: [option("interests.history", "History", "历史文化", "Interests: History", "兴趣：历史文化"),
+                                  option("interests.food", "Food", "当地美食", "Interests: Food", "兴趣：当地美食"),
+                                  option("interests.nature", "Nature", "自然风光", "Interests: Nature", "兴趣：自然风光")]),
             LioQuestionGroup(id: "pace", question: chinese ? "你喜欢什么节奏？" : "What pace suits you?", multiple: false,
-                        options: [option("pace.slow", "Slow", "慢慢来", "Pace: Slow"),
-                                  option("pace.balanced", "Balanced", "适中", "Pace: Balanced"),
-                                  option("pace.active", "Active", "充实些", "Pace: Active")])
+                        options: [option("pace.slow", "Slow", "慢慢来", "Pace: Slow", "节奏：慢慢来"),
+                                  option("pace.balanced", "Balanced", "适中", "Pace: Balanced", "节奏：适中"),
+                                  option("pace.active", "Active", "充实些", "Pace: Active", "节奏：充实些")])
         ]))
     }
 
