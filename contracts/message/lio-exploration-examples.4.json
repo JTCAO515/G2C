@@ -1,0 +1,183 @@
+{
+  "zh": {
+    "version": "LIO-timeline.4",
+    "conversation_id": "lio-dialogue-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "messages": [
+      {
+        "message_id": "explore-zh",
+        "text": "想去中国玩几天",
+        "answer": "这一版可以先安排一座城市。\n\n更想体验什么？\n历史 / 美食 / 自然\n\n继续细化 / 直接出方案",
+        "status": "completed",
+        "failure": null,
+        "activity": null,
+        "sources": [],
+        "trip": null,
+        "memory": null,
+        "segments": [
+          {
+            "purpose": "direction",
+            "text": "这一版可以先安排一座城市。"
+          }
+        ],
+        "question_groups": [
+          {
+            "factor_key": "interests",
+            "question": "更想体验什么？",
+            "multiple": true,
+            "options": [
+              {
+                "id": "interests.history",
+                "display_text": "历史",
+                "send_text": "兴趣：历史"
+              },
+              {
+                "id": "interests.food",
+                "display_text": "美食",
+                "send_text": "兴趣：美食"
+              },
+              {
+                "id": "interests.nature",
+                "display_text": "自然",
+                "send_text": "兴趣：自然"
+              }
+            ]
+          }
+        ],
+        "profile": [],
+        "notices": [],
+        "exits": [
+          {
+            "id": "continue_refining",
+            "display_text": "继续细化",
+            "send_text": "继续细化"
+          },
+          {
+            "id": "plan_now",
+            "display_text": "直接出方案",
+            "send_text": "直接出方案"
+          }
+        ],
+        "progress": null
+      }
+    ],
+    "next_before": null
+  },
+  "en": {
+    "version": "LIO-timeline.4",
+    "conversation_id": "lio-dialogue-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "messages": [
+      {
+        "message_id": "explore-en",
+        "text": "I would like to visit China",
+        "answer": "We can plan one city in this version.\n\nWhat would you most like to explore?\nHistory / Food / Nature\n\nKeep exploring / Make a plan now",
+        "status": "completed",
+        "failure": null,
+        "activity": null,
+        "sources": [],
+        "trip": null,
+        "memory": null,
+        "segments": [
+          {
+            "purpose": "direction",
+            "text": "We can plan one city in this version."
+          }
+        ],
+        "question_groups": [
+          {
+            "factor_key": "interests",
+            "question": "What would you most like to explore?",
+            "multiple": true,
+            "options": [
+              {
+                "id": "interests.history",
+                "display_text": "History",
+                "send_text": "Interests: History"
+              },
+              {
+                "id": "interests.food",
+                "display_text": "Food",
+                "send_text": "Interests: Food"
+              },
+              {
+                "id": "interests.nature",
+                "display_text": "Nature",
+                "send_text": "Interests: Nature"
+              }
+            ]
+          }
+        ],
+        "profile": [],
+        "notices": [],
+        "exits": [
+          {
+            "id": "continue_refining",
+            "display_text": "Keep exploring",
+            "send_text": "Keep exploring"
+          },
+          {
+            "id": "plan_now",
+            "display_text": "Make a plan now",
+            "send_text": "Make a plan now"
+          }
+        ],
+        "progress": null
+      }
+    ],
+    "next_before": null
+  },
+  "waiting": {
+    "version": "LIO-timeline.4",
+    "conversation_id": "lio-dialogue-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "messages": [
+      {
+        "message_id": "explore-en",
+        "text": "I would like to visit China",
+        "answer": "",
+        "status": "answering",
+        "failure": null,
+        "activity": null,
+        "sources": [],
+        "trip": null,
+        "memory": null,
+        "segments": [],
+        "question_groups": [],
+        "profile": [],
+        "notices": [],
+        "exits": [],
+        "progress": {
+          "kind": "waiting",
+          "text": "I am putting the plan together."
+        }
+      }
+    ],
+    "next_before": null
+  },
+  "planning_started": {
+    "version": "LIO-timeline.4",
+    "conversation_id": "lio-dialogue-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "messages": [
+      {
+        "message_id": "explore-en",
+        "text": "I would like to visit China",
+        "answer": "",
+        "status": "answering",
+        "failure": null,
+        "activity": null,
+        "sources": [],
+        "trip": null,
+        "memory": null,
+        "segments": [],
+        "question_groups": [],
+        "profile": [],
+        "notices": [],
+        "exits": [],
+        "progress": {
+          "kind": "planning_started",
+          "text": "Planning your three-day visit.",
+          "duration_days": 3
+        }
+      }
+    ],
+    "next_before": null
+  }
+}
