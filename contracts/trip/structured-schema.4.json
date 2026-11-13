@@ -1,0 +1,785 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://go2china.space/contracts/trip/structured-schema.4.json",
+  "title": "Additive rich day-ordinal itinerary; data is not publishing or factual authority",
+  "$defs": {
+    "Id": {
+      "$ref": "https://go2china.space/contracts/trip/structured-schema.3.json#/$defs/Id"
+    },
+    "DayIndex": {
+      "$ref": "https://go2china.space/contracts/trip/structured-schema.3.json#/$defs/DayIndex"
+    },
+    "Date": {
+      "$ref": "https://go2china.space/contracts/trip/structured-schema.3.json#/$defs/Date"
+    },
+    "Time": {
+      "$ref": "https://go2china.space/contracts/trip/structured-schema.3.json#/$defs/Time"
+    },
+    "Zone": {
+      "$ref": "https://go2china.space/contracts/trip/structured-schema.3.json#/$defs/Zone"
+    },
+    "Offset": {
+      "$ref": "https://go2china.space/contracts/trip/structured-schema.3.json#/$defs/Offset"
+    },
+    "Fixed": {
+      "$ref": "https://go2china.space/contracts/trip/structured-schema.3.json#/$defs/Fixed"
+    },
+    "UndatedDay": {
+      "type": "object",
+      "properties": {
+        "day_index": {
+          "$ref": "#/$defs/DayIndex"
+        },
+        "theme": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "area": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        }
+      },
+      "required": [
+        "day_index",
+        "theme",
+        "area"
+      ],
+      "additionalProperties": false
+    },
+    "DatedDay": {
+      "type": "object",
+      "properties": {
+        "day_index": {
+          "$ref": "#/$defs/DayIndex"
+        },
+        "date": {
+          "$ref": "#/$defs/Date"
+        },
+        "theme": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "area": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        }
+      },
+      "required": [
+        "day_index",
+        "date",
+        "theme",
+        "area"
+      ],
+      "additionalProperties": false
+    },
+    "Event": {
+      "$ref": "https://go2china.space/contracts/trip/structured-schema.3.json#/$defs/Event"
+    },
+    "Item": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "verification": {
+          "enum": [
+            "pending",
+            "verified"
+          ]
+        },
+        "evidence": {
+          "type": "array",
+          "maxItems": 40,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        },
+        "schedule": {
+          "type": "object",
+          "properties": {
+            "start": {
+              "$ref": "#/$defs/Event"
+            },
+            "end": {
+              "$ref": "#/$defs/Event"
+            }
+          },
+          "required": [
+            "start",
+            "end"
+          ],
+          "additionalProperties": false
+        },
+        "fixed": {
+          "$ref": "#/$defs/Fixed"
+        },
+        "source_category": {
+          "enum": [
+            "unknown",
+            "user_provided",
+            "queried",
+            "estimated"
+          ]
+        },
+        "source_refs": {
+          "type": "array",
+          "maxItems": 1,
+          "items": {
+            "$ref": "#/$defs/Id"
+          }
+        },
+        "kind": {
+          "enum": [
+            "sight",
+            "meal",
+            "hotel",
+            "transport",
+            "free_time"
+          ]
+        },
+        "place": {
+          "$ref": "#/$defs/Place"
+        },
+        "note": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tip": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Tip"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason_refs": {
+          "$ref": "#/$defs/ReasonRefs"
+        }
+      },
+      "required": [
+        "id",
+        "text",
+        "verification",
+        "evidence",
+        "schedule",
+        "fixed",
+        "source_category",
+        "source_refs",
+        "kind",
+        "place",
+        "note",
+        "tip",
+        "reason_refs"
+      ],
+      "additionalProperties": false
+    },
+    "Source": {
+      "$ref": "https://go2china.space/contracts/trip/structured-schema.3.json#/$defs/Source"
+    },
+    "Check": {
+      "$ref": "https://go2china.space/contracts/trip/structured-schema.3.json#/$defs/Check"
+    },
+    "RichSourceRef": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "enum": [
+            "amap",
+            "wikidata",
+            "visitor",
+            "checks"
+          ]
+        },
+        "kind": {
+          "enum": [
+            "place",
+            "route",
+            "name",
+            "tip",
+            "weather",
+            "day_opening"
+          ]
+        },
+        "reference": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "provider",
+        "kind",
+        "reference",
+        "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "Coordinate": {
+      "type": "object",
+      "properties": {
+        "raw": {
+          "type": "string",
+          "pattern": "^-?[0-9]{1,3}(?:\\.[0-9]{1,12})?,-?[0-9]{1,2}(?:\\.[0-9]{1,12})?$"
+        },
+        "longitude": {
+          "type": "string",
+          "pattern": "^-?[0-9]{1,3}(?:\\.[0-9]{1,12})?$"
+        },
+        "latitude": {
+          "type": "string",
+          "pattern": "^-?[0-9]{1,2}(?:\\.[0-9]{1,12})?$"
+        },
+        "crs": {
+          "const": "GCJ-02"
+        }
+      },
+      "required": [
+        "raw",
+        "longitude",
+        "latitude",
+        "crs"
+      ],
+      "additionalProperties": false
+    },
+    "Role": {
+      "enum": [
+        "poi_center",
+        "entrance",
+        "exit"
+      ]
+    },
+    "ReasonRefs": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "city",
+          "duration_days",
+          "season",
+          "first_visit",
+          "party_type",
+          "interests",
+          "pace",
+          "lodging_tier",
+          "dietary",
+          "must_see",
+          "avoid",
+          "mobility",
+          "arrival",
+          "departure"
+        ]
+      },
+      "maxItems": 14,
+      "uniqueItems": true
+    },
+    "Place": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "enum": [
+            "matched",
+            "unconfirmed"
+          ]
+        },
+        "amap_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ProviderId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "name_zh": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "name_en": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500,
+          "description": "Display label; not an official/provider translation claim unless name_en_source is attested."
+        },
+        "name_en_source": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/RichSourceRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "coordinate": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Coordinate"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "coordinate_role": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Role"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "address": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/RichSourceRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "state",
+        "amap_id",
+        "name_zh",
+        "name_en",
+        "name_en_source",
+        "coordinate",
+        "coordinate_role",
+        "address",
+        "source"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "unconfirmed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "amap_id": {
+                "type": "null"
+              },
+              "coordinate": {
+                "type": "null"
+              },
+              "coordinate_role": {
+                "type": "null"
+              },
+              "address": {
+                "type": "null"
+              },
+              "source": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "amap_id": {
+                "$ref": "#/$defs/ProviderId"
+              },
+              "coordinate": {
+                "$ref": "#/$defs/Coordinate"
+              },
+              "coordinate_role": {
+                "$ref": "#/$defs/Role"
+              },
+              "source": {
+                "$ref": "#/$defs/RichSourceRef"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Tip": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "source": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/RichSourceRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "text",
+        "source"
+      ],
+      "additionalProperties": false
+    },
+    "Leg": {
+      "type": "object",
+      "properties": {
+        "day_index": {
+          "$ref": "#/$defs/DayIndex"
+        },
+        "from_item_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "to_item_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "state": {
+          "enum": [
+            "estimated",
+            "unconfirmed"
+          ]
+        },
+        "mode": {
+          "oneOf": [
+            {
+              "enum": [
+                "walking",
+                "transit",
+                "taxi"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "duration_seconds": {
+          "oneOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "distance_m": {
+          "oneOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/RichSourceRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "time_semantics": {
+          "const": "provider_estimate_at_query_time"
+        },
+        "future_guaranteed": {
+          "const": false
+        }
+      },
+      "required": [
+        "day_index",
+        "from_item_id",
+        "to_item_id",
+        "state",
+        "mode",
+        "duration_seconds",
+        "distance_m",
+        "source",
+        "time_semantics",
+        "future_guaranteed"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "unconfirmed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "mode": {
+                "type": "null"
+              },
+              "duration_seconds": {
+                "type": "null"
+              },
+              "distance_m": {
+                "type": "null"
+              },
+              "source": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "mode": {
+                "enum": [
+                  "walking",
+                  "transit",
+                  "taxi"
+                ]
+              },
+              "duration_seconds": {
+                "type": "number",
+                "minimum": 0
+              },
+              "distance_m": {
+                "type": "number",
+                "minimum": 0
+              },
+              "source": {
+                "$ref": "#/$defs/RichSourceRef"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Hotel": {
+      "type": "object",
+      "properties": {
+        "place": {
+          "$ref": "#/$defs/Place"
+        },
+        "note": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason_refs": {
+          "$ref": "#/$defs/ReasonRefs"
+        }
+      },
+      "required": [
+        "place",
+        "note",
+        "reason_refs"
+      ],
+      "additionalProperties": false
+    },
+    "Lodging": {
+      "type": "object",
+      "properties": {
+        "area": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "recommendations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Hotel"
+          },
+          "minItems": 2,
+          "maxItems": 3
+        }
+      },
+      "required": [
+        "area",
+        "recommendations"
+      ],
+      "additionalProperties": false
+    },
+    "ProviderId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[A-Za-z0-9_-]+$"
+    }
+  },
+  "type": "object",
+  "properties": {
+    "content_version": {
+      "const": "structured.4"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "calendar": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "const": "undated"
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "const": "dated"
+            },
+            "start_date": {
+              "$ref": "#/$defs/Date"
+            }
+          },
+          "required": [
+            "state",
+            "start_date"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "days": {
+      "type": "array",
+      "minItems": 1
+    },
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 60,
+      "items": {
+        "$ref": "#/$defs/Item"
+      }
+    },
+    "sources": {
+      "type": "array",
+      "maxItems": 40,
+      "items": {
+        "$ref": "#/$defs/Source"
+      }
+    },
+    "date_checks": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "$ref": "#/$defs/Check"
+      }
+    },
+    "legs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Leg"
+      },
+      "minItems": 0,
+      "maxItems": 60
+    },
+    "lodging": {
+      "$ref": "#/$defs/Lodging"
+    }
+  },
+  "required": [
+    "content_version",
+    "title",
+    "calendar",
+    "days",
+    "items",
+    "sources",
+    "date_checks",
+    "legs",
+    "lodging"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "calendar": {
+            "properties": {
+              "state": {
+                "const": "undated"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "days": {
+            "items": {
+              "$ref": "#/$defs/UndatedDay"
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "days": {
+            "items": {
+              "$ref": "#/$defs/DatedDay"
+            }
+          }
+        }
+      }
+    }
+  ]
+}
