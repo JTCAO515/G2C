@@ -42,12 +42,15 @@ class _Observed:
 @dataclass(frozen=True,slots=True,repr=False)
 class ProviderCapture:
     _raw:bytes
+    _outcomes:bytes
     _revision:int
     _factory:InitVar[object]
     def __post_init__(self,_factory):
         if _factory is not _FACTORY:raise RuntimeDenied('issued provider capture required')
     @property
     def records(self):return json.loads(self._raw)
+    @property
+    def outcomes(self):return json.loads(self._outcomes)
 
 
 class RegisteredProviderSources:
@@ -136,16 +139,23 @@ class RegisteredProviderSources:
         def current():
             if self.worker.budget_exit is not self.exit or self.worker.runs.valid(binding)is not True:
                 raise RuntimeDenied('original provider source no longer current')
-        current();records=[]
+        current();records=[];outcomes=[]
         for observed in self._observed.values():
             operation=observed.operation
             actual=self.store.read_original(binding,operation.operation_key)
             if actual!=operation:raise RuntimeDenied('original registered provider input differs')
             self._status(observed,current)
             records.extend(json.loads(observed.records))
+            reply=json.loads(observed.reply)
+            original=json.loads(operation.original.input_bytes)
+            outcomes.append(dict(version='LIO-provider-outcome.1',attempt_id=operation.command.attempt_id,
+                operation_id=operation.command.operation_id,registration=operation.registration_id,
+                input_sha256=operation.command.input_digest,reply_sha256=sha256(observed.reply).hexdigest(),
+                request_ref=reply['request_ref'],status=reply['status'],item_count=len(reply['items']),
+                targets=original['targets'],query_type=original['query_type'],query=original['query']))
         if len(records)>256:raise RuntimeDenied('eligible provider source bound exceeded')
         current()
-        result=ProviderCapture(packed(records),self._revision,_factory=_FACTORY)
+        result=ProviderCapture(packed(records),packed(outcomes),self._revision,_factory=_FACTORY)
         self._issued=result
         return result
 

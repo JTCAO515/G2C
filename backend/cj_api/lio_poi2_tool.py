@@ -13,6 +13,7 @@ from cj_place.gaode_v2 import TextSearch,Nearby,POIDetail,prepare
 from cj_place.https_transport import ProviderCredentials,poi2_candidate_stream,POI2_REQUEST_SENT
 from cj_usage.registered_exit import Registration,InvocationInput
 from cj_usage.metered_exit import BudgetUnknown
+from cj_trip.domain import identifier
 
 from .local_app import ISSUER,scope_for
 from .local_lio_provider_sources import RegisteredProviderSources
@@ -24,6 +25,7 @@ class POI2Input:
     request_ref:str
     origin:ExplorationOrigin
     sources:RegisteredProviderSources
+    targets:tuple[str,...]=()
 
 
 def registration(services):
@@ -39,10 +41,14 @@ def registration(services):
                 argument.sources.binding!=argument.origin.binding):
             raise BudgetUnknown('explicit source-bound native4 POI2 input required')
         binding=argument.origin.binding
+        if (type(argument.targets)is not tuple or len(argument.targets)>60 or
+                len(set(argument.targets))!=len(argument.targets)):
+            raise BudgetUnknown('bounded code-owned lookup target set required')
+        for target in argument.targets:identifier(target)
         require_scope(binding.scope);argument.origin.check(binding)
         original=json.dumps(dict(version='LIO-poi2-input.1',query_type=type(argument.query).__name__,
             query=asdict(argument.query),request_ref=argument.request_ref,origin=argument.origin.descriptor(),
-            synthetic_only=True),ensure_ascii=False,sort_keys=True,separators=(',',':'),default=_binding_json).encode()
+            targets=argument.targets,synthetic_only=True),ensure_ascii=False,sort_keys=True,separators=(',',':'),default=_binding_json).encode()
         def bind(operation,guard):
             argument.origin.check(operation.binding);require_scope(operation.binding.scope)
             argument.sources.begin(operation)

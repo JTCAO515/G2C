@@ -28,13 +28,15 @@ import lio_exploration_flow_pg as native
 
 
 class FixtureWriter:
-    def __init__(self,reader,send_check):
-        self.reader,self.send_check=reader,send_check
+    def __init__(self,reader,send_check,available):
+        self.reader,self.send_check,self.available=reader,send_check,available
         self.closed=False;self.transport=self;self.writes=[]
     def write(self,data):
         self.send_check();self.writes.append(data)
-        body=json.dumps(dict(status='1',infocode='10000',count='1',pois=[dict(
-            id='B000SYNTH1',name='合成博物馆',cityname='北京市',adcode='110101',location='116.4,39.9')]),ensure_ascii=False).encode()
+        value=(dict(status='1',infocode='10000',count='1',pois=[dict(
+            id='B000SYNTH1',name='合成博物馆',cityname='北京市',adcode='110101',location='116.4,39.9')])
+            if self.available else dict(status='0',infocode='10001',info='INVALID_USER_KEY'))
+        body=json.dumps(value,ensure_ascii=False).encode()
         self.reader.feed_data(b'HTTP/1.1 200 OK\r\nContent-Length: '+str(len(body)).encode()+b'\r\n\r\n'+body)
         self.reader.feed_eof()
     async def drain(self):pass
@@ -54,7 +56,7 @@ def main():
             sources=RegisteredProviderSources(worker,binding)
             origin=ExplorationOrigin(host.database,binding,worker.messages.query(binding.message_id))
             packets=tuple(POI2Input(TextSearch('合成博物馆'+str(n),'北京',2),
-                'poi2-'+binding.run_id[:16]+'-'+str(n),origin,sources)for n in range(2))
+                'poi2-'+binding.run_id[:16]+'-'+str(n),origin,sources,('code-stop-'+str(n),))for n in range(2))
             phases=[]
             def send_check():
                 worker.memory_run.check()
@@ -62,7 +64,7 @@ def main():
                 phases.append('sent-under-original-frame')
             async def dial():
                 reader=asyncio.StreamReader()
-                writer=FixtureWriter(reader,send_check);writers.append(writer)
+                writer=FixtureWriter(reader,send_check,len(writers)%2==0);writers.append(writer)
                 return reader,writer
             read=https_transport._read_response
             async def receive(*args):
@@ -79,12 +81,18 @@ def main():
                 replies=calls.parallel(tuple(Call('gaode',POI2_REGISTRATION,packet)for packet in packets))
             assert calls.gaode==2
             assert phases==['sent-under-original-frame']*2+['received-outside-original-frame']*2,phases
-            for raw in replies:
+            for index,raw in enumerate(replies):
                 reply=json.loads(raw)
-                assert reply['version']=='LIO-poi2-result.1'and reply['status']=='ok'
-                assert reply['items'][0]['place']['coordinate']['raw']=='116.4,39.9'
+                assert reply['version']=='LIO-poi2-result.1'
+                assert reply['status']==('ok'if index==0 else'unavailable')
+                if index==0:assert reply['items'][0]['place']['coordinate']['raw']=='116.4,39.9'
+                else:assert reply['items']==[]
             capture=sources.capture(binding)
-            assert len(capture.records)==2
+            assert len(capture.records)==1
+            assert [(row['status'],row['item_count'])for row in capture.outcomes]==[('ok',1),('unavailable',0)]
+            assert len({row['attempt_id']for row in capture.outcomes})==2
+            assert [row['targets']for row in capture.outcomes]==[['code-stop-0'],['code-stop-1']]
+            assert [row['query']['keyword']for row in capture.outcomes]==['合成博物馆0','合成博物馆1']
             assert capture.records[0]['sha256']==sha256(packed(capture.records[0]['payload'])).hexdigest()
             late=[]
             def prove():
@@ -109,7 +117,7 @@ def main():
     with patch.object(RealTools,'_registrations',registry),patch.object(ExplorationPlanning,'_model',diagnosed):native.main()
     assert len(captures)==6 and len(writers)==12
     assert all(writer.closed and len(writer.writes)==1 for writer in writers)
-    print('PASS ZH3/EN3 actual native4 parallel registered tools/Meter/12 distinct financial RECEIVED/SELECT-only status proofs; HTTP fixture only, no real supplier claim',flush=True)
+    print('PASS ZH3/EN3 native4 parallel tools/12 distinct financial RECEIVED including six known-unavailable outcomes/SELECT-only proof; HTTP fixture only, no real supplier claim',flush=True)
 
 
 if __name__=='__main__':main()
