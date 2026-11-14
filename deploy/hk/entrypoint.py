@@ -41,7 +41,7 @@ def _runtime_gate(database, runtime):
                 or marker['quota_policy_sha256']!=demo_quota.policy_digest(runtime.context_path.read_text(),
                     demo_quota.APPROVED_BUDGET)):
             raise ValueError('HK Demo quota cutover incomplete')
-        if checkpoint.versions()[-1]==53:
+        if checkpoint.versions()[-1]>=53:
             marker=checkpoint.verified(control()/'demo-schema53.json')
             if marker['state']!='COMPLETE' or marker['lineage']!=release['lineage']:
                 raise ValueError('HK wire-origin cutover incomplete')

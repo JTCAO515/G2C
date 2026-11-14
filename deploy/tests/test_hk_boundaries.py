@@ -66,7 +66,8 @@ from scripts.m4_budget_transfer import seal,adopt
 from scripts import m4_budget_transfer as transfer
 
 
-def test_schema53_readiness_requires_its_completed_signed_anchor_and_keeps_quota_gate(tmp_path,monkeypatch):
+@pytest.mark.parametrize('schema',[53,54])
+def test_schema53_readiness_requires_its_completed_signed_anchor_and_keeps_quota_gate(tmp_path,monkeypatch,schema):
     from deploy.hk import demo_quota,entrypoint
     from contextlib import nullcontext
     key=Ed25519PrivateKey.generate()
@@ -85,7 +86,7 @@ def test_schema53_readiness_requires_its_completed_signed_anchor_and_keeps_quota
     monkeypatch.setattr(entrypoint,'control',lambda:tmp_path)
     monkeypatch.setattr(entrypoint.local_postgres,'require_serving',lambda control:None)
     monkeypatch.setattr(checkpoint,'require_release',lambda db,control:{'lineage':'original-lineage'})
-    monkeypatch.setattr(checkpoint,'versions',lambda:list(range(1,54)))
+    monkeypatch.setattr(checkpoint,'versions',lambda:list(range(1,schema+1)))
     checkpoint.atomic(tmp_path/'demo-schema52.json',dict(state='COMPLETE',lineage='original-lineage',
         quota_policy_sha256=demo_quota.policy_digest(raw,800)))
     for marker in ({'state':'INTENT','lineage':'original-lineage'},
