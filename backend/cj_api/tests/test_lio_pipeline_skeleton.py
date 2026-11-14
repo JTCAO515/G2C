@@ -3,11 +3,12 @@ import json
 import unittest
 
 from cj_api.lio_pipeline_skeleton import recipes,parse_skeleton,CapacityExceeded,SkeletonUnavailable
+from cj_message.lio_pipeline_schema import SKELETON
 
 
 def proposal(expected):
     def place(key):return dict(name_zh='合成'+key,name_en='Synthetic '+key)
-    return dict(version='LIO-plan-skeleton.1',title='Proposed trip',days=[dict(day_index=r.day_index,area='合成街区',
+    return dict(version=SKELETON,title='Proposed trip',days=[dict(day_index=r.day_index,area='合成街区',
         sights=[place(str(r.day_index)+'s'+str(n))for n in range(r.sights)],
         meals=[dict(period=p,place=place(str(r.day_index)+p))for p in r.meals])for r in expected],
         lodging=dict(area='合成住宿片区',recommendations=[place('hotel1'),place('hotel2')]))

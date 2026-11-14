@@ -4,8 +4,8 @@ import json
 from typing import Literal
 from pydantic import BaseModel,ConfigDict,Field,field_validator
 
-SKELETON='LIO-plan-skeleton.1'
-WORDING='LIO-plan-wording.1'
+SKELETON='LIO-exploration-plan-skeleton.1'
+WORDING='LIO-exploration-plan-wording.1'
 
 
 class Data(BaseModel):
@@ -42,7 +42,7 @@ class Lodging(Data):
 
 
 class Skeleton(Data):
-    version:Literal['LIO-plan-skeleton.1']
+    version:Literal['LIO-exploration-plan-skeleton.1']
     title:str=Field(min_length=1,max_length=100)
     days:list[Day]=Field(min_length=1,max_length=366)
     lodging:Lodging
@@ -56,7 +56,7 @@ class WordingRow(Data):
 
 
 class Wording(Data):
-    version:Literal['LIO-plan-wording.1']
+    version:Literal['LIO-exploration-plan-wording.1']
     items:list[WordingRow]=Field(max_length=60)
 
 
