@@ -4,6 +4,7 @@ Every read uses the existing MESSAGE history AUTH lifetime and scoped runtime
 database. Artifact references are resolved from original operation IDs, not paths
 or URLs supplied by the adapter. Deleted input payloads cannot expose old files.
 """
+import base64
 from dataclasses import asdict
 from datetime import datetime
 import re
@@ -95,6 +96,39 @@ class RuntimeOriginals:
                 events=[dict(sequence=s,kind=k) for s,k,_ in events],
                 operations=[dict(operation_key=r[0],registration_id=r[1],kind=r[2],attempt_id=r[3],operation_id=r[4],input_erased=r[7] is None) for r in rows],
                 original_period=period))
+        return self._read(token,message_id,project)
+
+    def visible_original(self,token,message_id):
+        """Private original input/event bytes; never a G result/state copy."""
+        def project(scope,original,source):
+            if any(row[7]is None for row in source[2]):
+                raise Unavailable('ORIGINAL_PAYLOAD_ERASED')
+            def raw(value):
+                data=bytes(value)
+                return dict(sha256=sha256(data).hexdigest(),bytes_base64=base64.b64encode(data).decode('ascii'))
+            def tail():
+                r=original.receipt
+                with self.database.connect(scope)as db:
+                    db.execute('SET TRANSACTION READ ONLY')
+                    ack=db.execute('SELECT acknowledged FROM cj_message_delivery '
+                        'WHERE scope=%s AND message_id=%s AND run_id=%s',
+                        (scope,message_id,r.run_id)).fetchone()
+                    jobs=db.execute("SELECT job_id,attempt_id,state FROM cj_memory_history_job WHERE scope=%s "
+                        "AND convert_from(batch,'UTF8')::jsonb#>>'{source,cursor,conversation_id}'=%s "
+                        "AND convert_from(batch,'UTF8')::jsonb#>>'{source,cursor,generation}'=%s "
+                        "AND (convert_from(batch,'UTF8')::jsonb#>>'{source,cursor,after}')::bigint<%s "
+                        "AND (convert_from(batch,'UTF8')::jsonb#>>'{source,cursor,through}')::bigint>=%s "
+                        'ORDER BY job_id,attempt_id',(scope,r.conversation_id,r.generation,r.sequence,r.sequence)).fetchall()
+                return dict(delivery_acknowledged=None if ack is None else ack[0],
+                    associated_history_jobs=[dict(job_id=j,attempt_id=a,state=s)for j,a,s in jobs])
+            observed=tail()
+            body=canonical(dict(version='G2C-runtime-visible-original.1',
+                scope_sha256=sha256(scope.encode()).hexdigest(),message_id=message_id,
+                run_id=original.receipt.run_id,message_input_sha256=original.receipt.input_sha256,
+                status=source[0][0],input=raw(original.raw),tail=observed,
+                events=[dict(sequence=n,kind=kind,value=raw(value.encode('utf-8')))for n,kind,value in source[1]]))
+            if tail()!=observed:raise Unavailable('ORIGINAL_VISIBLE_TAIL_CHANGED')
+            return body
         return self._read(token,message_id,project)
 
     def input(self,token,message_id,operation_id):
