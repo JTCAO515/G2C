@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from math import ceil
 
 from cj_trip.domain import identifier, packed
-from cj_trip.rich_reasons import brief, filter_reasons
+from cj_trip.rich_reasons import brief, filter_reason_text
 from cj_trip.structured import SourceRejected
 from cj_trip.structured_v4 import ITEM_EXTRA, adjacent_pairs, validate_candidate, validate_document
 from .rich_edges import EdgeWindows
@@ -91,7 +91,7 @@ def assemble(document, *, source, facts, activities, edges: EdgeWindows, phase,
     targets = [(item['id'], item) for item in value['items']]
     targets += [('lodging-'+str(index), hotel) for index,hotel in enumerate(value['lodging']['recommendations'])]
     for key,target in targets:
-        refs, dropped = filter_reasons(target['reason_refs'], facts)
+        target['note'], refs, dropped = filter_reason_text(target['note'],target['reason_refs'],facts)
         target['reason_refs'] = list(refs)
         if dropped:
             removed.append((key,dropped))

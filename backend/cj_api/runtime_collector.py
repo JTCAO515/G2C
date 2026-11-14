@@ -14,12 +14,13 @@ from .runtime_preparation_input import preparatory_message
 
 class RuntimeCollector:
     def __init__(self,originals,claims,run_requests,token_supplier,pins,directory,*,
-                 guard,state_reader,model_reader,dialogue=None,clock=monotonic):
+                 guard,state_reader,model_reader,dialogue=None,clock=monotonic,fixture_originals=None):
         self.originals,self.claims,self.run_requests=originals,claims,run_requests
         self.token_supplier,self.pins=token_supplier,pins
         self.guard,self.state_reader,self.model_reader,self.clock=guard,state_reader,model_reader,clock
         self.binding=claims.binding
         self.dialogue=dialogue
+        self.fixture_originals=fixture_originals
         self.refs=OriginalReferences(directory,self.binding,self,guard=guard)
 
     def inventory(self,token,mid):return self.originals.inventory(token,mid)
@@ -198,6 +199,15 @@ class RuntimeCollector:
 
     def original(self,reference,*,deadline):
         if self.clock()>=deadline:raise Unavailable('DEADLINE_REACHED')
-        body=self.refs.resolve(self.token_supplier(),reference)
+        token=self.token_supplier()
+        if self.fixture_originals is None:
+            body=self.refs.resolve(token,reference)
+        else:
+            # Qualify before consulting the optional source index. Each chosen
+            # resolver owns the current checks around its actual body read.
+            self.guard(read_only=True)
+            if self.fixture_originals.contains(token,reference):
+                body=self.fixture_originals.resolve(token,reference)
+            else:body=self.refs.resolve(token,reference)
         if self.clock()>=deadline:raise Unavailable('DEADLINE_REACHED')
         return body
