@@ -1656,4 +1656,39 @@ import XCTest
  private func captureRichItinerary(_ app:XCUIApplication,_ label:String,_ chinese:Bool,_ dark:Bool) {
   let a=XCTAttachment(screenshot:app.screenshot());a.name=label+(chinese ? "-zh":"-en")+(dark ? "-dark":"-light");a.lifetime = .keepAlways;add(a)
  }
+
+    func testExplorationReadEnglish() throws { try exerciseExplorationRead(false) }
+    func testExplorationReadChinese() throws { try exerciseExplorationRead(true) }
+    private func exerciseExplorationRead(_ chinese: Bool) throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        for dark in [false, true] {
+            app.launchArguments = ["--lio-preview", "--lio-exploration-read-acceptance", "-cj.ui.language.v1", chinese ? "zh-Hans" : "en"]
+                + (dark ? ["--lio-read-dark-acceptance"] : [])
+            app.launch()
+            let prefix = "lio.questions.explore-" + (chinese ? "zh" : "en") + "."
+            let first = app.buttons[prefix + "interests.history"]
+            XCTAssertTrue(first.waitForExistence(timeout: 10), app.debugDescription)
+            XCTAssertFalse(app.staticTexts["lio.exploration.fixture.unavailable"].exists)
+            XCTAssertEqual(app.staticTexts["lio.exploration.send-count"].label, "0")
+            try app.performAccessibilityAudit(for: .all)
+            first.tap()
+            app.buttons[prefix + "interests.nature"].tap()
+            let submit = app.buttons["lio.questions.continue"]
+            for _ in 0..<6 { if submit.isHittable { break }; app.swipeUp() }
+            XCTAssertTrue(submit.isHittable, app.debugDescription)
+            submit.tap()
+            XCTAssertEqual(app.staticTexts["lio.exploration.send-count"].label, "1")
+            XCTAssertEqual(app.staticTexts["lio.exploration.sent"].label, chinese ? "兴趣：历史\n兴趣：自然" : "Interests: History\nInterests: Nature")
+            let rain = app.staticTexts[chinese ? "带一件雨衣。" : "Bring a raincoat."]
+            for _ in 0..<6 { if rain.isHittable { break }; app.swipeUp() }
+            XCTAssertTrue(rain.exists)
+            try app.performAccessibilityAudit(for: .all)
+            let attachment = XCTAttachment(screenshot: app.screenshot())
+            attachment.name = "decoded-exploration-" + (chinese ? "zh" : "en") + (dark ? "-dark" : "-light")
+            attachment.lifetime = .keepAlways; add(attachment)
+            app.terminate()
+        }
+    }
+
 }
