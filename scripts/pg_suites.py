@@ -281,8 +281,10 @@ def group_registered_usage_schema():
 
 
 def group_registered_exit():
-    # #242 formal @2 model host and three-kind registered infrastructure.
-    return script('backend/cj_api/tests/registered_exit_pg.py')
+    # Formal @2 legacy behavior plus smaller code-owned tool reservations.
+    results=[script('backend/cj_api/tests/'+name)for name in
+             ('registered_exit_pg.py','bounded_tool_reservation_pg.py')]
+    return 1 if any(results)else 0
 
 
 def group_memory_run():
