@@ -70,7 +70,11 @@ def _booking_source(item,booking,items,turns):
 def parse_sourced(raw,turns,*,current_dates=False):
     value=decode(raw.encode() if type(raw)is str else raw)
     try:dto=SourcedIntake.model_validate(value)
-    except ValidationError:raise InvalidInput('exact sourced facts intake required')from None
+    except ValidationError as failure:
+        from .lio_flow_intake import schema_detail
+        error=InvalidInput('exact sourced facts intake required')
+        error.detail=schema_detail(failure,SourcedIntake)
+        raise error from None
     data=dto.model_dump(exclude_unset=True)
     sources={}
     for ref in data['field_sources']:

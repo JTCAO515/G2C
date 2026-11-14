@@ -11,7 +11,7 @@ from cj_agent.provider import ProviderUnknown
 from cj_agent.lio_intake_optional_schema import SYSTEM as FACTS_SYSTEM,OptionalIntake
 from cj_message.demo_dialogue import LIO_VERSION, LIO_VERSION_V3
 from cj_message.domain import Command,Unavailable
-from cj_message.lio_context import answer_prompt,self_description
+from cj_message.lio_context import answer_prompt,self_description,CAPABILITY_PATTERN
 from cj_message.lio_plan_needs import BOUND_EFFECT
 from cj_needs.domain import InvalidInput
 
@@ -19,13 +19,26 @@ from .lio_city import CityReference,forms,_normalize
 from .lio_sourced_intake import BookingSourceUnclear
 from .lio_flow_intake import ReadOnlyPlanningQuestion,parse_flow
 from .lio_national_intake import NONPERSISTENT,fields_for,fixed_sources_complete,province_evidence,diagnostic_code,StartDateConflict,FixedTimezoneConflict,DateDurationConflict,DateSourceUnclear
-from .lio_planning_grounding import PlanningTurn,standalone_question
+from .lio_planning_grounding import PlanningTurn,standalone_question,NUMBER,_number
 from .local_lio_planning import PlanningDetails,register,discuss
 
 CONTEXT='lio_planning_context.1:'
 CITY='lio_city_resolution.1:'
 MAX_TURNS=8
 CURRENT_SYSTEM=FACTS_SYSTEM
+_DURATION_QUESTION=re.compile(
+    rf'(?:(?P<zh>(?P<zh_number>{NUMBER})[天日])(?:怎么玩|怎么安排)|'
+    rf'(?:how (?:should|can) I spend|what (?:can|should) I do (?:in|for))\s+'
+    rf'(?P<en>(?P<en_number>{NUMBER})\s+days?))[?？。.!！\s]*',re.I)
+
+
+def literal_duration_question(text):
+    """One complete unconditional trip question; no quotation/negation/default."""
+    match=_DURATION_QUESTION.fullmatch(text.strip())
+    if match is None:return None
+    number=_number(match['zh_number']or match['en_number'])
+    return (number,match['zh']or match['en'])if number>0 else None
+
 SOURCE_LANGUAGE=(
     ' Evidence ignores reply styling. Copy city.query and all quotes verbatim from indexed originals; '
     'never translate or quote resolved/Memory data. If only adding dates/fixed items, use city:null '
@@ -45,6 +58,12 @@ PUBLICATION_REQUEST=re.compile(r"计划|规划|安排|设计|保存|存到|存�
 # Only the optional-date flow treats an undecided date as data, not refusal.
 # Keep the frozen older intake parsers and every actual no-save/conditional hold.
 _UNDECIDED_DATE=re.compile(r'日期.{0,4}(?:未定|没定|待定)|\bdates? (?:are |is )?undecided\b',re.I)
+
+
+# Meta/capability questions are answered by the general model path, never by
+# the planning intake. Colloquial forms such as 你能做啥 belong here (#994).
+META_QUESTION=re.compile(r'\s*(?:'+CAPABILITY_PATTERN+r'|(?:你是谁|你是什么|我是谁|你了解我什么|你知道我什么|'
+    r'who are you|what are you|who am i|what do you know about me))[?？。.!！\s]*',re.I)
 
 
 def publication_held(text):
@@ -136,20 +155,41 @@ class NationalLioPlanning:
         fixed=self_description(text,original.locale)
         if fixed is not None:return self._reply(worker,binding,state,fixed)
         if re.fullmatch(r'\s*(?:第一次来中国(?:旅行)?(?:建议|应该|可以)?怎么玩|first time in china[,，]?\s*(?:any tips|any advice))[?？。.!！\s]*',text,re.I):return None
-        if re.fullmatch(r'\s*(?:你是谁|你是什么|我是谁|你了解我什么|你能做什么|你能干啥|你有什么能力|who are you|what are you|who am i|what do you know about me|what can you do)[?？。.!！\s]*',text,re.I):return None
+        if META_QUESTION.fullmatch(text):return None
         today=original.question_day or datetime.now(ZoneInfo('Asia/Shanghai')).date()
         turns,refs,previous=self.context(binding,PlanningTurn(text,today))
-        messages=[dict(role='user',content=t.text) for t in turns]
+        literal=literal_duration_question(text)
+        if (literal is not None and previous is None and binding.message_sequence==len(turns)
+                and all(self_description(turn.text,original.locale)is not None for turn in turns[:-1])
+                and not self.plan_and_save.has_saved_itinerary(binding)):
+            days,quote=literal
+            # This is sourced code-owned state, not a fabricated model result
+            # or publication grant. The ordinary compiler rechecks these exact
+            # originals if a later sourced follow-up supplies a destination.
+            state=self._context(worker,binding,state,dict(authority='none',status='needs_details',
+                facts={'duration_days':dict(value=days,sources=[dict(message_id=binding.message_id,quote=quote)])},
+                nonplanning_message_ids=[]))
+            reply=('你想去哪个城市玩'+str(days)+'天？'if original.locale=='zh'else
+                   'Which city would you like to visit for '+str(days)+(' day?'if days==1 else' days?'))
+            return self._reply(worker,binding,state,reply)
+        # Label originals independently of unindexed Memory packets. The
+        # accepted main parser and its Memory-offset rules remain unchanged.
+        messages=[dict(role='user',content='Original traveler source_index='+str(index)+
+            ' (quote only the following original text):\n'+turn.text)for index,turn in enumerate(turns)]
+        memory_offset=0
         if worker.memory_run is not None:
             memory_messages=worker.memory_run.messages(text)
             messages=[*memory_messages[:-1],*messages]
+            # Code-owned Memory user slots precede the indexed originals; the
+            # model may count them, so source locators are corrected by quote.
+            memory_offset=len(memory_messages)-1
         if worker.message_context is not None:messages=worker.message_context.answer_messages(binding,messages)
         system=intake_prompt(original.locale,turns,discussion_only=previous is not None and previous.get('status')=='different_trip',
                              scene=self.scene_context(binding,datetime.now(timezone.utc)))
         raw=''.join(worker._registered_stream(binding,'model.lio_intake.0','model.lio_intake.9',
                     (messages,system,worker.provider,len(turns)-1),message_refs=refs))
         booking_unclear=False;question_fields=[];facts={}
-        try:intake,question_fields,facts=parse_flow(raw,turns,refs,binding.message_id,previous,schema=OptionalIntake)
+        try:intake,question_fields,facts=parse_flow(raw,turns,refs,binding.message_id,previous,schema=OptionalIntake,memory_offset=memory_offset)
         except DateSourceUnclear:
             return self._answer(worker,binding,state,original.locale,
                 '这个日期表达我还拿不准，可以给出具体的年月日吗？',
@@ -157,8 +197,8 @@ class NationalLioPlanning:
         except BookingSourceUnclear as error:
             intake=error.control;booking_unclear=True
         except (InvalidInput,ValueError,UnicodeError) as error:
-            logging.getLogger('cj_usage.audit').warning('LIO_INTAKE_REJECTED run_id=%s code=%s output_sha256=%s output_bytes=%s',
-                binding.run_id,diagnostic_code(error),sha256(raw.encode('utf-8','surrogatepass')).hexdigest(),len(raw.encode('utf-8','surrogatepass')))
+            logging.getLogger('cj_usage.audit').warning('LIO_INTAKE_REJECTED run_id=%s code=%s detail=%s output_sha256=%s output_bytes=%s',
+                binding.run_id,diagnostic_code(error),getattr(error,'detail','')or'-',sha256(raw.encode('utf-8','surrogatepass')).hexdigest(),len(raw.encode('utf-8','surrogatepass')))
             raise ProviderUnknown('nationwide structured intake unavailable') from error
         if isinstance(intake,ReadOnlyPlanningQuestion):
             held=publication_held(text)
