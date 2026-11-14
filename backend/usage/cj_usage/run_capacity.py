@@ -1,5 +1,5 @@
 """Read-only original base-profile capacity; reserve remains authoritative."""
-import json
+from cj_strict_json import compact
 from .core import Meter
 
 VERSION='G2C-original-run-capacity.1'
@@ -17,4 +17,4 @@ def encode_capacity(ledger,run_id):
         remaining_steps=remaining(ledger.config.max_steps,0 if run is None else run.steps),
         remaining_tools=remaining(ledger.config.max_tools,0 if run is None else run.tools),
         remaining_output=remaining(ledger.config.max_output,Meter.output_exposure(ledger,run_id)))
-    return json.dumps(value,ensure_ascii=True,sort_keys=True,separators=(',',':')).encode()
+    return compact(value,ensure_ascii=True,sort_keys=True)
