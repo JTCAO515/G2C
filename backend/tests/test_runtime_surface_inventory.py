@@ -17,7 +17,8 @@ def fixture():
         dict(operation_id='native-model',attempt_id='attempt-model',kind='model',registration_id='model.answer'),
         dict(operation_id='native-tool',attempt_id='attempt-tool',kind='tool',registration_id='tool.weather')])
     visible=dict(version='G2C-runtime-visible-original.1',message_id='e-original',run_id='e-run',
-        input=blob(b'actual original request'),events=[dict(sequence=1,kind='text_delta',value=blob(b'actual published chunk'))],
+        input=blob(b'actual original request'),visible_text=blob(b'actual published chunk'),
+        events=[dict(sequence=1,kind='text_delta',value=blob(b'actual published chunk'))],
         tail=dict(delivery_acknowledged=True,associated_history_jobs=[]))
     state=dict(allowed=True,inventory=inventory,visible=visible,missing=set(),calls=[],failure=None)
     def guard():

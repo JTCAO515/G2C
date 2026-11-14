@@ -126,6 +126,7 @@ class RuntimeOriginals:
                 scope_sha256=sha256(scope.encode()).hexdigest(),message_id=message_id,
                 run_id=original.receipt.run_id,message_input_sha256=original.receipt.input_sha256,
                 status=source[0][0],input=raw(original.raw),tail=observed,
+                visible_text=raw(''.join(value for _,kind,value in source[1]if kind=='text_delta').encode('utf-8')),
                 events=[dict(sequence=n,kind=kind,value=raw(value.encode('utf-8')))for n,kind,value in source[1]]))
             if tail()!=observed:raise Unavailable('ORIGINAL_VISIBLE_TAIL_CHANGED')
             return body

@@ -28,6 +28,7 @@ class NativeSurfaceInventory:
         visible=self.originals.visible_original(token,message_id)
         view=decode(visible);entries=[];missing=[]
         surfaces=[dict(source_kind='message_input',source_id=message_id,**view['input'])]
+        surfaces.append(dict(source_kind='visible_text',source_id=inventory['run_id'],**view['visible_text']))
         surfaces.extend(dict(source_kind='run_event',source_id=str(event['sequence']),
             event_kind=event['kind'],**event['value'])for event in view['events'])
         if inventory['status']not in('completed','failed','cancelled'):
