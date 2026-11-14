@@ -3,7 +3,7 @@ import unittest
 
 from cj_agent.provider import DashScopeConfig,M4_BASE,M4_MODEL,M4_NATIVE_TURN_BUFFERED
 from cj_api.runtime_model import RuntimeModel,configured_model
-from cj_message.lio_exploration_schema import PROFILES,response_format,response_format_sha256
+from cj_message.lio_exploration_schema import UNDERSTANDING,RESPONSE,PROFILES,response_format,response_format_sha256
 from runtime_adapter.contract import Unavailable,encode
 
 
@@ -18,7 +18,11 @@ def observer(profile,limit,*,logical_change=None,wire_change=None):
 
 
 class ExplorationWireTests(unittest.TestCase):
-    def test_two_profiles_observe_actual_schema_and_lower_config_without_new_numeric_cap(self):
+    def test_existing_schema_hashes_remain_unchanged(self):
+        self.assertEqual(response_format_sha256(UNDERSTANDING),'e953f01458e15a8d2a00a7ffcd856cedb0e0987112a3f8f349ce7cfb8cac77cb')
+        self.assertEqual(response_format_sha256(RESPONSE),'0b9d19e67383838d2e2aa97c36faa59d141080fb23ec7c1f4166702d2c44c03f')
+
+    def test_profiles_observe_actual_schema_and_lower_config_without_new_numeric_cap(self):
         for profile in PROFILES:
             for limit in (768,1536):
                 with self.subTest(profile=profile,limit=limit):

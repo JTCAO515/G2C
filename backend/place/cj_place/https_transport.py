@@ -1,4 +1,4 @@
-"""Fixed Gaode v3 HTTPS candidate. NOT a canonical authorized dispatch entry.
+"""Fixed Gaode v3 / explicit POI2 HTTPS candidates; no authorized dispatch entry.
 
 No registration, environment/proxy/cookie lookup, redirects, retry or usage
 settlement. Tests replace only the private dial function with local TLS.
@@ -179,39 +179,63 @@ async def _read_response(reader, body_limit):
 
 async def fetch_candidate(config: Config, request: PreparedRequest,
                           credentials: ProviderCredentials,*,before_send=None,basic=False,coordinate_only=False) -> TransportResult:
-    """Low-level one-shot candidate, never authorization or a retry/recovery API.
+    """Existing v3 candidate; original bindings and endpoint gate are retained."""
+    return await _fetch_bound(config,request,credentials,before_send=before_send,paths=_PATHS,
+        reprepare=lambda:prepare(config,request.query,request.request_ref,request.started_at,
+                                 basic=basic,coordinate_only=coordinate_only))
 
-    Credentials must come from trusted host configuration. This function performs
-    no AUTH/USAGE/RUN operation. Production execute remains unconditionally closed.
-    Every result after possible I/O failure is unknown; caller must preserve the
-    original attempt. Caller cancellation propagates after close/abort, never as
-    proof of non-dispatch. No raw exception, secret URL or body is logged.
+
+async def fetch_poi2_candidate(config:Config,request:PreparedRequest,credentials:ProviderCredentials,*,before_send):
+    """Opt-in POI2 candidate. Its caller must use the registered spending exit.
+
+    This is no AUTH/USAGE/write grant. No retry, proxy/environment lookup,
+    coordinate conversion, multilingual service or implicit pagination is added.
+    """
+    from .gaode_v2 import prepare as prepare_poi2
+    if before_send is None:return TransportResult('rejected','original_source_guard_required')
+    return await _fetch_bound(config,request,credentials,before_send=before_send,
+        paths=frozenset(('/v5/place/text','/v5/place/around','/v5/place/detail')),
+        reprepare=lambda:prepare_poi2(config,request.query,request.request_ref,request.started_at))
+
+
+def _candidate_target(config,request,credentials,reprepare,paths):
+    if type(config) is not Config or type(request) is not PreparedRequest or type(credentials) is not ProviderCredentials:
+        raise _WireFailure("transport_configuration_invalid")
+    if reprepare() != request or request.origin != ORIGIN or request.path not in paths:
+        raise _WireFailure("request_binding_invalid")
+    credentials.__post_init__()
+    expires = credentials.expires_at.astimezone(timezone.utc)
+    now = datetime.now(timezone.utc)
+    if now >= expires:
+        raise _WireFailure("credentials_expired")
+    age = (now - request.started_at.astimezone(timezone.utc)).total_seconds()
+    if age < 0:
+        raise _WireFailure("request_time_invalid")
+    remaining = min(config.timeout_seconds, config.max_age_seconds) - age
+    if remaining <= 0:
+        raise _WireFailure("request_deadline_expired")
+    remaining = min(remaining, (expires - now).total_seconds())
+    target = request.path + "?" + urlencode((*request.params, ("key", credentials.api_key)))
+    if len((ORIGIN + target).encode("ascii")) > config.max_request_bytes:
+        raise _WireFailure("credentialed_request_bytes_limit")
+    return target,expires,remaining
+
+
+async def _fetch_bound(config,request,credentials,*,before_send,paths,reprepare):
+    """One-shot transport shared only after the selected fixed preparation gate.
+
+    Every result after possible I/O failure is unknown; retain the same attempt.
+    Cancellation propagates after close/abort. No raw exception, URL or body log.
     """
     writer = None
     cancelled = False
     outcome = TransportResult("unknown", "transport_unknown")
     try:
-        if type(config) is not Config or type(request) is not PreparedRequest or type(credentials) is not ProviderCredentials:
-            return TransportResult("rejected", "transport_configuration_invalid")
-        if prepare(config, request.query, request.request_ref, request.started_at,basic=basic,coordinate_only=coordinate_only) != request or request.origin != ORIGIN or request.path not in _PATHS:
-            return TransportResult("rejected", "request_binding_invalid")
-        credentials.__post_init__()
-        expires = credentials.expires_at.astimezone(timezone.utc)
-        now = datetime.now(timezone.utc)
-        if now >= expires:
-            return TransportResult("rejected", "credentials_expired")
-        age = (now - request.started_at.astimezone(timezone.utc)).total_seconds()
-        if age < 0:
-            return TransportResult("rejected", "request_time_invalid")
-        remaining = min(config.timeout_seconds, config.max_age_seconds) - age
-        if remaining <= 0:
-            return TransportResult("rejected", "request_deadline_expired")
-        remaining = min(remaining, (expires - now).total_seconds())
-        target = request.path + "?" + urlencode((*request.params, ("key", credentials.api_key)))
-        if len((ORIGIN + target).encode("ascii")) > config.max_request_bytes:
-            return TransportResult("rejected", "credentialed_request_bytes_limit")
+        target,expires,remaining=_candidate_target(config,request,credentials,reprepare,paths)
+    except _WireFailure as error:
+        return TransportResult('rejected',error.args[0])
     except Exception:
-        return TransportResult("rejected", "transport_configuration_invalid")
+        return TransportResult('rejected','transport_configuration_invalid')
 
     loop = asyncio.get_running_loop()
     deadline = loop.time() + remaining
@@ -260,3 +284,85 @@ async def fetch_candidate(config: Config, request: PreparedRequest,
     if loop.time() > deadline or datetime.now(timezone.utc) >= expires:
         return TransportResult("unknown", "deadline_or_credentials_expired")
     return outcome
+
+
+POI2_REQUEST_SENT=object()
+_POI2_PATHS=frozenset(('/v5/place/text','/v5/place/around','/v5/place/detail'))
+
+
+async def _poi2_events(config,request,credentials,before_send):
+    """Two advances on one loop: send under dispatch fence, receive outside it."""
+    from .gaode_v2 import prepare as prepare_poi2
+    if before_send is None:
+        yield TransportResult('rejected','original_source_guard_required');return
+    try:
+        target,expires,remaining=_candidate_target(config,request,credentials,
+            lambda:prepare_poi2(config,request.query,request.request_ref,request.started_at),_POI2_PATHS)
+    except _WireFailure as error:
+        yield TransportResult('rejected',error.args[0]);return
+    except Exception:
+        yield TransportResult('rejected','transport_configuration_invalid');return
+    loop=asyncio.get_running_loop();deadline=loop.time()+remaining
+    writer=None;cancelled=False;outcome=TransportResult('unknown','transport_unknown')
+    try:
+        async with asyncio.timeout_at(deadline):
+            reader,writer=await _connect()
+            if loop.time()>=deadline:raise _WireFailure('connect_deadline_exceeded')
+            if datetime.now(timezone.utc)>=expires:raise _WireFailure('credentials_expired_unknown')
+            payload=('GET '+target+' HTTP/1.1\r\nHost: '+_HOST+
+                '\r\nAccept: application/json\r\nAccept-Encoding: identity\r\nConnection: close\r\n\r\n').encode('ascii')
+            if before_send()is not True:raise _WireFailure('original_place_authority_invalid')
+            if loop.time()>=deadline:raise _WireFailure('connect_deadline_exceeded')
+            writer.write(payload);await writer.drain()
+        # End the first task's timeout context before yielding. The next
+        # advance uses a new task on the same loop and the same absolute clock.
+        yield POI2_REQUEST_SENT
+        async with asyncio.timeout_at(deadline):
+            if before_send()is not True:raise _WireFailure('original_place_authority_changed')
+            status,body=await _read_response(reader,config.max_response_bytes)
+            if status==200 and _secret_in(body,credentials.api_key):raise _WireFailure('credential_echo_rejected')
+            outcome=TransportResult('received','http_received',Response(request.binding_digest,
+                request.origin,request.path,status,body,datetime.now(timezone.utc)))
+    except asyncio.CancelledError:cancelled=True
+    except _WireFailure as error:outcome=TransportResult('unknown',error.args[0])
+    except Exception:outcome=TransportResult('unknown','transport_unknown')
+    finally:
+        if writer is not None:
+            try:
+                writer.close()
+                async with asyncio.timeout_at(deadline):await writer.wait_closed()
+            except asyncio.CancelledError:
+                cancelled=True
+                with suppress(Exception):writer.transport.abort()
+            except Exception:
+                with suppress(Exception):writer.transport.abort()
+                outcome=TransportResult('unknown','close_unknown')
+    if cancelled:raise asyncio.CancelledError()from None
+    if loop.time()>deadline or datetime.now(timezone.utc)>=expires:
+        outcome=TransportResult('unknown','deadline_or_credentials_expired')
+    yield outcome
+
+
+def poi2_candidate_stream(config,request,credentials,*,before_send):
+    """Synchronous registered-adapter bridge; no network retry or new attempt.
+
+    Consume the first POI2_REQUEST_SENT under the original dispatch fence, then
+    release it before the next advance. Closing the iterator closes that socket.
+    """
+    import sys
+    from contextvars import copy_context
+    with asyncio.Runner()as runner:
+        events=_poi2_events(config,request,credentials,before_send)
+        try:
+            while True:
+                # Do not retain the first advance's now-expired M/Memory
+                # ContextVars in Runner's cached context during network reads.
+                try:event=runner.run(anext(events),context=copy_context())
+                except StopAsyncIteration:return
+                yield event
+        finally:
+            primary=sys.exception()
+            try:runner.run(events.aclose(),context=copy_context())
+            except BaseException:
+                if primary is None:raise
+                primary.add_note('original POI2 socket cleanup failed')

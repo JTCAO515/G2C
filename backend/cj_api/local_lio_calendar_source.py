@@ -31,6 +31,14 @@ class LioCalendarSource:
     compiler. Every source is reread through real scoped MESSAGE authority;
     publication reacquires all those leases before C acquires NEEDS.
     """
+    sidecar_version='LIO-fixed-day-bindings.1'
+
+    def _basis(self,day_count,start_date,sidecar):
+        return CalendarBasis(day_count,start_date,sidecar)
+
+    def _protocol(self,cursor,binding,stored):
+        return original_protocol(cursor,binding,stored)
+
     def __init__(self, database, message_context, *, day_count, start_date, references,
                  date_quote=None, selection=None):
         self.database, self.message_context = database, message_context
@@ -58,7 +66,7 @@ class LioCalendarSource:
             if stored.receipt.input_sha256 != digest:
                 raise LeaseUnavailable('original calendar source bytes differ')
             with self.database.connect(binding.scope) as connection:
-                protocol = original_protocol(connection.cursor(), source, stored)
+                protocol = self._protocol(connection.cursor(), source, stored)
             reference = lease.reference.public_value()
             result = {key: reference[key] for key in ('conversation_id', 'generation', 'message_id',
                 'run_id', 'sequence', 'input_sha256', 'message_version')}
@@ -118,10 +126,10 @@ class LioCalendarSource:
             entries.append(entry)
             mappings[(fixed['item_id'], source.reference, quote)] = pair
         self.mappings = mappings
-        sidecar = packed(dict(version='LIO-fixed-day-bindings.1', needs_id=snapshot.needs_id,
+        sidecar = packed(dict(version=self.sidecar_version, needs_id=snapshot.needs_id,
             needs_version=snapshot.version, needs_content_sha256=sha256(snapshot.content).hexdigest(),
             reference=json.loads(current.reference), bindings=entries))
-        basis = CalendarBasis(self.day_count, self.start_date, sidecar)
+        basis = self._basis(self.day_count, self.start_date, sidecar)
         self.basis = basis
         message.check(binding)
         return basis
