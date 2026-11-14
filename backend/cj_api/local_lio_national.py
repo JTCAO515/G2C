@@ -21,6 +21,7 @@ from .lio_flow_intake import ReadOnlyPlanningQuestion,parse_flow
 from .lio_national_intake import NONPERSISTENT,fields_for,fixed_sources_complete,province_evidence,diagnostic_code,StartDateConflict,FixedTimezoneConflict,DateDurationConflict,DateSourceUnclear
 from .lio_planning_grounding import PlanningTurn,standalone_question,NUMBER,_number
 from .local_lio_planning import PlanningDetails,register,discuss
+from .rejected_intake_capture import capture_rejected_intake
 
 CONTEXT='lio_planning_context.1:'
 CITY='lio_city_resolution.1:'
@@ -186,19 +187,23 @@ class NationalLioPlanning:
         if worker.message_context is not None:messages=worker.message_context.answer_messages(binding,messages)
         system=intake_prompt(original.locale,turns,discussion_only=previous is not None and previous.get('status')=='different_trip',
                              scene=self.scene_context(binding,datetime.now(timezone.utc)))
-        raw=''.join(worker._registered_stream(binding,'model.lio_intake.0','model.lio_intake.9',
-                    (messages,system,worker.provider,len(turns)-1),message_refs=refs))
-        booking_unclear=False;question_fields=[];facts={}
-        try:intake,question_fields,facts=parse_flow(raw,turns,refs,binding.message_id,previous,schema=OptionalIntake,memory_offset=memory_offset)
-        except DateSourceUnclear:
-            return self._answer(worker,binding,state,original.locale,
-                '这个日期表达我还拿不准，可以给出具体的年月日吗？',
-                'I am not sure which date that expression means. Could you give the year, month and day?')
-        except BookingSourceUnclear as error:
-            intake=error.control;booking_unclear=True
-        except (InvalidInput,ValueError,UnicodeError) as error:
-            logging.getLogger('cj_usage.audit').warning('LIO_INTAKE_REJECTED run_id=%s code=%s detail=%s output_sha256=%s output_bytes=%s',
-                binding.run_id,diagnostic_code(error),getattr(error,'detail','')or'-',sha256(raw.encode('utf-8','surrogatepass')).hexdigest(),len(raw.encode('utf-8','surrogatepass')))
+        booking_unclear=False;question_fields=[];facts={};rejected=False
+        with capture_rejected_intake(binding,check_running=lambda:worker._running(binding))as capture:
+            raw=''.join(worker._registered_stream(binding,'model.lio_intake.0','model.lio_intake.9',
+                        (messages,system,worker.provider,len(turns)-1),message_refs=refs))
+            try:intake,question_fields,facts=parse_flow(raw,turns,refs,binding.message_id,previous,schema=OptionalIntake,memory_offset=memory_offset)
+            except DateSourceUnclear:
+                return self._answer(worker,binding,state,original.locale,
+                    '这个日期表达我还拿不准，可以给出具体的年月日吗？',
+                    'I am not sure which date that expression means. Could you give the year, month and day?')
+            except BookingSourceUnclear as error:
+                intake=error.control;booking_unclear=True
+            except (InvalidInput,ValueError,UnicodeError) as error:
+                logging.getLogger('cj_usage.audit').warning('LIO_INTAKE_REJECTED run_id=%s code=%s detail=%s output_sha256=%s output_bytes=%s',
+                    binding.run_id,diagnostic_code(error),getattr(error,'detail','')or'-',sha256(raw.encode('utf-8','surrogatepass')).hexdigest(),len(raw.encode('utf-8','surrogatepass')))
+                capture.reject(diagnostic_code(error),raw.encode('utf-8'))
+                rejected=True
+        if rejected:
             # The rejected projection grants no planning authority. Keep the
             # original traveler messages for ordinary conversation, but do not
             # carry an older save grant across this unparsed request (which

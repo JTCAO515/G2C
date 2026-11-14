@@ -13,9 +13,9 @@ from cj_api.local_worker_context import checker_for
 from cj_api.real_services import RealServices,RealTools
 from cj_api.runtime_originals import RuntimeOriginals
 from runtime_adapter.contract import Unavailable
-from cj_api.local_lio_national import NationalLioPlanning
-from cj_api.rejected_intake_capture import RejectedIntakeSink,use_rejected_intake_sink,capture_rejected_intake
-from cj_agent.provider import DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,M4_REAL_OUTPUT_TOKENS,ProviderUnknown
+from cj_api import rejected_intake_capture as capture_module
+from cj_api.rejected_intake_capture import RejectedIntakeSink,use_rejected_intake_sink,IntakeCapture
+from cj_agent.provider import DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,M4_REAL_OUTPUT_TOKENS
 from cj_memory.typed_runtime import TypedRuntimeConfiguration
 from cj_memory.typed_api import create_local_typed_app
 from cj_message.auth_boundary import Boundary
@@ -45,15 +45,29 @@ def exercise(root,conninfo):
             subject='self',slot='travel.pace',kind='preference',text='I prefer a relaxed pace.',extent='long_term',occurred_at='date unknown',context=None)).encode())
         assert result.status_code==200,result.text
     mode=['valid'];sent=[];raws=[]
+    text='Could you help me with a travel question?'
+    unclear_text='Please plan three days in Beijing starting around Dec 1'
     def response(request):
         body=json.loads(request.content);sent.append(body)
-        assert any('Stored memory data'in m['content']for m in body['messages'])
-        if mode[0]=='transport':raise httpx.ReadTimeout('injected fixture transport UNKNOWN',request=request)
-        value=flow('Synthetic general travel question',city=None,days=None,intent='consult',questions=(),index=0,
-            reply='I can help with a visit. Which places interest you?')
-        value.update(version='LIO-planning-intake.8',planning_request_index=None,needs_tools=False)
-        if mode[0]=='invalid':value['duration_days']='not-an-integer'
-        raw=json.dumps(value);raws.append(raw.encode())
+        system=body['messages'][0]['content']
+        if 'LIO-planning-intake.8'in system:
+            assert any('Stored memory data'in m['content']for m in body['messages'])
+            assert capture_module._current.get()is not None
+            if mode[0]=='transport':raise httpx.ReadTimeout('injected fixture transport UNKNOWN',request=request)
+            value=flow(text,city=None,days=None,intent='consult',questions=(),index=0,
+                reply='I can help with a visit. Which places interest you?')
+            value.update(version='LIO-planning-intake.8',planning_request_index=None,needs_tools=False)
+            if mode[0]=='invalid':value['duration_days']='not-an-integer'
+            if mode[0]=='date-clarification':
+                value=flow(unclear_text,city='Beijing',days=3,start='2026-12-01',intent='plan',questions=())
+                value.update(version='LIO-planning-intake.8')
+                value['field_sources']=[dict(field='duration_days',source_index=0,quote='three days'),
+                    dict(field='start_date',source_index=0,quote='around Dec 1')]
+            raw=json.dumps(value);raws.append(raw.encode())
+        else:
+            assert capture_module._current.get()is None
+            raw=(json.dumps(dict(version='MEMORY-EXTRACT@2',entries=[]))if 'MEMORY-EXTRACT@2'in system else
+                'I can help shape the visit. Which places interest you?')
         event=dict(id='fixture-rejection-'+str(len(sent)),model=M4_MODEL,choices=[dict(index=0,delta=dict(content=raw),finish_reason='stop')],
             usage=dict(prompt_tokens=100,completion_tokens=100,total_tokens=200))
         return httpx.Response(200,stream=httpx.ByteStream(('data: '+json.dumps(event)+'\n\ndata: [DONE]\n\n').encode()))
@@ -64,33 +78,36 @@ def exercise(root,conninfo):
     tools=RealTools(services,buffered_streaming_subjects=frozenset({subject}))
     checker=checker_for(auth);boundary=Boundary(checker,lambda principal:database.message_repository(scope_for(principal.issuer,principal.subject)),lambda:str(uuid.uuid4()))
     directory=root/'rejected';directory.mkdir(mode=0o700);sink=RejectedIntakeSink(directory)
-    execute=NationalLioPlanning.execute;captures=[]
-    def wrapped(planner,worker,binding,*args):
-        with capture_rejected_intake(binding,check_running=lambda:worker._running(binding))as capture:
-            try:return execute(planner,worker,binding,*args)
-            except ProviderUnknown:
-                if mode[0]=='invalid':
-                    assert capture.observed is not None and capture.settled is not None
-                    receipt=capture.reject('invalid_model_intake',raws[-1]);captures.append(receipt)
-                    observed_operation=capture.observed[0]
-                    actual_lifetime=capture.read_lifetime()
-                    current=RuntimeOriginals(boundary,database,budget,directory,query_original=lambda ctx,mid:ctx.query_lio_message(mid),
-                        rejected_memory_lifetime=actual_lifetime)
-                    raw_original=current.rejected_intake(token,binding.message_id,observed_operation.command.operation_id,
-                        receipt.reference,directory=directory)
-                    assert json.loads(raw_original)['result_utf8'].encode()==raws[-1]
-                raise
-    with use_rejected_intake_sink(sink),patch.object(NationalLioPlanning,'execute',wrapped):
-        for name,expected in(('valid','completed'),('invalid','unknown'),('transport','unknown')):
-            mode[0]=name
+    actual_reject=IntakeCapture.reject;captures=[]
+    def rejected(capture,code,raw):
+        receipt=actual_reject(capture,code,raw)
+        assert mode[0]=='invalid'and capture.observed is not None and capture.settled is not None
+        captures.append(receipt);observed_operation=capture.observed[0]
+        actual_lifetime=capture.read_lifetime()
+        current=RuntimeOriginals(boundary,database,budget,directory,query_original=lambda ctx,mid:ctx.query_lio_message(mid),
+            rejected_memory_lifetime=actual_lifetime)
+        raw_original=current.rejected_intake(token,capture.binding.message_id,observed_operation.command.operation_id,
+            receipt.reference,directory=directory)
+        assert json.loads(raw_original)['result_utf8'].encode()==raws[-1]==raw
+        return receipt
+    with use_rejected_intake_sink(sink),patch.object(IntakeCapture,'reject',rejected):
+        for name,expected in(('valid','completed'),('invalid','completed'),('date-clarification','completed'),('transport','unknown')):
+            mode[0]=name;before=len(sent)
             boundary.receive_lio(token,json.dumps(dict(version='LIO-message.2',message_id='capture-'+name,
-                text='Could you help me with a travel question?',locale='en',new_conversation=True)).encode(),
+                text=unclear_text if name=='date-clarification'else text,locale='en',new_conversation=True)).encode(),
                 prepare_scope=database._provision_scope,version='LIO-message.2')
             worker=run_worker._worker_for_scope(database,model,auth,owner,checker,memory_configuration=memory,
                 tools_configuration=tools,draft_profile='needs-structured.1',assembly_planning=True,demo_planning=True,national_planning=True,
-                lio_confirmation=load_confirmation_signer(auth))
+                lio_confirmation=load_confirmation_signer(auth),lio_memory_enabled=True)
             outcomes=worker.process();assert[o.status for o in outcomes]==[expected],outcomes
-    assert len(sent)==model.calls==3 and len(captures)==1 and captures[0].status=='CAPTURED'
+            kinds=['memory'if 'MEMORY-EXTRACT@2'in body['messages'][0]['content']else
+                'intake'if 'LIO-planning-intake.8'in body['messages'][0]['content']else'generic'for body in sent[before:]]
+            assert kinds==dict(valid=['intake','memory'],invalid=['intake','generic','memory'],
+                **{'date-clarification':['intake'],'transport':['intake']})[name],(name,kinds)
+    assert len(sent)==model.calls==7 and len(captures)==1 and captures[0].status=='CAPTURED',dict(
+        sends=len(sent),model_calls=model.calls,captures=[receipt.status for receipt in captures],
+        request_kinds=['memory'if 'MEMORY-EXTRACT@2'in body['messages'][0]['content']else
+            'intake'if 'LIO-planning-intake.8'in body['messages'][0]['content']else'generic'for body in sent])
     files=list(directory.iterdir());assert len(files)==1
     stored=json.loads(files[0].read_bytes());assert stored['result_utf8'].encode()==raws[1]
     assert stored['registration_id']=='model.lio_intake.9'and stored['message_id']=='capture-invalid'
@@ -120,12 +137,15 @@ def exercise(root,conninfo):
     try:originals.rejected_intake(token,'capture-invalid',stored['operation_id'],captures[0].reference,directory=directory)
     except Unavailable:pass
     else:raise AssertionError('revoked owner read private rejected output')
-    rows=budget.inspect();assert len(rows)==3
-    assert sum(row['state']=='RECEIVED'for row in rows)==2
+    rows=budget.inspect();assert len(rows)==7
+    assert sum(row['state']=='RECEIVED'for row in rows)==6
     assert files[0].stat().st_mode&0o777==0o600
-    print('PASS signed saved Memory + actual model input/native ACK: valid parse no file; real schema reject exact private bytes; transport UNKNOWN no file/no replay; actual original Memory lifetime positive; historical/missing-holder/pause/config-missing denial; 3 fixture sends and original financial rows, no live provider',flush=True)
+    print('PASS signed saved Memory + actual model input/native ACK: valid parse/date clarification no file; real schema reject exact private bytes then guarded generic+Memory outside capture; transport UNKNOWN no file/no replay; actual original Memory lifetime positive; historical/missing-holder/pause/config-missing denial; 7 fixture sends/6 RECEIVED/1 UNKNOWN and original financial rows, no live provider',flush=True)
 
 
-if __name__=='__main__':
-    harness.exercise=lambda auth,conninfo:exercise(auth.parent/'rejected-intake-capture',conninfo)
-    harness.main()
+def main():
+    with patch.object(harness,'exercise',lambda auth,conninfo:exercise(auth.parent/'rejected-intake-capture',conninfo)):
+        harness.main()
+
+
+if __name__=='__main__':main()
