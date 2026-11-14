@@ -12,7 +12,7 @@ from cj_run.postgres import CommitUnknown as RunCommitUnknown
 from .metered_exit import MeteredExitCore, _PreparedCall, BudgetUnknown
 from .postgres import CommitUnknown,RepositoryUnavailable
 from .codec import CorruptLedger
-from .core import Blocked, Meter
+from .core import Blocked, Meter, run_limits
 
 
 @dataclass(frozen=True)
@@ -71,6 +71,9 @@ class RegisteredExit(MeteredExitCore):
 
     def for_run(self,binding,state): return self
 
+    def _provider_kind(self,registration_id,registration):
+        return None
+
     def read_run_capacity(self,binding,*,guard,max_response_bytes=4096):
         """Read original base limits under caller's live authority; not a permit."""
         from cj_run.step_usage import ledger_scope_for
@@ -101,6 +104,7 @@ class RegisteredExit(MeteredExitCore):
     def prepare_operation(self,runs,binding,operation_key,registration_id,argument,*,stage,reserve_final_model=False):
         try: registration=self.registrations[registration_id]
         except KeyError: raise BudgetUnknown('operation adapter is not registered') from None
+        provider_kind=self._provider_kind(registration_id,registration)
         prepared_input=registration.prepare_input(argument)
         output_limit=self.output_limits[registration.kind]
         if prepared_input.tool_output_limit is not None:
@@ -113,7 +117,7 @@ class RegisteredExit(MeteredExitCore):
             meter=self._original_meter(binding,ledger_scope_for(binding.scope,self.config))
             try:
                 with meter.repo.transaction() as ledger:
-                    available=self.config.max_output-Meter.output_exposure(ledger,binding.run_id)-self.output_limits['model']
+                    available=run_limits(ledger,binding.run_id).output-Meter.output_exposure(ledger,binding.run_id)-self.output_limits['model']
             except (CommitUnknown,RepositoryUnavailable,CorruptLedger,DatabaseError,Blocked):
                 raise BudgetUnknown('original tool output capacity unavailable') from None
             if available<1:raise BudgetExceeded(stage)
@@ -130,9 +134,38 @@ class RegisteredExit(MeteredExitCore):
         bind=(None if prepared_input.bind_operation is None else
               lambda guard:prepared_input.bind_operation(operation,guard))
         return _PreparedCall(operation,prepared_input.materialize,stage,lambda:runs.valid(binding),
-                             receipt=prepared_input.receipt,materialize_with_guard=bind)
+                             receipt=prepared_input.receipt,materialize_with_guard=bind,provider_kind=provider_kind)
 
     def prepare(self,runs,binding,step_key,messages,system,provider):
         registration_id='model.'+step_key
         return self.prepare_operation(runs,binding,registration_id,registration_id,
                                       (messages,system,provider),stage=step_key)
+
+
+class Native4RegisteredExit(RegisteredExit):
+    """Installed only for an operator-qualified account and checked actual Lio4 wire."""
+    TOOL_PROVIDERS=MappingProxyType({
+        'tool.lio_city.1':'amap',
+        'tool.lio_poi2.1':'amap',
+        'tool.lio_route.1':'amap',
+        'tool.visitor_fact':'local',
+    })
+
+    def __init__(self,*args,output_limits,**kwargs):
+        from .core import NATIVE4_TOOL_OUTPUT,NATIVE4_MODEL_OUTPUT
+        limits={kind:min(value,NATIVE4_TOOL_OUTPUT if kind=='tool'else NATIVE4_MODEL_OUTPUT)
+                for kind,value in output_limits.items()}
+        super().__init__(*args,output_limits=limits,**kwargs)
+
+    def _provider_kind(self,registration_id,registration):
+        if registration.kind in ('model','memory'):return 'model'
+        try:return self.TOOL_PROVIDERS[registration_id]
+        except KeyError:raise BudgetUnknown('native4 tool provider is not registered')from None
+
+    def read_run_capacity(self,binding,*,guard,max_response_bytes=4096):
+        from cj_run.step_usage import ledger_scope_for
+        account=ledger_scope_for(binding.scope,self.config)
+        meter=self._original_meter(binding,account)
+        return meter.repo.read_run_capacity_v2(binding.run_id,guard=guard,
+            max_response_bytes=max_response_bytes,
+            expected_period=(self.config.period_start,self.config.period_end))

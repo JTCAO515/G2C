@@ -35,7 +35,7 @@ from .local_run_context import load_run_context
 from cj_message.needs_binding import needs_scope_for
 from cj_message.travel import ABI as TRAVEL_ABI, PROFILE as TRAVEL_PROFILE
 from cj_run.step_usage import ledger_scope_for
-from cj_usage.codec import decode as decode_ledger
+from cj_usage.codec import decode_stored
 from cj_strict_json import reject_duplicates
 from .run_display_composition import RunDisplayWireConfiguration
 from .run_events_routes import RunEventsConfiguration
@@ -278,7 +278,9 @@ class LocalDatabase:
         account = ledger_scope_for(scope, profile.meter)
         row = executor.execute('SELECT format_version,ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',
                                (account,)).fetchone()
-        if row is None or row[0] != 1 or decode_ledger(row[1]).config != profile.meter:
+        if row is None:
+            raise CompositionUnavailable('original budget account unavailable or changed')
+        if decode_stored(row[0],row[1]).config != profile.meter:
             raise CompositionUnavailable('original budget account unavailable or changed')
 
     def provision(self, scope):

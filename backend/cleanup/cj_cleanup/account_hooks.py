@@ -1,7 +1,7 @@
 """B-owned CLEANUP@1.1 physical account hooks, explicit tables and trusted scopes."""
 from .core import Denied
 from .store import require_intent,require_account_retirement,original_result,record_result,receipt_for
-from cj_usage.codec import decode
+from cj_usage.codec import decode,decode_v2
 
 MESSAGE=(
  ('cj_message_edit_result_profile','scope'),('cj_message_edit_reference','scope'),('cj_message_edit_profile','scope'),
@@ -59,8 +59,8 @@ class UsageHook:
                 cur.execute('SELECT format_version,ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(scope,))
                 row=cur.fetchone()
                 if row is None:continue
-                if row[0]!=1:raise Denied('original usage format unresolved')
-                ledger=decode(row[1])
+                if row[0]not in(1,2):raise Denied('original usage format unresolved')
+                ledger=(decode if row[0]==1 else decode_v2)(row[1])
                 if any(a.state=='unknown' and a.receipt is None for a in ledger.attempts.values()):
                     raise Denied('original usage outcome unresolved')
 

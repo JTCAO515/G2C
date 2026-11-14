@@ -22,6 +22,12 @@ def number(value):
         raise CorruptLedger('invalid clock')
 
 
+def decode_stored(version, value):
+    if type(version) is not int or version not in (1,2):
+        raise CorruptLedger('unsupported ledger version')
+    return decode(value) if version == 1 else decode_v2(value)
+
+
 def decode(value):
     return _decode(value, version=1)
 

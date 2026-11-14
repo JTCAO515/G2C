@@ -89,7 +89,7 @@ def test_each_owned_run_resolves_its_original_registry():
     selected=[]
     config=Config('provider_call',20,0,1000,8,8,20000,90)
     profile=SimpleNamespace(meter=config,output_limits=dict(model=16000,tool=2000,memory=1000))
-    rows=SimpleNamespace(fetchall=lambda:[])
+    rows=SimpleNamespace(fetchall=lambda:[],fetchone=lambda:None)
     connection=SimpleNamespace(execute=lambda *args:rows)
     database=SimpleNamespace(run_context=SimpleNamespace(version='CJ-LOCAL-RUN@2',profiles=[profile],current=profile),
         connect=lambda *args,**kwargs:nullcontext(connection),require_budget_account=lambda *args,**kwargs:None)
