@@ -75,10 +75,12 @@ def policy(raw,producer,observer,consumer,pins):
 
 class FixtureUseRegistry:
     def __init__(self,directory,policy_file,producer,observer,consumer,pins,*,guard,source_guard,
-                 admission_lock,clock):
+                 admission_lock,clock,preparation_guard=None):
         self.directory,self.policy_file=Path(directory),Path(policy_file)
+        self.producer=producer
         self.consumer,self.pins=consumer,pins
         self.guard,self.source_guard,self.admission_lock,self.clock=guard,source_guard,admission_lock,clock
+        self.preparation_guard=preparation_guard
         self.raw=read_private(self.policy_file,65536)
         self.policy=policy(self.raw,producer,observer,consumer,pins)
         self.policy_sha256=sha256(self.raw).hexdigest()
@@ -88,16 +90,33 @@ class FixtureUseRegistry:
     def _directory(self):
         return private_directory(self.directory,Unavailable('FIXTURE_RESERVATION_DIRECTORY_AUTHORITY'))
 
-    def _current(self,read_only):
+    def _policy_current(self,read_only):
         self.guard(read_only=read_only)
-        definition=self.source_guard()
-        origin(definition)
         if read_private(self.policy_file,65536)!=self.raw:
             raise Unavailable('FIXTURE_REGISTRY_POLICY_CHANGED')
         now=self.clock()
         if now.tzinfo is None or not timestamp(self.policy['valid_from'])<=now<timestamp(self.policy['valid_until']):
             raise Unavailable('FIXTURE_REGISTRY_EXPIRED')
+
+    def _current(self,read_only):
+        self._policy_current(read_only)
+        definition=self.source_guard()
+        origin(definition)
         return {'ref':definition['ref'],'sha256':definition['sha256']}
+
+    def preparation_policy_source(self):
+        """Read the approved header before a definition exists; grants no use.
+
+        The host supplies current producer/observer qualification independently
+        of the final definition. Reservations still require source_guard.
+        """
+        if self.preparation_guard is None:
+            raise Unavailable('FIXTURE_PREPARATION_READER_NOT_CONNECTED')
+        self._policy_current(read_only=True)
+        self.preparation_guard()
+        self._policy_current(read_only=True)
+        self.preparation_guard()
+        return self.raw
 
     def _use(self,raw):
         value=decode(raw)

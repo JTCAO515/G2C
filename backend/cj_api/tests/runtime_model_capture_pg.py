@@ -14,7 +14,7 @@ from cj_api.real_services import RealServices,RealTools
 from cj_api.tool_evidence import ToolEvidence
 from cj_api.runtime_originals import RuntimeOriginals
 from cj_api.runtime_surface_inventory import NativeSurfaceInventory
-from cj_api.runtime_preparation_cost import PreparationCostInventory
+from cj_api.runtime_preparation_cost import PreparationCostInventory,FrozenPreparationCost
 from cj_agent.provider import DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,M4_REAL_OUTPUT_TOKENS
 from cj_memory.typed_runtime import TypedRuntimeConfiguration
 from cj_message.auth_boundary import Boundary
@@ -137,6 +137,17 @@ def exercise(root,conninfo):
     assert cost['totals']['known_parent_conservative_hold_cny_1e7']==cost['totals']['unknown_hold_attempts']==0
     assert costs.collect(deadline=time.monotonic()+30)==cost_bytes
     assert model.calls==calls_before and budget.inspect()==fees_before
+    frozen_directory=root/'preparation-close';frozen_directory.mkdir(mode=0o700)
+    frozen=FrozenPreparationCost(frozen_directory,costs)
+    original_cost=frozen.freeze(deadline=time.monotonic()+30)
+    # Independent activity in the original shared financial journal changes
+    # the parent anchor, but never the selected native preparation originals.
+    budget.begin('independent-consumer-unknown','model',b'fixture-only unrelated consumer intent')
+    fees_after_consumer=budget.inspect()
+    restarted=FrozenPreparationCost(frozen_directory,costs)
+    assert restarted.read(deadline=time.monotonic()+30)==original_cost
+    assert restarted.freeze(deadline=time.monotonic()+30)==original_cost
+    assert model.calls==calls_before and budget.inspect()==fees_after_consumer
     print('PASS original preparation accounting: two native settled Meter/financial attempts, '
         '7000 fixed-point estimated units, repeated reads zero new model/fee; supplier paid UNKNOWN')
     assert len(list(directory.glob('*.json')))==4
@@ -148,6 +159,9 @@ def exercise(root,conninfo):
     try:costs.collect(deadline=time.monotonic()+30)
     except Unavailable:pass
     else:raise AssertionError('revoked identity read cached native preparation costs')
+    try:restarted.read(deadline=time.monotonic()+30)
+    except Unavailable:pass
+    else:raise AssertionError('revoked identity read frozen preparation costs')
     try:NativeSurfaceInventory(originals,lambda:token,guard=lambda:None).collect(receipts[0].message_id)
     except Unavailable:pass
     else:raise AssertionError('revoked identity collected cached native surfaces')

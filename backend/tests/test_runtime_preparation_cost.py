@@ -108,3 +108,66 @@ def test_unrelated_parent_activity_is_observed_not_relabelled_as_preparation_cos
 @pytest.mark.parametrize('mids',[(),('same','same'),('ok',[])])
 def test_declared_configuration_requires_bounded_unique_message_ids(context,mids):
     with pytest.raises(Invalid):context.build(mids=mids)
+
+
+def test_frozen_cost_survives_unrelated_fees_without_recharging(context):
+    reader=context.build();raw=reader.collect(deadline=100)
+    context.budget.begin('consumer-new','model',b'independent consumer request')
+    context.budget.finish('consumer-new',context.receipt('d'))
+    before=context.budget.inspect()
+    assert reader.collect(deadline=100)!=raw
+    assert reader.verify_frozen(raw,deadline=100)==raw
+    assert context.build().verify_frozen(raw,deadline=100)==raw
+    assert context.budget.inspect()==before
+
+
+def test_frozen_cost_requires_explicit_reconciliation_of_selected_unknown(context):
+    reader=context.build();raw=reader.collect(deadline=100)
+    context.budget.finish('attempt1',context.receipt('c'))
+    with pytest.raises(Unavailable,match='RECONCILE_ORIGINAL'):
+        reader.verify_frozen(raw,deadline=100)
+    assert decode(raw)['accounting_status']=='UNKNOWN'
+    assert len(context.budget.inspect())==2
+
+
+def test_frozen_cost_rechecks_current_authority_session_and_original_hashes(context):
+    raw=context.build().collect(deadline=100)
+    context.state['allowed']=False
+    with pytest.raises(Unavailable):context.build().verify_frozen(raw,deadline=100)
+    context.state['allowed']=True
+    with pytest.raises(Unavailable,match='SESSION_CHANGED'):
+        context.build(supplier=lambda:'changed').verify_frozen(raw,deadline=100)
+    changed=decode(raw);changed['totals']['attempts']=0
+    with pytest.raises(Unavailable,match='RECONCILE_ORIGINAL'):
+        context.build().verify_frozen(encode(changed),deadline=100)
+    changed=decode(raw);changed['binding_sha256']='c'*64
+    with pytest.raises(Invalid,match='FROZEN_BINDING'):
+        context.build().verify_frozen(encode(changed),deadline=100)
+
+
+def test_retained_cost_restarts_and_unknown_ack_is_read_only(context,tmp_path):
+    from cj_api.runtime_preparation_cost import FrozenPreparationCost
+    from unittest.mock import patch
+    directory=tmp_path/'frozen';directory.mkdir(mode=0o700)
+    store=FrozenPreparationCost(directory,context.build())
+    with patch('cj_api.runtime_preparation_cost.os.fsync',side_effect=OSError('ACK unknown')):
+        with pytest.raises(OSError):store.freeze(deadline=100)
+    path=directory/'cost.json';raw=path.read_bytes()
+    assert path.stat().st_mode&0o777==0o600
+    context.budget.begin('independent-E','model',b'actual other request')
+    before=context.budget.inspect()
+    restarted=FrozenPreparationCost(directory,context.build())
+    assert restarted.read(deadline=100)==raw
+    assert restarted.freeze(deadline=100)==raw
+    assert path.read_bytes()==raw and context.budget.inspect()==before
+    path.write_bytes(b'{')
+    with pytest.raises(ValueError):restarted.freeze(deadline=100)
+    assert path.read_bytes()==b'{' and context.budget.inspect()==before
+
+
+def test_cost_directory_replacement_withholds_original(context,tmp_path):
+    from cj_api.runtime_preparation_cost import FrozenPreparationCost
+    directory=tmp_path/'frozen';directory.mkdir(mode=0o700)
+    store=FrozenPreparationCost(directory,context.build());store.freeze(deadline=100)
+    directory.rename(tmp_path/'retained');directory.mkdir(mode=0o700)
+    with pytest.raises(Unavailable,match='DIRECTORY_CHANGED'):store.read(deadline=100)

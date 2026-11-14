@@ -77,15 +77,36 @@ def exercise(auth,conninfo):
         if checker.check(tokens['fixture-C']).status is not AdmissionStatus.ALLOWED:
             raise Unavailable('LOCAL_SOURCE_WITHHELD')
 
+    def preparation_guard():
+        if checker.check(tokens['fixture-C']).status is not AdmissionStatus.ALLOWED:
+            raise Unavailable('LOCAL_SOURCE_WITHHELD')
+
+    definition_state={'available':False}
+    def source_guard():
+        preparation_guard()
+        if not definition_state['available']:raise Unavailable('LOCAL_DEFINITION_NOT_FROZEN')
+        return definition
+
     def build():
         return FixtureUseRegistry(directory,policy,producer,producer,consumer,pins,guard=guard,
-            source_guard=lambda:definition,admission_lock=admission,
+            source_guard=source_guard,admission_lock=admission,preparation_guard=preparation_guard,
             clock=lambda:datetime.now(timezone.utc))
 
     def request(attempt):
         return encode(dict(binding_sha256=consumer.key,pins_sha256=pins.key,batch_id='local-batch',
             candidate_id='C0',task_id='val-owner',language='en',attempt_id=attempt,step_id='local-step',
             request_sha256='f'*64))
+
+    # Bootstrap uses actual signed C/E qualification, with no predicted
+    # definition. It neither reserves a slot nor qualifies native Trip data.
+    bootstrap=FixtureOriginalReferences(references,build())
+    header=bootstrap.issue(tokens['fixture-E'],'preparation_policy')
+    assert bootstrap.resolve(tokens['fixture-E'],header['ref'])==policy.read_bytes()
+    try:build().reserve(request('first'))
+    except Unavailable as error:assert str(error)=='LOCAL_DEFINITION_NOT_FROZEN'
+    else:raise AssertionError('header admitted a use without a definition')
+    assert not list(directory.iterdir())
+    definition_state['available']=True
 
     # A second native MESSAGE transaction holds the actual row; confirm the
     # waiter in PostgreSQL, rather than inferring blocking from elapsed time.

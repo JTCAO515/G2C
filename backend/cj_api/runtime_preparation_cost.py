@@ -4,9 +4,12 @@ Coverage is the frozen declared MESSAGE list. A preparation controller must prov
 that list exhaustive and retain its actual before/after anchors separately.
 """
 from hashlib import sha256
+import os
+from pathlib import Path
 
 from cj_usage.authorization_budget import CNY_SCALE,LIMITS,_price_receipt,journal_state
 from runtime_adapter.contract import decode,encode,label,require,Unavailable
+from .runtime_private import private_directory,read_private
 
 
 VERSION='G2C-preparation-cost-inventory.1'
@@ -95,3 +98,67 @@ class PreparationCostInventory:
                 unknown_hold_attempts=sum(e['parent_conservative_hold_cny_1e7']is None for e in entries)),
             accounting_status='SETTLED'if not observed['missing']and all(e['accounting_settled']for e in entries)else'UNKNOWN',
             actual_supplier_paid='UNKNOWN',new_charge_attempts=0))
+
+    def verify_frozen(self,raw,*,deadline):
+        """Requalify selected originals without replacing historical anchors.
+
+        Unrelated consumer fees may advance the shared ledger. A transition of
+        any selected preparation original instead requires explicit new
+        reconciliation; this method never rewrites or recharges it.
+        """
+        saved=decode(raw)
+        require(type(saved)is dict and set(saved)=={'version','binding_sha256',
+            'declared_message_selection_sha256','coverage_scope','observed_ledger_before',
+            'observed_ledger_after','messages','attempts','missing','totals','accounting_status',
+            'actual_supplier_paid','new_charge_attempts'}and encode(saved)==raw,
+            'PREPARATION_FROZEN_FIELDS')
+        require(saved['version']==VERSION and saved['binding_sha256']==self.binding.key
+            and saved['declared_message_selection_sha256']==self.selection_sha256,
+            'PREPARATION_FROZEN_BINDING')
+        current=decode(self.collect(deadline=deadline))
+        for key in ('observed_ledger_before','observed_ledger_after'):
+            current[key]=saved[key]
+        if encode(current)!=raw:
+            raise Unavailable('PREPARATION_FROZEN_SOURCE_CHANGED_RECONCILE_ORIGINAL')
+        return raw
+
+
+class FrozenPreparationCost:
+    """One retained preparation-close original; never regenerates on query.
+
+    The controller owns an isolated directory for this fixture revision. A
+    partial/unknown write remains there and is query-only; there is no delete,
+    reset, settlement retry or financial dispatch in this component.
+    """
+    def __init__(self,directory,inventory):
+        self.directory,self.inventory=Path(directory),inventory
+        with self._directory()as fd:
+            info=os.fstat(fd);self.identity=(info.st_dev,info.st_ino)
+
+    def _directory(self):
+        return private_directory(self.directory,Unavailable('PREPARATION_COST_DIRECTORY_AUTHORITY'))
+
+    def _identity(self,fd):
+        info=os.fstat(fd)
+        if(info.st_dev,info.st_ino)!=self.identity:
+            raise Unavailable('PREPARATION_COST_DIRECTORY_CHANGED')
+
+    def freeze(self,*,deadline):
+        raw=self.inventory.collect(deadline=deadline)
+        with self._directory()as fd:
+            self._identity(fd)
+            try:out=os.open('cost.json',os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o600,dir_fd=fd)
+            except FileExistsError:pass
+            else:
+                with os.fdopen(out,'wb')as target:
+                    target.write(raw);target.flush();os.fsync(target.fileno())
+                os.fsync(fd)
+        return self.read(deadline=deadline)
+
+    def read(self,*,deadline):
+        with self._directory()as fd:
+            self._identity(fd)
+            try:raw=read_private('cost.json',1048576,directory_fd=fd)
+            except FileNotFoundError:
+                raise Unavailable('PREPARATION_COST_NOT_FROZEN')from None
+        return self.inventory.verify_frozen(raw,deadline=deadline)

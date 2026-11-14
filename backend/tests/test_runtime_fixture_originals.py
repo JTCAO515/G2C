@@ -142,3 +142,57 @@ def test_collector_routes_metadata_without_reinterpreting_or_falling_back(source
     count=len(calls)
     with pytest.raises(ValueError):collector.original(ref['ref'],deadline=10)
     assert len(calls)==count
+
+
+def test_preparation_policy_bootstraps_without_definition_but_never_admits_use(source):
+    store=source.registry
+    def no_definition():raise Unavailable('DEFINITION_NOT_CREATED')
+    def qualified():
+        if not source.fixture.state['source_allowed']:raise Unavailable('SOURCE_REVOKED')
+    store.source_guard=no_definition
+    reader=source.refs(None)
+    with pytest.raises(Unavailable,match='NOT_CONNECTED'):
+        reader.issue(source.token,'preparation_policy')
+    store.preparation_guard=qualified
+    header=reader.issue(source.token,'preparation_policy')
+    assert reader.resolve(source.token,header['ref'])==store.raw
+    assert not list(source.fixture.directory.iterdir())
+    with pytest.raises(Unavailable,match='DEFINITION_NOT_CREATED'):store.reserve(source.raw)
+    with pytest.raises(Unavailable,match='DEFINITION_NOT_CREATED'):reader.issue(source.token,'registry')
+    source.fixture.state['source_allowed']=False
+    with pytest.raises(Unavailable,match='SOURCE_REVOKED'):reader.resolve(source.token,header['ref'])
+    assert len(list(source.directory.iterdir()))==1
+
+
+def test_bootstrap_header_is_not_a_reservation_or_legacy_policy_reference(source):
+    source.registry.preparation_guard=lambda:None
+    reader=source.refs(None)
+    header=reader.issue(source.token,'preparation_policy')
+    legacy=reader.issue(source.token,'registry')
+    assert header!=legacy
+    source.fixture.state['consumer_allowed']=False
+    with pytest.raises(Unavailable):reader.resolve(source.token,header['ref'])
+
+
+def test_cost_reference_resolves_only_retained_original_and_requalifies(source,tmp_path):
+    # Controlled cost reader; native signed financial/Meter coverage lives in
+    # runtime_model_capture_pg. No arbitrary caller body enters issue().
+    state={'raw':encode({'original':'frozen-cost'}),'allowed':True}
+    def read(*,deadline):
+        if not state['allowed']:raise Unavailable('COST_WITHHELD')
+        return state['raw']
+    frozen=SimpleNamespace(inventory=SimpleNamespace(binding=source.registry.producer),read=read)
+    source.registry.preparation_guard=lambda:None
+    reader=FixtureOriginalReferences(source.directory,source.registry,
+        preparation_cost=frozen,clock=lambda:1)
+    ref=reader.issue(source.token,'preparation_cost')
+    restarted=FixtureOriginalReferences(source.directory,source.registry,
+        preparation_cost=frozen,clock=lambda:1)
+    assert restarted.resolve(source.token,ref['ref'])==state['raw']
+    state['raw']=encode({'original':'replaced-cost'})
+    with pytest.raises(Unavailable,match='SOURCE_CHANGED'):restarted.resolve(source.token,ref['ref'])
+    state['allowed']=False
+    with pytest.raises(Unavailable,match='COST_WITHHELD'):restarted.resolve(source.token,ref['ref'])
+    foreign=SimpleNamespace(inventory=SimpleNamespace(binding=source.registry.consumer),read=read)
+    with pytest.raises(Invalid,match='PRODUCER_BINDING'):
+        FixtureOriginalReferences(source.directory,source.registry,preparation_cost=foreign)
