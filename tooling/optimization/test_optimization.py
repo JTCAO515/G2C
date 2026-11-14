@@ -105,13 +105,42 @@ class OptimizationTests(unittest.TestCase):
                 self.assertEqual(len(state["operations"]), len(ops))
 
     def test_timeout_during_call_unknown_never_resent(self):
-        with patch.object(FakeCalls, "call", side_effect=lambda *a, **k: time.sleep(1)):
+        real_timer = signal.setitimer
+
+        def expire_in_call(*args, timeout, **kwargs):
+            real_timer(signal.ITIMER_REAL, timeout)
+            try:
+                time.sleep(1)
+                self.fail("timeout handler did not interrupt the call")
+            finally:
+                real_timer(signal.ITIMER_REAL, 0)
+
+        # Keep budget available through checkpoint fsync, then deliver the real
+        # timer expiration only after dispatch has entered the external seam.
+        with patch.object(Journal, "remaining", return_value=0.05), \
+                patch.object(signal, "setitimer") as timer, \
+                patch.object(FakeCalls, "call", side_effect=expire_in_call) as caller:
             state = run(self.directory, Limits(seconds=0.05))
+        caller.assert_called_once()
+        self.assertEqual(timer.call_count, 2)
+        timer.assert_any_call(signal.ITIMER_REAL, 0.05)
+        timer.assert_any_call(signal.ITIMER_REAL, 0)
         self.assertEqual(state["status"], "UNKNOWN")
         self.assertEqual(state["operations"][0]["outcome"], "UNKNOWN")
+        original = state["operations"]
         with patch.object(FakeCalls, "call", side_effect=AssertionError("resent")):
             state = run(self.directory, Limits(seconds=0.05), resume=True)
+        self.assertEqual(state["status"], "UNKNOWN")
         self.assertEqual(len(state["operations"]), 1)
+        self.assertEqual(state["operations"], original)
+
+    def test_timeout_before_dispatch_stops_without_sending(self):
+        with patch.object(Journal, "remaining", return_value=0), \
+                patch.object(FakeCalls, "call", side_effect=AssertionError("sent")) as caller:
+            state = run(self.directory, Limits(seconds=0.05))
+        caller.assert_not_called()
+        self.assertEqual(state["status"], "STOPPED")
+        self.assertEqual(state["operations"], [])
 
     def test_sigterm_in_flight_records_unknown(self):
         def terminate(*args, **kwargs):
