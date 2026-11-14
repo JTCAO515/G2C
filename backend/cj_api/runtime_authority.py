@@ -64,6 +64,8 @@ class RuntimeAuthority:
         self.budget.check_date()
         if self.current_pins()!=self.original_pins.raw:
             raise Unavailable('RUNTIME_PIN_CHANGED')
+        if self.binding()!=binding:
+            raise Unavailable('ORIGINAL_AUTH_CONTEXT_CHANGED')
         # The final wall/deadline check follows all AUTH/ledger callbacks.
         # It is not a fresh reservation and does not re-add the original hold.
         self.require_operation_clock(deadline=deadline)

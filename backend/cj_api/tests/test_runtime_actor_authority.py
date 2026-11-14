@@ -30,7 +30,7 @@ class ActorAuthorityTest(unittest.TestCase):
         self.database.commit()
         self.now = datetime(2026,11,15,11,30,tzinfo=ZoneInfo('Asia/Shanghai'))
         self.monotonic = 10
-        self.current = b'original-pins';self.allowed = True;self.hook = lambda: None
+        self.current = b'original-pins';self.allowed = True;self.token='fixture-token';self.hook = lambda: None
         @contextmanager
         def connect():
             try:yield self.database
@@ -41,7 +41,7 @@ class ActorAuthorityTest(unittest.TestCase):
             AdmissionStatus.ALLOWED if self.allowed else AdmissionStatus.DENIED,
             principal=SimpleNamespace(issuer=ISSUER,subject=subject)))
         pins = SimpleNamespace(key=sha256(self.current).hexdigest(),raw=self.current)
-        self.authority = RuntimeAuthority(checker,lambda:'fixture-token',budget,pins,
+        self.authority = RuntimeAuthority(checker,lambda:self.token,budget,pins,
             lambda:self.current,line='C',wall_clock=lambda:self.now,clock=lambda:self.monotonic)
         self.binding = self.authority.binding();self.pins = pins
 
@@ -68,16 +68,18 @@ class ActorAuthorityTest(unittest.TestCase):
                 self.current,self.now,self.monotonic,self.allowed=original
 
     def test_clock_and_pin_changes_inside_last_callback_are_not_missed(self):
-        for fault in ('pins','window','deadline'):
+        for fault in ('pins','window','deadline','auth','rotation'):
             with self.subTest(fault=fault):
-                original = self.current,self.now,self.monotonic
+                original = self.current,self.now,self.monotonic,self.allowed,self.token
                 def change():
                     if fault=='pins':self.current=b'changed'
                     elif fault=='window':self.now=self.now.replace(hour=23)
-                    else:self.monotonic=100
+                    elif fault=='deadline':self.monotonic=100
+                    elif fault=='auth':self.allowed=False
+                    else:self.token='rotated-token'
                 self.hook=change
                 with self.assertRaises(Unavailable):self.current_operation()
-                self.current,self.now,self.monotonic=original;self.hook=lambda:None
+                self.current,self.now,self.monotonic,self.allowed,self.token=original;self.hook=lambda:None
 
     def test_reconciliation_remains_read_only_after_window_and_pin_change(self):
         self.now=self.now.replace(hour=23);self.current=b'new-source'
