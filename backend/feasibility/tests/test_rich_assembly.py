@@ -14,7 +14,7 @@ from cj_trip.domain import packed
 from cj_trip.rich_reasons import ProfileFact
 from cj_trip.rich_source import capture
 from cj_trip.structured import SourceRejected
-from cj_trip.structured_v4 import adjacent_pairs, validate_candidate
+from cj_trip.structured_v4 import ITEM_EXTRA, adjacent_pairs, validate_candidate
 
 ROOT = Path(__file__).resolve().parents[3]
 CASES = json.loads((ROOT/'contracts/trip/structured-examples.4.json').read_bytes())['cases']
@@ -215,3 +215,21 @@ def test_exact_activity_set_and_conflicting_edge_windows_are_not_silently_repair
     unknown_mode=activity_windows(2,arrival_clock=0,departure_clock=15*3600)
     result=assemble(case['content'],**dict(args,edges=unknown_mode))
     assert result.status=='UNKNOWN' and result.reason=='EDGE_CONSTRAINTS_UNCONFIRMED' and result.content is None
+
+
+def test_retained_light_days_are_counted_without_adding_duplicate_new_stops():
+    case = light_case()
+    args = arguments(case, edges=activity_windows(2))
+    args['activities'] = tuple(replace(a, windows=(Window(18*3600, 21*3600),))
+        if a.item_id == 'item-4' else a for a in args['activities'])
+    first = assemble(case['content'], **args)
+    assert first.status == 'CONDITIONAL_SCHEDULE'
+    case['content'] = json.loads(first.content)
+    for item in case['content']['items']:
+        payload = dict(item={k: v for k, v in item.items() if k not in ITEM_EXTRA})
+        case['source']['records'].append(dict(provider='trip', kind='retained_item',
+            reference='previous-trip:1:'+item['id'], sha256=sha256(packed(payload)).hexdigest(), payload=payload))
+    case['host_expected']['eligible_records'] = deepcopy(case['source']['records'])
+    retained = assemble(case['content'], **dict(args, source=source_for(case)))
+    assert retained.status == 'CONDITIONAL_SCHEDULE'
+    assert json.loads(retained.content)['items'] == case['content']['items']
