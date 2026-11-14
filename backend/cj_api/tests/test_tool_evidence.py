@@ -28,7 +28,9 @@ KEY = 'synthetic-evidence-key-not-live'
 
 class HeldModelMemory:
     """Controlled first-advance lifetime; the PG test uses native Memory."""
-    def __init__(self):self.active=True;self.revoked=False;self.holds=0
+    def __init__(self):
+        self.active=True;self.revoked=False;self.holds=0
+        self.snapshot=SimpleNamespace(epoch=1);self.payload=b'fixture-only-memory-payload'
     def check(self):
         from cj_memory.runtime import RuntimeDenied
         if not self.active or self.revoked:raise RuntimeDenied('memory lease not held or source revoked')
