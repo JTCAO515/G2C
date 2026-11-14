@@ -1,0 +1,121 @@
+[
+  {
+    "format_version": "visitor-name.1",
+    "id": "visitor.name.beijing.palace-museum",
+    "place_key": "beijing.palace-museum",
+    "wikidata_qid": "Q2047427",
+    "name_zh": "故宫博物院",
+    "name_en": "The Palace Museum",
+    "cities": [
+      "beijing"
+    ],
+    "source_urls": [
+      "https://www.wikidata.org/wiki/Q2047427"
+    ],
+    "checked_on": "2026-11-13",
+    "expires_on": "2027-02-11",
+    "license": "CC0-1.0"
+  },
+  {
+    "format_version": "visitor-name.1",
+    "id": "visitor.name.chengdu.panda-base",
+    "place_key": "chengdu.panda-base",
+    "wikidata_qid": "Q1067861",
+    "name_zh": "成都大熊猫繁育研究基地",
+    "name_en": "Chengdu Research Base of Giant Panda Breeding",
+    "cities": [
+      "chengdu"
+    ],
+    "source_urls": [
+      "https://www.wikidata.org/wiki/Q1067861"
+    ],
+    "checked_on": "2026-11-13",
+    "expires_on": "2027-02-11",
+    "license": "CC0-1.0"
+  },
+  {
+    "format_version": "visitor-name.1",
+    "id": "visitor.name.xian.qin-mausoleum-museum",
+    "place_key": "xian.qin-mausoleum-museum",
+    "wikidata_qid": "Q122931722",
+    "name_zh": "秦始皇帝陵博物院",
+    "name_en": "Emperor Qinshihuang's Mausoleum Site Museum",
+    "cities": [
+      "xian"
+    ],
+    "source_urls": [
+      "https://www.wikidata.org/wiki/Q122931722"
+    ],
+    "checked_on": "2026-11-13",
+    "expires_on": "2027-02-11",
+    "license": "CC0-1.0"
+  },
+  {
+    "format_version": "visitor-name.1",
+    "id": "visitor.name.shanghai.the-bund",
+    "place_key": "shanghai.the-bund",
+    "wikidata_qid": "Q125474",
+    "name_zh": "外滩",
+    "name_en": "The Bund",
+    "cities": [
+      "shanghai"
+    ],
+    "source_urls": [
+      "https://www.wikidata.org/wiki/Q125474"
+    ],
+    "checked_on": "2026-11-13",
+    "expires_on": "2027-02-11",
+    "license": "CC0-1.0"
+  },
+  {
+    "format_version": "visitor-name.1",
+    "id": "visitor.name.hangzhou.west-lake",
+    "place_key": "hangzhou.west-lake",
+    "wikidata_qid": "Q502371",
+    "name_zh": "西湖",
+    "name_en": "West Lake",
+    "cities": [
+      "hangzhou"
+    ],
+    "source_urls": [
+      "https://www.wikidata.org/wiki/Q502371"
+    ],
+    "checked_on": "2026-11-13",
+    "expires_on": "2027-02-11",
+    "license": "CC0-1.0"
+  },
+  {
+    "format_version": "visitor-name.1",
+    "id": "visitor.name.chongqing.three-gorges-museum",
+    "place_key": "chongqing.three-gorges-museum",
+    "wikidata_qid": "Q10872783",
+    "name_zh": "重庆中国三峡博物馆",
+    "name_en": "Three Gorges Museum",
+    "cities": [
+      "chongqing"
+    ],
+    "source_urls": [
+      "https://www.wikidata.org/wiki/Q10872783"
+    ],
+    "checked_on": "2026-11-13",
+    "expires_on": "2027-02-11",
+    "license": "CC0-1.0"
+  },
+  {
+    "format_version": "visitor-name.1",
+    "id": "visitor.name.shenzhen.window-of-the-world",
+    "place_key": "shenzhen.window-of-the-world",
+    "wikidata_qid": "Q2302764",
+    "name_zh": "世界之窗",
+    "name_en": "Window of the World",
+    "cities": [
+      "shenzhen"
+    ],
+    "source_urls": [
+      "https://www.wikidata.org/wiki/Q2302764"
+    ],
+    "checked_on": "2026-11-13",
+    "expires_on": "2027-02-11",
+    "license": "CC0-1.0"
+  }
+]

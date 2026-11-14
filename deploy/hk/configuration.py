@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import re
 import stat
+import zlib
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -32,7 +33,9 @@ SECRET_FILES={
               'backup':{'CJ_BETA_BACKUP_ROOT','OSS_ACCESS_KEY_ID','OSS_ACCESS_KEY_SECRET'}},
 }
 TYPED_POLICY='CJ_BETA_TYPED_MEMORY_POLICY_B64'
+TYPED_POLICY_GZIP='CJ_BETA_TYPED_MEMORY_POLICY_GZIP_B64'
 MEMORY_RUN_POLICY='CJ_BETA_MEMORY_RUN_POLICY_B64'
+MEMORY_RUN_POLICY_GZIP='CJ_BETA_MEMORY_RUN_POLICY_GZIP_B64'
 TYPED_MESSAGE_SUBJECTS='CJ_BETA_TYPED_MESSAGE_SUBJECTS_JSON'
 MODEL_STREAM_SUBJECT='CJ_BETA_MODEL_STREAM_SUBJECT'
 ASSEMBLY_SUBJECTS='CJ_BETA_ASSEMBLY_SUBJECTS_JSON'
@@ -47,8 +50,8 @@ def load_secret_environment(role,*,root=Path('/run/secrets')):
     """Docker receives only paths; secret bytes enter this process, not Config.Env."""
     expected=SECRET_FILES[role];values={}
     for file,names in expected.items():
-        optional=({TYPED_POLICY,TYPED_MESSAGE_SUBJECTS}|ASSEMBLY_CLEANUP if role=='api' and file=='api' else
-                  {MEMORY_RUN_POLICY,MODEL_STREAM_SUBJECT,ASSEMBLY_RUN_CREDENTIAL_SUBJECTS,ASSEMBLY_MODEL_STREAM_SUBJECTS,
+        optional=({TYPED_POLICY,TYPED_POLICY_GZIP,TYPED_MESSAGE_SUBJECTS}|ASSEMBLY_CLEANUP if role=='api' and file=='api' else
+                  {MEMORY_RUN_POLICY,MEMORY_RUN_POLICY_GZIP,MODEL_STREAM_SUBJECT,ASSEMBLY_RUN_CREDENTIAL_SUBJECTS,ASSEMBLY_MODEL_STREAM_SUBJECTS,
                    ASSEMBLY_PROBE_MESSAGE,'CJ_BETA_CONFIRMATION_B64'}
                   if role=='worker' and file=='worker' else set())
         allowed=names|optional
@@ -76,6 +79,29 @@ def decoded(name,*,length=None):
     except (KeyError,ValueError):raise ValueError('missing_or_invalid_'+name) from None
     if length is not None and len(value)!=length:raise ValueError('invalid_length_'+name)
     return value
+
+
+def _policy_bytes(plain,gzip,label):
+    if plain in os.environ and gzip in os.environ:
+        raise ValueError('one_'+label+'_encoding_required')
+    if gzip not in os.environ:return decoded(plain)
+    inflater=zlib.decompressobj(16+zlib.MAX_WBITS)
+    try:raw=inflater.decompress(decoded(gzip),262145)
+    except zlib.error:raise ValueError('invalid_'+label+'_gzip') from None
+    if len(raw)>262144:raise ValueError('bounded_'+label+'_required')
+    if not inflater.eof or inflater.unused_data:
+        raise ValueError('complete_single_'+label+'_gzip_required')
+    return raw
+
+
+def typed_policy_bytes():
+    """API-only encodings of the same bounded, fully validated policy."""
+    return _policy_bytes(TYPED_POLICY,TYPED_POLICY_GZIP,'typed_memory_policy')
+
+
+def memory_run_policy_bytes():
+    """Worker-only encodings; the original runtime policy validates the result."""
+    return _policy_bytes(MEMORY_RUN_POLICY,MEMORY_RUN_POLICY_GZIP,'memory_run_policy')
 
 
 def authorization():
@@ -127,7 +153,7 @@ def beta_subjects():
             or len(set(subjects))!=len(subjects)):
         raise ValueError('explicit_unique_beta_synthetic_subjects_required')
     demo=json.loads(os.environ.get(DEMO_SUBJECTS,'[]'))
-    if (type(demo) is not list or len(demo)>10
+    if (type(demo) is not list or len(demo)>205
             or any(type(s) is not str or re.fullmatch(r'm4-synthetic-demo-[a-z0-9]{12}',s) is None for s in demo)
             or len(set(demo))!=len(demo)
             or set(demo)!={s for s in subjects if s.startswith('m4-synthetic-demo-')}
@@ -175,17 +201,17 @@ class Runtime:
         assembly_model_stream_subjects=_worker_assembly_pair(ASSEMBLY_MODEL_STREAM_SUBJECTS,worker,
             assembly_subjects,'explicit_worker_assembly_model_stream_pair_required')
         typed_memory=None
-        if TYPED_POLICY in os.environ:
+        if TYPED_POLICY in os.environ or TYPED_POLICY_GZIP in os.environ:
             if worker:raise ValueError('typed_memory_policy_is_API_only')
             from cj_memory.typed_local import TypedConfiguration
-            typed_memory=TypedConfiguration.from_bytes(decoded(TYPED_POLICY))
+            typed_memory=TypedConfiguration.from_bytes(typed_policy_bytes())
             if not frozenset(typed_memory.collection.profiles)<=frozenset(subjects):
                 raise ValueError('typed_memory_policy_outside_beta_invites')
         memory_runtime=None
-        if MEMORY_RUN_POLICY in os.environ:
+        if MEMORY_RUN_POLICY in os.environ or MEMORY_RUN_POLICY_GZIP in os.environ:
             if not worker:raise ValueError('memory_run_policy_is_worker_only')
             from cj_memory.typed_runtime import TypedRuntimeConfiguration
-            memory_runtime=TypedRuntimeConfiguration.from_bytes(decoded(MEMORY_RUN_POLICY))
+            memory_runtime=TypedRuntimeConfiguration.from_bytes(memory_run_policy_bytes())
             selected=frozenset(memory_runtime.selections)
             if (selected!=frozenset(memory_runtime.collection.collection.profiles)
                     or not selected<=frozenset(subjects)):
@@ -304,7 +330,8 @@ class Runtime:
             account_admission=True,needs_profile=needs_profile,message_subjects=message_subjects,
             existing_display_reads=True,cleanup_configuration=cleanup,
             cleanup_subjects=planning or None,demo_dialogue_subjects=planning or None,
-            lio_dialogue_subjects=self.demo_subjects or None,lio_memory_factory=lio_memory_factory)
+            lio_dialogue_subjects=self.demo_subjects or None,lio_memory_factory=lio_memory_factory,
+            lio_calendar_subjects=self.demo_subjects or None)
         if self.typed_memory is not None:
             from cj_memory.typed_api import register_typed_routes
             typed_memory=self.typed_memory

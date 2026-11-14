@@ -342,6 +342,7 @@ import XCTest
 
     func testJourneyEnglish() throws { try exerciseJourney("en") }
     func testJourneyChinese() throws { try exerciseJourney("zh-Hans") }
+
     func testTitledMemoryJourneyEnglish() throws { try exerciseJourney("en", titledReads: true) }
     func testTitledMemoryJourneyChinese() throws { try exerciseJourney("zh-Hans", titledReads: true) }
 
@@ -397,7 +398,18 @@ import XCTest
         let hotel = chinese ? "酒店入住" : "Hotel check-in"
         let park = chinese ? "公园散步" : "Park walk"
         let museum = chinese ? "美术馆" : "Art museum"
+        let card = app.buttons.containing(.staticText, identifier: chinese ? "北京行程" : "Beijing trip").firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 8))
+        card.tap()
+        func selectDay(_ number: Int) {
+            let button = app.buttons["lio.trip.select-day.\(number)"]
+            if !button.isHittable { app.swipeDown() }
+            XCTAssertTrue(button.isHittable)
+            button.tap()
+        }
+        selectDay(1)
         reply(hotel)
+        selectDay(2)
         reply(park)
         chat.tap()
 
@@ -406,16 +418,24 @@ import XCTest
         let undo = app.buttons["lio.chat.trip.undo"]
         XCTAssertTrue(undo.waitForExistence(timeout: 10), app.debugDescription)
         trips.tap()
+        selectDay(1)
         reply(hotel)
+        selectDay(2)
         reply(museum)
         XCTAssertFalse(app.staticTexts[park].exists)
         chat.tap()
         reveal(undo)
         undo.tap()
         trips.tap()
+        selectDay(2)
         reply(park)
+        XCTAssertFalse(app.staticTexts[museum].exists)
+        selectDay(1)
         reply(hotel)
         XCTAssertFalse(app.staticTexts[museum].exists)
+        let backToTrips = app.navigationBars.buttons[chinese ? "行程" : "Trips"].firstMatch
+        XCTAssertTrue(backToTrips.isHittable)
+        backToTrips.tap()
         let previous = app.buttons["lio.trip.history"]
         XCTAssertTrue(previous.waitForExistence(timeout: 6))
         previous.tap()
@@ -497,6 +517,66 @@ import XCTest
         reply(chinese ? "你喜欢什么样的酒店？" : "Tell me what kind of hotel you like.")
     }
 
+    func testTripEmptyStateInvitesConversationInBothLanguages() throws {
+        for language in ["en", "zh-Hans"] {
+            let chinese = language == "zh-Hans"
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "-cj.ui.language.v1", language]
+            app.launch()
+            XCTAssertTrue(app.tabBars.buttons[chinese ? "行程" : "Trips"].waitForExistence(timeout: 12))
+            app.tabBars.buttons[chinese ? "行程" : "Trips"].tap()
+            XCTAssertTrue(app.staticTexts[chinese ? "还没有行程" : "No trips yet"].waitForExistence(timeout: 8))
+            let chat = app.buttons[chinese ? "和 Lio 聊聊" : "Chat with Lio"]
+            XCTAssertTrue(chat.isHittable)
+            try app.performAccessibilityAudit(for: .all)
+            let attachment = XCTAttachment(screenshot: app.screenshot())
+            attachment.name = "trip-empty-\(language)"
+            attachment.lifetime = .keepAlways
+            add(attachment)
+            chat.tap()
+            XCTAssertTrue(app.buttons["lio.example.0"].waitForExistence(timeout: 8))
+            app.terminate()
+        }
+    }
+
+    func testTripTimelineDarkAndLargestTypeInBothLanguages() throws {
+        for language in ["en", "zh-Hans"] {
+            for largest in [false, true] {
+                try exerciseTrip(language,
+                    clarification: language == "en" ? "For three days in Beijing" : "北京三天",
+                    trips: language == "en" ? "Trips" : "行程", day: language == "en" ? "Day 1" : "第 1 天",
+                    fixed: language == "en" ? "Hotel check-in" : "酒店入住", largest: largest,
+                    appearance: largest ? "light" : "dark")
+            }
+        }
+    }
+
+    func testTripListOnlyShowsTheSavedSummaryFields() throws {
+        continueAfterFailure = false
+        for language in ["en", "zh-Hans"] {
+            for appearance in ["light", "dark"] {
+                let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+                app.launchArguments = ["--lio-preview", "-cj.ui.language.v1", language,
+                                       "-lio.ui.appearance.v1", appearance]
+                app.launchEnvironment = ["G2C_LIO_PREVIEW_TRIP": "__LIO_RECORDED_TRIP_FIXTURE__"]
+                app.launch()
+                let tab = app.tabBars.buttons[language == "en" ? "Trips" : "行程"]
+                XCTAssertTrue(tab.waitForExistence(timeout: 12))
+                tab.tap()
+                let card = app.buttons["Draft"]
+                XCTAssertTrue(card.waitForExistence(timeout: 8))
+                XCTAssertEqual(card.label, "Draft")
+                XCTAssertFalse(app.descendants(matching: .any).matching(identifier: "lio.trip.route-map").firstMatch.exists)
+                try app.performAccessibilityAudit(for: .all)
+                let attachment = XCTAttachment(screenshot: app.screenshot())
+                attachment.name = "trip-list-\(language)-\(appearance)"
+                attachment.lifetime = .keepAlways
+                add(attachment)
+                app.terminate()
+            }
+        }
+    }
+
     func testMemoryTitlesShowServiceTextAndKeepCompleteOriginals() throws {
         continueAfterFailure = false
         for language in ["en", "zh-Hans"] {
@@ -543,6 +623,51 @@ import XCTest
                 XCTAssertEqual(editor.value as? String, original)
                 app.terminate()
             }
+        }
+    }
+
+    func testMemoryDeactivationRecoversTheOriginalActionAndKeepsTheBody() throws {
+        continueAfterFailure = false
+        for (language, appearance) in [("en", "light"), ("en", "dark"), ("zh-Hans", "light"), ("zh-Hans", "dark")] {
+            let chinese = language == "zh-Hans"
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "--lio-journey-acceptance", "--lio-memory-grid-acceptance",
+                                   "--lio-memory-titled-acceptance", "-cj.ui.language.v1", language,
+                                   "-lio.ui.appearance.v1", appearance]
+            app.launch()
+            let memory = app.tabBars.buttons[chinese ? "记忆" : "Memory"]
+            XCTAssertTrue(memory.waitForExistence(timeout: 12))
+            memory.tap()
+            let card = app.buttons["lio.memory.card.quiet-hotel"]
+            XCTAssertTrue(card.waitForExistence(timeout: 8))
+            let original = try XCTUnwrap(card.value as? String)
+            for deactivated in [true, false] {
+                for _ in 0..<3 where !card.isHittable { app.swipeUp() }
+                card.tap()
+                XCTAssertTrue(app.staticTexts[original].waitForExistence(timeout: 8))
+                let action = app.buttons[deactivated ? "lio.memory.pause" : "lio.memory.resume"]
+                for _ in 0..<3 where !action.isHittable { app.swipeUp() }
+                XCTAssertTrue(action.isHittable)
+                action.tap()
+                let next = app.buttons[deactivated ? "lio.memory.resume" : "lio.memory.pause"]
+                XCTAssertTrue(next.waitForExistence(timeout: 12), app.debugDescription)
+                XCTAssertTrue(app.staticTexts[original].exists)
+                XCTAssertEqual(app.staticTexts[chinese ? "Lio 暂时不用这条记忆。"
+                    : "Lio isn’t using this memory."].exists, deactivated)
+                try app.performAccessibilityAudit(for: .all)
+                if deactivated {
+                    let image = XCTAttachment(screenshot: app.screenshot())
+                    image.name = "memory-control-\(language)-\(appearance)"
+                    image.lifetime = .keepAlways
+                    add(image)
+                }
+                app.navigationBars.buttons.element(boundBy: 0).tap()
+                XCTAssertTrue(card.waitForExistence(timeout: 8))
+                XCTAssertEqual(card.value as? String, original)
+                XCTAssertEqual(card.label.contains(chinese ? "已停用" : "Deactivated"), deactivated)
+                try app.performAccessibilityAudit(for: .all)
+            }
+            app.terminate()
         }
     }
 
@@ -624,6 +749,7 @@ import XCTest
                 XCTAssertTrue(edit.isHittable)
                 edit.tap()
                 XCTAssertEqual(app.textViews["lio.memory.editor"].value as? String, body)
+
                 app.terminate()
             }
         }
@@ -658,9 +784,12 @@ import XCTest
         let map = app.buttons["lio.trip.recorded-map"]
         if !map.isHittable { app.swipeUp() }
         XCTAssertTrue(map.isHittable, app.debugDescription)
-        XCTAssertFalse(app.staticTexts["Map unavailable"].exists)
+        let recordedFailure = app.staticTexts["lio.trip.recorded-map.unavailable"]
+        XCTAssertFalse(recordedFailure.exists)
+        XCTAssertTrue(app.staticTexts["lio.trip.route-map.unavailable"].exists)
+        XCTAssertTrue(schedule.exists)
         map.tap()
-        XCTAssertTrue(app.staticTexts["Map unavailable"].waitForExistence(timeout: 8))
+        XCTAssertTrue(recordedFailure.waitForExistence(timeout: 8))
         XCTAssertTrue(schedule.exists)
     }
 
@@ -681,7 +810,7 @@ import XCTest
         XCTAssertTrue(viewTrip.waitForExistence(timeout: 8))
         XCTAssertTrue(app.staticTexts["Earlier plan"].exists)
         viewTrip.tap()
-        XCTAssertTrue(app.navigationBars["Draft"].waitForExistence(timeout: 8), app.debugDescription)
+        XCTAssertTrue(app.staticTexts["Draft"].waitForExistence(timeout: 8), app.debugDescription)
         XCTAssertTrue(app.staticTexts["Date to be decided"].exists)
         XCTAssertFalse(app.staticTexts["Earlier plan"].exists)
         XCTAssertFalse(app.staticTexts["Earlier stop"].exists)
@@ -694,10 +823,13 @@ import XCTest
         XCTAssertFalse(app.staticTexts["Earlier stop"].exists)
     }
 
-    private func exerciseTrip(_ language: String, clarification: String, trips: String, day: String, fixed: String) throws {
+    private func exerciseTrip(_ language: String, clarification: String, trips: String, day: String, fixed: String,
+                              largest: Bool = false, appearance: String = "light") throws {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
         app.launchArguments = ["--lio-preview", "-cj.ui.language.v1", language]
+        app.launchArguments += ["-lio.ui.appearance.v1", appearance]
+        if largest { app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"] }
         app.launch()
         defer { app.terminate() }
 
@@ -725,9 +857,40 @@ import XCTest
         show.tap()
 
         XCTAssertTrue(app.navigationBars[trips].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.staticTexts[fixed].exists)
-        app.buttons["lio.trip.map.1"].tap()
-        XCTAssertTrue(app.navigationBars[day].waitForExistence(timeout: 8))
+        let chinese = language == "zh-Hans"
+        let trip = app.buttons.containing(.staticText, identifier: chinese ? "北京三日行" : "Three days in Beijing").firstMatch
+        XCTAssertTrue(trip.waitForExistence(timeout: 8), app.debugDescription)
+        trip.tap()
+        let routeMap = app.descendants(matching: .any).matching(identifier: "lio.trip.route-map").firstMatch
+        XCTAssertTrue(routeMap.waitForExistence(timeout: 8), app.debugDescription)
+        XCTAssertEqual(routeMap.label, language == "zh-Hans" ? "行程地图" : "Trip map")
+        let hotel = app.staticTexts[fixed]
+        if !hotel.isHittable { app.swipeUp() }
+        XCTAssertTrue(hotel.waitForExistence(timeout: 8))
+        let walk = app.buttons["lio.trip.focus.old-town-walk"]
+        if !walk.isHittable { app.swipeDown() }
+        XCTAssertTrue(walk.isHittable, app.debugDescription)
+        walk.tap()
+        XCTAssertEqual(routeMap.value as? String, walk.label)
+        XCTAssertNotEqual(routeMap.value as? String, "old-town-walk")
+        let second = app.buttons["lio.trip.select-day.2"]
+        if !second.isHittable { app.swipeDown() }
+        second.tap()
+        XCTAssertTrue((routeMap.value as? String ?? "").isEmpty)
+        XCTAssertTrue(app.buttons["lio.trip.focus.museum"].waitForExistence(timeout: 8))
+        XCTAssertFalse(hotel.exists)
+        XCTAssertTrue(app.buttons["lio.trip.focus.park"].exists)
+        app.buttons["lio.trip.select-day.1"].tap()
+        XCTAssertTrue(hotel.waitForExistence(timeout: 8))
+        let fixedStatus = app.staticTexts[chinese ? "固定安排" : "Fixed plan"]
+        if fixedStatus.frame.maxY > app.tabBars.firstMatch.frame.minY - 12 { app.swipeUp() }
+        XCTAssertTrue(fixedStatus.isHittable)
+        XCTAssertLessThanOrEqual(fixedStatus.frame.maxY, app.tabBars.firstMatch.frame.minY)
+        try app.performAccessibilityAudit(for: .all)
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = "trip-timeline-\(language)-\(appearance)-\(largest ? "largest" : "normal")"
+        attachment.lifetime = .keepAlways
+        add(attachment)
     }
 
     func testResendUsesTheSameQuestionAndQuotaStopsRetry() {
@@ -1188,4 +1351,344 @@ import XCTest
         XCTAssertFalse(app.navigationBars.firstMatch.exists)
         XCTAssertFalse(app.links.firstMatch.exists)
     }
+    func testExplorationQuestionsEnglish() throws { try exerciseQuestionControls(chinese: false) }
+    func testExplorationQuestionsChinese() throws { try exerciseQuestionControls(chinese: true) }
+
+    private func exerciseQuestionControls(chinese: Bool) throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        for dark in [false, true] {
+            app.launchArguments = ["--lio-preview", "--lio-question-controls-acceptance", "-cj.ui.language.v1", chinese ? "zh-Hans" : "en", "-lio.ui.appearance.v1", dark ? "dark" : "light"]
+            app.launch()
+            let submit = app.buttons["lio.questions.continue"]
+            let history = app.buttons["lio.questions.one.interests.history"]
+            let food = app.buttons["lio.questions.one.interests.food"]
+            let slow = app.buttons["lio.questions.one.pace.slow"]
+            let active = app.buttons["lio.questions.one.pace.active"]
+            XCTAssertTrue(submit.waitForExistence(timeout: 10))
+            XCTAssertEqual(submit.label, chinese ? "好了，继续" : "Done, continue")
+            XCTAssertFalse(submit.isEnabled)
+            food.tap()
+            history.tap()
+            XCTAssertTrue(food.isSelected)
+            XCTAssertTrue(history.isSelected)
+            XCTAssertEqual(app.staticTexts["fixture.send-count"].label, "0")
+            app.buttons["fixture.refresh"].tap()
+            XCTAssertTrue(food.isSelected)
+            XCTAssertTrue(history.isSelected)
+            try app.performAccessibilityAudit(for: .all)
+            let image = XCTAttachment(screenshot: app.screenshot())
+            image.name = "questions-\(chinese ? "zh" : "en")-\(dark ? "dark" : "light")"
+            image.lifetime = .keepAlways
+            add(image)
+            submit.tap()
+            XCTAssertEqual(app.staticTexts["fixture.send-count"].label, "1")
+            XCTAssertEqual(app.staticTexts["fixture.sent"].label, chinese ? "兴趣：历史文化\n兴趣：当地美食" : "Interests: History\nInterests: Food")
+            slow.tap()
+            active.tap()
+            XCTAssertFalse(slow.isSelected)
+            XCTAssertTrue(active.isSelected)
+            history.tap()
+            submit.tap()
+            XCTAssertEqual(app.staticTexts["fixture.send-count"].label, "2")
+            XCTAssertEqual(app.staticTexts["fixture.sent"].label, chinese ? "兴趣：当地美食\n节奏：充实些" : "Interests: Food\nPace: Active")
+            app.buttons["fixture.read-only"].tap()
+            XCTAssertFalse(submit.isEnabled)
+            XCTAssertFalse(food.isEnabled)
+            XCTAssertEqual(app.staticTexts["fixture.send-count"].label, "2")
+            app.terminate()
+        }
+    }
+
+    func testExplorationQuestionsLargeText() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        for chinese in [false, true] {
+            app.launchArguments = ["--lio-preview", "--lio-question-controls-acceptance", "-cj.ui.language.v1", chinese ? "zh-Hans" : "en", "-lio.ui.appearance.v1", "light", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+            app.launch()
+            let history = app.buttons["lio.questions.one.interests.history"]
+            XCTAssertTrue(history.waitForExistence(timeout: 10))
+            XCTAssertGreaterThanOrEqual(history.frame.height, 44)
+            let food = app.buttons["lio.questions.one.interests.food"]
+            XCTAssertGreaterThanOrEqual(food.frame.minY, history.frame.maxY)
+            history.tap()
+            let submit = app.buttons["lio.questions.continue"]
+            for _ in 0..<4 {
+                if submit.isHittable { break }
+                app.swipeUp()
+            }
+            XCTAssertTrue(submit.isHittable)
+            XCTAssertTrue(submit.isEnabled)
+            try app.performAccessibilityAudit(for: .all)
+            let image = XCTAttachment(screenshot: app.screenshot())
+            image.name = "questions-large-\(chinese ? "zh" : "en")"
+            image.lifetime = .keepAlways
+            add(image)
+            app.terminate()
+        }
+    }
+    func testExplorationReplyEnglish() throws { try exerciseExplorationReply(chinese: false) }
+    func testExplorationReplyChinese() throws { try exerciseExplorationReply(chinese: true) }
+
+    private func showExplorationReplyControl(_ element: XCUIElement, in app: XCUIApplication, down: Bool) {
+        for _ in 0..<6 {
+            if element.isHittable { return }
+            if down { app.swipeUp() } else { app.swipeDown() }
+        }
+    }
+
+    private func exerciseExplorationReply(chinese: Bool) throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        for dark in [false, true] {
+            launchExplorationReply(app, chinese: chinese, dark: dark)
+            let first = app.descendants(matching: .any).matching(identifier: "lio.segment.0").firstMatch
+            let second = app.descendants(matching: .any).matching(identifier: "lio.segment.1").firstMatch
+            XCTAssertTrue(first.waitForExistence(timeout: 10))
+            XCTAssertLessThan(first.frame.minY, second.frame.minY)
+            XCTAssertFalse(app.staticTexts["Combined answer for an older reader"].exists)
+            let history = app.buttons["lio.questions.sample.interests.history"]
+            showExplorationReplyControl(history, in: app, down: true)
+            history.tap()
+            XCTAssertEqual(app.staticTexts["fixture.count"].label, "0")
+            let submit = app.buttons["lio.questions.continue"]
+            showExplorationReplyControl(submit, in: app, down: true)
+            submit.tap()
+            XCTAssertEqual(app.staticTexts["fixture.count"].label, "1")
+            XCTAssertEqual(app.staticTexts["fixture.sent"].label, chinese ? "喜欢历史文化" : "I enjoy history")
+            let refresh = app.buttons["fixture.refresh"]
+            showExplorationReplyControl(refresh, in: app, down: true)
+            refresh.tap()
+            XCTAssertEqual(app.descendants(matching: .any).matching(identifier: "lio.notice.weather-day-1").count, 1)
+            XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "lio.segment.2").firstMatch.exists)
+            XCTAssertTrue(history.isSelected)
+            let profile = app.buttons["lio.profile.pace"]
+            showExplorationReplyControl(profile, in: app, down: false)
+            profile.tap()
+            let sendControl = app.buttons["lio.profile.edit.send"]
+            XCTAssertTrue(sendControl.waitForExistence(timeout: 5))
+            XCTAssertGreaterThanOrEqual(sendControl.frame.height, 44)
+            let field = app.descendants(matching: .any).matching(identifier: "lio.profile.edit.text").firstMatch
+            XCTAssertTrue(field.waitForExistence(timeout: 5))
+            field.tap()
+            let old = field.value as! String
+            field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: old.count) + (chinese ? "节奏改为轻松" : "Pace: relaxed"))
+            try app.performAccessibilityAudit(for: .all)
+            let sheet = XCTAttachment(screenshot: app.screenshot())
+            sheet.name = "profile-edit-\(chinese ? "zh" : "en")-\(dark ? "dark" : "light")"
+            sheet.lifetime = .keepAlways
+            add(sheet)
+            app.buttons["lio.profile.edit.send"].tap()
+            XCTAssertEqual(app.staticTexts["fixture.count"].label, "2")
+            XCTAssertEqual(app.staticTexts["fixture.sent"].label, chinese ? "节奏改为轻松" : "Pace: relaxed")
+            let plan = app.buttons["lio.exit.plan_now"]
+            showExplorationReplyControl(plan, in: app, down: true)
+            XCTAssertGreaterThanOrEqual(plan.frame.height, 44)
+            XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "lio.notice.source.weather-day-1").firstMatch.exists)
+            plan.tap()
+            XCTAssertEqual(app.staticTexts["fixture.count"].label, "3")
+            XCTAssertEqual(app.staticTexts["fixture.sent"].label, chinese ? "直接给我一个方案。" : "Please make a plan now.")
+            try app.performAccessibilityAudit(for: .all)
+            let image = XCTAttachment(screenshot: app.screenshot())
+            image.name = "exploration-\(chinese ? "zh" : "en")-\(dark ? "dark" : "light")"
+            image.lifetime = .keepAlways
+            add(image)
+            let readOnly = app.buttons["fixture.read-only"]
+            showExplorationReplyControl(readOnly, in: app, down: true)
+            readOnly.tap()
+            XCTAssertFalse(plan.isEnabled)
+            XCTAssertFalse(submit.isEnabled)
+            showExplorationReplyControl(profile, in: app, down: false)
+            XCTAssertTrue(profile.exists)
+            XCTAssertFalse(profile.isEnabled)
+            app.terminate()
+        }
+    }
+
+    func testExplorationPlainAnswersEnglish() throws { try exerciseExplorationPlainAnswers(chinese: false) }
+    func testExplorationPlainAnswersChinese() throws { try exerciseExplorationPlainAnswers(chinese: true) }
+
+    private func exerciseExplorationPlainAnswers(chinese: Bool) throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        do {
+            for mode in ["--lio-exploration-legacy-acceptance", "--lio-exploration-profile-only-acceptance"] {
+                launchExplorationReply(app, chinese: chinese, mode: mode)
+                let answer = app.descendants(matching: .any).matching(identifier: "lio.answer").firstMatch
+                XCTAssertTrue(answer.waitForExistence(timeout: 10))
+                let visibleText = answer.descendants(matching: .staticText).allElementsBoundByIndex.map(\.label).joined(separator: "\n")
+                XCTAssertTrue(visibleText.contains(chinese ? "之前的回答" : "Earlier reply"))
+                XCTAssertFalse(visibleText.contains("**"))
+                XCTAssertFalse(app.buttons["lio.questions.continue"].exists)
+                XCTAssertFalse(app.buttons["lio.exit.plan_now"].exists)
+                XCTAssertEqual(app.buttons["lio.profile.pace"].exists, mode == "--lio-exploration-profile-only-acceptance")
+                try app.performAccessibilityAudit(for: .all)
+                app.terminate()
+            }
+        }
+    }
+
+    func testExplorationProfileSendsOneEditedMessage() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        for chinese in [false, true] {
+            launchExplorationReply(app, chinese: chinese)
+            let profile = app.buttons["lio.profile.pace"]
+            XCTAssertTrue(profile.waitForExistence(timeout: 10))
+            profile.tap()
+            let sendControl = app.buttons["lio.profile.edit.send"]
+            XCTAssertTrue(sendControl.waitForExistence(timeout: 5))
+            XCTAssertGreaterThanOrEqual(sendControl.frame.height, 44)
+            let field = app.textViews["lio.profile.edit.text"]
+            XCTAssertTrue(field.waitForExistence(timeout: 5))
+            XCTAssertTrue(field.isEnabled)
+            field.tap()
+            let old = field.value as! String
+            field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: old.count) + (chinese ? "节奏改为轻松" : "Pace: relaxed"))
+            app.buttons["lio.profile.edit.send"].tap()
+            XCTAssertEqual(app.staticTexts["fixture.count"].label, "1")
+            XCTAssertEqual(app.staticTexts["fixture.sent"].label, chinese ? "节奏改为轻松" : "Pace: relaxed")
+            app.terminate()
+        }
+    }
+
+    func testExplorationCanPlanWithoutSelections() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        for chinese in [false, true] {
+            launchExplorationReply(app, chinese: chinese)
+            let submit = app.buttons["lio.questions.continue"]
+            XCTAssertTrue(submit.waitForExistence(timeout: 10))
+            XCTAssertFalse(submit.isEnabled)
+            let plan = app.buttons["lio.exit.plan_now"]
+            showExplorationReplyControl(plan, in: app, down: true)
+            XCTAssertTrue(plan.isEnabled)
+            plan.tap()
+            XCTAssertEqual(app.staticTexts["fixture.count"].label, "1")
+            XCTAssertEqual(app.staticTexts["fixture.sent"].label, chinese ? "直接给我一个方案。" : "Please make a plan now.")
+            app.terminate()
+        }
+    }
+
+    func testExplorationProfileCancelDoesNotSend() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        for chinese in [false, true] {
+            launchExplorationReply(app, chinese: chinese)
+            let profile = app.buttons["lio.profile.pace"]
+            XCTAssertTrue(profile.waitForExistence(timeout: 10))
+            let before = profile.label
+            profile.tap()
+            let sendControl = app.buttons["lio.profile.edit.send"]
+            XCTAssertTrue(sendControl.waitForExistence(timeout: 5))
+            XCTAssertGreaterThanOrEqual(sendControl.frame.height, 44)
+            let field = app.textViews["lio.profile.edit.text"]
+            XCTAssertTrue(field.waitForExistence(timeout: 5))
+            field.tap()
+            field.typeText(" changed")
+            app.buttons[chinese ? "取消" : "Cancel"].tap()
+            XCTAssertEqual(app.staticTexts["fixture.count"].label, "0")
+            XCTAssertEqual(profile.label, before)
+            app.terminate()
+        }
+    }
+
+    private func launchExplorationReply(_ app: XCUIApplication, chinese: Bool, dark: Bool = false, mode: String? = nil) {
+        app.launchArguments = ["--lio-preview", "--lio-exploration-reply-acceptance",
+                               "-cj.ui.language.v1", chinese ? "zh-Hans" : "en",
+                               "-lio.ui.appearance.v1", dark ? "dark" : "light"]
+        if let mode { app.launchArguments.append(mode) }
+        app.launch()
+    }
+
+ func testRichItineraryEnglishLight() throws { try exerciseRichItinerary(false,false) }
+ func testRichItineraryChineseLight() throws { try exerciseRichItinerary(true,false) }
+ func testRichItineraryEnglishDark() throws { try exerciseRichItinerary(false,true) }
+ func testRichItineraryChineseDark() throws { try exerciseRichItinerary(true,true) }
+ private func exerciseRichItinerary(_ chinese:Bool,_ dark:Bool) throws {
+  continueAfterFailure=false
+  let app=XCUIApplication(bundleIdentifier:"space.go2china.lio.acceptance")
+  app.launchArguments=["--lio-preview", "--lio-rich-itinerary-acceptance", "-cj.ui.language.v1", chinese ? "zh-Hans":"en"]+(dark ? ["--lio-rich-dark-acceptance"]:[])
+  app.launchEnvironment=["G2C_ACCEPTANCE_MAP_LOADING":"synthetic-delegate-failure"]
+  app.launch();defer{app.terminate()}
+  func reveal(_ element:XCUIElement) {
+   for _ in 0..<8 { if element.isHittable{return};app.swipeUp() }
+   XCTAssertTrue(element.isHittable,app.debugDescription)
+  }
+  let first=app.buttons["lio.rich.stop.sight"]
+  XCTAssertTrue(first.waitForExistence(timeout:10))
+  try app.performAccessibilityAudit(for:.all)
+  captureRichItinerary(app,"rich-day",chinese,dark)
+  first.tap()
+  let driver=app.buttons["lio.rich.driver"]
+  XCTAssertTrue(driver.waitForExistence(timeout:5));XCTAssertTrue(driver.isEnabled)
+  try app.performAccessibilityAudit(for:.all)
+  driver.tap()
+  let name=app.staticTexts["lio.rich.driver.name"]
+  XCTAssertTrue(name.waitForExistence(timeout:5));XCTAssertEqual(name.label,"示例花园")
+  XCTAssertEqual(app.staticTexts["lio.rich.driver.address"].label,"演示市示例路 1 号")
+  try app.performAccessibilityAudit(for:.all)
+  captureRichItinerary(app,"driver-card",chinese,dark)
+  app.buttons["lio.rich.driver.done"].tap();app.buttons["lio.rich.detail.done"].tap()
+  app.buttons["lio.rich.show-map"].tap()
+  XCTAssertTrue(app.staticTexts[chinese ? "暂时无法显示地图":"Map unavailable"].waitForExistence(timeout:8))
+  XCTAssertTrue(app.otherElements["lio.rich.map"].exists || app.images["lio.rich.map"].exists)
+  let second=app.buttons["lio.rich.stop.meal"]
+  reveal(second);second.tap()
+  XCTAssertTrue(driver.waitForExistence(timeout:5));XCTAssertFalse(driver.isEnabled)
+  try app.performAccessibilityAudit(for:.all)
+  app.buttons["lio.rich.detail.done"].tap()
+  let hotel=app.staticTexts[chinese ? "示例酒店甲":"Sample stay A"]
+  reveal(hotel)
+  try app.performAccessibilityAudit(for:.all)
+  captureRichItinerary(app,"lodging",chinese,dark)
+  for _ in 0..<8 { if app.buttons["lio.rich.day.2"].isHittable {break};app.swipeDown() }
+  app.buttons["lio.rich.day.2"].tap()
+  XCTAssertTrue(app.buttons["lio.rich.stop.transport"].exists)
+  XCTAssertTrue(app.buttons["lio.rich.stop.free"].exists)
+  try app.performAccessibilityAudit(for:.all)
+  captureRichItinerary(app,"transport",chinese,dark)
+  app.buttons["lio.rich.day.3"].tap()
+  XCTAssertTrue(app.staticTexts[chinese ? "这一天还没有安排。":"No activities planned for this day yet."].exists)
+  XCTAssertFalse(app.buttons["lio.rich.show-map"].exists)
+  try app.performAccessibilityAudit(for:.all)
+ }
+ private func captureRichItinerary(_ app:XCUIApplication,_ label:String,_ chinese:Bool,_ dark:Bool) {
+  let a=XCTAttachment(screenshot:app.screenshot());a.name=label+(chinese ? "-zh":"-en")+(dark ? "-dark":"-light");a.lifetime = .keepAlways;add(a)
+ }
+
+    func testExplorationReadEnglish() throws { try exerciseExplorationRead(false) }
+    func testExplorationReadChinese() throws { try exerciseExplorationRead(true) }
+    private func exerciseExplorationRead(_ chinese: Bool) throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        for dark in [false, true] {
+            app.launchArguments = ["--lio-preview", "--lio-exploration-read-acceptance", "-cj.ui.language.v1", chinese ? "zh-Hans" : "en"]
+                + (dark ? ["--lio-read-dark-acceptance"] : [])
+            app.launch()
+            let prefix = "lio.questions.explore-" + (chinese ? "zh" : "en") + "."
+            let first = app.buttons[prefix + "interests.history"]
+            XCTAssertTrue(first.waitForExistence(timeout: 10), app.debugDescription)
+            XCTAssertFalse(app.staticTexts["lio.exploration.fixture.unavailable"].exists)
+            XCTAssertEqual(app.staticTexts["lio.exploration.send-count"].label, "0")
+            try app.performAccessibilityAudit(for: .all)
+            first.tap()
+            app.buttons[prefix + "interests.nature"].tap()
+            let submit = app.buttons["lio.questions.continue"]
+            for _ in 0..<6 { if submit.isHittable { break }; app.swipeUp() }
+            XCTAssertTrue(submit.isHittable, app.debugDescription)
+            submit.tap()
+            XCTAssertEqual(app.staticTexts["lio.exploration.send-count"].label, "1")
+            XCTAssertEqual(app.staticTexts["lio.exploration.sent"].label, chinese ? "兴趣：历史\n兴趣：自然" : "Interests: History\nInterests: Nature")
+            let rain = app.staticTexts[chinese ? "带一件雨衣。" : "Bring a raincoat."]
+            for _ in 0..<6 { if rain.isHittable { break }; app.swipeUp() }
+            XCTAssertTrue(rain.exists)
+            try app.performAccessibilityAudit(for: .all)
+            let attachment = XCTAttachment(screenshot: app.screenshot())
+            attachment.name = "decoded-exploration-" + (chinese ? "zh" : "en") + (dark ? "-dark" : "-light")
+            attachment.lifetime = .keepAlways; add(attachment)
+            app.terminate()
+        }
+    }
+
 }

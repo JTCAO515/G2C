@@ -112,7 +112,7 @@ def _require_memory_configuration(cursor, scope, configuration, travel):
         raise RuntimeDenied('existing memory requires explicit runtime configuration')
 
 
-def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,formal_memory_configuration=None,account_checker_builder=None,run_credential=False,assembly_planning=False,demo_planning=False,lio_confirmation=None,lio_memory_enabled=False,national_planning=False,runtime_registrations_for_run=None,runtime_reflection=None):
+def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,formal_memory_configuration=None,account_checker_builder=None,run_credential=False,assembly_planning=False,demo_planning=False,lio_confirmation=None,lio_memory_enabled=False,national_planning=False,runtime_registrations_for_run=None,runtime_reflection=None,runtime_exit_observer_for_run=None):
     if draft_profile not in (None,'needs-structured.1','needs-current-trip.1'):
         raise CompositionUnavailable('unknown explicit draft profile')
     if place_draft_configuration is not None:
@@ -324,17 +324,23 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
         lio_memory = LioMemoryExtraction(database, candidates, memory_credential)
     if demo_planning:
         from functools import partial
-        from cj_message.lio_context import original_for
-        lio_original = partial(original_for, database)
+        from cj_message.lio_context import original_for, calendar_original_for
+        lio_original = partial(calendar_original_for if national_planning else original_for, database)
         if lio_confirmation is not None:
             from cj_api.local_lio_edit import LioEdit
             from cj_api.local_lio_planning import LioPlanning, LioPlanSave
             if national_planning:
                 from cj_api.local_lio_national import NationalLioPlanning
-                lio_planning=NationalLioPlanning(database,LioPlanSave(database,drafts,lio_confirmation,source_window=True,grouped=True))
+                from cj_api.local_lio_calendar import LioCalendar
+                calendar=LioCalendar(database,drafts,lio_confirmation)
+                lio_planning=NationalLioPlanning(database,LioPlanSave(database,drafts,lio_confirmation,
+                    source_window=True,grouped=True,calendar_reads=True),calendar=calendar)
             else:
                 lio_planning = LioPlanning(database, LioPlanSave(database, drafts, lio_confirmation))
             lio_edit = LioEdit(drafts, lio_confirmation,source_window=national_planning)
+            if national_planning:
+                from cj_api.local_lio_calendar_edit import LioCalendarEdit
+                lio_edit=LioCalendarEdit(calendar,lio_edit)
     return RunWorker(scope=scope, messages=messages, runs=runs, provider=model, drafts=drafts,
         memory=memory,edit_publisher=None if edit_config is None else edit_config.publisher,edit_results=database.edit_results,
         memory_history=history is not None,history_adapter=history,
@@ -348,12 +354,12 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
         runtime_reflection=runtime_reflection,
         execution_guard=lambda binding: database.require_execution(binding.scope, binding, connection=execution_connection),
         needs_lease=needs_lease_for(database,checker,memory_credential if run_credential else token),
-        budget_exit=(LocalBudgetRouter(database) if tools_configuration is None else
+        budget_exit=(LocalBudgetRouter(database,exit_observer_for_run=runtime_exit_observer_for_run) if tools_configuration is None else
                      LocalBudgetRouter(database,registrations=tools_configuration.registrations,
-                                       registrations_for_run=runtime_registrations_for_run)))
+                                       registrations_for_run=runtime_registrations_for_run,exit_observer_for_run=runtime_exit_observer_for_run)))
 
 
-def run_once(database, model, auth_dir, *, memory_configuration=None,memory_configuration_for_scope=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,background_jobs=None,formal_memory_configuration=None,real_services=None,account_admission=False,hk_beta_b_run_credential=False,hk_assembly_scopes=frozenset(),hk_assembly_run_credential_scopes=frozenset(),hk_demo_scopes=frozenset(),lio_confirmation=None,runtime_registrations_for_run=None,runtime_reflection=None):
+def run_once(database, model, auth_dir, *, memory_configuration=None,memory_configuration_for_scope=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,background_jobs=None,formal_memory_configuration=None,real_services=None,account_admission=False,hk_beta_b_run_credential=False,hk_assembly_scopes=frozenset(),hk_assembly_run_credential_scopes=frozenset(),hk_demo_scopes=frozenset(),lio_confirmation=None,runtime_registrations_for_run=None,runtime_reflection=None,runtime_exit_observer_for_run=None):
     if memory_configuration_for_scope is not None and (memory_configuration is not None or formal_memory_configuration is not None):
         raise ValueError('select one explicit Memory configuration source')
     if runtime_registrations_for_run is not None and (tools_configuration is None or real_services is None):
@@ -424,6 +430,7 @@ def run_once(database, model, auth_dir, *, memory_configuration=None,memory_conf
                                          lio_confirmation=lio_confirmation,
                                          runtime_registrations_for_run=runtime_registrations_for_run,
                                          runtime_reflection=runtime_reflection,
+                                         runtime_exit_observer_for_run=runtime_exit_observer_for_run,
                                          lio_memory_enabled=scope in hk_demo_scopes,
                                          national_planning=real_services is not None and scope in {
                                              scope_for(ISSUER,s) for s in real_services.national_subjects}).process()

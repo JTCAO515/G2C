@@ -11,7 +11,7 @@ from cj_auth.interfaces import AdmissionStatus
 from cj_run.core import Binding
 from cj_usage.metered_exit import BudgetUnknown
 from runtime_adapter.configuration import ROOT
-from runtime_adapter.contract import encode
+from runtime_adapter.contract import encode,Unavailable
 
 
 def test_expired_runtime_identity_closes_only_its_runtime_ids_not_ordinary_traffic(tmp_path,monkeypatch):
@@ -42,3 +42,24 @@ def test_expired_runtime_identity_closes_only_its_runtime_ids_not_ordinary_traff
     assert bindings.registrations(ordinary) is original and bindings.reflection(ordinary) is None
     other=Binding(scope_for(ISSUER,'other-owner'),'chat','generation','runtime-'+'a'*64,'run',1)
     assert bindings.registrations(other) is original and bindings.reflection(other) is None
+
+
+@pytest.mark.parametrize('failure',[Unavailable('ORIGINAL_UNAVAILABLE'),OSError('private claim unavailable')])
+def test_cancel_observer_preserves_existing_unavailable_original_rejection(failure):
+    from cj_api.runtime_run_requests import RunRequests
+    from cj_api.runtime_controlled_generation import ControlledGeneration
+    scope='local-owner'
+    binding=Binding(scope,'chat','generation','runtime-'+'a'*64,'run',1)
+    def unavailable(*args,**kwargs):raise failure
+    claims=SimpleNamespace(binding=SimpleNamespace(scope=scope),read=unavailable)
+    routing=RunRequests(claims,None,None,SimpleNamespace(registrations={}))
+    controls=ControlledGeneration()
+    bindings=RuntimeWorkerBindings.__new__(RuntimeWorkerBindings)
+    bindings.by_scope={scope:dict(routing=routing,controls=controls)}
+    assert bindings.registrations(binding)=={} and binding in routing.rejected
+    assert bindings.exit_observer(binding) is controls
+    with pytest.raises(BudgetUnknown):bindings.reflection(binding)
+    controls.completed(SimpleNamespace(command=SimpleNamespace(kind='model'),binding=binding))
+    assert controls.pauses=={}
+    other=Binding('foreign','chat','generation',binding.message_id,'run',1)
+    assert bindings.exit_observer(other) is None

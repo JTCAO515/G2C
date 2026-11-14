@@ -21,7 +21,7 @@ from cj_trip.operation import OperationWithheld
 
 from .history_routes import _query
 from .lio_dialogue_routes import _failure, _json
-from .lio_trip_cards import _card
+from .lio_trip_cards import _card,calendar_card
 from .local_app import scope_for, trip_resolver
 from .local_needs import protected_reader
 from .message_routes import BodyError, _read_body, _token
@@ -48,12 +48,12 @@ def _undo(action_id, target):
 
 
 class LioTripBoundary(Boundary):
-    def __init__(self, database, checker, confirmation_signer):
+    def __init__(self, database, checker, confirmation_signer,*,calendar=False):
         self.database = database
         self.reader = protected_reader(database, checker)
 
         resolve = trip_resolver(database)
-        super().__init__(checker, resolve, confirmation_signer, structured=True)
+        super().__init__(checker, resolve, confirmation_signer, structured=True,calendar=calendar)
 
     def _bind(self, token):
         repository, principal, check = super()._bind(token)
@@ -74,7 +74,8 @@ def _head(context, conversation):
     return context.lio_current_trip(needs_scope_for(scope), lio_needs_id(scope, conversation or lio_conversation(scope)))
 
 
-def _history(context, before, conversation):
+def _history(context, before, conversation,*,calendar=False):
+    card=calendar_card if calendar else _card
     head = _head(context, conversation)
     current = None
     target = None
@@ -82,7 +83,7 @@ def _history(context, before, conversation):
     if head is not None:
         if before is None:
             snapshot = context.lio_revisions(head.trip_id)
-            current = _card(snapshot[0])
+            current = card(snapshot[0])
             target = _target(head) if head.version > 1 else None
             revisions = snapshot[1:]
         elif before <= head.version:
@@ -92,10 +93,11 @@ def _history(context, before, conversation):
         if _head(context, conversation) != head:
             raise Conflict('Lio history changed')
     next_before = str(revisions[-1].version) if revisions and revisions[-1].version > 1 else None
-    value = dict(version='LIO-trip-history.1', current=current, history=[_card(v) for v in revisions],
+    value = dict(version='LIO-trip-history.1', current=current, history=[card(v) for v in revisions],
                  undo_target=target, next_before=next_before)
     if conversation is not None:
         value.update(version='LIO-trip-history.2', conversation_id=conversation)
+    if calendar:value['version']='LIO-trip-history.3'
     response = packed(value)
     if len(response) > 4_500_000:
         raise ValueError('Lio history response exceeds its bound')

@@ -16,6 +16,7 @@ from scripts import test as entry
 
 
 OFFLINE_CASES = (
+    ('eval/lio_calendar_transitions', ('eval/tests/test_lio_calendar_transitions.py',)),
     ('eval/optimization', ('eval.optimization.test_score',)),
     ('tooling/datasets', ('tooling/datasets', 'test_*.py')),
     ('tooling/optimization', ('tooling.optimization.test_optimization',)),

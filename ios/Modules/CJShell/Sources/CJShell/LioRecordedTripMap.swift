@@ -18,6 +18,7 @@ public struct LioRecordedTripMap: View {
         switch places {
         case .failure:
             Text(language.text("Map unavailable", "暂时无法显示地图"))
+                .accessibilityIdentifier("lio.trip.recorded-map.unavailable")
         case .success(let places):
             if places.contains(where: { $0.markerCoordinate != nil }) {
                 VStack(alignment: .leading, spacing: 8) {
@@ -34,6 +35,7 @@ public struct LioRecordedTripMap: View {
                             .frame(height: 320)
                         if unavailable {
                             Text(language.text("Map unavailable", "暂时无法显示地图"))
+                .accessibilityIdentifier("lio.trip.recorded-map.unavailable")
                         }
                         Link(language.text("Apple Maps legal information", "Apple 地图法律信息"),
                              destination: URL(string: "https://www.apple.com/legal/internet-services/maps/")!)

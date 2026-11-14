@@ -89,14 +89,19 @@ public struct LioTripLibrary {
 }
 
 extension LioItinerary {
-    init(_ saved: StructuredTripRecord) {
+    init(_ saved: StructuredTripRecord, places: [TripPlaceProjection] = []) {
         var stopsByDate: [String?: [Stop]] = [:]
         for item in saved.document.items {
             let startDate = item.start.date.lioValue
             let endDate = item.end.date.lioValue
+            let coordinate = places.first { item.sourceReferences.contains($0.id) }?.markerCoordinate
+            let point = coordinate.map {
+                Point(latitude: NSDecimalNumber(decimal: $0.latitude.value).doubleValue,
+                      longitude: NSDecimalNumber(decimal: $0.longitude.value).doubleValue)
+            }
             stopsByDate[startDate, default: []].append(
                 Stop(id: item.id, name: item.text, time: item.start.time.lioValue,
-                     point: nil, fixed: item.fixed.lioValue, endTime: item.end.time.lioValue,
+                     point: point, fixed: item.fixed.lioValue, endTime: item.end.time.lioValue,
                      endDate: endDate == startDate ? nil : endDate)
             )
         }

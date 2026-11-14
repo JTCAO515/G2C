@@ -445,7 +445,8 @@ class MeteredDashScopeProvider:
                 finally:loop.close()
 
     def invoke(self,messages,system,attempt,*,tools=None,receipt,guard,native_reply=None,tool_choice=None,
-               native_turn_profile=None,final_answer=False,release_after_send=False,lio_answer=False,structured_profile=None,intake_source_index=None,wire_observer=None):
+               native_turn_profile=None,final_answer=False,release_after_send=False,lio_answer=False,structured_profile=None,intake_source_index=None,wire_observer=None,
+               draft_profile=None,draft_schema_sha256=None):
         from cj_usage.authorization_budget import canonical
         native_tools=tools or []
         buffered=native_turn_profile==M4_NATIVE_TURN_BUFFERED
@@ -459,6 +460,17 @@ class MeteredDashScopeProvider:
             raise ProviderFailed('explicit native turn transport required')
         if structured_profile not in (None,'LIO-planning-intake.1','LIO-planning-intake.2','LIO-planning-intake.3','LIO-planning-intake.4','LIO-planning-intake.5','LIO-planning-intake.6','LIO-planning-intake.7','LIO-planning-intake.8','LIO-planning-intake.9') or structured_profile is not None and (native_tools or system is None):
             raise ProviderFailed('explicit nationwide structured profile required')
+        grouped_format=None
+        rich_draft=False
+        if draft_profile is not None or draft_schema_sha256 is not None:
+            from cj_draft.grouped_plan import GENERATION_PROFILES,response_format,response_format_sha256
+            if (draft_profile not in GENERATION_PROFILES or native_tools or system is None
+                    or structured_profile is not None or native_turn_profile is not None or release_after_send or lio_answer
+                    or draft_schema_sha256!=response_format_sha256(draft_profile)):
+                raise ProviderFailed('explicit source-bound grouped schema required')
+            grouped_format=response_format(draft_profile)
+            from cj_draft.rich_schema import GENERATION_PROFILES as rich_profiles
+            rich_draft=draft_profile in rich_profiles
         if release_after_send and (native_tools or system is None):
             raise ProviderFailed('explicit structured model input required')
         if tool_choice is not None and (tool_choice!='none' or not native_tools):
@@ -495,7 +507,7 @@ class MeteredDashScopeProvider:
             prompt+='\nReturn a single JSON object matching the requested output format.'
         body=dict(model=M4_MODEL,messages=[dict(role='system',content=prompt),*wire_messages],stream=True,
                   stream_options={'include_usage':True},enable_thinking=False,
-                  max_tokens=self.config.max_output_tokens if compact or incremental or structured_profile is not None else min(1024,self.config.max_output_tokens))
+                  max_tokens=self.config.max_output_tokens if compact or incremental or structured_profile is not None or rich_draft else min(1024,self.config.max_output_tokens))
         if proxy:
             definition=(_m4_compact_turn_function(native_tools,final_answer) if compact else
                         _m4_turn_function(native_tools,final_answer))
@@ -507,7 +519,9 @@ class MeteredDashScopeProvider:
         if tool_choice is not None:body['tool_choice']=tool_choice
         if native_tools and not (proxy or incremental):body['response_format']=_m4_native_answer_format()
         elif not native_tools and system is not None:
-            if structured_profile=='LIO-planning-intake.9':
+            if grouped_format is not None:
+                body['response_format']=grouped_format
+            elif structured_profile=='LIO-planning-intake.9':
                 from .lio_intake_optional_schema import response_format
                 body['response_format']=response_format(intake_source_index)
             elif structured_profile=='LIO-planning-intake.8':

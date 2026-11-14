@@ -120,6 +120,10 @@ def exercise(root,conninfo):
                 if count is not None:data['field_sources'].append(dict(field='duration_days',source_index=source_index if case.get('fresh_request')else 1 if later and not case['opening_days'] else 0,quote=case['duration_quote']))
                 if start is not None:data['field_sources'].append(dict(field='start_date',source_index=source_index,quote=case['date_quote']))
                 if party is not None:data['field_sources'].append(dict(field='party_size',source_index=source_index,quote=case['party_quote']))
+                if count is None and case.get('malformed_question'):
+                    data['reply']='好的，去**北京**。你打算玩几天？'if current['locale']=='zh'else'How many days would you like to spend in Beijing?'
+                    data['unknown_fields']=['start_date','party_size','start_date','party_size']
+                    data['field_sources']=[dict(field=field,source_index=0,quote='')for field in ('start_date','duration_days','party_size')]
                 content=json.dumps(data,ensure_ascii=False)
             elif current.get('visitor_question'):
                 content=json.dumps(dict(version='LIO-planning-intake.4',intent='consult',reply='I can check the visitor guidance.',
@@ -262,7 +266,10 @@ def exercise(root,conninfo):
                     planning_request_index=source_index if flow['intent']in ('plan','save')else None)
             content=json.dumps(flow,ensure_ascii=False)
             from jsonschema import Draft202012Validator
-            Draft202012Validator(body['response_format']['json_schema']['schema']).validate(json.loads(content))
+            validator=Draft202012Validator(body['response_format']['json_schema']['schema'])
+            if current.get('build31_case',{}).get('malformed_question')and source_index==0:
+                assert list(validator.iter_errors(json.loads(content)))
+            else:validator.validate(json.loads(content))
         identity=dict(id='fixture-national-'+str(len(wire)),model=M4_MODEL)
         delta=dict(tool_calls=[visitor_call])if visitor_call is not None else dict(content=content)
         events=[dict(**identity,choices=[dict(index=0,delta=delta,finish_reason=None)]),
@@ -555,7 +562,7 @@ def exercise(root,conninfo):
             opening_days=True,duration_quote='三天'if locale=='zh'else'three-day',date_quote='明天开始'if locale=='zh'else'starting tomorrow',party_quote='三个人'if locale=='zh'else'Three people'))
         cases.append(dict(locale=locale,zh='北京',en='Beijing',first='规划北京行程'if locale=='zh'else'Plan a trip to Beijing.',
             reply='下周二、四天、一人'if locale=='zh'else'Next Tuesday, four days, one person.',count=4,party=1,start=next_tuesday,
-            opening_days=False,duration_quote='四天'if locale=='zh'else'four days',date_quote='下周二'if locale=='zh'else'Next Tuesday',party_quote='一人'if locale=='zh'else'one person'))
+            opening_days=False,duration_quote='四天'if locale=='zh'else'four days',date_quote='下周二'if locale=='zh'else'Next Tuesday',party_quote='一人'if locale=='zh'else'one person',malformed_question=True))
         for count,word,zh_word in ((4,'four','四'),(5,'five','五')):
             cases.append(dict(locale=locale,zh='上海',en='Shanghai',first=f'规划上海{zh_word}天豪华游 2026-12-01出发 两个人'if locale=='zh'else
                 f'Plan a {word}-day luxury trip to Shanghai starting 2026-12-01 for two people.',reply=None,count=count,party=2,start='2026-12-01',opening_days=True,
@@ -584,6 +591,14 @@ def exercise(root,conninfo):
             if case['reply']is not None:
                 preview=api.get('/v2/lio/trip',headers=headers,params=params).json()
                 assert preview['current']is None and preview['history']==[],preview
+                if case.get('malformed_question'):
+                    shown=api.get('/v2/lio/timeline',headers=headers,params=params).json()['messages'][-1]
+                    assert shown['status']=='completed'and shown['answer']and shown['trip']is None,shown
+                    with database.connect(scope)as db:
+                        assert db.execute('SELECT count(*) FROM cj_message_needs_binding WHERE message_scope=%s AND message_id=%s',(scope,mid)).fetchone()==(0,)
+                        operations=db.execute('SELECT registration_id FROM cj_run_metered_operation WHERE scope=%s AND run_id='
+                            '(SELECT run_id FROM cj_message_receipt WHERE scope=%s AND message_id=%s)',(scope,scope,mid)).fetchall()
+                        assert operations==[('model.lio_intake.9',)],operations
                 mid+='-answer'
                 payload=dict(version='LIO-message.2',message_id=mid,text=case['reply'],locale=case['locale'],conversation_id=cid)
                 received=api.post('/v2/lio/messages',headers=headers,content=json.dumps(payload).encode());assert received.status_code==200,received.text
