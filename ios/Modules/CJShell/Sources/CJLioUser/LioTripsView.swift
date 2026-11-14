@@ -141,7 +141,7 @@ struct LioTripsView: View {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 20) {
                             Text(itinerary.title)
-                                .font(LioTheme.display(.title))
+                                .font(LioTheme.display(.title).weight(.semibold))
                                 .foregroundStyle(LioTheme.ink)
                                 .fixedSize(horizontal: false, vertical: true)
                                 .accessibilityAddTraits(.isHeader)
@@ -227,7 +227,7 @@ private struct LioTripDetail: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
                         Text(record.title)
-                            .font(LioTheme.display(.title))
+                            .font(LioTheme.display(.title).weight(.semibold))
                             .foregroundStyle(LioTheme.ink)
                             .background(LioTheme.paper)
                             .fixedSize(horizontal: false, vertical: true)

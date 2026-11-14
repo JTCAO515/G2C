@@ -21,6 +21,11 @@ class InvocationInput:
     materialize: object
     bind_operation: object = None
     receipt: object = None
+    tool_output_limit: int | None = None
+
+    def __post_init__(self):
+        if self.tool_output_limit is not None and (type(self.tool_output_limit) is not int or self.tool_output_limit < 1):
+            raise ValueError('positive code-owned tool output limit required')
 
 
 @dataclass(frozen=True)
@@ -66,6 +71,15 @@ class RegisteredExit(MeteredExitCore):
 
     def for_run(self,binding,state): return self
 
+    def read_run_capacity(self,binding,*,guard,max_response_bytes=4096):
+        """Read original base limits under caller's live authority; not a permit."""
+        from cj_run.step_usage import ledger_scope_for
+        account=ledger_scope_for(binding.scope,self.config)
+        meter=self._original_meter(binding,account)
+        return meter.repo.read_run_capacity(binding.run_id,guard=guard,
+            max_response_bytes=max_response_bytes,
+            expected_period=(self.config.period_start,self.config.period_end))
+
     def prepare_result_publication(self,runs,binding):
         """Zero-model original clock. No operation, reserve, claim or ledger write.
 
@@ -89,6 +103,10 @@ class RegisteredExit(MeteredExitCore):
         except KeyError: raise BudgetUnknown('operation adapter is not registered') from None
         prepared_input=registration.prepare_input(argument)
         output_limit=self.output_limits[registration.kind]
+        if prepared_input.tool_output_limit is not None:
+            if registration.kind!='tool' or prepared_input.tool_output_limit>output_limit:
+                raise BudgetUnknown('tool output limit exceeds original registered profile')
+            output_limit=prepared_input.tool_output_limit
         if reserve_final_model and registration.kind=='tool':
             from cj_run.step_usage import ledger_scope_for
             from .metered_exit import BudgetExceeded
