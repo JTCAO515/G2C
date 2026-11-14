@@ -11,7 +11,7 @@ from cj_agent.provider import ProviderUnknown
 from cj_agent.lio_intake_optional_schema import SYSTEM as FACTS_SYSTEM,OptionalIntake
 from cj_message.demo_dialogue import LIO_VERSION, LIO_VERSION_V3
 from cj_message.domain import Command,Unavailable
-from cj_message.lio_context import answer_prompt,self_description
+from cj_message.lio_context import answer_prompt,self_description,CAPABILITY_PATTERN
 from cj_message.lio_plan_needs import BOUND_EFFECT
 from cj_needs.domain import InvalidInput
 
@@ -45,6 +45,12 @@ PUBLICATION_REQUEST=re.compile(r"计划|规划|安排|设计|保存|存到|存�
 # Only the optional-date flow treats an undecided date as data, not refusal.
 # Keep the frozen older intake parsers and every actual no-save/conditional hold.
 _UNDECIDED_DATE=re.compile(r'日期.{0,4}(?:未定|没定|待定)|\bdates? (?:are |is )?undecided\b',re.I)
+
+
+# Meta/capability questions are answered by the general model path, never by
+# the planning intake. Colloquial forms such as 你能做啥 belong here (#994).
+META_QUESTION=re.compile(r'\s*(?:'+CAPABILITY_PATTERN+r'|(?:你是谁|你是什么|我是谁|你了解我什么|你知道我什么|'
+    r'who are you|what are you|who am i|what do you know about me))[?？。.!！\s]*',re.I)
 
 
 def publication_held(text):
@@ -136,20 +142,24 @@ class NationalLioPlanning:
         fixed=self_description(text,original.locale)
         if fixed is not None:return self._reply(worker,binding,state,fixed)
         if re.fullmatch(r'\s*(?:第一次来中国(?:旅行)?(?:建议|应该|可以)?怎么玩|first time in china[,，]?\s*(?:any tips|any advice))[?？。.!！\s]*',text,re.I):return None
-        if re.fullmatch(r'\s*(?:你是谁|你是什么|我是谁|你了解我什么|你能做什么|你能干啥|你有什么能力|who are you|what are you|who am i|what do you know about me|what can you do)[?？。.!！\s]*',text,re.I):return None
+        if META_QUESTION.fullmatch(text):return None
         today=original.question_day or datetime.now(ZoneInfo('Asia/Shanghai')).date()
         turns,refs,previous=self.context(binding,PlanningTurn(text,today))
         messages=[dict(role='user',content=t.text) for t in turns]
+        memory_offset=0
         if worker.memory_run is not None:
             memory_messages=worker.memory_run.messages(text)
             messages=[*memory_messages[:-1],*messages]
+            # Code-owned Memory user slots precede the indexed originals; the
+            # model may count them, so source locators are corrected by quote.
+            memory_offset=len(memory_messages)-1
         if worker.message_context is not None:messages=worker.message_context.answer_messages(binding,messages)
         system=intake_prompt(original.locale,turns,discussion_only=previous is not None and previous.get('status')=='different_trip',
                              scene=self.scene_context(binding,datetime.now(timezone.utc)))
         raw=''.join(worker._registered_stream(binding,'model.lio_intake.0','model.lio_intake.9',
                     (messages,system,worker.provider,len(turns)-1),message_refs=refs))
         booking_unclear=False;question_fields=[];facts={}
-        try:intake,question_fields,facts=parse_flow(raw,turns,refs,binding.message_id,previous,schema=OptionalIntake)
+        try:intake,question_fields,facts=parse_flow(raw,turns,refs,binding.message_id,previous,schema=OptionalIntake,memory_offset=memory_offset)
         except DateSourceUnclear:
             return self._answer(worker,binding,state,original.locale,
                 '这个日期表达我还拿不准，可以给出具体的年月日吗？',
@@ -157,8 +167,8 @@ class NationalLioPlanning:
         except BookingSourceUnclear as error:
             intake=error.control;booking_unclear=True
         except (InvalidInput,ValueError,UnicodeError) as error:
-            logging.getLogger('cj_usage.audit').warning('LIO_INTAKE_REJECTED run_id=%s code=%s output_sha256=%s output_bytes=%s',
-                binding.run_id,diagnostic_code(error),sha256(raw.encode('utf-8','surrogatepass')).hexdigest(),len(raw.encode('utf-8','surrogatepass')))
+            logging.getLogger('cj_usage.audit').warning('LIO_INTAKE_REJECTED run_id=%s code=%s detail=%s output_sha256=%s output_bytes=%s',
+                binding.run_id,diagnostic_code(error),getattr(error,'detail','')or'-',sha256(raw.encode('utf-8','surrogatepass')).hexdigest(),len(raw.encode('utf-8','surrogatepass')))
             raise ProviderUnknown('nationwide structured intake unavailable') from error
         if isinstance(intake,ReadOnlyPlanningQuestion):
             held=publication_held(text)
