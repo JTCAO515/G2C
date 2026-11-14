@@ -62,7 +62,8 @@ def source_c0(*,resource_root=None):
              'backend/cj_api/lio_positive_trip.py',
              'backend/cj_api/lio_city.py',
              'backend/cj_api/lio_exploration_routes.py',
-             'backend/message/cj_message/lio_exploration_schema.py')
+             'backend/message/cj_message/lio_exploration_schema.py',
+             'backend/memory/cj_memory/epoch_projection.py')
     files = (*policy_files,
              'eval/optimization/cases.v2.json',
              'eval/optimization/score_v2.py', 'tooling/optimization/uv.lock')

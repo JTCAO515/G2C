@@ -155,6 +155,7 @@ packages = [
 "backend/cj_api/lio_city.py" = "share/g2c/runtime-source/backend/cj_api/lio_city.py"
 "backend/cj_api/lio_exploration_routes.py" = "share/g2c/runtime-source/backend/cj_api/lio_exploration_routes.py"
 "backend/message/cj_message/lio_exploration_schema.py" = "share/g2c/runtime-source/backend/message/cj_message/lio_exploration_schema.py"
+"backend/memory/cj_memory/epoch_projection.py" = "share/g2c/runtime-source/backend/memory/cj_memory/epoch_projection.py"
 "eval/optimization/cases.v2.json" = "share/g2c/runtime-source/eval/optimization/cases.v2.json"
 "eval/optimization/score_v2.py" = "share/g2c/runtime-source/eval/optimization/score_v2.py"
 "tooling/optimization/uv.lock" = "share/g2c/runtime-source/tooling/optimization/uv.lock"
