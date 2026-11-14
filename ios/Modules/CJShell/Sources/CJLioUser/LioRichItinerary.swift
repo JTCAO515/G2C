@@ -44,6 +44,12 @@ struct LioRichItinerary: Sendable {
         let place: Place
         let note: String?
         let tip: String?
+        let fixed: Bool?
+
+        init(id: String, kind: Kind, text: String, time: String?, place: Place, note: String?, tip: String?, fixed: Bool? = nil) {
+            self.id = id; self.kind = kind; self.text = text; self.time = time
+            self.place = place; self.note = note; self.tip = tip; self.fixed = fixed
+        }
     }
     struct Leg: Sendable {
         enum Mode: String, Sendable { case walking, transit, taxi }

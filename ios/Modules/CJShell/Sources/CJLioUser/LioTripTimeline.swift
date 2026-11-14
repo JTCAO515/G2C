@@ -129,7 +129,7 @@ struct LioTripTimeline: View {
             }
             .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 6) {
-                let ending = [stop.endDate, stop.endTime].compactMap { $0 }.joined(separator: " ")
+                let ending = stop.endingText(language)
                 if let start = stop.time {
                     Text(ending.isEmpty ? start : "\(start)–\(ending)")
                         .font(.subheadline)
