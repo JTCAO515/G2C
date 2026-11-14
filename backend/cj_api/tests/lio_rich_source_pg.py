@@ -9,6 +9,12 @@ ROOT=Path(__file__).resolve().parents[3]
 sys.path[:0]=[str(ROOT),str(ROOT/'scripts'),str(ROOT/'backend/cj_api/tests')]
 from cj_api.local_lio_exploration import ExplorationPlanning
 from cj_api.local_lio_rich_source import RichProfileSource,PlanCapture
+from cj_api.local_lio_rich_calendar_source import RichCalendarSource
+from cj_api.local_lio_planning import register,PlanningDetails
+from cj_draft.rich_calendar_source import RichCalendarContextSource
+from cj_message.lio_plan_needs import original_needs
+from cj_trip.postgres import Repository as TripRepository
+import json
 from cj_memory.runtime import RuntimeDenied
 from cj_message.postgres import Transaction as MessageTransaction
 from cj_message.lio_exploration_schema import RESPONSE
@@ -29,6 +35,14 @@ def main():
                     raise AssertionError('an outline/profile without a code marker became authority')
             worker._step(binding,without_marker)
             state=source.record_plan_now(worker,binding,worker.runs.snapshot(binding))
+            state=register(worker,binding,state,PlanningDetails(None,{'fixed_items':[]},None,view.references))
+            original=host.legacy.calendar.context_publisher
+            repository=TripRepository(original.repository.connect,original.repository.scope,
+                host.legacy.calendar.confirmation,structured=True,calendar=True,rich=True)
+            calendar=RichCalendarSource(host.database,worker.message_context,day_count=extra['duration_days'],
+                start_date=None,references=view.references)
+            combined=RichCalendarContextSource(original.source,original_needs,calendar,repository,
+                profile_reader=source,worker=worker,expected_profile=view.profile)
             locks=[];late=[]
             def lock(tx):locks.append(tx.scope);return original_lock(tx)
             def operation():
@@ -68,6 +82,19 @@ def main():
             with patch.object(MessageTransaction,'lock_scope',lock):
                 _,capture=worker._step(binding,operation)
             assert locks==[],locks
+            # Actual C M/NEEDS/calendar/profile composition, with no provider
+            # seal or writer. The empty NEEDS fixed list is an original revision.
+            def joint():
+                captured=combined.capture(binding)
+                raw=json.loads(captured.raw)
+                assert raw['version']=='TRIP-RICH-CALENDAR-SOURCE.1'
+                assert raw['calendar_basis']['version']=='TRIP-calendar-basis.2'
+                assert raw['calendar_basis']['fixed_bindings']['reference']['lio_protocol']=='LIO-message.4'
+                assert raw['planning_profile']['profile']['memory_epoch']==worker.memory_run.snapshot.epoch
+                with combined.hold_for_publication(binding)as check:check()
+                return captured
+            _,joint_capture=worker._step(binding,joint)
+            assert joint_capture.basis.day_count==extra['duration_days']
             try:late[0].check()
             except RuntimeDenied:pass
             else:raise AssertionError('expired plan hold remained usable')
