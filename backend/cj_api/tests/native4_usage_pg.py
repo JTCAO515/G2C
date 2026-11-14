@@ -8,6 +8,8 @@ from tempfile import TemporaryDirectory
 import base64,json,os,sys,time,uuid
 from unittest.mock import patch
 import psycopg
+ROOT=Path(__file__).resolve().parents[3]
+sys.path[:0]=[str(ROOT),str(ROOT/'scripts')]
 from cj_api.local_app import LocalDatabase,ISSUER,scope_for
 from cj_api.local_run_context import load_run_context,LocalRunContext,RunProfile
 from cj_api.local_worker_context import checker_for,LocalBudgetRouter
@@ -21,8 +23,6 @@ from deploy.hk import checkpoint,native4_usage
 from cj_usage.core import LedgerV2,NATIVE4_PROFILE,Meter
 from cj_usage.registered_exit import Native4RegisteredExit,Registration,InvocationInput
 from cj_usage.metered_exit import BudgetExceeded,BudgetUnknown
-ROOT=Path(__file__).resolve().parents[3]
-sys.path[:0]=[str(ROOT),str(ROOT/'scripts')]
 import dev_auth,local_run_context,migrate,pg_suites,run_worker
 
 
