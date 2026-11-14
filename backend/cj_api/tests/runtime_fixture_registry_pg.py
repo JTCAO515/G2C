@@ -2,6 +2,7 @@
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from datetime import datetime,timezone
+from hashlib import sha256
 import json
 import os
 from threading import Event
@@ -15,10 +16,12 @@ import psycopg
 from cj_api.local_app import LocalDatabase,app_from_environment,ISSUER,scope_for
 from cj_api.local_worker_context import checker_for
 from cj_api.runtime_fixture_registry import FixtureUseRegistry,VERSION
+from cj_api.runtime_fixture_originals import FixtureOriginalReferences
+from cj_api.runtime_collector import RuntimeCollector
 from cj_auth.interfaces import AdmissionStatus
 from cj_message.auth_boundary import Boundary,AccessBlocked
 from runtime_adapter import Binding,Unavailable
-from runtime_adapter.contract import encode
+from runtime_adapter.contract import encode,decode
 import local_history_pg as harness
 import dev_auth
 
@@ -35,14 +38,17 @@ def exercise(auth,conninfo):
                     headers={'Authorization':'Bearer '+tokens[subject]})
                 assert response.status_code==200,response.text
     scope=scope_for(ISSUER,'fixture-E')
-    producer=Binding(scope_for(ISSUER,'fixture-C'),'local-C-session','local-ledger-fixture','local-producer-fixture')
-    consumer=Binding(scope,'local-E-session','local-ledger-fixture','local-producer-fixture')
+    producer=Binding(scope_for(ISSUER,'fixture-C'),sha256(tokens['fixture-C'].encode()).hexdigest(),
+        'local-ledger-fixture','local-producer-fixture')
+    consumer=Binding(scope,sha256(tokens['fixture-E'].encode()).hexdigest(),
+        'local-ledger-fixture','local-producer-fixture')
     pins=SimpleNamespace(key='a'*64)
     # This source reference is deliberately synthetic: the test proves native
     # AUTH and admission serialization, not Trip source/cost/isolation validity.
     definition={'ref':'original-'+'b'*64,'sha256':'c'*64}
     root=auth.parent/'fixture-registry';root.mkdir(mode=0o700)
     directory=root/'reservations';directory.mkdir(mode=0o700)
+    references=root/'metadata-originals';references.mkdir(mode=0o700)
     policy=root/'policy.json';policy.touch(mode=0o600)
     policy.write_bytes(encode(dict(version=VERSION,registry_id='local-registry',fixture_id='local-fixture',
         fixture_revision=1,producer_binding_sha256=producer.key,consumer_binding_sha256=consumer.key,
@@ -103,6 +109,23 @@ def exercise(auth,conninfo):
         results=list(pool.map(lambda _:build().reserve(request('second')),range(2)))
         assert results[0]==results[1]and results[0]['ordinal']==2
         assert len(list(directory.iterdir()))==2
+        originals=FixtureOriginalReferences(references,build(),request('first'))
+        policy_ref=originals.issue(tokens['fixture-E'],'registry')
+        reservation_ref=originals.issue(tokens['fixture-E'],'reservation')
+        assert originals.resolve(tokens['fixture-E'],policy_ref['ref'])==policy.read_bytes()
+        assert decode(originals.resolve(tokens['fixture-E'],reservation_ref['ref']))==build().read(request('first'))
+        second=FixtureOriginalReferences(references,build(),request('second'))
+        assert second.issue(tokens['fixture-E'],'registry')==policy_ref
+        assert second.issue(tokens['fixture-E'],'reservation')!=reservation_ref
+        assert len(list(directory.iterdir()))==2
+        legacy=root/'legacy-refs';legacy.mkdir(mode=0o700)
+        collector=RuntimeCollector(None,SimpleNamespace(binding=consumer),None,lambda:tokens['fixture-E'],
+            pins,legacy,guard=build().guard,state_reader=None,model_reader=None,
+            fixture_originals=FixtureOriginalReferences(references,build()))
+        assert decode(collector.original(reservation_ref['ref'],deadline=time.monotonic()+30))==build().read(request('first'))
+        try:originals.resolve(tokens['fixture-foreign'],reservation_ref['ref'])
+        except Unavailable:pass
+        else:raise AssertionError('foreign session resolved an original metadata source')
         selected['token']=tokens['fixture-foreign']
         try:build().read(request('first'))
         except Unavailable:pass
@@ -121,12 +144,22 @@ def exercise(auth,conninfo):
         try:build().read(request('first'))
         except Unavailable:pass
         else:raise AssertionError('revoked consumer read an original reservation')
+        try:originals.resolve(tokens['fixture-E'],reservation_ref['ref'])
+        except Unavailable:pass
+        else:raise AssertionError('revoked consumer resolved a saved reference')
         (auth/'invited.json').write_text(json.dumps(['fixture-E','fixture-foreign']))
         try:build().read(request('first'))
         except Unavailable:pass
         else:raise AssertionError('withdrawn source returned an original reservation')
+        try:originals.resolve(tokens['fixture-E'],policy_ref['ref'])
+        except Unavailable:pass
+        else:raise AssertionError('withdrawn producer returned cached policy metadata')
+        try:collector.original(policy_ref['ref'],deadline=time.monotonic()+30)
+        except Unavailable:pass
+        else:raise AssertionError('collector exposed withdrawn producer metadata')
     print('PASS private PG signed owner/foreign/revoked AUTH, native MESSAGE row waiter, '
-        'idempotent concurrent reservation, retained slots; source/cost/isolation/paid execution UNRUN')
+        'idempotent concurrent reservation, actual registry/reservation originals and withdrawn refs withheld; '
+        'full source/cost/isolation/paid execution UNRUN')
 
 
 if __name__=='__main__':
