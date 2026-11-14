@@ -143,6 +143,9 @@ def judge_transitions(case_id, reads, *, histories=None, answers=None,
                     check('edit.target_stays_day2_afternoon',replacement is not None and _day2_afternoon(replacement))
                     check('edit.target_lock_unchanged',replacement is not None and replacement['fixed']==target['fixed'])
                     check('edit.same_calendar_days_title',all(before[k]==after[k] for k in ('calendar','days','title')))
+                    check('edit.date_check_coverage_unchanged',
+                          {c['kind']:c['day_indices'] for c in before['date_checks']}==
+                          {c['kind']:c['day_indices'] for c in after['date_checks']})
                     refs={ref for i in before['items'] if i['id']!=selected_item_id for ref in i['source_refs']}
                     old_sources={s['id']:s for s in before['sources']};new_sources={s['id']:s for s in after['sources']}
                     check('edit.other_sources_unchanged',all(new_sources.get(ref)==old_sources[ref] for ref in refs))

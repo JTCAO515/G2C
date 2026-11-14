@@ -126,6 +126,16 @@ def test_replacement_cannot_move_to_another_day_or_add_an_unrequested_lock(chang
     assert any(c['name']==name and c['status']=='FAIL' for c in judge_transitions(case,reads,**kwargs)['checks'])
 
 
+def test_edit_cannot_silently_drop_unrelated_date_check_coverage():
+    case,reads,kwargs=run('day-edit-undo')
+    altered=deepcopy(reads[1]['trip']['content'])
+    altered['date_checks'][0]['day_indices']=[2]
+    documents=[reads[0]['trip']['content'],altered,reads[2]['trip']['content']]
+    reads,histories=observations(documents)
+    result=judge_transitions(case,reads,**dict(kwargs,histories=histories))
+    assert any(c['name']=='edit.date_check_coverage_unchanged' and c['status']=='FAIL' for c in result['checks'])
+
+
 def test_fixed_meetup_and_question_ending_are_actually_checked():
     case,reads,kwargs=run('date-conversion')
     kwargs['answers'][0]='已处理。'
