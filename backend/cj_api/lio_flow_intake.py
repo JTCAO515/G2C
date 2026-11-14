@@ -74,12 +74,67 @@ def _missing_duration_question(value,turns,refs,message_id,previous,schema):
               sources=[dict(message_id=message_id,quote=city.quote)])
     return ReadOnlyPlanningQuestion(control.reply),['duration_days'],{'city':fact}
 
-def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake):
+def _rebind(ref,turns,offset):
+    """Undo a Memory-slot count in one {source_index,quote} locator (#994).
+
+    The quote stays the evidence: after the shift it must still be an exact
+    span of that original traveler message, so Memory/system text never becomes
+    a source. Any other wrong locator is not repaired and is rejected as before.
+    """
+    index,quote=ref.get('source_index'),ref.get('quote')
+    if type(index)is not int or type(quote)is not str or not quote:return 0
+    if 0<=index<len(turns)and quote in turns[index].text:return 0
+    shifted=index-offset
+    if 0<=shifted<len(turns)and quote in turns[shifted].text:
+        ref['source_index']=shifted;return 1
+    return 0
+
+
+def rebind_sources(value,turns,*,memory_offset=0):
+    """Correct Memory-shifted source locators before validation.
+
+    memory_offset is the number of code-owned Memory user slots sent before the
+    original traveler messages; the model may count them as traveler messages.
+    Returns how many locators changed. Without Memory nothing is changed.
+    """
+    if type(value)is not dict or memory_offset<=0:return 0
+    changed=0
+    def walk(node):
+        nonlocal changed
+        if type(node)is dict:
+            if 'source_index'in node and 'quote'in node:changed+=_rebind(node,turns,memory_offset)
+            for child in node.values():walk(child)
+        elif type(node)is list:
+            for child in node:walk(child)
+    walk(value)
+    if memory_offset:
+        for key in ('current_source_index','planning_request_index'):
+            index=value.get(key)
+            if type(index)is int and index>=len(turns)and 0<=index-memory_offset<len(turns):
+                value[key]=index-memory_offset;changed+=1
+    return changed
+
+
+def schema_detail(error,schema):
+    """Code-owned field/type names of a schema failure; never model values."""
+    names=set(schema.model_fields)
+    return ','.join(sorted({str(item['loc'][0])+':'+str(item['type'])for item in error.errors()
+                            if item.get('loc')and item['loc'][0]in names})[:8])
+
+
+def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake,memory_offset=0):
     value=decode(raw.encode() if type(raw)is str else raw)
+    rebound=rebind_sources(value,turns,memory_offset=memory_offset)
+    if rebound:
+        import logging
+        logging.getLogger('cj_usage.audit').info('LIO_INTAKE_SOURCE_REBOUND message_id=%s count=%s',message_id,rebound)
     question=_missing_duration_question(value,turns,refs,message_id,previous,schema)
     if question is not None:return question
     try:dto=schema.model_validate(value)
-    except ValidationError:raise InvalidInput('exact unified planning facts required')from None
+    except ValidationError as failure:
+        error=InvalidInput('exact unified planning facts required')
+        error.detail=schema_detail(failure,schema)
+        raise error from None
     data=dto.model_dump(by_alias=True,exclude_unset=True)
     intent=data['intent'];questions=data.pop('question_fields');hold=data.pop('publication_hold');request_index=data.pop('planning_request_index')
     if request_index is not None and request_index>=len(turns):raise InvalidInput('intake must bind the complete latest request')
