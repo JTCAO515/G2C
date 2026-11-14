@@ -2,7 +2,9 @@
 from pathlib import Path
 from datetime import datetime,timedelta,timezone
 from unittest.mock import patch
-import json,time,uuid,httpx
+import json,time,uuid,httpx,sys
+ROOT=Path(__file__).resolve().parents[3]
+sys.path[:0]=[str(ROOT),str(ROOT/'scripts')]
 import local_history_pg as harness
 import dev_auth,local_run_context,run_worker
 from cj_api.local_app import LocalDatabase,ISSUER,scope_for,load_confirmation_signer
@@ -69,7 +71,14 @@ def exercise(root,conninfo):
             except ProviderUnknown:
                 if mode[0]=='invalid':
                     assert capture.observed is not None and capture.settled is not None
-                    captures.append(capture.reject('invalid_model_intake',raws[-1]))
+                    receipt=capture.reject('invalid_model_intake',raws[-1]);captures.append(receipt)
+                    observed_operation=capture.observed[0]
+                    actual_lifetime=capture.read_lifetime()
+                    current=RuntimeOriginals(boundary,database,budget,directory,query_original=lambda ctx,mid:ctx.query_lio_message(mid),
+                        rejected_memory_lifetime=actual_lifetime)
+                    raw_original=current.rejected_intake(token,binding.message_id,observed_operation.command.operation_id,
+                        receipt.reference,directory=directory)
+                    assert json.loads(raw_original)['result_utf8'].encode()==raws[-1]
                 raise
     with use_rejected_intake_sink(sink),patch.object(NationalLioPlanning,'execute',wrapped):
         for name,expected in(('valid','completed'),('invalid','unknown'),('transport','unknown')):
@@ -85,9 +94,10 @@ def exercise(root,conninfo):
     files=list(directory.iterdir());assert len(files)==1
     stored=json.loads(files[0].read_bytes());assert stored['result_utf8'].encode()==raws[1]
     assert stored['registration_id']=='model.lio_intake.9'and stored['message_id']=='capture-invalid'
-    originals=RuntimeOriginals(boundary,database,budget,directory,query_original=lambda ctx,mid:ctx.query_lio_message(mid))
-    decoded=json.loads(originals.rejected_intake(token,'capture-invalid',stored['operation_id'],captures[0].reference,directory=directory))
-    assert decoded==stored
+    originals=RuntimeOriginals(boundary,database,budget,directory,query_original=lambda ctx,mid:ctx.query_lio_message(mid),rejected_memory_lifetime=None)
+    try:originals.rejected_intake(token,'capture-invalid',stored['operation_id'],captures[0].reference,directory=directory)
+    except Unavailable:pass
+    else:raise AssertionError('historical file reconstructed a Memory permission')
     try:originals.rejected_intake(dev_auth.token(auth,foreign,120),'capture-invalid',stored['operation_id'],captures[0].reference,directory=directory)
     except Unavailable:pass
     else:raise AssertionError('foreign read private rejected output')
@@ -95,6 +105,17 @@ def exercise(root,conninfo):
     try:originals.rejected_intake(token,'capture-invalid',stored['operation_id'],wrong,directory=directory)
     except Unavailable:pass
     else:raise AssertionError('caller substituted private ref')
+    no_memory=RuntimeOriginals(boundary,database,budget,directory,query_original=lambda ctx,mid:ctx.query_lio_message(mid))
+    try:no_memory.rejected_intake(token,'capture-invalid',stored['operation_id'],captures[0].reference,directory=directory)
+    except Unavailable:pass
+    else:raise AssertionError('missing current Memory guard accepted old private output')
+    with TestClient(create_local_typed_app(conninfo_path=conninfo,auth_dir=auth,configuration=memory.collection))as api:
+        paused=api.post('/v2/memory-management-actions',headers=headers,content=json.dumps(dict(version='MEMORY-management.2',
+            action_id='pause-captured-memory',operation='pause',item_id='pace',expected_version=1,expected_source_version=1)).encode())
+        assert paused.status_code==200,paused.text
+    try:originals.rejected_intake(token,'capture-invalid',stored['operation_id'],captures[0].reference,directory=directory)
+    except Unavailable:pass
+    else:raise AssertionError('paused original Memory allowed private rejected output')
     (auth/'invited.json').write_text(json.dumps([foreign]))
     try:originals.rejected_intake(token,'capture-invalid',stored['operation_id'],captures[0].reference,directory=directory)
     except Unavailable:pass
@@ -102,7 +123,7 @@ def exercise(root,conninfo):
     rows=budget.inspect();assert len(rows)==3
     assert sum(row['state']=='RECEIVED'for row in rows)==2
     assert files[0].stat().st_mode&0o777==0o600
-    print('PASS signed saved Memory + actual model input/native ACK: valid parse no file; real schema reject exact private bytes; transport UNKNOWN no file/no replay; 3 fixture sends and original financial rows, no live provider',flush=True)
+    print('PASS signed saved Memory + actual model input/native ACK: valid parse no file; real schema reject exact private bytes; transport UNKNOWN no file/no replay; actual original Memory lifetime positive; historical/missing-holder/pause/config-missing denial; 3 fixture sends and original financial rows, no live provider',flush=True)
 
 
 if __name__=='__main__':

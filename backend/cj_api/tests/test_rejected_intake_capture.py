@@ -4,6 +4,7 @@ from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 import json,os,unittest
 from cj_run.core import Binding
 from cj_usage.core import Command,Attempt,Receipt
@@ -62,6 +63,16 @@ class RejectedCapture(unittest.TestCase):
             self.assertEqual(receipt.status,'NOT_CAPTURED')
         self.assertEqual(list(self.root.iterdir()),[])
 
+    def test_read_holder_only_comes_from_live_confirmed_producer(self):
+        from cj_api.rejected_intake_capture import OriginalIntakeReadLifetime
+        with capture_rejected_intake(self.binding,check_running=self.check)as empty:
+            with self.assertRaises(CaptureUnavailable):empty.read_lifetime()
+            with self.assertRaises(CaptureUnavailable):OriginalIntakeReadLifetime(empty,_factory=object())
+        with use_rejected_intake_sink(self.sink),capture_rejected_intake(self.binding,check_running=self.check)as capture:
+            self.observed();holder=capture.read_lifetime()
+        with self.assertRaises(CaptureUnavailable):
+            with holder.hold(SimpleNamespace(scope='owner'),self.binding,'operation','a'*64,None):pass
+
     def test_wrong_binding_and_mismatched_output_are_refused(self):
         with use_rejected_intake_sink(self.sink),capture_rejected_intake(self.binding,check_running=self.check)as capture:
             wrong=SimpleNamespace(**dict(vars(self.operation),binding=replace(self.binding,run_id='foreign')))
@@ -102,7 +113,8 @@ class RejectedCapture(unittest.TestCase):
         self.now+=1;self.sink.prune();self.assertEqual(list(self.root.iterdir()),[])
         (self.root/('a'*64+'.json')).write_text('{}');(self.root/('a'*64+'.json')).chmod(0o600)
         self.now+=60
-        with self.assertRaises((CaptureUnavailable,KeyError)):self.sink.prune()
+        self.sink.prune()  # A corrupt record is reported, not allowed to block all GC.
+        with self.assertRaises(CaptureUnavailable):self.sink.read('a'*64)
 
     def test_public_directory_nested_scope_and_symlink_are_rejected(self):
         self.root.chmod(0o755)
@@ -114,6 +126,34 @@ class RejectedCapture(unittest.TestCase):
         other=self.root/'target';other.write_text('private');other.chmod(0o600)
         link=self.root/'link';link.symlink_to(other)
         with self.assertRaises((CaptureUnavailable,OSError)):RejectedIntakeSink(link)
+
+
+
+
+    def test_broken_first_does_not_block_expired_complete_records(self):
+        with use_rejected_intake_sink(self.sink),capture_rejected_intake(self.binding,check_running=self.check)as capture:
+            self.observed();receipt=capture.reject('invalid_model_intake',self.raw)
+        broken='a'*64+'.json';(self.root/broken).write_text('{partial');(self.root/broken).chmod(0o600)
+        os.utime(self.root/broken,(self.now,self.now))
+        expired=receipt.reference+'.json';self.now+=TTL_SECONDS+1
+        with patch('cj_api.rejected_intake_capture.os.listdir',return_value=[broken,expired]):
+            RejectedIntakeSink(self.root,clock=lambda:self.now).prune()
+        self.assertEqual(list(self.root.iterdir()),[])
+
+    def test_abandoned_partial_is_bounded_and_unpublished(self):
+        name='.'+'a'*64+'.'+'b'*32+'.tmp';path=self.root/name;path.write_bytes(b'partial');path.chmod(0o600)
+        os.utime(path,(self.now-61,self.now-61));self.sink.prune()
+        self.assertEqual(list(self.root.iterdir()),[])
+
+    def test_final_reference_never_overwrites_prior_file(self):
+        with use_rejected_intake_sink(self.sink),capture_rejected_intake(self.binding,check_running=self.check)as capture:
+            self.observed();receipt=capture.reject('invalid_model_intake',self.raw)
+        old=(self.root/(receipt.reference+'.json')).read_bytes()
+        with use_rejected_intake_sink(self.sink),capture_rejected_intake(self.binding,check_running=self.check)as capture:
+            self.observed()
+            with self.assertRaises(FileExistsError):capture.reject('invalid_model_intake',self.raw)
+        self.assertEqual((self.root/(receipt.reference+'.json')).read_bytes(),old)
+        self.assertEqual(len(list(self.root.iterdir())),1)
 
 
 if __name__=='__main__':unittest.main()

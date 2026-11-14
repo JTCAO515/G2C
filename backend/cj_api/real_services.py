@@ -540,6 +540,7 @@ class RealTools:
                            **({'answer_format_profile':'lio-user.1'} if native_turn and argument.lio_answer else {}),
                            **({'native_turn_profile':turn_profile,'external_tools_disabled':final_answer} if native_turn else {})))
         inputs=json.loads(raw);metadata={}
+        rejection_memory=provider.memory if wrapped else None
         def bind(operation,guard):
             if exploration:argument.origin.check(operation.binding)
             self.services.require_scope(operation.binding.scope)
@@ -574,13 +575,15 @@ class RealTools:
                         from .rejected_intake_capture import observe_stream
                         @contextmanager
                         def rejection_lifetime():
-                            lease=provider.memory.hold(operation.binding)if wrapped else nullcontext(None)
+                            lease=rejection_memory.hold(operation.binding)if rejection_memory is not None else nullcontext(None)
                             with lease as memory_check:
                                 def check():
                                     if checked(memory_check=memory_check)is not True:
                                         raise BudgetUnknown('original rejection source authority changed')
                                 check();yield check;check()
-                        stream=observe_stream(operation,stream,metadata,rejection_lifetime)
+                        memory_descriptor=(dict(epoch=rejection_memory.snapshot.epoch,
+                            payload_sha256=hashlib.sha256(rejection_memory.payload).hexdigest())if rejection_memory is not None else None)
+                        stream=observe_stream(operation,stream,metadata,rejection_lifetime,memory_descriptor)
                     if capture_model:
                         # Preserve streaming latency. A complete artifact is
                         # written only after the original provider completes;
