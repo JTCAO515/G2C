@@ -163,6 +163,32 @@ class RuntimeOriginals:
                 kind=fee[0],actual_wire_input_sha256=fee[1],state=fee[2],receipt_utf8=fee[3]))
         return self._read(token,message_id,project)
 
+    def rejected_intake(self,token,message_id,operation_id,reference,*,directory):
+        """Operator-configured private store, current original lifetime; no new route."""
+        from .rejected_intake_capture import RejectedIntakeSink,CaptureUnavailable
+        def project(scope,original,source):
+            row,usage=self._operation(scope,source,operation_id)
+            require(row[1]=='model.lio_intake.9'and row[0]=='model.lio_intake.0','ORIGINAL_REJECTED_INTAKE_REQUIRED')
+            try:data=RejectedIntakeSink(directory).read(reference)
+            except (OSError,ValueError,CaptureUnavailable):raise Unavailable('ORIGINAL_REJECTED_INTAKE_UNAVAILABLE')from None
+            expected=sha256(canonical([scope,source[0][1],row[0],usage.command.attempt_id])).hexdigest()
+            require(reference==expected and data['reference']==expected and
+                (data['scope_sha256'],data['message_id'],data['run_id'],data['operation_key'],data['registration_id'],
+                 data['attempt_id'],data['operation_id'],data['input_sha256'])==
+                (sha256(scope.encode()).hexdigest(),message_id,original.receipt.run_id,row[0],row[1],
+                 usage.command.attempt_id,operation_id,usage.command.input_digest),'ORIGINAL_REJECTION_BINDING_CHANGED')
+            meter=original_json(self._meter(scope,source,row,usage));fee=self._financial(usage.command.attempt_id)
+            require(meter['state']=='settled'and not meter['exceeded']and meter['receipt']is not None,
+                'ORIGINAL_REJECTION_SETTLEMENT_UNAVAILABLE')
+            receipt=original_json(fee[3])if fee[3]is not None else None
+            require(fee[0]=='model'and fee[2]=='RECEIVED'and receipt is not None and
+                receipt['receipt_sha256']==data['receipt']['receipt_sha256']and
+                meter['receipt']['receipt_id']=='live:'+receipt['receipt_sha256']and
+                meter['receipt']['output']==len(data['result_utf8']),
+                'ORIGINAL_REJECTION_RECEIPT_CHANGED')
+            return canonical(data)
+        return self._read(token,message_id,project)
+
     def _local_visitor(self,scope,source,row,usage,data):
         receipt=data['receipt']
         require(data['version']=='G2C-tool-evidence.1' and data.get('tool')=='visitor_fact' and
