@@ -13,12 +13,30 @@ from .domain import CommitUnknown, Unavailable
 from .postgres import Repository
 from .runtime import RuntimeDenied, RuntimeUnknown
 from .typed_runtime import TypedRuntimeConfiguration
+from .typed_local import TypedConfiguration
 
 
 class CurrentScopeEpochReader:
     def __init__(self,database,configuration: TypedRuntimeConfiguration):
         self.database=database
         self.configuration=configuration
+        self.collection=configuration.collection
+        self.selections=configuration.selections
+
+    @classmethod
+    def for_api(cls,database,configuration: TypedConfiguration):
+        """Use the API's real policy; no worker policy or fake slot selection.
+
+        Only the owning scope version is displayed, not selected Memory items.
+        This does not add consumption/collection permission to the API host.
+        """
+        if configuration is None:raise RuntimeDenied('explicit API Memory policy required')
+        reader=cls.__new__(cls)
+        reader.database=database
+        reader.configuration=configuration
+        reader.collection=configuration
+        reader.selections=None
+        return reader
 
     def project(self,context: HistoryReadContext,binding,encode,*,max_result_bytes):
         """Encode a display using the real active scope epoch under a short lock.
@@ -37,9 +55,12 @@ class CurrentScopeEpochReader:
         if binding.scope!=scope or scope_for(principal.issuer,principal.subject)!=scope:
             raise RuntimeDenied('epoch view owner differs')
         configuration=self.configuration
-        selected=configuration.selections.get(principal.subject)
-        if selected is None:raise RuntimeDenied('original runtime selection unavailable')
-        profile=configuration.collection.collection.profiles[principal.subject]
+        collection=self.collection
+        selections=self.selections
+        selected=None if selections is None else selections.get(principal.subject)
+        if selections is not None and selected is None:raise RuntimeDenied('original runtime selection unavailable')
+        profile=collection.collection.profiles.get(principal.subject)
+        if profile is None:raise RuntimeDenied('original API Memory profile unavailable')
         original=context.query_lio_message(binding.message_id)
         if original is None:raise RuntimeDenied('original Lio message unavailable')
         receipt=original.receipt
@@ -50,7 +71,9 @@ class CurrentScopeEpochReader:
         def check():
             context.require_lio_projection()
             if (context.principal!=principal or context.scope!=scope or self.configuration is not configuration
-                    or configuration.selections.get(principal.subject)!=selected
+                    or self.collection is not collection or self.selections is not selections
+                    or collection.collection.profiles.get(principal.subject) is not profile
+                    or selections is not None and selections.get(principal.subject)!=selected
                     or profile.expires_at<=datetime.now(timezone.utc)
                     or context.query_lio_message(binding.message_id)!=original):
                 raise RuntimeDenied('epoch view binding changed')
