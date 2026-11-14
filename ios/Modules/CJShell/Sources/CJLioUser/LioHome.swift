@@ -385,6 +385,7 @@ public struct LioHome<MenuContent: View>: View {
                 controlIcon("line.3.horizontal")
             }
             .buttonStyle(.plain)
+            .lioFloatingSurface(Circle(), interactive: true)
             .accessibilityLabel(language.text("Menu", "菜单"))
             .accessibilityIdentifier("lio.menu")
             Spacer(minLength: 0)
@@ -405,6 +406,7 @@ public struct LioHome<MenuContent: View>: View {
                     controlIcon("square.and.pencil")
                 }
                 .buttonStyle(.plain)
+                .lioFloatingSurface(Circle(), interactive: true)
                 .disabled(!canSwitchChat)
                 .accessibilityLabel(language.text("New chat", "新对话"))
                 .accessibilityIdentifier("lio.chat.newShortcut")
@@ -415,6 +417,7 @@ public struct LioHome<MenuContent: View>: View {
         .padding(.horizontal, LioTheme.Spacing.md)
         .padding(.top, LioTheme.Spacing.xxs)
         .padding(.bottom, LioTheme.Spacing.xs)
+        .lioFloatingGroup()
     }
 
     /// A 44pt round control. The symbol stops growing at xxxLarge so it stays inside the circle;
@@ -425,7 +428,7 @@ public struct LioHome<MenuContent: View>: View {
             .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
             .frame(width: 44, height: 44)
             .foregroundStyle(LioTheme.ink)
-            .lioCard(Circle())
+            .contentShape(Circle())
     }
 
     /// A short paper-to-clear fade where content scrolls under the top controls or the composer.
@@ -560,11 +563,12 @@ public struct LioHome<MenuContent: View>: View {
         }
         .padding(.leading, 16)
         .padding(5)
-        .lioCard(Capsule())
+        .lioFloatingSurface(Capsule())
         .overlay(alignment: .top) {
             if showsJump {
                 Button { jumpRequest += 1 } label: { controlIcon("arrow.down") }
                     .buttonStyle(.plain)
+                    .lioFloatingSurface(Circle(), interactive: true)
                     .accessibilityLabel(language.text("Jump to latest", "回到最新"))
                     .accessibilityIdentifier("lio.jumpToLatest")
                     .offset(y: -(44 + LioTheme.Spacing.sm))
