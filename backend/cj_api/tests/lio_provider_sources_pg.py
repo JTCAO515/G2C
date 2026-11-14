@@ -28,7 +28,7 @@ import lio_exploration_flow_pg as native
 
 
 class FixtureWriter:
-    def __init__(self,reader,send_check,available):
+    def __init__(self,reader,send_check,available=True):
         self.reader,self.send_check,self.available=reader,send_check,available
         self.closed=False;self.transport=self;self.writes=[]
     def write(self,data):

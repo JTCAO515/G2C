@@ -249,4 +249,11 @@ def main():
             with patch.dict(os.environ,env):exercise(root,conninfo)
 
 
-if __name__=='__main__':main()
+if __name__=='__main__':
+    main()
+    from lio_rich_source_pg import main as rich_source_main
+    rich_source_main()
+    from lio_provider_sources_pg import main as providers_main
+    providers_main()
+    from lio_pipeline_models_pg import main as pipeline_models_main
+    pipeline_models_main()
