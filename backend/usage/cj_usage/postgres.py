@@ -84,9 +84,27 @@ class PostgresRepository:
         This storage seam does not authenticate, resolve identity or grant access.
         project receives only minimal status bytes, never ledger/input digest.
         """
-        import inspect
-        from .read_status import ReadUnavailable, encode_status, status_of
         label(attempt_id)
+        from .read_status import encode_status,status_of
+        def status(ledger):
+            attempt=ledger.attempts.get(attempt_id)
+            if attempt is None:raise RepositoryUnavailable('attempt unavailable')
+            return encode_status(status_of(attempt,ledger.config))
+        return self._read_ledger(status,guard=guard,max_response_bytes=max_response_bytes,
+            project=project,expected_period=expected_period)
+
+    def read_run_capacity(self,run_id,*,guard,max_response_bytes,expected_period):
+        """Original exhaustive ledger snapshot, never dispatch authorization."""
+        label(run_id)
+        from .read_status import ReadUnavailable
+        if expected_period is None:raise ReadUnavailable('original period required')
+        from .run_capacity import encode_capacity
+        return self._read_ledger(lambda ledger:encode_capacity(ledger,run_id),guard=guard,
+            max_response_bytes=max_response_bytes,project=None,expected_period=expected_period)
+
+    def _read_ledger(self,projection,*,guard,max_response_bytes,project,expected_period):
+        import inspect
+        from .read_status import ReadUnavailable
         integer(max_response_bytes, 1)
         if not callable(guard):
             raise ReadUnavailable('original authority guard required')
@@ -127,10 +145,7 @@ class PostgresRepository:
             _, ledger = _ledger_row(row)
             if expected_period is not None and (ledger.config.period_start, ledger.config.period_end) != expected_period:
                 raise ReadUnavailable('historical period binding changed')
-            attempt = ledger.attempts.get(attempt_id)
-            if attempt is None:
-                raise RepositoryUnavailable('attempt unavailable')
-            encoded = encode_status(status_of(attempt, ledger.config))
+            encoded = projection(ledger)
             if len(encoded) > max_response_bytes:
                 raise ReadUnavailable('status exceeds configured bound')
             if project is not None:
