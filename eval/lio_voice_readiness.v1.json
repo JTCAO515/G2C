@@ -1,0 +1,77 @@
+{
+  "version": "LIO-voice-offline-readiness.1",
+  "issues": [
+    937,
+    844
+  ],
+  "synthetic_only": true,
+  "authority": {
+    "behavior": "#922 and JT evening Goal",
+    "voice_text_pr": 894,
+    "voice_text_head": "530e97f7ee3502f7c79400cc32009903b60c19a5",
+    "voice_doc_on_main": false
+  },
+  "dataset_sha256": "47db1f0483d1c3a3841a9d5e9f15df3226762eb4f0f98f0613add14c30ee8c37",
+  "planned_per_arm": 30,
+  "locale_denominators": {
+    "zh": 15,
+    "en": 15
+  },
+  "prompt_pins": {
+    "old": "461b87b70784cb48fb7c5b1192adfcc29b86cc3bd2c047fdb1572a2bdb6a6d14",
+    "new_accepted": "e227371befa6011ac61592373697bf54a227956a185a3dd17eabe879c719662c"
+  },
+  "implementation_controls": {
+    "status": "PASS",
+    "test_functions": 13,
+    "subtests": 24,
+    "meaning": "Synthetic implementation controls only; not model quality or >=90 percent product score"
+  },
+  "actual_comparison": {
+    "status": "UNRUN",
+    "real_posts": 0,
+    "model_calls": 0,
+    "tool_calls": 0,
+    "old": {
+      "code_rates": "UNRUN",
+      "length_distribution": "UNRUN",
+      "first_paragraph": "UNRUN"
+    },
+    "new": {
+      "code_rates": "UNRUN",
+      "length_distribution": "UNRUN",
+      "first_paragraph": "UNRUN"
+    },
+    "costs": {
+      "conservative": "UNRUN",
+      "token_estimate": "UNRUN",
+      "paid": "UNRUN"
+    }
+  },
+  "gates": {
+    "code_rate_minimum": 0.9,
+    "redline_failures_maximum": 0,
+    "current_product_gate": "UNRUN"
+  },
+  "calibration": {
+    "reviewer": "JT",
+    "planned_n": 20,
+    "human_labels": 0,
+    "paired_model_human": 0,
+    "agreement": "UNRUN"
+  },
+  "G6": "UNRUN",
+  "G7": "UNRUN",
+  "G8": "UNRUN",
+  "G9": "UNRUN",
+  "over60": {
+    "test_target": "explicit pre-tool refusal and original Trip preservation",
+    "included_in_G6": false
+  },
+  "pending": [
+    "#931 actual orchestration before richness/reason/Chinese-name statistics",
+    "Qualified C-budget old/new prompt runtime and fresh window; no client prompt override",
+    "JT human calibration labels; no model self-label as human",
+    "PR894 documentation still unmerged; native4 scene rules remain #922"
+  ]
+}
