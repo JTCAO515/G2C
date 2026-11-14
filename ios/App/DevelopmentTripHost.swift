@@ -230,21 +230,21 @@ private var developmentHostEnvironment: [String: String] {
         }
         #if G2C_DEMO_BETA
         if tripEditingProfile != nil {
-            lioTripLibrary = LioTripLibrary(calendarList: {
-                var rows: [CalendarStructuredTripSummary] = []
-                var cursor: CalendarStructuredTripCursor?
+            lioTripLibrary = LioTripLibrary(list: {
+                var rows: [StructuredTripSummary] = []
+                var cursor: StructuredTripCursor?
                 repeat {
                     try Task.checkCancellation()
-                    let request = try client.prepareCalendarStructuredPage(limit: 20, after: cursor, binding: lifetime.trip)
-                    let page = try await client.calendarStructuredPage(for: request)
+                    let request = try client.prepareStructuredPage(limit: 20, after: cursor, binding: lifetime.trip)
+                    let page = try await client.structuredPage(for: request)
                     rows.append(contentsOf: page.trips)
                     cursor = page.next
                 } while cursor != nil
                 return rows
-            }, calendarDetail: { id in
-                let request = try client.prepareCalendarStructuredDetail(id: id, binding: lifetime.trip)
-                guard let snapshot = try await client.calendarStructuredDetail(for: request) else { return nil }
-                return try client.withCurrentCalendarStructuredSnapshot(snapshot) { _, record, _, _ in record }
+            }, detail: { id in
+                let request = try client.prepareStructuredDetail(id: id, binding: lifetime.trip)
+                guard let snapshot = try await client.structuredDetail(for: request) else { return nil }
+                return try client.withCurrentStructuredSnapshot(snapshot) { _, record, _, _ in record }
             })
         } else {
             lioTripLibrary = nil
@@ -926,14 +926,14 @@ private var developmentHostEnvironment: [String: String] {
         let lioClient = try LioTimelineHTTP(endpoint: lioEndpoint, scope: scope, lease: lease,
                                            credentials: credentials, firstChatRecovery: recovery,
                                            validate: { try lifetime.validate() })
-        let lioService = LioService.signedConversation(lioClient, destination: .defaultChat, version: .v3) { _ in }
+        let lioService = LioService.signedTimeline(lioClient)
         lio = lioService
-        lioChats = .signed(client: lioClient, defaultService: lioService, language: { shell.language.lio }, version: .v3,
+        lioChats = .signed(client: lioClient, defaultService: lioService, language: { shell.language.lio },
                            tripHistory: { conversationID in
             LioTripHistoryClient(timeline: lioClient, recovery: recovery, scope: scope, lease: lease,
-                                 conversationID: conversationID, version: .v3)
+                                 conversationID: conversationID)
         })
-        lioTripHistory = LioTripHistoryClient(timeline: lioClient, recovery: recovery, scope: scope, lease: lease, version: .v3)
+        lioTripHistory = LioTripHistoryClient(timeline: lioClient, recovery: recovery, scope: scope, lease: lease)
         lioMemoryActions = LioMemoryActionsClient(timeline: lioClient, recovery: recovery, scope: scope, lease: lease)
         #endif
         let betaRead = configuration.endpoint.host == "api-beta.go2china.space"

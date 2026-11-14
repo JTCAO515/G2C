@@ -29,7 +29,8 @@ struct LioItineraryCard<Actions: View>: View {
                         .foregroundStyle(LioTheme.ink)
                         .frame(minHeight: 44, alignment: .leading)
                 }
-                .accessibilityIdentifier("lio.trip.day.\(day.number)")
+                .disclosureGroupStyle(LioDayDisclosureStyle(language: language,
+                    identifier: "lio.trip.day.\(day.number)"))
             }
             Button(action: showTrips) {
                 RunReadableText(text: language.text("Saved to Trips · View", "已保存到行程 · 查看"))
@@ -42,6 +43,40 @@ struct LioItineraryCard<Actions: View>: View {
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+    }
+}
+
+private struct LioDayDisclosureStyle: DisclosureGroupStyle {
+    let language: LioLanguage
+    let identifier: String
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func makeBody(configuration: Configuration) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(LioTheme.Motion.animation(LioTheme.Motion.change, reduceMotion: reduceMotion)) {
+                    configuration.isExpanded.toggle()
+                }
+            } label: {
+                HStack {
+                    configuration.label
+                    Spacer(minLength: LioTheme.Spacing.sm)
+                    Image(systemName: "chevron.right")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(LioTheme.inkSecondary)
+                        .rotationEffect(.degrees(configuration.isExpanded ? 90 : 0))
+                        .accessibilityHidden(true)
+                }
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityValue(configuration.isExpanded
+                ? language.text("Expanded", "已展开") : language.text("Collapsed", "已收起"))
+            .accessibilityIdentifier(identifier)
+            if configuration.isExpanded { configuration.content }
+        }
+        .accessibilityElement(children: .contain)
     }
 }
 
