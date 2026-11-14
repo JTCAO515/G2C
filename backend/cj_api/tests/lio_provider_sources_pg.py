@@ -13,6 +13,7 @@ sys.path[:0]=[str(ROOT),str(ROOT/'scripts'),str(ROOT/'backend/cj_api/tests')]
 from cj_api.local_lio_exploration import ExplorationPlanning
 from cj_api.local_lio_provider_sources import RegisteredProviderSources,POI2_REGISTRATION
 from cj_api.lio_poi2_tool import POI2Input,registration
+from cj_api.local_lio_pipeline_calls import Call,PipelineCalls
 from cj_api.real_services import RealTools
 from cj_memory.runtime import RuntimeDenied
 from cj_message.lio_wire import ExplorationOrigin
@@ -52,7 +53,8 @@ def main():
         if profile==RESPONSE and extra.get('scene')=='plan_now_preview':
             sources=RegisteredProviderSources(worker,binding)
             origin=ExplorationOrigin(host.database,binding,worker.messages.query(binding.message_id))
-            packet=POI2Input(TextSearch('合成博物馆','北京',2),'poi2-'+binding.run_id[:16],origin,sources)
+            packets=tuple(POI2Input(TextSearch('合成博物馆'+str(n),'北京',2),
+                'poi2-'+binding.run_id[:16]+'-'+str(n),origin,sources)for n in range(2))
             phases=[]
             def send_check():
                 worker.memory_run.check()
@@ -73,13 +75,16 @@ def main():
                 phases.append('received-outside-original-frame')
                 return await read(*args)
             with patch.object(https_transport,'_connect',dial),patch.object(https_transport,'_read_response',receive):
-                raw=''.join(worker._registered_stream(binding,'plan4.poi2.0',POI2_REGISTRATION,packet))
-            reply=json.loads(raw)
-            assert phases==['sent-under-original-frame','received-outside-original-frame'],phases
-            assert reply['version']=='LIO-poi2-result.1'and reply['status']=='ok'
-            assert reply['items'][0]['place']['coordinate']['raw']=='116.4,39.9'
+                calls=PipelineCalls(worker,binding)
+                replies=calls.parallel(tuple(Call('gaode',POI2_REGISTRATION,packet)for packet in packets))
+            assert calls.gaode==2
+            assert phases==['sent-under-original-frame']*2+['received-outside-original-frame']*2,phases
+            for raw in replies:
+                reply=json.loads(raw)
+                assert reply['version']=='LIO-poi2-result.1'and reply['status']=='ok'
+                assert reply['items'][0]['place']['coordinate']['raw']=='116.4,39.9'
             capture=sources.capture(binding)
-            assert len(capture.records)==1
+            assert len(capture.records)==2
             assert capture.records[0]['sha256']==sha256(packed(capture.records[0]['payload'])).hexdigest()
             late=[]
             def prove():
@@ -102,9 +107,9 @@ def main():
             print('PROVIDER_SOURCE_REJECTED '+type(error).__name__+': '+str(error)+' cause='+repr(error.__cause__),flush=True)
             raise
     with patch.object(RealTools,'_registrations',registry),patch.object(ExplorationPlanning,'_model',diagnosed):native.main()
-    assert len(captures)==6 and len(writers)==6
+    assert len(captures)==6 and len(writers)==12
     assert all(writer.closed and len(writer.writes)==1 for writer in writers)
-    print('PASS ZH3/EN3 actual native4 registered tool/Meter/financial RECEIVED/SELECT-only status proof; HTTP fixture only, no real supplier claim',flush=True)
+    print('PASS ZH3/EN3 actual native4 parallel registered tools/Meter/12 distinct financial RECEIVED/SELECT-only status proofs; HTTP fixture only, no real supplier claim',flush=True)
 
 
 if __name__=='__main__':main()
