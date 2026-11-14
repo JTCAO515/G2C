@@ -1,9 +1,11 @@
 # Retained exact classification of one original use
 
 `FixtureScanJournal` connects the existing B fixture reservation, original
-consumer claims and native exact scanner. It reads an already reserved use; it
+consumer collector and native exact scanner. It reads an already reserved use; it
 does not reserve a new use. The full canonical claim bytes must hash to that
-use's original request and match its binding, pins, attempt and step. The native
+use's original request and match its binding, pins, attempt and step. The existing
+collector resolves that claim against the actual native RUN and canonical Lio
+input through `RunRequests`; the same MID alone is not an association proof. The native
 MESSAGE ID is that original step, not an independently supplied target.
 
 An owner-only retained directory contains an exclusive, fsynced intent before
@@ -40,6 +42,6 @@ all task surfaces, native dispatch/post/publication qualification and independen
 definition/cost/probe sources before full X01–X12 can pass.
 
 Unit controls exercise the real reservation implementation with controlled
-claim/scanner inputs: process reconstruction, concurrent reentry, failed scan,
+collector/scanner inputs: process reconstruction, concurrent reentry, failed scan,
 intent/result ACK loss, changed request, source/consumer withdrawal and late E
 surface change. They do not establish native full-task or Hong Kong eligibility.

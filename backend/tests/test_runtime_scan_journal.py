@@ -38,7 +38,7 @@ def journal(tmp_path,registry_fixture,scanner_fixture):
         state['scans']+=1
         return original(*args,**kwargs)
     scanner.scan=scan
-    def build():return FixtureScanJournal(directory,registry,SimpleNamespace(read=read),scanner)
+    def build():return FixtureScanJournal(directory,registry,SimpleNamespace(original_request=read),scanner)
     return SimpleNamespace(build=build,directory=directory,use=use,state=state,scanner=scanner,
         native=scanner_fixture,registry=registry_fixture,store=registry,token=token)
 

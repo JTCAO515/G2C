@@ -16,8 +16,8 @@ VERSION='G2C-fixture-scan-journal.1'
 
 
 class FixtureScanJournal:
-    def __init__(self,directory,registry,claims,scanner):
-        self.directory,self.registry,self.claims,self.scanner=Path(directory),registry,claims,scanner
+    def __init__(self,directory,registry,collector,scanner):
+        self.directory,self.registry,self.collector,self.scanner=Path(directory),registry,collector,scanner
         with self._directory()as fd:
             info=os.fstat(fd);self.identity=(info.st_dev,info.st_ino)
 
@@ -31,7 +31,7 @@ class FixtureScanJournal:
     def _original(self,use,deadline):
         reservation=self.registry.read(use)
         value=reservation['use']
-        request=self.claims.read(value['step_id'],deadline=deadline)
+        request=self.collector.original_request(value['step_id'],deadline=deadline)
         original=decode(request)
         require(sha256(request).hexdigest()==value['request_sha256']
             and original['attempt_id']==value['attempt_id']and original['step_id']==value['step_id']
