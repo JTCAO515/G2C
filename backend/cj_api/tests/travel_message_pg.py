@@ -5,6 +5,7 @@ import sys
 import time
 import subprocess
 import tarfile
+import uuid
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import ExitStack
 from pathlib import Path
@@ -65,7 +66,7 @@ host._one(receipt)
 
 def exercise(auth,conninfo):
     import run_worker
-    subjects=['alice','bob','missing-config','draft','later','restart','activation','inactive','memory-existing','memory-later']
+    subjects=['alice','bob','missing-config','draft','later','restart','activation','inactive','memory-existing','memory-later','native4-source']
     harness.dev_auth.init(auth,subjects)
     config=json.loads(conninfo.read_text())
     now=int(time.time())
@@ -134,6 +135,9 @@ def exercise(auth,conninfo):
                 tx.get(third_binding)
                 with host.message_context.hold_for_effect(third_binding)as source_lease:
                     assert source_lease.source_original('a-third').stored==source_lease.original_message()
+                    try:host.message_context.active_source_original(third_binding,'a-first')
+                    except Denied:pass
+                    else:raise AssertionError('public frame reader bridged an A-B-A selection')
                     try:source_lease.source_original('a-first')
                     except Denied:pass
                     else:raise AssertionError('historical source crossed actual travel ABA')
@@ -175,6 +179,7 @@ def exercise(auth,conninfo):
                         assert held.runs.valid(original_binding) is True
                         assert held.message_context.active_original(original_binding)==stored
                         prior=lease.source_original('normal-1')
+                        assert held.message_context.active_source_original(original_binding,'normal-1')==prior
                         assert prior.stored.receipt.message_id==normal1['receipt']['message_id']
                         assert prior.stored.receipt.input_sha256==normal1['receipt']['input_sha256']
                         assert prior.reference.sequence==1 and prior.reference.selection_epoch==lease.reference.selection_epoch
@@ -184,6 +189,16 @@ def exercise(auth,conninfo):
                             except(Denied,LeaseUnavailable):pass
                             else:raise AssertionError('source read escaped its original conversation')
                         original_admit=held.message_context.admit;source_checks=[]
+                        for wrong in ('a-third','missing-original'):
+                            try:held.message_context.active_source_original(original_binding,wrong)
+                            except(Denied,LeaseUnavailable):pass
+                            else:raise AssertionError('public frame reader escaped its original conversation')
+                        foreign_binding=Binding(scope_for(ISSUER,'bob'),original_binding.conversation_id,
+                            original_binding.generation,original_binding.message_id,original_binding.run_id,
+                            original_binding.message_sequence)
+                        try:held.message_context.active_source_original(foreign_binding,'normal-1')
+                        except LeaseUnavailable:pass
+                        else:raise AssertionError('public frame reader accepted a foreign binding')
                         def revoke_after_read():
                             source_checks.append(True)
                             if len(source_checks)==2:raise LeaseUnavailable('controlled final source AUTH withdrawal')
@@ -192,6 +207,16 @@ def exercise(auth,conninfo):
                             try:lease.source_original('normal-1')
                             except LeaseUnavailable:pass
                             else:raise AssertionError('historical source escaped final AUTH withdrawal')
+                        assert len(source_checks)==2
+                        source_checks.clear()
+                        def revoke_after_public_read():
+                            source_checks.append(True)
+                            if len(source_checks)==2:raise LeaseUnavailable('controlled public final AUTH withdrawal')
+                            return original_admit()
+                        with patch.object(held.message_context,'admit',side_effect=revoke_after_public_read):
+                            try:held.message_context.active_source_original(original_binding,'normal-1')
+                            except LeaseUnavailable:pass
+                            else:raise AssertionError('public historical source escaped final AUTH withdrawal')
                         assert len(source_checks)==2
                     assert lease.reference.owner_scope==scope_for(ISSUER,'alice')
                     try:lease.reference=lease.reference
@@ -204,12 +229,18 @@ def exercise(auth,conninfo):
                         try:pool.submit(lease.source_original,'normal-1').result()
                         except LeaseUnavailable:pass
                         else:raise AssertionError('cross-thread historical source used')
+                        try:pool.submit(held.message_context.active_source_original,original_binding,'normal-1').result()
+                        except LeaseUnavailable:pass
+                        else:raise AssertionError('cross-thread public historical source used')
             try:lease.check(original_binding)
             except LeaseUnavailable:pass
             else:raise AssertionError('expired lease used')
             try:lease.source_original('normal-1')
             except LeaseUnavailable:pass
             else:raise AssertionError('expired historical source used')
+            try:held.message_context.active_source_original(original_binding,'normal-1')
+            except LeaseUnavailable:pass
+            else:raise AssertionError('public source reader accepted a closed frame')
             earlier_binding=binding('alice',normal1)
             with held.runs.repository.transaction()as tx:
                 tx.get(earlier_binding)
@@ -217,9 +248,39 @@ def exercise(auth,conninfo):
                     try:earlier_lease.source_original('normal-2')
                     except Denied:pass
                     else:raise AssertionError('historical source read a future original')
+                    try:held.message_context.active_source_original(earlier_binding,'normal-2')
+                    except Denied:pass
+                    else:raise AssertionError('public source reader accepted a future original')
             try:MessageContextLease(held.message_context,None,original_binding,held.message_context.read_original(original_binding),stored)
             except TypeError:pass
             else:raise AssertionError('caller minted a lease')
+            # Native4 still uses genuine inner MESSAGE2 authority. Historical
+            # data comes from its current held frame, not a reverse M lookup.
+            from cj_message.demo_dialogue import LIO_VERSION_V4
+            from cj_message.lio_wire import exploration_original_protocol
+            native_host=worker('native4-source',FakeProvider())
+            native_token=headers['native4-source']['Authorization'].removeprefix('Bearer ')
+            native_boundary=Boundary(checker_for(auth),lambda p:database.message_repository(scope_for(p.issuer,p.subject)),
+                lambda:str(uuid.uuid4()))
+            native_first=native_boundary.receive_lio(native_token,json.dumps(dict(version=LIO_VERSION_V4,
+                message_id='native4-source-first',text='Chengdu for three days.',locale='en',new_conversation=True)).encode(),
+                prepare_scope=database._provision_scope,version=LIO_VERSION_V4)
+            native_second=native_boundary.receive_lio(native_token,json.dumps(dict(version=LIO_VERSION_V4,
+                message_id='native4-source-second',text='Plan now',locale='en',conversation_id=native_first.conversation_id)).encode(),
+                prepare_scope=database._provision_scope,version=LIO_VERSION_V4)
+            current=native_boundary.with_history_context(native_token,lambda c:c.query_lio_message(native_second.message_id))
+            r=current.receipt
+            native_binding=Binding(scope_for(ISSUER,'native4-source'),r.conversation_id,r.generation,r.message_id,r.run_id,r.sequence)
+            with native_host.message_context.hold_for_effect(native_binding):
+                with patch.object(native_host.message_context.repository,'connect',side_effect=AssertionError('native4 reverse M lookup')):
+                    historical=native_host.message_context.active_source_original(native_binding,native_first.message_id)
+                    assert historical.stored.receipt.message_id==native_first.message_id
+                    assert json.loads(historical.stored.raw)['text']=='Chengdu for three days.'
+                    h=historical.stored.receipt
+                    history_binding=Binding(native_binding.scope,h.conversation_id,h.generation,h.message_id,h.run_id,h.sequence)
+                    with database.connect(native_binding.scope)as connection:
+                        assert exploration_original_protocol(connection.cursor(),history_binding,historical.stored)==LIO_VERSION_V4
+            assert native_host.provider.calls==0
             # Missing explicit mode is not permission to turn off travel fences.
             no_mode,no_mode_raw=send('missing-config','no-mode','no-mode',None)
             disabled=LocalDatabase(conninfo,run_context=context)

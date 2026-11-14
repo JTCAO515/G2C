@@ -92,7 +92,7 @@ def test_all_198_short_invites_map_to_distinct_subjects():
                for code,subject in zip(codes,subjects,strict=True))
 
 
-def test_205_explicit_demo_subjects_remain_bounded(monkeypatch):
+def test_approved_206_explicit_demo_subjects_remain_bounded(monkeypatch):
     from deploy.hk import configuration
     monkeypatch.setattr(configuration,'local_database_target',lambda:True)
     subjects=['m4-synthetic-demo-'+format(i,'012x') for i in range(205)]
@@ -100,6 +100,10 @@ def test_205_explicit_demo_subjects_remain_bounded(monkeypatch):
     monkeypatch.setenv(configuration.DEMO_SUBJECTS,json.dumps(subjects))
     assert configuration.beta_subjects()==(subjects,frozenset(subjects))
     subjects.append('m4-synthetic-demo-ffffffffffff')
+    monkeypatch.setenv('CJ_BETA_SUBJECTS_JSON',json.dumps(subjects))
+    monkeypatch.setenv(configuration.DEMO_SUBJECTS,json.dumps(subjects))
+    assert configuration.beta_subjects()==(subjects,frozenset(subjects))
+    subjects.append('m4-synthetic-demo-eeeeeeeeeeee')
     monkeypatch.setenv('CJ_BETA_SUBJECTS_JSON',json.dumps(subjects))
     monkeypatch.setenv(configuration.DEMO_SUBJECTS,json.dumps(subjects))
     with pytest.raises(ValueError,match='demo invitation subjects'):configuration.beta_subjects()

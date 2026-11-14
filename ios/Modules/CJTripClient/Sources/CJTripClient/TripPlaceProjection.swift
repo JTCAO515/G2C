@@ -1,4 +1,5 @@
 import Foundation
+import CJAPI
 
 /// Read-only projection of the persisted provenance snapshot in a structured Trip.
 /// This is neither a PLACE result nor permission to query a provider.
@@ -21,7 +22,15 @@ public struct TripPlaceProjection: Sendable, Identifiable {
     public let markerCoordinate: PlaceCoordinateV1?
 
     public static func read(from document: StructuredTripDocument) throws -> [Self] {
-        try document.sources.filter { $0.kind == .place }.map { source in
+        try readValidatedSources(document.sources)
+    }
+
+    public static func read(from document: CalendarStructuredTripDocument) throws -> [Self] {
+        try readValidatedSources(document.sources)
+    }
+
+    private static func readValidatedSources(_ sources: [Components.Schemas.SourceRecordV1]) throws -> [Self] {
+        try sources.filter { $0.kind == .place }.map { source in
             // StructuredTripDocument already verified the original snapshot bytes/hash.
             let bytes = Data(base64Encoded: source.snapshot_utf8_base64)!
             var parser = StrictTripJSON(bytes: Array(bytes))

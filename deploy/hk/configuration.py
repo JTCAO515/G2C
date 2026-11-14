@@ -153,7 +153,9 @@ def beta_subjects():
             or len(set(subjects))!=len(subjects)):
         raise ValueError('explicit_unique_beta_synthetic_subjects_required')
     demo=json.loads(os.environ.get(DEMO_SUBJECTS,'[]'))
-    if (type(demo) is not list or len(demo)>205
+    # JT's 2026-11-14 P0 regression adds one fresh L identity to the existing
+    # 205. This bound is not a quota increase or account provisioning action.
+    if (type(demo) is not list or len(demo)>206
             or any(type(s) is not str or re.fullmatch(r'm4-synthetic-demo-[a-z0-9]{12}',s) is None for s in demo)
             or len(set(demo))!=len(demo)
             or set(demo)!={s for s in subjects if s.startswith('m4-synthetic-demo-')}

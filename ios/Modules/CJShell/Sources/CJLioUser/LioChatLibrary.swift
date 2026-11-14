@@ -68,9 +68,10 @@ public struct LioChatLibrary {
     public static func signed(client: LioTimelineHTTP, defaultService: LioService,
                               language: @escaping @MainActor () -> LioLanguage,
                               continuity: LioChatContinuity? = nil,
+                              version: LioTimelineWire.Version = .v2,
                               tripHistory: @escaping @MainActor (String) -> LioTripHistoryClient) -> Self {
         let continuity = continuity ?? LioChatContinuity()
-        let sessions = LioSignedChatSessions(client: client, continuity: continuity, tripHistory: tripHistory)
+        let sessions = LioSignedChatSessions(client: client, continuity: continuity, version: version, tripHistory: tripHistory)
         let defaultID = "lio-original"
         var library = Self(currentID: defaultID, history: {
             let title = language().text("First conversation", "最早的对话")
@@ -90,17 +91,20 @@ private final class LioSignedChatSessions {
     private let client: LioTimelineHTTP
     private let tripHistory: @MainActor (String) -> LioTripHistoryClient
     private let continuity: LioChatContinuity
+    private let version: LioTimelineWire.Version
 
-    init(client: LioTimelineHTTP, continuity: LioChatContinuity, tripHistory: @escaping @MainActor (String) -> LioTripHistoryClient) {
+    init(client: LioTimelineHTTP, continuity: LioChatContinuity, version: LioTimelineWire.Version,
+         tripHistory: @escaping @MainActor (String) -> LioTripHistoryClient) {
         self.client = client
         self.continuity = continuity
+        self.version = version
         self.tripHistory = tripHistory
     }
 
     func history() async throws -> [LioChatSession] {
         _ = try await client.reconcileFirstChat()
         return try client.savedChats().map { saved in
-            let service = LioService.signedConversation(client, destination: .existing(saved.id)) { _ in }
+            let service = LioService.signedConversation(client, destination: .existing(saved.id), version: version) { _ in }
             let trips = LioChatTrips(plan: LioTripPlan(client: tripHistory(saved.id)))
             return LioChatSession(id: continuity.localIDs[Data(saved.id.utf8)] ?? saved.id, title: saved.title,
                                   service: service, trips: trips)
@@ -115,7 +119,7 @@ private final class LioSignedChatSessions {
     private func blank(_ localID: String) -> LioChatSession {
         continuity.blankIDs.insert(Data(localID.utf8))
         let trips = LioChatTrips()
-        let service = LioService.signedConversation(client, destination: .newChat) { [weak self] id in
+        let service = LioService.signedConversation(client, destination: .newChat, version: version) { [weak self] id in
             await self?.bind(id, localID: localID, trips: trips)
         }
         return LioChatSession(id: localID, title: "", service: service, trips: trips)
