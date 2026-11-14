@@ -723,7 +723,7 @@ def group_lio_exploration():
     env=dict(clean_env(),CJ_PG_BINDIR=str(pg),PATH=str(pg)+os.pathsep+os.environ['PATH'])
     results=[script('backend/cj_api/tests/'+name,env=env) for name in
              ('lio_exploration_origin_pg.py','lio_exploration_flow_pg.py')]
-    return max(results)
+    return 1 if any(results) else 0
 
 
 GROUPS.update(lio_exploration=group_lio_exploration)
