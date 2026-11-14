@@ -77,4 +77,63 @@ class POI2TransportTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(writer.writes),1);self.assertTrue(writer.closed);self.assertEqual(dial.await_count,1)
 
 
+
+
+class POI2StreamTests(unittest.TestCase):
+    def request(self,config=CONFIG):
+        return prepare(config,TextSearch('博物馆','北京',2),'stream-original',datetime.now(timezone.utc))
+    def credentials(self):return ProviderCredentials(SYNTHETIC_KEY,datetime.now(timezone.utc)+timedelta(minutes=1))
+
+    def test_send_yields_before_receive_and_drops_the_expired_dispatch_context(self):
+        from contextvars import ContextVar
+        from threading import Thread
+        held=ContextVar('fixture_actual_dispatch_frame',default=None)
+        writer=Writer();dial=AsyncMock(return_value=(object(),writer))
+        receive=AsyncMock(return_value=(200,b'{"status":"1","infocode":"10000","count":"0","pois":[]}'))
+        guards=[]
+        def guard():guards.append(held.get());return True
+        token=held.set('actual-first-advance')
+        with patch.object(transport,'_connect',dial),patch.object(transport,'_read_response',receive):
+            stream=transport.poi2_candidate_stream(CONFIG,self.request(),self.credentials(),before_send=guard)
+            self.assertIs(next(stream),transport.POI2_REQUEST_SENT)
+            self.assertEqual(receive.await_count,0);self.assertEqual(len(writer.writes),1)
+            held.reset(token)
+            later=[]
+            thread=Thread(target=lambda:later.extend(list(stream)));thread.start();thread.join()
+        self.assertEqual([item.state for item in later],['received'])
+        self.assertEqual(guards,['actual-first-advance',None])
+        self.assertEqual(dial.await_count,1);self.assertEqual(receive.await_count,1);self.assertTrue(writer.closed)
+
+    def test_withdrawal_after_one_send_withholds_the_body_without_replay(self):
+        writer=Writer();dial=AsyncMock(return_value=(object(),writer));receive=AsyncMock()
+        allowed=True
+        with patch.object(transport,'_connect',dial),patch.object(transport,'_read_response',receive):
+            stream=transport.poi2_candidate_stream(CONFIG,self.request(),self.credentials(),before_send=lambda:allowed)
+            self.assertIs(next(stream),transport.POI2_REQUEST_SENT)
+            allowed=False
+            result=next(stream)
+            self.assertEqual(result.state,'unknown');self.assertIsNone(result.response)
+            self.assertEqual(list(stream),[])
+        self.assertEqual(len(writer.writes),1);self.assertEqual(dial.await_count,1)
+        self.assertEqual(receive.await_count,0);self.assertTrue(writer.closed)
+
+    def test_closed_or_late_original_stream_does_not_open_a_second_socket(self):
+        import time
+        writer=Writer();dial=AsyncMock(return_value=(object(),writer));receive=AsyncMock(return_value=(200,b'{}'))
+        config=replace(CONFIG,timeout_seconds=0.02)
+        with patch.object(transport,'_connect',dial),patch.object(transport,'_read_response',receive):
+            stream=transport.poi2_candidate_stream(config,self.request(config),self.credentials(),before_send=lambda:True)
+            self.assertIs(next(stream),transport.POI2_REQUEST_SENT)
+            time.sleep(0.03)
+            result=next(stream)
+            self.assertEqual(result.state,'unknown');self.assertIsNone(result.response)
+            self.assertEqual(list(stream),[])
+        self.assertEqual(dial.await_count,1);self.assertEqual(len(writer.writes),1);self.assertTrue(writer.closed)
+        writer=Writer();dial=AsyncMock(return_value=(object(),writer))
+        with patch.object(transport,'_connect',dial),patch.object(transport,'_read_response',receive):
+            stream=transport.poi2_candidate_stream(CONFIG,self.request(),self.credentials(),before_send=lambda:True)
+            self.assertIs(next(stream),transport.POI2_REQUEST_SENT);stream.close()
+        self.assertTrue(writer.closed);self.assertEqual(dial.await_count,1)
+
+
 if __name__=='__main__':unittest.main()

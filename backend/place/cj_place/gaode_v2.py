@@ -16,6 +16,10 @@ from .models import Coordinate,FieldState,Observed,aware,identifier,text_value
 VERSION='CJ-PLACE-POI2.1'
 
 
+class ReceiptMismatch(ValueError):
+    """No proof this is the complete bounded receipt of the original query."""
+
+
 def _keyword(value):
     text_value(value,320)
     if len(value)>80 or '|'in value:raise ValueError('one_bounded_keyword_required')
@@ -134,11 +138,12 @@ def _in_region(poi,region):
 def parse(config:Config,request:PreparedRequest,response:Response,now:datetime):
     aware(now);aware(response.received_at)
     if (response.binding_digest!=request.binding_digest or response.origin!=request.origin or
-            response.path!=request.path or response.http_status!=200 or
+            response.path!=request.path or
             response.received_at<request.started_at or response.received_at>now or
             (now-response.received_at).total_seconds()>config.max_age_seconds or
             len(response.body)>config.max_response_bytes):
-        raise ValueError('bounded_same_request_poi2_receipt_required')
+        raise ReceiptMismatch('bounded_same_request_poi2_receipt_required')
+    if response.http_status!=200:raise ValueError('poi2_http_failure')
     if not isinstance(request.query,(TextSearch,Nearby,POIDetail)):
         raise ValueError('explicit_poi2_request_required')
     value=_decode(response.body)
