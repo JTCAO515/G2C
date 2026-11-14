@@ -688,3 +688,29 @@ def test_hk_cli_requires_explicit_persistent_mount_and_fixed_identity(tmp_path,m
     with pytest.raises(ValueError):recovery.persistent_target('../outside')
     (base/identity).symlink_to(tmp_path/'other')
     with pytest.raises(ValueError):recovery.persistent_target(identity)
+
+
+@pytest.mark.parametrize('version',[1,2])
+@pytest.mark.parametrize('approved_budget',[80,800])
+def test_existing_quota_inspection_accepts_both_formats_without_reset(monkeypatch,version,approved_budget):
+    from dataclasses import asdict,replace
+    from cj_api.local_run_context import LocalRunContext,RunProfile,load_run_context
+    from cj_usage.core import Config,Ledger,LedgerV2
+    from deploy.hk import demo_quota
+    cfg=Config('provider_call',80,100,200,24,12,65536,600)
+    current=LocalRunContext(RunProfile(cfg,dict(model=12000,tool=48000,memory=1000)),(),'CJ-LOCAL-RUN@2')
+    following=LocalRunContext(RunProfile(replace(cfg,period_start=200,period_end=300),current.current.output_limits),(),current.version)
+    document=dict(version=current.version,current=dict(meter=asdict(cfg),output_limits=current.current.output_limits),history=[])
+    monkeypatch.setenv('CJ_BETA_RUN_CONTEXT_JSON',json.dumps(document))
+    monkeypatch.setattr(demo_quota,'authorization',lambda:None)
+    monkeypatch.setattr(demo_quota,'beta_subjects',lambda:({'synthetic-one'},{'synthetic-one'}))
+    monkeypatch.setattr(demo_quota,'demo_periods',lambda original,now:(current,following))
+    seen=[]
+    class Database:
+        def execute(self,sql,args):
+            assert sql.startswith('SELECT format_version,ledger')
+            seen.append(args[0]);profile=current if len(seen)==1 else following
+            ledger=(Ledger if version==1 else LedgerV2)(config=replace(profile.current.meter,budget=approved_budget))
+            return SimpleNamespace(fetchone=lambda:(version,asdict(ledger)))
+    keys,count,next_count=demo_quota._existing_ledgers(Database(),approved_budget,resume=True)
+    assert keys==seen and len(set(keys))==2 and(count,next_count)==(1,1)

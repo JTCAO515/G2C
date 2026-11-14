@@ -27,4 +27,77 @@ struct LioThinkingFixture: View {
         .preferredColorScheme(ProcessInfo.processInfo.arguments.contains("--lio-thinking-dark-acceptance") ? .dark : .light)
     }
 }
+
+// Injected scene phases exercise the real indicator's lifecycle without a service request.
+private struct LioThinkingLifecycleFixture: View {
+    @State private var paused = true
+    @State private var shown = true
+    @State private var change = 0
+    @State private var appearances = 0
+    @State private var announcements = 0
+    private let since = Date().addingTimeInterval(-7)
+
+    var body: some View {
+        VStack(spacing: 20) {
+            if shown {
+                LioThinkingIndicator(since: since, progress: "Travel ideas \(change)", planningDays: 2,
+                    language: .english, onVisible: { appearances += 1 },
+                    onAnnouncement: { _ in announcements += 1 })
+                    .environment(\.scenePhase, paused ? .background : .active)
+            }
+            Text(String(appearances)).accessibilityIdentifier("fixture.thinking.appearances")
+            Text(String(announcements)).accessibilityIdentifier("fixture.thinking.announcements")
+            Button(paused ? "Resume" : "Pause") { paused.toggle() }
+                .accessibilityIdentifier("fixture.thinking.pause")
+            Button("Change progress") { change += 1 }
+                .accessibilityIdentifier("fixture.thinking.change")
+            Button(shown ? "Hide" : "Show") { shown.toggle() }
+                .accessibilityIdentifier("fixture.thinking.show")
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.large)
+        .padding(20)
+        .background(LioTheme.paper)
+    }
+}
+
+private struct LioRetryTimingFixture: View {
+    let shell: ShellState
+    @State private var sample = RetryTimingSample()
+    @State private var prepared = false
+
+    var body: some View {
+        let sample = sample
+        Group {
+            if prepared {
+                LioHome(language: shell.language.lio, service: LioService { _ in
+                    AsyncStream { output in
+                        Task { await sample.reply(output); output.finish() }
+                    }
+                }, isDemo: true) { RetryTimingSummary() }
+            } else {
+                Color.clear.onAppear {
+                    UserDefaults.standard.removeObject(forKey: LioTimingLog.defaultsKey)
+                    prepared = true
+                }
+            }
+        }
+    }
+}
+
+private actor RetryTimingSample {
+    private var count = 0
+    func reply(_ output: AsyncStream<LioEvent>.Continuation) {
+        count += 1
+        if count == 1 { output.yield(.failed(.unfinished)) }
+        else { output.yield(.text("Here are some travel ideas.")); output.yield(.finished) }
+    }
+}
+
+private struct RetryTimingSummary: View {
+    var body: some View {
+        Text(String(LioTimingLog().entries().count))
+            .accessibilityIdentifier("fixture.timing.count")
+    }
+}
 #endif

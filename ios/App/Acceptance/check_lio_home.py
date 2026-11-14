@@ -59,6 +59,10 @@ def main():
     fixture_routes = (
         '        if ProcessInfo.processInfo.arguments.contains("--lio-exploration-home-acceptance") {\n'
         '            LioExplorationHomeFixture(shell: shell)\n'
+        '        } else if ProcessInfo.processInfo.arguments.contains("--lio-thinking-lifecycle-acceptance") {\n'
+        '            LioThinkingLifecycleFixture()\n'
+        '        } else if ProcessInfo.processInfo.arguments.contains("--lio-retry-timing-acceptance") {\n'
+        '            LioRetryTimingFixture(shell: shell)\n'
         '        } else if ProcessInfo.processInfo.arguments.contains("--lio-calendar-wire-acceptance") {\n'
         '            LioCalendarWireFixture(shell: shell)\n'
         '        } else if ProcessInfo.processInfo.arguments.contains("--lio-thinking-acceptance") {\n'
@@ -109,7 +113,7 @@ def main():
         subprocess.run(command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=600)
     summary = subprocess.check_output(["xcrun", "xcresulttool", "get", "test-results", "summary", "--path", str(result)])
     (output / "summary.json").write_bytes(summary)
-    assert json.loads(summary)["passedTests"] == (len(args.case) if args.case else 63), summary
+    assert json.loads(summary)["passedTests"] == (len(args.case) if args.case else 66), summary
 
 
 if __name__ == "__main__":

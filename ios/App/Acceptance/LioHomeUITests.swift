@@ -1,7 +1,111 @@
 import XCTest
 
 @MainActor final class LioHomeUITests: XCTestCase {
+    func testWaitingReportsOnlyWhileVisibleAndActive() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-thinking-lifecycle-acceptance"]
+        app.launch()
+        let appearances = app.staticTexts["fixture.thinking.appearances"]
+        let announcements = app.staticTexts["fixture.thinking.announcements"]
+        XCTAssertTrue(appearances.waitForExistence(timeout: 12))
+        XCTAssertEqual(appearances.label, "0")
+        XCTAssertEqual(announcements.label, "0")
+        app.buttons["fixture.thinking.change"].tap()
+        XCTAssertEqual(announcements.label, "0")
+        app.buttons["fixture.thinking.pause"].tap()
+        let first = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == '1'"), object: announcements)
+        XCTAssertEqual(XCTWaiter.wait(for: [first], timeout: 5), .completed)
+        XCTAssertEqual(appearances.label, "1")
+        app.buttons["fixture.thinking.pause"].tap()
+        app.buttons["fixture.thinking.change"].tap()
+        let silent = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label != '1'"), object: announcements)
+        silent.isInverted = true
+        XCTAssertEqual(XCTWaiter.wait(for: [silent], timeout: 5.2), .completed)
+        app.buttons["fixture.thinking.pause"].tap()
+        let second = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == '2'"), object: announcements)
+        XCTAssertEqual(XCTWaiter.wait(for: [second], timeout: 5), .completed)
+        XCTAssertEqual(appearances.label, "1")
+        app.buttons["fixture.thinking.show"].tap()
+        app.buttons["fixture.thinking.change"].tap()
+        XCTAssertEqual(announcements.label, "2")
+        XCTAssertEqual(appearances.label, "1")
+        app.buttons["fixture.thinking.show"].tap()
+        let shown = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == '3'"), object: announcements)
+        XCTAssertEqual(XCTWaiter.wait(for: [shown], timeout: 5), .completed)
+        XCTAssertEqual(appearances.label, "2")
+        app.terminate()
+    }
+
+    func testAskAgainRecordsTheNewQuestionTimingInBothLanguages() throws {
+        continueAfterFailure = false
+        for language in ["en", "zh-Hans"] {
+            let chinese = language == "zh-Hans"
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "--lio-retry-timing-acceptance", "-cj.ui.language.v1", language]
+            app.launch()
+            let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+            XCTAssertTrue(composer.waitForExistence(timeout: 12))
+            composer.tap(); composer.typeText("Some travel ideas")
+            app.buttons["lio.send"].tap()
+            let again = app.buttons["lio.askAgain"]
+            XCTAssertTrue(again.waitForExistence(timeout: 8))
+            app.buttons["lio.menu"].tap()
+            let count = app.staticTexts["fixture.timing.count"]
+            XCTAssertTrue(count.waitForExistence(timeout: 5))
+            XCTAssertEqual(count.label, "0")
+            app.buttons[chinese ? "完成" : "Done"].tap()
+            again.tap()
+            XCTAssertTrue(app.staticTexts["Here are some travel ideas."].waitForExistence(timeout: 8))
+            app.buttons["lio.menu"].tap()
+            XCTAssertTrue(count.waitForExistence(timeout: 5))
+            XCTAssertEqual(count.label, "1")
+            app.buttons[chinese ? "完成" : "Done"].tap()
+            try app.performAccessibilityAudit(for: .all)
+            let image = XCTAttachment(screenshot: app.screenshot())
+            image.name = "retry-timing-" + language
+            image.lifetime = .keepAlways
+            add(image)
+            app.terminate()
+        }
+    }
+
     func testThinkingIndicatorStagesAndLineLProgress() {
+        exerciseThinkingIndicator(reduceMotion: false)
+    }
+
+    func testThinkingIndicatorStillAdvancesWithReduceMotion() {
+        continueAfterFailure = false
+        let original = setSimulatorReduceMotion(true)
+        defer { _ = setSimulatorReduceMotion(original) }
+        exerciseThinkingIndicator(reduceMotion: true)
+    }
+
+    private func setSimulatorReduceMotion(_ enabled: Bool) -> Bool {
+        let settings = XCUIApplication(bundleIdentifier: "com.apple.Preferences")
+        settings.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        settings.launch()
+        let accessibility = settings.cells["Accessibility"]
+        for _ in 0..<8 {
+            if accessibility.exists && accessibility.isHittable { break }
+            settings.swipeUp()
+        }
+        XCTAssertTrue(accessibility.isHittable, settings.debugDescription)
+        accessibility.tap()
+        let motion = settings.cells["Motion"]
+        XCTAssertTrue(motion.waitForExistence(timeout: 8), settings.debugDescription)
+        motion.tap()
+        let reduceMotion = settings.switches["Reduce Motion"]
+        XCTAssertTrue(reduceMotion.waitForExistence(timeout: 8), settings.debugDescription)
+        let original = reduceMotion.value as! String
+        XCTAssertTrue(["0", "1"].contains(original))
+        if (original == "1") != enabled { reduceMotion.tap() }
+        XCTAssertEqual(reduceMotion.value as? String, enabled ? "1" : "0")
+        settings.terminate()
+        return original == "1"
+    }
+
+    private func exerciseThinkingIndicator(reduceMotion: Bool) {
         continueAfterFailure = false
         for language in ["zh-Hans", "en"] {
             let chinese = language == "zh-Hans"
@@ -23,7 +127,7 @@ import XCTest
             XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: general, object: indicators.element(boundBy: 0))],
                                           timeout: 9), .completed)
             let capture = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
-            capture.name = "Lio-thinking-" + language
+            capture.name = "Lio-thinking-" + language + (reduceMotion ? "-reduce-motion" : "")
             capture.lifetime = .keepAlways
             add(capture)
             app.terminate()

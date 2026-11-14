@@ -1,7 +1,8 @@
 """Injected DB-API repository. No DSN, role, provider or automatic provisioning."""
 from contextlib import contextmanager
 import logging
-from .codec import decode, encode, CorruptLedger
+from .codec import decode, encode, decode_stored, encode_v2, CorruptLedger
+from .core import LedgerV2
 from .core import integer, label
 
 
@@ -17,9 +18,7 @@ def _ledger_row(row):
     """Database read boundary: (revision, format_version, ledger) -> (revision, Ledger)."""
     revision, version, raw = row
     integer(revision)
-    if type(version) is not int or version != 1:
-        raise CorruptLedger('unsupported ledger version')
-    return revision, decode(raw)
+    return revision, decode_stored(version,raw)
 
 
 class PostgresRepository:
@@ -60,7 +59,7 @@ class PostgresRepository:
                     raise RepositoryUnavailable('scope unavailable')
                 revision, ledger = _ledger_row(row)
                 yield ledger
-                encoded = encode(ledger)
+                encoded = encode_v2(ledger) if isinstance(ledger,LedgerV2) else encode(ledger)
                 cur.execute('UPDATE public.cj_usage_ledger_candidate SET ledger=%s::jsonb, revision=revision+1 WHERE scope_id=%s AND revision=%s', (encoded, self.scope, revision))
                 if cur.rowcount != 1:
                     raise RepositoryUnavailable('scope changed')
@@ -100,6 +99,14 @@ class PostgresRepository:
         if expected_period is None:raise ReadUnavailable('original period required')
         from .run_capacity import encode_capacity
         return self._read_ledger(lambda ledger:encode_capacity(ledger,run_id),guard=guard,
+            max_response_bytes=max_response_bytes,project=None,expected_period=expected_period)
+
+    def read_run_capacity_v2(self,run_id,*,guard,max_response_bytes,expected_period):
+        label(run_id)
+        from .read_status import ReadUnavailable
+        if expected_period is None:raise ReadUnavailable('original period required')
+        from .run_capacity import encode_capacity_v2
+        return self._read_ledger(lambda ledger:encode_capacity_v2(ledger,run_id),guard=guard,
             max_response_bytes=max_response_bytes,project=None,expected_period=expected_period)
 
     def _read_ledger(self,projection,*,guard,max_response_bytes,project,expected_period):

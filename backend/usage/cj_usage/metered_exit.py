@@ -28,6 +28,7 @@ class _PreparedCall:
     consumed: bool = False
     receipt: object = None
     materialize_with_guard: object = None
+    provider_kind: str | None = None
 
 
 class MeteredExitCore:
@@ -75,7 +76,9 @@ class MeteredExitCore:
         try:
             audit_prepared(command,self.config.unit)
             if call.guard() is not True: raise Denied('original authority unavailable before reserve')
-            try: meter.reserve(command)
+            try:
+                if call.provider_kind is None:meter.reserve(command)
+                else:meter.reserve(command,provider_kind=call.provider_kind)
             except Blocked as error:
                 if error.reason == 'limit_exceeded' or self._stopped_before_reserve(meter,command,error.reason):
                     raise BudgetExceeded(call.step_key) from None
