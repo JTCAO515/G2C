@@ -1,4 +1,4 @@
-"""Fixed Gaode v3 HTTPS candidate. NOT a canonical authorized dispatch entry.
+"""Fixed Gaode v3 / explicit POI2 HTTPS candidates; no authorized dispatch entry.
 
 No registration, environment/proxy/cookie lookup, redirects, retry or usage
 settlement. Tests replace only the private dial function with local TLS.
@@ -179,13 +179,30 @@ async def _read_response(reader, body_limit):
 
 async def fetch_candidate(config: Config, request: PreparedRequest,
                           credentials: ProviderCredentials,*,before_send=None,basic=False,coordinate_only=False) -> TransportResult:
-    """Low-level one-shot candidate, never authorization or a retry/recovery API.
+    """Existing v3 candidate; original bindings and endpoint gate are retained."""
+    return await _fetch_bound(config,request,credentials,before_send=before_send,paths=_PATHS,
+        reprepare=lambda:prepare(config,request.query,request.request_ref,request.started_at,
+                                 basic=basic,coordinate_only=coordinate_only))
 
-    Credentials must come from trusted host configuration. This function performs
-    no AUTH/USAGE/RUN operation. Production execute remains unconditionally closed.
-    Every result after possible I/O failure is unknown; caller must preserve the
-    original attempt. Caller cancellation propagates after close/abort, never as
-    proof of non-dispatch. No raw exception, secret URL or body is logged.
+
+async def fetch_poi2_candidate(config:Config,request:PreparedRequest,credentials:ProviderCredentials,*,before_send):
+    """Opt-in POI2 candidate. Its caller must use the registered spending exit.
+
+    This is no AUTH/USAGE/write grant. No retry, proxy/environment lookup,
+    coordinate conversion, multilingual service or implicit pagination is added.
+    """
+    from .gaode_v2 import prepare as prepare_poi2
+    if before_send is None:return TransportResult('rejected','original_source_guard_required')
+    return await _fetch_bound(config,request,credentials,before_send=before_send,
+        paths=frozenset(('/v5/place/text','/v5/place/around','/v5/place/detail')),
+        reprepare=lambda:prepare_poi2(config,request.query,request.request_ref,request.started_at))
+
+
+async def _fetch_bound(config,request,credentials,*,before_send,paths,reprepare):
+    """One-shot transport shared only after the selected fixed preparation gate.
+
+    Every result after possible I/O failure is unknown; retain the same attempt.
+    Cancellation propagates after close/abort. No raw exception, URL or body log.
     """
     writer = None
     cancelled = False
@@ -193,7 +210,7 @@ async def fetch_candidate(config: Config, request: PreparedRequest,
     try:
         if type(config) is not Config or type(request) is not PreparedRequest or type(credentials) is not ProviderCredentials:
             return TransportResult("rejected", "transport_configuration_invalid")
-        if prepare(config, request.query, request.request_ref, request.started_at,basic=basic,coordinate_only=coordinate_only) != request or request.origin != ORIGIN or request.path not in _PATHS:
+        if reprepare() != request or request.origin != ORIGIN or request.path not in paths:
             return TransportResult("rejected", "request_binding_invalid")
         credentials.__post_init__()
         expires = credentials.expires_at.astimezone(timezone.utc)
