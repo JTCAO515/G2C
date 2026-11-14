@@ -1,6 +1,7 @@
 """Native Lio/Typed Memory/registered capture; private signed PG and fixture HTTP."""
 from datetime import datetime,timedelta,timezone
 from hashlib import sha256
+from types import SimpleNamespace
 import base64
 import json,time,uuid
 import httpx
@@ -13,6 +14,7 @@ from cj_api.real_services import RealServices,RealTools
 from cj_api.tool_evidence import ToolEvidence
 from cj_api.runtime_originals import RuntimeOriginals
 from cj_api.runtime_surface_inventory import NativeSurfaceInventory
+from cj_api.runtime_preparation_cost import PreparationCostInventory
 from cj_agent.provider import DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,M4_REAL_OUTPUT_TOKENS
 from cj_memory.typed_runtime import TypedRuntimeConfiguration
 from cj_message.auth_boundary import Boundary
@@ -95,12 +97,35 @@ def exercise(root,conninfo):
         raw=[base64.b64decode(s['bytes_base64'])for s in surfaces['surfaces']]
         assert wire['wire_input_utf8'].encode()in raw and original['result_utf8'].encode()in raw
         assert model.calls==calls_before and len(budget.inspect())==fees_before
+    # Read the actual native original Meter/financial sources; no artifact or
+    # successful-output dependency is required by this accounting reader.
+    from runtime_adapter import Binding
+    from cj_auth.interfaces import AdmissionStatus
+    binding=Binding(owner,sha256(token.encode()).hexdigest(),budget.ledger_id,budget.producer)
+    def qualified(**args):
+        assert args['binding']==binding and args['pins_sha256']=='b'*64 and args['read_only']is True
+        if checker.check(token).status is not AdmissionStatus.ALLOWED:raise Unavailable('LOCAL_ORIGINAL_AUTH_WITHHELD')
+    costs=PreparationCostInventory(originals,SimpleNamespace(require=qualified),binding,
+        SimpleNamespace(key='b'*64),lambda:token,tuple(mids))
+    calls_before=model.calls;fees_before=budget.inspect()
+    cost_bytes=costs.collect(deadline=time.monotonic()+30);cost=decode(cost_bytes)
+    assert cost['accounting_status']=='SETTLED'and cost['missing']==[]
+    assert cost['totals']['attempts']==cost['totals']['settled']==2
+    assert cost['totals']['known_estimated_cny_1e7']==7000
+    assert cost['totals']['known_parent_conservative_hold_cny_1e7']==cost['totals']['unknown_hold_attempts']==0
+    assert costs.collect(deadline=time.monotonic()+30)==cost_bytes
+    assert model.calls==calls_before and budget.inspect()==fees_before
+    print('PASS original preparation accounting: two native settled Meter/financial attempts, '
+        '7000 fixed-point estimated units, repeated reads zero new model/fee; supplier paid UNKNOWN')
     assert len(list(directory.glob('*.json')))==4
     foreign_token=dev_auth.token(auth,foreign,30)
     try:originals.visible_original(foreign_token,receipts[0].message_id)
     except Unavailable:pass
     else:raise AssertionError('foreign identity read private visible surfaces')
     (auth/'invited.json').write_text(json.dumps([foreign]))
+    try:costs.collect(deadline=time.monotonic()+30)
+    except Unavailable:pass
+    else:raise AssertionError('revoked identity read cached native preparation costs')
     try:NativeSurfaceInventory(originals,lambda:token,guard=lambda:None).collect(receipts[0].message_id)
     except Unavailable:pass
     else:raise AssertionError('revoked identity collected cached native surfaces')
