@@ -23,11 +23,19 @@ immutable state. E reads precede C holders, with a final E recheck; no E MESSAGE
 lock is acquired inside a C projection. Re-querying evidence is not a second
 classification and does not dispatch or charge anything.
 
+The existing fixture-original reader can optionally issue/resolve a retained
+scan metadata reference. Its new private descriptor version is
+`G2C-fixture-scan-reference.1`; old registry/reservation descriptors retain their
+original version and bytes. A global resolver recovers the actual retained use
+from the registry, not an E-supplied body. It calls only journal `read`, never
+`scan_once`. Missing scan, wrong session, withdrawal or an unconfigured reader
+withholds; it cannot fall back to a legacy original or create a scan on read.
+
 This is an at-most-once private scan journal, not the final X09 publisher or
 late-write closure. A written result is not proof that the source callback or
 the later publication succeeded. Query can still withhold that result. PASS
 retains the scanner's explicitly limited coverage and semantic UNRUN; no route
-exposes the body to E or activates a paid task. A future final host must include
+is configured in the live host or activates a paid task. A future final host must include
 all task surfaces, native dispatch/post/publication qualification and independent
 definition/cost/probe sources before full X01–X12 can pass.
 

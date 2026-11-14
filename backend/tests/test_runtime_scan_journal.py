@@ -1,5 +1,6 @@
 """Original reservation/request custody and scan-once failure interleavings."""
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from hashlib import sha256
 from threading import Event
 from types import SimpleNamespace
@@ -8,6 +9,7 @@ from unittest.mock import patch
 import pytest
 
 from cj_api.runtime_scan_journal import FixtureScanJournal
+from cj_api.runtime_fixture_originals import FixtureOriginalReferences,SCAN_VERSION
 from runtime_adapter import Invalid,Unavailable
 from runtime_adapter.contract import decode,encode
 from test_runtime_disclosure_scan import fixture as scanner_fixture
@@ -16,10 +18,15 @@ from test_runtime_fixture_registry import fixture as registry_fixture
 
 @pytest.fixture
 def journal(tmp_path,registry_fixture,scanner_fixture):
-    registry=registry_fixture.build()
+    token='local-E-scan-reference-token'
+    registry_fixture.consumer=replace(registry_fixture.consumer,auth_session_id=sha256(token.encode()).hexdigest())
+    registry_fixture.policy['consumer_binding_sha256']=registry_fixture.consumer.key
+    registry_fixture.policy_file.write_bytes(encode(registry_fixture.policy))
+    registry=registry_fixture.build(bound=registry_fixture.consumer)
     request=encode(dict(attempt_id='attempt1',step_id='step1',binding_sha256=registry.consumer.key,
         pins_sha256=registry.pins.key,kind='message'))
-    use=decode(registry_fixture.request());use['request_sha256']=sha256(request).hexdigest();use=encode(use)
+    use=decode(registry_fixture.request());use.update(binding_sha256=registry.consumer.key,
+        request_sha256=sha256(request).hexdigest());use=encode(use)
     registry.reserve(use)
     directory=tmp_path/'scan-journal';directory.mkdir(mode=0o700)
     state=dict(request=request,scans=0)
@@ -33,7 +40,7 @@ def journal(tmp_path,registry_fixture,scanner_fixture):
     scanner.scan=scan
     def build():return FixtureScanJournal(directory,registry,SimpleNamespace(read=read),scanner)
     return SimpleNamespace(build=build,directory=directory,use=use,state=state,scanner=scanner,
-        native= scanner_fixture,registry=registry_fixture)
+        native=scanner_fixture,registry=registry_fixture,store=registry,token=token)
 
 
 def test_repeat_and_process_reconstruction_read_the_original_without_reclassification(journal):
@@ -137,4 +144,35 @@ def test_concurrent_reentry_does_not_start_second_scan(journal):
                 journal.build().scan_once(journal.use,deadline=100)
         finally:release.set()
         assert decode(future.result(timeout=10))['exact_status']=='PASS'
+    assert journal.state['scans']==1
+
+
+def test_scan_ref_resolves_retained_metadata_across_reader_reconstruction(journal,tmp_path):
+    directory=tmp_path/'scan-refs';directory.mkdir(mode=0o700)
+    report=journal.build().scan_once(journal.use,deadline=100)
+    reader=FixtureOriginalReferences(directory,journal.store,journal.use,
+        scan_journal=journal.build(),clock=lambda:70)
+    ref=reader.issue(journal.token,'scan')
+    assert ref['sha256']==sha256(report).hexdigest()
+    descriptor=decode(next(directory.iterdir()).read_bytes())
+    assert descriptor['source']['version']==SCAN_VERSION
+    restored=FixtureOriginalReferences(directory,journal.store,scan_journal=journal.build(),clock=lambda:70)
+    assert restored.contains(journal.token,ref['ref'])
+    assert restored.resolve(journal.token,ref['ref'])==report and journal.state['scans']==1
+    journal.native.state['allowed']=False
+    with pytest.raises(Unavailable):restored.resolve(journal.token,ref['ref'])
+    assert journal.state['scans']==1
+
+
+def test_scan_reference_never_creates_a_missing_scan_or_uses_legacy_fallback(journal,tmp_path):
+    directory=tmp_path/'scan-refs';directory.mkdir(mode=0o700)
+    reader=FixtureOriginalReferences(directory,journal.store,journal.use,
+        scan_journal=journal.build(),clock=lambda:70)
+    with pytest.raises(Unavailable,match='QUERY_ONLY'):reader.issue(journal.token,'scan')
+    assert not list(directory.iterdir())and not list(journal.directory.iterdir())
+    journal.build().scan_once(journal.use,deadline=100)
+    ref=reader.issue(journal.token,'scan')
+    old=FixtureOriginalReferences(directory,journal.store,journal.use)
+    with pytest.raises(Unavailable,match='NOT_CONNECTED'):old.resolve(journal.token,ref['ref'])
+    with pytest.raises(Unavailable,match='SESSION_CHANGED'):reader.resolve('different-token',ref['ref'])
     assert journal.state['scans']==1
