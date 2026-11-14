@@ -178,6 +178,7 @@ struct LioTripsView: View {
                             Text(itinerary.title)
                                 .font(LioTheme.display(.title).weight(.semibold))
                                 .foregroundStyle(LioTheme.ink)
+                                .background(LioTheme.paper)
                                 .fixedSize(horizontal: false, vertical: true)
                                 .accessibilityAddTraits(.isHeader)
                             LioTripTimeline(itinerary: itinerary, language: language)
