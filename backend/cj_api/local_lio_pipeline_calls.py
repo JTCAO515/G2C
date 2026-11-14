@@ -9,6 +9,10 @@ Account/RUN/financial limits may refuse earlier; these ceilings never raise them
 from contextlib import ExitStack
 from dataclasses import dataclass
 
+from cj_message.lio_exploration_schema import ExplorationInput
+from cj_message.lio_wire import ExplorationOrigin
+from cj_trip.domain import packed
+
 
 class PipelineCapacity(ValueError):pass
 
@@ -19,6 +23,13 @@ class Call:
     registration:str
     argument:object
     references:tuple=()
+
+
+def model_call(host,worker,binding,view,profile,system,extra):
+    origin=ExplorationOrigin(host.database,binding,worker.messages.query(binding.message_id))
+    messages=host._input(worker,view,view.originals[-1].text,extra)
+    return Call('model','model.lio_exploration.1',
+        ExplorationInput(profile,packed(messages),system,worker.provider,origin),tuple(view.references))
 
 
 class PipelineCalls:
