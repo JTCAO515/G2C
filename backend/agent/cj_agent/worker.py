@@ -219,7 +219,7 @@ class RunWorker:
                     if draft and state.draft_outcome is not None:
                         raise Conflict('draft result already recorded before invocation')
                     check_needs=None
-                    if draft and effect is not None and (self.drafts.content_version in ('structured.2','structured.3') or self.place_sources is not None):
+                    if draft and effect is not None and (self.drafts.content_version in ('structured.2','structured.3','structured.4') or self.place_sources is not None):
                         check_needs=leases.enter_context(self.drafts.hold_for_publication(binding))
                         check_needs()
                     elif draft and self.needs_lease is not None:
