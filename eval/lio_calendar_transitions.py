@@ -60,6 +60,12 @@ def _card_matches(card,snapshot):
     return packed(card)==packed(expected)
 
 
+def _day2_afternoon(item):
+    start,end=(item['schedule'][edge] for edge in ('start','end'))
+    return (start['day_index']==end['day_index']==2 and start['time']['state']==end['time']['state']=='known'
+            and time(12)<=time.fromisoformat(start['time']['value'])<time.fromisoformat(end['time']['value'])<=time(18))
+
+
 def judge_transitions(case_id, reads, *, histories=None, answers=None,
                       question_days=None, selected_item_id=None):
     """Assess frozen recipes; missing evidence remains UNKNOWN/UNRUN.
@@ -125,11 +131,7 @@ def judge_transitions(case_id, reads, *, histories=None, answers=None,
                 before=base.document;after=changed.document
                 target=next((i for i in before['items'] if i['id']==selected_item_id),None)
                 eligible=None if selected_item_id is None else (target is not None and
-                    target['fixed']=={'state':'known','value':False} and target['schedule']['start']['day_index']==2)
-                if eligible:
-                    start,end=(target['schedule'][edge] for edge in ('start','end'))
-                    eligible=(end['day_index']==2 and start['time']['state']==end['time']['state']=='known'
-                        and time(12)<=time.fromisoformat(start['time']['value'])<time.fromisoformat(end['time']['value'])<=time(18))
+                    target['fixed']=={'state':'known','value':False} and _day2_afternoon(target))
                 check('edit.actual_unlocked_day2_target',eligible)
                 if target is not None:
                     order=[i['id'] for i in before['items']]
@@ -138,6 +140,8 @@ def judge_transitions(case_id, reads, *, histories=None, answers=None,
                     check('edit.only_target_changes',all(by_id.get(i['id'])==i for i in before['items'] if i['id']!=selected_item_id))
                     replacement=by_id.get(selected_item_id)
                     check('edit.target_label_changes',replacement is not None and replacement['text']!=target['text'])
+                    check('edit.target_stays_day2_afternoon',replacement is not None and _day2_afternoon(replacement))
+                    check('edit.target_lock_unchanged',replacement is not None and replacement['fixed']==target['fixed'])
                     check('edit.same_calendar_days_title',all(before[k]==after[k] for k in ('calendar','days','title')))
                     refs={ref for i in before['items'] if i['id']!=selected_item_id for ref in i['source_refs']}
                     old_sources={s['id']:s for s in before['sources']};new_sources={s['id']:s for s in after['sources']}

@@ -113,6 +113,19 @@ def test_relative_date_uses_date_bearing_original_and_never_an_analysis_clock():
     assert any(c['name']=='step1.date_mapping' and c['status']=='FAIL' for c in shifted['checks'])
 
 
+@pytest.mark.parametrize('change',['different_day','new_lock'])
+def test_replacement_cannot_move_to_another_day_or_add_an_unrequested_lock(change):
+    case,reads,kwargs=run('day-edit-undo')
+    replacement=reads[1]['trip']['content']['items'][1]
+    if change=='different_day':
+        for edge in ('start','end'):replacement['schedule'][edge]['day_index']=3
+        name='edit.target_stays_day2_afternoon'
+    else:
+        replacement['fixed']=dict(state='known',value=True);name='edit.target_lock_unchanged'
+    reads[1]['trip']['content_sha256']=sha256(packed(reads[1]['trip']['content'])).hexdigest()
+    assert any(c['name']==name and c['status']=='FAIL' for c in judge_transitions(case,reads,**kwargs)['checks'])
+
+
 def test_fixed_meetup_and_question_ending_are_actually_checked():
     case,reads,kwargs=run('date-conversion')
     kwargs['answers'][0]='已处理。'
