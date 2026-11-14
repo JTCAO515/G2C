@@ -345,3 +345,5 @@ if __name__=='__main__':
     main()
     from lio_exploration_profile_pg import main as profile_main
     profile_main()
+    from lio_cross_language_pg import main as cross_language_main
+    cross_language_main()

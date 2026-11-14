@@ -34,7 +34,7 @@ SOURCE_LANGUAGE=(
     'city.query must itself be the original city mention inside city.quote. Keep an earlier city source '
     'when the latest message only adds dates or fixed arrangements. '
     'For original source0 "I want to spend three days in Chengdu.", use '
-    'city={query:"Chengdu",quote:"Chengdu",source_index:0,normalized_name:"成都",province:null}; '
+    'city value {"query":"Chengdu","quote":"Chengdu","source_index":0,"normalized_name":"成都","province":null}; '
     'query:"成都" or quote:"成都" is invalid because those characters are absent from source0. '
     'For original source0 "我想去成都玩三天", query:"成都",quote:"成都",source_index:0 is valid. '
     'Only normalized_name may propose a canonical Chinese name; it never replaces original evidence. '
