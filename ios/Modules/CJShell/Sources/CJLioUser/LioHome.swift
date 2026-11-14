@@ -37,6 +37,9 @@ public struct LioHome<MenuContent: View>: View {
     @State private var jumpRequest = 0
     @State private var sendCount = 0
     @State private var entering: Set<LioEntranceKey> = []
+    @State private var completedBodies: Set<Data> = []
+    @State private var seenMemoryTags: Set<LioMemoryWire.Tag> = []
+    @State private var savedCelebrations = 0
     @State private var chatFading = false
     @State private var timing = LioTimingLog()
     private struct Observation: Equatable {
@@ -112,6 +115,7 @@ public struct LioHome<MenuContent: View>: View {
             }
         }
         .tint(LioTheme.vermilion)
+        .sensoryFeedback(.success, trigger: savedCelebrations)
         .disabled(restoringChat)
         .opacity(restoringChat ? 0 : 1)
         .overlay {
@@ -200,7 +204,7 @@ public struct LioHome<MenuContent: View>: View {
             VStack(alignment: .leading, spacing: 22) {
                 if turn.id == earlierID { earlierMessages(scroll) }
                 if opening == .before(turn.id) { openingMessage }
-                turnView(turn)
+                turnView(turn, scroll: scroll)
             }
         }
         if let memoryNotice { Text(memoryNotice).font(.footnote) }
@@ -253,7 +257,7 @@ public struct LioHome<MenuContent: View>: View {
                         if followsAnswer, let pending, latest?.id == pending.id { scroll.scrollTo("lio.bottom", anchor: .bottom) }
                     }
                     .onChange(of: latest?.status) { _, status in
-                        if status == .finished, let id = latest?.id { timing.mark(.finished, id) }
+                        if status == .finished, let latest, latest.answer.isEmpty { timing.mark(.finished, latest.id) }
                         if followsAnswer && status == .finished { scroll.scrollTo("lio.bottom", anchor: .bottom) }
                     }
                     .onChange(of: jumpRequest) { _, _ in
@@ -349,6 +353,8 @@ public struct LioHome<MenuContent: View>: View {
             memoryNotice = nil
             followsAnswer = true
             entering = []
+            completedBodies = []
+            seenMemoryTags = []
             refreshRequest += 1
         }
         menuOpen = false
@@ -507,8 +513,13 @@ public struct LioHome<MenuContent: View>: View {
         }
     }
 
-    private func recordPendingFirstQuestion() {
-        if let question = conversation.pending, let chatID, chatLibrary?.continuity?.blankIDs.contains(chatID) == true {
+    private func preparePendingQuestion() {
+        guard let question = conversation.pending else { return }
+        entering.formUnion([LioEntranceKey(turn: question.id, part: .answer),
+                            LioEntranceKey(turn: question.id, part: .card),
+                            LioEntranceKey(turn: question.id, part: .memory)])
+        if !question.isResend { entering.insert(LioEntranceKey(turn: question.id, part: .question)) }
+        if let chatID, chatLibrary?.continuity?.blankIDs.contains(chatID) == true {
             chatLibrary?.continuity?.firstQuestions[chatID] = question
         }
     }
@@ -531,9 +542,8 @@ public struct LioHome<MenuContent: View>: View {
                 conversation.send(draft, language: language)
                 if let id = conversation.pending?.id {
                     timing.start(id, language: timingLanguage)
-                    entering.formUnion([LioEntranceKey(turn: id, part: .question), LioEntranceKey(turn: id, part: .answer)])
                 }
-                recordPendingFirstQuestion()
+                preparePendingQuestion()
                 if showedWelcome, let id = conversation.pending?.id { opening = .before(id) }
                 else if opening == .beforeNext { opening = .hidden }
                 draft = ""
@@ -651,8 +661,9 @@ public struct LioHome<MenuContent: View>: View {
         }
     }
 
-    private func turnView(_ turn: LioTurn) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+    private func turnView(_ turn: LioTurn, scroll: ScrollViewProxy) -> some View {
+        let owner = conversation
+        return VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 4) {
                 Spacer(minLength: dynamicTypeSize.isAccessibilitySize ? 12 : 64)
                 if turn.status == .failed(.notSent) {
@@ -660,7 +671,7 @@ public struct LioHome<MenuContent: View>: View {
                         if turn.id == conversation.turns.last?.id { followsAnswer = true }
                         conversation.resend(turn.id)
                         timing.start(turn.id, language: timingLanguage)
-                        recordPendingFirstQuestion()
+                        preparePendingQuestion()
                     } label: {
                         Image(systemName: "exclamationmark.circle.fill")
                             .foregroundStyle(LioTheme.danger)
@@ -688,29 +699,32 @@ public struct LioHome<MenuContent: View>: View {
                 EmptyView()
             } else if !turn.answer.isEmpty {
                 let answerKey = LioEntranceKey(turn: turn.id, part: .answer)
-                Group {
-                    if let answer = LioReplyMarkdown.render(turn.answer) {
-                        if !answer.characters.isEmpty {
-                            lioReply {
-                                replyText(Text(answer))
-                                    .textSelection(.enabled)
-                                    .accessibilityIdentifier("lio.answer")
-                            }
-                        }
-                    } else {
-                        lioReply {
-                            replyText(Text(language.text("This reply can’t be shown right now.", "这条回答暂时无法显示。")))
-                                .accessibilityIdentifier("lio.reply.unavailable")
-                        }
-                    }
+                lioReply {
+                    LioStreamingText(source: turn.answer, streaming: turn.status == .answering,
+                                     animate: entering.contains(answerKey), language: language,
+                                     presentationActive: !chatFading && !menuOpen && tab == .chat,
+                                     onFirstVisible: {
+                        guard conversation === owner, !chatFading else { return }
+                        timing.mark(.firstText, turn.id)
+                    }, onComplete: {
+                        guard conversation === owner, !chatFading else { return }
+                        timing.mark(.finished, turn.id)
+                        completedBodies.insert(turn.id)
+                    }, onLayout: {
+                        guard conversation === owner, scenePhase == .active, tab == .chat,
+                              followsAnswer, conversation.turns.last?.id == turn.id else { return }
+                        scroll.scrollTo("lio.bottom", anchor: .bottom)
+                    })
                 }
                 .lioEntrance(.fade, active: entering.contains(answerKey)) { entering.remove(answerKey) }
-                .onAppear { timing.mark(.firstText, turn.id) }
             }
             messageStatus(turn)
             if let memoryActions {
                 ForEach(turn.memoryTags.filter { !handledTags.contains($0) }) { tag in
                     memorySuggestion(tag, turnID: turn.id, client: memoryActions)
+                        .lioEntrance(.rise, active: entering.contains(LioEntranceKey(turn: turn.id, part: .memory))
+                            && !seenMemoryTags.contains(tag) && scenePhase == .active)
+                        .onAppear { if conversation === owner { seenMemoryTags.insert(tag) } }
                 }
                 ForEach(memoryFeedback.values.filter {
                     $0.turnID == turn.id && ($0.kind.replacesPrompt || !turn.memoryTags.contains($0.tag))
@@ -724,35 +738,58 @@ public struct LioHome<MenuContent: View>: View {
                            value: memoryFeedback.count)
             }
             if let itinerary = turn.itinerary {
+                let entrance = LioEntranceKey(turn: turn.id, part: .card)
+                let fresh = entering.contains(entrance)
                 let card = LioTripCard(turnID: turn.id, itinerary: itinerary)
                 let isLatest = card == latestTripCard
                 let current = isLatest ? tripPlan?.current(in: card) : nil
-                LioItineraryCard(itinerary: current ?? itinerary, language: language) {
-                    if tripLibrary != nil { tripPath = [LioTripRoute(id: itinerary.id, visit: UUID())] }
-                    tab = .trips
-                } actions: {
-                    if isLatest, let tripPlan {
-                        if current != nil, let target = tripPlan.target {
-                            Button(language.text("Undo", "撤销")) {
-                                Task {
-                                    guard latestTripCard == card, conversation.pending == nil else { return }
-                                    await tripPlan.undo(target)
+                if !fresh || cardBodyReady(turn) {
+                    LioResultEntrance(fresh: fresh, onShown: {
+                        guard conversation === owner else { return }
+                        entering.remove(entrance)
+                        if scenePhase == .active, !chatFading, tab == .chat {
+                            savedCelebrations += 1
+                            if followsAnswer, conversation.turns.last?.id == turn.id { scroll.scrollTo("lio.bottom", anchor: .bottom) }
+                        }
+                    }) { celebrate in
+                        LioItineraryCard(itinerary: current ?? itinerary, language: language, celebrate: celebrate) {
+                            if tripLibrary != nil { tripPath = [LioTripRoute(id: itinerary.id, visit: UUID())] }
+                            tab = .trips
+                        } actions: {
+                            if isLatest, let tripPlan {
+                                if current != nil, let target = tripPlan.target {
+                                    Button(language.text("Undo", "撤销")) {
+                                        Task {
+                                            guard latestTripCard == card, conversation.pending == nil else { return }
+                                            await tripPlan.undo(target)
+                                        }
+                                    }
+                                    .buttonStyle(.bordered)
+                                    .disabled(tripPlan.busy || tripPlan.pending || conversation.pending != nil || scenePhase != .active)
+                                    .accessibilityIdentifier("lio.chat.trip.undo")
+                                }
+                                if tripPlan.pending {
+                                    Text(language.text("Waiting for the trip to update…", "正在等行程更新…"))
+                                        .font(.footnote)
+                                }
+                                if let notice = tripPlan.notice {
+                                    Text(notice.text(language)).font(.footnote)
                                 }
                             }
-                            .buttonStyle(.bordered)
-                            .disabled(tripPlan.busy || tripPlan.pending || conversation.pending != nil || scenePhase != .active)
-                            .accessibilityIdentifier("lio.chat.trip.undo")
-                        }
-                        if tripPlan.pending {
-                            Text(language.text("Waiting for the trip to update…", "正在等行程更新…"))
-                                .font(.footnote)
-                        }
-                        if let notice = tripPlan.notice {
-                            Text(notice.text(language)).font(.footnote)
                         }
                     }
                 }
             }
+        }
+    }
+
+    private func cardBodyReady(_ turn: LioTurn) -> Bool {
+        switch turn.status {
+        // Native4's separate segment renderer does not use this pacing callback yet.
+        // Keep its saved cards visible until #933 wires that renderer's completion.
+        case .finished: turn.exploration != nil || turn.answer.isEmpty || completedBodies.contains(turn.id)
+        case .failed: true
+        case .thinking, .working, .answering: false
         }
     }
 
@@ -798,7 +835,7 @@ public struct LioHome<MenuContent: View>: View {
                     if let pending = conversation.pending {
                         timing.start(pending.id, language: timingLanguage)
                     }
-                    recordPendingFirstQuestion()
+                    preparePendingQuestion()
                 }
                     .buttonStyle(.borderedProminent)
                     .tint(LioTheme.vermilion)
