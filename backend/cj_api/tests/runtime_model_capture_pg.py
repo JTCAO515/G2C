@@ -9,7 +9,7 @@ import local_history_pg as harness
 import dev_auth,local_run_context,run_worker
 from cj_api.local_app import LocalDatabase,ISSUER,scope_for,load_confirmation_signer
 from cj_api.local_run_context import load_run_context
-from cj_api.local_worker_context import checker_for
+from cj_api.local_worker_context import checker_for,LocalBudgetRouter
 from cj_api.real_services import RealServices,RealTools
 from cj_api.tool_evidence import ToolEvidence
 from cj_api.runtime_originals import RuntimeOriginals
@@ -91,6 +91,28 @@ def exercise(root,conninfo):
         assert wire['wire_input_sha256']==original['receipt']['input_sha256']
         meter=decode(originals.meter(token,receipt.message_id,operation['operation_id']))
         assert meter['state']=='settled'and meter['receipt']is not None and not meter['cancelled']
+        # The exact runtime factory defers its native scope until after the
+        # transaction characteristics are established. The public read path
+        # must bind inside that READ ONLY transaction, without touching Meter.
+        from cj_usage.postgres import PostgresRepository,RepositoryUnavailable
+        from cj_run.step_usage import ledger_scope_for
+        account=ledger_scope_for(owner,context.current.meter)
+        original_receipt=boundary.with_history_context(token,lambda ctx:ctx.query_lio_message(receipt.message_id).receipt)
+        binding=worker._binding(original_receipt)
+        original_exit=LocalBudgetRouter(database).for_run(binding,worker.runs.snapshot(binding))
+        status=original_exit.resolve_meter(binding,account).repo
+        original_ledger=database.connect(owner,usage_profile=context.current)
+        with original_ledger as db:
+            before_status=db.execute('SELECT revision,ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(account,)).fetchone()
+        unbound=PostgresRepository(lambda:database.connect(owner,usage_profile=context.current),account)
+        try:unbound.read_status(operation['attempt_id'],guard=lambda:None,max_response_bytes=4096)
+        except RepositoryUnavailable:pass
+        else:raise AssertionError('unbound runtime read unexpectedly bypassed scope isolation')
+        view=decode(status.read_status(operation['attempt_id'],guard=lambda:None,max_response_bytes=4096,
+            expected_period=(context.current.meter.period_start,context.current.meter.period_end)))
+        assert view['status']=='settled'and view['receipt_id']is not None
+        with database.connect(owner,usage_profile=context.current)as db:
+            assert db.execute('SELECT revision,ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(account,)).fetchone()==before_status
         calls_before=model.calls;fees_before=len(budget.inspect())
         surfaces=decode(NativeSurfaceInventory(originals,lambda:token,guard=lambda:None).collect(receipt.message_id))
         assert surfaces['evidence_status']=='COMPLETE'and surfaces['missing']==[]

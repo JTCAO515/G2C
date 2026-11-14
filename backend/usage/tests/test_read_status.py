@@ -80,6 +80,30 @@ class ReadTests(unittest.TestCase):
         self.assertNotIn('FOR UPDATE',sql[1])
         self.assertEqual(self.row[0],7)
 
+    def test_explicit_runtime_binder_follows_readonly_before_select(self):
+        def bind(conn,cur):
+            self.assertIs(conn,self.conn)
+            self.assertIn('READ ONLY',[x[0]for x in self.log if isinstance(x,tuple)][-1])
+            self.event('bind')
+        self.repo=PostgresRepository(self.factory,'scope-a',read_binder=bind)
+        self.assertEqual(json.loads(self.read())['status'],'unknown')
+        self.assertLess(self.log.index('set'),self.log.index('bind'))
+        self.assertLess(self.log.index('bind'),self.log.index('select'))
+
+    def test_binder_failure_withholds_and_preserves_original_ledger(self):
+        before=deepcopy(self.row)
+        def bind(conn,cur):raise RepositoryUnavailable('original scope unavailable')
+        self.repo=PostgresRepository(self.factory,'scope-a',read_binder=bind)
+        with self.assertRaises(RepositoryUnavailable):self.read()
+        self.assertNotIn('select',self.log);self.assertNotIn('commit',self.log)
+        self.assertEqual(self.row,before)
+
+    def test_changed_binder_during_read_is_not_same_qualification(self):
+        self.repo=PostgresRepository(self.factory,'scope-a',read_binder=lambda conn,cur:None)
+        self.hooks['fetch']=lambda:setattr(self.repo,'read_binder',lambda conn,cur:None)
+        with self.assertRaises(ReadUnavailable):self.read()
+        self.assertEqual(self.row[0],7)
+
     def test_all_states_zero_receipt_and_cancellation(self):
         for state in ('reserved','unknown','released','settled'):
             l=deepcopy(self.ledger)

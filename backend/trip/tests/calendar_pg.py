@@ -27,7 +27,7 @@ from cj_trip.postgres import Repository
 from cj_trip.domain import Proposal, packed
 from cj_trip.confirmation import ConfirmationSigner
 from cj_agent.draft import trip_scope_for
-from cj_api.local_app import scope_for, ISSUER
+from cj_api.local_app import LocalDatabase, scope_for, ISSUER
 from cj_message.travel import ABI
 import dev_auth
 
@@ -46,7 +46,8 @@ class CalendarReadChecks(unittest.TestCase):
     def setUpClass(cls):
         Harness.setUpClass.__func__(cls)
         cls.host = RegisteredHost(cls.auth/'calendar', Path(CONNINFO),
-            {s: (12, 2, 30000) for s in ('calendar', 'calendar-foreign', 'calendar-revoke')})
+            {s: (12, 2, 30000) for s in ('calendar', 'calendar-foreign', 'calendar-revoke',
+                                       'calendar-rich', 'calendar-rich-revoke')})
         cls.env = dict(CJ_LOCAL_NEEDS_PROFILE='manual-v1', CJ_LOCAL_TRAVEL_CONTEXT='message-travel.1')
         cls.signer = ConfirmationSigner(b'synthetic-calendar-pg-signer-123456789')
         for subject in cls.host.subjects:
@@ -76,6 +77,123 @@ class CalendarReadChecks(unittest.TestCase):
         receipt = repository.act(signed.action)
         self.assertEqual(receipt.committed_version, 1)
         return legacy_id, proposal.trip_id, content
+
+    def rich_saved(self,subject):
+        """Controlled signed storage ingress for reader tests, not a WP8 source grant."""
+        app,outcome,database=self.plan(subject)
+        with TestClient(app) as writer:
+            accepted=self.post(writer,subject,self.action(subject,outcome,'accept'))
+            self.assertEqual(accepted.status_code,200,accepted.text)
+            legacy_id=accepted.json()['receipt']['trip_id']
+        cases=json.loads((ROOT/'contracts/trip/structured-examples.4.json').read_bytes())['cases']
+        raw=packed(cases['unconfirmed']['content'])
+        return legacy_id,self.saved_read_fixture(subject,raw),raw
+
+    def saved_read_fixture(self,subject,raw):
+        owner=scope_for(ISSUER,subject)
+        database=LocalDatabase(CONNINFO,run_context=self.host.profiles[subject][1],travel_context=True,needs_context=True)
+        repository=Repository(lambda:database.connect(owner),trip_scope_for(owner),self.signer,
+                              structured=True,calendar=True,rich=True)
+        proposal=Proposal('rich-pg-'+uuid.uuid4().hex,'a-rich-'+uuid.uuid4().hex,0,
+                          'synthetic-rich-read',int(time.time())+300,raw)
+        digest=repository.publish(proposal)
+        signed=self.signer.issue(repository.scope,repository.proposal_detail(proposal.proposal_id),
+            action_id='rich-save-'+uuid.uuid4().hex,kind='accept',candidate_hash=digest)
+        self.assertEqual(repository.act(signed.action).committed_version,1)
+        return proposal.trip_id
+
+    def test_rich_native_read_and_old_mixed_pages_preserve_original_bytes(self):
+        from cj_trip.local_rich_read import create_local_rich_read_app
+        subject='calendar-rich'
+        legacy_id,trip_id,raw=self.rich_saved(subject)
+        options=dict(conninfo_path=CONNINFO,auth_dir=self.host.auth,run_context=self.host.profiles[subject][1])
+        headers=self.host.headers[subject]
+        with TestClient(create_local_rich_read_app(**options)) as client:
+            result=client.get('/v7/trip-structured',params={'trip_id':trip_id},headers=headers)
+            self.assertEqual(result.status_code,200,result.text)
+            value=result.json();self.assertEqual(value['version'],'TRIP-structured-read.3')
+            self.assertEqual(packed(value['trip']['content']),raw)
+            self.assertEqual(value['trip']['content_sha256'],sha256(raw).hexdigest())
+            self.assertEqual(client.get('/v7/trip-structured',params={'trip_id':trip_id},
+                headers=self.host.headers['calendar-foreign']).json()['trip'],None)
+            page=client.get('/v3/trip-structured-list',headers=headers).json()
+            rows={item['trip_id']:item for item in page['trips']}
+            self.assertEqual(rows[trip_id]['content_version'],'structured.4')
+            self.assertEqual(rows[trip_id]['day_count'],2)
+            self.assertIsNone(rows[legacy_id]['calendar'])
+            self.assertIsNone(rows[legacy_id]['day_count'])
+            old_examples=json.loads((ROOT/'contracts/trip/structured-read-examples.2.json').read_bytes())['positive']
+            old1=next(case['value']['trip']['content'] for case in old_examples
+                      if case['name']=='structured.1 content unchanged')
+            old1=deepcopy(old1);old1['title']+='\u0000legacy control'
+            originals=[(self.saved_read_fixture(subject,packed(content)),packed(content))
+                       for content in (old1,FIXTURES['base'])]
+            for old_id,old_raw in originals:
+                actual=client.get('/v7/trip-structured',params={'trip_id':old_id},headers=headers)
+                self.assertEqual(actual.status_code,200,actual.text)
+                self.assertEqual(actual.json()['version'],'TRIP-structured-read.3')
+                self.assertEqual(packed(actual.json()['trip']['content']),old_raw)
+                self.assertEqual(actual.json()['trip']['content_sha256'],sha256(old_raw).hexdigest())
+            rich_cases=json.loads((ROOT/'contracts/trip/structured-examples.4.json').read_bytes())['cases']
+            dated_raw=packed(rich_cases['dated']['content'])
+            dated_id=self.saved_read_fixture(subject,dated_raw)
+            actual=client.get('/v7/trip-structured',params={'trip_id':dated_id},headers=headers)
+            self.assertEqual(actual.status_code,200,actual.text)
+            self.assertEqual(packed(actual.json()['trip']['content']),dated_raw)
+            for query in ('trip_id=x&trip_id=y','trip_id=x&owner=other'):
+                self.assertEqual(client.get('/v7/trip-structured?'+query,headers=headers).status_code,400)
+        for factory,list_path,detail_path in ((create_local_calendar_read_app,'/v2/trip-structured-list','/v6/trip-structured'),
+                                              (create_local_structured_read_app,'/v1/trip-structured-list','/v5/trip-structured')):
+            with TestClient(factory(**options)) as old:
+                rejected=old.get(detail_path,params={'trip_id':trip_id},headers=headers)
+                self.assertEqual(rejected.status_code,503,rejected.text)
+                self.assertNotIn('trip',rejected.json())
+                # The older read.1 cannot consume the unrelated pre-existing
+                # calendar.3 representation; exercise its old content detail,
+                # while the read.2 list covers 1-3 mixed with the new4 record.
+                if factory is create_local_structured_read_app:
+                    self.assertEqual(old.get(detail_path,params={'trip_id':legacy_id},headers=headers).status_code,200)
+                    continue
+                page=old.get(list_path,params={'limit':'100'},headers=headers)
+                self.assertEqual(page.status_code,200,page.text)
+                found={item['trip_id']for item in page.json()['trips']}
+                self.assertNotIn(trip_id,found);self.assertNotIn(dated_id,found);self.assertIn(legacy_id,found)
+                self.assertTrue({old_id for old_id,_ in originals}<=found)
+                last=max(found)
+                following=old.get(list_path,params={'limit':'1','after':last},headers=headers)
+                self.assertEqual(following.status_code,200,following.text)
+                self.assertEqual(following.json()['trips'],[])
+        with TestClient(create_local_rich_read_app(**dict(options,max_response_bytes=1))) as bounded:
+            result=bounded.get('/v7/trip-structured',params={'trip_id':trip_id},headers=headers)
+            self.assertEqual(result.status_code,503)
+            self.assertNotIn(trip_id,result.text)
+
+    def test_rich_read_revocation_after_encoding_withholds_the_whole_page(self):
+        from cj_trip.local_rich_read import create_local_rich_read_app
+        from cj_trip import local_calendar_read as api
+        legacy_id,trip_id,_=self.rich_saved('calendar-rich-revoke')
+        with TestClient(create_local_structured_read_app(conninfo_path=CONNINFO,auth_dir=self.host.auth,
+            run_context=self.host.profiles['calendar-rich-revoke'][1])) as old:
+            page=old.get('/v1/trip-structured-list',params={'limit':'1'},headers=self.host.headers['calendar-rich-revoke'])
+            self.assertEqual(page.status_code,200,page.text)
+            self.assertEqual([item['trip_id']for item in page.json()['trips']],[legacy_id])
+            following=old.get('/v1/trip-structured-list',params={'limit':'1','after':legacy_id},headers=self.host.headers['calendar-rich-revoke'])
+            self.assertEqual(following.status_code,200,following.text)
+            self.assertEqual(following.json()['trips'],[])
+        invited=self.host.auth/'invited.json';original=invited.read_bytes();encode=api.compact
+        def revoke(value):
+            raw=encode(value)
+            if value.get('version')=='TRIP-structured-read.3':
+                invited.write_text(json.dumps([s for s in json.loads(original)if s!='calendar-rich-revoke']))
+            return raw
+        try:
+            with TestClient(create_local_rich_read_app(conninfo_path=CONNINFO,auth_dir=self.host.auth,
+                run_context=self.host.profiles['calendar-rich-revoke'][1])) as client,patch.object(api,'compact',revoke):
+                result=client.get('/v3/trip-structured-list',headers=self.host.headers['calendar-rich-revoke'])
+                self.assertEqual(result.status_code,503,result.text)
+                self.assertNotIn('trips',result.json())
+                self.assertNotIn(trip_id,result.text)
+        finally:invited.write_bytes(original)
 
     def test_actual_signed_read_retains_three_days_legacy_and_owner_partition(self):
         legacy_id, trip_id, raw = self.saved()

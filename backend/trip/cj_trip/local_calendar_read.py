@@ -30,18 +30,25 @@ def create_local_calendar_read_app(*, conninfo_path, auth_dir, run_context, max_
 
 def register_local_calendar_read_routes(app, *, database, auth_dir,
                                          max_response_bytes=1_000_000, selected_subjects=None):
+    return _register_calendar_read_routes(app,database=database,auth_dir=auth_dir,
+        max_response_bytes=max_response_bytes,selected_subjects=selected_subjects)
+
+
+def _register_calendar_read_routes(app, *, database, auth_dir,
+                                 max_response_bytes=1_000_000, selected_subjects=None, rich=False):
     if (os.environ.get('CJ_ENV') != 'local' or database.run_context is None
             or type(max_response_bytes) is not int or max_response_bytes < 1):
         raise CompositionUnavailable('explicit local calendar read host required')
 
     resolve = trip_resolver(database, provision=True)
     checker = account_checker_for(Path(auth_dir), database, selected_subjects=selected_subjects)
-    boundary = Boundary(checker, resolve, structured=True, calendar=True)
+    boundary = Boundary(checker, resolve, structured=True, calendar=True, rich=rich)
+    version = 'TRIP-structured-read.3' if rich else VERSION
 
     def structured(trip):
         document = json.loads(trip.content)
         version = document.get('content_version')
-        if version in ('structured.1', 'structured.2', 'structured.3'):
+        if version in ('structured.1', 'structured.2', 'structured.3') or rich and version=='structured.4':
             return document
         if version in (None, 'provenance.1'):
             return None
@@ -74,7 +81,7 @@ def register_local_calendar_read_routes(app, *, database, auth_dir,
 
         def operation():
             def encode(context):
-                result = dict(version=VERSION, request_id=request.state.request_id)
+                result = dict(version=version, request_id=request.state.request_id)
                 if detail:
                     trip = context.detail(query['trip_id'])
                     content = None if trip is None else structured(trip)
@@ -86,7 +93,7 @@ def register_local_calendar_read_routes(app, *, database, auth_dir,
                     for trip in scanned:
                         content = structured(trip)
                         if content is not None:
-                            calendar = content.get('calendar') if content['content_version'] == 'structured.3' else None
+                            calendar = content.get('calendar') if content['content_version'] in ('structured.3','structured.4') else None
                             result['trips'].append(dict(trip_id=trip.trip_id, version=trip.version,
                                 content_version=content['content_version'], title=content['title'],
                                 content_sha256=sha256(trip.content).hexdigest(), calendar=calendar,
@@ -103,11 +110,11 @@ def register_local_calendar_read_routes(app, *, database, auth_dir,
         except Exception:
             return _error(request, 503, 'TRIP_UNAVAILABLE', 'dependency', 'unknown', 'retry_safe_read')
 
-    @app.get('/v2/trip-structured-list')
+    @app.get('/v3/trip-structured-list' if rich else '/v2/trip-structured-list')
     async def listing(request: Request):
         return await invoke(request, False)
 
-    @app.get('/v6/trip-structured')
+    @app.get('/v7/trip-structured' if rich else '/v6/trip-structured')
     async def read_detail(request: Request):
         return await invoke(request, True)
 
