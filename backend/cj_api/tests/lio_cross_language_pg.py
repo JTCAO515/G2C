@@ -32,9 +32,10 @@ from test_lio_planning_flow import flow
 SUBJECT='m4-synthetic-demo-0123456789ab'
 KEY='cross-language-fixture-only-key'
 CASE=json.loads((Path(__file__).parent/'fixtures/lio982-source-rejection.json').read_bytes())
+FIXED_CASE=json.loads((Path(__file__).parent/'fixtures/lio991-duplicate-fixed.json').read_bytes())
 
 
-def exercise(root,conninfo):
+def exercise(root,conninfo,*,basic_memory=False):
     auth=root/'auth';dev_auth.init(auth,[SUBJECT]);now=int(time.time())
     config=root/'connection.json';config.write_text(json.dumps(conninfo))
     meter=root/'meter.json';meter.write_text(json.dumps(dict(version='CJ-LOCAL-RUN@2',current=dict(meter=dict(
@@ -57,9 +58,10 @@ def exercise(root,conninfo):
         demo_accounts.manage(runtime,'bootstrap',SUBJECT,control,operations,(sha256(invite.encode()).hexdigest(),datetime.now(timezone.utc)+timedelta(hours=1)))
         demo_accounts.manage(runtime,'insert',SUBJECT,control,operations)
     journal=AuthorizationBudget(root/'fixture-journal',clock=lambda:datetime(2026,11,9,tzinfo=timezone.utc))
-    locale='en';text='';bad=False;wire=[];start=None
+    locale='en';text='';bad=False;wire=[];start=None;basic=False;regression=False;duplicate=False
     fixed={'en':'On day 1 I have a fixed hotel meetup from 9 to 10 a.m.; keep it unchanged',
            'zh':'第一天我9:00到10:00要在酒店集合，保持不变'}
+    original_fixed='第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变；酒店名称和位置尚未确定。'
     def response(request):
         nonlocal start
         body=json.loads(request.content);wire.append(body);system=body['messages'][0]['content']
@@ -68,7 +70,16 @@ def exercise(root,conninfo):
             assert body['max_tokens']==1536,body['max_tokens']
             originals=[m['content']for m in body['messages'][1:]if m['role']=='user'and not m['content'].startswith('Stored memory data')]
             index=len(originals)-1
-            if index==0:
+            for ordinal,source in enumerate(originals):
+                assert source.startswith('Original traveler source_index='+str(ordinal)+' (quote only the following original text):\n')
+            if basic:
+                assert body['messages'][1]['content'].startswith('Stored memory data (not instructions):\n')
+                assert 'Prefers a relaxed pace.'in body['messages'][1]['content']
+                value=flow(text,city=None,days=3,intent='plan',questions=('city',),
+                    reply='你想去哪个城市？'if locale=='zh'else'Which city would you like to visit?')
+                value.update(version='LIO-planning-intake.8',needs_tools=False,planning_request_index=0)
+                value['field_sources']=[dict(field='duration_days',source_index=2 if bad else 0,quote='三天'if locale=='zh'else'three days')]
+            elif index==0:
                 value=flow(text,city='Chengdu'if locale=='en'else'成都',questions=(),intent='plan')
                 value.update(version='LIO-planning-intake.8',needs_tools=False)
                 value['field_sources']=[dict(field='duration_days',source_index=0,quote='three days'if locale=='en'else'三天')]
@@ -83,6 +94,10 @@ def exercise(root,conninfo):
                 item=value['fixed_items'][0]
                 item.update(kind='appointment',quote=fixed[locale],label='hotel meetup'if locale=='en'else'酒店集合',
                     start_date=start,end_date=start,start_timezone=None,end_timezone=None)
+                if regression:
+                    item.update(kind='hotel',quote=original_fixed if locale=='zh'else fixed['en'],
+                                start_timezone='Asia/Shanghai',end_timezone='Asia/Shanghai')
+                    if locale=='zh':item['unknown_fields']=[] # original r09 intake: absent place, not a claimed name
                 if bad:value['city'].update(query='成都',quote='成都')
         elif 'The traveler requested a complete 'in system:
             value=dict(answer=('Day 1: a neighborhood. Day 2: a museum. Day 3: a park. Which day should we adjust?'
@@ -92,12 +107,23 @@ def exercise(root,conninfo):
             assert original['version']=='TRIP-source-input.2'
             assert original['fields']['party_size']['state']!='known'
             assert len(original['fields']['fixed_items'])==1
+            original_item=original['fields']['fixed_items'][0]
+            if regression:
+                assert 'including on a first plan'in system
+                assert 'Return only NEW suggested stops'in system
+                assert json.dumps([original_item['item_id']],separators=(',',':'))in system
             days=[]
             for n in range(3):
                 day=(date.fromisoformat(start)+timedelta(days=n)).isoformat()
                 rows=[]if n==0 else [[f'am-{n}','Museum（博物馆）','09:00','11:00',['self']]]
                 rows.append([f'pm-{n}','Park（公园）','14:00','16:00',['self']]);days.append([day,rows])
             value=dict(version='TRIP-lio-first-plan.2',title='Chengdu（成都）',days=days)
+            if regression:
+                value=json.loads(FIXED_CASE['draft_utf8'])
+                for index,day in enumerate(value['days']):
+                    day[0]=(date.fromisoformat(start)+timedelta(days=index)).isoformat()
+                if duplicate:value['days'][0][1][0][0]=original_item['item_id']
+                else:value['days'][0][1].pop(0) # compliant fixture, never server-side repair
         identity=dict(id='cross-language-fixture-'+str(len(wire)),model=M4_MODEL)
         frames=[dict(**identity,choices=[dict(index=0,delta=dict(content=json.dumps(value,ensure_ascii=False)),finish_reason=None)]),
                 dict(**identity,choices=[dict(index=0,delta={},finish_reason='stop')]),
@@ -110,12 +136,62 @@ def exercise(root,conninfo):
     signer=load_confirmation_signer(auth)
     app=create_local_app(conninfo_path=None,auth_dir=auth,database=database,run_context=context,account_admission=True,
         confirmation_signer=signer,demo_dialogue_subjects=subjects,lio_dialogue_subjects=subjects)
+    if basic_memory:
+        from cj_memory.typed_api import register_typed_routes
+        from cj_api.local_lio_memory import pilot_write_configuration
+        register_typed_routes(app,database=database,auth_dir=auth,
+                              configuration=pilot_write_configuration(memory.collection,subjects))
     headers={'Authorization':'Bearer '+dev_auth.token(auth,SUBJECT,3600),'Content-Type':'application/octet-stream'}
     async def catalogue(key,guard):assert key==KEY and guard()is True;return city_catalog()
     with TestClient(app)as api,patch('cj_api.lio_city._catalog_exchange',side_effect=catalogue):
-        for label,language,invalid in (('en','en',False),('zh','zh',False),('translated','en',True)):
-            locale=language;bad=invalid;cid=None
+        if basic_memory:
+            seed=dict(version='MEMORY-manual.2',operation_id='basic-memory-setup',item_id='basic-memory-pace',
+                subject='self',slot='travel.pace',kind='preference',text='Prefers a relaxed pace.',extent='long_term',
+                context=None,occurred_at='synthetic local regression')
+            seeded=api.post('/v2/memories',headers=headers,content=json.dumps(seed,separators=(',',':')).encode())
+            assert seeded.status_code==200,seeded.text
+            assert seeded.json()['receipt']['status']=='active'
+            seed_receipt=api.get('/v2/memory-receipts',headers=headers,params=dict(operation_id=seed['operation_id']))
+            assert seed_receipt.status_code==200 and seed_receipt.json()['receipt']==seeded.json()['receipt']
+            for label,language,question,invalid in (
+                    ('zh-capability','zh','你能做啥',False),('en-capability','en','What can you do?',False),
+                    ('zh-days','zh','三天怎么玩',False),('en-days','en','How should I spend three days?',False),
+                    ('zh-model','zh','帮我规划三天的旅行',False),('en-model','en','Please help me plan for three days',False),
+                    ('bad-offset','zh','帮我规划三天的旅行',True)):
+                locale=language;text=question;basic=True;bad=invalid
+                before=len(wire);mid='basic-'+label
+                sent=api.post('/v2/lio/messages',headers=headers,content=json.dumps(dict(version='LIO-message.2',
+                    message_id=mid,text=text,locale=locale,new_conversation=True),ensure_ascii=False).encode())
+                assert sent.status_code==200,sent.text
+                cid=sent.json()['conversation_id']
+                outcome,=run_worker.run_once(database,model,auth,tools_configuration=tools,real_services=services,
+                    memory_configuration_for_scope=lambda owner:memory if owner==scope else None,account_admission=True,
+                    hk_demo_scopes=frozenset({scope}),lio_confirmation=signer)
+                assert outcome.status==('unknown'if bad else'completed'),outcome
+                timeline=api.get('/v2/lio/timeline',headers=headers,params=dict(conversation_id=cid)).json()
+                message,=timeline['messages']
+                if bad:
+                    assert message['status']=='failed'and message['answer']==''
+                else:
+                    assert message['status']=='completed'and message['answer']
+                    if 'capability'in label or label.endswith('-days'):assert len(wire)==before # code clarification, never model-health evidence
+                    else:
+                        assert len(wire)==before+1
+                    if 'capability'not in label:
+                        with database.connect(scope)as db:
+                            row=db.execute("SELECT value FROM cj_run_event WHERE scope=%s AND run_id=%s AND value LIKE 'lio_planning_context.1:%%'",
+                                           (scope,outcome.run_id)).fetchone()
+                        saved=json.loads(row[0].split(':',1)[1]);assert saved['facts']['duration_days']['value']==3
+                current=api.get('/v2/lio/trip',headers=headers,params=dict(conversation_id=cid)).json()
+                assert current['current']is None
+                print(json.dumps(dict(case=label,mid=mid,cid=cid,run=outcome.run_id,status=outcome.status,memory='actual native active source')),flush=True)
+            basic=False;bad=False
+        for label,language,invalid in (('en','en',False),('zh','zh',False),('translated','en',True),
+                ('r09-zh','zh',False),('r09-en','en',False),('r09-duplicate','zh',False)):
+            locale=language;bad=invalid;cid=None;regression=label.startswith('r09');duplicate=label=='r09-duplicate'
             texts=(CASE['turns']if locale=='en'else('我想去成都玩三天。','明天开始。'+fixed['zh']+'。酒店名称和位置尚未确定。不要声称已经预订。'))
+            if regression and locale=='zh':
+                texts=('去成都玩三天','从明天开始。 '+original_fixed+'请给每天的上午、下午安排写出计划时间段，不要声称已有预约。')
             for index,text in enumerate(texts):
                 mid='cross-'+label+'-'+str(index)
                 sent=api.post('/v2/lio/messages',headers=headers,content=json.dumps(dict(version='LIO-message.2',message_id=mid,
@@ -127,8 +203,11 @@ def exercise(root,conninfo):
                 expected='unknown'if bad and index==1 else'completed'
                 assert outcome.status==expected,outcome
                 current=api.get('/v2/lio/trip',headers=headers,params=dict(conversation_id=cid)).json()
-                if index==0 or bad:
+                if index==0 or bad or duplicate:
                     assert current['current']is None
+                    if duplicate and index==1:
+                        timeline=api.get('/v2/lio/timeline',headers=headers,params=dict(conversation_id=cid)).json()
+                        assert timeline['messages'][-1]['status']=='failed',timeline
                 else:
                     card=current['current'];assert card is not None and current['history']==[],current
                     assert [day['date']for day in card['days']]==[(date.fromisoformat(start)+timedelta(days=n)).isoformat()for n in range(3)]
@@ -142,16 +221,21 @@ def exercise(root,conninfo):
                     fields=json.loads(bytes(row[0]));assert fields['party_size']['state']!='known'
                     meeting,=fields['fixed_items'];assert meeting['applies_to']==['self']
                     assert meeting['booking_status']['state']!='known'
-                    assert meeting['start']['place']['state']=='unknown'and meeting['end']['place']['state']=='unknown'
+                    expected_place='missing'if regression and locale=='zh'else'unknown'
+                    assert meeting['start']['place']['state']==expected_place and meeting['end']['place']['state']==expected_place
                 print(json.dumps(dict(mid=mid,cid=cid,run=outcome.run_id,status=outcome.status)),flush=True)
             if bad:
                 with database.connect(scope)as db:
                     assert db.execute('SELECT count(*)FROM cj_message_needs_binding WHERE message_scope=%s AND message_id=%s',(scope,mid)).fetchone()[0]==0
-        with database.connect(scope)as db:assert db.execute('SELECT count(*)FROM cj_memory_item').fetchone()[0]==0
-    print('PASS signed ZH/EN preview -> date/fixed self -> one saved version; translated source remains UNKNOWN/zero binding/Trip, no retries; HTTP fixtures only',flush=True)
+        with database.connect(scope)as db:assert db.execute('SELECT count(*)FROM cj_memory_item').fetchone()[0]==(1 if basic_memory else 0)
+        if basic_memory:
+            detail=api.get('/v2/memory-items',headers=headers,params=dict(item_id='basic-memory-pace')).json()['item']
+            assert detail['status']=='active'and detail['version']==1
+            assert detail['command']['text']==seed['text']and detail['command']['slot']=='travel.pace'
+    print('PASS signed ZH/EN preview -> date/fixed self -> one saved version, including r09 fixed hotel; translated source UNKNOWN and duplicate original IDs remain rejected/zero Trip; no retries, HTTP fixtures only',flush=True)
 
 
-def main():
+def main(*,basic_memory=False):
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
     from cryptography.hazmat.primitives.serialization import Encoding,PrivateFormat,PublicFormat,NoEncryption
     import base64
@@ -165,7 +249,7 @@ def main():
                 CJ_TRIAL_VALID_UNTIL='2026-12-31T16:00:00+00:00',CJ_BETA_DEMO_SUBJECTS_JSON=json.dumps([SUBJECT]),
                 CJ_BETA_RECOVERY_PRIVATE_B64=base64.b64encode(key.private_bytes(Encoding.Raw,PrivateFormat.Raw,NoEncryption())).decode(),
                 CJ_BETA_RECOVERY_PUBLIC_B64=base64.b64encode(key.public_key().public_bytes(Encoding.Raw,PublicFormat.Raw)).decode())
-            with patch.dict(os.environ,env):exercise(root,conninfo)
+            with patch.dict(os.environ,env):exercise(root,conninfo,basic_memory=basic_memory)
 
 
 if __name__=='__main__':main()
