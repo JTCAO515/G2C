@@ -231,6 +231,7 @@ public struct LioHome<MenuContent: View>: View {
                 .padding(.bottom, 12)
                 .frame(maxWidth: .infinity)
                 .opacity(chatFading ? 0 : 1)
+                .allowsHitTesting(!chatFading)
             }
             .scrollClipDisabled(false)
             .scrollDismissesKeyboard(.interactively)
@@ -313,13 +314,15 @@ public struct LioHome<MenuContent: View>: View {
 
     private var canSwitchChat: Bool {
         scenePhase == .active && conversation.pending == nil && !memoryBusy && !memoryPending
-            && tripPlan?.busy != true && tripPlan?.pending != true
+            && tripPlan?.busy != true && tripPlan?.pending != true && !chatFading
     }
 
     /// Fades the current conversation out for `chatFadeOut` seconds, switches, then fades the opening in.
     /// The switch itself and its guard are unchanged; Reduce Motion switches at once.
+    /// While the old chat fades out nothing else can switch, send or be tapped; the switch then re-checks
+    /// its conditions, so a deferred new chat never overrides something that changed meanwhile.
     private func startNewChat(_ library: LioChatLibrary) {
-        guard canSwitchChat, !chatFading else { return }
+        guard canSwitchChat else { return }
         guard !reduceMotion else {
             switchChat(library.newChat(), opening: .beforeNext)
             return
@@ -328,8 +331,10 @@ public struct LioHome<MenuContent: View>: View {
         withAnimation(.easeOut(duration: LioTheme.Motion.chatFadeOut)) { chatFading = true }
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(LioTheme.Motion.chatFadeOut))
-            switchChat(library.newChat(), opening: .beforeNext)
-            withAnimation(LioTheme.Motion.change) { chatFading = false }
+            withAnimation(LioTheme.Motion.change) {
+                chatFading = false
+                if canSwitchChat { switchChat(library.newChat(), opening: .beforeNext) }
+            }
         }
     }
 
@@ -518,6 +523,7 @@ public struct LioHome<MenuContent: View>: View {
     private var composer: some View {
         let placeholder = language.text("Start chatting", "开始聊天")
         let canSend = !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && conversation.pending == nil
+            && !chatFading
         let showsJump = !followsAnswer && !conversation.turns.isEmpty
         return HStack(alignment: .center, spacing: 10) {
             TextField(placeholder, text: $draft, prompt: Text(placeholder).foregroundStyle(LioTheme.inkSecondary), axis: .vertical)

@@ -1,5 +1,26 @@
+import CJMessageHTTP
 import Foundation
 import SwiftUI
+
+/// What line L's `progress` field (#925) gives the waiting indicator: the phrase to show and, only for
+/// `planning_started`, the day count for the trip-shaped placeholder. The app never supplies days itself.
+struct LioThinkingInput: Equatable {
+    let progress: String?
+    let planningDays: Int?
+
+    init(progress: String? = nil, planningDays: Int? = nil) {
+        self.progress = progress
+        self.planningDays = planningDays
+    }
+
+    init(_ wire: LioExplorationWire.Progress?) {
+        switch wire {
+        case .waiting(let text)?: self.init(progress: text)
+        case .planningStarted(let text, let days)?: self.init(progress: text, planningDays: days > 0 ? days : nil)
+        case nil: self.init()
+        }
+    }
+}
 
 /// What the waiting indicator shows at a given moment after sending (#913, Nielsen's response-time bands).
 enum LioThinkingPhase: Equatable {

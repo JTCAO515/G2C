@@ -1,3 +1,4 @@
+import CJMessageHTTP
 import Foundation
 import Testing
 @testable import CJLioUser
@@ -21,6 +22,14 @@ struct LioThinkingTests {
         #expect(LioThinkingPhase.at(7, progress: "正在比较几家酒店的位置", language: .chinese) == .status("正在比较几家酒店的位置"))
         #expect(LioThinkingPhase.at(20, progress: " ", language: .chinese) == .status("这次要多想一会儿…"))
         #expect(LioThinkingPhase.at(1, progress: "正在比较几家酒店的位置", language: .chinese) == .breathing)
+    }
+
+    @Test func lineLProgressMapsToTheIndicatorWithoutInventingDays() {
+        #expect(LioThinkingInput(nil) == LioThinkingInput())
+        #expect(LioThinkingInput(.waiting("正在比较几家酒店的位置")) == LioThinkingInput(progress: "正在比较几家酒店的位置"))
+        #expect(LioThinkingInput(.planningStarted(text: "Planning your 3 days", days: 3))
+                == LioThinkingInput(progress: "Planning your 3 days", planningDays: 3))
+        #expect(LioThinkingInput(.planningStarted(text: "Planning", days: 0)).planningDays == nil)
     }
 
     @Test func announcementsAreChangesAtMostEveryFiveSeconds() {
