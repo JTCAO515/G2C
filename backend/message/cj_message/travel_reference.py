@@ -164,10 +164,13 @@ class MessageContextLease:
         No transaction, new lease or effect authority escapes. Formal/legacy
         holders without this same-transaction reader remain unsupported.
         """
+        return self._read_source_original(self._binding,message_id)
+
+    def _read_source_original(self,binding,message_id):
         if self._source_reader is None:raise LeaseUnavailable('travel source reader unavailable')
-        self.check(self._binding)
+        self.check(binding)
         result=self._source_reader(message_id)
-        self.check(self._binding)
+        self.check(binding)
         return result
 
     @property
@@ -378,3 +381,14 @@ class MessageContextAuthority:
             raise LeaseUnavailable('active original message lease required')
         active.check(binding)
         return active._stored
+
+    def active_source_original(self,binding,message_id):
+        """Read historical original data through the already-held MESSAGE frame.
+
+        The genuine lease retains its transaction and all original selection,
+        context, identity and lifetime checks. No authority is reacquired.
+        """
+        active=self._active.get()
+        if active is None:
+            raise LeaseUnavailable('active original message lease required')
+        return active._read_source_original(binding,message_id)
