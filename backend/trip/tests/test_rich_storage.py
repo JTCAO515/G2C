@@ -16,6 +16,27 @@ def no_connection():
     raise AssertionError('consumer refusal must precede database access')
 
 
+def test_legacy_validated_direct_source_writer_keeps_its_existing_ingress():
+    class Cursor:
+        def __init__(self): self.statements = []
+        def execute(self, statement, arguments): self.statements.append((statement, arguments))
+        def fetchone(self): return None
+
+    event = {key: {'state': 'unknown'} for key in ('date', 'time', 'timezone', 'utc_offset')}
+    raw = packed(dict(content_version='structured.1', title='Original validated itinerary', sources=[],
+        items=[dict(id='legacy-item', text='Original stop', verification='pending', evidence=[],
+            schedule=dict(start=event, end=event), fixed={'state': 'unknown'},
+            source_category='user_provided', source_refs=[])]))
+    proposal = Proposal('legacy-proposal', 'legacy-trip', 0, 'legacy-source', 9999999999, raw)
+    repository = Repository(no_connection, 'owner')
+    cursor = Cursor()
+    assert repository._publish_in_tx(cursor, proposal) == proposal.digest('owner')
+    assert len(cursor.statements) == 2
+    assert cursor.statements[1][1][6] == raw
+    # Its public consumer still cannot read/publish structured data implicitly.
+    with pytest.raises(Denied): repository.publish(proposal)
+
+
 def test_rich_proposal_data_is_canonical_but_old_ingress_does_not_gain_admission():
     for case in CASES.values():
         raw=packed(case['content'])

@@ -185,9 +185,12 @@ class Repository:
             return self._publish_in_tx(cur, proposal)
 
     def _publish_in_tx(self, cur, proposal):
-        # Internal source-bound publishers also enter here directly. Consumer
-        # admission remains required even for a previously validated Proposal.
-        self._content(proposal.content, validated=True)
+        # Preserve the accepted legacy direct source-writer ingress. Only the
+        # new rich representation adds an explicit consumer requirement here;
+        # public publish/read/act retain their existing version admission.
+        document = json.loads(proposal.content)
+        if type(document) is dict and document.get('content_version') == 'structured.4':
+            self._content(proposal.content, validated=True)
         cur.execute('SELECT candidate_hash FROM cj_trip_proposal WHERE scope=%s AND proposal_id=%s', (self.scope,proposal.proposal_id))
         old = cur.fetchone()
         digest = proposal.digest(self.scope)
