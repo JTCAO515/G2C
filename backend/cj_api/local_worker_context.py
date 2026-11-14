@@ -94,8 +94,9 @@ class LocalBudgetRouter:
         elif any(event.kind=='started' for event in state.events):
             raise BudgetUnknown('original run period not visible; query with retained original configuration')
         else: profile=context.current
-        self.database.require_budget_account(binding.scope,profile=profile)
-        run_profile=self._native4_policy(binding,profile)if context.version=='CJ-LOCAL-RUN@2'else None
+        ledger_version=self.database.require_budget_account(binding.scope,profile=profile)
+        run_profile=(self._native4_policy(binding,profile)
+                     if context.version=='CJ-LOCAL-RUN@2'and ledger_version==2 else None)
         def resolve(original, account):
             if original.scope!=binding.scope or account!=ledger_scope_for(binding.scope,profile.meter):
                 raise BudgetUnknown('original quota owner changed')

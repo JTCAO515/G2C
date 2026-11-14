@@ -89,14 +89,16 @@ def test_each_owned_run_resolves_its_original_registry():
     selected=[]
     config=Config('provider_call',20,0,1000,8,8,20000,90)
     profile=SimpleNamespace(meter=config,output_limits=dict(model=16000,tool=2000,memory=1000))
-    rows=SimpleNamespace(fetchall=lambda:[],fetchone=lambda:None)
+    rows=SimpleNamespace(fetchall=lambda:[])
     connection=SimpleNamespace(execute=lambda *args:rows)
     database=SimpleNamespace(run_context=SimpleNamespace(version='CJ-LOCAL-RUN@2',profiles=[profile],current=profile),
-        connect=lambda *args,**kwargs:nullcontext(connection),require_budget_account=lambda *args,**kwargs:None)
+        connect=lambda *args,**kwargs:nullcontext(connection),require_budget_account=lambda *args,**kwargs:1)
     def resolve(binding):
         selected.append(binding)
         return {'selected':binding.run_id}
     router=LocalBudgetRouter(database,registrations_for_run=resolve)
+    def no_native_query(*args):raise AssertionError('format1 must not query schema55 qualification')
+    router._native4_policy=no_native_query
     for run in ('A','B','A'):
         binding=SimpleNamespace(scope='original-synthetic-owner',run_id=run)
         current=router.for_run(binding,SimpleNamespace(events=()))

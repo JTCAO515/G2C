@@ -56,7 +56,7 @@ def _existing_ledgers(db, budget, *, resume):
             row = db.execute('SELECT format_version,ledger FROM cj_usage_ledger_candidate '
                              'WHERE scope_id=%s FOR UPDATE', (key,)).fetchone()
             if row is None:
-                raise ValueError('original_demo_quota_unavailable')
+                raise ValueError('original HK synthetic quota ledger unavailable')
             if decode_stored(row[0],row[1]).config != expected:
                 raise ValueError('original HK synthetic quota ledger unavailable')
             keys.append(key)

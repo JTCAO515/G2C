@@ -272,7 +272,7 @@ class LocalDatabase:
         if self.run_context is None: return
         profile=self.run_context.current if profile is None else profile
         with self.connect(scope,usage_profile=profile) as conn:
-            self._check_budget_account(conn, scope, profile)
+            return self._check_budget_account(conn, scope, profile)
 
     def _check_budget_account(self, executor, scope, profile):
         account = ledger_scope_for(scope, profile.meter)
@@ -282,6 +282,7 @@ class LocalDatabase:
             raise CompositionUnavailable('original budget account unavailable or changed')
         if decode_stored(row[0],row[1]).config != profile.meter:
             raise CompositionUnavailable('original budget account unavailable or changed')
+        return row[0]
 
     def provision(self, scope):
         """Trusted, idempotent scope provisioning for the local host only."""
