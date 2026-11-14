@@ -412,7 +412,7 @@ Typed 保存、管理及既有 `/v1/memory-erasures` 不安装 V1 记忆写入�
 
 ### Demo 邀请码
 
-按 #685 指定的代号配置 `CJ_BETA_DEMO_SUBJECTS_JSON`，至多 205 个
+按 #685 指定的代号配置 `CJ_BETA_DEMO_SUBJECTS_JSON`，至多 206 个
 `m4-synthetic-demo-<12位代号>`，同时纳入原邀请、Typed API 策略和 worker 记忆选择。
 创建 UID10001 所有的 0700 `/srv/g2c-beta/demo-auth-socket`，worker 保留原签名私钥，
 API 只读挂载 Unix socket 目录。公网 `POST /v1/demo-invite-sessions` 的接口见 #685。
@@ -444,7 +444,9 @@ worker 的双层运行策略可单独显式使用 `CJ_BETA_MEMORY_RUN_POLICY_GZI
 `CJ_BETA_MEMORY_RUN_POLICY_B64` 互斥，仅进入原 worker 0600 文件；API 不接受该字段。
 它复用相同限长解压，结果仍经原 TypedRuntimeConfiguration 和全部主体/selection 校验，
 不会从 API 策略推断 worker 权限。批量配置必须同时核对两个角色的完整策略及原有身份不变。
-实际增加名单前先预检完整环境文件及原策略边界，不能仅凭 205 的名单容量宣布账号已开通。
+第 206 个位置用于 JT 已批准的 L P0 新合成身份（#495/6879334775）；
+名单容量不创建账号、不改变每周期/每日额度或各线费用子额。
+实际增加名单前先预检完整环境文件及原策略边界，不能仅凭名单容量宣布账号已开通。
 先以原名单和原配置发布兼容新表示的应用，再由 B 在独立维护阶段备份并启用批量名单和策略。
 启用新表示后，退到不识别该字段的旧镜像前，须先恢复其兼容配置；不能只用应用镜像切换入口回退。
 配置回退保留账号原件、资格/撤销记录、业务数据和唯一费用账，不恢复旧账或删除新账号来过门禁。

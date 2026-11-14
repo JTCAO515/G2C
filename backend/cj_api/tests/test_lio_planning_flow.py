@@ -504,7 +504,7 @@ class PlanningFlow(unittest.TestCase):
 
     def test_capability_question_bypasses_planning_in_both_languages(self):
         planning=NationalLioPlanning(None,None)
-        for text,locale in (('你能干啥','zh'),('你会干嘛','zh'),('你能帮我做什么','zh'),
+        for text,locale in (('你能干啥','zh'),('你能做啥','zh'),('你会干嘛','zh'),('你能帮我做什么','zh'),
                             ('What can you do?','en'),('What can you help me with?','en')):
             events=[]
             class Worker:

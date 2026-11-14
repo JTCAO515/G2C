@@ -141,7 +141,7 @@ private actor JourneyMemoryBackend: ClientTransport {
                 throw MemoryFailure.invalidInput
             }
             version += 1
-            managementReceipts[action] = ["action_id": action, "item_id": selectedID, "version": version, "status": status, "input_sha256": digest(raw)]
+            managementReceipts[action] = ["action_id": action, "item_id": selectedID, "version": version, "status": status, "input_sha256": CJMemoryClient.digest(raw)]
             throw URLError(.networkConnectionLost)
         case "getTypedMemoryManagementReceipt":
             guard let action = parameter("action_id"), let receipt = managementReceipts[action] else {

@@ -254,6 +254,7 @@ public struct LioHome<MenuContent: View>: View {
                     }
                     .frame(width: viewport.size.width, height: viewport.size.height)
                     .clipped()
+                    .contentShape(Rectangle())
                     .scrollClipDisabled(false)
                     .scrollDismissesKeyboard(.interactively)
                     .simultaneousGesture(DragGesture(minimumDistance: 12).onChanged { _ in

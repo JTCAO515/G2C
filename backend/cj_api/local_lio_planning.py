@@ -55,6 +55,18 @@ NATIONAL_GROUPED_DRAFT = (
     'Use short ASCII stop IDs of at most 96 characters. Use only self, party or companion IDs actually present in the source; '
     'when planning for a stated party, party denotes that proposed group, not a fabricated companion or booking. '
 )
+
+
+def grouped_draft_guidance(fields):
+    fixed_ids=[item['item_id']for item in fields.get('fixed_items',())]
+    if not fixed_ids:return NATIONAL_GROUPED_DRAFT
+    return (NATIONAL_GROUPED_DRAFT+
+        ' Original NEEDS fixed_items are input constraints, not output suggestions. '
+        'The server inserts those exact original rows automatically, including on a first plan. '
+        'Return only NEW suggested stops in days. Do not copy a fixed item row, name or time span '
+        'to preserve it or to cover a requested period. These original IDs must not appear in any '
+        'output row: '+json.dumps(fixed_ids,separators=(',',':'))+'. '
+        'Omitting those rows preserves the fixed commitments; returning their IDs rejects the entire draft. ')
 RICH_FIRST_DRAFT = (
     ' Follow the captured pace and other trip preferences. Include lunch and dinner every day. '
     'Use complete place names in the question language without inventing prices, bookings or sources. '
@@ -229,12 +241,18 @@ class LioPlanSave:
             self.read_repository=Repository(context_publisher.repository.connect,context_publisher.repository.scope,
                                            confirmation,structured=True,calendar=True)
 
-    def scene_context(self,binding,now):
+    def _current_context(self,binding):
         from cj_trip.planning_context import read_current
         from cj_message.lio_plan_needs import lio_needs_id
+        return read_current(self.read_repository,needs_scope_for(binding.scope),
+                            lio_needs_id(binding.scope,binding.conversation_id))
+
+    def has_saved_itinerary(self,binding):
+        return self._current_context(binding)is not None
+
+    def scene_context(self,binding,now):
         from .lio_scene import scene_prompt
-        current=read_current(self.read_repository,needs_scope_for(binding.scope),
-                             lio_needs_id(binding.scope,binding.conversation_id))
+        current=self._current_context(binding)
         # read_current checks the current accepted head and original source
         # lineage and validates proposed NEEDS. Do not read a pending draft.
         return scene_prompt(None if current is None else json.loads(current.proposed),now,
@@ -242,12 +260,9 @@ class LioPlanSave:
 
     def supports_destination(self,binding,city):
         from base64 import b64decode
-        from cj_trip.planning_context import read_current
-        from cj_message.lio_plan_needs import lio_needs_id
         from cj_needs.contract_v1 import decode_snapshot
         from .lio_city import _normalize
-        current=read_current(self.read_repository,needs_scope_for(binding.scope),
-                             lio_needs_id(binding.scope,binding.conversation_id))
+        current=self._current_context(binding)
         if current is None:return True
         try:
             snapshot=decode_snapshot(b64decode(json.loads(current.needs_source)['snapshot'],validate=True))
@@ -333,7 +348,7 @@ class LioPlanSave:
                 draft_guidance=NATIONAL_GROUPED_DRAFT,rich_guidance=RICH_FIRST_DRAFT)
         else:
             publisher = publisher_class(self.context_publisher, self.confirmation,
-                                         original_needs, check_original, draft_guidance=NATIONAL_GROUPED_DRAFT if self.grouped else NATIONAL_COMPACT_DRAFT if self.source_window else COMPACT_DRAFT)
+                                         original_needs, check_original, draft_guidance=grouped_draft_guidance(details.fields) if self.grouped else NATIONAL_COMPACT_DRAFT if self.source_window else COMPACT_DRAFT)
         previous = worker.drafts
         worker.drafts = publisher
         try:
