@@ -160,6 +160,131 @@ class TypedStorageChecks(TitleProjectionPG,Harness):
         after=self.memory_snapshot(scope);self.assertEqual(len(after['cj_memory_scope']),1)
         self.assertEqual(after['cj_run_metered_operation'],before['cj_run_metered_operation'])
 
+    def test_fresh_runtime_epoch_view_needs_no_candidate_history_fence(self):
+        """Existing public capture/hold API; no new collection or history grant."""
+        from copy import deepcopy
+        from unittest.mock import patch
+        from e2e_local import dev_auth
+        from cj_api.local_app import create_local_app
+        from cj_memory.typed_runtime import TypedRuntimeConfiguration
+        from cj_memory.runtime import RuntimeDenied
+        from cj_run.core import Binding
+        import local_run_context as operator
+        import dev_auth as local_auth
+        from cj_message.travel import ABI
+        identity='epoch-view-'+self.tag;scope=scope_for(ISSUER,identity)
+        auth=Path(self.tmp.name)/identity;dev_auth('init',str(auth),'--invite',identity)
+        token=dev_auth('token',str(auth),'--subject',identity);checker=checker_for(auth)
+        def admit():
+            decision=checker.check(token)
+            if decision.status is not AdmissionStatus.ALLOWED:raise Unavailable('current signed identity required')
+            return decision.principal
+        _,document=self.runtime_configuration()
+        profile=deepcopy(document['collection']['collection']['profiles']['alice'])
+        document['collection']['collection']['profiles']={identity:profile}
+        document['collection']['travel_contexts']={identity:[]}
+        document['selections']={identity:document['selections']['alice']}
+        configuration=TypedRuntimeConfiguration.from_bytes(json.dumps(document).encode())
+        operator.provision_budget(CONNINFO,self.run_context,identity)
+        local_auth.activate_travel(CONNINFO,identity,self.run_context,ABI)
+        database=LocalDatabase(CONNINFO,run_context=self.run_context,travel_context=True)
+        database.provision(scope)
+        authority=MessageContextAuthority(database.message_repository(scope),admit)
+        # Explicit fixture setup, not part of the display read: creates the initial active scope
+        # through the unchanged provisioner, with no history consent/fence.
+        configuration.bind(database,scope,identity,admit,message_context=authority)
+        app=create_local_app(conninfo_path=CONNINFO,auth_dir=auth,run_context=self.run_context,travel_context=True)
+        headers={'Authorization':'Bearer '+token,'Content-Type':'application/octet-stream'}
+        with TestClient(app) as client:
+            chat=client.put('/v1/conversations',params={'conversation_id':'fresh-epoch-view'},headers=headers).json()
+            raw=json.dumps(dict(version='MESSAGE-send.2',conversation_id='fresh-epoch-view',message_id='epoch-'+self.tag,
+                text='Read current profile only',trip_id=None,creation_intent='none',expected_generation=chat['generation'],
+                expected_sequence=chat['last_sequence'],travel_context=None,needs_reference=None)).encode()
+            response=client.post('/v2/messages',content=raw,headers=headers)
+            self.assertEqual(response.status_code,200,response.text)
+            receipt=response.json()['receipt']
+        binding=Binding(scope,receipt['conversation_id'],receipt['generation'],receipt['message_id'],receipt['run_id'],receipt['sequence'])
+        runtime=configuration.bind_readonly(database,scope,identity,admit,message_context=authority)
+        def snapshot():
+            with database.connect(scope) as connection:
+                digest=hashlib.sha256(scope.encode()).hexdigest()
+                fence=connection.execute('SELECT erased FROM cj_memory_history_fence WHERE scope_digest=%s',(digest,)).fetchall()
+            return self.memory_snapshot(scope),fence
+        before,fence=snapshot();self.assertEqual(fence,[])
+        with database.connect(scope) as connection:
+            native_epoch=connection.execute('SELECT epoch FROM cj_memory_scope WHERE scope=%s',(scope,)).fetchone()[0]
+        self.assertGreater(native_epoch,0)
+        with authority.hold_for_effect(binding):
+            captured=runtime.capture(binding)
+            self.assertEqual(captured.snapshot.epoch,native_epoch)
+            with captured.hold(binding) as check:
+                encoded=json.dumps(dict(memory_epoch=captured.snapshot.epoch)).encode()
+                check()
+            self.assertEqual(json.loads(encoded),dict(memory_epoch=native_epoch))
+        self.assertEqual(snapshot(),(before,[]))
+        # Exact API-host composition: one existing HistoryReadContext M frame,
+        # not a worker's MessageContextAuthority lease or a second M lock.
+        from cj_memory.epoch_projection import CurrentScopeEpochReader
+        from cj_message.auth_boundary import Boundary,HistoryReadContext
+        from cj_message.postgres import Transaction as MessageTransaction
+        from cj_api.local_account_admission_v2 import account_checker_for,retired_in_transaction
+        from cj_api.local_worker_context import checker_factory_for
+        database=LocalDatabase(CONNINFO,run_context=self.run_context,travel_context=True,needs_context=True,trip_context=True)
+        subjects=frozenset({identity})
+        lio=create_local_app(conninfo_path=None,auth_dir=auth,database=database,run_context=self.run_context,
+            account_admission=True,demo_dialogue_subjects=subjects,lio_dialogue_subjects=subjects)
+        lio_mid='epoch-lio-'+self.tag
+        with TestClient(lio) as client:
+            result=client.post('/v2/lio/messages',content=json.dumps(dict(version='LIO-message.2',
+                message_id=lio_mid,text='Read a profile only',locale='en',new_conversation=True)).encode(),headers=headers)
+            self.assertEqual(result.status_code,200,result.text)
+        checker_builder=checker_factory_for(auth,selected_subjects=subjects)
+        def transaction_checker(transaction,scope):return checker_builder(retired_in_transaction(transaction.cur,scope))
+        boundary=Boundary(account_checker_for(auth,database,selected_subjects=subjects),
+            lambda principal:database.message_repository(scope_for(principal.issuer,principal.subject)),lambda:'unused',
+            checker_in_transaction=transaction_checker)
+        reader=CurrentScopeEpochReader(database,configuration)
+        locks=[];lock=MessageTransaction.lock_scope
+        def counted(tx):locks.append(tx.scope);return lock(tx)
+        observed=[]
+        def project(context):
+            def framed():
+                stored=context.query_lio_message(lio_mid);r=stored.receipt
+                original=Binding(scope,r.conversation_id,r.generation,r.message_id,r.run_id,r.sequence)
+                observed.append(original)
+                return reader.project(context,original,lambda epoch:json.dumps(dict(memory_epoch=epoch)).encode(),max_result_bytes=1000)
+            return context.with_lio_timeline_projection(framed)
+        before,fence=snapshot()
+        with patch.object(MessageTransaction,'lock_scope',counted):
+            self.assertEqual(json.loads(boundary.with_history_context(token,project)),dict(memory_epoch=native_epoch))
+        self.assertEqual(locks,[scope]);self.assertEqual(snapshot(),(before,[]))
+        with self.assertRaisesRegex(RuntimeError,'projection frame required'):
+            boundary.with_history_context(token,lambda context:reader.project(context,observed[0],lambda epoch:b'{}',max_result_bytes=1000))
+        def wrong_run(context):
+            old=observed[0]
+            wrong=Binding(old.scope,old.conversation_id,old.generation,old.message_id,'wrong-run',old.message_sequence)
+            return context.with_lio_timeline_projection(lambda:reader.project(context,wrong,lambda epoch:b'{}',max_result_bytes=1000))
+        with self.assertRaises(RuntimeDenied):boundary.with_history_context(token,wrong_run)
+        for payload,limit in (('not materialized',1000),(b'oversize',1)):
+            def invalid_projection(context):
+                return context.with_lio_timeline_projection(lambda:reader.project(context,observed[0],
+                    lambda epoch:payload,max_result_bytes=limit))
+            with self.assertRaises(RuntimeDenied):boundary.with_history_context(token,invalid_projection)
+        invited=auth/'invited.json';original=invited.read_bytes()
+        try:
+            from cj_message.auth_boundary import AccessBlocked,IdentityChanged
+            def revoke_after_encode(context):
+                def encoded(epoch):
+                    invited.write_text('[]')
+                    return b'{"private":"must be withheld"}'
+                return context.with_lio_timeline_projection(lambda:reader.project(context,observed[0],encoded,max_result_bytes=1000))
+            with self.assertRaises((AccessBlocked,IdentityChanged,RuntimeDenied)):
+                boundary.with_history_context(token,revoke_after_encode)
+            invited.write_text('[]')
+            with self.assertRaises((RuntimeDenied,Unavailable)):
+                with captured.hold(binding):pass
+        finally:invited.write_bytes(original)
+
     def test_readonly_binding_wrong_owner_authority_and_fresh_admission_refused(self):
         from cj_memory.runtime import RuntimeDenied
         configuration,_=self.runtime_configuration();database=LocalDatabase(CONNINFO,run_context=self.run_context,travel_context=True)
