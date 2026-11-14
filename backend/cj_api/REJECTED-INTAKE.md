@@ -22,7 +22,10 @@ exit without a file. `finally` drops buffered references; it does not remove a
 previously confirmed private reference or change fees. CAPTURED/NOT_CAPTURED and
 exceptions remain distinct; a ref is not proof of product quality or live usage.
 The operator must read through the current original source/Memory/AUTH/erasure
-boundary, never use a ref to resurrect an erased payload.
+boundary, never use a ref to resurrect an erased payload. Historical files do not
+grant seven days of read access: without a trusted host-provided actual original
+Memory lifetime the reader withholds. Persisted epoch/payload hashes are association
+data only; no fresh capture, empty items or manually rebuilt RuntimeRun is a permit.
 
 Files require an owned 0700 directory and 0600 mode, exact native binding and
 receipt, source lifetime checks before/after filesystem work, and seven-day TTL.
