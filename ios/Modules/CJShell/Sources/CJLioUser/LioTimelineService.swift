@@ -10,6 +10,7 @@ struct LioTimelineTurn: Sendable {
     let sources: [LioSource]
     let itinerary: LioItinerary?
     let memoryTags: [LioMemoryWire.Tag]
+    let exploration: LioExplorationDisplay?
 
     var isActive: Bool {
         switch status {
@@ -23,22 +24,43 @@ struct LioTimelineTurn: Sendable {
         text = message.question
         answer = message.answer
         itinerary = message.trip.map(LioItinerary.init)
-        // A choice is available only when its description is safe to show.
+        exploration = nil
         memoryTags = message.memoryTags.filter { LioPublicDisplay.permitsText($0.text) }
-        sources = message.sources.enumerated().compactMap { index, source in
-            guard LioPublicDisplay.permitsText(source.title) else { return nil }
-            let url = source.link.flatMap { LioPublicDisplay.permitsSource($0) ? $0 : nil }
-            return LioSource(id: "\(message.id).\(index)", title: source.title, url: url)
+        sources = Self.projectSources(message.sources.map { ($0.title, $0.link) }, messageID: message.id)
+        status = Self.status(message.state, activity: message.activity, answer: message.answer)
+    }
+
+    init(_ message: LioExplorationWire.Message) throws {
+        messageID = message.id
+        text = message.question
+        answer = message.answer
+        exploration = try LioExplorationDisplay(message)
+        // Native calendar/rich summaries keep their actual type and binding in exploration.trip.
+        itinerary = nil
+        memoryTags = message.memoryTags.filter { LioPublicDisplay.permitsText($0.text) }
+        sources = Self.projectSources(message.sources.map { ($0.title, $0.link) }, messageID: message.id)
+        status = Self.status(message.state, activity: message.activity, answer: message.answer)
+    }
+
+    private static func projectSources(_ values: [(String, URL?)], messageID: String) -> [LioSource] {
+        values.enumerated().compactMap { index, source in
+            guard LioPublicDisplay.permitsText(source.0) else { return nil }
+            let url = source.1.flatMap { LioPublicDisplay.permitsSource($0) ? $0 : nil }
+            return LioSource(id: "\(messageID).\(index)", title: source.0, url: url)
         }
-        switch (message.state, message.activity) {
-        case (.waiting, _): status = .thinking
-        case (.answering, .places): status = .working(.places)
-        case (.answering, .weather): status = .working(.weather)
-        case (.answering, .travelInformation): status = .working(.travelInformation)
-        case (.answering, nil): status = message.answer.isEmpty ? .thinking : .answering
-        case (.completed, _): status = .finished
-        case (.serviceLimit, _): status = .failed(.serviceLimit)
-        case (.unavailable, _): status = .failed(.unavailable)
+    }
+
+    private static func status(_ state: LioTimelineWire.Message.State, activity: LioTimelineWire.Activity?,
+                               answer: String) -> LioTurn.Status {
+        switch (state, activity) {
+        case (.waiting, _): .thinking
+        case (.answering, .places): .working(.places)
+        case (.answering, .weather): .working(.weather)
+        case (.answering, .travelInformation): .working(.travelInformation)
+        case (.answering, nil): answer.isEmpty ? .thinking : .answering
+        case (.completed, _): .finished
+        case (.serviceLimit, _): .failed(.serviceLimit)
+        case (.unavailable, _): .failed(.unavailable)
         }
     }
 }
@@ -46,9 +68,11 @@ struct LioTimelineTurn: Sendable {
 struct LioTimelinePage: Sendable {
     let turns: [LioTimelineTurn]
     let nextBefore: String?
-    static let empty = Self(turns: [], nextBefore: nil)
+    let conversationID: String?
+    static let empty = Self(turns: [], nextBefore: nil, conversationID: nil)
 
-    private init(turns: [LioTimelineTurn], nextBefore: String?) {
+    private init(turns: [LioTimelineTurn], nextBefore: String?, conversationID: String?) {
+        self.conversationID = conversationID
         self.turns = turns
         self.nextBefore = nextBefore
     }
@@ -56,9 +80,17 @@ struct LioTimelinePage: Sendable {
     init(_ page: LioTimelineWire.Page) {
         turns = page.messages.map(LioTimelineTurn.init)
         nextBefore = page.nextBefore
+        conversationID = page.conversationID
+    }
+
+    init(_ page: LioExplorationWire.Page) throws {
+        turns = try page.messages.map(LioTimelineTurn.init)
+        nextBefore = page.nextBefore
+        conversationID = page.conversationID
     }
 
     init(latest: Self, earlier: [Self]) {
+        conversationID = latest.conversationID
         var seen = Set<Data>()
         let ordered = earlier.reversed().flatMap(\.turns) + latest.turns
         turns = Array(ordered.reversed().filter { seen.insert($0.id).inserted }.reversed())
@@ -69,12 +101,7 @@ struct LioTimelinePage: Sendable {
 extension LioService {
     public static func signedTimeline(_ client: LioTimelineHTTP) -> LioService {
         timeline(send: { original in
-            switch try await client.submit(original) {
-            case .accepted(let id): .accepted(conversationID: id)
-            case .notSent: .notSent
-            case .dailyLimit: .dailyLimit
-            case .rejected: .rejected
-            }
+            try await signedSend(client, original)
         }, read: { id, before in
             try await client.timeline(conversationID: id, before: before)
         })
@@ -83,17 +110,31 @@ extension LioService {
     public static func signedConversation(_ client: LioTimelineHTTP, destination: LioTimelineWire.V2Destination,
                                           didCreate: @escaping @Sendable (String) async -> Void) -> LioService {
         timeline(send: { original in
-            switch try await client.submit(original) {
-            case .accepted(let id): .accepted(conversationID: id)
-            case .notSent: .notSent
-            case .dailyLimit: .dailyLimit
-            case .rejected: .rejected
-            }
+            try await signedSend(client, original)
         }, read: { id, before in
             try await client.timeline(conversationID: id, before: before, version: .v2)
         }, destination: destination, recoverFirst: { id in
             try await client.reconcileFirstChat(messageID: id)
         }, didCreate: didCreate)
+    }
+
+    /// Native4 is selected explicitly; existing public entrypoints retain their original protocol.
+    public static func signedExplorationConversation(_ client: LioTimelineHTTP,
+        destination: LioTimelineWire.V2Destination, didCreate: @escaping @Sendable (String) async -> Void) -> LioService {
+        exploration(send: { original in try await signedSend(client, original) }, read: { id, before in
+            try await client.exploration(conversationID: id, before: before)
+        }, destination: destination, recoverFirst: { id in
+            try await client.reconcileFirstChat(messageID: id)
+        }, didCreate: didCreate)
+    }
+
+    private static func signedSend(_ client: LioTimelineHTTP, _ original: LioTimelineWire.Send) async throws -> SendResult {
+        switch try await client.submit(original) {
+        case .accepted(let id): .accepted(conversationID: id)
+        case .notSent: .notSent
+        case .dailyLimit: .dailyLimit
+        case .rejected: .rejected
+        }
     }
 
     enum SendResult: Sendable {
@@ -113,8 +154,31 @@ extension LioService {
         observationWindow: Duration = .seconds(90),
         recoveryInterval: Duration = .seconds(15)
     ) -> LioService {
-        let session = LioTimelineSession(send: send, read: read, destination: destination,
-                                         recoverFirst: recoverFirst, didCreate: didCreate)
+        let session = LioTimelineSession(send: send, read: { id, before in
+            LioTimelinePage(try await read(id, before))
+        }, destination: destination, recoverFirst: recoverFirst, didCreate: didCreate)
+        return service(session: session, pollInterval: pollInterval, observationWindow: observationWindow,
+                       recoveryInterval: recoveryInterval)
+    }
+
+    static func exploration(
+        send: @escaping @Sendable (LioTimelineWire.Send) async throws -> SendResult,
+        read: @escaping @Sendable (String?, String?) async throws -> LioExplorationWire.Page,
+        destination: LioTimelineWire.V2Destination = .defaultChat,
+        recoverFirst: @escaping @Sendable (String) async throws -> String? = { _ in nil },
+        didCreate: @escaping @Sendable (String) async -> Void = { _ in },
+        pollInterval: Duration = .seconds(2), observationWindow: Duration = .seconds(90),
+        recoveryInterval: Duration = .seconds(15)
+    ) -> LioService {
+        let session = LioTimelineSession(send: send, read: { id, before in
+            try LioTimelinePage(await read(id, before))
+        }, destination: destination, recoverFirst: recoverFirst, didCreate: didCreate, messageVersion: .v4)
+        return service(session: session, pollInterval: pollInterval, observationWindow: observationWindow,
+                       recoveryInterval: recoveryInterval)
+    }
+
+    private static func service(session: LioTimelineSession, pollInterval: Duration,
+                                observationWindow: Duration, recoveryInterval: Duration) -> LioService {
         return LioService(updates: { waiting in
             session.observe(waiting: waiting, interval: pollInterval, window: observationWindow,
                             recoveryInterval: waiting.isEmpty ? nil : recoveryInterval)
@@ -158,7 +222,8 @@ extension LioService {
 
 private actor LioTimelineSession {
     let send: @Sendable (LioTimelineWire.Send) async throws -> LioService.SendResult
-    let read: @Sendable (String?, String?) async throws -> LioTimelineWire.Page
+    let read: @Sendable (String?, String?) async throws -> LioTimelinePage
+    private let messageVersion: LioTimelineWire.Version
     let destination: LioTimelineWire.V2Destination?
     let recoverFirst: @Sendable (String) async throws -> String?
     let didCreate: @Sendable (String) async -> Void
@@ -172,10 +237,11 @@ private actor LioTimelineSession {
     private var submissions: [Data: Submission] = [:]
 
     init(send: @escaping @Sendable (LioTimelineWire.Send) async throws -> LioService.SendResult,
-         read: @escaping @Sendable (String?, String?) async throws -> LioTimelineWire.Page,
+         read: @escaping @Sendable (String?, String?) async throws -> LioTimelinePage,
          destination: LioTimelineWire.V2Destination?,
          recoverFirst: @escaping @Sendable (String) async throws -> String?,
-         didCreate: @escaping @Sendable (String) async -> Void) {
+         didCreate: @escaping @Sendable (String) async -> Void, messageVersion: LioTimelineWire.Version = .v2) {
+        self.messageVersion = messageVersion
         self.send = send
         self.read = read
         self.destination = destination
@@ -200,7 +266,8 @@ private actor LioTimelineSession {
             let locale: LioTimelineWire.Locale = question.language == .english ? .english : .chinese
             if let destination {
                 original = try LioTimelineWire.Send(messageID: question.messageID, text: question.text, locale: locale,
-                                                    destination: conversationID.map(LioTimelineWire.V2Destination.existing) ?? destination)
+                                                    destination: conversationID.map(LioTimelineWire.V2Destination.existing) ?? destination,
+                                                    version: messageVersion)
             } else {
                 original = try LioTimelineWire.Send(messageID: question.messageID, text: question.text,
                                                     locale: locale, conversationID: conversationID)
@@ -313,6 +380,6 @@ private actor LioTimelineSession {
         let page = try await read(conversationID, before)
         try Task.checkCancellation()
         if let id = page.conversationID { conversationID = id }
-        return LioTimelinePage(page)
+        return page
     }
 }
