@@ -543,6 +543,51 @@ erase经原账号注销API和单条MEMORY-ERASURE服务、独立已批准cleanup
 它在release守卫下固定同一run ID及message hash，写SEED_RESUME_INTENT后由原worker接续该delivery；
 不再次send A、不初始化账号或预算、不重开出口。任何可能已派发或再次中断的状态保持HOLD/只读。
 worker脏会话审计在受信scope binder之前执行，保留零初始advisory锁检查；binder安装的事务级release共享锁不再误报脏会话。
+
+### schema54 / 原生 Lio4 发布与回退
+
+此升级由 B 操作，L 的闲时应用发布授权不包含迁移、签名控制、operator
+selector、环境文件或预算改动。候选应用与 PG17 operator 须固定已审完整源码和
+镜像，精确 CI 全绿；A 的固定 SHA 归档短冻结期间可构建、验证，不合并新 PR。
+
+先按原部署锁和双排空确认没有其他实际 ACTIVE 批次，停入口与原 worker，保留
+原账、所有 INTENT/UNKNOWN 和旧采集文件。核同当前 schema53 的签名安全点、
+完整删除 fences、数据与序列，再用包含54的已审 operator 执行明确的升级入口：
+
+```sh
+python -B -m deploy.hk.demo_schema --target 54
+```
+
+升级只追加54，不重建预算账户、不改800额度、已用数、原费用或 hold。原52额度
+和53来源 marker 必须均为 COMPLETE 且同 lineage；缺失、未决或错 lineage 时停下
+核原动作，不跨过旧阶段。54沿现有 `demo-schema54` 签名 INTENT、原 release/
+latest 身份、完整 fences 和新 PG17 checkpoint 流程。DDL事务、导出、latest、release
+或完成 marker 中断后仅核对并续结该原阶段：
+
+```sh
+python -B -m deploy.hk.demo_schema --resume-schema54
+```
+
+已发布的签名 archive 不重导，未发布残件保留。数据或序列晚变时拒绝续结，不以新
+备份掩盖原差异。readiness 在54仍校验原52、53门禁，并要求同 lineage 的54
+COMPLETE marker；数据库版本为54本身不代表发布完成。
+
+B核对新签名备份、兼容应用镜像、原件读回和发布策略后，才更新现有 idle helper
+的 schema/source 白名单与 operator selector；L不能编辑这些文件放行自己的候选。
+应用 source/image 变化会撤回旧 C 采集租约，须按新源重签。准备时保留迁移前镜像和
+备份，不把它们自动登记为54可用的回退目标。
+
+出现任何真正 Lio4 原件后，回退必须保留54、原4准入与兼容 reader。旧 schema53/
+9406 binary 不属于已证明的兼容回退；不得删除、改标或还原旧数据来绕过54的 down
+拒绝。新代码的 `CJ_LIO_EXPLORATION_ENABLED=0` 仅关闭探索策略，保留4数据读取，
+可作为同兼容镜像的待验证回退方案。此非秘密服务端开关由 B 在原 common 环境文件
+中按固定字节配置并重建 API/worker，其他字段保持原值；不移除4名单或凭客户端参数
+授予权限。兼容方案必须核同原4字节、同身份续读及跨身份/旧1–3读取拒绝，并保留旧
+1–3正例。完成前不宣称回退已验证；失败时保持停新和已知兼容代码，修复后前滚。
+
+本机 PG17 覆盖53及54的原 quota bytes/未知占用保留、签名发布中断、原阶段续结、
+晚写拒绝与不重复应用；原生4 reader/rollback策略测试与香港实际切换、合成和真机
+验收分列。marker、脚本或本机 PASS 不授予 E/F 实验资格。
 `hk_cloud_rehearsal` PG组验证这套生产者组合，实际生成native checkpoint；另以签名hash-only假包验证删除前拒绝，不冒充真实云备份。
 
 恢复operator仅接受32位十六进制 `--rehearsal-id`，目标固定在已核持久bind卷 `/rehearsals/ID`（宿主 `/srv/g2c-beta/rehearsals`，UID10001/0700）；拒绝tmpfs、容器overlay、缺挂载和符号链接逃逸。示例：

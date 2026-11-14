@@ -321,7 +321,7 @@ private struct LioDayStops: View {
                         .frame(width: 20, height: 20)
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 2) {
-                        let ending = [stop.endDate, stop.endTime].compactMap { $0 }.joined(separator: " ")
+                        let ending = stop.endingText(language)
                         Group {
                             if let start = stop.time, !ending.isEmpty {
                                 Text("\(start)–\(ending)")

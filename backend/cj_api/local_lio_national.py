@@ -26,6 +26,13 @@ CONTEXT='lio_planning_context.1:'
 CITY='lio_city_resolution.1:'
 MAX_TURNS=8
 CURRENT_SYSTEM=FACTS_SYSTEM
+SOURCE_LANGUAGE=(
+    ' Evidence ignores reply styling. Copy city.query and all quotes verbatim from indexed originals; '
+    'never translate or quote resolved/Memory data. If only adding dates/fixed items, use city:null '
+    'to retain the verified prior source. Otherwise Chengdu uses query/quote:"Chengdu", '
+    'normalized_name:"成都"; 成都 uses query/quote:"成都". Keep source_index. '
+    'Never infer province, party size, hotel location or booking.')
+
 AUTHORITY_BARRIERS=('discussion','cancelled','ready_to_publish','different_destination','different_trip')
 # This is a publication gate, not city/date extraction or the intent router.
 # A model cannot turn an isolated date/party answer into a fresh save grant.
@@ -58,6 +65,7 @@ def intake_prompt(locale,turns,*,discussion_only=False,scene=None):
                  'For discuss intent, answer the current discussion usefully, including requested refinements, rather than a saving acknowledgement. '
                  'Keep the saved itinerary and its bookings unchanged; never claim the separate proposal was saved. '
                  'If the traveler changes topic, answer that topic normally.')
+    system+='\n'+SOURCE_LANGUAGE
     return system if scene is None else system+'\n'+scene
 
 

@@ -208,9 +208,38 @@ def exercise(root,conninfo):
         assert message['question_groups']==[] and message['exits']==[]
         _,message=send('flow4-emergency','有人受伤需要急救')
         assert message['question_groups']==[] and message['answer'].startswith('请立即拨打120')
+        prior=api.get('/v4/lio/timeline',headers=headers,params=dict(conversation_id=jt_cid))
+        assert prior.status_code==200,prior.text
+        with database.connect(scope)as db:
+            original_before=db.execute('SELECT conversation_id,run_id,input_sha256,raw_input,lio_wire_protocol,lio_wire_input,'
+                'demo_dialogue_input_sha256 FROM cj_message_receipt WHERE scope=%s AND message_id=%s',
+                (scope,'flow4-jt-original')).fetchone()
         with patch.dict(os.environ,{'CJ_LIO_EXPLORATION_ENABLED':'0'}):
             _,message=send('flow4-rollback','我想去中国玩几天')
+            reads_started=len(wire)
+            retained=api.get('/v4/lio/timeline',headers=headers,params=dict(conversation_id=jt_cid))
+            assert retained.status_code==200 and retained.content==prior.content,retained.text
+            recovered=api.get('/v4/lio/messages',headers=headers,params=dict(
+                message_id='flow4-jt-original',input_sha256=original_before[-1]))
+            assert recovered.status_code==200,recovered.text
+            validate(recovered.json())
+            assert recovered.json()['receipt']['conversation_id']==jt_cid
+            for version in (1,2,3):
+                assert api.get('/v'+str(version)+'/lio/timeline',headers=headers,
+                    params=dict(conversation_id=jt_cid)).status_code!=200
+            for version in (2,3):
+                assert api.get('/v'+str(version)+'/lio/messages',headers=headers,params=dict(
+                    message_id='flow4-jt-original',input_sha256=original_before[-1])).status_code==400
+            foreign={'Authorization':'Bearer '+dev_auth.token(auth,OUTSIDE,3600)}
+            assert api.get('/v4/lio/timeline',headers=foreign,params=dict(conversation_id=jt_cid)).status_code==403
+            assert len(wire)==reads_started
+            with database.connect(scope)as db:
+                original_after=db.execute('SELECT conversation_id,run_id,input_sha256,raw_input,lio_wire_protocol,lio_wire_input,'
+                    'demo_dialogue_input_sha256 FROM cj_message_receipt WHERE scope=%s AND message_id=%s',
+                    (scope,'flow4-jt-original')).fetchone()
+            assert original_after==original_before
         assert message['question_groups']==[] and message['exits']==[]
+        print('PASS same-code flag0 preserves pre-existing actual4 timeline bytes/MID/CID/RUN/core/outer hashes; legacy1–3 and foreign still refuse4; no readback model calls',flush=True)
         memory_input=dict(version='MEMORY-manual.2',operation_id='flow4-memory',item_id='flow4-memory',subject='self',
             slot='travel.pace',kind='preference',text='I prefer a slow travel pace.',extent='long_term',occurred_at='date unknown',context=None)
         saved=api.post('/v2/memories',headers=headers,content=json.dumps(memory_input).encode())
