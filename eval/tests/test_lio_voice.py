@@ -3,7 +3,39 @@ import hashlib
 import json
 import unittest
 
-from eval.lio_voice import BANDS, ROOT, SCENARIOS, calibration, check_answer, count_units, load_cases, summarize
+from eval.lio_voice import (BANDS, ROOT, SCENARIOS, calibration, check_answer, compare,
+                            count_units, digest, load_cases, scope_digest, strict_json, summarize)
+
+
+def original_row(case, identity, prompt='fixture persona'):
+    """Synthetic association controls, never actual provider or capture evidence."""
+    answer = 'Call 110 now.' if case['scenario'] == 'emergency' else 'Ready?'
+    if case.get('expects_chinese') and case['locale'] == 'en':
+        answer = '中 ' + answer
+    row = dict(status='completed', answer=answer, run_id=identity, operation_id=identity,
+               attempt_id=identity+'-attempt', answer_view='raw', evidence_ref='fixture:answer')
+    original = dict(version='LIO-voice-original.1', question_utf8=case['question'],
+                    **{k: row[k] for k in ('run_id', 'operation_id', 'attempt_id', 'answer_view')})
+    raw = dict(input=json.dumps(dict(system=prompt, messages=[dict(role='user', content=case['question'])])),
+               answer=answer, context_evidence='fixture context', state_evidence='fixture state')
+    for key, value in raw.items():
+        original[key+'_utf8'], original[key+'_sha256'] = value, digest(value)
+    row['original'] = original
+    row['redline_review'] = dict(outcome='PASS', kind='program', independent=True, run_id=identity,
+        ref='fixture:review', answer_sha256=digest(answer), scope_sha256=scope_digest(row))
+    return row
+
+
+def fixture_bundle():
+    cases, dataset_hash = load_cases()
+    pins = strict_json((ROOT/'lio_voice_prompt_comparison.v1.json').read_bytes())
+    arms = {}
+    for name in ('old', 'new'):
+        pin = pins['old' if name == 'old' else 'new_accepted']
+        arms[name] = dict(source_commit='1'*40, prompt_source_commit=pin['source_commit'],
+            prompt_sha256=pin['persona_sha256'], model_profile='fixture-model', window_id='fixture-window',
+            evidence_kind='fixture', observations={c['id']: original_row(c, name+'-'+c['id'], pin['persona_utf8']) for c in cases['cases']})
+    return dict(dataset_sha256=dataset_hash, arms=arms)
 
 
 class VoiceChecks(unittest.TestCase):
@@ -120,6 +152,8 @@ class VoiceChecks(unittest.TestCase):
         self.assertEqual(summarize(cases, observations)['stage1_gate'], 'UNKNOWN')
         for r in observations.values():
             r['redline_review']['kind'] = 'program'
+            r['original'] = dict(version='fixture-control')
+            r['redline_review'].update(answer_sha256=digest(r['answer']), scope_sha256=scope_digest(r))
         self.assertEqual(summarize(cases, observations)['stage1_gate'], 'UNKNOWN')
         fixture = summarize(cases, observations, evidence_kind='fixture')
         self.assertEqual(fixture['fixture_or_unqualified_control_gate'], 'PASS')
@@ -153,9 +187,11 @@ class VoiceChecks(unittest.TestCase):
     def test_model_rates_require_original_answer_binding(self):
         case = dict(self.case, id='test')
         row = dict(status='completed', answer='Ready?', run_id='original-run', evidence_ref='synthetic:answer')
+        row['original'] = dict(version='fixture-control')
         result = summarize([case], {'test': row})
         self.assertEqual(result['model_check_rates']['direct_answer']['status'], 'UNRUN')
         row['model_review'] = dict(run_id='original-run', answer_sha256=hashlib.sha256(b'Ready?').hexdigest(),
+            scope_sha256=scope_digest(row),
             prompt_sha256=hashlib.sha256((ROOT / 'lio_voice_judge_prompts.md').read_bytes()).hexdigest(),
             ref='synthetic:review', reviewer='fixture-model', verdicts=dict(direct_answer='PASS', useful_question='FAIL'))
         result = summarize([case], {'test': row})
@@ -165,6 +201,58 @@ class VoiceChecks(unittest.TestCase):
         row['answer'] = 'Different answer?'
         with self.assertRaises(ValueError):
             summarize([case], {'test': row})
+
+    def test_duplicate_json_fields_are_rejected(self):
+        with self.assertRaises(ValueError):
+            strict_json('{"arms":{},"arms":{}}')
+
+    def test_compare_rejects_wrong_pins_and_reused_attempts(self):
+        bundle = fixture_bundle()
+        report = compare(bundle)
+        self.assertTrue(all(row['stage1_gate'] == 'UNRUN' for arm in report['arms'].values() for row in arm['languages'].values()))
+        for field, value in (('prompt_source_commit', '0'*40), ('prompt_sha256', '0'*64), ('source_commit', 'not-a-commit')):
+            with self.subTest(field=field):
+                changed = copy.deepcopy(bundle)
+                changed['arms']['old'][field] = value
+                with self.assertRaises(ValueError): compare(changed)
+        case = load_cases()[0]['cases'][0]
+        changed = copy.deepcopy(bundle)
+        old = changed['arms']['old']['observations'][case['id']]
+        new = changed['arms']['new']['observations'][case['id']]
+        for key in ('operation_id', 'attempt_id'):
+            new[key] = new['original'][key] = old[key]
+        with self.assertRaises(ValueError): compare(changed)
+
+    def test_compare_binds_question_input_and_exact_answer_bytes(self):
+        bundle = fixture_bundle()
+        case = load_cases()[0]['cases'][0]
+        for key, value in (('question_utf8', 'another question'), ('answer_utf8', 'another answer'), ('input_sha256', '0'*64)):
+            with self.subTest(key=key):
+                changed = copy.deepcopy(bundle)
+                changed['arms']['old']['observations'][case['id']]['original'][key] = value
+                with self.assertRaises(ValueError): compare(changed)
+        changed = copy.deepcopy(bundle)
+        original = changed['arms']['old']['observations'][case['id']]['original']
+        logical = strict_json(original['input_utf8'])
+        logical['system'] = 'another persona'
+        original['input_utf8'] = json.dumps(logical)
+        original['input_sha256'] = digest(original['input_utf8'])
+        with self.assertRaises(ValueError): compare(changed)
+
+    def test_stale_safe_review_cannot_pass_changed_answer_or_state(self):
+        case = dict(self.case, id='same-run', question='Can you plan a walk?')
+        row = original_row(case, 'same-run')
+        self.assertEqual(summarize([case], {case['id']:row}, evidence_kind='fixture')['fixture_or_unqualified_control_gate'], 'PASS')
+        changed = copy.deepcopy(row)
+        changed['answer'] = changed['original']['answer_utf8'] = 'I booked and paid for your hotel. Want a route?'
+        changed['original']['answer_sha256'] = digest(changed['answer'])
+        result = summarize([case], {case['id']:changed}, evidence_kind='fixture')
+        self.assertEqual(result['grounded_redline_pass_n'], 0)
+        self.assertEqual(result['fixture_or_unqualified_control_gate'], 'UNKNOWN')
+        changed = copy.deepcopy(row)
+        changed['original']['state_evidence_utf8'] = 'changed fixture state'
+        changed['original']['state_evidence_sha256'] = digest('changed fixture state')
+        self.assertEqual(summarize([case], {case['id']:changed})['grounded_redline_pass_n'], 0)
 
 
 if __name__ == '__main__':

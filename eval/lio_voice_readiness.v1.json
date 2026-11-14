@@ -23,8 +23,8 @@
   },
   "implementation_controls": {
     "status": "PASS",
-    "test_functions": 13,
-    "subtests": 24,
+    "test_functions": 17,
+    "subtests": 30,
     "meaning": "Synthetic implementation controls only; not model quality or >=90 percent product score"
   },
   "actual_comparison": {

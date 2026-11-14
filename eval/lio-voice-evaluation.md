@@ -51,7 +51,8 @@ that a fixture was deployed.
   claims and invented identity still require original state/source evidence and review.
 
 No dependencies, production code, authorization, old evaluator, frozen contract,
-quota/hold, provider route, publishing or CI gate is changed by the checker.
+quota/hold, provider route or publishing is changed by the checker. The existing
+default test entry gains this module's controls; no existing check is removed or relaxed.
 
 ## Human/model calibration
 
@@ -78,7 +79,7 @@ No independent human labels or qualified model-judge results are imported here.
 The historical preparation is retained separately; it does not establish
 calibration or an independent model score. JT's labels remain pending.
 
-## Old/new comparison (L2, pending #842)
+## Old/new comparison (L2, qualified runtime pending)
 
 The explicit preparation pins are in `lio_voice_prompt_comparison.v1.json`.
 Old is the immediate pre-#842 base `dbc39d17`; the earlier candidate `037dccab`
@@ -118,23 +119,43 @@ body event really exposes the first paragraph; a terminal-only body cannot estab
 an earlier streaming paragraph time. Missing timing remains null.
 
 The offline comparison input is a JSON object with `dataset_sha256` and `arms.old` /
-`arms.new`. Each arm has `source_commit`, `prompt_sha256`, `model_profile`, `window_id`
+`arms.new`. Each arm has actual runtime `source_commit` (40 hex),
+`prompt_source_commit` and `prompt_sha256` matching the frozen old/new source pins,
+`model_profile`, `window_id`
 and `evidence_kind=fixture|real_service`, plus `observations` keyed by frozen case ID.
 Fixture/unqualified controls report separately and cannot return a product
 `stage1_gate=PASS`; a synthetic/fixture reference is rejected for a real-service arm.
 A completed observation contains `status`,
-`answer`, `run_id`, `evidence_ref`, `first_paragraph_seconds` (or null), and independent
+`answer`, `run_id`, `operation_id`, `attempt_id`, `answer_view=raw|rendered`,
+`evidence_ref`, `first_paragraph_seconds` (or null), and `original` described below.
+Each operation/attempt pair occurs only once across all cases and both arms;
+identical answer text from genuinely separate attempts is allowed. Independent
 grounded `redline_review={outcome:PASS|FAIL,kind:human|program,independent:true,run_id:...,
-ref:...}` bound to the same original RUN when available. A model-only PASS cannot
-establish zero severe errors. Optional `model_review` contains `run_id`,
+answer_sha256:...,scope_sha256:...,ref:...}` binds the exact answer and original scope.
+A stale same-RUN review of another answer/state cannot certify a PASS.
+A model-only PASS cannot establish zero severe errors. Optional `model_review` contains `run_id`,
 `answer_sha256`, `prompt_sha256` (of `lio_voice_judge_prompts.md`), `reviewer`, `ref`,
-and `verdicts` keyed by the three criterion IDs. Missing reviews stay UNRUN; a review
-of a different answer/RUN/prompt is rejected. Failed/missing
+`scope_sha256` and `verdicts` keyed by the three criterion IDs. Missing reviews stay
+UNRUN; a review of a different scope/answer/RUN/prompt is rejected. Failed/missing
 observations do not receive artificial answers. Run:
 
 ```sh
 python -B -m eval.lio_voice compare old-new-observations.json
 ```
+
+The qualified runner's `original` export has `version=LIO-voice-original.1`, the
+same RUN/operation/attempt/view, frozen `question_utf8`, plus `input_utf8`,
+`answer_utf8`, `context_evidence_utf8`, `state_evidence_utf8` and the SHA256 of
+each corresponding UTF-8 byte string. The original logical input is JSON with
+`system` and `messages`: the last user message must be the frozen question, and
+the system input must begin with the exact frozen PERSONA. Keep all actual
+context/source/state artifacts; do not generate replacements to satisfy an import.
+`scope_sha256` hashes the whole original object serialized as UTF-8 JSON with sorted
+keys, no extra whitespace (`separators=(',', ':')`) and `ensure_ascii=False`.
+Duplicate JSON fields are rejected. These cross-checks establish association only:
+hashes and this offline file format never issue runner/source/AUTH qualification,
+prove a real dispatch, or authorize a synthetic export to be called real evidence.
+The approved runtime/window and original artifact reference must still be verified.
 
 Report both languages separately: every check's pass/planned rate, per-answer units
 and band distribution, first-paragraph known/missing counts and p50/p95/max. Each

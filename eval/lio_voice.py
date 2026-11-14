@@ -7,6 +7,7 @@ from pathlib import Path
 import re
 import unicodedata
 from pypinyin import lazy_pinyin
+from cj_strict_json import reject_duplicates
 
 from evaluation.cj028.evaluate import latency, number, ratio, require
 
@@ -36,9 +37,79 @@ LIST_ITEM = re.compile(r'^\s*(?:[-+*•▪◦]\s+|(?:\d+|[一二三四五六七�
 MODEL_CRITERIA = ('direct_answer', 'useful_question', 'useful_uncertainty')
 
 
+def strict_json(raw):
+    return json.loads(raw, object_pairs_hook=reject_duplicates(ValueError, 'duplicate evaluation field'))
+
+
+def digest(raw):
+    return hashlib.sha256(raw.encode('utf8')).hexdigest()
+
+
+def scope_digest(row):
+    original = row.get('original')
+    if type(original) is not dict:
+        return None
+    return digest(json.dumps(original, ensure_ascii=False, sort_keys=True, separators=(',', ':')))
+
+
+def validate_original(case, row):
+    """Cross-check the qualified runner's original export, not a generated label.
+
+    This validates data association; it never issues capture/AUTH qualification.
+    The exporter retains actual provider input/output and source/state evidence.
+    """
+    original = row.get('original')
+    require(type(original) is dict and original.get('version') == 'LIO-voice-original.1', 'original export required')
+    require(original.get('question_utf8') == case['question'], 'original question differs from frozen case')
+    for key in ('run_id', 'operation_id', 'attempt_id'):
+        require(type(row.get(key)) is str and bool(row[key]) and original.get(key) == row[key], 'original attempt binding differs')
+    require(original.get('answer_utf8') == row['answer'], 'original answer differs')
+    require(original.get('answer_view') in ('raw', 'rendered') and original['answer_view'] == row.get('answer_view'), 'original answer view differs')
+    for key in ('input', 'answer', 'context_evidence', 'state_evidence'):
+        raw = original.get(key+'_utf8')
+        require(type(raw) is str and original.get(key+'_sha256') == digest(raw), 'original '+key+' bytes differ')
+    logical = strict_json(original['input_utf8'])
+    require(type(logical) is dict and type(logical.get('messages')) is list and logical['messages'], 'original model input required')
+    require(all(type(m) is dict for m in logical['messages']), 'invalid original model messages')
+    users = [m for m in logical['messages'] if m.get('role') == 'user']
+    require(users and users[-1].get('content') == case['question'], 'original model question differs')
+    require(type(logical.get('system')) is str, 'original system input required')
+    return original, logical
+
+
+def compare(bundle):
+    dataset, dataset_hash = load_cases()
+    pins = strict_json((ROOT/'lio_voice_prompt_comparison.v1.json').read_bytes())
+    require(bundle['dataset_sha256'] == dataset_hash, 'dataset digest mismatch')
+    require(set(bundle['arms']) == {'old', 'new'}, 'need old and new arms')
+    seen = set()
+    result = dict(dataset_sha256=dataset_hash, arms={})
+    for name, arm in bundle['arms'].items():
+        pin = pins['old' if name == 'old' else 'new_accepted']
+        require(re.fullmatch(r'[0-9a-f]{40}', arm.get('source_commit', '')) is not None, 'invalid runtime source commit')
+        require(arm.get('prompt_source_commit') == pin['source_commit'] and arm.get('prompt_sha256') == pin['persona_sha256'], 'frozen prompt pin mismatch')
+        require(all(type(arm.get(k)) is str and bool(arm[k]) for k in ('model_profile', 'window_id')), 'missing arm provenance')
+        require(arm.get('evidence_kind') in ('fixture', 'real_service'), 'missing arm evidence layer')
+        require(set(arm['observations']) <= {c['id'] for c in dataset['cases']}, 'unknown arm case ID')
+        for case in dataset['cases']:
+            row = arm['observations'].get(case['id'])
+            if row is None or row.get('status') != 'completed':
+                continue
+            original, logical = validate_original(case, row)
+            require(logical['system'].startswith(pin['persona_utf8']), 'original provider input has another PERSONA')
+            identity = (row['operation_id'], row['attempt_id'])
+            require(identity not in seen, 'original attempt reused across cases/arms')
+            seen.add(identity)
+        result['arms'][name] = dict(provenance={k: arm[k] for k in ('source_commit', 'prompt_source_commit', 'prompt_sha256', 'model_profile', 'window_id', 'evidence_kind')},
+            languages={locale: summarize([c for c in dataset['cases'] if c['locale'] == locale],
+                {c['id']: arm['observations'][c['id']] for c in dataset['cases'] if c['locale'] == locale and c['id'] in arm['observations']},
+                evidence_kind=arm['evidence_kind']) for locale in ('zh', 'en')})
+    return result
+
+
 def load_cases():
     raw = (ROOT / 'lio_voice_cases.v1.json').read_bytes()
-    doc = json.loads(raw)
+    doc = strict_json(raw)
     require(doc['version'] == 'LIO-voice-cases.1', 'unsupported voice cases')
     cases = doc['cases']
     require(len(cases) == 30 and len({c['id'] for c in cases}) == 30, 'expected 30 unique cases')
@@ -144,15 +215,17 @@ def summarize(cases, observations, *, evidence_kind='UNQUALIFIED'):
         require(row.get('evidence_ref') and row.get('run_id'), 'completed output needs original evidence and RUN')
         if evidence_kind == 'real_service':
             require(not row['evidence_ref'].startswith(('synthetic:','fixture:')), 'fixture reference cannot certify a real-service arm')
+            validate_original(case, row)
         seconds = row.get('first_paragraph_seconds')
         require(seconds is None or number(seconds), 'invalid first paragraph clock')
         review = row.get('model_review')
         if review is not None:
             require(review.get('run_id') == row['run_id']
                     and review.get('answer_sha256') == hashlib.sha256(row['answer'].encode()).hexdigest()
+                    and scope_digest(row) is not None and review.get('scope_sha256') == scope_digest(row)
                     and review.get('ref') and review.get('reviewer')
                     and review.get('prompt_sha256') == hashlib.sha256((ROOT / 'lio_voice_judge_prompts.md').read_bytes()).hexdigest(),
-                    'model review must bind the original answer/RUN and frozen prompt')
+                    'model review must bind the original scope/answer/RUN and frozen prompt')
             require(set(review['verdicts']) <= set(MODEL_CRITERIA), 'unknown model review criterion')
             for item, verdict in review['verdicts'].items():
                 require(verdict in ('PASS', 'FAIL'), 'invalid model verdict')
@@ -168,7 +241,9 @@ def summarize(cases, observations, *, evidence_kind='UNQUALIFIED'):
         review = row.get('redline_review', {})
         reviewed += (review.get('outcome') == 'PASS' and review.get('kind') in ('human', 'program')
                      and review.get('independent') is True and bool(review.get('ref'))
-                     and review.get('run_id') == row.get('run_id') and bool(row.get('run_id')))
+                     and review.get('run_id') == row.get('run_id') and bool(row.get('run_id'))
+                     and review.get('answer_sha256') == digest(row.get('answer', ''))
+                     and scope_digest(row) is not None and review.get('scope_sha256') == scope_digest(row))
     redline_fails = sum(observations.get(c['id'], {}).get('redline_review', {}).get('outcome') == 'FAIL' for c in cases)
     missing = sum(r is None for r in checked)
     impossible = any((r['numerator'] + missing) / r['denominator'] < .9 for r in rates.values())
@@ -204,24 +279,10 @@ def main():
     parser.add_argument('input', type=Path, help='Offline old/new bundle, or actual model judgments for calibration')
     args = parser.parse_args()
     if args.mode == 'calibrate':
-        samples = json.loads((ROOT / 'lio_voice_calibration.v1.json').read_bytes())
-        print(json.dumps(calibration(samples, json.loads(args.input.read_bytes())), ensure_ascii=False, indent=2))
+        samples = strict_json((ROOT / 'lio_voice_calibration.v1.json').read_bytes())
+        print(json.dumps(calibration(samples, strict_json(args.input.read_bytes())), ensure_ascii=False, indent=2))
         return
-    dataset, digest = load_cases()
-    bundle = json.loads(args.input.read_bytes())
-    require(bundle['dataset_sha256'] == digest, 'dataset digest mismatch')
-    require(set(bundle['arms']) == {'old', 'new'}, 'need old and new arms')
-    result = dict(dataset_sha256=digest, arms={})
-    for name, arm in bundle['arms'].items():
-        require(all(arm.get(k) for k in ('source_commit', 'prompt_sha256', 'model_profile', 'window_id')), 'missing arm provenance')
-        require(arm.get('evidence_kind') in ('fixture','real_service'), 'missing arm evidence layer')
-        result['arms'][name] = dict(provenance={k: arm[k] for k in ('source_commit', 'prompt_sha256', 'model_profile', 'window_id')},
-                                  languages={locale: summarize([c for c in dataset['cases'] if c['locale'] == locale],
-                                      {k: v for k, v in arm['observations'].items() if k in {c['id'] for c in dataset['cases'] if c['locale'] == locale}},
-                                      evidence_kind=arm['evidence_kind'])
-                                             for locale in ('zh', 'en')})
-        require(set(arm['observations']) <= {c['id'] for c in dataset['cases']}, 'unknown arm case ID')
-    print(json.dumps(result, ensure_ascii=False, indent=2))
+    print(json.dumps(compare(strict_json(args.input.read_bytes())), ensure_ascii=False, indent=2))
 
 
 if __name__ == '__main__':
