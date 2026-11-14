@@ -211,13 +211,13 @@ def exercise(auth,conninfo):
                         source_checks.clear()
                         def revoke_after_public_read():
                             source_checks.append(True)
-                            if len(source_checks)==3:raise LeaseUnavailable('controlled public final AUTH withdrawal')
+                            if len(source_checks)==2:raise LeaseUnavailable('controlled public final AUTH withdrawal')
                             return original_admit()
                         with patch.object(held.message_context,'admit',side_effect=revoke_after_public_read):
                             try:held.message_context.active_source_original(original_binding,'normal-1')
                             except LeaseUnavailable:pass
                             else:raise AssertionError('public historical source escaped final AUTH withdrawal')
-                        assert len(source_checks)==3
+                        assert len(source_checks)==2
                     assert lease.reference.owner_scope==scope_for(ISSUER,'alice')
                     try:lease.reference=lease.reference
                     except AttributeError:pass
