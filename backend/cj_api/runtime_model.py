@@ -8,6 +8,7 @@ from cj_agent.provider import (M4_NATIVE_TURN_BUFFERED,M4_NATIVE_TURN_PROFILE_V2
 from runtime_adapter.contract import decode,Unavailable
 from cj_draft.grouped_plan import GENERATION_PROFILES
 from cj_draft.rich_schema import GENERATION_PROFILES as RICH_PROFILES
+from cj_message.lio_exploration_schema import PROFILES as EXPLORATION_PROFILES,response_format,response_format_sha256
 
 
 def configured_model(provider,native_turn_profile):
@@ -32,6 +33,12 @@ class RuntimeModel:
         body=decode(wire['wire_input_utf8'])
         logical=decode(self.originals.input(token,message_id,operation_id))
         config=self.provider.config
+        structured=logical.get('structured_profile')
+        if isinstance(structured,str) and structured.startswith('LIO-exploration-'):
+            if (structured not in EXPLORATION_PROFILES or
+                    logical.get('response_format_sha256')!=response_format_sha256(structured) or
+                    body.get('response_format')!=response_format(structured)):
+                raise Unavailable('ACTUAL_EXPLORATION_SCHEMA_CHANGED')
         profile=logical.get('native_turn_profile')
         if profile is not None and profile!=self.native_turn_profile:
             raise Unavailable('ACTUAL_NATIVE_MODEL_PROFILE_CHANGED')

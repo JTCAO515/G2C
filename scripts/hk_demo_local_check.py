@@ -218,13 +218,15 @@ def check_quota_resume(control,backups,operator,conninfo,schema_root):
     print('PASS original quota recovery, readied only with matching 800 configuration and no downgrade')
 
 
-def check_schema53_resume(control,backups,operator,schema_root):
+def check_schema53_resume(control,backups,operator,schema_root,*,target=53):
     """Interrupt the same real PG action before/after commit and publication."""
-    marker=control/'demo-schema53.json'
-    destination=backups/'demo-schema53'
+    anchor=f'demo-schema{target}'
+    marker=control/(anchor+'.json')
+    destination=backups/anchor
+    resume=demo_schema.resume_schema53 if target==53 else demo_schema.resume_schema54
     lineage=checkpoint.verified(control/'release.json')['lineage']
     original_quota=checkpoint.verified(control/'demo-schema52.json')
-    context_path=control.parent/'schema53-runtime.json'
+    context_path=control.parent/f'schema{target}-runtime.json'
     context_path.write_text(os.environ['CJ_BETA_RUN_CONTEXT_JSON'])
     runtime=SimpleNamespace(context_path=context_path,context=SimpleNamespace(
         current=SimpleNamespace(meter=SimpleNamespace(budget=800))))
@@ -235,21 +237,32 @@ def check_schema53_resume(control,backups,operator,schema_root):
     def gate(ready):
         try:entrypoint._runtime_gate(database,runtime)
         except ValueError as exc:
-            assert not ready and str(exc) in ('beta_database_not_released','HK wire-origin cutover incomplete')
+            reasons=('beta_database_not_released','HK wire-origin cutover incomplete')
+            if target==54:reasons+=('HK exploration-origin cutover incomplete',)
+            assert not ready and str(exc) in reasons
         else:assert ready
     for quota in (dict(state='INTENT',lineage=lineage),dict(state='COMPLETE',lineage='foreign')):
         checkpoint.atomic(control/'demo-schema52.json',quota)
-        try:demo_schema.upgrade(control,backups,target=53,schema_root=schema_root)
+        try:demo_schema.upgrade(control,backups,target=target,schema_root=schema_root)
         except ValueError as exc:assert 'complete original quota upgrade' in str(exc)
-        else:raise AssertionError('schema53 crossed an incomplete original quota release')
+        else:raise AssertionError(f'schema{target} crossed an incomplete original quota release')
         assert not marker.exists() and not destination.exists()
-        with operator() as (db,_):assert migrate.applied(db)==list(range(1,53))
+        with operator() as (db,_):assert migrate.applied(db)==list(range(1,target))
     checkpoint.atomic(control/'demo-schema52.json',original_quota)
+    if target==54:
+        origin=control/'demo-schema53.json';original_origin=checkpoint.verified(origin)
+        for value in (dict(state='INTENT',lineage=lineage),dict(state='COMPLETE',lineage='foreign')):
+            checkpoint.atomic(origin,value)
+            try:demo_schema.upgrade(control,backups,target=target,schema_root=schema_root)
+            except ValueError as exc:assert 'complete original wire-origin upgrade' in str(exc)
+            else:raise AssertionError('schema54 crossed an incomplete original wire-origin release')
+            assert not marker.exists()and not destination.exists()
+        checkpoint.atomic(origin,original_origin)
     with patch.object(migrate,'up',side_effect=OSError('synthetic schema53 rollback')):
-        try:demo_schema.upgrade(control,backups,target=53,schema_root=schema_root)
+        try:demo_schema.upgrade(control,backups,target=target,schema_root=schema_root)
         except OSError as exc:assert str(exc)=='synthetic schema53 rollback'
         else:raise AssertionError('schema53 rollback hidden')
-    with operator() as (db,_):assert migrate.applied(db)==list(range(1,53))
+    with operator() as (db,_):assert migrate.applied(db)==list(range(1,target))
     assert checkpoint.verified(marker)['state']=='INTENT'
 
     def partial_export(path,*args,**kwargs):
@@ -258,10 +271,10 @@ def check_schema53_resume(control,backups,operator,schema_root):
         raise OSError('synthetic schema53 export interruption')
 
     with patch.object(checkpoint,'export',side_effect=partial_export):
-        try:demo_schema.resume_schema53(control,backups,schema_root=schema_root)
+        try:resume(control,backups,schema_root=schema_root)
         except OSError as exc:assert str(exc)=='synthetic schema53 export interruption'
         else:raise AssertionError('schema53 export interruption hidden')
-    with operator() as (db,_):assert migrate.applied(db)==list(range(1,54))
+    with operator() as (db,_):assert migrate.applied(db)==list(range(1,target+1))
     gate(False)
     atomic=checkpoint.atomic
     for name in ('latest','release'):
@@ -271,22 +284,22 @@ def check_schema53_resume(control,backups,operator,schema_root):
                 raise OSError('synthetic schema53 '+name)
             atomic(path,value,**kwargs)
         with patch.object(checkpoint,'atomic',side_effect=interrupt):
-            try:demo_schema.resume_schema53(control,backups,schema_root=schema_root)
+            try:resume(control,backups,schema_root=schema_root)
             except OSError as exc:assert str(exc)=='synthetic schema53 '+name
             else:raise AssertionError('schema53 publication interruption hidden')
         assert checkpoint.verified(marker)['state']=='INTENT'
         gate(False)
-    preserved,=backups.glob('demo-schema53.unpublished-*')
+    preserved,=backups.glob(anchor+'.unpublished-*')
     assert (preserved/'database.dump').read_bytes()==b'original interrupted schema53 export'
     with patch.object(demo_schema,'_complete',side_effect=OSError('synthetic schema53 marker')):
-        try:demo_schema.resume_schema53(control,backups,schema_root=schema_root)
+        try:resume(control,backups,schema_root=schema_root)
         except OSError as exc:assert str(exc)=='synthetic schema53 marker'
         else:raise AssertionError('schema53 marker interruption hidden')
     with operator() as (db,_):
         scope,revision=db.execute('SELECT scope_id,revision FROM cj_usage_ledger_candidate ORDER BY scope_id LIMIT 1').fetchone()
         db.execute('UPDATE cj_usage_ledger_candidate SET revision=revision+1 WHERE scope_id=%s',(scope,))
     with patch.object(checkpoint,'export',side_effect=AssertionError('late data must not create another backup')):
-        try:demo_schema.resume_schema53(control,backups,schema_root=schema_root)
+        try:resume(control,backups,schema_root=schema_root)
         except ValueError as exc:assert 'database differs from signed backup' in str(exc)
         else:raise AssertionError('schema53 late write hidden by published release')
     assert checkpoint.verified(marker)['state']=='INTENT'
@@ -294,13 +307,13 @@ def check_schema53_resume(control,backups,operator,schema_root):
         db.execute('UPDATE cj_usage_ledger_candidate SET revision=%s WHERE scope_id=%s',(revision,scope))
     marker.with_suffix('.tmp').write_bytes(b'interrupted schema53 marker')
     with patch.object(checkpoint,'export',side_effect=AssertionError('published schema53 archive repeated')):
-        demo_schema.resume_schema53(control,backups,schema_root=schema_root)
+        resume(control,backups,schema_root=schema_root)
     assert checkpoint.verified(marker)['state']=='COMPLETE'
     gate(True)
     assert destination.joinpath('manifest.json').exists()
-    assert {p.read_bytes() for p in control.glob('demo-schema53.tmp.unpublished-*')}=={b'interrupted schema53 marker'}
+    assert {p.read_bytes() for p in control.glob(anchor+'.tmp.unpublished-*')}=={b'interrupted schema53 marker'}
     with operator() as (db,_):checkpoint.require_release(db,control)
-    print('PASS original schema53 rollback/export/latest/release/marker interruptions reconciled without replay')
+    print(f'PASS original schema{target} rollback/export/latest/release/marker interruptions reconciled without replay')
 
 
 def verify_upgrade(root, blueprint, target):
@@ -318,10 +331,10 @@ def verify_upgrade(root, blueprint, target):
         CJ_BETA_RECOVERY_PRIVATE_B64=base64.b64encode(key.private_bytes(Encoding.Raw,PrivateFormat.Raw,NoEncryption())).decode(),
         CJ_BETA_RECOVERY_PUBLIC_B64=base64.b64encode(key.public_key().public_bytes(Encoding.Raw,PublicFormat.Raw)).decode())
     initialize,snapshot,negative,reserve_after_upgrade=(
-        quota_fixture(root,env) if target in (52,53) else (lambda _:None,None,None,None))
+        quota_fixture(root,env) if target in (52,53,54) else (lambda _:None,None,None,None))
     with pg_suites.cluster('demo-upgrade',port=55650,role='cj_demo_upgrade',root=root/'old',socket=root/'old-s') as config:
         with psycopg.connect(**config,autocommit=True) as db:
-            migrate.up(db,migrate.load(),51 if target==53 else target-1)
+            migrate.up(db,migrate.load(),51 if target in (53,54) else target-1)
             original=checkpoint.local.fence_state(db)
 
         @contextmanager
@@ -330,13 +343,13 @@ def verify_upgrade(root, blueprint, target):
                 yield db,config
 
         with patch.dict(os.environ,env),patch.object(checkpoint,'operator',operator),                patch.object(staging,'PG17',pg_suites.bindir()):
-            with patch.object(checkpoint,'versions',return_value=list(range(1,52 if target==53 else target))):
+            with patch.object(checkpoint,'versions',return_value=list(range(1,52 if target in (53,54) else target))):
                 checkpoint.bootstrap(control,initialize)
             checkpoint.atomic(control/'b2.json',dict(version='g2c-hk-local.1',state='FORWARD_ONLY'))
-            if target in (52,53):
+            if target in (52,53,54):
                 with operator() as (db,_):
                     negative(db)
-            if target==53:
+            if target in (53,54):
                 migrations=migrate.load()
                 with patch.object(migrate,'load',return_value=migrations[:52]):
                     with pg_suites.cluster('quota-blueprint',port=55652,role='cj_quota_blueprint',
@@ -350,10 +363,19 @@ def verify_upgrade(root, blueprint, target):
                 raw['current']['meter']['budget']=800
                 os.environ['CJ_BETA_RUN_CONTEXT_JSON']=json.dumps(raw)
                 assert checkpoint.verified(control/'demo-schema52.json')['state']=='COMPLETE'
-            if target in (52,53):
+                if target==54:
+                    with patch.object(migrate,'load',return_value=migrations[:53]):
+                        with pg_suites.cluster('origin-blueprint',port=55653,role='cj_origin_blueprint',
+                                root=root/'origin-blueprint',socket=root/'origin-blueprint-s')as origin_blueprint:
+                            with psycopg.connect(**origin_blueprint,autocommit=True)as db:
+                                migrate.up(db,migrate.load(),53)
+                            origin_schema=root/'origin-schema'
+                            schema.generate(origin_blueprint,origin_schema)
+                        demo_schema.upgrade(control,backups,target=53,schema_root=origin_schema)
+            if target in (52,53,54):
                 with operator() as (db,_):
                     prior_quota=snapshot(db)
-                    if target==53:
+                    if target in (53,54):
                         assert all(row[2]['config']['budget']==800 for row in prior_quota)
                         assert any(row[2]['attempts'].get('original-attempt',{}).get('state')=='unknown'
                                    for row in prior_quota)
@@ -362,8 +384,8 @@ def verify_upgrade(root, blueprint, target):
                 lineage=old['lineage'],fences=original))
             if target==52:
                 check_quota_resume(control,backups,operator,config,schema_root)
-            elif target==53:
-                check_schema53_resume(control,backups,operator,schema_root)
+            elif target in (53,54):
+                check_schema53_resume(control,backups,operator,schema_root,target=target)
             else:
                 demo_schema.upgrade(control,backups,target=target,schema_root=schema_root)
             base=demo_schema.daily_base(control,backups,'previous')
@@ -378,7 +400,7 @@ def verify_upgrade(root, blueprint, target):
                         ledger['config']['budget']=800
                         assert (key,revision+1,ledger) in raised
                     assert len(raised)==len(prior_quota)==3
-                elif target==53:
+                elif target in (53,54):
                     assert snapshot(db)==prior_quota
             if target==52:
                 reserve_after_upgrade(config)
@@ -2161,7 +2183,7 @@ if __name__=='__main__':
         with pg_suites.cluster('demo',port=55649,role='cj_demo_init',root=root/'pg',socket=root/'s') as conninfo:
             with psycopg.connect(**conninfo,autocommit=True) as connection:
                 migrations=migrate.load();migrate.up(connection,migrations,migrations[-1]['version'])
-            for version in (50,51,52,53):
+            for version in (50,51,52,53,54):
                 with patch.object(migrate,'load',return_value=migrations[:version]):
                     with pg_suites.cluster('old-blueprint',port=55651,role='cj_demo_blueprint',
                             root=root/'old-blueprint',socket=root/'old-blueprint-s') as previous:

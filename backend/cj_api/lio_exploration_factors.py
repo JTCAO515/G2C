@@ -53,7 +53,7 @@ FACTORS = (
     Factor('first_visit', 'people', (65, 40, 10), True, '第一次来', 'First visit',
         '这是第一次来中国旅行吗？', 'Is this your first trip to China?',
         _options(('first','第一次','First visit'), ('return','来过中国','Returning to China'),
-                 ('city_first','来过中国，这座城市是第一次','First visit to this city'))),
+                 ('city_first','来过中国，这座城市是第一次','Returning to China; first visit to this city'))),
     Factor('party_type', 'people', (85, 80, 30), 'two_adults', '两个成人', 'Two adults',
         '这次和谁一起旅行？', 'Who is travelling with you?',
         _options(('solo','一个人','Solo'), ('two_adults','两个成人','Two adults'),
