@@ -54,3 +54,30 @@ current Trip CAS, and use the existing signer and sole commit path. This source
 component supplies none of those missing permissions. Native rich save, edit,
 date conversion and undo remain separate integration requirements. A conditional
 data-validator PASS is never a native source grant or complete task PASS.
+
+## Registered provider composition
+
+`RichProviderContextSource` adds a second, explicit stage. Initial `capture`
+still captures only the original calendar/profile/NEEDS. After the registered
+providers settle, call `seal_providers(binding, issued_calendar)` **outside
+worker._step and all RUN/MESSAGE/Memory/NEEDS/Trip frames**. The actual L producer
+checks original operation inputs and settled Meter receipts there; the C layer
+does not take a records list or initiate a provider/retry.
+
+The resulting opaque capture retains `TRIP-RICH-PROVIDER-SOURCE.1`, including
+the unchanged calendar/profile source plus `provider_records`. It delegates the
+original NEEDS records, calendar basis and profile. These retained bytes remain
+data: copying or constructing a descriptor does not issue a publication lease.
+
+Final publication reuses the original MESSAGE and worker Memory frames, enters
+calendar/profile and provider holders before NEEDS/Trip, and keeps all checks
+through the existing final callback. The producer's final check must use its
+SELECT-only status reader, not reacquire RUN via `read_original`. Missing seals,
+changed original/configuration/producer revision, unresolved receipts, expired
+or copied captures and late source withdrawals withhold publication. A failed
+seal is not retried by this component.
+
+This join does not yet compile `TRIP-rich-source.1`, code-produced date checks,
+fixed/retained/H records, a structured.4 candidate or a signed Trip action. The
+new component still requires actual registered-producer signed PG composition,
+source-bundle qualification and the full WP8 red-line review before activation.
