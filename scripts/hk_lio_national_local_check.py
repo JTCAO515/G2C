@@ -47,6 +47,35 @@ DISCUSSION_REQUESTS={
         ('en','Hangzhou','visit Hangzhou for two days')}
 
 
+def first_plan_fixture(schema,items,*,title,subjects,long_id=False):
+    """Generate test data for the schema selected in this actual supplier call."""
+    fields=schema['properties'];profile=fields['version']['const']
+    shape=fields['days']['items']['prefixItems'];dates={}
+    for item in items:
+        dates.setdefault(item['date'],[]).append([item['id'],item['text'],item['start_time'],item['end_time'],subjects])
+    if len(shape)==3:
+        sights,meals=shape[1:];sight_count=sights['minItems'];meal_count=meals['minItems']
+        assert sight_count==sights['maxItems']and meal_count==meals['maxItems']==2
+        assert 2<=sight_count<=4
+        groups=[]
+        for day,(stamp,rows)in enumerate(dates.items(),1):
+            def row(kind,index,start,end):
+                return [f'{kind}-{day}-{index}',rows[0][1]+f' {kind} {index}',start,end,subjects]
+            visits=[row('sight',index+1,start,end)for index,(start,end)in enumerate(
+                (('09:00','11:00'),('14:00','15:00'),('16:00','17:00'),('19:30','20:30'))[:sight_count])]
+            food=[row('meal',index+1,start,end)for index,(start,end)in enumerate((('12:00','13:00'),('18:00','19:00')))]
+            groups.append([day if shape[0]['type']=='integer'else stamp,visits,food])
+        first_row=groups[0][1][0]
+    else:
+        assert len(shape)==2
+        groups=[[day if shape[0]['type']=='integer'else stamp,rows]for day,(stamp,rows)in enumerate(dates.items(),1)]
+        first_row=groups[0][1][0]
+    if long_id:first_row[0]='x'*97
+    value=dict(version=profile,title=title,days=groups)
+    count=sum(len(rows)for group in groups for rows in group[1:])
+    return value,count
+
+
 def exercise(root,conninfo):
     auth=root/'auth';dev_auth.init(auth,[SUBJECT])
     config=root/'connection.json';config.write_text(json.dumps(conninfo));now=int(time.time())
@@ -100,8 +129,12 @@ def exercise(root,conninfo):
                 content=('You have shared that you prefer fewer stops in a day.' if has_saved else
                          "I don't know you yet. Would you like to introduce yourself?")
         elif 'LIO-planning-intake.8' in system:
-            text=body['messages'][-1]['content'];current['text']=text
+            indexed=body['messages'][-1]['content']
+            source=re.fullmatch(r'Original traveler source_index=([0-9]+) \(quote only the following original text\):\n([\s\S]*)',indexed)
+            assert source is not None,indexed
+            text=source[2];current['text']=text
             source_index=len([m for m in body['messages'][1:] if m['role']=='user' and not m['content'].startswith('Stored memory data')])-1
+            assert int(source[1])==source_index
             from cj_agent.lio_intake_optional_schema import response_format
             assert body['response_format']==response_format(source_index)
             if current.get('build31_case'):
@@ -233,13 +266,11 @@ def exercise(root,conninfo):
             if original['current_trip'] is not None:
                 content=json.dumps(dict(version='TRIP-lio-replan-delta.4',days=[]))
             else:
-                dates={}
-                for item in items:
-                    dates.setdefault(item['date'],[]).append([item['id'],item['text'],item['start_time'],item['end_time'],
-                        current.get('build31_case',{}).get('bad_subjects',['party'])])
-                if current.get('build31_case',{}).get('long_id'):
-                    next(iter(dates.values()))[0][0]='x'*97
-                content=json.dumps(dict(version='TRIP-lio-first-plan.2',title=current['en']+' trip',days=list(dates.items())),ensure_ascii=False)
+                fixture,total=first_plan_fixture(body['response_format']['json_schema']['schema'],items,
+                    title=current['en']+' trip',subjects=current.get('build31_case',{}).get('bad_subjects',['party']),
+                    long_id=current.get('build31_case',{}).get('long_id',False))
+                current['selected_generation']=dict(profile=fixture['version'],items=total)
+                content=json.dumps(fixture,ensure_ascii=False)
         if 'LIO-planning-intake.8' in system:
             data=json.loads(content)
             if 'start_date' not in data:
@@ -624,7 +655,7 @@ def exercise(root,conninfo):
                 continue
             card=saved['current'];assert card is not None and saved['history']==[],saved
             assert len(card['days'])==case['count'] and card['days'][0]['date']==case['start'],card
-            assert len([item for day in card['days']for item in day['items']])==case['count']*case.get('periods',2)
+            assert len([item for day in card['days']for item in day['items']])==current['selected_generation']['items']
             with database.connect(scope)as db:
                 original=db.execute('SELECT n.content FROM cj_message_needs_binding b JOIN cj_needs_revision n '
                     'ON(n.scope,n.needs_id,n.version)=(b.needs_scope,b.needs_id,b.needs_version) WHERE b.message_scope=%s AND b.message_id=%s',
@@ -632,7 +663,7 @@ def exercise(root,conninfo):
                 fields=json.loads(bytes(original[0]));assert fields['fixed_items']==[] and fields['party_size']==dict(state='known',value=case['party'])
                 projected=db.execute('SELECT proposed_input FROM cj_trip_needs_basis WHERE message_scope=%s AND run_id='
                     '(SELECT run_id FROM cj_message_receipt WHERE scope=%s AND message_id=%s)',(scope,scope,mid)).fetchone()
-                proposed=json.loads(bytes(projected[0]));assert len(proposed['fixed_items'])==case['count']*case.get('periods',2)
+                proposed=json.loads(bytes(projected[0]));assert len(proposed['fixed_items'])==current['selected_generation']['items']
                 assert all(item['kind']=='intent'and item['applies_to']==['party']for item in proposed['fixed_items'])
             timeline=api.get('/v2/lio/timeline',params=params,headers=headers).json()
             assert timeline['messages'][-1]['trip']==card and timeline['messages'][-1]['status']=='completed'
