@@ -117,8 +117,14 @@ def assemble(document, *, source, facts, activities, edges: EdgeWindows, phase,
     if any(check['kind']=='day_opening' and check['state']=='conflict' for check in value['date_checks']):
         return Assembly('CONFLICT','KNOWN_OPENING_CONFLICT')
     proposed = [item for item in value['items'] if item['id'] not in protected and item['kind'] in ('sight','meal','free_time')]
-    first = [item for item in proposed if item['schedule']['start']['day_index']==1]
-    last = [item for item in proposed if item['schedule']['start']['day_index']==len(value['days'])]
+    # A retained planned stop still occupies its first/last-day recipe slot.
+    # Original NEEDS commitments remain distinct from the suggested light plan.
+    source_fixed = {record['payload']['item']['id'] for record in source.document['records']
+                    if (record['provider'], record['kind']) == ('needs', 'fixed_item')}
+    planned = [item for item in value['items'] if item['id'] not in source_fixed
+               and item['kind'] in ('sight','meal','free_time')]
+    first = [item for item in planned if item['schedule']['start']['day_index']==1]
+    last = [item for item in planned if item['schedule']['start']['day_index']==len(value['days'])]
     precedence=()
     if edges.first_unknown_recipe:
         if (len(first)!=2 or sorted(item['kind'] for item in first)!=['meal','sight']):
