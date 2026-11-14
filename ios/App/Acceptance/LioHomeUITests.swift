@@ -1,6 +1,35 @@
 import XCTest
 
 @MainActor final class LioHomeUITests: XCTestCase {
+    func testThinkingIndicatorStagesAndLineLProgress() {
+        continueAfterFailure = false
+        for language in ["zh-Hans", "en"] {
+            let chinese = language == "zh-Hans"
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "--lio-thinking-acceptance", "-cj.ui.language.v1", language]
+            app.launch()
+            let indicators = app.staticTexts.matching(identifier: "lio.progress")
+            XCTAssertTrue(indicators.firstMatch.waitForExistence(timeout: 12))
+            XCTAssertEqual(indicators.count, 5)
+            let replying = chinese ? "Lio 正在回复…" : "Lio is replying…"
+            for index in 0..<5 { XCTAssertEqual(indicators.element(boundBy: index).label, replying) }
+            func value(_ index: Int) -> String { indicators.element(boundBy: index).value as? String ?? "" }
+            XCTAssertEqual(value(0), "")
+            XCTAssertEqual(value(1), chinese ? "正在整理信息…" : "Pulling the details together…")
+            XCTAssertEqual(value(2), chinese ? "这次要多想一会儿…" : "This one is taking a little longer…")
+            XCTAssertEqual(value(3), chinese ? "正在比较几家酒店的位置" : "Comparing where the hotels are")
+            XCTAssertEqual(value(4), chinese ? "开始安排 3 天行程" : "Starting your 3-day plan")
+            let general = NSPredicate(format: "value == %@", chinese ? "正在整理信息…" : "Pulling the details together…")
+            XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: general, object: indicators.element(boundBy: 0))],
+                                          timeout: 9), .completed)
+            let capture = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+            capture.name = "Lio-thinking-" + language
+            capture.lifetime = .keepAlways
+            add(capture)
+            app.terminate()
+        }
+    }
+
     func testEnglish() throws { try exercise("en", question: "How do I take the metro in Shanghai?") }
     func testChinese() throws { try exercise("zh-Hans", question: "在上海怎么坐地铁？") }
 

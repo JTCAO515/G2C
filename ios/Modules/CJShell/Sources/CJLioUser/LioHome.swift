@@ -38,6 +38,7 @@ public struct LioHome<MenuContent: View>: View {
     @State private var sendCount = 0
     @State private var entering: Set<LioEntranceKey> = []
     @State private var chatFading = false
+    @State private var timing = LioTimingLog()
     private struct Observation: Equatable {
         let active: Bool
         let request: Int
@@ -230,6 +231,7 @@ public struct LioHome<MenuContent: View>: View {
                 .padding(.bottom, 12)
                 .frame(maxWidth: .infinity)
                 .opacity(chatFading ? 0 : 1)
+                .allowsHitTesting(!chatFading)
             }
             .scrollClipDisabled(false)
             .scrollDismissesKeyboard(.interactively)
@@ -245,6 +247,7 @@ public struct LioHome<MenuContent: View>: View {
                 if followsAnswer, let pending, latest?.id == pending.id { scroll.scrollTo("lio.bottom", anchor: .bottom) }
             }
             .onChange(of: latest?.status) { _, status in
+                if status == .finished, let id = latest?.id { timing.mark(.finished, id) }
                 if followsAnswer && status == .finished { scroll.scrollTo("lio.bottom", anchor: .bottom) }
             }
             .onChange(of: jumpRequest) { _, _ in
@@ -307,15 +310,19 @@ public struct LioHome<MenuContent: View>: View {
         }
     }
 
+    private var timingLanguage: String { language == .english ? "en" : "zh-Hans" }
+
     private var canSwitchChat: Bool {
         scenePhase == .active && conversation.pending == nil && !memoryBusy && !memoryPending
-            && tripPlan?.busy != true && tripPlan?.pending != true
+            && tripPlan?.busy != true && tripPlan?.pending != true && !chatFading
     }
 
     /// Fades the current conversation out for `chatFadeOut` seconds, switches, then fades the opening in.
     /// The switch itself and its guard are unchanged; Reduce Motion switches at once.
+    /// While the old chat fades out nothing else can switch, send or be tapped; the switch then re-checks
+    /// its conditions, so a deferred new chat never overrides something that changed meanwhile.
     private func startNewChat(_ library: LioChatLibrary) {
-        guard canSwitchChat, !chatFading else { return }
+        guard canSwitchChat else { return }
         guard !reduceMotion else {
             switchChat(library.newChat(), opening: .beforeNext)
             return
@@ -324,8 +331,10 @@ public struct LioHome<MenuContent: View>: View {
         withAnimation(.easeOut(duration: LioTheme.Motion.chatFadeOut)) { chatFading = true }
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(LioTheme.Motion.chatFadeOut))
-            switchChat(library.newChat(), opening: .beforeNext)
-            withAnimation(LioTheme.Motion.change) { chatFading = false }
+            withAnimation(LioTheme.Motion.change) {
+                chatFading = false
+                if canSwitchChat { switchChat(library.newChat(), opening: .beforeNext) }
+            }
         }
     }
 
@@ -517,6 +526,7 @@ public struct LioHome<MenuContent: View>: View {
     private var composer: some View {
         let placeholder = language.text("Start chatting", "开始聊天")
         let canSend = !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && conversation.pending == nil
+            && !chatFading
         let showsJump = !followsAnswer && !conversation.turns.isEmpty
         return HStack(alignment: .center, spacing: 10) {
             TextField(placeholder, text: $draft, prompt: Text(placeholder).foregroundStyle(LioTheme.inkSecondary), axis: .vertical)
@@ -530,6 +540,7 @@ public struct LioHome<MenuContent: View>: View {
                 sendCount += 1
                 conversation.send(draft, language: language)
                 if let id = conversation.pending?.id {
+                    timing.start(id, language: timingLanguage)
                     entering.formUnion([LioEntranceKey(turn: id, part: .question), LioEntranceKey(turn: id, part: .answer)])
                 }
                 recordPendingFirstQuestion()
@@ -659,6 +670,7 @@ public struct LioHome<MenuContent: View>: View {
                     Button {
                         if turn.id == conversation.turns.last?.id { followsAnswer = true }
                         conversation.resend(turn.id)
+                        timing.start(turn.id, language: timingLanguage)
                         recordPendingFirstQuestion()
                     } label: {
                         Image(systemName: "exclamationmark.circle.fill")
@@ -704,6 +716,7 @@ public struct LioHome<MenuContent: View>: View {
                     }
                 }
                 .lioEntrance(.fade, active: entering.contains(answerKey)) { entering.remove(answerKey) }
+                .onAppear { timing.mark(.firstText, turn.id) }
             }
             messageStatus(turn)
             if let memoryActions {
@@ -767,7 +780,8 @@ public struct LioHome<MenuContent: View>: View {
     private func messageStatus(_ turn: LioTurn) -> some View {
         switch turn.status {
         case .thinking, .working:
-            statusLine(language.text("Lio is replying…", "Lio 正在回复…"))
+            LioThinkingIndicator(since: timing.indicatorStart(turn.id), progress: nil, planningDays: nil,
+                                 language: language) { timing.mark(.indicator, turn.id) }
         case .failed(let failure):
             let message = switch failure {
             case .notSent: language.text("Message couldn’t be sent. Check your connection and tap to try again.",
@@ -792,6 +806,7 @@ public struct LioHome<MenuContent: View>: View {
                 Button(language.text("Ask again", "重新问")) {
                     followsAnswer = true
                     conversation.askAgain(turn.id)
+                    timing.start(turn.id, language: timingLanguage)
                     recordPendingFirstQuestion()
                 }
                     .buttonStyle(.bordered)
@@ -802,22 +817,6 @@ public struct LioHome<MenuContent: View>: View {
         case .answering, .finished:
             EmptyView()
         }
-    }
-
-    /// Waiting for Lio: the avatar and moving dots where the reply will appear. Read aloud as the title.
-    private func statusLine(_ title: String) -> some View {
-        HStack(spacing: LioTheme.Spacing.xs) {
-            LioPortrait(size: 22)
-            Image(systemName: "ellipsis")
-                .font(.title3.weight(.bold))
-                .foregroundStyle(LioTheme.inkSecondary)
-                .symbolEffect(.variableColor.iterative, options: .repeating, isActive: !reduceMotion)
-        }
-        .frame(minHeight: 28)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(title)
-        .accessibilityAddTraits(.isStaticText)
-        .accessibilityIdentifier("lio.progress")
     }
 }
 #endif

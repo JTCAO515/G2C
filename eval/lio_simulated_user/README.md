@@ -117,6 +117,34 @@ contract after delivery; this package does not invent that wire contract. Pin
 the actual candidate, model/prompt/schema, original identities, native source,
 capture, window, simulator/DUT roles and accounting references before dispatch.
 
+### Native4 presentation adapter
+
+`native4_observations.presentation_fields()` consumes captured UTF-8 bytes of
+the frozen `LIO-timeline.4`, bound to the expected conversation, MID and exact
+traveler text. It returns `wire_status` for diagnostics and `turn_fields` for
+the existing host. Question spans follow the frozen visible section order and
+use Unicode character offsets, even when the same words appear earlier.
+
+This is a data adapter, not a transport, observer authorization or authenticity
+check. The qualified host must obtain those bytes through its actual protected
+read. It must separately supply the native RUN outcome and the observed
+exploration boundary; a completed UI message, no groups or a plan-now button
+cannot substitute for those observations. There is no network or model exit.
+
+Question completeness defaults to false. Only an independently complete census
+can set `independent_question_census_complete=True`; the adapter still withholds
+completeness for nonterminal/failed messages or question marks in unannotated
+segments/notices. Absence of punctuation is not a semantic question census.
+Extra factor questions require independently sourced annotations, never a model
+grading its own answer. Missing coverage remains UNKNOWN, not zero-error PASS.
+
+Public `profile[].display_text` labels never become G3 truth. The adapter returns
+`profile=None`, `profile_complete=False`, `profile_evidence='unavailable'` until
+the host joins an actual accepted-context observation. Initial injected Memory,
+its completeness and reference also remain a separate native observation; an
+absent read is not empty Memory. No frozen persona, metric, denominator or old
+negative is changed. Local wire controls do not complete the real 60 episodes.
+
 ## Commands and evidence levels
 
 ```sh

@@ -23,11 +23,12 @@ def _ledger_row(row):
 
 
 class PostgresRepository:
-    def __init__(self, connect, scope):
+    def __init__(self, connect, scope, *, read_binder=None):
         label(scope)
         if connect is None:
             raise ValueError('connection factory required')
         self.connect, self.scope = connect, scope
+        self.read_binder = read_binder
 
     @contextmanager
     def transaction(self):
@@ -94,7 +95,7 @@ class PostgresRepository:
                 raise ReadUnavailable('explicit historical period required')
             integer(expected_period[0])
             integer(expected_period[1], expected_period[0] + 1)
-        scope, connect = self.scope, self.connect
+        scope, connect, read_binder = self.scope, self.connect, self.read_binder
         conn = cur = None
         encoded = None
         primary = cleanup_error = None
@@ -103,7 +104,7 @@ class PostgresRepository:
             result = guard()
             if inspect.iscoroutine(result):
                 result.close()
-            if result is not None or self.scope != scope or self.connect is not connect:
+            if result is not None or self.scope != scope or self.connect is not connect or self.read_binder is not read_binder:
                 raise ReadUnavailable('read binding changed or invalid guard')
 
         try:
@@ -115,6 +116,7 @@ class PostgresRepository:
             cur = conn.cursor()
             check()
             cur.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY')
+            if read_binder is not None:read_binder(conn,cur)
             check()
             cur.execute('SELECT revision, format_version, ledger FROM public.cj_usage_ledger_candidate WHERE scope_id=%s', (scope,))
             check()

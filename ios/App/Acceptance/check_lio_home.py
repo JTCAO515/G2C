@@ -57,7 +57,9 @@ def main():
     if app.count(preview) != 1:
         raise ValueError("Expected a single sample preview")
     fixture_routes = (
-        '        if ProcessInfo.processInfo.arguments.contains("--lio-exploration-read-acceptance") {\n'
+        '        if ProcessInfo.processInfo.arguments.contains("--lio-thinking-acceptance") {\n'
+        '            LioThinkingFixture(chinese: UserDefaults.standard.string(forKey: "cj.ui.language.v1") == "zh-Hans")\n'
+        '        } else if ProcessInfo.processInfo.arguments.contains("--lio-exploration-read-acceptance") {\n'
         '            LioExplorationReadFixture(chinese: UserDefaults.standard.string(forKey: "cj.ui.language.v1") == "zh-Hans")\n'
         '        } else if ProcessInfo.processInfo.arguments.contains("--lio-rich-itinerary-acceptance") {\n'
         '            LioRichItineraryFixture(chinese: UserDefaults.standard.string(forKey: "cj.ui.language.v1") == "zh-Hans")\n'
@@ -81,7 +83,7 @@ def main():
     )
     fixtures = ("LioScrollFixture.swift", "LioTimelineFixture.swift", "LioJourneyFixture.swift",
                 "LioMemoryJourneyFixture.swift", "LioChatHistoryFixture.swift", "LioSessionRecoveryFixture.swift",
-                "LioScenePrivacyFixture.swift", "LioExplorationQuestionsFixture.swift", "LioExplorationReplyFixture.swift", "LioRichItineraryFixture.swift", "LioExplorationReadFixture.swift")
+                "LioScenePrivacyFixture.swift", "LioExplorationQuestionsFixture.swift", "LioExplorationReplyFixture.swift", "LioRichItineraryFixture.swift", "LioExplorationReadFixture.swift", "LioThinkingFixture.swift")
     generated_source.write_text(app.replace(preview, fixture_routes)
                                 .replace("import CJLioUser\n", "@testable import CJLioUser\n")
                                 + "\n" + "\n".join((HERE / name).read_text() for name in fixtures))
