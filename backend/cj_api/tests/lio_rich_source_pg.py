@@ -10,12 +10,14 @@ sys.path[:0]=[str(ROOT),str(ROOT/'scripts'),str(ROOT/'backend/cj_api/tests')]
 from cj_api.local_lio_exploration import ExplorationPlanning
 from cj_api.local_lio_rich_source import RichProfileSource,PlanCapture
 from cj_api.local_lio_rich_calendar_source import RichCalendarSource
+from cj_api.local_lio_rich_checks import RichUndatedChecks
 from cj_api.local_lio_planning import register,PlanningDetails
 from cj_draft.rich_calendar_source import RichCalendarContextSource
 from cj_message.lio_plan_needs import original_needs
 from cj_trip.postgres import Repository as TripRepository
 import json
 from cj_memory.runtime import RuntimeDenied
+from cj_needs.revision_lease import LeaseUnavailable
 from cj_message.postgres import Transaction as MessageTransaction
 from cj_message.lio_exploration_schema import RESPONSE
 import lio_exploration_flow_pg as native
@@ -91,7 +93,33 @@ def main():
                 assert raw['calendar_basis']['version']=='TRIP-calendar-basis.2'
                 assert raw['calendar_basis']['fixed_bindings']['reference']['lio_protocol']=='LIO-message.4'
                 assert raw['planning_profile']['profile']['memory_epoch']==worker.memory_run.snapshot.epoch
-                with combined.hold_for_publication(binding)as check:check()
+                with combined.hold_for_publication(binding)as check:
+                    check()
+                    reader=RichUndatedChecks(combined)
+                    document=dict(calendar=dict(state='undated'),days=[dict(day_index=day)
+                        for day in range(1,captured.basis.day_count+1)])
+                    issued=reader.capture(binding,captured,document)
+                    document['date_checks']=issued.checks
+                    assert len(issued.records)==2 and all(row['payload']['state']=='not_checked'for row in issued.records)
+                    late_checks=[]
+                    with worker.message_context.hold_for_effect(binding)as message:
+                        with reader.hold(binding,issued,message)as checked:
+                            checked(document);late_checks.append(checked)
+                            for wrong in (dict(document,calendar=dict(state='dated',start_date='2026-12-01')),
+                                          dict(document,date_checks=[dict(row,state='clear')for row in issued.checks])):
+                                try:checked(wrong)
+                                except LeaseUnavailable:pass
+                                else:raise AssertionError('changed calendar/check result admitted')
+                        try:
+                            with RichUndatedChecks(combined).hold(binding,issued,message)as checked:checked(document)
+                        except LeaseUnavailable:pass
+                        else:raise AssertionError('copied code checks granted another reader')
+                    try:late_checks[0](document)
+                    except LeaseUnavailable:pass
+                    else:raise AssertionError('code check outlived its frame')
+                    try:reader.capture(binding,captured,dict(document,calendar=dict(state='dated',start_date='2026-12-01')))
+                    except LeaseUnavailable:pass
+                    else:raise AssertionError('undated checker covered a dated candidate')
                 return captured
             _,joint_capture=worker._step(binding,joint)
             assert joint_capture.basis.day_count==extra['duration_days']
