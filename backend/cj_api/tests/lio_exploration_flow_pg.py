@@ -22,6 +22,7 @@ from cj_api.local_app import ISSUER,LocalDatabase,create_local_app,load_confirma
 from cj_api.local_run_context import load_run_context
 from cj_api.real_services import RealServices,RealTools
 from cj_memory.typed_runtime import TypedRuntimeConfiguration
+from cj_memory.epoch_projection import CurrentScopeEpochReader
 from cj_usage.authorization_budget import AuthorizationBudget,DEMO_DEADLINE
 from deploy.hk import checkpoint,demo_accounts
 from deploy.hk.configuration import Runtime
@@ -125,7 +126,8 @@ def exercise(root,conninfo):
         return LioMemoryCards(candidates.collection,candidates.current)
     app=create_local_app(conninfo_path=None,auth_dir=auth,database=database,run_context=context,account_admission=True,
         confirmation_signer=signer,demo_dialogue_subjects=subjects,lio_dialogue_subjects=subjects,
-        lio_calendar_subjects=subjects,lio_exploration_subjects=subjects,lio_memory_factory=cards)
+        lio_calendar_subjects=subjects,lio_exploration_subjects=subjects,lio_memory_factory=cards,
+        lio_profile_epoch_reader=CurrentScopeEpochReader(database,memory))
     register_typed_routes(app,database=database,auth_dir=auth,configuration=memory.collection)
     headers={'Authorization':'Bearer '+dev_auth.token(auth,SUBJECT,3600),'Content-Type':'application/octet-stream'}
     def process(expected='completed'):
@@ -161,6 +163,8 @@ def exercise(root,conninfo):
                 assert [button['id']for button in message['exits']]==['continue_refining','plan_now']
                 _,message=send(prefix+'-pace','节奏改为：轻松'if locale=='zh'else'Change my travel pace to relaxed',cid)
                 assert all(group['factor_key']!='pace'for group in message['question_groups'])
+                assert any(row['factor_key']=='pace' and row['state']=='known' and
+                    ('轻松'if locale=='zh'else'Relaxed')in row['display_text']for row in message['profile'])
                 before=len(wire)
                 _,message=send(prefix+'-plan','直接出方案'if locale=='zh'else'Plan now',cid)
                 assert message['question_groups']==[] and len(wire)==before+1
@@ -169,9 +173,11 @@ def exercise(root,conninfo):
                 assert all(('第'+str(day)+'天'if locale=='zh'else'Day '+str(day))in message['answer']for day in (1,2,3))
                 print('PASS native4 '+locale+' scenario '+str(n)+' exploration -> plain-text profile edit -> next-message outline with disclosed defaults',flush=True)
         locale='zh';fault='bad_questions'
-        _,message=send('flow4-jt-original','规划三天北京豪华游 26.12.01出发 两个人')
+        jt_cid,message=send('flow4-jt-original','规划三天北京豪华游 26.12.01出发 两个人')
         assert len(message['question_groups'])==4
         assert not {'city','duration_days','party_type'}&{group['factor_key']for group in message['question_groups']}
+        assert {'city','duration_days','party_type'}<={row['factor_key']for row in message['profile']}
+        assert all(row['state']=='known'for row in message['profile'])
         fault=None
         suzhou,message=send('flow4-registered-city','规划三天苏州豪华游')
         assert not {'city','duration_days'}&{group['factor_key']for group in message['question_groups']}
@@ -225,6 +231,9 @@ def exercise(root,conninfo):
         assert message['status']=='failed' and message['profile']==[] and not message['answer']
         _,message=send('flow4-after-pause','我想去中国玩几天')
         assert all(factor['state']!='memory'for factor in message['profile'])
+        hidden=api.get('/v4/lio/timeline',headers=headers,params=dict(conversation_id=jt_cid))
+        assert hidden.status_code==200,hidden.text
+        validate(hidden.json());assert all(row['profile']==[]for row in hidden.json()['messages'])
         assert all(record['state']=='RECEIVED'for record in journal.inspect())
         with database.connect(scope)as db:assert db.execute('SELECT count(*)FROM cj_trip_record').fetchone()[0]==0
         print('PASS native4 supplied parameters are not reasked; invalid question output uses finite bank; zero Trip writes, HTTP suppliers remain fixture-only',flush=True)

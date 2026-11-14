@@ -16,27 +16,27 @@ def _value(key,value,locale):
 
 
 class LioProfileCards:
-    def __init__(self,memory_cards):
-        self.memory_cards=memory_cards
+    def __init__(self,epoch_reader):
+        self.epoch_reader=epoch_reader
 
     def project(self,context,token,binding,state,locale):
         if state is None or state.status!='completed':return []
         values=[effect.removeprefix(CONTEXT) for effect in state.effects if effect.startswith(CONTEXT)]
         if not values:return []
         profile=decode_context(values[-1])
-        # The existing C projection checks the current Memory scope/identity
-        # under this same canonical M frame. It exposes a current epoch without
-        # granting a processing permit or a raw C repository to this reader.
         if profile.memory_epoch is not None:
-            if self.memory_cards is None:raise Unavailable('current profile Memory reader unavailable')
-            current=self.memory_cards.read_current(context,token,binding.message_id,binding.run_id)
-            if current is None or json.loads(current)['memory_epoch']!=profile.memory_epoch:
-                # Any Memory revision can invalidate a retained source. Hide the
-                # historical profile until a new admitted producer rebinds it;
-                # do not selectively revive apparently unchanged cached facts.
-                return []
-        elif any(factor.state=='memory' for factor in profile.factors):
-            return []
+            if self.epoch_reader is None:raise Unavailable('current profile Memory reader unavailable')
+            def encode(epoch):
+                rows=(self._rows(context,binding,profile,locale) if epoch==profile.memory_epoch else [])
+                return json.dumps(rows,ensure_ascii=False,separators=(',',':')).encode()
+            # The C-owned reader holds the real active scope through encoding;
+            # candidate history fences and consent are not prerequisites or made up.
+            raw=self.epoch_reader.project(context,binding,encode,max_result_bytes=32768)
+            return json.loads(raw)
+        if any(factor.state=='memory' for factor in profile.factors):return []
+        return self._rows(context,binding,profile,locale)
+
+    def _rows(self,context,binding,profile,locale):
         rows=[]
         for factor in profile.factors:
             for source in factor.sources:

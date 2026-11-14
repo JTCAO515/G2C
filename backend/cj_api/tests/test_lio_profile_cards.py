@@ -25,8 +25,11 @@ class ProfileCardsTests(unittest.TestCase):
         context=SimpleNamespace(query_lio_message=lambda mid:stored if mid=='mid' else None)
         binding=SimpleNamespace(message_id='mid',run_id='rid',conversation_id='cid',generation='gen')
         calls=[]
-        def current(*args):calls.append(args);return json.dumps(dict(memory_epoch=epoch,candidates=[])).encode()
-        return LioProfileCards(SimpleNamespace(read_current=current)),context,binding,stored,calls
+        def project(context,binding,encode,*,max_result_bytes):
+            calls.append((context,binding));value=encode(epoch)
+            assert type(value)is bytes and len(value)<=max_result_bytes
+            return value
+        return LioProfileCards(SimpleNamespace(project=project)),context,binding,stored,calls
 
     def test_current_epoch_and_original_sources_produce_localized_public_fields_only(self):
         for locale,word in (('zh','轻松'),('en','Relaxed')):
