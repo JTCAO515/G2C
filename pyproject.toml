@@ -152,6 +152,7 @@ packages = [
 "backend/cj_api/lio_exploration_policy.py" = "share/g2c/runtime-source/backend/cj_api/lio_exploration_policy.py"
 "backend/cj_api/lio_profile_cards.py" = "share/g2c/runtime-source/backend/cj_api/lio_profile_cards.py"
 "backend/cj_api/lio_positive_trip.py" = "share/g2c/runtime-source/backend/cj_api/lio_positive_trip.py"
+"backend/cj_api/lio_city.py" = "share/g2c/runtime-source/backend/cj_api/lio_city.py"
 "backend/cj_api/lio_exploration_routes.py" = "share/g2c/runtime-source/backend/cj_api/lio_exploration_routes.py"
 "backend/message/cj_message/lio_exploration_schema.py" = "share/g2c/runtime-source/backend/message/cj_message/lio_exploration_schema.py"
 "eval/optimization/cases.v2.json" = "share/g2c/runtime-source/eval/optimization/cases.v2.json"
