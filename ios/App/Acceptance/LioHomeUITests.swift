@@ -1772,12 +1772,19 @@ import XCTest
    for _ in 0..<6 { if control.isHittable { return }; app.swipeUp() }
    XCTAssertTrue(control.isHittable,app.debugDescription)
   }
+  func audit() throws {
+   try app.performAccessibilityAudit(for: .all) { issue in
+    let detail = XCTAttachment(string: issue.compactDescription + "\n" + issue.detailedDescription + "\n" + (issue.element?.debugDescription ?? "No element supplied") + "\n" + app.debugDescription)
+    detail.name = "calendar-wire-audit"; detail.lifetime = .keepAlways; self.add(detail)
+    return false
+   }
+  }
   let pending = app.staticTexts[chinese ? "出发日期待定":"Start date not set"]
   let chat = app.tabBars.buttons[chinese ? "聊天":"Chat"]
   ask("Plan three days, dates not set")
   XCTAssertTrue(pending.waitForExistence(timeout:12),app.debugDescription)
   captureCalendarWire(app,"calendar-http-card-before-audit",chinese)
-  try app.performAccessibilityAudit(for:.all)
+  try audit()
   captureCalendarWire(app,"calendar-http-card",chinese)
   let show = app.buttons["lio.trip.show"].firstMatch; reveal(show); show.tap()
   XCTAssertTrue(pending.waitForExistence(timeout:10))
@@ -1785,7 +1792,7 @@ import XCTest
   XCTAssertTrue(third.waitForExistence(timeout:10),app.debugDescription)
   XCTAssertEqual(third.label,chinese ? "第 3 天":"Day 3")
   third.tap(); XCTAssertTrue(app.staticTexts["lio.trip.day.empty"].exists)
-  try app.performAccessibilityAudit(for:.all)
+  try audit()
   captureCalendarWire(app,"calendar-http-trip",chinese)
   chat.tap()
   ask("Start on December 1")
@@ -1795,7 +1802,7 @@ import XCTest
   reveal(latest); latest.tap()
   XCTAssertTrue(third.waitForExistence(timeout:10))
   XCTAssertEqual(third.label,"2026-12-03")
-  try app.performAccessibilityAudit(for:.all)
+  try audit()
   captureCalendarWire(app,"calendar-http-dated",chinese)
   chat.tap(); reveal(undo); undo.tap()
   // The first read can reconcile before XCTest observes the transient spinner.
