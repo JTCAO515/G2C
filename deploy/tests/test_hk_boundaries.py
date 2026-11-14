@@ -171,12 +171,13 @@ def test_compressed_policy_enters_only_through_api_owned_secret_file(tmp_path):
         configuration.load_secret_environment('worker',root=tmp_path)
 
 
-def test_full_205_profile_policy_fits_secret_bound_without_changing_permissions(tmp_path):
+@pytest.mark.parametrize('count',[205,206])
+def test_full_profile_policy_fits_secret_bound_without_changing_permissions(tmp_path,count):
     from cj_memory.typed_local import TypedConfiguration
     profile=dict(subjects=['self'],extents=['long_term','current'],context_ids=[],slots={
         name:dict(kind='preference',collection_allowed=True,semantic_resolved=True)
         for name in ('travel.pace','travel.budget','lodging.style','travel.interests','diet.taste')})
-    subjects=['m4-synthetic-demo-'+format(i,'012x')for i in range(205)]
+    subjects=['m4-synthetic-demo-'+format(i,'012x')for i in range(count)]
     value=dict(version='local-memory-typed.1',collection=dict(version='local-memory-policy.1',
         expires_at='2026-12-31T00:00:00+00:00',profiles={s:profile for s in subjects}),
         travel_contexts={s:[]for s in subjects})
@@ -190,7 +191,7 @@ def test_full_205_profile_policy_fits_secret_bound_without_changing_permissions(
     with patch.dict(os.environ,{},clear=True):
         configuration.load_secret_environment('api',root=tmp_path)
         decoded=TypedConfiguration.from_bytes(configuration.typed_policy_bytes())
-    assert decoded==original and len(decoded.collection.profiles)==205
+    assert decoded==original and len(decoded.collection.profiles)==count
     from cj_memory.typed_runtime import TypedRuntimeConfiguration
     runtime=dict(version='local-memory-run.2',collection=value,selections={
         s:dict(subject='self',slots=list(profile['slots']),max_bytes=1000)for s in subjects})
