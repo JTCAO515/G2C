@@ -59,4 +59,3 @@ not a claim that this display codec knows private host evidence.
 Local synthetic tests and independent code review are separate from exact-head CI,
 native UI, Hong Kong, source eligibility, real model and JT G12 acceptance. No
 new data or operational permission follows from this preparation.
-
