@@ -1,0 +1,10 @@
+[Unit]
+Description=Expire private rejected Lio intake outputs
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=/srv/g2c-beta/rejected-intake-gc.env
+ExecStart=/usr/bin/docker run --rm --pull=never --network=none --read-only --tmpfs /tmp --user 10001:10001 --cap-drop ALL --security-opt no-new-privileges --memory 128m --mount type=bind,src=/srv/g2c-beta/rejected-intakes,dst=/rejected-intakes --entrypoint python ${REJECTION_GC_IMAGE} -B -m cj_api.rejected_intake_capture --prune /rejected-intakes
+TimeoutStartSec=90

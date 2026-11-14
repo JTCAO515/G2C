@@ -157,8 +157,12 @@ class NationalExecution(unittest.TestCase):
     def test_bad_model_date_quote_is_rejected_before_city_lookup(self):
         value=self.envelope('计划上海2026-11-20，两个人')
         value['extraction']['fields']['arrival']['date']['value']='2026-12-20'
-        from cj_agent.provider import ProviderUnknown
-        with self.assertRaises(ProviderUnknown):self.run_intake(value)
+        published,events,lookups,result=self.run_intake(value)
+        self.assertEqual((published,lookups),([],[]))
+        self.assertIsNone(result)
+        context=json.loads(next(v.split(':',1)[1]for _,v in events if v.startswith('lio_planning_context.1:')))
+        self.assertEqual(context['authority'],'none')
+        self.assertEqual(context['facts'],{})
 
 
     def test_discussion_revokes_before_missing_or_ambiguous_city_question(self):
@@ -277,8 +281,7 @@ class NationalExecution(unittest.TestCase):
         self.assertFalse(any(kind=='registered'for kind,_ in events))
         self.assertTrue(any('哪一项确实已经预约' in text and '尚未保存' in text for kind,text in events if kind=='text_delta'))
 
-    def test_bad_booking_reference_is_unknown_before_city_or_execution(self):
-        from cj_agent.provider import ProviderUnknown
+    def test_bad_booking_reference_falls_back_before_city_or_execution(self):
         from test_lio_intake_start_schema import sample
         from lio_flat_fixture import facts_fixture
         for index,quote in ((99,'already booked'),(1,'not an original traveler quote')):
@@ -287,7 +290,12 @@ class NationalExecution(unittest.TestCase):
             value=self.envelope(turns[-1].text)
             with self.subTest(index=index),patch('lio_flat_fixture.facts_fixture',return_value=wire),\
                  patch.object(NationalLioPlanning,'_previous_city')as downstream:
-                with self.assertRaises(ProviderUnknown):self.run_intake(value,turns=turns)
+                published,events,lookups,result=self.run_intake(value,turns=turns)
+                self.assertEqual((published,lookups),([],[]))
+                self.assertIsNone(result)
+                context=json.loads(next(v.split(':',1)[1]for _,v in events if v.startswith('lio_planning_context.1:')))
+                self.assertEqual(context['authority'],'none')
+                self.assertEqual(context['authority_barrier_message_id'],'national-message')
                 downstream.assert_not_called()
 
     def test_natural_fixed_day_number_keeps_explicit_self_and_unbooked_status(self):
@@ -409,12 +417,13 @@ class NationalExecution(unittest.TestCase):
         self.assertTrue(any('谁参加' in v for k,v in events if k=='text_delta'))
 
     def test_rejection_log_contains_code_hash_and_size_but_no_raw_model_value(self):
-        from cj_agent.provider import ProviderUnknown
         value=self.envelope('计划上海2026-11-20，两个人')
         private='private-model-value-not-a-real-secret'
         value['field_sources']['arrival.date'][0]['quote']=private
         with self.assertLogs('cj_usage.audit',level='WARNING') as logs:
-            with self.assertRaises(ProviderUnknown):self.run_intake(value)
+            published,_,lookups,result=self.run_intake(value)
+        self.assertEqual((published,lookups),([],[]))
+        self.assertIsNone(result)
         text=' '.join(logs.output)
         self.assertIn('code=field_source_binding',text)
         self.assertIn('output_sha256=',text)

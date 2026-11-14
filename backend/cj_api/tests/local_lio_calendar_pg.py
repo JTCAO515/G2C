@@ -354,3 +354,7 @@ if __name__=='__main__':
     cross_language_main()
     from lio_basic_memory_pg import main as basic_memory_main
     basic_memory_main()
+    from lio_rejected_capture_fallback_pg import main as rejected_fallback_main
+    rejected_fallback_main()
+    from rejected_intake_capture_pg import main as rejected_capture_main
+    rejected_capture_main()

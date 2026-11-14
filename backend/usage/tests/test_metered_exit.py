@@ -36,6 +36,26 @@ class MeteredExitStopTests(unittest.TestCase):
         self.assertEqual(list(self.core.stream(self.call('a'))), ['ok'])
         self.assertEqual(self.repo.ledger.attempts['a'].state, 'settled')
 
+    def test_completion_observer_only_sees_definite_native_settlement(self):
+        completed=[];call=self.call('a')
+        call.on_settled=lambda step,attempt:completed.append((step.command.attempt_id,attempt.state))
+        self.assertEqual(list(self.core.stream(call)),['ok'])
+        self.assertEqual(completed,[('a','settled')])
+        with self.assertRaises(BudgetUnknown):list(self.core.stream(call))
+        self.assertEqual(completed,[('a','settled')])
+
+    def test_unknown_settlement_ack_never_notifies_completion_observer(self):
+        from cj_usage.postgres import CommitUnknown
+        completed=[];call=self.call('a');call.on_settled=lambda *args:completed.append(args)
+        settle=self.meter.settle
+        def unknown(receipt):
+            settle(receipt)
+            raise CommitUnknown('injected settlement ACK unknown')
+        with patch.object(self.meter,'settle',side_effect=unknown),self.assertRaises(BudgetUnknown):
+            list(self.core.stream(call))
+        self.assertEqual(completed,[])
+        self.assertEqual(self.repo.ledger.attempts['a'].state,'settled')
+
     def test_deadline_crossed_before_reserve_is_budget_exhausted(self):
         list(self.core.stream(self.call('a')))
         self.time = 151

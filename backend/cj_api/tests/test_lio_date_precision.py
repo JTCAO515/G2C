@@ -62,9 +62,12 @@ class DatePrecision(unittest.TestCase):
         value['extra_fields']={'departure':{'date':'2026-12-25','time':None,'timezone':None,'place':None}}
         value['field_sources'].append(dict(field='departure.date',source_index=0,quote='下周'))
         from test_lio_national_execution import NationalExecution
-        from cj_agent.provider import ProviderUnknown
-        with self.assertRaises(ProviderUnknown):
-            NationalExecution().run_intake(NationalExecution().envelope(text),flow_output=value)
+        published,events,lookups,result=NationalExecution().run_intake(NationalExecution().envelope(text),flow_output=value)
+        self.assertEqual((published,lookups),([],[]))
+        self.assertIsNone(result)
+        context=json.loads(next(v.split(':',1)[1]for _,v in events if v.startswith('lio_planning_context.1:')))
+        self.assertEqual(context['authority'],'none')
+        self.assertEqual(context['facts'],{})
 
     def test_full_week_range_can_bind_each_endpoint(self):
         phrase='下周二到下周五，周二开始'

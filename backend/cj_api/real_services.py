@@ -540,6 +540,7 @@ class RealTools:
                            **({'answer_format_profile':'lio-user.1'} if native_turn and argument.lio_answer else {}),
                            **({'native_turn_profile':turn_profile,'external_tools_disabled':final_answer} if native_turn else {})))
         inputs=json.loads(raw);metadata={}
+        rejection_memory=provider.memory if wrapped else None
         def bind(operation,guard):
             if exploration:argument.origin.check(operation.binding)
             self.services.require_scope(operation.binding.scope)
@@ -570,6 +571,19 @@ class RealTools:
                         **({'intake_source_index':inputs['current_source_index']} if 'current_source_index' in inputs else {}),
                         **({'draft_profile':inputs['draft_profile'],'draft_schema_sha256':inputs['response_format_sha256']}if 'draft_profile' in inputs else {}),
                         **capture)
+                    if national_intake and intake_profile=='LIO-planning-intake.9':
+                        from .rejected_intake_capture import observe_stream
+                        @contextmanager
+                        def rejection_lifetime():
+                            lease=rejection_memory.hold(operation.binding)if rejection_memory is not None else nullcontext(None)
+                            with lease as memory_check:
+                                def check():
+                                    if checked(memory_check=memory_check)is not True:
+                                        raise BudgetUnknown('original rejection source authority changed')
+                                check();yield check;check()
+                        memory_descriptor=(dict(epoch=rejection_memory.snapshot.epoch,
+                            payload_sha256=hashlib.sha256(rejection_memory.payload).hexdigest())if rejection_memory is not None else None)
+                        stream=observe_stream(operation,stream,metadata,rejection_lifetime,memory_descriptor)
                     if capture_model:
                         # Preserve streaming latency. A complete artifact is
                         # written only after the original provider completes;
@@ -594,7 +608,9 @@ class RealTools:
                         yield result
                     else:yield from stream
             return invoke
-        return InvocationInput(raw,None,bind,_receipt(metadata))
+        from .rejected_intake_capture import acknowledge_settlement
+        settlement=(acknowledge_settlement if national_intake and intake_profile=='LIO-planning-intake.9'else None)
+        return InvocationInput(raw,None,bind,_receipt(metadata),on_settled=settlement)
 
     def _require_national(self,scope):
         from .local_app import ISSUER,scope_for

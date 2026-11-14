@@ -25,6 +25,7 @@ class _PreparedCall:
     materialize: object
     step_key: str
     guard: object
+    on_settled: object = None
     consumed: bool = False
     receipt: object = None
     materialize_with_guard: object = None
@@ -118,7 +119,8 @@ class MeteredExitCore:
             # Only a complete local invocation supplies its original receipt.
             receipt=(Receipt(command.attempt_id,'local:'+command.attempt_id,self.config.unit,1,output)
                      if call.receipt is None else call.receipt(command.attempt_id,self.config.unit,output))
-            meter.settle(receipt)
+            settled=meter.settle(receipt)
+            if call.on_settled is not None:call.on_settled(step,settled)
         except (CommitUnknown,RepositoryUnavailable,CorruptLedger,DatabaseError,Blocked,UnicodeError,AuditUnavailable):
             raise BudgetUnknown('original budget outcome unavailable') from None
         finally:
