@@ -55,6 +55,28 @@ private actor HumanSpy: ClientTransport {
     }
 }
 @MainActor struct PreservedHistoryTests {
+    @Test func dedicatedRunReadExitCannotTakeOrdinaryReadsOrWrites() async throws {
+        let row=try humanRow(),ordinary=HumanSpy([try humanHistory([row]),try humanJSON(["request_id":humanTrace])])
+        let run=HumanSpy([try humanRun(row)])
+        let recovery=MessageRecovery(storage:HumanStore())
+        let scope=try StorageScope(environment:UUID().uuidString,account:"synthetic")
+        let lease=try recovery.activate(scope)
+        let endpoint=try MessageEndpoint(url:#require(URL(string:"https://synthetic.invalid")),maximumRequestBytes:16384,maximumResponseBytes:32768)
+        let normalExit=try NoRedirectTransport(interceptedTransport:ordinary,previewEndpoint:nil,validatePreview:nil)
+        let runExit=try NoRedirectTransport(interceptedTransport:run,previewEndpoint:nil,validatePreview:nil)
+        let client=MessageHTTPClient(recovery:recovery,scope:scope,endpoint:endpoint,credentials:HumanCredentials(),liveReadTransport:normalExit,preservedRunReadTransport:runExit)
+        let page=try await client.preservedHistory(conversationID:"chat",limit:2,limits:limits(),lease:lease)
+        _=try await client.preservedRun(for:#require(page.value.first),page:page,limits:limits(),lease:lease)
+        _=try await client.versionedMessageExchange(path:"/v3/message-send-status?conversation_id=chat",operation:"readTripDiscussionStatusV3",raw:nil,lease:lease)
+        await #expect(throws:MessageHTTPFailure.self) {
+            _=try await client.versionedMessageExchange(path:"/v3/messages",operation:"receiveTripDiscussionV3",raw:Data("not-an-original".utf8),lease:lease)
+        }
+        await #expect(throws:MessageHTTPFailure.self) {
+            _=try await client.versionedMessageExchange(path:"/v6/run-display?message_id=m1",operation:"readPreservedRunDisplayV6",raw:Data("not-a-read".utf8),lease:lease)
+        }
+        #expect(await ordinary.requests.map(\.2)==["readPreservedMessageHistoryV5","readTripDiscussionStatusV3"])
+        #expect(await run.requests.map(\.2)==["readPreservedRunDisplayV6"])
+    }
     func limits() throws -> MessageReadLimits { try .init(maximumPageItems:2,maximumCursorBytes:128,maximumDecodedBytes:8192,maximumPages:4) }
     private func client(_ wire: HumanSpy, recovery: MessageRecovery? = nil) throws -> (MessageRecovery, Lease, MessageHTTPClient) {
         let recovery = recovery ?? MessageRecovery(storage:HumanStore())

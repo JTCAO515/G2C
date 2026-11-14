@@ -77,10 +77,12 @@ def _binding_json(value):
     raise TypeError("binding_type")
 
 
-def prepare(config: Config, query: Query, request_ref: str, started_at: datetime,*,basic=False) -> PreparedRequest:
+def prepare(config: Config, query: Query, request_ref: str, started_at: datetime,*,basic=False,coordinate_only=False) -> PreparedRequest:
     if type(config) is not Config:
         raise PreparationError("configuration_required")
     if type(basic) is not bool:raise PreparationError('explicit_basic_profile_required')
+    if type(coordinate_only) is not bool or coordinate_only and (not basic or type(query) is not RouteQuery):
+        raise PreparationError('explicit_basic_coordinate_route_required')
     aware(started_at)
     identifier(request_ref)
     if type(query) not in (Search, Detail, RouteQuery):
@@ -106,10 +108,10 @@ def prepare(config: Config, query: Query, request_ref: str, started_at: datetime
         path = "/v3/direction/" + query.mode
         params.update(origin=query.origin.coordinate.raw, destination=query.destination.coordinate.raw)
         if query.mode == "walking":
-            params.update(origin_id=query.origin.provider_id, destination_id=query.destination.provider_id)
+            if not coordinate_only:params.update(origin_id=query.origin.provider_id, destination_id=query.destination.provider_id)
         else:
-            params.update(originid=query.origin.provider_id, destinationid=query.destination.provider_id,
-                          strategy="10", extensions="base")
+            if not coordinate_only:params.update(originid=query.origin.provider_id,destinationid=query.destination.provider_id)
+            params.update(strategy="10",extensions="base")
     pairs = tuple(sorted(params.items()))
     # Credential-free request size only. A future host must bound the final signed URL too.
     if len((config.origin + path + "?" + urlencode(pairs)).encode("ascii")) > config.max_request_bytes:
@@ -150,6 +152,25 @@ def _decode(body):
     if type(value) is not dict:
         raise ValueError("json_object")
     return value
+
+
+ROUTE_POINT_TOLERANCE_M = 25.0
+
+
+def _separation_m(first: Coordinate, second: Coordinate) -> float:
+    lat1,lat2=math.radians(float(first.latitude)),math.radians(float(second.latitude))
+    dlat=lat2-lat1;dlon=math.radians(float(second.longitude-first.longitude))
+    h=math.sin(dlat/2)**2+math.cos(lat1)*math.cos(lat2)*math.sin(dlon/2)**2
+    return 2*6371008.8*math.asin(min(1.0,math.sqrt(h)))
+
+
+def _path_points(path):
+    steps=path.get('steps')
+    if type(steps) is not list or not steps:return None
+    if type(steps[0]) is not dict or type(steps[-1]) is not dict:raise ValueError('route_steps')
+    first,last=steps[0].get('polyline'),steps[-1].get('polyline')
+    if type(first) is not str or not first or type(last) is not str or not last:return None
+    return Coordinate(first.split(';')[0]),Coordinate(last.split(';')[-1])
 
 
 def _observed(item, key, parser):
@@ -198,7 +219,7 @@ _RATE_CODES = frozenset({"10003", "10004", "10010", "10014", "10015", "10019", "
 
 
 def parse_response(config: Config, request: PreparedRequest, response: Response,
-                   *, now: datetime, evidence="unverified_bytes",basic=False) -> Result:
+                   *, now: datetime, evidence="unverified_bytes",basic=False,coordinate_only=False) -> Result:
     """Pure parsing. Binding checks are correlation checks, NOT authentication.
 
     The host associates exact original request with response; Gaode does not echo
@@ -206,7 +227,7 @@ def parse_response(config: Config, request: PreparedRequest, response: Response,
     """
     if type(request) is not PreparedRequest:
         raise ValueError("prepared_request_required")
-    expected = prepare(config, request.query, request.request_ref, request.started_at,basic=basic)
+    expected = prepare(config, request.query, request.request_ref, request.started_at,basic=basic,coordinate_only=coordinate_only)
     if expected != request:
         return Result(Outcome.BINDING_MISMATCH, request.query, "request_changed")
     if evidence not in ("synthetic", "unverified_bytes"):
@@ -295,8 +316,19 @@ def parse_response(config: Config, request: PreparedRequest, response: Response,
         for path in paths:
             if type(path) is not dict:
                 raise ValueError("route_path")
-            routes.append(Route(request.query, _observed(path, "distance", lambda v: _quantity(v, "m")),
-                                _observed(path, "duration", lambda v: _quantity(v, "s"))))
+            distance=_observed(path, "distance", lambda v: _quantity(v, "m"))
+            if coordinate_only:
+                points=_path_points(path)
+                if points is None:return result(Outcome.UNKNOWN,'route_path_points_unknown',provider_code=code,provider_count=count)
+                if (_separation_m(request.query.origin.coordinate,points[0])>ROUTE_POINT_TOLERANCE_M
+                        or _separation_m(request.query.destination.coordinate,points[1])>ROUTE_POINT_TOLERANCE_M):
+                    return result(Outcome.BINDING_MISMATCH,'route_path_coordinates',provider_code=code,provider_count=count)
+                # Conservative anomaly bound, including both allowed endpoint
+                # snaps and 1% spherical/datum allowance; never alter a value.
+                minimum=max(0.,.99*_separation_m(request.query.origin.coordinate,request.query.destination.coordinate)-2*ROUTE_POINT_TOLERANCE_M)
+                if distance.state is FieldState.PRESENT and float(distance.value.value)<minimum:
+                    return result(Outcome.BINDING_MISMATCH,'route_distance_below_point_span',provider_code=code,provider_count=count)
+            routes.append(Route(request.query,distance,_observed(path, "duration", lambda v: _quantity(v, "s"))))
         return result(Outcome.OK if routes else Outcome.NO_RESULTS,
                       "route_estimates" if routes else "no_routes", routes=tuple(routes),
                       provider_code=code, provider_count=count)

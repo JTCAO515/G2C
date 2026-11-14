@@ -31,10 +31,15 @@ struct TripShell: View {
                 if let offline { Section { OfflineTripEntry(controller: offline, language: language) } }
                 if let presentation = host.presentation {
                     Section(language.text("Formal trips", "正式行程")) {
-                        Button(language.text("Read destination-local timeline", "读取目的地当地时间线")) {
+                        Button {
                             if let openTimeline { openTimeline() }
                             else if let reader=host.makeTimelineReader() { sheet = .timeline(UUID(),reader) }
-                        }.disabled(action == nil).accessibilityIdentifier("trips.timeline.open")
+                        } label: {
+                            ShellActionLabel(title: language.text("Read destination-local timeline", "读取目的地当地时间线"),
+                                             symbol: "calendar", accessory: "chevron.right")
+                        }
+                        .buttonStyle(ShellActionButtonStyle())
+                        .disabled(action == nil).accessibilityIdentifier("trips.timeline.open")
                         TripContainerLoadLabel(state: presentation.listState, language: language)
                         if presentation.listState == .loaded && presentation.trips.isEmpty {
                             Text(language.text("No trips returned", "暂无行程"))
@@ -43,35 +48,46 @@ struct TripShell: View {
                             Button {
                                 if host.selectTrip(trip.trip_id, context: action) { state.tripPath.append(.detail) }
                             } label: {
-                                VStack(alignment: .leading) {
-                                    RunReadableText(text: trip.document.title)
-                                    RunReadableText(text: language.text("Current version \(trip.version)", "当前版本 \(trip.version)"), style: .caption)
-                                    RunReadableText(text: trip.trip_id, style: .caption)
-                                }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
-                            }.buttonStyle(ShellReadableButtonStyle()).disabled(action == nil)
+                                ShellActionLabel(title: trip.document.title, symbol: "map",
+                                                 detail: language.text("Current version \(trip.version)", "当前版本 \(trip.version)") + "\n" + trip.trip_id,
+                                                 accessory: "chevron.right")
+                            }.buttonStyle(ShellActionButtonStyle()).disabled(action == nil)
                                 .accessibilityIdentifier("trips.item." + trip.trip_id)
                         }
-                        Button(language.text("Refresh trips", "刷新行程")) {
+                        Button {
                             guard let work = host.prepareTrips(context: action) else { return }
                             Task { await host.perform(work) }
-                        }.disabled(action == nil).accessibilityIdentifier("trips.refresh")
+                        } label: {
+                            ShellActionLabel(title: language.text("Refresh trips", "刷新行程"), symbol: "arrow.clockwise")
+                        }
+                        .buttonStyle(ShellActionButtonStyle(emphasized: presentation.trips.isEmpty))
+                        .disabled(action == nil).accessibilityIdentifier("trips.refresh")
                         if presentation.next != nil {
-                            Button(language.text("Load next page", "读取下一页")) {
+                            Button {
                                 guard let work = host.prepareTrips(context: action, more: true) else { return }
                                 Task { await host.perform(work) }
-                            }.disabled(action == nil).accessibilityIdentifier("trips.next")
+                            } label: {
+                                ShellActionLabel(title: language.text("Load next page", "读取下一页"), symbol: "arrow.down")
+                            }
+                            .buttonStyle(ShellActionButtonStyle())
+                            .disabled(action == nil).accessibilityIdentifier("trips.next")
                         }
                         Text(language.text("Live pages may change while browsing.", "浏览期间，分页内容可能更新。"))
                             .font(.caption)
                     }
                     Section(language.text("Current context", "当前上下文")) {
                         if let id = host.contextTripID {
-                            Button(language.text("View selected trip", "查看选中行程")) {
+                            Button {
                                 if host.selectTrip(id, context: action) { state.tripPath.append(.detail) }
-                            }.disabled(action == nil)
+                            } label: {
+                                ShellActionLabel(title: language.text("View selected trip", "查看选中行程"), symbol: "map")
+                            }
+                            .buttonStyle(ShellActionButtonStyle()).disabled(action == nil)
                         }
                         if host.contextProposalID != nil {
-                            NavigationLink(language.text("View current draft", "查看当前草稿"), value: TripRoute.proposal)
+                            NavigationLink(value: TripRoute.proposal) {
+                                ShellActionLabel(title: language.text("View current draft", "查看当前草稿"), symbol: "doc.text")
+                            }
                         } else {
                             Text(language.text("No draft is selected.", "当前未选择草稿。"))
                         }
@@ -85,14 +101,15 @@ struct TripShell: View {
                             Button {
                                 if host.selectPending(original.actionID, context: action) { state.tripPath.append(.originalAction) }
                             } label: {
-                                VStack(alignment: .leading) {
-                                    Text(original.proposal.document.title)
-                                    Text(original.actionID).font(.caption)
-                                }
-                            }.disabled(action == nil || presentation.pendingState != .loaded)
+                                ShellActionLabel(title: original.proposal.document.title, symbol: "doc.text",
+                                                 detail: original.actionID, accessory: "chevron.right")
+                            }.buttonStyle(ShellActionButtonStyle())
+                                .disabled(action == nil || presentation.pendingState != .loaded)
                         }
-                        Button(language.text("Read original actions", "读取原动作")) { host.loadPending(context: action) }
-                            .disabled(action == nil)
+                        Button { host.loadPending(context: action) } label: {
+                            ShellActionLabel(title: language.text("Read original actions", "读取原动作"), symbol: "clock.arrow.circlepath")
+                        }
+                        .buttonStyle(ShellActionButtonStyle()).disabled(action == nil)
                     }
                     if host.isSynthetic { Text(language.text("Synthetic test data", "合成测试数据")).font(.caption) }
                 } else {
@@ -100,8 +117,8 @@ struct TripShell: View {
                 }
                 Section {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text(language.text("Map unavailable", "地图暂不可用")).font(.headline)
-                        Text(language.text("Amap verification has not been completed. Map and location-based actions are not available here.", "高德认证尚未完成，地图及定位相关操作暂未开放。"))
+                        ShellCardHeading(title: language.text("Map unavailable", "地图暂不可用"), symbol: "map")
+                        RunReadableText(text: language.text("Amap verification has not been completed. Map and location-based actions are not available here.", "高德认证尚未完成，地图及定位相关操作暂未开放。"))
                     }
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityElement(children: .combine)
@@ -167,9 +184,8 @@ private struct TripContainerDetail: View {
                             openManual(entry)
                         }
                     } label: {
-                        RunReadableText(text: language.text("Edit a local draft", "编辑本地草稿"))
-                            .frame(minHeight: 44)
-                    }.buttonStyle(ShellReadableButtonStyle()).disabled(action == nil || !host.canPrepareManualEditor)
+                        ShellActionLabel(title: language.text("Edit a local draft", "编辑本地草稿"), symbol: "pencil")
+                    }.buttonStyle(ShellActionButtonStyle()).disabled(action == nil || !host.canPrepareManualEditor)
                     if !host.hasManualResources {
                         Text(language.text("Local editing resources are unavailable.", "本地编辑资源尚不可用。"))
                     } else if host.manualEditorState == .loading {
@@ -182,16 +198,20 @@ private struct TripContainerDetail: View {
                             guard let work = host.prepareOfflineSync(context: action) else { return }
                             Task { await host.performOfflineSync(work) }
                         } label: {
-                            RunReadableText(text: language.text("Synchronize for offline reading", "同步用于离线读取"))
-                                .frame(minHeight: 44)
-                        }.buttonStyle(ShellReadableButtonStyle()).disabled(action == nil)
+                            ShellActionLabel(title: language.text("Synchronize for offline reading", "同步用于离线读取"),
+                                             symbol: "arrow.down.circle")
+                        }.buttonStyle(ShellActionButtonStyle()).disabled(action == nil)
                             .accessibilityIdentifier("offline.sync")
                         OfflineSyncLabel(controller: cache, language: language)
                     }
-                    Button(language.text("Read current detail", "读取当前详情")) {
+                    Button {
                         guard let work = host.prepareTrip(context: action) else { return }
                         Task { await host.perform(work) }
-                    }.disabled(action == nil).accessibilityIdentifier("trips.detail.read")
+                    } label: {
+                        ShellActionLabel(title: language.text("Read current detail", "读取当前详情"), symbol: "arrow.clockwise")
+                    }
+                    .buttonStyle(ShellActionButtonStyle(emphasized: !host.showsSelectedDetail))
+                    .disabled(action == nil).accessibilityIdentifier("trips.detail.read")
                 } else { Text(language.text("Trip selection is unavailable.", "行程选择已不可用。")) }
             }.frame(maxWidth: .infinity, alignment: .leading).padding()
         }.navigationTitle(language.text("Trip details", "行程详情"))
@@ -220,17 +240,24 @@ private struct TripContainerProposal: View {
                         if let id = presentation.selectedActionID {
                             Text(language.text("Original action: ", "原动作：") + id).font(.caption).textSelection(.enabled)
                             if case .unknown = presentation.decision {
-                                Button(language.text("Query this original action", "查询此原动作")) {
+                                Button {
                                     guard let work = host.prepareReconciliation(context: action) else { return }
                                     Task { await host.perform(work) }
-                                }.disabled(action == nil)
+                                } label: {
+                                    ShellActionLabel(title: language.text("Query this original action", "查询此原动作"),
+                                                     symbol: "doc.text.magnifyingglass")
+                                }
+                                .buttonStyle(ShellActionButtonStyle()).disabled(action == nil)
                             }
                         } else { Text(language.text("No original action is selected.", "未选择原动作。")) }
                     } else {
-                        Button(language.text("Read current draft", "读取当前草稿")) {
+                        Button {
                             guard let work = host.prepareProposal(context: action) else { return }
                             Task { await host.perform(work) }
-                        }.disabled(action == nil || !host.canReadContextProposal)
+                        } label: {
+                            ShellActionLabel(title: language.text("Read current draft", "读取当前草稿"), symbol: "doc.text")
+                        }
+                        .buttonStyle(ShellActionButtonStyle()).disabled(action == nil || !host.canReadContextProposal)
                     }
                 } else { Text(language.text("Trip connection is unavailable.", "行程连接已不可用。")) }
             }.frame(maxWidth: .infinity, alignment: .leading).padding()

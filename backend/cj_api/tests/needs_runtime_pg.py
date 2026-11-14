@@ -265,8 +265,47 @@ def publication_orders(host,auth,conninfo):
     print('PASS actual manual NEEDS writer first rejects old draft; real proposal + RUN commit first holds writer until original publication ends')
 
 
+def hk_host(auth,conninfo):
+    # Exercise the actual beta HTTP factory; only its cloud transport is replaced
+    # with this suite's restricted private-PG database, never the NEEDS producer.
+    sys.path.insert(0,str(harness.ROOT))
+    from deploy.hk.configuration import Runtime
+    from cj_api.composition import CompositionUnavailable
+    host=RegisteredHost(auth,conninfo,{s:(8,2,50000) for s in ('hk-a','hk-b')})
+    context_path,context=host.profiles['hk-a']
+    runtime=Runtime(auth,context,context_path,[])
+    database=LocalDatabase(conninfo,run_context=context)
+    values=dict(CJ_BETA_HISTORY_B64=base64.b64encode(b'h'*32).decode(),
+                CJ_BETA_CONFIRMATION_B64=base64.b64encode(b'c'*32).decode())
+    original=manual('hk-manual-original','hk-record',0,{'party_size':{'state':'known','value':3}})
+    with patch.dict(os.environ,values),patch.object(Runtime,'database',return_value=database):
+        os.environ.pop('CJ_LOCAL_NEEDS_PROFILE',None)
+        with TestClient(runtime.app()) as client:
+            post(client,host,'hk-a',original,503)
+        os.environ['CJ_LOCAL_NEEDS_PROFILE']='manual-v1'
+        with TestClient(runtime.app()) as client:
+            first=post(client,host,'hk-a',original)['receipt']
+            found=harness.expect(client.get('/v1/needs-action-receipts',params={'action_id':'hk-manual-original'},headers=host.headers['hk-a']))['receipt']
+            assert found==first and (found['action_id'],found['needs_id'],found['version'])==('hk-manual-original','hk-record',1)
+            assert detail(client,host,'hk-a','hk-record')['fields']['party_size']['value']==3
+            revision=harness.expect(client.get('/v1/needs-revisions',params={'needs_id':'hk-record','version':1},headers=host.headers['hk-a']))['revision']
+            assert base64.b64decode(revision['original_input_utf8_base64'])==original
+            denied=harness.expect(client.get('/v1/needs',params={'needs_id':'hk-record'},headers=host.headers['hk-b']),503)
+            assert denied['error']['code']=='NEEDS_ACCESS_UNAVAILABLE'
+            post(client,host,'hk-b',manual('hk-b-own','hk-b-record',0,{'party_size':{'state':'known','value':2}}))
+            assert detail(client,host,'hk-b','hk-record') is None
+            assert harness.expect(client.get('/v1/needs-action-receipts',params={'action_id':'hk-manual-original'},headers=host.headers['hk-b']))['receipt'] is None
+            assert detail(client,host,'hk-a','hk-b-record') is None
+        os.environ['CJ_LOCAL_NEEDS_PROFILE']='unknown-profile'
+        try:runtime.app()
+        except CompositionUnavailable:pass
+        else:raise AssertionError('unknown beta NEEDS profile accepted')
+    print('PASS beta host explicit manual NEEDS original receipt/revision and owner isolation; default disabled/unknown profile rejected')
+
+
 def exercise(auth,conninfo):
     schema_gates(conninfo)
+    hk_host(auth.with_name('hk-auth'),conninfo)
     with patch.dict(os.environ,dict(CJ_LOCAL_NEEDS_PROFILE='manual-v1',CJ_LOCAL_TRAVEL_CONTEXT='message-travel.1',CJ_DRAFT_CONTENT_VERSION='legacy')):
         behavior(auth,conninfo)
     entry=next(e for e in migrate.load() if e['name']=='needs_runtime_write')

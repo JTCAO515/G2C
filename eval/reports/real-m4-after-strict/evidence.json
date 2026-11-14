@@ -1,0 +1,276 @@
+{
+  "ledger": {
+    "id": "32d95019ea16443b81e648960c4baba0",
+    "rows": 375,
+    "sha256": "42aca1ce8aa21f80de3f1058271c206b8135d7d66682818e51221215fbd35b55",
+    "counts": {
+      "model": 239,
+      "weather": 62,
+      "place": 44,
+      "fact": 14,
+      "route": 16
+    },
+    "states": {
+      "INTENT": 68,
+      "RECEIVED": 307
+    },
+    "anchor_state": "ADOPTED"
+  },
+  "identity": {
+    "version": 2,
+    "pin": "b49bbb2526255f597afe0648e23904c237dc1eef79aaecd856c188c8d617ad09",
+    "source_sha256": {
+      "backend/agent/cj_agent/provider.py": "258d0e6a56753396733aa95a2b8fd14813eb639ab1045ffb786c67a8b32682a2",
+      "backend/cj_api/real_services.py": "192d59ef6ed9e55df81791bd013d67303801d03ae13055749d3523a0c482e911",
+      "backend/fact/cj_fact/live_source.py": "a31d82c73bfb2abcc0be3288d1d19be04992946e1a4e2c26497ff920b834c88a",
+      "backend/fact/cj_fact/https_transport.py": "c7b23cabfe965ebb2cdcfae00ccc0f789fdce4c35025d29f1ae79a7876987ba8"
+    }
+  },
+  "claim": {
+    "adapter_identity": {
+      "pin": "b49bbb2526255f597afe0648e23904c237dc1eef79aaecd856c188c8d617ad09",
+      "source_sha256": {
+        "backend/agent/cj_agent/provider.py": "258d0e6a56753396733aa95a2b8fd14813eb639ab1045ffb786c67a8b32682a2",
+        "backend/cj_api/real_services.py": "192d59ef6ed9e55df81791bd013d67303801d03ae13055749d3523a0c482e911",
+        "backend/fact/cj_fact/https_transport.py": "c7b23cabfe965ebb2cdcfae00ccc0f789fdce4c35025d29f1ae79a7876987ba8",
+        "backend/fact/cj_fact/live_source.py": "a31d82c73bfb2abcc0be3288d1d19be04992946e1a4e2c26497ff920b834c88a"
+      },
+      "version": 2
+    },
+    "adapter_pin": "b49bbb2526255f597afe0648e23904c237dc1eef79aaecd856c188c8d617ad09",
+    "candidate_id": "c9adb9a15b6ec366201ad4d89d821ae010292b48",
+    "output": "/evidence/hk-strict-10000-smoke-001",
+    "phase": "smoke"
+  },
+  "result": {
+    "candidate_id": "c9adb9a15b6ec366201ad4d89d821ae010292b48",
+    "hashes": {
+      "observations.json": "d10bf56be251e0fc508ce75721d5f610c363835d3d21d0aeddcb3126029be478",
+      "plan.json": "3fcb234ab2225eb36422505b8039e25ee159f21a8f9aa1c41277a96a2f508ec7",
+      "raw/place-route-en.json": "6b72b07aa5fa0ad74f7f719fb9adce9195f8a91fc7115c6de6ca48adabf81642",
+      "raw/place-route-zh.json": "7080042915978f3e1ca96f38088184ea66b1b7fc40a494def2ef6edb01bf7c02",
+      "summary.json": "02413c86e0171f211f17f5e9936064647fff5844371f42e3ae6ba243a064e1ff"
+    },
+    "status": "FAIL"
+  },
+  "full_claim_exists": false,
+  "original367_unchanged": true,
+  "remaining_processes": "PID                 COMMAND\n344492              sleep\n",
+  "eval_Python_PG_count": 0,
+  "schema_version": 1,
+  "source_preflight": {
+    "status": "PASS",
+    "source": {
+      "runner_commit": "c9adb9a15b6ec366201ad4d89d821ae010292b48",
+      "backend_commit": "c9adb9a15b6ec366201ad4d89d821ae010292b48",
+      "manifest_sha256": "44b72f9ca0ab54e40a81703d7d26156fcbea9f6ce02a63846cdd144492b354f2"
+    },
+    "manifest_files": 640,
+    "identity": {
+      "version": 2,
+      "pin": "b49bbb2526255f597afe0648e23904c237dc1eef79aaecd856c188c8d617ad09",
+      "source_sha256": {
+        "backend/agent/cj_agent/provider.py": "258d0e6a56753396733aa95a2b8fd14813eb639ab1045ffb786c67a8b32682a2",
+        "backend/cj_api/real_services.py": "192d59ef6ed9e55df81791bd013d67303801d03ae13055749d3523a0c482e911",
+        "backend/fact/cj_fact/live_source.py": "a31d82c73bfb2abcc0be3288d1d19be04992946e1a4e2c26497ff920b834c88a",
+        "backend/fact/cj_fact/https_transport.py": "c7b23cabfe965ebb2cdcfae00ccc0f789fdce4c35025d29f1ae79a7876987ba8"
+      }
+    },
+    "secret": {
+      "keys": [
+        "CJ_AMAP_WEB_KEY",
+        "CJ_MODEL_API_KEY"
+      ],
+      "owner": 10001,
+      "mode": "0600"
+    },
+    "ledger": {
+      "ledger_id": "32d95019ea16443b81e648960c4baba0",
+      "rows": 367,
+      "sha256": "b52ed0c23a81c3eb167834a199260d501963a4099811f18968ad448204c1afe2",
+      "counts": {
+        "model": 234,
+        "weather": 62,
+        "fact": 14,
+        "place": 42,
+        "route": 15
+      },
+      "states": {
+        "RECEIVED": 300,
+        "INTENT": 67
+      },
+      "anchor_state": "ADOPTED"
+    },
+    "forecast": {
+      "basis": "C first real batch actual authorization holds + planned6 smoke minimum flow; not billed costs",
+      "counts": {
+        "model": 234,
+        "weather": 62,
+        "fact": 14,
+        "place": 42,
+        "route": 15
+      },
+      "before_conservative_cny": {
+        "model": 247,
+        "tool": 119
+      },
+      "additional_estimate_cny": {
+        "model": 153,
+        "tool": 62
+      },
+      "projected_conservative_cny": {
+        "model": 400,
+        "tool": 181
+      },
+      "stop_cny": {
+        "model": 10000,
+        "tool": 10000
+      },
+      "budget_cny": {
+        "model": 10000,
+        "tool": 200
+      },
+      "within_stop_lines": true,
+      "within_budget": true,
+      "within_authorization": true,
+      "policy_ref": "https://github.com/JTCAO515/G2C/issues/495#issuecomment-6644812116",
+      "model_policy_ref": "https://github.com/JTCAO515/G2C/issues/495#issuecomment-6688002330",
+      "actual_billed_total": "UNKNOWN",
+      "M1_hold_cny": 13,
+      "quantity_limits": {
+        "place": 1200,
+        "route": 600,
+        "weather": 200,
+        "fact": 240
+      }
+    },
+    "smoke_claimed": false,
+    "full_claimed": false,
+    "container": "g2c-c-runtime-c9adb9a1",
+    "image": "sha256:4b238d00738b8875d4e27ec5f7d7c4dbef0daf3196072c20ea45d214ac4251d3",
+    "mounts": [
+      {
+        "source": "/srv/g2c-beta/c-eval.env",
+        "destination": "/run/secrets/c-eval.env",
+        "rw": false
+      },
+      {
+        "source": "/srv/g2c-beta/c-evidence",
+        "destination": "/evidence",
+        "rw": true
+      },
+      {
+        "source": "/srv/g2c-beta/budget",
+        "destination": "/home/cj/.local/share/g2c/m4-real-services",
+        "rw": true
+      },
+      {
+        "source": "/srv/g2c-beta/control",
+        "destination": "/control",
+        "rw": false
+      },
+      {
+        "source": "/srv/g2c-beta/control/budget",
+        "destination": "/control/budget",
+        "rw": true
+      }
+    ],
+    "environment_names": [
+      "CJ_C_EVAL_SOURCE_SHA256",
+      "CJ_DEPLOY_TARGET",
+      "CJ_ENV",
+      "CJ_M4_BUDGET_PRODUCER",
+      "CJ_M4_SYNTHETIC_ONLY",
+      "CJ_PG_BINDIR",
+      "CJ_TRIAL_VALID_UNTIL",
+      "LANG",
+      "PATH",
+      "PYTHONDONTWRITEBYTECODE",
+      "PYTHONPATH",
+      "PYTHON_SHA256",
+      "PYTHON_VERSION"
+    ]
+  },
+  "archive": {
+    "sha256": "c76a94e8ccda24e09cb56c79e8bb9b3f587c8c500b5ba404d5b9e580b959b1e1",
+    "original_file_n": 18,
+    "raw_files_in_git": false
+  },
+  "artifact_sha256": {
+    "budget-after.json": "4ae3c3fff687a53cd95062bc33d9d70763ec52d6a8911045bcb386a23c2cae4a",
+    "budget-before.json": "ef7b498c65f6ac0542dc07b322a43d859f49dffb123e421bcddc916c5c29222d",
+    "case-starts.json": "ca25333dd80b27fd8bd978e665a50c07a925d74a5d5a439646be9c475efba792",
+    "estimate.json": "52ad298c8ec1ef43ef61f95704890cf9055962748af2dcf599a2e62248851e75",
+    "observations.json": "d10bf56be251e0fc508ce75721d5f610c363835d3d21d0aeddcb3126029be478",
+    "packages.json": "cff3b2adf3252cb116925d5a60193915faa6bd9fccc6867023880ce388b0a01a",
+    "plan.json": "3fcb234ab2225eb36422505b8039e25ee159f21a8f9aa1c41277a96a2f508ec7",
+    "progress.json": "46825aa89bde1159d5b0299a70f891692ce0ff2a8aec0fbe774558bdbfa6bb69",
+    "progress.md": "54c93f989bb64fc9846d3d6906aa897b91171fbf4907eedc0de5fb5c5db8fdb1",
+    "raw/place-route-en.json": "6b72b07aa5fa0ad74f7f719fb9adce9195f8a91fc7115c6de6ca48adabf81642",
+    "raw/place-route-zh.json": "7080042915978f3e1ca96f38088184ea66b1b7fc40a494def2ef6edb01bf7c02",
+    "runtime-config.json": "8c95707048362b286b499507d59594ceb17f985c9851c7bed3aba8b1568057e8",
+    "summary.json": "02413c86e0171f211f17f5e9936064647fff5844371f42e3ae6ba243a064e1ff"
+  },
+  "process": {
+    "pid": 19,
+    "started_unix": 1794019746.870318,
+    "stage": "hk-strict-10000-smoke-001",
+    "command": [
+      "python",
+      "-B",
+      "/app/eval/hk.py",
+      "run",
+      "smoke",
+      "--output",
+      "/evidence/hk-strict-10000-smoke-001"
+    ]
+  },
+  "process_result": {
+    "wrapper_pid": 19,
+    "runner_pid": 24,
+    "exit_code": 1,
+    "finished_unix": 1794019779.02286
+  },
+  "B_blocker": "https://github.com/JTCAO515/G2C/issues/523#issuecomment-6701275432",
+  "B_start_conditions": {
+    "exit": "PR613 / c9adb9a1 / merge e18f248e",
+    "posterior": "https://github.com/JTCAO515/G2C/issues/523#issuecomment-6701236470",
+    "independent_B_evidence_manifest_sha256": "a2a9fb65cf42d4b449776b3a3b2089c987fdb1be7f1a5e05202dff3a9ad8eb1f",
+    "verified_B_result_sha256": "b4f109139034639ec11e2c68f4d94c200cdbe1786463fc40c6725048f5444904",
+    "public_posterior_is_not_C_smoke_or_quality": true
+  },
+  "old_Mac": {
+    "state": "SEALED",
+    "ledger_id": "32d95019ea16443b81e648960c4baba0",
+    "original_attempt_count": 307,
+    "reactivated": false
+  },
+  "next_budget_forecast": {
+    "basis": "historical stage end, not a hold; recalculate after B fixes/probes",
+    "current_model_including_M1": 252,
+    "current_paid_tools": 122,
+    "unchanged_next6_full_estimate": {
+      "model": 153,
+      "tool": 62
+    },
+    "without_new_B_proof": {
+      "model": 405,
+      "tool": 184
+    },
+    "model_stop": 10000,
+    "model_total": 10000,
+    "tool_stop": 10000,
+    "tool_total": 200,
+    "actual_paid": "UNKNOWN"
+  },
+  "network": {
+    "policy": "JT-2026-11-06-M4-NETWORK",
+    "approved": "China-mainland Mac + VPN",
+    "overseas_client_required": false,
+    "protected_GET_baseline": "PR579 / report-002 n6; not user-submit answer timing",
+    "actual_user_POST_to_first_or_full": "UNRUN",
+    "reason": "Stopped on real smoke prerequisite failure; no target-network model tasks dispatched"
+  },
+  "grounded_fact_semantic_review": "UNKNOWN; bilingual review packet prepared for JT, no human results supplied",
+  "goal_complete": false
+}

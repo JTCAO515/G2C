@@ -8,16 +8,21 @@ with Last-Event-ID and never receives a byte twice.
 import asyncio
 from dataclasses import dataclass
 import json
+import logging
 import time
 
 from fastapi import Request
 from fastapi.responses import StreamingResponse
 from starlette.concurrency import run_in_threadpool
+from cj_run.display_snapshot import RunSnapshotAdvanced
+from cj_run.postgres import RunScopeBusy
 
 from .history_routes import _query
+from .local_account_admission_v2 import retirement_read_operation
 from .message_routes import _error, _token
 
 TERMINAL = frozenset({'completed', 'failed', 'cancelled', 'context_invalid', 'unknown'})
+_timing_log = logging.getLogger('cj_usage.audit')
 
 
 @dataclass(frozen=True)
@@ -38,7 +43,8 @@ def _sse(event, data, event_id=None):
     return ('\n'.join(lines) + '\n\n').encode('utf-8')
 
 
-def register_run_events_route(app, reader=None, display_configuration=None, configuration=None):
+def register_run_events_route(app, reader=None, display_configuration=None, configuration=None, *,
+                              travel_reader=None, legacy_reader=None):
     if configuration is not None and type(configuration) is not RunEventsConfiguration:
         raise ValueError('explicit RUN events configuration required')
     from .run_cancel_routes import register_run_cancel_route
@@ -47,9 +53,8 @@ def register_run_events_route(app, reader=None, display_configuration=None, conf
     def unavailable(request):
         return _error(request, 503, 'RUN_EVENTS_UNAVAILABLE', 'dependency', 'unknown', 'retry_safe_read')
 
-    @app.get('/v1/run-events')
-    async def stream(request: Request):
-        if reader is None or configuration is None:
+    async def stream(request: Request, read, *, timing=False):
+        if read is None or configuration is None:
             return unavailable(request)
         token = _token(request)
         if token is None:
@@ -66,14 +71,22 @@ def register_run_events_route(app, reader=None, display_configuration=None, conf
             return _error(request, 400, 'INVALID_INPUT', 'input', 'failed', 'do_not_retry')
 
         def snapshot():
-            payload = json.loads(reader.read(token, mid))
+            with retirement_read_operation(purpose='sse_snapshot'):
+                payload = json.loads(read(token, mid))
             return payload['status'], payload['text'].encode('utf-8')
 
         try:
+            initial_read = time.monotonic()
             status, text = await run_in_threadpool(snapshot)
-        except Exception:
+        except Exception as error:
+            if timing:
+                _timing_log.info('M4_SSE_INITIAL_TIMING request_id=%s elapsed_ms=%.3f outcome=%s',
+                                 request.state.request_id,(time.monotonic()-initial_read)*1000,type(error).__name__)
             # Same withholding as /v1/run-display: absent, foreign and unavailable look alike.
             return unavailable(request)
+        if timing:
+            _timing_log.info('M4_SSE_INITIAL_TIMING request_id=%s elapsed_ms=%.3f outcome=read',
+                             request.state.request_id,(time.monotonic()-initial_read)*1000)
         if offset > len(text):
             return _error(request, 409, 'RESYNC_REQUIRED', 'input', 'failed', 'retry_safe_read')
         try:
@@ -84,6 +97,7 @@ def register_run_events_route(app, reader=None, display_configuration=None, conf
         async def events():
             nonlocal status, text
             sent, last_status = offset, None
+            missed_poll = False
             deadline = time.monotonic() + configuration.max_stream_seconds
             while True:
                 if len(text) > sent:
@@ -95,11 +109,31 @@ def register_run_events_route(app, reader=None, display_configuration=None, conf
                 if status in TERMINAL or time.monotonic() >= deadline or await request.is_disconnected():
                     return
                 await asyncio.sleep(configuration.poll_interval_seconds)
+                poll_started = time.monotonic()
                 try:
                     status, text = await run_in_threadpool(snapshot)
-                except Exception:
+                    missed_poll = False
+                except Exception as error:
+                    if timing:
+                        _timing_log.info('M4_SSE_POLL_TIMING request_id=%s elapsed_ms=%.3f outcome=%s',
+                                         request.state.request_id,(time.monotonic()-poll_started)*1000,type(error).__name__)
+                    if isinstance(error, (RunSnapshotAdvanced, RunScopeBusy)) and not missed_poll:
+                        # The failed projection returned no bytes. The next normal
+                        # poll checks the same bearer, owner and original again.
+                        missed_poll = True
+                        continue
                     yield _sse('status', {'status': 'unavailable'}, sent)
                     return
 
         return StreamingResponse(events(), media_type='text/event-stream',
                                  headers={'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no'})
+
+    @app.get('/v1/run-events')
+    async def legacy_events(request: Request):
+        source = legacy_reader if legacy_reader is not None else reader
+        return await stream(request, source.read if source is not None else None,
+                            timing=legacy_reader is not None)
+
+    @app.get('/v2/run-events')
+    async def travel_events(request: Request):
+        return await stream(request, travel_reader.read_travel_events if travel_reader is not None else None,timing=True)

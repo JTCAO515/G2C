@@ -7,7 +7,7 @@ import re
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
-from .history_config import CursorBinding, CursorResyncRequired, CursorUnavailable, HistoryWireConfiguration
+from .history_config import CursorBinding, CursorResyncRequired, HistoryWireConfiguration
 from .message_routes import BodyError, _body_error, _error, _query_pairs, _read_octets, _token
 from .generated import (MessageReceipt, ConversationSummary, MessageHistoryItem, MessageDraftSnapshot,
     ConversationPageResponse, MessageHistoryResponse, MessageDraftReadResponse, MessageDraftSaveResponse)
@@ -75,8 +75,7 @@ def register_history_routes(app, boundary=None, configuration=None, environment=
             raise ValueError('Explicit local history context/configuration required')
         from cj_auth.interfaces import AdmissionReason, AdmissionStatus
         from cj_message.auth_boundary import AccessBlocked, IdentityChanged
-        from cj_message.domain import (ChatSummary, Cursor, ChatListCursor, HistoryMessage, Draft,
-                                       CommitUnknown, InputConflict, ResyncRequired)
+        from cj_message.domain import Cursor, ChatListCursor, CommitUnknown, InputConflict, ResyncRequired
 
     def failure(request, write, exc=None):
         if configuration is not None:
@@ -123,7 +122,7 @@ def register_history_routes(app, boundary=None, configuration=None, environment=
         return response
 
     def draft_projection(value,cid,generation):
-        if (type(value) is not Draft or value.conversation_id != cid or value.generation != generation):
+        if value.conversation_id != cid or value.generation != generation:
             raise ValueError('Invalid internal draft')
         _int64(value.revision,1)
         if len(value.original_utf8) > configuration.max_private_response_bytes:
@@ -153,18 +152,17 @@ def register_history_routes(app, boundary=None, configuration=None, environment=
                     or kind=='message_history' and cursor.conversation_id != cid):
                 raise CursorResyncRequired()
             rows,nxt = context.conversations(cursor,query['limit']) if kind=='conversations' else (context.trip_message_history(cid,cursor,query['limit']) if formal else context.message_history(cid,cursor,query['limit']))
-            if nxt is not None and (type(nxt) is not expected or nxt.scope != context.scope
+            if nxt is not None and (nxt.scope != context.scope
                     or kind=='message_history' and nxt.conversation_id != cid):
                 raise ValueError('Invalid internal cursor')
             next_token = policy.encode(nxt,binding) if nxt is not None else None
             projected=[];raw_total=0
             for row in rows:
                 if kind=='conversations':
-                    if type(row) is not ChatSummary:raise ValueError('Invalid internal summary')
                     _int64(row.epoch);_int64(row.list_sequence,1)
                     projected.append(ConversationSummary.model_validate(asdict(row),strict=True))
                 else:
-                    if type(row) is not HistoryMessage or row.receipt.conversation_id != cid:
+                    if row.receipt.conversation_id != cid:
                         raise ValueError('Invalid internal history')
                     raw_total+=len(row.original_utf8)
                     if raw_total > configuration.max_private_response_bytes:raise PrivateOutputTooLarge()

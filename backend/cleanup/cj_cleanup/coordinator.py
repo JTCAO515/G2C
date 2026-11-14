@@ -1,6 +1,6 @@
 """Explicitly injected CLEANUP@1.0 host. Account authorization/barriers are #27."""
 from .core import Denied, digest
-from .hooks import HookRequest, Selection
+from .hooks import HookRequest
 from .store import CODECS
 
 

@@ -55,6 +55,24 @@ def test_missing_done_or_malformed_chunk_is_unknown():
                 [{'role': 'user', 'content': 'hi'}]))
 
 
+def test_wrongly_shaped_or_duplicate_chunk_is_unknown_not_crash():
+    # External model output is a trust boundary: any shape error after send is unknown.
+    for chunk in (b'[]', b'"text"', b'{"choices":{}}', b'{"choices":["x"]}', b'{"choices":[{"delta":"x"}]}',
+                  b'{"choices":[{"delta":{"content":["x"]}}]}', b'{"choices":[{"delta":{"content":1}}]}',
+                  b'{"choices":[],"choices":[]}'):
+        content = b'data: ' + chunk + b'\n\ndata: [DONE]\n\n'
+        with pytest.raises(ProviderUnknown):
+            list(provider(lambda request, c=content: httpx.Response(200, content=c)).stream(
+                [{'role': 'user', 'content': 'hi'}]))
+
+
+def test_usage_only_and_null_content_chunks_are_skipped():
+    content = (b'data: {"choices":[{"delta":{"content":null}}]}\n\n'
+               b'data: {"choices":[],"usage":{"total_tokens":3}}\n\n' + sse('ok'))
+    assert ''.join(provider(lambda request: httpx.Response(200, content=content)).stream(
+        [{'role': 'user', 'content': 'hi'}])) == 'ok'
+
+
 def test_output_bound_is_unknown():
     with pytest.raises(ProviderUnknown):
         list(provider(lambda request: httpx.Response(200, content=sse('x' * 50)), max_output_chars=10).stream(

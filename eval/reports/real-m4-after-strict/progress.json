@@ -1,0 +1,496 @@
+{
+  "schema_version": 1,
+  "kind": "incremental_audit_not_admission",
+  "stage": "smoke",
+  "verdict_scope": "prerequisite_only_not_product_quality",
+  "source": {
+    "candidate_id": "c9adb9a15b6ec366201ad4d89d821ae010292b48",
+    "evidence_layer": "real",
+    "execution_source": {
+      "runner_commit": "c9adb9a15b6ec366201ad4d89d821ae010292b48",
+      "backend_commit": "c9adb9a15b6ec366201ad4d89d821ae010292b48",
+      "manifest_sha256": "44b72f9ca0ab54e40a81703d7d26156fcbea9f6ce02a63846cdd144492b354f2"
+    },
+    "collector_sha256": "6c8bb9f311c0bfc862ccf7aedec6efcd5e7799dcd7bcbec16771569560a00e43",
+    "model": "qwen3.8-flash",
+    "sample_set_version": null,
+    "source_date": "2026-11-07"
+  },
+  "planned_n": 6,
+  "observed_n": 2,
+  "by_language": {
+    "zh": {
+      "planned_n": 3,
+      "observed_n": 1,
+      "outcomes": {
+        "PASS": 1,
+        "FAIL": 0,
+        "UNKNOWN": 0,
+        "UNRUN": 2
+      },
+      "started_without_result": [],
+      "execution_status": {
+        "completed": 1
+      },
+      "failure_categories": {},
+      "first_body_seconds": {
+        "known_n": 1,
+        "planned_n": 3,
+        "unknown_or_missing_n": 2,
+        "p50": 23.884288537985412,
+        "p95": 23.884288537985412,
+        "max": 23.884288537985412,
+        "threshold_decision": "UNKNOWN"
+      },
+      "full_answer_seconds": {
+        "known_n": 1,
+        "planned_n": 3,
+        "unknown_or_missing_n": 2,
+        "p50": 23.884288537985412,
+        "p95": 23.884288537985412,
+        "max": 23.884288537985412,
+        "threshold_decision": "UNKNOWN"
+      },
+      "timing_scope": "known-subset diagnostic; original formal gate retains full denominator",
+      "original_product_profiles": [],
+      "serious_errors": {
+        "status": "UNRUN",
+        "known_errors": [],
+        "scope": "Known prerequisite state violations only; complete semantic/product review UNRUN"
+      },
+      "usage": {
+        "call_attempts_by_kind": {
+          "model": 4,
+          "place": 2,
+          "route": 1
+        },
+        "complete_receipts": {
+          "model": 4,
+          "place": 2,
+          "route": 1
+        },
+        "unknown_intents": {},
+        "model_tokens_from_complete_receipts": {
+          "prompt_tokens": 9483,
+          "completion_tokens": 1191,
+          "total_tokens": 10674
+        },
+        "token_unknown_model_attempt_n": 0,
+        "conservative_hold_cny": {
+          "model": 4,
+          "tool": 3
+        },
+        "token_price_estimate": {
+          "currency": "CNY",
+          "basis": "estimated_public_price_not_billed",
+          "source": "https://help.aliyun.com/zh/model-studio/qwen3-8-flash",
+          "source_as_of": "2026-11-05",
+          "model": "qwen3.8-flash",
+          "region": "cn-beijing",
+          "input_per_million": "0.8",
+          "output_per_million": "2.7",
+          "complete_model_receipts": 4,
+          "unknown_model_attempts": 0,
+          "prompt_tokens": 9483,
+          "completion_tokens": 1191,
+          "known_receipt_subtotal_cny": "0.0108021",
+          "entire_model_estimate_cny": "0.0108021",
+          "actual_billed_cny": "UNKNOWN",
+          "tool_monetary_cost": "UNKNOWN",
+          "exclusions": "Incomplete windows, tools, cache discounts, credits and invoice adjustments are not inferred; UNKNOWN holds stay reserved"
+        },
+        "actual_billed_cny": "UNKNOWN",
+        "note": "Original authorization/call attempts; not every uncertain intent is proven sent. No invoice supplied."
+      },
+      "usage_complete": true,
+      "unknown_inflight_usage": null,
+      "attempt_manifest_complete": true
+    },
+    "en": {
+      "planned_n": 3,
+      "observed_n": 1,
+      "outcomes": {
+        "PASS": 0,
+        "FAIL": 1,
+        "UNKNOWN": 0,
+        "UNRUN": 2
+      },
+      "started_without_result": [],
+      "execution_status": {
+        "unknown": 1
+      },
+      "failure_categories": {
+        "integration_protocol": 1
+      },
+      "first_body_seconds": {
+        "known_n": 0,
+        "planned_n": 3,
+        "unknown_or_missing_n": 3,
+        "p50": null,
+        "p95": null,
+        "max": null,
+        "threshold_decision": "UNKNOWN"
+      },
+      "full_answer_seconds": {
+        "known_n": 0,
+        "planned_n": 3,
+        "unknown_or_missing_n": 3,
+        "p50": null,
+        "p95": null,
+        "max": null,
+        "threshold_decision": "UNKNOWN"
+      },
+      "timing_scope": "known-subset diagnostic; original formal gate retains full denominator",
+      "original_product_profiles": [],
+      "serious_errors": {
+        "status": "UNRUN",
+        "known_errors": [],
+        "scope": "Known prerequisite state violations only; complete semantic/product review UNRUN"
+      },
+      "usage": {
+        "call_attempts_by_kind": {
+          "model": 1
+        },
+        "complete_receipts": {},
+        "unknown_intents": {
+          "model": 1
+        },
+        "model_tokens_from_complete_receipts": {},
+        "token_unknown_model_attempt_n": 1,
+        "conservative_hold_cny": {
+          "model": 1,
+          "tool": 0
+        },
+        "token_price_estimate": {
+          "currency": "CNY",
+          "basis": "estimated_public_price_not_billed",
+          "source": "https://help.aliyun.com/zh/model-studio/qwen3-8-flash",
+          "source_as_of": "2026-11-05",
+          "model": "qwen3.8-flash",
+          "region": "cn-beijing",
+          "input_per_million": "0.8",
+          "output_per_million": "2.7",
+          "complete_model_receipts": 0,
+          "unknown_model_attempts": 1,
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "known_receipt_subtotal_cny": "0.0",
+          "entire_model_estimate_cny": null,
+          "actual_billed_cny": "UNKNOWN",
+          "tool_monetary_cost": "UNKNOWN",
+          "exclusions": "Incomplete windows, tools, cache discounts, credits and invoice adjustments are not inferred; UNKNOWN holds stay reserved"
+        },
+        "actual_billed_cny": "UNKNOWN",
+        "note": "Original authorization/call attempts; not every uncertain intent is proven sent. No invoice supplied."
+      },
+      "usage_complete": false,
+      "unknown_inflight_usage": null,
+      "attempt_manifest_complete": true
+    }
+  },
+  "artifact_fingerprints": {
+    "plan.json": "3fcb234ab2225eb36422505b8039e25ee159f21a8f9aa1c41277a96a2f508ec7",
+    "runtime-config.json": "8c95707048362b286b499507d59594ceb17f985c9851c7bed3aba8b1568057e8",
+    "packages.json": "cff3b2adf3252cb116925d5a60193915faa6bd9fccc6867023880ce388b0a01a"
+  },
+  "attempts": [
+    {
+      "case_id": "place-route",
+      "language": "zh",
+      "attempt": 1,
+      "verdict": "PASS",
+      "run_id": "71c8adba-97cb-4bf4-b205-4b3d83cc893e",
+      "message_id": "m4-synthetic-r2-smoke-place-route-zh-task",
+      "known_smoke_hard_errors": [],
+      "run_status": "completed",
+      "failure": null,
+      "original_attempts": [
+        {
+          "attempt_id": "f0629253893943c9a8cfa58f323d6bb4",
+          "run_id": "71c8adba-97cb-4bf4-b205-4b3d83cc893e",
+          "registration_id": "model.tool_turn",
+          "operation_key": "model.tool_turn.0",
+          "authorization_state": "RECEIVED",
+          "kind": "model",
+          "input_sha": "883fa13643c955afc51a801503ca0d06d26c49b26909f443699210696c9b21cc",
+          "receipt": {
+            "actual_cost_cny": "UNKNOWN",
+            "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+            "model_id": "qwen3.8-flash",
+            "receipt_sha256": "4a46265725e8fab08a944075e54b6b29703d7afa13ec3f71e1d75318a0f6e346",
+            "region": "cn-beijing",
+            "usage": {
+              "completion_tokens": 95,
+              "prompt_tokens": 1269,
+              "total_tokens": 1364
+            }
+          }
+        },
+        {
+          "attempt_id": "4c403f2c2923415fa166a07382fa812b",
+          "run_id": "71c8adba-97cb-4bf4-b205-4b3d83cc893e",
+          "registration_id": "model.tool_turn",
+          "operation_key": "model.tool_turn.1",
+          "authorization_state": "RECEIVED",
+          "kind": "model",
+          "input_sha": "fa830b5b9d89b46a841ac503a79c9a7811695d4be573cf6cb5eb6fe47fa65e46",
+          "receipt": {
+            "actual_cost_cny": "UNKNOWN",
+            "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+            "model_id": "qwen3.8-flash",
+            "receipt_sha256": "a5fe17d6a868cb681a1a00b1b45e0bc89fb3b367fec13ffa8a44cee09e464939",
+            "region": "cn-beijing",
+            "usage": {
+              "completion_tokens": 97,
+              "prompt_tokens": 1953,
+              "total_tokens": 2050
+            }
+          }
+        },
+        {
+          "attempt_id": "3d3cdbb0692748cdb5e29616644556ae",
+          "run_id": "71c8adba-97cb-4bf4-b205-4b3d83cc893e",
+          "registration_id": "model.tool_turn",
+          "operation_key": "model.tool_turn.2",
+          "authorization_state": "RECEIVED",
+          "kind": "model",
+          "input_sha": "53e025adcb32aa2a59ea1ec94b42c5d5a6db4df32a09845f3716dd3df4c06591",
+          "receipt": {
+            "actual_cost_cny": "UNKNOWN",
+            "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+            "model_id": "qwen3.8-flash",
+            "receipt_sha256": "2331370a8283d1e331b1bf616003ef7930da26d08c917f1ef8660cc59c47d630",
+            "region": "cn-beijing",
+            "usage": {
+              "completion_tokens": 178,
+              "prompt_tokens": 2638,
+              "total_tokens": 2816
+            }
+          }
+        },
+        {
+          "attempt_id": "9c60df27302d4f7487917fda5957b7c0",
+          "run_id": "71c8adba-97cb-4bf4-b205-4b3d83cc893e",
+          "registration_id": "model.tool_turn",
+          "operation_key": "model.tool_turn.3",
+          "authorization_state": "RECEIVED",
+          "kind": "model",
+          "input_sha": "5162ae6ad03b290a0a49ce5352bcd21d51b93f6c1eb8943144798620f2ff2d6e",
+          "receipt": {
+            "actual_cost_cny": "UNKNOWN",
+            "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+            "model_id": "qwen3.8-flash",
+            "receipt_sha256": "cefa952ea72776105bd367147d7e54aaa37da8a9658ea960997117a4495199d0",
+            "region": "cn-beijing",
+            "usage": {
+              "completion_tokens": 821,
+              "prompt_tokens": 3623,
+              "total_tokens": 4444
+            }
+          }
+        },
+        {
+          "attempt_id": "64d02960a4bf43c7b19f44fbadf46b61",
+          "run_id": "71c8adba-97cb-4bf4-b205-4b3d83cc893e",
+          "registration_id": "tool.place",
+          "operation_key": "tool.0.0",
+          "authorization_state": "RECEIVED",
+          "kind": "place",
+          "input_sha": "37c79471dcc2814e2a744c25a06e42967b56364ad050df1531c3b01f09d541f7",
+          "receipt": {
+            "actual_cost_cny": "UNKNOWN",
+            "endpoint": "https://restapi.amap.com/v3/place/text",
+            "provider_code": "10000",
+            "region": "China",
+            "response_sha256": "5271ab284456546f6fe103b612c1e3b5a219dc98b8062c2a8d1c1bd70da44991",
+            "result_status": "ok"
+          }
+        },
+        {
+          "attempt_id": "1df0c98d64ce413293ec525941bc0a84",
+          "run_id": "71c8adba-97cb-4bf4-b205-4b3d83cc893e",
+          "registration_id": "tool.place",
+          "operation_key": "tool.1.0",
+          "authorization_state": "RECEIVED",
+          "kind": "place",
+          "input_sha": "7a95945725e5bd3e50028a39bd88562782a2afed21ffb4536ce9101ff8ec24e5",
+          "receipt": {
+            "actual_cost_cny": "UNKNOWN",
+            "endpoint": "https://restapi.amap.com/v3/place/text",
+            "provider_code": "10000",
+            "region": "China",
+            "response_sha256": "c6183cf54d72dde9aa48f1bcf394c3b40a320acc98dd424a53004e6b081025a0",
+            "result_status": "ok"
+          }
+        },
+        {
+          "attempt_id": "0a84695ba02a499a8cd21cccd8276359",
+          "run_id": "71c8adba-97cb-4bf4-b205-4b3d83cc893e",
+          "registration_id": "tool.place",
+          "operation_key": "tool.2.0",
+          "authorization_state": "RECEIVED",
+          "kind": "route",
+          "input_sha": "cf5ba63e0545c8c4da78df8e64f8ad45e3d9288319b11aa03440dc910ee872d0",
+          "receipt": {
+            "actual_cost_cny": "UNKNOWN",
+            "endpoint": "https://restapi.amap.com/v3/direction/walking",
+            "provider_code": "10000",
+            "region": "China",
+            "response_sha256": "3449bbe0aa25f04fc6348c248e9f4599794cf6b9610c4a3eede541cc205a7b74",
+            "result_status": "ok"
+          }
+        }
+      ],
+      "raw_evidence_ref": "raw/place-route-zh.json",
+      "raw_evidence_sha256": "7080042915978f3e1ca96f38088184ea66b1b7fc40a494def2ef6edb01bf7c02",
+      "input_sha256": "44cd683ebefb4ccd1d51b7b9699971ec9400e253c1403138666dfde45145553e",
+      "first_body_seconds": 23.884288537985412,
+      "full_answer_seconds": 23.884288537985412,
+      "time_to_terminal_seconds": 23.884288537985412,
+      "source": {
+        "candidate_id": "c9adb9a15b6ec366201ad4d89d821ae010292b48",
+        "evidence_layer": "real",
+        "execution_source": {
+          "runner_commit": "c9adb9a15b6ec366201ad4d89d821ae010292b48",
+          "backend_commit": "c9adb9a15b6ec366201ad4d89d821ae010292b48",
+          "manifest_sha256": "44b72f9ca0ab54e40a81703d7d26156fcbea9f6ce02a63846cdd144492b354f2"
+        },
+        "collector_sha256": "6c8bb9f311c0bfc862ccf7aedec6efcd5e7799dcd7bcbec16771569560a00e43",
+        "model": "qwen3.8-flash",
+        "sample_set_version": null,
+        "source_date": "2026-11-07"
+      },
+      "expected": {
+        "run_status": "completed",
+        "same_RUN_nonempty_body": true,
+        "tools": [
+          "place",
+          "route"
+        ]
+      }
+    },
+    {
+      "case_id": "place-route",
+      "language": "en",
+      "attempt": 1,
+      "verdict": "FAIL",
+      "run_id": "33fe95cc-7bb0-4d3c-bd72-30af70516bb3",
+      "message_id": "m4-synthetic-r2-smoke-place-route-en-task",
+      "known_smoke_hard_errors": [],
+      "run_status": "unknown",
+      "failure": {
+        "category": "integration_protocol",
+        "stage": "native_function_turn",
+        "reason": "original_provider_failure_phase",
+        "root_cause": "UNKNOWN",
+        "provider_diagnostics": [
+          {
+            "attempt_sha256": "c41fdfa60ecccfb4128a4e9c786d9534ab302a8a5433085e4818d48fe801aaf5",
+            "phase": "native_function_turn",
+            "http_status": 200,
+            "done": true,
+            "finished": true,
+            "usage": true,
+            "content_chars": 0,
+            "tool_count": 1,
+            "reason_code": "native_envelope_fields",
+            "choice_rejection": "none",
+            "finish_reason": "stop",
+            "argument_chars_before_rejection": 267
+          }
+        ],
+        "scope": "Evidence component/effect only; not vendor blame, finish-reason inference or a new verdict"
+      },
+      "original_attempts": [
+        {
+          "attempt_id": "842207975a98472daf0c40916c30ac63",
+          "run_id": "33fe95cc-7bb0-4d3c-bd72-30af70516bb3",
+          "registration_id": "model.tool_turn",
+          "operation_key": "model.tool_turn.0",
+          "authorization_state": "INTENT",
+          "kind": "model",
+          "input_sha": "61ecca295020184daafe623e43d486ca8ee0797dcaf58e2b4af5d372c9b4e3ea",
+          "receipt": null
+        }
+      ],
+      "raw_evidence_ref": "raw/place-route-en.json",
+      "raw_evidence_sha256": "6b72b07aa5fa0ad74f7f719fb9adce9195f8a91fc7115c6de6ca48adabf81642",
+      "input_sha256": "8038779ba545c4f09f124eaa6c4b3f70629e2056d1edaab3845e35c7deed1a94",
+      "first_body_seconds": null,
+      "full_answer_seconds": null,
+      "time_to_terminal_seconds": 2.8684289150114637,
+      "source": {
+        "candidate_id": "c9adb9a15b6ec366201ad4d89d821ae010292b48",
+        "evidence_layer": "real",
+        "execution_source": {
+          "runner_commit": "c9adb9a15b6ec366201ad4d89d821ae010292b48",
+          "backend_commit": "c9adb9a15b6ec366201ad4d89d821ae010292b48",
+          "manifest_sha256": "44b72f9ca0ab54e40a81703d7d26156fcbea9f6ce02a63846cdd144492b354f2"
+        },
+        "collector_sha256": "6c8bb9f311c0bfc862ccf7aedec6efcd5e7799dcd7bcbec16771569560a00e43",
+        "model": "qwen3.8-flash",
+        "sample_set_version": null,
+        "source_date": "2026-11-07"
+      },
+      "expected": {
+        "run_status": "completed",
+        "same_RUN_nonempty_body": true,
+        "tools": [
+          "place",
+          "route"
+        ]
+      }
+    }
+  ],
+  "usage": {
+    "call_attempts_by_kind": {
+      "model": 5,
+      "place": 2,
+      "route": 1
+    },
+    "complete_receipts": {
+      "model": 4,
+      "place": 2,
+      "route": 1
+    },
+    "unknown_intents": {
+      "model": 1
+    },
+    "model_tokens_from_complete_receipts": {
+      "prompt_tokens": 9483,
+      "completion_tokens": 1191,
+      "total_tokens": 10674
+    },
+    "token_unknown_model_attempt_n": 1,
+    "conservative_hold_cny": {
+      "model": 5,
+      "tool": 3
+    },
+    "token_price_estimate": {
+      "currency": "CNY",
+      "basis": "estimated_public_price_not_billed",
+      "source": "https://help.aliyun.com/zh/model-studio/qwen3-8-flash",
+      "source_as_of": "2026-11-05",
+      "model": "qwen3.8-flash",
+      "region": "cn-beijing",
+      "input_per_million": "0.8",
+      "output_per_million": "2.7",
+      "complete_model_receipts": 4,
+      "unknown_model_attempts": 1,
+      "prompt_tokens": 9483,
+      "completion_tokens": 1191,
+      "known_receipt_subtotal_cny": "0.0108021",
+      "entire_model_estimate_cny": null,
+      "actual_billed_cny": "UNKNOWN",
+      "tool_monetary_cost": "UNKNOWN",
+      "exclusions": "Incomplete windows, tools, cache discounts, credits and invoice adjustments are not inferred; UNKNOWN holds stay reserved"
+    },
+    "actual_billed_cny": "UNKNOWN",
+    "note": "Original authorization/call attempts; not every uncertain intent is proven sent. No invoice supplied."
+  },
+  "usage_complete": false,
+  "attempt_manifest_complete": true,
+  "unknown_inflight_usage": null,
+  "authority": "Original formal report/checker and canonical phase, not this file",
+  "original_gate_status": "FAIL"
+}

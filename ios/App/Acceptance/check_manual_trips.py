@@ -4,19 +4,30 @@ An unmerged backend pin is candidate evidence, never main or Issue acceptance.
 Source creation uses its unmodified run_once/draft_profile, original C writer,
 registered Meter, signed APIs and private runtime-role PG. No Trip is seeded.
 """
-import argparse,base64,hashlib,importlib.util,json,os,plistlib,socket,subprocess,sys,tempfile,threading,time,uuid
+import argparse,base64,hashlib,importlib.util,json,os,plistlib,secrets,socket,subprocess,sys,tempfile,threading,time,uuid
 from pathlib import Path
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from urllib.parse import urlparse,parse_qs
 APP=Path(__file__).resolve().parents[3];HERE=Path(__file__).resolve().parent
 p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--backend-root',type=Path,required=True);p.add_argument('--backend-head',required=True)
-p.add_argument('--run-context',type=Path,required=True);p.add_argument('--simulator',required=True)
+p.add_argument('--run-context',type=Path,required=True)
+target=p.add_mutually_exclusive_group(required=True)
+target.add_argument('--simulator');target.add_argument('--device')
+p.add_argument('--local-tls',type=Path);p.add_argument('--prepare-only',action='store_true')
 p.add_argument('--output',type=Path,required=True);p.add_argument('--build-dir',type=Path,required=True)
-p.add_argument('--largest-recovery',action='store_true')
+p.add_argument('--chinese-recovery','--largest-recovery',dest='chinese_recovery',action='store_true',help='Chinese restart/original-query path; legacy alias retained, no font override')
 p.add_argument('--case',choices=['testNeedsManualTitleSave','testNeedsManualFixedRoundTrip','testNeedsManualTimeTextSave','testNeedsManualSaveACKLoss','testNeedsManualSaveConflict','testNeedsManualLateAccount','testNeedsManualPrepareCancellation','testNeedsManualCanonicalFixedRefusal','testNeedsManualInvalidWindow','testNeedsPlanningPrefix','testNeedsPlanningAccept','testNeedsPlanningReject','testNeedsPlanningACKLoss','testNeedsPlanningDiscoveryUnavailable','testNeedsPlanningStaleAccept','testNeedsPlanningConflict','testNeedsPlanningLateAccount','testNeedsPlanningInterruptedAccept','testNeedsPlanningManualComposition','testNeedsPlanningCurrentFixedAccept','testNeedsPlanningCurrentUnlockedReject','testNeedsPlanningOriginalsLargest','testNeedsPlanningCurrentFixedACKLoss'],required=True)
 a=p.parse_args();BACKEND=a.backend_root.resolve();OUT=a.output.resolve();BUILD=a.build_dir.resolve();CASE=a.case;PLANNING_PREFIX=CASE.startswith('testNeedsPlanning')
-if a.largest_recovery and CASE!='testNeedsPlanningAccept':p.error('--largest-recovery applies to the existing source1 acceptance/recovery case only')
+TLS=None
+if a.device:
+ if not a.local_tls:p.error('--device requires the approved --local-tls profile')
+ from m4_device import LocalTLS,configure_project,private_workspace
+ from m4_native import DeviceNative,authenticated_control
+ TLS=LocalTLS.load(a.local_tls)
+ device_project_root,BUILD=private_workspace(OUT,BUILD)
+elif a.local_tls or a.prepare_only:p.error('Device options require --device')
+if a.chinese_recovery and CASE!='testNeedsPlanningAccept':p.error('--chinese-recovery applies to the existing source1 acceptance/recovery case only')
 HISTORY_LARGEST=CASE=='testNeedsPlanningOriginalsLargest'
 CURRENT_REPLAN=CASE in ('testNeedsPlanningCurrentFixedAccept','testNeedsPlanningCurrentUnlockedReject','testNeedsPlanningCurrentFixedACKLoss')
 PLANNING_DECISION=CURRENT_REPLAN or CASE in ('testNeedsPlanningAccept','testNeedsPlanningReject','testNeedsPlanningACKLoss','testNeedsPlanningStaleAccept','testNeedsPlanningConflict','testNeedsPlanningInterruptedAccept','testNeedsPlanningManualComposition')
@@ -29,7 +40,7 @@ os.umask(0o077);OUT.mkdir(parents=True,mode=0o700)
 if (OUT/'report.json').exists():raise ValueError('preserve prior evidence')
 for key in tuple(os.environ):
  if key.startswith(('PG','LIBPQ','CJ_LOCAL_','G2C_DEV_')):os.environ.pop(key)
-os.environ['CJ_ENV']='local';sys.path.insert(0,str(BACKEND/'scripts'))
+os.environ.update(CJ_ENV='local',OS_ACTIVITY_MODE='disable');sys.path.insert(0,str(BACKEND/'scripts'))
 import dev_auth,migrate,psycopg,uvicorn
 from pg_suites import cluster
 from fastapi.testclient import TestClient
@@ -44,11 +55,18 @@ import run_worker,cj_api.local_app,cj_trip.local_needs_app,cj_draft.needs_local
 modules=[run_worker,cj_api.local_app,cj_trip.local_needs_app,cj_draft.needs_local]
 assert all(Path(m.__file__).is_relative_to(BACKEND) for m in modules),'wrong backend import root'
 source_files=[*list((APP/'ios/App').glob('*.swift')),HERE/'DevelopmentScopedMessageUITests.swift',Path(__file__)]
+if TLS:source_files += [HERE/name for name in ('m4_device.py','m4_native.py','m4_artifacts.py','M4DeviceControl.swift','M4DeviceTestSession.swift')]
 for module in ('CJShell','CJTripClient','CJMessageClient','CJNeedsClient','CJAuth','CJManualPreviewClient','CJRunClient'):
  source_files+=list((APP/'ios/Modules'/module/'Sources').rglob('*.swift'))
 def fingerprint(root,paths):return {str(path.relative_to(root)):hashlib.sha256(path.read_bytes()).hexdigest() for path in paths}
 backend_files=[BACKEND/name for name in subprocess.check_output(['git','ls-files','backend','scripts','contracts','pyproject.toml','uv.lock'],cwd=BACKEND,text=True).splitlines()]
 r=dict(status='RUNNING',layer='actual Simulator/signed API/private PG/pinned backend candidate',app_head=head(APP),backend_head=head(BACKEND),backend_root_verified=True,source_hashes=fingerprint(APP,source_files),backend_hashes=fingerprint(BACKEND,backend_files),responses=[],unrun=['main backend delivery if pin unmerged','real services/models/fees/cloud/device'])
+if TLS:
+ r.update(layer='signed approved iPhone/local pinned HTTPS/private PG/pinned backend candidate',
+  cases={CASE:'UNRUN'},
+  raw_native_bundle_shareable=False,build_inputs_shareable=False,
+  unrun=['main backend delivery if pin unmerged','real services/models/fees/cloud',
+         'physical system language/timezone switching #29'])
 if PLANNING_PREFIX:
  r['unrun']+=['source-input.2 main delivery until B378 merges' if CURRENT_REPLAN else 'source-input.2 formal replanning']
  if PLANNING_DECISION:r['verified_scope']='original NEEDS planning discovery/decision/recovery'
@@ -59,9 +77,9 @@ if PLANNING_PREFIX:
   r['verified_scope']='explicit MESSAGE-send.2 / original RUN published prefix only'
   r['unrun']+=['planning discovery/decision not exercised by prefix-only case']
 if HISTORY_LARGEST:
- r['verified_scope']='largest Chinese planning originals navigation only; zero App messages/model/Trip writes'
+ r['verified_scope']='Chinese planning originals navigation at system default font; zero App messages/model/Trip writes'
  r['unrun']+=['discovery/decision/recovery not exercised by navigation-only case']
-r['largest_recovery']=a.largest_recovery
+r['largest_recovery']=a.chinese_recovery
 def save():(OUT/'report.json').write_text(json.dumps(r,ensure_ascii=False,indent=2))
 def check(resp,phase):
  r['responses'].append(dict(phase=phase,status=resp.status_code,error=resp.json().get('error')));save();assert resp.status_code==200,(phase,resp.status_code,resp.text);return resp.json()
@@ -177,8 +195,11 @@ try:
     worker_thread=threading.Thread(target=prefix_worker,daemon=True);worker_thread.start()
    if CURRENT_REPLAN:
     current_thread=threading.Thread(target=current_worker,daemon=True);current_thread.start()
-   server=uvicorn.Server(uvicorn.Config(observed,host='127.0.0.1',port=0,log_level='error',access_log=False))
-   sock=socket.socket();sock.bind(('127.0.0.1',0));sock.listen();endpoint='http://127.0.0.1:'+str(sock.getsockname()[1]);thread=threading.Thread(target=lambda:server.run(sockets=[sock]),daemon=True);thread.start()
+   server=uvicorn.Server(uvicorn.Config(observed,host=TLS.host if TLS else '127.0.0.1',port=0,log_level='error',access_log=False,
+    **(TLS.uvicorn_options() if TLS else {})))
+   if TLS:sock=TLS.listener()
+   else:sock=socket.socket();sock.bind(('127.0.0.1',0));sock.listen()
+   endpoint=('https://'+TLS.host if TLS else 'http://127.0.0.1')+':'+str(sock.getsockname()[1]);thread=threading.Thread(target=lambda:server.run(sockets=[sock]),daemon=True);thread.start()
    def current_formal():
     with database.connect(scope_for(ISSUER,subject)) as conn:
      role=conn.execute('SELECT current_user').fetchone()[0];trips=conn.execute('SELECT trip_id,version,content FROM cj_trip_record').fetchall()
@@ -403,7 +424,10 @@ try:
     def do_GET(self):
      try:
       url=urlparse(self.path);assert parse_qs(url.query).get('case')==[CASE]
-      if url.path=='/prepare':value=dict(case_id=CASE,endpoint=endpoint,conversation='source',namespace=namespace['id'],accounts=tokens,subjects=subjects,formal_trips=[] if PLANNING_PREFIX else [dict(id=tid,title=formal['content']['title'],version=1,content_sha256=formal['content_sha256'],item_ids=[x['id'] for x in formal['content']['items']])],manual_profile=True,manual_only=not PLANNING_PREFIX,needs_planning=PLANNING_PREFIX,largest_recovery=a.largest_recovery)
+      if url.path=='/prepare':
+       if TLS:native.stage()
+       value=dict(case_id=CASE,endpoint=endpoint,conversation='source',namespace=namespace['id'],accounts={} if TLS else tokens,subjects=subjects,formal_trips=[] if PLANNING_PREFIX else [dict(id=tid,title=formal['content']['title'],version=1,content_sha256=formal['content_sha256'],item_ids=[x['id'] for x in formal['content']['items']])],manual_profile=True,manual_only=not PLANNING_PREFIX,needs_planning=PLANNING_PREFIX,largest_recovery=a.chinese_recovery,
+        device_host=TLS.host if TLS else None,device_port=str(sock.getsockname()[1]) if TLS else None)
       elif url.path=='/prefix-not-sent':value=prefix_not_sent()
       elif url.path=='/wait-planning-response':
        assert CASE in ('testNeedsPlanningLateAccount','testNeedsPlanningInterruptedAccept') and late_captured.wait(20);value=dict(status='actual protected200 held')
@@ -445,37 +469,68 @@ try:
       else:raise ValueError('unknown control')
       raw=json.dumps(value).encode();self.send_response(200);self.end_headers();self.wfile.write(raw)
      except Exception as error:r.setdefault('control_errors',[]).append(type(error).__name__);save();self.send_response(500);self.end_headers();self.wfile.write(type(error).__name__.encode())
-   control=ThreadingHTTPServer(('127.0.0.1',0),Control);threading.Thread(target=control.serve_forever,daemon=True).start()
+   control_token=secrets.token_urlsafe(32) if TLS else None;native=None
+   def stage_input(request):
+    if parse_qs(urlparse(request).query).get('case')!=[CASE]:raise ValueError('Staging requires this case')
+    native.stage()
+   control=ThreadingHTTPServer((TLS.host if TLS else '127.0.0.1',0),
+    authenticated_control(Control,control_token,stage_input) if TLS else Control)
+   if TLS:TLS.secure_http_server(control)
+   threading.Thread(target=control.serve_forever,daemon=True).start()
    try:
     spec=importlib.util.spec_from_file_location('manual_native_builder',APP/'scripts/check_ios_trip_confirm.py');builder_module=importlib.util.module_from_spec(spec);spec.loader.exec_module(builder_module)
-    builder=object.__new__(builder_module.XCTestDriver);builder.directory=OUT/'project';builder.directory.mkdir();builder.write_project(0)
-    (builder.directory/'G2CControl.swift').write_text((HERE/'DevelopmentScopedMessageUITests.swift').read_text().replace('__FIXTURE_URL__',f'http://127.0.0.1:{control.server_port}'))
+    builder=object.__new__(builder_module.XCTestDriver);builder.directory=(device_project_root if TLS else OUT)/'project';builder.directory.mkdir();builder.write_project(0)
+    control_url=('https://'+TLS.host if TLS else 'http://127.0.0.1')+':'+str(control.server_port)
+    (builder.directory/'G2CControl.swift').write_text((HERE/'DevelopmentScopedMessageUITests.swift').read_text().replace('__FIXTURE_URL__',control_url))
     project=builder.directory/'G2CAcceptance.xcodeproj';pbx=project/'project.pbxproj';bundle='space.go2china.scoped.acceptance'
     text=pbx.read_text().replace('space.go2china.foundation.local',bundle).replace('space.go2china.foundation.control',bundle+'.control')
     entitlements=builder.directory/'Manual.entitlements';entitlements.write_bytes(plistlib.dumps({'application-identifier':bundle,'keychain-access-groups':[bundle]}));pbx.write_text(text.replace(json.dumps(str(APP/'ios/App/Development.entitlements')),json.dumps(str(entitlements))))
-    result=OUT/(CASE+'.xcresult');cmd=['xcodebuild','-project',str(project),'-scheme','G2CControl','-configuration','Debug','-destination','platform=iOS Simulator,id='+a.simulator,'-derivedDataPath',str(BUILD),'-resultBundlePath',str(result),'-scmProvider','system','-skipPackageUpdates','-onlyUsePackageVersionsFromResolvedFile','-parallel-testing-enabled','NO','-collect-test-diagnostics','never','ARCHS=arm64','ONLY_ACTIVE_ARCH=YES','CODE_SIGNING_ALLOWED=YES','CODE_SIGN_IDENTITY=-','-only-testing:G2CControl/DevelopmentScopedMessageUITests/'+CASE,'test']
-    print('MANUAL '+CASE+' backend='+r['backend_head'],flush=True);run=subprocess.run(cmd,cwd=APP,capture_output=True,text=True,timeout=1800)
-    log=run.stdout+run.stderr
-    for secret in tokens.values():log=log.replace(secret,'<redacted-local-token>')
-    (OUT/'native.log').write_text(log);run.check_returncode()
-    summary=json.loads(subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)]));r['test_summary']=summary;assert summary['passedTests']==1 and summary['failedTests']==summary['skippedTests']==0
-    verified=prefix_not_sent() if HISTORY_LARGEST else current_planning_proof() if CURRENT_REPLAN else planning_composition_proof() if CASE=='testNeedsPlanningManualComposition' else planning_decision_proof() if PLANNING_DECISION else planning_no_decision_proof() if PLANNING_NO_DECISION else proof()
-    if CURRENT_REPLAN:assert verified['receipt_queries']>=1
-    elif CASE=='testNeedsPlanningManualComposition':assert verified['planning_receipt_queries']>=2
-    elif PLANNING_DECISION:assert verified['receipt_queries']>=1
-    if not PLANNING_PREFIX and CASE not in ('testNeedsManualLateAccount','testNeedsManualPrepareCancellation','testNeedsManualCanonicalFixedRefusal','testNeedsManualInvalidWindow'):assert verified['receipt_queries']>=1
-    container=Path(subprocess.check_output(['xcrun','simctl','get_app_container',a.simulator,bundle,'data'],text=True).strip())
-    for f in container.rglob('*'):
-     if f.is_file() and not f.is_symlink():assert all(secret.encode() not in f.read_bytes() for secret in tokens.values()) and b'-----BEGIN PRIVATE KEY-----' not in f.read_bytes()
-    assert head(APP)==r['app_head'] and head(BACKEND)==r['backend_head']
-    assert all(hashlib.sha256((APP/f).read_bytes()).hexdigest()==h for f,h in r['source_hashes'].items())
-    assert all(hashlib.sha256((BACKEND/f).read_bytes()).hexdigest()==h for f,h in r['backend_hashes'].items())
-    r['status']='PASS_APP_WITH_PINNED_CANDIDATE_BACKEND';r['token_key_scan']='PASS'
+    if TLS:
+     _,configuration_file,_=configure_project(project,TLS,control_url,control_token,bundle=bundle)
+     native=DeviceNative(a.device,bundle,project,configuration_file,BUILD,APP,OUT,tokens,control_token,r,evidence_root=OUT)
+     selected=['DevelopmentScopedMessageUITests/'+CASE]
+     native.build_for_testing('Debug',selected,dict(os.environ))
+     if not a.prepare_only:r['test_summary']=native.run('Debug',selected,dict(os.environ))
+    else:
+     result=OUT/(CASE+'.xcresult');cmd=['xcodebuild','-project',str(project),'-scheme','G2CControl','-configuration','Debug','-destination','platform=iOS Simulator,id='+a.simulator,'-derivedDataPath',str(BUILD),'-resultBundlePath',str(result),'-scmProvider','system','-skipPackageUpdates','-onlyUsePackageVersionsFromResolvedFile','-parallel-testing-enabled','NO','-collect-test-diagnostics','never','ARCHS=arm64','ONLY_ACTIVE_ARCH=YES','CODE_SIGNING_ALLOWED=YES','CODE_SIGN_IDENTITY=-','-only-testing:G2CControl/DevelopmentScopedMessageUITests/'+CASE,'test']
+     print('MANUAL '+CASE+' backend='+r['backend_head'],flush=True);run=subprocess.run(cmd,cwd=APP,capture_output=True,text=True,timeout=1800)
+     log=run.stdout+run.stderr
+     for secret in tokens.values():log=log.replace(secret,'<redacted-local-token>')
+     (OUT/'native.log').write_text(log);run.check_returncode()
+     summary=json.loads(subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)]));r['test_summary']=summary;assert summary['passedTests']==1 and summary['failedTests']==summary['skippedTests']==0
+    if not a.prepare_only:
+     verified=prefix_not_sent() if HISTORY_LARGEST else current_planning_proof() if CURRENT_REPLAN else planning_composition_proof() if CASE=='testNeedsPlanningManualComposition' else planning_decision_proof() if PLANNING_DECISION else planning_no_decision_proof() if PLANNING_NO_DECISION else proof()
+     if CURRENT_REPLAN:assert verified['receipt_queries']>=1
+     elif CASE=='testNeedsPlanningManualComposition':assert verified['planning_receipt_queries']>=2
+     elif PLANNING_DECISION:assert verified['receipt_queries']>=1
+     if not PLANNING_PREFIX and CASE not in ('testNeedsManualLateAccount','testNeedsManualPrepareCancellation','testNeedsManualCanonicalFixedRefusal','testNeedsManualInvalidWindow'):assert verified['receipt_queries']>=1
+     container=native.scan('Debug') if TLS else Path(subprocess.check_output(['xcrun','simctl','get_app_container',a.simulator,bundle,'data'],text=True).strip())
+     for f in container.rglob('*'):
+      if f.is_file() and not f.is_symlink():assert all(secret.encode() not in f.read_bytes() for secret in tokens.values()) and b'-----BEGIN PRIVATE KEY-----' not in f.read_bytes()
+     r['token_key_scan']='PASS'
+    else:r['token_key_scan']='UNRUN: device App container'
+    r['status']='VERIFYING_CLEANUP'
    finally:
     prefix_stop.set();message_ready.set();current_ready.set()
     if PLANNING_PREFIX:worker_thread.join(20)
     if CURRENT_REPLAN:current_thread.join(20)
     late_release.set();r['observed_requests']=audit;save();server.should_exit=True;thread.join(10);sock.close();control.shutdown();control.server_close()
+    if TLS:
+     try:
+      if native is not None:native.cleanup_input()
+     finally:(device_project_root/'project/M4ControlBootstrap.plist').unlink(missing_ok=True)
+     for path in OUT.rglob('*'):
+      if path.is_file() and not path.is_symlink():
+       assert not any(secret.encode() in path.read_bytes() for secret in [*tokens.values(),control_token]),'credential in evidence export'
+     r['artifact_token_scan']='PASS';save()
   r['private_pg_stopped']=True
-except BaseException as error:r['status']='FAIL';r['error']=type(error).__name__;raise
+  assert head(APP)==r['app_head'] and head(BACKEND)==r['backend_head']
+  assert all(hashlib.sha256((APP/f).read_bytes()).hexdigest()==h for f,h in r['source_hashes'].items())
+  assert all(hashlib.sha256((BACKEND/f).read_bytes()).hexdigest()==h for f,h in r['backend_hashes'].items())
+  r['status']='PREPARED_EXECUTION_UNRUN' if a.prepare_only else 'PASS_APP_WITH_PINNED_CANDIDATE_BACKEND'
+  if TLS and not a.prepare_only:r['cases'][CASE]='PASS'
+except BaseException as error:
+ r['status']='FAIL';r['error']=type(error).__name__
+ if TLS and 'device_tests' in r:r['cases'][CASE]='FAIL'
+ raise
 finally:save()

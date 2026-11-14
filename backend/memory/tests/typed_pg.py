@@ -22,9 +22,10 @@ from cj_memory.manual import ManualPolicy
 from cj_memory.typed import ContextRef
 from cj_message.travel_reference import MessageContextAuthority
 from cj_message.travel import Selection
+from title_projection_pg import TitleProjectionPG
 
 
-class TypedStorageChecks(Harness):
+class TypedStorageChecks(TitleProjectionPG,Harness):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -89,6 +90,109 @@ class TypedStorageChecks(Harness):
     def selected(self,context):
         with self.authority.hold_current(Selection(context['id'],context['version'])) as lease:
             return self.service.effective('self',ContextRef('travel',lease.context.id))
+
+    @contextmanager
+    def readonly_connections(self,database):
+        from unittest.mock import patch
+        original=database._open_runtime_connection;opened=[]
+        def connect():
+            conn=original();conn.read_only=True;opened.append(True);return conn
+        with patch.object(database,'_open_runtime_connection',connect):yield opened
+
+    def memory_snapshot(self,scope):
+        tables=('cj_memory_scope','cj_memory_item','cj_memory_source','cj_memory_operation',
+                'cj_memory_management_action','cj_run_metered_operation','cj_message_context_profile')
+        with self.database.connect(scope) as conn:
+            return {table:conn.execute('SELECT row_to_json(t)::text FROM '+table+' t ORDER BY 1').fetchall()
+                    for table in tables}
+
+    def test_readonly_binding_existing_typed_memory_uses_no_DML(self):
+        from psycopg.errors import ReadOnlySqlTransaction
+        raw=self.raw(self.travel[0]);saved=self.save(raw)
+        configuration,_=self.runtime_configuration()
+        database=LocalDatabase(CONNINFO,run_context=self.run_context,travel_context=True)
+        authority=MessageContextAuthority(database.message_repository(self.scope),self.admit)
+        before=self.memory_snapshot(self.scope)
+        with self.readonly_connections(database) as opened:
+            bound=configuration.bind_readonly(database,self.scope,'alice',self.admit,message_context=authority)
+            self.assertEqual(bound.guard('readonly_probe'),(self.admit(),self.scope))
+            self.assertEqual(bound.payload_version,'MEMORY-RUN-CONSUME@2')
+            self.assertEqual(len(opened),1)
+            # Control: the unchanged provisioning bind really attempts its old
+            # INSERT, even for an existing namespace, and PostgreSQL rejects it.
+            with self.assertRaises(ReadOnlySqlTransaction):
+                configuration.bind(database,self.scope,'alice',self.admit,message_context=authority)
+        self.assertEqual(bound.service.detail(saved['item_id']).command.raw,
+                         self.service.detail(saved['item_id']).command.raw)
+        self.assertEqual(self.memory_snapshot(self.scope),before)
+
+    def test_readonly_binding_missing_namespace_refuses_without_creating_it(self):
+        from copy import deepcopy
+        from e2e_local import dev_auth
+        from cj_memory.typed_runtime import TypedRuntimeConfiguration
+        from cj_memory.runtime import RuntimeDenied
+        identity='readonly-'+self.tag;scope=scope_for(ISSUER,identity)
+        auth=Path(self.tmp.name)/identity;dev_auth('init',str(auth),'--invite',identity)
+        token=dev_auth('token',str(auth),'--subject',identity);checker=checker_for(auth)
+        def admit():
+            decision=checker.check(token);self.assertIs(decision.status,AdmissionStatus.ALLOWED)
+            return decision.principal
+        _,document=self.runtime_configuration();profile=deepcopy(document['collection']['collection']['profiles']['alice'])
+        document['collection']['collection']['profiles']={identity:profile}
+        document['collection']['travel_contexts']={identity:[]}
+        document['selections']={identity:document['selections']['alice']}
+        configuration=TypedRuntimeConfiguration.from_bytes(json.dumps(document).encode())
+        import local_run_context as operator
+        import dev_auth as local_auth
+        from cj_message.travel import ABI
+        operator.provision_budget(CONNINFO,self.run_context,identity)
+        local_auth.activate_travel(CONNINFO,identity,self.run_context,ABI)
+        database=LocalDatabase(CONNINFO,run_context=self.run_context,travel_context=True)
+        database.provision(scope)
+        authority=MessageContextAuthority(database.message_repository(scope),admit)
+        before=self.memory_snapshot(scope);self.assertEqual(before['cj_memory_scope'],[])
+        with self.readonly_connections(database):
+            with self.assertRaisesRegex(RuntimeDenied,'original memory scope unavailable'):
+                configuration.bind_readonly(database,scope,identity,admit,message_context=authority)
+        self.assertEqual(self.memory_snapshot(scope),before)
+        # Compatibility: the existing bind still provisions its own namespace.
+        configuration.bind(database,scope,identity,admit,message_context=authority)
+        after=self.memory_snapshot(scope);self.assertEqual(len(after['cj_memory_scope']),1)
+        self.assertEqual(after['cj_run_metered_operation'],before['cj_run_metered_operation'])
+
+    def test_readonly_binding_wrong_owner_authority_and_fresh_admission_refused(self):
+        from cj_memory.runtime import RuntimeDenied
+        configuration,_=self.runtime_configuration();database=LocalDatabase(CONNINFO,run_context=self.run_context,travel_context=True)
+        bob=scope_for(ISSUER,'bob');token=self.headers('bob')['Authorization'].removeprefix('Bearer ')
+        def other():
+            decision=self.checker.check(token);self.assertIs(decision.status,AdmissionStatus.ALLOWED)
+            return decision.principal
+        alice_authority=MessageContextAuthority(database.message_repository(self.scope),self.admit)
+        bob_authority=MessageContextAuthority(database.message_repository(bob),other)
+        before=self.memory_snapshot(self.scope)
+        with self.readonly_connections(database) as opened:
+            with self.assertRaisesRegex(RuntimeDenied,'principal/owner mismatch'):
+                configuration.bind_readonly(database,self.scope,'bob',other,message_context=alice_authority)
+            for wrong in (bob_authority,object()):
+                with self.assertRaisesRegex(RuntimeDenied,'canonical original context authority'):
+                    configuration.bind_readonly(database,self.scope,'alice',self.admit,message_context=wrong)
+            self.assertEqual(opened,[])
+            import dev_auth as local_auth
+            expired=local_auth.token(self.auth,'alice',-1)
+            def denied():
+                self.assertIs(self.checker.check(expired).status,AdmissionStatus.DENIED)
+                raise RuntimeDenied('actual admission denied')
+            with self.assertRaisesRegex(RuntimeDenied,'actual admission denied'):
+                configuration.bind_readonly(database,self.scope,'alice',denied,message_context=alice_authority)
+            self.assertEqual(opened,[])
+            state=[self.token]
+            def current():
+                decision=self.checker.check(state[0]);self.assertIs(decision.status,AdmissionStatus.ALLOWED)
+                return decision.principal
+            bound=configuration.bind_readonly(database,self.scope,'alice',current,message_context=alice_authority)
+            state[0]=token
+            with self.assertRaisesRegex(RuntimeDenied,'principal/owner mismatch'):bound.guard('late_check')
+        self.assertEqual(self.memory_snapshot(self.scope),before)
 
     def test_actual_owned_lease_type_isolation_longterm_and_original_bytes(self):
         long=self.raw();saved=self.save(long)
@@ -167,6 +271,91 @@ class TypedStorageChecks(Harness):
         with TestClient(self.typed_app()) as client:
             read=client.get('/v2/memory-receipts',params={'operation_id':json.loads(raw)['operation_id']},headers=self.headers('alice'))
             self.assertEqual(read.status_code,200,read.text);self.assertEqual(read.json()['receipt'],receipt)
+
+
+    def injected_typed_app(self,database,configuration=None):
+        from cj_api.local_app import create_local_app
+        from cj_memory.typed_api import register_typed_routes
+        app=create_local_app(conninfo_path=None,auth_dir=self.auth,database=database,
+                             run_context=self.run_context,travel_context=True)
+        register_typed_routes(app,database=database,auth_dir=self.auth,
+                              configuration=configuration or self.typed_configuration())
+        return app
+
+    def test_injected_typed_cohost_original_receipts_owner_and_withdrawal(self):
+        raw=self.raw(self.travel[0],text='Injected 本次旅行')
+        command=json.loads(raw)
+        with TestClient(self.injected_typed_app(self.database)) as client:
+            headers={**self.headers('alice'),'Content-Type':'application/octet-stream'}
+            self.assertEqual(client.post('/v2/memories',content=raw,
+                headers={'Content-Type':'application/octet-stream'}).status_code,401)
+            import dev_auth as local_auth
+            for token in ('invalid-signature',local_auth.token(self.auth,'alice',-1)):
+                denied=client.post('/v2/memories',content=raw,
+                    headers={'Authorization':'Bearer '+token,'Content-Type':'application/octet-stream'})
+                self.assertEqual(denied.status_code,401,denied.text)
+            opened=client.put('/v1/conversations',params={'conversation_id':'injected-'+self.tag},headers=headers)
+            self.assertEqual(opened.status_code,200,opened.text)
+            saved=client.post('/v2/memories',content=raw,headers=headers)
+            self.assertEqual(saved.status_code,200,saved.text);receipt=saved.json()['receipt']
+            self.assertEqual(receipt['input_sha256'],hashlib.sha256(raw).hexdigest())
+            self.assertEqual(client.post('/v2/memories',content=raw,headers=headers).json()['receipt'],receipt)
+            self.assertIsNone(client.get('/v2/memory-items',params={'item_id':command['item_id']},
+                headers=self.headers('bob')).json()['item'])
+            action=dict(version='MEMORY-management.2',action_id='pause-'+self.tag,operation='pause',
+                item_id=command['item_id'],expected_version=1,expected_source_version=1)
+            foreign=client.post('/v2/memory-management-actions',content=json.dumps(action).encode(),
+                headers={**self.headers('bob'),'Content-Type':'application/octet-stream'})
+            self.assertNotEqual(foreign.status_code,200)
+            paused=client.post('/v2/memory-management-actions',content=json.dumps(action).encode(),headers=headers)
+            self.assertEqual(paused.status_code,200,paused.text)
+            query=client.get('/v2/memory-management-receipts',params={'action_id':action['action_id']},headers=headers)
+            self.assertEqual(query.json()['receipt'],paused.json()['receipt'])
+            item=client.get('/v2/memory-items',params={'item_id':command['item_id']},headers=headers).json()['item']
+            self.assertEqual((item['version'],item['status']),(2,'disabled'))
+            stop=dict(version='MEMORY-STOP-USE@2',action_id='withdraw-'+self.tag,operation='withdraw',
+                item_id=command['item_id'],expected_version=2,source_id=item['command']['source_id'],expected_source_version=1)
+            withdrawn=client.post('/v2/memory-withdrawal-actions',content=json.dumps(stop).encode(),headers=headers)
+            self.assertEqual(withdrawn.status_code,200,withdrawn.text)
+            self.assertEqual(withdrawn.json()['receipt']['status'],'withdrawn')
+            self.assertNotIn(command['item_id'],[i.command.item_id for i in self.selected(self.travel[0]).items])
+            listing=client.get('/v2/memories',params={'limit':'100'},headers=headers)
+            self.assertEqual(listing.status_code,200,listing.text)
+            self.assertEqual([i['status'] for i in listing.json()['items'] if i['command']['item_id']==command['item_id']],['withdrawn'])
+        with TestClient(self.injected_typed_app(self.database)) as client:
+            original=client.get('/v2/memory-receipts',params={'operation_id':command['operation_id']},headers=self.headers('alice'))
+            self.assertEqual(original.status_code,200,original.text)
+            self.assertEqual(original.json()['receipt'],receipt)
+
+    def test_injected_database_transaction_guard_blocks_real_storage(self):
+        from cj_api.composition import CompositionUnavailable
+        from unittest.mock import patch
+        database=LocalDatabase(CONNINFO,run_context=self.run_context,travel_context=True)
+        state=dict(denied=False,checks=0)
+        def guard(cursor):
+            self.assertEqual(cursor.execute('SELECT current_user').fetchone()[0],'cj_m1_runtime')
+            state['checks']+=1
+            if state['denied']:raise CompositionUnavailable('test release guard closed')
+        raw=self.raw(self.travel[0]);command=json.loads(raw)
+        with patch.object(database,'_before_scope',guard),TestClient(self.injected_typed_app(database)) as client:
+            headers={**self.headers('alice'),'Content-Type':'application/octet-stream'}
+            state['denied']=True
+            denied=client.post('/v2/memories',content=raw,headers=headers)
+            self.assertEqual(denied.status_code,503,denied.text)
+            self.assertGreater(state['checks'],0)
+            with self.database.connect(self.scope) as conn:
+                self.assertEqual(conn.execute('SELECT count(*) FROM cj_memory_operation WHERE operation_id=%s',
+                    (command['operation_id'],)).fetchone()[0],0)
+            state['denied']=False
+            saved=client.post('/v2/memories',content=raw,headers=headers)
+            self.assertEqual(saved.status_code,200,saved.text)
+            before=state['checks'];state['denied']=True
+            denied=client.get('/v2/memory-items',params={'item_id':command['item_id']},headers=headers)
+            self.assertEqual(denied.status_code,503,denied.text)
+            self.assertGreater(state['checks'],before)
+        with self.database.connect(self.scope) as conn:
+            self.assertEqual(conn.execute('SELECT count(*) FROM cj_memory_operation WHERE operation_id=%s',
+                (command['operation_id'],)).fetchone()[0],1)
 
 
     def test_typed_edit_pause_resume_stop_and_new_context_version(self):

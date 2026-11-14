@@ -6,8 +6,12 @@ import Foundation
 @MainActor final class MemoryCandidateUITests: XCTestCase {
     let control = "__CONTROL_URL__"
     var app: XCUIApplication!
+    #if G2C_M4_DEVICE_ACCEPTANCE
+    private lazy var deviceSession = M4DeviceTestSession(test: self, control: control)
+    #endif
     struct Fixture: Decodable {
         let bundle: String
+        let case_id: String?
         let launch: [String: String]
         let subjects: [String: String]
         let conversation: String
@@ -40,12 +44,26 @@ import Foundation
     func call(_ path: String, _ query: [String: String] = [:]) async throws -> Data {
         var url = try XCTUnwrap(URLComponents(string: control + path))
         if !query.isEmpty { url.queryItems = query.sorted(by: { $0.key < $1.key }).map { .init(name: $0.key, value: $0.value) } }
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        let (data, response) = try await deviceSession.data(from: XCTUnwrap(url.url))
+        #else
         let session = URLSession(configuration: .ephemeral); defer { session.invalidateAndCancel() }
         let (data, response) = try await session.data(from: XCTUnwrap(url.url))
+        #endif
         XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
         return data
     }
     func proof() async throws -> Proof { try JSONDecoder().decode(Proof.self, from: await call("/proof")) }
+    func size(_ value: String) async throws {
+        _ = try await call("/size", ["value": value])
+    }
+    #if G2C_M4_DEVICE_ACCEPTANCE
+    private func stage(_ fixture: Fixture) async throws {
+        try await deviceSession.stageAccounts(caseID: XCTUnwrap(fixture.case_id))
+        app.launchEnvironment.merge(try deviceSession.applicationEnvironment(
+            endpoint: XCTUnwrap(fixture.launch["G2C_DEV_API_BASE_URL"]), injecting: true)) { _, value in value }
+    }
+    #endif
     func reveal(_ element: XCUIElement, centered: Bool = false, editor: Bool = false) {
         func top() -> CGFloat {
             let titles = editor ? ["Review suggestion", "核对建议"] : ["Memory suggestions", "记忆建议", "Delete account", "注销账号"]
@@ -54,7 +72,23 @@ import Foundation
             return bars.element.frame.maxY
         }
         for index in 0..<100 {
+            #if G2C_M4_DEVICE_ACCEPTANCE
+            if element.exists && element.frame.height > 0 {
+                let frame=element.frame, bar=app.navigationBars.firstMatch, tabs=app.tabBars.firstMatch
+                let upper=centered ? top() : (bar.exists ? bar.frame.maxY : app.frame.minY)
+                // The presenting App's hidden Tab bar is not the sheet's
+                // viewport. Match the existing device-cleanup reveal bounds.
+                let lower=tabs.exists && tabs.isHittable ? tabs.frame.minY : app.frame.maxY-44
+                let fits=frame.height <= lower-upper
+                let within=fits ? frame.minY >= upper && frame.maxY <= lower : frame.midY > upper && frame.midY < lower
+                // Offscreen lazy rows can throw when asked for hittability on iOS27.2.
+                if within && element.isHittable { return }
+                if frame.minY < upper { app.swipeDown() } else { app.swipeUp() }
+                continue
+            }
+            #else
             if element.exists && element.isHittable && (!centered || (element.frame.midY > top() && element.frame.midY < app.frame.maxY - 44)) { return }
+            #endif
             if centered && element.exists {
                 if element.frame.midY <= top() { app.swipeDown() } else { app.swipeUp() }
             } else if index < 40 { app.swipeUp() } else { app.swipeDown() }
@@ -65,12 +99,43 @@ import Foundation
     }
     func tap(_ id: String) {
         let label = ["Memory", "记忆", "Assistant", "助手", "Preference", "偏好"].contains(id)
-        let query = app.buttons.matching(NSPredicate(format: label ? "label == %@" : "identifier == %@", id)), button = query.element
+        let query: XCUIElementQuery
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        let tab = ["Memory", "记忆", "Assistant", "助手"].contains(id)
+        // Reuse the fixed-container query used by Fact and cleanup acceptance.
+        // A navigation action cannot satisfy the page's below-navigation bounds.
+        if tab { query = app.tabBars.buttons.matching(NSPredicate(format: "label == %@", id)) }
+        else if id == "assistant.panel.done" { query = app.navigationBars.buttons.matching(identifier: id) }
+        else { query = app.buttons.matching(NSPredicate(format: label ? "label == %@" : "identifier == %@", id)) }
+        #else
+        query = app.buttons.matching(NSPredicate(format: label ? "label == %@" : "identifier == %@", id))
+        #endif
+        let button = query.element
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        if tab || id == "assistant.panel.done" {
+            XCTAssertTrue(button.waitForExistence(timeout:10),id)
+            XCTAssertTrue(button.isHittable,id)
+        } else {
+            reveal(button, centered: id.hasPrefix("memoryCandidate.") || id.hasPrefix("account.cleanup."), editor: id.hasPrefix("memoryCandidate.editor."))
+        }
+        #else
         reveal(button, centered: id.hasPrefix("memoryCandidate.") || id.hasPrefix("account.cleanup."), editor: id.hasPrefix("memoryCandidate.editor."))
+        #endif
         XCTAssertEqual(query.count, 1, id)
         let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: button)
-        XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 25), .completed, id)
+        let result = XCTWaiter.wait(for: [enabled], timeout: 25)
+        if result != .completed { print("CANDIDATE_DISABLED_CONDITIONS", id, button.value as Any) }
+        XCTAssertEqual(result, .completed, id)
         button.tap()
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        if tab {
+            let selected=XCTNSPredicateExpectation(predicate:NSPredicate(format:"selected == true"),object:button)
+            XCTAssertEqual(XCTWaiter.wait(for:[selected],timeout:10),.completed,id)
+        }
+        if id.hasPrefix("account.development.signin.") || id == "account.development.restore" {
+            deviceSession.waitForAppNetworkConsent()
+        }
+        #endif
     }
     func text(_ id: String, contains value: String) {
         let element = app.staticTexts.matching(identifier: id).element
@@ -85,6 +150,21 @@ import Foundation
         XCTAssertEqual(result, .completed, id)
     }
     func enter(_ id: String, value: String, placeholder: String) {
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        let query = deviceSession.textInputQuery(id, in: app), field = query.element
+        reveal(field); XCTAssertEqual(query.count, 1)
+        field.tap()
+        XCTAssertTrue(app.keyboards.element.waitForExistence(timeout: 10), "The actual editor must acquire keyboard focus")
+        let done = app.toolbars.buttons.matching(identifier: "memoryCandidate.editor.done")
+        XCTAssertTrue(done.element.waitForExistence(timeout: 8)); XCTAssertEqual(done.count, 1)
+        deviceSession.revealControl(field, in: app, keyboardDone: done.element, diagnosticIdentifier: id)
+        // Place the caret at the visible last line, above the field's bottom edge.
+        field.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.8)).tap()
+        XCTAssertLessThanOrEqual(field.frame.maxY, min(done.element.frame.minY, app.keyboards.element.frame.minY))
+        M4DeviceTestSession.clearFocusedTextWithKeyboard(field)
+        XCTAssertNil(field.value)
+        XCTAssertEqual(field.placeholderValue, placeholder)
+        #else
         let multi = app.textViews.matching(identifier: id), single = app.textFields.matching(identifier: id)
         let multiline = multi.element.exists
         let query = multiline ? multi : single, field = query.element
@@ -102,6 +182,7 @@ import Foundation
             selectAll.element.tap(); field.typeText(XCUIKeyboardKey.delete.rawValue)
             XCTAssertEqual(field.value as? String, multiline ? placeholder : "")
         }
+        #endif
         field.typeText(value)
         XCTAssertEqual(Array((field.value as? String ?? "").utf8), Array(value.utf8))
     }
@@ -130,13 +211,33 @@ import Foundation
         tap("assistant.memoryCandidates.review")
         text("memoryCandidate.conversation", contains: fixture.conversation)
     }
+    #if G2C_M4_DEVICE_ACCEPTANCE
+    func requireSelectedKind(_ language: String) {
+        let picker = app.descendants(matching: .any).matching(identifier: "memoryCandidate.editor.kind")
+        XCTAssertEqual(picker.count, 1)
+        let selected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label ENDSWITH %@", language == "en" ? "Preference" : "偏好"), object: picker.element)
+        XCTAssertEqual(XCTWaiter.wait(for: [selected], timeout: 5), .completed, "Explicit kind choice must be visible before editing")
+    }
+    func requireEditedValues(_ fixture: Fixture, language: String, stage: String) {
+        requireSelectedKind(language)
+        for (id, expected) in [("memoryCandidate.editor.text", fixture.edited_text), ("memoryCandidate.editor.time", fixture.occurred_at)] {
+            let fields = deviceSession.textInputQuery(id, in: app)
+            XCTAssertEqual(fields.count, 1, stage)
+            XCTAssertEqual(Array((fields.element.value as? String ?? "").utf8), Array(expected.utf8), stage + ": " + id)
+        }
+        print("CANDIDATE_EDITED_STATE_VERIFIED", stage)
+    }
+    #endif
     func verify(_ language: String, operation: String = "confirm", reopen: Bool = false, account: Bool = false, current: Bool = false) async throws {
         continueAfterFailure = false
         let name = (account ? "account-" : reopen ? "lost-ack-" : current ? "current-" : operation + "-") + language
         let f = try JSONDecoder().decode(Fixture.self, from: await call("/fixture", ["case": name]))
-        _ = try await call("/size", ["value": "standard"])
+        try await size("standard")
         app = XCUIApplication(bundleIdentifier: f.bundle); app.launchArguments = ["-cj.ui.language.v1", language]
         app.launchEnvironment = f.launch.merging(["OS_ACTIVITY_MODE": "disable"]) { _, required in required }
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        try await stage(f)
+        #endif
         app.launch(); defer { app.terminate() }
         XCTAssertTrue(app.tabBars.element.waitForExistence(timeout: 30)); signIn(f, language)
         selectConversation(f, language); tap("assistant.memoryCandidates.read")
@@ -155,14 +256,23 @@ import Foundation
             let kind = app.descendants(matching: .any).matching(identifier: "memoryCandidate.editor.kind")
             reveal(kind.element); XCTAssertEqual(kind.count, 1); kind.element.tap()
             tap(language == "en" ? "Preference" : "偏好")
+            #if G2C_M4_DEVICE_ACCEPTANCE
+            requireSelectedKind(language)
+            #endif
             enter("memoryCandidate.editor.text", value: f.edited_text, placeholder: language == "en" ? "Memory text" : "记忆内容")
             enter("memoryCandidate.editor.time", value: f.occurred_at, placeholder: language == "en" ? "Time or original uncertainty" : "时间或原有不确定说明")
+            #if G2C_M4_DEVICE_ACCEPTANCE
+            requireEditedValues(f, language: language, stage: "before-keyboard-dismiss")
+            #endif
             let done = app.toolbars.buttons.matching(identifier: "memoryCandidate.editor.done")
             XCTAssertEqual(done.count, 1); done.element.tap()
             let hidden = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.keyboards.element)
             XCTAssertEqual(XCTWaiter.wait(for: [hidden], timeout: 10), .completed)
+            #if G2C_M4_DEVICE_ACCEPTANCE
+            requireEditedValues(f, language: language, stage: "after-keyboard-dismiss")
+            #endif
         }
-        _ = try await call("/size", ["value": "max"])
+        try await size("max")
         text("memoryCandidate.editor.scope", contains: language == "en" ? "other history" : "其他历史")
         if let travelID = f.travel_id, let version = f.travel_version {
             reveal(app.buttons["memoryCandidate.editor.confirm"])
@@ -172,12 +282,22 @@ import Foundation
         }
         let actionButton = operation == "confirm" ? "memoryCandidate.editor.confirm" : "memoryCandidate.editor.reject"
         try audit("candidate-editor-" + language + "-max", target: app.buttons[actionButton])
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        if operation == "confirm" { requireEditedValues(f, language: language, stage: "after-full-AX") }
+        if let travelID = f.travel_id, let version = f.travel_version {
+            text("memoryCandidate.editor.travel", contains: travelID + " · " + String(version))
+        }
+        #endif
         tap(actionButton)
         let original = app.staticTexts["memoryCandidate.originalID"]; reveal(original); let actionID = original.label
         XCTAssertFalse(actionID.isEmpty)
         if reopen {
             text("memoryCandidate.status", contains: language == "en" ? "uncertain" : "尚不明确")
-            app.terminate(); app.launch(); XCTAssertTrue(app.tabBars.element.waitForExistence(timeout: 30))
+            app.terminate()
+            #if G2C_M4_DEVICE_ACCEPTANCE
+            try await stage(f)
+            #endif
+            app.launch(); XCTAssertTrue(app.tabBars.element.waitForExistence(timeout: 30))
             signIn(f, language); selectConversation(f, language); reviewPanel(f)
             tap("memoryCandidate.loadOriginals"); tap("memoryCandidate.original." + actionID)
             text("memoryCandidate.originalID", contains: actionID); tap("memoryCandidate.query")
@@ -193,7 +313,11 @@ import Foundation
         XCTAssertEqual(after.input_sha256?.count, 64)
         try audit("candidate-original-" + language + "-max", target: app.staticTexts["memoryCandidate.historicalNotice"])
         if account {
-            app.terminate(); app.launch(); XCTAssertTrue(app.tabBars.element.waitForExistence(timeout: 30)); signIn(f, language)
+            app.terminate()
+            #if G2C_M4_DEVICE_ACCEPTANCE
+            try await stage(f)
+            #endif
+            app.launch(); XCTAssertTrue(app.tabBars.element.waitForExistence(timeout: 30)); signIn(f, language)
             tap("memory.accountDeletion"); tap("account.cleanup.review")
             let consent = app.switches.matching(identifier: "account.cleanup.consent")
             reveal(consent.element, centered: true); XCTAssertEqual(consent.count, 1)

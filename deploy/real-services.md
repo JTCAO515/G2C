@@ -15,8 +15,12 @@ Memory fence、原动作只读恢复均继续生效。默认 local/Fake 路径�
 
 原注册出口先持久 input bytes/attempt，再经原 Meter reserve/claim/最后 guard。
 真实 adapter 补一份授权累计意图账本，固定在用户数据目录 `g2c/m4-real-services`，
-不取代产品 Meter。按已合PR540的M4授权，北京每 intent 保守占用 ¥1、保留 M1 的 ¥13，
-累计387个M4模型intent（合计¥400）后停止；地点/路线/天气每 intent保守占用¥1，合计¥160后停止。
+不取代产品 Meter。按 [JT 2026-11-06 决定](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6688002330)，
+模型总上限与停止线均为 ¥10,000，北京每 intent 保守占用 ¥1、保留 M1 的 ¥13，
+累计9,987个M4模型intent（含M1合计¥10,000）后停止，不释放任何旧UNKNOWN/INTENT。
+原387停线只作为显式历史测试保留。地点/路线/天气每 intent保守占用¥1。
+JT于2026-11-05在C会话把工具停止线改为¥10000（[#495记录](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6644812116)），
+原工具总预算¥200未提高，实际出口按停止线与总预算的较小值拒绝新付费意图，因此当前最多保守占用¥200。
 各分类同时保持M4的1200/600/200/240次数上限，事实页保守占用0，2026-11-30到期；UNKNOWN不释放占用。
 提高额度只改变未来新intent门禁；原SQLite路径、全部历史intent/receipt和既有验收批次保持原样，不迁移或清零。
 完整 receipt 的 `provider_call=1` 只证明完成一次调用，绝不表示人民币实付已知；实际账单 UNKNOWN。
@@ -37,12 +41,58 @@ Memory fence、原动作只读恢复均继续生效。默认 local/Fake 路径�
   只提供原文片段和 hash/抓取时间；旅客资格、地域/日期适用性保持 UNKNOWN。
   Mac 的代理 Fake-IP 不能冒充公开目标 IP；如遇该边界，保留 UNKNOWN，待获准主机网络验证。
 
+固定NIA页的live profile显式接受identity或单成员gzip；通用FACT传输的默认配置继续拒绝压缩。
+压缩后的HTTP读取仍受原body/wire/chunk/deadline上限约束，解压后另限262144字节；CRC错误、
+截断、额外成员或尾随字节均UNKNOWN，关闭原响应，不重试。`original_bytes`/`original_sha256`
+仍指用于提取原文的完整UTF-8实体字节（有界Content-Encoding解码后）；传输编码元数据与
+实际压缩字节摘要应在真实调用证据中另列，不把压缩传输数据当UTF-8原文。该修复不变更
+冻结的合成FACT wire，也不增加来源/URL/适用性权限。
+
+事实页失败日志 `M4_FACT_PAGE_UNKNOWN` 仅记录 DNS/HTTPS/状态/正文读取/UTF-8/片段提取阶段、
+白名单原因码、已取得的HTTP状态（未取得为UNKNOWN）和已观察正文的字节数；不记录正文、
+响应头、地址、异常文本或凭据。该诊断不增加抓取、不改变成功结果或失败分类，不补造回执，
+不释放原INTENT；历史未保留的HTTP状态与失败阶段仍UNKNOWN。取消继续向外传播。
+
 模型原生 function calls 转为既有内部 MODEL-tool-turn.1 数据，再由代码注册表选择工具。
 网页/工具输出以不可信数据传给模型，不能提供 owner、密钥、预算或写入权限。
 原生参数现在用完整类型定义的 place_search/place_detail/place_route/weather/fact，
 host 转为原 PLACE-query.1 / FACT-query.1 再经已有严格 codec。模型不必猜封装版本或坐标Decimal字段。
 续接保留实际 `assistant.tool_calls` 和逐一匹配的 `role=tool/tool_call_id`，
 同时保留工具调用响应中合法的说明文字；它只随原assistant消息续接，不作为最终回答或工具权限。
+正式 M4 的新模型意图使用 [`model-tool-turn-function.2`](../contracts/place/MODEL-TOOL-TURN-FUNCTION-V2.md)。
+该外层仅接受精确的 answer 或 calls 单字段，再经未改的 `MODEL-tool-turn.1` parser。
+原 `model-tool-turn-function.1` 将 `MODEL-tool-turn.1` envelope作为唯一
+`m4_tool_turn` 命名函数的参数传输。依据[官方强制函数说明](https://help.aliyun.com/en/model-studio/qwen-function-calling)，
+非思考模式显式选择该函数；不使用Qwen不保证支持的required策略。原input bytes绑定新profile。
+wrapper仅是本次模型输出，收费仍为一次原model调用；内层每条真实查询仍逐一通过原tool.round.index、RequestRef、Registry和Meter。
+供应商唯一真实wrapper ID对应一条按原顺序含index/name/result的聚合tool回复，不生成供应商子ID，不重放已完成的内层调用。
+已观测北京命名函数流使用自然结束`stop`；与`tool_calls`一样，仅表示待核的结束候选。
+函数参数schema必须与冻结parser的互斥分支一致：tool为answer=null且1–4个调用；answer为
+非空白zh/en且calls=[]。非final使用交叉约束，不能把独立nullable字段的任意组合宣称合法；
+最终消费仍只取原parse_turn及原4查询/末轮限制，schema声明本身不证明模型遵循或真实通路通过。
+该命名函数显式设置 `function.strict=true`，沿用[官方 Chat Completions 工具定义示例](https://help.aliyun.com/zh/model-studio/context-cache)
+的参数约束开关；工具轮和终答轮都携带。函数名、schema、冻结parser和原Meter不变，
+不把无效返回修成有效包、不重派原UNKNOWN。真实英文天气曾在工具回执后出现
+`native_envelope_fields`；原具体缺失/额外字段仍UNKNOWN，补开关本身也不代称真实修复已通过，见#523。
+英文天气08真实通过后，C 的英文地点＋路线首轮仍出现同类字段拒绝（未到工具），原具体字段仍UNKNOWN。
+命名函数的系统指令明确要求四个顶层字段全部出现、版本字面量、null/空数组与终答限制；
+这是生成端约束，不补造供应商字段、不放宽解析器。真实效果须经独立新场景验证，不能据提示或strict声明判定。
+337 的 C 英文天气在真实工具回执后再次拒绝。原位图 4、额外字段 0，确认顶层只有 answer，嵌套值仍 UNKNOWN。
+新 v2 将这些内部协议常量移到适配层，原 v1 仍按旧规则拒绝这种输出。新候选实际效果另验。
+命名函数参数失败的固定reason另分`native_json_invalid/duplicate`、`native_envelope_type/fields`、
+`native_version_literal`、`native_answer_fields/calls/text`、`native_kind_literal`、
+`native_tool_answer`、`native_calls_type/bound`、`native_call_fields/name/arguments`和
+`native_contract_bound/invalid`；不记录值、字段名、异常文本或参数片段。原INTENT保持，旧日志
+没有的拒绝字段与token数仍UNKNOWN，不能用较新的分类倒填原请求。
+字段形状错误另记录 `M4_NATIVE_ENVELOPE_SHAPE`：同attempt SHA，present_mask的1/2/4/8位
+表示version/kind/answer/calls是否存在，extra_count只记额外字段数量；不记录未知键名、值或原参数。
+原 `M4_MODEL_UNKNOWN` 格式保持，旧失败证据不会补出此位图。
+必须同时收到DONE、完整usage、同一模型/响应身份，以及唯一合法wrapper和原envelope后，才结算或执行内层工具；
+缺件、截断、length、过滤和未知结束原因仍拒绝，不把停止标记本身当成功或重试依据。
+末轮限制kind=answer，在提交回执前拒绝外部工具；上限仍八个模型回合、每回合最多四查询和原RUN工具总限额，不增加第九次或修复调用。
+旧 `bilingual-json-schema.1` 已在真实工具流中未获有效JSON，其FAIL/INTENT保留；只为既有直接invoke消费者保留显式兼容路径，
+待这些调用方完成迁移后再移除。正式RealTools始终选新profile，没有运行时自动fallback。
+非native的既有结构化调用继续原JSON Object模式；1024输出token与原Meter限额不变，无效/缺字段/截断仍UNKNOWN。
 不会把已执行的结果改成新的 user 请求。该标识仅关联数据，执行仍逐步经过原Meter/final guard。
 这是对已合PR524真实失败的实现修复，旧wire语义不变；协议依据
 [DashScope Function Calling](https://help.aliyun.com/en/model-studio/qwen-function-calling)。
@@ -64,6 +114,7 @@ App 若后续需要真实专用资料卡，须先证明已合消费者缺陷，�
 RUN总计最多4个provider_call、最多1次工具调用，仍使用原共享账本，原批次存在即只读。
 它用来区分传输、响应身份、工具解码和完整回执阶段的失败；不代表C的路线冒烟或66例质量已通过。
 模型失败诊断只记录原attempt的SHA256、固定阶段、HTTP状态、完成标记和数量；
+另记固定拒绝原因、归一化finish枚举和拒绝前已累计arguments字符数，区分最后解析阶段与后续wire/SSE读取失败。
 不记录异常文本、请求/响应正文、供应商原ID或密钥。HTTP拒绝仍保持INTENT与费用UNKNOWN，绝不自动重试。
 
 M4基础live步行解析仅在 `basic=True`、RouteQuery/walking、status=1及infocode=10000时接受供应商实际的 `info="ok"`；
@@ -74,3 +125,22 @@ M4基础live步行解析仅在 `basic=True`、RouteQuery/walking、status=1及in
 原RUN/Meter与共享账本保持，最多10 provider_call/3tools；错点、错顺序、重复、driving或其他查询在原HTTP前拒绝。
 secret-body检查后的原HTTP200公共地图响应留在固定批次私有目录，文件0600；存储失败单独使诊断失败，原收到响应继续解析/计量。
 旧批次重跑只读；历史原RUN的FAIL/UNKNOWN不被离线重解析结果覆盖，实际新端到端结果仍需C的新阶段验证。
+
+八轮native上限内，第八个原model.tool_turn.7保留为终答：显式设置供应商`tool_choice=none`，仍保留完整原assistant/tool消息及工具声明。
+不增加第九次模型请求、不扩大RUN预算。供应商违背禁用策略返回工具调用时，在回执发布与工具注册前拒绝；原模型费用保持UNKNOWN，不自动重试。
+前七轮与非native入口的默认请求字节不变，未修改MODEL-tool-turn.1或PLACE冻结wire。
+依据：[DashScope Function Calling](https://help.aliyun.com/en/model-studio/qwen-function-calling)及[兼容接口参数](https://help.aliyun.com/en/model-studio/qwen-api-via-openai-chat-completions)。
+
+`capture-route-geometry` 为固定G1取证：故宫/景山公园各一次Search，绑定本次真实POI回执后，以故宫到景山的同原坐标/poi_center只查一次walking。
+它使用新固定batch/scope、原共享账本及相同10 provider_call/3tools上限，复用原secret-checked响应留存；重跑仅只读。
+退出成功仅表示三份原HTTP响应已留存并匹配固定查询，不计路线几何或产品质量PASS；`geometry_acceptance=UNASSESSED`。
+原C两语言119米投影和英文八轮UNKNOWN保留，不把新取证冒充旧请求的原body或重派旧RUN。
+[高德原生参数](https://lbs.amap.com/api/webservice/guide/api/direction)允许坐标外同时提供可选POI ID；端点实际语义须依据原响应核查，不凭两个echo坐标假定入口。
+
+`capture-route-coordinate` 是独立C1对照：同一固定两地点，但显式选择坐标路线profile，原POI ID仍绑定在原query/注册输入中；HTTP仅送原始坐标，不送可选POI覆盖参数。
+该profile的prepare、transport复核和parser必须同时选择`coordinate_only=True`；交叉混用在拨号前或解析前拒绝。
+旧profile与G1/R1仍保留原参数/绑定，不覆盖旧batch。C1沿用10/3上限、secret检查和只读恢复，只作原响应取证，几何仍UNASSESSED，不是新wire。
+M4真实入口默认使用坐标路线profile；生产HTTP不送POI覆盖参数，POI ID仍保留作来源关联。
+新profile核steps首尾与原坐标各相距最多25米，并拒绝低于保守两点跨度的距离；缺少path点则UNKNOWN、明显错点或不可能短距离则binding_mismatch，不输出原估计。
+25米是本profile的近邻匹配门限，跨度检查另留1%球面/坐标差异及两端门限余量；均不是供应商精度、入口、道路通行或未来可用保证，不修改供应商数值/原坐标或推断出入口。
+默认旧adapter解析、冻结PLACE/Geo数据codec、legacy显式`coordinate_routes=False`取证路径不变。退出判定分别核G1/C1 profile，C1逐笔核唯一walking原参数不含POI覆盖。

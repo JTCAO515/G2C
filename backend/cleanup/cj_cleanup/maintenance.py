@@ -1,5 +1,4 @@
 """Original daily diagnostic maintenance, through the approved cleanup role only."""
-import json
 from .core import Denied,digest
 from .coordinator import Coordinator
 from .diagnostic_retention import DiagnosticHook,SECONDS

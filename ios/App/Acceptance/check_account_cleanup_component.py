@@ -6,7 +6,7 @@ actual registry and the formal V3 environment factory; unavailable external
 obligations must preserve blocked/prepared state before retirement.
 No account operation, binding, receipt or progress token is injected into the App.
 """
-import argparse, asyncio, base64, hashlib, importlib.util, json, os, plistlib, socket, subprocess, sys, tempfile, threading, time, uuid
+import argparse, asyncio, base64, hashlib, importlib.util, json, os, plistlib, secrets as random_secrets, socket, subprocess, sys, tempfile, threading, time, uuid
 from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit, parse_qs
@@ -35,13 +35,25 @@ FULL_INVENTORY = ('business/message','business/usage','business/memory-authorita
 def main():
     global BUNDLE, CASES
     parser = argparse.ArgumentParser(description=__doc__)
-    for name in ('simulator', 'backend-head'): parser.add_argument('--' + name, required=True)
+    target=parser.add_mutually_exclusive_group(required=True)
+    target.add_argument('--simulator');target.add_argument('--device')
+    parser.add_argument('--local-tls',type=Path)
+    parser.add_argument('--backend-head',required=True)
     for name in ('backend-source', 'run-context', 'output', 'build-dir'): parser.add_argument('--' + name, type=Path, required=True)
     parser.add_argument('--case', choices=CASES+[REMOTE_CASE,PROVIDED_CASE])
     parser.add_argument('--prepare-only', action='store_true', help='Only prove real C/B source preparation; native acceptance remains UNRUN')
     parser.add_argument('--all-provided', action='store_true', help='Additional all31 provided-domain case; original B4/full32 cases stay unchanged')
     parser.add_argument('--native-device', action='store_true', help='Use actual CJProbeApp DEVICE@4 workflow; legacy component cases remain default')
     args = parser.parse_args()
+    tls=None
+    if args.device:
+        if not args.local_tls:parser.error('--device requires the approved --local-tls profile')
+        if not args.native_device or not args.all_provided:parser.error('Physical mode is the actual CJProbeApp all-provided path; component/full-blocked cases remain separate')
+        from m4_device import LocalTLS,configure_project,private_workspace,scan_app_container
+        from m4_native import DeviceNative,authenticated_control
+        tls=LocalTLS.load(args.local_tls)
+    elif args.local_tls:parser.error('--local-tls requires --device')
+    os.umask(0o077)
     if args.native_device:
         BUNDLE='space.go2china.device-v4.acceptance';CASES=CASES+[REMOTE_CASE]
     elif args.case in (REMOTE_CASE,PROVIDED_CASE):raise ValueError('device case requires native-device mode')
@@ -52,6 +64,7 @@ def main():
     if args.prepare_only and not args.all_provided:raise ValueError('prepare-only is restricted to the additional provided profile')
     positive_inventory=tuple(t for t in FULL_INVENTORY if t!='external-processing') if args.all_provided else B_DOMAINS
     backend = args.backend_source.resolve(); output = args.output.resolve(); build = args.build_dir.resolve()
+    if tls: device_project_root, build = private_workspace(output, build)
     for path in (output, build):
         if path.is_relative_to(ROOT) or path.is_relative_to(backend): raise ValueError('external artifact/build root required')
     output.mkdir(parents=True)
@@ -83,7 +96,7 @@ def main():
     report=dict(status='RUNNING',head=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(), backend_head=head,
         app_mode='CJProbeApp_device_v4' if args.native_device else 'native_component_harness_not_CJProbeApp',positive_inventory=list(positive_inventory),full_registry=str(Path('backend/storage-registry.json')),
         cases={},proofs={},faults=[],run_context=json.loads(args.run_context.read_text()),
-        unrun=['CJProbeApp account UI/full AX/localizations', 'complete device hook/key erasure/current-device receipt', 'C/all-domain full-account completion', 'physical device/VoiceOver', 'real accounts/cloud/providers/fees/deployment'])
+        unrun=['CJProbeApp account UI/full AX/localizations', 'complete device hook/key erasure/current-device receipt', 'C/all-domain full-account completion', 'physical device', 'real accounts/cloud/providers/fees/deployment'])
     sources=[Path(__file__),HERE/'AccountCleanupComponentApp.swift',HERE/'AccountCleanupComponentUITests.swift',ROOT/'ios/App/DevelopmentSessionConfiguration.swift']
     for module in ('CJCleanupClient','CJMessageClient'):
         sources+=list((ROOT/'ios/Modules'/module/'Sources').rglob('*.swift'))
@@ -93,11 +106,18 @@ def main():
         sources += [ROOT/'ios/App/CJProbeApp.swift', ROOT/'ios/App/DevelopmentTripHost.swift', ROOT/'ios/App/DevelopmentControlRecordStore.swift', HERE/'DevelopmentDeviceCleanupUITests.swift']
         for module in ('CJShell','CJOfflineTrip','CJAuth','CJTripClient','CJManualPreviewClient','CJMemoryClient','CJNeedsClient','CJFeedbackClient'):
             sources += list((ROOT/'ios/Modules'/module/'Sources').rglob('*.swift'))
-        report['unrun']=['external-processing full32 positive','physical device/VoiceOver','real accounts/cloud/providers/fees/deployment'] if args.all_provided else ['all C online cleanup domains', 'physical device/VoiceOver', 'real accounts/cloud/providers/fees/deployment']
+        report['unrun']=['external-processing full32 positive','physical device','real accounts/cloud/providers/fees/deployment'] if args.all_provided else ['all C online cleanup domains', 'physical device', 'real accounts/cloud/providers/fees/deployment']
+    if tls:
+        sources += list((ROOT/'ios/App').glob('*.swift'))
+        sources += [HERE/name for name in ('m4_device.py','m4_native.py','m4_artifacts.py','M4DeviceControl.swift','M4DeviceTestSession.swift')]
+        report.update(layer='signed approved iPhone/local pinned HTTPS/private PG/actual provided-domain workflow',
+            raw_native_bundle_shareable=False,build_inputs_shareable=False,
+            device_font_scope='system default font; no size override',
+            unrun=['external-processing full32 positive','real accounts/cloud/providers/fees/deployment'])
     report['source_hashes']={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sources}
     report['backend_trees']={name:subprocess.check_output(['git','rev-parse','HEAD:'+name],cwd=backend,text=True).strip() for name in ('backend','contracts','scripts')}
     def save(): (output/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
-    save(); servers=[]; threads=[]; control=None; secrets=[]; audits=[]; lock=threading.Lock(); fault={'path':None}; current={'case':None}
+    save(); servers=[]; threads=[]; control=None; native=None; control_token=None; secrets=[]; audits=[]; lock=threading.Lock(); fault={'path':None}; current={'case':None}
     try:
         with tempfile.TemporaryDirectory(prefix='cj443-',dir='/tmp') as temp:
             root=Path(temp)
@@ -199,11 +219,9 @@ def main():
                             if args.all_provided:
                                 other=api.get('/v1/trip-proposals',params={'proposal_id':proposal_id_for(other_trip_runs[case])},headers={'Authorization':'Bearer '+tokens[case]['B']});other.raise_for_status()
                                 other_trip_hashes[case]=hashlib.sha256(encode(other.json()['proposal'])).hexdigest()
-                if args.prepare_only:
+                if args.prepare_only and not tls:
                     report.update(status='UNRUN',source_status='PASS',native='UNRUN',cases={PROVIDED_CASE:'UNRUN'})
                     save();return
-                original_size = subprocess.check_output(['xcrun','simctl','ui',args.simulator,'content_size'],env=env,text=True).strip()
-                if args.native_device: subprocess.run(['xcrun','simctl','ui',args.simulator,'content_size','large'],env=env,check=True)
                 endpoints={}
                 for mode,app in apps.items():
                     async def observed(scope,receive,send,app=app,mode=mode):
@@ -258,13 +276,14 @@ def main():
                             await send({'type':'http.response.body','body':error});return
                         for message in messages:await send(message)
                     with socket.socket() as sock:sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
-                    server=uvicorn.Server(uvicorn.Config(observed,host='127.0.0.1',port=port,log_level='error',access_log=False))
+                    server=uvicorn.Server(uvicorn.Config(observed,host=tls.host if tls else '127.0.0.1',port=port,log_level='error',access_log=False,
+                        **(tls.uvicorn_options() if tls else {})))
                     thread=threading.Thread(target=server.run,daemon=True);thread.start();servers.append(server);threads.append(thread)
                     deadline=time.monotonic()+10
                     while not server.started:
                         if not thread.is_alive() or time.monotonic()>deadline:raise RuntimeError('local API did not start')
                         time.sleep(.02)
-                    endpoints[mode]='http://127.0.0.1:'+str(port)
+                    endpoints[mode]=('https://'+tls.host if tls else 'http://127.0.0.1')+':'+str(port)
                 def proof(case):
                     with lock: entries=[dict(e) for e in audits if e['case']==case]
                     result=dict(provider_calls=provider_counts[case],api=entries,accounts={})
@@ -335,7 +354,7 @@ def main():
                             if case not in CASES:raise ValueError('unknown case')
                             if parsed.path=='/fixture':
                                 current['case']=case
-                                value=dict(endpoint=endpoints['full' if case=='testActualFullInventoryBlocked' else 'component'],accounts=tokens[case],subjects=subjects[case],case_id=case,
+                                value=dict(endpoint=endpoints['full' if case=='testActualFullInventoryBlocked' else 'component'],accounts={} if tls else tokens[case],subjects=subjects[case],case_id=case,
                                     proposal_id=proposals[case]['proposal_id'] if case in proposals else None,
                                     trip_id=proposals[case]['trip_id'] if case in proposals else None,provider_calls=provider_counts[case])
                             elif parsed.path=='/remote-delete' and args.native_device and case==REMOTE_CASE:
@@ -371,10 +390,9 @@ def main():
                                 value={}
                             elif parsed.path=='/size' and args.native_device:
                                 size={'max':'accessibility-extra-extra-extra-large','standard':'large'}[query['value']]
-                                subprocess.run(['xcrun','simctl','ui',args.simulator,'content_size',size],env=env,check=True)
                                 value={}
                             elif parsed.path=='/native-files' and args.native_device:
-                                container=Path(subprocess.check_output(['xcrun','simctl','get_app_container',args.simulator,BUNDLE,'data'],env=env,text=True).strip())
+                                container=app_container()
                                 namespace=lambda value:str(uuid.UUID(bytes=hashlib.sha256(value.encode()).digest()[:16])).upper()
                                 environment=namespace('G2C.DEBUG.TRIP.environment|'+endpoints['component'])
                                 account=namespace('G2C.DEBUG.TRIP.account|https://local.g2c.invalid|'+subjects[case]['A'])
@@ -440,11 +458,25 @@ def main():
                             raw=json.dumps(value).encode();self.send_response(200);self.send_header('Content-Type','application/json');self.send_header('Cache-Control','no-store');self.end_headers();self.wfile.write(raw)
                         except Exception as error:
                             report.setdefault('control_errors',[]).append(type(error).__name__);save();self.send_response(500);self.end_headers()
-                control=ThreadingHTTPServer(('127.0.0.1',0),Control);threading.Thread(target=control.serve_forever,daemon=True).start()
+                control_token=random_secrets.token_urlsafe(32) if tls else None
+                def stage_input(request):
+                    query=parse_qs(urlsplit(request).query)
+                    if set(query)!={'case'} or query['case']!=[current['case']]:raise ValueError('Staging requires the active cleanup case')
+                    native.stage(case=query['case'][0])
+                def app_container():
+                    if tls:
+                        path=Path(tempfile.mkdtemp(prefix='device-cleanup-snapshot-',dir=root))/'app-data'
+                        scan_app_container(args.device,BUNDLE,path,tokens[current['case']].values());return path
+                    return Path(subprocess.check_output(['xcrun','simctl','get_app_container',args.simulator,BUNDLE,'data'],env=env,text=True).strip())
+                control=ThreadingHTTPServer((tls.host if tls else '127.0.0.1',0),
+                    authenticated_control(Control,control_token,stage_input,lambda: current['case']) if tls else Control)
+                if tls:tls.secure_http_server(control)
+                threading.Thread(target=control.serve_forever,daemon=True).start()
                 spec=importlib.util.spec_from_file_location('cleanup_component_builder',ROOT/'scripts/check_ios_trip_confirm.py');module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
-                builder=object.__new__(module.XCTestDriver);builder.directory=output/'project';builder.directory.mkdir();builder.write_project(0)
+                builder=object.__new__(module.XCTestDriver);builder.directory=(device_project_root if tls else output)/'project';builder.directory.mkdir();builder.write_project(0)
                 test_file='DevelopmentDeviceCleanupUITests.swift' if args.native_device else 'AccountCleanupComponentUITests.swift'
-                (builder.directory/'G2CControl.swift').write_text((HERE/test_file).read_text().replace('__CONTROL_URL__','http://127.0.0.1:'+str(control.server_port)))
+                control_url=('https://'+tls.host if tls else 'http://127.0.0.1')+':'+str(control.server_port)
+                (builder.directory/'G2CControl.swift').write_text((HERE/test_file).read_text().replace('__CONTROL_URL__',control_url))
                 project=builder.directory/'G2CAcceptance.xcodeproj';pbx=project/'project.pbxproj';text=pbx.read_text()
                 original_entry=json.dumps(str(ROOT/'ios/App/CJProbeApp.swift'))
                 assert text.count(original_entry)==1,'component entry replacement missing or ambiguous'
@@ -452,40 +484,88 @@ def main():
                 text=text.replace('space.go2china.foundation.local',BUNDLE).replace('space.go2china.foundation.control',BUNDLE+'.control')
                 entitlement=builder.directory/'Component.entitlements';entitlement.write_bytes(plistlib.dumps({'application-identifier':BUNDLE,'keychain-access-groups':[BUNDLE]}))
                 pbx.write_text(text.replace(json.dumps(str(ROOT/'ios/App/Development.entitlements')),json.dumps(str(entitlement))))
+                if tls:_,configuration_file,_=configure_project(project,tls,control_url,control_token,bundle=BUNDLE,
+                    offline_group='group.g2c.offline' if args.all_provided else None)
                 for case in ([args.case] if args.case else CASES):
-                    current['case']=case;report['cases'][case]='RUNNING';save();result=output/(case+'.xcresult')
-                    command=['xcodebuild','-project',str(project),'-scheme','G2CControl','-configuration','Debug','-destination','platform=iOS Simulator,id='+args.simulator,
-                        '-derivedDataPath',str(build),'-resultBundlePath',str(result),'-scmProvider','system','-skipPackageUpdates','-onlyUsePackageVersionsFromResolvedFile','-parallel-testing-enabled','NO',
-                        '-collect-test-diagnostics','never','ARCHS=arm64','ONLY_ACTIVE_ARCH=YES','CODE_SIGNING_ALLOWED=YES','CODE_SIGN_IDENTITY=-',
-                        '-only-testing:G2CControl/'+('DevelopmentDeviceCleanupUITests' if args.native_device else 'AccountCleanupComponentUITests')+'/'+case,'test']
-                    run=subprocess.run(command,cwd=ROOT,env=env,capture_output=True,text=True,timeout=1200)
-                    log=run.stdout+run.stderr
-                    for secret in secrets:
-                        if isinstance(secret,str):log=log.replace(secret,'<redacted-local-credential>')
-                    (output/(case+'.log')).write_text(log)
-                    if run.returncode:report['cases'][case]='FAIL';save();run.check_returncode()
-                    summary=json.loads(subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)],env=env,text=True))
-                    report.setdefault('results',{})[case]={k:summary[k] for k in ('passedTests','failedTests','skippedTests')}
-                    assert summary['passedTests']==1 and summary['failedTests']==summary['skippedTests']==0
-                    report['cases'][case]='PASS';save()
-                container=Path(subprocess.check_output(['xcrun','simctl','get_app_container',args.simulator,BUNDLE,'data'],env=env,text=True).strip())
-                for path in [*container.rglob('*'),*output.rglob('*')]:
-                    if path.is_file():
-                        data=path.read_bytes()
+                    current['case']=case;report['cases'][case]='RUNNING';save()
+                    if tls:
+                        detail=dict(status='RUNNING');report.setdefault('device_native',{})[case]=detail
+                        case_output=output/'device-native'/case;case_output.mkdir(parents=True,mode=0o700)
+                        native=DeviceNative(args.device,BUNDLE,project,configuration_file,build,ROOT,case_output,tokens[case],control_token,detail,evidence_root=output,case_id=case)
+                        selected=['DevelopmentDeviceCleanupUITests/'+case]
+                        native.build_for_testing('Debug',selected,env)
+                        if args.prepare_only:
+                            detail['status']='PREPARED_EXECUTION_UNRUN';report['cases'][case]='UNRUN';save();continue
+                        try:
+                            summary=native.run_and_scan('Debug',selected,env)
+                        except BaseException:
+                            detail['status']='FAIL';report['cases'][case]='FAIL';report['native']='FAIL';save()
+                            raise
+                        report.setdefault('results',{})[case]={k:summary[k] for k in ('passedTests','failedTests','skippedTests')}
+                        detail['status']='PASS';report['cases'][case]='PASS';save()
+                    else:
+                        result=output/(case+'.xcresult')
+                        command=['xcodebuild','-project',str(project),'-scheme','G2CControl','-configuration','Debug','-destination','platform=iOS Simulator,id='+args.simulator,
+                            '-derivedDataPath',str(build),'-resultBundlePath',str(result),'-scmProvider','system','-skipPackageUpdates','-onlyUsePackageVersionsFromResolvedFile','-parallel-testing-enabled','NO',
+                            '-collect-test-diagnostics','never','ARCHS=arm64','ONLY_ACTIVE_ARCH=YES','CODE_SIGNING_ALLOWED=YES','CODE_SIGN_IDENTITY=-',
+                            '-only-testing:G2CControl/'+('DevelopmentDeviceCleanupUITests' if args.native_device else 'AccountCleanupComponentUITests')+'/'+case,'test']
+                        run=subprocess.run(command,cwd=ROOT,env=env,capture_output=True,text=True,timeout=1200)
+                        log=run.stdout+run.stderr
                         for secret in secrets:
-                            if (secret.encode() if isinstance(secret,str) else secret) in data:raise AssertionError('credential leaked into component artifacts')
-                report['credential_scan']='PASS';report['status']='PASS' if len(report['cases'])==len(CASES) else 'PARTIAL_PASS';save()
+                            if isinstance(secret,str):log=log.replace(secret,'<redacted-local-credential>')
+                        (output/(case+'.log')).write_text(log)
+                        if run.returncode:report['cases'][case]='FAIL';save();run.check_returncode()
+                        summary=json.loads(subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)],env=env,text=True))
+                        report.setdefault('results',{})[case]={k:summary[k] for k in ('passedTests','failedTests','skippedTests')}
+                        assert summary['passedTests']==1 and summary['failedTests']==summary['skippedTests']==0
+                        report['cases'][case]='PASS';save()
+                if not args.prepare_only:
+                    container=app_container()
+                    for path in [*container.rglob('*'),*output.rglob('*')]:
+                        if path.is_file():
+                            data=path.read_bytes()
+                            for secret in secrets:
+                                if (secret.encode() if isinstance(secret,str) else secret) in data:raise AssertionError('credential leaked into component artifacts')
+                    report['credential_scan']='PASS';report['status']='VERIFYING_CLEANUP';save()
+                else:report.update(status='PREPARED_EXECUTION_UNRUN',source_status='PASS',native='UNRUN');save()
             report['pg_stopped']=True;save()
-    except Exception as error:
+    except BaseException as error:
         report['status']='FAIL';report['error_type']=type(error).__name__;report['last_api']=audits;save();raise
     finally:
-        if args.native_device and 'original_size' in locals():
-            subprocess.run(['xcrun','simctl','ui',args.simulator,'content_size',original_size],env=env,check=True)
-        if control:control.shutdown();control.server_close()
-        for server in servers:server.should_exit=True
-        for thread in threads:thread.join(timeout=10)
-        if args.prepare_only and report.get('source_status')=='PASS':
-            report.update(pg_stopped=True,task_credentials_destroyed=True);save()
+        try:
+            if control:control.shutdown();control.server_close()
+            for server in servers:server.should_exit=True
+            for thread in threads:thread.join(timeout=10)
+            if tls:
+                try:
+                    if native is not None:native.cleanup_input()
+                except Exception:
+                    report['status']='FAIL';raise
+                finally:
+                    (device_project_root/'project/M4ControlBootstrap.plist').unlink(missing_ok=True);save()
+                if control_token is not None:
+                    for path in output.rglob('*'):
+                        if path.is_file() and not path.is_symlink() and control_token.encode() in path.read_bytes():
+                            report['status']='FAIL';save();raise AssertionError('control credential in evidence export')
+                if any(thread.is_alive() for thread in threads):
+                    report['status']='FAIL';save();raise RuntimeError('cleanup host did not stop')
+            if args.prepare_only and report.get('source_status')=='PASS':
+                report.update(pg_stopped=True,task_credentials_destroyed=True);save()
+            if report['status']!='FAIL' and not (args.prepare_only and not tls):
+                try:
+                    assert subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()==report['head'],'App head changed during execution'
+                    assert subprocess.check_output(['git','rev-parse','HEAD'],cwd=backend,text=True).strip()==args.backend_head,'backend pin changed during execution'
+                    assert all(hashlib.sha256((ROOT/name).read_bytes()).hexdigest()==digest for name,digest in report['source_hashes'].items()),'source changed during execution'
+                except BaseException as error:
+                    report.update(status='FAIL',error_type=type(error).__name__);save();raise
+                selected=[args.case] if args.case else CASES
+                expected='UNRUN' if args.prepare_only else 'PASS'
+                assert set(report['cases'])==set(selected) and all(value==expected for value in report['cases'].values()),'required cleanup cases incomplete'
+                report['status']='PREPARED_EXECUTION_UNRUN' if args.prepare_only else ('PASS' if len(selected)==len(CASES) else 'PARTIAL_PASS')
+                save()
+        except BaseException as error:
+            report.update(status='FAIL',error_type=type(error).__name__);save();raise
+
     print(json.dumps(dict(status=report['status'],head=report['head'],cases=report['cases'],unrun=report['unrun']),ensure_ascii=False))
 
 if __name__=='__main__':main()

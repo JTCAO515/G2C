@@ -20,7 +20,7 @@ extension MessageHTTPClient {
         else if !submissionEnabledForTest { throw MessageHTTPFailure.productionActivationUnavailable }
     }
     func versionedMessageExchange(path: String, operation: String, raw: Data?, lease: Lease) async throws -> (Int, Data, String) {
-        let transport = try await checkedTransport(lease)
+        let transport = try await checkedTransport(lease, readingPreservedRun: operation == "readPreservedRunDisplayV6")
         var headers = HTTPFields()
         headers[.accept] = "application/json"
         if raw != nil { headers[.contentType] = "application/octet-stream" }

@@ -3,6 +3,7 @@
 Consumes MESSAGE bf79's real synchronous context and a trusted host RUN resolver.
 No caller run ID/scope, cached admission boolean or second principal is accepted.
 """
+from cj_strict_json import compact
 from dataclasses import dataclass
 import inspect
 import json
@@ -16,6 +17,10 @@ class SnapshotUnavailable(Exception):
 
 class SnapshotChanged(SnapshotUnavailable):
     pass
+
+
+class RunSnapshotAdvanced(SnapshotChanged):
+    """The original RUN appended events while the projection was withheld."""
 
 
 class SnapshotTooLarge(SnapshotUnavailable):
@@ -52,7 +57,7 @@ def _encode_snapshot(state, configuration):
         'status': state.status, 'event_highwater': state.sequence,
         'text': state.text, 'text_state': 'complete' if state.status == 'completed' else 'partial',
     }
-    encoded = json.dumps(payload, ensure_ascii=False, separators=(',', ':'), allow_nan=False).encode('utf-8')
+    encoded = compact(payload)
     if len(encoded) > configuration.max_response_bytes:
         raise SnapshotTooLarge('encoded display snapshot exceeds configured bound')
     return encoded
@@ -118,10 +123,9 @@ class DisplaySnapshotReader:
 
     def read_history_display(self,token,message_id,request_id):
         def encode(state,original,history):
-            return json.dumps(dict(request_id=request_id,version='RUN-display.6',
+            return compact(dict(request_id=request_id,version='RUN-display.6',
                 snapshot=json.loads(_encode_snapshot(state,self.configuration)),
-                reference=history.reference,source_state=history.source_state),
-                ensure_ascii=False,separators=(',',':'),allow_nan=False).encode('utf8')
+                reference=history.reference,source_state=history.source_state))
         return self._read_materialized(token,message_id,encode,history=True)
 
     def read_draft_status_v4(self,token,message_id,request_id):
@@ -130,6 +134,13 @@ class DisplaySnapshotReader:
     def read_travel_display(self,token,message_id,request_id):
         return self._context_display(token,message_id,request_id,formal=False)
 
+    def read_travel_events(self, token, message_id):
+        def encode(state, original, reference):
+            if reference.message_version != 'MESSAGE-send.2':
+                raise SnapshotUnavailable('travel stream requires original send.2')
+            return _encode_snapshot(state, self.configuration)
+        return self._read_materialized(token, message_id, encode, travel=True)
+
     def _context_display(self,token,message_id,request_id,*,formal,edit=False,results=False):
         def encode(state,original,reference):
             value=dict(request_id=request_id,version='RUN-display.5' if results else 'RUN-display.4' if edit else 'RUN-display.3' if formal else 'RUN-display.2',
@@ -137,7 +148,7 @@ class DisplaySnapshotReader:
             if results:
                 from .scoped_result import descriptor
                 value['scoped_result']=descriptor(state,original)
-            return json.dumps(value,ensure_ascii=False,separators=(',',':'),allow_nan=False).encode('utf8')
+            return compact(value)
         return self._read_materialized(token,message_id,encode,travel=True,formal=formal,edit=edit,results=results)
 
     def _read_draft_status(self, token, message_id, request_id, *, version):
@@ -146,7 +157,7 @@ class DisplaySnapshotReader:
                 raise SnapshotUnavailable('budget result requires version 2')
             command = json.loads(original.raw)
             requested = command['creation_intent'] == 'consider_trip' or version>=5 and command.get('modification_intent')=='propose_scoped_edit'
-            published = any(effect.startswith('trip_proposal:') for effect in state.effects)
+            published = state.trip_proposal_published
             if not requested and (published or state.draft_outcome is not None):
                 raise SnapshotUnavailable('draft evidence contradicts original message')
             outcome = ('not_requested' if not requested else
@@ -163,7 +174,7 @@ class DisplaySnapshotReader:
             if version==6:
                 from .scoped_result import descriptor
                 payload['scoped_result']=descriptor(state,original)
-            return json.dumps(payload, ensure_ascii=False, separators=(',', ':'), allow_nan=False).encode('utf-8')
+            return compact(payload)
         return self._read_materialized(token, message_id, encode,travel=version>=3,formal=version>=4,edit=version>=5,results=version==6)
 
     def _read_materialized(self, token, message_id, encode, *, travel=False, formal=False, edit=False,results=False,history=False):
@@ -203,6 +214,13 @@ class DisplaySnapshotReader:
             # Projection, encoding and final envelope bound precede every final guard.
             final = _checked_recovery(repository, binding)
             if final.state != first.state or final.cursor != first.cursor:
+                if (final.cursor.epoch == first.cursor.epoch
+                        and final.cursor.after == first.cursor.after
+                        and final.state.usage == first.state.usage
+                        and final.state.sequence > first.state.sequence
+                        and final.state.events[:first.state.sequence] == first.state.events):
+                    source_guard()
+                    raise RunSnapshotAdvanced('RUN changed during snapshot projection')
                 raise SnapshotChanged('RUN changed during snapshot projection')
             source_guard()
             return encoded

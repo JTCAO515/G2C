@@ -34,16 +34,20 @@ class Repository:
         self.connect, self.scope, self.bind_needs = connect, scope, bind_needs
 
     @contextmanager
-    def transaction(self):
-        # Factory must yield a NEW non-autocommit DB-API connection at READ COMMITTED.
-        conn = self.connect()
+    def transaction(self, *, borrowed_connection=None, validate_connection=None):
+        # The trusted host can retain an idle connection for one execution.
+        # The repository still owns each transaction and discards a failed lease.
+        conn = self.connect() if borrowed_connection is None else borrowed_connection
         cur = None
         outcome = 'setup_failed'
+        cleanup_failed = False
 
         def cleanup(action, stage):
+            nonlocal cleanup_failed
             try:
                 action()
             except BaseException:
+                cleanup_failed = True
                 # Fixed diagnostics only: never exception text, SQL, scope or credentials.
                 # Even a failing logging handler cannot replace the primary outcome.
                 try:
@@ -61,6 +65,8 @@ class Repository:
                 bind_scope = getattr(conn, 'bind_scope', None)
                 if bind_scope is not None:
                     bind_scope(cur)
+                if validate_connection is not None:
+                    validate_connection(cur)
                 yield Transaction(cur, self.scope, bind_needs=self.bind_needs, local_run_mode=self.local_run_mode, registered_usage=self.registered_usage,travel_mode=self.travel_mode,travel_metadata=self.travel_metadata,trip_mode=self.trip_mode,trip_metadata=self.trip_metadata,edit_mode=self.edit_mode,edit_metadata=self.edit_metadata)
             except BaseException:
                 outcome = 'body_failed'
@@ -77,7 +83,8 @@ class Repository:
         finally:
             if cur is not None:
                 cleanup(cur.close, 'cursor_close')
-            cleanup(conn.close, 'connection_close')
+            if borrowed_connection is None or outcome != 'committed' or cleanup_failed:
+                cleanup(conn.close, 'connection_close')
 
 
 class Transaction:
@@ -135,11 +142,26 @@ class Transaction:
         row = self.cur.fetchone()
         return Stored(bytes(row[0]), Receipt(*row[1:7]),row[7] if self.travel_metadata else None,row[8 if self.travel_metadata else 7] if self.trip_metadata else None,row[-1] if self.edit_metadata else None) if row else None
 
-    def insert(self, stored, *, command=None):
-        protected=self.local_execution()
+    def insert(self, stored, *, command=None, dialogue=None):
+        protected = self.local_execution()
         r = stored.receipt
-        self.cur.execute('INSERT INTO cj_message_receipt (scope, message_id, conversation_id, generation, sequence, run_id, input_sha256, raw_input) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)',
-                         (self.scope, r.message_id, r.conversation_id, r.generation, r.sequence, r.run_id, r.input_sha256, stored.raw))
+        columns = 'scope, message_id, conversation_id, generation, sequence, run_id, input_sha256, raw_input'
+        values = (self.scope, r.message_id, r.conversation_id, r.generation, r.sequence,
+                  r.run_id, r.input_sha256, stored.raw)
+        if dialogue is not None:
+            columns += ', demo_dialogue_input_sha256, demo_dialogue_locale'
+            values += (dialogue.input_sha256, dialogue.locale)
+            from .demo_dialogue import LIO_VERSION, LIO_VERSION_V2, LIO_VERSION_V3
+            if dialogue.protocol in (LIO_VERSION, LIO_VERSION_V2, LIO_VERSION_V3):
+                columns += ', demo_dialogue_protocol'
+                # Both HTTP versions use the same persisted Lio execution
+                # protocol. The input digest still covers the exact wire version.
+                values += (LIO_VERSION,)
+            if dialogue.protocol == LIO_VERSION_V3:
+                columns += ', lio_wire_protocol, lio_wire_input'
+                values += (LIO_VERSION_V3, dialogue.wire_input)
+        placeholders = ','.join(['%s'] * len(values))
+        self.cur.execute(f'INSERT INTO cj_message_receipt ({columns}) VALUES ({placeholders})', values)
         if protected:
             from .local_protection import capture as capture_requirement
             capture_requirement(self.cur,self.scope,stored,self.registered_usage)

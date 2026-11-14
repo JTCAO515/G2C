@@ -1,0 +1,223 @@
+{
+  "ledger": {
+    "id": "32d95019ea16443b81e648960c4baba0",
+    "rows": 364,
+    "sha256": "ad4ea4b7b17440a6fa4f1a65fce68740c50bc46ba23cb4b2cad8ea44ef2a2b14",
+    "counts": {
+      "fact": 14,
+      "model": 232,
+      "place": 42,
+      "route": 15,
+      "weather": 61
+    },
+    "states": {
+      "INTENT": 67,
+      "RECEIVED": 297
+    },
+    "anchor_state": "ADOPTED"
+  },
+  "original346_unchanged": true,
+  "claim": {
+    "adapter_identity": {
+      "pin": "86fcc1ce5ab05fb304f046c3782472c498ff6115bac9c2e6d6f57dbdac40a0da",
+      "source_sha256": {
+        "backend/agent/cj_agent/provider.py": "0dda99a1b08cd4562a59bbf459ffd34b2e0ee81afefa2873405ef8a8deb470e8",
+        "backend/cj_api/real_services.py": "192d59ef6ed9e55df81791bd013d67303801d03ae13055749d3523a0c482e911",
+        "backend/fact/cj_fact/https_transport.py": "c7b23cabfe965ebb2cdcfae00ccc0f789fdce4c35025d29f1ae79a7876987ba8",
+        "backend/fact/cj_fact/live_source.py": "a31d82c73bfb2abcc0be3288d1d19be04992946e1a4e2c26497ff920b834c88a"
+      },
+      "version": 2
+    },
+    "adapter_pin": "86fcc1ce5ab05fb304f046c3782472c498ff6115bac9c2e6d6f57dbdac40a0da",
+    "candidate_id": "04dd91b28218517ef49cc7f60add34ee975ee9fc",
+    "output": "/evidence/hk-native-schema-smoke-001",
+    "phase": "smoke"
+  },
+  "result": {
+    "candidate_id": "04dd91b28218517ef49cc7f60add34ee975ee9fc",
+    "hashes": {
+      "observations.json": "469394981b54ebe0f317676ecc437227ec27113e9240ab5079f00f0b877775f4",
+      "plan.json": "167574990af26f5418ba5f23e7fde06a6d1d51ba3673cc92d93adc34f139d2d2",
+      "raw/place-route-en.json": "8ab00ce61b0b713e554c52aff78466473f05d5419faf190fc982f2c44184be03",
+      "raw/place-route-zh.json": "363fe411544772596b8c4005f5bd212de1cc4d2a3af2df574eb510b6e4d3b7d8",
+      "raw/weather-en.json": "27bed6a5ccf7edc2c69d766a7acac22ea7ffe58e6d82a3c60bd815c0ebea8cb0",
+      "raw/weather-zh.json": "b975a14ac086f31e528bfdfeb2df2d8542905057d207952351fc199795c43a54",
+      "summary.json": "be110b2a1bb224b79af90372aefda593ea6aa6ab70b0380e55c9415c71fd0f1c"
+    },
+    "status": "FAIL"
+  },
+  "full_claim_exists": false,
+  "remaining_processes": [
+    "sleep"
+  ],
+  "eval_Python_PG_count": 0,
+  "schema_version": 1,
+  "source_preflight": {
+    "status": "PASS",
+    "source": {
+      "runner_commit": "04dd91b28218517ef49cc7f60add34ee975ee9fc",
+      "backend_commit": "c4c3b30274ed130a9df21e30d701646a90d8cdd7",
+      "manifest_sha256": "997b1897e09533c033eacf971bd9b25749cd4adca2d50e2ad4fee5211f44e73a"
+    },
+    "identity": {
+      "version": 2,
+      "pin": "86fcc1ce5ab05fb304f046c3782472c498ff6115bac9c2e6d6f57dbdac40a0da",
+      "source_sha256": {
+        "backend/agent/cj_agent/provider.py": "0dda99a1b08cd4562a59bbf459ffd34b2e0ee81afefa2873405ef8a8deb470e8",
+        "backend/cj_api/real_services.py": "192d59ef6ed9e55df81791bd013d67303801d03ae13055749d3523a0c482e911",
+        "backend/fact/cj_fact/live_source.py": "a31d82c73bfb2abcc0be3288d1d19be04992946e1a4e2c26497ff920b834c88a",
+        "backend/fact/cj_fact/https_transport.py": "c7b23cabfe965ebb2cdcfae00ccc0f789fdce4c35025d29f1ae79a7876987ba8"
+      }
+    },
+    "container": "g2c-c-runtime-04dd91b2",
+    "image": "sha256:43a0b6533265dba34db54a35d422a158eb0677cca787cf29d7db38135db98faa",
+    "mounts": [
+      {
+        "source": "/srv/g2c-beta/control",
+        "destination": "/control",
+        "rw": false
+      },
+      {
+        "source": "/srv/g2c-beta/control/budget",
+        "destination": "/control/budget",
+        "rw": true
+      },
+      {
+        "source": "/srv/g2c-beta/c-runner/04dd91b28218517ef49cc7f60add34ee975ee9fc/eval",
+        "destination": "/app/eval",
+        "rw": false
+      },
+      {
+        "source": "/srv/g2c-beta/c-runner/04dd91b28218517ef49cc7f60add34ee975ee9fc/evaluation",
+        "destination": "/app/evaluation",
+        "rw": false
+      },
+      {
+        "source": "/srv/g2c-beta/c-runner/04dd91b28218517ef49cc7f60add34ee975ee9fc/c-eval-source.json",
+        "destination": "/app/c-eval-source.json",
+        "rw": false
+      },
+      {
+        "source": "/srv/g2c-beta/c-eval.env",
+        "destination": "/run/secrets/c-eval.env",
+        "rw": false
+      },
+      {
+        "source": "/srv/g2c-beta/c-evidence",
+        "destination": "/evidence",
+        "rw": true
+      },
+      {
+        "source": "/srv/g2c-beta/budget",
+        "destination": "/home/cj/.local/share/g2c/m4-real-services",
+        "rw": true
+      }
+    ],
+    "environment_names": [
+      "CJ_C_EVAL_SOURCE_SHA256",
+      "CJ_DEPLOY_TARGET",
+      "CJ_ENV",
+      "CJ_M4_BUDGET_PRODUCER",
+      "CJ_M4_SYNTHETIC_ONLY",
+      "CJ_PG_BINDIR",
+      "CJ_TRIAL_VALID_UNTIL",
+      "LANG",
+      "PATH",
+      "PYTHONDONTWRITEBYTECODE",
+      "PYTHONPATH",
+      "PYTHON_SHA256",
+      "PYTHON_VERSION"
+    ],
+    "ledger": {
+      "ledger_id": "32d95019ea16443b81e648960c4baba0",
+      "rows": 346,
+      "sha256": "ef9624ced9948f62668070147e935942d97cf33458dc68441d03830b35d84d8b",
+      "counts": {
+        "fact": 14,
+        "model": 222,
+        "place": 38,
+        "route": 13,
+        "weather": 59
+      },
+      "states": {
+        "INTENT": 66,
+        "RECEIVED": 280
+      },
+      "anchor_state": "ADOPTED"
+    }
+  },
+  "archive": {
+    "sha256": "308b4c5d8250b899db51726533882e7cd1bdc409cc11dc19949f5dfe977736cb",
+    "original_file_n": 19,
+    "raw_files_in_git": false
+  },
+  "artifact_sha256": {
+    "budget-after.json": "9edf63df0f749e0bb7b94c0355af66574b60d72f3ad6d63a9e5842e08f24b69a",
+    "budget-before.json": "99cebd3000a3e108f426a27b78542c5368284a95da8bd50ec372a15803aa3434",
+    "case-starts.json": "fd1940d694ef83ba2bd7e5c740bce550efaeafa3fd54575a5f597dd489994647",
+    "estimate.json": "87b3b55c57fe2044b8d465b2053a67282318b5f2849234d4174999dec1e77189",
+    "observations.json": "469394981b54ebe0f317676ecc437227ec27113e9240ab5079f00f0b877775f4",
+    "packages.json": "cff3b2adf3252cb116925d5a60193915faa6bd9fccc6867023880ce388b0a01a",
+    "plan.json": "167574990af26f5418ba5f23e7fde06a6d1d51ba3673cc92d93adc34f139d2d2",
+    "progress.json": "9e8f151d839b7dbba4386755a7a4bf6729ecb6bd549111b91019683b3efc67cc",
+    "progress.md": "613259bf59ff455a22a13c88c24b22793e38547354176b42aedf8fcc987f0a53",
+    "raw/place-route-en.json": "8ab00ce61b0b713e554c52aff78466473f05d5419faf190fc982f2c44184be03",
+    "raw/place-route-zh.json": "363fe411544772596b8c4005f5bd212de1cc4d2a3af2df574eb510b6e4d3b7d8",
+    "raw/weather-en.json": "27bed6a5ccf7edc2c69d766a7acac22ea7ffe58e6d82a3c60bd815c0ebea8cb0",
+    "raw/weather-zh.json": "b975a14ac086f31e528bfdfeb2df2d8542905057d207952351fc199795c43a54",
+    "runtime-config.json": "86215051d0d76f06d8af440547af491a65b4f06186313a6d753bf69b6dcd3dff",
+    "summary.json": "be110b2a1bb224b79af90372aefda593ea6aa6ab70b0380e55c9415c71fd0f1c"
+  },
+  "process": {
+    "wrapper_pid": 19,
+    "started_epoch": 1793954052.3609197,
+    "output": "/evidence/hk-native-schema-smoke-001",
+    "command": [
+      "python",
+      "-B",
+      "/app/eval/hk.py",
+      "run",
+      "smoke",
+      "--output",
+      "/evidence/hk-native-schema-smoke-001"
+    ]
+  },
+  "process_result": {
+    "wrapper_pid": 19,
+    "exit_code": 1,
+    "finished_epoch": 1793954118.2611973
+  },
+  "next_budget_forecast": {
+    "current_model_including_M1": 245,
+    "current_paid_tools": 118,
+    "unchanged_next6_full_estimate": {
+      "model": 153,
+      "tool": 62
+    },
+    "without_new_B_proof": {
+      "model": 398,
+      "tool": 180
+    },
+    "with_minimum2_model_new_B_proof": {
+      "model": 400,
+      "tool_minimum": 180
+    },
+    "model_stop": 400,
+    "model_total": 500,
+    "actual_paid": "UNKNOWN"
+  },
+  "B_blocker": "https://github.com/JTCAO515/G2C/issues/523#issuecomment-6680874961",
+  "budget_stop": "https://github.com/JTCAO515/G2C/issues/495#issuecomment-6680936625",
+  "public_vs_private": {
+    "private_backend": "c4c3b30274ed130a9df21e30d701646a90d8cdd7",
+    "public_backend": "bb409131b40f00ae8bd38f4a9a53df61e0adfa99",
+    "four_production_provider_fact_and_authorization_budget_blobs_unchanged_by_public_manual_host": true
+  },
+  "network": {
+    "approved": "China-mainland Mac + VPN",
+    "protected_GET_baseline": "PR579 / report-002 n6; not user-submit answer timing",
+    "actual_user_POST_to_first_or_full": "UNRUN"
+  },
+  "grounded_fact_semantic_review": "UNKNOWN; no reviewer invented",
+  "goal_complete": false
+}

@@ -1,0 +1,32 @@
+[
+  {
+    "id": "visitor.example.payment",
+    "topic": "payment",
+    "cities": ["beijing"],
+    "text_zh": "合成格式样例：此处填写支付渠道的已核对概括，不代表任何真实规则。",
+    "text_en": "Synthetic format example: place a checked payment-channel summary here. This states no real rule.",
+    "source_urls": ["https://www.pbc.gov.cn/"],
+    "checked_on": "2026-11-12",
+    "expires_on": "2026-12-12"
+  },
+  {
+    "id": "visitor.example.transport",
+    "topic": "transport",
+    "cities": ["chengdu", "xian"],
+    "text_zh": "合成格式样例：此处填写交通渠道概括；实际条目须分别核实所列城市。",
+    "text_en": "Synthetic format example: place a transport-channel summary here. A real entry must check each listed city.",
+    "source_urls": ["https://www.chengdu.gov.cn/", "https://www.xa.gov.cn/"],
+    "checked_on": "2026-11-12",
+    "expires_on": "2026-12-01"
+  },
+  {
+    "id": "visitor.example.internet",
+    "topic": "internet",
+    "cities": ["shanghai"],
+    "text_zh": "合成格式样例：此处填写通信服务渠道概括，不承诺具体设备或套餐可用。",
+    "text_en": "Synthetic format example: place a connectivity-channel summary here, without promising device or plan availability.",
+    "source_urls": ["https://www.shanghai.gov.cn/"],
+    "checked_on": "2026-11-12",
+    "expires_on": "2026-11-19"
+  }
+]

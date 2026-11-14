@@ -27,9 +27,13 @@ import uvicorn
 
 from runtime import ROOT, private_database
 from cases import state
-from gates import POLICY
+from gates import VISIBLE_PROGRESS_POLICY
 from judge import judge
 from report import report, markdown
+from progress import write as write_progress
+from failure import capture as capture_failure, parse_audit
+from hk import active as hk_active, source_candidate, require_output
+import hk
 from cj_agent.provider import DashScopeConfig, MeteredDashScopeProvider, M4_BASE, M4_MODEL
 from cj_agent.worker import Outcome
 from cj_api.local_app import LocalDatabase, create_local_app, ISSUER, scope_for
@@ -46,7 +50,7 @@ import local_run_context
 import run_worker
 
 STATE = Path.home() / '.local/share/g2c/m4-real-services'
-NETWORK = 'development-mac-real-exits'
+NETWORK = 'hk-private-real-exits' if hk_active() else 'development-mac-real-exits'
 
 
 def save(path, value):
@@ -63,6 +67,17 @@ def keychain(name):
     if result.returncode or not result.stdout.strip():
         raise ValueError('required_authorized_keychain_item_unavailable')
     return result.stdout.strip()
+
+
+def create_real_services(subjects):
+    if hk_active():
+        return hk.services(subjects)
+    if (STATE/'transfer.json').exists():
+        raise ValueError('sealed_Mac_producer_is_read_only')
+    model_key=keychain('g2c-dashscope');amap_key=keychain('g2c-amap-web-key')
+    model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,model_key,
+        max_output_tokens=1024),AuthorizationBudget(STATE))
+    return RealServices(model,amap_key,subjects)
 
 
 @contextmanager
@@ -103,9 +118,12 @@ def post(client, path, body, headers, evidence, name):
 
 
 def body_available(text):
-    # Source URLs/tool metadata are not first answer-body content.
-    return any(line.strip() and not line.startswith(('Source: ', '来源：'))
-               for line in text.splitlines())
+    # The host inserts standalone source URLs before the model's answer.
+    for line in text.splitlines():
+        content=line.strip()
+        if content and re.fullmatch(r'(?:Source:|来源：)\s*(?:https?://\S+)?',content) is None:
+            return True
+    return False
 
 
 def stream_run(client, headers, mid, future, started, evidence):
@@ -249,9 +267,14 @@ def run_case(client, database, conninfo, auth, context, services, scenario, lang
         save(policy_path, document)
         evidence['restart_scope'] = 'new original real worker process; same persistent PG/API/journal'
         def work():
-            result = subprocess.run([sys.executable, '-B', str(ROOT / 'eval/real_worker.py'),
-                str(conninfo), str(auth), str(conninfo.parent / 'run.json'), str(policy_path)],
-                capture_output=True, text=True, timeout=660, check=True)
+            try:
+                result = subprocess.run([sys.executable, '-B', str(ROOT / 'eval/real_worker.py'),
+                    str(conninfo), str(auth), str(conninfo.parent / 'run.json'), str(policy_path)],
+                    capture_output=True, text=True, timeout=660, check=True)
+            except subprocess.CalledProcessError as error:
+                evidence['provider_failure_diagnostics']=parse_audit(error.stderr or '')
+                raise
+            evidence['provider_failure_diagnostics']=parse_audit(result.stderr)
             return [Outcome(**value) for value in json.loads(result.stdout)]
     mid = subject + '-task'
     started = time.monotonic()
@@ -313,45 +336,48 @@ def main():
     os.environ['CJ_ENV'] = 'local'
     raw = Path(__file__).with_name('scenarios.json').read_bytes()
     scenarios = json.loads(raw)
-    commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
+    require_output(args.output)
+    commit = source_candidate()
     from smoke import require_full_ready
     require_full_ready(args.smoke, commit)
-    from real_budget import estimate, verified_journal
+    from real_budget import estimate, verified_journal, stop_reached
     from real_phase import claim
     before = verified_journal()
     forecast = estimate(before, include_smoke=False)
-    if not forecast['within_stop_lines']:
-        raise ValueError('full_batch_estimate_exceeds_stop_line_report_495_before_dispatch')
-    model_key=keychain('g2c-dashscope');amap_key=keychain('g2c-amap-web-key')
+    if not forecast['within_authorization']:
+        raise ValueError('full_batch_estimate_exceeds_authorization_report_495_before_dispatch')
+    subjects = frozenset('m4-synthetic-' + args.batch_id + '-' + str(i) + '-' + lang for i in range(len(scenarios)) for lang in ('zh','en'))
+    services=create_real_services(subjects)
+    budget=services.model.authorization
     if not claim('full',args.output,commit):
         print('READ_ONLY: canonical full phase already claimed; no request/retry');return 0
-    budget = AuthorizationBudget(STATE)
     budget.check_date();verified_journal()
     plan = dict(schema_version=1, sample_set_id='g2c-m4-synthetic-33',
         sample_set_version='2:' + sha256(raw).hexdigest(), evidence_layer='real',
         provenance='Original fixed33/11; synthetic only, no tuning of prompts, model, holdout or judges.',
-        collector_sha256=sha256(Path(__file__).read_bytes()).hexdigest(), approved_thresholds=dict(POLICY), attempts=[1],
+        collector_sha256=sha256(Path(__file__).read_bytes()).hexdigest(),
+        quality_policy=VISIBLE_PROGRESS_POLICY['id'], approved_thresholds=dict(VISIBLE_PROGRESS_POLICY), attempts=[1],
         batch_id=args.batch_id, smoke_evidence_sha256=sha256((args.smoke/'summary.json').read_bytes()).hexdigest(),
+        execution_source=hk.source_info(),
         candidates=[dict(id=commit, commit=commit, config_version='M4 real-m4 / signed MESSAGE-send.2 / registered exit / legacy draft / typed memory',
                          model_version=M4_MODEL, source_as_of=datetime.now(timezone.utc).isoformat())],
         networks=[dict(id=NETWORK, kind='local_real_services', endpoint='loopback signed API → Beijing DashScope/authorized tools',
-            client_environment='Codex development Mac; current egress, geographic target classification UNKNOWN',
+            client_environment=('HK private Unix PG/original worker; not a target-network observation' if hk_active() else
+                                'Codex development Mac; current egress, geographic target classification UNKNOWN'),
             measurement=dict(kind='program', independent=True, outcome='PASS',
                              ref='eval/real.py:tcp_app + per-row raw client monotonic timestamps'),
             description='Actual local TCP protected v2 snapshot polls (200ms), real external exits. Not an overseas or China target-network measurement.')],
         scenarios=scenarios)
-    report(plan, [])
+    summary=report(plan, [])
     args.output.mkdir(parents=True, mode=0o700)
     (args.output / 'raw').mkdir(mode=0o700)
     save(args.output / 'plan.json', plan)
     save(args.output / 'budget-before.json', before)
     save(args.output / 'preflight-estimate.json', forecast)
     save(args.output / 'packages.json', {v: version(v) for v in ('httpx','psycopg','uvicorn','fastapi')})
-    subjects = frozenset('m4-synthetic-' + args.batch_id + '-' + str(i) + '-' + lang for i in range(len(scenarios)) for lang in ('zh','en'))
-    model = MeteredDashScopeProvider(DashScopeConfig(M4_BASE, M4_MODEL, model_key,
-                                                   max_output_tokens=1024), budget)
-    services = RealServices(model, amap_key, subjects)
-    observations = []
+    observations=[];starts=[]
+    save(args.output/'observations.json',observations);save(args.output/'case-starts.json',starts)
+    save(args.output/'report.json',summary);write_progress('full',plan,observations,args.output,summary,starts)
     with redirect_stdout(io.StringIO()), private_database('real-evaluation') as conninfo:
         auth = conninfo.parent / 'auth'
         dev_auth.init(auth, sorted(subjects))
@@ -361,6 +387,7 @@ def main():
             unit='provider_call', budget=100, period_start=now-60, period_end=now+21600,
             max_steps=24, max_tools=12, max_output=65536, max_seconds=600),
             output_limits=dict(model=12000, tool=48000, memory=2000))))
+        save(args.output/'runtime-config.json',json.loads(profile.read_bytes()))
         context = load_run_context(profile)
         for subject in subjects:
             local_run_context.provision_budget(conninfo, context, subject)
@@ -380,21 +407,29 @@ def main():
                         observed_at=datetime.now(timezone.utc).isoformat(), source_as_of=datetime.now(timezone.utc).isoformat(),
                         raw_evidence_ref='raw/' + key + '.json', first_body_seconds=None, full_answer_seconds=None,
                         draft_seconds=None)
-                    evidence = dict(input_sha256=sha256(scenario['inputs'][language].encode()).hexdigest())
+                    starts.append(dict(scenario_id=scenario['id'],language=language,attempt=1,
+                        started_at=datetime.now(timezone.utc).isoformat()))
+                    save(args.output/'case-starts.json',starts)
+                    write_progress('full',plan,observations,args.output,summary,starts)
+                    evidence = dict(input_sha256=sha256(scenario['inputs'][language].encode()).hexdigest(),execution_stage='run_case')
                     started = time.monotonic()
                     try:
-                        observed, expected, first, terminal = run_case(client, database, conninfo, auth, context,
-                            services, scenario, language, subject, evidence)
-                        judgment = judge(scenario, observed, expected)
-                        evidence.update(observed=observed, expected=expected, judgment=judgment)
+                        with capture_failure(evidence):
+                            observed, expected, first, terminal = run_case(client, database, conninfo, auth, context,
+                                services, scenario, language, subject, evidence)
                         artifact_missing = scenario['recipe'] in ('preview','accept','reject') and 'candidate_document' not in observed
-                        evidence['requested_candidate_missing'] = artifact_missing
+                        evidence.update(observed=observed,expected=expected,requested_candidate_missing=artifact_missing)
+                        row.update(first_body_seconds=first,full_answer_seconds=None if artifact_missing else terminal)
+                        evidence['execution_stage']='independent_judge'
+                        judgment = judge(scenario, observed, expected)
+                        evidence['judgment']=judgment
                         row.update(status='success' if observed['run_status']=='completed' and not artifact_missing else 'failure',
-                            first_body_seconds=first, full_answer_seconds=terminal,
+                            first_body_seconds=first, full_answer_seconds=None if artifact_missing else terminal,
                             independent_judgment=judgment, serious_errors=judgment['serious_errors'],
                             judgment=dict(kind='program', independent=True, outcome=judgment['task_outcome'], ref='eval/judge.py'))
+                        evidence['execution_stage']='observation_complete'
                     except Exception as error:
-                        evidence.update(error_kind=type(error).__name__, execution_stage='inspect original HTTP/attempt evidence; never redispatch')
+                        evidence.update(error_kind=type(error).__name__, recovery='inspect original HTTP/attempt evidence; never redispatch')
                         row.update(status='failure', serious_errors=[], judgment=dict(kind='program', independent=True,
                             outcome='FAIL', ref='eval/real.py:execution_failure'))
                     evidence['operations'] = original_operations(database, subject)
@@ -416,10 +451,11 @@ def main():
                     summary = report(plan, observations)
                     save(args.output / 'report.json', summary)
                     (args.output / 'report.md').write_text(markdown(summary))
+                    write_progress('full',plan,observations,args.output,summary,starts)
                     # Progress is deliberately outside redirect_stdout, no API content or keys.
                     os.write(1, (key+' '+row['status']+' '+row['judgment']['outcome']+'\n').encode())
                     counts = {kind: sum(v['kind']==kind for v in budget.inspect()) for kind in ('model','place','route','weather','fact')}
-                    if counts['model']+13 >= 400 or sum(counts[k] for k in ('place','route','weather')) >= 159:
+                    if stop_reached(counts):
                         save(args.output / 'stop.json', dict(reason='authorization stop threshold', counts=counts))
                         return 2
     return int(any(v['status']=='failure' or v['judgment']['outcome']=='FAIL' for v in observations))

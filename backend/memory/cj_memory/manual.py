@@ -1,8 +1,8 @@
 """Manual-source producer. Policy is server configuration, never request fields."""
+from cj_strict_json import compact
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import hashlib
-import json
 from typing import Callable
 from .domain import Command, InvalidInput, Unavailable, strict_object
 
@@ -17,7 +17,7 @@ def parse_manual(raw):
     # Prefix identifies server manual provenance in the existing source namespace.
     obj['source_id'] = 'manual-v1:' + hashlib.sha256(raw).hexdigest()
     obj['source_version'] = 1
-    return Command.parse(json.dumps(obj, ensure_ascii=False, separators=(',', ':')).encode('utf-8'))
+    return Command.parse(compact(obj, allow_nan=True))
 
 
 @dataclass(frozen=True)

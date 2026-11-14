@@ -46,12 +46,12 @@ extension RunDisplayState {
             RunReadableText(text:state.label(language)).frame(maxWidth:.infinity,alignment:.leading).accessibilityIdentifier("run.display.status")
             if case .loaded(let value) = state {
                 if showAnswerText && !value.snapshot.text.isEmpty {
-                    Text(verbatim: value.snapshot.text).textSelection(.enabled).accessibilityIdentifier("run.display.text")
+                    answerBubble(value.snapshot.text, identifier: "run.display.text")
                 }
                 RunReadableText(text:language.text("Snapshot at read time", "读取时的快照"),style:.caption)
             }
             if let progress = model.streamProgress {
-                if showAnswerText { Text(verbatim: progress.text).textSelection(.enabled).accessibilityIdentifier("run.stream.text") }
+                if showAnswerText { answerBubble(progress.text, identifier: "run.stream.text") }
                 Text(language.text("Received text · final state not yet verified", "已接收正文 · 最终状态尚未核实"))
                     .font(.caption)
             }
@@ -98,6 +98,16 @@ extension RunDisplayState {
         .onChange(of: scenePhase) { _, phase in if phase != .active { model.invalidate() } }
         .onDisappear { model.invalidate() }
     }
+    private func answerBubble(_ text: String, identifier: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(language.text("Assistant", "助手")).font(.caption.weight(.semibold))
+            RunSelectableText(text: text).accessibilityIdentifier(identifier)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(.background, in: RoundedRectangle(cornerRadius: 16))
+    }
+
     private func actionButton(_ english: String, _ chinese: String, disabled: Bool, id: String,
                               action: @escaping @MainActor () -> Void) -> some View {
         let title = language.text(english, chinese)
@@ -125,8 +135,16 @@ private struct RunReadableButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .foregroundStyle(Color.primary)
-            .opacity(enabled && !configuration.isPressed ? 1 : 0.7)
             .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-            .contentShape(Rectangle())
+            .padding(.horizontal, 12)
+            .padding(.vertical, 4)
+            .background(.background, in: RoundedRectangle(cornerRadius: 12))
+            .overlay {
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(Color.primary.opacity(0.25), lineWidth: 1)
+                    .allowsHitTesting(false)
+            }
+            .contentShape(RoundedRectangle(cornerRadius: 12))
+            .opacity(enabled && !configuration.isPressed ? 1 : 0.7)
     }
 }

@@ -5,7 +5,6 @@ here. Those remain the original MEMORY Service's responsibility.
 """
 from cj_memory.domain import Service as MemoryService
 from cj_memory.lifecycle import INTERFACE_VERSION, LifecycleAdapter, LifecycleAdapterV2
-from .domain import Action
 from .edit import parse_action
 from .service import apply_in_transaction, query_in_transaction
 

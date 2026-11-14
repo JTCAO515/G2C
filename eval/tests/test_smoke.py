@@ -15,21 +15,24 @@ from smoke import cases, check, require_full_ready, model_input_digest
 from real_budget import estimate, verified_journal
 import real_budget
 import real_phase
+import smoke
 from cj_api.real_services import canonical_tool, TOOL_SYSTEM, TOOLS
-from cj_agent.provider import M4_BASE, M4_MODEL
+from cj_agent.provider import M4_BASE, M4_MODEL, M4_NATIVE_TURN_PROFILE, M4_TURN_FUNCTION
+from cj_agent.provider import M4_NATIVE_TURN_PROFILE_V2, M4_TURN_FUNCTION_V2
 from cj_place.models import (Result, Source, Outcome, Observed, FieldState, Place, Coordinate, Route)
 from cj_place.contract_v1 import decode_query, encode_result
 from datetime import datetime, timezone
 from cj_usage.authorization_budget import canonical
 
 
-def evidence(case, language='zh'):
+def evidence(case, language='zh', *, proxy=False, profile=M4_NATIVE_TURN_PROFILE):
     run='original-'+case['id']+'-'+language;mid='message-'+run;answer='Actual fixture body'
     ops=[];attempts=[]
     def model(n,messages):
         aid=run+'-model-'+str(n)
         inputs=dict(messages=deepcopy(messages),system=TOOL_SYSTEM,
                     native_tools=[t for t in TOOLS if t['function']['name'] in case['native']])
+        if proxy:inputs.update(native_turn_profile=profile,external_tools_disabled=False)
         ops.append(dict(run_id=run,operation_key='model.tool_turn.'+str(n),registration_id='model.tool_turn',
                         attempt_id=aid,input=inputs))
         attempts.append(dict(attempt_id=aid,kind='model',input_sha=model_input_digest(inputs),state='RECEIVED',receipt=dict(
@@ -71,7 +74,21 @@ def evidence(case, language='zh'):
         else:wire=canonical(data)
         attempts[-1]['receipt']['response_sha256']=sha256(wire).hexdigest()
         results.append(dict(role='tool',tool_call_id=aid,content=json.dumps(dict(tool=name,result=data))))
-    model(1,[dict(role='assistant',content=None,tool_calls=calls),*results])
+    if proxy:
+        turn=dict(version='MODEL-tool-turn.1',kind='tool',answer=None,calls=[
+            dict(name=c['function']['name'],arguments=json.loads(c['function']['arguments'])) for c in calls])
+        function_name=M4_TURN_FUNCTION
+        if profile==M4_NATIVE_TURN_PROFILE_V2:
+            turn=dict(calls=turn['calls'])
+            function_name=M4_TURN_FUNCTION_V2
+        wrapper=run+'-wrapper'
+        aggregate=[dict(index=i,name=call['function']['name'],**json.loads(result['content']))
+                   for i,(call,result) in enumerate(zip(calls,results))]
+        messages=[dict(role='assistant',content=None,tool_calls=[dict(id=wrapper,type='function',
+            function=dict(name=function_name,arguments=json.dumps(turn)))]),
+            dict(role='tool',tool_call_id=wrapper,content=json.dumps(dict(results=aggregate)))]
+    else:messages=[dict(role='assistant',content=None,tool_calls=calls),*results]
+    model(1,messages)
     snapshot=dict(run_id=run,message_id=mid,status='completed',text_state='complete',text=answer)
     return dict(input_sha256=sha256(case['inputs'][language].encode()).hexdigest(),observed=dict(message_receipt=dict(run_id=run,message_id=mid),runtime_role='cj_m1_runtime',
         foreign_message_rows=0,foreign_mutations=0,formal_trip_count=0,memory_item_count=0),
@@ -80,6 +97,129 @@ def evidence(case, language='zh'):
 
 
 class SmokeChecks(unittest.TestCase):
+    def test_completed_fact_answer_with_citation_prefix_keeps_receipt_requirements(self):
+        case=cases('2026-11-04')[2]
+        raw=evidence(case,proxy=True,profile=M4_NATIVE_TURN_PROFILE_V2)
+        raw['answer']='来源：https://en.nia.gov.cn/\n来源：实际官方摘录。日期适用性和资格 UNKNOWN。'
+        raw['events'][0]['data']['text']=raw['answer']
+        self.assertEqual(check(case,raw)['status'],'PASS')
+        next(r for r in raw['authorization_attempts'] if r['kind']=='fact').update(state='INTENT',receipt=None)
+        self.assertEqual(check(case,raw)['status'],'FAIL')
+
+    def test_compact_profile_requires_same_original_tool_chain_in_all_six_cells(self):
+        for case in cases('2026-11-04'):
+            for language in ('zh','en'):
+                with self.subTest(case=case['id'],language=language):
+                    raw=evidence(case,language,proxy=True,profile=M4_NATIVE_TURN_PROFILE_V2)
+                    self.assertEqual(check(case,raw)['status'],'PASS')
+
+    def test_compact_profile_rejects_wrong_wrapper_shape_binding_and_tool_result(self):
+        case=cases('2026-11-04')[0]
+        for mutation in ('legacy_wrapper','duplicate_calls','mixed_branches','foreign_id','changed_result'):
+            with self.subTest(mutation=mutation):
+                raw=evidence(case,proxy=True,profile=M4_NATIVE_TURN_PROFILE_V2)
+                follow=raw['operations'][-1]
+                assistant,tool=follow['input']['messages']
+                wrapper=assistant['tool_calls'][0]['function']
+                if mutation=='legacy_wrapper':wrapper['name']=M4_TURN_FUNCTION
+                elif mutation=='duplicate_calls':wrapper['arguments']='{"calls":[],'+wrapper['arguments'][1:]
+                elif mutation=='mixed_branches':
+                    arguments=json.loads(wrapper['arguments'])
+                    arguments['answer']={'zh':'回答','en':'Answer'}
+                    wrapper['arguments']=json.dumps(arguments)
+                elif mutation=='foreign_id':tool['tool_call_id']='foreign-wrapper'
+                else:
+                    bundle=json.loads(tool['content'])
+                    bundle['results'][0]['result']={}
+                    tool['content']=json.dumps(bundle)
+                receipt=next(a for a in raw['authorization_attempts'] if a['attempt_id']==follow['attempt_id'])
+                receipt['input_sha']=model_input_digest(follow['input'])
+                self.assertEqual(check(case,raw)['status'],'FAIL')
+
+    def test_proxy_four_tool_flows_preserve_all_original_receipt_requirements(self):
+        for case in cases('2026-11-04'):
+            for language in ('zh','en'):
+                with self.subTest(case=case['id'],language=language):
+                    self.assertEqual(check(case,evidence(case,language,proxy=True))['status'],'PASS')
+
+    def test_proxy_wrapper_inner_query_index_and_results_cannot_be_changed(self):
+        case=cases('2026-11-04')[0]
+        for mutation in ('id','wrapper','arguments','index','name','missing','result'):
+            with self.subTest(mutation=mutation):
+                e=evidence(case,proxy=True);model=e['operations'][-1];messages=model['input']['messages']
+                wrapper=messages[0]['tool_calls'][0];turn=json.loads(wrapper['function']['arguments'])
+                bundle=json.loads(messages[1]['content'])
+                if mutation=='id':messages[1]['tool_call_id']='foreign-wrapper'
+                elif mutation=='wrapper':wrapper['function']['name']='foreign-function'
+                elif mutation=='arguments':turn['calls'][0]['arguments']['keyword']='different-query'
+                elif mutation=='index':bundle['results'][1]['index']=0
+                elif mutation=='name':bundle['results'][0]['name']='weather'
+                elif mutation=='missing':bundle['results'].pop()
+                elif mutation=='result':bundle['results'][0]['result']={}
+                wrapper['function']['arguments']=json.dumps(turn)
+                messages[1]['content']=json.dumps(bundle)
+                # Even a real wire hash of damaged input cannot replace the original tool receipt.
+                next(a for a in e['authorization_attempts'] if a['attempt_id']==model['attempt_id'])['input_sha']=model_input_digest(model['input'])
+                self.assertEqual(check(case,e)['status'],'FAIL')
+
+    def test_proxy_missing_data_and_unknown_receipts_never_pass_completed_text(self):
+        case=cases('2026-11-04')[1]
+        for mutation in ('data','tool_receipt','model_receipt','body','run'):
+            with self.subTest(mutation=mutation):
+                e=evidence(case,proxy=True)
+                if mutation=='data':e['operations'][-1]['input']['messages'].pop()
+                elif mutation in ('tool_receipt','model_receipt'):
+                    suffix='tool-0' if mutation=='tool_receipt' else 'model-1'
+                    next(a for a in e['authorization_attempts'] if a['attempt_id'].endswith(suffix)).update(state='INTENT',receipt=None)
+                elif mutation=='body':e['answer']='Source: https://example.com\n'
+                elif mutation=='run':e['outcomes'][0]['status']='unknown'
+                self.assertEqual(check(case,e)['status'],'FAIL')
+
+    def test_duplicate_result_fields_are_not_accepted_in_either_transport(self):
+        case=cases('2026-11-04')[1]
+        for proxy in (False,True):
+            with self.subTest(proxy=proxy):
+                e=evidence(case,proxy=proxy);message=e['operations'][-1]['input']['messages'][-1]
+                key='results' if proxy else 'result';value=json.loads(message['content'])
+                message['content']='{"'+key+'":null,'+message['content'][1:]
+                self.assertEqual(check(case,e)['status'],'FAIL')
+
+    def test_proxy_fact_excerpts_must_come_from_the_verified_original_result(self):
+        case=cases('2026-11-04')[2];e=evidence(case,proxy=True);model=e['operations'][-1]
+        bundle=json.loads(model['input']['messages'][-1]['content']);original=deepcopy(bundle['results'][0]['result'])
+        bundle['results'][0]['result']['excerpts']=[]
+        receipt=next(a['receipt'] for a in e['authorization_attempts'] if a['kind']=='fact')
+        receipt['response_sha256']=sha256(canonical(bundle['results'][0]['result'])).hexdigest()
+        model['input']['messages'][-1]['content']=json.dumps(bundle)
+        model['input']['messages'].append(dict(role='tool',tool_call_id='unbound-fake',content=json.dumps(dict(tool='fact',result=original))))
+        proof=check(case,e)
+        self.assertEqual(proof['status'],'FAIL');self.assertIn('official_page_excerpt_not_proven',proof['reasons'])
+
+    def test_wire_digest_uses_actual_proxy_and_legacy_final_strategy(self):
+        from real import MeteredDashScopeProvider,DashScopeConfig
+        class Captured(Exception):pass
+        class Capture:
+            def begin(self,attempt,kind,raw):self.raw=raw;raise Captured()
+        case=cases('2026-11-04')[1]
+        for proxy,final in ((False,False),(False,True),(True,False),(True,True)):
+            with self.subTest(proxy=proxy,final=final):
+                value=evidence(case,proxy=proxy)['operations'][-1]['input']
+                kwargs=dict(native_turn_profile=M4_NATIVE_TURN_PROFILE,final_answer=final) if proxy else dict(tool_choice='none' if final else None)
+                if proxy:value['external_tools_disabled']=final
+                elif final:value['tool_choice']='none'
+                capture=Capture();provider=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,'offline-only',max_output_tokens=1024),capture)
+                source=provider.invoke(value['messages'],value['system'],'no-dispatch',tools=value['native_tools'],receipt={},guard=lambda:False,**kwargs)
+                try:
+                    with self.assertRaises(Captured):next(source)
+                finally:source.close()
+                wire=json.loads(capture.raw)
+                self.assertEqual(model_input_digest(value),sha256(capture.raw).hexdigest())
+                self.assertEqual(wire['messages'][1:],value['messages'])
+                if proxy:
+                    self.assertEqual(wire['tool_choice']['function']['name'],M4_TURN_FUNCTION)
+                    self.assertEqual(wire['tools'][0]['function']['parameters']['properties']['calls']['maxItems'],0 if final else 4)
+                elif final:self.assertEqual(wire['tool_choice'],'none')
+
     def test_all_four_tool_flows_need_real_receipt_and_continuation(self):
         for c in cases('2026-11-04'):
             self.assertEqual(check(c,evidence(c))['status'],'PASS')
@@ -171,6 +311,9 @@ class SmokeChecks(unittest.TestCase):
             self.assertTrue(real_phase.claim('full',p/'full-a','candidate1'))
             self.assertFalse(real_phase.claim('full',p/'full-b','candidate1'))
 
+    @patch.object(real_budget,'TOOL_STOP',160)
+    @patch.object(real_budget,'MODEL_STOP',400)
+    @patch.object(real_budget,'MODEL_BUDGET',500)
     def test_first_round_based_estimate_and_equality_stop(self):
         previous=[dict(kind='model')]*166+[dict(kind='place')]*17+[dict(kind='weather')]*57+[dict(kind='fact')]*10
         r=estimate(previous,include_smoke=True)
@@ -178,6 +321,97 @@ class SmokeChecks(unittest.TestCase):
         self.assertTrue(r['within_stop_lines'])
         self.assertFalse(estimate(previous+[dict(kind='model')]*68,include_smoke=True)['within_stop_lines'])
         self.assertFalse(estimate(previous+[dict(kind='weather')]*24,include_smoke=True)['within_stop_lines'])
+
+    @patch.object(real_budget,'MODEL_STOP',400)
+    @patch.object(real_budget,'MODEL_BUDGET',500)
+    def test_JT_tool_stop_change_allows_161_projection_within_original_200_budget(self):
+        previous=[dict(kind='model')]*200+[dict(kind='place')]*99
+        r=estimate(previous,include_smoke=True)
+        self.assertEqual(r['projected_conservative_cny'],dict(model=366,tool=161))
+        self.assertEqual(r['stop_cny'],dict(model=400,tool=10000))
+        self.assertEqual(r['budget_cny'],dict(model=500,tool=200))
+        self.assertTrue(r['within_authorization'])
+        self.assertEqual(r['actual_billed_total'],'UNKNOWN')
+
+    def test_raised_stop_does_not_authorize_more_than_original_tool_total(self):
+        for before,allowed in ((138,True),(139,False)):
+            with self.subTest(before=before):
+                r=estimate([dict(kind='route')]*before,include_smoke=True)
+                self.assertTrue(r['within_stop_lines'])
+                self.assertEqual(r['within_budget'],allowed)
+                self.assertEqual(r['within_authorization'],allowed)
+
+    @patch.object(real_budget,'MODEL_STOP',400)
+    @patch.object(real_budget,'MODEL_BUDGET',500)
+    def test_model_equality_stop_still_blocks_after_tool_stop_change(self):
+        r=estimate([dict(kind='model')]*234,include_smoke=True)
+        self.assertEqual(r['projected_conservative_cny']['model'],400)
+        self.assertTrue(r['within_budget'])
+        self.assertFalse(r['within_authorization'])
+
+    @patch.object(real_budget,'MODEL_STOP',400)
+    @patch.object(real_budget,'MODEL_BUDGET',500)
+    def test_full_between_case_guard_uses_new_stop_and_original_total(self):
+        for tools in (159,160,161,199):
+            with self.subTest(tools=tools):
+                self.assertFalse(real_budget.stop_reached(dict(place=tools)))
+        self.assertTrue(real_budget.stop_reached(dict(place=200)))
+        self.assertFalse(real_budget.stop_reached(dict(model=386)))
+        self.assertTrue(real_budget.stop_reached(dict(model=387)))
+
+    @patch.object(real_budget,'TOOL_STOP',160)
+    def test_full_between_case_guard_retains_historical_stop_policy(self):
+        self.assertFalse(real_budget.stop_reached(dict(weather=159)))
+        self.assertTrue(real_budget.stop_reached(dict(weather=160)))
+
+    def test_JT_model_total_and_stop_both_10000_keep_M1_and_tool_cap(self):
+        previous=[dict(kind='model',state='INTENT',receipt=None)]*232+[dict(kind='place')]*118
+        r=estimate(previous,include_smoke=True)
+        self.assertEqual(r['before_conservative_cny'],dict(model=245,tool=118))
+        self.assertEqual(r['additional_estimate_cny'],dict(model=153,tool=62))
+        self.assertEqual(r['projected_conservative_cny'],dict(model=398,tool=180))
+        self.assertEqual(r['stop_cny'],dict(model=10000,tool=10000))
+        self.assertEqual(r['budget_cny'],dict(model=10000,tool=200))
+        self.assertEqual(r['M1_hold_cny'],13)
+        self.assertTrue(r['within_authorization'])
+        self.assertEqual(r['actual_billed_total'],'UNKNOWN')
+
+    def test_model_10000_projection_equality_remains_a_stop(self):
+        for count,total,within_budget,allowed in ((9833,9999,True,True),(9834,10000,True,False),(9835,10001,False,False)):
+            with self.subTest(total=total):
+                r=estimate([dict(kind='model')]*count,include_smoke=True)
+                self.assertEqual(r['projected_conservative_cny']['model'],total)
+                self.assertEqual(r['within_budget'],within_budget)
+                self.assertEqual(r['within_authorization'],allowed)
+
+    def test_model_between_cases_stop_10000_includes_original_M1_hold(self):
+        self.assertFalse(real_budget.stop_reached(dict(model=9986)))
+        self.assertTrue(real_budget.stop_reached(dict(model=9987)))
+        self.assertTrue(real_budget.stop_reached(dict(model=9988)))
+        self.assertTrue(real_budget.stop_reached(dict(model=232,weather=200)))
+
+    def test_future_forecast_does_not_change_original_attempts_or_hold(self):
+        previous=[dict(kind='model',state='INTENT',receipt=None),dict(kind='weather',state='RECEIVED',receipt={})]
+        original=json.dumps(previous,sort_keys=True)
+        a=estimate(previous,include_smoke=True);b=estimate(previous,include_smoke=True)
+        self.assertEqual(a,b)
+        self.assertEqual(a['before_conservative_cny'],dict(model=14,tool=1))
+        self.assertEqual(a['additional_estimate_cny'],dict(model=153,tool=62))
+        self.assertEqual(json.dumps(previous,sort_keys=True),original)
+
+    def test_smoke_over_total_budget_stops_before_credentials_claim_or_exit(self):
+        with tempfile.TemporaryDirectory() as folder, \
+                patch.object(sys,'argv',['smoke.py','--output',str(Path(folder)/'new')]), \
+                patch.dict(os.environ,{'CJ_M4_SYNTHETIC_ONLY':'1'}), \
+                patch.object(smoke,'claimed',return_value=False), \
+                patch.object(smoke.subprocess,'check_output',return_value='candidate'), \
+                patch.object(smoke,'verified_journal',return_value=[dict(kind='route')]*139), \
+                patch.object(smoke,'create_real_services',side_effect=AssertionError('no service credentials or exit')), \
+                patch.object(smoke,'keychain',side_effect=AssertionError('no key read')), \
+                patch.object(smoke,'claim',side_effect=AssertionError('no phase claim')), \
+                patch.object(smoke,'AuthorizationBudget',side_effect=AssertionError('no budget mutation')):
+            with self.assertRaisesRegex(ValueError,'exceeds_authorization'):
+                smoke.main()
 
 
 if __name__=='__main__':unittest.main()

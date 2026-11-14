@@ -13,6 +13,15 @@ class RepositoryUnavailable(Exception):
     pass
 
 
+def _ledger_row(row):
+    """Database read boundary: (revision, format_version, ledger) -> (revision, Ledger)."""
+    revision, version, raw = row
+    integer(revision)
+    if type(version) is not int or version != 1:
+        raise CorruptLedger('unsupported ledger version')
+    return revision, decode(raw)
+
+
 class PostgresRepository:
     def __init__(self, connect, scope):
         label(scope)
@@ -48,11 +57,7 @@ class PostgresRepository:
                 row = cur.fetchone()
                 if row is None:
                     raise RepositoryUnavailable('scope unavailable')
-                revision, version, raw = row
-                integer(revision)
-                if type(version) is not int or version != 1:
-                    raise CorruptLedger('unsupported ledger version')
-                ledger = decode(raw)
+                revision, ledger = _ledger_row(row)
                 yield ledger
                 encoded = encode(ledger)
                 cur.execute('UPDATE public.cj_usage_ledger_candidate SET ledger=%s::jsonb, revision=revision+1 WHERE scope_id=%s AND revision=%s', (encoded, self.scope, revision))
@@ -117,11 +122,7 @@ class PostgresRepository:
             check()
             if row is None:
                 raise RepositoryUnavailable('scope unavailable')
-            revision, version, raw = row
-            integer(revision)
-            if type(version) is not int or version != 1:
-                raise CorruptLedger('unsupported ledger version')
-            ledger = decode(raw)
+            _, ledger = _ledger_row(row)
             if expected_period is not None and (ledger.config.period_start, ledger.config.period_end) != expected_period:
                 raise ReadUnavailable('historical period binding changed')
             attempt = ledger.attempts.get(attempt_id)

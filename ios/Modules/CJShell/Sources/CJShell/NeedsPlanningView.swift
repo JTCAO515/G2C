@@ -11,8 +11,8 @@ struct NeedsPlanningView:View {
     private var originalMessageID:String? { messages.captureAcceptedRunReceipt()?.planningSource?.receipt.message_id }
     var body:some View {
         VStack(alignment:.leading,spacing:14) {
-            RunReadableText(text:language.text("Planning candidate","规划候选"),style:.headline)
-            command("planning.discover",language.text("Read this original message's planning result","读取此原消息的规划结果"),disabled:host.busy || originalMessageID==nil) {
+            ShellCardHeading(title: language.text("Planning candidate", "规划候选"), symbol: "map")
+            command("planning.discover",language.text("Read this original message's planning result","读取此原消息的规划结果"),symbol:"doc.text.magnifyingglass",disabled:host.busy || originalMessageID==nil) {
                 if let work=host.prepareDiscovery() { Task { await work() } }
             }
             if let read=host.read {
@@ -20,10 +20,10 @@ struct NeedsPlanningView:View {
                 if let candidate=read.value.candidate {
                     detail(candidate,discovery:read.value)
                     let choose=candidate.status=="pending" && candidate.expiresAt>Int64(Date().timeIntervalSince1970) && !host.busy && host.actionID==nil
-                    command("planning.accept",language.text("Accept this exact new plan","采用这份确切的新规划"),disabled:!choose) {
+                    command("planning.accept",language.text("Accept this exact new plan","采用这份确切的新规划"),symbol:"checkmark.circle",disabled:!choose, prominent:true) {
                         if let work=host.prepareDecision(.accept,read:read) { Task { await work() } }
                     }
-                    command("planning.reject",language.text("Reject this planning candidate","拒绝这份规划候选"),disabled:!choose) {
+                    command("planning.reject",language.text("Reject this planning candidate","拒绝这份规划候选"),symbol:"xmark.circle",disabled:!choose) {
                         if let work=host.prepareDecision(.reject,read:read) { Task { await work() } }
                     }
                 }
@@ -48,14 +48,14 @@ struct NeedsPlanningView:View {
             if host.formalUnavailable {
                 RunReadableText(text:language.text("Acceptance confirmed; current formal read is unavailable. Keep the original receipt.","采用已确认；当前正式读回不可用，请保留原回执。"))
             }
-            command("planning.originals",language.text("Read earlier planning actions","读取此前规划动作"),disabled:host.busy) { host.loadOriginals() }
+            command("planning.originals",language.text("Read earlier planning actions","读取此前规划动作"),symbol:"clock.arrow.circlepath",disabled:host.busy) { host.loadOriginals() }
             ForEach(host.actions) { original in
-                command("planning.query."+original.actionID,language.text("Check original ","核对原动作 ")+original.actionID,disabled:host.busy) {
+                command("planning.query."+original.actionID,language.text("Check original ","核对原动作 ")+original.actionID,symbol:"doc.text.magnifyingglass",disabled:host.busy) {
                     if let work=host.prepareQuery(original.actionID) { Task { await work() } }
                 }
             }
             RunReadableText(text:language.text("Reads never plan again. UNKNOWN keeps the original action for read-only reconciliation.","读取不会重新规划。UNKNOWN 保留原动作，仅只读核对。"),style:.caption)
-        }.accessibilityElement(children:.contain).accessibilityIdentifier("planning.candidate")
+        }.shellCard().accessibilityElement(children:.contain).accessibilityIdentifier("planning.candidate")
             .onChange(of:originalMessageID) { _,_ in host.clearSelection() }
     }
     private func detail(_ candidate:NeedsPlanningCandidate,discovery:NeedsPlanningDiscovery) -> some View {
@@ -73,9 +73,14 @@ struct NeedsPlanningView:View {
             StructuredTripDocumentView(document:candidate.content,language:language,prefix:"planning.proposal")
         }
     }
-    private func command(_ id:String,_ title:String,disabled:Bool,action:@escaping()->Void) -> some View {
-        Button(action:action) { RunReadableText(text:title).frame(maxWidth:.infinity,minHeight:44,alignment:.leading).contentShape(Rectangle()) }
-            .buttonStyle(ShellReadableButtonStyle()).disabled(disabled).accessibilityIdentifier(id)
+    private func command(_ id: String, _ title: String, symbol: String, disabled: Bool, prominent: Bool = false,
+                         action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            ShellActionLabel(title: title, symbol: symbol)
+        }
+        .buttonStyle(ShellActionButtonStyle(emphasized: prominent))
+        .disabled(disabled)
+        .accessibilityIdentifier(id)
     }
     private func state(_ value:ScopedDiscoveryState) -> String {
         switch value {

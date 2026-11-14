@@ -6,7 +6,6 @@ This gate does not create Auth users, change roles, or activate a public backend
 """
 import argparse
 import base64
-from contextlib import contextmanager
 from datetime import date,datetime,timezone
 import fcntl
 import hashlib
@@ -30,7 +29,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'scripts'))
 sys.path.insert(0,str(ROOT/'backend/agent/tests'))
 from cj_api.local_app import LocalDatabase,create_local_app,scope_for,ISSUER,_require_unbound
-from cj_api.supabase_test_database import decode_uri,pin_ca,current_authorization,discard_session,require_environment,require_identity,prepare_owned_session
+from cj_api.supabase_test_database import SUPABASE_TEST_SCHEMA,decode_uri,pin_ca,current_authorization,discard_session,require_environment,require_identity,prepare_owned_session
 from cj_agent.draft import trip_scope_for
 from cj_message.domain import Service as MessageService
 from cj_trip.confirmation import ConfirmationSigner
@@ -180,7 +179,7 @@ def fixture(root,subjects):
     """Original signed Trip flow; no callback or handcrafted private records."""
     with pg_suites.cluster('pool_gate_source',port=55883,role='cj_pool_gate_source',root=root/'pg',socket=root/'s') as config:
         with psycopg.connect(**config,autocommit=True) as conn:
-            chain=migrate.load();migrate.up(conn,chain,chain[-1]['version'])
+            migrate.up(conn,migrate.load(),SUPABASE_TEST_SCHEMA)
         conninfo=root/'conn.json';conninfo.write_text(json.dumps(config))
         auth=root/'auth';dev_auth.init(auth,list(subjects))
         with patch.dict(os.environ,{'CJ_E2E_CONNINFO':str(conninfo)}):
@@ -371,7 +370,7 @@ def run(ca,*,resume=False):
             operator=dict(decode_uri(keychain('g2c-supabase-db'),operator=True),sslrootcert=pinned.name)
             runtime=dict(decode_uri(keychain('g2c-supabase-runtime-db')),sslrootcert=pinned.name)
             with query.connect(operator,operator=True) as conn:
-                if migrate.applied(conn)!=[m['version'] for m in migrate.load()]:raise GateFailure('exact_application_schema_required')
+                if migrate.applied(conn)!=list(range(1,SUPABASE_TEST_SCHEMA+1)):raise GateFailure('exact_application_schema_required')
                 if query.execute(conn,'SELECT ssl FROM pg_catalog.pg_stat_ssl WHERE pid=pg_backend_pid()').fetchone()!=(True,):raise GateFailure('database_side_TLS_required')
                 if resume:
                     data={t:rows(conn,t,all_scopes,query) for t in TABLES}

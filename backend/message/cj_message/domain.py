@@ -204,6 +204,14 @@ class Cursor:
     after: int
 
 
+def read_active_message(tx, message_id):
+    """Read under the caller's MESSAGE scope lock and validate the original chat."""
+    stored = tx.find(message_id)
+    if stored is not None:
+        tx.chat(stored.receipt.conversation_id, stored.receipt.generation)
+    return stored
+
+
 class Service:
     """Repository is pre-scoped by a future trusted AUTH composition root.
 
@@ -241,38 +249,47 @@ class Service:
                     raise InputConflict()
                 receipt = old.receipt
             else:
-                chat = tx.chat(command.conversation_id)
-                if (chat.generation, chat.last_sequence) != (command.expected_generation, command.expected_sequence):
-                    raise SequenceConflict()
-                if travel:
-                    from .travel_reference import require_producer
-                    if formal:
-                        if formal_producer is None:
-                            from .trip_reference import require_producer as require_trip
-                            source=require_trip(tx,command)
-                        else:source=formal_producer.require(tx,command)
-                    else:
-                        require_producer(tx,command)
-                receipt = Receipt(command.message_id, command.conversation_id,
-                                  chat.generation, chat.last_sequence + 1,
-                                  self.new_run_id(), hashlib.sha256(raw).hexdigest())
-                stored=Stored(raw,receipt)
-                if travel:
-                    from .travel_reference import insert_reference
-                    tx.insert(stored,command=command)
-                    if formal:
-                        from .trip_reference import insert_reference as insert_trip
-                        insert_trip(tx,stored,command,source)
-                    else:
-                        insert_reference(tx,stored,command)
-                else:
-                    tx.insert(stored)
-                tx.enqueue(receipt)
+                receipt = self.accept_new(tx, command, travel=travel, formal=formal,
+                                          formal_producer=formal_producer)
             if travel:
                 from .travel_reference import read_reference
                 reference=read_reference(tx,Stored(raw,receipt))
         # Only leave the transaction with a receipt after commit has succeeded.
         return TravelAcceptance(receipt,reference) if travel else receipt
+
+    def accept_new(self, tx, command, *, travel, formal=False, formal_producer=None, dialogue=None):
+        """Accept an already parsed command under the original MESSAGE scope lock."""
+        chat = tx.chat(command.conversation_id)
+        if (chat.generation, chat.last_sequence) != (command.expected_generation, command.expected_sequence):
+            raise SequenceConflict()
+        if travel:
+            from .travel_reference import require_producer
+            if formal:
+                if formal_producer is None:
+                    from .trip_reference import require_producer as require_trip
+                    source = require_trip(tx, command)
+                else:
+                    source = formal_producer.require(tx, command)
+            else:
+                require_producer(tx, command)
+        receipt = Receipt(command.message_id, command.conversation_id, chat.generation,
+                          chat.last_sequence + 1, self.new_run_id(), hashlib.sha256(command.raw).hexdigest())
+        stored = Stored(command.raw, receipt)
+        if travel:
+            from .travel_reference import insert_reference
+            if dialogue is None:
+                tx.insert(stored, command=command)
+            else:
+                tx.insert(stored, command=command, dialogue=dialogue)
+            if formal:
+                from .trip_reference import insert_reference as insert_trip
+                insert_trip(tx, stored, command, source)
+            else:
+                insert_reference(tx, stored, command)
+        else:
+            tx.insert(stored)
+        tx.enqueue(receipt)
+        return receipt
 
     def open_conversation(self, conversation_id):
         """Idempotently create an active chat for this scope; never reactivates an inactive one."""
@@ -292,9 +309,7 @@ class Service:
     def query(self, message_id):
         with self.repository.transaction() as tx:
             tx.lock_scope()
-            old = tx.find(message_id)
-            if old is not None:
-                tx.chat(old.receipt.conversation_id, old.receipt.generation)
+            old = read_active_message(tx, message_id)
         # None means absent in this ledger; production retention policy still gates retry.
         return old
 
@@ -337,43 +352,55 @@ class Service:
     def send_status_v2(self, conversation_id, message_id=None):
         return self._send_status(conversation_id,message_id,travel=True)
 
-    def _send_status(self, conversation_id, message_id, *, travel, formal=False, edit=False):
+    def _send_status(self, conversation_id, message_id, *, travel, formal=False, edit=False, transaction=None):
         if (type(conversation_id) is not str or not conversation_id.strip()
                 or len(conversation_id.encode('utf-8')) > 256 or '\x00' in conversation_id
                 or (message_id is not None and (type(message_id) is not str or not message_id.strip()))):
             raise InvalidInput('explicit conversation and optional message required')
+        if transaction is not None:
+            return self._send_status_in_transaction(transaction, conversation_id, message_id,
+                                                    travel=travel, formal=formal, edit=edit)
         with self.repository.transaction() as tx:
-            # Both reads must follow the same scope lock as receive. READ COMMITTED
-            # without this lock can combine an absent receipt with a newer head.
+            # Both reads still share the receive lock. A Lio projection may
+            # already hold this exact protected transaction for its callback.
             tx.lock_scope()
-            stored = tx.find(message_id) if message_id is not None else None
-            if stored is not None and stored.receipt.conversation_id != conversation_id:
-                stored = None
-            head = tx.active_head(conversation_id)
-            reference=None
-            if travel and stored is not None:
-                from .travel_reference import read_reference
-                reference=read_reference(tx,stored)
-                if not edit and reference.message_version=='MESSAGE-send.4':
-                    raise Unavailable('send.4 requires its read version')
-                if not formal and reference.message_version=='MESSAGE-send.3':
-                    raise Unavailable('send.3 requires explicit versioned read')
+            return self._send_status_in_transaction(tx, conversation_id, message_id,
+                                                    travel=travel, formal=formal, edit=edit)
+
+    def _send_status_in_transaction(self, tx, conversation_id, message_id, *, travel, formal, edit):
+        stored = tx.find(message_id) if message_id is not None else None
+        if stored is not None and stored.receipt.conversation_id != conversation_id:
+            stored = None
+        head = tx.active_head(conversation_id)
+        reference=None
+        if travel and stored is not None:
+            from .travel_reference import read_reference
+            reference=read_reference(tx,stored)
+            if not edit and reference.message_version=='MESSAGE-send.4':
+                raise Unavailable('send.4 requires its read version')
+            if not formal and reference.message_version=='MESSAGE-send.3':
+                raise Unavailable('send.3 requires explicit versioned read')
         return TravelSendStatus(stored,head,reference) if travel else SendStatus(stored, head)
+
+    def _message_cursor(self, tx, conversation_id, cursor):
+        """Current chat plus a cursor bound to it; a stale or foreign cursor needs resync."""
+        chat = tx.chat(conversation_id)
+        if cursor is None:
+            cursor = Cursor(self.repository.scope, conversation_id, chat.generation,
+                            chat.epoch, chat.last_sequence, 0)
+        if (type(cursor) is not Cursor or
+            (cursor.scope, cursor.conversation_id, cursor.generation, cursor.epoch) !=
+            (self.repository.scope, conversation_id, chat.generation, chat.epoch) or
+            not 0 <= cursor.after <= cursor.through <= chat.last_sequence):
+            raise ResyncRequired()
+        return chat, cursor
 
     def page(self, conversation_id, cursor=None, limit=20):
         if type(limit) is not int or not 1 <= limit <= 100:
             raise InvalidInput('invalid limit')
         with self.repository.transaction() as tx:
             tx.lock_scope()
-            chat = tx.chat(conversation_id)
-            if cursor is None:
-                cursor = Cursor(self.repository.scope, conversation_id, chat.generation,
-                                chat.epoch, chat.last_sequence, 0)
-            if (type(cursor) is not Cursor or
-                (cursor.scope, cursor.conversation_id, cursor.generation, cursor.epoch) !=
-                (self.repository.scope, conversation_id, chat.generation, chat.epoch) or
-                not 0 <= cursor.after <= cursor.through <= chat.last_sequence):
-                raise ResyncRequired()
+            chat, cursor = self._message_cursor(tx, conversation_id, cursor)
             rows = tx.page(conversation_id, cursor.generation, cursor.after, cursor.through, limit)
             # A hole is not an empty/successful history page.
             expected = min(limit, cursor.through - cursor.after)
@@ -409,15 +436,7 @@ class Service:
             raise InvalidInput('invalid limit')
         with self.repository.transaction() as tx:
             tx.lock_scope()
-            chat = tx.chat(conversation_id)
-            if cursor is None:
-                cursor = Cursor(self.repository.scope, conversation_id, chat.generation,
-                                chat.epoch, chat.last_sequence, 0)
-            if (type(cursor) is not Cursor or
-                (cursor.scope, cursor.conversation_id, cursor.generation, cursor.epoch) !=
-                (self.repository.scope, conversation_id, chat.generation, chat.epoch) or
-                not 0 <= cursor.after <= cursor.through <= chat.last_sequence):
-                raise ResyncRequired()
+            chat, cursor = self._message_cursor(tx, conversation_id, cursor)
             stored = tx.history(conversation_id, chat.generation, cursor.after, cursor.through, limit)
             if len(stored) != min(limit, cursor.through - cursor.after):
                 raise ResyncRequired()

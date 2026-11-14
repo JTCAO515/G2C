@@ -69,11 +69,15 @@ import Darwin
     public var existsInOriginalCapture: Bool { descriptor != nil }
     deinit { if let descriptor { close(descriptor) } }
     private static func openPhysical(_ path: String) throws -> Int32 {
-        var fd = open("/", O_RDONLY | O_DIRECTORY | O_CLOEXEC)
+        // Sandbox traversal needs search permission, not permission to list
+        // system ancestors. The final owned directory remains read-opened.
+        var fd = open("/", O_SEARCH | O_CLOEXEC)
         guard fd >= 0 else { throw CleanupFailure.unavailable }
-        for part in path.split(separator: "/") {
+        let parts = path.split(separator: "/")
+        for (index, part) in parts.enumerated() {
             guard part != ".", part != ".." else { close(fd); throw CleanupFailure.unavailable }
-            let next = openat(fd, String(part), O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
+            let access = index == parts.count - 1 ? O_RDONLY | O_DIRECTORY : O_SEARCH
+            let next = openat(fd, String(part), access | O_NOFOLLOW | O_CLOEXEC)
             close(fd)
             guard next >= 0 else { throw CleanupFailure.unavailable }
             fd = next

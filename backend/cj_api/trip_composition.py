@@ -1,6 +1,6 @@
 """Explicit local TRIP composition of existing fixed AUTH and public Boundary."""
 from dataclasses import dataclass
-from .composition import CompositionUnavailable, _internal_modules
+from .composition import CompositionUnavailable, _internal_modules, _strict_admission_checker
 
 
 @dataclass(frozen=True)
@@ -26,12 +26,7 @@ def build_trip_boundary(*,environment,jwt_configuration,verification_keys,access
     if environment!='local' or None in (resolve,verification_keys,access_provider):
         raise CompositionUnavailable('Explicit local TRIP AUTH/resolver configuration required')
     modules=_internal_modules('trip')
-    auth=modules['cj_auth.jwt_adapter']
-    if (not isinstance(jwt_configuration,auth.JWTConfiguration)
-            or jwt_configuration.profile is not auth.JWTProfile.STRICT_V1):
-        raise CompositionUnavailable('Fixed strict AUTH profile required')
-    verifier=auth.PyJWTVerifier(jwt_configuration,verification_keys)
-    checker=modules['cj_auth.admission'].AdmissionChecker(verifier,access_provider)
+    checker = _strict_admission_checker(modules, jwt_configuration, verification_keys, access_provider)
     boundary=modules['cj_trip.auth_boundary'].Boundary(checker,resolve,confirmation_validator)
     return boundary,modules
 

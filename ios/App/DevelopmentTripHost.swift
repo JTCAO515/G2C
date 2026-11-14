@@ -1,8 +1,11 @@
-#if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
+#if G2C_DEMO_BETA || (DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE)))
 import Foundation
 import Darwin
 import CryptoKit
 import CJShell
+#if G2C_DEMO_BETA
+import CJLioUser
+#endif
 import CJTripClient
 import CJManualPreviewClient
 import CJMessageHTTP
@@ -21,14 +24,38 @@ import HTTPTypes
 import OpenAPIRuntime
 import Observation
 
+private var developmentHostEnvironment: [String: String] {
+    #if G2C_DEMO_BETA
+    return [:]
+    #else
+    return ProcessInfo.processInfo.environment
+    #endif
+}
+
 /// Provision only already-provided journal families before device enrollment.
 /// No ciphertext/key is fabricated, and the offline cache is excluded until a
 /// sealed formal sync provisions it. Old unconfigured roots retain their shape.
 @MainActor private func provisionJournalSiblings(of base: URL, suffixes: [String]) throws {
-    let environment = ProcessInfo.processInfo.environment
+    #if !G2C_DEMO_BETA
+    let environment = developmentHostEnvironment
     guard environment["G2C_DEV_ACCOUNT_MODE"] == "1", let profile = environment["G2C_DEV_CLEANUP_PROFILE"], ["device-v3", "device-v4"].contains(profile) else { return }
-    let original = try DeviceCleanupDirectory(existingPrivateDirectory: base)
-    let parentURL = base.deletingLastPathComponent()
+    #endif
+    // Resolve only the OS-supplied Application Support alias. App descendants
+    // are appended unchanged and still undergo the physical no-follow walk.
+    let support = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask,
+        appropriateFor: nil, create: true)
+    guard base.isFileURL, let physical = realpath(support.path, nil) else { throw CleanupFailure.unavailable }
+    defer { free(physical) }
+    let physicalSupport = URL(fileURLWithPath: String(cString: physical))
+    let parts = base.pathComponents, supplied = support.pathComponents, resolved = physicalSupport.pathComponents
+    let relative: [String]
+    if parts.starts(with: supplied) { relative = Array(parts.dropFirst(supplied.count)) }
+    else if parts.starts(with: resolved) { relative = Array(parts.dropFirst(resolved.count)) }
+    else { throw CleanupFailure.unavailable }
+    guard !relative.isEmpty, relative.allSatisfy({ $0 != "." && $0 != ".." }) else { throw CleanupFailure.unavailable }
+    let physicalBase = relative.reduce(physicalSupport) { $0.appendingPathComponent($1, isDirectory: true) }
+    let original = try DeviceCleanupDirectory(existingPrivateDirectory: physicalBase)
+    let parentURL = physicalBase.deletingLastPathComponent()
     let parent = try DeviceCleanupDirectory(existingPrivateDirectory: parentURL)
     let fd = open(parentURL.path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
     guard fd >= 0 else { throw CleanupFailure.unavailable }; defer { close(fd) }
@@ -46,7 +73,9 @@ import Observation
 }
 
 @MainActor private func provisionCurrentMemoryFamilies(_ root: URL) throws {
-    guard ProcessInfo.processInfo.environment["G2C_DEV_CLEANUP_PROFILE"] == "device-v4" else { return }
+    #if !G2C_DEMO_BETA
+    guard developmentHostEnvironment["G2C_DEV_CLEANUP_PROFILE"] == "device-v4" else { return }
+    #endif
     try provisionJournalSiblings(of: root, suffixes: ["erasure-v1", "erasure-v1.CJMemoryErasureObservationsV1",
         "candidate-v1", "candidate-v1.CJMemoryCandidateRejectionsV1"])
 }
@@ -95,8 +124,13 @@ import Observation
 @MainActor final class DevelopmentTripHost {
     let id = UUID()
     let trips: TripContainerHost
+    #if G2C_DEMO_BETA
+    let lioTripLibrary: LioTripLibrary?
+    #endif
     let messages: DevelopmentMessageHost
+    #if DEBUG
     let memory: DevelopmentMemoryHost?
+    #endif
     let typedMemory: DevelopmentTypedMemoryHost?
     let needs: DevelopmentNeedsHost?
     let structuredTrips: StructuredTripHost?
@@ -105,15 +139,26 @@ import Observation
     private let lifetime: DevelopmentLifetime
     private let keys: ScopedMessageKeyProvider
 
-    init(configuration: DevelopmentSessionConfiguration, shell: ShellState, lease: DevelopmentSessionLease? = nil, offline: OfflineTripController? = nil, memoryExtensionsAllowed: Bool = false) throws {
-        let environment = ProcessInfo.processInfo.environment
+    init(configuration: DevelopmentSessionConfiguration, shell: ShellState, lease: DevelopmentSessionLease? = nil,
+         offline: OfflineTripController? = nil, memoryExtensionsAllowed: Bool = false,
+         betaComposition: DevelopmentBetaComposition? = nil) throws {
+        let environment = developmentHostEnvironment
+        if let betaComposition {
+            guard lease != nil, memoryExtensionsAllowed, configuration.endpoint == betaComposition.endpoint else {
+                throw DevelopmentBetaComposition.Failure.invalidConfiguration
+            }
+        } else if environment[DevelopmentBetaComposition.setting] != nil {
+            throw DevelopmentBetaComposition.Failure.invalidConfiguration
+        }
         let historyProfile = try DevelopmentMemoryHistoryProfile.read(environment)
         guard historyProfile == nil || lease != nil else { throw MemoryFailure.unconfigured }
-        let feedbackProfile = try DevelopmentFeedbackProfile.read(environment)
+        let feedbackProfile = try betaComposition?.feedback ?? DevelopmentFeedbackProfile.read(environment)
         let messageProfile=try DevelopmentMessageProfile.read(environment)
-        let typedMode = try DevelopmentTypedMode.read(environment,messageProfile:messageProfile)
+        let typedMode = try betaComposition?.typedMemory ?? DevelopmentTypedMode.read(environment,messageProfile:messageProfile)
         let erasureEndpoint: URL?
-        if environment["G2C_DEV_MEMORY_ERASURE_URL"] != nil {
+        if let betaComposition {
+            erasureEndpoint = betaComposition.endpoint
+        } else if environment["G2C_DEV_MEMORY_ERASURE_URL"] != nil {
             guard memoryExtensionsAllowed, lease != nil, typedMode != nil,
                   let endpoint = DevelopmentSessionConfiguration.readEndpoint(environment, key: "G2C_DEV_MEMORY_ERASURE_URL") else { throw MemoryFailure.unconfigured }
             erasureEndpoint = endpoint
@@ -124,12 +169,12 @@ import Observation
                   let endpoint = DevelopmentSessionConfiguration.readEndpoint(environment, key: "G2C_DEV_MEMORY_CANDIDATE_URL") else { throw MemoryFailure.unconfigured }
             candidateEndpoint = endpoint
         } else { candidateEndpoint = nil }
-        let needsProfile = try DevelopmentNeedsProfile.read(environment)
-        let tripEditingProfile = try DevelopmentTripEditingProfile.read(environment)
+        let needsProfile = try betaComposition?.needs ?? DevelopmentNeedsProfile.read(environment)
+        let tripEditingProfile = try betaComposition?.manualEditing ?? DevelopmentTripEditingProfile.read(environment)
         let tripDiscussions=messageProfile == .discussion,scopedEdits=messageProfile == .edit || messageProfile == .editResults
         let scopedResults=messageProfile == .editResults
-        let needsPlanning=messageProfile == .planning
-        let travelProfile=try needsPlanning ? DevelopmentTravelProfile.read(environment) : typedMode?.travel
+        let needsPlanning = betaComposition != nil || messageProfile == .planning
+        let travelProfile = try messageProfile == .planning ? DevelopmentTravelProfile.read(environment) : typedMode?.travel
         let answerProfile=try DevelopmentSessionConfiguration.toolAnswerProfile(environment)
         try messageProfile?.validate(typed:typedMode,needs:needsProfile,answer:answerProfile,
             travel:travelProfile,legacyProposal:configuration.proposalID != nil)
@@ -175,9 +220,36 @@ import Observation
                 session: lifetime.session, sessionOperation: lifetime.operation, pendingStore: store,
                 requestTimeout: 10, resourceTimeout: 20, maximumJournalBytes: 4_000_000, maximumJournalRecords: 100)
         } else {
+            #if os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+            client = try TripClient(developmentDevice: endpoint, credentials: credentials, currentBinding: { lifetime.current },
+                session: lifetime.session, sessionOperation: lifetime.operation, pendingStore: store, liveTransport: transport, liveWrites: TripLiveWrites())
+            #else
             client = TripClient(endpoint: endpoint, credentials: credentials, currentBinding: { lifetime.current },
                 session: lifetime.session, sessionOperation: lifetime.operation, pendingStore: store, liveTransport: transport, liveWrites: TripLiveWrites())
+            #endif
         }
+        #if G2C_DEMO_BETA
+        if tripEditingProfile != nil {
+            lioTripLibrary = LioTripLibrary(list: {
+                var rows: [StructuredTripSummary] = []
+                var cursor: StructuredTripCursor?
+                repeat {
+                    try Task.checkCancellation()
+                    let request = try client.prepareStructuredPage(limit: 20, after: cursor, binding: lifetime.trip)
+                    let page = try await client.structuredPage(for: request)
+                    rows.append(contentsOf: page.trips)
+                    cursor = page.next
+                } while cursor != nil
+                return rows
+            }, detail: { id in
+                let request = try client.prepareStructuredDetail(id: id, binding: lifetime.trip)
+                guard let snapshot = try await client.structuredDetail(for: request) else { return nil }
+                return try client.withCurrentStructuredSnapshot(snapshot) { _, record, _, _ in record }
+            })
+        } else {
+            lioTripLibrary = nil
+        }
+        #endif
         trips = TripContainerHost(shell: shell)
         guard trips.bind(TripContainerBinding(client: client, trip: lifetime.trip, shellGeneration: shell.generation,
             session: lifetime.session, sessionOperation: lifetime.operation, pageSize: 20,
@@ -232,17 +304,26 @@ import Observation
             messages.messages.configurePlanningCandidates(planning)
         }
         needs=try messageNeeds ? preparedNeeds : makeNeeds()
+        #if DEBUG
+        memory = try typedMode == nil ? DevelopmentMemoryProfile.read(environment).map { profile in
+            try DevelopmentMemoryHost(configuration: configuration, profile: profile, shell: shell,
+                session: lifetime.session, operation: lifetime.operation, isCurrent: { lifetime.current != nil })
+        } : nil
+        #endif
         if let typedMode {
             guard let travel = messages.travelSelection else { throw MemoryFailure.unconfigured }
+            #if G2C_DEMO_BETA
+            let clearLioChoices: (@MainActor (MemoryBinding, String) throws -> Void)? = { [actions = messages.lioMemoryActions] binding, itemID in
+                try actions.clearErasedItem(itemID, environment: binding.environment, account: binding.account)
+            }
+            #else
+            let clearLioChoices: (@MainActor (MemoryBinding, String) throws -> Void)? = nil
+            #endif
             typedMemory = try DevelopmentTypedMemoryHost(configuration:configuration,mode:typedMode,shell:shell,
                 session:lifetime.session,operation:lifetime.operation,travel:travel,messages:messages.messages,
-                isCurrent:{lifetime.current != nil}, erasureEndpoint: erasureEndpoint, candidateEndpoint: candidateEndpoint)
-            memory = nil
-        } else if let profile = try DevelopmentMemoryProfile.read(environment) {
-            memory = try DevelopmentMemoryHost(configuration: configuration, profile: profile, shell: shell,
-                session: lifetime.session, operation: lifetime.operation, isCurrent: { lifetime.current != nil })
-            typedMemory = nil
-        } else { memory = nil;typedMemory = nil }
+                isCurrent:{lifetime.current != nil}, erasureEndpoint: erasureEndpoint, candidateEndpoint: candidateEndpoint,
+                clearAdditionalOriginals: clearLioChoices)
+        } else { typedMemory = nil }
         if tripEditingProfile != nil {
             let needsHost = needs?.host
             structuredTrips = StructuredTripHost(shell: shell, client: client, binding: lifetime.trip,
@@ -279,7 +360,9 @@ import Observation
         memoryHistory?.invalidate()
         feedback?.invalidate()
         messages.invalidate()
+        #if DEBUG
         memory?.invalidate()
+        #endif
         typedMemory?.invalidate()
         needs?.invalidate()
         structuredTrips?.invalidate()
@@ -458,6 +541,7 @@ import Observation
     func invalidate() { host.invalidate(); client.invalidate(); keys.invalidate() }
 }
 
+#if DEBUG
 /// The server receives the existing manual command, with no caller source/owner flags.
 @MainActor final class DevelopmentMemoryHost {
     let host: MemoryContainerHost
@@ -481,7 +565,7 @@ import Observation
         try provisionCurrentMemoryFamilies(directory)
         let root = directory.resolvingSymlinksInPath()
         let lifecycleRoot = root.appendingPathExtension("lifecycle")
-        let managementURL = try DevelopmentMemoryProfile.managementEndpoint(ProcessInfo.processInfo.environment)
+        let managementURL = try DevelopmentMemoryProfile.managementEndpoint(developmentHostEnvironment)
         let key: MessageEncryptionKey
         if let existing = try keys.existing(expectedID: nil, for: keys.begin(.lookup)) { key = existing }
         else {
@@ -567,6 +651,8 @@ import Observation
     func invalidate() { host.invalidate(); keys.invalidate() }
 }
 
+#endif
+
 /// One account/key namespace across wire versions. V1 recovery is query-only;
 /// V2 has its own encrypted domain and cannot bypass unresolved V1 originals.
 @MainActor final class DevelopmentTypedMemoryHost {
@@ -576,7 +662,8 @@ import Observation
     private let candidates: DevelopmentMemoryCandidateComponents?
     init(configuration: DevelopmentSessionConfiguration,mode: DevelopmentTypedMode,shell: ShellState,
          session: SessionLifecycle,operation: SessionOperation,travel: TravelSelectionModel,messages: AssistantMessageHost,
-         isCurrent: @escaping @MainActor () -> Bool, erasureEndpoint: URL? = nil, candidateEndpoint: URL? = nil) throws {
+         isCurrent: @escaping @MainActor () -> Bool, erasureEndpoint: URL? = nil, candidateEndpoint: URL? = nil,
+         clearAdditionalOriginals: (@MainActor (MemoryBinding, String) throws -> Void)? = nil) throws {
         let binding = MemoryBinding(environment:configuration.environmentID,account:configuration.accountID,generation:UUID(),selection:UUID())
         let generation = shell.generation
         let namespace = MessageKeyNamespace(environment:binding.environment,account:binding.account,purpose:.localMemoryPendingV1)
@@ -610,7 +697,7 @@ import Observation
         }
         let credentials: MemoryCredentialCallback = { requested in current() == requested ? configuration.token : nil }
         let oldEndpoint = try MemoryEndpoint(url:configuration.endpoint,maximumRequestBytes:32768,maximumResponseBytes:1_000_000,allowLoopbackHTTP:true)
-        let oldManagementEndpoint = try DevelopmentMemoryProfile.managementEndpoint(ProcessInfo.processInfo.environment).map {
+        let oldManagementEndpoint = try DevelopmentMemoryProfile.managementEndpoint(developmentHostEnvironment).map {
             try MemoryEndpoint(url:$0,maximumRequestBytes:32768,maximumResponseBytes:65536,allowLoopbackHTTP:true)
         }
         let reads = try NoRedirectTransport(requestTimeout:10,resourceTimeout:20)
@@ -620,8 +707,13 @@ import Observation
         let transport = try NoRedirectTransport.developmentTypedMemory(endpoint:endpoint,requestTimeout:10,resourceTimeout:20,validate:{
             guard current() == binding else { throw MemoryFailure.staleBinding }
         })
+        #if G2C_DEMO_BETA
+        let memoryReadVersion: TypedMemoryReadVersion = .v3
+        #else
+        let memoryReadVersion: TypedMemoryReadVersion = .v2
+        #endif
         let client = try TypedMemoryClient(localEndpoint:endpoint,credentials:credentials,currentBinding:current,pendingStore:store,
-            localTransport:transport,validatePriorOriginals:{
+            localTransport:transport,readVersion:memoryReadVersion,validatePriorOriginals:{
                 if try legacy.requiresOriginalReconciliation(binding:binding) { throw MemoryFailure.pendingRequiresQuery }
             })
         var options: [TypedMemoryManualOption] = []
@@ -640,7 +732,7 @@ import Observation
         if let erasureEndpoint {
             erasure = try DevelopmentMemoryErasureComponents(configuration: configuration, endpointURL: erasureEndpoint, binding: binding,
                 legacyRoot: legacyRoot, key: key, keys: keys, manual: oldStore, management: oldManagement, typed: store,
-                session: session, operation: operation, current: current)
+                session: session, operation: operation, current: current, clearAdditionalOriginals: clearAdditionalOriginals)
         } else { erasure = nil }
         host = try TypedMemoryContainerHost(shell:shell,client:client,binding:binding,pageSize:20,options:options,travel:travel,legacy:legacy,currentBinding:current, erasureClient: erasure?.client, itemCleanup: erasure?.cleanup)
         if let candidateEndpoint {
@@ -662,7 +754,8 @@ import Observation
         legacyRoot: URL, key: MessageEncryptionKey, keys: ScopedMessageKeyProvider,
         manual: MemoryPendingStore, management: MemoryManagementPendingStore, typed: TypedMemoryPendingStore,
         session: SessionLifecycle, operation: SessionOperation,
-        current: @escaping @MainActor () -> MemoryBinding?) throws {
+        current: @escaping @MainActor () -> MemoryBinding?,
+        clearAdditionalOriginals: (@MainActor (MemoryBinding, String) throws -> Void)? = nil) throws {
         let files = FileManager.default
         let support = try files.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
         let expected = support.appendingPathComponent("G2CDevelopmentMemory", isDirectory: true)
@@ -687,7 +780,8 @@ import Observation
             return configuration.token
         }, currentBinding: current, session: session, sessionOperation: operation, pendingStore: store,
             requestTimeout: 10, resourceTimeout: 20)
-        cleanup = MemoryItemLocalCleanup(manual: manual, management: management, typed: typed)
+        cleanup = MemoryItemLocalCleanup(manual: manual, management: management, typed: typed,
+                                         clearAdditionalOriginals: clearAdditionalOriginals)
     }
     func invalidate() { client.invalidate() }
 }
@@ -771,6 +865,12 @@ import Observation
     let history: ServerHistoryHost
     let runs: RunContainerHost
     let travelSelection: TravelSelectionModel?
+    #if G2C_DEMO_BETA
+    let lio: LioService
+    let lioChats: LioChatLibrary
+    let lioTripHistory: LioTripHistoryClient
+    let lioMemoryActions: LioMemoryActionsClient
+    #endif
     private let lifetime: DevelopmentMessageLifetime
     private let keyAdapter: ExistingMessageKeyAdapter
 
@@ -779,7 +879,7 @@ import Observation
          scopedEdits:Bool=false,scopedResults:Bool=false,needsPlanning:Bool=false,currentNeeds:(@MainActor ()->MessageNeedsSelection?)?=nil,isCurrent: @escaping @MainActor () -> Bool) throws {
         guard !tripDiscussions || travelProfile == nil else { throw DevelopmentDiscussionProfile.Failure.incompatibleProfiles }
         let answerFormat: RunAnswerFormat
-        switch try DevelopmentSessionConfiguration.toolAnswerProfile(ProcessInfo.processInfo.environment) {
+        switch try DevelopmentSessionConfiguration.toolAnswerProfile(developmentHostEnvironment) {
         case .plain:answerFormat = .plainText
         case .place:answerFormat = .placeToolV1
         case .fact:answerFormat = .factToolV1
@@ -820,8 +920,27 @@ import Observation
             transport = try NoRedirectTransport.developmentMessages(endpoint:endpoint,requestTimeout:10,resourceTimeout:20,validate:{try lifetime.validate()})
         }
         let credentials = DevelopmentMessageCredentials(token: configuration.token, scope: scope, lease: lease, lifetime: lifetime)
+        #if G2C_DEMO_BETA
+        let lioEndpoint = try MessageEndpoint(url: configuration.endpoint, maximumRequestBytes: LioMemoryWire.maximumRequestBytes,
+                                              maximumResponseBytes: 4_500_000)
+        let lioClient = try LioTimelineHTTP(endpoint: lioEndpoint, scope: scope, lease: lease,
+                                           credentials: credentials, firstChatRecovery: recovery,
+                                           validate: { try lifetime.validate() })
+        let lioService = LioService.signedTimeline(lioClient)
+        lio = lioService
+        lioChats = .signed(client: lioClient, defaultService: lioService, language: { shell.language.lio },
+                           tripHistory: { conversationID in
+            LioTripHistoryClient(timeline: lioClient, recovery: recovery, scope: scope, lease: lease,
+                                 conversationID: conversationID)
+        })
+        lioTripHistory = LioTripHistoryClient(timeline: lioClient, recovery: recovery, scope: scope, lease: lease)
+        lioMemoryActions = LioMemoryActionsClient(timeline: lioClient, recovery: recovery, scope: scope, lease: lease)
+        #endif
+        let betaRead = configuration.endpoint.host == "api-beta.go2china.space"
+        let runReads = try NoRedirectTransport(requestTimeout: betaRead ? 30 : 15, resourceTimeout: 150)
         let client = MessageHTTPClient(recovery: recovery, scope: scope, endpoint: endpoint,
-                                        credentials: credentials, liveReadTransport: transport,readsScopedEditResults:scopedResults)
+            credentials: credentials, liveReadTransport: transport,readsScopedEditResults:scopedResults,
+            preservedRunReadTransport:betaRead ? runReads:nil)
         let selectedTravel = try travelProfile.map { try TravelSelectionModel(ids:$0.travel_ids,client:client,lease:lease,isCurrent:{lifetime.current}) }
         let needsForBinding:(@MainActor ()->MessageNeedsSelection?)?
         if needsPlanning {
@@ -853,11 +972,14 @@ import Observation
             selectForSending: { [weak messages] cid in messages?.selectConversationForSending(cid) == true })) else {
             messages.invalidate(); throw RecoveryError.inactive
         }
-        let runReads = try NoRedirectTransport(requestTimeout: 15, resourceTimeout: 150)
+        #if G2C_DEMO_BETA
+        let runStops = try RunCancellationTransport.developmentTravel(endpoint: endpoint, validate: { try lifetime.validate() })
+        #else
         let runStops = try scopedEdits ? RunCancellationTransport.developmentEditCompatible(endpoint:endpoint,validate:{try lifetime.validate()})
             : tripDiscussions ? RunCancellationTransport.developmentTripCompatible(endpoint:endpoint,validate:{try lifetime.validate()})
             : travelProfile == nil ? RunCancellationTransport.development(endpoint:endpoint,validate:{try lifetime.validate()})
             : RunCancellationTransport.developmentCompatible(endpoint:endpoint,validate:{try lifetime.validate()})
+        #endif
         let runModel = try RunDisplayModel(endpoint: endpoint, maximumMessageIDBytes:(tripDiscussions || scopedEdits) ? 16384 : 256, maximumTextBytes: 200000,
             credentials: { captured in
                 try lifetime.validate()
@@ -892,29 +1014,51 @@ import Observation
     private let shell: ShellState
     private let endpoint: URL
     private let approvedLocalHost: String?
+    private let approvedBetaAPI: Bool
+    private let betaComposition: DevelopmentBetaComposition?
     private let proposalID: String?
     private let tokens: [String: String]
     private let persistence: KeychainSessionStore
+    private let demoMode: Bool
+    #if G2C_DEMO_BETA
+    @ObservationIgnored private var lioChatContinuity: LioChatContinuity?
+    #endif
     @ObservationIgnored lazy var accounts: DevelopmentAccountHost = {
         DevelopmentAccountHost(shell: shell,
-            choices: tokens.keys.sorted().map { .init(id: $0, label: $0) }, persistence: persistence,
+            choices: tokens.keys.sorted().map { .init(id: $0, label: $0) }, persistence: persistence, demoMode: demoMode,
             material: { [weak self] choice in
                 guard let token = self?.tokens[choice] else { throw SessionFailure.invalidConfiguration }
                 return try SessionMaterial(trustedSDKBytes: Data(token.utf8))
             }, verify: { [weak self] material in
                 guard let self else { return .networkUnknown }
                 return await self.verify(material)
+            }, refresh: { material in
+                #if G2C_DEMO_BETA
+                return try await DemoInviteClient.renew(material)
+                #else
+                return nil
+                #endif
             }, activate: { [weak self] material, session, operation in
-                guard let self, let configuration = self.configuration(material) else { throw SessionFailure.invalidConfiguration }
+                guard let self, let inputs = try self.sessionInputs(material) else { throw SessionFailure.invalidConfiguration }
+                let configuration = inputs.configuration
                 try self.offline?.bindSynchronizationIdentity(material: material, account: configuration.accountID,
                     session: session, operation: operation)
                 if self.cleanupEnabled {
-                    try self.attachCleanup(configuration: configuration, lease: .init(session: session, operation: operation))
+                    try self.attachCleanup(configuration: configuration, material: material, lease: .init(session: session, operation: operation))
                 }
                 if self.cleanupWorkflow?.holdsBusinessFence != true {
                     self.trip = try DevelopmentTripHost(configuration: configuration, shell: self.shell,
                         lease: DevelopmentSessionLease(session: session, operation: operation), offline: self.offline,
-                        memoryExtensionsAllowed: self.cleanupWorkflow?.version == .v4)
+                        memoryExtensionsAllowed: self.cleanupWorkflow?.version == .v4, betaComposition: inputs.composition)
+                    #if G2C_DEMO_BETA
+                    if let current = self.trip?.messages.lioChats.continuity {
+                        if let previous = self.lioChatContinuity { current.inherit(previous) }
+                        self.lioChatContinuity = current
+                    }
+                    #endif
+                    if let conversation = inputs.conversation {
+                        _ = self.trip?.messages.messages.selectConversationForSending(conversation)
+                    }
                 }
                 if self.cleanupEnabled, let workflow = self.cleanupWorkflow {
                     Task { await workflow.enrollOnline() }
@@ -924,41 +1068,82 @@ import Observation
             }, invalidate: { [weak self] in self?.trip?.invalidate(); self?.trip = nil },
             clearOffline: offline == nil ? nil : { [weak self] in try self?.offline?.clearLocally() },
             serverRejected: offline == nil || cleanupEnabled ? nil : { [weak self] material in try self?.offline?.identityRejected(material: material) },
-            identityWillChange: { [weak self] in self?.cleanupWorkflow?.invalidate(); self?.cleanupWorkflow = nil; self?.cleanup = nil },
+            identityWillChange: { [weak self] in
+                #if G2C_DEMO_BETA
+                self?.lioChatContinuity = nil
+                #endif
+                self?.cleanupWorkflow?.invalidate(); self?.cleanupWorkflow = nil; self?.cleanup = nil
+            },
             rejectedContext: cleanupEnabled ? { [weak self] material, session, operation in
                 guard let self else { throw CleanupFailure.stale }
                 try await self.reconcileRejectedDevice(material: material, lease: .init(session: session, operation: operation))
             } : nil)
     }()
 
-    init(environment: [String: String], shell: ShellState) throws {
-        _ = try DevelopmentTripEditingProfile.read(environment)
+    #if DEBUG
+    convenience init(environment: [String: String], shell: ShellState) throws {
+        let composition = try DevelopmentBetaComposition.read(environment)
+        if composition == nil { _ = try DevelopmentTripEditingProfile.read(environment) }
         guard environment["G2C_DEV_ACCOUNT_MODE"] == "1",
-              let endpoint = DevelopmentSessionConfiguration.readEndpoint(environment) else { throw SessionFailure.invalidConfiguration }
+              let endpoint = composition?.endpoint ?? DevelopmentSessionConfiguration.readEndpoint(environment) else { throw SessionFailure.invalidConfiguration }
         let tokens = try DevelopmentAccountInput.read(environment)
-        let applicationID = try DevelopmentKeychainIdentity.read()
         let cleanupProfile = environment["G2C_DEV_CLEANUP_PROFILE"]
         if let cleanupProfile, !["device-v3", "device-v4"].contains(cleanupProfile) { throw SessionFailure.invalidConfiguration }
-        cleanupEnabled = cleanupProfile != nil
-        cleanupVersion = cleanupProfile == "device-v4" ? .v4 : .v3
+        try self.init(shell: shell, endpoint: endpoint, tokens: tokens,
+                      approvedLocalHost: environment["G2C_M4_LOCAL_HOST"], approvedBetaAPI: environment["G2C_M4_BETA_API"] == "1",
+                      composition: composition, proposalID: environment["G2C_DEV_PROPOSAL_ID"],
+                      offlineProfile: composition?.offline ?? DevelopmentOfflineProfile.read(environment),
+                      cleanup: cleanupProfile.map { $0 == "device-v4" ? .v4 : .v3 }, demoMode: false)
+    }
+    #endif
+
+    #if G2C_DEMO_BETA
+    convenience init(demo shell: ShellState) throws {
+        try self.init(shell: shell, endpoint: DemoBetaConfiguration.endpoint, tokens: [:],
+                      approvedLocalHost: nil, approvedBetaAPI: false, composition: nil, proposalID: nil,
+                      offlineProfile: .init(wallOffset: 0, uptimeOffset: 0, trusted: true), cleanup: .v4, demoMode: true)
+    }
+
+    var finishingDemoCleanup: Bool { cleanupWorkflow?.holdsBusinessFence == true }
+
+    func finishDemoCleanup() {
+        guard cleanup?.presentation.controlsFinalized == true else { return }
+        accounts.signOut()
+    }
+    #endif
+
+    private init(shell: ShellState, endpoint: URL, tokens: [String: String], approvedLocalHost: String?,
+                 approvedBetaAPI: Bool, composition: DevelopmentBetaComposition?, proposalID: String?,
+                 offlineProfile: DevelopmentOfflineProfile?, cleanup: CleanupDeviceVersion?, demoMode: Bool) throws {
+        let applicationID = try DevelopmentKeychainIdentity.read()
+        cleanupEnabled = cleanup != nil
+        cleanupVersion = cleanup ?? .v3
         self.shell = shell; self.endpoint = endpoint; self.tokens = tokens
-        approvedLocalHost = environment["G2C_M4_LOCAL_HOST"] // Already matched by readEndpoint above.
-        proposalID = environment["G2C_DEV_PROPOSAL_ID"]
+        self.approvedLocalHost = approvedLocalHost
+        self.approvedBetaAPI = approvedBetaAPI
+        betaComposition = composition
+        self.proposalID = proposalID
+        self.demoMode = demoMode
         let scope = try KeychainSessionScope(namespace: SessionNamespace(
-            environment: DevelopmentSessionConfiguration.environmentNamespace(endpoint), slot: "M1.Development.Active"),
+            environment: DevelopmentSessionConfiguration.environmentNamespace(endpoint), slot: demoMode ? "M4.DemoInvite.Active" : "M1.Development.Active"),
             applicationIdentifier: applicationID)
         let sdkStore = KeychainSessionStore(scope: scope, protection: .whenUnlockedThisDeviceOnly)
         persistence = sdkStore
-        if let profile = try DevelopmentOfflineProfile.read(environment) {
+        if let profile = offlineProfile {
             let files = FileManager.default
             let support = try files.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-            let directory = support.appendingPathComponent("G2COfflineTrip", isDirectory: true)
+            // Resolve the OS-supplied container alias before adding App-owned
+            // descendants. Their no-symlink walk remains unchanged.
+            guard let physical = realpath(support.path, nil) else { throw OfflineFailure.invalidPath }
+            defer { free(physical) }
+            let directory = URL(fileURLWithPath: String(cString: physical)).appendingPathComponent("G2COfflineTrip", isDirectory: true)
                 .appendingPathComponent(DevelopmentSessionConfiguration.environmentNamespace(endpoint).uuidString, isDirectory: true)
             try files.createDirectory(at: directory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+            let deviceClock = try OfflineDeviceClock.makeReader(directory: directory)
             offline = try OfflineTripController(environment: DevelopmentSessionConfiguration.environmentNamespace(endpoint),
-                applicationIdentifier: applicationID, directory: directory.resolvingSymlinksInPath(),
+                applicationIdentifier: applicationID, directory: directory,
                 sdkMaterial: sdkStore.load, policy: .acceptedTrip, clock: {
-                    guard let value = OfflineDeviceClock.read(), let wall = value.trustedWallSeconds else { return nil }
+                    guard let value = deviceClock(), let wall = value.trustedWallSeconds else { return nil }
                     let (shifted, overflow) = wall.addingReportingOverflow(profile.wallOffset)
                     guard !overflow else { return nil }
                     return .init(trustedWallSeconds: profile.trusted ? shifted : nil,
@@ -974,6 +1159,9 @@ import Observation
     private func fenceCleanupBusiness() throws {
         guard let original = cleanupWorkflow else { throw CleanupFailure.stale }
         try original.requireCurrent()
+        #if G2C_DEMO_BETA
+        lioChatContinuity = nil
+        #endif
         trip?.invalidate()
         guard cleanupWorkflow === original else { throw CleanupFailure.stale }
         try original.requireCurrent(); offline?.hide()
@@ -990,11 +1178,11 @@ import Observation
         try accounts.clearForAccountCleanup()
         shell.selectedTab = .memory; shell.memoryPath = [.accountDeletion]
     }
-    private func attachCleanup(configuration: DevelopmentSessionConfiguration, lease: DevelopmentSessionLease) throws {
+    private func attachCleanup(configuration: DevelopmentSessionConfiguration, material: SessionMaterial, lease: DevelopmentSessionLease) throws {
         cleanupWorkflow?.invalidate()
         guard let offline else { throw CleanupFailure.unavailable }
         let workflow = try DevelopmentCleanupWorkflow(scope: .init(environment: configuration.environmentID, account: configuration.accountID, generation: UUID()),
-            endpoint: endpoint, sdkStore: persistence, offline: offline, ordinary: (configuration, lease), preferredVersion: cleanupVersion,
+            endpoint: endpoint, sdkStore: persistence, offline: offline, ordinary: (configuration, lease, material.withBytes(developmentCleanupHash)), preferredVersion: cleanupVersion,
             quiesce: { [weak self] in guard let self else { throw CleanupFailure.stale }; try self.fenceCleanupBusiness() },
             clearSDK: { [weak self] in guard let self else { throw CleanupFailure.stale }; try self.clearCleanupSDK() })
         cleanupWorkflow = workflow; cleanup = workflow.host
@@ -1009,7 +1197,7 @@ import Observation
         // cached reads immediately; its original DEVICE call owns physical work.
         try offline?.denyRejectedIdentity(material: material)
         guard let configuration = configuration(material) else { throw CleanupFailure.unavailable }
-        try attachCleanup(configuration: configuration, lease: lease)
+        try attachCleanup(configuration: configuration, material: material, lease: lease)
         guard let workflow = cleanupWorkflow else { throw CleanupFailure.unavailable }
         await workflow.reconnectIdentityRefused(material: material)
     }
@@ -1041,7 +1229,12 @@ import Observation
             let saved: SessionMaterial?
             do { saved = try persistence.load() } catch SessionFailure.restorationBlocked { saved = nil }
             if let saved {
+                #if G2C_DEMO_BETA
+                let storedOwner = try? saved.withBytes { try DevelopmentSessionConfiguration.demo(DemoInviteSession.decode($0)).accountID }
+                guard storedOwner == scope.account else { return }
+                #else
                 guard configuration(saved)?.accountID == scope.account else { return }
+                #endif
             }
             let workflow = try DevelopmentCleanupWorkflow(scope: scope, endpoint: endpoint, sdkStore: persistence, offline: offline, ordinary: nil, preferredVersion: cleanupVersion,
                 quiesce: { [weak self] in guard let self else { throw CleanupFailure.stale }; try self.fenceCleanupBusiness() },
@@ -1055,16 +1248,36 @@ import Observation
         }
     }
 
-    private func configuration(_ material: SessionMaterial) -> DevelopmentSessionConfiguration? {
-        material.withBytes { bytes in
-            guard let token = String(data: bytes, encoding: .utf8) else { return nil }
-            return DevelopmentSessionConfiguration.restoring(endpoint:endpoint,token:token,
-                proposalID:proposalID,approvedLocalHost:approvedLocalHost)
+    private func sessionInputs(_ material: SessionMaterial) throws -> (configuration: DevelopmentSessionConfiguration,
+        composition: DevelopmentBetaComposition?, conversation: String?)? {
+        try material.withBytes { bytes in
+            #if G2C_DEMO_BETA
+            let invite = try DemoInviteSession.decode(bytes, now: Date())
+            return (.demo(invite), .demo(invite.composition), invite.composition.conversation_id)
+            #else
+            guard let token = String(data: bytes, encoding: .utf8),
+                  let configuration = DevelopmentSessionConfiguration.restoring(endpoint: endpoint, token: token,
+                    proposalID: proposalID, approvedLocalHost: approvedLocalHost, approvedBetaAPI: approvedBetaAPI) else { return nil }
+            return (configuration, betaComposition, nil)
+            #endif
         }
     }
 
+    private func configuration(_ material: SessionMaterial) -> DevelopmentSessionConfiguration? {
+        try? sessionInputs(material)?.configuration
+    }
+
     private func verify(_ material: SessionMaterial) async -> DevelopmentSessionCheck {
-        guard let configuration = configuration(material) else { return .rejected }
+        let configuration: DevelopmentSessionConfiguration
+        do {
+            guard let inputs = try sessionInputs(material) else { return .rejected }
+            configuration = inputs.configuration
+        } catch {
+            #if G2C_DEMO_BETA
+            if error as? DemoBetaConfiguration.Failure == .expired { return .expired }
+            #endif
+            return .rejected
+        }
         // Untrusted token metadata can deny an expired attempt, never authorize one.
         if let expiry = configuration.expiresAt, expiry <= Date().timeIntervalSince1970 { return .expired }
         do {
@@ -1359,6 +1572,10 @@ private struct DevelopmentNativeManifest: Codable {
     let scope: AccountCleanupScope
     let nonce: UUID
     let sdkHash: String
+    // The server's registered stateRef always uses the original SDK digest.
+    // Demo renewal separately pins the current Keychain bytes for local erasure.
+    var renewedSDKHash: String? = nil
+    var currentSDKHash: String { renewedSDKHash ?? sdkHash }
     let directories: [String: [String]]
     let keyIDs: [String: UUID]
     func encoded() throws -> Data {
@@ -1421,7 +1638,8 @@ private func developmentCleanupHash(_ value: Data) -> String {
         self.manifest = manifest; scope = manifest.scope; stateRef = try manifest.stateRef
         self.manifestStore = manifestStore; self.executionStore = executionStore; self.sdkStore = sdkStore
         self.offline = offline; self.quiesce = quiesce; self.clearSDK = clearSDK; self.validateOwner = validateOwner
-        guard ["NativeDeviceManifest@2", "NativeDeviceManifest@3"].contains(manifest.version), manifest.sdkHash.count == 64 else { throw CleanupFailure.stale }
+        guard ["NativeDeviceManifest@2", "NativeDeviceManifest@3"].contains(manifest.version), manifest.sdkHash.count == 64,
+              manifest.currentSDKHash.count == 64 else { throw CleanupFailure.stale }
         layout = try DevelopmentDeviceNativeLayout(scope: manifest.scope, version: manifest.deviceVersion)
         executionBytes = try executionStore.load()?.withBytes { $0 }
         let restored: DevelopmentNativeExecution?
@@ -1452,7 +1670,7 @@ private func developmentCleanupHash(_ value: Data) -> String {
         guard usable, try manifestStore.load()?.withBytes({ $0 }) == manifest.encoded(),
               try layout.manifestReferences() == nativeDirectories else { throw CleanupFailure.stale }
         let sdk = try currentSDKHash()
-        guard sdk == nil || sdk == manifest.sdkHash else { throw CleanupFailure.stale }
+        guard sdk == nil || sdk == manifest.currentSDKHash else { throw CleanupFailure.stale }
     }
     private func validateExecution(_ invocation: DeviceCleanupInvocation, _ intent: UUID) throws {
         try validateManifest()
@@ -1519,7 +1737,7 @@ private func developmentCleanupHash(_ value: Data) -> String {
         switch target {
         case .sdkSession:
             let current = try currentSDKHash()
-            guard current == nil || current == manifest.sdkHash else { throw CleanupFailure.stale }
+            guard current == nil || current == manifest.currentSDKHash else { throw CleanupFailure.stale }
             if current != nil { try clearSDK() }
         case .offlineTrip:
             if try layout.primaryURL(for: target) != nil { try offline.clearDeviceAccount(account: scope.account) }
@@ -1564,7 +1782,7 @@ private func developmentCleanupHash(_ value: Data) -> String {
     private let deviceStore: KeychainSessionStore
     private let accountStore: KeychainSessionStore
     private let indexStore: KeychainSessionStore
-    private let ordinary: (configuration: DevelopmentSessionConfiguration, lease: DevelopmentSessionLease)?
+    private let ordinary: (configuration: DevelopmentSessionConfiguration, lease: DevelopmentSessionLease, sdkHash: String)?
     private let quiesce: @MainActor () throws -> Void
     private let clearSDK: @MainActor () throws -> Void
     private var manifest: DevelopmentNativeManifest?
@@ -1610,7 +1828,7 @@ private func developmentCleanupHash(_ value: Data) -> String {
             selected: slot(environment: scope.environment, suffix: "M3.Cleanup.Selected"))
     }
     init(scope: AccountCleanupScope, endpoint: URL, sdkStore: KeychainSessionStore, offline: OfflineTripController,
-         ordinary: (DevelopmentSessionConfiguration, DevelopmentSessionLease)?, preferredVersion: CleanupDeviceVersion = .v3,
+         ordinary: (DevelopmentSessionConfiguration, DevelopmentSessionLease, String)?, preferredVersion: CleanupDeviceVersion = .v3,
          quiesce: @escaping @MainActor () throws -> Void, clearSDK: @escaping @MainActor () throws -> Void) throws {
         self.preferredVersion = preferredVersion
         self.endpoint = try MessageEndpoint(url: endpoint, maximumRequestBytes: 16384, maximumResponseBytes: 65536, allowLoopbackHTTP: true)
@@ -1629,9 +1847,36 @@ private func developmentCleanupHash(_ value: Data) -> String {
         }
         lifetime = AccountCleanupLifetime(scope: manifest?.scope ?? scope)
         if manifest != nil { try configureClients() }
+        #if G2C_DEMO_BETA
+        try pinRenewedDemoCredential()
+        #endif
         host.bind { [weak self] command in await self?.perform(command) }
         refresh()
     }
+    #if G2C_DEMO_BETA
+    /// Only a newly verified, current session for the same owner can repin local
+    /// SDK bytes. The registered stateRef and any in-flight cleanup stay sealed.
+    private func pinRenewedDemoCredential() throws {
+        guard let original = manifest, let ordinary, ordinary.sdkHash != original.currentSDKHash else { return }
+        try check()
+        guard ordinary.configuration.accountID == original.scope.account,
+              ordinary.lease.session.isCurrent(ordinary.lease.operation),
+              try sdkStore.load()?.withBytes(developmentCleanupHash) == ordinary.sdkHash,
+              try executionStore.load() == nil, let device, let account else { throw CleanupFailure.stale }
+        switch device.state {
+        case .ready, .registrationUnknown, .enrolled: break
+        default: throw CleanupFailure.stale
+        }
+        guard try account.permitsOrdinaryCredentialRenewal, try !device.hasVerifiedIdentityRefusal,
+              try manifestStore.load()?.withBytes({ $0 }) == original.encoded() else { throw CleanupFailure.stale }
+        var next = original
+        next.renewedSDKHash = ordinary.sdkHash
+        let bytes = try next.encoded()
+        try manifestStore.save(SessionMaterial(trustedSDKBytes: bytes))
+        guard try manifestStore.load()?.withBytes({ $0 }) == bytes else { throw CleanupFailure.exchangeUnknown }
+        manifest = next
+    }
+    #endif
     func invalidate() { active = false; lifetime.invalidate(); device?.invalidate(); account?.invalidate(); host.invalidate() }
     func requireCurrent() throws { try check() }
     private func check() throws { guard active else { throw CleanupFailure.stale }; try Task.checkCancellation() }
@@ -1695,7 +1940,7 @@ private func developmentCleanupHash(_ value: Data) -> String {
         let layout = try DevelopmentDeviceNativeLayout(scope: manifest.scope, version: manifest.deviceVersion)
         guard try layout.manifestReferences() == manifest.directories,
               try manifestStore.load()?.withBytes({ $0 }) == manifest.encoded(),
-              try sdkStore.load()?.withBytes(developmentCleanupHash) == manifest.sdkHash else { throw CleanupFailure.stale }
+              try sdkStore.load()?.withBytes(developmentCleanupHash) == manifest.currentSDKHash else { throw CleanupFailure.stale }
         _ = try DevelopmentDeviceNativeStores(scope: manifest.scope, layout: layout, endpoint: endpoint.url, originalKeyIDs: manifest.keyIDs)
     }
     /// Only a sealed successful formal synchronization can provision the previously
@@ -1724,7 +1969,7 @@ private func developmentCleanupHash(_ value: Data) -> String {
             for (purpose, _) in actual where original.keyIDs[purpose] == nil { guard purpose == offlinePurpose else { throw CleanupFailure.stale } }
             var expected = original.keyIDs; expected[offlinePurpose] = provision.keyID
             let next = DevelopmentNativeManifest(version: original.version, scope: original.scope, nonce: original.nonce,
-                sdkHash: original.sdkHash, directories: current, keyIDs: expected)
+                sdkHash: original.sdkHash, renewedSDKHash: original.renewedSDKHash, directories: current, keyIDs: expected)
             guard try next.stateRef == original.stateRef,
                   try manifestStore.load()?.withBytes({ $0 }) == original.encoded() else { throw CleanupFailure.stale }
             try check(); try offline.validateStorageProvision(provision)
@@ -1740,7 +1985,7 @@ private func developmentCleanupHash(_ value: Data) -> String {
         let current: String?
         do { current = try sdkStore.load()?.withBytes(developmentCleanupHash) }
         catch SessionFailure.restorationBlocked { current = nil }
-        guard let manifest, current == nil || current == manifest.sdkHash else { throw CleanupFailure.stale }
+        guard let manifest, current == nil || current == manifest.currentSDKHash else { throw CleanupFailure.stale }
         if current != nil { try clearSDK() }
     }
     func enrollOnline() async {
@@ -1750,7 +1995,7 @@ private func developmentCleanupHash(_ value: Data) -> String {
             if manifest == nil { try prepareResources() }
             guard let device, let manifest, let ordinary,
                   ordinary.lease.session.isCurrent(ordinary.lease.operation),
-                  try sdkStore.load()?.withBytes(developmentCleanupHash) == manifest.sdkHash else { throw CleanupFailure.stale }
+                  try sdkStore.load()?.withBytes(developmentCleanupHash) == manifest.currentSDKHash else { throw CleanupFailure.stale }
             // A verified switch back to an existing account must restore its own
             // original recovery locator. Never replace an unfinished clear plan.
             if case .finalizing = try Self.selection(environment: lifetime.scope.environment) { throw CleanupFailure.unavailable }
@@ -1771,8 +2016,8 @@ private func developmentCleanupHash(_ value: Data) -> String {
         do {
             try check()
             guard let device, let manifest, let ordinary,
-                  material.withBytes(developmentCleanupHash) == manifest.sdkHash,
-                  developmentCleanupHash(Data(ordinary.configuration.token.utf8)) == manifest.sdkHash else { throw CleanupFailure.stale }
+                  material.withBytes(developmentCleanupHash) == manifest.currentSDKHash,
+                  ordinary.sdkHash == manifest.currentSDKHash else { throw CleanupFailure.stale }
             try quiesce(); try check()
             let verified = try await device.perform(device.prepareIdentityVerification()); try check()
             if case .identityAllowed = verified { return } // No clearing and no offline renewal.
@@ -1937,6 +2182,372 @@ private func developmentCleanupHash(_ value: Data) -> String {
         }
         host.show(value)
     }
+}
+
+#endif
+
+#if DEBUG && G2C_DEMO_BETA && targetEnvironment(simulator)
+/// Local-only evidence of the actual Beta cleanup coordinator. No public API,
+/// remote host, real credential, deletion, or seven-day elapsed-time claim.
+struct DemoCleanupRenewalProbeResult: Codable {
+    let scenario: String
+    let renewalAccepted: Bool
+    let originalStateRefUnchanged: Bool
+    let originalControlsUnchanged: Bool
+    let manifestChangeIsOnlyRenewedSDKHash: Bool
+    let recoveryStatus: String
+    let recoveryOriginalActionID: String?
+    let recoveryOriginalRequestSha256: String?
+}
+
+@MainActor enum DemoCleanupRenewalProbe {
+    static let scenarios = ["ready", "registrationUnknown", "enrolled", "preparedUnregister",
+                            "preparationUnknown", "foreignOwner", "confirmationDispatched", "verifiedRefusal"]
+    static func run(endpoint: URL, scenario: String) async throws -> DemoCleanupRenewalProbeResult {
+        guard endpoint.scheme == "http", endpoint.host == "127.0.0.1", endpoint.port != nil,
+              scenarios.contains(scenario) else { throw CleanupFailure.unavailable }
+        return try await DevelopmentCleanupWorkflow.probeCredentialRenewal(endpoint: endpoint, scenario: scenario)
+    }
+}
+
+private extension DevelopmentCleanupWorkflow {
+    struct RenewalControlSnapshot: Equatable {
+        let manifest: Data?
+        let device: Data?
+        let account: Data?
+        let execution: Data?
+        let selection: Data?
+        let sdk: Data?
+    }
+    func renewalControlSnapshot() throws -> RenewalControlSnapshot {
+        try .init(manifest: manifestStore.load()?.withBytes { $0 },
+                  device: deviceStore.load()?.withBytes { $0 },
+                  account: accountStore.load()?.withBytes { $0 },
+                  execution: executionStore.load()?.withBytes { $0 },
+                  selection: indexStore.load()?.withBytes { $0 },
+                  sdk: sdkStore.load()?.withBytes { $0 })
+    }
+    static func probeOriginalRequest(_ record: Data?, field: String) throws -> Data {
+        guard let record, let fields = try JSONSerialization.jsonObject(with: record) as? [String: Any],
+              let encoded = fields[field] as? String, let raw = Data(base64Encoded: encoded), !raw.isEmpty else {
+            throw CleanupFailure.unavailable
+        }
+        return raw
+    }
+    func probeSeedState(_ scenario: String) async throws {
+        try prepareResources()
+        guard let manifest = manifest, let device = device, let account = account else {
+            throw CleanupFailure.unavailable
+        }
+        if scenario == "registrationUnknown" {
+            _ = try device.prepareRegistration(stateRef: manifest.stateRef)
+            guard case .registrationUnknown = device.state else { throw CleanupFailure.unavailable }
+        } else if ["enrolled", "preparedUnregister", "preparationUnknown", "confirmationDispatched", "verifiedRefusal"].contains(scenario) {
+            _ = try await device.perform(device.prepareRegistration(stateRef: manifest.stateRef))
+            guard case .enrolled = device.state else { throw CleanupFailure.unavailable }
+            if ["preparedUnregister", "preparationUnknown", "confirmationDispatched"].contains(scenario) {
+                try account.adoptDeviceEnrollment(device.acceptedEnrollment())
+                let preparation = try account.prepareAccountDeletion()
+                if scenario == "preparationUnknown" {
+                    guard case .preparationUnknown = account.state else { throw CleanupFailure.unavailable }
+                } else {
+                    try await account.perform(preparation)
+                    guard case .awaitingConfirmation(let prepared) = account.state else { throw CleanupFailure.unavailable }
+                    if scenario == "confirmationDispatched" {
+                        let confirmation = try account.prepareConfirmation(operationID: prepared.operationID,
+                            registryDigest: prepared.registryDigest, confirmation: "DELETE_ACCOUNT")
+                        do {
+                            try await account.perform(confirmation)
+                            throw CleanupFailure.unavailable
+                        } catch CleanupFailure.exchangeUnknown { }
+                        guard try account.requiresRestrictedProgress else { throw CleanupFailure.unavailable }
+                    }
+                }
+            } else if scenario == "verifiedRefusal" {
+                guard case .identityRefused = try await device.perform(device.prepareIdentityVerification()),
+                      try device.hasVerifiedIdentityRefusal else { throw CleanupFailure.unavailable }
+            }
+        } else {
+            guard case .ready = device.state, case .ready = account.state else { throw CleanupFailure.unavailable }
+        }
+    }
+    static func probeCredentialRenewal(endpoint: URL, scenario: String) async throws -> DemoCleanupRenewalProbeResult {
+        let environment = UUID(), owner = UUID()
+        let scope = AccountCleanupScope(environment: environment, account: owner, generation: UUID())
+        let sdk = try slot(environment: environment, suffix: "B691.SyntheticSDK." + owner.uuidString)
+        let oldToken = "SDK.SYNTHETIC.B691." + scenario
+        let oldMaterial = try SessionMaterial(trustedSDKBytes: Data(oldToken.utf8))
+        let oldSession = SessionLifecycle(persistence: sdk, restorePolicy: .userInitiatedOnly)
+        let oldOperation = try oldSession.beginTrustedSDKSave()
+        try oldSession.save(oldMaterial, for: oldOperation)
+        let originalConfiguration = DevelopmentSessionConfiguration(endpoint: endpoint, token: oldToken,
+            proposalID: nil, environmentID: environment, accountID: owner, subject: "synthetic-" + scenario,
+            expiresAt: Date().addingTimeInterval(7200).timeIntervalSince1970)
+        let support = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask,
+                                                   appropriateFor: nil, create: true)
+        let directory = support.appendingPathComponent("B691SyntheticOffline", isDirectory: true)
+            .appendingPathComponent(environment.uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true,
+                                                attributes: [.posixPermissions: 0o700])
+        let offline = try OfflineTripController(environment: environment,
+            applicationIdentifier: DevelopmentKeychainIdentity.read(), directory: directory,
+            sdkMaterial: sdk.load, policy: .acceptedTrip, clock: { nil })
+        let original = try Self(scope: scope, endpoint: endpoint, sdkStore: sdk, offline: offline,
+            ordinary: (originalConfiguration, .init(session: oldSession, operation: oldOperation), oldMaterial.withBytes(developmentCleanupHash)),
+            preferredVersion: .v4, quiesce: {}, clearSDK: { throw CleanupFailure.unavailable })
+        defer { original.invalidate() }
+        try await original.probeSeedState(scenario)
+        guard let manifest = original.manifest else { throw CleanupFailure.unavailable }
+        // A verified new SDK save is the fixture input to the same production
+        // coordinator init; its existing pin guard remains the decision maker.
+        original.invalidate()
+        let newToken = oldToken + ".renewed"
+        let material = try SessionMaterial(trustedSDKBytes: Data(newToken.utf8))
+        let session = SessionLifecycle(persistence: sdk, restorePolicy: .userInitiatedOnly)
+        let operation = try session.beginTrustedSDKSave()
+        try session.save(material, for: operation)
+        let configuration = DevelopmentSessionConfiguration(endpoint: endpoint, token: newToken,
+            proposalID: nil, environmentID: environment, accountID: scenario == "foreignOwner" ? UUID() : owner,
+            subject: "synthetic-" + scenario, expiresAt: Date().addingTimeInterval(604800).timeIntervalSince1970)
+        let before = try original.renewalControlSnapshot()
+        let shouldAccept = !["foreignOwner", "confirmationDispatched", "verifiedRefusal"].contains(scenario)
+        var accepted = false
+        var afterRenewal: RenewalControlSnapshot?
+        var recovery = "UNRUN_DENIED"
+        var originalActionID: String?
+        var originalRequestHash: String?
+        do {
+            let renewed = try Self(scope: scope, endpoint: endpoint, sdkStore: sdk, offline: offline,
+                ordinary: (configuration, .init(session: session, operation: operation), material.withBytes(developmentCleanupHash)),
+                preferredVersion: .v4, quiesce: {}, clearSDK: { throw CleanupFailure.unavailable })
+            defer { renewed.invalidate() }
+            accepted = true
+            afterRenewal = try renewed.renewalControlSnapshot()
+            if scenario == "ready" {
+                recovery = "NOT_APPLICABLE_NO_ORIGINAL"
+            } else {
+                let registration = ["registrationUnknown", "enrolled"].contains(scenario)
+                let request = try probeOriginalRequest(registration ? before.device : before.account,
+                                                       field: registration ? "registration" : "preparation")
+                guard let fields = try JSONSerialization.jsonObject(with: request) as? [String: Any],
+                      let actionID = fields["action_id"] as? String else { throw CleanupFailure.unavailable }
+                originalActionID = actionID; originalRequestHash = developmentCleanupHash(request)
+                guard let currentDevice = renewed.device, let currentAccount = renewed.account else {
+                    throw CleanupFailure.unavailable
+                }
+                if registration {
+                    let result = try await currentDevice.perform(currentDevice.prepareRegistrationQuery())
+                    if scenario == "registrationUnknown" {
+                        guard case .notObserved = result else { throw CleanupFailure.unavailable }
+                    } else {
+                        guard case .enrolled = result else { throw CleanupFailure.unavailable }
+                    }
+                } else {
+                    let result = try await currentAccount.read(currentAccount.prepareOriginalRead())
+                    if scenario == "preparationUnknown" {
+                        guard case .notObserved = result else { throw CleanupFailure.unavailable }
+                    } else {
+                        guard case .progress(let progress) = result,
+                              progress.status == .awaitingConfirmation else { throw CleanupFailure.unavailable }
+                    }
+                }
+                let afterRead = try renewed.renewalControlSnapshot()
+                guard try probeOriginalRequest(registration ? afterRead.device : afterRead.account,
+                    field: registration ? "registration" : "preparation") == request else { throw CleanupFailure.unavailable }
+                recovery = "PASS"
+            }
+        } catch CleanupFailure.stale {
+            guard !shouldAccept else { throw CleanupFailure.stale }
+            afterRenewal = try original.renewalControlSnapshot()
+        }
+        guard accepted == shouldAccept else { throw CleanupFailure.unavailable }
+        guard let after = afterRenewal else { throw CleanupFailure.unavailable }
+        guard before.device == after.device, before.account == after.account,
+              before.execution == after.execution, before.selection == after.selection,
+              before.sdk == after.sdk, let actualManifest = after.manifest else { throw CleanupFailure.unavailable }
+        let actual = try JSONDecoder().decode(DevelopmentNativeManifest.self, from: actualManifest)
+        var expected = manifest
+        if accepted { expected.renewedSDKHash = material.withBytes(developmentCleanupHash) }
+        guard actualManifest == (try expected.encoded()), try actual.stateRef == manifest.stateRef else {
+            throw CleanupFailure.unavailable
+        }
+        return .init(scenario: scenario, renewalAccepted: accepted, originalStateRefUnchanged: true,
+                     originalControlsUnchanged: true, manifestChangeIsOnlyRenewedSDKHash: true,
+                     recoveryStatus: recovery, recoveryOriginalActionID: originalActionID,
+                     recoveryOriginalRequestSha256: originalRequestHash)
+    }
+}
+
+struct DemoCleanupRootProbeResult: Codable {
+    let scenario: String
+    let state: String
+    let ordinaryBlocked: Bool
+    let tripAbsent: Bool
+    let originalStateRefUnchanged: Bool
+    let originalRequestsUnchanged: Bool
+    let originalSelectionUnchanged: Bool
+    let savedNewMaterial: Bool
+    let recoveryStatus: String
+    let recoveryOriginalActionID: String?
+    let recoveryOriginalRequestSha256: String?
+    let activeAccountOwnsCleanup: Bool
+    let activeAccountOwnsTrip: Bool
+    let independentOwnerCannotReadOriginal: Bool
+}
+
+@MainActor private extension DevelopmentAccountRoot {
+    static func unwrapProbeManifest(_ value: Data?) throws -> Data {
+        guard let value else { throw CleanupFailure.unavailable }; return value
+    }
+    static func probeRootRenewal(scenario: String) async throws -> DemoCleanupRootProbeResult {
+        let shell = ShellState()
+        let root = try DevelopmentAccountRoot(demo: shell)
+        guard try root.persistence.load() == nil,
+              try DevelopmentCleanupWorkflow.selection(environment: DevelopmentSessionConfiguration.environmentNamespace(DemoBetaConfiguration.endpoint)) == nil,
+              let offline = root.offline else { throw CleanupFailure.unavailable }
+        func material(owner: String, renewed: Bool) throws -> SessionMaterial {
+            let expiry = Date().addingTimeInterval(renewed ? 604700 : 3600)
+            let claims: [String: Any] = ["sub": owner, "iss": "https://local.g2c.invalid", "aud": "g2c-local",
+                "exp": expiry.timeIntervalSince1970, "b691_scenario": scenario, "b691_renewed": renewed]
+            let payload = try JSONSerialization.data(withJSONObject: claims).base64EncodedString()
+                .replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "=", with: "")
+            let grant = DemoInviteGrant(version: DemoBetaConfiguration.inviteVersion,
+                access_token: "b691fixture." + payload + ".synthetic", subject: owner,
+                expires_at: ISO8601DateFormatter().string(from: expiry))
+            let selection = try DemoCompositionProfile(language: .zh, travelID: String(repeating: "a", count: 32), travelVersion: 1)
+            return try SessionMaterial(trustedSDKBytes: JSONEncoder().encode(DemoInviteSession(grant: grant, composition: selection)))
+        }
+        let subject = "m4-synthetic-demo-" + UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased().prefix(12)
+        let old = try material(owner: subject, renewed: false)
+        let oldConfiguration = try old.withBytes { try DevelopmentSessionConfiguration.demo(DemoInviteSession.decode($0)) }
+        let scope = AccountCleanupScope(environment: oldConfiguration.environmentID, account: oldConfiguration.accountID, generation: UUID())
+        let session = SessionLifecycle(persistence: root.persistence, restorePolicy: .userInitiatedOnly)
+        let operation = try session.beginTrustedSDKSave(); try session.save(old, for: operation)
+        let original = try DevelopmentCleanupWorkflow(scope: scope, endpoint: DemoBetaConfiguration.endpoint,
+            sdkStore: root.persistence, offline: offline,
+            ordinary: (oldConfiguration, .init(session: session, operation: operation), old.withBytes(developmentCleanupHash)),
+            preferredVersion: .v4, quiesce: {}, clearSDK: { throw CleanupFailure.unavailable })
+        try await original.probeSeedState(scenario == "foreignOwner" ? "preparedUnregister" : scenario)
+        let before = try original.renewalControlSnapshot()
+        original.invalidate()
+        let renewedSubject = scenario == "foreignOwner" ? "m4-synthetic-demo-" + UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased().prefix(12) : subject
+        let candidate = try material(owner: renewedSubject, renewed: true)
+        defer {
+            root.cleanupWorkflow?.invalidate(); root.trip?.invalidate(); original.invalidate()
+        }
+        root.accounts.signIn(exchanging: { candidate })
+        let deadline = Date().addingTimeInterval(15)
+        while root.accounts.state == .checking, Date() < deadline { try await Task.sleep(for: .milliseconds(10)) }
+        let accepted: Bool
+        if case .signedIn = root.accounts.state { accepted = true } else { accepted = false }
+        let shouldAccept = !["confirmationDispatched", "verifiedRefusal"].contains(scenario)
+        if accepted, scenario == "foreignOwner", let current = root.cleanupWorkflow {
+            await current.enrollOnline()
+            while current.probeEnrollmentInFlight, Date() < deadline { try await Task.sleep(for: .milliseconds(10)) }
+        }
+        let after = try original.renewalControlSnapshot()
+        let beforeManifest = try JSONDecoder().decode(DevelopmentNativeManifest.self, from: try unwrapProbeManifest(before.manifest))
+        let afterManifest = try JSONDecoder().decode(DevelopmentNativeManifest.self, from: try unwrapProbeManifest(after.manifest))
+        let selectedAccount = scenario == "foreignOwner" ? try candidate.withBytes { try DevelopmentSessionConfiguration.demo(DemoInviteSession.decode($0)).accountID } : scope.account
+        var expectedManifest = beforeManifest
+        if accepted, scenario != "foreignOwner" { expectedManifest.renewedSDKHash = candidate.withBytes(developmentCleanupHash) }
+        let expectedSelection = scenario == "foreignOwner" ? root.cleanupWorkflow?.probeScope : scope
+        let ownsCleanup = !accepted || root.cleanupWorkflow?.probeOwner == selectedAccount
+        let ownsTrip = !accepted || root.trip?.probeOwner == selectedAccount
+        var independentReadDenied = true
+        if scenario == "foreignOwner" {
+            guard let current = root.cleanupWorkflow else { throw CleanupFailure.unavailable }
+            independentReadDenied = try current.probeOriginalReadUnavailable()
+        }
+        let selectionUnchanged: Bool
+        if let bytes = after.selection, case .original(let actualScope) = try CleanupControlSelection(bytes: bytes) {
+            selectionUnchanged = actualScope == expectedSelection
+        } else { selectionUnchanged = false }
+        let blocked = shell.messageBindingBlocked
+        guard accepted == shouldAccept, shouldAccept || (blocked && root.trip == nil),
+              try beforeManifest.stateRef == afterManifest.stateRef, after.manifest == (try expectedManifest.encoded()),
+              before.device == after.device, before.account == after.account, before.execution == after.execution,
+              selectionUnchanged, ownsCleanup, ownsTrip, independentReadDenied,
+              try root.persistence.load()?.withBytes({ $0 }) == candidate.withBytes({ $0 }) else {
+            let failure = DemoCleanupRootProbeFailure(scenario: scenario, state: String(describing: root.accounts.state), blocked: blocked, tripAbsent: root.trip == nil)
+            root.cleanupWorkflow?.invalidate(); root.trip?.invalidate(); original.invalidate()
+            try root.cleanupWorkflow?.probeRemoveExactSyntheticControls(fixtureMaterial: candidate)
+            try original.probeRemoveExactSyntheticControls(fixtureMaterial: candidate)
+            throw failure
+        }
+        let recovery: (String, String?, String?)
+        if accepted, scenario != "foreignOwner" {
+            guard let current = root.cleanupWorkflow else { throw CleanupFailure.unavailable }
+            recovery = try await current.probeRecoverOriginal(before: before, scenario: scenario)
+        } else { recovery = ("UNRUN_DENIED_OR_INDEPENDENT_OWNER", nil, nil) }
+        let result = DemoCleanupRootProbeResult(scenario: scenario, state: scenario == "foreignOwner" ? "independentOwnerSignedIn" : accepted ? "signedIn" : "blocked",
+            ordinaryBlocked: blocked, tripAbsent: root.trip == nil, originalStateRefUnchanged: true,
+            originalRequestsUnchanged: true, originalSelectionUnchanged: before.selection == after.selection, savedNewMaterial: true,
+            recoveryStatus: recovery.0, recoveryOriginalActionID: recovery.1, recoveryOriginalRequestSha256: recovery.2, activeAccountOwnsCleanup: ownsCleanup, activeAccountOwnsTrip: ownsTrip, independentOwnerCannotReadOriginal: independentReadDenied)
+        // Only fixture-owned exact records, after retiring every writer. No
+        // production terminal-cleanup authority or remote erase is exercised.
+        root.cleanupWorkflow?.invalidate(); root.trip?.invalidate(); original.invalidate()
+        try root.cleanupWorkflow?.probeRemoveExactSyntheticControls(fixtureMaterial: candidate)
+        try original.probeRemoveExactSyntheticControls(fixtureMaterial: candidate)
+        return result
+    }
+}
+
+private struct DemoCleanupRootProbeFailure: Error, CustomStringConvertible {
+    let scenario: String; let state: String; let blocked: Bool; let tripAbsent: Bool
+    var description: String { "root_" + scenario + ":" + state + ":blocked=" + String(blocked) + ":tripAbsent=" + String(tripAbsent) }
+}
+
+private extension DevelopmentCleanupWorkflow {
+    var probeEnrollmentInFlight: Bool { enrolling }
+    var probeOwner: UUID { lifetime.scope.account }
+    var probeScope: AccountCleanupScope { lifetime.scope }
+    func probeOriginalReadUnavailable() throws -> Bool {
+        guard let account else { throw CleanupFailure.unavailable }
+        do { _ = try account.prepareOriginalRead(); return false }
+        catch CleanupFailure.unavailable { return true }
+    }
+    func probeRecoverOriginal(before: RenewalControlSnapshot, scenario: String) async throws -> (String, String?, String?) {
+        let registration = scenario == "registrationUnknown"
+        let raw = try Self.probeOriginalRequest(registration ? before.device : before.account,
+                                               field: registration ? "registration" : "preparation")
+        guard let fields = try JSONSerialization.jsonObject(with: raw) as? [String: Any],
+              let actionID = fields["action_id"] as? String,
+              let device, let account else { throw CleanupFailure.unavailable }
+        if registration {
+            guard case .notObserved = try await device.perform(device.prepareRegistrationQuery()) else { throw CleanupFailure.unavailable }
+        } else {
+            let result = try await account.read(account.prepareOriginalRead())
+            if scenario == "preparationUnknown" {
+                guard case .notObserved = result else { throw CleanupFailure.unavailable }
+            } else {
+                guard case .progress(let progress) = result, progress.status == .awaitingConfirmation else { throw CleanupFailure.unavailable }
+            }
+        }
+        let after = try renewalControlSnapshot()
+        guard try Self.probeOriginalRequest(registration ? after.device : after.account,
+            field: registration ? "registration" : "preparation") == raw else { throw CleanupFailure.unavailable }
+        return ("PASS", actionID, developmentCleanupHash(raw))
+    }
+    func probeRemoveExactSyntheticControls(fixtureMaterial: SessionMaterial) throws {
+        guard !active,
+              try fixtureMaterial.withBytes({ try DemoInviteSession.decode($0).grant.access_token.hasPrefix("b691fixture.") }) else { throw CleanupFailure.unavailable }
+        for store in [manifestStore, deviceStore, accountStore, executionStore, indexStore, sdkStore] {
+            if let value = try store.load() {
+                guard try store.removeIfMatching(value) else { throw CleanupFailure.unavailable }
+            }
+        }
+    }
+}
+
+extension DemoCleanupRenewalProbe {
+    static func runRoot(scenario: String) async throws -> DemoCleanupRootProbeResult {
+        try await DevelopmentAccountRoot.probeRootRenewal(scenario: scenario)
+    }
+}
+
+private extension DevelopmentTripHost {
+    var probeOwner: UUID { lifetime.trip.account }
 }
 
 #endif

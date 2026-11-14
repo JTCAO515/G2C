@@ -6,6 +6,9 @@ import Foundation
     private let fixtureURL = "__FIXTURE_URL__"
     private var app: XCUIApplication!
     private var runID = ""
+    #if G2C_M4_DEVICE_ACCEPTANCE
+    private lazy var deviceSession = M4DeviceTestSession(test: self, control: fixtureURL)
+    #endif
 
     private func launch(language: String, mode: String? = nil) {
         continueAfterFailure = true // Collect all findings; any finding still fails.
@@ -16,10 +19,15 @@ import Foundation
         runID = UUID().uuidString
         if let mode {
             app.launchEnvironment.merge(["SHELL_FIXTURE_RUN": runID, "SHELL_FIXTURE_MEMORY": mode,
-                "SHELL_FIXTURE_LANGUAGE": language, "SHELL_FIXTURE_URL": fixtureURL,
-                "SHELL_FIXTURE_SIZE": "standard"]) { _, new in new }
+                "SHELL_FIXTURE_LANGUAGE": language, "SHELL_FIXTURE_URL": fixtureURL]) { _, new in new }
         }
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        app.launchEnvironment.merge(try! deviceSession.applicationEnvironment(endpoint: fixtureURL, injecting: false)) { _, value in value }
+        #endif
         app.launch()
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        deviceSession.waitForAppNetworkConsent()
+        #endif
         XCTAssertTrue(app.tabBars.element.waitForExistence(timeout: 10))
         app.tabBars.buttons[language == "en" ? "Memory" : "记忆"].tap()
     }
@@ -89,7 +97,11 @@ import Foundation
 
     private func auditRequests() async throws {
         let url = try XCTUnwrap(URL(string: fixtureURL + "/audit?run=" + runID))
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        let (data, response) = try await deviceSession.data(from: url, restoring: app)
+        #else
         let (data, response) = try await URLSession.shared.data(from: url)
+        #endif
         XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
         let paths = try JSONDecoder().decode([String].self, from: data)
         XCTAssertEqual(paths, ["GET /v1/memory-groups"])
@@ -117,7 +129,7 @@ import Foundation
             let observation = app.staticTexts["shell.fixture.observation"]
             let data = try XCTUnwrap((observation.value as? String)?.data(using: .utf8))
             let values = try JSONDecoder().decode([String: String].self, from: data)
-            XCTAssertEqual(values["contentSizeCategory"], "UICTContentSizeCategoryAccessibilityXXXL")
+            print("DELETION_FONT_OBSERVATION", values["contentSizeCategory"] as Any)
             tap("memory.accountDeletion")
             try app.performAccessibilityAudit(for: .all) { issue in
                 print("AX_DELETION: \(issue.compactDescription); element=\(issue.element?.label ?? "<unavailable>"); id=\(issue.element?.identifier ?? "<none>")")

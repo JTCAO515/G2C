@@ -386,6 +386,46 @@
       "down": "backend/migrations/down/0048_deployment_schema_read.down.sql",
       "sha256": "3bf76317811eab5c23760ccf1ea510a0e6efc6e6e9b3d96e91d6ffc19a90b33a",
       "down_sha256": "03d3541b913fbbf7c3a05af46f6d24f7554174676f217ea487c1bbb617f42a32"
+    },
+    {
+      "version": 49,
+      "name": "demo_invitation",
+      "file": "backend/migrations/0049_demo_invitation.sql",
+      "down": "backend/migrations/down/0049_demo_invitation.down.sql",
+      "sha256": "b413422c94ecee91465ff9647d0734ce1fb267eb8d2cb6265390c4d73b250003",
+      "down_sha256": "76ce7640bf94177abc7f405537f88e37b5154a40b83bdfbdbc35926ca5748086"
+    },
+    {
+      "version": 50,
+      "name": "demo_dialogue",
+      "file": "backend/migrations/0050_demo_dialogue.sql",
+      "down": "backend/migrations/down/0050_demo_dialogue.down.sql",
+      "sha256": "e338efae815efb7bc2f017798b0cb089c68e0d16574faf0d092adba8092f39a2",
+      "down_sha256": "c38fb01b8611311df5e33cc629b04ea1f75ab6f0f4c07153062a4f5183ae1160"
+    },
+    {
+      "version": 51,
+      "name": "lio_dialogue",
+      "file": "backend/migrations/0051_lio_dialogue.sql",
+      "down": "backend/migrations/down/0051_lio_dialogue.down.sql",
+      "sha256": "3d69b2c34147749ef103a649397747a1eb018686916ac6ce5102827481472520",
+      "down_sha256": "d14320f39ff244e10eef4dbd249822af30babcbbef10d5115fad0cf144f86467"
+    },
+    {
+      "version": 52,
+      "name": "demo_daily_quota",
+      "file": "backend/migrations/0052_demo_daily_quota.sql",
+      "down": "backend/migrations/down/0052_demo_daily_quota.down.sql",
+      "sha256": "6d8318cd42596341c1bb83a0303489f71738d036efa8bd194be8df9474d5db5d",
+      "down_sha256": "776b914206204d761107e127734a60c60096143923e04ef83af23815ec757bc0"
+    },
+    {
+      "version": 53,
+      "name": "lio_wire_origin",
+      "file": "backend/migrations/0053_lio_wire_origin.sql",
+      "sha256": "1d9bb398904f68b1df88198f04fe2433d7ab8e1ca11f57b4ce0cd3708d162b1b",
+      "down": "backend/migrations/down/0053_lio_wire_origin.down.sql",
+      "down_sha256": "7686cc2d2d225884723da3faacd48317783abfc566e04edd891ea986055fa3b9"
     }
   ]
 }

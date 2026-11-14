@@ -29,7 +29,7 @@ def create_app(*, _message_boundary=None, _max_body_bytes=None, _history_configu
                _original_usage_reader=None, _original_usage_configuration=None, _original_usage_modules=None,
                _cleanup_progress_configuration=None, _cleanup_progress_dependencies=None,
                _memory_management_boundary=None, _memory_management_configuration=None,
-               _feasibility_dependencies=None, _run_events_configuration=None):
+               _feasibility_dependencies=None, _run_events_configuration=None, _run_events_reader=None):
     if os.environ.get("CJ_ENV") != "local":
         raise RuntimeError("CJ_ENV must explicitly be local; other environments are not configured")
     # Load the required native solver before creating/serving the API. Fail-fast
@@ -97,5 +97,7 @@ def create_app(*, _message_boundary=None, _max_body_bytes=None, _history_configu
     from .feasibility_routes import register_feasibility
     register_feasibility(app, _feasibility_dependencies)
     from .run_events_routes import register_run_events_route
-    register_run_events_route(app, _run_display_reader, _run_display_configuration, _run_events_configuration)
+    events_reader = _run_display_reader if _run_events_reader is None else _run_events_reader
+    register_run_events_route(app, events_reader, _run_display_configuration, _run_events_configuration,
+                              travel_reader=_run_display_reader,legacy_reader=_run_display_reader)
     return app

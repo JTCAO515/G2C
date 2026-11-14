@@ -38,14 +38,12 @@ struct ShellFixtureApp: App {
     private let memory: MemoryContainerHost
     private let trips: ReadOnlyTripFixture?
     private let mode: String
-    private let textSize: String?
 
     init() {
         let env = ProcessInfo.processInfo.environment
         let run = env["SHELL_FIXTURE_RUN"]!
         let mode = env["SHELL_FIXTURE_MEMORY"]!
         self.mode = mode
-        textSize = env["SHELL_FIXTURE_SIZE"]
         let preferences = UserDefaults(suiteName: "g2c.shell.acceptance." + run)!
         preferences.register(defaults: [ShellState.languageKey: env["SHELL_FIXTURE_LANGUAGE"] ?? "en"])
         let shell = ShellState(preferences: preferences)
@@ -60,7 +58,11 @@ struct ShellFixtureApp: App {
         let host = MemoryContainerHost(shell: shell)
         func endpoint() -> MessageEndpoint {
             let url = URL(string: env["SHELL_FIXTURE_URL"]!)!
+            #if G2C_M4_DEVICE_ACCEPTANCE
+            precondition(url.scheme == "https" && url.host == env["G2C_M4_LOCAL_HOST"] && url.port != nil)
+            #else
             precondition(url.scheme == "http" && url.host == "127.0.0.1" && url.port != nil)
+            #endif
             return try! MessageEndpoint(url: url, maximumRequestBytes: 100_000,
                 maximumResponseBytes: 100_000, allowLoopbackHTTP: true)
         }
@@ -100,10 +102,6 @@ struct ShellFixtureApp: App {
                     RunReadableText(text: "SYNTHETIC / 合成", style: .caption)
                         .accessibilityIdentifier("shell.fixture.observation")
                         .accessibilityValue(observation)
-                }
-                .transformEnvironment(\.dynamicTypeSize) { size in
-                    if textSize == "maximum" { size = .accessibility5 }
-                    else if textSize == "large" { size = .accessibility3 }
                 }
                 .task {
                     if mode != "unconfigured" { await memory.loadGroups(context: memory.captureAction()) }

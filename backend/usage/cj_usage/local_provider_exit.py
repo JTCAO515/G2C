@@ -1,4 +1,5 @@
 """Frozen M1 source facade over the single metered execution core."""
+from cj_strict_json import compact
 import json
 from psycopg import Error as DatabaseError
 from cj_run.step_usage import StepStore, OriginalStepOnly
@@ -22,8 +23,7 @@ class LocalProviderExit(MeteredExitCore):
         if not isinstance(provider,FakeProvider):
             raise BudgetUnknown('only local FakeProvider may use this exit')
         try:
-            raw=json.dumps({'messages':messages,'system':system},ensure_ascii=False,
-                           separators=(',',':'),allow_nan=False).encode('utf-8')
+            raw=compact({'messages':messages,'system':system})
             inputs=json.loads(raw)  # private materialization, no caller-owned mutable aliases
             step=StepStore(runs,self.config).create(binding,step_key,raw,self.output_limits[step_key])
         except (OriginalStepOnly,RunCommitUnknown,DatabaseError,ValueError):

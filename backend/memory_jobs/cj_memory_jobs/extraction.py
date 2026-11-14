@@ -1,7 +1,7 @@
 """Untrusted model-output boundary. Parsed data is never a collection/save permit."""
+from cj_strict_json import compact
 from dataclasses import dataclass
 from hashlib import sha256
-import json
 from typing import Callable
 
 from cj_memory.domain import InvalidInput as MemoryInvalidInput, strict_object
@@ -61,7 +61,7 @@ def publication_identity(scope: str, entry: Entry,
     value=dict(version='MEMORY-PUBLICATION-IDENTITY@1',scope_digest=sha256(scope.encode('utf-8')).hexdigest(),
                references=sorted(references),subject=entry.subject,slot=entry.slot,
                extent=entry.extent,context=context_key)
-    digest=sha256(json.dumps(value,ensure_ascii=True,sort_keys=True,separators=(',',':')).encode('ascii')).hexdigest()
+    digest=sha256(compact(value, sort_keys=True, ensure_ascii=True, allow_nan=True)).hexdigest()
     return PublicationIdentity('history-op-v1:'+digest,'history-item-v1:'+digest,'history-v1:'+digest)
 
 

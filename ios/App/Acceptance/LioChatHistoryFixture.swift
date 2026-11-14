@@ -1,0 +1,173 @@
+// Intercepted transport for the actual signed chat library in simulator acceptance.
+#if DEBUG && G2C_LIO_APP && targetEnvironment(simulator)
+import CJMessageClient
+@testable import CJMessageHTTP
+import CryptoKit
+import HTTPTypes
+import OpenAPIRuntime
+
+private struct LioChatHistoryFixture: View {
+    let shell: ShellState
+    @State private var clients: Result<ChatHistoryClients, any Error>?
+
+    var body: some View {
+        Group {
+            switch clients {
+            case .success(let clients):
+                LioHome(language: shell.language.lio, service: clients.original, isDemo: false,
+                        chatLibrary: clients.library) {
+                    LioMenuSettings(shell: shell)
+                    if ProcessInfo.processInfo.arguments.contains("--lio-chat-recovery-acceptance") {
+                        Button("Recreate client") { self.clients = Result { try clients.recreated(shell: shell) } }
+                            .accessibilityIdentifier("synthetic.chat.recreate")
+                    }
+                }
+                .id(clients.id)
+            case .failure(let error):
+                Text("Synthetic chat setup failed: \(String(reflecting: error))")
+            case nil:
+                ProgressView()
+            }
+        }
+        .task {
+            if clients == nil { clients = Result { try ChatHistoryClients(shell: shell) } }
+        }
+    }
+}
+
+@MainActor
+private struct ChatHistoryClients {
+    let id = UUID()
+    let original: LioService
+    let library: LioChatLibrary
+    private let source: ChatHistorySource
+
+    init(shell: ShellState) throws {
+        try self.init(shell: shell, source: ChatHistorySource(shell: shell), continuity: LioChatContinuity())
+        if ProcessInfo.processInfo.arguments.contains("--lio-chat-before-stage-acceptance"), let continuity = library.continuity {
+            let selected = library.newChat()
+            continuity.selectedID = selected.id
+            continuity.firstQuestions[selected.id] = LioQuestion(messageID: UUID().uuidString,
+                text: shell.language.text("A question before staging", "还没发出的合成问题"), language: shell.language.lio)
+        }
+    }
+
+    private init(shell: ShellState, source: ChatHistorySource, continuity: LioChatContinuity) throws {
+        self.source = source
+        let recovery = source.recovery, scope = source.scope
+        let lease = try recovery.activate(scope)
+        let client = source.client(lease: lease)
+        let original = LioService.signedTimeline(client)
+        self.original = original
+        library = .signed(client: client, defaultService: original, language: { shell.language.lio }, continuity: continuity) { id in
+            LioTripHistoryClient(timeline: client, recovery: recovery, scope: scope, lease: lease, conversationID: id)
+        }
+    }
+
+    func recreated(shell: ShellState) throws -> Self {
+        let continuity = LioChatContinuity()
+        if let previous = library.continuity { continuity.inherit(previous) }
+        return try Self(shell: shell, source: source, continuity: continuity)
+    }
+}
+
+@MainActor private struct ChatHistorySource {
+    let scope: StorageScope
+    let recovery: MessageRecovery
+    private let transport: NoRedirectTransport
+
+    init(shell: ShellState) throws {
+        let scope = try StorageScope(environment: "synthetic", account: UUID().uuidString)
+        let recovery = MessageRecovery(storage: JourneyStorage())
+        let endpoint = try MessageEndpoint(url: URL(string: "https://synthetic.invalid")!,
+                                           maximumRequestBytes: 16_384, maximumResponseBytes: 65_536)
+        let locale: LioTimelineWire.Locale = shell.language == .chinese ? .chinese : .english
+        let rejectsFirst = ProcessInfo.processInfo.arguments.contains("--lio-chat-first-refusal-acceptance")
+        let scenario = ChatHistoryTransport(locale: locale, rejectsFirst: rejectsFirst)
+        let transport = try NoRedirectTransport(interceptedTransport: scenario, messageEndpoint: endpoint,
+                                                validateMessage: {}, lio: true)
+        self.scope = scope; self.recovery = recovery; self.transport = transport
+    }
+
+    func client(lease: Lease) -> LioTimelineHTTP {
+        LioTimelineHTTP(scope: scope, lease: lease, credentials: JourneyCredentials(),
+                        transport: transport, firstChatRecovery: recovery)
+    }
+}
+
+private actor ChatHistoryTransport: ClientTransport {
+    private let originalID = "lio-dialogue-0123456789abcdef0123456789abcdef"
+    private let newID = "lio-dialogue-abcdef0123456789abcdef0123456789"
+    private let locale: LioTimelineWire.Locale
+    private let rejectsFirst: Bool
+    private var refusedMessageID: String?
+    private var first: (id: String, text: String, digest: String)?
+    private var receiptRead = false
+
+    init(locale: LioTimelineWire.Locale, rejectsFirst: Bool) {
+        self.locale = locale
+        self.rejectsFirst = rejectsFirst
+    }
+
+    func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
+        guard request.headerFields[.authorization] == "Bearer SYNTHETIC",
+              let path = request.path, let route = URLComponents(string: path) else {
+            throw MessageHTTPFailure.invalidConfiguration
+        }
+        let query = route.queryItems ?? []
+        func value(_ name: String) -> String? { query.first { $0.name == name }?.value }
+        switch (request.method, route.path) {
+        case (.get, "/v1/lio/timeline") where value("conversation_id").map({ $0 == originalID }) ?? true:
+            return try page(version: 1, conversation: originalID, id: "sample-old", text: "An earlier question",
+                            answer: "An earlier reply.")
+        case (.post, "/v2/lio/messages"):
+            guard first == nil, let body else {
+                receiptRead = false
+                throw MessageHTTPFailure.invalidConfiguration
+            }
+            let bytes = try await Data(collecting: body, upTo: 16_384)
+            guard let fields = try JSONSerialization.jsonObject(with: bytes) as? [String: Any],
+                  fields["version"] as? String == "LIO-message.2", fields["new_conversation"] as? Bool == true,
+                  fields["locale"] as? String == locale.rawValue,
+                  fields["conversation_id"] == nil, let id = fields["message_id"] as? String,
+                  let question = fields["text"] as? String else { throw MessageHTTPFailure.invalidConfiguration }
+            if rejectsFirst, refusedMessageID == nil {
+                refusedMessageID = id
+                return try response(["failure": "unavailable"], status: .badRequest)
+            }
+            guard id != refusedMessageID else { throw MessageHTTPFailure.invalidConfiguration }
+            first = (id, question, SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined())
+            throw URLError(.networkConnectionLost)
+        case (.get, "/v2/lio/messages"):
+            guard let first, value("message_id") == first.id, value("input_sha256") == first.digest else {
+                throw MessageHTTPFailure.invalidConfiguration
+            }
+            receiptRead = true
+            return try response(["version": "LIO-message-lookup.2", "receipt": [
+                "version": "LIO-message-receipt.2", "message_id": first.id, "conversation_id": newID
+            ]])
+        case (.get, "/v2/lio/timeline") where value("conversation_id") == newID:
+            guard receiptRead, let first else { throw MessageHTTPFailure.invalidConfiguration }
+            return try page(version: 2, conversation: newID, id: first.id, text: first.text, answer: "A separate reply.")
+        case (.get, "/v2/lio/trip") where value("conversation_id") == newID:
+            return try response(["version": "LIO-trip-history.2", "conversation_id": newID,
+                                 "current": NSNull(), "history": [], "undo_target": NSNull(), "next_before": NSNull()])
+        default:
+            throw MessageHTTPFailure.invalidConfiguration
+        }
+    }
+
+    private func page(version: Int, conversation: String, id: String, text: String,
+                      answer: String) throws -> (HTTPResponse, HTTPBody?) {
+        try response(["version": "LIO-timeline.\(version)", "conversation_id": conversation, "next_before": NSNull(),
+                      "messages": [["message_id": id, "text": text, "answer": answer,
+                                    "status": "completed", "sources": []]]])
+    }
+
+    private func response(_ value: [String: Any], status: HTTPResponse.Status = .ok) throws -> (HTTPResponse, HTTPBody?) {
+        var reply = HTTPResponse(status: status)
+        reply.headerFields[.contentType] = "application/json"
+        return (reply, HTTPBody(try JSONSerialization.data(withJSONObject: value)))
+    }
+}
+#endif

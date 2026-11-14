@@ -1,0 +1,71 @@
+{
+  "plan": {
+    "kind": "target_network_read_diagnostic",
+    "endpoint": "https://api-beta.go2china.space",
+    "method": "GET",
+    "message_id": "hk-api-smoke-20261106-06",
+    "run_id": "0d92e40a-847c-47e4-8b32-c483ee249724",
+    "generation": "5c70ee0510434cc6a94bc9fe6de99767",
+    "planned_n": 6,
+    "source_origin": "B public06; not a C smoke/full observation",
+    "network": {
+      "label": "China-mainland Mac + VPN",
+      "location_basis": "JT stated China mainland; VPN on",
+      "actual_egress_location": "UNKNOWN",
+      "settings_changed": false,
+      "default_interface": "utun6",
+      "target_interface": "utun6",
+      "proxy_flags": {
+        "HTTPEnable": 1,
+        "HTTPSEnable": 1,
+        "ProxyAutoConfigEnable": 0,
+        "ProxyAutoDiscoveryEnable": 0,
+        "SOCKSEnable": 0
+      },
+      "proxy_query_exit": 0
+    },
+    "serving_backend_expected": "5348e7b0077b6c50323325f09d064aeac8bdbcd7",
+    "created_at": "2026-11-06T06:57:07.844648+00:00",
+    "collector_sha256": "ba1018755b62bb510e9828ac7a478188ce7089aa49da2f804c48262d742a7dcc",
+    "provider_dispatch_permitted": false,
+    "financial_ledger_access": false,
+    "canonical_phase_access": false,
+    "clock_scope": "original GET to decoded response; original user POST clock unavailable",
+    "quality_release_decision": "UNRUN",
+    "first_body_seconds": "UNRUN",
+    "full_answer_seconds": "UNRUN"
+  },
+  "observations": [
+    {
+      "attempt": 1,
+      "method": "GET",
+      "status": "FAIL",
+      "http_status": 200,
+      "first_decoded_bytes_seconds": 21.292961625000316,
+      "protected_read_seconds": null,
+      "http_response_seconds": 21.29329108300044,
+      "response_bytes": 814,
+      "response_sha256": "0bbbe6026c6c7852c3513ea86793ba94bc898aab6ff1e5c004813eb9e9a5cb93",
+      "error_kind": "ValueError"
+    }
+  ],
+  "planned_n": 6,
+  "outcomes": {
+    "PASS": 0,
+    "FAIL": 1,
+    "UNKNOWN": 0
+  },
+  "unrun_n": 5,
+  "valid_read_timing": {
+    "known_n": 0,
+    "planned_n": 6,
+    "p50": null,
+    "p95": null,
+    "max": null
+  },
+  "availability": "FAIL",
+  "quality_release_decision": "UNRUN",
+  "submitted_messages": 0,
+  "model_or_tool_dispatches": 0,
+  "actual_paid_cost": "UNKNOWN"
+}

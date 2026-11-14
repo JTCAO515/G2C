@@ -2,14 +2,14 @@
 
 Reuses the one Gaode model/parser. Legacy versions and projections stay intact.
 """
+from cj_strict_json import compact
 from datetime import datetime,timezone
 import json
 import re
 
 from .gaode import _quantity,parse_response
 from .models import (CONTRACT_VERSION, Coordinate, Departure, Detail, Endpoint, FieldState,
-                     Observed, Outcome, Place, Result, Route, RouteQuery, Search, Source,
-                     aware, identifier, text_value)
+                     Observed, Outcome, Place, Route, RouteQuery, Search, aware, identifier, text_value)
 from cj_strict_json import reject_duplicates
 
 VERSION = 'PLACE@1.0'
@@ -98,8 +98,7 @@ def _read_query(value):
 
 
 def encode_query(query):
-    return json.dumps(dict(version=QUERY_VERSION, query=query_value(query)), ensure_ascii=False,
-                      separators=(',', ':'), allow_nan=False).encode('utf8')
+    return compact(dict(version=QUERY_VERSION, query=query_value(query)))
 
 
 def decode_query(raw):
@@ -188,7 +187,7 @@ def encode_result(result, *, evidence_kind, recording_ref=None):
     value = dict(version=RESULT_VERSION, query=query_value(result.query), outcome=result.outcome.value,
         reason=result.reason, source=data, places=[_place(p) for p in result.places],
         routes=[_route(r) for r in result.routes], provider_code=result.provider_code, provider_count=result.provider_count)
-    return json.dumps(value, ensure_ascii=False, separators=(',', ':'), allow_nan=False).encode('utf8')
+    return compact(value)
 
 
 def decode_result(raw):

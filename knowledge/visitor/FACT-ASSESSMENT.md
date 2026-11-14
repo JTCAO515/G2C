@@ -1,0 +1,37 @@
+# #843：FACT@1.0 适配评估 → L #847
+
+结论：**不能直接承载**。评估依据为 `contracts/fact/V1.md`、`README.md`、`TOOL-HOST-V1.md`，
+基线 `0b3078552e66f726e00e444889285acb27432806`。此处只给 L 差异，不定义或冻结新 wire，不改 backend 或 contracts。
+
+## 已有边界与差异
+
+| 事项 | 现有 FACT@1.0 | 本库及 #847 所需 |
+|---|---|---|
+| 来源类型 | `data_origin=synthetic`，只接受固定 HTTPS 合成来源；明确要求真实来源采用新增版本 / policy | 维护者整理的官方公开网页概括，必须显式标为维护者整理，不得写成 synthetic 或官方原文 |
+| 查询 | `fact_key`、单个 `region`、必填 `dates`、`conditions`；精确匹配，无地理或时区推断 | 按 `topic` 和城市检索；由 L 明确映射及新请求形状，不虚构旅行日期、身份或适用条件 |
+| 正文 | `summary_zh/en` 是固定的适用性状态说明；`original_value` 保留原始 JSON literal | 返回 `text_zh/en` 的双语维护者概括；不能塞入原文或覆盖固定状态语义 |
+| 证据 | 保存原文 base64、SHA256、精确 span，解码重解析原文与声明 | 本库不保存抓取原件，只有概括与多个具体来源 URL；不能伪造原文/span/hash 来满足旧版本 |
+| 日期 | aware retrieval/evaluation timestamps；来源声明的覆盖日期和到期时刻 | `checked_on/expires_on` 是维护者日期；失效为北京时间日初，不能冒充来源发布日期或来源声明的到期日 |
+| 结果 | synthetic producer、原始 request_ref、AUTH/RUN/Meter 关联、未知与取消边界 | L 需要新增显式本地知识库 producer / result 版本或独立 payload，并保留原关联与未知、取消、权限及费用不变量 |
+
+## 交给 L 的最小要求
+
+1. 仅新增版本；FACT@1.0、旧示例、decoder 和合成路径不变。由 L 决定新版本号并按红线流程附正负例。
+2. 查询按五主题与七城显式匹配；只读取 `knowledge/visitor/entries/*.json`，不递归把 `examples/`、测试和文档当事实。
+3. 只返回经维护者核对且未失效的正式条目，带 `id/topic/cities/text_zh/text_en/source_urls/checked_on/expires_on`；
+   新结果的证据类型明确是维护者概括，网址、日期留在内部结果中，不能因用户正文不显示依据而丢弃。
+4. 在文件反序列化边界校验一次，使用可信当前时间检查到期；不能固定历史 `--as-of` 延寿。
+   明确无命中、过期及格式错误的行为，不把格式错静默转换为成功或真实知识。
+5. 无命中遵循 `docs/lio-voice.md` 第 6.2 节；用户正文不展示供应商或接口。签证/入境仍仅指向官方渠道。
+
+本目录的格式是内容文件约定，不是新 FACT wire，也不授予服务端上线或抓取权。
+L 接入须自行验证命中、无命中、失效、格式错误及本地签名链路中英问答。
+H1 历史：截至 #843 交付时正式条目 0、真实来源访问 0。
+H2 #846 交付时：经 JT 确认来源后已有 12 条维护者概括内容，覆盖及复核时间见 [COVERAGE.md](COVERAGE.md)；当时线上接入和 L 的本地签名问答为 UNRUN。本评估未改变 FACT@1.0 的合成来源限制。
+
+## WP12 / #935：追加本地内容版本
+
+main 已有 L 的 `FACT-query.2/result.2` 与旧八字段读取器（`backend/fact/cj_fact/visitor.py`）；它严格拒绝额外字段，且只支持原五主题。
+本次把条件与官方渠道放在 `entries-v2/*.json`（visitor-entry.2），Wikidata 标签放在 `names/*.json`（visitor-name.1）；旧12条与旧目录原字节保留。
+新字段、visa_entry 主题和名称读取需 L 显式追加 wire/消费版本，不放宽旧 .2；C WP9 必须按具体 subject、时效、节假日例外及预约规则类型解释条件。
+边界、迁移退出条件和命令见 [WP12-FORMAT.md](WP12-FORMAT.md)。这不是 H 冻结的新 FACT wire，也不代表模型路由、提醒生成或新格式线上接入已通过。

@@ -1,0 +1,193 @@
+{
+  "ledger": {
+    "id": "32d95019ea16443b81e648960c4baba0",
+    "rows": 423,
+    "sha256": "94395e7971b86f92beeb88f35b7f17111a0e149928c787e312f1c9d4077e5236",
+    "counts": {
+      "model": 266,
+      "weather": 67,
+      "fact": 15,
+      "place": 54,
+      "route": 21
+    },
+    "states": {
+      "RECEIVED": 354,
+      "INTENT": 69
+    },
+    "anchor_state": "ADOPTED"
+  },
+  "identity": {
+    "version": 2,
+    "pin": "acbc62427ee95199cb6b4c6ddd7aa26b787c6831c943f7073729e9147b1f975e",
+    "source_sha256": {
+      "backend/agent/cj_agent/provider.py": "8aa4929b0c1006eb336ce2b7042151d211973e58f5ee013e36c04876355a356b",
+      "backend/cj_api/real_services.py": "2d4c492290a5e06febb7fc42a7185b2a85df0b5fd0e4b97381bea9edbc9834f1",
+      "backend/fact/cj_fact/live_source.py": "a31d82c73bfb2abcc0be3288d1d19be04992946e1a4e2c26497ff920b834c88a",
+      "backend/fact/cj_fact/https_transport.py": "c7b23cabfe965ebb2cdcfae00ccc0f789fdce4c35025d29f1ae79a7876987ba8"
+    }
+  },
+  "claim": {
+    "adapter_identity": {
+      "pin": "acbc62427ee95199cb6b4c6ddd7aa26b787c6831c943f7073729e9147b1f975e",
+      "source_sha256": {
+        "backend/agent/cj_agent/provider.py": "8aa4929b0c1006eb336ce2b7042151d211973e58f5ee013e36c04876355a356b",
+        "backend/cj_api/real_services.py": "2d4c492290a5e06febb7fc42a7185b2a85df0b5fd0e4b97381bea9edbc9834f1",
+        "backend/fact/cj_fact/https_transport.py": "c7b23cabfe965ebb2cdcfae00ccc0f789fdce4c35025d29f1ae79a7876987ba8",
+        "backend/fact/cj_fact/live_source.py": "a31d82c73bfb2abcc0be3288d1d19be04992946e1a4e2c26497ff920b834c88a"
+      },
+      "version": 2
+    },
+    "adapter_pin": "acbc62427ee95199cb6b4c6ddd7aa26b787c6831c943f7073729e9147b1f975e",
+    "candidate_id": "e3b36c39b637f564a369e91ca559bcf4d64c0f79",
+    "output": "/evidence/hk-compact-e3b36c39-smoke-001",
+    "phase": "smoke"
+  },
+  "result": {
+    "candidate_id": "e3b36c39b637f564a369e91ca559bcf4d64c0f79",
+    "hashes": {
+      "observations.json": "4e58487b035387c906348c2b02f204e037f95fd390229840311a50b525b1920d",
+      "plan.json": "41c93d942ab758f5d3d867d48ace893d585c7ab11b82a81818bfc8dfed7c4af5",
+      "raw/fact-zh.json": "ca807d7fd574e37b3c8c01b5549eac01b2eaf2501dc260e255e1d852f4db4e84",
+      "raw/place-route-en.json": "9c955361c20a6f093e0df3b4e9e0e4a253149f3362b83ae66634360a57a783ff",
+      "raw/place-route-zh.json": "5e34a2e450e447d259f54ab70e6bd3c82750864f87fdff729143eadb222b440b",
+      "raw/weather-en.json": "b00ed1a72a40d1bdb8d2ed33cbdd14a75d733fed1266aa29dd08faa5af3be448",
+      "raw/weather-zh.json": "f221d482442aa420bc0107e4064f221e2b5afc1e6fc37d756e03cec7ecf3f2ad",
+      "summary.json": "ad1ea88ef583918ac63d78c3571609bd4ee9973ff936c596e34634828fbd1803"
+    },
+    "status": "FAIL"
+  },
+  "full_claim_exists": false,
+  "schema_version": 1,
+  "source_preflight": {
+    "status": "PASS",
+    "source": {
+      "runner_commit": "e3b36c39b637f564a369e91ca559bcf4d64c0f79",
+      "backend_commit": "6809804d23021942702f09640062b2277c20f811",
+      "manifest_sha256": "da0c06b8317e9e416eb24d3dbc974979fdc64d33ef128c46a051bb1035af4663"
+    },
+    "manifest_files": 640,
+    "identity": {
+      "version": 2,
+      "pin": "acbc62427ee95199cb6b4c6ddd7aa26b787c6831c943f7073729e9147b1f975e",
+      "source_sha256": {
+        "backend/agent/cj_agent/provider.py": "8aa4929b0c1006eb336ce2b7042151d211973e58f5ee013e36c04876355a356b",
+        "backend/cj_api/real_services.py": "2d4c492290a5e06febb7fc42a7185b2a85df0b5fd0e4b97381bea9edbc9834f1",
+        "backend/fact/cj_fact/live_source.py": "a31d82c73bfb2abcc0be3288d1d19be04992946e1a4e2c26497ff920b834c88a",
+        "backend/fact/cj_fact/https_transport.py": "c7b23cabfe965ebb2cdcfae00ccc0f789fdce4c35025d29f1ae79a7876987ba8"
+      }
+    },
+    "secret": {
+      "keys": [
+        "CJ_AMAP_WEB_KEY",
+        "CJ_MODEL_API_KEY"
+      ],
+      "owner": 10001,
+      "mode": "0600"
+    },
+    "ledger": {
+      "ledger_id": "32d95019ea16443b81e648960c4baba0",
+      "rows": 402,
+      "sha256": "60e97d85493d7fb268a01c0e36aa252e9454157d5b61fd6565a64607d764caaa",
+      "counts": {
+        "model": 254,
+        "weather": 65,
+        "fact": 14,
+        "place": 50,
+        "route": 19
+      },
+      "states": {
+        "RECEIVED": 333,
+        "INTENT": 69
+      },
+      "anchor_state": "ADOPTED"
+    },
+    "forecast": {
+      "basis": "C first real batch actual authorization holds + planned6 smoke minimum flow; not billed costs",
+      "counts": {
+        "model": 254,
+        "weather": 65,
+        "fact": 14,
+        "place": 50,
+        "route": 19
+      },
+      "before_conservative_cny": {
+        "model": 267,
+        "tool": 134
+      },
+      "additional_estimate_cny": {
+        "model": 153,
+        "tool": 62
+      },
+      "projected_conservative_cny": {
+        "model": 420,
+        "tool": 196
+      },
+      "stop_cny": {
+        "model": 10000,
+        "tool": 10000
+      },
+      "budget_cny": {
+        "model": 10000,
+        "tool": 200
+      },
+      "within_stop_lines": true,
+      "within_budget": true,
+      "within_authorization": true,
+      "policy_ref": "https://github.com/JTCAO515/G2C/issues/495#issuecomment-6644812116",
+      "model_policy_ref": "https://github.com/JTCAO515/G2C/issues/495#issuecomment-6688002330",
+      "actual_billed_total": "UNKNOWN",
+      "M1_hold_cny": 13,
+      "quantity_limits": {
+        "place": 1200,
+        "route": 600,
+        "weather": 200,
+        "fact": 240
+      }
+    },
+    "smoke_claimed": false,
+    "full_claimed": false
+  },
+  "stage": "hk-compact-e3b36c39-smoke-001",
+  "original_402_unchanged": true,
+  "archive_sha256": "bff21225d23fb74c754d278a16d8e6d9ffd67aea6499945ee48d0b31d3146b5c",
+  "file_sha256": {
+    "hk-compact-e3b36c39-smoke-001/budget-after.json": "115f7ae3c8a80ae3f824cab1230f873c76ffb80da2ee688db145f347c2c8a73c",
+    "hk-compact-e3b36c39-smoke-001/budget-before.json": "25321c7f6ce20337fc0512d9555ef32986aea72aa761cec07d65a26c26ba2af1",
+    "hk-compact-e3b36c39-smoke-001/case-starts.json": "6e3786dcc720be1fa8f58ace20b5deb9a08d90001086def4b9408df631c52c00",
+    "hk-compact-e3b36c39-smoke-001/estimate.json": "581f487ee4a079b7aeeb9728500f5e9dd9692d778bb16c77ed1bd80c8780a13f",
+    "hk-compact-e3b36c39-smoke-001/observations.json": "4e58487b035387c906348c2b02f204e037f95fd390229840311a50b525b1920d",
+    "hk-compact-e3b36c39-smoke-001/packages.json": "cff3b2adf3252cb116925d5a60193915faa6bd9fccc6867023880ce388b0a01a",
+    "hk-compact-e3b36c39-smoke-001/plan.json": "41c93d942ab758f5d3d867d48ace893d585c7ab11b82a81818bfc8dfed7c4af5",
+    "hk-compact-e3b36c39-smoke-001/progress.json": "ab00b9dd1ae7da90d7d2a06149c565fe6632922959d6fbe3b5e9b2acb3f1b026",
+    "hk-compact-e3b36c39-smoke-001/progress.md": "b4447903c310db173bd64e23960962a698ec6fb2809398678be6e1c8b8df0949",
+    "hk-compact-e3b36c39-smoke-001/raw/fact-zh.json": "ca807d7fd574e37b3c8c01b5549eac01b2eaf2501dc260e255e1d852f4db4e84",
+    "hk-compact-e3b36c39-smoke-001/raw/place-route-en.json": "9c955361c20a6f093e0df3b4e9e0e4a253149f3362b83ae66634360a57a783ff",
+    "hk-compact-e3b36c39-smoke-001/raw/place-route-zh.json": "5e34a2e450e447d259f54ab70e6bd3c82750864f87fdff729143eadb222b440b",
+    "hk-compact-e3b36c39-smoke-001/raw/weather-en.json": "b00ed1a72a40d1bdb8d2ed33cbdd14a75d733fed1266aa29dd08faa5af3be448",
+    "hk-compact-e3b36c39-smoke-001/raw/weather-zh.json": "f221d482442aa420bc0107e4064f221e2b5afc1e6fc37d756e03cec7ecf3f2ad",
+    "hk-compact-e3b36c39-smoke-001/runtime-config.json": "1300b7697060c38d292d6d29a15b0c2d34fbc3ff2fb153cbcbe08ce382e5ef56",
+    "hk-compact-e3b36c39-smoke-001/summary.json": "ad1ea88ef583918ac63d78c3571609bd4ee9973ff936c596e34634828fbd1803",
+    "hk-compact-e3b36c39-smoke-001.exit.json": "2dbf695f96c80b38ed8d57f56c6960fa58b6f64de498810401a763246ea07b91",
+    "hk-compact-e3b36c39-smoke-001.launch.json": "9c36b68aee81db3d6510e3eea002dab862701f416524cb22ad488db14a6ca478",
+    "hk-compact-e3b36c39-smoke-001.process.json": "58ea40ef3b84d4439d3691e2a60a3f468903c34e349532680262f145ebb8df86",
+    "hk-compact-e3b36c39-smoke-001.shape.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "hk-compact-e3b36c39-smoke-001.stderr": "f553e35c5f4949770669a7f09cf10e7453b974752165c3d9b932530b51e3bb13",
+    "hk-compact-e3b36c39-smoke-001.stdout": "1244f4fa30d64086a1ba320f2f98d7a2ede419b3609a4f705d2e94bf3ec55f49"
+  },
+  "process_result": {
+    "wrapper_pid": 19,
+    "runner_pid": 25,
+    "exit_code": 1,
+    "finished_unix": 1794027001.545262
+  },
+  "remaining_commands": [
+    "sleep"
+  ],
+  "eval_Python_PG_count": 0,
+  "image": "sha256:d8a0c9733ca7c632a51febe470a8fdd91c028fcedb412460cfc34cf5ad7ebd0a",
+  "base_operator": "sha256:7bd142b3f46eaabc11fa4efcc79ba8a889c52249c1545452839d9be616e3e4e6",
+  "actual_paid": "UNKNOWN",
+  "target_network_POST": "UNRUN",
+  "full66": "UNRUN",
+  "human_review": "UNKNOWN"
+}

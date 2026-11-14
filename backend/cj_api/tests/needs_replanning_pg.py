@@ -15,11 +15,12 @@ import dev_auth,run_worker
 
 
 def exercise(auth,conninfo):
-    subjects=['program','cli','invalid','stale','absent','foreign','unknown','changed-needs','changed-selection','cancel-queued','cancel-flight'];host=RegisteredHost(auth,conninfo,{s:(30,2,30000) for s in subjects})
+    demo='m4-synthetic-698-demo'
+    subjects=['program','cli','invalid','stale','absent','foreign','unknown','changed-needs','changed-selection','cancel-queued','cancel-flight',demo];host=RegisteredHost(auth,conninfo,{s:(30,2,30000) for s in subjects})
     for s in subjects:dev_auth.activate_travel(conninfo,s,host.profiles[s][1],'MESSAGE-TRAVEL-CONSUMER@1')
     signer=load_confirmation_signer(auth)
     def app(s):return create_local_app(conninfo_path=conninfo,auth_dir=auth,run_context=host.profiles[s][1],travel_context=True,needs_profile='manual-v1',confirmation_signer=signer,history_configuration=load_history_configuration(auth))
-    def db(s):return LocalDatabase(conninfo,run_context=host.profiles[s][1],travel_context=True)
+    def db(s,*,needs_context=False):return LocalDatabase(conninfo,run_context=host.profiles[s][1],travel_context=True,needs_context=needs_context)
     def needs(s):return create_local_needs_app(conninfo_path=conninfo,auth_dir=auth,run_context=host.profiles[s][1],confirmation_signer=signer)
     def post(c,s,path,raw):return c.post(path,content=raw,headers={**host.headers[s],'Content-Type':'application/octet-stream'})
     namespaces={}
@@ -73,6 +74,93 @@ def exercise(auth,conninfo):
             current=save(c,s,edited,'fixed-original',fix=True)
             assert current['version']==3 and current['content']['items'][1]['fixed']==dict(state='known',value=True)
             return current
+
+    def check_demo_replanning():
+        import httpx
+        from cj_agent.provider import DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL
+        from cj_api.real_services import RealServices,RealTools
+        from cj_memory.typed_runtime import TypedRuntimeConfiguration
+        from cj_usage.authorization_budget import AuthorizationBudget
+        from test_m4_real_services import KEY,NOW,sse
+
+        profile=dict(subjects=['self'],slots={'pace':dict(kind='preference',collection_allowed=True,
+            semantic_resolved=True)},extents=['long_term'],context_ids=[])
+        collection=dict(version='local-memory-typed.1',collection=dict(version='local-memory-policy.1',
+            expires_at='2099-11-30T23:59:59+08:00',profiles={demo:profile}),travel_contexts={demo:[]})
+        memory=TypedRuntimeConfiguration.from_bytes(packed(dict(version='local-memory-run.2',collection=collection,
+            selections={demo:dict(subject='self',slots=['pace'],max_bytes=1000)})))
+        owner=scope_for(ISSUER,demo); scopes=frozenset({owner}); database=db(demo,needs_context=True)
+        draft_inputs=[]
+
+        def response(request):
+            body=json.loads(request.content)
+            if body.get('tools'):
+                phase='answer'
+                answer='A fictional plan is ready for review.'
+            else:
+                phase='draft'
+                original=json.loads(body['messages'][-1]['content'])
+                draft_inputs.append(original)
+                messages=body['messages'][1:]
+                if original.get('current_trip') is not None:
+                    planner=CurrentTripPlanFakeProvider()
+                else:
+                    planner=NeedsPlanFakeProvider()
+                    messages[-1]=dict(role='system',content=json.dumps(dict(version='TRIP-source-input.1',fields=original['fields'])))
+                answer=''.join(planner.stream(messages,system=SYSTEM))
+            wire=sse().replace(json.dumps('{"zh":"待核实。","en":"Needs verification."}'),json.dumps(answer))
+            wire=wire.replace('chatcmpl-synthetic',f'chatcmpl-demo-{len(draft_inputs)}-{phase}')
+            return httpx.Response(200,stream=httpx.ByteStream(wire.encode()))
+
+        budget=AuthorizationBudget(auth.parent/'demo-replanning-budget',clock=lambda:NOW)
+        model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY),budget,transport=httpx.MockTransport(response))
+        services=RealServices(model,KEY,frozenset({demo}),demo_subjects=frozenset({demo}))
+        options=dict(memory_configuration_for_scope=lambda _:memory,account_admission=True,real_services=services,
+            tools_configuration=RealTools(services,buffered_streaming_subjects=frozenset({demo})))
+
+        def run_planning(key,*,legacy=False):
+            receipt,_=send(demo,key)
+            selected={'hk_assembly_scopes':scopes} if legacy else {'hk_demo_scopes':scopes}
+            outcome,=run_worker.run_once(database,model,auth,**options,**selected)
+            assert outcome.status=='completed' and outcome.proposal_id=='p-'+receipt['run_id'],outcome
+            assert run_worker.run_once(database,model,auth,**options,**selected)==[]
+            return receipt,outcome.proposal_id
+
+        source(demo)
+        first,_=run_planning('demo-first')
+        with TestClient(needs(demo)) as c:
+            d=discover(c,demo,first)
+            assert d['state']=='published' and d['planning_context'] is None
+            assert draft_inputs[-1]['version']=='TRIP-source-input.2' and draft_inputs[-1]['current_trip'] is None
+            accepted=accept(c,demo,d,'demo-adopt-first')
+            current=save(c,demo,read(c,demo,accepted['trip_id']),'demo-edit-first')
+            assert current['version']==2
+
+        old,old_proposal=run_planning('demo-old-failed',legacy=True)
+        assert draft_inputs[-1]['version']=='TRIP-source-input.1'
+        with TestClient(needs(demo)) as c:
+            original=harness.expect(c.get('/v2/trip-needs-proposals',params=dict(proposal_id=old_proposal),headers=host.headers[demo]))['proposal']
+            conflict=harness.expect(c.get('/v1/trip-needs-discovery',params=dict(message_id=old['message_id'],run_id=old['run_id']),headers=host.headers[demo]),409)
+            assert conflict['error']['code']=='TRIP_CONFLICT'
+            action=packed(dict(version='TRIP-needs-action.1',action_id='demo-old-accept',kind='accept',proposal_id=old_proposal,candidate_hash=original['candidate_hash']))
+            assert harness.expect(post(c,demo,'/v1/trip-needs-actions',action),409)['error']['code']=='TRIP_CONFLICT'
+
+        fresh,_=run_planning('demo-replan')
+        with TestClient(needs(demo)) as c:
+            d=discover(c,demo,fresh)
+            assert d['state']=='published' and d['source_profile']=='TRIP-source-input.2'
+            assert (d['planning_context']['trip_id'],d['planning_context']['version'])==(current['trip_id'],2)
+            captured=draft_inputs[-1]['current_trip']
+            assert (captured['trip_id'],captured['version'],captured['content'])==(current['trip_id'],2,current['content'])
+            accepted=accept(c,demo,d,'demo-adopt-replan')
+            assert accepted['committed_version']==1 and accepted['trip_id']!=current['trip_id']
+            assert read(c,demo,current['trip_id'])==current
+            assert harness.expect(c.get('/v2/trip-needs-proposals',params=dict(proposal_id=old_proposal),headers=host.headers[demo]))['proposal']==original
+            assert harness.expect(c.get('/v1/trip-needs-action-receipts',params=dict(action_id='demo-old-accept'),headers=host.headers[demo]))['receipt'] is None
+        assert model.calls==6 and [a['state'] for a in budget.inspect()]==['RECEIVED']*6
+        print('PASS #698 Demo first plan and same NEEDS Trip v2 replan through registered Meter, original discovery and accept; legacy pending conflict retained')
+
+    check_demo_replanning()
     for s in ('program','cli'):
         old=setup(s);r,raw=send(s,'replanning')
         from cj_trip.planning_context import read_current

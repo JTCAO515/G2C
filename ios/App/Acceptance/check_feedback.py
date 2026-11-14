@@ -12,6 +12,7 @@ import json
 import os
 from pathlib import Path
 import plistlib
+import secrets
 import socket
 import subprocess
 import sys
@@ -31,7 +32,9 @@ CASES = ['testAnswerAndGeneralEnglish', 'testAnswerAndGeneralChinese',
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--simulator', required=True)
+    target = parser.add_mutually_exclusive_group(required=True)
+    target.add_argument('--simulator'); target.add_argument('--device')
+    parser.add_argument('--local-tls', type=Path); parser.add_argument('--prepare-only', action='store_true')
     parser.add_argument('--run-context', required=True, type=Path)
     parser.add_argument('--output', required=True, type=Path)
     parser.add_argument('--build-dir', required=True, type=Path)
@@ -39,7 +42,16 @@ def main():
     parser.add_argument('--backend-head', required=True)
     parser.add_argument('--case', choices=CASES)
     args = parser.parse_args()
+    tls = None
+    if args.device:
+        if not args.local_tls: parser.error('--device requires the approved --local-tls profile')
+        from m4_device import LocalTLS, configure_project, private_workspace
+        from m4_native import DeviceNative, authenticated_control
+        tls = LocalTLS.load(args.local_tls)
+    elif args.local_tls or args.prepare_only: parser.error('Device options require --device')
+    os.umask(0o077)
     output, build, backend = args.output.resolve(), args.build_dir.resolve(), args.backend_source.resolve()
+    if tls: device_project_root, build = private_workspace(output, build)
     if any(p.is_relative_to(ROOT) or p.is_relative_to(backend) for p in (output, build)):
         raise ValueError('External evidence/build directory required')
     output.mkdir(parents=True)
@@ -74,9 +86,10 @@ def main():
     context = load_run_context(args.run_context)
     report = dict(status='RUNNING', head=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
                   backend_head=backend_head, cases={}, database_proofs={}, checks={}, faults=[],
-                  unrun=['real providers/cloud/accounts', 'physical device/VoiceOver (#29)', 'release/deployment'],
+                  unrun=['real providers/cloud/accounts', 'physical device (#29)', 'release/deployment'],
                   run_context=json.loads(args.run_context.read_text()))
     sources = [*list((ROOT / 'ios/App').glob('*.swift')), Path(__file__), HERE / 'DevelopmentFeedbackUITests.swift']
+    if tls: sources += [HERE / name for name in ('m4_device.py','m4_native.py','m4_artifacts.py','M4DeviceControl.swift','M4DeviceTestSession.swift')]
     for package in ('CJFeedbackClient', 'CJShell', 'CJMessageClient'):
         sources += list((ROOT / 'ios/Modules' / package / 'Sources').rglob('*.swift'))
     report['source_hashes'] = {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sources}
@@ -89,8 +102,11 @@ def main():
     stop, held, released, finished = (threading.Event() for _ in range(4))
     lock = threading.Lock()
     mode = {'fault': None}
-    original_size = subprocess.check_output(['xcrun', 'simctl', 'ui', args.simulator, 'content_size'], env=env, text=True).strip()
-    worker_thread = api_thread = control = server = None
+    worker_thread = api_thread = control = server = native = control_token = None
+    if tls: report.update(layer='signed approved iPhone/local pinned HTTPS/private PG/formal worker/FakeProvider',
+        raw_native_bundle_shareable=False, build_inputs_shareable=False,
+        device_font_scope='system default font; no size override',
+        unrun=['real accounts/providers/cloud/fees'])
     try:
         with tempfile.TemporaryDirectory(prefix='cj15-', dir='/tmp') as temporary:
             root = Path(temporary)
@@ -159,8 +175,9 @@ def main():
                             with lock: audit.append(entry)
                     with socket.socket() as sock:
                         sock.bind(('127.0.0.1', 0)); port = sock.getsockname()[1]
-                    endpoint = f'http://127.0.0.1:{port}'
-                    server = uvicorn.Server(uvicorn.Config(observed, host='127.0.0.1', port=port, log_level='error', access_log=False))
+                    endpoint = f'https://{tls.host}:{port}' if tls else f'http://127.0.0.1:{port}'
+                    server = uvicorn.Server(uvicorn.Config(observed, host=tls.host if tls else '127.0.0.1', port=port, log_level='error', access_log=False,
+                        **(tls.uvicorn_options() if tls else {})))
                     api_thread = threading.Thread(target=server.run, daemon=True); api_thread.start()
                     deadline = time.monotonic() + 10
                     while not server.started:
@@ -199,7 +216,7 @@ def main():
                                     conversation = 'cj15-' + uuid.uuid4().hex
                                     with TestClient(app) as client:
                                         client.put('/v1/conversations', params={'conversation_id': conversation}, headers={'Authorization': 'Bearer ' + tokens[case]['A']}).raise_for_status()
-                                    records[case] = dict(provider_start=model.calls, endpoint=endpoint, accounts=tokens[case], subjects=subjects[case], case_id=case, conversation=conversation,
+                                    records[case] = dict(provider_start=model.calls, endpoint=endpoint, accounts={} if tls else tokens[case], subjects=subjects[case], case_id=case, conversation=conversation,
                                                          prompt='PRIVATE_TRANSCRIPT_NOT_FEEDBACK 北京地铁站信息 ' + conversation)
                                     value = records[case]
                                 elif parsed.path == '/proof': value = proof(case)
@@ -213,10 +230,6 @@ def main():
                                     released.set()
                                     if not finished.wait(20): raise TimeoutError('no actual ACK delivered')
                                     value = proof(case)
-                                elif parsed.path == '/size':
-                                    if query['value'] not in ('large', 'accessibility-extra-extra-extra-large'): raise ValueError('unsupported size')
-                                    subprocess.run(['xcrun', 'simctl', 'ui', args.simulator, 'content_size', query['value']], env=env, check=True, capture_output=True)
-                                    value = {}
                                 elif parsed.path == '/validate':
                                     value = proof(case)
                                     with TestClient(app) as client:
@@ -248,18 +261,52 @@ def main():
                                 import traceback
                                 report.setdefault('control_errors', []).append(dict(type=type(error).__name__, frames=[dict(function=f.name, line=f.lineno) for f in traceback.extract_tb(error.__traceback__)]))
                                 save(); self.send_response(500); self.end_headers(); self.wfile.write(type(error).__name__.encode())
-                    control = ThreadingHTTPServer(('127.0.0.1', 0), Control)
+                    control_token = secrets.token_urlsafe(32) if tls else None; active_case = None; last_device_container = None
+                    def stage_input(request):
+                        query = parse_qs(urlsplit(request).query)
+                        if set(query) != {'case'} or query['case'] != [active_case]: raise ValueError('Staging requires the active feedback case')
+                        native.stage(case=query['case'][0])
+                    control = ThreadingHTTPServer((tls.host if tls else '127.0.0.1', 0),
+                        authenticated_control(Control, control_token, stage_input, lambda: active_case) if tls else Control)
+                    if tls: tls.secure_http_server(control)
                     threading.Thread(target=control.serve_forever, daemon=True).start()
                     spec = importlib.util.spec_from_file_location('feedback_builder', ROOT / 'scripts/check_ios_trip_confirm.py')
                     module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
-                    builder = object.__new__(module.XCTestDriver); builder.directory = output / 'project'; builder.directory.mkdir(); builder.write_project(0)
-                    (builder.directory / 'G2CControl.swift').write_text((HERE / 'DevelopmentFeedbackUITests.swift').read_text().replace('__FIXTURE_URL__', f'http://127.0.0.1:{control.server_port}'))
+                    builder = object.__new__(module.XCTestDriver); builder.directory = (device_project_root if tls else output) / 'project'; builder.directory.mkdir(); builder.write_project(0)
+                    control_url = ('https://' + tls.host if tls else 'http://127.0.0.1') + ':' + str(control.server_port)
+                    (builder.directory / 'G2CControl.swift').write_text((HERE / 'DevelopmentFeedbackUITests.swift').read_text().replace('__FIXTURE_URL__', control_url))
                     project = builder.directory / 'G2CAcceptance.xcodeproj'; pbx = project / 'project.pbxproj'
                     text = pbx.read_text().replace('space.go2china.foundation.local', BUNDLE).replace('space.go2china.foundation.control', BUNDLE + '.control')
                     entitlement = builder.directory / 'Feedback.entitlements'; entitlement.write_bytes(plistlib.dumps({'application-identifier': BUNDLE, 'keychain-access-groups': [BUNDLE]}))
                     pbx.write_text(text.replace(json.dumps(str(ROOT / 'ios/App/Development.entitlements')), json.dumps(str(entitlement))))
+                    if tls: _, configuration_file, _ = configure_project(project, tls, control_url, control_token, bundle=BUNDLE)
                     for case in ([args.case] if args.case else CASES):
                         report['cases'][case] = 'RUNNING'; save()
+                        if tls:
+                            active_case = case
+                            detail = dict(status='RUNNING'); report.setdefault('device_native', {})[case] = detail
+                            case_output = output / 'device-native' / case; case_output.mkdir(parents=True, mode=0o700)
+                            native = DeviceNative(args.device, BUNDLE, project, configuration_file, build, ROOT,
+                                case_output, tokens[case], control_token, detail, evidence_root=output,case_id=case)
+                            selected = ['DevelopmentFeedbackUITests/' + case]
+                            native.build_for_testing('Debug', selected, env)
+                            if args.prepare_only:
+                                detail['status'] = 'PREPARED_EXECUTION_UNRUN'; report['cases'][case] = 'UNRUN'; save(); continue
+                            try:
+                                native.run('Debug', selected, env)
+                            except BaseException:
+                                detail['status'] = 'FAIL'; report['cases'][case] = 'FAIL'
+                                try:
+                                    last_device_container = native.scan('Debug')
+                                    detail['failure_container_scan'] = {'status': 'PASS'}
+                                except Exception as scan_error:
+                                    detail['failure_container_scan'] = {
+                                        'status': 'FAIL' if isinstance(scan_error, AssertionError) else 'UNRUN',
+                                        'error_type': type(scan_error).__name__}
+                                save()
+                                raise
+                            last_device_container = native.scan('Debug')
+                            detail['status'] = 'PASS'; report['cases'][case] = 'PASS'; save(); continue
                         result = output / (case + '.xcresult')
                         command = ['xcodebuild', '-project', str(project), '-scheme', 'G2CControl', '-configuration', 'Debug', '-destination', 'platform=iOS Simulator,id=' + args.simulator,
                             '-derivedDataPath', str(build), '-resultBundlePath', str(result), '-scmProvider', 'system', '-skipPackageUpdates', '-onlyUsePackageVersionsFromResolvedFile',
@@ -276,26 +323,29 @@ def main():
                         report.setdefault('results', {})[case] = {k: summary[k] for k in ('passedTests', 'failedTests', 'skippedTests')}
                         assert summary['passedTests'] == 1 and summary['failedTests'] == summary['skippedTests'] == 0
                         report['cases'][case] = 'PASS'; save()
-                    container = Path(subprocess.check_output(['xcrun', 'simctl', 'get_app_container', args.simulator, BUNDLE, 'data'], env=env, text=True).strip())
-                    for path in [*container.rglob('*'), *output.rglob('*')]:
-                        if path.is_file():
-                            raw = path.read_bytes()
-                            assert not any(token.encode() in raw for pair in tokens.values() for token in pair.values())
-                            assert b'-----BEGIN PRIVATE KEY-----' not in raw
-                            if path.is_relative_to(container): assert b'PRIVATE_TRANSCRIPT_NOT_FEEDBACK' not in raw
-                    assert not errors
-                    assert all(hashlib.sha256((ROOT / p).read_bytes()).hexdigest() == digest for p, digest in report['source_hashes'].items()), 'App source changed during native execution'
-                    assert subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip() == report['head'], 'App head changed during execution'
-                    assert not subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT), 'App working tree changed during execution'
-                    report['checks']['source_hashes_unchanged'] = 'PASS'
-                    report['checks']['token_private_key_and_app_plaintext_scan'] = 'PASS'
-                    report['status'] = 'PARTIAL_PASS' if args.case else 'PASS'
+                    if not args.prepare_only:
+                        container = last_device_container if tls else Path(subprocess.check_output(['xcrun', 'simctl', 'get_app_container', args.simulator, BUNDLE, 'data'], env=env, text=True).strip())
+                        for path in [*container.rglob('*'), *output.rglob('*')]:
+                            if path.is_file():
+                                raw = path.read_bytes()
+                                assert not any(token.encode() in raw for pair in tokens.values() for token in pair.values())
+                                assert b'-----BEGIN PRIVATE KEY-----' not in raw
+                                if path.is_relative_to(container): assert b'PRIVATE_TRANSCRIPT_NOT_FEEDBACK' not in raw
+                        assert not errors
+                        assert all(hashlib.sha256((ROOT / p).read_bytes()).hexdigest() == digest for p, digest in report['source_hashes'].items()), 'App source changed during native execution'
+                        assert subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip() == report['head'], 'App head changed during execution'
+                        assert not subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT), 'App working tree changed during execution'
+                        report['checks']['source_hashes_unchanged'] = 'PASS'
+                        report['checks']['token_private_key_and_app_plaintext_scan'] = 'PASS'
+                        report['status'] = 'VERIFYING_CLEANUP'
+                    else: report.update(status='PREPARED_EXECUTION_UNRUN'); save()
                 finally:
                     stop.set(); released.set()
                     if worker_thread: worker_thread.join(timeout=10)
                     if server: server.should_exit = True
                     if api_thread: api_thread.join(timeout=10)
                     if control: control.shutdown(); control.server_close(); control = None
+            report['private_pg_stopped'] = True
     except BaseException as error:
         report['status'] = 'FAIL'; report['error'] = type(error).__name__
         for case, status in report['cases'].items():
@@ -307,10 +357,32 @@ def main():
         if server: server.should_exit = True
         if api_thread: api_thread.join(timeout=10)
         if control: control.shutdown(); control.server_close()
-        subprocess.run(['xcrun', 'simctl', 'terminate', args.simulator, BUNDLE], env=env, capture_output=True)
-        subprocess.run(['xcrun', 'simctl', 'ui', args.simulator, 'content_size', original_size], env=env, capture_output=True)
+        if tls:
+            try:
+                if native is not None: native.cleanup_input()
+            except Exception:
+                report['status'] = 'FAIL'; raise
+            finally:
+                (device_project_root / 'project/M4ControlBootstrap.plist').unlink(missing_ok=True); save()
+            if control_token is not None:
+                for path in output.rglob('*'):
+                    if path.is_file() and not path.is_symlink():
+                        if any(value.encode() in path.read_bytes() for value in [*[t for pair in tokens.values() for t in pair.values()], control_token]):
+                            report['status'] = 'FAIL'; save(); raise AssertionError('credential in evidence export')
+                report['artifact_token_scan'] = 'PASS'
+        else:
+            subprocess.run(['xcrun', 'simctl', 'terminate', args.simulator, BUNDLE], env=env, capture_output=True)
         report['worker_errors'] = errors; report['request_audit'] = audit
         if (worker_thread and worker_thread.is_alive()) or (api_thread and api_thread.is_alive()): report['status'] = 'FAIL'; report['shutdown'] = 'thread alive'
+        if report['status'] != 'FAIL':
+            try:
+                assert all(hashlib.sha256((ROOT / p).read_bytes()).hexdigest() == digest for p, digest in report['source_hashes'].items()), 'App source changed during execution'
+                assert subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip() == report['head'], 'App head changed during execution'
+                assert subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=backend, text=True).strip() == args.backend_head, 'backend pin changed during execution'
+                assert not subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT), 'App working tree changed during execution'
+            except BaseException as error:
+                report.update(status='FAIL', error=type(error).__name__); save(); raise
+            report['status'] = 'PREPARED_EXECUTION_UNRUN' if args.prepare_only else ('PARTIAL_PASS' if args.case else 'PASS')
         save()
 
 

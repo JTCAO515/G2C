@@ -1,6 +1,8 @@
 """Code-owned registrations over the single accounting engine."""
+from cj_strict_json import compact
 from dataclasses import dataclass
 import json
+import os
 from types import MappingProxyType
 from typing import Literal
 from psycopg import Error as DatabaseError
@@ -10,7 +12,7 @@ from cj_run.postgres import CommitUnknown as RunCommitUnknown
 from .metered_exit import MeteredExitCore, _PreparedCall, BudgetUnknown
 from .postgres import CommitUnknown,RepositoryUnavailable
 from .codec import CorruptLedger
-from .core import Blocked
+from .core import Blocked, Meter
 
 
 @dataclass(frozen=True)
@@ -34,8 +36,7 @@ def _model_input(argument):
     if not isinstance(provider,FakeProvider):
         raise BudgetUnknown('registered model adapter permits only FakeProvider')
     try:
-        raw=json.dumps({'messages':messages,'system':system},ensure_ascii=False,
-                       separators=(',',':'),allow_nan=False).encode('utf-8')
+        raw=compact({'messages':messages,'system':system})
     except UnicodeError:
         raise BudgetUnknown('registered model input encoding unavailable') from None
     inputs=json.loads(raw)
@@ -48,6 +49,7 @@ def _model_input(argument):
 MODEL_REGISTRY=MappingProxyType({
     'model.answer':Registration('model',_model_input),
     'model.draft':Registration('model',_model_input),
+    'memory.lio_extract.1':Registration('memory',_model_input),
 })
 
 
@@ -71,7 +73,6 @@ class RegisteredExit(MeteredExitCore):
         are never resumed through this path, so a lost clock cannot be reset.
         """
         from cj_run.step_usage import ledger_scope_for
-        from .metered_exit import BudgetExceeded
         try:OperationStore(runs,self.config).bind_period_without_operation(binding)
         except (OriginalStepOnly,RunCommitUnknown,DatabaseError):
             raise BudgetUnknown('original zero-model period unavailable') from None
@@ -80,20 +81,32 @@ class RegisteredExit(MeteredExitCore):
             with meter.repo.transaction() as ledger:previous=ledger.last_clock
         except (CommitUnknown,RepositoryUnavailable,CorruptLedger,DatabaseError,Blocked):
             raise BudgetUnknown('original result clock unavailable') from None
-        started=previous=self._now(previous)
-        def check():
-            nonlocal previous
-            previous=self._now(previous)
-            if previous-started>=self.config.max_seconds:raise BudgetExceeded('draft')
-        return check
+        started=self._now(previous)
+        return self._deadline(started,started)
 
-    def prepare_operation(self,runs,binding,operation_key,registration_id,argument,*,stage):
+    def prepare_operation(self,runs,binding,operation_key,registration_id,argument,*,stage,reserve_final_model=False):
         try: registration=self.registrations[registration_id]
         except KeyError: raise BudgetUnknown('operation adapter is not registered') from None
         prepared_input=registration.prepare_input(argument)
+        output_limit=self.output_limits[registration.kind]
+        if reserve_final_model and registration.kind=='tool':
+            from cj_run.step_usage import ledger_scope_for
+            from .metered_exit import BudgetExceeded
+            meter=self._original_meter(binding,ledger_scope_for(binding.scope,self.config))
+            try:
+                with meter.repo.transaction() as ledger:
+                    available=self.config.max_output-Meter.output_exposure(ledger,binding.run_id)-self.output_limits['model']
+            except (CommitUnknown,RepositoryUnavailable,CorruptLedger,DatabaseError,Blocked):
+                raise BudgetUnknown('original tool output capacity unavailable') from None
+            if available<1:raise BudgetExceeded(stage)
+            output_limit=min(output_limit,available)
         try:
-            operation=OperationStore(runs,self.config).create(binding,operation_key,registration_id,
-                registration.kind,prepared_input.original_bytes,self.output_limits[registration.kind])
+            from .authorization_budget import HK_PRODUCER
+            from .sublimits import operation_id
+            extra=({'new_id':lambda:operation_id(binding.scope)}
+                   if os.environ.get('CJ_M4_BUDGET_PRODUCER')==HK_PRODUCER else {})
+            operation=OperationStore(runs,self.config,**extra).create(binding,operation_key,registration_id,
+                registration.kind,prepared_input.original_bytes,output_limit)
         except (OriginalStepOnly,RunCommitUnknown,DatabaseError,ValueError):
             raise BudgetUnknown('original operation preparation unavailable') from None
         bind=(None if prepared_input.bind_operation is None else

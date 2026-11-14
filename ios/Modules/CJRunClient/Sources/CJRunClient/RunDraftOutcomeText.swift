@@ -27,7 +27,7 @@ public struct RunReadableText: UIViewRepresentable {
         let textStyle: UIFont.TextStyle
         switch style { case .body:textStyle = .body;case .caption:textStyle = .caption1;case .headline:textStyle = .headline }
         label.font = UIFont.preferredFont(forTextStyle:textStyle,
-            compatibleWith: UITraitCollection(preferredContentSizeCategory: runTextCategory(size)))
+            compatibleWith: UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(size)))
     }
     public func sizeThatFits(_ proposal: ProposedViewSize, uiView: UILabel, context: Context) -> CGSize? {
         guard let width = proposal.width, width.isFinite, width > 0 else { return nil }
@@ -53,7 +53,7 @@ public struct RunSelectableText: UIViewRepresentable {
     public func updateUIView(_ view: UITextView, context: Context) {
         if view.text?.utf8.elementsEqual(text.utf8) != true { view.text = text }
         view.font = UIFont.preferredFont(forTextStyle: .body,
-            compatibleWith: UITraitCollection(preferredContentSizeCategory: runTextCategory(size)))
+            compatibleWith: UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(size)))
     }
     public func sizeThatFits(_ proposal: ProposedViewSize, uiView: UITextView, context: Context) -> CGSize? {
         guard let width = proposal.width, width.isFinite, width > 0 else { return nil }
@@ -62,24 +62,6 @@ public struct RunSelectableText: UIViewRepresentable {
     }
     public static func dismantleUIView(_ uiView: UITextView, coordinator: ()) { uiView.text = nil }
 }
-
-private func runTextCategory(_ size: DynamicTypeSize) -> UIContentSizeCategory {
-        switch size {
-        case .xSmall: .extraSmall
-        case .small: .small
-        case .medium: .medium
-        case .large: .large
-        case .xLarge: .extraLarge
-        case .xxLarge: .extraExtraLarge
-        case .xxxLarge: .extraExtraExtraLarge
-        case .accessibility1: .accessibilityMedium
-        case .accessibility2: .accessibilityLarge
-        case .accessibility3: .accessibilityExtraLarge
-        case .accessibility4: .accessibilityExtraExtraLarge
-        case .accessibility5: .accessibilityExtraExtraExtraLarge
-        @unknown default: .large
-        }
-    }
 #else
 public struct RunReadableText: View {
     let text: String

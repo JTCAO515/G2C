@@ -4,7 +4,6 @@ from psycopg import Error as DatabaseError
 from cj_usage.codec import CorruptLedger
 from cj_auth.admission import AdmissionChecker
 from cj_auth.jwt_adapter import PyJWTVerifier, JWTConfiguration, StaticPublicKeys, VerificationKey
-from cj_message.needs_binding import needs_scope_for
 from cj_needs.revision_lease import RevisionLease, LeaseUnavailable
 from cj_run.step_usage import ledger_scope_for
 from cj_run.operation_usage import ABI as REGISTERED_ABI
@@ -12,23 +11,35 @@ from cj_usage.core import Meter
 from cj_usage.postgres import PostgresRepository
 from cj_usage.local_provider_exit import LocalProviderExit, BudgetUnknown
 from cj_usage.registered_exit import RegisteredExit, MODEL_REGISTRY
-from .local_app import ISSUER, AUDIENCE, KEY_ID, scope_for, InvitedSubjects
+from .local_app import ISSUER, AUDIENCE, KEY_ID, InvitedSubjects, needs_lease_resolver
 
 
-def checker_for(auth_dir,*,account_retired=None):
-    access=InvitedSubjects(auth_dir/'invited.json')
-    if account_retired is not None:
+def checker_factory_for(auth_dir, *, selected_subjects=None):
+    invitations = InvitedSubjects(auth_dir / 'invited.json', selected_subjects)
+    verifier = PyJWTVerifier(
+        JWTConfiguration(ISSUER, AUDIENCE, 'RS256', 0),
+        StaticPublicKeys({KEY_ID: VerificationKey('RS256', (auth_dir / 'public.pem').read_bytes())}),
+    )
+
+    def build(account_retired=None):
+        if account_retired is None:
+            return AdmissionChecker(verifier, invitations)
         from cj_auth.account_revocation import AccountRevocationAccess
-        access=AccountRevocationAccess(access,account_retired)
-    return AdmissionChecker(PyJWTVerifier(JWTConfiguration(ISSUER,AUDIENCE,'RS256',0),
-        StaticPublicKeys({KEY_ID:VerificationKey('RS256',(auth_dir/'public.pem').read_bytes())})),
-        access)
+        return AdmissionChecker(verifier, AccountRevocationAccess(invitations, account_retired))
+
+    return build
+
+
+def checker_for(auth_dir, *, account_retired=None, selected_subjects=None):
+    return checker_factory_for(auth_dir, selected_subjects=selected_subjects)(account_retired)
 
 
 class LocalBudgetRouter:
-    def __init__(self, database, *, registrations=None):
+    def __init__(self, database, *, registrations=None, registrations_for_run=None,exit_observer_for_run=None):
         self.database=database
         self.registrations=MODEL_REGISTRY if registrations is None else registrations
+        self.registrations_for_run=registrations_for_run
+        self.exit_observer_for_run=exit_observer_for_run
 
     def stop(self, binding):
         raise BudgetUnknown('original quota period unresolved; cleanup withheld')
@@ -65,17 +76,20 @@ class LocalBudgetRouter:
                 raise BudgetUnknown('original quota owner changed')
             return Meter(PostgresRepository(lambda:self.database.connect(binding.scope,usage_profile=profile),account),profile.meter,time.time)
         if context.version=='CJ-LOCAL-RUN@2':
-            return RegisteredExit(profile.meter,resolve,clock=time.time,output_limits=profile.output_limits,
-                                  environment='local',registrations=self.registrations)
+            registrations=(self.registrations if self.registrations_for_run is None else
+                           self.registrations_for_run(binding))
+            options=dict(clock=time.time,output_limits=profile.output_limits,environment='local',registrations=registrations)
+            observer=None if self.exit_observer_for_run is None else self.exit_observer_for_run(binding)
+            if observer is not None:
+                from .runtime_controlled_generation import ControlledRegisteredExit
+                return ControlledRegisteredExit(profile.meter,resolve,observer=observer,**options)
+            return RegisteredExit(profile.meter,resolve,**options)
         return LocalProviderExit(profile.meter,resolve,clock=time.time,
                                  output_limits=profile.output_limits,environment='local')
 
 
 def needs_lease_for(database, checker, token_supplier):
-    def resolve(principal):
-        scope=scope_for(principal.issuer,principal.subject)
-        return lambda:database.connect(scope),scope,needs_scope_for(scope)
-    lease=RevisionLease(checker,resolve,environment='local',issuer=ISSUER,audience=AUDIENCE)
+    lease=RevisionLease(checker,needs_lease_resolver(database),environment='local',issuer=ISSUER,audience=AUDIENCE)
     def hold(binding):
         try: token=token_supplier()
         except (OSError,ValueError): raise LeaseUnavailable('local worker identity unavailable') from None

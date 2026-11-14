@@ -51,6 +51,19 @@ class TypedRuntimeConfiguration:
             raise RuntimeDenied('canonical original context authority required')
         return _bind_runtime(self,TypedRuntimeMemory,database,scope,identity,admit,message_context)
 
+    def bind_readonly(self,database,scope,identity,admit,*,message_context):
+        """Bind existing storage for trusted preflight without provisioning it."""
+        from cj_api.local_app import scope_for
+        if type(message_context) is not MessageContextAuthority or message_context.repository.scope!=scope:
+            raise RuntimeDenied('canonical original context authority required')
+        def current_principal():
+            principal=admit()
+            if scope_for(principal.issuer,principal.subject)!=scope:
+                raise RuntimeDenied('typed Memory principal/owner mismatch')
+            return principal
+        return _bind_runtime(self,TypedRuntimeMemory,database,scope,identity,current_principal,
+                             message_context,provision=False)
+
 
 def _bind_runtime(configuration,runtime_type,database,scope,identity,admit,message_context,*,provision=True):
     selection=configuration.selections.get(identity)

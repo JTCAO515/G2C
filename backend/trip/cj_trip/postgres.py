@@ -12,11 +12,14 @@ from .domain import Action, Proposal, ProposalDetail, Receipt, Trip, Conflict, D
 
 
 class Repository:
-    def __init__(self, connect, scope, confirm=None, guard=None, *, structured=False):
+    def __init__(self, connect, scope, confirm=None, guard=None, *, structured=False, calendar=False):
         self.connect, self.scope = connect, identifier(scope)
         self.confirm = confirm
         self.guard = guard or (lambda stage: None)
         self.structured = structured
+        if calendar and not structured:
+            raise ValueError('calendar consumer requires structured capability')
+        self.calendar = calendar
         self.manual_origin = None
         self.needs_actions = None
         self.needs_edits = None
@@ -91,12 +94,46 @@ class Repository:
         from .needs_discovery import PlaceNeedsDiscovery
         return PlaceNeedsDiscovery(self.needs_actions).read(self,query,encode)
 
+    def discover_demo_needs(self,query,encode):
+        if self.needs_actions is None:raise Denied('actual source-bound host required')
+        from .needs_discovery import DemoNeedsDiscovery
+        return DemoNeedsDiscovery(self.needs_actions).read(self,query,encode)
+
     def scoped_result(self,result_id,encode):
         from .scoped_result_read import read
         return read(self.scoped_actions,self,result_id,encode)
 
+    def calendar_conversion_receipt(self, request):
+        if not self.calendar:
+            raise Denied('calendar receipt requires explicit versioned consumer')
+        from .calendar_receipts import query
+        return query(self, request)
+
+    def calendar_plan_receipt(self, binding):
+        if not self.calendar: raise Denied('explicit calendar consumer required')
+        from .lio_history import _message_receipt, plan_action_id
+        return _message_receipt(self, binding, plan_action_id(binding.run_id), 'lio-calendar-plan.1')
+
+    def calendar_edit_receipt(self, binding):
+        if not self.calendar: raise Denied('explicit calendar consumer required')
+        from .lio_history import _message_receipt, edit_action_id
+        return _message_receipt(self, binding, edit_action_id(binding.run_id), 'lio-calendar-edit.1')
+
+    def undo_calendar(self, request):
+        from .calendar_history import undo
+        return undo(self, request)
+
     def _content(self, content, *, validated=False):
         document = json.loads(content)
+        if type(document) is dict and document.get('content_version') == 'structured.3':
+            if not self.calendar:
+                raise Denied('calendar Trip requires explicit versioned consumer')
+            if not validated:
+                from .structured_v3 import validate_document
+                from .domain import packed
+                validate_document(document)
+                if packed(document) != content: raise ValueError('canonical stored Trip required')
+            return content
         if type(document) is dict and document.get('content_version') in ('structured.1','structured.2'):
             if not self.structured:
                 raise Denied('structured Trip requires explicit versioned consumer')
@@ -295,6 +332,31 @@ class Repository:
         with self.transaction() as cur:
             row = self._receipt(cur, identifier(action_id))
             return row[0] if row else None
+
+    def lio_revisions(self, trip_id, before, limit):
+        from .lio_history import revisions
+        return revisions(self, trip_id, before=before, limit=limit)
+
+    def lio_current_trip(self, needs_scope, needs_id):
+        from .lio_history import current_head
+        return current_head(self, needs_scope, needs_id)
+
+    def lio_plan_receipt(self, binding):
+        from .lio_history import plan_receipt
+        return plan_receipt(self, binding)
+
+    def lio_edit_receipt(self, binding):
+        from .lio_history import edit_receipt
+        return edit_receipt(self, binding)
+
+    def undo_lio(self, request):
+        from .lio_history import undo
+        return undo(self, request)
+
+    def lio_undo_receipt(self, request):
+        from .needs_action_store import NeedsActions
+        with self.transaction() as cur:
+            return NeedsActions._previous(self, cur, request)
 
     def read_decision_source(self,query,project,max_source_bytes,max_result_bytes):
         from .decision_source import read

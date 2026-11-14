@@ -367,6 +367,11 @@ def group_structured_read():
         f'/tmp/cj-structured-read-{os.getpid()}','backend/trip/tests/structured_read_pg.py')
 
 
+def group_trip_calendar():
+    return _fresh_runtime_check('trip_calendar',55502,'cj861_calendar',
+        f'/tmp/cj861-calendar-{os.getpid()}','backend/trip/tests/calendar_pg.py')
+
+
 def group_edit_memory():
     return _fresh_runtime_check('edit_memory',55503,'cj344_memory',
         f'/tmp/cj344-memory-{os.getpid()}','backend/memory/tests/edit_runtime_pg.py')
@@ -438,7 +443,7 @@ def group_account_inflight():
 
 GROUPS = {'e2e': group_e2e, 'migrations': group_migrations, 'feasibility_domain': group_feasibility_domain, 'message': group_message, 'run': group_run, 'needs': group_needs, 'trip': group_trip, 'feasibility': group_feasibility, 'memory_management': group_memory_management,
           'memory': group_memory, 'domain_runners': group_domain_runners,
-          'local_context_schema': group_local_context_schema, 'local_needs_fence': group_local_needs_fence, 'local_budget_exit': group_local_budget_exit, 'local_protection_schema': group_local_protection_schema, 'local_run_host': group_local_run_host, 'registered_usage_schema': group_registered_usage_schema, 'registered_exit': group_registered_exit, 'memory_run': group_memory_run, 'travel_context': group_travel_context, 'travel_message': group_travel_message, 'place_tool': group_place_tool,'memory_typed': group_memory_typed,'trip_manual': group_trip_manual,'fact_tool': group_fact_tool,'needs_runtime': group_needs_runtime,'feasibility_runtime': group_feasibility_runtime,'needs_trip': group_needs_trip,'needs_actions': group_needs_actions,'structured_read': group_structured_read,'edit_memory': group_edit_memory,'scoped_runtime': group_scoped_runtime,'scoped_result': group_scoped_result,'place_draft_source': group_place_draft_source,'message_source': group_message_source,'cleanup_foundation': group_cleanup_foundation,'feedback_runtime': group_feedback_runtime,'memory_history': group_memory_history,'account_gateway': group_account_gateway,'account_retention': group_account_retention,'account_inflight':group_account_inflight,'memory_publication':group_memory_publication}
+          'local_context_schema': group_local_context_schema, 'local_needs_fence': group_local_needs_fence, 'local_budget_exit': group_local_budget_exit, 'local_protection_schema': group_local_protection_schema, 'local_run_host': group_local_run_host, 'registered_usage_schema': group_registered_usage_schema, 'registered_exit': group_registered_exit, 'memory_run': group_memory_run, 'travel_context': group_travel_context, 'travel_message': group_travel_message, 'place_tool': group_place_tool,'memory_typed': group_memory_typed,'trip_manual': group_trip_manual,'fact_tool': group_fact_tool,'needs_runtime': group_needs_runtime,'feasibility_runtime': group_feasibility_runtime,'needs_trip': group_needs_trip,'needs_actions': group_needs_actions,'structured_read': group_structured_read,'trip_calendar': group_trip_calendar,'edit_memory': group_edit_memory,'scoped_runtime': group_scoped_runtime,'scoped_result': group_scoped_result,'place_draft_source': group_place_draft_source,'message_source': group_message_source,'cleanup_foundation': group_cleanup_foundation,'feedback_runtime': group_feedback_runtime,'memory_history': group_memory_history,'account_gateway': group_account_gateway,'account_retention': group_account_retention,'account_inflight':group_account_inflight,'memory_publication':group_memory_publication}
 
 
 def group_device_v2():
@@ -621,6 +626,96 @@ def group_supabase_pool_reset():
 
 
 GROUPS.update(supabase_pool_reset=group_supabase_pool_reset)
+
+
+def group_hk_recovery():
+    pg=Path(os.environ.get('CJ_PG17_BINDIR',bindir()))
+    return script('scripts/hk_recovery_local_check.py',env=dict(clean_env(),CJ_PG_BINDIR=str(pg),PATH=str(pg)+os.pathsep+os.environ['PATH']))
+
+
+GROUPS.update(hk_recovery=group_hk_recovery)
+
+
+def group_hk_cloud_rehearsal():
+    pg=Path(os.environ.get('CJ_PG17_BINDIR',bindir()))
+    return script('scripts/hk_cloud_rehearsal_local_check.py',env=dict(clean_env(),CJ_PG_BINDIR=str(pg),PATH=str(pg)+os.pathsep+os.environ['PATH']))
+
+
+GROUPS.update(hk_cloud_rehearsal=group_hk_cloud_rehearsal)
+
+
+def group_hk_typed_memory():
+    return script('backend/cj_api/tests/hk_typed_memory_pg.py')
+
+
+GROUPS.update(hk_typed_memory=group_hk_typed_memory)
+
+
+def group_hk_typed_worker():
+    return script('backend/cj_api/tests/hk_typed_worker_pg.py') or script('scripts/hk_demo_local_check.py')
+
+
+GROUPS.update(hk_typed_worker=group_hk_typed_worker)
+
+
+def group_lio_projection():
+    return script('backend/cj_api/tests/lio_projection_pg.py')
+
+
+GROUPS.update(lio_projection=group_lio_projection)
+
+
+def group_lio_origin_compat():
+    pg=Path(os.environ.get('CJ_PG17_BINDIR',bindir()))
+    return script('backend/cj_api/tests/lio_origin_compat_pg.py',
+                  env=dict(clean_env(),CJ_PG_BINDIR=str(pg),PATH=str(pg)+os.pathsep+os.environ['PATH']))
+
+
+GROUPS.update(lio_origin_compat=group_lio_origin_compat)
+
+
+def group_lio_calendar():
+    pg=Path(os.environ.get('CJ_PG17_BINDIR',bindir()))
+    return script('backend/cj_api/tests/local_lio_calendar_pg.py',
+                  env=dict(clean_env(),CJ_PG_BINDIR=str(pg),PATH=str(pg)+os.pathsep+os.environ['PATH']))
+
+
+GROUPS.update(lio_calendar=group_lio_calendar)
+
+
+def group_runtime_fixture_registry():
+    return script('backend/cj_api/tests/runtime_fixture_registry_pg.py')
+
+
+GROUPS.update(runtime_fixture_registry=group_runtime_fixture_registry)
+
+
+def group_runtime_cancel():
+    return script('backend/cj_api/tests/runtime_native_dialogue_pg.py')
+
+
+GROUPS.update(runtime_cancel=group_runtime_cancel)
+
+
+def group_runtime_fixture_observer():
+    return script('backend/cj_api/tests/runtime_fixture_observer_pg.py')
+
+
+GROUPS.update(runtime_fixture_observer=group_runtime_fixture_observer)
+
+
+def group_runtime_release_witness():
+    return script('backend/cj_api/tests/runtime_release_witness_pg.py')
+
+
+GROUPS.update(runtime_release_witness=group_runtime_release_witness)
+
+
+def group_runtime_fixture_boundary():
+    return script('backend/cj_api/tests/runtime_fixture_boundary_pg.py')
+
+
+GROUPS.update(runtime_fixture_boundary=group_runtime_fixture_boundary)
 
 
 def main(argv):

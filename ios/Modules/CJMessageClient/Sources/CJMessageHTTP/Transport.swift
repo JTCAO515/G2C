@@ -18,6 +18,7 @@ public struct MessageEndpoint: Sendable {
     /// Capability classification established once at the URL/config boundary.
     /// Only development factories use it; it never grants a route by itself.
     public let allowsDevelopmentActivation: Bool
+    public let allowsDemoBetaActivation: Bool
     public init(url: URL, maximumRequestBytes: Int, maximumResponseBytes: Int, allowLoopbackHTTP: Bool = false) throws {
         if let port = url.port, !(1...65535).contains(port) { throw MessageHTTPFailure.invalidConfiguration }
         #if os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
@@ -26,18 +27,35 @@ public struct MessageEndpoint: Sendable {
         let loopback = url.scheme == "http" && url.host == "127.0.0.1" && url.port != nil
         #endif
         let deviceLocal: Bool
+        let beta: Bool
         #if DEBUG && G2C_M4_DEVICE_ACCEPTANCE
         deviceLocal = Self.isM4LocalHTTPS(url, approvedHost: ProcessInfo.processInfo.environment["G2C_M4_LOCAL_HOST"])
+        beta = Self.isM4BetaHTTPS(url, environment: ProcessInfo.processInfo.environment)
         #else
         deviceLocal = false
+        beta = false
         #endif
-        let local = allowLoopbackHTTP && (loopback || deviceLocal)
+        let local = allowLoopbackHTTP && (loopback || deviceLocal || beta)
         guard url.scheme == "https" || local, url.host != nil, url.user == nil, url.password == nil,
               url.query == nil, url.fragment == nil, ["", "/"].contains(url.path), maximumRequestBytes > 0, maximumResponseBytes > 0 else {
             throw MessageHTTPFailure.invalidConfiguration
         }
         self.url = url; self.maximumRequestBytes = maximumRequestBytes; self.maximumResponseBytes = maximumResponseBytes
         allowsDevelopmentActivation = local
+        #if os(iOS)
+        allowsDemoBetaActivation = Self.isDemoBetaEndpoint(url,
+            bundleIdentifier: Bundle.main.bundleIdentifier,
+            signedMarker: Bundle.main.object(forInfoDictionaryKey: "G2CDemoBeta") as? Bool == true)
+        #else
+        allowsDemoBetaActivation = false
+        #endif
+    }
+
+    // Xcode's app configuration does not propagate to Swift Package targets.
+    // Admit this exact origin only from the signed Beta's bundle metadata.
+    static func isDemoBetaEndpoint(_ url: URL, bundleIdentifier: String?, signedMarker: Bool) -> Bool {
+        signedMarker && bundleIdentifier == "space.go2china.app"
+            && url.absoluteString == "https://api-beta.go2china.space"
     }
 
     /// M4 local test traffic is limited to one explicitly supplied private IPv4
@@ -51,6 +69,16 @@ public struct MessageEndpoint: Sendable {
               zip(fields, bytes).allSatisfy({ String($0.1) == $0.0 }) else { return false }
         return bytes[0] == 10 || (bytes[0] == 172 && (16...31).contains(bytes[1]))
             || (bytes[0] == 192 && bytes[1] == 168) || (bytes[0] == 169 && bytes[1] == 254)
+    }
+
+    /// The one M4 test service published READY in #30. Uses system TLS trust;
+    /// this classification never grants a route, session or Production access.
+    static func isM4BetaHTTPS(_ url: URL, environment: [String: String]) -> Bool {
+        environment["G2C_M4_BETA_API"] == "1" && environment["G2C_M4_LOCAL_HOST"] == nil
+            && url.scheme == "https" && url.host == "api-beta.go2china.space"
+            && (url.port == nil || url.port == 443)
+            && url.user == nil && url.password == nil && url.query == nil && url.fragment == nil
+            && ["", "/"].contains(url.path)
     }
 }
 
@@ -109,17 +137,47 @@ struct CheckedTransport: ClientTransport {
 }
 
 public final class NoRedirectTransport: ClientTransport, Sendable {
+    #if DEBUG && os(iOS) && targetEnvironment(simulator)
+    // One explicit local fixture for #691's real App-root lifecycle. Release
+    // builds have no installation API; ordinary Debug callers stay unchanged.
+    private final class B691Fixture: @unchecked Sendable {
+        private let lock = NSLock()
+        private var installed: URLProtocol.Type?
+        func install(_ value: URLProtocol.Type) throws {
+            lock.lock(); defer { lock.unlock() }
+            guard installed == nil else { throw MessageHTTPFailure.invalidConfiguration }
+            installed = value
+        }
+        func read() throws -> URLProtocol.Type {
+            lock.lock(); defer { lock.unlock() }
+            guard let installed else { throw MessageHTTPFailure.invalidConfiguration }
+            return installed
+        }
+    }
+    private static let b691Fixture = B691Fixture()
+    private static func requireB691Fixture() throws {
+        guard Bundle.main.bundleIdentifier == "space.go2china.app",
+              Bundle.main.object(forInfoDictionaryKey: "G2CDemoBeta") as? Bool == true,
+              Bundle.main.object(forInfoDictionaryKey: "G2CB691LocalFixture") as? Bool == true else {
+            throw MessageHTTPFailure.invalidConfiguration
+        }
+    }
+    public static func installB691LocalFixture(_ value: URLProtocol.Type) throws {
+        try requireB691Fixture()
+        try b691Fixture.install(value)
+    }
+    #endif
     private struct EndpointCapability: Sendable {
         let endpoint: MessageEndpoint
         let validate: @MainActor @Sendable () throws -> Void
     }
     private enum MessageWire {
-        case legacy, travel, discussion, edit
+        case legacy, travel, discussion, edit, lio
         var path: String {
-            switch self { case .legacy: "/v1/messages"; case .travel: "/v2/messages"; case .discussion: "/v3/messages"; case .edit: "/v4/messages" }
+            switch self { case .legacy: "/v1/messages"; case .travel: "/v2/messages"; case .discussion: "/v3/messages"; case .edit: "/v4/messages"; case .lio: "/v1/lio/messages" }
         }
         var operation: String {
-            switch self { case .legacy: Operations.receiveMessage.id; case .travel: Operations.receiveMessageV2.id; case .discussion: "receiveTripDiscussionV3"; case .edit: "receiveTripEditV4" }
+            switch self { case .legacy: Operations.receiveMessage.id; case .travel: Operations.receiveMessageV2.id; case .discussion: "receiveTripDiscussionV3"; case .edit: "receiveTripEditV4"; case .lio: "sendLioMessageV1" }
         }
     }
     private struct MessageCapability: Sendable {
@@ -149,6 +207,118 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
 
     public convenience init(requestTimeout: TimeInterval, resourceTimeout: TimeInterval) throws {
         try self.init(requestTimeout:requestTimeout,resourceTimeout:resourceTimeout,preview:nil)
+    }
+
+    static func lioTimeline(endpoint: MessageEndpoint,
+                            validate: @escaping @MainActor @Sendable () throws -> Void) throws -> NoRedirectTransport {
+        guard endpoint.allowsDemoBetaActivation else { throw MessageHTTPFailure.productionActivationUnavailable }
+        return try NoRedirectTransport(requestTimeout: 10, resourceTimeout: 20, preview: nil,
+            messages: MessageCapability(endpoint: endpoint, validate: validate, wire: .lio))
+    }
+
+    func sendLio(_ original: LioTimelineWire.Send, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
+        guard let messages, messages.wire == .lio else { throw MessageHTTPFailure.productionActivationUnavailable }
+        let path = original.version == .v1 ? messages.wire.path : "/v2/lio/messages"
+        let operation = original.version == .v1 ? messages.wire.operation : "sendLioMessageV2"
+        var request = HTTPRequest(method: .post, scheme: nil, authority: nil, path: path)
+        request.headerFields[.authorization] = "Bearer " + bearer
+        request.headerFields[.contentType] = "application/octet-stream"
+        request.headerFields[.accept] = "application/json"
+        return try await sendLocalWrite(request, body: HTTPBody(original.originalUTF8),
+            baseURL: messages.endpoint.url, operationID: operation,
+            capability: messages.boundary, messageWire: nil)
+    }
+
+    func readLio(conversationID: String?, before: String?, bearer: String,
+                 version: LioTimelineWire.Version = .v1) async throws -> (HTTPResponse, HTTPBody?) {
+        var query: [URLQueryItem] = []
+        if let conversationID {
+            guard LioTimelineWire.validConversationID(conversationID) else { throw MessageHTTPFailure.invalidConfiguration }
+            query.append(URLQueryItem(name: "conversation_id", value: conversationID))
+        }
+        if let before {
+            guard LioTimelineWire.validMessageID(before) else { throw MessageHTTPFailure.invalidConfiguration }
+            query.append(URLQueryItem(name: "before", value: before))
+        }
+        return try await lioRead(path: "/v\(version.rawValue)/lio/timeline", query: query,
+                                 operation: "readLioTimelineV\(version.rawValue)", bearer: bearer)
+    }
+
+    func readLioFirstReceipt(_ original: LioTimelineWire.Send, inputSHA256: String,
+                             bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
+        try await lioRead(path: "/v2/lio/messages", query: [
+            URLQueryItem(name: "message_id", value: original.messageID),
+            URLQueryItem(name: "input_sha256", value: inputSHA256)
+        ], operation: "readLioMessageV2", bearer: bearer)
+    }
+
+    func readLioTrip(before: String?, bearer: String, conversationID: String? = nil) async throws -> (HTTPResponse, HTTPBody?) {
+        if let before, !LioTripHistoryWire.validCursor(before) { throw MessageHTTPFailure.invalidConfiguration }
+        var query: [URLQueryItem] = []
+        if let conversationID {
+            guard LioTimelineWire.validConversationID(conversationID) else { throw MessageHTTPFailure.invalidConfiguration }
+            query.append(URLQueryItem(name: "conversation_id", value: conversationID))
+        }
+        if let before { query.append(URLQueryItem(name: "before", value: before)) }
+        let version = conversationID == nil ? 1 : 2
+        return try await lioRead(path: "/v\(version)/lio/trip", query: query,
+                                 operation: "readLioTripHistoryV\(version)", bearer: bearer)
+    }
+
+    func sendLioUndo(_ undo: LioTripHistoryWire.Undo, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
+        guard let messages, messages.wire == .lio else { throw MessageHTTPFailure.productionActivationUnavailable }
+        var request = HTTPRequest(method: .post, scheme: nil, authority: nil, path: "/v\(undo.version)/lio/trip/undo")
+        request.headerFields[.authorization] = "Bearer " + bearer
+        request.headerFields[.contentType] = "application/octet-stream"
+        request.headerFields[.accept] = "application/json"
+        return try await sendLocalWrite(request, body: HTTPBody(undo.originalUTF8),
+            baseURL: messages.endpoint.url, operationID: "undoLioTripV\(undo.version)",
+            capability: messages.boundary, messageWire: nil)
+    }
+
+    func readLioUndo(_ undo: LioTripHistoryWire.Undo, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
+        var query = [
+            URLQueryItem(name: "action_id", value: undo.actionID),
+            URLQueryItem(name: "target", value: undo.target)
+        ]
+        if let id = undo.conversationID { query.append(URLQueryItem(name: "conversation_id", value: id)) }
+        return try await lioRead(path: "/v\(undo.version)/lio/trip/undo", query: query,
+                                 operation: "readLioTripUndoV\(undo.version)", bearer: bearer)
+    }
+
+    func sendLioMemoryChoice(_ action: LioMemoryWire.Action, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
+        try await lioMemoryRequest(action, bearer: bearer, path: "/v1/lio/memory/actions", operation: "chooseLioMemoryV1")
+    }
+
+    /// The B endpoint only observes the existing action. Its POST body keeps the target out of the URL.
+    func readLioMemoryChoice(_ action: LioMemoryWire.Action, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
+        try await lioMemoryRequest(action, bearer: bearer, path: "/v1/lio/memory/receipt", operation: "readLioMemoryChoiceV1")
+    }
+
+    private func lioMemoryRequest(_ action: LioMemoryWire.Action, bearer: String, path: String,
+                                  operation: String) async throws -> (HTTPResponse, HTTPBody?) {
+        guard let messages, messages.wire == .lio else { throw MessageHTTPFailure.productionActivationUnavailable }
+        var request = HTTPRequest(method: .post, scheme: nil, authority: nil, path: path)
+        request.headerFields[.authorization] = "Bearer " + bearer
+        request.headerFields[.contentType] = "application/octet-stream"
+        request.headerFields[.accept] = "application/json"
+        return try await sendLocalWrite(request, body: HTTPBody(action.originalUTF8), baseURL: messages.endpoint.url,
+                                        operationID: operation, capability: messages.boundary, messageWire: nil)
+    }
+
+    private func lioRead(path: String, query: [URLQueryItem], operation: String, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
+        guard let messages, messages.wire == .lio else { throw MessageHTTPFailure.productionActivationUnavailable }
+        var components = URLComponents()
+        components.path = path
+        if !query.isEmpty {
+            components.queryItems = query
+            components.percentEncodedQuery = components.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
+        }
+        guard let route = components.string else { throw MessageHTTPFailure.invalidConfiguration }
+        var request = HTTPRequest(method: .get, scheme: nil, authority: nil, path: route)
+        request.headerFields[.authorization] = "Bearer " + bearer
+        request.headerFields[.accept] = "application/json"
+        return try await sendLocalRead(request, baseURL: messages.endpoint.url, operationID: operation, capability: messages.boundary)
     }
 
     /// Explicit capability for ONE producer-defined readonly computation, never a caller
@@ -189,13 +359,13 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
 
     private static func developmentMessageTransport(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
         resourceTimeout: TimeInterval, wire: MessageWire, validate: @escaping @MainActor @Sendable () throws -> Void) throws -> NoRedirectTransport {
-        #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
-        guard endpoint.allowsDevelopmentActivation else { throw MessageHTTPFailure.invalidConfiguration }
+        #if !(DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE)))
+        guard endpoint.allowsDemoBetaActivation else { throw MessageHTTPFailure.productionActivationUnavailable }
+        #endif
+        if endpoint.allowsDemoBetaActivation, wire != .travel { throw MessageHTTPFailure.invalidConfiguration }
+        guard endpoint.allowsDevelopmentActivation || endpoint.allowsDemoBetaActivation else { throw MessageHTTPFailure.invalidConfiguration }
         return try NoRedirectTransport(requestTimeout: requestTimeout, resourceTimeout: resourceTimeout,
             preview: nil, messages: MessageCapability(endpoint: endpoint, validate: validate, wire: wire))
-        #else
-        throw MessageHTTPFailure.productionActivationUnavailable
-        #endif
     }
 
     /// Existing #226 manual wire only, scoped to the explicit local simulator
@@ -228,59 +398,55 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     /// lifecycle writes only; legacy and MESSAGE capabilities remain closed.
     public static func developmentTypedMemory(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
         resourceTimeout: TimeInterval, validate: @escaping @MainActor @Sendable () throws -> Void) throws -> NoRedirectTransport {
-        #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
-        guard endpoint.allowsDevelopmentActivation,
+        #if !(DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE)))
+        guard endpoint.allowsDemoBetaActivation else { throw MessageHTTPFailure.productionActivationUnavailable }
+        #endif
+        guard endpoint.allowsDevelopmentActivation || endpoint.allowsDemoBetaActivation,
               endpoint.maximumRequestBytes <= 32768,endpoint.maximumResponseBytes <= 1_000_000 else { throw MessageHTTPFailure.invalidConfiguration }
         return try NoRedirectTransport(requestTimeout:requestTimeout,resourceTimeout:resourceTimeout,
             preview:nil,typedMemory:EndpointCapability(endpoint:endpoint,validate:validate))
-        #else
-        throw MessageHTTPFailure.productionActivationUnavailable
-        #endif
     }
 
     /// CJ-LOCAL-NEEDS@1 manual-v1 only. The per-work validator is captured
     /// before dispatch and rechecked after body collection at the live exit.
     public static func developmentNeeds(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
         resourceTimeout: TimeInterval, validate: @escaping @MainActor @Sendable () throws -> Void) throws -> NoRedirectTransport {
-        #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
-        guard endpoint.allowsDevelopmentActivation,
+        #if !(DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE)))
+        guard endpoint.allowsDemoBetaActivation else { throw MessageHTTPFailure.productionActivationUnavailable }
+        #endif
+        guard endpoint.allowsDevelopmentActivation || endpoint.allowsDemoBetaActivation,
               endpoint.maximumRequestBytes <= 131072, endpoint.maximumResponseBytes <= 1048576 else {
             throw MessageHTTPFailure.invalidConfiguration
         }
         return try NoRedirectTransport(requestTimeout: requestTimeout, resourceTimeout: resourceTimeout,
             preview: nil, needs: EndpointCapability(endpoint: endpoint, validate: validate))
-        #else
-        throw MessageHTTPFailure.productionActivationUnavailable
-        #endif
     }
 
     /// Per-work signed local Trip editing capability. Ordinary/Release construction
     /// never enables these routes, and no other write or remote host is admitted.
     public static func developmentTripEditing(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
         resourceTimeout: TimeInterval, validate: @escaping @MainActor @Sendable () throws -> Void) throws -> NoRedirectTransport {
-        #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
-        guard endpoint.allowsDevelopmentActivation,
+        #if !(DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE)))
+        guard endpoint.allowsDemoBetaActivation else { throw MessageHTTPFailure.productionActivationUnavailable }
+        #endif
+        guard endpoint.allowsDevelopmentActivation || endpoint.allowsDemoBetaActivation,
               endpoint.maximumRequestBytes <= 1_000_000, endpoint.maximumResponseBytes <= 1_000_000 else { throw MessageHTTPFailure.invalidConfiguration }
         return try NoRedirectTransport(requestTimeout: requestTimeout, resourceTimeout: resourceTimeout,
             preview: nil, tripEditing: EndpointCapability(endpoint: endpoint, validate: validate))
-        #else
-        throw MessageHTTPFailure.productionActivationUnavailable
-        #endif
     }
 
     /// FEEDBACK@1.0 local Simulator capability. No generic or Release write grant.
     public static func developmentFeedback(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
         resourceTimeout: TimeInterval, validate: @escaping @MainActor @Sendable () throws -> Void) throws -> NoRedirectTransport {
-        #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
-        guard endpoint.allowsDevelopmentActivation,
+        #if !(DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE)))
+        guard endpoint.allowsDemoBetaActivation else { throw MessageHTTPFailure.productionActivationUnavailable }
+        #endif
+        guard endpoint.allowsDevelopmentActivation || endpoint.allowsDemoBetaActivation,
               endpoint.maximumRequestBytes <= 16384, endpoint.maximumResponseBytes <= 1_000_000 else {
             throw MessageHTTPFailure.invalidConfiguration
         }
         return try NoRedirectTransport(requestTimeout: requestTimeout, resourceTimeout: resourceTimeout,
             preview: nil, feedback: EndpointCapability(endpoint: endpoint, validate: validate))
-        #else
-        throw MessageHTTPFailure.productionActivationUnavailable
-        #endif
     }
 
     /// Explicit MEMORY-HISTORY@1 consent only; never an organizer job dispatch grant.
@@ -326,13 +492,12 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     /// Explicit MEMORY-ERASURE@1 original POST/progress GET, not account deletion.
     public static func developmentMemoryErasure(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
         resourceTimeout: TimeInterval, validate: @escaping @MainActor @Sendable () throws -> Void) throws -> NoRedirectTransport {
-        #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
-        guard endpoint.allowsDevelopmentActivation, endpoint.maximumRequestBytes <= 32768, endpoint.maximumResponseBytes <= 524288 else { throw MessageHTTPFailure.invalidConfiguration }
+        #if !(DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE)))
+        guard endpoint.allowsDemoBetaActivation else { throw MessageHTTPFailure.productionActivationUnavailable }
+        #endif
+        guard endpoint.allowsDevelopmentActivation || endpoint.allowsDemoBetaActivation, endpoint.maximumRequestBytes <= 32768, endpoint.maximumResponseBytes <= 524288 else { throw MessageHTTPFailure.invalidConfiguration }
         return try NoRedirectTransport(requestTimeout: requestTimeout, resourceTimeout: resourceTimeout,
             preview: nil, memoryErasure: EndpointCapability(endpoint: endpoint, validate: validate))
-        #else
-        throw MessageHTTPFailure.productionActivationUnavailable
-        #endif
     }
     /// Non-network unit seam, unavailable to App callers.
     init(interceptedTransport: any ClientTransport, memoryErasureEndpoint: MessageEndpoint,
@@ -376,14 +541,13 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     /// business access, device erase, receipt write or background job dispatch.
     public static func developmentAccountCleanup(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
         resourceTimeout: TimeInterval, validate: @escaping @MainActor @Sendable () throws -> Void) throws -> NoRedirectTransport {
-        #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
-        guard endpoint.allowsDevelopmentActivation,
+        #if !(DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE)))
+        guard endpoint.allowsDemoBetaActivation else { throw MessageHTTPFailure.productionActivationUnavailable }
+        #endif
+        guard endpoint.allowsDevelopmentActivation || endpoint.allowsDemoBetaActivation,
               endpoint.maximumRequestBytes <= 16384, endpoint.maximumResponseBytes <= 65536 else { throw MessageHTTPFailure.invalidConfiguration }
         return try NoRedirectTransport(requestTimeout: requestTimeout, resourceTimeout: resourceTimeout,
             preview: nil, accountCleanup: EndpointCapability(endpoint: endpoint, validate: validate))
-        #else
-        throw MessageHTTPFailure.productionActivationUnavailable
-        #endif
     }
 
     /// Non-network boundary-test seam; never an App factory bypass.
@@ -404,15 +568,15 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     /// neither generic account progress nor any content/control erase or write.
     public static func developmentDeviceCompletion(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
         resourceTimeout: TimeInterval, validate: @escaping @MainActor @Sendable () throws -> Void, version: CleanupDeviceVersion = .v3) throws -> NoRedirectTransport {
-        #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
-        guard endpoint.allowsDevelopmentActivation, endpoint.maximumRequestBytes <= 16384, endpoint.maximumResponseBytes <= 65536 else { throw MessageHTTPFailure.invalidConfiguration }
+        #if !(DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE)))
+        guard endpoint.allowsDemoBetaActivation else { throw MessageHTTPFailure.productionActivationUnavailable }
+        #endif
+        if endpoint.allowsDemoBetaActivation, version != .v4 { throw MessageHTTPFailure.invalidConfiguration }
+        guard endpoint.allowsDevelopmentActivation || endpoint.allowsDemoBetaActivation, endpoint.maximumRequestBytes <= 16384, endpoint.maximumResponseBytes <= 65536 else { throw MessageHTTPFailure.invalidConfiguration }
         let bounded = try MessageEndpoint(url: endpoint.url, maximumRequestBytes: endpoint.maximumRequestBytes,
             maximumResponseBytes: min(endpoint.maximumResponseBytes, 4096), allowLoopbackHTTP: true)
         return try NoRedirectTransport(requestTimeout: requestTimeout, resourceTimeout: resourceTimeout,
             preview: nil, deviceCompletion: EndpointCapability(endpoint: bounded, validate: validate), deviceVersion: version)
-        #else
-        throw MessageHTTPFailure.productionActivationUnavailable
-        #endif
     }
     /// Non-network boundary-test seam; not available to App consumers.
     init(interceptedTransport: any ClientTransport, deviceCompletionEndpoint: MessageEndpoint,
@@ -429,13 +593,13 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     /// Version-fixed V3 device control exits; no arbitrary business or domain write.
     public static func developmentDeviceCleanup(endpoint: MessageEndpoint, requestTimeout: TimeInterval,
         resourceTimeout: TimeInterval, validate: @escaping @MainActor @Sendable () throws -> Void, version: CleanupDeviceVersion = .v3) throws -> NoRedirectTransport {
-        #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
-        guard endpoint.allowsDevelopmentActivation, endpoint.maximumRequestBytes <= 16384, endpoint.maximumResponseBytes <= 65536 else { throw MessageHTTPFailure.invalidConfiguration }
+        #if !(DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE)))
+        guard endpoint.allowsDemoBetaActivation else { throw MessageHTTPFailure.productionActivationUnavailable }
+        #endif
+        if endpoint.allowsDemoBetaActivation, version != .v4 { throw MessageHTTPFailure.invalidConfiguration }
+        guard endpoint.allowsDevelopmentActivation || endpoint.allowsDemoBetaActivation, endpoint.maximumRequestBytes <= 16384, endpoint.maximumResponseBytes <= 65536 else { throw MessageHTTPFailure.invalidConfiguration }
         return try NoRedirectTransport(requestTimeout: requestTimeout, resourceTimeout: resourceTimeout,
             preview: nil, deviceCleanup: EndpointCapability(endpoint: endpoint, validate: validate), deviceVersion: version)
-        #else
-        throw MessageHTTPFailure.productionActivationUnavailable
-        #endif
     }
     init(interceptedTransport: any ClientTransport, deviceCleanupEndpoint: MessageEndpoint,
          validateDeviceCleanup: @escaping @MainActor @Sendable () throws -> Void, version: CleanupDeviceVersion = .v3) {
@@ -450,15 +614,31 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         deviceCleanup=EndpointCapability(endpoint:deviceCleanupEndpoint,validate:validateDeviceCleanup)
     }
 
+    #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+    /// Existing development transports keep their route/lease checks and own
+    /// sessions, sharing only the approved local TLS and no-redirect delegate.
+    public static func developmentLocalTLSDelegate() throws -> any URLSessionDelegate {
+        try RedirectBlocker.localDeviceConfiguration()
+    }
+    #endif
+
     private init(requestTimeout: TimeInterval, resourceTimeout: TimeInterval, preview: EndpointCapability?, messages: MessageCapability? = nil, memory: EndpointCapability? = nil, memoryManagement: EndpointCapability? = nil, typedMemory: EndpointCapability? = nil, needs: EndpointCapability? = nil, tripEditing: EndpointCapability? = nil, feedback: EndpointCapability? = nil, memoryHistory: EndpointCapability? = nil, accountCleanup: EndpointCapability? = nil, memoryCandidates: EndpointCapability? = nil, deviceCleanup: EndpointCapability? = nil, deviceCompletion: EndpointCapability? = nil, memoryErasure: EndpointCapability? = nil, memoryProjection: EndpointCapability? = nil, deviceVersion: CleanupDeviceVersion = .v3) throws {
         self.deviceVersion = deviceVersion
         guard requestTimeout > 0, resourceTimeout > 0, requestTimeout.isFinite, resourceTimeout.isFinite else {
             throw MessageHTTPFailure.invalidConfiguration
         }
         let config = URLSessionConfiguration.ephemeral
+        #if DEBUG && os(iOS) && targetEnvironment(simulator)
+        if Bundle.main.object(forInfoDictionaryKey: "G2CB691LocalFixture") as? Bool == true {
+            try Self.requireB691Fixture()
+            config.protocolClasses = [try Self.b691Fixture.read()]
+        }
+        #endif
         config.httpCookieStorage = nil; config.urlCache = nil; config.urlCredentialStorage = nil
         config.timeoutIntervalForRequest = requestTimeout; config.timeoutIntervalForResource = resourceTimeout
         #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+        // Keep the original local request pending while iOS obtains network consent (TN3179).
+        config.waitsForConnectivity = true
         let delegate = try RedirectBlocker.localDeviceConfiguration()
         #else
         let delegate = RedirectBlocker()
@@ -489,7 +669,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
 
     /// Module-test-only composition: the supplied transport must be non-network.
     init(interceptedTransport: any ClientTransport, messageEndpoint: MessageEndpoint,
-         validateMessage: @escaping @MainActor @Sendable () throws -> Void) throws {
+         validateMessage: @escaping @MainActor @Sendable () throws -> Void, lio: Bool = false) throws {
         deviceVersion = .v3
         memoryProjection = nil
         memoryErasure = nil
@@ -499,7 +679,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         accountCleanup = nil
         memoryHistory = nil;feedback = nil;tripEditing = nil; needs = nil;typedMemory = nil
         session = nil; transport = interceptedTransport; preview = nil; memory = nil; memoryManagement = nil
-        messages = MessageCapability(endpoint: messageEndpoint, validate: validateMessage, wire: .legacy)
+        messages = MessageCapability(endpoint: messageEndpoint, validate: validateMessage, wire: lio ? .lio : .legacy)
     }
 
     /// Non-network typed MESSAGE transport seam for module boundary tests.
@@ -668,7 +848,8 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
     /// once-staged work may enter this original-operation exit.
     func sendConversationOpening(_ request:HTTPRequest,body:HTTPBody?,baseURL:URL,operationID:String,
         validateOriginal:@escaping @MainActor @Sendable () throws -> Void) async throws -> (HTTPResponse,HTTPBody?) {
-        guard let messages,(messages.wire == .discussion || messages.wire == .edit),baseURL==messages.endpoint.url,
+        guard let messages, (messages.wire == .discussion || messages.wire == .edit
+              || (messages.wire == .travel && messages.endpoint.allowsDemoBetaActivation)), baseURL==messages.endpoint.url,
               operationID==Operations.openConversation.id,request.method == .put,body==nil,
               request.scheme==nil,request.authority==nil,
               !request.headerFields.contains(where:{ $0.name.canonicalName=="host" }),
@@ -688,6 +869,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
 
     deinit { session?.invalidateAndCancel() }
     public func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
+        if messages?.wire == .lio { throw MessageHTTPFailure.productionActivationUnavailable }
         if let memoryProjection {
             guard baseURL == memoryProjection.endpoint.url,
                   LocalMemoryCandidateProjectionRoute.accepts(request, hasBody: body != nil, operationID: operationID) else {
@@ -796,7 +978,18 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
             return try await sendLocalRead(request, baseURL: baseURL, operationID: operationID, capability: memoryHistory)
         }
         if request.method == .get || request.method == .head {
-            return try await transport.send(request,body:body,baseURL:baseURL,operationID:operationID)
+            do {
+                let response=try await transport.send(request,body:body,baseURL:baseURL,operationID:operationID)
+                #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+                M4BetaReadDiagnostic.record(endpoint:baseURL,path:URLComponents(string:request.path ?? "")?.path ?? "",stage:"transport",status:response.0.status.code)
+                #endif
+                return response
+            } catch {
+                #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+                M4BetaReadDiagnostic.record(endpoint:baseURL,path:URLComponents(string:request.path ?? "")?.path ?? "",stage:"transport",error:error)
+                #endif
+                throw error
+            }
         }
         if let messages, request.method == .post, operationID == messages.wire.operation,
            request.path == messages.wire.path, request.scheme == nil, request.authority == nil,
@@ -899,6 +1092,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         case .travel: _ = try OriginalTravelMessageSend(raw: bytes, maximumBytes: capability.endpoint.maximumRequestBytes)
         case .discussion: _ = try OriginalTripDiscussion(raw: bytes, maximumBytes: capability.endpoint.maximumRequestBytes)
         case .edit: _ = try OriginalTripEdit(raw: bytes, maximumBytes: capability.endpoint.maximumRequestBytes)
+        case .lio: throw MessageHTTPFailure.invalidConfiguration
         case nil: break
         }
         try await capability.validate()
@@ -916,30 +1110,34 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
 }
 private final class RedirectBlocker: NSObject, URLSessionTaskDelegate, Sendable {
     #if DEBUG && G2C_M4_DEVICE_ACCEPTANCE && canImport(Security)
-    private let localServer: M4LocalServerTrust?
-    init(localServer: M4LocalServerTrust? = nil) { self.localServer = localServer }
+    private let localServers: [M4LocalServerTrust]
+    init(localServers: [M4LocalServerTrust] = []) { self.localServers = localServers }
 
     #if os(iOS) && !targetEnvironment(simulator)
     static func localDeviceConfiguration() throws -> RedirectBlocker {
         let environment = ProcessInfo.processInfo.environment
         guard let host = environment["G2C_M4_LOCAL_HOST"] else { return RedirectBlocker() }
-        guard let rawPort = environment["G2C_M4_LOCAL_PORT"], let port = Int(rawPort),
+        guard let rawPort = environment["G2C_M4_LOCAL_PORT"],
               let url = URL(string: "https://" + host + ":" + rawPort),
               MessageEndpoint.isM4LocalHTTPS(url, approvedHost: host),
               let certificate = Bundle.main.url(forResource: "G2CM4LocalServer", withExtension: "cer") else {
             throw MessageHTTPFailure.invalidConfiguration
         }
-        let policy = try M4LocalServerTrust(host: host, port: port, certificateDER: Data(contentsOf: certificate))
-        return RedirectBlocker(localServer: policy)
+        let ports = try M4LocalServerTrust.approvedPorts(primary: rawPort,
+            additional: environment["G2C_M4_LOCAL_EXTRA_PORTS"])
+        let bytes = try Data(contentsOf: certificate)
+        let policies = try ports.map { try M4LocalServerTrust(host: host, port: $0, certificateDER: bytes) }
+        return RedirectBlocker(localServers: policies)
     }
     #endif
 
     func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge) async
         -> (URLSession.AuthChallengeDisposition, URLCredential?) {
-        guard let localServer, challenge.protectionSpace.host == localServer.host else {
+        guard let first = localServers.first, challenge.protectionSpace.host == first.host else {
             return (.performDefaultHandling, nil)
         }
         guard challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
+              let localServer = localServers.first(where: { $0.port == challenge.protectionSpace.port }),
               let trust = challenge.protectionSpace.serverTrust,
               localServer.accepts(trust, host: challenge.protectionSpace.host, port: challenge.protectionSpace.port) else {
             return (.cancelAuthenticationChallenge, nil)
@@ -962,6 +1160,7 @@ public enum MessageHTTPOutcome: Sendable {
     let endpoint: MessageEndpoint
     private let credentials: any MessageCredentialsProvider
     private let transport: any ClientTransport
+    private let preservedRunReadTransport: NoRedirectTransport?
     let submissionEnabledForTest: Bool
     let readsScopedEditResults: Bool
     var tripEditStatusOperation: String { readsScopedEditResults ? "readTripEditStatusV5" : "readTripEditStatusV4" }
@@ -980,6 +1179,7 @@ public enum MessageHTTPOutcome: Sendable {
                 credentials: any MessageCredentialsProvider, interceptedTestTransport: any ClientTransport, readsScopedEditResults: Bool = false) {
         self.recovery = recovery; self.scope = scope; self.endpoint = endpoint
         self.credentials = credentials; self.transport = interceptedTestTransport
+        preservedRunReadTransport = nil
         self.readsScopedEditResults=readsScopedEditResults
         submissionEnabledForTest = true
         liveMessageTransport = nil
@@ -987,9 +1187,11 @@ public enum MessageHTTPOutcome: Sendable {
     /// Production/default transports stay read-only. Only the explicit DEBUG Simulator
     /// message capability can send, through the current-process head/permit path.
     public init(recovery: MessageRecovery, scope: StorageScope, endpoint: MessageEndpoint,
-                credentials: any MessageCredentialsProvider, liveReadTransport: NoRedirectTransport, readsScopedEditResults: Bool = false) {
+                credentials: any MessageCredentialsProvider, liveReadTransport: NoRedirectTransport, readsScopedEditResults: Bool = false,
+                preservedRunReadTransport: NoRedirectTransport? = nil) {
         self.recovery = recovery; self.scope = scope; self.endpoint = endpoint
         self.credentials = credentials; self.transport = liveReadTransport
+        self.preservedRunReadTransport = preservedRunReadTransport
         self.readsScopedEditResults=readsScopedEditResults
         submissionEnabledForTest = false
         liveMessageTransport = liveReadTransport
@@ -998,12 +1200,15 @@ public enum MessageHTTPOutcome: Sendable {
         let checked = try await checkedTransport(lease)
         return Client(serverURL: endpoint.url, configuration: configuration, transport: checked)
     }
-    func checkedTransport(_ lease: Lease) async throws -> CheckedTransport {
+    func checkedTransport(_ lease: Lease, readingPreservedRun: Bool = false) async throws -> CheckedTransport {
         try recovery.validateScope(scope, lease: lease)
         let value = try await credentials.bearer(for: scope, lease: lease)
         try recovery.validateScope(scope, lease: lease)
         guard let value, !value.isEmpty, value.utf8.allSatisfy({ $0 > 32 && $0 < 127 }) else { throw MessageHTTPFailure.credentialsUnavailable }
-        return CheckedTransport(underlying: transport, endpoint: endpoint, bearer: value,
+        let selected: any ClientTransport
+        if readingPreservedRun, let preservedRunReadTransport { selected = preservedRunReadTransport }
+        else { selected = transport }
+        return CheckedTransport(underlying: selected, endpoint: endpoint, bearer: value,
             validate: { [recovery,scope] in try recovery.validateScope(scope,lease:lease) })
     }
     public func submit(messageID: String, lease: Lease) async throws -> MessageHTTPOutcome {
@@ -1328,18 +1533,41 @@ extension MessageHTTPClient {
     /// only display state; it cannot recover an input or stage a RUN/Trip write.
     public func preservedRun(for row: MessageHumanHistoryItem, page: MessageReadResult<[MessageHumanHistoryItem]>,
         limits: MessageReadLimits, lease: Lease) async throws -> MessageReadResult<MessageHumanRun> {
+        #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+        var diagnosticStage="validate"
+        M4BetaReadDiagnostic.record(endpoint:endpoint.url,path:"/v6/run-display",stage:diagnosticStage)
+        #endif
+        do {
         try validateRead(page, lease: lease); try checkSendLease(lease)
         guard page.value.contains(where: { $0.id == row.id }) else { throw RecoveryError.inactive }
         var query = URLComponents(); query.path = "/v6/run-display"
         query.queryItems = [.init(name: "message_id", value: row.receipt.message_id)]
         query.percentEncodedQuery = query.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
         guard let path = query.string else { throw MessageHTTPFailure.invalidConfiguration }
+        #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+        diagnosticStage="exchange"
+        #endif
         let (status, bytes, trace) = try await versionedMessageExchange(path: path, operation: "readPreservedRunDisplayV6", raw: nil, lease: lease)
+        #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+        diagnosticStage="decode"
+        #endif
         guard status == 200 else { try readError(status, JSONDecoder().decode(Components.Schemas.ErrorResponse.self, from: bytes)) }
         let value = try decodePreservedRun(bytes, maximumBytes: endpoint.maximumResponseBytes,
             textLimit: limits.maximumDecodedBytes, trace: trace, row: row)
+        #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+        diagnosticStage="final-lease"
+        #endif
         try validateRead(page, lease: lease); try checkSendLease(lease)
+        #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+        M4BetaReadDiagnostic.record(endpoint:endpoint.url,path:"/v6/run-display",stage:"completed",status:status)
+        #endif
         return MessageReadResult(value: value, next: nil, requestID: trace, owner: readOwner, lease: lease)
+        } catch {
+            #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE
+            M4BetaReadDiagnostic.record(endpoint:endpoint.url,path:"/v6/run-display",stage:diagnosticStage,error:error)
+            #endif
+            throw error
+        }
     }
     public func tripDiscussionHistory(conversationID:String,limit:Int,after:MessageReadCursor?=nil,limits:MessageReadLimits,lease:Lease) async throws -> MessageReadResult<[MessageTripHistoryItem]> {
         try await versionedTripHistory(conversationID:conversationID,limit:limit,after:after,limits:limits,lease:lease,edit:false)

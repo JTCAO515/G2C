@@ -8,7 +8,10 @@ from hashlib import sha256
 from psycopg import Error as DatabaseError
 
 from cj_memory.runtime import RuntimeDenied,RuntimeUnknown
+from cj_message.demo_dialogue import LIO_CHAT_PATTERN
 from cj_message.domain import Command
+from cj_message.lio_plan_needs import original_needs
+from cj_message.needs_binding import needs_scope_for
 from cj_trip.auth_boundary import Boundary as TripBoundary
 from cj_trip.domain import Denied as TripDenied,Conflict as TripConflict,CommitUnknown
 from cj_trip.operation import OperationWithheld
@@ -32,9 +35,9 @@ class HistoryMemory:
         if run.erasure_protocol!=FENCE:raise RuntimeDenied('explicit original-history erasure fence required')
         return run
 
-    def before_model(self,binding,original,messages,system):
+    def before_model(self,binding,original,messages,system,*,message_refs=()):
         decisions=self.collect.model_decisions(binding,messages,system)
-        return self.memory.with_history(original,[],decision_source_sha256s=decisions)
+        return self.memory.with_history(original,list(message_refs),decision_source_sha256s=decisions)
 
 
 class OriginalHistory:
@@ -68,14 +71,17 @@ class OriginalHistory:
 
 class OriginalDecisions:
     def __init__(self,database,auth_dir,credential,principal,message_context):
+        self.database = database
         self.credential,self.principal,self.message_context=credential,principal,message_context
         def resolve(p):
             owner=scope_for(p.issuer,p.subject)
             return lambda:database.connect(owner),trip_scope_for(owner)
         self.boundary=TripBoundary(account_checker_for(auth_dir,database),resolve,structured=True)
+        self.calendar_boundary=TripBoundary(account_checker_for(auth_dir,database),resolve,structured=True,calendar=True)
 
-    def _digest(self,binding,query):
-        try:return read_original_digest(self.boundary,self.credential,self.principal(),binding.scope,query).decode('ascii')
+    def _digest(self,binding,query,*,boundary=None):
+        selected=self.boundary if boundary is None else boundary
+        try:return read_original_digest(selected,self.credential(),self.principal(),binding.scope,query).decode('ascii')
         except (TripDenied,TripConflict,ValueError) as error:raise RuntimeDenied('original model decision unavailable') from error
         except (OperationWithheld,CommitUnknown,DatabaseError) as error:raise RuntimeUnknown('original model decision uncertain') from error
 
@@ -86,6 +92,20 @@ class OriginalDecisions:
         reference=self.message_context.read_original(binding)
         raw=reference.source
         return [self._digest(binding,DecisionQuery(command.trip_context.id,command.trip_context.expected_version,sha256(raw).hexdigest()))]
+
+    def _lio_reference(self, binding, fields):
+        with self.database.connect(binding.scope) as connection:
+            with connection.cursor() as cursor:
+                original = original_needs(cursor, binding)
+                if original is None:
+                    return None
+                needs_id, revision, digest = original
+                row = cursor.execute(
+                    'SELECT content FROM cj_needs_revision WHERE scope=%s AND needs_id=%s AND version=%s',
+                    (needs_scope_for(binding.scope), needs_id, revision)).fetchone()
+                if row is None or sha256(row[0]).hexdigest() != digest or json.loads(bytes(row[0])) != fields:
+                    raise RuntimeDenied('original Lio planning fields differ')
+        return needs_id, revision
 
     def model(self,binding,stored,messages,system):
         command=Command.parse_original(stored.raw);digests=[]
@@ -99,13 +119,25 @@ class OriginalDecisions:
             if value.get('version')!='TRIP-source-input.2':
                 if 'current_trip' in value:raise RuntimeDenied('unknown formal model context version')
                 continue
-            if set(value)!={'version','needs_id','revision','fields','current_trip'} or command.needs_reference!=(value['needs_id'],value['revision']):
+            if set(value)!={'version','needs_id','revision','fields','current_trip'}:
+                raise RuntimeDenied('original NEEDS model source differs')
+            reference = command.needs_reference
+            if reference is None and LIO_CHAT_PATTERN.fullmatch(binding.conversation_id):
+                reference = self._lio_reference(binding, value['fields'])
+            if reference != (value['needs_id'],value['revision']):
                 raise RuntimeDenied('original NEEDS model source differs')
             trip=value['current_trip']
             if trip is None:continue
             if type(trip) is not dict or set(trip)!={'trip_id','version','content','proposed_fields'}:
                 raise RuntimeDenied('bounded original Trip model source required')
             expected=self.principal()
+            boundary=self.boundary
+            if LIO_CHAT_PATTERN.fullmatch(binding.conversation_id) and json.loads(stored.raw)['version']=='MESSAGE-send.2':
+                from cj_message.demo_dialogue import LIO_VERSION_V3
+                from cj_message.lio_wire import original_protocol
+                with self.database.connect(binding.scope) as connection:
+                    protocol=original_protocol(connection.cursor(),binding,stored)
+                if protocol==LIO_VERSION_V3:boundary=self.calendar_boundary
             def read(context):
                 if context.metadata.principal!=expected or context.metadata.scope!=trip_scope_for(binding.scope):
                     raise TripDenied('original Trip model owner differs')
@@ -113,8 +145,8 @@ class OriginalDecisions:
                 if actual is None or actual.version!=trip['version'] or json.loads(actual.content)!=trip['content']:
                     raise TripDenied('original Trip model bytes differ')
                 return sha256(actual.content).hexdigest().encode('ascii')
-            try:content_sha=self.boundary.with_operation(self.credential,read).decode('ascii')
+            try:content_sha=boundary.with_operation(self.credential(),read).decode('ascii')
             except (TripDenied,TripConflict,ValueError) as error:raise RuntimeDenied('original Trip model context unavailable') from error
             except (OperationWithheld,CommitUnknown,DatabaseError) as error:raise RuntimeUnknown('original Trip model context uncertain') from error
-            digests.append(self._digest(binding,DecisionQuery(trip['trip_id'],trip['version'],content_sha)))
+            digests.append(self._digest(binding,DecisionQuery(trip['trip_id'],trip['version'],content_sha),boundary=boundary))
         return digests

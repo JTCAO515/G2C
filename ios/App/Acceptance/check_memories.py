@@ -57,7 +57,7 @@ def main():
     from cj_memory.local_runtime import load_runtime_configuration
     from run_worker import run_once
     context = load_run_context(args.run_context)
-    report = dict(status='RUNNING', head=head, cases={}, checks={}, unrun=['#227 effective context', 'cloud/real model/fees', 'device/VoiceOver', 'deployment'],
+    report = dict(status='RUNNING', head=head, cases={}, checks={}, unrun=['#227 effective context', 'cloud/real model/fees', 'device', 'deployment'],
         run_context=json.loads(args.run_context.read_text()), source_hashes={})
     sources = [*list((ROOT/'ios/App').glob('*.swift')), *list((ROOT/'ios/Modules/CJMemoryClient/Sources').rglob('*.swift')),
                *list((ROOT/'ios/Modules/CJShell/Sources').rglob('*.swift')), Path(__file__), HERE/'DevelopmentMemoryUITests.swift']

@@ -12,7 +12,7 @@ struct StructuredTripHome: View {
     var offline: OfflineTripController? = nil
     @State private var issue: String?
     @State private var task: Task<Void,Never>?
-    @State private var panel: Panel = .record
+    @State private var panel: Panel? = .record
     private enum BrowsePanel: Identifiable {
         case records(UUID), timeline(UUID, TripTimelineHost)
         var id: UUID { switch self { case .records(let id): id; case .timeline(let id, _): id } }
@@ -26,109 +26,25 @@ struct StructuredTripHome: View {
             ScrollView {
                 VStack(alignment:.leading,spacing:18) {
                     if let offline { OfflineTripEntry(controller: offline, language: language) }
-                    RunReadableText(text:language.text("Local synthetic test data", "本地合成测试数据"),style:.caption).accessibilityIdentifier("trip.manual.synthetic")
-                    RunReadableText(text:language.text("Only your explicit selected edits are submitted. Saving confirms that exact server diff once; it does not update Memory or requirements.","只提交你明确选中的修改。保存仅确认这份服务器差异，不修改记忆或需求。"))
                     if let display=host.display() {
-                        RunReadableText(text:loadMessage(display.state)).accessibilityIdentifier("trip.structured.state")
-                        button("trip.structured.refresh",language.text("Read formal trips","读取正式行程"),disabled:display.busy) { run { try host.page() } }
-                        ForEach(display.trips,id:\.tripID) { row in
-                            button("trip.structured.item."+row.tripID,row.title+" · "+String(row.version),disabled:display.busy) {
-                                panel = .record;run { try host.detail(id:row.tripID) }
-                            }
-                        }
-                        if display.hasNext {
-                            button("trip.structured.next",language.text("Read next page","读取下一页"),disabled:display.busy) { run { try host.page(more:true) } }
-                        }
+                        tripList(display)
                         if let record=display.selected {
-                            Divider()
-                            if let offline {
-                                button("offline.sync", language.text("Synchronize for offline reading", "同步用于离线读取"), disabled: display.busy || host.editor != nil) {
-                                    run { try host.synchronizeOffline() }
-                                }
-                                OfflineSyncLabel(controller: offline, language: language)
-                            }
-                            RunReadableText(text:record.tripID+" · "+language.text("Read version ","读取版本 ")+String(record.version)).accessibilityIdentifier("trip.manual.basis")
-                            button("trip.manual.current",language.text("Read current version (keep input)","读取当前版本（保留输入）"),disabled:display.busy) { run { try host.currentRecord() } }
-                            if let observed=display.currentObservation {
-                                RunReadableText(text:language.text("Current observation: version ","当前观测：版本 ")+String(observed.version)+language.text(". The editor's basis has not changed.","；编辑器基准没有改变。"))
-                                    .accessibilityIdentifier("trip.manual.current.version")
-                            }
-                            button("trip.manual.replaceBasis",language.text("Read and explicitly replace the local basis/input","读取并明确替换本地基准和输入"),disabled:display.busy) {
-                                panel = .record;run { try host.detail(id:record.tripID) }
-                            }
-                            DisclosureGroup(isExpanded:Binding(get:{panel == .record},set:{ if $0 { panel = .record } })) {
-                                StructuredTripDocumentView(document:record.document,language:language,prefix:"trip.manual.record")
-                            } label: { RunReadableText(text:language.text("Read record","已读记录")).accessibilityIdentifier("trip.manual.record.open") }
-                            if record.document.version == .needsBound {
-                                RunReadableText(text:needsLabel()).accessibilityIdentifier("trip.manual.needs.status")
-                                button("trip.manual.needs.read",language.text("Read explicitly selected requirements","读取明确选定的需求"),disabled:display.busy) { run { try host.needs() } }
-                                RunReadableText(text:language.text("The server verifies the Trip's original requirements; this selection is not source permission.","服务端会核对此行程的原需求；这里的选择不构成来源许可。"),style:.caption)
-                            }
-                            button("trip.manual.edit.open",language.text("Start explicit local edits","开始明确的本地编辑"),disabled:display.busy) {
-                                act { try host.openEditor();panel = .editor }
-                            }
+                            selectedTrip(record, display: display)
                         }
                         if let edit {
-                            RunReadableText(text:editorMessage(edit)).accessibilityIdentifier("trip.manual.editor.state")
-                            if let refusal=edit.refusal {
-                                RunReadableText(text:(refusal.status == 409
-                                    ? language.text("Save conflict (version, source or constraints). Input retained; check the current Trip and requirements before explicitly choosing a new basis. ","保存冲突（版本、来源或约束）。输入已保留；请核对当前行程与需求，再明确选择新基准。")
-                                    : language.text("Original request refused; input retained. ","原请求被拒；输入已保留。"))+String(refusal.status)+" · "+refusal.code)
-                                    .accessibilityIdentifier("trip.manual.refusal")
-                            }
-                            DisclosureGroup(isExpanded:Binding(get:{panel == .editor},set:{ if $0 { panel = .editor } })) {
-                                ManualTripForm(draft:edit.draft,language:language,change:{ value in act { try host.updateDraft(value) } })
-                            } label: { RunReadableText(text:language.text("Unsaved input","未保存输入")).accessibilityIdentifier("trip.manual.input.open") }
-                            button("trip.manual.prepare",language.text("Prepare selected changes","准备选定修改"),disabled:display.busy || !edit.canPrepare) { run { try host.prepare(save:false) } }
-                            if let prepared=edit.preparation {
-                                DisclosureGroup(isExpanded:Binding(get:{panel == .diff},set:{ if $0 { panel = .diff } })) {
-                                    RunReadableText(text:language.text("Before","修改前"),style:.headline)
-                                    StructuredTripDocumentView(document:prepared.before,language:language,prefix:"trip.manual.before")
-                                    RunReadableText(text:language.text("After · uncommitted","修改后 · 尚未提交"),style:.headline)
-                                    StructuredTripDocumentView(document:prepared.after,language:language,prefix:"trip.manual.after")
-                                    if let report=prepared.feasibility {
-                                        RunReadableText(text:language.text("Overall feasibility remains ","整体可行性仍为 ")+report.status.rawValue).accessibilityIdentifier("trip.manual.feasibility")
-                                        ForEach(report.checks.indices,id:\.self) { index in
-                                            RunReadableText(text:language == .english ? report.checks[index].english : report.checks[index].chinese)
-                                        }
-                                    } else {
-                                        RunReadableText(text:language.text("No overall feasibility report was returned. Save rechecks the original source, scope and version.","接口未返回整体可行性报告。保存时仍会复核原来源、选定范围和版本。"))
-                                    }
-                                    DisclosureGroup(language.text("Original server diff","服务器原始差异")) {
-                                        RunSelectableText(text:String(decoding:prepared.originalDiffUTF8,as:UTF8.self)).accessibilityIdentifier("trip.manual.diff.raw")
-                                    }
-                                } label: { RunReadableText(text:language.text("Review exact server changes","核对服务器准确改动")).accessibilityIdentifier("trip.manual.diff.open") }
-                            }
-                            button("trip.manual.save",language.text("Save this reviewed diff","保存这份已核对的差异"),disabled:display.busy || !edit.canSave) { run { try host.prepare(save:true) } }
-                            if let receipt=edit.receipt {
-                                RunSelectableText(text:language.text("Original receipt: ","原动作回执：")+receipt.actionID+" · "+String(receipt.committedVersion))
-                                    .accessibilityIdentifier("trip.manual.receipt")
-                                RunReadableText(text:language.text("This proves that original commit, not the current Trip version.","这只证明该原动作的提交，不代表当前行程版本。"),style:.caption)
-                            }
+                            tripEditor(edit, display: display)
                         }
                         if display.busy {
                             ProgressView()
-                            button("trip.manual.stop",language.text("Stop waiting; reconcile the original","停止等待，随后核对原动作")) { host.stopWaiting();task?.cancel() }
+                            button("trip.manual.stop",language.text("Stop waiting; reconcile the original","停止等待，随后核对原动作"), symbol: "stop.circle") { host.stopWaiting();task?.cancel() }
                         }
-                        Divider()
-                        button("trip.manual.originals.read",language.text("Read retained original actions","读取保留的原动作"),disabled:display.busy) { act { try host.loadOriginals() } }
-                        ForEach(display.originals,id:\.storageID) { original in
-                            DisclosureGroup {
-                                RunSelectableText(text:original.tripID+" · "+String(original.originalVersion)+"\n"+String(decoding:original.originalUTF8,as:UTF8.self)).accessibilityIdentifier("trip.manual.original.input."+original.storageID)
-                                button("trip.manual.original.query."+original.storageID,language.text("Query this original only","只查询此原动作"),disabled:display.busy) { run { try host.query(storageID:original.storageID) } }
-                            } label: {
-                                RunReadableText(text:original.originalID).accessibilityIdentifier("trip.manual.original.open."+original.storageID)
-                            }
-                        }
-                        if let result=display.originalOutcome {
-                            RunReadableText(text:historyMessage(result)).accessibilityIdentifier("trip.manual.original.result")
-                        }
+                        originalActions(display)
                     } else { RunReadableText(text:language.text("Trip context is unavailable. Read again in the current account.","行程上下文不可用，请在当前账号下重新读取。")) }
                     if let issue { RunReadableText(text:issue).accessibilityIdentifier("trip.manual.issue") }
-                    button("trip.manual.browse", language.text("Timelines, browsing and original actions","时间线、浏览与原动作")) { browsePanel = .records(UUID()) }
+                    button("trip.manual.browse", language.text("Timelines, browsing and original actions","时间线、浏览与原动作"), symbol: "calendar") { browsePanel = .records(UUID()) }
                 }.frame(maxWidth:.infinity,alignment:.leading).padding()
             }.accessibilityIdentifier("trip.manual.content").scrollDismissesKeyboard(.interactively)
-                .navigationTitle(language.text("Edit trip","编辑行程")).navigationBarTitleDisplayMode(.inline)
+                .navigationTitle(language.text("Trips","行程")).navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement:.topBarLeading) {
                     Button { UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder),to:nil,from:nil,for:nil) }
                     label: { Image(systemName:"keyboard.chevron.compact.down").frame(minWidth:44,minHeight:44) }
@@ -156,9 +72,154 @@ struct StructuredTripHome: View {
         .onChange(of: state.selectedTab) { _, tab in if tab != .trips { browsePanel = nil } }
         .onChange(of: state.generation) { _, _ in browsePanel = nil }
     }
-    private func button(_ id: String,_ title: String,disabled: Bool = false,action:@escaping ()->Void) -> some View {
-        Button(action:action) { RunReadableText(text:title).frame(maxWidth:.infinity,minHeight:44,alignment:.leading).contentShape(Rectangle()) }
-            .buttonStyle(ShellReadableButtonStyle()).disabled(disabled).accessibilityIdentifier(id)
+    private func tripList(_ display: StructuredTripDisplay) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ShellCardHeading(title: language.text("Formal trips", "正式行程"), symbol: "suitcase")
+            RunReadableText(text: language.text("Local synthetic test data", "本地合成测试数据"), style: .caption)
+                .accessibilityIdentifier("trip.manual.synthetic")
+            RunReadableText(text: loadMessage(display.state), style: .caption)
+                .accessibilityIdentifier("trip.structured.state")
+            button("trip.structured.refresh", language.text("Read formal trips", "读取正式行程"),
+                   symbol: "arrow.clockwise", prominent: display.trips.isEmpty, disabled: display.busy) {
+                run { try host.page() }
+            }
+            ForEach(display.trips, id: \.tripID) { row in
+                let selected = row.tripID == display.selected?.tripID
+                Button {
+                    panel = .record
+                    run { try host.detail(id: row.tripID) }
+                } label: {
+                    ShellActionLabel(title: row.title, symbol: "map",
+                                     detail: language.text("Version ", "版本 ") + String(row.version),
+                                     accessory: selected ? "checkmark.circle.fill" : "chevron.right")
+                }
+                .buttonStyle(ShellActionButtonStyle())
+                .accessibilityLabel(row.title + " · " + String(row.version))
+                .accessibilityAddTraits(selected ? .isSelected : [])
+                .disabled(display.busy)
+                .accessibilityIdentifier("trip.structured.item." + row.tripID)
+            }
+            if display.hasNext {
+                button("trip.structured.next", language.text("Read next page", "读取下一页"),
+                       symbol: "arrow.down", disabled: display.busy) { run { try host.page(more: true) } }
+            }
+        }.shellCard()
+    }
+
+    private func selectedTrip(_ record: StructuredTripRecord, display: StructuredTripDisplay) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ShellCardHeading(title: language.text("Selected trip", "已选行程"), symbol: "map")
+            RunReadableText(text: record.document.title, style: .headline)
+            if let offline {
+                button("offline.sync", language.text("Synchronize for offline reading", "同步用于离线读取"), symbol: "arrow.down.circle", disabled: display.busy || host.editor != nil) {
+                    run { try host.synchronizeOffline() }
+                }
+                OfflineSyncLabel(controller: offline, language: language)
+            }
+            RunReadableText(text:record.tripID+" · "+language.text("Read version ","读取版本 ")+String(record.version)).accessibilityIdentifier("trip.manual.basis")
+            button("trip.manual.current",language.text("Read current version (keep input)","读取当前版本（保留输入）"), symbol: "arrow.clockwise", disabled:display.busy) { run { try host.currentRecord() } }
+            if let observed=display.currentObservation {
+                RunReadableText(text:language.text("Current observation: version ","当前观测：版本 ")+String(observed.version)+language.text(". The editor's basis has not changed.","；编辑器基准没有改变。"))
+                    .accessibilityIdentifier("trip.manual.current.version")
+            }
+            button("trip.manual.replaceBasis",language.text("Read and explicitly replace the local basis/input","读取并明确替换本地基准和输入"), symbol: "arrow.triangle.2.circlepath", disabled:display.busy) {
+                panel = .record;run { try host.detail(id:record.tripID) }
+            }
+            DisclosureGroup(isExpanded:expanded(.record)) {
+                StructuredTripDocumentView(document:record.document,language:language,prefix:"trip.manual.record")
+            } label: { RunReadableText(text:language.text("Read record","已读记录")).accessibilityIdentifier("trip.manual.record.open") }
+            if record.document.version == .needsBound {
+                RunReadableText(text:needsLabel()).accessibilityIdentifier("trip.manual.needs.status")
+                button("trip.manual.needs.read",language.text("Read explicitly selected requirements","读取明确选定的需求"), symbol: "list.bullet.rectangle", disabled:display.busy) { run { try host.needs() } }
+                RunReadableText(text:language.text("The server verifies the Trip's original requirements; this selection is not source permission.","服务端会核对此行程的原需求；这里的选择不构成来源许可。"),style:.caption)
+            }
+            button("trip.manual.edit.open",language.text("Start explicit local edits","开始明确的本地编辑"), symbol: "pencil", disabled:display.busy) {
+                act { try host.openEditor();panel = .editor }
+            }
+        }.shellCard()
+    }
+
+    private func tripEditor(_ edit: ManualTripDisplay, display: StructuredTripDisplay) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ShellCardHeading(title: language.text("Trip edits", "行程修改"), symbol: "pencil.line")
+            RunReadableText(text: language.text("Only your explicit selected edits are submitted. Saving confirms that exact server diff once; it does not update Memory or requirements.", "只提交你明确选中的修改。保存仅确认这份服务器差异，不修改记忆或需求。"), style: .caption)
+            RunReadableText(text:editorMessage(edit)).accessibilityIdentifier("trip.manual.editor.state")
+            if let refusal=edit.refusal {
+                RunReadableText(text:(refusal.status == 409
+                    ? language.text("Save conflict (version, source or constraints). Input retained; check the current Trip and requirements before explicitly choosing a new basis. ","保存冲突（版本、来源或约束）。输入已保留；请核对当前行程与需求，再明确选择新基准。")
+                    : language.text("Original request refused; input retained. ","原请求被拒；输入已保留。"))+String(refusal.status)+" · "+refusal.code)
+                    .accessibilityIdentifier("trip.manual.refusal")
+            }
+            DisclosureGroup(isExpanded:expanded(.editor)) {
+                ManualTripForm(draft:edit.draft,language:language,change:{ value in act { try host.updateDraft(value) } })
+            } label: { RunReadableText(text:language.text("Unsaved input","未保存输入")).accessibilityIdentifier("trip.manual.input.open") }
+            button("trip.manual.prepare",language.text("Prepare selected changes","准备选定修改"), symbol: "list.bullet.clipboard", disabled:display.busy || !edit.canPrepare) { run { try host.prepare(save:false) } }
+            if let prepared=edit.preparation {
+                DisclosureGroup(isExpanded:expanded(.diff)) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        ShellCardHeading(title: language.text("Before", "修改前"), symbol: "doc")
+                        StructuredTripDocumentView(document: prepared.before, language: language, prefix: "trip.manual.before")
+                    }.shellCard(fill: Color(uiColor: .systemBackground))
+                    VStack(alignment: .leading, spacing: 10) {
+                        ShellCardHeading(title: language.text("After · uncommitted", "修改后 · 尚未提交"), symbol: "doc.badge.clock")
+                        StructuredTripDocumentView(document: prepared.after, language: language, prefix: "trip.manual.after")
+                    }.shellCard(fill: Color(uiColor: .systemBackground))
+                    if let report=prepared.feasibility {
+                        RunReadableText(text:language.text("Overall feasibility remains ","整体可行性仍为 ")+report.status.rawValue).accessibilityIdentifier("trip.manual.feasibility")
+                        ForEach(report.checks.indices,id:\.self) { index in
+                            RunReadableText(text:language == .english ? report.checks[index].english : report.checks[index].chinese)
+                        }
+                    } else {
+                        RunReadableText(text:language.text("No overall feasibility report was returned. Save rechecks the original source, scope and version.","接口未返回整体可行性报告。保存时仍会复核原来源、选定范围和版本。"))
+                    }
+                    DisclosureGroup(language.text("Original server diff","服务器原始差异")) {
+                        RunSelectableText(text:String(decoding:prepared.originalDiffUTF8,as:UTF8.self)).accessibilityIdentifier("trip.manual.diff.raw")
+                    }
+                } label: { RunReadableText(text:language.text("Review exact server changes","核对服务器准确改动")).accessibilityIdentifier("trip.manual.diff.open") }
+            }
+            button("trip.manual.save",language.text("Save this reviewed diff","保存这份已核对的差异"), symbol: "checkmark.circle", prominent: true, disabled:display.busy || !edit.canSave) { run { try host.prepare(save:true) } }
+            if let receipt=edit.receipt {
+                VStack(alignment: .leading, spacing: 8) {
+                    ShellCardHeading(title: language.text("Save confirmed", "已确认保存"), symbol: "checkmark.seal")
+                    RunSelectableText(text:language.text("Original receipt: ","原动作回执：")+receipt.actionID+" · "+String(receipt.committedVersion))
+                        .accessibilityIdentifier("trip.manual.receipt")
+                    RunReadableText(text:language.text("This proves that original commit, not the current Trip version.","这只证明该原动作的提交，不代表当前行程版本。"),style:.caption)
+                }.shellCard(fill: Color(uiColor: .systemBackground))
+            }
+        }.shellCard()
+    }
+
+    private func originalActions(_ display: StructuredTripDisplay) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ShellCardHeading(title: language.text("Original actions", "原动作"), symbol: "clock.arrow.circlepath")
+            button("trip.manual.originals.read",language.text("Read retained original actions","读取保留的原动作"), symbol: "clock.arrow.circlepath", disabled:display.busy) { act { try host.loadOriginals() } }
+            ForEach(display.originals,id:\.storageID) { original in
+                DisclosureGroup {
+                    RunSelectableText(text:original.tripID+" · "+String(original.originalVersion)+"\n"+String(decoding:original.originalUTF8,as:UTF8.self)).accessibilityIdentifier("trip.manual.original.input."+original.storageID)
+                    button("trip.manual.original.query."+original.storageID,language.text("Query this original only","只查询此原动作"), symbol: "doc.text.magnifyingglass", disabled:display.busy) { run { try host.query(storageID:original.storageID) } }
+                } label: {
+                    RunReadableText(text:original.originalID).accessibilityIdentifier("trip.manual.original.open."+original.storageID)
+                }
+            }
+            if let result=display.originalOutcome {
+                RunReadableText(text:historyMessage(result)).accessibilityIdentifier("trip.manual.original.result")
+            }
+        }.shellCard()
+    }
+
+    private func expanded(_ section: Panel) -> Binding<Bool> {
+        Binding(get: { panel == section }, set: { isExpanded in
+            if isExpanded { panel = section }
+            else if panel == section { panel = nil }
+        })
+    }
+
+    private func button(_ id: String, _ title: String, symbol: String, prominent: Bool = false,
+                        disabled: Bool = false, action: @escaping () -> Void) -> some View {
+        Button(action: action) { ShellActionLabel(title: title, symbol: symbol) }
+            .buttonStyle(ShellActionButtonStyle(emphasized: prominent))
+            .disabled(disabled)
+            .accessibilityIdentifier(id)
     }
     private func run(_ make:()throws->StructuredTripHostWork) {
         act { let work=try make();task=Task { await host.perform(work) } }
@@ -214,12 +275,17 @@ struct StructuredTripDocumentView: View {
             RunReadableText(text:language.text("Bookings, source labels and time declarations are not externally verified.","预订、来源标签和时间声明未由外部服务核实。"),style:.caption)
             ForEach(document.items) { item in
                 VStack(alignment:.leading,spacing:8) {
-                    RunSelectableText(text:item.id+"\n"+item.text).accessibilityIdentifier(prefix+".item."+item.id)
+                    Label {
+                        RunSelectableText(text:item.id+"\n"+item.text).accessibilityIdentifier(prefix+".item."+item.id)
+                    } icon: {
+                        Image(systemName: item.fixed == .known(true) ? "lock.fill" : "mappin.circle")
+                            .accessibilityHidden(true)
+                    }
                     RunSelectableText(text:language.text("Protection: ","保护：")+lock(item.fixed)+"\n"+language.text("Source: ","来源：")+item.sourceCategory.rawValue+" · "+item.verification.rawValue)
                         .accessibilityIdentifier(prefix+".fixed."+item.id)
                     RunSelectableText(text:language.text("Start: ","开始：")+event(item.start)+"\n"+language.text("End: ","结束：")+event(item.end))
                         .accessibilityIdentifier(prefix+".schedule."+item.id)
-                }.padding(.vertical,8)
+                }.shellCard(fill: Color(uiColor: .tertiarySystemBackground))
             }
         }
     }

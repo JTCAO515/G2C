@@ -7,8 +7,12 @@ import Foundation
 @MainActor final class MemoryErasureUITests: XCTestCase {
     let control = "__CONTROL_URL__"
     var app: XCUIApplication!
+    #if G2C_M4_DEVICE_ACCEPTANCE
+    private lazy var deviceSession = M4DeviceTestSession(test: self, control: control)
+    #endif
     struct Fixture: Decodable {
         let bundle: String
+        let case_id: String?
         let launch: [String: String]
         let subjects: [String: String]
         let option_label: String
@@ -29,11 +33,25 @@ import Foundation
     func call(_ path: String, query: [String: String] = [:]) async throws -> Data {
         var url = try XCTUnwrap(URLComponents(string: control + path))
         if !query.isEmpty { url.queryItems = query.sorted(by: { $0.key < $1.key }).map { .init(name: $0.key, value: $0.value) } }
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        let (bytes, response) = try await deviceSession.data(from: XCTUnwrap(url.url))
+        #else
         let session = URLSession(configuration: .ephemeral); defer { session.invalidateAndCancel() }
         let (bytes, response) = try await session.data(from: XCTUnwrap(url.url))
+        #endif
         XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
         return bytes
     }
+    func size(_ value: String) async throws {
+        _ = try await call("/size", query: ["value": value])
+    }
+    #if G2C_M4_DEVICE_ACCEPTANCE
+    private func stage(_ fixture: Fixture) async throws {
+        try await deviceSession.stageAccounts(caseID: XCTUnwrap(fixture.case_id))
+        app.launchEnvironment.merge(try deviceSession.applicationEnvironment(
+            endpoint: XCTUnwrap(fixture.launch["G2C_DEV_API_BASE_URL"]), injecting: true)) { _, value in value }
+    }
+    #endif
     func reveal(_ element: XCUIElement, centered: Bool = false) {
         func visible() -> Bool {
             guard element.exists && element.isHittable else { return false }
@@ -65,6 +83,11 @@ import Foundation
         let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: button)
         XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 25), .completed, id)
         button.tap()
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        if id.hasPrefix("account.development.signin.") || id == "account.development.restore" {
+            deviceSession.waitForAppNetworkConsent()
+        }
+        #endif
     }
     func text(_ id: String, contains value: String) {
         let element = app.staticTexts.matching(identifier: id).element
@@ -119,6 +142,9 @@ import Foundation
         tap(language == "en" ? "Memory" : "记忆")
         tap("memory.account"); tap("account.development.signin.A")
         guard let subject = fixture.subjects["A"] else { XCTFail("The actual local subject is required"); return }
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        deviceSession.requireAccount(subject,in:app)
+        #endif
         text("account.development.status", contains: subject)
         let back = app.navigationBars.buttons.matching(NSPredicate(format: "label == %@", language == "en" ? "Memory" : "记忆"))
         XCTAssertEqual(back.count, 1); back.element.tap()
@@ -126,10 +152,13 @@ import Foundation
     func verify(_ language: String, reopenUnknown: Bool = false, deleteAccount: Bool = false) async throws {
         continueAfterFailure = false
         let fixture = try JSONDecoder().decode(Fixture.self, from: await call("/fixture", query: ["case": (deleteAccount ? "account-" : reopenUnknown ? "lost-ack-" : "complete-") + language]))
-        _ = try await call("/size", query: ["value": "standard"])
+        try await size("standard")
         app = XCUIApplication(bundleIdentifier: fixture.bundle)
         app.launchArguments = ["-cj.ui.language.v1", language]
         app.launchEnvironment = fixture.launch.merging(["OS_ACTIVITY_MODE": "disable"]) { _, required in required }
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        try await stage(fixture)
+        #endif
         app.launch(); defer { app.terminate() }
         XCTAssertTrue(app.tabBars.element.waitForExistence(timeout: 30))
         signIn(fixture, language: language)
@@ -140,7 +169,7 @@ import Foundation
         tap("memory2.items.open"); tap("memory2.items.read"); tap("memory2.item." + saved.item_id)
         tap("memory2.detail.read"); text("memory2.detail.text", contains: fixture.text)
         tap("memory2.erasure.review")
-        _ = try await call("/size", query: ["value": "max"])
+        try await size("max")
         text("memoryErasure.range", contains: language == "en" ? "not limited" : "不是只精准匹配")
         text("memoryErasure.retained", contains: language == "en" ? "retained" : "保留")
         let acknowledge = app.switches.matching(identifier: "memoryErasure.rangeAcknowledgement")
@@ -168,7 +197,11 @@ import Foundation
             text("memoryErasure.status", contains: language == "en" ? "uncertain" : "尚不明确")
             reveal(app.buttons["memoryErasure.reconcile"])
             XCTAssertFalse(app.buttons["memoryErasure.reconcile"].isEnabled)
-            app.terminate(); app.launch()
+            app.terminate()
+            #if G2C_M4_DEVICE_ACCEPTANCE
+            try await stage(fixture)
+            #endif
+            app.launch()
             XCTAssertTrue(app.tabBars.element.waitForExistence(timeout: 30))
             signIn(fixture, language: language)
             tap("memory.erasure.originals"); tap("memoryErasure.loadOriginals")
@@ -201,7 +234,11 @@ import Foundation
         try audit("erasure-complete-" + language + "-max", target: app.staticTexts["memoryErasure.localProgress"])
         if deleteAccount {
             // Reopen the ordinary root; no protected ID or deletion receipt is injected.
-            app.terminate(); app.launch()
+            app.terminate()
+            #if G2C_M4_DEVICE_ACCEPTANCE
+            try await stage(fixture)
+            #endif
+            app.launch()
             XCTAssertTrue(app.tabBars.element.waitForExistence(timeout: 30))
             signIn(fixture, language: language)
             tap("memory.accountDeletion"); tap("account.cleanup.review")

@@ -1,4 +1,5 @@
 """Explicit source-bound Trip action/read host; canonical original AUTH and act."""
+from cj_strict_json import compact
 import json
 import os
 from pathlib import Path
@@ -6,13 +7,12 @@ from fastapi import Request
 from fastapi.responses import Response
 from starlette.concurrency import run_in_threadpool
 from cj_api.app import create_app
-from cj_api.local_app import LocalDatabase,scope_for
+from cj_api.local_app import LocalDatabase,scope_for,trip_resolver
 from cj_api.local_account_admission_v2 import account_checker_for
 from cj_api.composition import CompositionUnavailable
 from cj_api.message_routes import BodyError,_body_error,_error,_read_octets,_token
 from cj_auth.interfaces import AdmissionStatus
 from cj_message.travel_reference import MessageContextAuthority
-from cj_agent.draft import trip_scope_for
 from cj_draft.needs_local import publisher
 from .auth_boundary import Boundary
 from .confirmation import ConfirmationSigner
@@ -28,13 +28,20 @@ from .domain import Conflict,Denied,identifier
 
 
 def create_local_needs_app(*,conninfo_path,auth_dir,run_context,confirmation_signer,max_response_bytes=1_000_000):
+    app=create_app()
+    database=LocalDatabase(conninfo_path,run_context=run_context,travel_context=True,needs_context=True)
+    register_local_needs_routes(app,database=database,auth_dir=auth_dir,
+        confirmation_signer=confirmation_signer,max_response_bytes=max_response_bytes)
+    return app
+
+
+def register_local_needs_routes(app,*,database,auth_dir,confirmation_signer,max_response_bytes=1_000_000,
+                                planning_only=False,selected_subjects=None):
+    run_context=database.run_context
     if os.environ.get('CJ_ENV')!='local' or type(confirmation_signer) is not ConfirmationSigner or run_context is None or type(max_response_bytes) is not int or max_response_bytes<1:
         raise CompositionUnavailable('explicit local source-bound Trip host required')
-    database=LocalDatabase(conninfo_path,run_context=run_context,travel_context=True,needs_context=True)
-    checker=account_checker_for(Path(auth_dir),database)
-    def resolve(principal):
-        owner=scope_for(principal.issuer,principal.subject)
-        return lambda:database.connect(owner),trip_scope_for(owner)
+    checker=account_checker_for(Path(auth_dir),database,selected_subjects=selected_subjects)
+    resolve=trip_resolver(database)
     class NeedsBoundary(Boundary):
         def _bind(self,token):
             repository,principal,check=super()._bind(token)
@@ -56,7 +63,6 @@ def create_local_needs_app(*,conninfo_path,auth_dir,run_context,confirmation_sig
                 if repository.needs_actions is not service or repository.needs_edits is not edits or repository.source_initializations is not initializations:raise Denied('source action binding changed')
             return repository,principal,guard
     boundary=NeedsBoundary(checker,resolve,confirmation_signer,structured=True)
-    app=create_app()
     def query(request,key):
         values=list(request.query_params.multi_items())
         if len(values)!=1 or values[0][0]!=key:raise ValueError('exact query required')
@@ -85,7 +91,7 @@ def create_local_needs_app(*,conninfo_path,auth_dir,run_context,confirmation_sig
             result['proposal']=dict(proposal_id=original.proposal_id,trip_id=original.trip_id,
                 expected_version=original.expected_version,candidate_hash=value.candidate_hash,status=value.status,
                 expires_at=original.expires_at,content=json.loads(original.content))
-        raw=json.dumps(result,ensure_ascii=False,separators=(',',':'),allow_nan=False).encode()
+        raw=compact(result)
         if len(raw)>max_response_bytes:raise ValueError('private response too large')
         return raw
     async def invoke(request,kind,arg):
@@ -100,7 +106,7 @@ def create_local_needs_app(*,conninfo_path,auth_dir,run_context,confirmation_sig
                             detail=value['proposal'];p=detail.proposal
                             value['proposal']=dict(proposal_id=p.proposal_id,trip_id=p.trip_id,expected_version=p.expected_version,
                                 candidate_hash=detail.candidate_hash,status=detail.status,expires_at=p.expires_at,content=json.loads(p.content))
-                        raw=json.dumps(dict(version='TRIP-needs-discovery.1',request_id=request.state.request_id,discovery=value),ensure_ascii=False,separators=(',',':'),allow_nan=False).encode()
+                        raw=compact(dict(version='TRIP-needs-discovery.1',request_id=request.state.request_id,discovery=value))
                         if len(raw)>max_response_bytes:raise Denied('bounded planning discovery required')
                         return raw
                     return ctx.discover_needs(arg,encode_discovery)
@@ -154,6 +160,9 @@ def create_local_needs_app(*,conninfo_path,auth_dir,run_context,confirmation_sig
     async def edit_query(request:Request):return await read(request,'preparation','request_id')
     @app.post('/v1/trip-needs-saves')
     async def edit_save(request:Request):return await edit_write(request,'save')
+    if planning_only:
+        return
+
     @app.post('/v1/trip-source-initializations')
     async def source_prepare(request:Request):return await edit_write(request,'source_prepare')
     @app.get('/v1/trip-source-initializations')

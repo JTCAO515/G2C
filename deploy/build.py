@@ -8,7 +8,9 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def source_context(root, destination,revision='HEAD'):
     entries=subprocess.check_output(['git','ls-tree','-rz',revision,'--',
-        'pyproject.toml','uv.lock','backend','scripts','deploy'],cwd=root).split(b'\0')
+        'pyproject.toml','uv.lock','backend','scripts','deploy',
+        'eval/optimization/cases.v2.json','eval/optimization/score_v2.py','tooling/optimization/uv.lock',
+        'knowledge/visitor/entries'],cwd=root).split(b'\0')
     for entry in entries:
         if not entry:continue
         metadata,raw_path=entry.split(b'\t',1)

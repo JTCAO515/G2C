@@ -1,0 +1,1330 @@
+{
+  "original_plan_sha256": "83ed239ed160d40bfbad671368f75fa4e9afda5801b8cfaa046d031a38d016b1",
+  "original_observations_sha256": "4d47f4701a4613d7f04d0d0b316c52c2202b71b9ad358e7e7eb509e34462a80a",
+  "original_report_sha256": "423ab8a90f36c60891fbeb76f5b442c1267d25462e36c03fbf6e9e1c0a4032b8",
+  "scope": "fixed33pairs/11holdout",
+  "original_rows_unchanged": 429,
+  "historical_snapshot_before": {
+    "ledger_id": "32d95019ea16443b81e648960c4baba0",
+    "rows": 429,
+    "sha256": "27188245e37b89a99b2c3aa077e7956ffdf4d090efa4fbdd6396b7d32068b1b4",
+    "counts": {
+      "model": 270,
+      "weather": 67,
+      "fact": 17,
+      "place": 54,
+      "route": 21
+    },
+    "states": {
+      "RECEIVED": 360,
+      "INTENT": 69
+    },
+    "anchor_state": "ADOPTED"
+  },
+  "historical_snapshot_after": {
+    "id": "32d95019ea16443b81e648960c4baba0",
+    "rows": 564,
+    "sha256": "119d38b6380a7050147dabc1e6578603ea0a5d4f26d2e7fd1c9d54cf4a987fe9",
+    "counts": {
+      "model": 379,
+      "weather": 72,
+      "fact": 17,
+      "place": 71,
+      "route": 25
+    },
+    "states": {
+      "RECEIVED": 493,
+      "INTENT": 71
+    },
+    "anchor_state": "ADOPTED"
+  },
+  "run_exit": {
+    "wrapper_pid": 195,
+    "runner_pid": 201,
+    "exit_code": 1,
+    "finished_unix": 1794030916.1499205
+  },
+  "actual_planned": 66,
+  "actual_started": 66,
+  "actual_observed": 66,
+  "never_started_n": 0,
+  "cases": [
+    {
+      "scenario_id": "beijing-explore",
+      "language": "zh",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "9b9ddd6c32a55dabca76f71b31a9f8fd06f32d45e14ce5912902e81056927f8d",
+      "input_sha256": "a1828a3a077e84a1c6516c6de832bafa4f9ec358c48d8ef59d8e30d900ddff7f",
+      "run_id": "718a8a38-214e-4277-b79e-42372a217a49",
+      "run_status": "completed",
+      "attempt_ids": [
+        "77dc7b86eda949fd8de06ca806dead16"
+      ]
+    },
+    {
+      "scenario_id": "beijing-explore",
+      "language": "en",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "2f3610382416527a737aed9cde0f3b271334d522c5d53e2ad45cd2fca4aabe09",
+      "input_sha256": "37d7b5ca02084e4d02b0944491580a211e3c4814b8f90e4942f4200806f43395",
+      "run_id": "68dff66d-e3d8-43c3-995f-9e72f6a7d080",
+      "run_status": "completed",
+      "attempt_ids": [
+        "208d0e2ea9fe4c339436a51cef2505a3",
+        "c454acf25f114e2d9e45be21ae13f2e2",
+        "118dbf8d09e5464d8ef4ee30a0cc03c3",
+        "e060af9e48844ef2a8366974772717a7",
+        "9be36d9b87714ff8ad7355bb6bd60a36",
+        "02f7352591aa4faeab9ea116458af5f1"
+      ]
+    },
+    {
+      "scenario_id": "beijing-preview",
+      "language": "zh",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "294a07eb9d175bde05439d8e28501ac76cdfbbf53d77f981bd83fa0e76a3d025",
+      "input_sha256": "bfb2e1949cfc022266ec3397f6ee8b72392208c3822e907530eb7bf6ebc722e4",
+      "run_id": "5c675424-073b-4662-912c-4c4cedc3e441",
+      "run_status": "completed",
+      "attempt_ids": [
+        "b2c7baf3cc1d466d97239f304ea18ef4",
+        "5f312f70d0174a059d1e339190a87f18"
+      ]
+    },
+    {
+      "scenario_id": "beijing-preview",
+      "language": "en",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "1c2a315d7b2faa534e1cc36ff7685bed711b9c47db719117b5d1985b090e4c1f",
+      "input_sha256": "df352638c23c0288aab955f50b62a5b561e10bc463baf87bdbb4415195af675c",
+      "run_id": "84e389b1-257b-42f3-a9e5-d5bf5734a5a4",
+      "run_status": "completed",
+      "attempt_ids": [
+        "5866330ccc67445788861f90cf6cd6c2",
+        "3abb230d5ab94431891d0bbf475bae25",
+        "16586594b189454c9018c4cc180b4128",
+        "5329dcd552d14060a89277fc4dc7c392",
+        "764388a85d0645b6a753207001aa5bce",
+        "7deee782c5ea4ba7a1b5607b77615add"
+      ]
+    },
+    {
+      "scenario_id": "short-trip",
+      "language": "zh",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "3c9e90df0be7772692f775fcae2b04377c7800f84da1d266a457d599b041819c",
+      "input_sha256": "ca2482c561824d9694993a3baf52c2272aefc6860d47e4913cc5e47cb3bc4585",
+      "run_id": "d67a8cac-cdf6-482a-aa19-903f15901302",
+      "run_status": "completed",
+      "attempt_ids": [
+        "d85ae6261c654ff2ab7f395d6c1fea77",
+        "6144c58066ca4a00bed0d645b4f3ab7f",
+        "cc9833dc9d0f4e17b7c385238db796c4",
+        "9967e3b3abf8494ca51e859087acbb89",
+        "e9cf9aa64da44255aef32a1bcb6a3482",
+        "0f632c860fe84c80b67a15f851d0e458",
+        "abc7f48670464ea7a93b9c620ee9c81f",
+        "8145592581b340b990115379a52fc385",
+        "bc2b6b6711dd4ec2b4908e5f925519e9",
+        "5acb45b5215643b8a557327372981067",
+        "5ac7daa97ec0419abe237bc1de74f3f2"
+      ]
+    },
+    {
+      "scenario_id": "short-trip",
+      "language": "en",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "2d702b7c7eab94e3b6b73daba12236822042864a545f1cb9cab2a0d1e6208687",
+      "input_sha256": "3c815acfe1d02f2fa3d6a65c587ef234bc603285e6f1f886a97ba6ced8c72929",
+      "run_id": "9fb77df8-5a1c-4c05-ab89-9fc66523dfef",
+      "run_status": "completed",
+      "attempt_ids": [
+        "b2eb0ebf741444af86d3cb9ffba80408",
+        "01836eedeb9d466bbe81e4d2b4f1b95a"
+      ]
+    },
+    {
+      "scenario_id": "daily-budget",
+      "language": "zh",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "e43d69c7b617a15a4282f8ca90a2804e50d41137b0f019a33601e8b605491f90",
+      "input_sha256": "a0165035fb986725b1e0165d1ab90472091acda38a0d5d1788d3dbc3b9a75c90",
+      "run_id": "b5402ff8-25d0-4b09-8ee9-0afbca66cd43",
+      "run_status": "completed",
+      "attempt_ids": [
+        "777bc244235a49c1810f84628cd19d97",
+        "668ee0cacd9843e19e257274700a83d8"
+      ]
+    },
+    {
+      "scenario_id": "daily-budget",
+      "language": "en",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "39c2b831b5045b4b598672272b5ccac8dca0865ca7b0c42b60d0a936dda71722",
+      "input_sha256": "b46e6d1ebd7f495df3fa57b509ac0d24a735f01ba690a94df9258865dfe9a8b3",
+      "run_id": "8c45904c-93bb-47b1-9924-62e2ba5fbced",
+      "run_status": "completed",
+      "attempt_ids": [
+        "dd2e6bb6dd504e118a8f12d5202068db",
+        "693a01cd613e40f894c823dcb2830302"
+      ]
+    },
+    {
+      "scenario_id": "slow-pace",
+      "language": "zh",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "481ddfd35bf10d669dd87cc46ac5e6f315d41fe4b16e8b7878950f4ca3ba8b18",
+      "input_sha256": "696273de3646f9490e10314425fbf514e20535c333f0ed3939e460b0962fe3e9",
+      "run_id": "cd58a618-fe4b-46ad-a5d0-b5a94cec6f24",
+      "run_status": "completed",
+      "attempt_ids": [
+        "736202dac9e14bddb9e49de3d1da3d31",
+        "cdfa68bf8bda409abe405f7debd556e4"
+      ]
+    },
+    {
+      "scenario_id": "slow-pace",
+      "language": "en",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "failure",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "aedfe904f8534bcf2f333af712465868dbcfcc7c0f37795cb069d8586f634c2f",
+      "input_sha256": "17e5e177fb3fde36f13a90f759dc1bdbf5c7ce8850be5d612e07101de2619142",
+      "run_id": "b23b19ca-9aa7-4dc9-a3e7-3d801a785acf",
+      "run_status": "unknown",
+      "attempt_ids": [
+        "e67512fb0cbe4f809a83a0df9fd6afc0",
+        "bb6fee85bd384d05b18aa0f8836a30d1",
+        "5a6788cf6bc9453cb2c937806fa18eab",
+        "0eaf71a7cf2444e7bf19c225f05968c4",
+        "44a3c0b7eb83408f8887558dec4e50e6",
+        "38bb082019fb483ebf1fc6f2ddbd66d6"
+      ]
+    },
+    {
+      "scenario_id": "uncertain-hours",
+      "language": "zh",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "7ec2887b71575a63174fb1ce5c378de80351b4089295d53edb244d62984ab1e3",
+      "input_sha256": "2306ffa68c9e9790efaa6d312798caa4ace07e9597e5522636b1f10cd5f6c38b",
+      "run_id": "5c2fee5f-0b0d-4ef3-be41-92e7c0f51d52",
+      "run_status": "completed",
+      "attempt_ids": [
+        "3bea7621b673444ca25227238162b5ad"
+      ]
+    },
+    {
+      "scenario_id": "uncertain-hours",
+      "language": "en",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "c1889cbaf434f27276c84bbb28960c8a454f1b2fad8c560f27e20ea580a6234c",
+      "input_sha256": "aa57e25d0b31c646202a4162255c6e6c581118beadf2a568adc36024e29c79d7",
+      "run_id": "a72f3ab3-e62b-4cd3-8900-cb39cb22b64a",
+      "run_status": "completed",
+      "attempt_ids": [
+        "40d5ac8f235c417f882ac11a3ea4288f"
+      ]
+    },
+    {
+      "scenario_id": "arrival-timezone",
+      "language": "zh",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "00da5af1530be8ab0e3280f3f653300f25a7ea18e41332ffde48485699dac7b1",
+      "input_sha256": "4170dafce4ec61f4d7aab7ea180cf7b9ad19aae6154c2569be48109343cdc4c3",
+      "run_id": "927e02f7-a580-4670-be24-f50bd6462124",
+      "run_status": "completed",
+      "attempt_ids": [
+        "475445b78c6f45ecba7cf1a5edd825ec"
+      ]
+    },
+    {
+      "scenario_id": "arrival-timezone",
+      "language": "en",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "7faa0cd27fd785849b8ade8f971071ffc66e47608470186bd1ef413c601883ac",
+      "input_sha256": "fa1d68bd6a17c3873778f6e14e9825ac413ecd3abe56c724fd7d7100c7e49dfe",
+      "run_id": "fc787957-f691-4fd2-bf62-7dd13ebcac16",
+      "run_status": "completed",
+      "attempt_ids": [
+        "1955d4403a9f42e1bdf213c16604ef6e"
+      ]
+    },
+    {
+      "scenario_id": "transport-gap",
+      "language": "zh",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "15f4992812b6412860ec4b37e9249d1d195ad1349440dc60c2390a77a0b3da6c",
+      "input_sha256": "f6a442801603fca11d43c3a02fabfd2da4ee6ac4aa193bb70ee088f048175631",
+      "run_id": "984dc2b8-4dbf-4cef-974d-669085bb5b99",
+      "run_status": "completed",
+      "attempt_ids": [
+        "462b7eb9d1fb4cf7b15384cb1cec8bc9",
+        "85ed5e8adc28458d91f884ac90eca9f2"
+      ]
+    },
+    {
+      "scenario_id": "transport-gap",
+      "language": "en",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "e23a9b32c13f992b87c59051efa4d148f065f3b33e670c7c0d52344b62531a50",
+      "input_sha256": "c65172d436bf29c6b0a52425ed0480ed92ded4b5906095422de64d95c84ba38d",
+      "run_id": "97099594-5b1c-4b70-834b-c0d339ece4ad",
+      "run_status": "completed",
+      "attempt_ids": [
+        "6f3334d74d554bbda8a0e4aa5fad5109",
+        "f5eb55a276ab4e31b61674285c08dcec"
+      ]
+    },
+    {
+      "scenario_id": "accept-once",
+      "language": "zh",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "9e4d7e727e05935bc8e72192c01638e18af91ccf96f6d113291038afb48aef86",
+      "input_sha256": "39a80657b9640557a6b19bfbea6bf345e7ea0a9730583a6a9a868428ecb68ede",
+      "run_id": "29e65fbc-fcb8-447b-8164-567994208a76",
+      "run_status": "completed",
+      "attempt_ids": [
+        "3d6858579b7948ada9d2f1d9e223e05a",
+        "08426690dc6f438d8ec1e4b8747ac9d7"
+      ]
+    },
+    {
+      "scenario_id": "accept-once",
+      "language": "en",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "3f4128fd7b73b20001613604295f8713c6ca70fdbc2985b80212a6005d77da7d",
+      "input_sha256": "30c05986cc22055d7e64f846ecb15e76ceaf6248955ad9a6d499b6e7f917189c",
+      "run_id": "1a2b6510-9946-4fff-b960-4afe242e1a4b",
+      "run_status": "completed",
+      "attempt_ids": [
+        "07d4a55f2bee4f4180150990eb8049ba",
+        "8dd485c5a35f45f08ca8411a3b6b8ff7"
+      ]
+    },
+    {
+      "scenario_id": "reject-preview",
+      "language": "zh",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "d7247bc976e5b748a6bab0d3d34c4d8eb4823dddb03802e436aaae72861371c0",
+      "input_sha256": "4d1b8d5bfd012d48547e5cfd9fcccdfe5d2cf9d958b892caf6e483cae50762a7",
+      "run_id": "29d9486f-76ed-44ee-a8c3-57843c76b343",
+      "run_status": "completed",
+      "attempt_ids": [
+        "c85ed64858264b94a97f1d65abda4114",
+        "99a6a54a5bcf40b8b9ce9ad79e5a82ac"
+      ]
+    },
+    {
+      "scenario_id": "reject-preview",
+      "language": "en",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "67ac40d26febc1a8fb1b8e6bf77b2ec940271f0128ab6ef0c7052587612e476d",
+      "input_sha256": "57a0854b25358fe49c07ad46c139b74254df8309c35b710bebff5ce445b19611",
+      "run_id": "40386f9a-e3fc-4a4c-93ff-09b78e7b7bc4",
+      "run_status": "completed",
+      "attempt_ids": [
+        "382207b9ec794767ac878439993dff71",
+        "d1522c06c9884a2899358d4a44d2710d"
+      ]
+    },
+    {
+      "scenario_id": "memory-explicit",
+      "language": "zh",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "4b3a78a828d1f98c1fae3d1937a6b23210cdb384967d79404d09418e2f48b2ac",
+      "input_sha256": "7992ad86b485f24f1ca231a4a893be7848c6c0af88b10ae9d7a99cb4d2bd0d00",
+      "run_id": "0d36c218-9b48-40f7-8d26-34fbc4d2ec26",
+      "run_status": "completed",
+      "attempt_ids": [
+        "3567ef08b58a493082f44a35841f0d33",
+        "f4fba05f3ac64af8ac752652dd4bc6dd"
+      ]
+    },
+    {
+      "scenario_id": "memory-explicit",
+      "language": "en",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "46c5a48cc1f8a96e59534696ce7eb5909411fb46b948e961f3e52912c02e59de",
+      "input_sha256": "6ef67651824dcf94904d4e0374735e2b2db938ebc16696c6e24c69870d723400",
+      "run_id": "e739b81a-d7e9-4b83-b865-cd22d43c313b",
+      "run_status": "completed",
+      "attempt_ids": [
+        "bbbcfc43c43c4f97bbaf536a8b4a06ac",
+        "d97b78f25bba40539d14c203a23951a4"
+      ]
+    },
+    {
+      "scenario_id": "memory-new-chat",
+      "language": "zh",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "c1da39a91425cf5adb214a7c9d221a1cbbcaf13e4a940e9c57615b11f4448b55",
+      "input_sha256": "72086a5718317806e6ecbb4ea9f6c3629a71c1cb583953dbe3bbd2b0c6e2f33f",
+      "run_id": "23207b1e-5ab6-47bd-b44a-e6c41b3d53f9",
+      "run_status": "completed",
+      "attempt_ids": [
+        "aad54a3329354aafaf3d65c05593b71c",
+        "635cf4c2b3bb4a129a0f9337405c2896"
+      ]
+    },
+    {
+      "scenario_id": "memory-new-chat",
+      "language": "en",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "9f664e6f1fb97fded2b9264e1a85ffc2e79bb414cf99cd5480545422e759fb19",
+      "input_sha256": "8d70df3b181fddd9fdf5d456b841d43ecfe543d41644a44b66c9bbdb584f17d7",
+      "run_id": "7fd8795b-6d7d-48d9-9ced-a5420c86191f",
+      "run_status": "completed",
+      "attempt_ids": [
+        "6e3c16f35b594a5b89413476ebcb175c",
+        "6b11a0a665d7460a9886c167c346c912"
+      ]
+    },
+    {
+      "scenario_id": "memory-restart",
+      "language": "zh",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "25a42ccac39b359615bf6c01759aae8f484c5dd37179783fdd00e205652d952c",
+      "input_sha256": "58b26cc8edb307f3be0d0e154b75e0da68db6957fcad77ab03c9943d37f3f2f0",
+      "run_id": "d15ddb6b-8c08-4038-971b-a79878b69fbc",
+      "run_status": "completed",
+      "attempt_ids": [
+        "a03c072610724ddf8c99420bded0fcb3",
+        "b8bf6398970446618201190fcaf26809"
+      ]
+    },
+    {
+      "scenario_id": "memory-restart",
+      "language": "en",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "05fa0033bf11445a76e98ab7842dd2e017b2e9260f4ca02167010c6130f43184",
+      "input_sha256": "ccf9e39069da1ad8016b7d846546f9d4259422857881db2f6ded28b59371a088",
+      "run_id": "b5140e3c-f14f-45c3-b484-328c5f4ee397",
+      "run_status": "completed",
+      "attempt_ids": [
+        "519b022e5b6444d3acf75ce568f98b7b",
+        "639467c57ffc426ebd6a7a143404f814"
+      ]
+    },
+    {
+      "scenario_id": "memory-other-travel",
+      "language": "zh",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "ba2ca8abf57288456ecbff3984bdc68c36d783aade924b95e81d691354bfeb7b",
+      "input_sha256": "ba17d70053b1f8174ba5a2f8e1472fcbe429e133175697f8a9e181e7dd3ba9f4",
+      "run_id": "12861dcf-26bf-48ba-9633-f762ccd27781",
+      "run_status": "completed",
+      "attempt_ids": [
+        "10da6e8b22b644839c25259c78170011",
+        "d4743a81fe9d441da95e0d4affc6fc3a"
+      ]
+    },
+    {
+      "scenario_id": "memory-other-travel",
+      "language": "en",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "77d5bf51cb75031d0a73aea1957d28531b054c1b6eb320dfaaaecaea4ac3fc34",
+      "input_sha256": "53f01784842244136cdb2a0e1d490b99097f2624fd0bad2bca5191cbb342e264",
+      "run_id": "328a1e9e-1d44-4fd8-8ada-298483913b63",
+      "run_status": "completed",
+      "attempt_ids": [
+        "12c006ae569e41e3ac0a760ac123c288",
+        "e1e3e05596e243679277a1ff1071d826"
+      ]
+    },
+    {
+      "scenario_id": "memory-correct",
+      "language": "zh",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "5c7b5b3ee6c6dfe3a6681aaaa941c0f6825ba1368c13b0f99c2db0caa302fff6",
+      "input_sha256": "68cf4470cfda16db4aae9616d815c2612f213aa6fc34aa6573a94a570da84965",
+      "run_id": "991ed33d-3a7c-44c4-8c94-9b4bee724891",
+      "run_status": "completed",
+      "attempt_ids": [
+        "f44daa62b0dc472aa81f263c395d61b4",
+        "8f9fa84e8a4d4b44a83708d2f4fe2299"
+      ]
+    },
+    {
+      "scenario_id": "memory-correct",
+      "language": "en",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "261823bcb23642d2c7350941156e8be3ec7bc032ec8f5e4f3c425ca63848e813",
+      "input_sha256": "e06bd4dfc9b8b90e553bd615e328eaef330d469288863ed392b49e98b9c59b71",
+      "run_id": "2c01814f-ea72-4a8f-aa51-a1baf411cae4",
+      "run_status": "completed",
+      "attempt_ids": [
+        "f546b28e264b4f3c8e3f680544890a2d",
+        "b1b9eb63529a46938850b41a914163a7"
+      ]
+    },
+    {
+      "scenario_id": "memory-disabled",
+      "language": "zh",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "82f154a51bb9f992cbd0834d5366bbf7390d279283a6adc25b9ea3f0bc460124",
+      "input_sha256": "4a9fe852bb1c4d7c3b418bf76db7d56ca432596adc8c4f6a724c85c75d00cbf2",
+      "run_id": "034aa604-cf83-4d50-aafb-ca3363276245",
+      "run_status": "completed",
+      "attempt_ids": [
+        "69503e2dc9004912adb7a6c1dd01f9e0",
+        "77182a3981354c6fa7649d6b2b0cf37f"
+      ]
+    },
+    {
+      "scenario_id": "memory-disabled",
+      "language": "en",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "c3e0bd6dda63f24e5121cf771ac813be7c907458e8dcfe98c99de3385dd4bcbb",
+      "input_sha256": "c62f4702ab799f670af2fc1e535807f6b31e0cbb3a50500ffe09fc67a6209522",
+      "run_id": "44723f6c-2558-4a8e-9175-ca1fa0258517",
+      "run_status": "completed",
+      "attempt_ids": [
+        "30d5b2a09e044999aa6c91e37ea72f52",
+        "bbdbbbf72f514c9281e1d7eb166c9a91"
+      ]
+    },
+    {
+      "scenario_id": "inference-not-fact",
+      "language": "zh",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "4aa97b8e43d150452f99516b8fc2589035158bd9eb974b23635f64c5437d46ef",
+      "input_sha256": "d860c6cd22819de0de9e7857ad9422fbcf16a3dffedccb706e5a1eab324e6afc",
+      "run_id": "0783b92f-9b5c-45d1-a622-a52df85dcad6",
+      "run_status": "completed",
+      "attempt_ids": [
+        "40f73e30cc5943bdbf35ec6bbfc92e41"
+      ]
+    },
+    {
+      "scenario_id": "inference-not-fact",
+      "language": "en",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "20261ffe9a2783b80e683b22f5a94d540cac59cbf2567226424e14160f3f1151",
+      "input_sha256": "61e30bb954a1858fb1c87cfd4fd4c526c79cbf0fea3f6b4ccad123525fdfe49d",
+      "run_id": "1b3dfe3e-5c39-4911-abe8-d40c30051a58",
+      "run_status": "completed",
+      "attempt_ids": [
+        "8dcf525bf3ef431c845e1027b799b9a7"
+      ]
+    },
+    {
+      "scenario_id": "companion-not-self",
+      "language": "zh",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "8fe3b5b404d70edb414708eb1f21ec8c9a29ac77b992e421998ed3ba3ceb772c",
+      "input_sha256": "7dab00c8aec13ae742d9f054999a91da65b82a98309f25c291e80956c856b683",
+      "run_id": "937c94fb-7c15-457e-954e-322c285ac69c",
+      "run_status": "completed",
+      "attempt_ids": [
+        "59bb4e54e2dc41448828abc212b6fd57"
+      ]
+    },
+    {
+      "scenario_id": "companion-not-self",
+      "language": "en",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "a0a314eec87e881347a41b8ce6a392280d21b4b527604c8e558c6e56fc26cc1c",
+      "input_sha256": "5e8e6b8a154a94fd2dc8a6efe1287a542d0fa47b8f6e2eae2f5fcd491e476419",
+      "run_id": "d1362b3a-7f76-4546-8e0a-2178cad2532d",
+      "run_status": "completed",
+      "attempt_ids": [
+        "b3c4022802cf42f586e74f2ceef53195"
+      ]
+    },
+    {
+      "scenario_id": "temporary-not-longterm",
+      "language": "zh",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "fc372c09a442c03f41bc0fa99ee71fcb469b8c12e9747888cb8b9cfaf8f75f02",
+      "input_sha256": "e1afa930d8b858d30ce8e2becb6bc316dca3dc7ee8ff338fd93d63effe085bb7",
+      "run_id": "f2e97e26-d679-46af-98d5-bd7210b23454",
+      "run_status": "completed",
+      "attempt_ids": [
+        "76454e1bd82c4eb292267533369458fc"
+      ]
+    },
+    {
+      "scenario_id": "temporary-not-longterm",
+      "language": "en",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "ae237d0f69eaf50178910ebf03b512514f96dab6973d909475df1f49fdfe407c",
+      "input_sha256": "703e631fdb72cc9a36f780175b9161def699fed5a698f5a7338c0707d27e0320",
+      "run_id": "ee6e5957-802e-42bb-8dd4-b75aadf0ead4",
+      "run_status": "completed",
+      "attempt_ids": [
+        "3c9ff785a43f48cf9e12a59a50dccbc7"
+      ]
+    },
+    {
+      "scenario_id": "skip-onboarding",
+      "language": "zh",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "58697205e84e99a02e4ddc73061fb35fb00ff310d862fc529e948555e8de48c2",
+      "input_sha256": "795f59ee7b21e1452ef108bda5c59ed40696c9b10a4ee16e1c482f3d1ff3276a",
+      "run_id": "3c325a46-73dc-44e1-9813-67940f466622",
+      "run_status": "completed",
+      "attempt_ids": [
+        "0d767df77f294a009d1b1e5eb9ac4ec7"
+      ]
+    },
+    {
+      "scenario_id": "skip-onboarding",
+      "language": "en",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "cec27482aa6308949dc09da19f55ee21a69901935897d45af4a33ac75c4faabe",
+      "input_sha256": "0f2aaccd3356222d13bdfd4eb9b86666774669b396c704624d3ef7a63b6b9de7",
+      "run_id": "a86c0eb5-c888-4fcb-964c-5056ad8a1258",
+      "run_status": "completed",
+      "attempt_ids": [
+        "dbc8acd93b9f4a70bf53c8eabb12400e"
+      ]
+    },
+    {
+      "scenario_id": "holdout-memory-stop",
+      "language": "zh",
+      "purpose": "holdout",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "873474995930a4efc9b2df96973f2252b1f56b97f577d5092307c762dbb6b058",
+      "input_sha256": "478516e0346fae594988cf4307af9f87a60fc46435ca61aa1445dddbdb69cca8",
+      "run_id": "cab80a15-d55a-4a65-9c24-fb3b17ce1a97",
+      "run_status": "completed",
+      "attempt_ids": [
+        "a10329057a84462e9fb84f39ff36364c",
+        "c032521918464e4887da6a73d811480e"
+      ]
+    },
+    {
+      "scenario_id": "holdout-memory-stop",
+      "language": "en",
+      "purpose": "holdout",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "65f69d8cce788cb9aced126e53ed9e829661f112b2345efc12930984eb8b2bbf",
+      "input_sha256": "d434c846366eb216614e39488043125fc4db7cb35d8ae3c67b2258d6a1a743f2",
+      "run_id": "c9c3a8ef-bad5-42b5-8a7d-8cec31b7ab78",
+      "run_status": "completed",
+      "attempt_ids": [
+        "f1031e1ac1b14cdab67a42635d7e0709",
+        "832a4d4216d448e897a9cb4b7f373002",
+        "6cd9184175594b6ea999c6bdba0e7029",
+        "02e6e7e75a1248f8a96da391a608f9e2",
+        "79390bf77ab74699b9a91a4cea91ec94",
+        "92d2f4741f574c11bb9bfc94f6f25bb6",
+        "b3455ae8a67c4be8916f1da036668be4",
+        "6e03a049e2244035939b9cc16f8a085b"
+      ]
+    },
+    {
+      "scenario_id": "holdout-no-confirm",
+      "language": "zh",
+      "purpose": "holdout",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "4d902f2621af8f9888712c469353285127b82009f0e01240e8ce0036865529b8",
+      "input_sha256": "afdcdab3f72364ee730c5138812d0ce19db6b4fcf60aa1ddf0b30749441d2399",
+      "run_id": "51987e44-160d-4855-94fa-012a6da3650f",
+      "run_status": "completed",
+      "attempt_ids": [
+        "c8bfb130700d46f3b4cb5143c3386187",
+        "1c5248dece594bf0a1a6a2b1eb5a4caa"
+      ]
+    },
+    {
+      "scenario_id": "holdout-no-confirm",
+      "language": "en",
+      "purpose": "holdout",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "b4f24060770c2753a826c1b5e2647e17d084feeb87a7a449385a85d4411cce5d",
+      "input_sha256": "d91113b212681fdbf2606d05e30ea4728d61276cfe15d0045c7dd884851e145f",
+      "run_id": "91a668b8-4d3b-475c-8327-f88df74c101a",
+      "run_status": "completed",
+      "attempt_ids": [
+        "44cda1cfe92d4fe68ef3977cc78c439f",
+        "db6d8b6a734f469387114e879a51f194"
+      ]
+    },
+    {
+      "scenario_id": "holdout-local-adjust",
+      "language": "zh",
+      "purpose": "holdout",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "e426410504158a04f3fe823a8389ba8664f3be1d42ac6a482ba901a68d7a042e",
+      "input_sha256": "9d282c421c1a49fb69966e444b805ba40df79707c7725595c6e866fdac7070ba",
+      "run_id": "fccd9b7e-652e-456b-8964-d5e08d4005e5",
+      "run_status": "completed",
+      "attempt_ids": [
+        "c48c145650d64ffb8232748c7a9282ad"
+      ]
+    },
+    {
+      "scenario_id": "holdout-local-adjust",
+      "language": "en",
+      "purpose": "holdout",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "cd1ff854d6f40190c2777cacace3ad2bea7008e699ba76ee870f5d2a46fb58cc",
+      "input_sha256": "caa46c4d588c9a5473ef900d057a7eb531de9f8216e143fbeaa9a3df33c91b4d",
+      "run_id": "27795ff5-b365-4d80-8a75-5efda1ec7843",
+      "run_status": "completed",
+      "attempt_ids": [
+        "7bf14cae85954caa96384c2842f97815"
+      ]
+    },
+    {
+      "scenario_id": "holdout-fixed-arrangement",
+      "language": "zh",
+      "purpose": "holdout",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "3487c8a5af8f312bdc340c1b85375b7dd8d9bda4681142667ee70aaeb62ae1c0",
+      "input_sha256": "c9df2356fee9be2b8647a53b58d314cc1f297168197b23af6b210958d1d3b44d",
+      "run_id": "44f3661f-d0db-4ddf-a4f2-b8e48dcfdf83",
+      "run_status": "completed",
+      "attempt_ids": [
+        "3eab37e9ced14afeb2c291b55e2e80b6"
+      ]
+    },
+    {
+      "scenario_id": "holdout-fixed-arrangement",
+      "language": "en",
+      "purpose": "holdout",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "52a5eb12d315313390cf2c1a049793c0a2ed788b87d8484e6a1353ffe6a1e724",
+      "input_sha256": "f647c80d84f47d972ae8c7723b17cfdddb8657b1afb110a83668228c91135d3a",
+      "run_id": "99d0cde7-5cd6-4ce6-86de-0f6f6f36a86b",
+      "run_status": "completed",
+      "attempt_ids": [
+        "0cda2fa276d84f3ba2498b9e8c23df6b",
+        "53d4e049d46545e1ae4aa0157df44b33",
+        "f356d5e2a12241e0bea88f18d508c61a",
+        "42c2b45ed25641bfa970aea0260dca14"
+      ]
+    },
+    {
+      "scenario_id": "holdout-place-source",
+      "language": "zh",
+      "purpose": "holdout",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "f8e49c21db0c8255f1ae34e3a40e08574e3adc5585412887a219b1f72627f67d",
+      "input_sha256": "4f2537e6e03585ce968900e15dc36ceb3fe8de43ac49dff8d087bd6cea269910",
+      "run_id": "e60e1304-98d1-46f8-8906-7f9277f8061a",
+      "run_status": "completed",
+      "attempt_ids": [
+        "40dda3533985438381d8d753517e55cd"
+      ]
+    },
+    {
+      "scenario_id": "holdout-place-source",
+      "language": "en",
+      "purpose": "holdout",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "498f5bd91d98942c30573e3a86eac1efdd8c37cef20befc20c22a9a0e1ac5eb3",
+      "input_sha256": "919d6be8b301aabad9f20e3f336eb890b3d0c232cc5f324ec073d45ee93137e6",
+      "run_id": "fd0f5680-5842-469e-aebc-e86cad00f98f",
+      "run_status": "completed",
+      "attempt_ids": [
+        "4718ff150d094c8faa058c6008648b95"
+      ]
+    },
+    {
+      "scenario_id": "holdout-current-weather",
+      "language": "zh",
+      "purpose": "holdout",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "12e061f0e7e2423b95bd4acfad276533cf27a4d8a137ae0b206aa620f5c3bca6",
+      "input_sha256": "f0b8a1215681b8749d7d27c0973fe0768acd8f0f384addd3e269ae6088c4285d",
+      "run_id": "6443750b-7470-4df2-9850-4c6d891fc9c8",
+      "run_status": "completed",
+      "attempt_ids": [
+        "647bfeecf73644888bbedfac70792a6b",
+        "311d9b4db1e7453aafbe476428b4ade2",
+        "ec01aa3b9f7e45bd83c644ce6e428505"
+      ]
+    },
+    {
+      "scenario_id": "holdout-current-weather",
+      "language": "en",
+      "purpose": "holdout",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "b3dfc7894053b5234f762068cac6e37c3b760cc8f3b143d299da71218432ee34",
+      "input_sha256": "d83ab8e93a8853f6634f84f0b81c737453e235a58e9c1dd081e70ee590c2aa19",
+      "run_id": "d85fcc99-fcb4-4b7e-804f-468f4131bfe8",
+      "run_status": "completed",
+      "attempt_ids": [
+        "f4f624edaaf543b58a3215f099c02651",
+        "0f4962c120e94c0baada088bb2602679",
+        "02888b54c6884833a13f51b861caea1b"
+      ]
+    },
+    {
+      "scenario_id": "holdout-unsupported-booking",
+      "language": "zh",
+      "purpose": "holdout",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "7ef023c27025083bcab328f97f5aeca625979870a83304baece3dca4323d4a26",
+      "input_sha256": "5621f29eee45d29c8590d4462a19e8776b12ab3746b37ef447297c3df032929d",
+      "run_id": "c9f51c67-d074-464f-ab07-4b1f9843f5a8",
+      "run_status": "completed",
+      "attempt_ids": [
+        "0487a25315b941ecaad938263f721546"
+      ]
+    },
+    {
+      "scenario_id": "holdout-unsupported-booking",
+      "language": "en",
+      "purpose": "holdout",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "9eb1231b4b8f847d02f2522c68a5214f1cc053dbb792c182035d91eda3fafb58",
+      "input_sha256": "dbd3b5340978048b4a569e7e5b75bf09eac22fd86ae0c836f4b2097dc1739065",
+      "run_id": "c91a1cb3-7bff-45a5-ac6f-011643b52429",
+      "run_status": "completed",
+      "attempt_ids": [
+        "b891c04bc25d45a799c51543223443a1"
+      ]
+    },
+    {
+      "scenario_id": "holdout-plugin-placeholder",
+      "language": "zh",
+      "purpose": "holdout",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "226cab4f312a01629121204f5e0e975844cf9145805b1ebb6cb6232599917e26",
+      "input_sha256": "443ccb4941146eb86b66a32930542f4e544f9b949ed5f5965ce28395de84cf34",
+      "run_id": "60cc51bc-e09d-44ae-a381-b47ef68b455a",
+      "run_status": "completed",
+      "attempt_ids": [
+        "445002dd252f4785970da676fccdd078"
+      ]
+    },
+    {
+      "scenario_id": "holdout-plugin-placeholder",
+      "language": "en",
+      "purpose": "holdout",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "4c0d18b9faac54b06aa456d4ef9593b856727377f663d7fd2922eed31f0e1d43",
+      "input_sha256": "ab013a021c6ee2da5b9980cecb1aeabe7077084a1b16fbb436d5170be74a34ac",
+      "run_id": "ea43cebe-ac49-46a4-8105-558aa0585eeb",
+      "run_status": "completed",
+      "attempt_ids": [
+        "920aba4fb6e14983be33c9a17d041c5e"
+      ]
+    },
+    {
+      "scenario_id": "holdout-feedback",
+      "language": "zh",
+      "purpose": "holdout",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "8b3ad3692688fb98f958a17ed202812f9b02305a2dddb25591be0136df73354b",
+      "input_sha256": "7e9e51bb472d6935c4681aef6527878540d2127787b05d086782004bb165354b",
+      "run_id": "93f04a30-8720-4f30-86b5-bc3567f21d46",
+      "run_status": "completed",
+      "attempt_ids": [
+        "82650f887cc840bd9734b20b3a00d4f4"
+      ]
+    },
+    {
+      "scenario_id": "holdout-feedback",
+      "language": "en",
+      "purpose": "holdout",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "f1ae74058ed64a5af1dcdab8477175785933737de4a56c319aa449df17a6706a",
+      "input_sha256": "4563f32901478429d003bd4503bc38df2e16103a99d6f128f710069b7a68f7d0",
+      "run_id": "190e3665-03fc-4f6b-8ab5-220884ecb0b0",
+      "run_status": "completed",
+      "attempt_ids": [
+        "7037107231b34d99b01aedc8c7d112d5"
+      ]
+    },
+    {
+      "scenario_id": "holdout-account-boundary",
+      "language": "zh",
+      "purpose": "holdout",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "5766213e5d3e3a4a24710cf8c15a622367503331a9724847502197536dccab6f",
+      "input_sha256": "ce6d28817b1f6a26ac36546a405fb2ecea90c98fcac25a045c97596685e8725d",
+      "run_id": "b737817b-a449-4843-a3e9-490e24d719ff",
+      "run_status": "completed",
+      "attempt_ids": [
+        "5570ee5e7e374b38a305870a3b2f6bf8"
+      ]
+    },
+    {
+      "scenario_id": "holdout-account-boundary",
+      "language": "en",
+      "purpose": "holdout",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "68b18c353056b2692b7953666267b933f2420e41b1d484d2adf8ce9145954166",
+      "input_sha256": "1238e881f26299bb42ce2f0b1400b06b2afe11adb0fe3225a47e89a82e22005b",
+      "run_id": "6a274228-5d17-4973-9ea2-2e94fd8aa9c9",
+      "run_status": "completed",
+      "attempt_ids": [
+        "b36a2022371343c0b04acd1273380243"
+      ]
+    },
+    {
+      "scenario_id": "memory-explicit-fact",
+      "language": "zh",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "67688df82b087ec2f6b099e8a3fc1885414cdc7a95a84b3f8cce95d8476aebd8",
+      "input_sha256": "7d13b65f671e58471cb157cb0687f59723585151a9993d60fd0b24ab2da6f8ea",
+      "run_id": "204996ae-ea41-45bd-85df-1616119ae98d",
+      "run_status": "completed",
+      "attempt_ids": [
+        "6f1402b79c51456981240632d868eac3",
+        "fae7a07b71c24918a1f3497c8fc114d0"
+      ]
+    },
+    {
+      "scenario_id": "memory-explicit-fact",
+      "language": "en",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "a7a51cdce50eea1c82eb646d2e111b6db579a3e7921e48f504933c4b5b721aaa",
+      "input_sha256": "8ad7e98a88891a836368b6ff37c882a495c89aef85e8ffa3b1b76b6155709252",
+      "run_id": "c914e303-0c33-481f-af55-e6d64a5a51ff",
+      "run_status": "completed",
+      "attempt_ids": [
+        "78737be3e6a7418a9dcfbbb183328a8d",
+        "2d251c1215a347fba90c27c7b08c1bf5"
+      ]
+    },
+    {
+      "scenario_id": "memory-explicit-experience",
+      "language": "zh",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "1b47f23082d5b1c328381fa62a84e16894f13895c2f889d1d30032b6729eec83",
+      "input_sha256": "0ba0f09f5690b3c011a8b4e23b544eea38f07065d50db8173c793b79c591f2fa",
+      "run_id": "b205ab43-17d0-485a-9824-790ce18aa5d4",
+      "run_status": "completed",
+      "attempt_ids": [
+        "76a8045098d94c63ae4fc966413c5630",
+        "df232c7dcb134abbb7228f1757fe2a74"
+      ]
+    },
+    {
+      "scenario_id": "memory-explicit-experience",
+      "language": "en",
+      "purpose": "evaluation",
+      "attempt": 1,
+      "status": "failure",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "6c6c883d8c34e8db6e35ce1af653b73569758bf3b4e411aae98f291f6668e170",
+      "input_sha256": "0c3c126609ea7be813408dbefd737c4cfacdc42104dc66535ac5c2f0ae7961da",
+      "run_id": "ea872612-b078-49d3-98e5-bbe665c79de3",
+      "run_status": "unknown",
+      "attempt_ids": [
+        "22b48fcb8f624d1685f37f90a656a8e8",
+        "66ccebbd9e8f42ec853c4e5f3b69c7fb"
+      ]
+    },
+    {
+      "scenario_id": "holdout-history-consent",
+      "language": "zh",
+      "purpose": "holdout",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "b5684a355934c7bd8dd056701381571322cff8ad1eb4a7ea5d8f935ae0a4c9a6",
+      "input_sha256": "b099c352048db21d23523ccf73349bf15ca8ad1aa70b4e2f91a190a3db7afc47",
+      "run_id": "12dfb722-3e64-40b3-8637-9d59f081ebfb",
+      "run_status": "completed",
+      "attempt_ids": [
+        "7b77a949b12a464c9e9815e4eadf560a"
+      ]
+    },
+    {
+      "scenario_id": "holdout-history-consent",
+      "language": "en",
+      "purpose": "holdout",
+      "attempt": 1,
+      "status": "success",
+      "judgment": "UNKNOWN",
+      "raw_sha256": "f9ad8ae4321f7532f91fffec4161175769b88a302156b23d7f56dd8439bad3c9",
+      "input_sha256": "c202831c7e493537f1ba4deb19cf811b685b176b5024f822808c4f5de1854314",
+      "run_id": "2fbf5ed7-dedd-4aac-8d1e-4b7c690ffb95",
+      "run_status": "completed",
+      "attempt_ids": [
+        "49f84a5f561c43a2a0ddef1b10fdf612"
+      ]
+    }
+  ],
+  "by_language": {
+    "zh": {
+      "planned": 33,
+      "observed": 33,
+      "run_completed": 33,
+      "observed_statuses": {
+        "success": 33
+      },
+      "independent_outcomes": {
+        "UNKNOWN": 33
+      },
+      "actual_usage": {
+        "call_attempts_by_kind": {
+          "model": 53,
+          "place": 4,
+          "route": 3,
+          "weather": 1
+        },
+        "complete_receipts": {
+          "model": 53,
+          "place": 4,
+          "route": 3,
+          "weather": 1
+        },
+        "unknown_intents": {},
+        "model_tokens_from_complete_receipts": {
+          "prompt_tokens": 75398,
+          "completion_tokens": 9910,
+          "total_tokens": 85308
+        },
+        "token_unknown_model_attempt_n": 0,
+        "conservative_hold_cny": {
+          "model": 53,
+          "tool": 8
+        },
+        "token_price_estimate": {
+          "currency": "CNY",
+          "basis": "estimated_public_price_not_billed",
+          "source": "https://help.aliyun.com/zh/model-studio/qwen3-8-flash",
+          "source_as_of": "2026-11-05",
+          "model": "qwen3.8-flash",
+          "region": "cn-beijing",
+          "input_per_million": "0.8",
+          "output_per_million": "2.7",
+          "complete_model_receipts": 53,
+          "unknown_model_attempts": 0,
+          "prompt_tokens": 75398,
+          "completion_tokens": 9910,
+          "known_receipt_subtotal_cny": "0.0870754",
+          "entire_model_estimate_cny": "0.0870754",
+          "actual_billed_cny": "UNKNOWN",
+          "tool_monetary_cost": "UNKNOWN",
+          "exclusions": "Incomplete windows, tools, cache discounts, credits and invoice adjustments are not inferred; UNKNOWN holds stay reserved"
+        },
+        "actual_billed_cny": "UNKNOWN",
+        "note": "Original authorization/call attempts; not every uncertain intent is proven sent. No invoice supplied."
+      }
+    },
+    "en": {
+      "planned": 33,
+      "observed": 33,
+      "run_completed": 31,
+      "observed_statuses": {
+        "success": 31,
+        "failure": 2
+      },
+      "independent_outcomes": {
+        "UNKNOWN": 33
+      },
+      "actual_usage": {
+        "call_attempts_by_kind": {
+          "model": 56,
+          "place": 13,
+          "weather": 4,
+          "route": 1
+        },
+        "complete_receipts": {
+          "model": 54,
+          "place": 13,
+          "weather": 4,
+          "route": 1
+        },
+        "unknown_intents": {
+          "model": 2
+        },
+        "model_tokens_from_complete_receipts": {
+          "prompt_tokens": 86436,
+          "completion_tokens": 11464,
+          "total_tokens": 97900
+        },
+        "token_unknown_model_attempt_n": 2,
+        "conservative_hold_cny": {
+          "model": 56,
+          "tool": 18
+        },
+        "token_price_estimate": {
+          "currency": "CNY",
+          "basis": "estimated_public_price_not_billed",
+          "source": "https://help.aliyun.com/zh/model-studio/qwen3-8-flash",
+          "source_as_of": "2026-11-05",
+          "model": "qwen3.8-flash",
+          "region": "cn-beijing",
+          "input_per_million": "0.8",
+          "output_per_million": "2.7",
+          "complete_model_receipts": 54,
+          "unknown_model_attempts": 2,
+          "prompt_tokens": 86436,
+          "completion_tokens": 11464,
+          "known_receipt_subtotal_cny": "0.1001016",
+          "entire_model_estimate_cny": null,
+          "actual_billed_cny": "UNKNOWN",
+          "tool_monetary_cost": "UNKNOWN",
+          "exclusions": "Incomplete windows, tools, cache discounts, credits and invoice adjustments are not inferred; UNKNOWN holds stay reserved"
+        },
+        "actual_billed_cny": "UNKNOWN",
+        "note": "Original authorization/call attempts; not every uncertain intent is proven sent. No invoice supplied."
+      }
+    }
+  },
+  "full_bound_usage": {
+    "call_attempts_by_kind": {
+      "model": 109,
+      "place": 17,
+      "route": 4,
+      "weather": 5
+    },
+    "complete_receipts": {
+      "model": 107,
+      "place": 17,
+      "route": 4,
+      "weather": 5
+    },
+    "unknown_intents": {
+      "model": 2
+    },
+    "model_tokens_from_complete_receipts": {
+      "prompt_tokens": 161834,
+      "completion_tokens": 21374,
+      "total_tokens": 183208
+    },
+    "token_unknown_model_attempt_n": 2,
+    "conservative_hold_cny": {
+      "model": 109,
+      "tool": 26
+    },
+    "token_price_estimate": {
+      "currency": "CNY",
+      "basis": "estimated_public_price_not_billed",
+      "source": "https://help.aliyun.com/zh/model-studio/qwen3-8-flash",
+      "source_as_of": "2026-11-05",
+      "model": "qwen3.8-flash",
+      "region": "cn-beijing",
+      "input_per_million": "0.8",
+      "output_per_million": "2.7",
+      "complete_model_receipts": 107,
+      "unknown_model_attempts": 2,
+      "prompt_tokens": 161834,
+      "completion_tokens": 21374,
+      "known_receipt_subtotal_cny": "0.187177",
+      "entire_model_estimate_cny": null,
+      "actual_billed_cny": "UNKNOWN",
+      "tool_monetary_cost": "UNKNOWN",
+      "exclusions": "Incomplete windows, tools, cache discounts, credits and invoice adjustments are not inferred; UNKNOWN holds stay reserved"
+    },
+    "actual_billed_cny": "UNKNOWN",
+    "note": "Original authorization/call attempts; not every uncertain intent is proven sent. No invoice supplied."
+  },
+  "global_ledger_delta_usage": {
+    "call_attempts_by_kind": {
+      "model": 109,
+      "place": 17,
+      "route": 4,
+      "weather": 5
+    },
+    "complete_receipts": {
+      "model": 107,
+      "place": 17,
+      "route": 4,
+      "weather": 5
+    },
+    "unknown_intents": {
+      "model": 2
+    },
+    "model_tokens_from_complete_receipts": {
+      "prompt_tokens": 161834,
+      "completion_tokens": 21374,
+      "total_tokens": 183208
+    },
+    "token_unknown_model_attempt_n": 2,
+    "conservative_hold_cny": {
+      "model": 109,
+      "tool": 26
+    },
+    "token_price_estimate": {
+      "currency": "CNY",
+      "basis": "estimated_public_price_not_billed",
+      "source": "https://help.aliyun.com/zh/model-studio/qwen3-8-flash",
+      "source_as_of": "2026-11-05",
+      "model": "qwen3.8-flash",
+      "region": "cn-beijing",
+      "input_per_million": "0.8",
+      "output_per_million": "2.7",
+      "complete_model_receipts": 107,
+      "unknown_model_attempts": 2,
+      "prompt_tokens": 161834,
+      "completion_tokens": 21374,
+      "known_receipt_subtotal_cny": "0.187177",
+      "entire_model_estimate_cny": null,
+      "actual_billed_cny": "UNKNOWN",
+      "tool_monetary_cost": "UNKNOWN",
+      "exclusions": "Incomplete windows, tools, cache discounts, credits and invoice adjustments are not inferred; UNKNOWN holds stay reserved"
+    },
+    "actual_billed_cny": "UNKNOWN",
+    "note": "Original authorization/call attempts; not every uncertain intent is proven sent. No invoice supplied."
+  },
+  "unbound_new_attempts": [],
+  "authoritative_fees": "UNKNOWN",
+  "independent_human_review": "UNKNOWN"
+}

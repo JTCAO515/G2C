@@ -8,6 +8,9 @@ COPY pyproject.toml uv.lock ./
 COPY backend ./backend
 COPY scripts ./scripts
 COPY deploy ./deploy
+COPY eval/optimization/cases.v2.json eval/optimization/score_v2.py ./eval/optimization/
+COPY tooling/optimization/uv.lock ./tooling/optimization/uv.lock
+COPY knowledge/visitor/entries ./knowledge/visitor/entries
 RUN uv sync --locked --no-dev
 ENV PATH="/app/.venv/bin:$PATH" PYTHONPATH="/app:/app/scripts" PYTHONDONTWRITEBYTECODE=1
 RUN useradd --uid 10001 --create-home cj

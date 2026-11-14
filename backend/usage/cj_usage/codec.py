@@ -71,7 +71,7 @@ def decode(value):
         if attempts and clock is None:
             raise CorruptLedger('missing clock')
         return Ledger(cfg, attempts, runs, clock)
-    except (TypeError, ValueError, KeyError, OverflowError) as exc:
+    except (TypeError, ValueError, KeyError, OverflowError):
         raise CorruptLedger('invalid ledger') from None
     except Exception as exc:
         if isinstance(exc, CorruptLedger):

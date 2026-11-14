@@ -9,7 +9,7 @@ owner or scope from request data. Recovery rules (ADR-0003):
 - a delivery is acknowledged only after RUN holds a terminal status.
 """
 from dataclasses import dataclass
-from contextlib import contextmanager, ExitStack
+from contextlib import contextmanager, ExitStack, nullcontext
 import json
 
 # The worker must be ready (or fail startup) before accepting any work (#176).
@@ -25,7 +25,7 @@ from cj_memory.runtime import RuntimeDenied, RuntimeUnknown
 from cj_place.draft_source import PlaceSourceUnavailable
 
 from .draft import DRAFT_SYSTEM, DraftRejected
-from .provider import FakeProvider, ProviderFailed, ProviderUnknown
+from .provider import FakeProvider, MeteredDashScopeProvider, ProviderFailed, ProviderUnknown
 
 FLUSH_CHARS = 24
 _END = object()
@@ -102,7 +102,7 @@ class Outcome:
 
 
 class RunWorker:
-    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None, memory=None, message_context=None, tools=None, edit_publisher=None,edit_results=False,place_sources=None,memory_history=False,history_adapter=None):
+    def __init__(self, *, scope, messages, runs, provider, drafts=None, needs_lease=None, budget_exit=None, execution_guard=None, memory=None, message_context=None, tools=None, edit_publisher=None,edit_results=False,place_sources=None,memory_history=False,history_adapter=None,execution_lease=nullcontext,owned_transaction_lease=None,lio_original=None,lio_planning=None,lio_edit=None,lio_memory=None,runtime_reflection=None):
         """`messages`: cj_message.domain.Service and `runs`: cj_run.core.Service, both bound to `scope`.
 
         `drafts`: optional cj_agent.draft.DraftPublisher for this user's TRIP scope; messages
@@ -112,6 +112,8 @@ class RunWorker:
         self.needs_lease = needs_lease
         self.budget_exit = budget_exit
         self.execution_guard = execution_guard
+        self.execution_lease = execution_lease
+        self.owned_transaction_lease = owned_transaction_lease
         self.memory = memory
         self.memory_history=memory_history
         self.history_adapter=history_adapter
@@ -122,6 +124,13 @@ class RunWorker:
         self.edit_results=edit_results
         self.tools=tools
         self.place_sources=place_sources
+        self.lio_original = lio_original
+        self.lio_city_context = None
+        self.lio_planning = lio_planning
+        self.lio_edit = lio_edit
+        self.lio_memory = lio_memory
+        self._lio_active = False
+        self.runtime_reflection = runtime_reflection
 
     def process(self, limit=20):
         outcomes = []
@@ -130,7 +139,8 @@ class RunWorker:
             if receipt.conversation_id in blocked:
                 outcomes.append(Outcome(receipt.message_id, receipt.run_id, 'waiting'))
                 continue
-            outcome = self._one(receipt)
+            with self.execution_lease():
+                outcome = self._one(receipt)
             if outcome.status == 'waiting':
                 blocked.add(receipt.conversation_id)
             outcomes.append(outcome)
@@ -140,13 +150,14 @@ class RunWorker:
         return Binding(self.scope, receipt.conversation_id, receipt.generation,
                        receipt.message_id, receipt.run_id, receipt.sequence)
 
-    def _event(self, binding, state, kind, value=''):
+    def _event(self, binding, state, kind, value='', *, mutation=None):
         sequence = state.sequence + 1
         try:
             event = Event(binding, sequence, f'{binding.run_id}:{sequence}', kind, value)
-            memory_effect=self.memory_run is not None and kind in {'text_delta','completed','draft_outcome'}
+            memory_effect=self.memory_run is not None and (
+                mutation is not None or kind in {'text_delta','completed','draft_outcome'})
             travel_effect=self.message_context is not None and kind in {'started','text_delta','completed','effect_committed'}
-            if not memory_effect and not travel_effect:
+            if not memory_effect and not travel_effect and mutation is None:
                 return self.runs.apply(event)
             with ExitStack() as leases:
                 with self.runs.repository.transaction() as tx:
@@ -158,6 +169,7 @@ class RunWorker:
                         raise Conflict('state changed during memory publication')
                     if context is not None:context.check(binding)
                     if check_memory is not None:check_memory()
+                    if mutation is not None:mutation(tx.cur)
                     tx.put(updated)
             return updated
         except Conflict:
@@ -172,7 +184,7 @@ class RunWorker:
             raise _Stopped(state)
         return state
 
-    def _step(self, binding, invoke, effect=None, *, draft=False):
+    def _step(self, binding, invoke, effect=None, *, draft=False, publication_deadline=None):
         """Serialize this worker's actual step start/publication against cancellation.
 
         This does not enable Service.dispatch or create a new execution authority.
@@ -189,9 +201,10 @@ class RunWorker:
                         raise _Stopped(state)
                     if state.status != 'running':
                         raise Conflict('step requires original running state')
-                    deadline=(self.budget_exit.prepare_publication(binding)
-                              if self.message_context is not None and draft and effect is not None
-                              and self.budget_exit is not None else None)
+                    deadline = publication_deadline
+                    if (deadline is None and self.message_context is not None and draft and effect is not None
+                            and self.budget_exit is not None):
+                        deadline = self.budget_exit.prepare_publication(binding)
                     context=(leases.enter_context(self.message_context.hold_for_effect(binding,source_lock=effect is not None))
                              if self.message_context is not None else None)
                     if self.runs.valid(binding) is not True:
@@ -206,7 +219,7 @@ class RunWorker:
                     if draft and state.draft_outcome is not None:
                         raise Conflict('draft result already recorded before invocation')
                     check_needs=None
-                    if draft and effect is not None and (self.drafts.content_version=='structured.2' or self.place_sources is not None):
+                    if draft and effect is not None and (self.drafts.content_version in ('structured.2','structured.3') or self.place_sources is not None):
                         check_needs=leases.enter_context(self.drafts.hold_for_publication(binding))
                         check_needs()
                     elif draft and self.needs_lease is not None:
@@ -225,11 +238,12 @@ class RunWorker:
                     publication_started = effect is not None
                     if check_memory is not None and self.message_context is None:
                         check_memory()
-                    def final_check():
+                    def final_check(*, check_trip=None):
                         if context is not None:context.check(binding)
                         if check_memory is not None:check_memory()
                         if check_needs is not None:check_needs()
                         if draft and effect is not None and self.place_sources is not None:self.place_sources.check_data(binding)
+                        if check_trip is not None:check_trip()
                         if deadline is not None:deadline()
                     previous_check=self._publication_check
                     if self.message_context is not None and effect is not None:
@@ -252,27 +266,42 @@ class RunWorker:
             raise
         return state, result
 
-    def _stream(self, binding, messages, system=None):
+    def _stream(self, binding, messages, system=None, *, answer=False, grouped_input=None):
+        if grouped_input is not None:
+            messages,system=grouped_input.messages,grouped_input.system
         self._model_history(binding,messages,system)
+        draft = system is not None and not answer
         prepared = None
         if self.budget_exit is not None:
-            prepared = self.budget_exit.prepare(self.runs,binding,'draft' if system is not None else 'answer',
-                                                messages,system,self.provider)
+            if grouped_input is not None:
+                prepared=self.budget_exit.prepare_operation(self.runs,binding,'model.draft','model.draft',
+                    grouped_input,stage='draft')
+            else:
+                prepared = self.budget_exit.prepare(self.runs,binding,'draft' if draft else 'answer',
+                                                    messages,system,self.provider)
         def source():
             return (self.budget_exit.stream(prepared) if prepared is not None else
                     self.provider.stream(messages) if system is None else self.provider.stream(messages,system=system))
-        yield from self._stream_source(binding,source,draft=system is not None)
+        yield from self._stream_source(binding,source,draft=draft)
 
-    def _registered_stream(self,binding,key,registration,argument):
-        if self.memory_history and registration in ('model.answer','model.draft'):
-            messages,system,_=argument
-            self._model_history(binding,messages,system)
-        prepared=self.budget_exit.prepare_operation(self.runs,binding,key,registration,argument,stage='answer')
+    def _registered_stream(self,binding,key,registration,argument,*,progress=None,message_refs=()):
+        if self.memory_history and registration in ('model.answer','model.draft','model.lio_intake.1','model.lio_intake.2','model.lio_intake.3','model.lio_intake.4','model.lio_intake.5','model.lio_intake.6','model.lio_intake.7','model.lio_intake.8','model.lio_intake.9'):
+            if registration in ('model.lio_intake.3','model.lio_intake.4','model.lio_intake.5','model.lio_intake.6','model.lio_intake.7','model.lio_intake.8','model.lio_intake.9'):messages,system,_,_=argument
+            else:messages,system,_=argument
+            self._model_history(binding,messages,system,message_refs=message_refs)
+        options={'reserve_final_model':True} if self._lio_active and registration.startswith('tool.') else {}
+        prepared=self.budget_exit.prepare_operation(self.runs,binding,key,registration,argument,stage='answer',**options)
+        if progress is not None:
+            yield progress
         yield from self._stream_source(binding,lambda:self.budget_exit.stream(prepared),draft=False)
 
-    def _model_history(self,binding,messages,system):
+    def _model_history(self,binding,messages,system,*,message_refs=()):
         if self.memory_history and self.memory_run is not None:
-            self.memory_run=self.history_adapter.before_model(binding,self.memory_run,messages,system)
+            if message_refs:
+                self.memory_run=self.history_adapter.before_model(
+                    binding,self.memory_run,messages,system,message_refs=message_refs)
+            else:
+                self.memory_run=self.history_adapter.before_model(binding,self.memory_run,messages,system)
             # This proxy belongs to this original worker. Preserve its provider
             # and payload; only the actual C fence/reference union is enriched.
             self.provider.memory=self.memory_run
@@ -317,13 +346,24 @@ class RunWorker:
         try:
             messages = ([{'role': 'user', 'content': text}] if self.memory_run is None
                         else self.memory_run.messages(text))
+            planning_refs=()
+            if self._lio_active and self.lio_planning is not None:
+                messages,planning_refs=self.lio_planning.answer_context(binding,messages)
             sources=None
-            structured=self.drafts.content_version=='structured.2' or self.place_sources is not None
+            structured=self.drafts.content_version in ('structured.2','structured.3') or self.place_sources is not None
             if structured:
                 if self.message_context is None:raise DraftRejected('canonical original message context required')
                 _,sources=self._step(binding,lambda:self.drafts.sources_for(binding),draft=True)
                 messages=self.drafts.model_messages(binding,text,sources,messages)
-            reply = ''.join(self._stream(binding, messages, system=self.drafts.system if structured else DRAFT_SYSTEM))
+            grouped=None
+            original_provider=(self.provider.original if type(self.provider) in (_MemoryProvider,_EditMemoryProvider)
+                               else self.provider)
+            if structured and type(original_provider) is MeteredDashScopeProvider:
+                from cj_draft.grouped_plan import grouped_input
+                grouped=grouped_input(self.drafts,sources,messages,self.provider)
+            system=grouped.system if grouped is not None else self.drafts.system if structured else DRAFT_SYSTEM
+            if planning_refs:self._model_history(binding,messages,system,message_refs=planning_refs)
+            reply = ''.join(self._stream(binding,messages,system=system,**({'grouped_input':grouped}if grouped is not None else {})))
             if self.drafts.content_version == 'legacy':
                 def publish():
                     check=self._publication_check or (self.memory_run.check if self.memory_run is not None else None)
@@ -355,13 +395,17 @@ class RunWorker:
         if self.execution_guard is not None:
             self.execution_guard(binding)
         messages, runs, provider, drafts = self.messages, self.runs, self.provider, self.drafts
-        with runs.repository.worker_lease(binding) as check:
+        with runs.repository.worker_lease(binding) as check, ExitStack() as leases:
             if check is None:
                 return Outcome(receipt.message_id, receipt.run_id, 'waiting')
+            transaction = runs.repository.transaction
+            if self.owned_transaction_lease is not None:
+                transaction = leases.enter_context(self.owned_transaction_lease())
+
             class OwnedRepository:
                 @contextmanager
                 def transaction(self):
-                    with runs.repository.transaction() as tx:
+                    with transaction() as tx:
                         check()
                         yield tx
                         check()
@@ -371,6 +415,11 @@ class RunWorker:
                               memory=self.memory,memory_history=self.memory_history,history_adapter=self.history_adapter,
                               message_context=self.message_context,
                               tools=self.tools,edit_publisher=self.edit_publisher,edit_results=self.edit_results,place_sources=self.place_sources,
+                              lio_original=self.lio_original,
+                              lio_planning=self.lio_planning,
+                              lio_edit=self.lio_edit,
+                              lio_memory=self.lio_memory,
+                              runtime_reflection=self.runtime_reflection,
                               runs=Service(OwnedRepository(), runs.valid))
             if self.edit_publisher is not None:
                 with self.message_context.worker_repository(owned.runs.repository):
@@ -410,6 +459,9 @@ class RunWorker:
             raise
 
     def _execute(self, receipt, binding):
+        original = self.lio_original(binding) if self.lio_original is not None else None
+        locale = original.locale if original is not None else None
+        self._lio_active = original is not None
         state = self.runs.accept(binding)
         if self.budget_exit is not None:
             self.budget_exit = self.budget_exit.for_run(binding,state)
@@ -418,14 +470,23 @@ class RunWorker:
         if state.status == 'running':
             # Interrupted by a crash or restart: the provider may have billed or answered.
             return self._finish(receipt, self._event(binding, state, 'unknown'))
-        result_deadline=self.budget_exit.prepare_result_publication(self.runs,binding) if self.edit_results else None
+        lio_original = self.messages.query(receipt.message_id) if locale is not None and self.lio_edit else None
+        lio_replacement = lio_original is not None and self.lio_edit.matches(json.loads(lio_original.raw)['text'])
+        result_deadline = (self.budget_exit.prepare_result_publication(self.runs, binding)
+                           if self.edit_results or lio_replacement else None)
         try:
             state = self._event(binding, state, 'started')
         except Conflict:
             return Outcome(receipt.message_id, receipt.run_id, 'waiting')
-        stored = self.messages.query(receipt.message_id)
+        stored = lio_original if lio_original is not None else self.messages.query(receipt.message_id)
         command = json.loads(stored.raw)
         text = command['text']
+        if self.runtime_reflection is not None:
+            reflection=self.runtime_reflection(binding)
+            if reflection is not None:
+                if command['creation_intent']!='none':
+                    raise BudgetUnknown('reflection cannot carry a publication intent')
+                return self._reflect_runtime(receipt,binding,state,reflection)
         if self.memory is not None:
             self.memory_run = (self.history_adapter.capture(binding) if self.memory_history
                                else self.memory.capture(binding))
@@ -443,12 +504,34 @@ class RunWorker:
         proposal_id = None
         buffer = ''
         try:
+            from cj_message.lio_context import LioCitation, LioToolProgress, answer_prompt
+
+            if lio_replacement:
+                edited = self.lio_edit.execute(self, binding, state, stored, text, locale, result_deadline)
+                return self._finish(receipt, edited)
+            if locale is not None and self.lio_planning is not None:
+                planning = self.lio_planning.execute(self, binding, state, text, original)
+                if planning is not None:
+                    return self._finish(receipt, planning)
+                state=self.runs.snapshot(binding)
             inputs = ([{'role': 'user', 'content': text}] if self.memory_run is None
                       else self.memory_run.messages(text))
             if self.message_context is not None:
                 inputs=self.message_context.answer_messages(binding,inputs)
-            chunks=self._stream(binding,inputs) if self.tools is None else self.tools.answer(self,binding,inputs)
+            message_refs=()
+            if locale is not None and self.lio_planning is not None:
+                inputs,message_refs=self.lio_planning.answer_context(binding,inputs)
+            if locale is None:
+                chunks = self._stream(binding, inputs) if self.tools is None else self.tools.answer(self, binding, inputs)
+            elif self.tools is None:
+                chunks = self._stream(binding, inputs, system=answer_prompt(locale,question=text), answer=True)
+            else:
+                chunks = self.tools.answer(self, binding, inputs, lio_locale=locale, lio_question_day=original.question_day,**({'message_refs':message_refs} if message_refs else {}),
+                                           **({'lio_city':self.lio_city_context} if self.lio_city_context is not None else {}))
             for chunk in chunks:
+                if isinstance(chunk, (LioCitation, LioToolProgress)):
+                    state = self._event(binding, state, 'effect_committed', chunk.effect())
+                    continue
                 buffer += chunk
                 if len(buffer) >= FLUSH_CHARS:
                     state, buffer = self._event(binding, state, 'text_delta', buffer), ''
@@ -456,7 +539,11 @@ class RunWorker:
                 state = self._event(binding, state, 'text_delta', buffer)
             if self.drafts is not None and command['creation_intent'] == 'consider_trip':
                 state, proposal_id = self._draft(binding, state, text, stored)
+            publish_memory = (self.lio_memory.extract(self, binding)
+                              if locale is not None and self.lio_memory is not None else None)
             state = self._event(binding, state, 'completed')
+            if publish_memory is not None:
+                publish_memory()
         except BudgetExceeded:
             state = self._budget_rejection(binding,'answer')
         except ProviderFailed:
@@ -464,3 +551,18 @@ class RunWorker:
         except ProviderUnknown:
             state = self._event(binding, self.runs.snapshot(binding), 'unknown')
         return self._finish(receipt, state, proposal_id)
+
+    def _reflect_runtime(self,receipt,binding,state,payload):
+        """One original registered model operation; no planning/tools/Memory."""
+        try:
+            for chunk in self._registered_stream(binding,'model.runtime_reflection.0',
+                                                  'model.runtime_reflection.1',payload):
+                state=self._event(binding,state,'text_delta',chunk)
+            state=self._event(binding,state,'completed')
+        except BudgetExceeded:
+            state=self._budget_rejection(binding,'answer')
+        except ProviderFailed:
+            state=self._event(binding,self.runs.snapshot(binding),'failed')
+        except ProviderUnknown:
+            state=self._event(binding,self.runs.snapshot(binding),'unknown')
+        return self._finish(receipt,state)

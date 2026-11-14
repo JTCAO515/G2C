@@ -2,7 +2,7 @@
 from contextlib import contextmanager
 import inspect
 import threading
-from .domain import Command, CommitUnknown
+from .domain import Command, CommitUnknown, Conflict, Unavailable
 
 
 class OperationWithheld(Exception):
@@ -66,9 +66,12 @@ class OperationContext:
         from .typed import parse_manual
         command = parse_manual(raw)
         self._state['operation_id'] = command.operation_id
-        self._state['writing'] = True
+
+        def mark_write():
+            self._state['writing'] = True
+
         try:
-            return self._service.save_manual_typed(raw, authority, self._state['principal'])
+            return self._service.save_manual_typed(raw, authority, self._state['principal'], mark_write=mark_write)
         finally:
             self._state['writing'] = False
 
@@ -83,6 +86,50 @@ class OperationContext:
     def detail(self, item_id):
         self._check()
         return self._service.detail(item_id)
+
+    def project_titles(self, kind, argument, encode):
+        """Encode one source-current read under the existing guarded scope lock."""
+        self._check()
+        from .title_projection import derive_title
+
+        def eligible(tx, item):
+            if item.status != 'active':
+                return False
+            try:
+                return tx.source(item.command)
+            except Unavailable:
+                # The owner may still inspect the old item, but it cannot gain
+                # a derived label from an unavailable approval/source revision.
+                return False
+
+        previous = self._state.get('consumption_fence')
+        with self._service.repository.transaction() as tx:
+            epoch = tx.lock_scope()
+            if kind == 'detail':
+                value = tx.detail(argument)
+                items = [] if value is None else [value]
+            elif kind == 'list':
+                value = items = tx.list_items(*argument)
+            else:
+                raise ValueError('title projection is read-only')
+            current = [item for item in items if eligible(tx, item)]
+            titles = {item.command.item_id: derive_title(item.command) for item in current}
+
+            def fence(held):
+                if previous is not None:
+                    previous(held)
+                if held.lock_scope() != epoch:
+                    raise Conflict('memory title snapshot changed')
+                for item in current:
+                    if held.detail(item.command.item_id) != item or not eligible(held, item):
+                        raise Unavailable('memory title source changed before publication')
+
+            self._state['consumption_fence'] = fence
+            self._state['consuming'] = True
+            try:
+                return encode(value, titles)
+            finally:
+                self._state['consuming'] = False
 
     def apply_lifecycle(self, original_utf8):
         """Apply one trusted lifecycle action using the existing guarded transaction."""

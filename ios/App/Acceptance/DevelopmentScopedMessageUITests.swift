@@ -20,10 +20,15 @@ import UIKit
         let scoped_results:Bool?
         let largest_recovery:Bool?
         let map_points:[MapPoint]?
+        let device_language_phase:String?
+        let language_items:[LanguageItem]?
         let map_loading_failure:Bool?
         let device_host:String?
         let device_port:String?
         let amap:Bool?
+    }
+    private struct LanguageItem:Decodable {
+        let id, text, schedule: String
     }
     private struct MapPoint:Decodable {
         let id,provider_id,name_zh,state,snapshot_sha256:String
@@ -115,17 +120,27 @@ import UIKit
             if tabBar.exists && tabBar.isHittable { bottom=min(bottom,tabBar.frame.minY) }
             let header=app.otherElements.matching(identifier:"assistant.header").firstMatch
             let composer=app.otherElements.matching(identifier:"assistant.composer").firstMatch
-            if !navigation.exists && !["assistant.draft","assistant.send","assistant.intent"].contains(id) && header.exists && composer.exists {
+            if !navigation.exists && !["assistant.draft","assistant.send"].contains(id) && header.exists && composer.exists {
                 top=max(top,header.frame.maxY+8);bottom=min(bottom,composer.frame.minY)
             }
             let frame=element.exists ? element.frame : .zero
-            if id.hasPrefix("planning.") && attempt % 10 == 0 { print("PLANNING_VIEWPORT",id,frame,top,bottom,element.exists,navigation.exists) }
-            if element.exists && element.isHittable && frame.midY>top && frame.midY<bottom { return element }
+            if (id.hasPrefix("planning.") || id == "trip.manual.prepare" || id == "assistant.intent") && attempt % 10 == 0 { print("CONTROL_VIEWPORT",id,frame,top,bottom,element.exists,navigation.exists) }
+            let fits=frame.height<=bottom-top
+            let inViewport=fits ? frame.minY>=top && frame.maxY<=bottom : frame.midY>top && frame.midY<bottom
+            if element.exists && element.isHittable && inViewport { return element }
             let located = !frame.isEmpty && frame.minY.isFinite && frame.maxY.isFinite
-            let down=located ? frame.midY<=top : attempt>=35
+            let down=located ? (fits ? frame.minY<top : frame.midY<=top) : attempt>=35
             let middle=(top+bottom)/2,step=min(150,(bottom-top)*0.35)
-            let start=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:largestFont && !mapViewport ? app.frame.width*0.85 : app.frame.width-6,dy:middle+(down ? -step : step)))
-            let end=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:largestFont && !mapViewport ? app.frame.width*0.85 : app.frame.width-6,dy:middle+(down ? step : -step)))
+            #if G2C_M4_DEVICE_ACCEPTANCE
+            // Native multiline fields consume drags inside their content.
+            // Use the form's empty gutter to scroll the enclosing page.
+            let editableForm=id.hasPrefix("trip.manual.")
+            #else
+            let editableForm=false
+            #endif
+            let x=largestFont && !mapViewport && !editableForm ? app.frame.width*0.85 : app.frame.width-6
+            let start=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:x,dy:middle+(down ? -step : step)))
+            let end=app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:x,dy:middle+(down ? step : -step)))
             start.press(forDuration:0.05,thenDragTo:end)
         }
         capture("not-visible-"+id)
@@ -165,10 +180,15 @@ import UIKit
         XCTAssertEqual(issues,0)
     }
     private func launch(_ f:Fixture,language:String,large:Bool=false,restore:Bool=false,timezone:String?=nil) throws {
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        largestFont=UIApplication.shared.preferredContentSizeCategory.isAccessibilityCategory
+        #else
         largestFont=large
+        #endif
         app?.terminate();app=XCUIApplication(bundleIdentifier:bundle)
         app.launchArguments=["-cj.ui.language.v1",language]
-        if large { app.launchArguments += ["-UIPreferredContentSizeCategoryName","UICTContentSizeCategoryAccessibilityXXXL"] }
+        #if !G2C_M4_DEVICE_ACCEPTANCE
+        #endif
         app.launchEnvironment=["OS_ACTIVITY_MODE":"disable","G2C_DEV_ACCOUNT_MODE":"1","G2C_DEV_API_BASE_URL":f.endpoint,
             "G2C_DEV_ACCOUNTS":restore || f.device_host != nil ? "{}" : String(data:try JSONEncoder().encode(f.accounts),encoding:.utf8)!,"G2C_DEV_MESSAGE_PROFILE":"trip-edit-v1",
             "G2C_DEV_NEEDS_PROFILE":"manual-v1","G2C_DEV_NEEDS_ID":"visit",
@@ -178,6 +198,7 @@ import UIKit
         if let host=f.device_host {
             app.launchEnvironment["G2C_M4_LOCAL_HOST"]=host
             app.launchEnvironment["G2C_M4_LOCAL_PORT"]=try XCTUnwrap(f.device_port)
+            app.launchEnvironment["G2C_M4_LOCAL_EXTRA_PORTS"]="[]"
             app.launchEnvironment["G2C_DEV_ACCOUNTS"]="{}"
             if !restore { app.launchEnvironment["G2C_M4_ACCOUNTS_FILE"]="G2CM4DeviceAccounts.json" }
         }
@@ -226,13 +247,64 @@ import UIKit
             return multiline.exists ? multiline : app.textFields.matching(identifier:id).firstMatch
         }
         let field=visible({input()},id:id)
-        XCTAssertTrue(field.isEnabled && field.isHittable);field.tap();field.press(forDuration:1.1)
+        XCTAssertTrue(field.isEnabled && field.isHittable);field.tap()
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        field.coordinate(withNormalizedOffset:CGVector(dx:0.95,dy:0.95)).tap()
+        M4DeviceTestSession.clearFocusedTextWithKeyboard(field)
+        #else
+        field.press(forDuration:1.1)
         let selection=app.descendants(matching:.any).matching(NSPredicate(format:"label IN %@",["Select All","全选"])).firstMatch
-        XCTAssertTrue(selection.waitForExistence(timeout:5));selection.tap();field.typeText(value)
+        XCTAssertTrue(selection.waitForExistence(timeout:5));selection.tap()
+        #endif
+        field.typeText(value)
         XCTAssertEqual(input().value as? String,value);tap("trip.manual.keyboard.done")
     }
     func testFormalPlaceMapEnglish() async throws { try await formalPlaceMap("testFormalPlaceMapEnglish",large:false) }
     func testFormalPlaceMapChineseLargest() async throws { try await formalPlaceMap("testFormalPlaceMapChineseLargest",large:true) }
+    func testFormalPlaceMapNonGCJ() async throws { try await formalPlaceMap("testFormalPlaceMapNonGCJ",large:false) }
+    #if G2C_M4_DEVICE_ACCEPTANCE
+    func testFormalPlaceMapDeviceLanguage() async throws {
+        let name = "testFormalPlaceMapDeviceLanguage"
+        let fixture = try await prepare(name)
+        let phase = try XCTUnwrap(fixture.device_language_phase)
+        let order = Locale.preferredLanguages
+        let primary = try XCTUnwrap(order.first)
+        XCTAssertEqual(order.count, 2)
+        XCTAssertTrue(primary.hasPrefix(phase == "zh" ? "zh" : "en"))
+        XCTAssertTrue(order[1].hasPrefix(phase == "zh" ? "en" : "zh"))
+        print("M4_LANGUAGE_ORDER", order.joined(separator: ","))
+        if phase == "restore-en" { return }
+        XCTAssertEqual(UIApplication.shared.preferredContentSizeCategory, .large)
+        let trip = try XCTUnwrap(fixture.formal_trips.first)
+        let points = try XCTUnwrap(fixture.map_points)
+        let items = try XCTUnwrap(fixture.language_items)
+        XCTAssertEqual(items.map(\.id), trip.item_ids)
+        XCTAssertEqual(points.count, 1)
+        XCTAssertTrue(items.contains { $0.text.contains("Booking not confirmed; travel time unknown.") })
+        defer { app?.terminate() }
+        mapViewport = true
+        try launch(fixture, language: "en", restore: phase == "zh")
+        tap("Trips")
+        tap("trips.timeline.open")
+        tap("timeline.refresh")
+        tap("timeline.trip." + trip.id)
+        text("timeline.record.id", contains: trip.id)
+        text("timeline.record.version", contains: String(trip.version))
+        text("timeline.record.title", contains: trip.title)
+        for point in points {
+            text("trip.map.identity." + point.id, contains: point.provider_id)
+            text("trip.map.name." + point.id, contains: point.name_zh)
+            text("trip.map.address." + point.id, contains: try XCTUnwrap(point.address_zh))
+        }
+        for item in items {
+            text("timeline.item." + item.id, contains: item.id + "\n" + item.text)
+            text("timeline.schedule." + item.id, contains: item.schedule)
+        }
+        _ = try await call("/map-source-proof", caseID: name)
+        capture(name + "-" + phase)
+        try audit(name + "-" + phase)
+    }
+    #endif
     func testFormalPlaceMapMissing() async throws { try await formalPlaceMap("testFormalPlaceMapMissing",large:false) }
     func testFormalPlaceMapUnavailable() async throws { try await formalPlaceMap("testFormalPlaceMapUnavailable",large:false) }
     func testFormalPlaceMapLateAccount() async throws {
@@ -263,12 +335,13 @@ import UIKit
                 text("trip.map.identity."+point.id,contains:point.provider_id)
                 text("trip.map.name."+point.id,contains:point.name_zh)
                 text("trip.map.address."+point.id,contains:point.address_zh ?? "UNKNOWN")
-                text("trip.map.coordinate."+point.id,contains:point.coordinate?.raw ?? "UNKNOWN")
+                text("trip.map.coordinate."+point.id,contains:point.coordinate.map { $0.raw + " · " + $0.crs } ?? "UNKNOWN")
             }
-            let located=points.filter { $0.coordinate != nil }
+            let located=points.filter { $0.coordinate?.crs == "GCJ-02" }
             if located.isEmpty {
                 XCTAssertFalse(app.buttons.matching(identifier:"trip.map.show").firstMatch.exists)
                 XCTAssertFalse(app.descendants(matching:.any).matching(identifier:"trip.map.canvas").firstMatch.exists)
+                XCTAssertEqual(app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@","trip.map.marker.")).count,0)
                 for point in points { text("trip.map.status."+point.id,contains:language=="en" ? "no marker" : "不画点") }
             } else {
                 tap("trip.map.show")
@@ -643,12 +716,29 @@ import UIKit
         try launch(f,language:"en");conversation(f)
         tap("assistant.travelContext");tap("travel.selection."+f.namespace);tap("assistant.panel.done")
         func setPlanningIntent(_ enabled:Bool) {
-            let toggle=visible({app.switches.matching(identifier:"assistant.intent").firstMatch},id:"assistant.intent")
+            let named=visible({app.switches.matching(identifier:"assistant.intent").firstMatch},id:"assistant.intent")
+            #if G2C_M4_DEVICE_ACCEPTANCE
+            let controls=named.switches
+            print("M4_PLANNING_SWITCH",named.frame,named.value as Any,"children",controls.count)
+            XCTAssertEqual(controls.count,1,"The named intent row must contain its actual switch")
+            let toggle=controls.element(boundBy:0)
+            #else
+            let toggle=named
+            #endif
             XCTAssertTrue(toggle.isEnabled && toggle.isHittable)
             XCTAssertEqual(toggle.value as? String,enabled ? "0" : "1")
+            #if G2C_M4_DEVICE_ACCEPTANCE
+            toggle.tap()
+            #else
             toggle.coordinate(withNormalizedOffset:CGVector(dx:0.95,dy:0.5)).tap()
+            #endif
             let changed=XCTNSPredicateExpectation(predicate:NSPredicate(format:"value == %@",enabled ? "1" : "0"),object:toggle)
-            XCTAssertEqual(XCTWaiter.wait(for:[changed],timeout:5),.completed)
+            let outcome=XCTWaiter.wait(for:[changed],timeout:5)
+            if outcome != .completed {
+                capture("planning-switch-not-changed")
+                let tree=XCTAttachment(string:app.debugDescription);tree.name="planning-switch-tree";tree.lifetime = .keepAlways;add(tree)
+            }
+            XCTAssertEqual(outcome,.completed)
         }
         setPlanningIntent(true)
         enter("SYNTHETIC Plan using my explicit saved requirements / 使用已保存需求",language:"en")
@@ -667,10 +757,12 @@ import UIKit
         XCTAssertFalse(app.buttons.matching(identifier:"scoped.accept").firstMatch.exists)
         capture(name+"-original-planning-run");try audit(name+"-published")
         tap("Memory")
-        for _ in 0..<3 {
-            if app.buttons.matching(identifier:"memory.language").firstMatch.exists { break }
-            let back=app.navigationBars.buttons.firstMatch;XCTAssertTrue(back.exists);back.tap()
+        let accountPage=app.navigationBars.matching(identifier:"Account").firstMatch
+        if accountPage.waitForExistence(timeout:2) {
+            XCTAssertEqual(accountPage.buttons.count,1,"The account navigation bar has one back control")
+            accountPage.buttons.element(boundBy:0).tap()
         }
+        XCTAssertTrue(app.navigationBars.matching(identifier:"Memory").firstMatch.waitForExistence(timeout:10))
         tap("memory.language");tap("简体中文");tap("助手")
         text("run.display.status",contains:"已完成");text("run.draft.status",contains:"已记录草稿候选，尚非正式行程")
         _ = try await call("/manual-save-proof",caseID:name)
@@ -734,6 +826,7 @@ import UIKit
             tap("planning.originals")
             let query=visible({app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@","planning.query.")).firstMatch},id:"planning.original.query")
             XCTAssertTrue(query.isEnabled && query.isHittable);query.tap()
+            capture(name+"-original-query-dispatched")
             if let invalidation {
                 text("planning.activity",contains:invalidation=="compete" ? "Conflict" : "UNKNOWN")
                 XCTAssertFalse(textElement("planning.receipt").exists)

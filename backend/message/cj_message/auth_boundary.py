@@ -43,6 +43,7 @@ class HistoryReadContext:
         self._admission_guard = _guard
         self._active = True
         self._thread = threading.current_thread()
+        self._lio_projection_tx = None
 
     def _check(self):
         if (not self._active or threading.current_thread() is not self._thread
@@ -92,6 +93,61 @@ class HistoryReadContext:
         self._check()
         return result
 
+    def with_lio_timeline_projection(self, operation):
+        """One canonical M lock, same transaction, synchronous read projection.
+
+        This is not a processing/source permit or a cross-request cache. The
+        existing guarded repository checks canonical AUTH at entry and commit;
+        the enclosing history callback also checks immediately before return.
+        """
+        self._check()
+        if self._lio_projection_tx is not None:
+            raise RuntimeError('nested Lio projection unavailable')
+        with self._service.repository.transaction() as tx:
+            tx.lock_scope()
+            self._lio_projection_tx = tx
+            try:
+                result = operation()
+                self._check()
+                return result
+            finally:
+                self._lio_projection_tx = None
+
+    def lio_timeline(self, conversation_id, before, *, multiple=False):
+        from .lio_timeline import read
+        self._check()
+        if self._lio_projection_tx is None:
+            result = read(self._service, conversation_id, before, multiple=multiple)
+        else:
+            from .lio_timeline import read_in_transaction
+            self._admission_guard('lio_projection_page')
+            result = read_in_transaction(self._lio_projection_tx, conversation_id, before, multiple=multiple)
+            self._admission_guard('lio_projection_page_return')
+        self._check()
+        return result
+
+    def query_lio_message(self, message_id):
+        from .demo_dialogue import message_id as validated_message_id
+        from .lio_timeline import original
+        self._check()
+        mid = validated_message_id(message_id)
+        if self._lio_projection_tx is None:
+            result = original(self._service, mid)
+        else:
+            from .lio_timeline import original_in_transaction
+            self._admission_guard('lio_projection_original')
+            result = original_in_transaction(self._lio_projection_tx, mid)
+            self._admission_guard('lio_projection_original_return')
+        self._check()
+        return result
+
+    def query_lio_receipt(self, message_id):
+        from .demo_dialogue import query
+        self._check()
+        result = query(self._service, message_id, lio=True)
+        self._check()
+        return result
+
     def query_edit_message(self,message_id,*,require_active=True):
         self._check()
         if type(message_id) is not str or not message_id.strip():raise InvalidInput('message ID required')
@@ -128,7 +184,13 @@ class HistoryReadContext:
 
     def send_status(self, conversation_id, message_id=None):
         self._check()
-        result = self._service.send_status(conversation_id, message_id)
+        if self._lio_projection_tx is None:
+            result = self._service.send_status(conversation_id, message_id)
+        else:
+            self._admission_guard('lio_projection_status')
+            result = self._service._send_status(conversation_id, message_id, travel=False,
+                                               transaction=self._lio_projection_tx)
+            self._admission_guard('lio_projection_status_return')
         self._check()
         if result.stored is not None:
             stored = result.stored
@@ -160,6 +222,8 @@ class HistoryReadContext:
     def with_enabled_source(self, query, policy, project):
         from .source import with_source
         self._check()
+        if self._lio_projection_tx is not None:
+            raise RuntimeError('Lio projection is not a source processing permit')
         result = with_source(self._service, self._principal, query, policy, project)
         self._check()
         return result
@@ -190,6 +254,8 @@ class HistoryReadContext:
             self._check()
             self._admission_guard('current_source_lease')
             return self._principal
+        if self._lio_projection_tx is not None:
+            raise RuntimeError('Lio projection is not a source processing permit')
         result=with_source_and_travel(self._service,self._principal,query,policy,selection,admit,project)
         self._check()
         return result
@@ -202,13 +268,15 @@ class Boundary:
     verified TrustedPrincipal to a repository scoped to that identity/environment.
     Caller bodies cannot supply a repository, scope or principal.
     """
-    def __init__(self, checker, resolve_repository, new_run_id, *, resolve_travel_repository=None):
+    def __init__(self, checker, resolve_repository, new_run_id, *, resolve_travel_repository=None,
+                 checker_in_transaction=None):
         if INTERFACE_VERSION != EXPECTED_AUTH or not isinstance(checker, AdmissionChecker):
             raise ValueError('fixed AUTH interface required')
         self.checker = checker
         self.resolve_repository = resolve_repository
         self.new_run_id = new_run_id
         self.resolve_travel_repository = resolve_travel_repository
+        self.checker_in_transaction = checker_in_transaction
 
     def _bind(self, token, *, travel=False):
         first = self.checker.check(token)
@@ -222,13 +290,19 @@ class Boundary:
         repository = resolver(first.principal)
         bound_scope = repository.scope
 
-        def guard(stage):
-            current = self.checker.check(token)
+        def check(stage, tx):
+            checker = self.checker
+            if tx is not None and self.checker_in_transaction is not None:
+                checker = self.checker_in_transaction(tx, bound_scope)
+            current = checker.check(token)
             if current.status is not AdmissionStatus.ALLOWED:
                 raise AccessBlocked(current, stage)
             if current.principal != first.principal or repository.scope != bound_scope:
                 # Do not accept an identity replacement even if it independently passes.
                 raise IdentityChanged(stage)
+
+        def guard(stage):
+            check(stage, None)
 
         class GuardedRepository:
             scope = bound_scope
@@ -236,9 +310,9 @@ class Boundary:
             @contextmanager
             def transaction(self):
                 with repository.transaction() as tx:
-                    guard('transaction')
+                    check('transaction', tx)
                     yield tx
-                    guard('commit')
+                    check('commit', tx)
                 guard('return')
 
         return Service(GuardedRepository(), self.new_run_id), first.principal, bound_scope, guard
@@ -305,6 +379,21 @@ class Boundary:
 
     def receive_v2(self, token, raw):
         return self._service(token).receive_v2(raw)
+
+    def receive_dialogue(self, token, raw):
+        from .demo_dialogue import receive
+        return receive(self._service(token), raw)
+
+    def receive_lio(self, token, raw, *, prepare_scope, version):
+        from .demo_dialogue import receive_lio
+        return receive_lio(self._service(token), raw, prepare_scope=prepare_scope, version=version)
+
+    def query_dialogue(self, token, message_id):
+        from .demo_dialogue import query
+        return query(self._service(token), message_id)
+
+    def query_lio(self, token, message_id):
+        return self.with_history_context(token, lambda context: context.query_lio_receipt(message_id))
 
     def send_status_v2(self, token, conversation_id, message_id=None):
         return self._service(token).send_status_v2(conversation_id,message_id)

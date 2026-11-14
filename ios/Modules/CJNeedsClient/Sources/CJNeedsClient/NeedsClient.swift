@@ -41,14 +41,16 @@ public typealias NeedsCredentialCallback = @MainActor (NeedsBinding) async throw
         session = nil; sessionOperation = nil; store = pendingStore
         transport = interceptedTransport; testWrites = true; acceptsUserActions = manualWritesAvailable; localTimeouts = nil
     }
-    #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
     /// Explicit CJ-LOCAL-NEEDS@1 manual-v1 capability. Ordinary and Release
     /// construction retains its read-only path and original session fences.
     public init(localEndpoint endpoint: NeedsEndpoint, credentials: @escaping NeedsCredentialCallback,
                 currentBinding: @escaping @MainActor () -> NeedsBinding?, session: SessionLifecycle,
                 sessionOperation: SessionOperation, pendingStore: NeedsPendingStore,
                 requestTimeout: TimeInterval, resourceTimeout: TimeInterval) throws {
-        guard endpoint.allowsDevelopmentActivation,
+        #if !(DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE)))
+        guard endpoint.allowsDemoBetaActivation else { throw NeedsFailure.unconfigured }
+        #endif
+        guard endpoint.allowsDevelopmentActivation || endpoint.allowsDemoBetaActivation,
               endpoint.maximumRequestBytes <= 131072, endpoint.maximumResponseBytes <= 1048576 else {
             throw NeedsFailure.unconfigured
         }
@@ -57,7 +59,6 @@ public typealias NeedsCredentialCallback = @MainActor (NeedsBinding) async throw
         transport = try NoRedirectTransport(requestTimeout: requestTimeout, resourceTimeout: resourceTimeout)
         localTimeouts = (requestTimeout, resourceTimeout); testWrites = true; acceptsUserActions = true
     }
-    #endif
     public func invalidate() { generation = UUID(); started = nil; confirmed.removeAll() }
     func retireWork() { generation = UUID(); started = nil }
     private var sessionIsCurrent: Bool {

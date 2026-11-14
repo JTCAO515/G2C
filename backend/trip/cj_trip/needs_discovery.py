@@ -10,6 +10,8 @@ class NeedsDiscovery:
     content_versions=('structured.2',)
     def __init__(self,actions):self.actions=actions
 
+    def _published(self,value,capture):return value
+
     def read(self,repository,query,encode):
         actions=self.actions;owner=actions.owner;database=actions.database
         with database.message_repository(owner).transaction() as tx:
@@ -70,9 +72,10 @@ class NeedsDiscovery:
                 profile,context=actions.planning_context(cur,repository,pid,retained)
                 identity=None if context is None else dict(trip_id=context[0],version=context[1],content_sha256=sha256(context[2]).hexdigest())
                 check();repository.guard('needs_discovery')
-                encoded=encode(dict(state='published',reference=reference,run_status=state.status,draft_outcome=None,
+                value=dict(state='published',reference=reference,run_status=state.status,draft_outcome=None,
                     needs_reference=dict(id=retained['needs_id'],expected_version=retained['revision']),source_profile=profile,
-                    planning_context=identity,proposal=detail))
+                    planning_context=identity,proposal=detail)
+                encoded=encode(self._published(value,capture))
                 check();repository.guard('needs_discovery')
                 return encoded
 
@@ -80,3 +83,10 @@ class NeedsDiscovery:
 class PlaceNeedsDiscovery(NeedsDiscovery):
     """Explicit appended reader; the old discovery keeps its format gate."""
     content_versions=('structured.1','structured.2')
+
+
+class DemoNeedsDiscovery(PlaceNeedsDiscovery):
+    """Server-only card facts on the original protected discovery lifetime."""
+    def _published(self,value,capture):
+        from .demo_candidate_days import candidate_days
+        return dict(value,days=candidate_days(value['proposal'].proposal,capture))

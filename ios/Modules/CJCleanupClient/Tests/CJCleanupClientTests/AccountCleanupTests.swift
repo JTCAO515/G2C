@@ -159,6 +159,24 @@ private struct AccountIntercept: ClientTransport {
 }
 
 @MainActor struct AccountCleanupTests {
+    @Test func ordinaryCredentialRenewalPreservesPreparationAndStopsAtUnknownConfirmation() async throws {
+        let h = try AccountHarness(), prepared = try await h.prepare()
+        let original = h.secure.bytes
+        h.client = try h.ordinary()
+        #expect(try h.client.permitsOrdinaryCredentialRenewal)
+        #expect(h.secure.bytes == original)
+        let confirmation = try h.confirmation(prepared)
+        #expect(try h.client.permitsOrdinaryCredentialRenewal)
+        h.server.loseConfirmationACK = true
+        await #expect(throws: CleanupFailure.exchangeUnknown) {
+            try await h.client.perform(confirmation)
+        }
+        h.client = try h.ordinary()
+        #expect(try !h.client.permitsOrdinaryCredentialRenewal)
+        #expect(h.server.requests.filter { $0.operation == "prepareAccountCleanupV1" }.count == 1)
+        #expect(h.server.requests.filter { $0.operation == "confirmAccountCleanupV1" }.count == 1)
+    }
+
     @Test func preparedOriginalGETPreservesConfirmationAcrossReconstruction() async throws {
         let h = try AccountHarness(), prepared = try await h.prepare()
         let preparationBytes = try h.secure.record().preparation

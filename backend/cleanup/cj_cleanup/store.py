@@ -5,7 +5,7 @@ import psycopg
 from psycopg.pq import TransactionStatus
 
 from .core import Conflict, Denied, Invalid, encode, hash_value, identifier, digest
-from .hooks import HookRequest, HookReceipt, make_receipt
+from .hooks import HookRequest
 from . import hooks, hooks_v1_1
 from cj_strict_json import reject_duplicates
 from .registry import freeze,freeze_controls
@@ -117,8 +117,9 @@ def require_intent(cursor,request:HookRequest) -> None:
 
 
 class Store:
-    def __init__(self, connect, subject_digest: str, guard):
+    def __init__(self, connect, subject_digest: str, guard, *, before_transaction=None):
         self.connect,self.subject_digest,self.guard=connect,hash_value(subject_digest),guard
+        self.before_transaction=before_transaction
 
     @contextmanager
     def transaction(self, operation_id, *, writing=True):
@@ -141,6 +142,7 @@ class Store:
                 raise Unavailable('fresh cleanup connection required')
             with conn.cursor() as cur:
                 if snapshot:cur.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY')
+                if self.before_transaction is not None:self.before_transaction(cur)
                 cur.execute('SELECT current_user')
                 if cur.fetchone()!=('cj_local_cleanup',):raise Denied('dedicated cleanup role required')
                 cur.execute("SELECT set_config('cj.cleanup_subject',%s,true),set_config('cj.cleanup_operation',%s,true)",

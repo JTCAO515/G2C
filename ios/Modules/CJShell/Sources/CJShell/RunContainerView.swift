@@ -28,12 +28,12 @@ struct RunContainerView: View {
     }
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            RunReadableText(text:language.text("Original run", "原运行"),style:.headline).accessibilityAddTraits(.isHeader)
+            ShellCardHeading(title: language.text("Original run", "原运行"), symbol: "text.bubble")
             if let model = host.displayModel {
                 Button { _ = host.selectAcceptedMessage(from:messages) } label: {
-                    RunReadableText(text:language.text("Use selected accepted message", "使用已选中的已接受消息"))
-                        .frame(maxWidth:.infinity,minHeight:44,alignment:.leading).contentShape(Rectangle())
-                }.disabled(model.cancellationState == .stopping).accessibilityIdentifier("run.selectOriginal")
+                    ShellActionLabel(title: language.text("Use selected accepted message", "使用已选中的已接受消息"),
+                                     symbol: "checkmark.bubble")
+                }.buttonStyle(ShellActionButtonStyle()).disabled(model.cancellationState == .stopping).accessibilityIdentifier("run.selectOriginal")
                 if host.sourceUnavailable {
                     Text(language.text("No current accepted message receipt is available. Select an original message in recovery first.", "没有可用的当前已接受消息回执，请先在恢复列表中选择原消息。"))
                         .font(.footnote)
@@ -43,9 +43,8 @@ struct RunContainerView: View {
                             guard let id = host.originalPresentationID else { return }
                             factPanel = FactPanel(id:id)
                         } label: {
-                            RunReadableText(text:language.text("Read complete sources", "读取完整来源"))
-                                .frame(maxWidth:.infinity,minHeight:44,alignment:.leading).contentShape(Rectangle())
-                        }.buttonStyle(ShellReadableButtonStyle()).accessibilityIdentifier("fact.sources.open")
+                            ShellActionLabel(title: language.text("Read complete sources", "读取完整来源"), symbol: "doc.on.doc")
+                        }.buttonStyle(ShellActionButtonStyle()).accessibilityIdentifier("fact.sources.open")
                 }
                 // Public view prepares opaque original read work synchronously before Task.
                 RunDisplayView(model:model,language:language == .english ? .english : .chinese,showAnswerText:host.answerFormat == .plainText && !host.hidesScopedEditReply)
@@ -71,9 +70,9 @@ struct RunContainerView: View {
                     case .unavailable: RunReadableText(text: language.text("Requirements preview unavailable. Read the original run.", "需求预览不可用，请读取原运行。"))
                     case .loaded:
                         Button(action: openNeeds) {
-                            RunReadableText(text: language.text("Review unconfirmed requirements", "审阅未确认的需求"))
-                                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
-                        }.buttonStyle(ShellReadableButtonStyle()).accessibilityIdentifier("needs.preview.open")
+                            ShellActionLabel(title: language.text("Review unconfirmed requirements", "审阅未确认的需求"),
+                                             symbol: "list.bullet.rectangle")
+                        }.buttonStyle(ShellActionButtonStyle()).accessibilityIdentifier("needs.preview.open")
                     }
                 }
                 if host.isSynthetic { Text(language.text("Synthetic test data", "合成测试数据")).font(.caption) }

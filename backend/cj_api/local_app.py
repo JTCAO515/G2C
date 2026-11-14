@@ -8,6 +8,8 @@ Real email OTP (Supabase) replaces the local key in P2c.
 from datetime import datetime, timedelta, timezone
 from dataclasses import dataclass
 from collections.abc import Mapping
+from contextlib import contextmanager
+from functools import partial
 import json
 import os
 import re
@@ -15,6 +17,7 @@ from pathlib import Path
 import tempfile
 import stat
 import time
+from types import SimpleNamespace
 import uuid
 
 import psycopg
@@ -48,6 +51,30 @@ def scope_for(issuer, subject):
     return f'local:{issuer}:{subject}'
 
 
+def trip_resolver(database, *, provision=False):
+    """TRIP boundary resolver: the principal's own connection and derived Trip scope.
+
+    provision registers the Trip scope first (existing host provisioning only;
+    no formal record or Proposal is created).
+    """
+    def resolve(principal):
+        owner = scope_for(principal.issuer, principal.subject)
+        scope = trip_scope_for(owner)
+        if provision:
+            with database.connect(owner) as conn:
+                conn.execute('INSERT INTO cj_trip_scope(scope) VALUES(%s) ON CONFLICT DO NOTHING', (scope,))
+        return lambda: database.connect(owner), scope
+    return resolve
+
+
+def needs_lease_resolver(database):
+    """NEEDS revision lease resolver: connection, owner scope and derived NEEDS scope."""
+    def resolve(principal):
+        owner = scope_for(principal.issuer, principal.subject)
+        return lambda: database.connect(owner), owner, needs_scope_for(owner)
+    return resolve
+
+
 def _require_unbound(cursor):
     """Reject any M1 authority GUC; never overwrite retained session authority."""
     cursor.execute("SELECT current_setting('cj.message_scope',true), current_setting('cj.trip_scope',true), "
@@ -58,6 +85,15 @@ def _require_unbound(cursor):
         raise CompositionUnavailable('database scope already present')
 
 
+def _require_runtime_role(executor):
+    role = executor.execute("SELECT rolsuper,rolbypassrls,rolcreatedb,rolcreaterole,rolreplication,"
+                            "EXISTS(SELECT 1 FROM pg_auth_members WHERE member=r.oid),"
+                            "EXISTS(SELECT 1 FROM pg_class WHERE relowner=r.oid) "
+                            "FROM pg_roles r WHERE rolname=current_user").fetchone()
+    if role != (False, False, False, False, False, False, False):
+        raise CompositionUnavailable('unsafe local runtime database role')
+
+
 class _ScopedConnection:
     """IDLE DB-API connection with an explicit transaction-entry binding hook.
 
@@ -65,10 +101,11 @@ class _ScopedConnection:
     before reading data. Direct host `with` consumers use the same hook here.
     Plain execute/cursor calls never silently rebind after commit or rollback.
     """
-    def __init__(self, connection, scope, *, needs_scope=None, usage_scope=None,edit_results=False):
+    def __init__(self, connection, scope, *, needs_scope=None, usage_scope=None,edit_results=False,before_scope=None):
         self._connection, self._scope = connection, scope
         self._needs_scope, self._usage_scope = needs_scope, usage_scope
         self._edit_results=edit_results
+        self._before_scope=before_scope
 
     def __getattr__(self, name):
         return getattr(self._connection, name)
@@ -78,22 +115,25 @@ class _ScopedConnection:
             if self._connection.info.transaction_status != TransactionStatus.INTRANS:
                 raise CompositionUnavailable('active transaction required for scope binding')
             _require_unbound(cursor)
-            cursor.execute("SELECT set_config('cj.message_scope',%s,true), set_config('cj.trip_scope',%s,true)",
-                           (self._scope, trip_scope_for(self._scope)))
-            cursor.execute("SELECT set_config('cj.message_context_abi',%s,true)",(TRAVEL_ABI,))
+            if self._before_scope is not None:self._before_scope(cursor)
             from cj_message.trip_context import ABI
-            cursor.execute("SELECT set_config('cj.message_trip_abi',%s,true)",(ABI,))
             from cj_message.edit_protocol import EDIT_ABI
-            cursor.execute("SELECT set_config('cj.message_edit_abi',%s,true)",(EDIT_ABI,))
+            settings = [
+                ('cj.message_scope', self._scope),
+                ('cj.trip_scope', trip_scope_for(self._scope)),
+                ('cj.message_context_abi', TRAVEL_ABI),
+                ('cj.message_trip_abi', ABI),
+                ('cj.message_edit_abi', EDIT_ABI),
+            ]
             if self._edit_results:
                 from cj_message.edit_result_protocol import CONFIGURATION_ABI
-                cursor.execute("SELECT set_config('cj.message_edit_result_abi',%s,true)",(CONFIGURATION_ABI,))
+                settings.append(('cj.message_edit_result_abi', CONFIGURATION_ABI))
             if self._needs_scope is not None:
-                if self._usage_scope is None:
-                    cursor.execute("SELECT set_config('cj.needs_scope',%s,true)",(self._needs_scope,))
-                else:
-                    cursor.execute("SELECT set_config('cj.needs_scope',%s,true), set_config('cj.usage_scope',%s,true)",
-                                   (self._needs_scope,self._usage_scope))
+                settings.append(('cj.needs_scope', self._needs_scope))
+                if self._usage_scope is not None:
+                    settings.append(('cj.usage_scope', self._usage_scope))
+            cursor.execute('SELECT ' + ', '.join('set_config(%s,%s,true)' for _ in settings),
+                           tuple(value for setting in settings for value in setting))
         except BaseException:
             self._connection.close()
             raise
@@ -181,8 +221,14 @@ class LocalDatabase:
             raise CompositionUnavailable('explicit NEEDS capability required')
         self.needs_context=needs_context
 
+    def _before_scope(self,cursor):
+        pass
+
     def _open_runtime_connection(self):
         return psycopg.connect(**self.conninfo,autocommit=True)
+
+    def _open_dedicated_runtime_connection(self):
+        return self._open_runtime_connection()
 
     @property
     def edit_results(self):
@@ -196,33 +242,28 @@ class LocalDatabase:
         if passfile is not None:
             passfile.close()
 
-    def connect(self, scope, *, usage_profile=None):
+    def connect(self, scope, *, usage_profile=None, dedicated=False):
         if type(scope) is not str or not scope.startswith('local:' + ISSUER + ':') or not scope.removeprefix('local:' + ISSUER + ':'):
             raise CompositionUnavailable('verified local scope required')
-        conn = self._open_runtime_connection()
+        conn = self._open_dedicated_runtime_connection() if dedicated else self._open_runtime_connection()
         try:
             if conn.closed or conn.info.transaction_status != TransactionStatus.IDLE or conn.autocommit is not True:
                 raise CompositionUnavailable('fresh idle runtime connection required')
             with conn.cursor() as cursor:
                 _require_unbound(cursor)
-            role = conn.execute("SELECT rolsuper,rolbypassrls,rolcreatedb,rolcreaterole,rolreplication,"
-                                "EXISTS(SELECT 1 FROM pg_auth_members WHERE member=r.oid),"
-                                "EXISTS(SELECT 1 FROM pg_class WHERE relowner=r.oid) "
-                                "FROM pg_roles r WHERE rolname=current_user").fetchone()
-            if role != (False, False, False, False, False, False, False):
-                raise CompositionUnavailable('unsafe local runtime database role')
+            _require_runtime_role(conn)
             # No scope is installed at checkout. Repositories still receive IDLE;
             # their transaction entry installs LOCAL authority which PostgreSQL
             # removes on commit/rollback even when a physical connection survives.
             conn.autocommit = False
             if self.run_context is None:
                 if usage_profile is not None: raise CompositionUnavailable('run context unavailable')
-                return _ScopedConnection(conn,scope,needs_scope=needs_scope_for(scope) if self.needs_context else None,edit_results=self.edit_results)
+                return _ScopedConnection(conn,scope,needs_scope=needs_scope_for(scope) if self.needs_context else None,edit_results=self.edit_results,before_scope=self._before_scope)
             profile=self.run_context.current if usage_profile is None else usage_profile
             if profile not in self.run_context.profiles:
                 raise CompositionUnavailable('unregistered original period')
             return _ScopedConnection(conn,scope,needs_scope=needs_scope_for(scope),
-                                     usage_scope=ledger_scope_for(scope,profile.meter),edit_results=self.edit_results)
+                                     usage_scope=ledger_scope_for(scope,profile.meter),edit_results=self.edit_results,before_scope=self._before_scope)
         except BaseException:
             conn.close()
             raise
@@ -230,23 +271,51 @@ class LocalDatabase:
     def require_budget_account(self, scope, *, profile=None):
         if self.run_context is None: return
         profile=self.run_context.current if profile is None else profile
-        account=ledger_scope_for(scope,profile.meter)
         with self.connect(scope,usage_profile=profile) as conn:
-            row=conn.execute('SELECT format_version,ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(account,)).fetchone()
-            if row is None or row[0]!=1 or decode_ledger(row[1]).config!=profile.meter:
-                raise CompositionUnavailable('original budget account unavailable or changed')
+            self._check_budget_account(conn, scope, profile)
+
+    def _check_budget_account(self, executor, scope, profile):
+        account = ledger_scope_for(scope, profile.meter)
+        row = executor.execute('SELECT format_version,ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',
+                               (account,)).fetchone()
+        if row is None or row[0] != 1 or decode_ledger(row[1]).config != profile.meter:
+            raise CompositionUnavailable('original budget account unavailable or changed')
 
     def provision(self, scope):
         """Trusted, idempotent scope provisioning for the local host only."""
         with self.connect(scope) as conn:
-            conn.execute('INSERT INTO cj_message_scope(scope) VALUES (%s) ON CONFLICT DO NOTHING', (scope,))
-            conn.execute('SELECT scope FROM cj_message_scope WHERE scope=%s FOR UPDATE',(scope,))
-            if self.run_context is None and conn.execute('SELECT 1 FROM cj_local_run_protection WHERE scope=%s',(scope,)).fetchone():
-                # Safe original history stays readable without creating new runtime
-                # state; writes/dispatch check protection inside their own scope lock.
-                return
-            conn.execute("INSERT INTO cj_run_scope(scope, epoch, active) VALUES (%s, '1', true) ON CONFLICT DO NOTHING", (scope,))
-            conn.execute('INSERT INTO cj_trip_scope(scope) VALUES (%s) ON CONFLICT DO NOTHING', (trip_scope_for(scope),))
+            self._provision_scope(conn, scope)
+
+    def _provision_scope(self, executor, scope):
+        executor.execute('INSERT INTO cj_message_scope(scope) VALUES (%s) ON CONFLICT DO NOTHING', (scope,))
+        executor.execute('SELECT scope FROM cj_message_scope WHERE scope=%s FOR UPDATE', (scope,))
+        if self.run_context is None and executor.execute('SELECT 1 FROM cj_local_run_protection WHERE scope=%s', (scope,)).fetchone():
+            # Keep the original history read path available without enabling runtime state.
+            return
+        executor.execute("INSERT INTO cj_run_scope(scope, epoch, active) VALUES (%s, '1', true) ON CONFLICT DO NOTHING", (scope,))
+        executor.execute('INSERT INTO cj_trip_scope(scope) VALUES (%s) ON CONFLICT DO NOTHING', (trip_scope_for(scope),))
+
+    @contextmanager
+    def scoped_cursor(self, scope, *, connection=None):
+        if connection is None:
+            with self.connect(scope) as owned, owned.cursor() as cursor:
+                yield cursor
+            return
+        if (connection._scope != scope or connection.closed
+                or connection.info.transaction_status != TransactionStatus.IDLE):
+            raise CompositionUnavailable('idle connection for the original scope required')
+        with connection.transaction(), connection.cursor() as cursor:
+            cursor.execute('SET TRANSACTION ISOLATION LEVEL READ COMMITTED')
+            connection.bind_scope(cursor)
+            self._check_execution_connection(cursor)
+            yield cursor
+
+    def prepare_legacy_message_scope(self, connection, scope):
+        # Preserve the budget read commit before provisioning and the separate MESSAGE writer.
+        with self.scoped_cursor(scope, connection=connection) as cursor:
+            self._check_budget_account(cursor, scope, self.run_context.current)
+        with self.scoped_cursor(scope, connection=connection) as cursor:
+            self._provision_scope(cursor, scope)
 
     def message_repository(self, scope):
         return MessageRepository(lambda: self.connect(scope), scope, bind_needs=self.run_context is not None,
@@ -271,8 +340,19 @@ class LocalDatabase:
             with conn.cursor() as cursor:
                 return profile(cursor,scope)
 
-    def require_execution(self, scope, binding=None):
-        with self.message_repository(scope).transaction() as tx:
+    def require_execution(self, scope, binding=None, *, connection=None):
+        with self.execution_transaction(scope, binding, connection=connection):
+            pass
+
+    @contextmanager
+    def execution_transaction(self, scope, binding=None, *, connection=None):
+        """Hold the original MESSAGE lock while its caller checks execution authority."""
+        if connection is not None and (connection._scope != scope or connection.closed
+                or connection.info.transaction_status != TransactionStatus.IDLE):
+            raise CompositionUnavailable('idle execution connection for the original scope required')
+        with self.message_repository(scope).transaction(borrowed_connection=connection) as tx:
+            if connection is not None:
+                self._check_execution_connection(tx.cur)
             tx.lock_scope()
             tx.local_execution(None if binding is None else binding.message_id,
                                None if binding is None else binding.run_id)
@@ -286,14 +366,38 @@ class LocalDatabase:
                 raise CompositionUnavailable('explicit edit configuration required')
             if trip_profile(tx.cur,scope) and not self.trip_context and self.edit_configuration is None:
                 raise CompositionUnavailable('formal Trip execution requires explicit compatible configuration')
+            yield tx
+
+    def _check_execution_connection(self, cursor):
+        _require_runtime_role(cursor)
 
     def trip_repository(self, scope):
         return TripRepository(lambda: self.connect(scope), trip_scope_for(scope), confirm=local_confirmation)
 
-    def run_repository(self, scope, *, usage_profile=None):
+    def run_repository(self, scope, *, usage_profile=None, connect_worker=None):
         connect = (lambda: self.connect(scope)) if usage_profile is None else (lambda: self.connect(scope,usage_profile=usage_profile))
         return RunRepository(connect, scope, expires_at=datetime.now(timezone.utc) + RUN_RETENTION,
-                             statement_timeout_ms=10000, lock_timeout_ms=5000)
+                             statement_timeout_ms=10000, lock_timeout_ms=5000,
+                             connect_worker=connect_worker)
+
+    @contextmanager
+    def lease_run_transactions(self, repository):
+        connection = repository.connect()
+
+        def transaction():
+            if connection.closed:
+                # An independent check or recovery can still use the normal path.
+                # The failed transaction itself is never rerun here.
+                return repository.transaction()
+            if connection.info.transaction_status != TransactionStatus.IDLE:
+                raise CompositionUnavailable('idle original RUN connection required')
+            return repository.transaction(borrowed_connection=connection,
+                                          validate_connection=self._check_execution_connection)
+
+        try:
+            yield transaction
+        finally:
+            connection.close()
 
 
 def local_confirmation(scope, action, proposal):
@@ -308,11 +412,13 @@ def local_confirmation(scope, action, proposal):
 class InvitedSubjects:
     """Server-owned invite list (auth_dir/invited.json); token claims never grant access."""
 
-    def __init__(self, path):
+    def __init__(self, path, selected_subjects=None):
         self.path = Path(path)
+        self.selected_subjects = selected_subjects
 
     def evaluate(self, principal):
-        invited = principal.subject in json.loads(self.path.read_text())
+        invited = (principal.subject in json.loads(self.path.read_text())
+                   and (self.selected_subjects is None or principal.subject in self.selected_subjects))
         return CJAccessFacts(principal, Fact.YES, Fact.YES, Fact.YES if invited else Fact.NO)
 
 
@@ -324,12 +430,17 @@ def trip_configuration(value):
 
 def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, history_configuration=None,
                      memory_configuration=None, run_context=None, travel_context=False, needs_profile=None, trip_context=False,edit_configuration=None,
-                     cleanup_configuration=None,formal_memory_configuration=None,database=None):
+                     cleanup_configuration=None,formal_memory_configuration=None,database=None,account_admission=False,message_subjects=None,
+                     existing_display_reads=False,cleanup_subjects=None,demo_dialogue_subjects=None,
+                     lio_dialogue_subjects=None,lio_memory_factory=None,lio_calendar_subjects=None):
     if os.environ.get('CJ_ENV') != 'local':
         raise CompositionUnavailable('CJ_ENV must explicitly be local')
     auth_dir = Path(auth_dir)
     if needs_profile not in (None,'manual-v1'):
         raise CompositionUnavailable('unknown local NEEDS profile')
+    if message_subjects is not None and (type(message_subjects) is not frozenset
+            or any(type(s) is not str or not s for s in message_subjects)):
+        raise CompositionUnavailable('explicit MESSAGE subject selection required')
     if database is None:
         database = LocalDatabase(conninfo_path,run_context=run_context,travel_context=travel_context,
                                  needs_context=needs_profile is not None,trip_context=trip_context,edit_configuration=edit_configuration)
@@ -338,10 +449,16 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
         if type(database) not in (LocalDatabase,SupabaseTestDatabase):
             raise CompositionUnavailable('explicit supported host database required')
         if type(database) is SupabaseTestDatabase and cleanup_configuration is not None:
-            raise CompositionUnavailable('local cleanup identity is not approved for the cloud profile')
+            from .supabase_cleanup import SupabaseCleanupConfiguration
+            if type(cleanup_configuration) is not SupabaseCleanupConfiguration:
+                raise CompositionUnavailable('local cleanup identity is not approved for the cloud profile')
     keys = StaticPublicKeys({KEY_ID: VerificationKey('RS256', (auth_dir / 'public.pem').read_bytes())})
     config = JWTConfiguration(ISSUER, AUDIENCE, 'RS256', 0)
     access=base_access=InvitedSubjects(auth_dir/'invited.json')
+    if account_admission:
+        from .local_account_admission_v2 import retired_for
+        from cj_auth.account_revocation import AccountRevocationAccess
+        access=AccountRevocationAccess(base_access,retired_for(database))
     formal_producer=None
     if formal_memory_configuration is not None:
         if memory_configuration is not None:raise CompositionUnavailable('select one explicit Memory producer configuration')
@@ -354,15 +471,59 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
     if cleanup_configuration is not None:
         from .local_cleanup import Runtime,Configuration
         from cj_auth.account_revocation import AccountRevocationAccess
-        if type(cleanup_configuration) is not Configuration:raise CompositionUnavailable('explicit local cleanup configuration required')
-        cleanup_runtime=Runtime(database,cleanup_configuration,scope_for)
-        access=AccountRevocationAccess(base_access,cleanup_runtime.retired)
+        from .supabase_cleanup import SupabaseCleanupConfiguration,SupabaseCleanupRuntime
+        from .supabase_test_database import SupabaseTestDatabase
+        if type(cleanup_configuration) is Configuration and type(database) is LocalDatabase:
+            cleanup_runtime=Runtime(database,cleanup_configuration,scope_for)
+        elif type(cleanup_configuration) is SupabaseCleanupConfiguration and type(database) is SupabaseTestDatabase:
+            cleanup_runtime=SupabaseCleanupRuntime(database,cleanup_configuration,scope_for)
+        else:raise CompositionUnavailable('matching explicit cleanup host configuration required')
+        if not account_admission:
+            access=AccountRevocationAccess(base_access,cleanup_runtime.retired)
 
-    def message_repository(principal):
+    from .local_account_admission_v2 import request_scope_connection
+
+    def message_repository(principal, *, provision=True):
+        if message_subjects is not None and principal.subject not in message_subjects:
+            raise CompositionUnavailable('MESSAGE consumer unavailable for this API-only subject')
         scope = scope_for(principal.issuer, principal.subject)
-        database.require_budget_account(scope)
-        database.provision(scope)
+        connection = (request_scope_connection(database, scope, purpose='legacy_message_preflight')
+                      if provision and database.run_context is not None else None)
+        if connection is not None:
+            database.prepare_legacy_message_scope(connection, scope)
+        else:
+            database.require_budget_account(scope)
+            if provision:
+                database.provision(scope)
         return database.message_repository(scope)
+
+    def display_message_repository(principal):
+        repository = message_repository(principal, provision=False)
+        connection = request_scope_connection(database, repository.scope, purpose='sse_snapshot')
+        if connection is None:
+            return repository
+        return SimpleNamespace(
+            scope=repository.scope,
+            transaction=partial(repository.transaction, borrowed_connection=connection,
+                                validate_connection=database._check_execution_connection),
+        )
+
+    display_boundary = None
+    if existing_display_reads:
+        if not account_admission or (cleanup_runtime is not None and cleanup_subjects is None):
+            raise CompositionUnavailable('existing display reads require runtime retirement checks')
+        from cj_auth.admission import AdmissionChecker
+        from cj_auth.jwt_adapter import PyJWTVerifier
+        from cj_message.auth_boundary import Boundary
+        from .local_account_admission_v2 import retired_in_transaction
+
+        verifier = PyJWTVerifier(config, keys)
+
+        def display_checker(tx, scope):
+            return AdmissionChecker(verifier, AccountRevocationAccess(base_access, retired_in_transaction(tx.cur, scope)))
+
+        display_boundary = Boundary(AdmissionChecker(verifier, access), display_message_repository, None,
+                                    checker_in_transaction=display_checker)
 
     def travel_repository(principal):
         # Identity exists before any chat/Trip/NEEDS or metered account. Provision
@@ -377,7 +538,15 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
     def run_repository(principal, scope):
         if scope != scope_for(principal.issuer, principal.subject):
             raise CompositionUnavailable('scope mismatch')
-        return database.run_repository(scope)
+        repository = database.run_repository(scope)
+        connection = request_scope_connection(database, scope, purpose='sse_snapshot')
+        if connection is None:
+            return repository
+        return SimpleNamespace(
+            scope=scope,
+            recover=partial(repository.recover, borrowed_connection=connection,
+                            validate_connection=database._check_execution_connection),
+        )
 
     def feedback_resolver(principal):
         scope=scope_for(principal.issuer,principal.subject)
@@ -463,12 +632,67 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
         max_body_bytes=16384, history_configuration=history_configuration,
         run_display_configuration=RunDisplayWireConfiguration(max_message_id_bytes=256, max_text_bytes=200000,
                                                               max_response_bytes=400000),
-        resolve_run_display=run_repository,
+        resolve_run_display=run_repository, run_display_message_boundary=display_boundary,
         run_events_configuration=RunEventsConfiguration(poll_interval_seconds=0.2, max_stream_seconds=120),
         trip_configuration=TripWireConfiguration(max_action_bytes=4096, max_page_limit=50,
                                                  max_private_response_bytes=1_000_000),
         resolve_trip=trip, trip_confirmation_validator=local_confirmation if confirmation_signer is None else None,
         trip_confirmation_signer=confirmation_signer)
+    if lio_dialogue_subjects and (not demo_dialogue_subjects or not lio_dialogue_subjects <= demo_dialogue_subjects):
+        raise CompositionUnavailable('Lio subjects must belong to the admitted Demo scope')
+    if lio_calendar_subjects and (type(lio_calendar_subjects) is not frozenset
+            or not lio_dialogue_subjects or not lio_calendar_subjects <= lio_dialogue_subjects):
+        raise CompositionUnavailable('calendar subjects require an explicit admitted Lio consumer')
+    if demo_dialogue_subjects:
+        if not account_admission or not database.travel_context or database.run_context is None:
+            raise CompositionUnavailable('Demo dialogue requires original Travel and account admission')
+        from cj_auth.admission import AdmissionChecker
+        from cj_auth.jwt_adapter import PyJWTVerifier
+        from cj_message.auth_boundary import Boundary
+        from .demo_dialogue_routes import register_demo_dialogue_routes
+        from .lio_dialogue_routes import register_lio_dialogue_routes
+        from .lio_trip_cards import LioTripCards
+        from .local_account_admission_v2 import retired_for, retired_in_transaction
+
+        verifier = PyJWTVerifier(config, keys)
+
+        def dialogue_repository(principal):
+            return database.message_repository(scope_for(principal.issuer, principal.subject))
+
+        def dialogue_binding(subjects):
+            invited = InvitedSubjects(auth_dir/'invited.json', subjects)
+            checker = AdmissionChecker(verifier, AccountRevocationAccess(invited, retired_for(database)))
+
+            def current_checker(tx, scope):
+                return AdmissionChecker(verifier, AccountRevocationAccess(invited, retired_in_transaction(tx.cur, scope)))
+
+            return Boundary(checker, dialogue_repository, lambda: str(uuid.uuid4()),
+                            checker_in_transaction=current_checker), checker
+
+        dialogue_boundary, _ = dialogue_binding(demo_dialogue_subjects)
+        register_demo_dialogue_routes(app, dialogue_boundary)
+        if lio_dialogue_subjects:
+            lio_boundary, lio_checker = dialogue_binding(lio_dialogue_subjects)
+            memory_cards = lio_memory_factory(lio_boundary) if lio_memory_factory is not None else None
+            calendar_boundary, calendar_checker = (dialogue_binding(lio_calendar_subjects)
+                if lio_calendar_subjects else (None,None))
+            register_lio_dialogue_routes(app, lio_boundary, database.run_repository,
+                                         LioTripCards(database, lio_checker), prepare_scope=database._provision_scope,
+                                         memory_cards=memory_cards,calendar_boundary=calendar_boundary,
+                                         calendar_cards=(LioTripCards(database,calendar_checker,calendar=True)
+                                             if lio_calendar_subjects else None))
+            if memory_cards is not None:
+                from .lio_memory_routes import register_lio_memory_routes
+                register_lio_memory_routes(app, memory_cards)
+            if confirmation_signer is not None:
+                from .lio_trip_routes import LioTripBoundary, register_lio_trip_routes
+                register_lio_trip_routes(app, LioTripBoundary(database, lio_checker, confirmation_signer))
+                if lio_calendar_subjects:
+                    from .lio_calendar_trip_routes import register_lio_calendar_trip_routes
+                    from cj_trip.local_calendar_read import register_local_calendar_read_routes
+                    register_lio_calendar_trip_routes(app,LioTripBoundary(database,calendar_checker,confirmation_signer,calendar=True))
+                    register_local_calendar_read_routes(app,database=database,auth_dir=auth_dir,
+                                                       selected_subjects=lio_calendar_subjects)
     if database.edit_results:
         from .run_display_composition import build_run_display_reader
         from .scoped_result_routes import register_scoped_result_routes
@@ -477,7 +701,8 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
             resolve_run=run_repository,configuration=RunDisplayWireConfiguration(256,200000,400000))
         register_scoped_result_routes(app,reader,history_configuration)
     from .account_cleanup_routes import register_account_cleanup_routes
-    register_account_cleanup_routes(app,None if cleanup_runtime is None else cleanup_runtime.gateway(config,keys,base_access))
+    cleanup_access=base_access if cleanup_subjects is None else InvitedSubjects(auth_dir/'invited.json',cleanup_subjects)
+    register_account_cleanup_routes(app,None if cleanup_runtime is None else cleanup_runtime.gateway(config,keys,cleanup_access))
     return app
 
 

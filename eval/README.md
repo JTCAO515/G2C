@@ -108,6 +108,18 @@ uv run --locked python -B eval/report.py --plan PLAN.json --observations OBSERVA
 严重错误0，首字 p95 ≤5秒，完整回答 p95 ≤90秒。样本/留出和全部原尝试不变。
 不同候选不能合并或自动挑最好版本；同候选任一语言/网络失败不能由另一格抵消。
 
+JT 在 [2026-11-07](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6708986558)
+批准 `quality_policy=JT-2026-11-07-M4`。新正式计划显式选择该版本。每种语言和网络组
+分别判定首个 App 可见 RUN 进度 p95 ≤5 秒、首正文 p95 ≤15 秒、完整回答 p95 ≤90 秒、
+完成率 ≥90%、严重错误 0。未指定版本的冻结计划仍用 `JT-2026-11-04-M4`，历史 FAIL
+和报告原样保留。计划中的 `approved_thresholds` 只记录口径。未知版本拒绝生成判定。
+
+新版进度证据写在观测的 `first_visible_progress` 中，记录提交至 App 渲染的 `seconds`、
+`clock=client_monotonic`、`observed_at=app_render`、`source=server_run_status_event`、
+首个真实状态事件的正整数 `event_sequence`、原 `run_id` 和 `ref`。`run_id` 必须与观测
+一致。证据需来自真实 App，提交回执、快照状态、服务端写入时钟和本地动画仅供诊断。
+未接 App 时钟的正式 runner 不填此字段，门槛保持 UNKNOWN 或 UNRUN。
+
 完成率沿原口径 P/(P+F+U)，缺测R保留并阻止PASS。延迟使用全计划样本的最近秩
 p95；缺时延不能从分母删除，只给已知子集诊断。已知慢样本已足以证明全计划
 p95超标时可FAIL，其他缺测为UNKNOWN/UNRUN。没有完整观测不能凭成功子集放行。
@@ -146,9 +158,24 @@ p95超标时可FAIL，其他缺测为UNKNOWN/UNRUN。没有完整观测不能凭
 `measurement={kind:program/human,independent:true,outcome:PASS,ref:...}`。空值或
 UNKNOWN标记不能认证测量。本机ASGI不冒充目标网络；完整候选放行还须计划并测量
 `target_network`组，endpoint为`https://api-beta.go2china.space`。该组测量等B在#30
-通知就绪后再执行；按scope.md分别保留`travel_phase=overseas_pretrip/china_travel`
-两种来源，缺失地域直接列UNRUN，不用单一地域放行整体。缺组/未测不输出候选PASS；
+通知就绪后再执行。历史缺省口径按`JT-2026-11-04-M4`分别保留
+`travel_phase=overseas_pretrip/china_travel`两种来源，缺失地域列UNRUN；
+旧计划与旧报告不因后续决定被重新解释。缺组/未测不输出候选PASS；
 本机或单一网络真实服务范围的四指标可先单独报告，不冒其他网络已测。
+
+JT 2026-11-06在#32/PR568批准现有境内Codex开发Mac+VPN访问上述测试域名，
+不再要求两个独立地域客户端。新冻结计划须显式写
+`"network_policy":"JT-2026-11-06-M4-NETWORK"`才采用该口径；不写或指定
+`JT-2026-11-04-M4`仍走历史口径，其他值拒绝，不接受自定义阈值。
+新口径的`target_network`组使用`travel_phase=china_travel`，另有
+`client_device=codex_development_mac`、`client_location=china_mainland`、
+`vpn=on`；独立`measurement`还须标明`scope=user_submission_to_answer`和
+`clock=client_monotonic`。这些字段只描述可信执行方实际记录的条件，不认证
+外部证据真伪。缺字段/来源/实际任务时钟为UNKNOWN；实际VPN出口可如实UNKNOWN，
+不能把香港服务器、iPhone或纯GET快照计时填成该客户端的提交至正文证据。
+JSON与Markdown报告显示所选网络口径和来源。四项质量数值、原硬判定、事实/语义
+独立审查、样本/留出、每个计划格与全部attempt的统计保持原样；新网络口径不减少
+计划数，不把子集或读取诊断提升为完整66例质量PASS，也不追改任何历史结果。
 
 Fake/local/synthetic 报告会显示门槛的诊断PASS/FAIL/UNKNOWN，但
 `evaluation_release_decision=UNRUN`，不算真实结论。只有`evidence_layer=real`
@@ -156,8 +183,17 @@ Fake/local/synthetic 报告会显示门槛的诊断PASS/FAIL/UNKNOWN，但
 原`release_decision`保留全项目其他前置的区别。报告程序不认证外部文件的
 真实性；计划、原始观测和审查依据须由可信执行方冻结并供核对，不交给模型改写。
 
-实际执行预算遵守 PR540 后的 M4 条目3/4：模型与M1合计¥500、¥400停；指定工具合计
-¥200、¥160停及地点1200/路线600/天气200/事实页240次上限，至2026-11-30。
+实际执行预算遵守M4条目3/4及JT最新决定：JT 2026-11-06原话
+“模型上线调整为10000元”（[#495登记](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6688002330)），
+DashScope北京与M1合计的模型总上限及停止线均¥10,000，替代原¥500总额/¥400停线；
+M1原保守占用13与所有UNKNOWN/INTENT继续计入。C的153模型/62付费工具只是
+未来预测，不会写入账本或实际预留；开跑须当前实际锚点累计+本批预测<停止线且
+不超过总预算。B独立阶段按其自身实际累计与预测，不被C未派预测冻结。
+指定工具原合计仍¥200。JT于2026-11-05将工具停止线由¥160提高到¥10,000
+（[#495原文登记](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6644812116)），
+没有同步扩大原¥200总预算。预估同时检查停止线与总预算，不能用较高停止线授权超过总额。
+地点1200/路线600/天气200/事实页240次上限及2026-11-30期限不变。实际派发仍须B唯一
+出口已反映当前授权；C的预检通过不能替代该出口或恢复已sealed的Mac producer。
 
 ## 已授权真实批次（#530）
 
@@ -177,10 +213,31 @@ python -B eval/real.py --batch-id round2-full --smoke .local/eval/round2-smoke -
 同一adapter的smoke/full阶段在固定用户数据目录各原子认领一次；输出目录或C提交名变化不产生新派发。
 中断/失败只读原结果，完整smoke原证据在独立阶段凭证中锁定哈希。只有B实际adapter修复产生另一候选，
 才会有独立阶段身份；所有旧FAIL仍保留，不以换目录重复收费。
+阶段身份覆盖四个B生产文件：`provider.py`、`real_services.py`、FACT `live_source.py`
+和 `https_transport.py`。扩展前全部三组FACT源码指纹继续使用原两文件键（包括936/8a），
+仅升级C不会解锁旧phase；新的FACT生产源码变化才纳入扩展键。新claim记录实际四文件
+摘要，旧claim/result不迁移、不覆盖、不释放。源码缺失拒绝认领，输出、C提交、报告或
+runner/config改动均不能产生新身份。来源身份不同也不自动授权调用：仍须B正式修复交付、
+实际版本/manifest核对、预算预检和原六格/完整66门禁。
 目录存在时只读返回；不恢复或重发未知原动作。模型、端点、工具、凭据来源及
 唯一累计授权账本沿用 B `RealServices`，没有任意 URL、模型或预算目录选项。
 旧 M1 ¥13 及 B 的并行调用不释放；观测只归属本场景原 Meter attempt，
 全局账本快照另存，不能把其他线的并行调用算成本线。
+
+`C-SMOKE-CORRECTION.1` 是 JT 批准的单次接续，专用于 `hk-compact-e3b36c39-smoke-001`
+的正文误报。批准见 [#495](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6702591531)。
+`smoke_correction.json` 固定原 acbc adapter、原 e3 阶段与 FAIL 凭证、原文件哈希和适用的 C 判定代码。
+新入口用原真实账本复核五条完整链路，核 `case-starts` 证明英文 FACT 从未开始，再对唯一未运行格和固定66预检。
+通过后单独原子认领 `smoke-correction-1`，只运行原问题的英文 FACT，工具白名单仅 FACT。
+认领即消耗该单次机会，失败或中断按原动作只读对账。
+
+```sh
+python -B eval/hk.py run smoke-correction --output /evidence/hk-body-correction-001
+```
+
+新目录的五份 raw 逐字来自封存原件，`original-*` 保存原判定，`plan.correction` 记录接续及原执行来源。
+接续凭证锁定全部六格，仍需同候选独立判定及真实原回执全部 PASS 才进入原 `full`。
+原 smoke FAIL 和常规阶段认领保留。接续仅适用本批准的一格，其他失败按原规则处理。
 
 签名 MESSAGE-send.2、原 NEEDS 来源、Trip 显式确认与 typed Memory 保存/管理/撤回
 经现有 API；角色/owner/正式写入/上下文由原独立 judge 核对。重启案例用新真实
@@ -190,8 +247,10 @@ worker 进程消费同一 PG/原消息/授权账本。使用 B 已交 legacy dra
 当前 travel.2 的冻结 v1 SSE 读口不能消费新版上下文，采集用实际 TCP 的
 `/v2/run-display` 保护快照，每200ms读取。首正文是客户端首次读到有效回答的
 单调时钟上界，排除工具来源链接；完整回答含必要候选实际读回，确认动作不计入。
-提交早于RUN建立的503只允许重读原快照，不重新提交消息。当前 Mac 出口不能证明
-海外/中国目标网络，后者仍等 B #30 就绪通知，缺测为 UNRUN。
+提交早于RUN建立的503只允许重读原快照，不重新提交消息。本段私有PG/loopback测量
+不能代替公网目标网络。按#32中JT2026-11-06决定，目标网络采用现有境内Mac+VPN访问
+`https://api-beta.go2china.space`的实际客户端测量，如实记录条件，不写成海外客户端；
+尚无该公网实测的报告保持UNRUN。该决定不把旧数据或HK服务器位置升级为网络证据。
 
 原始HTTP响应、用户可见回答、客户端时间、原注册输入、库状态、预算 intent/回执
 保存于输出目录；不写凭据或JWT。无供应商账单时实付 UNKNOWN，保守占用单列。
@@ -200,3 +259,108 @@ worker 进程消费同一 PG/原消息/授权账本。使用 B 已交 legacy dra
 与可核对证据链接随 PR 提交，历史失败保留。
 报告计算不发出请求，也不代替B原计量出口/预算账本；不得用模型模拟成Fake
 或未知费用当零来绕过停止点。
+
+### 获准 Mac 的只读公网基线
+
+`network_read.py` 只对既有合成06执行六次固定`GET /v1/run-display`，首失败即停，
+不POST、不创建消息、访问财务账本或canonical phase，也不导入模型SDK。
+由B在准备采集时交接既有beta-a的短期Bearer纯文本0600文件；不传provider/数据库/
+签名私钥。凭据仅在内存形成Authorization头，记录不含头或异常文本，完成后删除
+该确切一次性文件。TLS/主机名验证开启，忽略代理环境变量、不改OS的VPN/代理、不跟重定向。
+
+该端点严格复用已有`RunDisplayResponse`生成契约（顶层request_id/snapshot，无version），
+核X-Request-ID/no-store和原message/run/generation，输出目录存在时只读退出。
+另行保存operator前后实际镜像和原账本只读快照；实际出口地域不能从VPN或服务器位置推断。
+这只是“境内Mac+VPN”的端到端受保护GET耗时，含TLS、网络和服务端处理，不能当纯网络RTT，
+更不能替代用户POST起的首字/完整回答、六格/66、双语语义或质量放行；这些字段保持UNRUN。
+全部尝试、失败、重复采集及剩余UNRUN分别保留，不择优合并。
+
+```sh
+uv run --locked python -B eval/network_read.py --bearer-file .local/one-time-bearer.jwt --output .local/public-read-001
+```
+
+B572新增17个固定native拒绝reason仅在`failure.py`白名单消费，未知值仍为UNKNOWN，
+不保留原模型文本，不倒填旧stage，也不改变原判定/预算/准入或重派权限。
+
+## 香港唯一 producer 的 C 执行准备
+
+Mac账本完成seal/adopt后，旧Mac仅只读；新阶段只能在B正式交付的HK环境执行。
+当前准备代码不表示 #30 ready，也不授权提前调用目标域名。B负责部署接线，C仅交
+已提交源码与参数；不修改B/deploy/授权文件、不另建或恢复一份可写费用账本。
+
+`hk.py package`只读取干净Git提交，生成可重现的C overlay及来源manifest，不构建镜像，
+不读凭据、不请求任何服务。必须给B已审的后端commit，并逐字核对C提交所含业务源码
+与该B提交一致；镜像中的既有B文件逐个核hash，不能用任意标签伪造候选或安装假git。
+
+```sh
+uv run --locked python -B eval/hk.py package --backend-commit B_FULL_SHA --output .local/c-hk-source
+```
+
+B在既有已审operator镜像上使用输出中的`eval/hk.Dockerfile`，固定镜像身份与manifest
+SHA，分别记录B后端pin和C runner pin。该overlay只加入已提交的eval运行源码、固定
+样本/原250行见证和既有报告计算器；不打包工作区秘密、历史raw、测试或报告日志。
+所有原测试仍保留并独立执行；overlay并不是测试验收证据。
+
+最小执行布局：
+
+| 输入/挂载 | 边界 |
+|---|---|
+| `CJ_C_EVAL_SOURCE_SHA256` | B从C已交制品核对的manifest SHA；不能从未核文件自行填一个值 |
+| `/app/c-eval-source.json` | 来源manifest只读，实际B/C文件hash必须匹配；报告记录两个commit |
+| `/run/secrets/c-eval.env` | 当前uid所有、0600、常规文件；恰好`CJ_MODEL_API_KEY`和`CJ_AMAP_WEB_KEY`两项，来自现有安全凭据，不入镜像/Config.Env/日志 |
+| `/evidence` | 仅C本阶段raw/计划/报告持久写卷；完整阶段仍须原六格全部PASS及canonical凭证 |
+| 原HK预算目录及`/control/budget` | B同一个ADOPTED账本和非恢复控制锚/锁，不复制重置；producer仍`hk-beta-47.83.147.176` |
+
+只提供`CJ_ENV=local`、`CJ_DEPLOY_TARGET=hk-beta`、`CJ_M4_SYNTHETIC_ONLY=1`、
+原producer、已核试用期限及上述非秘密来源pin。不得提供Supabase/operator/cleanup/
+签名私钥/OSS身份或Docker socket。C只用全新私有Unix PG、`search_path=public`、
+镜像中显式`CJ_PG_BINDIR=/usr/lib/postgresql/17/bin`（不依赖宿主pg_config）、
+原受限业务角色与原worker；B的授权期限守卫传入原`RealServices.from_environment`。
+服务凭据只在构造原服务时暂入进程，随即移除；PG子进程不继承，重启worker从同一
+0600子集重新构造服务，不沿用旧Mac SDK。缺件/错误权限/源码不符均停下，不走备用出口。
+
+以下仅为B正式ready、费用出口与C精确head门禁全部满足后的命令布局；本节不执行它们：
+
+```sh
+python -B /app/eval/hk.py run smoke --output /evidence/new-smoke-stage
+python -B /app/eval/hk.py run full --smoke /evidence/new-smoke-stage --output /evidence/new-full-stage
+```
+
+仍固定中英各三例四类工具，任一UNKNOWN/FAILED/空正文立即停；同候选六格全PASS才66。
+HK私有PG的loopback采样单独标`hk-private-real-exits`，不能冒充海外/中国目标网络；
+目标网络仍等B #30正式ready后另测。所有旧FAIL/UNKNOWN/INTENT保持原样。
+
+B563的命名函数输送仍传原`MODEL-tool-turn.1`。冒烟取证按实际注册的
+`native_turn_profile`/`external_tools_disabled`（以及旧`tool_choice`）重用B真实序列化器
+核对出口输入SHA；新回执解包父wrapper ID、每个inner的index/name/query及原响应SHA，
+缺段、换ID/查询/结果、重复字段或丢失回执均FAIL。FACT摘录只取已与原回执匹配的结果，
+不接受无关消息补出的摘录。旧直接native回执结构仍保留支持；历史出口SHA须按原候选的
+序列化器核验，不用当前源码重写旧结论。这里仅适配输送编码，
+不修改语料、留出、judge、质量门槛或既有通过条件；合成单元样例不能开启真实全量。
+
+## 持续报告与失败归类
+
+runner在每格提交前写`case-starts.json`，在原始证据/原判定完成后写`progress.json/md`；
+开始但未留完整结果的格为UNKNOWN，尚未开始为UNRUN。中英分别保留计划数、原判定
+PASS/FAIL/UNKNOWN/UNRUN、原RUN状态、严重错误/时延原口径与全部原注册attempt、
+预算意图/回执/输入SHA；缺意图或孤立意图不丢弃、不计成已知零费用。重复身份拒绝，
+不选最好结果。模型tokens只合计有效完整回执，保守占用/公开价估算/实付UNKNOWN分列。
+
+该报告只读归档，**不是派发、重试、计量账本或全量准入权威**；不能改变原summary/report
+与canonical phase。每格原FAIL保留，未观察时延不补值；门槛分母仍由原判定计算。
+冻结的非秘密runtime配置也另存hash。判定程序异常前已完成的RUN/时钟/原回执仍保留。
+
+失败分类为接入/协议、来源/工具、模型质量、判定程序、环境或UNKNOWN。分类只定位已证
+组件/效果，根因默认UNKNOWN，不把未知RUN归咎模型。原provider审计只采固定无内容字段
+（attempt SHA、phase、HTTP状态、结束/usage标记与数量），并绑定原attempt；不保存异常
+文本或API key，也不根据缺finishReason猜stop/length。报告含版本、场景、run/attempt、
+失败阶段、原证据hash与预期，便于最小复现；分类绝不提升原判定。
+
+已留齐文件的batch可只读重生成派生报告，输出目录必须是新的，不访问服务或共享账本：
+
+```sh
+python -B eval/progress.py --stage smoke --batch BATCH --output NEW_AUDIT_DIRECTORY
+```
+
+这不是恢复执行入口，不能重派已开始/UNKNOWN的格。旧批次没有start记录时不自动补造；
+历史只读分析须注明原冻结候选与来源适用性，不继承为当前候选的真实通过。

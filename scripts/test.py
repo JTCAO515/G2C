@@ -41,19 +41,21 @@ def env():
     return value
 
 
-def run(label, argv, cwd=ROOT, extra_path=None):
+def run(label, argv, cwd=ROOT, extra_path=None, executable=sys.executable):
     print(f'::group::{label}', flush=True)
     current = env()
     if extra_path:
         current['PYTHONPATH'] = str(extra_path)
-    code = subprocess.run([sys.executable, *argv], cwd=cwd, env=current).returncode
+    code = subprocess.run([executable, *argv], cwd=cwd, env=current).returncode
     print('::endgroup::', flush=True)
     return label, code
 
 
 def main():
     pytest = ['-m', 'pytest', '-q', '-p', 'no:cacheprovider']
-    results = [run('backend/tests', [*pytest, 'backend/tests'])]
+    results = [run('default entry failure propagation',
+                   ['-B', '-m', 'unittest', '-v', 'scripts.test_test_entry'])]
+    results.append(run('backend/tests', [*pytest, 'backend/tests']))
     results.append(run('deploy boundaries', [*pytest, 'deploy/tests'],
                        extra_path=os.pathsep.join((str(ROOT),str(ROOT/'scripts')))))
     results.append(run('Supabase M4 boundaries', [*pytest, 'scripts/test_supabase_m4.py'],extra_path=ROOT/'scripts'))
@@ -70,8 +72,28 @@ def main():
         results.append(run(f'backend/{directory}/{module}', ['-B', '-m', 'unittest', module],
                            BACKEND / directory, BACKEND / directory))
     results.append(run('evaluation/cj028', [*pytest, 'tests'], ROOT / 'evaluation/cj028', ROOT / 'evaluation/cj028'))
+    results.append(run('eval/optimization', ['-B', '-m', 'unittest', '-v', 'eval.optimization.test_score']))
+    results.append(run('eval/lio_simulated_user',
+                       ['-B', '-m', 'unittest', 'discover', '-s', 'eval/lio_simulated_user/tests', '-v']))
+    results.append(run('eval/lio_calendar_transitions',
+                       [*pytest, 'eval/tests/test_lio_calendar_transitions.py']))
+    results.append(run('tooling/datasets',
+                       ['-B', '-m', 'unittest', 'discover', '-s', 'tooling/datasets',
+                        '-t', '.', '-p', 'test_*.py', '-v']))
+    # GEPA uses its accepted project lock and environment, not the production root dependencies.
+    results.append(run('tooling/optimization',
+                       ['run', '--project', 'tooling/optimization', '--locked', 'python',
+                        '-B', '-m', 'unittest', '-v', 'tooling.optimization.test_optimization'],
+                       extra_path=ROOT, executable='uv'))
+    results.append(run('tooling/training preflight',
+                       ['-B', '-m', 'unittest', 'discover', '-s', 'tooling/training',
+                        '-p', 'test_*.py', '-v']))
+    results.append(run('tooling/training F schema', ['-B', 'tooling/training/check_f_dataset.py', '-v']))
     results.append(run('ops/recovery-preflight', [*pytest, '.'], ROOT / 'ops/recovery-preflight'))
     results.append(run('contracts/api proposal', ['-B', '-m', 'unittest', 'contracts/api/check_trip_content_v2_schema_proposal.py']))
+    results.append(run('contracts/trip structured3', ['-B', 'contracts/trip/check_structured_v3.py']))
+    results.append(run('contracts/trip structured4', ['-B', 'contracts/trip/check_structured_v4.py']))
+    results.append(run('contracts/message calendar2', ['-B', 'contracts/message/check_trip_v2.py']))
     for script in CONTRACT_SCRIPTS:
         results.append(run(script, ['-B', script]))
     results.append(run('openapi', ['-m', 'openapi_spec_validator', 'contracts/api/openapi.json']))

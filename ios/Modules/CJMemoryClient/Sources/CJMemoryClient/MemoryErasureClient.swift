@@ -94,24 +94,23 @@ public struct MemoryErasureOriginal: Sendable {
     public init(development endpoint: MemoryEndpoint, credentials: @escaping MemoryCredentialCallback,
                 currentBinding: @escaping @MainActor () -> MemoryBinding?, session: SessionLifecycle, sessionOperation: SessionOperation,
                 pendingStore: MemoryErasurePendingStore, requestTimeout: TimeInterval, resourceTimeout: TimeInterval) throws {
-        #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
+        #if !(DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE)))
+        guard endpoint.allowsDemoBetaActivation else { throw MemoryFailure.liveWriteUnavailable }
+        #endif
         guard session.isCurrent(sessionOperation), currentBinding() != nil, session.isCurrent(sessionOperation) else { throw MemoryFailure.staleBinding }
-        guard endpoint.allowsDevelopmentActivation, endpoint.maximumRequestBytes <= 32768, endpoint.maximumResponseBytes <= 524288,
+        guard endpoint.allowsDevelopmentActivation || endpoint.allowsDemoBetaActivation, endpoint.maximumRequestBytes <= 32768, endpoint.maximumResponseBytes <= 524288,
               requestTimeout > 0, resourceTimeout > 0, requestTimeout.isFinite, resourceTimeout.isFinite else { throw MemoryFailure.unconfigured }
         self.endpoint = endpoint; self.credentials = credentials; self.currentBinding = currentBinding
         self.session = session; operation = sessionOperation; store = pendingStore
         factory = { validate in try NoRedirectTransport.developmentMemoryErasure(endpoint: endpoint,
             requestTimeout: requestTimeout, resourceTimeout: resourceTimeout, validate: validate) }
-        #else
-        throw MemoryFailure.liveWriteUnavailable
-        #endif
     }
     init(endpoint: MemoryEndpoint, credentials: @escaping MemoryCredentialCallback,
          currentBinding: @escaping @MainActor () -> MemoryBinding?, session: SessionLifecycle, sessionOperation: SessionOperation,
          pendingStore: MemoryErasurePendingStore, interceptedTransport: any ClientTransport) {
         self.endpoint = endpoint; self.credentials = credentials; self.currentBinding = currentBinding
         self.session = session; operation = sessionOperation; store = pendingStore
-        factory = { ErasureInterceptedTransport(underlying: interceptedTransport, validate: $0) }
+        factory = { MemoryInterceptedTransport(underlying: interceptedTransport, validate: $0) }
     }
     public func invalidate() { generation = UUID(); progressReads = [:]; consumedReads = [:] }
     private func check(_ scope: ErasureScope) throws {
@@ -299,15 +298,4 @@ private func erasureHTTPError(_ bytes: Data, trace: String, status: Int) throws 
     let code = try historyString(fields["code"], limit: 96)
     guard code.utf8.allSatisfy({ (65...90).contains($0) || (48...57).contains($0) || $0 == 95 }) else { throw MemoryFailure.invalidResponse }
     return status == 503 ? .exchangeUnknown : .rejected(status, code)
-}
-private struct ErasureInterceptedTransport: ClientTransport {
-    let underlying: any ClientTransport
-    let validate: @MainActor @Sendable () throws -> Void
-    func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
-        let bytes: Data?
-        if let body { bytes = try await Data(collecting: body, upTo: 32768) } else { bytes = nil }
-        try await validate(); try Task.checkCancellation()
-        let result = try await underlying.send(request, body: bytes.map(HTTPBody.init), baseURL: baseURL, operationID: operationID)
-        try await validate(); try Task.checkCancellation(); return result
-    }
 }

@@ -1,0 +1,376 @@
+{
+  "version": "G2C-cross-binding-fixture-examples.1",
+  "evidence_level": "synthetic_schema_controls_only",
+  "runtime_eligibility": "UNRUN",
+  "definition": {
+    "version": "G2C-cross-binding-fixture.1",
+    "kind": "definition",
+    "fixture_id": "synthetic-luoyang-fixture",
+    "fixture_revision": 1,
+    "task_id": "val-owner",
+    "source": "authorized_synthetic_native_trip",
+    "frozen_at": "2026-11-13T04:00:00Z",
+    "producer": {
+      "binding": {
+        "binding_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "binding_ref": {
+          "ref": "original-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "owner_scope_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "status": "PASS",
+      "purpose_authorization_ref": {
+        "ref": "original-1111111111111111111111111111111111111111111111111111111111111111",
+        "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "window_ref": {
+        "ref": "original-2222222222222222222222222222222222222222222222222222222222222222",
+        "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "original_request_inventory_ref": {
+        "ref": "original-3333333333333333333333333333333333333333333333333333333333333333",
+        "sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+      },
+      "original_action_inventory_ref": {
+        "ref": "original-4444444444444444444444444444444444444444444444444444444444444444",
+        "sha256": "4444444444444444444444444444444444444444444444444444444444444444"
+      },
+      "meter_inventory_ref": {
+        "ref": "original-5555555555555555555555555555555555555555555555555555555555555555",
+        "sha256": "5555555555555555555555555555555555555555555555555555555555555555"
+      },
+      "fee_inventory_ref": {
+        "ref": "original-6666666666666666666666666666666666666666666666666666666666666666",
+        "sha256": "6666666666666666666666666666666666666666666666666666666666666666"
+      },
+      "trip_receipt_ref": {
+        "ref": "original-7777777777777777777777777777777777777777777777777777777777777777",
+        "sha256": "7777777777777777777777777777777777777777777777777777777777777777"
+      },
+      "completed_at": "2026-11-13T03:30:00Z"
+    },
+    "baseline": {
+      "observed_at": "2026-11-13T03:31:00Z",
+      "trip_id_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "trip_version": 1,
+      "content_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "state_ref": {
+        "ref": "original-dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      }
+    },
+    "private_sentinel_set_ref": {
+      "ref": "original-8888888888888888888888888888888888888888888888888888888888888888",
+      "sha256": "8888888888888888888888888888888888888888888888888888888888888888"
+    },
+    "preparation_cost": {
+      "charge_id": "synthetic-original-c-charge",
+      "charged_batch_id": "synthetic-c-prepare-batch",
+      "ledger_id_sha256": "9999999999999999999999999999999999999999999999999999999999999999",
+      "original_cost_anchor_ref": {
+        "ref": "original-9999999999999999999999999999999999999999999999999999999999999999",
+        "sha256": "9999999999999999999999999999999999999999999999999999999999999999"
+      },
+      "cost_inventory_ref": {
+        "ref": "original-6666666666666666666666666666666666666666666666666666666666666666",
+        "sha256": "6666666666666666666666666666666666666666666666666666666666666666"
+      },
+      "allocation_ref": {
+        "ref": "original-1111111111111111111111111111111111111111111111111111111111111111",
+        "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "mode": "original_ledger_read_only"
+    },
+    "reuse_policy": {
+      "registry_ref": {
+        "ref": "original-1111111111111111111111111111111111111111111111111111111111111111",
+        "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "consumer_registration_ref": {
+        "ref": "original-2222222222222222222222222222222222222222222222222222222222222222",
+        "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "valid_from": "2026-11-13T04:00:00Z",
+      "valid_until": "2026-11-13T14:00:00Z",
+      "maximum_uses": 100,
+      "baseline_mutation": "forbidden",
+      "preparation_charge": "original_charge_once_references_on_reuse"
+    }
+  },
+  "use": {
+    "version": "G2C-cross-binding-fixture.1",
+    "kind": "use",
+    "use_id": "synthetic-e-use-1",
+    "definition_ref": {
+      "ref": "original-0000000000000000000000000000000000000000000000000000000000000000",
+      "sha256": "d161b7d248d1538e739d237138d68ecca2336984717a1da588af1a75728aed05"
+    },
+    "fixture_id": "synthetic-luoyang-fixture",
+    "fixture_revision": 1,
+    "reservation_ref": {
+      "ref": "original-1111111111111111111111111111111111111111111111111111111111111111",
+      "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    "consumer": {
+      "binding": {
+        "binding_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "binding_ref": {
+          "ref": "original-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        },
+        "owner_scope_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "pins_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "experiment_ref": {
+        "ref": "original-2222222222222222222222222222222222222222222222222222222222222222",
+        "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "public_release_ref": {
+        "ref": "original-3333333333333333333333333333333333333333333333333333333333333333",
+        "sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+      },
+      "batch_id": "synthetic-e-batch",
+      "candidate_id": "synthetic-C0",
+      "task_id": "val-owner",
+      "language": "en",
+      "attempt_id": "synthetic-e-attempt",
+      "step_id": "synthetic-e-step",
+      "request_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+      "request_association_ref": {
+        "ref": "original-4444444444444444444444444444444444444444444444444444444444444444",
+        "sha256": "4444444444444444444444444444444444444444444444444444444444444444"
+      },
+      "inventory_ref": {
+        "ref": "original-5555555555555555555555555555555555555555555555555555555555555555",
+        "sha256": "5555555555555555555555555555555555555555555555555555555555555555"
+      },
+      "probes": [
+        {
+          "probe_id": "synthetic-read-probe",
+          "operation_kind": "foreign_read",
+          "original_request_ref": {
+            "ref": "original-6666666666666666666666666666666666666666666666666666666666666666",
+            "sha256": "6666666666666666666666666666666666666666666666666666666666666666"
+          },
+          "original_response_ref": {
+            "ref": "original-7777777777777777777777777777777777777777777777777777777777777777",
+            "sha256": "7777777777777777777777777777777777777777777777777777777777777777"
+          },
+          "association_ref": {
+            "ref": "original-8888888888888888888888888888888888888888888888888888888888888888",
+            "sha256": "8888888888888888888888888888888888888888888888888888888888888888"
+          },
+          "request_sha256": "6666666666666666666666666666666666666666666666666666666666666666",
+          "sent_at": "2026-11-13T13:01:00Z",
+          "terminal_at": "2026-11-13T13:01:01Z",
+          "result": "DENIED"
+        }
+      ],
+      "task_terminal_at": "2026-11-13T13:02:00Z"
+    },
+    "observer": {
+      "binding": {
+        "binding_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "binding_ref": {
+          "ref": "original-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "owner_scope_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "qualification_ref": {
+        "ref": "original-1111111111111111111111111111111111111111111111111111111111111111",
+        "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "pre_authority_ref": {
+        "ref": "original-2222222222222222222222222222222222222222222222222222222222222222",
+        "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "post_authority_ref": {
+        "ref": "original-3333333333333333333333333333333333333333333333333333333333333333",
+        "sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+      },
+      "publication_authority_ref": {
+        "ref": "original-4444444444444444444444444444444444444444444444444444444444444444",
+        "sha256": "4444444444444444444444444444444444444444444444444444444444444444"
+      },
+      "before": {
+        "observed_at": "2026-11-13T13:00:59Z",
+        "trip_id_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "trip_version": 1,
+        "content_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "state_ref": {
+          "ref": "original-dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+        }
+      },
+      "after": {
+        "observed_at": "2026-11-13T13:02:01Z",
+        "trip_id_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "trip_version": 1,
+        "content_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "state_ref": {
+          "ref": "original-dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+        }
+      },
+      "disclosure_scan_ref": {
+        "ref": "original-5555555555555555555555555555555555555555555555555555555555555555",
+        "sha256": "5555555555555555555555555555555555555555555555555555555555555555"
+      },
+      "consumer_evidence_inventory_ref": {
+        "ref": "original-6666666666666666666666666666666666666666666666666666666666666666",
+        "sha256": "6666666666666666666666666666666666666666666666666666666666666666"
+      },
+      "foreign_read_rows": 0,
+      "foreign_mutations": 0,
+      "private_visible_hits": 0,
+      "checked_at": "2026-11-13T13:02:02Z",
+      "dispatch_authority_ref": {
+        "ref": "original-2222222222222222222222222222222222222222222222222222222222222222",
+        "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      }
+    },
+    "cost_attribution": {
+      "charge_id": "synthetic-original-c-charge",
+      "charged_batch_id": "synthetic-c-prepare-batch",
+      "allocation_ref": {
+        "ref": "original-1111111111111111111111111111111111111111111111111111111111111111",
+        "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "treatment": "reuse_reference",
+      "batch_cost_report_ref": {
+        "ref": "original-7777777777777777777777777777777777777777777777777777777777777777",
+        "sha256": "7777777777777777777777777777777777777777777777777777777777777777"
+      }
+    },
+    "stage": "COMPLETE",
+    "evidence_status": "PASS",
+    "checks": {
+      "producer_chain": {
+        "status": "PASS",
+        "reason": null,
+        "evidence_refs": [
+          {
+            "ref": "original-8888888888888888888888888888888888888888888888888888888888888888",
+            "sha256": "8888888888888888888888888888888888888888888888888888888888888888"
+          }
+        ]
+      },
+      "fixture_identity": {
+        "status": "PASS",
+        "reason": null,
+        "evidence_refs": [
+          {
+            "ref": "original-8888888888888888888888888888888888888888888888888888888888888888",
+            "sha256": "8888888888888888888888888888888888888888888888888888888888888888"
+          }
+        ]
+      },
+      "reuse_admission": {
+        "status": "PASS",
+        "reason": null,
+        "evidence_refs": [
+          {
+            "ref": "original-8888888888888888888888888888888888888888888888888888888888888888",
+            "sha256": "8888888888888888888888888888888888888888888888888888888888888888"
+          }
+        ]
+      },
+      "observer_authority": {
+        "status": "PASS",
+        "reason": null,
+        "evidence_refs": [
+          {
+            "ref": "original-8888888888888888888888888888888888888888888888888888888888888888",
+            "sha256": "8888888888888888888888888888888888888888888888888888888888888888"
+          }
+        ]
+      },
+      "consumer_probe_binding": {
+        "status": "PASS",
+        "reason": null,
+        "evidence_refs": [
+          {
+            "ref": "original-8888888888888888888888888888888888888888888888888888888888888888",
+            "sha256": "8888888888888888888888888888888888888888888888888888888888888888"
+          }
+        ]
+      },
+      "consumer_inventory": {
+        "status": "PASS",
+        "reason": null,
+        "evidence_refs": [
+          {
+            "ref": "original-8888888888888888888888888888888888888888888888888888888888888888",
+            "sha256": "8888888888888888888888888888888888888888888888888888888888888888"
+          }
+        ]
+      },
+      "foreign_read_observation": {
+        "status": "PASS",
+        "reason": null,
+        "evidence_refs": [
+          {
+            "ref": "original-8888888888888888888888888888888888888888888888888888888888888888",
+            "sha256": "8888888888888888888888888888888888888888888888888888888888888888"
+          }
+        ]
+      },
+      "foreign_write_observation": {
+        "status": "PASS",
+        "reason": null,
+        "evidence_refs": [
+          {
+            "ref": "original-8888888888888888888888888888888888888888888888888888888888888888",
+            "sha256": "8888888888888888888888888888888888888888888888888888888888888888"
+          }
+        ]
+      },
+      "before_after_consistency": {
+        "status": "PASS",
+        "reason": null,
+        "evidence_refs": [
+          {
+            "ref": "original-8888888888888888888888888888888888888888888888888888888888888888",
+            "sha256": "8888888888888888888888888888888888888888888888888888888888888888"
+          }
+        ]
+      },
+      "private_disclosure_scan": {
+        "status": "PASS",
+        "reason": null,
+        "evidence_refs": [
+          {
+            "ref": "original-8888888888888888888888888888888888888888888888888888888888888888",
+            "sha256": "8888888888888888888888888888888888888888888888888888888888888888"
+          }
+        ]
+      },
+      "cost_accounting": {
+        "status": "PASS",
+        "reason": null,
+        "evidence_refs": [
+          {
+            "ref": "original-8888888888888888888888888888888888888888888888888888888888888888",
+            "sha256": "8888888888888888888888888888888888888888888888888888888888888888"
+          }
+        ]
+      }
+    },
+    "published_at": "2026-11-13T13:02:03Z",
+    "isolation_ref": {
+      "ref": "original-9999999999999999999999999999999999999999999999999999999999999999",
+      "sha256": "9999999999999999999999999999999999999999999999999999999999999999"
+    },
+    "coverage": {
+      "foreign_read_interface": "PASS",
+      "foreign_write_interface": "UNRUN",
+      "model_visible_exact_scan": "PASS",
+      "user_visible_exact_scan": "PASS",
+      "semantic_disclosure_review": "UNKNOWN"
+    }
+  },
+  "definition_wire_sha256": "d161b7d248d1538e739d237138d68ecca2336984717a1da588af1a75728aed05",
+  "use_wire_sha256": "77826b751a493bee0fcb732ef03c912ebeb543ced6cca4144102dcf2b9cdb763"
+}

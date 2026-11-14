@@ -2,6 +2,9 @@
 from datetime import datetime, timezone
 from pathlib import Path
 import tempfile
+import importlib.util
+import shutil
+import sys
 import plistlib
 from types import SimpleNamespace
 import unittest
@@ -11,7 +14,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
 from m4_artifacts import export_native_logs, verified_public_certificate
-from m4_device import freeze_amap_key, stage_accounts
+from m4_device import ROOT, configure_project, freeze_amap_key, private_directory, private_workspace, stage_accounts
 
 
 class CertificatePackagingTests(unittest.TestCase):
@@ -107,6 +110,140 @@ class OneUseInputTests(unittest.TestCase):
                             stage_accounts('synthetic-device','synthetic.bundle',Path('synthetic.app'),Path(directory),{'A':'SYNTHETIC'})
                 self.assertTrue(source_paths)
                 self.assertTrue(all(not source.exists() for source in source_paths))
+
+
+class DeviceWorkspaceTests(unittest.TestCase):
+    def test_unapproved_offline_group_or_identity_cannot_mutate_project(self):
+        spec=importlib.util.spec_from_file_location('m4_fixture_generator',ROOT/'scripts/check_ios_trip_confirm.py')
+        module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+        for group,bundle in [('group.g2c.other','space.go2china.offline.acceptance'),
+                             ('group.g2c.offline','space.go2china.memory-candidate.acceptance'),
+                             ('group.g2c.offline','space.go2china.offline-trip.acceptance')]:
+            with self.subTest(group=group,bundle=bundle),tempfile.TemporaryDirectory() as directory:
+                builder=object.__new__(module.XCTestDriver);builder.directory=Path(directory);builder.write_project(0)
+                project=builder.directory/'G2CAcceptance.xcodeproj'
+                original=(project/'project.pbxproj').read_bytes()
+                tls=SimpleNamespace(public_der=b'SYNTHETIC-PUBLIC-CERTIFICATE',team='SYNTHETIC1')
+                with self.assertRaises(ValueError):
+                    configure_project(project,tls,'https://192.168.1.1:1234','SYNTHETIC-CONTROL',bundle=bundle,offline_group=group)
+                self.assertEqual((project/'project.pbxproj').read_bytes(),original)
+                self.assertFalse((builder.directory/'M4OfflineDevice.entitlements').exists())
+
+    def test_offline_group_is_exact_and_debug_only(self):
+        spec=importlib.util.spec_from_file_location('m4_fixture_generator',ROOT/'scripts/check_ios_trip_confirm.py')
+        module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+        with tempfile.TemporaryDirectory() as directory:
+            builder=object.__new__(module.XCTestDriver);builder.directory=Path(directory);builder.write_project(0)
+            project=builder.directory/'G2CAcceptance.xcodeproj'
+            tls=SimpleNamespace(public_der=b'SYNTHETIC-PUBLIC-CERTIFICATE',team='SYNTHETIC1')
+            configure_project(project,tls,'https://192.168.1.1:1234','SYNTHETIC-CONTROL',bundle='space.go2china.offline.acceptance',include_release=True,offline_group='group.g2c.offline')
+            pbx=(project/'project.pbxproj').read_text()
+            debug=next(line for line in pbx.splitlines() if line.startswith('000000000000000000000014 ='))
+            release=next(line for line in pbx.splitlines() if line.startswith('000000000000000000000015 ='))
+            self.assertIn('M4OfflineDevice.entitlements',debug);self.assertIn('G2C_OFFLINE_CLOCK=1',debug)
+            self.assertNotIn('M4OfflineDevice.entitlements',release);self.assertNotIn('G2C_OFFLINE_CLOCK',release)
+            self.assertNotIn('com.apple.security.application-groups',plistlib.loads((builder.directory/'M4Device.entitlements').read_bytes()))
+            self.assertEqual(plistlib.loads((builder.directory/'M4OfflineDevice.entitlements').read_bytes())['com.apple.security.application-groups'],['group.g2c.offline'])
+
+    def test_approved_device_v4_group_keeps_keychain_identity_separate(self):
+        spec=importlib.util.spec_from_file_location('m4_fixture_generator',ROOT/'scripts/check_ios_trip_confirm.py')
+        module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+        with tempfile.TemporaryDirectory() as directory:
+            builder=object.__new__(module.XCTestDriver);builder.directory=Path(directory);builder.write_project(0)
+            project=builder.directory/'G2CAcceptance.xcodeproj'
+            tls=SimpleNamespace(public_der=b'SYNTHETIC-PUBLIC-CERTIFICATE',team='SYNTHETIC1')
+            configure_project(project,tls,'https://192.168.1.1:1234','SYNTHETIC-CONTROL',
+                bundle='space.go2china.device-v4.acceptance',include_release=True,offline_group='group.g2c.offline')
+            value=plistlib.loads((builder.directory/'M4OfflineDevice.entitlements').read_bytes())
+            self.assertEqual(value['com.apple.security.application-groups'],['group.g2c.offline'])
+            self.assertEqual(value['keychain-access-groups'],['$(AppIdentifierPrefix)$(PRODUCT_BUNDLE_IDENTIFIER)'])
+            self.assertEqual(value['application-identifier'],'$(AppIdentifierPrefix)$(PRODUCT_BUNDLE_IDENTIFIER)')
+            pbx=(project/'project.pbxproj').read_text()
+            debug=next(line for line in pbx.splitlines() if line.startswith('000000000000000000000014 ='))
+            release=next(line for line in pbx.splitlines() if line.startswith('000000000000000000000015 ='))
+            self.assertIn('M4OfflineDevice.entitlements',debug);self.assertIn('G2C_OFFLINE_CLOCK=1',debug)
+            self.assertNotIn('M4OfflineDevice.entitlements',release);self.assertNotIn('G2C_OFFLINE_CLOCK',release)
+
+    def test_public_beta_app_does_not_bundle_the_control_server_pin(self):
+        spec=importlib.util.spec_from_file_location('m4_fixture_generator',ROOT/'scripts/check_ios_trip_confirm.py')
+        module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+        with tempfile.TemporaryDirectory() as directory:
+            builder=object.__new__(module.XCTestDriver);builder.directory=Path(directory);builder.write_project(0)
+            project=builder.directory/'G2CAcceptance.xcodeproj'
+            original_app_phase=next(line for line in (project/'project.pbxproj').read_text().splitlines() if line.startswith('000000000000000000000120 ='))
+            tls=SimpleNamespace(public_der=b'SYNTHETIC-PUBLIC-CERTIFICATE',team='SYNTHETIC1')
+            configure_project(project,tls,'https://192.168.1.1:1234','SYNTHETIC-CONTROL',
+                bundle='space.go2china.beta.acceptance',app_local_tls=False)
+            pbx=(project/'project.pbxproj').read_text()
+            app_phase=next(line for line in pbx.splitlines() if line.startswith('000000000000000000000120 ='))
+            control_phase=next(line for line in pbx.splitlines() if line.startswith('A00000000000000000000009 ='))
+            self.assertEqual(app_phase,original_app_phase)
+            self.assertIn('files = (E',control_phase)
+            self.assertNotIn('G2C_DEBUG_LOCAL_NETWORK=1',pbx)
+            self.assertIn('G2C_DEBUG_SIGNING_IDENTITY=1',pbx)
+            self.assertNotIn('name = Production;',pbx)
+
+    def test_implicit_build_and_generated_inputs_are_private(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output=Path(directory)/'exports';output.mkdir()
+            private,build=private_workspace(output)
+            try:
+                self.assertFalse(private.is_relative_to(output))
+                self.assertEqual(private.stat().st_mode&0o777,0o700)
+                self.assertTrue(build.is_relative_to(private))
+                self.assertEqual(list(output.iterdir()),[])
+            finally:shutil.rmtree(private)
+
+    def test_nested_or_symlinked_export_build_paths_are_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);output=root/'exports';output.mkdir()
+            alias=root/'alias';alias.symlink_to(output,target_is_directory=True)
+            for build in (output,output/'dd',root,alias/'dd'):
+                with self.subTest(build=build):
+                    with self.assertRaises(ValueError):private_workspace(output,build)
+
+    def test_actual_temp_destination_under_export_is_rejected_before_inputs(self):
+        from m4_native import DeviceNative
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);output=root/'exports';temporary=output/'native-temp';temporary.mkdir(parents=True)
+            with patch('tempfile.tempdir',str(temporary)):
+                with self.assertRaises(ValueError):private_workspace(output,root/'build')
+                with self.assertRaises(ValueError):private_directory(output,'raw-native-')
+                with self.assertRaises(ValueError):DeviceNative('SYNTHETIC','synthetic.bundle',root/'project',
+                    root/'config',root/'build',root,output/'case',{},'SYNTHETIC-CONTROL',{},evidence_root=output)
+            self.assertEqual(list(temporary.iterdir()),[])
+
+    def test_matrix_rejects_build_under_aggregate_exports_before_any_child(self):
+        spec=importlib.util.spec_from_file_location('m4_matrix',ROOT/'ios/App/Acceptance/check_m4_app.py')
+        module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+        with tempfile.TemporaryDirectory() as directory:
+            output=Path(directory)/'exports'
+            arguments=['matrix','--device','SYNTHETIC','--local-tls','SYNTHETIC',
+                '--run-context','SYNTHETIC','--output',str(output),'--build-dir',str(output/'derived'),
+                '--prepare-only','--step','accounts']
+            with patch.object(sys,'argv',arguments),patch('m4_device.LocalTLS.load'),patch.object(module.subprocess,'run') as child:
+                with self.assertRaisesRegex(ValueError,'separate'):module.main()
+                child.assert_not_called()
+            self.assertFalse(output.exists())
+
+    def test_actual_generator_removes_production_in_both_device_modes(self):
+        spec=importlib.util.spec_from_file_location('m4_fixture_generator',ROOT/'scripts/check_ios_trip_confirm.py')
+        module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+        for release in (False,True):
+            with self.subTest(include_release=release),tempfile.TemporaryDirectory() as directory:
+                builder=object.__new__(module.XCTestDriver);builder.directory=Path(directory)
+                builder.write_project(0)
+                project=builder.directory/'G2CAcceptance.xcodeproj'
+                tls=SimpleNamespace(public_der=b'SYNTHETIC-PUBLIC-CERTIFICATE',team='SYNTHETIC1')
+                bundle,config,_=configure_project(project,tls,'https://192.168.1.1:1234','SYNTHETIC-CONTROL',include_release=release)
+                pbx=(project/'project.pbxproj').read_text()
+                self.assertNotIn('name = Production;',pbx)
+                self.assertNotIn('PRODUCT_BUNDLE_IDENTIFIER = space.go2china.app;',pbx)
+                project_configs='000000000000000000000012'+(', 000000000000000000000013' if release else '')
+                app_configs='000000000000000000000014'+(', 000000000000000000000015' if release else '')
+                self.assertIn('buildConfigurations = ('+project_configs+');',pbx)
+                self.assertIn('buildConfigurations = ('+app_configs+');',pbx)
+                if release:self.assertIn('M4_LOCAL_CERT_EXCLUDE_Release_CJProbeApp = G2CM4LocalServer.cer',config.read_text())
 
 
 if __name__=='__main__':unittest.main()

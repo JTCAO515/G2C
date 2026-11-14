@@ -1,0 +1,99 @@
+name: g2c-beta
+x-application: &application
+  image: ${CJ_BETA_IMAGE:?exact reviewed source image required}
+  entrypoint: [python, -B, -m, deploy.hk.entrypoint]
+  user: "10001:10001"
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  read_only: true
+  tmpfs: [/tmp]
+  restart: unless-stopped
+  mem_limit: 768m
+  logging: {driver: local, options: {max-size: 5m, max-file: "3"}}
+services:
+  migrate:
+    <<: *application
+    command: [migrate]
+    restart: "no"
+    env_file:
+      - /srv/g2c-beta/common.env
+    volumes:
+      - /srv/g2c-beta/operator.env:/run/secrets/operator.env:ro
+      - /srv/g2c-beta/supabase-ca.crt:/run/config/supabase-ca.crt:ro
+      - /srv/g2c-beta/control:/control
+  api:
+    <<: *application
+    command: [api]
+    env_file:
+      - /srv/g2c-beta/common.env
+    volumes:
+      - /srv/g2c-beta/api.env:/run/secrets/api.env:ro
+      - /srv/g2c-beta/supabase-ca.crt:/run/config/supabase-ca.crt:ro
+      - /srv/g2c-beta/control:/control:ro
+      - /srv/g2c-beta/heartbeat:/heartbeat:ro
+    depends_on: {migrate: {condition: service_completed_successfully}}
+    healthcheck:
+      test: [CMD, python, -m, deploy.hk.healthcheck]
+      interval: 15s
+      timeout: 12s
+      retries: 3
+  worker:
+    <<: *application
+    command: [worker]
+    env_file:
+      - /srv/g2c-beta/common.env
+    environment:
+      CJ_M4_BUDGET_PRODUCER: hk-beta-47.83.147.176
+    volumes:
+      - /srv/g2c-beta/worker.env:/run/secrets/worker.env:ro
+      - /srv/g2c-beta/supabase-ca.crt:/run/config/supabase-ca.crt:ro
+      - /srv/g2c-beta/control:/control:ro
+      - /srv/g2c-beta/heartbeat:/heartbeat
+      - /srv/g2c-beta/budget:/home/cj/.local/share/g2c/m4-real-services
+      - /srv/g2c-beta/control/budget:/control/budget
+    depends_on: {migrate: {condition: service_completed_successfully}}
+  caddy:
+    image: caddy:2.11.7-alpine@sha256:e70b164da81ef698b3ad19af799ea6086ce6d9e48ed4079eb9fe26f6fbf14ee5
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    security_opt: [no-new-privileges:true]
+    read_only: true
+    tmpfs: [/tmp]
+    restart: unless-stopped
+    mem_limit: 192m
+    ports: ["80:80", "443:443"]
+    volumes:
+      - /srv/g2c-beta/deploy/hk/Caddyfile:/etc/caddy/Caddyfile:ro
+      - /srv/g2c-beta/tls:/data
+      - /srv/g2c-beta/caddy-config:/config
+    depends_on: [api]
+  backup:
+    <<: *application
+    image: ${CJ_BETA_OPERATOR_IMAGE:?exact reviewed operator image required}
+    entrypoint: [python, -B, -m, deploy.hk.backup]
+    restart: "no"
+    profiles: [operator]
+    env_file:
+      - /srv/g2c-beta/common.env
+    volumes:
+      - /srv/g2c-beta/operator.env:/run/secrets/operator.env:ro
+      - /srv/g2c-beta/backup.env:/run/secrets/backup.env:ro
+      - /srv/g2c-beta/authorizations:/run/authorizations:ro
+      - /srv/g2c-beta/supabase-ca.crt:/run/config/supabase-ca.crt:ro
+      - /srv/g2c-beta/control:/control
+      - /srv/g2c-beta/backups:/backups
+      - /srv/g2c-beta/rehearsals:/rehearsals
+  rehearsal:
+    <<: *application
+    image: ${CJ_BETA_OPERATOR_IMAGE:?exact reviewed operator image required}
+    entrypoint: [python, -B, -m, deploy.hk.cloud_rehearsal]
+    restart: "no"
+    profiles: [operator]
+    env_file:
+      - /srv/g2c-beta/common.env
+    volumes:
+      - /srv/g2c-beta/operator.env:/run/secrets/operator.env:ro
+      - /srv/g2c-beta/rehearsal.env:/run/secrets/rehearsal.env:ro
+      - /srv/g2c-beta/backups:/backups
+      - /srv/g2c-beta/supabase-ca.crt:/run/config/supabase-ca.crt:ro
+      - /srv/g2c-beta/control:/control

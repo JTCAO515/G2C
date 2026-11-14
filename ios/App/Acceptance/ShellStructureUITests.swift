@@ -6,6 +6,9 @@ import Foundation
     private let fixtureURL = "__FIXTURE_URL__"
     private var app: XCUIApplication!
     private var runID = ""
+    #if G2C_M4_DEVICE_ACCEPTANCE
+    private lazy var deviceSession = M4DeviceTestSession(test: self, control: fixtureURL)
+    #endif
 
     private func launch(mode: String? = nil, language: String = "en") {
         continueAfterFailure = false
@@ -17,7 +20,13 @@ import Foundation
             app.launchEnvironment.merge(["SHELL_FIXTURE_RUN": runID, "SHELL_FIXTURE_MEMORY": mode,
                 "SHELL_FIXTURE_LANGUAGE": language, "SHELL_FIXTURE_URL": fixtureURL]) { _, new in new }
         } else { app.launchArguments = ["-cj.ui.language.v1", language] }
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        app.launchEnvironment.merge(try! deviceSession.applicationEnvironment(endpoint: fixtureURL, injecting: false)) { _, value in value }
+        #endif
         app.launch()
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        deviceSession.waitForAppNetworkConsent()
+        #endif
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
     }
 
@@ -30,7 +39,13 @@ import Foundation
 
     private func visibleControl(_ label: String) -> XCUIElement {
         let tab = ["Assistant","Trips","Plugins","Memory","助手","行程","插件","记忆"].contains(label)
-        let identifier = ["Privacy notice (beta)","隐私说明（内测版）"].contains(label) ? "memory.privacy" : label
+        let routes = ["Account":"memory.account", "账号":"memory.account",
+            "Delete account":"memory.accountDeletion", "注销账号":"memory.accountDeletion",
+            "Language":"memory.language", "语言":"memory.language",
+            "Help":"memory.help", "帮助":"memory.help",
+            "Privacy notice (beta)":"memory.privacy", "隐私说明（内测版）":"memory.privacy",
+            "Support":"memory.support", "支持":"memory.support"]
+        let identifier = routes[label] ?? label
         let element: XCUIElement
         if tab { element = app.tabBars.buttons.matching(identifier:identifier).firstMatch }
         else if identifier == "support.email" {
@@ -38,6 +53,9 @@ import Foundation
             // Its exact product identifier is stable; no mail composition is sent.
             element = app.descendants(matching:.any).matching(identifier:identifier).firstMatch
         } else { element = app.buttons.matching(identifier:identifier).firstMatch }
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        if !tab { deviceSession.revealControl(element, in: app, diagnosticIdentifier: identifier) }
+        #else
         if !tab {
             for attempt in 0..<30 {
                 let navigation = app.navigationBars.firstMatch
@@ -54,6 +72,7 @@ import Foundation
                 start.press(forDuration:0.05,thenDragTo:end)
             }
         }
+        #endif
         XCTAssertTrue(element.waitForExistence(timeout: 5), label)
         XCTAssertTrue(element.isHittable, label)
         return element
@@ -75,8 +94,18 @@ import Foundation
         let field = app.descendants(matching: .any).matching(identifier: "assistant.draft").firstMatch
         XCTAssertTrue(field.waitForExistence(timeout: 5))
         field.tap(); field.typeText("Beijing draft 157")
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        // The keyboard accessory is outside the scrollable content bounds.
+        // Use the same exact toolbar query as the signed feedback driver.
+        let done = app.toolbars.buttons.matching(NSPredicate(format: "label IN %@", ["Done", "完成"]))
+        XCTAssertTrue(done.element.waitForExistence(timeout: 8)); XCTAssertEqual(done.count, 1)
+        XCTAssertTrue(done.element.isEnabled && done.element.isHittable); done.element.tap()
+        let hidden = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.keyboards.firstMatch)
+        XCTAssertEqual(XCTWaiter.wait(for: [hidden], timeout: 10), .completed)
+        #else
         if app.buttons["Done"].exists { tap("Done") }
         else if app.buttons["完成"].exists { tap("完成") }
+        #endif
     }
 
     private func draftRetained() {
@@ -91,7 +120,11 @@ import Foundation
 
     private func requests() async throws -> [String] {
         let url = try XCTUnwrap(URL(string: fixtureURL + "/audit?run=" + runID))
+        #if G2C_M4_DEVICE_ACCEPTANCE
+        let (data, response) = try await deviceSession.data(from: url, restoring: app)
+        #else
         let (data, response) = try await URLSession.shared.data(from: url)
+        #endif
         XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
         return try JSONDecoder().decode([String].self, from: data)
     }
@@ -105,10 +138,31 @@ import Foundation
             XCTAssertTrue(app.navigationBars[chinese ? "帮助" : "Help"].exists)
             text(chinese ? "首次使用与建号" : "Getting started")
             capture("help-" + language)
+            let guidance = [
+                ("help.account.registration", chinese ? "进入账号并选择注册" : "open Account and choose Register"),
+                ("help.invited.access", chinese ? "仍需服务端验证。" : "Server verification is required."),
+                ("help.trip.actions", chinese ? "使用可用的按钮采用或拒绝草稿，或保存修改。" : "Use the available controls to accept or reject a draft or save changes."),
+                ("help.trip.offline", chinese ? "期限从最近一次成功同步起算，最长 14 天。" : "up to 14 days from the last successful sync."),
+                ("help.account.deletion", chinese ? "请先核对范围，再确认删除。" : "review its scope and confirm the action."),
+            ]
+            for (identifier, expected) in guidance {
+                let matches = app.staticTexts.matching(identifier: identifier)
+                let paragraph = matches.element
+                #if G2C_M4_DEVICE_ACCEPTANCE
+                deviceSession.revealControl(paragraph, in: app, diagnosticIdentifier: identifier)
+                #else
+                for _ in 0..<12 {
+                    if paragraph.exists && paragraph.isHittable { break }
+                    app.swipeUp()
+                }
+                #endif
+                XCTAssertEqual(matches.count, 1, identifier)
+                XCTAssertTrue(paragraph.label.contains(expected), identifier)
+            }
             app.navigationBars.buttons.element(boundBy: 0).tap()
             tap(chinese ? "隐私说明（内测版）" : "Privacy notice (beta)")
             XCTAssertTrue(app.navigationBars[chinese ? "隐私说明（内测版）" : "Privacy notice (beta)"].exists)
-            let provider = app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Context Jump LLC")).firstMatch
+            let provider = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Context Jump LLC")).firstMatch
             XCTAssertTrue(provider.waitForExistence(timeout: 5))
             capture("privacy-provider-" + language)
             let support = app.buttons[chinese ? "支持" : "Support"]
@@ -135,8 +189,8 @@ import Foundation
         enterDraft()
         for tab in ["Assistant", "Trips", "Plugins"] {
             tap(tab)
-            XCTAssertFalse(app.buttons["Account"].exists)
-            XCTAssertFalse(app.buttons["Language"].exists)
+            XCTAssertFalse(app.buttons["memory.account"].exists)
+            XCTAssertFalse(app.buttons["memory.language"].exists)
         }
         tap("Memory"); tap("Language")
         text("Saved on this device. Switching language keeps your current navigation and unsent draft.")
@@ -147,8 +201,8 @@ import Foundation
         tap("助手"); draftRetained()
         for tab in ["助手", "行程", "插件"] {
             tap(tab)
-            XCTAssertFalse(app.buttons["账号"].exists)
-            XCTAssertFalse(app.buttons["语言"].exists)
+            XCTAssertFalse(app.buttons["memory.account"].exists)
+            XCTAssertFalse(app.buttons["memory.language"].exists)
         }
         tap("记忆")
         XCTAssertTrue(app.navigationBars["语言"].exists)

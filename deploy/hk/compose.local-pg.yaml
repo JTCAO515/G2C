@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: ${CJ_BETA_OPERATOR_IMAGE:?exact reviewed operator image required}
+    entrypoint: [python, -B, -m, deploy.hk.local_postgres]
+    command: [serve]
+    user: "10001:10001"
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    read_only: true
+    tmpfs: [/tmp]
+    restart: unless-stopped
+    network_mode: none
+    mem_limit: 768m
+    logging: {driver: local, options: {max-size: 5m, max-file: "3"}}
+    env_file:
+      - /srv/g2c-beta/common.env
+    volumes:
+      - /srv/g2c-beta/local-pg:/local-pg
+      - /srv/g2c-beta/local-pg-socket:/run/g2c-pg
+  api:
+    volumes:
+      - /srv/g2c-beta/local-pg-socket:/run/g2c-pg:ro
+      - /srv/g2c-beta/demo-auth-socket:/run/g2c-demo:ro
+  worker:
+    volumes:
+      - /srv/g2c-beta/local-pg-socket:/run/g2c-pg:ro
+      - /srv/g2c-beta/demo-auth-socket:/run/g2c-demo
+  migrate:
+    volumes:
+      - /srv/g2c-beta/local-pg-socket:/run/g2c-pg:ro
+  backup:
+    volumes:
+      - /srv/g2c-beta/local-pg-socket:/run/g2c-pg:ro
+  rehearsal:
+    volumes:
+      - /srv/g2c-beta/local-pg-socket:/run/g2c-pg:ro

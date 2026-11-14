@@ -1,4 +1,5 @@
 """Local typed MEMORY API; canonical AUTH/operation and B-owned current leases."""
+from cj_strict_json import compact
 import json
 from datetime import datetime,timezone
 from pathlib import Path
@@ -8,7 +9,8 @@ from starlette.concurrency import run_in_threadpool
 
 from cj_api.app import create_app
 from cj_api.generated import (MemorySaveV2Response,MemoryReceiptV2Response,MemoryDetailV2Response,
-    MemoryListV2Response,MemoryManagementApplyV2Response,MemoryManagementReceiptV2Response)
+    MemoryListV2Response,MemoryManagementApplyV2Response,MemoryManagementReceiptV2Response,
+    MemoryDetailV3Response,MemoryListV3Response)
 from cj_api.composition import CompositionUnavailable
 from cj_api.local_app import (LocalDatabase,scope_for,ISSUER,AUDIENCE,KEY_ID,InvitedSubjects)
 from cj_api.memory_boundary import (MemoryBoundary,MemoryBinding,MemoryAccessBlocked,
@@ -26,25 +28,51 @@ from .typed_local import TypedConfiguration
 
 
 class _RequestBoundary(MemoryBoundary):
-    def __init__(self, original, authority):
+    def __init__(self, original, authority, *, title_projection=None):
         super().__init__(original.checker,original.resolve_binding,original.source_policy,original.modules)
         self.authority=authority
+        self.title_projection=title_projection
 
     def _command(self, kind, argument):
         return parse_manual(argument) if kind=='save' else None
 
     def _context_value(self, context, kind, argument):
         if kind=='save':return context.save_manual_typed(argument,self.authority)
+        if self.title_projection is not None:
+            return context.project_titles(kind,argument,self.title_projection)
         return super()._context_value(context,kind,argument)
 
 
-def create_local_typed_app(*,conninfo_path,auth_dir,configuration,max_body_bytes=32768,max_response_bytes=1_000_000):
+def _require_typed_host(configuration,max_body_bytes,max_response_bytes):
     import os
     if (os.environ.get('CJ_ENV')!='local' or type(configuration) is not TypedConfiguration
             or type(max_body_bytes) is not int or not 1<=max_body_bytes<=32768
             or type(max_response_bytes) is not int or max_response_bytes<1):
         raise CompositionUnavailable('explicit bounded local typed MEMORY host required')
-    database=LocalDatabase(conninfo_path,travel_context=True)
+
+
+def create_local_typed_app(*,conninfo_path,auth_dir,configuration,max_body_bytes=32768,max_response_bytes=1_000_000):
+    _require_typed_host(configuration,max_body_bytes,max_response_bytes)
+    app=create_app()
+    _register_typed_routes(app,database=LocalDatabase(conninfo_path,travel_context=True),auth_dir=auth_dir,
+        configuration=configuration,max_body_bytes=max_body_bytes,max_response_bytes=max_response_bytes)
+    return app
+
+
+def register_typed_routes(app,*,database:LocalDatabase,auth_dir,configuration:TypedConfiguration,
+                          max_body_bytes=32768,max_response_bytes=1_000_000):
+    """Install existing v2 routes using the trusted host's scoped runtime database.
+
+    The host constructs the database with travel capability and its original
+    transaction guard; request fields never select a database or grant rights.
+    AUTH, account retirement, source policy and current leases stay route-owned.
+    """
+    _require_typed_host(configuration,max_body_bytes,max_response_bytes)
+    _register_typed_routes(app,database=database,auth_dir=auth_dir,configuration=configuration,
+        max_body_bytes=max_body_bytes,max_response_bytes=max_response_bytes)
+
+
+def _register_typed_routes(app,*,database,auth_dir,configuration,max_body_bytes,max_response_bytes):
     auth_dir=Path(auth_dir)
     keys=StaticPublicKeys({KEY_ID:VerificationKey('RS256',(auth_dir/'public.pem').read_bytes())})
 
@@ -70,7 +98,6 @@ def create_local_typed_app(*,conninfo_path,auth_dir,configuration,max_body_bytes
     boundary=build_memory_boundary(environment='local',jwt_configuration=JWTConfiguration(ISSUER,AUDIENCE,'RS256',0),
         verification_keys=keys,access_provider=AccountRevocationAccess(InvitedSubjects(auth_dir/'invited.json'),retired_for(database)),
         resolve_binding=resolve,source_policy=policy)
-    app=create_app()
 
     def query(request,fields):
         pairs=list(request.query_params.multi_items());value=dict(pairs)
@@ -90,20 +117,28 @@ def create_local_typed_app(*,conninfo_path,auth_dir,configuration,max_body_bytes
                  expected_version=command.context_version if command.schema_version==2 else None))
         return dict(command=value,version=item.version,status=item.status,recorded_at=item.recorded_at.isoformat())
 
-    def project(request,kind,value):
+    def project(request,kind,value,*,titles=None):
+        def titled_item(item):
+            result=private_item(item)
+            result['title']=titles.get(item.command.item_id)
+            return result
+
+        render=private_item if titles is None else titled_item
         if kind in ('save','query'):
             result={'receipt':None if value is None else value.__dict__}
         elif kind in ('manage','withdraw','management_query'):
             result={'receipt':None if value is None else dict(action_id=value.operation_id,item_id=value.item_id,
                 version=value.version,status=value.status,input_sha256=value.input_sha256)}
-        elif kind=='detail':result={'item':None if value is None else private_item(value)}
-        elif kind=='list':result={'items':[private_item(item) for item in value]}
+        elif kind=='detail':result={'item':None if value is None else render(value)}
+        elif kind=='list':result={'items':[render(item) for item in value]}
         else:raise ValueError('unsupported typed projection')
-        raw=json.dumps(dict(version='MEMORY-result.2',request_id=request.state.request_id,**result),
-                       ensure_ascii=False,separators=(',',':')).encode()
+        version='MEMORY-result.2' if titles is None else 'MEMORY-result.3'
+        raw=compact(dict(version=version,request_id=request.state.request_id,**result), allow_nan=True)
         models={'save':MemorySaveV2Response,'query':MemoryReceiptV2Response,'detail':MemoryDetailV2Response,
                 'list':MemoryListV2Response,'manage':MemoryManagementApplyV2Response,
                 'withdraw':MemoryManagementApplyV2Response,'management_query':MemoryManagementReceiptV2Response}
+        if titles is not None:
+            models.update(detail=MemoryDetailV3Response,list=MemoryListV3Response)
         models[kind].model_validate_json(raw,strict=True)
         if len(raw)>max_response_bytes:raise ValueError('private output exceeds explicit limit')
         return raw
@@ -120,7 +155,7 @@ def create_local_typed_app(*,conninfo_path,auth_dir,configuration,max_body_bytes
         return _error(request,503,'MEMORY_OUTCOME_UNKNOWN' if write else 'MEMORY_UNAVAILABLE','dependency','unknown',
                       'reconcile_original' if write else 'retry_safe_read')
 
-    async def invoke(request,kind,argument):
+    async def invoke(request,kind,argument,*,with_titles=False):
         token=_token(request)
         if token is None:return _error(request,401,'ACCESS_DENIED','access','failed','do_not_retry')
         def operation():
@@ -146,6 +181,10 @@ def create_local_typed_app(*,conninfo_path,auth_dir,configuration,max_body_bytes
                 if version!=expected:raise InvalidInput('typed operation endpoint/version mismatch')
                 return execute(service.repository,service.manual_policy,guard,authority,argument,
                                lambda value:project(request,kind,value))
+            if with_titles:
+                return _RequestBoundary(boundary,authority,
+                    title_projection=lambda value,titles:project(request,kind,value,titles=titles)
+                    ).invoke(token,kind,argument,lambda raw:raw)
             return _RequestBoundary(boundary,authority).invoke(token,kind,argument,lambda value:project(request,kind,value))
         try:return Response(content=await run_in_threadpool(operation),media_type='application/json')
         except Exception as error:return failure(request,kind in ('save','manage','withdraw'),error)
@@ -178,17 +217,26 @@ def create_local_typed_app(*,conninfo_path,auth_dir,configuration,max_body_bytes
         except (InvalidInput,UnicodeError):return _error(request,400,'INVALID_INPUT','input','failed','do_not_retry')
         return await invoke(request,'query',value['operation_id'])
 
-    @app.get('/v2/memory-items')
-    async def detail(request:Request):
+    async def detail_read(request,with_titles):
         try:value=query(request,('item_id',))
         except (InvalidInput,UnicodeError):return _error(request,400,'INVALID_INPUT','input','failed','do_not_retry')
-        return await invoke(request,'detail',value['item_id'])
+        return await invoke(request,'detail',value['item_id'],with_titles=with_titles)
 
-    @app.get('/v2/memories')
-    async def listing(request:Request):
+    async def list_read(request,with_titles):
         try:
             value=query(request,('after','limit') if 'after' in request.query_params else ('limit',));limit=int(value['limit'])
             if str(limit)!=value['limit'] or not 1<=limit<=100:raise InvalidInput('page bound')
         except (InvalidInput,ValueError,UnicodeError):return _error(request,400,'INVALID_INPUT','input','failed','do_not_retry')
-        return await invoke(request,'list',(value.get('after'),limit))
-    return app
+        return await invoke(request,'list',(value.get('after'),limit),with_titles=with_titles)
+
+    @app.get('/v2/memory-items')
+    async def detail(request:Request):return await detail_read(request,False)
+
+    @app.get('/v2/memories')
+    async def listing(request:Request):return await list_read(request,False)
+
+    @app.get('/v3/memory-items')
+    async def detail_titled(request:Request):return await detail_read(request,True)
+
+    @app.get('/v3/memories')
+    async def listing_titled(request:Request):return await list_read(request,True)

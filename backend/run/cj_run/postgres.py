@@ -1,16 +1,21 @@
 """Injected DB-API repository. No DSN, connection creation, auth or dispatch."""
+from cj_strict_json import compact
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
 import hashlib
-import json
 import logging
+from psycopg.errors import LockNotAvailable
 from .core import Binding, State, Event, Cursor, Conflict, Denied, ResyncRequired, WorkerOwnershipLost, advance, page
 from .usage_binding import UsageBinding
 
 
 class RecoveryReadUnavailable(Exception):
     """Strict read cleanup failed; no recovered value may be published."""
+
+
+class RunScopeBusy(LockNotAvailable):
+    """The RUN scope lock statement timed out before any RUN state was read."""
 
 
 class CommitUnknown(Exception):
@@ -33,7 +38,7 @@ class JobCursor:
 
 
 class Repository:
-    def __init__(self, connect, scope, *, expires_at, statement_timeout_ms, lock_timeout_ms):
+    def __init__(self, connect, scope, *, expires_at, statement_timeout_ms, lock_timeout_ms, connect_worker=None):
         if connect is None or type(scope) is not str or not scope.strip():
             raise ValueError('trusted scope and connection factory required')
         if not isinstance(expires_at, datetime) or expires_at.tzinfo is None or expires_at.utcoffset() is None:
@@ -42,12 +47,27 @@ class Repository:
             if type(n) is not int or not 1 <= n <= 2147483647:
                 raise ValueError('explicit positive timeout required')
         self.connect, self.scope, self.expires_at = connect, scope, expires_at
+        self.connect_worker = connect_worker
         self.statement_timeout_ms, self.lock_timeout_ms = statement_timeout_ms, lock_timeout_ms
 
     def snapshot_optional(self,binding):
         """Original history may precede RUN acceptance; failure is never absence."""
         with self.transaction(require_clean_close=True) as tx:
             return None if tx._record(binding) is None else tx.get(binding)
+
+    def lio_timeline(self, bindings):
+        """Display retained Lio originals already resolved by the MESSAGE boundary."""
+        with self._transaction(require_clean_close=True, scope_lock=False, display_snapshot=True) as tx:
+            snapshots = []
+            for binding in bindings:
+                row = tx._record(binding, lock=False)
+                if row is None:
+                    snapshots.append((None, False))
+                    continue
+                state = tx._read_state(binding, row, retained=True)
+                expired = row[6] is not True and state.status in ('queued', 'running')
+                snapshots.append((state, expired))
+            return snapshots
 
     @contextmanager
     def worker_lease(self, binding):
@@ -58,11 +78,12 @@ class Repository:
         lock remains until explicit release or process/session death.
         """
         if binding.scope != self.scope: raise Denied('scope unavailable')
-        raw = b'CJ-RUN-WORKER-LEASE@1\x00' + json.dumps(binding.chat, ensure_ascii=False, separators=(',', ':')).encode()
+        raw = b'CJ-RUN-WORKER-LEASE@1\x00' + compact(binding.chat, allow_nan=True)
         unsigned = int.from_bytes(hashlib.sha256(raw).digest()[:8], 'big')
         key = unsigned if unsigned < 1 << 63 else unsigned - (1 << 64)
         high, low = unsigned >> 32, unsigned & 0xffffffff
-        conn = self.connect()
+        connect = self.connect if self.connect_worker is None else self.connect_worker
+        conn = connect()
         cur = None; acquired = False; active = False; failed = False
         def budget():
             cur.execute("SELECT set_config('statement_timeout',%s,true), set_config('lock_timeout',%s,true)",
@@ -72,14 +93,16 @@ class Repository:
                 if conn.autocommit: raise WorkerOwnershipLost('autocommit lease unavailable')
                 cur = conn.cursor()
                 cur.execute('SET TRANSACTION ISOLATION LEVEL READ COMMITTED')
+                # Audit the initial physical session before the trusted scope
+                # binder installs its transaction-scoped release barrier.
+                cur.execute("SELECT count(*) FROM pg_locks WHERE pid=pg_backend_pid() AND locktype='advisory' AND granted")
+                if cur.fetchone()[0] != 0: raise WorkerOwnershipLost('dirty worker session')
                 bind_scope = getattr(conn, 'bind_scope', None)  # existing scoped DB-API extension
                 if bind_scope is not None: bind_scope(cur)
                 budget()
                 cur.execute('SELECT active FROM cj_run_scope WHERE scope=%s', (self.scope,))
                 row = cur.fetchone()
                 if row is None or row[0] is not True: raise Denied('scope unavailable')
-                cur.execute("SELECT count(*) FROM pg_locks WHERE pid=pg_backend_pid() AND locktype='advisory' AND granted")
-                if cur.fetchone()[0] != 0: raise WorkerOwnershipLost('dirty worker session')
                 cur.execute('SELECT pg_backend_pid(), pg_try_advisory_lock(%s)', (key,))
                 pid, acquired = cur.fetchone()
                 conn.commit()
@@ -126,8 +149,9 @@ class Repository:
                 try: logging.getLogger(__name__).warning('run_worker_lease_cleanup_failed')
                 except BaseException: pass
 
-    def transaction(self, *, require_clean_close=False):
-        return self._transaction(require_clean_close=require_clean_close,scope_lock=True)
+    def transaction(self, *, require_clean_close=False, borrowed_connection=None, validate_connection=None):
+        return self._transaction(require_clean_close=require_clean_close,scope_lock=True,
+                                 borrowed_connection=borrowed_connection,validate_connection=validate_connection)
 
     def job_transaction(self, *, require_clean_close=False,background_protocol=None):
         # Job rows have their own locks/physical lease. Taking the shared RUN
@@ -135,8 +159,9 @@ class Repository:
         return self._transaction(require_clean_close=require_clean_close,scope_lock=False,background_protocol=background_protocol)
 
     @contextmanager
-    def _transaction(self, *, require_clean_close,scope_lock,background_protocol=None):
-        conn = self.connect()
+    def _transaction(self, *, require_clean_close,scope_lock,background_protocol=None,
+                     borrowed_connection=None,validate_connection=None,display_snapshot=False):
+        conn = self.connect() if borrowed_connection is None else borrowed_connection
         cur = None
         outcome = 'setup_failed'
         cleanup_error = None
@@ -158,19 +183,30 @@ class Repository:
                 raise ValueError('autocommit forbidden')
             cur = conn.cursor()
             try:
-                cur.execute('SET TRANSACTION ISOLATION LEVEL READ COMMITTED')
+                cur.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY'
+                            if display_snapshot else 'SET TRANSACTION ISOLATION LEVEL READ COMMITTED')
                 bind_scope = getattr(conn, 'bind_scope', None)
                 if bind_scope is not None:
                     bind_scope(cur)
+                if validate_connection is not None:
+                    validate_connection(cur)
                 if background_protocol is not None:
                     cur.execute("SELECT set_config('cj.background_protocol',%s,true)",(background_protocol,))
                 cur.execute("SELECT set_config('statement_timeout',%s,true), set_config('lock_timeout',%s,true)",
                             (str(self.statement_timeout_ms), str(self.lock_timeout_ms)))
-                cur.execute('SELECT epoch,active FROM cj_run_scope WHERE scope=%s'+(' FOR UPDATE' if scope_lock else ''), (self.scope,))
+                try:
+                    cur.execute('SELECT epoch,active FROM cj_run_scope WHERE scope=%s'+(' FOR UPDATE' if scope_lock else ''), (self.scope,))
+                except LockNotAvailable as error:
+                    if scope_lock:
+                        raise RunScopeBusy(*error.args) from error
+                    raise
                 row = cur.fetchone()
                 if row is None or row[1] is not True:
                     raise Denied('scope unavailable')
-                yield Transaction(cur, self.scope, row[0], self.expires_at) if scope_lock else JobCursor(cur,self.scope,row[0])
+                if scope_lock or display_snapshot:
+                    yield Transaction(cur, self.scope, row[0], self.expires_at)
+                else:
+                    yield JobCursor(cur, self.scope, row[0])
             except BaseException:
                 outcome = 'body_failed'
                 cleanup(conn.rollback, 'rollback')
@@ -185,15 +221,20 @@ class Repository:
         finally:
             if cur is not None:
                 cleanup(cur.close, 'cursor_close')
-            cleanup(conn.close, 'connection_close')
+            if borrowed_connection is None or outcome != 'committed' or cleanup_error is not None:
+                cleanup(conn.close, 'connection_close')
         if require_clean_close and cleanup_error is not None:
             if not isinstance(cleanup_error, Exception):
                 raise cleanup_error
             raise RecoveryReadUnavailable('RUN read cleanup failed') from None
 
-    def recover(self, binding, *, require_clean_close=False):
+    def recover(self, binding, *, require_clean_close=False, borrowed_connection=None, validate_connection=None):
         """Deterministic original-run read, never a worker execution authorization."""
-        transaction = (self.transaction(require_clean_close=True) if require_clean_close else self.transaction())
+        if borrowed_connection is not None:
+            transaction = self.transaction(require_clean_close=require_clean_close, borrowed_connection=borrowed_connection,
+                                           validate_connection=validate_connection)
+        else:
+            transaction = self.transaction(require_clean_close=True) if require_clean_close else self.transaction()
         with transaction as tx:
             state = tx.get(binding)
             result = Recovery(state, Cursor(binding, tx.epoch, state.sequence, 0),
@@ -218,9 +259,9 @@ class Transaction:
         if type(binding) is not Binding or binding.scope != self.scope:
             raise Denied('scope unavailable')
 
-    def _record(self, binding):
+    def _record(self, binding, *, lock=True):
         self._scope(binding)
-        self.cur.execute('SELECT conversation_id,generation,message_id,message_sequence,status,event_sequence,expires_at>clock_timestamp(),usage_command_bytes,usage_input_bytes FROM cj_run_record WHERE scope=%s AND run_id=%s FOR UPDATE',
+        self.cur.execute('SELECT conversation_id,generation,message_id,message_sequence,status,event_sequence,expires_at>clock_timestamp(),usage_command_bytes,usage_input_bytes FROM cj_run_record WHERE scope=%s AND run_id=%s' + (' FOR UPDATE' if lock else ''),
                          (self.scope, binding.run_id))
         return self.cur.fetchone()
 
@@ -252,9 +293,12 @@ class Transaction:
         row = self._record(binding)
         if row is None:
             raise Conflict('unavailable')
+        return self._read_state(binding, row)
+
+    def _read_state(self, binding, row, *, retained=False):
         if row[:4] != (binding.conversation_id, binding.generation, binding.message_id, binding.message_sequence):
             raise Conflict('binding changed')
-        if row[6] is not True:
+        if not retained and row[6] is not True:
             raise ResyncRequired('run recovery expired; not absent')
         self.cur.execute('SELECT sequence,event_id,kind,value FROM cj_run_event WHERE scope=%s AND run_id=%s ORDER BY sequence',
                          (self.scope, binding.run_id))

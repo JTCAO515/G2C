@@ -3,6 +3,7 @@ import json
 import unittest
 from cj_memory.domain import Command, InvalidInput
 from cj_memory.typed import ContextRef, parse_manual, parse_stored
+from test_title_projection import TitleProjection, TitleWireContract
 
 
 def raw(**changes):
@@ -31,6 +32,28 @@ class TypedGrammar(unittest.TestCase):
             with self.subTest(changes=changes),self.assertRaises(InvalidInput):parse_manual(raw(**changes))
         value=raw()
         with self.assertRaises(InvalidInput):parse_manual(value[:-1]+b',"slot":"duplicate"}')
+
+
+class TypedHostConfiguration(unittest.TestCase):
+    def test_both_entry_points_reject_invalid_configuration_before_dependencies(self):
+        from unittest.mock import patch
+        from cj_api.composition import CompositionUnavailable
+        from cj_memory.typed_api import create_local_typed_app,register_typed_routes
+        from cj_memory.typed_local import TypedConfiguration
+        config=TypedConfiguration.from_bytes(json.dumps(EditRuntimePolicy().document()['collection']).encode())
+        cases=[dict(configuration=None),dict(configuration=config,max_body_bytes=0),
+               dict(configuration=config,max_body_bytes=32769),dict(configuration=config,max_response_bytes=0)]
+        with patch.dict('os.environ',CJ_ENV='local'):
+            for options in cases:
+                with self.subTest(options=options),self.assertRaises(CompositionUnavailable):
+                    create_local_typed_app(conninfo_path='missing-conninfo',auth_dir='missing-auth',**options)
+                with self.subTest(options=options),self.assertRaises(CompositionUnavailable):
+                    register_typed_routes(None,database=None,auth_dir='missing-auth',**options)
+        with patch.dict('os.environ',CJ_ENV='production'):
+            with self.assertRaises(CompositionUnavailable):
+                create_local_typed_app(conninfo_path='missing-conninfo',auth_dir='missing-auth',configuration=config)
+            with self.assertRaises(CompositionUnavailable):
+                register_typed_routes(None,database=None,auth_dir='missing-auth',configuration=config)
 
 
 

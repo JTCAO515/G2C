@@ -4,6 +4,7 @@ The internal live-context addition was confirmed by the MESSAGE owner via Main.
 Type checks only catch misuse: context must originate in the current trusted
 with_history_context callback. No caller metadata object grants authorization.
 """
+from cj_strict_json import compact
 import base64
 import json
 import os
@@ -26,7 +27,7 @@ def _integer(value,minimum=0):
 
 
 def _json(value):
-    return json.dumps(value,ensure_ascii=False,sort_keys=True,separators=(',',':'),allow_nan=False).encode('utf-8')
+    return compact(value, sort_keys=True)
 
 
 class AeadCursorCodec:

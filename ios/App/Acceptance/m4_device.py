@@ -99,20 +99,62 @@ class LocalTLS:
                     ssl_version=ssl.PROTOCOL_TLS_SERVER, ssl_ciphers='ECDHE+AESGCM:ECDHE+CHACHA20')
 
 
-def configure_project(project, tls, control_url, control_token, amap=False):
+def private_directory(output, prefix):
+    """Validate the actual tempfile destination before it can receive inputs."""
+    output = Path(output).resolve()
+    private = Path(tempfile.mkdtemp(prefix=prefix)).resolve()
+    if private.is_relative_to(output) or output.is_relative_to(private) or private.is_relative_to(ROOT):
+        private.rmdir()  # Still empty: no certificate, token or raw data was written.
+        raise ValueError('Private temporary directory overlaps repository or evidence exports')
+    private.chmod(0o700)
+    return private
+
+
+def private_workspace(output, build=None):
+    """Keep device inputs and derived products outside the export boundary."""
+    output = Path(output).resolve()
+    if build is not None:
+        build = Path(build).resolve()
+        if build.is_relative_to(output) or output.is_relative_to(build) or build.is_relative_to(ROOT):
+            raise ValueError('Device build cache must be separate from repository and evidence exports')
+    private = private_directory(output, 'g2c-m4-private-project-')
+    return private, build if build is not None else private / 'build'
+
+
+def configure_project(project, tls, control_url, control_token, amap=False,
+                      bundle=None, include_release=False, app_local_tls=True, offline_group=None):
     """Adapt the existing generated native project; real keys stay local-only."""
     project = Path(project)
     pbx = project / 'project.pbxproj'
     text = pbx.read_text()
-    bundle = 'space.go2china.app' if amap else 'space.go2china.scoped.acceptance'
+    if bundle is None:
+        bundle = 'space.go2china.app' if amap else 'space.go2china.scoped.acceptance'
+    if amap and bundle != 'space.go2china.app':
+        raise ValueError('AMap requires its authorized formal Bundle ID')
+    if amap and include_release:
+        raise ValueError('Local AMap device configuration is Debug only')
+    if amap and not app_local_tls:
+        raise ValueError('The local AMap project requires its local test profile')
+    if offline_group is not None and (offline_group!='group.g2c.offline' or bundle not in (
+            'space.go2china.app','space.go2china.offline.acceptance','space.go2china.device-v4.acceptance')):
+        raise ValueError('Only the dedicated JT-approved offline group and identities are allowed')
+    if not app_local_tls:
+        text=text.replace('G2C_DEBUG_LOCAL_NETWORK=1','G2C_DEBUG_SIGNING_IDENTITY=1')
     text = text.replace('space.go2china.foundation.local', bundle).replace(
         'space.go2china.foundation.control', 'space.go2china.m4.device.control')
+    # Owning generators may already have replaced the foundation IDs. Keep
+    # the controller identity stable while each business App retains its ID.
+    text = text.replace(bundle + '.control', 'space.go2china.m4.device.control')
     text = text.replace('GENERATE_INFOPLIST_FILE = YES;',
         'GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_NSLocalNetworkUsageDescription = "M4 synthetic-data test control on the development Mac";')
-    text = re.sub(r'buildConfigurations = \(000000000000000000000012[^)]*\)',
-                  'buildConfigurations = (000000000000000000000012)', text)
-    text = re.sub(r'buildConfigurations = \(000000000000000000000014[^)]*\)',
-                  'buildConfigurations = (000000000000000000000014)', text)
+    # The acceptance project has no Beta or Production configuration. Its only product
+    # identities are the isolated Debug/Release acceptance IDs (or Debug AMap).
+    for first, release, product in (('12', '13', '1[68]'), ('14', '15', '1[79]')):
+        prefix = '0000000000000000000000'
+        permitted = [prefix + first] + ([prefix + release] if include_release else [])
+        text = re.sub(r'buildConfigurations = \(' + prefix + first + r'[^)]*\)',
+                      'buildConfigurations = (' + ', '.join(permitted) + ')', text)
+        text = re.sub(r'^' + prefix + product + r' = \{isa = XCBuildConfiguration;[^\n]*\n', '', text, flags=re.MULTILINE)
     # The simulator entitlement is never reused as a device signing identity.
     text = re.sub(r'"CODE_SIGN_ENTITLEMENTS\[sdk=iphonesimulator\*\]"\s*=\s*[^;]+;', '', text)
     device_entitlements = project.parent/'M4Device.entitlements'
@@ -123,6 +165,18 @@ def configure_project(project, tls, control_url, control_token, amap=False):
     if text.count(target_anchor) not in (2,3):
         raise ValueError('App identity configurations changed')
     text=text.replace(target_anchor,target_anchor+' CODE_SIGN_ENTITLEMENTS = '+json.dumps(str(device_entitlements))+';')
+    if offline_group:
+        offline_entitlements=project.parent/'M4OfflineDevice.entitlements'
+        value=plistlib.loads(device_entitlements.read_bytes())
+        value['com.apple.security.application-groups']=[offline_group]
+        offline_entitlements.write_bytes(plistlib.dumps(value))
+        debug_prefix='000000000000000000000014 ='
+        debug=next(line for line in text.splitlines() if line.startswith(debug_prefix))
+        updated=debug.replace(json.dumps(str(device_entitlements)),json.dumps(str(offline_entitlements)))
+        updated,count=re.subn(r'(INFOPLIST_PREPROCESSOR_DEFINITIONS = ")([^"]*)(";)',
+            lambda match:match[1]+match[2]+' G2C_OFFLINE_CLOCK=1'+match[3],updated)
+        if count!=1:raise ValueError('Offline Debug Info preprocessing configuration changed')
+        text=text.replace(debug,updated)
     entries = []
     resource_ids = []
     counter = 0
@@ -139,7 +193,7 @@ def configure_project(project, tls, control_url, control_token, amap=False):
     with pin_file.open('xb') as output:
         output.write(tls.public_der)
     pin_file.chmod(0o600)
-    resource_ids.append(resource(pin_file))
+    if app_local_tls:resource_ids.append(resource(pin_file))
     local = ROOT / 'ios/.local-amap-device'
     frozen_key = None
     if amap:
@@ -150,7 +204,7 @@ def configure_project(project, tls, control_url, control_token, amap=False):
     app_anchor = '000000000000000000000120 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = ('
     if text.count(app_anchor) != 1:
         raise ValueError('App resource phase changed')
-    text = text.replace(app_anchor, app_anchor + ', '.join(resource_ids) + ', ')
+    if resource_ids:text = text.replace(app_anchor, app_anchor + ', '.join(resource_ids) + ', ')
     bootstrap = project.parent / 'M4ControlBootstrap.plist'
     with bootstrap.open('xb') as output:
         output.write(plistlib.dumps(dict(endpoint=control_url, token=control_token)))
@@ -161,7 +215,9 @@ def configure_project(project, tls, control_url, control_token, amap=False):
         raise ValueError('Control resource phase changed')
     text = text.replace(control_anchor, control_anchor + ', '.join(control_resources))
     sources = []
-    for source in [HERE / 'M4DeviceControl.swift', ROOT / 'ios/Modules/CJMessageClient/Sources/CJMessageHTTP/M4LocalServerTrust.swift']:
+    control_sources = [HERE / 'M4DeviceControl.swift', HERE / 'M4DeviceTestSession.swift',
+                       ROOT / 'ios/Modules/CJMessageClient/Sources/CJMessageHTTP/M4LocalServerTrust.swift']
+    for source in control_sources:
         sources.append(resource(source))
     source_anchor = f'A{7:023X} = {{isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = ('
     if text.count(source_anchor) != 1:
@@ -174,6 +230,15 @@ def configure_project(project, tls, control_url, control_token, amap=False):
              'DEBUG_INFORMATION_FORMAT = dwarf',
              'CODE_SIGNING_ALLOWED = YES', 'CODE_SIGN_STYLE = Automatic',
              'CODE_SIGN_IDENTITY = Apple Development', 'DEVELOPMENT_TEAM = ' + tls.team]
+    if include_release:
+        # Release product stays disconnected. Only its separate XCTest runner
+        # needs the pinned control connection, not the product or its packages.
+        lines[:2] = [
+            'M4_DEVICE_FLAGS_Debug = -D DEBUG -D G2C_M4_DEVICE_ACCEPTANCE',
+            'M4_CONTROL_FLAGS_G2CControl = -D DEBUG -D G2C_M4_DEVICE_ACCEPTANCE',
+            'OTHER_SWIFT_FLAGS = $(inherited) $(M4_DEVICE_FLAGS_$(CONFIGURATION)) $(M4_CONTROL_FLAGS_$(TARGET_NAME))',
+            'M4_LOCAL_CERT_EXCLUDE_Release_CJProbeApp = G2CM4LocalServer.cer',
+            'EXCLUDED_SOURCE_FILE_NAMES = $(inherited) $(M4_LOCAL_CERT_EXCLUDE_$(CONFIGURATION)_$(TARGET_NAME))']
     if amap:
         # This include supplies only local SDK paths/flags; no key value.
         lines = ['#include ' + json.dumps(str(local / 'AMap.xcconfig'))] + lines
@@ -204,6 +269,11 @@ def stage_accounts(device, bundle, app, private_directory, tokens):
     result=subprocess.run(['xcrun','devicectl','device','install','app','--device',device,str(app),
         '--timeout','60'],capture_output=True)
     if result.returncode:raise RuntimeError('Approved device App install failed')
+    copy_accounts(device,bundle,private_directory,tokens)
+
+
+def copy_accounts(device, bundle, private_directory, tokens):
+    """Stage a fresh one-use input for a relaunch, without reinstalling the App."""
     with tempfile.TemporaryDirectory(prefix='operator-input-',dir=private_directory) as temporary:
         source=Path(temporary)/'G2CM4DeviceAccounts.json'
         with source.open('x') as output:json.dump(tokens,output)
@@ -214,14 +284,18 @@ def stage_accounts(device, bundle, app, private_directory, tokens):
         if result.returncode:raise RuntimeError('Device one-use credential staging failed')
 
 
+def staged_accounts_present(device,bundle):
+    result=subprocess.run(['xcrun','devicectl','device','info','files','--device',device,
+        '--domain-type','appDataContainer','--domain-identifier',bundle,'--subdirectory','Library/Caches',
+        '--no-recurse','--json-output','-','--quiet','--timeout','20'],capture_output=True)
+    if result.returncode:raise RuntimeError('Device staged-input cleanup state UNKNOWN')
+    data=json.loads(result.stdout)['result']['files']
+    return any(item['name']=='G2CM4DeviceAccounts.json' for item in data)
+
+
 def discard_staged_accounts(device,bundle):
     def present():
-        result=subprocess.run(['xcrun','devicectl','device','info','files','--device',device,
-            '--domain-type','appDataContainer','--domain-identifier',bundle,'--subdirectory','Library/Caches',
-            '--no-recurse','--json-output','-','--quiet','--timeout','20'],capture_output=True)
-        if result.returncode:raise RuntimeError('Device staged-input cleanup state UNKNOWN')
-        data=json.loads(result.stdout)['result']['files']
-        return any(item['name']=='G2CM4DeviceAccounts.json' for item in data)
+        return staged_accounts_present(device,bundle)
     if not present():return
     # This App-owned one-use input is the only cleanup target, never a business
     # journal or Keychain item. The App rejects symlinks and verifies removal.

@@ -7152,6 +7152,234 @@ public enum Operations {
             }
         }
     }
+    /// - Remark: HTTP `GET /v2/run-events`.
+    /// - Remark: Generated from `#/paths//v2/run-events/get(streamTravelRunEvents)`.
+    public enum streamTravelRunEvents {
+        public static let id: Swift.String = "streamTravelRunEvents"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v2/run-events/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// Exact original opaque MESSAGE-send.2 ID, using the owner and active source checks of /v2/run-display.
+                ///
+                /// - Remark: Generated from `#/paths/v2/run-events/GET/query/message_id`.
+                public var message_id: Swift.String
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - message_id: Exact original opaque MESSAGE-send.2 ID, using the owner and active source checks of /v2/run-display.
+                public init(message_id: Swift.String) {
+                    self.message_id = message_id
+                }
+            }
+            public var query: Operations.streamTravelRunEvents.Input.Query
+            /// - Remark: Generated from `#/paths/v2/run-events/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                /// UTF-8 byte offset of answer text already received; the stream resumes after it.
+                ///
+                /// - Remark: Generated from `#/paths/v2/run-events/GET/header/Last-Event-ID`.
+                public var Last_hyphen_Event_hyphen_ID: Swift.String?
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.streamTravelRunEvents.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - Last_hyphen_Event_hyphen_ID: UTF-8 byte offset of answer text already received; the stream resumes after it.
+                ///   - accept:
+                public init(
+                    Last_hyphen_Event_hyphen_ID: Swift.String? = nil,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.streamTravelRunEvents.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.Last_hyphen_Event_hyphen_ID = Last_hyphen_Event_hyphen_ID
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.streamTravelRunEvents.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - query:
+            ///   - headers:
+            public init(
+                query: Operations.streamTravelRunEvents.Input.Query,
+                headers: Operations.streamTravelRunEvents.Input.Headers = .init()
+            ) {
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v2/run-events/GET/responses/200/headers`.
+                public struct Headers: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v2/run-events/GET/responses/200/headers/X-Request-ID`.
+                    public var X_hyphen_Request_hyphen_ID: Components.Schemas.RequestId
+                    /// Creates a new `Headers`.
+                    ///
+                    /// - Parameters:
+                    ///   - X_hyphen_Request_hyphen_ID:
+                    public init(X_hyphen_Request_hyphen_ID: Components.Schemas.RequestId) {
+                        self.X_hyphen_Request_hyphen_ID = X_hyphen_Request_hyphen_ID
+                    }
+                }
+                /// Received HTTP response headers
+                public var headers: Operations.streamTravelRunEvents.Output.Ok.Headers
+                /// - Remark: Generated from `#/paths/v2/run-events/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v2/run-events/GET/responses/200/content/text\/event-stream`.
+                    case text_event_hyphen_stream(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.text_event_hyphen_stream`.
+                    ///
+                    /// - Throws: An error if `self` is not `.text_event_hyphen_stream`.
+                    /// - SeeAlso: `.text_event_hyphen_stream`.
+                    public var text_event_hyphen_stream: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .text_event_hyphen_stream(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.streamTravelRunEvents.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - headers: Received HTTP response headers
+                ///   - body: Received HTTP response body
+                public init(
+                    headers: Operations.streamTravelRunEvents.Output.Ok.Headers,
+                    body: Operations.streamTravelRunEvents.Output.Ok.Body
+                ) {
+                    self.headers = headers
+                    self.body = body
+                }
+            }
+            /// Read-only server-sent events for the original MESSAGE-send.2 RUN. Same scope, source and revocation checks as the protected Travel display snapshot. `event: delta` data {"text"} with id = cumulative UTF-8 byte offset; `event: status` data {"status": queued|running|completed|failed|cancelled|context_invalid|unknown|unavailable}. Closes after a terminal status or the server stream bound; reconnect with Last-Event-ID.
+            ///
+            /// - Remark: Generated from `#/paths//v2/run-events/get(streamTravelRunEvents)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.streamTravelRunEvents.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.streamTravelRunEvents.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Default: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v2/run-events/GET/responses/default/headers`.
+                public struct Headers: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v2/run-events/GET/responses/default/headers/X-Request-ID`.
+                    public var X_hyphen_Request_hyphen_ID: Components.Schemas.RequestId
+                    /// Creates a new `Headers`.
+                    ///
+                    /// - Parameters:
+                    ///   - X_hyphen_Request_hyphen_ID:
+                    public init(X_hyphen_Request_hyphen_ID: Components.Schemas.RequestId) {
+                        self.X_hyphen_Request_hyphen_ID = X_hyphen_Request_hyphen_ID
+                    }
+                }
+                /// Received HTTP response headers
+                public var headers: Operations.streamTravelRunEvents.Output.Default.Headers
+                /// - Remark: Generated from `#/paths/v2/run-events/GET/responses/default/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v2/run-events/GET/responses/default/content/application\/json`.
+                    case json(Components.Schemas.ErrorResponse)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.ErrorResponse {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.streamTravelRunEvents.Output.Default.Body
+                /// Creates a new `Default`.
+                ///
+                /// - Parameters:
+                ///   - headers: Received HTTP response headers
+                ///   - body: Received HTTP response body
+                public init(
+                    headers: Operations.streamTravelRunEvents.Output.Default.Headers,
+                    body: Operations.streamTravelRunEvents.Output.Default.Body
+                ) {
+                    self.headers = headers
+                    self.body = body
+                }
+            }
+            /// BASE error envelope; access, input, conflict or unavailable. No automatic retry of writes.
+            ///
+            /// - Remark: Generated from `#/paths//v2/run-events/get(streamTravelRunEvents)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Operations.streamTravelRunEvents.Output.Default)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Operations.streamTravelRunEvents.Output.Default {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case text_event_hyphen_stream
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "text/event-stream":
+                    self = .text_event_hyphen_stream
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .text_event_hyphen_stream:
+                    return "text/event-stream"
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .text_event_hyphen_stream,
+                    .json
+                ]
+            }
+        }
+    }
     /// Prepare a short-lived server-signed action bound to the authenticated owner and immutable proposal. This does not confirm or modify a Trip. Requires an explicitly configured issuer; default is unavailable.
     ///
     /// - Remark: HTTP `POST /v1/trip-confirmations`.
@@ -12001,6 +12229,435 @@ public enum Operations {
             /// - Throws: An error if `self` is not `.`default``.
             /// - SeeAlso: `.`default``.
             public var `default`: Operations.getTypedMemoryManagementReceipt.Output.Default {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `GET /v3/memories`.
+    /// - Remark: Generated from `#/paths//v3/memories/get(listTitledMemories)`.
+    public enum listTitledMemories {
+        public static let id: Swift.String = "listTitledMemories"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v3/memories/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v3/memories/GET/query/limit`.
+                public var limit: Swift.Int
+                /// - Remark: Generated from `#/paths/v3/memories/GET/query/after`.
+                public var after: Swift.String?
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - limit:
+                ///   - after:
+                public init(
+                    limit: Swift.Int,
+                    after: Swift.String? = nil
+                ) {
+                    self.limit = limit
+                    self.after = after
+                }
+            }
+            public var query: Operations.listTitledMemories.Input.Query
+            /// - Remark: Generated from `#/paths/v3/memories/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.listTitledMemories.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.listTitledMemories.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.listTitledMemories.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - query:
+            ///   - headers:
+            public init(
+                query: Operations.listTitledMemories.Input.Query,
+                headers: Operations.listTitledMemories.Input.Headers = .init()
+            ) {
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v3/memories/GET/responses/200/headers`.
+                public struct Headers: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v3/memories/GET/responses/200/headers/X-Request-ID`.
+                    public var X_hyphen_Request_hyphen_ID: Components.Schemas.RequestId
+                    /// Creates a new `Headers`.
+                    ///
+                    /// - Parameters:
+                    ///   - X_hyphen_Request_hyphen_ID:
+                    public init(X_hyphen_Request_hyphen_ID: Components.Schemas.RequestId) {
+                        self.X_hyphen_Request_hyphen_ID = X_hyphen_Request_hyphen_ID
+                    }
+                }
+                /// Received HTTP response headers
+                public var headers: Operations.listTitledMemories.Output.Ok.Headers
+                /// - Remark: Generated from `#/paths/v3/memories/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v3/memories/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.MemoryListV3Response)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.MemoryListV3Response {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.listTitledMemories.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - headers: Received HTTP response headers
+                ///   - body: Received HTTP response body
+                public init(
+                    headers: Operations.listTitledMemories.Output.Ok.Headers,
+                    body: Operations.listTitledMemories.Output.Ok.Body
+                ) {
+                    self.headers = headers
+                    self.body = body
+                }
+            }
+            /// Source-current read-only title projection; original item remains authoritative.
+            ///
+            /// - Remark: Generated from `#/paths//v3/memories/get(listTitledMemories)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.listTitledMemories.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.listTitledMemories.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Default: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v3/memories/GET/responses/default/headers`.
+                public struct Headers: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v3/memories/GET/responses/default/headers/X-Request-ID`.
+                    public var X_hyphen_Request_hyphen_ID: Components.Schemas.RequestId
+                    /// Creates a new `Headers`.
+                    ///
+                    /// - Parameters:
+                    ///   - X_hyphen_Request_hyphen_ID:
+                    public init(X_hyphen_Request_hyphen_ID: Components.Schemas.RequestId) {
+                        self.X_hyphen_Request_hyphen_ID = X_hyphen_Request_hyphen_ID
+                    }
+                }
+                /// Received HTTP response headers
+                public var headers: Operations.listTitledMemories.Output.Default.Headers
+                /// - Remark: Generated from `#/paths/v3/memories/GET/responses/default/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v3/memories/GET/responses/default/content/application\/json`.
+                    case json(Components.Schemas.ErrorResponse)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.ErrorResponse {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.listTitledMemories.Output.Default.Body
+                /// Creates a new `Default`.
+                ///
+                /// - Parameters:
+                ///   - headers: Received HTTP response headers
+                ///   - body: Received HTTP response body
+                public init(
+                    headers: Operations.listTitledMemories.Output.Default.Headers,
+                    body: Operations.listTitledMemories.Output.Default.Body
+                ) {
+                    self.headers = headers
+                    self.body = body
+                }
+            }
+            /// Unified BASE error; see composition-proposal.md for conservative recovery mapping
+            ///
+            /// - Remark: Generated from `#/paths//v3/memories/get(listTitledMemories)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Operations.listTitledMemories.Output.Default)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Operations.listTitledMemories.Output.Default {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `GET /v3/memory-items`.
+    /// - Remark: Generated from `#/paths//v3/memory-items/get(getTitledMemoryItem)`.
+    public enum getTitledMemoryItem {
+        public static let id: Swift.String = "getTitledMemoryItem"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v3/memory-items/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v3/memory-items/GET/query/item_id`.
+                public var item_id: Swift.String
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - item_id:
+                public init(item_id: Swift.String) {
+                    self.item_id = item_id
+                }
+            }
+            public var query: Operations.getTitledMemoryItem.Input.Query
+            /// - Remark: Generated from `#/paths/v3/memory-items/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getTitledMemoryItem.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getTitledMemoryItem.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.getTitledMemoryItem.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - query:
+            ///   - headers:
+            public init(
+                query: Operations.getTitledMemoryItem.Input.Query,
+                headers: Operations.getTitledMemoryItem.Input.Headers = .init()
+            ) {
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v3/memory-items/GET/responses/200/headers`.
+                public struct Headers: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v3/memory-items/GET/responses/200/headers/X-Request-ID`.
+                    public var X_hyphen_Request_hyphen_ID: Components.Schemas.RequestId
+                    /// Creates a new `Headers`.
+                    ///
+                    /// - Parameters:
+                    ///   - X_hyphen_Request_hyphen_ID:
+                    public init(X_hyphen_Request_hyphen_ID: Components.Schemas.RequestId) {
+                        self.X_hyphen_Request_hyphen_ID = X_hyphen_Request_hyphen_ID
+                    }
+                }
+                /// Received HTTP response headers
+                public var headers: Operations.getTitledMemoryItem.Output.Ok.Headers
+                /// - Remark: Generated from `#/paths/v3/memory-items/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v3/memory-items/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.MemoryDetailV3Response)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.MemoryDetailV3Response {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.getTitledMemoryItem.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - headers: Received HTTP response headers
+                ///   - body: Received HTTP response body
+                public init(
+                    headers: Operations.getTitledMemoryItem.Output.Ok.Headers,
+                    body: Operations.getTitledMemoryItem.Output.Ok.Body
+                ) {
+                    self.headers = headers
+                    self.body = body
+                }
+            }
+            /// Source-current read-only title projection; original item remains authoritative.
+            ///
+            /// - Remark: Generated from `#/paths//v3/memory-items/get(getTitledMemoryItem)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.getTitledMemoryItem.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.getTitledMemoryItem.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Default: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v3/memory-items/GET/responses/default/headers`.
+                public struct Headers: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v3/memory-items/GET/responses/default/headers/X-Request-ID`.
+                    public var X_hyphen_Request_hyphen_ID: Components.Schemas.RequestId
+                    /// Creates a new `Headers`.
+                    ///
+                    /// - Parameters:
+                    ///   - X_hyphen_Request_hyphen_ID:
+                    public init(X_hyphen_Request_hyphen_ID: Components.Schemas.RequestId) {
+                        self.X_hyphen_Request_hyphen_ID = X_hyphen_Request_hyphen_ID
+                    }
+                }
+                /// Received HTTP response headers
+                public var headers: Operations.getTitledMemoryItem.Output.Default.Headers
+                /// - Remark: Generated from `#/paths/v3/memory-items/GET/responses/default/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v3/memory-items/GET/responses/default/content/application\/json`.
+                    case json(Components.Schemas.ErrorResponse)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.ErrorResponse {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.getTitledMemoryItem.Output.Default.Body
+                /// Creates a new `Default`.
+                ///
+                /// - Parameters:
+                ///   - headers: Received HTTP response headers
+                ///   - body: Received HTTP response body
+                public init(
+                    headers: Operations.getTitledMemoryItem.Output.Default.Headers,
+                    body: Operations.getTitledMemoryItem.Output.Default.Body
+                ) {
+                    self.headers = headers
+                    self.body = body
+                }
+            }
+            /// Unified BASE error; see composition-proposal.md for conservative recovery mapping
+            ///
+            /// - Remark: Generated from `#/paths//v3/memory-items/get(getTitledMemoryItem)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Operations.getTitledMemoryItem.Output.Default)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Operations.getTitledMemoryItem.Output.Default {
                 get throws {
                     switch self {
                     case let .`default`(_, response):

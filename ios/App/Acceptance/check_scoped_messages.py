@@ -16,16 +16,20 @@ parser.add_argument('--local-tls',type=Path)
 parser.add_argument('--amap-device',action='store_true')
 parser.add_argument('--output',type=Path,required=True)
 parser.add_argument('--build-dir',type=Path,required=True);parser.add_argument('--run-context',type=Path,required=True)
-parser.add_argument('--case',choices=['testScopedItemAndLanguageSwitch','testScopedDayChineseLargest','testScopedUndeterminedDayWithoutModel','testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateLateAccount','testScopedCandidateStaleAcceptance','testScopedCandidateDiscoveryUnavailable','testScopedFixedReorderChineseLargest','testManualProtectedPrepareUnknownRestart','testScopedResultClarification','testScopedResultExpansionKeep','testScopedResultExpansionReselection','testScopedResultWithdrawal','testScopedResultLateAccount','testFormalMapNoPlaceSources','testFormalPlaceMapEnglish','testFormalPlaceMapChineseLargest','testFormalPlaceMapMissing','testFormalPlaceMapUnavailable','testFormalPlaceMapLateAccount'],required=True)
+parser.add_argument('--case',choices=['testScopedItemAndLanguageSwitch','testScopedDayChineseLargest','testScopedUndeterminedDayWithoutModel','testScopedCandidateAccept','testScopedCandidateReject','testScopedCandidateACKLoss','testScopedCandidateConflict','testScopedCandidateWithdrawal','testScopedCandidateLateAccount','testScopedCandidateStaleAcceptance','testScopedCandidateDiscoveryUnavailable','testScopedFixedReorderChineseLargest','testManualProtectedPrepareUnknownRestart','testScopedResultClarification','testScopedResultExpansionKeep','testScopedResultExpansionReselection','testScopedResultWithdrawal','testScopedResultLateAccount','testFormalMapNoPlaceSources','testFormalPlaceMapEnglish','testFormalPlaceMapChineseLargest','testFormalPlaceMapMissing','testFormalPlaceMapUnavailable','testFormalPlaceMapLateAccount','testFormalPlaceMapNonGCJ','testFormalPlaceMapDeviceLanguage'],required=True)
 ARGS=parser.parse_args();PLACE_MAP=ARGS.case.startswith('testFormalPlaceMap');RESULT_PROFILE=ARGS.case.startswith('testScopedResult');OUT=ARGS.output.resolve();BUILD=ARGS.build_dir.resolve();CASE=ARGS.case
+DEVICE_LANGUAGE=CASE=='testFormalPlaceMapDeviceLanguage'
+if DEVICE_LANGUAGE and (not ARGS.device or ARGS.amap_device):
+ parser.error('System language acceptance requires the designated iPhone without a map SDK')
+language_phase='en' if DEVICE_LANGUAGE else None
 TLS=None
 if ARGS.device:
  if not ARGS.local_tls:parser.error('--device requires the approved --local-tls profile')
- if CASE.endswith('Largest'):parser.error('Device maximum-font case needs actual system font setup; not a launch-argument substitute')
  if CASE=='testFormalPlaceMapUnavailable':parser.error('Device map outage needs a real device network case; simulator delegate fault is not device evidence')
- from m4_device import LocalTLS,configure_project,scan_app_container,stage_accounts,discard_staged_accounts
+ from m4_device import LocalTLS,configure_project,private_workspace,private_directory,scan_app_container,stage_accounts,discard_staged_accounts
  from m4_artifacts import export_native_logs,redact
  TLS=LocalTLS.load(ARGS.local_tls)
+ device_project_root,BUILD=private_workspace(OUT,BUILD)
 elif ARGS.local_tls or ARGS.amap_device:parser.error('Device options require --device')
 if ARGS.amap_device and not PLACE_MAP:parser.error('AMap device configuration is restricted to the formal PLACE map cases')
 if OUT.is_relative_to(ROOT) or BUILD.is_relative_to(ROOT):raise ValueError('external evidence required')
@@ -52,10 +56,10 @@ import uvicorn
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from urllib.parse import urlparse,parse_qs
 from cj_api.local_app import load_history_configuration
-r={'app_manual_trip_profile':ARGS.manual_trip_profile,'head':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'status':'RUNNING','layer':'actual simulator/signed API/private PG/formal run_once/Fake synthetic','cases':{},'unrun':(['real accounts/models/services/fees/cloud','physical device/VoiceOver','maps deferred'] if RESULT_PROFILE else ['expansion/clarification pending B360/C336','real accounts/models/services/fees/cloud','physical device/VoiceOver'])}
-if TLS:r['layer']='actual signed iPhone/signed local HTTPS API/private PG/formal run_once/Fake synthetic';r['unrun']=['real accounts/models/PLACE API/cloud/fees','VoiceOver','actual system maximum font']
+r={'app_manual_trip_profile':ARGS.manual_trip_profile,'head':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'status':'RUNNING','layer':'actual simulator/signed API/private PG/formal run_once/Fake synthetic','cases':{},'unrun':(['real accounts/models/services/fees/cloud','physical device','maps deferred'] if RESULT_PROFILE else ['expansion/clarification pending B360/C336','real accounts/models/services/fees/cloud','physical device'])}
+if TLS:r['layer']='actual signed iPhone/signed local HTTPS API/private PG/formal run_once/Fake synthetic';r['unrun']=['real accounts/models/PLACE API/cloud/fees']
 if PLACE_MAP or CASE=='testFormalMapNoPlaceSources':r['unrun']=['positive formal PLACE production chain pending C notification','real point alignment L2/L3','real model/PLACE API/fees/cloud/production/device']
-if TLS:r['unrun']=['real point alignment','real accounts/models/PLACE API/cloud/fees','VoiceOver','actual system maximum font']
+if TLS:r['unrun']=['real point alignment','real accounts/models/PLACE API/cloud/fees']
 def save():(OUT/'report.json').write_text(json.dumps(r,ensure_ascii=False,indent=2))
 def expect(response,phase):
  r.setdefault('setup_responses',[]).append(dict(phase=phase,status=response.status_code,error=response.json().get('error')));save();assert response.status_code==200,(phase,response.status_code,response.text)
@@ -111,15 +115,20 @@ try:
       yield packed(dict(version=MODEL_VERSION,title='SYNTHETIC formal PLACE sources',items=items,proposed_subjects={},place_refs=refs)).decode()
     version='structured.1' if CASE.endswith('Largest') else 'structured.2'
     source_tools=LocalPlaceDraftTools()
-    if CASE=='testFormalPlaceMapMissing':
+    if CASE=='testFormalPlaceMapMissing' or DEVICE_LANGUAGE:
      from cj_place.local_draft_source import LocalDraftPlaceProducer
      class MissingCoordinate(LocalDraftPlaceProducer):
-      def _response(self,query):return 200,dict(status='1',info='OK',infocode='10000',count='1',pois=[dict(id='SYNTH_NO_COORD',name='合成未知坐标')])
+      def _response(self,query):
+       point=dict(id='SYNTH_NO_COORD',name='合成未知坐标')
+       if DEVICE_LANGUAGE:point.update(name='北京合成地点',address='合成东路12号')
+       return 200,dict(status='1',info='OK',infocode='10000',count='1',pois=[point])
      source_tools.place=MissingCoordinate(source_tools.place.config,clock=source_tools.place.clock)
     with TestClient(api) as client:
      declarations=[]
      for index,key in enumerate(('a','b','c')):
       item=fixed(key,str(9+index*2).zfill(2)+':00:00',str(10+index*2).zfill(2)+':00:00');item['kind']='intent' if index else 'appointment';item['locked']=known(index==0);declarations.append(item)
+     if DEVICE_LANGUAGE:
+      declarations[0]['description']='北京合成地点 · 合成东路12号 · ¥35 · Booking not confirmed; travel time unknown.'
      expect(client.post('/v1/needs-actions',content=packed(dict(action_id='synthetic-place-needs',needs_id='visit',expected_version=0,source=dict(kind='manual',text='SYNTHETIC explicit formal PLACE constraints'),changes=dict(fixed_items=declarations))),headers=binary),'actual-place-needs')
      namespace=expect(client.post('/v1/travel-context-actions',content=packed(dict(version='TRAVEL-context-action.1',action_id='place-plan-namespace',operation='create',travel_context=None)),headers=binary),'actual-place-plan-namespace')['receipt']['travel_context']
      chat=expect(client.put('/v1/conversations',params={'conversation_id':'actual-place-source'},headers=headers),'actual-place-chat')
@@ -218,15 +227,43 @@ try:
      changed=prompt['original_content']['items'][2]['id'] if RESULT_PROFILE else prompt['selected_item_ids'][0]
      yield packed(dict(version=prompt['edit_version'],request_id=prompt['request_id'],trip_id=prompt['trip_id'],expected_version=prompt['expected_version'],original_hash=prompt['original_hash'],title=None,order=order,changes=[dict(item_id=changed,field='text',value='SYNTHETIC lighter choice / 本次轻松一点')])).decode()
    formal=detail['trip'];spec=dict(id=tid,title=formal['content']['title'],version=formal['version'],content_sha256=formal['content_sha256'],item_ids=[item['id'] for item in formal['content']['items']])
+   if DEVICE_LANGUAGE:
+    def event_text(event):
+     labels={'missing':'Explicitly missing','unknown':'Unknown'}
+     return ' · '.join(event[key]['value'] if event[key]['state']=='known' else labels[event[key]['state']]
+                       for key in ('date','time','timezone','utc_offset'))
+    language_items=[dict(id=item['id'],text=item['text'],
+                         schedule='Start: '+event_text(item['schedule']['start'])+'\nEnd: '+event_text(item['schedule']['end']))
+                    for item in formal['content']['items']]
+   else:
+    language_items=None
    map_points=[]
+   non_gcj_content=None
    if PLACE_MAP:
-    for entry in formal['content']['sources']:
+    map_content=formal['content']
+    if CASE=='testFormalPlaceMapNonGCJ':
+     # A deliberate client-side negative fixture. The signed backend still
+     # serves and stores its original contract-valid GCJ-02 source.
+     non_gcj_content=deepcopy(map_content)
+     for entry in non_gcj_content['sources']:
+      if entry['kind']!='place':continue
+      snapshot=json.loads(base64.b64decode(entry['snapshot_utf8_base64'],validate=True))
+      coordinate=snapshot['record']['place']['coordinate']['value']
+      assert coordinate['crs']=='GCJ-02'
+      coordinate['crs']='WGS84'
+      source_bytes=packed(snapshot)
+      entry['snapshot_utf8_base64']=base64.b64encode(source_bytes).decode('ascii')
+      entry['snapshot_sha256']=hashlib.sha256(source_bytes).hexdigest()
+     map_content=non_gcj_content
+    for entry in map_content['sources']:
      if entry['kind']!='place':continue
      source_bytes=base64.b64decode(entry['snapshot_utf8_base64']);assert hashlib.sha256(source_bytes).hexdigest()==entry['snapshot_sha256']
      place=json.loads(source_bytes)['record']['place'];coordinate=place['coordinate']
      map_points.append(dict(id=entry['id'],provider_id=place['provider_id'],name_zh=place['name_zh'],address_zh=place['address_zh']['value'],state=coordinate['state'],coordinate=coordinate['value'],snapshot_sha256=entry['snapshot_sha256']))
-    assert len(map_points)==(1 if CASE=='testFormalPlaceMapMissing' else 2)
-    r['original_map_points']=map_points;save()
+    assert len(map_points)==(1 if CASE=='testFormalPlaceMapMissing' or DEVICE_LANGUAGE else 2)
+    if non_gcj_content is None:r['original_map_points']=map_points
+    else:r['delivered_non_gcj_points']=map_points
+    save()
    cid=CASE
    with TestClient(edit_api) as client:expect(client.put('/v1/conversations',params=dict(conversation_id=cid),headers=headers),'native-original-chat')
    structured=create_local_structured_read_app(conninfo_path=connection,auth_dir=auth,run_context=context)
@@ -247,14 +284,35 @@ try:
      return message
     drop_ack=CASE=='testScopedCandidateACKLoss' and path=='/v1/trip-scoped-actions' and scope['method']=='POST'
     hold_discovery=(CASE=='testScopedCandidateLateAccount' and path=='/v1/trip-scoped-discovery') or (CASE=='testScopedResultLateAccount' and path=='/v1/trip-scoped-results') or (CASE=='testFormalPlaceMapLateAccount' and path=='/v5/trip-structured' and not late_captured.is_set())
+    non_gcj_read=non_gcj_content is not None and path in ('/v1/trip-structured-list','/v5/trip-structured')
     actual_reply=[]
     async def sent(message):
      if message['type']=='http.response.start':entry['status']=message['status']
      if path in ('/v4/messages','/v1/trip-manual-preparations','/v1/trip-scoped-results') and message['type']=='http.response.body':reply.append(message.get('body',b''))
-     if drop_ack or hold_discovery:actual_reply.append(message)
+     if drop_ack or hold_discovery or non_gcj_read:actual_reply.append(message)
      else:await send(message)
     target=structured if path in ('/v1/trip-structured-list','/v5/trip-structured') else manual_app if path.startswith(('/v1/trip-manual-','/v1/trip-structured-initialization')) else scoped_app if path.startswith('/v1/trip-scoped-') else typed_app if path.startswith(('/v2/memor','/v2/memory-')) else edit_api
     await target(scope,received,sent)
+    if non_gcj_read:
+     start=actual_reply[0]
+     if start['status']==200:
+      response=json.loads(b''.join(part.get('body',b'') for part in actual_reply[1:]))
+      delivered_sha=hashlib.sha256(packed(non_gcj_content)).hexdigest()
+      records=response['trips'] if path=='/v1/trip-structured-list' else [response['trip']]
+      for record in records:
+       if record is None or record['trip_id']!=tid:continue
+       assert record['content_sha256']==formal['content_sha256']
+       entry.update(original_sha256=record['content_sha256'],delivered_non_gcj_sha256=delivered_sha)
+       record['content_sha256']=delivered_sha
+       if path=='/v5/trip-structured':
+        assert record['content']==formal['content']
+        record['content']=non_gcj_content
+      body=packed(response)
+      start['headers']=[(key,value) for key,value in start['headers'] if key!=b'content-length']
+      await send(start)
+      await send(dict(type='http.response.body',body=body))
+     else:
+      for message in actual_reply:await send(message)
     if path=='/v1/trip-scoped-results' and entry.get('status')==200:
      projection=json.loads(b''.join(reply))['display'];entry.update(result_state=projection['state'],result_present=projection['result'] is not None,expected_version=projection['expected_version'],current_version=projection['current_version'])
     if drop_ack:
@@ -333,7 +391,8 @@ try:
     assert any(x['path']=='/v5/trip-structured' and x.get('status')==200 for x in audit)
     if CASE=='testFormalPlaceMapLateAccount':
      assert late_state.get('original_response_delivered') and late_state['release_elapsed_seconds']<14
-    value=dict(runtime_role=role,formal_trip_id=tid,formal_version=1,content_sha256=formal['content_sha256'],source_message_receipt=r['source_message_receipt'],source_message_sha256=r['source_message_sha256'],points=map_points,app_writes=0,app_models=0,app_messages=0,setup_models=model.calls,setup_place_calls=source_tools.place.invocations,source_unchanged=True)
+    value=dict(runtime_role=role,formal_trip_id=tid,formal_version=1,content_sha256=formal['content_sha256'],source_message_receipt=r['source_message_receipt'],source_message_sha256=r['source_message_sha256'],points=map_points if non_gcj_content is None else None,app_writes=0,app_models=0,app_messages=0,setup_models=model.calls,setup_place_calls=source_tools.place.invocations,source_unchanged=True)
+    if non_gcj_content is not None:value['delivered_non_gcj_points']=map_points
     value['late_original']=dict(late_state) if CASE=='testFormalPlaceMapLateAccount' else None
     r['map_source_proof']=value;r['observed_requests']=list(audit);save();return value
    def map_no_place_proof():
@@ -536,7 +595,7 @@ try:
       self.send_response(403);self.end_headers();self.wfile.write(b'control authorization required');return
      try:
       path=urlparse(self.path);assert parse_qs(path.query).get('case')==[CASE]
-      if path.path=='/prepare':value=dict(case_id=CASE,endpoint=endpoint,conversation=cid,namespace=selected_namespace['id'],accounts=native_tokens,subjects=dict(A=subject,**({'B':other_subject} if CASE in ('testScopedCandidateLateAccount','testScopedResultLateAccount','testFormalPlaceMapLateAccount') else {})),formal_trips=[spec],map_points=map_points if PLACE_MAP else None,map_loading_failure=CASE=='testFormalPlaceMapUnavailable',manual_profile=ARGS.manual_trip_profile,scoped_results=RESULT_PROFILE,device_host=TLS.host if TLS else None,device_port=str(sock.getsockname()[1]) if TLS else None,amap=ARGS.amap_device)
+      if path.path=='/prepare':value=dict(case_id=CASE,endpoint=endpoint,conversation=cid,namespace=selected_namespace['id'],accounts=native_tokens,subjects=dict(A=subject,**({'B':other_subject} if CASE in ('testScopedCandidateLateAccount','testScopedResultLateAccount','testFormalPlaceMapLateAccount') else {})),formal_trips=[spec],map_points=map_points if PLACE_MAP else None,map_loading_failure=CASE=='testFormalPlaceMapUnavailable',manual_profile=ARGS.manual_trip_profile,scoped_results=RESULT_PROFILE,device_host=TLS.host if TLS else None,device_port=str(sock.getsockname()[1]) if TLS else None,amap=ARGS.amap_device,device_language_phase=language_phase,language_items=language_items)
       elif path.path=='/wait-discovery':
        assert CASE in ('testScopedCandidateLateAccount','testScopedResultLateAccount','testFormalPlaceMapLateAccount') and late_captured.wait(20);value=dict(status='original protected 200 held')
       elif path.path=='/release-discovery':
@@ -589,7 +648,7 @@ try:
    original_size=None;staging_attempted=False
    try:
     module_spec=importlib.util.spec_from_file_location('scoped_builder',ROOT/'scripts/check_ios_trip_confirm.py');module=importlib.util.module_from_spec(module_spec);module_spec.loader.exec_module(module)
-    builder=object.__new__(module.XCTestDriver);builder.directory=OUT/'project';builder.directory.mkdir();builder.write_project(0)
+    builder=object.__new__(module.XCTestDriver);builder.directory=(device_project_root if TLS else OUT)/'project';builder.directory.mkdir();builder.write_project(0)
     control_url=('https://'+TLS.host if TLS else 'http://127.0.0.1')+':'+str(control.server_port)
     test_source=(HERE/'DevelopmentScopedMessageUITests.swift').read_text().replace('__FIXTURE_URL__',control_url)
     project=builder.directory/'G2CAcceptance.xcodeproj';pbx=project/'project.pbxproj';bundle='space.go2china.scoped.acceptance'
@@ -599,15 +658,18 @@ try:
     else:
      text=pbx.read_text().replace('space.go2china.foundation.local',bundle).replace('space.go2china.foundation.control',bundle+'.control')
      entitlements=builder.directory/'Scoped.entitlements';entitlements.write_bytes(plistlib.dumps({'application-identifier':bundle,'keychain-access-groups':[bundle]}));pbx.write_text(text.replace(json.dumps(str(ROOT/'ios/App/Development.entitlements')),json.dumps(str(entitlements))))
-     original_size=subprocess.check_output(['xcrun','simctl','ui',ARGS.simulator,'content_size'],text=True).strip()
-     desired='accessibility-extra-extra-extra-large' if CASE.endswith('Largest') else 'large'
-     subprocess.run(['xcrun','simctl','ui',ARGS.simulator,'content_size',desired],check=True,capture_output=True);r['simulator_content_size']=subprocess.check_output(['xcrun','simctl','ui',ARGS.simulator,'content_size'],text=True).strip();assert r['simulator_content_size']==desired;save()
     (builder.directory/'G2CControl.swift').write_text(test_source)
     destination='platform=iOS,id='+ARGS.device if TLS else 'platform=iOS Simulator,id='+ARGS.simulator
     if TLS:
-     quarantine=Path(tempfile.mkdtemp(prefix='g2c-m4-private-native-'));quarantine.chmod(0o700)
-     result=quarantine/(CASE+'.xcresult');r['private_native_result']=str(result);r['raw_native_bundle_shareable']=False;save()
-     r['native_artifacts']=dict(status='UNRUN: native process has not reached a terminal exit',raw_bundle_shareable=False);save()
+     quarantine=private_directory(OUT,'g2c-m4-private-native-')
+     result=quarantine/(CASE+'.xcresult')
+     r['raw_native_bundle_shareable']=False
+     if DEVICE_LANGUAGE:
+      r['system_language_phases']={}
+     else:
+      r['private_native_result']=str(result)
+      r['native_artifacts']=dict(status='UNRUN: native process has not reached a terminal exit',raw_bundle_shareable=False)
+     save()
     else:result=OUT/(CASE+'.xcresult')
     command=['xcodebuild','-project',str(project),'-scheme','G2CControl','-configuration','Debug','-destination',destination,'-derivedDataPath',str(BUILD),'-resultBundlePath',str(result),'-scmProvider','system','-skipPackageUpdates','-onlyUsePackageVersionsFromResolvedFile','-parallel-testing-enabled','NO','-collect-test-diagnostics','never','ARCHS=arm64','ONLY_ACTIVE_ARCH=YES','CODE_SIGNING_ALLOWED=YES','CODE_SIGN_IDENTITY=-','-only-testing:G2CControl/DevelopmentScopedMessageUITests/'+CASE,'test']
     if TLS:
@@ -639,28 +701,81 @@ try:
      staging_attempted=True
      stage_accounts(ARGS.device,bundle,BUILD/'Build/Products/Debug-iphoneos/CJProbeApp.app',quarantine,native_tokens)
      r['status']='RUNNING';save();command[-1]='test-without-building'
-    print('SCOPED '+CASE,flush=True);run=subprocess.run(command,cwd=ROOT,capture_output=True,text=True,timeout=1800)
-    r['native_exit_code']=run.returncode
-    log=run.stdout+run.stderr
-    if not TLS:private_values=list(native_tokens.values())
-    if TLS and frozen_sdk_key:r['sdk_console_key_redactions']=log.count(frozen_sdk_key.value)
-    if TLS:
-     # Test-without-building has an action log (including native stdout); build
-     # logs were checked separately, and there is no independent console ref.
-     r['native_artifacts']=export_native_logs(result,OUT,private_values,log,kinds=('action',))
-     log=redact(log,private_values)[0]
-    for temporary_token in native_tokens.values():log=log.replace(temporary_token,'<redacted-local-token>')
-    assert all(temporary_token not in log for temporary_token in native_tokens.values())
-    r['redacted_log_accounts']=sorted(native_tokens);r['token_scan_accounts']=sorted(native_tokens)
-    (OUT/(CASE+'.log')).write_text(log);r['cases'][CASE]='FAIL' if run.returncode else 'VERIFYING';save()
-    if TLS and not r['native_artifacts']['status'].startswith('PASS'):raise RuntimeError('Native logs failed credential/export gate; raw bundle quarantined')
-    run.check_returncode()
-    summary_text=subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)],text=True)
-    if TLS:
-     summary_text,summary_hits=redact(summary_text,private_values)
-     if summary_hits:
-      (OUT/'test-summary-redacted.json').write_text(summary_text);raise RuntimeError('Native summary contained credential; raw bundle quarantined')
-    summary=json.loads(summary_text);(OUT/'test-summary.json').write_text(json.dumps(summary,indent=2));assert summary['passedTests']==1 and summary['failedTests']==summary['skippedTests']==0
+    def run_native(result, export_dir, attempt):
+     launch=command.copy()
+     launch[launch.index('-resultBundlePath')+1]=str(result)
+     print('SCOPED '+CASE+((' '+language_phase) if DEVICE_LANGUAGE else ''),flush=True)
+     run=subprocess.run(launch,cwd=ROOT,capture_output=True,text=True,timeout=1800)
+     attempt['native_exit_code']=run.returncode
+     log=run.stdout+run.stderr
+     redactions=private_values if TLS else list(native_tokens.values())
+     if TLS and frozen_sdk_key:attempt['sdk_console_key_redactions']=log.count(frozen_sdk_key.value)
+     if TLS:
+      # Test-without-building has an action log (including native stdout); build
+      # logs were checked separately, and there is no independent console ref.
+      attempt['native_artifacts']=export_native_logs(result,export_dir,redactions,log,kinds=('action',))
+      log=redact(log,redactions)[0]
+     for temporary_token in native_tokens.values():log=log.replace(temporary_token,'<redacted-local-token>')
+     assert all(temporary_token not in log for temporary_token in native_tokens.values())
+     attempt['redacted_log_accounts']=sorted(native_tokens);attempt['token_scan_accounts']=sorted(native_tokens)
+     (export_dir/(CASE+'.log')).write_text(log)
+     if DEVICE_LANGUAGE:attempt['native_status']='FAIL' if run.returncode else 'VERIFYING'
+     else:r['cases'][CASE]='FAIL' if run.returncode else 'VERIFYING'
+     save()
+     if TLS and not attempt['native_artifacts']['status'].startswith('PASS'):raise RuntimeError('Native logs failed credential/export gate; raw bundle quarantined')
+     run.check_returncode()
+     summary_text=subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)],text=True)
+     if TLS:
+      summary_text,summary_hits=redact(summary_text,redactions)
+      if summary_hits:
+       (export_dir/'test-summary-redacted.json').write_text(summary_text);raise RuntimeError('Native summary contained credential; raw bundle quarantined')
+     summary=json.loads(summary_text);(export_dir/'test-summary.json').write_text(json.dumps(summary,indent=2));assert summary['passedTests']==1 and summary['failedTests']==summary['skippedTests']==0
+     if DEVICE_LANGUAGE:
+      observed=[line.split('M4_LANGUAGE_ORDER ',1)[1].strip() for line in log.splitlines() if 'M4_LANGUAGE_ORDER ' in line]
+      assert len(observed)==1
+      attempt['language_order']=observed[0].split(',')
+      attempt['native_status']='PASS'
+      save()
+
+    if DEVICE_LANGUAGE:
+     def run_language_phase(phase):
+      phase_result=quarantine/(phase+'.xcresult')
+      attempt=dict(private_native_result=str(phase_result),native_status='RUNNING')
+      r['system_language_phases'][phase]=attempt
+      phase_output=OUT/phase
+      phase_output.mkdir(mode=0o700)
+      save()
+      run_native(phase_result,phase_output,attempt)
+
+     def wait_for_language(phase):
+      r['status']='WAITING_FOR_SYSTEM_LANGUAGE'
+      r['awaiting_language_phase']=phase
+      save()
+      print('WAITING_FOR_SYSTEM_LANGUAGE '+phase,flush=True)
+      gate=OUT/('allow-system-language-'+phase)
+      deadline=time.monotonic()+600
+      while not gate.exists():
+       if time.monotonic()>deadline:
+        raise TimeoutError('Operator language switch was not confirmed')
+       time.sleep(2)
+      r['status']='RUNNING'
+      r.pop('awaiting_language_phase',None)
+      save()
+
+     run_language_phase('en')
+     wait_for_language('zh')
+     language_phase='zh'
+     try:
+      run_language_phase('zh')
+     finally:
+      wait_for_language('restore-en')
+      language_phase='restore-en'
+      run_language_phase('restore-en')
+     phases=r['system_language_phases']
+     assert phases['en']['language_order']==phases['restore-en']['language_order']
+     assert phases['zh']['language_order']==phases['en']['language_order'][::-1]
+    else:
+     run_native(result,OUT,r)
     if PLACE_MAP:map_source_proof()
     elif CASE=='testFormalMapNoPlaceSources':map_no_place_proof()
     elif CASE=='testScopedResultExpansionReselection':
@@ -678,7 +793,10 @@ try:
      assert verified['messages']==verified['posts']==1 and verified['forbidden_writes']==0 and not worker_errors
      if CASE=='testScopedUndeterminedDayWithoutModel':assert verified['model_calls']==verified['registered_operations']==verified['pending_proposals']==0 and verified['draft_outcome']=='validation_failed'
      else:assert verified['model_calls']==verified['registered_operations']==verified['pending_proposals']==1 and verified['draft_outcome']=='published'
-    if TLS:scan_app_container(ARGS.device,bundle,OUT/'device-app-data',native_tokens.values())
+    if non_gcj_content is not None:
+     reads=[entry for entry in audit if entry['path']=='/v5/trip-structured' and 'delivered_non_gcj_sha256' in entry]
+     assert len(reads)>=2 and all(entry['original_sha256']==formal['content_sha256'] for entry in reads)
+    if TLS:scan_app_container(ARGS.device,bundle,quarantine/'device-app-data',native_tokens.values())
     else:
      container=Path(subprocess.check_output(['xcrun','simctl','get_app_container',ARGS.simulator,bundle,'data'],text=True).strip())
      for file in container.rglob('*'):
@@ -686,7 +804,7 @@ try:
        data=file.read_bytes();assert all(temporary_token.encode() not in data for temporary_token in native_tokens.values()) and b'-----BEGIN PRIVATE KEY-----' not in data
     assert r['head']==subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'head changed during acceptance'
     assert all(hashlib.sha256((ROOT/name).read_bytes()).hexdigest()==digest for name,digest in r['source_hashes'].items()),'source changed during acceptance'
-    r['token_key_scan']='PASS';r['token_key_scan_scope']='App data and exported build/action/process text; opaque raw bundle not shareable' if TLS else 'existing simulator App-data/log scope';r['cases'][CASE]='PASS';r['status']='PASS';save()
+    r['token_key_scan']='PASS';r['token_key_scan_scope']='App data and exported build/action/process text; opaque raw bundle not shareable' if TLS else 'existing simulator App-data/log scope';r['cases'][CASE]='PASS';r['status']='VERIFYING_CLEANUP';save()
    finally:
     input_cleanup_error=None
     if TLS and staging_attempted:
@@ -695,10 +813,11 @@ try:
      except Exception as error:
       r['staged_credential_cleanup']='FAIL: device cleanup pending, do not reuse input';save();input_cleanup_error=error
     r['observed_requests']=list(audit);r['worker_errors']=list(worker_errors);save()
-    if original_size is not None:subprocess.run(['xcrun','simctl','ui',ARGS.simulator,'content_size',original_size],check=True,capture_output=True)
     late_release.set();stop.set();worker_thread.join(10);server.should_exit=True;api_thread.join(10);sock.close();control.shutdown();control.server_close()
     if input_cleanup_error is not None:raise input_cleanup_error
   r['private_pg_stopped']=True
+  if TLS:(device_project_root/'project/M4ControlBootstrap.plist').unlink(missing_ok=True)
+  r['status']='PASS'
 except BaseException as error:
  r['status']='FAIL';r['error']=type(error).__name__;raise
 finally:save()

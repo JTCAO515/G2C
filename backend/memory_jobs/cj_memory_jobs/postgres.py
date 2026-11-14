@@ -3,17 +3,18 @@
 No identity resolver, alternate AUTH, role switch, model call or automatic retry.
 Schema/registry/cleanup/runtime integration remain unactivated until their PR.
 """
+from cj_strict_json import compact
 from dataclasses import asdict, dataclass
 from hashlib import sha256
 import json
 
 from .codec import Conflict, Unavailable, decode_v2, encode_v2, job_identity
 from .consent import VERSION
+from . import lio_batch
 
 
 def encode(value):
-    return json.dumps(value, ensure_ascii=True, sort_keys=True,
-                      separators=(',', ':')).encode('ascii')
+    return compact(value, sort_keys=True, ensure_ascii=True, allow_nan=True)
 
 
 def stream_key(source, mode):
@@ -21,6 +22,12 @@ def stream_key(source, mode):
     value['cursor'].pop('after')
     value['cursor'].pop('through')
     return sha256(encode(dict(source=value, mode=mode))).hexdigest()
+
+
+def _job_stream(source, mode, version):
+    if version == lio_batch.VERSION:
+        return lio_batch.stream_key(source)
+    return stream_key(source, mode)
 
 
 @dataclass(frozen=True)
@@ -130,7 +137,8 @@ class Transaction:
              AND c.source_version=(convert_from(j.batch,'UTF8')::jsonb#>>'{source,source_version}')::bigint
              AND c.withdrawal_epoch=(convert_from(j.batch,'UTF8')::jsonb#>>'{source,withdrawal_epoch}')::bigint
             WHERE j.scope=%s AND j.memory_epoch=%s AND j.state IN ('pending','inflight','unknown')
-            ORDER BY j.job_id''',(self.scope,self.epoch))
+            AND convert_from(j.batch,'UTF8')::jsonb->>'version' IS DISTINCT FROM %s
+            ORDER BY j.job_id''',(self.scope,self.epoch,lio_batch.VERSION))
         return tuple(self.job(jid,attempt) for jid,attempt in self.cur.fetchall())
 
     def _job(self, row):
@@ -154,10 +162,14 @@ class Transaction:
             if (command.decision.trip_id,command.decision.expected_version,command.decision.content_sha256)!=(
                     decision.trip_id,decision.version,decision.content_sha256):
                 raise Unavailable('original accepted decision differs from batch')
+        elif version==lio_batch.VERSION:
+            source, rows, mode = lio_batch.decode_batch(batch)
+            if (job_id, attempt_id) != lio_batch.job_ids(source.cursor.scope, rows[0]) or original != lio_batch.original_input(source, rows[0]):
+                raise Unavailable('stored original Lio job differs')
         else:
             source, rows, mode = decode_v2(batch)
         if (source.cursor.scope != self.scope or sha256(batch).hexdigest() != source_key
-                or stream_key(source,mode) != stored_stream):
+                or _job_stream(source,mode,version) != stored_stream):
             raise Unavailable('stored history binding unavailable')
         if ((state == 'completed') != (candidate is not None)
                 or processed != (source.cursor.through if state == 'completed' else source.cursor.after)):
@@ -175,6 +187,12 @@ class Transaction:
             raise Conflict('original history attempt differs')
         return row
 
+    def legacy_job(self, job_id, attempt_id):
+        row = self.job(job_id, attempt_id)
+        if json.loads(row[2])['version'] == lio_batch.VERSION:
+            raise Unavailable('explicit Lio job boundary required')
+        return row
+
     def enqueue(self, source, rows, mode, job_id, attempt_id, original):
         batch = encode_v2(source, rows, mode)
         return self._enqueue_batch(source,rows,mode,job_id,attempt_id,original,batch)
@@ -183,7 +201,13 @@ class Transaction:
         from .decision_batch import encoded
         return self._enqueue_batch(source,rows,mode,job_id,attempt_id,original,encoded(source,rows,mode,decision))
 
-    def _enqueue_batch(self,source,rows,mode,job_id,attempt_id,original,batch):
+    def enqueue_lio(self, source, message):
+        job_id, attempt_id = lio_batch.job_ids(source.cursor.scope, message)
+        batch = lio_batch.encode_batch(source, (message,), 'incremental')
+        return self._enqueue_batch(source, (message,), 'incremental', job_id, attempt_id,
+                                   lio_batch.original_input(source, message), batch, lio=True)
+
+    def _enqueue_batch(self,source,rows,mode,job_id,attempt_id,original,batch,*,lio=False):
         key = sha256(batch).hexdigest()
         self.cur.execute('''SELECT job_id,attempt_id,source_key,stream_key,original_input,batch,state,processed,candidate,memory_epoch
             FROM cj_memory_history_job WHERE scope=%s AND (job_id=%s OR attempt_id=%s OR source_key=%s)''',
@@ -196,15 +220,17 @@ class Transaction:
             if (stored[0].job_id,stored[0].attempt_id,stored[1],stored[2]) != (job_id,attempt_id,original,batch):
                 raise Conflict('original history task differs')
             return stored[0]
+        if not lio and (job_id.startswith(lio_batch.JOB_PREFIX) or attempt_id.startswith(lio_batch.ATTEMPT_PREFIX)):
+            raise Conflict('Lio job identity is reserved for original Lio intake')
         self.cur.execute('''SELECT 1 FROM cj_memory_erasure_fence WHERE scope_digest=%s
             AND ((kind='job_id' AND reference_sha256=%s) OR (kind='attempt_id' AND reference_sha256=%s)) LIMIT 1''',
             (self.scope_digest,sha256(job_id.encode()).hexdigest(),sha256(attempt_id.encode()).hexdigest()))
         if self.cur.fetchone() is not None:raise Conflict('original erased job and attempt identities cannot be reused')
-        stream = stream_key(source,mode)
+        stream = lio_batch.stream_key(source) if lio else stream_key(source,mode)
         self.cur.execute('SELECT processed FROM cj_memory_history_cursor WHERE scope=%s AND stream_key=%s',
                          (self.scope,stream))
         previous = self.cur.fetchone()
-        if source.cursor.after != (previous[0] if previous else 0):
+        if source.cursor.after != (previous[0] if previous else source.cursor.after if lio else 0):
             raise Conflict('history processing gap or overlap')
         self.cur.execute('SELECT 1 FROM cj_memory_history_job WHERE scope=%s AND stream_key=%s '
                          "AND state IN ('pending','inflight','unknown')", (self.scope,stream))
@@ -219,7 +245,7 @@ class Transaction:
         return self.job(job_id,attempt_id)[0]
 
     def transition(self, job_id, attempt_id, target, *, candidate=None):
-        status, _, _, source, _, mode, old_candidate, memory_epoch = self.job(job_id,attempt_id)
+        status, _, batch, source, _, mode, old_candidate, memory_epoch = self.job(job_id,attempt_id)
         state = status.state
         if target in ('inflight','completed') and self.epoch != memory_epoch:
             raise Conflict('original Memory basis changed')
@@ -250,5 +276,5 @@ class Transaction:
         if target == 'completed':
             self.cur.execute('''INSERT INTO cj_memory_history_cursor VALUES(%s,%s,%s)
                 ON CONFLICT(scope,stream_key) DO UPDATE SET processed=EXCLUDED.processed''',
-                (self.scope,stream_key(source,mode),processed))
+                (self.scope,_job_stream(source,mode,json.loads(batch)['version']),processed))
         return self.job(job_id,attempt_id)[0]

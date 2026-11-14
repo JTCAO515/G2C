@@ -1,0 +1,75 @@
+"""Opaque original references; persist descriptors/hashes, never escaped AUTH bytes."""
+from hashlib import sha256
+import os
+from pathlib import Path
+import re
+
+from runtime_adapter.contract import decode,digest,encode,require,Unavailable
+from .runtime_private import read_private,private_directory,PrivateFileError
+
+KINDS=frozenset({'inventory','input','meter','fee','artifact','wire_input',
+    'action','protected_inventory','meter_link','provider','output','result','state'})
+MESSAGE_KINDS=frozenset({'inventory','action','protected_inventory','result','state'})
+
+
+class OriginalReferences:
+    def __init__(self,directory,binding,reader,*,guard):
+        self.directory=Path(directory);self.binding=binding;self.reader=reader;self.guard=guard
+        with self._directory():pass
+
+    def _directory(self):
+        return private_directory(self.directory,Unavailable('ORIGINAL_REFERENCE_DIRECTORY_AUTHORITY'))
+
+    def _bytes(self,token,descriptor):
+        kind=descriptor['kind'];mid=descriptor['message_id'];op=descriptor['operation_id']
+        if kind=='inventory':return self.reader.inventory(token,mid)
+        if kind=='input':return self.reader.input(token,mid,op)
+        if kind=='meter':return self.reader.meter(token,mid,op)
+        if kind=='fee':return self.reader.fee(token,mid,op)
+        if kind in ('artifact','wire_input'):
+            return self.reader.artifact(token,mid,op,wire_input=kind=='wire_input')
+        return self.reader.projection(token,kind,mid,op)
+
+    def issue(self,token,*,kind,message_id,operation_id=None):
+        require(kind in KINDS,'ORIGINAL_REFERENCE_KIND')
+        require(type(message_id) is str and message_id and (kind in MESSAGE_KINDS and operation_id is None or
+            kind not in MESSAGE_KINDS and type(operation_id) is str and operation_id),'ORIGINAL_REFERENCE_SOURCE')
+        self.guard(read_only=True)
+        descriptor=dict(binding_sha256=self.binding.key,kind=kind,message_id=message_id,operation_id=operation_id)
+        raw=self._bytes(token,descriptor)
+        record=dict(source=descriptor,sha256=sha256(raw).hexdigest())
+        ref='original-'+digest(record);body=encode(record)
+        with self._directory() as directory:
+            try:fd=os.open(ref+'.json',os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o600,dir_fd=directory)
+            except FileExistsError:
+                if self._record(directory,ref)!=record:raise Unavailable('ORIGINAL_REFERENCE_CHANGED')
+            else:
+                with os.fdopen(fd,'wb') as output:output.write(body);output.flush();os.fsync(output.fileno())
+                os.fsync(directory)
+        self.guard(read_only=True)
+        return dict(ref=ref,sha256=record['sha256'])
+
+    @staticmethod
+    def _record(directory,ref):
+        try:raw=read_private(ref+'.json',65536,directory_fd=directory)
+        except PrivateFileError as error:
+            if error.reason=='bound':require(False,'ORIGINAL_REFERENCE_BOUND')
+            raise Unavailable('ORIGINAL_REFERENCE_AUTHORITY') from None
+        record=decode(raw)
+        require(type(record) is dict and set(record)=={'source','sha256'} and
+                ref=='original-'+digest(record),'ORIGINAL_REFERENCE_INTEGRITY')
+        descriptor=record['source']
+        require(type(descriptor) is dict and set(descriptor)=={'binding_sha256','kind','message_id','operation_id'} and
+                descriptor['kind'] in KINDS,'ORIGINAL_REFERENCE_DESCRIPTOR')
+        return record
+
+    def resolve(self,token,ref):
+        require(type(ref) is str and re.fullmatch('original-[a-f0-9]{64}',ref) is not None,'ORIGINAL_REFERENCE_ID')
+        self.guard(read_only=True)
+        with self._directory() as directory:record=self._record(directory,ref)
+        if record['source']['binding_sha256']!=self.binding.key:
+            raise Unavailable('ORIGINAL_REFERENCE_OWNER_CHANGED')
+        raw=self._bytes(token,record['source'])
+        if sha256(raw).hexdigest()!=record['sha256']:raise Unavailable('ORIGINAL_REFERENCE_BYTES_CHANGED')
+        self.guard(read_only=True)
+        return raw

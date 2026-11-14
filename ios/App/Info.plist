@@ -3,21 +3,46 @@
 <plist version="1.0"><dict>
 <key>CFBundleIdentifier</key><string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 <key>CFBundleExecutable</key><string>$(EXECUTABLE_NAME)</string>
-<key>CFBundleName</key><string>G2C</string>
-<key>CFBundleDisplayName</key><string>G2C</string>
+<key>CFBundleName</key><string>Go2China</string>
+<key>CFBundleDisplayName</key><string>Go2China</string>
 <key>CFBundlePackageType</key><string>APPL</string>
+#if G2C_DEMO_BETA_PLIST
+<key>CFBundleShortVersionString</key><string>$(MARKETING_VERSION)</string>
+<key>CFBundleVersion</key><string>$(CURRENT_PROJECT_VERSION)</string>
+<key>G2CDemoBeta</key><true/>
+<key>ITSAppUsesNonExemptEncryption</key><false/>
+<key>UISupportedInterfaceOrientations</key><array>
+<string>UIInterfaceOrientationPortrait</string>
+<string>UIInterfaceOrientationLandscapeLeft</string>
+<string>UIInterfaceOrientationLandscapeRight</string>
+</array>
+<key>UISupportedInterfaceOrientations~ipad</key><array>
+<string>UIInterfaceOrientationPortrait</string>
+<string>UIInterfaceOrientationPortraitUpsideDown</string>
+<string>UIInterfaceOrientationLandscapeLeft</string>
+<string>UIInterfaceOrientationLandscapeRight</string>
+</array>
+#else
 <key>CFBundleShortVersionString</key><string>0.1</string>
 <key>CFBundleVersion</key><string>1</string>
+#endif
+#if !G2C_DEMO_BETA_PLIST
 <key>CFBundleIcons</key><dict><key>CFBundlePrimaryIcon</key><dict>
 <key>CFBundleIconFiles</key><array><string>AppIcon60x60</string></array>
 </dict></dict>
 <key>CFBundleIcons~ipad</key><dict><key>CFBundlePrimaryIcon</key><dict>
 <key>CFBundleIconFiles</key><array><string>AppIcon60x60</string><string>AppIcon76x76</string><string>AppIcon83.5x83.5</string></array>
 </dict></dict>
-<key>UILaunchScreen</key><dict/>
-#if G2C_DEBUG_LOCAL_NETWORK
+#endif
+<key>UILaunchScreen</key><dict><key>UIColorName</key><string>LaunchPaper</string></dict>
+#if G2C_DEBUG_LOCAL_NETWORK || G2C_DEBUG_SIGNING_IDENTITY || G2C_DEMO_BETA_PLIST
 <key>G2CDevelopmentApplicationIdentifier</key><string>$(AppIdentifierPrefix)$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+#endif
+#if G2C_DEBUG_LOCAL_NETWORK
 <key>NSAppTransportSecurity</key><dict><key>NSAllowsLocalNetworking</key><true/></dict>
 <key>NSLocalNetworkUsageDescription</key><string>Connect to the development Mac for synthetic-data testing. / 连接开发机执行合成数据测试。</string>
+#endif
+#if G2C_OFFLINE_CLOCK || G2C_DEMO_BETA_PLIST
+<key>G2COfflineClockGroup</key><string>group.g2c.offline</string>
 #endif
 </dict></plist>

@@ -1,4 +1,5 @@
 """Internal TRIP candidate v0.1; no HTTP schema or caller authorization."""
+from cj_strict_json import compact
 from dataclasses import dataclass
 import base64
 import hashlib
@@ -17,7 +18,7 @@ def identifier(value):
 
 
 def packed(value):
-    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'), allow_nan=False).encode('utf-8')
+    return compact(value, sort_keys=True)
 
 
 def validate_source_records(records):
@@ -185,6 +186,11 @@ class Proposal:
             raise ValueError('immutable UTF-8 content required')
         # Minimal internal document, not the future PLACE/FACT or wire schema.
         doc = json.loads(self.content)
+        if type(doc) is dict and doc.get('content_version') == 'structured.3':
+            from .structured_v3 import validate_document
+            validate_document(doc)
+            if packed(doc) != self.content: raise ValueError('canonical content required')
+            return
         if type(doc) is dict and doc.get('content_version') == 'structured.2':
             from .structured_v2 import validate_document
             validate_document(doc)

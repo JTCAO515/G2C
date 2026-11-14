@@ -1,4 +1,5 @@
 """Bounded internal encoding of canonical committed MESSAGE values, never consent."""
+from cj_strict_json import compact
 from dataclasses import asdict, dataclass
 from enum import StrEnum
 import hashlib
@@ -143,8 +144,7 @@ def _encode(source, rows, mode, version, parse_command):
     if version == 'CJ020-internal.2':
         value['source_kind'] = (SourceKind.COMMITTED_MESSAGE if mode == 'incremental'
                                 else SourceKind.CONVERSATION_SUMMARY)
-    raw = json.dumps(value, ensure_ascii=True,
-                     sort_keys=True, separators=(',', ':')).encode('ascii')
+    raw = compact(value, sort_keys=True, ensure_ascii=True, allow_nan=True)
     if len(raw) > 262144:
         raise InvalidInput('batch exceeds local bound')
     return raw

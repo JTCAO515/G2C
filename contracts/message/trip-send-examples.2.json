@@ -1,0 +1,2227 @@
+{
+  "version": "MESSAGE-trip-examples.2",
+  "synthetic_only": true,
+  "canonical_message": {
+    "version": "MESSAGE-send.2",
+    "conversation_id": "lio-dialogue-00000000000000000000000000000000",
+    "message_id": "date-message",
+    "text": "12月1日出发",
+    "trip_id": null,
+    "creation_intent": "none",
+    "expected_generation": "generation-demo",
+    "expected_sequence": 1,
+    "travel_context": null,
+    "needs_reference": null
+  },
+  "outer_message": {
+    "version": "LIO-message.3",
+    "message_id": "date-message",
+    "text": "12月1日出发",
+    "locale": "zh",
+    "conversation_id": "lio-dialogue-00000000000000000000000000000000"
+  },
+  "protected_contents": [
+    {
+      "content_version": "structured.3",
+      "title": "成都三日 / Chengdu three days",
+      "calendar": {
+        "state": "undated"
+      },
+      "days": [
+        {
+          "day_index": 1
+        },
+        {
+          "day_index": 2
+        },
+        {
+          "day_index": 3
+        }
+      ],
+      "items": [
+        {
+          "id": "hotel-meetup",
+          "text": "酒店集合 / hotel meetup",
+          "verification": "pending",
+          "evidence": [],
+          "schedule": {
+            "start": {
+              "day_index": 1,
+              "time": {
+                "state": "known",
+                "value": "09:00"
+              },
+              "timezone": {
+                "state": "known",
+                "value": "Asia/Shanghai"
+              },
+              "utc_offset": {
+                "state": "unknown"
+              }
+            },
+            "end": {
+              "day_index": 1,
+              "time": {
+                "state": "known",
+                "value": "10:00"
+              },
+              "timezone": {
+                "state": "known",
+                "value": "Asia/Shanghai"
+              },
+              "utc_offset": {
+                "state": "unknown"
+              }
+            }
+          },
+          "fixed": {
+            "state": "known",
+            "value": true
+          },
+          "source_category": "user_provided",
+          "source_refs": []
+        }
+      ],
+      "sources": [],
+      "date_checks": [
+        {
+          "kind": "weather",
+          "state": "not_checked",
+          "day_indices": [
+            1,
+            2,
+            3
+          ],
+          "item_ids": [],
+          "reason": "date_not_set",
+          "evidence_refs": []
+        },
+        {
+          "kind": "day_opening",
+          "state": "not_checked",
+          "day_indices": [
+            1,
+            2,
+            3
+          ],
+          "item_ids": [],
+          "reason": "date_not_set",
+          "evidence_refs": []
+        }
+      ]
+    },
+    {
+      "content_version": "structured.3",
+      "title": "成都三日 / Chengdu three days",
+      "calendar": {
+        "state": "dated",
+        "start_date": "2026-12-01"
+      },
+      "days": [
+        {
+          "day_index": 1,
+          "date": "2026-12-01"
+        },
+        {
+          "day_index": 2,
+          "date": "2026-12-02"
+        },
+        {
+          "day_index": 3,
+          "date": "2026-12-03"
+        }
+      ],
+      "items": [
+        {
+          "id": "hotel-meetup",
+          "text": "酒店集合 / hotel meetup",
+          "verification": "pending",
+          "evidence": [],
+          "schedule": {
+            "start": {
+              "day_index": 1,
+              "time": {
+                "state": "known",
+                "value": "09:00"
+              },
+              "timezone": {
+                "state": "known",
+                "value": "Asia/Shanghai"
+              },
+              "utc_offset": {
+                "state": "unknown"
+              }
+            },
+            "end": {
+              "day_index": 1,
+              "time": {
+                "state": "known",
+                "value": "10:00"
+              },
+              "timezone": {
+                "state": "known",
+                "value": "Asia/Shanghai"
+              },
+              "utc_offset": {
+                "state": "unknown"
+              }
+            }
+          },
+          "fixed": {
+            "state": "known",
+            "value": true
+          },
+          "source_category": "user_provided",
+          "source_refs": []
+        }
+      ],
+      "sources": [],
+      "date_checks": [
+        {
+          "kind": "weather",
+          "state": "unknown",
+          "day_indices": [
+            1,
+            2,
+            3
+          ],
+          "item_ids": [],
+          "reason": "evidence_unavailable",
+          "evidence_refs": []
+        },
+        {
+          "kind": "day_opening",
+          "state": "unknown",
+          "day_indices": [
+            1,
+            2,
+            3
+          ],
+          "item_ids": [],
+          "reason": "evidence_unavailable",
+          "evidence_refs": []
+        }
+      ]
+    },
+    {
+      "content_version": "structured.3",
+      "title": "成都三日 / Chengdu three days",
+      "calendar": {
+        "state": "dated",
+        "start_date": "2026-12-01"
+      },
+      "days": [
+        {
+          "day_index": 1,
+          "date": "2026-12-01"
+        },
+        {
+          "day_index": 2,
+          "date": "2026-12-02"
+        },
+        {
+          "day_index": 3,
+          "date": "2026-12-03"
+        }
+      ],
+      "items": [
+        {
+          "id": "hotel-meetup",
+          "text": "酒店集合 / hotel meetup",
+          "verification": "pending",
+          "evidence": [],
+          "schedule": {
+            "start": {
+              "day_index": 1,
+              "time": {
+                "state": "known",
+                "value": "09:00"
+              },
+              "timezone": {
+                "state": "known",
+                "value": "Asia/Shanghai"
+              },
+              "utc_offset": {
+                "state": "unknown"
+              }
+            },
+            "end": {
+              "day_index": 1,
+              "time": {
+                "state": "known",
+                "value": "10:00"
+              },
+              "timezone": {
+                "state": "known",
+                "value": "Asia/Shanghai"
+              },
+              "utc_offset": {
+                "state": "unknown"
+              }
+            }
+          },
+          "fixed": {
+            "state": "known",
+            "value": true
+          },
+          "source_category": "user_provided",
+          "source_refs": []
+        }
+      ],
+      "sources": [],
+      "date_checks": [
+        {
+          "kind": "weather",
+          "state": "unknown",
+          "day_indices": [
+            1,
+            2,
+            3
+          ],
+          "item_ids": [],
+          "reason": "evidence_unavailable",
+          "evidence_refs": []
+        },
+        {
+          "kind": "day_opening",
+          "state": "conflict",
+          "day_indices": [
+            1,
+            2,
+            3
+          ],
+          "item_ids": [
+            "hotel-meetup"
+          ],
+          "reason": "synthetic_closure",
+          "evidence_refs": [
+            "synthetic:original-opening-receipt"
+          ]
+        }
+      ]
+    },
+    {
+      "content_version": "structured.1",
+      "title": "原有行程 / old trip",
+      "items": [
+        {
+          "id": "hotel-meetup",
+          "text": "酒店集合 / hotel meetup",
+          "verification": "pending",
+          "evidence": [],
+          "schedule": {
+            "start": {
+              "time": {
+                "state": "known",
+                "value": "09:00:00"
+              },
+              "timezone": {
+                "state": "known",
+                "value": "Asia/Shanghai"
+              },
+              "utc_offset": {
+                "state": "unknown"
+              },
+              "date": {
+                "state": "unknown"
+              }
+            },
+            "end": {
+              "time": {
+                "state": "known",
+                "value": "09:00:00"
+              },
+              "timezone": {
+                "state": "known",
+                "value": "Asia/Shanghai"
+              },
+              "utc_offset": {
+                "state": "unknown"
+              },
+              "date": {
+                "state": "unknown"
+              }
+            }
+          },
+          "fixed": {
+            "state": "known",
+            "value": true
+          },
+          "source_category": "user_provided",
+          "source_refs": []
+        }
+      ],
+      "sources": []
+    },
+    {
+      "content_version": "structured.2",
+      "title": "原有行程 / old trip",
+      "items": [
+        {
+          "id": "hotel-meetup",
+          "text": "酒店集合 / hotel meetup",
+          "verification": "pending",
+          "evidence": [],
+          "schedule": {
+            "start": {
+              "time": {
+                "state": "known",
+                "value": "09:00:00"
+              },
+              "timezone": {
+                "state": "known",
+                "value": "Asia/Shanghai"
+              },
+              "utc_offset": {
+                "state": "unknown"
+              },
+              "date": {
+                "state": "unknown"
+              }
+            },
+            "end": {
+              "time": {
+                "state": "known",
+                "value": "09:00:00"
+              },
+              "timezone": {
+                "state": "known",
+                "value": "Asia/Shanghai"
+              },
+              "utc_offset": {
+                "state": "unknown"
+              },
+              "date": {
+                "state": "unknown"
+              }
+            }
+          },
+          "fixed": {
+            "state": "known",
+            "value": true
+          },
+          "source_category": "user_provided",
+          "source_refs": []
+        }
+      ],
+      "sources": []
+    }
+  ],
+  "positive": [
+    {
+      "name": "undated selection without guessed timezone",
+      "definition": "TripSelection2",
+      "value": {
+        "id": "demo-trip",
+        "expected_version": 1,
+        "day": {
+          "day_index": 1
+        },
+        "item_id": "hotel-meetup"
+      }
+    },
+    {
+      "name": "protected original reference",
+      "definition": "TripReference",
+      "value": {
+        "version": "LIO-trip-reference.1",
+        "conversation_id": "lio-dialogue-00000000000000000000000000000000",
+        "generation": "generation-demo",
+        "message_id": "date-message",
+        "run_id": "run-demo",
+        "sequence": 2,
+        "input_sha256": "789d4b2cb469688536233c2124eb9e93ffbd7ed66a813a1a14c01705b4b539db",
+        "message_version": "MESSAGE-send.2",
+        "lio_protocol": "LIO-message.3",
+        "trip_id": "demo-trip",
+        "trip_version": 1,
+        "content_version": "structured.3",
+        "content_sha256": "18c76ec1bbf3a5c8cf08ac31387878733edbb28d5e95d16a09e163dedb7e6b10",
+        "selection": {
+          "id": "demo-trip",
+          "expected_version": 1,
+          "day": {
+            "day_index": 1
+          },
+          "item_id": "hotel-meetup"
+        }
+      }
+    },
+    {
+      "name": "LIO3 text envelope",
+      "definition": "LioMessage3",
+      "value": {
+        "version": "LIO-message.3",
+        "message_id": "date-message",
+        "text": "12月1日出发",
+        "locale": "zh",
+        "conversation_id": "lio-dialogue-00000000000000000000000000000000"
+      }
+    },
+    {
+      "name": "undated card all3 days incl empty",
+      "definition": "Card2",
+      "value": {
+        "version": "LIO-trip-card.2",
+        "trip_id": "demo-trip",
+        "trip_version": 1,
+        "content_version": "structured.3",
+        "content_sha256": "18c76ec1bbf3a5c8cf08ac31387878733edbb28d5e95d16a09e163dedb7e6b10",
+        "title": "成都三日 / Chengdu three days",
+        "calendar": {
+          "state": "undated"
+        },
+        "days": [
+          {
+            "day_index": 1,
+            "items": [
+              {
+                "item_id": "hotel-meetup",
+                "label": "酒店集合 / hotel meetup",
+                "start_time": "09:00",
+                "end_time": "10:00",
+                "fixed": true
+              }
+            ]
+          },
+          {
+            "day_index": 2,
+            "items": []
+          },
+          {
+            "day_index": 3,
+            "items": []
+          }
+        ],
+        "date_checks": [
+          {
+            "kind": "weather",
+            "state": "not_checked",
+            "day_indices": [
+              1,
+              2,
+              3
+            ],
+            "item_ids": [],
+            "reason": "date_not_set",
+            "evidence_refs": []
+          },
+          {
+            "kind": "day_opening",
+            "state": "not_checked",
+            "day_indices": [
+              1,
+              2,
+              3
+            ],
+            "item_ids": [],
+            "reason": "date_not_set",
+            "evidence_refs": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "dated card same trip new version",
+      "definition": "Card2",
+      "value": {
+        "version": "LIO-trip-card.2",
+        "trip_id": "demo-trip",
+        "trip_version": 2,
+        "content_version": "structured.3",
+        "content_sha256": "4aecb1bc2c1d520c7aafe226107513019e36f9c4ff34889b54c710d517271e15",
+        "title": "成都三日 / Chengdu three days",
+        "calendar": {
+          "state": "dated",
+          "start_date": "2026-12-01"
+        },
+        "days": [
+          {
+            "day_index": 1,
+            "date": "2026-12-01",
+            "items": [
+              {
+                "item_id": "hotel-meetup",
+                "label": "酒店集合 / hotel meetup",
+                "start_time": "09:00",
+                "end_time": "10:00",
+                "fixed": true
+              }
+            ]
+          },
+          {
+            "day_index": 2,
+            "date": "2026-12-02",
+            "items": []
+          },
+          {
+            "day_index": 3,
+            "date": "2026-12-03",
+            "items": []
+          }
+        ],
+        "date_checks": [
+          {
+            "kind": "weather",
+            "state": "unknown",
+            "day_indices": [
+              1,
+              2,
+              3
+            ],
+            "item_ids": [],
+            "reason": "evidence_unavailable",
+            "evidence_refs": []
+          },
+          {
+            "kind": "day_opening",
+            "state": "unknown",
+            "day_indices": [
+              1,
+              2,
+              3
+            ],
+            "item_ids": [],
+            "reason": "evidence_unavailable",
+            "evidence_refs": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "fixed source mapping",
+      "definition": "FixedDays",
+      "value": {
+        "version": "LIO-fixed-day-bindings.1",
+        "needs_id": "needs-demo",
+        "needs_version": 1,
+        "needs_content_sha256": "ec8614910ab7c2e70ca822b3688cb9935d478f563f49a3f30e8c627b678fb5aa",
+        "reference": {
+          "conversation_id": "lio-dialogue-00000000000000000000000000000000",
+          "generation": "generation-demo",
+          "message_id": "fixed-message",
+          "run_id": "fixed-run",
+          "sequence": 1,
+          "input_sha256": "2c8e49233181b88039e44390cd8a0aa8ba8c556d89b93b9a90383f47205e7b8e",
+          "message_version": "MESSAGE-send.2",
+          "lio_protocol": "LIO-message.3"
+        },
+        "bindings": [
+          {
+            "item_id": "hotel-meetup",
+            "day_index": 1,
+            "end_day_index": 1,
+            "quote": "第1天9点到10点酒店集合",
+            "source_reference": {
+              "conversation_id": "lio-dialogue-00000000000000000000000000000000",
+              "generation": "generation-demo",
+              "message_id": "fixed-message",
+              "run_id": "fixed-run",
+              "sequence": 1,
+              "input_sha256": "2c8e49233181b88039e44390cd8a0aa8ba8c556d89b93b9a90383f47205e7b8e",
+              "message_version": "MESSAGE-send.2",
+              "lio_protocol": "LIO-message.3"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "date conversion input",
+      "definition": "DateConvert",
+      "value": {
+        "version": "TRIP-date-convert.1",
+        "action_id": "convert-demo",
+        "trip_id": "demo-trip",
+        "expected_version": 1,
+        "original_hash": "18c76ec1bbf3a5c8cf08ac31387878733edbb28d5e95d16a09e163dedb7e6b10",
+        "start_date": "2026-12-01",
+        "date_source": {
+          "reference": {
+            "conversation_id": "lio-dialogue-00000000000000000000000000000000",
+            "generation": "generation-demo",
+            "message_id": "date-message",
+            "run_id": "run-demo",
+            "sequence": 2,
+            "input_sha256": "789d4b2cb469688536233c2124eb9e93ffbd7ed66a813a1a14c01705b4b539db",
+            "message_version": "MESSAGE-send.2",
+            "lio_protocol": "LIO-message.3"
+          },
+          "quote": "12月1日出发",
+          "question_day": "2026-11-12"
+        }
+      }
+    },
+    {
+      "name": "date conversion receipt",
+      "definition": "DateReceipt",
+      "value": {
+        "version": "TRIP-date-convert-receipt.1",
+        "action_id": "convert-demo",
+        "trip_id": "demo-trip",
+        "original_version": 1,
+        "original_hash": "18c76ec1bbf3a5c8cf08ac31387878733edbb28d5e95d16a09e163dedb7e6b10",
+        "outcome": "converted",
+        "committed": true,
+        "trip_version": 2,
+        "content_sha256": "4aecb1bc2c1d520c7aafe226107513019e36f9c4ff34889b54c710d517271e15",
+        "calendar": {
+          "state": "dated",
+          "start_date": "2026-12-01"
+        },
+        "date_checks": [
+          {
+            "kind": "weather",
+            "state": "unknown",
+            "day_indices": [
+              1,
+              2,
+              3
+            ],
+            "item_ids": [],
+            "reason": "evidence_unavailable",
+            "evidence_refs": []
+          },
+          {
+            "kind": "day_opening",
+            "state": "unknown",
+            "day_indices": [
+              1,
+              2,
+              3
+            ],
+            "item_ids": [],
+            "reason": "evidence_unavailable",
+            "evidence_refs": []
+          }
+        ],
+        "conflicts": []
+      }
+    },
+    {
+      "name": "history",
+      "definition": "History3",
+      "value": {
+        "version": "LIO-trip-history.3",
+        "conversation_id": "lio-dialogue-00000000000000000000000000000000",
+        "current": {
+          "version": "LIO-trip-card.2",
+          "trip_id": "demo-trip",
+          "trip_version": 2,
+          "content_version": "structured.3",
+          "content_sha256": "4aecb1bc2c1d520c7aafe226107513019e36f9c4ff34889b54c710d517271e15",
+          "title": "成都三日 / Chengdu three days",
+          "calendar": {
+            "state": "dated",
+            "start_date": "2026-12-01"
+          },
+          "days": [
+            {
+              "day_index": 1,
+              "date": "2026-12-01",
+              "items": [
+                {
+                  "item_id": "hotel-meetup",
+                  "label": "酒店集合 / hotel meetup",
+                  "start_time": "09:00",
+                  "end_time": "10:00",
+                  "fixed": true
+                }
+              ]
+            },
+            {
+              "day_index": 2,
+              "date": "2026-12-02",
+              "items": []
+            },
+            {
+              "day_index": 3,
+              "date": "2026-12-03",
+              "items": []
+            }
+          ],
+          "date_checks": [
+            {
+              "kind": "weather",
+              "state": "unknown",
+              "day_indices": [
+                1,
+                2,
+                3
+              ],
+              "item_ids": [],
+              "reason": "evidence_unavailable",
+              "evidence_refs": []
+            },
+            {
+              "kind": "day_opening",
+              "state": "unknown",
+              "day_indices": [
+                1,
+                2,
+                3
+              ],
+              "item_ids": [],
+              "reason": "evidence_unavailable",
+              "evidence_refs": []
+            }
+          ]
+        },
+        "history": [
+          {
+            "version": "LIO-trip-card.2",
+            "trip_id": "demo-trip",
+            "trip_version": 1,
+            "content_version": "structured.3",
+            "content_sha256": "18c76ec1bbf3a5c8cf08ac31387878733edbb28d5e95d16a09e163dedb7e6b10",
+            "title": "成都三日 / Chengdu three days",
+            "calendar": {
+              "state": "undated"
+            },
+            "days": [
+              {
+                "day_index": 1,
+                "items": [
+                  {
+                    "item_id": "hotel-meetup",
+                    "label": "酒店集合 / hotel meetup",
+                    "start_time": "09:00",
+                    "end_time": "10:00",
+                    "fixed": true
+                  }
+                ]
+              },
+              {
+                "day_index": 2,
+                "items": []
+              },
+              {
+                "day_index": 3,
+                "items": []
+              }
+            ],
+            "date_checks": [
+              {
+                "kind": "weather",
+                "state": "not_checked",
+                "day_indices": [
+                  1,
+                  2,
+                  3
+                ],
+                "item_ids": [],
+                "reason": "date_not_set",
+                "evidence_refs": []
+              },
+              {
+                "kind": "day_opening",
+                "state": "not_checked",
+                "day_indices": [
+                  1,
+                  2,
+                  3
+                ],
+                "item_ids": [],
+                "reason": "date_not_set",
+                "evidence_refs": []
+              }
+            ]
+          }
+        ],
+        "undo_target": "synthetic-target",
+        "next_before": null
+      }
+    },
+    {
+      "name": "timeline3",
+      "definition": "Timeline3",
+      "value": {
+        "version": "LIO-timeline.3",
+        "conversation_id": "lio-dialogue-00000000000000000000000000000000",
+        "messages": [
+          {
+            "message_id": "date-message",
+            "text": "12月1日出发",
+            "answer": "出发日期已对齐，想先调整哪天？",
+            "status": "completed",
+            "failure": null,
+            "activity": null,
+            "sources": [],
+            "trip": {
+              "version": "LIO-trip-card.2",
+              "trip_id": "demo-trip",
+              "trip_version": 2,
+              "content_version": "structured.3",
+              "content_sha256": "4aecb1bc2c1d520c7aafe226107513019e36f9c4ff34889b54c710d517271e15",
+              "title": "成都三日 / Chengdu three days",
+              "calendar": {
+                "state": "dated",
+                "start_date": "2026-12-01"
+              },
+              "days": [
+                {
+                  "day_index": 1,
+                  "date": "2026-12-01",
+                  "items": [
+                    {
+                      "item_id": "hotel-meetup",
+                      "label": "酒店集合 / hotel meetup",
+                      "start_time": "09:00",
+                      "end_time": "10:00",
+                      "fixed": true
+                    }
+                  ]
+                },
+                {
+                  "day_index": 2,
+                  "date": "2026-12-02",
+                  "items": []
+                },
+                {
+                  "day_index": 3,
+                  "date": "2026-12-03",
+                  "items": []
+                }
+              ],
+              "date_checks": [
+                {
+                  "kind": "weather",
+                  "state": "unknown",
+                  "day_indices": [
+                    1,
+                    2,
+                    3
+                  ],
+                  "item_ids": [],
+                  "reason": "evidence_unavailable",
+                  "evidence_refs": []
+                },
+                {
+                  "kind": "day_opening",
+                  "state": "unknown",
+                  "day_indices": [
+                    1,
+                    2,
+                    3
+                  ],
+                  "item_ids": [],
+                  "reason": "evidence_unavailable",
+                  "evidence_refs": []
+                }
+              ]
+            },
+            "memory": null
+          }
+        ],
+        "next_before": null
+      }
+    },
+    {
+      "name": "message receipt3",
+      "definition": "LioReceipt3",
+      "value": {
+        "version": "LIO-message-receipt.3",
+        "message_id": "date-message",
+        "conversation_id": "lio-dialogue-00000000000000000000000000000000"
+      }
+    },
+    {
+      "name": "missing original lookup3",
+      "definition": "LioLookup3",
+      "value": {
+        "version": "LIO-message-lookup.3",
+        "receipt": null
+      }
+    },
+    {
+      "name": "native undo3",
+      "definition": "Undo3",
+      "value": {
+        "version": "LIO-trip-undo.3",
+        "action_id": "undo-demo",
+        "conversation_id": "lio-dialogue-00000000000000000000000000000000",
+        "target": "synthetic-target"
+      }
+    },
+    {
+      "name": "undo receipt3",
+      "definition": "UndoReceipt3",
+      "value": {
+        "version": "LIO-trip-undo-receipt.3",
+        "action_id": "undo-demo",
+        "conversation_id": "lio-dialogue-00000000000000000000000000000000",
+        "committed": true
+      }
+    },
+    {
+      "name": "hard conflict has no commit",
+      "definition": "DateReceipt",
+      "value": {
+        "version": "TRIP-date-convert-receipt.1",
+        "action_id": "convert-demo",
+        "trip_id": "demo-trip",
+        "original_version": 1,
+        "original_hash": "18c76ec1bbf3a5c8cf08ac31387878733edbb28d5e95d16a09e163dedb7e6b10",
+        "outcome": "conflict",
+        "committed": false,
+        "trip_version": null,
+        "content_sha256": null,
+        "calendar": {
+          "state": "undated"
+        },
+        "date_checks": null,
+        "conflicts": [
+          {
+            "kind": "hard_fixed",
+            "code": "FIXED_DATE_CONFLICT",
+            "day_indices": [
+              1
+            ],
+            "item_ids": [
+              "hotel-meetup"
+            ],
+            "reason": "synthetic original fixed calendar conflict",
+            "evidence_refs": [
+              "synthetic:original-fixed-source"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "unknown commit reconciles original only",
+      "definition": "DateReceipt",
+      "value": {
+        "version": "TRIP-date-convert-receipt.1",
+        "action_id": "convert-demo",
+        "trip_id": "demo-trip",
+        "original_version": 1,
+        "original_hash": "18c76ec1bbf3a5c8cf08ac31387878733edbb28d5e95d16a09e163dedb7e6b10",
+        "outcome": "unknown",
+        "committed": null,
+        "trip_version": null,
+        "content_sha256": null,
+        "calendar": null,
+        "date_checks": null,
+        "conflicts": []
+      }
+    },
+    {
+      "name": "soft conflict commits with explicit evidence",
+      "definition": "DateReceipt",
+      "value": {
+        "version": "TRIP-date-convert-receipt.1",
+        "action_id": "convert-soft",
+        "trip_id": "demo-trip",
+        "original_version": 1,
+        "original_hash": "18c76ec1bbf3a5c8cf08ac31387878733edbb28d5e95d16a09e163dedb7e6b10",
+        "outcome": "converted",
+        "committed": true,
+        "trip_version": 2,
+        "content_sha256": "8bd79f899576062480c9c90cdf5cfdec3a5fc4b401d110f4083166f840643647",
+        "calendar": {
+          "state": "dated",
+          "start_date": "2026-12-01"
+        },
+        "date_checks": [
+          {
+            "kind": "weather",
+            "state": "unknown",
+            "day_indices": [
+              1,
+              2,
+              3
+            ],
+            "item_ids": [],
+            "reason": "evidence_unavailable",
+            "evidence_refs": []
+          },
+          {
+            "kind": "day_opening",
+            "state": "conflict",
+            "day_indices": [
+              1,
+              2,
+              3
+            ],
+            "item_ids": [
+              "hotel-meetup"
+            ],
+            "reason": "synthetic_closure",
+            "evidence_refs": [
+              "synthetic:original-opening-receipt"
+            ]
+          }
+        ],
+        "conflicts": [
+          {
+            "kind": "date_dependent",
+            "code": "DAY_CLOSED",
+            "day_indices": [
+              1,
+              2,
+              3
+            ],
+            "item_ids": [
+              "hotel-meetup"
+            ],
+            "reason": "synthetic_closure",
+            "evidence_refs": [
+              "synthetic:original-opening-receipt"
+            ]
+          }
+        ]
+      },
+      "conversion_input": {
+        "version": "TRIP-date-convert.1",
+        "action_id": "convert-soft",
+        "trip_id": "demo-trip",
+        "expected_version": 1,
+        "original_hash": "18c76ec1bbf3a5c8cf08ac31387878733edbb28d5e95d16a09e163dedb7e6b10",
+        "start_date": "2026-12-01",
+        "date_source": {
+          "reference": {
+            "conversation_id": "lio-dialogue-00000000000000000000000000000000",
+            "generation": "generation-demo",
+            "message_id": "date-message",
+            "run_id": "run-demo",
+            "sequence": 2,
+            "input_sha256": "789d4b2cb469688536233c2124eb9e93ffbd7ed66a813a1a14c01705b4b539db",
+            "message_version": "MESSAGE-send.2",
+            "lio_protocol": "LIO-message.3"
+          },
+          "quote": "12月1日出发",
+          "question_day": "2026-11-12"
+        }
+      }
+    },
+    {
+      "name": "legacy structured.1 card not normalized",
+      "definition": "Card2",
+      "value": {
+        "version": "LIO-trip-card.2",
+        "trip_id": "legacy-trip",
+        "trip_version": 7,
+        "content_version": "structured.1",
+        "content_sha256": "c38b0b2eab9046e808fcc9c14977ad44a5a5dcc12b8a1b6d82782e8178c16f4d",
+        "title": "原有行程 / old trip",
+        "calendar": null,
+        "date_checks": null,
+        "days": [
+          {
+            "date": null,
+            "items": [
+              {
+                "item_id": "hotel-meetup",
+                "label": "酒店集合 / hotel meetup",
+                "start_time": "09:00:00",
+                "end_time": "09:00:00",
+                "fixed": true
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "legacy structured.2 card not normalized",
+      "definition": "Card2",
+      "value": {
+        "version": "LIO-trip-card.2",
+        "trip_id": "legacy-trip",
+        "trip_version": 7,
+        "content_version": "structured.2",
+        "content_sha256": "986d90376b57cc4fa2d46dd4678bb572566715d606d435e2d5dc687bd7d26b1b",
+        "title": "原有行程 / old trip",
+        "calendar": null,
+        "date_checks": null,
+        "days": [
+          {
+            "date": null,
+            "items": [
+              {
+                "item_id": "hotel-meetup",
+                "label": "酒店集合 / hotel meetup",
+                "start_time": "09:00:00",
+                "end_time": "09:00:00",
+                "fixed": true
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "schema_reject": [
+    {
+      "name": "mixed selector",
+      "definition": "TripSelection2",
+      "value": {
+        "id": "demo-trip",
+        "expected_version": 1,
+        "day": {
+          "day_index": 1,
+          "date": "2026-12-01"
+        },
+        "item_id": "hotel-meetup"
+      }
+    },
+    {
+      "name": "zero selector",
+      "definition": "TripSelection2",
+      "value": {
+        "id": "demo-trip",
+        "expected_version": 1,
+        "day": {
+          "day_index": 0
+        },
+        "item_id": "hotel-meetup"
+      }
+    },
+    {
+      "name": "undated card has dates",
+      "definition": "Card2",
+      "value": {
+        "version": "LIO-trip-card.2",
+        "trip_id": "demo-trip",
+        "trip_version": 1,
+        "content_version": "structured.3",
+        "content_sha256": "18c76ec1bbf3a5c8cf08ac31387878733edbb28d5e95d16a09e163dedb7e6b10",
+        "title": "成都三日 / Chengdu three days",
+        "calendar": {
+          "state": "undated"
+        },
+        "days": [
+          {
+            "day_index": 1,
+            "items": [
+              {
+                "item_id": "hotel-meetup",
+                "label": "酒店集合 / hotel meetup",
+                "start_time": "09:00",
+                "end_time": "10:00",
+                "fixed": true
+              }
+            ],
+            "date": "2026-12-01"
+          },
+          {
+            "day_index": 2,
+            "items": []
+          },
+          {
+            "day_index": 3,
+            "items": []
+          }
+        ],
+        "date_checks": [
+          {
+            "kind": "weather",
+            "state": "not_checked",
+            "day_indices": [
+              1,
+              2,
+              3
+            ],
+            "item_ids": [],
+            "reason": "date_not_set",
+            "evidence_refs": []
+          },
+          {
+            "kind": "day_opening",
+            "state": "not_checked",
+            "day_indices": [
+              1,
+              2,
+              3
+            ],
+            "item_ids": [],
+            "reason": "date_not_set",
+            "evidence_refs": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "dated card missing date",
+      "definition": "Card2",
+      "value": {
+        "version": "LIO-trip-card.2",
+        "trip_id": "demo-trip",
+        "trip_version": 2,
+        "content_version": "structured.3",
+        "content_sha256": "4aecb1bc2c1d520c7aafe226107513019e36f9c4ff34889b54c710d517271e15",
+        "title": "成都三日 / Chengdu three days",
+        "calendar": {
+          "state": "dated",
+          "start_date": "2026-12-01"
+        },
+        "days": [
+          {
+            "day_index": 1,
+            "items": [
+              {
+                "item_id": "hotel-meetup",
+                "label": "酒店集合 / hotel meetup",
+                "start_time": "09:00",
+                "end_time": "10:00",
+                "fixed": true
+              }
+            ]
+          },
+          {
+            "day_index": 2,
+            "date": "2026-12-02",
+            "items": []
+          },
+          {
+            "day_index": 3,
+            "date": "2026-12-03",
+            "items": []
+          }
+        ],
+        "date_checks": [
+          {
+            "kind": "weather",
+            "state": "unknown",
+            "day_indices": [
+              1,
+              2,
+              3
+            ],
+            "item_ids": [],
+            "reason": "evidence_unavailable",
+            "evidence_refs": []
+          },
+          {
+            "kind": "day_opening",
+            "state": "unknown",
+            "day_indices": [
+              1,
+              2,
+              3
+            ],
+            "item_ids": [],
+            "reason": "evidence_unavailable",
+            "evidence_refs": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "CID plus new conversation",
+      "definition": "LioMessage3",
+      "value": {
+        "version": "LIO-message.3",
+        "message_id": "date-message",
+        "text": "12月1日出发",
+        "locale": "zh",
+        "conversation_id": "lio-dialogue-00000000000000000000000000000000",
+        "new_conversation": true
+      }
+    },
+    {
+      "name": "unconfirmed commit with committed version",
+      "definition": "DateReceipt",
+      "value": {
+        "version": "TRIP-date-convert-receipt.1",
+        "action_id": "convert-demo",
+        "trip_id": "demo-trip",
+        "original_version": 1,
+        "original_hash": "18c76ec1bbf3a5c8cf08ac31387878733edbb28d5e95d16a09e163dedb7e6b10",
+        "outcome": "unknown",
+        "committed": true,
+        "trip_version": 2,
+        "content_sha256": "4aecb1bc2c1d520c7aafe226107513019e36f9c4ff34889b54c710d517271e15",
+        "calendar": {
+          "state": "dated",
+          "start_date": "2026-12-01"
+        },
+        "date_checks": [
+          {
+            "kind": "weather",
+            "state": "unknown",
+            "day_indices": [
+              1,
+              2,
+              3
+            ],
+            "item_ids": [],
+            "reason": "evidence_unavailable",
+            "evidence_refs": []
+          },
+          {
+            "kind": "day_opening",
+            "state": "unknown",
+            "day_indices": [
+              1,
+              2,
+              3
+            ],
+            "item_ids": [],
+            "reason": "evidence_unavailable",
+            "evidence_refs": []
+          }
+        ],
+        "conflicts": []
+      }
+    },
+    {
+      "name": "fake core send version",
+      "definition": "LioMessage3",
+      "value": {
+        "version": "MESSAGE-send.5",
+        "message_id": "date-message",
+        "text": "12月1日出发",
+        "locale": "zh",
+        "conversation_id": "lio-dialogue-00000000000000000000000000000000"
+      }
+    },
+    {
+      "name": "missing original canonical digest",
+      "definition": "TripReference",
+      "value": {
+        "version": "LIO-trip-reference.1",
+        "conversation_id": "lio-dialogue-00000000000000000000000000000000",
+        "generation": "generation-demo",
+        "message_id": "date-message",
+        "run_id": "run-demo",
+        "sequence": 1,
+        "message_version": "MESSAGE-send.2",
+        "lio_protocol": "LIO-message.3",
+        "trip_id": "demo-trip",
+        "trip_version": 1,
+        "content_version": "structured.3",
+        "content_sha256": "18c76ec1bbf3a5c8cf08ac31387878733edbb28d5e95d16a09e163dedb7e6b10",
+        "selection": {
+          "id": "demo-trip",
+          "expected_version": 1,
+          "day": {
+            "day_index": 1
+          },
+          "item_id": "hotel-meetup"
+        }
+      }
+    }
+  ],
+  "semantic_reject": [
+    {
+      "name": "wrong selected trip version",
+      "definition": "TripReference",
+      "value": {
+        "version": "LIO-trip-reference.1",
+        "conversation_id": "lio-dialogue-00000000000000000000000000000000",
+        "generation": "generation-demo",
+        "message_id": "date-message",
+        "run_id": "run-demo",
+        "sequence": 2,
+        "input_sha256": "789d4b2cb469688536233c2124eb9e93ffbd7ed66a813a1a14c01705b4b539db",
+        "message_version": "MESSAGE-send.2",
+        "lio_protocol": "LIO-message.3",
+        "trip_id": "demo-trip",
+        "trip_version": 1,
+        "content_version": "structured.3",
+        "content_sha256": "18c76ec1bbf3a5c8cf08ac31387878733edbb28d5e95d16a09e163dedb7e6b10",
+        "selection": {
+          "id": "demo-trip",
+          "expected_version": 2,
+          "day": {
+            "day_index": 1
+          },
+          "item_id": "hotel-meetup"
+        }
+      }
+    },
+    {
+      "name": "outer wire hash is not canonical hash",
+      "definition": "TripReference",
+      "value": {
+        "version": "LIO-trip-reference.1",
+        "conversation_id": "lio-dialogue-00000000000000000000000000000000",
+        "generation": "generation-demo",
+        "message_id": "date-message",
+        "run_id": "run-demo",
+        "sequence": 2,
+        "input_sha256": "5cc03f933ee2362c51502b960d9a9883557e6776bdb6edbb705aed3c039853de",
+        "message_version": "MESSAGE-send.2",
+        "lio_protocol": "LIO-message.3",
+        "trip_id": "demo-trip",
+        "trip_version": 1,
+        "content_version": "structured.3",
+        "content_sha256": "18c76ec1bbf3a5c8cf08ac31387878733edbb28d5e95d16a09e163dedb7e6b10",
+        "selection": {
+          "id": "demo-trip",
+          "expected_version": 1,
+          "day": {
+            "day_index": 1
+          },
+          "item_id": "hotel-meetup"
+        }
+      }
+    },
+    {
+      "name": "out of range day",
+      "definition": "TripReference",
+      "value": {
+        "version": "LIO-trip-reference.1",
+        "conversation_id": "lio-dialogue-00000000000000000000000000000000",
+        "generation": "generation-demo",
+        "message_id": "date-message",
+        "run_id": "run-demo",
+        "sequence": 2,
+        "input_sha256": "789d4b2cb469688536233c2124eb9e93ffbd7ed66a813a1a14c01705b4b539db",
+        "message_version": "MESSAGE-send.2",
+        "lio_protocol": "LIO-message.3",
+        "trip_id": "demo-trip",
+        "trip_version": 1,
+        "content_version": "structured.3",
+        "content_sha256": "18c76ec1bbf3a5c8cf08ac31387878733edbb28d5e95d16a09e163dedb7e6b10",
+        "selection": {
+          "id": "demo-trip",
+          "expected_version": 1,
+          "day": {
+            "day_index": 4
+          },
+          "item_id": "hotel-meetup"
+        }
+      }
+    },
+    {
+      "name": "date selector against undated trip",
+      "definition": "TripReference",
+      "value": {
+        "version": "LIO-trip-reference.1",
+        "conversation_id": "lio-dialogue-00000000000000000000000000000000",
+        "generation": "generation-demo",
+        "message_id": "date-message",
+        "run_id": "run-demo",
+        "sequence": 2,
+        "input_sha256": "789d4b2cb469688536233c2124eb9e93ffbd7ed66a813a1a14c01705b4b539db",
+        "message_version": "MESSAGE-send.2",
+        "lio_protocol": "LIO-message.3",
+        "trip_id": "demo-trip",
+        "trip_version": 1,
+        "content_version": "structured.3",
+        "content_sha256": "18c76ec1bbf3a5c8cf08ac31387878733edbb28d5e95d16a09e163dedb7e6b10",
+        "selection": {
+          "id": "demo-trip",
+          "expected_version": 1,
+          "day": {
+            "date": "2026-12-01",
+            "timezone": "Asia/Shanghai"
+          },
+          "item_id": "hotel-meetup"
+        }
+      }
+    },
+    {
+      "name": "drop empty rest day",
+      "definition": "Card2",
+      "value": {
+        "version": "LIO-trip-card.2",
+        "trip_id": "demo-trip",
+        "trip_version": 1,
+        "content_version": "structured.3",
+        "content_sha256": "18c76ec1bbf3a5c8cf08ac31387878733edbb28d5e95d16a09e163dedb7e6b10",
+        "title": "成都三日 / Chengdu three days",
+        "calendar": {
+          "state": "undated"
+        },
+        "days": [
+          {
+            "day_index": 1,
+            "items": [
+              {
+                "item_id": "hotel-meetup",
+                "label": "酒店集合 / hotel meetup",
+                "start_time": "09:00",
+                "end_time": "10:00",
+                "fixed": true
+              }
+            ]
+          },
+          {
+            "day_index": 2,
+            "items": []
+          }
+        ],
+        "date_checks": [
+          {
+            "kind": "weather",
+            "state": "not_checked",
+            "day_indices": [
+              1,
+              2,
+              3
+            ],
+            "item_ids": [],
+            "reason": "date_not_set",
+            "evidence_refs": []
+          },
+          {
+            "kind": "day_opening",
+            "state": "not_checked",
+            "day_indices": [
+              1,
+              2,
+              3
+            ],
+            "item_ids": [],
+            "reason": "date_not_set",
+            "evidence_refs": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "card hash changed",
+      "definition": "Card2",
+      "value": {
+        "version": "LIO-trip-card.2",
+        "trip_id": "demo-trip",
+        "trip_version": 1,
+        "content_version": "structured.3",
+        "content_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "title": "成都三日 / Chengdu three days",
+        "calendar": {
+          "state": "undated"
+        },
+        "days": [
+          {
+            "day_index": 1,
+            "items": [
+              {
+                "item_id": "hotel-meetup",
+                "label": "酒店集合 / hotel meetup",
+                "start_time": "09:00",
+                "end_time": "10:00",
+                "fixed": true
+              }
+            ]
+          },
+          {
+            "day_index": 2,
+            "items": []
+          },
+          {
+            "day_index": 3,
+            "items": []
+          }
+        ],
+        "date_checks": [
+          {
+            "kind": "weather",
+            "state": "not_checked",
+            "day_indices": [
+              1,
+              2,
+              3
+            ],
+            "item_ids": [],
+            "reason": "date_not_set",
+            "evidence_refs": []
+          },
+          {
+            "kind": "day_opening",
+            "state": "not_checked",
+            "day_indices": [
+              1,
+              2,
+              3
+            ],
+            "item_ids": [],
+            "reason": "date_not_set",
+            "evidence_refs": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "fixed day invented by model",
+      "definition": "FixedDays",
+      "value": {
+        "version": "LIO-fixed-day-bindings.1",
+        "needs_id": "needs-demo",
+        "needs_version": 1,
+        "needs_content_sha256": "ec8614910ab7c2e70ca822b3688cb9935d478f563f49a3f30e8c627b678fb5aa",
+        "reference": {
+          "conversation_id": "lio-dialogue-00000000000000000000000000000000",
+          "generation": "generation-demo",
+          "message_id": "fixed-message",
+          "run_id": "fixed-run",
+          "sequence": 1,
+          "input_sha256": "2c8e49233181b88039e44390cd8a0aa8ba8c556d89b93b9a90383f47205e7b8e",
+          "message_version": "MESSAGE-send.2",
+          "lio_protocol": "LIO-message.3"
+        },
+        "bindings": [
+          {
+            "item_id": "hotel-meetup",
+            "day_index": 2,
+            "end_day_index": 1,
+            "quote": "第1天9点到10点酒店集合",
+            "source_reference": {
+              "conversation_id": "lio-dialogue-00000000000000000000000000000000",
+              "generation": "generation-demo",
+              "message_id": "fixed-message",
+              "run_id": "fixed-run",
+              "sequence": 1,
+              "input_sha256": "2c8e49233181b88039e44390cd8a0aa8ba8c556d89b93b9a90383f47205e7b8e",
+              "message_version": "MESSAGE-send.2",
+              "lio_protocol": "LIO-message.3"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "fixed quote from wrong message",
+      "definition": "FixedDays",
+      "value": {
+        "version": "LIO-fixed-day-bindings.1",
+        "needs_id": "needs-demo",
+        "needs_version": 1,
+        "needs_content_sha256": "ec8614910ab7c2e70ca822b3688cb9935d478f563f49a3f30e8c627b678fb5aa",
+        "reference": {
+          "conversation_id": "lio-dialogue-00000000000000000000000000000000",
+          "generation": "generation-demo",
+          "message_id": "fixed-message",
+          "run_id": "fixed-run",
+          "sequence": 1,
+          "input_sha256": "2c8e49233181b88039e44390cd8a0aa8ba8c556d89b93b9a90383f47205e7b8e",
+          "message_version": "MESSAGE-send.2",
+          "lio_protocol": "LIO-message.3"
+        },
+        "bindings": [
+          {
+            "item_id": "hotel-meetup",
+            "day_index": 1,
+            "end_day_index": 1,
+            "quote": "第1天9点到10点酒店集合",
+            "source_reference": {
+              "conversation_id": "lio-dialogue-00000000000000000000000000000000",
+              "generation": "generation-demo",
+              "message_id": "date-message",
+              "run_id": "run-demo",
+              "sequence": 2,
+              "input_sha256": "789d4b2cb469688536233c2124eb9e93ffbd7ed66a813a1a14c01705b4b539db",
+              "message_version": "MESSAGE-send.2",
+              "lio_protocol": "LIO-message.3"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "fixed mapping omitted",
+      "definition": "FixedDays",
+      "value": {
+        "version": "LIO-fixed-day-bindings.1",
+        "needs_id": "needs-demo",
+        "needs_version": 1,
+        "needs_content_sha256": "ec8614910ab7c2e70ca822b3688cb9935d478f563f49a3f30e8c627b678fb5aa",
+        "reference": {
+          "conversation_id": "lio-dialogue-00000000000000000000000000000000",
+          "generation": "generation-demo",
+          "message_id": "fixed-message",
+          "run_id": "fixed-run",
+          "sequence": 1,
+          "input_sha256": "2c8e49233181b88039e44390cd8a0aa8ba8c556d89b93b9a90383f47205e7b8e",
+          "message_version": "MESSAGE-send.2",
+          "lio_protocol": "LIO-message.3"
+        },
+        "bindings": []
+      }
+    },
+    {
+      "name": "stale NEEDS hash",
+      "definition": "FixedDays",
+      "value": {
+        "version": "LIO-fixed-day-bindings.1",
+        "needs_id": "needs-demo",
+        "needs_version": 1,
+        "needs_content_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "reference": {
+          "conversation_id": "lio-dialogue-00000000000000000000000000000000",
+          "generation": "generation-demo",
+          "message_id": "fixed-message",
+          "run_id": "fixed-run",
+          "sequence": 1,
+          "input_sha256": "2c8e49233181b88039e44390cd8a0aa8ba8c556d89b93b9a90383f47205e7b8e",
+          "message_version": "MESSAGE-send.2",
+          "lio_protocol": "LIO-message.3"
+        },
+        "bindings": [
+          {
+            "item_id": "hotel-meetup",
+            "day_index": 1,
+            "end_day_index": 1,
+            "quote": "第1天9点到10点酒店集合",
+            "source_reference": {
+              "conversation_id": "lio-dialogue-00000000000000000000000000000000",
+              "generation": "generation-demo",
+              "message_id": "fixed-message",
+              "run_id": "fixed-run",
+              "sequence": 1,
+              "input_sha256": "2c8e49233181b88039e44390cd8a0aa8ba8c556d89b93b9a90383f47205e7b8e",
+              "message_version": "MESSAGE-send.2",
+              "lio_protocol": "LIO-message.3"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "date source reanchored to later day",
+      "definition": "DateConvert",
+      "value": {
+        "version": "TRIP-date-convert.1",
+        "action_id": "convert-demo",
+        "trip_id": "demo-trip",
+        "expected_version": 1,
+        "original_hash": "18c76ec1bbf3a5c8cf08ac31387878733edbb28d5e95d16a09e163dedb7e6b10",
+        "start_date": "2026-12-01",
+        "date_source": {
+          "reference": {
+            "conversation_id": "lio-dialogue-00000000000000000000000000000000",
+            "generation": "generation-demo",
+            "message_id": "date-message",
+            "run_id": "run-demo",
+            "sequence": 2,
+            "input_sha256": "789d4b2cb469688536233c2124eb9e93ffbd7ed66a813a1a14c01705b4b539db",
+            "message_version": "MESSAGE-send.2",
+            "lio_protocol": "LIO-message.3"
+          },
+          "quote": "12月1日出发",
+          "question_day": "2026-11-13"
+        }
+      }
+    },
+    {
+      "name": "committed version jumps",
+      "definition": "DateReceipt",
+      "value": {
+        "version": "TRIP-date-convert-receipt.1",
+        "action_id": "convert-demo",
+        "trip_id": "demo-trip",
+        "original_version": 1,
+        "original_hash": "18c76ec1bbf3a5c8cf08ac31387878733edbb28d5e95d16a09e163dedb7e6b10",
+        "outcome": "converted",
+        "committed": true,
+        "trip_version": 3,
+        "content_sha256": "4aecb1bc2c1d520c7aafe226107513019e36f9c4ff34889b54c710d517271e15",
+        "calendar": {
+          "state": "dated",
+          "start_date": "2026-12-01"
+        },
+        "date_checks": [
+          {
+            "kind": "weather",
+            "state": "unknown",
+            "day_indices": [
+              1,
+              2,
+              3
+            ],
+            "item_ids": [],
+            "reason": "evidence_unavailable",
+            "evidence_refs": []
+          },
+          {
+            "kind": "day_opening",
+            "state": "unknown",
+            "day_indices": [
+              1,
+              2,
+              3
+            ],
+            "item_ids": [],
+            "reason": "evidence_unavailable",
+            "evidence_refs": []
+          }
+        ],
+        "conflicts": []
+      }
+    },
+    {
+      "name": "receipt binds different action",
+      "definition": "DateReceipt",
+      "value": {
+        "version": "TRIP-date-convert-receipt.1",
+        "action_id": "another-action",
+        "trip_id": "demo-trip",
+        "original_version": 1,
+        "original_hash": "18c76ec1bbf3a5c8cf08ac31387878733edbb28d5e95d16a09e163dedb7e6b10",
+        "outcome": "converted",
+        "committed": true,
+        "trip_version": 2,
+        "content_sha256": "4aecb1bc2c1d520c7aafe226107513019e36f9c4ff34889b54c710d517271e15",
+        "calendar": {
+          "state": "dated",
+          "start_date": "2026-12-01"
+        },
+        "date_checks": [
+          {
+            "kind": "weather",
+            "state": "unknown",
+            "day_indices": [
+              1,
+              2,
+              3
+            ],
+            "item_ids": [],
+            "reason": "evidence_unavailable",
+            "evidence_refs": []
+          },
+          {
+            "kind": "day_opening",
+            "state": "unknown",
+            "day_indices": [
+              1,
+              2,
+              3
+            ],
+            "item_ids": [],
+            "reason": "evidence_unavailable",
+            "evidence_refs": []
+          }
+        ],
+        "conflicts": []
+      }
+    },
+    {
+      "name": "wrong protected version with matching selector",
+      "definition": "TripReference",
+      "value": {
+        "version": "LIO-trip-reference.1",
+        "conversation_id": "lio-dialogue-00000000000000000000000000000000",
+        "generation": "generation-demo",
+        "message_id": "date-message",
+        "run_id": "run-demo",
+        "sequence": 2,
+        "input_sha256": "789d4b2cb469688536233c2124eb9e93ffbd7ed66a813a1a14c01705b4b539db",
+        "message_version": "MESSAGE-send.2",
+        "lio_protocol": "LIO-message.3",
+        "trip_id": "demo-trip",
+        "trip_version": 2,
+        "content_version": "structured.3",
+        "content_sha256": "18c76ec1bbf3a5c8cf08ac31387878733edbb28d5e95d16a09e163dedb7e6b10",
+        "selection": {
+          "id": "demo-trip",
+          "expected_version": 2,
+          "day": {
+            "day_index": 1
+          },
+          "item_id": "hotel-meetup"
+        }
+      }
+    },
+    {
+      "name": "timezone not from source",
+      "definition": "TripReference",
+      "value": {
+        "version": "LIO-trip-reference.1",
+        "conversation_id": "lio-dialogue-00000000000000000000000000000000",
+        "generation": "generation-demo",
+        "message_id": "date-message",
+        "run_id": "run-demo",
+        "sequence": 2,
+        "input_sha256": "789d4b2cb469688536233c2124eb9e93ffbd7ed66a813a1a14c01705b4b539db",
+        "message_version": "MESSAGE-send.2",
+        "lio_protocol": "LIO-message.3",
+        "trip_id": "demo-trip",
+        "trip_version": 1,
+        "content_version": "structured.3",
+        "content_sha256": "18c76ec1bbf3a5c8cf08ac31387878733edbb28d5e95d16a09e163dedb7e6b10",
+        "selection": {
+          "id": "demo-trip",
+          "expected_version": 1,
+          "day": {
+            "day_index": 1,
+            "timezone": "Europe/Paris"
+          },
+          "item_id": "hotel-meetup"
+        }
+      }
+    },
+    {
+      "name": "explicit compiled date mismatch",
+      "definition": "DateConvert",
+      "value": {
+        "version": "TRIP-date-convert.1",
+        "action_id": "convert-demo",
+        "trip_id": "demo-trip",
+        "expected_version": 1,
+        "original_hash": "18c76ec1bbf3a5c8cf08ac31387878733edbb28d5e95d16a09e163dedb7e6b10",
+        "start_date": "2027-12-01",
+        "date_source": {
+          "reference": {
+            "conversation_id": "lio-dialogue-00000000000000000000000000000000",
+            "generation": "generation-demo",
+            "message_id": "date-message",
+            "run_id": "run-demo",
+            "sequence": 2,
+            "input_sha256": "789d4b2cb469688536233c2124eb9e93ffbd7ed66a813a1a14c01705b4b539db",
+            "message_version": "MESSAGE-send.2",
+            "lio_protocol": "LIO-message.3"
+          },
+          "quote": "12月1日出发",
+          "question_day": "2026-11-12"
+        }
+      }
+    },
+    {
+      "name": "soft conflict omitted from receipt",
+      "definition": "DateReceipt",
+      "value": {
+        "version": "TRIP-date-convert-receipt.1",
+        "action_id": "convert-soft",
+        "trip_id": "demo-trip",
+        "original_version": 1,
+        "original_hash": "18c76ec1bbf3a5c8cf08ac31387878733edbb28d5e95d16a09e163dedb7e6b10",
+        "outcome": "converted",
+        "committed": true,
+        "trip_version": 2,
+        "content_sha256": "8bd79f899576062480c9c90cdf5cfdec3a5fc4b401d110f4083166f840643647",
+        "calendar": {
+          "state": "dated",
+          "start_date": "2026-12-01"
+        },
+        "date_checks": [
+          {
+            "kind": "weather",
+            "state": "unknown",
+            "day_indices": [
+              1,
+              2,
+              3
+            ],
+            "item_ids": [],
+            "reason": "evidence_unavailable",
+            "evidence_refs": []
+          },
+          {
+            "kind": "day_opening",
+            "state": "conflict",
+            "day_indices": [
+              1,
+              2,
+              3
+            ],
+            "item_ids": [
+              "hotel-meetup"
+            ],
+            "reason": "synthetic_closure",
+            "evidence_refs": [
+              "synthetic:original-opening-receipt"
+            ]
+          }
+        ],
+        "conflicts": []
+      },
+      "conversion_input": {
+        "version": "TRIP-date-convert.1",
+        "action_id": "convert-soft",
+        "trip_id": "demo-trip",
+        "expected_version": 1,
+        "original_hash": "18c76ec1bbf3a5c8cf08ac31387878733edbb28d5e95d16a09e163dedb7e6b10",
+        "start_date": "2026-12-01",
+        "date_source": {
+          "reference": {
+            "conversation_id": "lio-dialogue-00000000000000000000000000000000",
+            "generation": "generation-demo",
+            "message_id": "date-message",
+            "run_id": "run-demo",
+            "sequence": 2,
+            "input_sha256": "789d4b2cb469688536233c2124eb9e93ffbd7ed66a813a1a14c01705b4b539db",
+            "message_version": "MESSAGE-send.2",
+            "lio_protocol": "LIO-message.3"
+          },
+          "quote": "12月1日出发",
+          "question_day": "2026-11-12"
+        }
+      }
+    },
+    {
+      "name": "UTF8 text beyond old byte cap",
+      "definition": "LioMessage3",
+      "value": {
+        "version": "LIO-message.3",
+        "message_id": "date-message",
+        "text": "字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字",
+        "locale": "zh",
+        "conversation_id": "lio-dialogue-00000000000000000000000000000000"
+      }
+    }
+  ],
+  "source_messages": {
+    "date-message": {
+      "version": "MESSAGE-send.2",
+      "conversation_id": "lio-dialogue-00000000000000000000000000000000",
+      "message_id": "date-message",
+      "text": "12月1日出发",
+      "trip_id": null,
+      "creation_intent": "none",
+      "expected_generation": "generation-demo",
+      "expected_sequence": 1,
+      "travel_context": null,
+      "needs_reference": null
+    },
+    "fixed-message": {
+      "version": "MESSAGE-send.2",
+      "conversation_id": "lio-dialogue-00000000000000000000000000000000",
+      "message_id": "fixed-message",
+      "text": "第1天9点到10点酒店集合",
+      "trip_id": null,
+      "creation_intent": "none",
+      "expected_generation": "generation-demo",
+      "expected_sequence": 0,
+      "travel_context": null,
+      "needs_reference": null
+    }
+  },
+  "needs_basis": {
+    "needs_id": "needs-demo",
+    "needs_version": 1,
+    "fields": {
+      "fixed_items": [
+        {
+          "item_id": "hotel-meetup",
+          "kind": "hotel",
+          "description": "酒店集合 / hotel meetup",
+          "applies_to": [
+            "self"
+          ],
+          "locked": {
+            "state": "known",
+            "value": true
+          },
+          "booking_status": {
+            "state": "unknown"
+          },
+          "start": {
+            "date": {
+              "state": "unknown"
+            },
+            "time": {
+              "state": "known",
+              "value": "09:00"
+            },
+            "timezone": {
+              "state": "known",
+              "value": "Asia/Shanghai"
+            },
+            "place": {
+              "state": "unknown"
+            }
+          },
+          "end": {
+            "date": {
+              "state": "unknown"
+            },
+            "time": {
+              "state": "known",
+              "value": "10:00"
+            },
+            "timezone": {
+              "state": "known",
+              "value": "Asia/Shanghai"
+            },
+            "place": {
+              "state": "unknown"
+            }
+          }
+        }
+      ],
+      "destination_timezone": {
+        "state": "known",
+        "value": "Asia/Shanghai"
+      }
+    },
+    "needs_content_sha256": "ec8614910ab7c2e70ca822b3688cb9935d478f563f49a3f30e8c627b678fb5aa"
+  },
+  "fixed_day_truth": {
+    "hotel-meetup": [
+      1,
+      1
+    ]
+  },
+  "source_receipts": {
+    "date-message": {
+      "conversation_id": "lio-dialogue-00000000000000000000000000000000",
+      "generation": "generation-demo",
+      "message_id": "date-message",
+      "run_id": "run-demo",
+      "sequence": 2,
+      "input_sha256": "789d4b2cb469688536233c2124eb9e93ffbd7ed66a813a1a14c01705b4b539db",
+      "message_version": "MESSAGE-send.2",
+      "lio_protocol": "LIO-message.3"
+    },
+    "fixed-message": {
+      "conversation_id": "lio-dialogue-00000000000000000000000000000000",
+      "generation": "generation-demo",
+      "message_id": "fixed-message",
+      "run_id": "fixed-run",
+      "sequence": 1,
+      "input_sha256": "2c8e49233181b88039e44390cd8a0aa8ba8c556d89b93b9a90383f47205e7b8e",
+      "message_version": "MESSAGE-send.2",
+      "lio_protocol": "LIO-message.3"
+    }
+  },
+  "question_days": {
+    "date-message": "2026-11-12",
+    "fixed-message": "2026-11-12"
+  },
+  "conversion_input": {
+    "version": "TRIP-date-convert.1",
+    "action_id": "convert-demo",
+    "trip_id": "demo-trip",
+    "expected_version": 1,
+    "original_hash": "18c76ec1bbf3a5c8cf08ac31387878733edbb28d5e95d16a09e163dedb7e6b10",
+    "start_date": "2026-12-01",
+    "date_source": {
+      "reference": {
+        "conversation_id": "lio-dialogue-00000000000000000000000000000000",
+        "generation": "generation-demo",
+        "message_id": "date-message",
+        "run_id": "run-demo",
+        "sequence": 2,
+        "input_sha256": "789d4b2cb469688536233c2124eb9e93ffbd7ed66a813a1a14c01705b4b539db",
+        "message_version": "MESSAGE-send.2",
+        "lio_protocol": "LIO-message.3"
+      },
+      "quote": "12月1日出发",
+      "question_day": "2026-11-12"
+    }
+  },
+  "compiled_start_dates": {
+    "date-message": "2026-12-01"
+  },
+  "reference_trip": {
+    "trip_id": "demo-trip",
+    "trip_version": 1,
+    "content_sha256": "18c76ec1bbf3a5c8cf08ac31387878733edbb28d5e95d16a09e163dedb7e6b10"
+  },
+  "protected_card_records": [
+    {
+      "trip_id": "demo-trip",
+      "trip_version": 1,
+      "content_sha256": "18c76ec1bbf3a5c8cf08ac31387878733edbb28d5e95d16a09e163dedb7e6b10"
+    },
+    {
+      "trip_id": "demo-trip",
+      "trip_version": 2,
+      "content_sha256": "4aecb1bc2c1d520c7aafe226107513019e36f9c4ff34889b54c710d517271e15"
+    },
+    {
+      "trip_id": "legacy-trip",
+      "trip_version": 7,
+      "content_sha256": "c38b0b2eab9046e808fcc9c14977ad44a5a5dcc12b8a1b6d82782e8178c16f4d"
+    },
+    {
+      "trip_id": "legacy-trip",
+      "trip_version": 7,
+      "content_sha256": "986d90376b57cc4fa2d46dd4678bb572566715d606d435e2d5dc687bd7d26b1b"
+    }
+  ]
+}

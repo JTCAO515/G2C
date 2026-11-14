@@ -12,6 +12,7 @@ import OpenAPIRuntime
     private let transport: any ClientTransport
     private let store: TypedMemoryPendingStore
     private let validatePriorOriginals: @MainActor () throws -> Void
+    private let readVersion: TypedMemoryReadVersion
     private let owner = UUID()
     private var generation = UUID()
     private var confirmed: Set<Data> = []
@@ -19,21 +20,25 @@ import OpenAPIRuntime
     private var usedManagementReads: Set<UUID> = []
     // Historical exact-action completion only, retained across presentation retirement.
     private var managementConfirmed: Set<Data> = []
-    #if DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
     public convenience init(localEndpoint: MemoryEndpoint,credentials: @escaping MemoryCredentialCallback,
         currentBinding: @escaping @MainActor () -> MemoryBinding?,pendingStore: TypedMemoryPendingStore,
-        localTransport: NoRedirectTransport,validatePriorOriginals: @escaping @MainActor () throws -> Void) throws {
-        guard localEndpoint.allowsDevelopmentActivation,localEndpoint.maximumRequestBytes <= 32768,
+        localTransport: NoRedirectTransport,readVersion: TypedMemoryReadVersion = .v2,
+        validatePriorOriginals: @escaping @MainActor () throws -> Void) throws {
+        #if !(DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE)))
+        guard localEndpoint.allowsDemoBetaActivation else { throw MemoryFailure.unconfigured }
+        #endif
+        guard localEndpoint.allowsDevelopmentActivation || localEndpoint.allowsDemoBetaActivation,localEndpoint.maximumRequestBytes <= 32768,
               localEndpoint.maximumResponseBytes <= 1_000_000 else { throw MemoryFailure.unconfigured }
         self.init(endpoint:localEndpoint,credentials:credentials,currentBinding:currentBinding,pendingStore:pendingStore,
-            interceptedTransport:localTransport,validatePriorOriginals:validatePriorOriginals)
+            interceptedTransport:localTransport,readVersion:readVersion,validatePriorOriginals:validatePriorOriginals)
     }
-    #endif
     init(endpoint: MemoryEndpoint,credentials: @escaping MemoryCredentialCallback,
         currentBinding: @escaping @MainActor () -> MemoryBinding?,pendingStore: TypedMemoryPendingStore,
-        interceptedTransport: any ClientTransport,validatePriorOriginals: @escaping @MainActor () throws -> Void = {}) {
+        interceptedTransport: any ClientTransport,readVersion: TypedMemoryReadVersion = .v2,
+        validatePriorOriginals: @escaping @MainActor () throws -> Void = {}) {
         self.endpoint = endpoint;self.credentials = credentials;current = currentBinding;store = pendingStore;transport = interceptedTransport
         self.validatePriorOriginals = validatePriorOriginals
+        self.readVersion = readVersion
     }
     private func check(_ binding: MemoryBinding,_ token: UUID) throws {
         guard generation == token else { throw MemoryFailure.staleBinding }
@@ -153,6 +158,7 @@ extension TypedMemoryClient {
         guard read.owner == owner,read.generation == token,read.binding == binding,currentReads[Data(read.item.value.command.item_id.utf8)] == read.stamp else { throw MemoryFailure.staleBinding }
     }
     public func list(limit: Int,after: TypedMemoryCursor? = nil,binding: MemoryBinding) async throws -> TypedMemoryPage {
+        if case .v3 = readVersion { return try await listTitled(limit:limit,after:after,binding:binding) }
         let token = try begin(binding)
         guard (1...100).contains(limit) else { throw MemoryFailure.invalidInput }
         if let after { guard after.owner == owner,after.generation == token,after.binding == binding else { throw MemoryFailure.staleBinding } }
@@ -177,6 +183,7 @@ extension TypedMemoryClient {
         }
     }
     public func detail(itemID: String,binding: MemoryBinding) async throws -> TypedMemoryRead? {
+        if case .v3 = readVersion { return try await titledDetail(itemID:itemID,binding:binding) }
         let token = try begin(binding)
         guard memoryText(itemID) else { throw MemoryFailure.invalidInput }
         let api = try await api(binding,token)
@@ -194,6 +201,49 @@ extension TypedMemoryClient {
     }
 }
 
+
+extension TypedMemoryClient {
+    private func listTitled(limit: Int,after: TypedMemoryCursor?,binding: MemoryBinding) async throws -> TypedMemoryPage {
+        let token = try begin(binding)
+        guard (1...100).contains(limit) else { throw MemoryFailure.invalidInput }
+        if let after { guard after.owner == owner,after.generation == token,after.binding == binding else { throw MemoryFailure.staleBinding } }
+        let api = try await api(binding,token)
+        let output = try await exchange(binding,token) { try await api.listTitledMemories(query:.init(limit:limit,after:after?.after)) }
+        switch output {
+        case .ok(let value):
+            let values = try value.body.json.items
+            guard values.count <= limit else { throw MemoryFailure.invalidResponse }
+            var previous = after?.after ?? ""
+            let items = try values.map { value in
+                let item = try TypedMemoryItem(value)
+                guard previous.utf8.lexicographicallyPrecedes(value.command.item_id.utf8) else { throw MemoryFailure.invalidResponse }
+                previous = value.command.item_id
+                return remember(item,token:token,binding:binding)
+            }
+            let next = values.last.map { TypedMemoryCursor(owner:owner,generation:token,binding:binding,after:$0.command.item_id) }
+            return TypedMemoryPage(items:items,next:next)
+        case .default(let status,let value):throw MemoryFailure.rejected(status,try value.body.json.error.code)
+        }
+    }
+
+    private func titledDetail(itemID: String,binding: MemoryBinding) async throws -> TypedMemoryRead? {
+        let token = try begin(binding)
+        guard memoryText(itemID) else { throw MemoryFailure.invalidInput }
+        let api = try await api(binding,token)
+        let output = try await exchange(binding,token) { try await api.getTitledMemoryItem(query:.init(item_id:itemID)) }
+        switch output {
+        case .ok(let value):
+            let payload = try value.body.json.item
+            if let value = payload.value1 {
+                guard same(value.command.item_id,itemID) else { throw MemoryFailure.invalidResponse }
+                return remember(try TypedMemoryItem(value),token:token,binding:binding)
+            }
+            // The other generated branch is the strict ExplicitJSONNull type.
+            return nil
+        case .default(let status,let value):throw MemoryFailure.rejected(status,try value.body.json.error.code)
+        }
+    }
+}
 
 extension TypedMemoryClient {
     private enum ManagementResponse {

@@ -1,4 +1,5 @@
 """CLEANUP-API@1 / CLEANUP-DEVICE@1; no ordinary business credential from a cap."""
+from cj_strict_json import compact
 import json
 from fastapi import Request
 from fastapi.responses import Response
@@ -29,7 +30,7 @@ def _parse(raw,version,fields):
 def register_account_cleanup_routes(app,gateway):
     def project(request):
         def encode(value):
-            raw=json.dumps(dict(request_id=request.state.request_id,**value),ensure_ascii=True,separators=(',',':')).encode('ascii')
+            raw=compact(dict(request_id=request.state.request_id,**value), ensure_ascii=True, allow_nan=True)
             if len(raw)>65536:raise Invalid('cleanup response too large')
             return raw
         return encode

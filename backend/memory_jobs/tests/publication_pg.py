@@ -533,6 +533,273 @@ def exercise(conninfo,auth):
         print('PASS C collection uses runtime-only ACCOUNT-ADMISSION@2: actual original retirement denies the same token before canonical erasure; other owner allowed and lookup failure UNKNOWN, without fallback')
 
 
+def exercise_demo_candidates(conninfo, auth):
+    from cj_api.local_account_admission_v2 import subject_digest
+    from cj_memory_jobs.codec import Unavailable
+    from cj_memory_jobs.demo_candidates import DemoCandidates
+    from cj_memory_jobs.publication_result import VERSION_DEMO
+    from cj_memory_withdrawal.erasure_command import ErasureCommand
+    from cj_memory_withdrawal.erasure_evidence import parse_original
+    from cj_memory_withdrawal.erasure_store import freeze
+
+    actors = ('demo-alice', 'demo-bob')
+    dev_auth.init(auth, actors)
+    tokens = {actor:dev_auth.token(auth,actor,30) for actor in actors}
+    slots = frozenset({'travel.pace', 'seating', 'experience'})
+    extraction = CollectionPolicy(frozenset({'self'}),slots,4,500,lambda entry:True,lambda entry,rows:True)
+    memory_policy = ManualPolicy(extraction.subjects,slots,frozenset({'long_term'}),frozenset(),
+        datetime.now(timezone.utc)+timedelta(hours=1),lambda command,raw:True,lambda command,raw:True)
+    app = create_collection_app(conninfo_path=conninfo,auth_dir=auth,
+        resolve_collection=lambda principal:(extraction,memory_policy,lambda entry:(None,None)))
+    host = app.state.memory_history
+    service = host.service
+    demo = DemoCandidates(service,frozenset(actors))
+    other_demo = DemoCandidates(service,frozenset({'demo-bob'}))
+    owner = tokens['demo-alice']
+    headers = {'Authorization':'Bearer '+owner,'Content-Type':'application/octet-stream'}
+    digest = lambda raw:hashlib.sha256(raw).hexdigest()
+    chat = 'demo-candidate-chat'
+    publications = {}
+    with TestClient(app) as client:
+        def post(path, value):
+            response = client.post(path,content=json.dumps(value,ensure_ascii=False).encode(),headers=headers)
+            assert response.status_code == 200,(response.status_code,response.text)
+            return response.json()
+        head = client.put('/v1/conversations',params={'conversation_id':chat},headers=headers).json()
+        other = client.put('/v1/conversations',params={'conversation_id':chat},
+            headers={'Authorization':'Bearer '+tokens['demo-bob']})
+        assert other.status_code == 200,(other.status_code,other.text)
+        post('/v3/memory-history-actions',dict(version='MEMORY-HISTORY@1',action_id='demo-enable',operation='enable',
+            conversation_id=chat,expected_generation=head['generation'],expected_epoch=0,expected_source_version=0))
+
+        def current(receipt, *, token=owner, run=None, service=demo):
+            return json.loads(host.boundary.with_history_context(token,lambda context:service.current(
+                context,token,receipt['message_id'],run or receipt['run_id'])))
+
+        def collect(index, slot, text, *, kind='preference', extent='long_term', extra=False, expected=1):
+            mid,jid,aid = f'demo-message-{index}',f'demo-job-{index}',f'demo-attempt-{index}'
+            receipt = post('/v1/messages',dict(version='MESSAGE-send.1',conversation_id=chat,message_id=mid,
+                text=text,trip_id=None,creation_intent='none',expected_generation=head['generation'],expected_sequence=index))['receipt']
+            source = dict(conversation_id=chat,generation=head['generation'],epoch=0,after=index,through=index+1,
+                          source_version=1,withdrawal_epoch=1,mode='incremental')
+            post('/internal/v1/memory-history/jobs',dict(version='MEMORY-JOBS@1',job_id=jid,attempt_id=aid,source=source))
+            service.transition(owner,jid,aid,'inflight')
+            prepared = service.prepare_model_input_v2(owner,jid,aid,max_payload_bytes=8192)
+            message, = json.loads(json.loads(prepared)['messages'][0]['content'])['messages']
+            entry = dict(subject='self',slot=slot,kind=kind,text=text,extent=extent,occurred_at='date unknown',
+                         evidence=[dict(ref=message['ref'],quote=text)])
+            entries = [entry,dict(entry,slot='experience',kind='experience')] if extra else [entry]
+            result = json.dumps(dict(version='MEMORY-EXTRACT@2',entries=entries),ensure_ascii=False).encode()
+            bound = dict(message_id=mid,run_id=receipt['run_id'],max_payload_bytes=8192)
+            def publish(context):
+                processing = demo.processing_policy(context,owner,jid,aid,prepared,digest(prepared),**bound)
+                assert context.with_enabled_source(SourceQuery(**source),processing,
+                    lambda snapshot:processing.with_input(snapshot,lambda raw:digest(raw).encode())) == digest(prepared).encode()
+                policy = demo.publication_policy(context,owner,jid,aid,prepared,digest(prepared),
+                    result,digest(result),before_commit=lambda:None,**bound)
+                return context.with_enabled_source(SourceQuery(**source),policy,policy.apply_original_result)
+            raw = host.boundary.with_history_context(owner,publish)
+            original = json.loads(raw)
+            assert original['version'] == VERSION_DEMO and original['model_output_sha256'] == digest(result)
+            assert [row['status'] for row in original['receipts']] == ['candidate'] * expected
+            recovered = host.boundary.with_history_context(owner,lambda context:demo.query_publication_in_context(
+                context,owner,jid,aid,message_id=mid,run_id=receipt['run_id']))
+            assert recovered == raw
+            publications[jid] = raw
+            try:host.boundary.with_history_context(owner,lambda context:service.query_publication_v2_in_context(context,owner,jid,aid))
+            except Unavailable:pass
+            else:raise AssertionError('old publication version consumed a Demo receipt')
+            return receipt
+
+        first = collect(0,'travel.pace','I prefer no more than two sights a day',extra=True)
+        second = collect(1,'seating','I usually prefer window seats')
+        temporary = collect(2,'seating','For today only, I need an aisle seat',extent='current',expected=0)
+        assert current(temporary)['candidates'] == []
+        first_read,second_read = current(first),current(second)
+        first_card, = first_read['candidates']
+        second_card, = second_read['candidates']
+        assert first_card['slot'] == 'travel.pace' and second_card['slot'] == 'seating'
+        for token,run in ((tokens['demo-bob'],None),(owner,second['run_id'])):
+            try:current(first,token=token,run=run)
+            except Unavailable:pass
+            else:raise AssertionError('other Demo owner or wrong RUN retrieved the candidate')
+        try:current(first,service=other_demo)
+        except Unavailable:pass
+        else:raise AssertionError('unselected owner retrieved a Demo candidate')
+        with host.database.connect(scope_for(ISSUER,'demo-alice')) as conn:
+            assert conn.execute('SELECT status FROM cj_memory_item ORDER BY status').fetchall() == [('candidate',),('candidate',)]
+        for index,receipt in enumerate((first,second)):
+            projected = current(receipt)
+            candidate, = projected['candidates']
+            action = dict(version='MEMORY-CANDIDATE@1',action_id=f'demo-user-choice-{index}',**candidate['review'],
+                candidate_id=candidate['candidate_id'],expected_candidate_version=candidate['version'],
+                expected_memory_epoch=projected['memory_epoch'],operation='confirm' if index == 0 else 'reject')
+            if index == 0:
+                action.update({key:candidate[key] for key in ('kind','text','extent','context','occurred_at')})
+            original = post('/v3/memory-candidate-actions',action)['result']
+            assert post('/v3/memory-candidate-actions',action)['result'] == original
+            assert original['receipt']['status'] == ('active' if index == 0 else 'rejected')
+            assert current(receipt)['candidates'] == []
+        with host.database.connect(scope_for(ISSUER,'demo-alice')) as conn:
+            assert conn.execute("SELECT slot FROM cj_memory_item WHERE status='active'").fetchall() == [('travel.pace',)]
+        def erase(context):
+            repository,principal,guard = service._binding(context,owner)
+            with repository.transaction() as memory:
+                active, = memory.effective('self',None)
+                assert active.command.item_id == first_card['candidate_id'] and active.version == 2
+                command = ErasureCommand.parse(json.dumps(dict(version='MEMORY-ERASURE@1',action_id='demo-erase',
+                    item_id=active.command.item_id,expected_version=active.version,derived_range='owned_trip_derived_scope')).encode())
+                original = freeze(memory,command,subject_digest(principal),max_sources=1000,max_jobs=1000,max_bytes=1_000_000)
+                evidence, = memory.cur.execute('SELECT evidence FROM cj_memory_erasure_manifest WHERE scope=%s AND action_id=%s',
+                    (memory.scope,command.action_id)).fetchone()
+                jobs = parse_original(bytes(evidence),json.loads(original),digest(original))['jobs']
+                assert [(job['job_id'],job['publication_utf8'].encode()) for job in jobs] == [('demo-job-0',publications['demo-job-0'])]
+                assert memory.effective('self',None) == []
+                guard('demo_original_erasure_freeze')
+                return b'original Demo publication frozen'
+        assert host.boundary.with_history_context(owner,erase) == b'original Demo publication frozen'
+        print('PASS actual Demo single-source input fence, mixed and empty candidate-only publication, exact recovery, explicit confirm and dismiss')
+        print('PASS original Demo Pub4 proof is frozen unchanged and the removed item leaves canonical context')
+
+
+def exercise_lio_candidates(conninfo, auth):
+    from cj_api.local_account_admission_v2 import subject_digest
+    from cj_memory_jobs.codec import Unavailable
+    from cj_memory_jobs.consent import EnqueueCommand
+    from cj_memory_jobs.lio_candidates import LioCandidates
+    from cj_memory_jobs.postgres import encode
+    from cj_memory_jobs.publication_result import VERSION_DEMO
+    from cj_memory_withdrawal.erasure_command import ErasureCommand
+    from cj_memory_withdrawal.erasure_store import freeze
+    from cj_message.auth_boundary import HistoryReadContext
+    from cj_message.travel import ABI
+
+    sys.path.insert(0, str(ROOT/'backend/cj_api/tests'))
+    from registered_host_support import RegisteredHost
+
+    actors = ('lio-alice', 'lio-bob')
+    registered = RegisteredHost(auth, Path(conninfo), {actor:(12,2,30000) for actor in actors})
+    run_context = registered.profiles[actors[0]][1]
+    for actor in actors:
+        dev_auth.activate_travel(Path(conninfo), actor, run_context, ABI, auth_dir=auth)
+    pace, quiet = 'I always like a slow travel pace.', 'I always prefer a quiet entrance.'
+    slots = frozenset({'travel.pace', 'quiet.entrance'})
+    extraction = CollectionPolicy(frozenset({'self'}),slots,4,500,lambda entry:True,lambda entry,rows:True)
+    memory_policy = ManualPolicy(extraction.subjects,slots,frozenset({'long_term'}),frozenset(),
+        datetime.now(timezone.utc)+timedelta(hours=1),lambda command,raw:True,lambda command,raw:True)
+    app = create_collection_app(conninfo_path=conninfo,auth_dir=auth,run_context=run_context,
+        resolve_collection=lambda principal:(extraction,memory_policy,lambda entry:(None,None)))
+    host = app.state.memory_history
+    service = host.service
+    lio = LioCandidates(service, frozenset(actors))
+    headers = {**registered.headers[actors[0]], 'Content-Type':'application/octet-stream'}
+    token = headers['Authorization'][7:]
+    other = registered.headers[actors[1]]['Authorization'][7:]
+    selected = 'lio-middle'
+    digest = lambda raw:hashlib.sha256(raw).hexdigest()
+
+    def original(context, mid):
+        # Stand-in only for B's LIO marker lookup. Travel, owner, original bytes
+        # and active generation are still checked by the signed repository.
+        if mid == selected:
+            travel = context.query_travel_message(mid)
+            return travel.stored if travel is not None else None
+        return None
+
+    with patch.object(HistoryReadContext,'query_lio_message',original,create=True),TestClient(app) as client:
+        chat='lio-private-pub4'
+        head=client.put('/v1/conversations',params={'conversation_id':chat},headers=headers)
+        assert head.status_code==200,head.text
+        for index,(mid,text) in enumerate((('lio-before','Tell me about a park.'),
+                (selected,pace+' '+quiet),('lio-after','What is the weather?'))):
+            command=dict(version='MESSAGE-send.2',message_id=mid,text=text,conversation_id=chat,trip_id=None,
+                         creation_intent='none',expected_generation=head.json()['generation'],
+                         expected_sequence=index,travel_context=None,needs_reference=None)
+            response=client.post('/v2/messages',content=json.dumps(command).encode(),headers=headers)
+            assert response.status_code==200,response.text
+            if mid==selected:
+                receipt=response.json()['receipt']
+
+        def current():
+            return service.boundary.with_history_context(token,lambda context:
+                lio.current(context,token,selected,receipt['run_id']))
+
+        assert current() is None
+        prepared=json.loads(lio.prepare(token,selected,receipt['run_id'],max_payload_bytes=8192))
+        jid,aid=prepared['job_id'],prepared['attempt_id']
+        query=SourceQuery(**prepared['source'])
+        assert (query.after,query.through,prepared['state'])==(1,2,'inflight')
+        raw=prepared['prepared_input_utf8'].encode()
+        turn,=json.loads(json.loads(raw)['messages'][0]['content'])['messages']
+        assert turn['text']==pace+' '+quiet
+        assert json.loads(lio.prepare(token,selected,receipt['run_id'],max_payload_bytes=8192))['prepared_input_utf8'] is None
+        for subject,run in ((other,receipt['run_id']),(token,'other-run')):
+            try:lio.prepare(subject,selected,run,max_payload_bytes=8192)
+            except Unavailable:pass
+            else:raise AssertionError('foreign owner or wrong original RUN scheduled')
+
+        model=encode(dict(version='MEMORY-EXTRACT@2',entries=[dict(subject='self',slot=slot,
+            kind='preference',text=text,extent='long_term',occurred_at='date unknown',
+            evidence=[dict(ref=turn['ref'],quote=text)])
+            for slot,text in (('travel.pace',pace),('quiet.entrance',quiet))]))
+        params=dict(message_id=selected,run_id=receipt['run_id'],max_payload_bytes=8192)
+
+        def publish(context):
+            processing=lio.processing_policy(context,token,jid,aid,raw,digest(raw),**params)
+            assert context.with_enabled_source(query,processing,
+                lambda snapshot:processing.with_input(snapshot,lambda original:digest(original).encode()))==digest(raw).encode()
+            result=lio.publication_policy(context,token,jid,aid,raw,digest(raw),model,digest(model),
+                before_commit=lambda:None,**params)
+            return context.with_enabled_source(query,result,result.apply_original_result)
+
+        result=service.boundary.with_history_context(token,publish)
+        assert json.loads(result)['version']==VERSION_DEMO
+        assert [row['status'] for row in json.loads(result)['receipts']]==['candidate','candidate']
+        assert service.boundary.with_history_context(token,lambda context:
+            lio.query_publication_in_context(context,token,jid,aid,message_id=selected,run_id=receipt['run_id']))==result
+        projected=json.loads(current())
+        cards={card['slot']:card for card in projected['candidates']}
+        card,sibling=cards['travel.pace'],cards['quiet.entrance']
+        assert json.loads(service.current_conversation_candidates(token,chat,''))['candidates']==[]
+        try:service.query_original(token,jid,aid)
+        except Unavailable:pass
+        else:raise AssertionError('old job reader consumed a Lio job')
+        with host.database.connect(scope_for(ISSUER,actors[0])) as conn:
+            assert conn.execute('SELECT status FROM cj_memory_item').fetchall()==[('candidate',),('candidate',)]
+            assert conn.execute('SELECT count(*) FROM cj_memory_history_consent').fetchone()==(0,)
+            original,=conn.execute('SELECT original_input FROM cj_memory_history_job WHERE job_id=%s',(jid,)).fetchone()
+            assert EnqueueCommand.parse(bytes(original)).query==query
+
+        choice=encode(dict(version='MEMORY-CANDIDATE@1',action_id='remember-lio-middle',**card['review'],
+            candidate_id=card['candidate_id'],expected_candidate_version=card['version'],
+            expected_memory_epoch=projected['memory_epoch'],operation='confirm',
+            **{key:card[key] for key in ('kind','text','extent','context','occurred_at')}))
+        accepted=service.apply_candidate(token,choice)
+        assert json.loads(accepted)['receipt']['status']=='active' and service.apply_candidate(token,choice)==accepted
+        assert json.loads(current())['candidates']==[sibling]
+
+        def erase(context):
+            repository,principal,guard=service._binding(context,token)
+            with repository.transaction() as memory:
+                active,=memory.effective('self',None)
+                assert active.command.item_id==card['candidate_id']
+                original=ErasureCommand.parse(encode(dict(version='MEMORY-ERASURE@1',action_id='erase-lio-middle',
+                    item_id=active.command.item_id,expected_version=active.version,derived_range='owned_trip_derived_scope')))
+                freeze(memory,original,subject_digest(principal),max_sources=1000,max_jobs=1000,max_bytes=1_000_000)
+                assert memory.effective('self',None)==[]
+                guard('lio_erasure')
+                return b'null'
+        service.boundary.with_history_context(token,erase)
+        # Simulate removal of the exact shared payload after the canonical
+        # freeze. The retained origin and pending sibling remain user-visible.
+        with psycopg.connect(**json.loads(Path(conninfo).read_text())) as observer:
+            assert observer.execute('DELETE FROM cj_memory_history_job WHERE scope=%s AND job_id=%s '
+                'AND attempt_id=%s RETURNING job_id',(scope_for(ISSUER,actors[0]),jid,aid)).fetchone()==(jid,)
+        assert json.loads(current())['candidates']==[sibling]
+        assert json.loads(service.current_conversation_candidates(token,chat,''))['candidates']==[]
+        print('PASS Lio protected middle Travel message, candidate-only Pub4, explicit save and sibling after erasure')
+
+
 if __name__=='__main__':
     with patch.dict(os.environ,{'CJ_ENV':'local'}),tempfile.TemporaryDirectory(prefix='g2c-pub-auth-') as temp:
         with pg_suites.cluster('publication_candidate',port=55510,role='cj_pub_init',socket=f'/tmp/cj-pub-{os.getpid()}') as config:
@@ -554,3 +821,5 @@ if __name__=='__main__':
                 conn.execute((ROOT/publication['file']).read_text())
                 conn.execute((ROOT/decision['file']).read_text())
             print('PASS nonempty down refusal; post-erasure empty publication rollback preserves the existing opaque erasure fence')
+            exercise_demo_candidates(path,Path(temp)/'demo-auth')
+            exercise_lio_candidates(path,Path(temp)/'lio-auth')
