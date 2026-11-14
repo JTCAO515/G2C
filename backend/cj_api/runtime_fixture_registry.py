@@ -99,9 +99,10 @@ class FixtureUseRegistry:
             raise Unavailable('FIXTURE_REGISTRY_EXPIRED')
 
     def _current(self,read_only):
-        self._policy_current(read_only)
+        self.guard(read_only=read_only)
         definition=self.source_guard()
         origin(definition)
+        self._policy_current(read_only)
         return {'ref':definition['ref'],'sha256':definition['sha256']}
 
     def preparation_policy_source(self):
@@ -116,6 +117,7 @@ class FixtureUseRegistry:
         self.preparation_guard()
         self._policy_current(read_only=True)
         self.preparation_guard()
+        self._policy_current(read_only=True)
         return self.raw
 
     def _use(self,raw):

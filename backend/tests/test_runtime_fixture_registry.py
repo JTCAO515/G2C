@@ -196,3 +196,35 @@ def test_source_reference_mutated_in_place_does_not_change_the_prior_snapshot(fi
     with pytest.raises(Unavailable,match='DEFINITION_CHANGED'):store.reserve(fixture.request())
     record=decode(next(fixture.directory.iterdir()).read_bytes())
     assert record['definition_ref']['sha256']=='c'*64
+
+
+@pytest.mark.parametrize('change',['policy','expiry'])
+def test_final_source_read_cannot_return_after_policy_change_or_expiry(fixture,change):
+    store=fixture.build();original=store.source_guard;calls=0
+    def source():
+        nonlocal calls
+        calls+=1
+        result=original()
+        if calls==2:
+            if change=='policy':fixture.policy_file.write_bytes(encode({**fixture.policy,'maximum_uses':3}))
+            else:fixture.state['now']=datetime(2026,11,14,3,tzinfo=timezone.utc)
+        return result
+    store.source_guard=source
+    with pytest.raises(Unavailable,match='POLICY_CHANGED|EXPIRED'):
+        store.reserve(fixture.request())
+    assert len(list(fixture.directory.iterdir()))==1
+
+
+@pytest.mark.parametrize('change',['policy','expiry'])
+def test_last_preparation_guard_cannot_bypass_policy_or_expiry(fixture,change):
+    store=fixture.build();calls=0
+    def prepare():
+        nonlocal calls
+        calls+=1
+        if calls==2:
+            if change=='policy':fixture.policy_file.write_bytes(encode({**fixture.policy,'maximum_uses':3}))
+            else:fixture.state['now']=datetime(2026,11,14,3,tzinfo=timezone.utc)
+    store.preparation_guard=prepare
+    with pytest.raises(Unavailable,match='POLICY_CHANGED|EXPIRED'):
+        store.preparation_policy_source()
+    assert not list(fixture.directory.iterdir())
