@@ -22,6 +22,8 @@ from psycopg_pool import ConnectionPool
 
 from cj_api.runtime_fixture_boundary import FixtureSourceBoundary
 from cj_api.runtime_release_witness import NativeReleaseWitness
+from cj_api.runtime_disclosure_scan import NativeExactDisclosureScan,SENTINEL_VERSION
+from cj_api.runtime_surface_inventory import VERSION as SURFACE_VERSION
 from cj_api.local_app import load_confirmation_signer,scope_for
 from cj_api.local_account_admission_v2 import account_checker_for,retired_in_transaction
 from cj_api.local_worker_context import checker_factory_for
@@ -105,6 +107,26 @@ def exercise(auth,conninfo):
         assert source.with_current(before,lambda current,private:encode({'trip_version':current['trip']['version']}),
             deadline=time.monotonic()+30)==encode({'trip_version':3})
         assert f.model.calls==calls
+        # Native C custody is real here; E bytes are explicit controlled scan
+        # fixtures, separate from the native surface-capture group's evidence.
+        private=source.with_current(before,lambda state,content:content,deadline=time.monotonic()+30)
+        marker=json.loads(private)['title']
+        sentinel=encode(dict(version=SENTINEL_VERSION,source_state_sha256=sha256(before).hexdigest(),values=[marker]))
+        scan_state=dict(data=b'ordinary E reply',missing=[])
+        def controlled_surfaces(mid):
+            data=scan_state['data']
+            return encode(dict(version=SURFACE_VERSION,message_id=mid,run_id='controlled-e-run',
+                surfaces=[dict(source_kind='visible_text',source_id='controlled-e-run',
+                    sha256=sha256(data).hexdigest(),bytes_base64=base64.b64encode(data).decode())],
+                evidence_status='UNKNOWN'if scan_state['missing']else'COMPLETE',
+                missing=scan_state['missing'],coverage_scope='controlled-E-bytes'))
+        scanner=NativeExactDisclosureScan(SimpleNamespace(collect=controlled_surfaces),source,before,
+            sentinel,sha256(sentinel).hexdigest())
+        assert decode(scanner.scan('controlled-e-message',deadline=time.monotonic()+30))['exact_status']=='PASS'
+        scan_state.update(data=marker.encode(),missing=[{'field':'uncaptured-output'}])
+        report=decode(scanner.scan('controlled-e-message',deadline=time.monotonic()+30))
+        assert report['exact_status']=='FAIL'and report['semantic_disclosure_review']=='UNRUN'
+        assert marker not in str(report)and f.model.calls==calls
 
         with ThreadPoolExecutor(max_workers=3)as pool:
             entered=[Event()for _ in range(3)];pending=[]
