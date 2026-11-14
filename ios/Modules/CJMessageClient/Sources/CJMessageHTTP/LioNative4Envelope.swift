@@ -8,7 +8,7 @@ enum LioNative4Envelope {
         var parser = StrictJSON(bytes: Array(bytes))
         let fields = try CardJSON.fields(parser.document(), "version message_id text locale new_conversation")
         guard try CardJSON.text(fields["version"]) == "LIO-message.4",
-              try CardJSON.text(fields["message_id"]).utf8.elementsEqual(messageID.utf8),
+              matchesMessageID(fields["message_id"], expected: messageID),
               LioTimelineWire.Locale(rawValue: try CardJSON.text(fields["locale"])) != nil,
               case .boolean(true)? = fields["new_conversation"],
               case .string(let text)? = fields["text"] else { throw MessageHTTPFailure.invalidConfiguration }
@@ -40,11 +40,16 @@ enum LioNative4Envelope {
         return (id, bytes.subdata(in: parser.rootMemberRanges["receipt"]!))
     }
 
+    private static func matchesMessageID(_ value: StrictJSONValue?, expected: String) -> Bool {
+        guard case .string(let id) = value else { return false }
+        return id.utf8.elementsEqual(expected.utf8)
+    }
+
     private static func conversation(in value: StrictJSONValue?, original: LioTimelineWire.Send) throws -> String {
         let fields = try CardJSON.fields(value, "version message_id conversation_id")
         let id = try CardJSON.text(fields["conversation_id"])
         guard try CardJSON.text(fields["version"]) == "LIO-message-receipt.4",
-              try CardJSON.text(fields["message_id"]).utf8.elementsEqual(original.messageID.utf8),
+              matchesMessageID(fields["message_id"], expected: original.messageID),
               LioTimelineWire.validConversationID(id),
               original.conversationID.map({ $0.utf8.elementsEqual(id.utf8) }) ?? true else {
             throw MessageHTTPFailure.invalidResponse

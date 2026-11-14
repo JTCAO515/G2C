@@ -101,6 +101,27 @@ struct LioNative4ClientTests {
         #expect(await exit.calls.count == 2)
     }
 
+    @Test(arguments: [String(repeating: "m", count: 128), String(repeating: "m", count: 129),
+                      String(repeating: "m", count: 256), String(repeating: "界", count: 85) + "a", "e\u{301}", "  m  "])
+    func native4KeepsTheExistingMessageIDByteDomain(_ mid: String) throws {
+        let original = try LioTimelineWire.Send(messageID: mid, text: "Trip", locale: .english,
+                                                destination: .newChat, version: .v4)
+        let restored = try LioTimelineWire.Send.recordedFirst(original.originalUTF8, messageID: mid)
+        #expect(restored?.original.originalUTF8 == original.originalUTF8)
+        let fields = ["version":"LIO-message-receipt.4", "message_id":mid, "conversation_id":cid]
+        let response = try JSONSerialization.data(withJSONObject: fields)
+        #expect(try original.confirm(response) == cid)
+        if mid == "e\u{301}" {
+            var different = fields; different["message_id"] = "\u{e9}"
+            let normalized = try JSONSerialization.data(withJSONObject: different)
+            #expect(throws: Error.self) { try original.confirm(normalized) }
+        }
+        #expect(throws: MessageHTTPFailure.invalidConfiguration) {
+            try LioTimelineWire.Send(messageID: String(repeating: "m", count: 257), text: "Trip", locale: .english,
+                                     destination: .newChat, version: .v4)
+        }
+    }
+
     @Test func successfulNative4SubmissionStoresItsVerifiedReceipt() async throws {
         let scope = try StorageScope(environment: "synthetic", account: UUID().uuidString)
         let recovery = MessageRecovery(storage: Native4Store())
