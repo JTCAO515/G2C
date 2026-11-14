@@ -25,6 +25,7 @@ def source_c0(*,resource_root=None):
     from cj_api.local_lio_exploration import UNDERSTANDING_SYSTEM,RESPONSE_SYSTEM,PRACTICAL_SYSTEM
     from cj_api.lio_exploration_profile import POLICY as EXPLORATION_DEFAULT_POLICY
     from cj_message.lio_exploration_schema import PROFILES as EXPLORATION_PROFILES,response_format,response_format_sha256
+    from cj_api.lio_pipeline_model import SKELETON_SYSTEM,WORDING_SYSTEM
     policy_files = ('backend/agent/cj_agent/provider.py', 'backend/agent/cj_agent/worker.py', 'backend/cj_api/real_services.py',
              'backend/cj_api/local_lio_planning.py', 'backend/cj_api/local_lio_national.py',
              'backend/cj_api/lio_scene.py',
@@ -63,6 +64,21 @@ def source_c0(*,resource_root=None):
              'backend/cj_api/lio_city.py',
              'backend/cj_api/lio_exploration_routes.py',
              'backend/message/cj_message/lio_exploration_schema.py',
+             'backend/cj_api/local_lio_rich_source.py',
+             'backend/cj_api/local_lio_rich_calendar_source.py',
+             'backend/cj_api/local_lio_provider_sources.py',
+             'backend/cj_api/local_lio_rich_checks.py',
+             'backend/cj_api/lio_poi2_tool.py',
+             'backend/cj_api/lio_pipeline_skeleton.py',
+             'backend/cj_api/lio_pipeline_document.py',
+             'backend/cj_api/lio_pipeline_model.py',
+             'backend/message/cj_message/lio_pipeline_schema.py',
+             'backend/place/cj_place/gaode_v2.py',
+             'backend/place/cj_place/https_transport.py',
+             'backend/draft/cj_draft/rich_calendar_source.py',
+             'backend/draft/cj_draft/rich_provider_source.py',
+             'backend/trip/cj_trip/local_rich_read.py',
+             'backend/message/cj_message/travel_reference.py',
              'backend/memory/cj_memory/epoch_projection.py')
     files = (*policy_files,
              'eval/optimization/cases.v2.json',
@@ -87,6 +103,8 @@ def source_c0(*,resource_root=None):
                     exploration_understanding=UNDERSTANDING_SYSTEM,
                     exploration_response=RESPONSE_SYSTEM,
                     exploration_practical=PRACTICAL_SYSTEM,
+                    pipeline_skeleton=SKELETON_SYSTEM,
+                    pipeline_wording=WORDING_SYSTEM,
                     exploration_schemas={profile:dict(response_format=response_format(profile),
                         response_format_sha256=response_format_sha256(profile)) for profile in EXPLORATION_PROFILES},
                     exploration_default_policy=EXPLORATION_DEFAULT_POLICY,

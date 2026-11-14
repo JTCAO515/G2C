@@ -5,10 +5,11 @@ import json
 from typing import Literal
 
 from pydantic import BaseModel,ConfigDict,Field
+from .lio_pipeline_schema import SKELETON,WORDING,Skeleton,Wording
 
 UNDERSTANDING='LIO-exploration-understanding.1'
 RESPONSE='LIO-exploration-response.1'
-PROFILES=(UNDERSTANDING,RESPONSE)
+PROFILES=(UNDERSTANDING,RESPONSE,SKELETON,WORDING)
 
 
 class DTO(BaseModel):
@@ -52,7 +53,7 @@ class ExplorationResponse(DTO):
 
 
 def response_format(profile):
-    model={UNDERSTANDING:Understanding,RESPONSE:ExplorationResponse}[profile]
+    model={UNDERSTANDING:Understanding,RESPONSE:ExplorationResponse,SKELETON:Skeleton,WORDING:Wording}[profile]
     return dict(type='json_schema',json_schema=dict(name=profile.replace('-','_').replace('.','_'),
         strict=True,schema=model.model_json_schema()))
 

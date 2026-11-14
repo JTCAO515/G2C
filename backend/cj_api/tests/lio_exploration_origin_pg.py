@@ -163,6 +163,9 @@ def exercise(root,conninfo):
     from types import SimpleNamespace
     from cj_message.lio_wire import ExplorationOrigin
     from cj_message.lio_exploration_schema import (ExplorationInput,PROFILES,response_format,response_format_sha256)
+    from cj_message.lio_pipeline_schema import SKELETON,WORDING,Skeleton,Wording
+    from cj_api.lio_pipeline_skeleton import recipes
+    from test_lio_pipeline_skeleton import proposal
     from cj_usage.local_provider_exit import BudgetUnknown
     stored4=boundary.with_history_context(token,lambda context:context.query_lio_message(receipt.message_id))
     r=stored4.receipt
@@ -173,8 +176,10 @@ def exercise(root,conninfo):
     def response(request):
         body=json.loads(request.content);wire.append(body)
         version=body['response_format']['json_schema']['schema']['properties']['version']['const']
-        value=(dict(version=version,intent='explore',current_source_index=0,updates=[])
-               if version==PROFILES[0] else dict(version=version,body='',groups=[]))
+        if version==SKELETON:value=proposal(recipes(3,'moderate',light_first=True,light_last=True))
+        elif version==WORDING:value=dict(version=version,items=[dict(item_id='p4-d1-s1',reason=None,reason_refs=[],tip=None)])
+        else:value=(dict(version=version,intent='explore',current_source_index=0,updates=[])
+                    if version==PROFILES[0] else dict(version=version,body='',groups=[]))
         identity=dict(id='native4-fixture-'+str(len(wire)),model=M4_MODEL)
         chunks=[dict(**identity,choices=[dict(index=0,delta=dict(content=json.dumps(value)),finish_reason=None)]),
                 dict(**identity,choices=[dict(index=0,delta={},finish_reason='stop')]),
@@ -199,6 +204,8 @@ def exercise(root,conninfo):
             operation=SimpleNamespace(binding=binding4,command=SimpleNamespace(attempt_id=profile+'-'+str(limit)))
             result=json.loads(''.join(prepared.bind_operation(operation,lambda:True)()))
             assert result['version']==profile
+            if profile==SKELETON:Skeleton.model_validate(result)
+            elif profile==WORDING:Wording.model_validate(result)
             assert wire[-1]['max_tokens']==limit and wire[-1]['response_format']==response_format(profile)
         before=len(wire)
         for argument in (dict(profile=PROFILES[0],client_enabled=True),
@@ -208,8 +215,8 @@ def exercise(root,conninfo):
             except (BudgetUnknown,Unavailable):pass
             else:raise AssertionError('client/unknown/old3 enabled the new model profile')
         assert len(wire)==before
-    assert len(wire)==4 and all(row['state']=='RECEIVED' for row in journal.inspect())
-    print('PASS two explicit native4 model profiles use genuine4 origin/declared schema/actual wire at1536 and768; dict flags, unknown profile and old3 refuse before vendor; HTTP fixture only',flush=True)
+    assert len(wire)==2*len(PROFILES) and all(row['state']=='RECEIVED' for row in journal.inspect())
+    print('PASS four explicit native4 model profiles use genuine4 origin/declared schema/actual wire at1536 and768; dict flags, unknown profile and old3 refuse before vendor; HTTP fixture only',flush=True)
     with psycopg.connect(**conninfo,autocommit=True) as db:
         try:migrate.down(db,migrate.load(),53)
         except psycopg.Error:pass
@@ -242,4 +249,13 @@ def main():
             with patch.dict(os.environ,env):exercise(root,conninfo)
 
 
-if __name__=='__main__':main()
+if __name__=='__main__':
+    main()
+    from lio_rich_source_pg import main as rich_source_main
+    rich_source_main()
+    from lio_provider_sources_pg import main as providers_main
+    providers_main()
+    from lio_pipeline_models_pg import main as pipeline_models_main
+    pipeline_models_main()
+    import runpy
+    runpy.run_path(str(ROOT/'backend/draft/tests/rich_provider_pg.py'),run_name='__main__')

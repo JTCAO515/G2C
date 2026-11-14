@@ -1,0 +1,212 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://go2china.space/contracts/message/lio-trip-history-schema.4.json",
+  "title": "Explicit Lio4 history/undo snapshot data; not source or write permission",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/History4"
+    },
+    {
+      "$ref": "#/$defs/Undo4"
+    },
+    {
+      "$ref": "#/$defs/UndoReceipt4"
+    }
+  ],
+  "$defs": {
+    "Id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+      "not": {
+        "pattern": "[\\u0000-\\u001f\\u007f-\\u009f\\u2028\\u2029]"
+      }
+    },
+    "Hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "minLength": 64,
+      "maxLength": 64
+    },
+    "Version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9223372036854775806
+    },
+    "Card": {
+      "anyOf": [
+        {
+          "$ref": "https://go2china.space/contracts/message/trip-schema.2.json#/$defs/Card2"
+        },
+        {
+          "$ref": "https://go2china.space/contracts/message/lio-exploration-schema.4.json#/$defs/Card3"
+        }
+      ]
+    },
+    "UndoTarget": {
+      "type": "object",
+      "properties": {
+        "trip_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "expected_version": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 9223372036854775806
+        },
+        "original_hash": {
+          "$ref": "#/$defs/Hash"
+        },
+        "content_version": {
+          "enum": [
+            "structured.1",
+            "structured.2",
+            "structured.3",
+            "structured.4"
+          ]
+        },
+        "restore_version": {
+          "$ref": "#/$defs/Version"
+        },
+        "restore_hash": {
+          "$ref": "#/$defs/Hash"
+        },
+        "restore_content_version": {
+          "enum": [
+            "structured.1",
+            "structured.2",
+            "structured.3",
+            "structured.4"
+          ]
+        }
+      },
+      "required": [
+        "trip_id",
+        "expected_version",
+        "original_hash",
+        "content_version",
+        "restore_version",
+        "restore_hash",
+        "restore_content_version"
+      ],
+      "additionalProperties": false
+    },
+    "History4": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": "LIO-trip-history.4"
+        },
+        "conversation_id": {
+          "type": "string",
+          "pattern": "^lio-dialogue-[0-9a-f]{32}$",
+          "minLength": 45,
+          "maxLength": 45
+        },
+        "current": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Card"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "history": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/Card"
+          }
+        },
+        "undo_target": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UndoTarget"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "next_before": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "not": {
+                "pattern": "[\\u0000-\\u0020\\u007f-\\u009f\\u2028\\u2029]"
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "version",
+        "conversation_id",
+        "current",
+        "history",
+        "undo_target",
+        "next_before"
+      ],
+      "additionalProperties": false
+    },
+    "Undo4": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": "LIO-trip-undo.4"
+        },
+        "action_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "conversation_id": {
+          "type": "string",
+          "pattern": "^lio-dialogue-[0-9a-f]{32}$",
+          "minLength": 45,
+          "maxLength": 45
+        },
+        "target": {
+          "$ref": "#/$defs/UndoTarget"
+        }
+      },
+      "required": [
+        "version",
+        "action_id",
+        "conversation_id",
+        "target"
+      ],
+      "additionalProperties": false
+    },
+    "UndoReceipt4": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": "LIO-trip-undo-receipt.4"
+        },
+        "action_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "conversation_id": {
+          "type": "string",
+          "pattern": "^lio-dialogue-[0-9a-f]{32}$",
+          "minLength": 45,
+          "maxLength": 45
+        },
+        "committed": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "version",
+        "action_id",
+        "conversation_id",
+        "committed"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

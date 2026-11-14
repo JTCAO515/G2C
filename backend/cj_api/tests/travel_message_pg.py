@@ -127,6 +127,16 @@ def exercise(auth,conninfo):
             assert states=={'a-first':'context_invalid','b-second':'context_invalid','a-third':'completed','a-other':'completed'},states
             assert model.calls==2
             assert host.runs.snapshot(binding('alice',first)).text==''
+            # Actual A→B→A originals have equal final context values but
+            # different immutable segment epochs; source reads cannot bridge it.
+            third_binding=binding('alice',third)
+            with host.runs.repository.transaction()as tx:
+                tx.get(third_binding)
+                with host.message_context.hold_for_effect(third_binding)as source_lease:
+                    assert source_lease.source_original('a-third').stored==source_lease.original_message()
+                    try:source_lease.source_original('a-first')
+                    except Denied:pass
+                    else:raise AssertionError('historical source crossed actual travel ABA')
             none,_=send('alice','no-travel','none',None)
             assert none['reference']['context_kind']=='none' and none['reference']['context_id'] is None
             assert worker('alice',model).process()[0].status=='completed' and model.calls==3
@@ -164,6 +174,25 @@ def exercise(auth,conninfo):
                     with patch.object(held.message_context.repository,'connect',side_effect=AssertionError('second message connection')):
                         assert held.runs.valid(original_binding) is True
                         assert held.message_context.active_original(original_binding)==stored
+                        prior=lease.source_original('normal-1')
+                        assert prior.stored.receipt.message_id==normal1['receipt']['message_id']
+                        assert prior.stored.receipt.input_sha256==normal1['receipt']['input_sha256']
+                        assert prior.reference.sequence==1 and prior.reference.selection_epoch==lease.reference.selection_epoch
+                        assert prior.reference.input_sha256==prior.stored.receipt.input_sha256
+                        for wrong in ('a-third','missing-original'):
+                            try:lease.source_original(wrong)
+                            except(Denied,LeaseUnavailable):pass
+                            else:raise AssertionError('source read escaped its original conversation')
+                        original_admit=held.message_context.admit;source_checks=[]
+                        def revoke_after_read():
+                            source_checks.append(True)
+                            if len(source_checks)==2:raise LeaseUnavailable('controlled final source AUTH withdrawal')
+                            return original_admit()
+                        with patch.object(held.message_context,'admit',side_effect=revoke_after_read):
+                            try:lease.source_original('normal-1')
+                            except LeaseUnavailable:pass
+                            else:raise AssertionError('historical source escaped final AUTH withdrawal')
+                        assert len(source_checks)==2
                     assert lease.reference.owner_scope==scope_for(ISSUER,'alice')
                     try:lease.reference=lease.reference
                     except AttributeError:pass
@@ -172,9 +201,22 @@ def exercise(auth,conninfo):
                         try:pool.submit(lease.check,original_binding).result()
                         except LeaseUnavailable:pass
                         else:raise AssertionError('cross-thread lease used')
+                        try:pool.submit(lease.source_original,'normal-1').result()
+                        except LeaseUnavailable:pass
+                        else:raise AssertionError('cross-thread historical source used')
             try:lease.check(original_binding)
             except LeaseUnavailable:pass
             else:raise AssertionError('expired lease used')
+            try:lease.source_original('normal-1')
+            except LeaseUnavailable:pass
+            else:raise AssertionError('expired historical source used')
+            earlier_binding=binding('alice',normal1)
+            with held.runs.repository.transaction()as tx:
+                tx.get(earlier_binding)
+                with held.message_context.hold_for_effect(earlier_binding)as earlier_lease:
+                    try:earlier_lease.source_original('normal-2')
+                    except Denied:pass
+                    else:raise AssertionError('historical source read a future original')
             try:MessageContextLease(held.message_context,None,original_binding,held.message_context.read_original(original_binding),stored)
             except TypeError:pass
             else:raise AssertionError('caller minted a lease')
