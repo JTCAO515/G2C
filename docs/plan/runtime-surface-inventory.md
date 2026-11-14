@@ -30,7 +30,8 @@ so a later scanner can preserve known FAIL priority even with other gaps.
 
 `COMPLETE` covers only the stated original MESSAGE/RUN and the associated job
 check at that native read. A full use must still enumerate every actual client
-step, any additional/background source, late-write closure and the exact frozen
+step, subsequent HTTP timeline/card/profile responses, any additional/background
+source, late-write closure and the exact frozen
 private sentinel set. It must verify hashes after persistence and perform exact
 and separately declared semantic review; this module does not scan, classify
 no-leakage, issue a use or charge/refund anything.

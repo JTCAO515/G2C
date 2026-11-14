@@ -1,4 +1,4 @@
-"""Private exhaustive per-MESSAGE input/output collection for disclosure scans.
+"""Private primary MESSAGE/RUN input/output collection for disclosure scans.
 
 This is not an E metadata response. Bytes may contain a detected leak and must
 remain with the trusted observer; only a separately qualified digest view may
