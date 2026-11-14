@@ -72,8 +72,7 @@ def test_new_grammar_refuses_wrong_version_originals_and_fixed_bindings(change):
         RichCalendarBasis(3, None, packed(value))
 
 
-@pytest.fixture
-def harness(monkeypatch):
+def source_harness(monkeypatch, source_class=RichCalendarContextSource, **source_options):
     events = []
     value = sidecar()
     original = deepcopy(FIXTURE['source_messages']['fixed-message'])
@@ -155,8 +154,8 @@ def harness(monkeypatch):
 
     base = SimpleNamespace(reader=None, message_context=Messages(), revision_lease=NeedsLease(),
         token_supplier=lambda: 'synthetic-only', max_revisions=128, max_bytes=4_000_000, trip_repository=None)
-    source = RichCalendarContextSource(base, None, Calendar(), None, profile_reader=Profiles(),
-                                       worker=worker, expected_profile=expected)
+    source = source_class(base, None, Calendar(), None, profile_reader=Profiles(),
+                          worker=worker, expected_profile=expected, **source_options)
     def capture(_self, b):
         assert b == binding
         source._captures[b] = needs
@@ -165,6 +164,11 @@ def harness(monkeypatch):
     monkeypatch.setattr(LioContextSource, 'capture', capture)
     result = source.capture(binding)
     return SimpleNamespace(source=source, capture=result, binding=binding, events=events, flags=flags)
+
+
+@pytest.fixture
+def harness(monkeypatch):
+    return source_harness(monkeypatch)
 
 
 def test_same_message_profile_and_calendar_remain_held_before_needs(harness):
