@@ -135,12 +135,13 @@ def read_reference(tx, stored):
 
 
 class MessageContextLease:
-    def __init__(self, authority, principal, binding, reference, stored, *, refresh=None, _factory=None):
+    def __init__(self, authority, principal, binding, reference, stored, *, refresh=None, source_reader=None, _factory=None):
         if _factory is not _LEASE_FACTORY:
             raise TypeError('message context lease must be issued by authority')
         self._authority,self._principal,self._binding=authority,principal,binding
         self._refresh=refresh
         self._reference,self._stored=reference,stored
+        self._source_reader=source_reader
         self._active=True
         self._thread=threading.current_thread()
 
@@ -156,6 +157,18 @@ class MessageContextLease:
     def original_message(self):
         self.check(self._binding)
         return self._stored
+
+    def source_original(self,message_id):
+        """Read pure original data in this active MESSAGE2 travel segment.
+
+        No transaction, new lease or effect authority escapes. Formal/legacy
+        holders without this same-transaction reader remain unsupported.
+        """
+        if self._source_reader is None:raise LeaseUnavailable('travel source reader unavailable')
+        self.check(self._binding)
+        result=self._source_reader(message_id)
+        self.check(self._binding)
+        return result
 
     @property
     def reference(self):
@@ -319,7 +332,22 @@ class MessageContextAuthority:
                     if reference.context_kind=='travel':
                         try: check_context(tx.cur,tx.scope,Selection(reference.context_id,reference.context_version))
                         except ContextConflict as exc: raise Denied('travel context changed') from exc
-                lease=MessageContextLease(self,principal,binding,reference,stored,refresh=refresh,_factory=_LEASE_FACTORY)
+                def source_original(message_id):
+                    earlier=tx.find(message_id)
+                    if earlier is None:raise LeaseUnavailable('original source message unavailable')
+                    original=read_reference(tx,earlier)
+                    if (original.owner_scope,original.conversation_id,original.generation)!=(
+                            reference.owner_scope,reference.conversation_id,reference.generation):
+                        raise Denied('original source conversation differs')
+                    if original.message_id!=message_id or original.sequence>reference.sequence:
+                        raise Denied('original source is outside the current message boundary')
+                    if (original.selection_epoch,original.context_kind,original.context_id,original.context_version)!=(
+                            reference.selection_epoch,reference.context_kind,reference.context_id,reference.context_version):
+                        raise Denied('original source travel segment differs')
+                    return OriginalTravelMessage(earlier,original)
+                reader=source_original if reference.message_version=='MESSAGE-send.2'else None
+                lease=MessageContextLease(self,principal,binding,reference,stored,refresh=refresh,
+                    source_reader=reader,_factory=_LEASE_FACTORY)
                 token=self._active.set(lease)
                 try:
                     lease.check(binding)

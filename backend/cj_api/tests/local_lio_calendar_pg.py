@@ -70,8 +70,13 @@ def exercise(root,conninfo):
         assert str(request.url)==M4_BASE+'/chat/completions'
         body=json.loads(request.content);wire.append(body);system=body['messages'][0]['content']
         if 'LIO-planning-intake.8' in system:
-            text=body['messages'][-1]['content']
             users=[m for m in body['messages'][1:] if m['role']=='user' and not m['content'].startswith('Stored memory data')]
+            originals=[]
+            for ordinal,message in enumerate(users):
+                prefix='Original traveler source_index='+str(ordinal)+' (quote only the following original text):\n'
+                assert message['content'].startswith(prefix)
+                originals.append(message['content'][len(prefix):])
+            text=originals[-1]
             index=len(users)-1
             if text in ('明天开始','Start tomorrow','12月1日出发','Start Dec 1'):
                 question_day=datetime.now(ZoneInfo('Asia/Shanghai')).date()
@@ -345,3 +350,7 @@ if __name__=='__main__':
     main()
     from lio_exploration_profile_pg import main as profile_main
     profile_main()
+    from lio_cross_language_pg import main as cross_language_main
+    cross_language_main()
+    from lio_basic_memory_pg import main as basic_memory_main
+    basic_memory_main()

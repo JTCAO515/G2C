@@ -41,6 +41,13 @@ def _original_latest(control):
     return checkpoint.verified(path) if path.exists() else None
 
 
+def _require_original_schema53(control,lineage):
+    for target,name in ((52,'quota'),(53,'wire-origin')):
+        prior=checkpoint.verified(control/(schema_anchor(target)+'.json'))
+        if prior['state']!='COMPLETE' or prior['lineage']!=lineage:
+            raise ValueError(f'complete original {name} upgrade before schema54')
+
+
 def _migrate_quota_schema(db):
     migrate.up(db,migrate.load(),52)
     db.execute('INSERT INTO public.cj_demo_quota_upgrade VALUES (true)')
@@ -87,7 +94,7 @@ def upgrade(control,backups,*,target=49,schema_root=None):
     if not local_database_target():raise ValueError('HK local Demo upgrade required')
     local_postgres.require_serving(control)
     expected=checkpoint.versions()
-    if target not in (49,50,51,52,53) or expected!=list(range(1,target+1)):
+    if target not in (49,50,51,52,53,54) or expected!=list(range(1,target+1)):
         raise ValueError('exact Demo migration chain required')
     anchor=schema_anchor(target)
     marker=control/(anchor+'.json')
@@ -103,9 +110,10 @@ def upgrade(control,backups,*,target=49,schema_root=None):
             quota=checkpoint.verified(control/'demo-schema52.json')
             if quota['state']!='COMPLETE' or quota['lineage']!=release['lineage']:
                 raise ValueError('complete original quota upgrade before schema53')
+        if target==54:_require_original_schema53(control,release['lineage'])
         _require_idle(db)
         intent=dict(state='INTENT',lineage=release['lineage'],original_fences=checkpoint.local.fence_state(db))
-        if target in (52,53):
+        if target in (52,53,54):
             latest=_original_latest(control)
             if latest is None:
                 if release['checkpoint']!='fresh':
@@ -182,18 +190,27 @@ def resume_quota(control,backups,*,schema_root=None):
 
 
 def resume_schema53(control,backups,*,schema_root=None):
+    return _resume_origin_schema(control,backups,target=53,schema_root=schema_root)
+
+
+def resume_schema54(control,backups,*,schema_root=None):
+    return _resume_origin_schema(control,backups,target=54,schema_root=schema_root)
+
+
+def _resume_origin_schema(control,backups,*,target,schema_root):
     """Reconcile the original signed wire-origin upgrade, never a new attempt."""
-    if not local_database_target() or checkpoint.versions()!=list(range(1,54)):
+    if not local_database_target() or checkpoint.versions()!=list(range(1,target+1)):
         raise ValueError('exact HK wire-origin schema required')
     local_postgres.require_serving(control)
-    marker=control/'demo-schema53.json'
-    destination=backups/'demo-schema53'
+    marker=control/(schema_anchor(target)+'.json')
+    destination=backups/schema_anchor(target)
     with checkpoint.lock(control),checkpoint.operator() as (db,_),db.transaction():
         db.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ')
         db.execute('SELECT pg_advisory_xact_lock(%s)',(checkpoint.RELEASE_LOCK,))
         intent=checkpoint.verified(marker)
         release=checkpoint.verified(control/'release.json')
         instance,lineage=checkpoint.identity(db)
+        if target==54:_require_original_schema53(control,lineage)
         applied=migrate.applied(db)
         expected=checkpoint.versions()
         if (intent['state']!='INTENT' or release['version']!='g2c-beta-release.1'
@@ -206,7 +223,7 @@ def resume_schema53(control,backups,*,schema_root=None):
         if applied==expected[:-1]:
             if not original_release or destination.exists() or _original_latest(control)!=intent['original_latest']:
                 raise ValueError('original rolled-back wire-origin state unavailable')
-            migrate.up(db,migrate.load(),53)
+            migrate.up(db,migrate.load(),target)
         elif applied!=expected:
             raise ValueError('original wire-origin schema unavailable')
         if not original_release:
@@ -241,8 +258,8 @@ def daily_base(control,root,previous):
 if __name__=='__main__':
     try:
         arguments=sys.argv[1:]
-        if arguments not in ([],['--target','50'],['--target','51'],['--target','52'],['--target','53'],
-                             ['--resume-quota'],['--resume-schema53']):
+        if arguments not in ([],['--target','50'],['--target','51'],['--target','52'],['--target','53'],['--target','54'],
+                             ['--resume-quota'],['--resume-schema53'],['--resume-schema54']):
             raise ValueError('explicit Demo schema upgrade required')
         load_secret_environment('recovery')
         control=Path(os.environ['CJ_DEPLOY_CONTROL'])
@@ -252,6 +269,9 @@ if __name__=='__main__':
         elif arguments==['--resume-schema53']:
             resume_schema53(control,Path('/backups'))
             print('PASS original HK wire-origin backup resumed')
+        elif arguments==['--resume-schema54']:
+            resume_schema54(control,Path('/backups'))
+            print('PASS original HK exploration-origin backup resumed')
         else:
             upgrade(control,Path('/backups'),target=int(arguments[1]) if arguments else 49)
     except (OSError,ValueError,KeyError,psycopg.Error):

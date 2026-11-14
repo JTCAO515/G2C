@@ -56,3 +56,38 @@ collector、原身份/原C子额度及独占窗口重新签租。不得在旧hel
 任一FAIL/UNKNOWN停止新派并保留原动作；错误按实际owner记录，未知写入只读对账。
 报告中英分母/逐项结果、首进度/首正文/完成时间及保守/token估算/实付费用；
 只有全国完整16条全部PASS后才申请#32六格，六格通过后另排正式66例。
+
+## 可执行的内容与版本断言
+
+`lio_calendar_transitions.judge_transitions`消费每步原始
+`TRIP-structured-read.2`和`LIO-trip-history.3`响应，不读模型自报的成功结论。
+检查canonical哈希、同一Trip和逐步新版本、实际卡片与canonical内容核同、所有原历史
+版本保留、无日期/三天、固定集合、只改实际选中未锁下午项、相对和绝对日期映射，
+以及撤销后完整原字节相等。相对日期只接收承载该日期的原消息的native question_day；
+缺该证据为UNKNOWN，不读本地/分析时钟。原始回应和冻结recipe不被修补。
+
+本地可执行入口：
+
+```sh
+uv run --locked python -B -m eval.lio_calendar_transitions observations.json --output checks.json
+```
+
+输入须是自有0600文件，格式`LIO-calendar-observations.1`，字段为`version`、
+`case_id`、`reads`以及可选`histories`、`answers`、`question_days`、`selected_item_id`。
+`reads`按recipe步骤顺序保存完整原响应；其余三个映射以字符串`0`至`4`为步骤索引。
+native undo不设回答文本断言。原证据和结果都不覆盖；输出带输入SHA256，文件为0600。
+这只是本地判定器，不会提交HTTP、调用模型或改变真实状态。
+
+`transition_outcome`只表示这些内容断言；即使全部PASS，`task_outcome`仍为UNKNOWN。
+真实原件资格/身份/来源、Memory零静默写入、正文日期/人数/预约语义、撤销零模型、
+时序/原费用仍列在`remaining_proofs`。长度仍UNRUN，不接收手填PASS或伪造门槛。
+未观察步骤为UNKNOWN，整套未跑为UNRUN；有明确内容冲突则FAIL，不能被模型评分盖过。
+
+专项及默认入口：
+
+```sh
+uv run --locked python -B -m pytest eval/tests/test_lio_calendar_transitions.py -q
+uv run --locked python -B scripts/test.py
+```
+
+默认入口新增子检查及真实非零退出传播控制；旧检查和冻结输入保留。

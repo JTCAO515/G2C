@@ -6,9 +6,11 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from cj_needs.domain import InvalidInput, decode
+from cj_message.lio_exploration_schema import ProfileUpdate
 
 from .lio_exploration_factors import BY_KEY, LABELS, defaults
 from .lio_planning_grounding import NUMBERS
+from .lio_positive_trip import supports as positive_trip_support
 
 CONTEXT = 'lio_planning_context.2:'
 VERSION = 'lio_planning_context.2'
@@ -103,28 +105,16 @@ class _DTO(BaseModel):
     model_config = ConfigDict(extra='forbid', strict=True, frozen=True)
 
 
-class _Quote(_DTO):
-    source_index: int = Field(ge=0)
-    quote: str = Field(min_length=1, max_length=4000)
-
-
-class _Update(_DTO):
-    factor_key: str
-    value: str | int | bool | list[str] | None
-    state: Literal['known', 'not_needed', 'inferred']
-    sources: list[_Quote] = Field(min_length=1, max_length=8)
-
-
 class _Updates(_DTO):
     version: Literal['LIO-profile-update.1']
-    updates: list[_Update] = Field(max_length=28)
+    updates: list[ProfileUpdate] = Field(max_length=28)
 
 
 _ALIASES = {
     'pace': {'relaxed': ('轻松','悠闲','慢节奏','relaxed','leisurely','slow'),
              'moderate': ('适中','中等','moderate','balanced'),
              'packed': ('紧凑','密集','packed','fast')},
-    'party_type': {'solo': ('一个人','一人','solo','alone'),
+    'party_type': {'solo': ('一个人','一人','solo','alone','1 person','one person'),
                    'two_adults': ('两个成人','two adults'),
                    'family': ('带孩子','with children'), 'friends': ('和朋友','with friends')},
     'season': {'spring': ('春季','春天','spring'), 'summer': ('夏季','夏天','summer'),
@@ -132,7 +122,7 @@ _ALIASES = {
     'lodging_tier': {'simple': ('简洁实用','经济型','simple and practical','budget-friendly'),
                      'comfortable': ('舒适型','comfortable'), 'luxury': ('高端型','豪华','奢华','luxury','luxurious')},
     'interests': {'history': ('历史','history','historic'), 'food': ('美食','food'),
-                  'nature': ('山水','自然','nature','scenery'), 'modern': ('现代城市','modern city')},
+                  'nature': ('山水','自然','nature','scenery','熊猫与自然','pandas and nature'), 'modern': ('现代城市','modern city')},
     'dietary': {'none': ('无饮食限制','no dietary restrictions'),
                 'mild': ('不吃辣','no spicy food','do not eat spicy','avoid spicy'),
                 'vegetarian': ('素食','vegetarian'), 'halal': ('清真','halal')},
@@ -170,7 +160,7 @@ def _canonical(key, text):
     return (payload,) if BY_KEY[key].multiple else payload
 
 
-def _supported_source(update, clause, quote):
+def _supported_source(update, clause, quote,registered_city_terms=()):
     key=update.factor_key
     if _DECLINED.fullmatch(quote.strip()):
         return _positive_payload(key,clause).casefold() == quote.strip().casefold()
@@ -183,6 +173,7 @@ def _supported_source(update, clause, quote):
             if whole == part and (isinstance(part,str) and part in allowed or
                     isinstance(part,tuple) and set(part) <= allowed):return True
         return False
+    if positive_trip_support(key,clause,quote,registered_city_terms=registered_city_terms):return True
     whole,part=_canonical(key,clause),_canonical(key,quote)
     if BY_KEY[key].multiple and isinstance(whole,tuple) and isinstance(part,tuple):
         return set(part) <= set(whole)
@@ -221,7 +212,7 @@ def _known_value(update, sources):
     raise InvalidInput('profile value differs from its original quote')
 
 
-def parse_updates(raw, originals):
+def parse_updates(raw, originals,*,registered_city_terms=()):
     """Validate untrusted model JSON once against protected original text/MIDs."""
     try:
         packet = _Updates.model_validate(decode(raw.encode() if isinstance(raw, str) else raw))
@@ -239,7 +230,7 @@ def parse_updates(raw, originals):
             original = originals[ref.source_index]
             offsets = [match.start() for match in re.finditer(re.escape(ref.quote), original.text)]
             if not offsets or any(not _supported_source(update,
-                    _source_clause(original.text,offset,ref.quote),ref.quote) for offset in offsets):
+                    _source_clause(original.text,offset,ref.quote),ref.quote,registered_city_terms) for offset in offsets):
                 raise InvalidInput('profile quote is absent or negated')
             sources.append(Source(original.message_id, original.sequence, ref.quote, offsets[-1]))
         # The code recognizes explicit refusal regardless of a model's state
@@ -319,7 +310,7 @@ def default_proposals(profile, original):
                  if key not in profile or profile[key].state == 'default')
 
 
-def snapshot(profile):
+def snapshot(profile,*,memory_epoch=None):
     """Plain internal event data, not a NEEDS contract or a save receipt."""
     def source(row):
         if isinstance(row, Source):
@@ -329,7 +320,7 @@ def snapshot(profile):
             return dict(kind='memory', slot=row.slot, source_id=row.source_id,
                         source_version=row.source_version, version=row.version, text=row.text)
         return dict(kind='default', message_id=row.message_id, policy=row.policy)
-    return dict(version=VERSION, factors=[dict(factor_key=fact.key, value=fact.value,
+    return dict(version=VERSION,memory_epoch=memory_epoch, factors=[dict(factor_key=fact.key, value=fact.value,
         state=fact.state, sources=[source(s) for s in fact.sources]) for fact in profile.values()])
 
 
@@ -366,6 +357,7 @@ class _StoredFact(_DTO):
 class _Snapshot(_DTO):
     version: Literal['lio_planning_context.2']
     factors: list[_StoredFact] = Field(max_length=14)
+    memory_epoch:int | None=Field(default=None,ge=0)
 
 
 def decode_context(raw):
@@ -376,6 +368,14 @@ def decode_context(raw):
         raise InvalidInput('exact planning context.2 required') from None
     if len({fact.factor_key for fact in stored.factors}) != len(stored.factors):
         raise InvalidInput('duplicate profile factor')
+    for fact in stored.factors:
+        factor=BY_KEY.get(fact.factor_key)
+        if factor is None:raise InvalidInput('unknown exploration factor')
+        expected=(_StoredMemory if fact.state=='memory' else _StoredDefault if fact.state=='default' else _StoredSource)
+        if any(not isinstance(source,expected) for source in fact.sources):
+            raise InvalidInput('profile source kind differs from state')
+        if fact.state=='memory' and any(source.slot not in factor.memory_slots for source in fact.sources):
+            raise InvalidInput('profile Memory slot differs from factor')
     return stored
 
 
@@ -383,7 +383,7 @@ def restore(raw, originals, memory_run=None):
     return restore_context(decode_context(raw),originals,memory_run)
 
 
-def restore_context(stored, originals, memory_run=None):
+def restore_context(stored, originals, memory_run=None,*,registered_city_terms=()):
     """Rebind validated context to current protected originals/Memory.
 
     Stored memory/default projections never become fresh user authority. Memory
@@ -393,16 +393,11 @@ def restore_context(stored, originals, memory_run=None):
     by_mid = {original.message_id: index for index,original in enumerate(originals)}
     updates = []
     for fact in stored.factors:
-        if fact.factor_key not in BY_KEY:
-            raise InvalidInput('unknown exploration factor')
         if fact.state in ('memory','default'):
-            expected = _StoredMemory if fact.state == 'memory' else _StoredDefault
-            if any(not isinstance(source,expected) for source in fact.sources):
-                raise InvalidInput('profile source kind differs from state')
             continue
         refs = []
         for source in fact.sources:
-            if not isinstance(source,_StoredSource) or source.message_id not in by_mid:
+            if source.message_id not in by_mid:
                 raise InvalidInput('protected original profile source unavailable')
             index = by_mid[source.message_id]
             original = originals[index]
@@ -411,5 +406,6 @@ def restore_context(stored, originals, memory_run=None):
                 raise InvalidInput('persisted profile source differs from original')
             refs.append(dict(source_index=index,quote=source.quote))
         updates.append(dict(factor_key=fact.factor_key,value=fact.value,state=fact.state,sources=refs))
-    parsed = parse_updates(json.dumps(dict(version='LIO-profile-update.1',updates=updates)), originals)
+    parsed = parse_updates(json.dumps(dict(version='LIO-profile-update.1',updates=updates)), originals,
+        registered_city_terms=registered_city_terms)
     return merge({}, parsed, memory_prefill(memory_run))

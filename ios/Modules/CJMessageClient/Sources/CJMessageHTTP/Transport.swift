@@ -218,13 +218,8 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
 
     func sendLio(_ original: LioTimelineWire.Send, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
         guard let messages, messages.wire == .lio else { throw MessageHTTPFailure.productionActivationUnavailable }
-        let path: String
-        let operation: String
-        switch original.version {
-        case .v1: (path, operation) = (messages.wire.path, messages.wire.operation)
-        case .v2: (path, operation) = ("/v2/lio/messages", "sendLioMessageV2")
-        case .v3: (path, operation) = ("/v3/lio/messages", "sendLioMessageV3")
-        }
+        let path = original.version == .v1 ? messages.wire.path : "/v\(original.version.rawValue)/lio/messages"
+        let operation = original.version == .v1 ? messages.wire.operation : "sendLioMessageV\(original.version.rawValue)"
         var request = HTTPRequest(method: .post, scheme: nil, authority: nil, path: path)
         request.headerFields[.authorization] = "Bearer " + bearer
         request.headerFields[.contentType] = "application/octet-stream"
@@ -251,7 +246,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
 
     func readLioFirstReceipt(_ original: LioTimelineWire.Send, inputSHA256: String,
                              bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
-        let version = original.version == .v3 ? 3 : 2
+        let version = original.version == .v1 ? 2 : original.version.rawValue
         return try await lioRead(path: "/v\(version)/lio/messages", query: [
             URLQueryItem(name: "message_id", value: original.messageID),
             URLQueryItem(name: "input_sha256", value: inputSHA256)

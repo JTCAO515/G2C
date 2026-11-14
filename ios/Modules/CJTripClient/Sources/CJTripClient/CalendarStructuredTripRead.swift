@@ -90,7 +90,7 @@ public enum CalendarStructuredTripReadV2 {
         }
     }
 
-    private static func readCalendar(_ raw: TripJSONValue) throws -> CalendarStructuredTripDocument.CalendarState {
+    static func readCalendar(_ raw: TripJSONValue) throws -> CalendarStructuredTripDocument.CalendarState {
         let fields = try raw.object()
         switch try fields.required("state").text() {
         case "undated":

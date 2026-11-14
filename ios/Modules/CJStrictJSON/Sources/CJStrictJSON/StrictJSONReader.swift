@@ -14,12 +14,16 @@ public protocol StrictJSONPolicy {
     static var maximumDepth: Int { get }
     static var requiresObjectRoot: Bool { get }
     static var allowsFragments: Bool { get }
+    /// New consumers may retain numeric lexemes outside Foundation's numeric range.
+    /// Domain readers must still enforce their own integer/finite quantity constraints.
+    static var preservesUnboundedNumberTokens: Bool { get }
 }
 
 public extension StrictJSONPolicy {
     static var maximumDepth: Int { 64 }
     static var requiresObjectRoot: Bool { false }
     static var allowsFragments: Bool { false }
+    static var preservesUnboundedNumberTokens: Bool { false }
 }
 
 /// Generic JSON grammar with a duplicate-key check Foundation does not perform.
@@ -41,12 +45,47 @@ public struct StrictJSONReader<Policy: StrictJSONPolicy> {
         if Policy.requiresObjectRoot {
             guard index < bytes.count, bytes[index] == 123 else { throw Policy.failure }
         }
-        _ = try JSONSerialization.jsonObject(with: Data(bytes), options: Policy.allowsFragments ? [.fragmentsAllowed] : [])
+        let grammarInput = Policy.preservesUnboundedNumberTokens ? try foundationGrammarInput() : Data(bytes)
+        _ = try JSONSerialization.jsonObject(with: grammarInput, options: Policy.allowsFragments ? [.fragmentsAllowed] : [])
         let result = try value(depth: 0)
         whitespace()
         guard index == bytes.count else { throw Policy.failure }
         root = result
         return result
+    }
+
+    /// Foundation checks all structural/string syntax as before. Only strictly valid
+    /// numeric lexemes are replaced in this private grammar probe; `value` still
+    /// traverses the actual original bytes, retaining every token and byte range.
+    private func foundationGrammarInput() throws -> Data {
+        let number = try NSRegularExpression(pattern: #"-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?"#)
+        var probe: [UInt8] = []
+        probe.reserveCapacity(bytes.count)
+        var cursor = 0
+        while cursor < bytes.count {
+            let byte = bytes[cursor]
+            if byte == 34 {
+                probe.append(byte); cursor += 1
+                while cursor < bytes.count {
+                    let part = bytes[cursor]
+                    probe.append(part); cursor += 1
+                    if part == 34 { break }
+                    if part == 92, cursor < bytes.count {
+                        probe.append(bytes[cursor]); cursor += 1
+                    }
+                }
+            } else if byte == 45 || (48...57).contains(byte) {
+                let start = cursor
+                while cursor < bytes.count, ![9, 10, 13, 32, 44, 93, 125].contains(bytes[cursor]) { cursor += 1 }
+                let token = String(decoding: bytes[start..<cursor], as: UTF8.self)
+                let range = NSRange(location: 0, length: token.utf16.count)
+                guard number.firstMatch(in: token, range: range)?.range == range else { throw Policy.failure }
+                probe.append(48)
+            } else {
+                probe.append(byte); cursor += 1
+            }
+        }
+        return Data(probe)
     }
 
     private mutating func whitespace() { while index < bytes.count && [9, 10, 13, 32].contains(bytes[index]) { index += 1 } }
@@ -98,6 +137,9 @@ public struct StrictJSONReader<Policy: StrictJSONPolicy> {
             let start = index
             while index < bytes.count && ![9, 10, 13, 32, 44, 93, 125].contains(bytes[index]) { index += 1 }
             let token = String(decoding: bytes[start..<index], as: UTF8.self)
+            // Foundation accepts trailing array commas. They cannot produce an
+            // empty numeric value in the explicitly strict new numeric policy.
+            if Policy.preservesUnboundedNumberTokens, token.isEmpty { throw Policy.failure }
             switch token {
             case "true": return .boolean(true)
             case "false": return .boolean(false)

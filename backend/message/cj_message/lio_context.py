@@ -5,7 +5,7 @@ from datetime import date
 import json
 import re
 
-from .demo_dialogue import LIO_VERSION, LIO_VERSION_V3
+from .demo_dialogue import LIO_VERSION, LIO_VERSION_V3, LIO_VERSION_V4
 from .domain import Unavailable
 
 
@@ -30,7 +30,14 @@ I can't book or pay for anything — you'll need to do that through official cha
 
 _SELF_QUESTION = re.compile(r'(?:你是谁|你是什么|介绍一下你自己|who are you|what are you)[?？。.!！\s]*', re.I)
 
-_CAPABILITY_QUESTION = re.compile(r'(?:你能做什么|你能干啥|你会干嘛|你能帮我做什么|你可以做什么|你会什么|你有什么能力|what can you do|what do you do|what can you help me with)[?？。.!！\s]*', re.I)
+# Colloquial variants (你能做啥, 你可以帮我干嘛, 你有啥功能) are the same
+# capability question; a narrow list sent them into planning intake (#994).
+CAPABILITY_PATTERN = (r'(?:(?:那|请问|所以)\s*)?(?:'
+    r'你(?:都|还)?(?:能|会|可以)(?:帮我|为我|给我)?(?:做|干|帮|处理)?(?:些)?(?:什么|啥|哪些|嘛|啥子)(?:事|事情|忙)?|'
+    r'你有(?:什么|啥|哪些)(?:能力|功能|本事|用)|'
+    r'what (?:can|could) you (?:do|help(?: me)? with)|what do you do|how can you help(?: me)?|what are you able to do'
+    r')(?:呢|呀|啊|吗)?')
+_CAPABILITY_QUESTION = re.compile(CAPABILITY_PATTERN + r'[?？。.!！\s]*', re.I)
 
 
 def self_description(question, locale):
@@ -166,7 +173,7 @@ class LioOriginal:
     protocol: str = LIO_VERSION
 
 
-def original_for(database, binding):
+def _origin_row(database,binding):
     with database.connect(binding.scope) as connection:
         row = connection.execute(
             'SELECT demo_dialogue_locale,demo_question_day,lio_wire_protocol FROM cj_message_receipt WHERE scope=%s AND '
@@ -174,6 +181,11 @@ def original_for(database, binding):
             'demo_dialogue_protocol=%s',
             (binding.scope, binding.conversation_id, binding.generation, binding.message_id,
              binding.run_id, LIO_VERSION)).fetchone()
+    return row
+
+
+def original_for(database, binding):
+    row=_origin_row(database,binding)
     if row is None:
         return None
     if row[2] is not None:
@@ -182,15 +194,26 @@ def original_for(database, binding):
 
 
 def calendar_original_for(database, binding):
-    with database.connect(binding.scope) as connection:
-        row = connection.execute(
-            'SELECT demo_dialogue_locale,demo_question_day,lio_wire_protocol FROM cj_message_receipt WHERE scope=%s AND '
-            'conversation_id=%s AND generation=%s AND message_id=%s AND run_id=%s AND '
-            'demo_dialogue_protocol=%s',
-            (binding.scope, binding.conversation_id, binding.generation, binding.message_id,
-             binding.run_id, LIO_VERSION)).fetchone()
+    row=_origin_row(database,binding)
     if row is None:
         return None
     if row[2] not in (None, LIO_VERSION_V3):
         raise Unavailable('original Lio capability unavailable')
     return LioOriginal(row[0], row[1], LIO_VERSION if row[2] is None else row[2])
+
+
+def exploration_original_for(database,binding):
+    row=_origin_row(database,binding)
+    if row is None:return None
+    if row[2]!=LIO_VERSION_V4:
+        raise Unavailable('exploration worker requires an actual Lio4 original')
+    return LioOriginal(row[0],row[1],LIO_VERSION_V4)
+
+
+def selected_lio_original_for(database,binding):
+    """Only the explicitly upgraded national factory installs this selector."""
+    row=_origin_row(database,binding)
+    if row is None:return None
+    if row[2] not in (None,LIO_VERSION_V3,LIO_VERSION_V4):
+        raise Unavailable('original Lio capability unavailable')
+    return LioOriginal(row[0],row[1],LIO_VERSION if row[2] is None else row[2])

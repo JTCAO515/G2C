@@ -64,6 +64,16 @@ class RuntimeCollector:
             if str(error)!='ORIGINAL_FINANCIAL_ATTEMPT_UNAVAILABLE':raise
             return None
 
+    def original_request(self,message_id,*,deadline):
+        """Canonical claim proved against its actual native MESSAGE/RUN input."""
+        self.guard(read_only=True)
+        if self.clock()>=deadline:raise Unavailable('DEADLINE_REACHED')
+        request,inventory=self._source(self.token_supplier(),message_id)
+        if inventory is None:raise Unavailable('NATIVE_MESSAGE_SOURCE_REQUIRED')
+        self.guard(read_only=True)
+        if self.clock()>=deadline:raise Unavailable('DEADLINE_REACHED')
+        return encode(request)
+
     def _output(self,token,mid,op):
         # Only a complete, hash-verified original has an output reference.
         # Partial streams retain their INTENT/wire artifact without inventing a

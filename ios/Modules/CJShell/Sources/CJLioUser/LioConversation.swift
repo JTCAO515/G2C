@@ -82,6 +82,7 @@ struct LioTurn: Identifiable {
     var sources: [LioSource] = []
     var itinerary: LioItinerary?
     var memoryTags: [LioMemoryWire.Tag] = []
+    var exploration: LioExplorationDisplay?
     var fromTimeline = false
     var id: Data { question.id }
 
@@ -98,6 +99,7 @@ struct LioTurn: Identifiable {
 final class LioConversation {
     private let service: LioService
     private(set) var turns: [LioTurn] = []
+    private(set) var conversationID: String?
     var itineraries: [LioItinerary] {
         var seen: Set<String> = []
         return Array(turns.reversed().compactMap { turn -> LioItinerary? in
@@ -225,7 +227,7 @@ final class LioConversation {
                 if let existing = turns.firstIndex(where: { $0.id == row.id }) {
                     let turn = turns[existing]
                     if turn.fromTimeline {
-                        if !turn.hasTimelineResult {
+                        if !turn.hasTimelineResult || row.exploration != nil {
                             turns[existing] = makeTurn(row, question: turn.question)
                         }
                         insertion = existing
@@ -251,6 +253,7 @@ final class LioConversation {
     }
 
     private func display(_ page: LioTimelinePage) {
+        conversationID = page.conversationID
         hasLoadedTimeline = true
         timelineUnavailable = false
         let visibleIDs = Set(page.turns.map(\.id))
@@ -267,6 +270,7 @@ final class LioConversation {
     private func makeTurn(_ row: LioTimelineTurn, question: LioQuestion? = nil) -> LioTurn {
         let question = question ?? LioQuestion(messageID: row.messageID, text: row.text, language: .english)
         return LioTurn(question: question, status: row.status, answer: row.answer,
-                       sources: row.sources, itinerary: row.itinerary, memoryTags: row.memoryTags, fromTimeline: true)
+                       sources: row.sources, itinerary: row.itinerary, memoryTags: row.memoryTags,
+                       exploration: row.exploration, fromTimeline: true)
     }
 }

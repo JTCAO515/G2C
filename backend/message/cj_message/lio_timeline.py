@@ -3,7 +3,8 @@ from dataclasses import dataclass
 import hashlib
 import json
 
-from .demo_dialogue import LIO_VERSION, LIO_VERSION_V3, admitted_dialogue, lio_conversation, has_new_lio_wire
+from .demo_dialogue import (LIO_VERSION, LIO_VERSION_V3, LIO_VERSION_V4, admitted_dialogue,
+    lio_conversation, has_new_lio_wire, has_exploration_wire)
 from .domain import Command, InvalidInput, Unavailable
 from .travel_reference import read_reference
 
@@ -28,6 +29,7 @@ class TimelinePage:
     messages: tuple[TimelineMessage, ...]
     next_before: str | None
     requires_new_lio: bool = False
+    requires_exploration: bool = False
 
 
 def original(service, message_id):
@@ -57,6 +59,19 @@ def read(service, conversation_id, before, *, multiple=False):
 
 def read_in_transaction(tx, conversation_id, before, *, multiple=False):
     """The same page validation for ordinary and protected projection reads."""
+    return _read_in_transaction(tx,conversation_id,before,multiple=multiple,exploration=False)
+
+
+def read_exploration(service,conversation_id,before):
+    with service.repository.transaction() as tx:
+        return read_exploration_in_transaction(tx,conversation_id,before)
+
+
+def read_exploration_in_transaction(tx,conversation_id,before):
+    return _read_in_transaction(tx,conversation_id,before,multiple=True,exploration=True)
+
+
+def _read_in_transaction(tx,conversation_id,before,*,multiple,exploration):
     conversation = lio_conversation(tx.scope)
     if conversation_id is not None and conversation_id != conversation:
         if not multiple:
@@ -71,6 +86,9 @@ def read_in_transaction(tx, conversation_id, before, *, multiple=False):
         if before is not None:
             raise InvalidInput('invalid timeline cursor')
         return TimelinePage(None, None, (), None)
+    requires_exploration=has_exploration_wire(tx,conversation,head.generation)
+    if requires_exploration and not exploration:
+        raise Unavailable('exploration conversation requires its selected reader')
     params = (tx.scope, conversation, head.generation, LIO_VERSION)
     sequence = None
     if before is not None:
@@ -96,10 +114,11 @@ def read_in_transaction(tx, conversation_id, before, *, multiple=False):
         if ((command.message_id, command.conversation_id) != (mid, conversation)
                 or hashlib.sha256(raw).hexdigest() != digest):
             raise Unavailable('original dialogue binding changed')
-        if protocol not in (None, LIO_VERSION_V3):
+        allowed=(None,LIO_VERSION_V3,LIO_VERSION_V4) if exploration else (None,LIO_VERSION_V3)
+        if protocol not in allowed:
             raise Unavailable('original Lio wire capability unavailable')
         messages.append(TimelineMessage(mid, run_id, position, json.loads(command.raw)['text'], locale,
                                        LIO_VERSION if protocol is None else protocol))
     return TimelinePage(conversation, head.generation, tuple(messages),
                         messages[0].message_id if len(rows) > PAGE_SIZE else None,
-                        has_new_lio_wire(tx, conversation, head.generation))
+                        has_new_lio_wire(tx, conversation, head.generation),requires_exploration)

@@ -1,12 +1,13 @@
 import CJMessageHTTP
 
 /// A public-display projection, not admission to a new timeline or a send capability.
-struct LioExplorationDisplay {
+struct LioExplorationDisplay: Equatable, Sendable {
     let messageID: String
     let presentation: LioExplorationPresentation
     let questions: [LioQuestionGroup]
     let state: LioTimelineWire.Message.State
     let progress: LioExplorationWire.Progress?
+    let trip: LioExplorationWire.Trip?
 
     init(_ message: LioExplorationWire.Message) throws {
         var visible = [message.answer]
@@ -15,6 +16,20 @@ struct LioExplorationDisplay {
         visible += message.notices.map(\.text)
         visible += message.exits.flatMap { [$0.displayText, $0.sendText] }
         visible += message.questions.flatMap { [$0.question] + $0.options.flatMap { [$0.displayText, $0.sendText] } }
+        if let progress = message.progress {
+            switch progress {
+            case .waiting(let text), .planningStarted(let text, _): visible.append(text)
+            }
+        }
+        if let trip = message.trip {
+            let title: String
+            let days: [LioCalendarTripCard.Day]
+            switch trip {
+            case .calendar(let card): title = card.title; days = card.days
+            case .rich(let card): title = card.title; days = card.days
+            }
+            visible += [title] + days.flatMap { $0.items.map(\.label) }
+        }
         guard visible.allSatisfy(LioPublicDisplay.permitsText) else { throw LioExplorationDisplayFailure.unavailable }
         let segments = message.segments.map { segment -> LioExplorationPresentation.Segment in
             let purpose: LioExplorationPresentation.Segment.Purpose
@@ -43,6 +58,7 @@ struct LioExplorationDisplay {
         }
         state = message.state
         progress = message.progress
+        trip = message.trip
     }
 
     /// Old message and plain-text behavior stays explicit; no retagging or inferred new fields.
@@ -53,6 +69,7 @@ struct LioExplorationDisplay {
         questions = []
         state = message.state
         progress = nil
+        trip = nil
     }
 
     func draft() -> LioQuestionDraft { LioQuestionDraft(messageID: messageID, questions: questions) }

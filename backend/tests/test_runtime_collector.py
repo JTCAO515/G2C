@@ -6,6 +6,7 @@ import pytest
 from cj_api.runtime_collector import RuntimeCollector
 from runtime_adapter import Binding,Unavailable
 from runtime_adapter.contract import decode,encode
+from test_runtime_run_requests import routing
 
 
 @pytest.mark.parametrize('kind',['message','task_setup'])
@@ -38,3 +39,19 @@ def test_erased_input_withholds_old_state_result_and_opaque_reference(tmp_path,k
     action=decode(collector.projection('fixture-token','action',mid,None))
     assert action['status']=='UNKNOWN' and action['result'] is None and action['state_evidence']==[]
     assert state['reads']==1
+
+
+@pytest.mark.parametrize('changed',['text','native_digest','run'])
+def test_original_request_checks_actual_native_input_not_only_same_mid(tmp_path,routing,changed):
+    resolver,bound,state,_=routing;resolver.claims.history_profile='lio.2'
+    tmp_path.chmod(0o700)
+    record=dict(run_id=bound.run_id,status='completed',operations=[])
+    originals=SimpleNamespace(inventory=lambda token,mid:encode(record),boundary=resolver.boundary)
+    collector=RuntimeCollector(originals,resolver.claims,resolver,lambda:'fixture-token',
+        SimpleNamespace(key='b'*64),tmp_path,guard=lambda **kwargs:None,
+        state_reader=None,model_reader=None,clock=lambda:0)
+    assert collector.original_request(bound.message_id,deadline=100)==encode(state['request'])
+    if changed=='text':state['text']='another same-MID text'
+    elif changed=='native_digest':state['native_digest']='d'*64
+    else:record['run_id']='another-run'
+    with pytest.raises(Unavailable):collector.original_request(bound.message_id,deadline=100)

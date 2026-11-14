@@ -74,7 +74,8 @@ class LocalBudgetRouter:
         def resolve(original, account):
             if original.scope!=binding.scope or account!=ledger_scope_for(binding.scope,profile.meter):
                 raise BudgetUnknown('original quota owner changed')
-            return Meter(PostgresRepository(lambda:self.database.connect(binding.scope,usage_profile=profile),account),profile.meter,time.time)
+            return Meter(PostgresRepository(lambda:self.database.connect(binding.scope,usage_profile=profile),account,
+                read_binder=lambda connection,cursor:connection.bind_scope(cursor)),profile.meter,time.time)
         if context.version=='CJ-LOCAL-RUN@2':
             registrations=(self.registrations if self.registrations_for_run is None else
                            self.registrations_for_run(binding))

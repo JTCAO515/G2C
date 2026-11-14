@@ -47,6 +47,25 @@ def forms(name,level):
     return {_normalize(v) for v in values}|{_normalize(''.join(lazy_pinyin(v))) for v in values}
 
 
+def resolved_terms(value):
+    """Deserialize a code-recorded registered administrative result, not a model query.
+
+    This supplies spelling equivalences only, never user intent or write authority.
+    Translations, ambiguous results and unmatched query words cannot add tokens.
+    """
+    if value.get('status')!='resolved':return ()
+    if (value.get('version')!=VERSION or not isinstance(value.get('candidates'),list) or len(value['candidates'])!=1 or
+            not isinstance(value.get('source'),dict) or value['source'].get('endpoint')!=ENDPOINT or
+            value['source'].get('parameters')!=PARAMETERS or
+            re.fullmatch('[0-9a-f]{64}',str(value['source'].get('raw_response_sha256'))) is None):
+        raise ValueError('registered administrative source required')
+    candidate=CityReference(**value['candidates'][0]);query=value.get('requested_name')
+    if (not isinstance(query,str) or candidate.level not in ('province','city','district') or
+            re.fullmatch('[0-9]{6}',candidate.adcode) is None or _normalize(query) not in forms(candidate.name,candidate.level)):
+        raise ValueError('administrative query must match the actual candidate')
+    return tuple({query,candidate.name,_base(candidate.name,candidate.level),*forms(candidate.name,candidate.level)})
+
+
 def catalog(raw):
     if type(raw) is not bytes or not 0<len(raw)<=MAX_CATALOG_BYTES:raise ValueError('bounded city catalog required')
     value=json.loads(raw,object_pairs_hook=reject_duplicates(ValueError,'duplicate administrative field'))

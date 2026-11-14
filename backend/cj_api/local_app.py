@@ -432,7 +432,8 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
                      memory_configuration=None, run_context=None, travel_context=False, needs_profile=None, trip_context=False,edit_configuration=None,
                      cleanup_configuration=None,formal_memory_configuration=None,database=None,account_admission=False,message_subjects=None,
                      existing_display_reads=False,cleanup_subjects=None,demo_dialogue_subjects=None,
-                     lio_dialogue_subjects=None,lio_memory_factory=None,lio_calendar_subjects=None):
+                     lio_dialogue_subjects=None,lio_memory_factory=None,lio_calendar_subjects=None,
+                     lio_exploration_subjects=None,lio_profile_epoch_reader=None):
     if os.environ.get('CJ_ENV') != 'local':
         raise CompositionUnavailable('CJ_ENV must explicitly be local')
     auth_dir = Path(auth_dir)
@@ -643,6 +644,9 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
     if lio_calendar_subjects and (type(lio_calendar_subjects) is not frozenset
             or not lio_dialogue_subjects or not lio_calendar_subjects <= lio_dialogue_subjects):
         raise CompositionUnavailable('calendar subjects require an explicit admitted Lio consumer')
+    if lio_exploration_subjects and (type(lio_exploration_subjects) is not frozenset
+            or not lio_calendar_subjects or not lio_exploration_subjects<=lio_calendar_subjects):
+        raise CompositionUnavailable('exploration subjects require an explicit calendar/Lio consumer')
     if demo_dialogue_subjects:
         if not account_admission or not database.travel_context or database.run_context is None:
             raise CompositionUnavailable('Demo dialogue requires original Travel and account admission')
@@ -681,6 +685,15 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
                                          memory_cards=memory_cards,calendar_boundary=calendar_boundary,
                                          calendar_cards=(LioTripCards(database,calendar_checker,calendar=True)
                                              if lio_calendar_subjects else None))
+            if lio_exploration_subjects:
+                if lio_profile_epoch_reader is None:
+                    raise CompositionUnavailable('native4 requires the current Memory epoch reader')
+                from .lio_exploration_routes import register_lio_exploration_routes
+                from .lio_profile_cards import LioProfileCards
+                exploration_boundary,exploration_checker=dialogue_binding(lio_exploration_subjects)
+                register_lio_exploration_routes(app,exploration_boundary,database.run_repository,
+                    LioTripCards(database,exploration_checker,calendar=True),LioProfileCards(lio_profile_epoch_reader),
+                    prepare_scope=database._provision_scope,memory_cards=memory_cards)
             if memory_cards is not None:
                 from .lio_memory_routes import register_lio_memory_routes
                 register_lio_memory_routes(app, memory_cards)

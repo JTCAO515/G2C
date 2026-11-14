@@ -317,9 +317,13 @@ class Runtime:
         elif ASSEMBLY_CLEANUP & os.environ.keys():
             raise ValueError('cleanup_requires_explicit_assembly_pair')
         lio_memory_factory=None
+        lio_profile_epoch_reader=None
         if self.demo_subjects:
             from cj_api.lio_memory_routes import LioMemoryCards
             from cj_api.local_lio_memory import lio_candidates
+            from cj_memory.epoch_projection import CurrentScopeEpochReader
+
+            lio_profile_epoch_reader=CurrentScopeEpochReader.for_api(database,self.typed_memory)
 
             def lio_memory_factory(boundary):
                 candidates=lio_candidates(database,boundary,self.demo_subjects,self.typed_memory)
@@ -331,7 +335,9 @@ class Runtime:
             existing_display_reads=True,cleanup_configuration=cleanup,
             cleanup_subjects=planning or None,demo_dialogue_subjects=planning or None,
             lio_dialogue_subjects=self.demo_subjects or None,lio_memory_factory=lio_memory_factory,
-            lio_calendar_subjects=self.demo_subjects or None)
+            lio_calendar_subjects=self.demo_subjects or None,
+            lio_exploration_subjects=self.demo_subjects or None,
+            lio_profile_epoch_reader=lio_profile_epoch_reader)
         if self.typed_memory is not None:
             from cj_memory.typed_api import register_typed_routes
             typed_memory=self.typed_memory

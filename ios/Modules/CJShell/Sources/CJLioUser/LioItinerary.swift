@@ -228,7 +228,7 @@ extension LioItinerary {
     }
 }
 
-private extension TripObservation {
+extension TripObservation {
     var lioValue: Value? {
         if case .known(let value) = self { return value }
         return nil

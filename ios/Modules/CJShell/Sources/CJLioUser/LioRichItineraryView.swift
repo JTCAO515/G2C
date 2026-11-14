@@ -98,6 +98,9 @@ struct LioRichItineraryView: View {
                 Text(stop.place.displayName(language)).font(.headline)
                 if language == .english { Text(stop.place.nameZH).font(.subheadline).foregroundStyle(LioTheme.inkSecondary) }
                 Text(stop.text).font(.body)
+                if stop.fixed == true {
+                    Label(language.text("Fixed plan", "固定安排"), systemImage: "lock.fill").font(.subheadline)
+                }
                 if !stop.place.matched {
                     Text(language.text("Suggested place", "地点建议")).font(.subheadline).foregroundStyle(LioTheme.inkSecondary)
                 }
@@ -167,6 +170,8 @@ private struct LioRichStopDetail: View {
                 Label(stop.kind.title(language), systemImage: stop.kind.symbol).font(.subheadline)
                 Text(stop.place.displayName(language)).font(LioTheme.display(.title)).accessibilityAddTraits(.isHeader)
                 if language == .english { Text(stop.place.nameZH).font(.title3) }
+                if let time = stop.time { Text(time).foregroundStyle(LioTheme.inkSecondary) }
+                if stop.fixed == true { Label(language.text("Fixed plan", "固定安排"), systemImage: "lock.fill") }
                 Text(stop.text)
                 if let address = stop.place.driverAddress { Text(address).textSelection(.enabled) }
                 else { Text(language.text("Address not available yet.", "暂无地址。")).foregroundStyle(LioTheme.inkSecondary) }

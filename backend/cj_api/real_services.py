@@ -353,6 +353,7 @@ class RealTools:
             'model.lio_intake.7':Registration('model',self._lio_intake_facts_input),
             'model.lio_intake.8':Registration('model',self._lio_intake_flow_input),
             'model.lio_intake.9':Registration('model',self._lio_intake_optional_input),
+            'model.lio_exploration.1':Registration('model',self._lio_exploration_input),
             'tool.lio_city.1':Registration('tool',self._city_input),
             'memory.lio_extract.1':Registration('memory',self._lio_memory_input),
             **{'tool.'+name:Registration('tool',lambda argument,name=name:self._tool_input(name,argument)) for name in {NATIVE_REGISTRATION[n] for n in self.names}},
@@ -454,12 +455,28 @@ class RealTools:
     def _lio_memory_input(self, argument):
         return self._model_input(argument, release_after_send=True)
 
+    def _lio_exploration_input(self,argument):
+        from cj_message.lio_exploration_schema import ExplorationInput,PROFILES
+        from cj_message.lio_wire import ExplorationOrigin
+        if (type(argument) is not ExplorationInput or argument.profile not in PROFILES or
+                type(argument.origin) is not ExplorationOrigin):
+            raise BudgetUnknown('explicit native4 exploration packet required')
+        argument.origin.check(argument.origin.binding)
+        return self._model_input(argument,national_intake=True,intake_profile=argument.profile)
+
     def _model_input(self,argument,*,release_after_send=False,national_intake=False,intake_profile='LIO-planning-intake.1',answer_preparation=False):
         from cj_draft.grouped_plan import GroupedDraftInput,response_format_sha256 as grouped_schema_sha256
+        from cj_message.lio_exploration_schema import ExplorationInput,response_format_sha256 as exploration_sha
+        exploration=type(argument) is ExplorationInput
         grouped=type(argument) is GroupedDraftInput
         native_turn = type(argument) is ModelInput
         indexed=intake_profile in ('LIO-planning-intake.3','LIO-planning-intake.4','LIO-planning-intake.5','LIO-planning-intake.6','LIO-planning-intake.7','LIO-planning-intake.8','LIO-planning-intake.9')
-        if grouped:
+        if exploration:
+            if not national_intake or release_after_send or answer_preparation:
+                raise BudgetUnknown('explicit exploration registration required')
+            messages,system,provider=json.loads(argument.messages),argument.system,argument.provider
+            native_reply=None;final_answer=False;turn_profile=M4_NATIVE_TURN_PROFILE_V2
+        elif grouped:
             if release_after_send or national_intake or answer_preparation:
                 raise BudgetUnknown('explicit grouped draft registration required')
             messages,system,provider=argument.messages,argument.system,argument.provider
@@ -490,6 +507,7 @@ class RealTools:
                      modes_sha256 if intake_profile=='LIO-planning-intake.4' else response_format_sha256)
         selected_tools=(self.national_tools if argument.national else self.native_tools) if native_turn else None
         if self.runtime_fragments is not None:
+            if exploration:raise BudgetUnknown('native4 is not a legacy national runtime text slot')
             from runtime_adapter.contract import decode,Invalid
             from runtime_adapter.profiles import render
             fragments=decode(self.runtime_fragments)
@@ -514,6 +532,7 @@ class RealTools:
                            **({'draft_profile':argument.profile,'response_format_sha256':grouped_schema_sha256(argument.profile)} if grouped else {}),
                            **({'response_mode':'lio-memory-json.1'} if release_after_send else {}),
                            **({'structured_profile':intake_profile} if national_intake else {}),
+                           **({'response_format_sha256':exploration_sha(intake_profile),'lio_origin':argument.origin.descriptor()} if exploration else {}),
                            **({'response_format_sha256':SCHEMA_SHA256} if national_intake and intake_profile=='LIO-planning-intake.2' else {}),
                            **({'current_source_index':source_index,'response_format_sha256':
                                indexed_sha(source_index)}
@@ -522,6 +541,7 @@ class RealTools:
                            **({'native_turn_profile':turn_profile,'external_tools_disabled':final_answer} if native_turn else {})))
         inputs=json.loads(raw);metadata={}
         def bind(operation,guard):
+            if exploration:argument.origin.check(operation.binding)
             self.services.require_scope(operation.binding.scope)
             if grouped or national_intake or native_turn and argument.national:
                 self._require_national(operation.binding.scope)
@@ -546,6 +566,7 @@ class RealTools:
                         release_after_send=inputs.get('response_mode')=='lio-memory-json.1',
                         lio_answer=inputs.get('answer_format_profile')=='lio-user.1',
                         **({'structured_profile':inputs['structured_profile']} if 'structured_profile' in inputs else {}),
+                        **({'exploration_schema_sha256':inputs['response_format_sha256']} if exploration else {}),
                         **({'intake_source_index':inputs['current_source_index']} if 'current_source_index' in inputs else {}),
                         **({'draft_profile':inputs['draft_profile'],'draft_schema_sha256':inputs['response_format_sha256']}if 'draft_profile' in inputs else {}),
                         **capture)

@@ -324,8 +324,8 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
         lio_memory = LioMemoryExtraction(database, candidates, memory_credential)
     if demo_planning:
         from functools import partial
-        from cj_message.lio_context import original_for, calendar_original_for
-        lio_original = partial(calendar_original_for if national_planning else original_for, database)
+        from cj_message.lio_context import original_for, selected_lio_original_for
+        lio_original = partial(selected_lio_original_for if national_planning else original_for, database)
         if lio_confirmation is not None:
             from cj_api.local_lio_edit import LioEdit
             from cj_api.local_lio_planning import LioPlanning, LioPlanSave
@@ -341,6 +341,11 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
             if national_planning:
                 from cj_api.local_lio_calendar_edit import LioCalendarEdit
                 lio_edit=LioCalendarEdit(calendar,lio_edit)
+                from cj_api.local_lio_exploration import (ExplorationPlanning,ExplorationDispatch,
+                    ExplorationEditDispatch,exploration_enabled)
+                exploration=ExplorationPlanning(database,lio_planning,enabled=exploration_enabled())
+                lio_planning=ExplorationDispatch(lio_planning,exploration)
+                lio_edit=ExplorationEditDispatch(database,lio_edit,exploration)
     return RunWorker(scope=scope, messages=messages, runs=runs, provider=model, drafts=drafts,
         memory=memory,edit_publisher=None if edit_config is None else edit_config.publisher,edit_results=database.edit_results,
         memory_history=history is not None,history_adapter=history,

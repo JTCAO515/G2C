@@ -195,6 +195,63 @@ private struct ErasureWire: ClientTransport {
         // A fresh original-stop authorization can explicitly verify an empty retry.
         try cleaner.clear(grant, validateCurrent: {})
     }
+    @Test(arguments: ["none", "unsafe", "late-unsafe"])
+    func itemCleanupErasesCrashLeftoversInEveryCapturedJournalAfterFullPreflight(blocker: String) async throws {
+        let f = try ErasureClientFixture(); defer { f.dispose() }
+        let work = try f.client.prepare(entry: await f.entry(), acknowledgement: .ownedTripDerivedScope)
+        _ = try await f.client.perform(work)
+        let grant = try f.client.localAuthorization(for: work.original)
+        let namespace = f.storeNamespace
+        let manualRoot = f.f.root.appendingPathComponent("manual"), typedRoot = f.f.root.appendingPathComponent("typed"), managementRoot = f.f.root.appendingPathComponent("management")
+        for root in [manualRoot, typedRoot, managementRoot] {
+            try FileManager.default.createDirectory(at: root, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+        }
+        let manual = try MemoryPendingStore(directory: manualRoot, maximumBytes: 100000, maximumRecords: 100, namespace: namespace, keyID: f.f.keyID, key: { f.f.secret })
+        let typed = try TypedMemoryPendingStore(directory: typedRoot, maximumBytes: 100000, maximumRecords: 100, namespace: namespace, keyID: f.f.keyID, key: { f.f.secret })
+        let management = try MemoryManagementPendingStore(directory: managementRoot, maximumBytes: 100000, maximumRecords: 100, namespace: namespace, keyID: f.f.keyID, key: { f.f.secret })
+        var target = command("已删除的中文"); target.item_id = "item+中文"
+        let removed = try MemoryPending(target), other = try MemoryPending(command("另一条记忆"))
+        try manual.append(other); try manual.append(removed)
+        // The item's manual save crashed before its rename: its only local copy is a temporary entry.
+        let crashed = manualRoot.appendingPathComponent(".write-" + UUID().uuidString)
+        try FileManager.default.moveItem(at: manualRoot.appendingPathComponent(digest(Data(removed.operationID.utf8)) + ".memory"), to: crashed)
+        #expect(try manual.pending().map(\.operationID) == [other.operationID])
+        let typedRecord = TypedMemoryPending(try TypedMemoryCommand(operationID: "typed-save", itemID: "item+中文", subject: "self", slot: "pace", text: "已删除的中文", occurredAt: "时间不详", kind: .preference, travelContext: nil))
+        try typed.append(typedRecord, validateBinding: {})
+        try typed.recordRejection(typedRecord, status: 409, code: "ORIGINAL_CONFLICT", validateBinding: {})
+        let typedRejections = typedRoot.appendingPathExtension("CJMemoryTypedRejectionsV2")
+        let sidecarLeftover = typedRejections.appendingPathComponent(".write-" + UUID().uuidString)
+        try Data(contentsOf: crashed).prefix(40).write(to: sidecarLeftover)
+        let otherFile = manualRoot.appendingPathComponent(digest(Data(other.operationID.utf8)) + ".memory")
+        let otherBytes = try Data(contentsOf: otherFile)
+        // A hard-linked temporary name in a journal planned after the manual one.
+        let outside = f.f.root.appendingPathComponent("outside"), marker = Data("outside".utf8)
+        try marker.write(to: outside)
+        let linkUnsafe = { try FileManager.default.linkItem(at: outside, to: typedRoot.appendingPathComponent(".write-" + UUID().uuidString)) }
+        if blocker == "unsafe" { try linkUnsafe() }
+        let cleaner = MemoryItemLocalCleanup(manual: manual, management: management, typed: typed)
+        if blocker != "none" {
+            var callbacks = 0
+            #expect(throws: MemoryFailure.storageUnavailable) {
+                try cleaner.clear(grant, validateCurrent: {
+                    callbacks += 1
+                    if callbacks == 2, blocker == "late-unsafe" { try linkUnsafe() }
+                })
+            }
+            // Every journal's preflight precedes the first unlink anywhere.
+            #expect(FileManager.default.fileExists(atPath: crashed.path))
+            #expect(FileManager.default.fileExists(atPath: sidecarLeftover.path))
+            #expect(try typed.pending().count == 1)
+            #expect(try Data(contentsOf: outside) == marker)
+            return
+        }
+        try cleaner.clear(grant, validateCurrent: {})
+        #expect(try FileManager.default.contentsOfDirectory(atPath: manualRoot.path) == [otherFile.lastPathComponent])
+        #expect(try Data(contentsOf: otherFile) == otherBytes)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: typedRoot.path).isEmpty)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: typedRejections.path).isEmpty)
+        #expect(try f.store.records().count == 1)
+    }
     @Test func stopAuthorizationCannotClearAnotherAccountsJournals() async throws {
         let alice = try ErasureClientFixture(); defer { alice.dispose() }
         let bob = try Fixture(); defer { bob.cleanup() }

@@ -16,11 +16,58 @@ from cryptography.hazmat.primitives import serialization
 from cj_usage.authorization_budget import AuthorizationBudget,BudgetUnknown,HK_PRODUCER
 from cj_usage import authorization_budget as budget_module
 from deploy.hk import configuration,checkpoint,oss_backup
+
+
+@pytest.mark.parametrize('demo',[False,True])
+def test_hk_app_epoch_display_uses_api_policy_without_worker_configuration(tmp_path,monkeypatch,demo):
+    from contextlib import nullcontext
+    from fastapi import FastAPI
+    from cj_memory.typed_local import TypedConfiguration
+    from cj_memory.epoch_projection import CurrentScopeEpochReader
+    from cj_memory import typed_api
+    from cj_trip import local_needs_app,local_manual_app,local_structured_read
+    from deploy.hk import demo_login
+    who='m4-synthetic-demo-0123456789ab';subjects=frozenset({who})if demo else frozenset()
+    profile=dict(subjects=['self'],extents=['long_term'],context_ids=[],slots={
+        'travel.pace':dict(kind='preference',collection_allowed=True,semantic_resolved=True)})
+    typed=TypedConfiguration.from_bytes(json.dumps(dict(version='local-memory-typed.1',
+        collection=dict(version='local-memory-policy.1',expires_at='2099-12-31T00:00:00Z',
+            profiles={who:profile}),travel_contexts={who:[]})).encode())if demo else None
+    connection=SimpleNamespace(execute=lambda *args:SimpleNamespace(fetchone=lambda:(True,)))
+    database=SimpleNamespace(connect=lambda scope:nullcontext(connection),travel_profile=lambda scope:True)
+    runtime=configuration.Runtime(tmp_path,object(),tmp_path/'unused-context',[],typed_memory=typed,
+        subjects=subjects,typed_message_subjects=subjects,demo_subjects=subjects)
+    assert runtime.memory_runtime is None  # This is the real API-only shape.
+    monkeypatch.setattr(runtime,'database',lambda:database)
+    monkeypatch.setattr(configuration,'decoded',lambda name,*,length:b'x'*length)
+    monkeypatch.setenv('CJ_LOCAL_NEEDS_PROFILE','manual-v1')
+    monkeypatch.setattr(configuration,'assembly_cleanup',lambda db:None)
+    monkeypatch.setattr(configuration,'register_assembly_erasure',lambda *args:None)
+    for module,name in ((typed_api,'register_typed_routes'),(local_needs_app,'register_local_needs_routes'),
+            (local_manual_app,'register_local_manual_routes'),
+            (local_structured_read,'register_local_structured_read_routes'),(demo_login,'register_demo_login')):
+        monkeypatch.setattr(module,name,lambda *args,**kwargs:None)
+    calls=[];factory=CurrentScopeEpochReader.for_api
+    def for_api(db,policy):
+        calls.append((db,policy));return factory(db,policy)
+    monkeypatch.setattr(CurrentScopeEpochReader,'for_api',for_api)
+    supplied={}
+    def create(**kwargs):supplied.update(kwargs);return FastAPI()
+    monkeypatch.setattr(configuration,'create_local_app',create)
+    runtime.app()
+    assert supplied['lio_exploration_subjects']==(subjects or None)
+    assert supplied['lio_dialogue_subjects']==supplied['lio_calendar_subjects']==(subjects or None)
+    if demo:
+        assert calls==[(database,typed)]
+        assert type(supplied['lio_profile_epoch_reader'])is CurrentScopeEpochReader
+    else:
+        assert not calls and supplied['lio_profile_epoch_reader']is None
 from scripts.m4_budget_transfer import seal,adopt
 from scripts import m4_budget_transfer as transfer
 
 
-def test_schema53_readiness_requires_its_completed_signed_anchor_and_keeps_quota_gate(tmp_path,monkeypatch):
+@pytest.mark.parametrize('schema',[53,54])
+def test_schema53_readiness_requires_its_completed_signed_anchor_and_keeps_quota_gate(tmp_path,monkeypatch,schema):
     from deploy.hk import demo_quota,entrypoint
     from contextlib import nullcontext
     key=Ed25519PrivateKey.generate()
@@ -39,7 +86,7 @@ def test_schema53_readiness_requires_its_completed_signed_anchor_and_keeps_quota
     monkeypatch.setattr(entrypoint,'control',lambda:tmp_path)
     monkeypatch.setattr(entrypoint.local_postgres,'require_serving',lambda control:None)
     monkeypatch.setattr(checkpoint,'require_release',lambda db,control:{'lineage':'original-lineage'})
-    monkeypatch.setattr(checkpoint,'versions',lambda:list(range(1,54)))
+    monkeypatch.setattr(checkpoint,'versions',lambda:list(range(1,schema+1)))
     checkpoint.atomic(tmp_path/'demo-schema52.json',dict(state='COMPLETE',lineage='original-lineage',
         quota_policy_sha256=demo_quota.policy_digest(raw,800)))
     for marker in ({'state':'INTENT','lineage':'original-lineage'},
@@ -48,6 +95,13 @@ def test_schema53_readiness_requires_its_completed_signed_anchor_and_keeps_quota
         with pytest.raises(ValueError,match='wire-origin cutover incomplete'):
             entrypoint._runtime_gate(database,runtime)
     checkpoint.atomic(tmp_path/'demo-schema53.json',dict(state='COMPLETE',lineage='original-lineage'))
+    if schema==54:
+        for marker in ({'state':'INTENT','lineage':'original-lineage'},
+                       {'state':'COMPLETE','lineage':'foreign-lineage'}):
+            checkpoint.atomic(tmp_path/'demo-schema54.json',marker)
+            with pytest.raises(ValueError,match='exploration-origin cutover incomplete'):
+                entrypoint._runtime_gate(database,runtime)
+        checkpoint.atomic(tmp_path/'demo-schema54.json',dict(state='COMPLETE',lineage='original-lineage'))
     entrypoint._runtime_gate(database,runtime)
     runtime.context.current.meter.budget=80
     with pytest.raises(ValueError,match='quota cutover incomplete'):
