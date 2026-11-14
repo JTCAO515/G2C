@@ -1744,6 +1744,9 @@ import XCTest
   let counts = app.staticTexts["fixture.counts"]
   XCTAssertTrue(counts.waitForExistence(timeout:5))
   XCTAssertEqual(counts.label,"sends=2 undoPosts=1 undoReads=1 details=3")
+  let versions = app.staticTexts["fixture.history"]
+  XCTAssertTrue(versions.waitForExistence(timeout:5))
+  XCTAssertEqual(versions.label,"current=3 history=2,1")
  }
  private func captureCalendarWire(_ app:XCUIApplication,_ label:String,_ chinese:Bool) {
   let shot=XCTAttachment(screenshot:app.screenshot());shot.name=label+(chinese ? "-zh":"-en");shot.lifetime = .keepAlways;add(shot)

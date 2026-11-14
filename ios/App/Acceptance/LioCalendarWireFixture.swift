@@ -27,7 +27,13 @@ private struct LioCalendarWireFixture: View {
 struct CalendarCounters: View {
  let wire: CalendarHTTPWire
  @State private var counts = ""
- var body: some View { Text(counts).accessibilityIdentifier("fixture.counts").task { counts = await wire.counts() } }
+ @State private var versions = ""
+ var body: some View {
+  VStack {
+   Text(counts).accessibilityIdentifier("fixture.counts")
+   Text(versions).accessibilityIdentifier("fixture.history")
+  }.task { counts = await wire.counts(); versions = await wire.versions() }
+ }
 }
 @MainActor final class CalendarStorage: SecureMessageStorage {
  private var value: Snapshot?
@@ -69,7 +75,7 @@ actor CalendarHTTPWire: ClientTransport {
  static let trace = "00000000-0000-4000-8000-000000000001"
  private let samples: [Data]
  private var messages: [[String:Any]] = []
- private var current: Int?
+ private var currentVersion: Int?
  private var undoID: String?
  private var sends = 0, undoPosts = 0, undoReads = 0, details = 0
  init() throws {
@@ -82,6 +88,33 @@ actor CalendarHTTPWire: ClientTransport {
  }
  func counts() -> String { "sends=\(sends) undoPosts=\(undoPosts) undoReads=\(undoReads) details=\(details)" }
  private func sample(_ index:Int) throws -> [String:Any] { try JSONSerialization.jsonObject(with:samples[index]) as! [String:Any] }
+ func versions() -> String {
+  let history = currentVersion == 3 ? "2,1" : currentVersion == 2 ? "1" : ""
+  return "current=\(currentVersion ?? 0) history=\(history)"
+ }
+ private func card(_ version:Int) throws -> [String:Any] {
+  var result = try sample(version == 2 ? 1 : 0)
+  result["trip_version"] = version
+  return result
+ }
+ private func detail() throws -> [String:Any] {
+  var result = try sample(currentVersion == 2 ? 3 : 2)
+  if let currentVersion {
+   var trip = result["trip"] as! [String:Any]
+   trip["version"] = currentVersion
+   result["trip"] = trip
+  } else { result["trip"] = NSNull() }
+  return result
+ }
+ private func listing() throws -> [String:Any] {
+  var result = try sample(currentVersion == 2 ? 5 : 4)
+  if let currentVersion {
+   var trips = result["trips"] as! [[String:Any]]
+   trips[0]["version"] = currentVersion
+   result["trips"] = trips
+  } else { result["trips"] = [] as [[String:Any]] }
+  return result
+ }
  func send(_ request:HTTPRequest, body:HTTPBody?, baseURL:URL, operationID:String) async throws -> (HTTPResponse,HTTPBody?) {
   let path = request.path!, null = NSNull()
   let value: [String:Any]
@@ -89,17 +122,17 @@ actor CalendarHTTPWire: ClientTransport {
    let input = try JSONSerialization.jsonObject(with:try await Data(collecting:body!, upTo:16384)) as! [String:Any]
    if path == "/v3/lio/messages" {
     precondition(input["version"] as? String == "LIO-message.3")
-    let index = sends == 0 ? 0 : 1; current = index; sends += 1
+    let version = sends == 0 ? 1 : 2; currentVersion = version; sends += 1
     let text = input["text"] as! String, zh = input["locale"] as? String == "zh"
     messages.append(["message_id":input["message_id"]!, "text":text,
       "answer":zh ? "先按三天来安排。" : "Here is a three-day outline.", "status":"completed",
-      "failure":null,"activity":null,"sources":[],"trip":try sample(index),"memory":null])
+      "failure":null,"activity":null,"sources":[],"trip":try card(version),"memory":null])
     value = ["version":"LIO-message-receipt.3","message_id":input["message_id"]!,"conversation_id":Self.conversation]
    } else if path == "/v3/lio/trip-undos" {
     precondition(input["version"] as? String == "LIO-trip-undo.3")
-    precondition(current == 1)
+    precondition(currentVersion == 2)
     precondition(input["target"] as? String == "synthetic-target")
-    undoPosts += 1; undoID = input["action_id"] as? String; current = 0
+    undoPosts += 1; undoID = input["action_id"] as? String; currentVersion = 3
     throw URLError(.networkConnectionLost)
    } else { throw URLError(.unsupportedURL) }
   } else if path.hasPrefix("/v3/lio/trip-undo-receipts?") {
@@ -109,15 +142,15 @@ actor CalendarHTTPWire: ClientTransport {
    value = ["version":"LIO-trip-undo-receipt.3","action_id":undoID!,"conversation_id":Self.conversation,"committed":true]
   } else if path.hasPrefix("/v3/lio/trip?") {
    value = ["version":"LIO-trip-history.3","conversation_id":Self.conversation,
-     "current":try current.map { try sample($0) } ?? null,
-     "history":try current == 1 ? [sample(0)] : [],
-     "undo_target":current == 1 ? "synthetic-target" : null,"next_before":null]
+     "current":try currentVersion.map { try card($0) } ?? null,
+     "history":try currentVersion == 3 ? [card(2),card(1)] : currentVersion == 2 ? [card(1)] : [],
+     "undo_target":currentVersion == 2 ? "synthetic-target" : null,"next_before":null]
   } else if path.hasPrefix("/v3/lio/timeline") {
    value = ["version":"LIO-timeline.3","conversation_id":Self.conversation,"messages":messages,"next_before":null]
   } else if path.hasPrefix("/v6/trip-structured?") {
-   details += 1; value = try sample(current == 1 ? 3 : 2)
+   details += 1; value = try detail()
   } else if path.hasPrefix("/v2/trip-structured-list?") {
-   value = try sample(current == 1 ? 5 : 4)
+   value = try listing()
   } else { throw URLError(.unsupportedURL) }
   let bytes = try JSONSerialization.data(withJSONObject:value,options:[.sortedKeys,.withoutEscapingSlashes])
   var response = HTTPResponse(status:.ok)
