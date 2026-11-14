@@ -257,3 +257,5 @@ if __name__=='__main__':
     providers_main()
     from lio_pipeline_models_pg import main as pipeline_models_main
     pipeline_models_main()
+    import runpy
+    runpy.run_path(str(ROOT/'backend/draft/tests/rich_provider_pg.py'),run_name='__main__')
