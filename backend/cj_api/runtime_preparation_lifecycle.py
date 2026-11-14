@@ -38,19 +38,23 @@ class PreparationLifecycle:
             raise Unavailable('PREPARATION_ORIGINAL_SESSION_CHANGED')
         return token
 
-    def _snapshot(self):
+    def _snapshot(self,watermark=None):
         budget=self.costs.originals.budget
         with budget.connect()as db:
             db.execute('BEGIN');budget.require_producer(db)
             count,digest=journal_state(db)
+            if watermark is None:watermark=db.execute('SELECT coalesce(max(rowid),0) FROM attempt').fetchone()[0]
+            rows=db.execute('SELECT id,kind,input_sha,state,receipt FROM attempt WHERE rowid<=? ORDER BY id',
+                (watermark,)).fetchall()
+            identity=sha256(encode([list(row[:3])for row in rows])).hexdigest()
             prefix='g2c1-'+scope_hash(self.costs.binding.scope)+'-'
             # No provider/owner data outside this exact registered scope leaves
             # the original store; the global anchor is only count/hash.
-            rows=db.execute('SELECT id,kind,input_sha,state,receipt FROM attempt '
-                'WHERE substr(id,1,?)=? ORDER BY id',(len(prefix),prefix)).fetchall()
-        return dict(ledger=dict(count=count,sha256=digest),attempts=[dict(
+            scoped=[row for row in rows if row[0].startswith(prefix)]
+        return dict(ledger=dict(count=count,sha256=digest),watermark=watermark,
+            identity_sha256=identity,attempts=[dict(
             attempt_id=a,kind=k,input_sha256=i,state=s,
-            receipt_sha256=None if r is None else sha256(r.encode()).hexdigest())for a,k,i,s,r in rows])
+            receipt_sha256=None if r is None else sha256(r.encode()).hexdigest())for a,k,i,s,r in scoped])
 
     def _read(self,name):
         with self._directory()as fd:
@@ -85,7 +89,7 @@ class PreparationLifecycle:
             and value['binding_sha256']==self.costs.binding.key
             and value['selection_sha256']==self.costs.selection_sha256,'PREPARATION_LIFECYCLE_START_BINDING')
         snapshot=value['snapshot']
-        require(type(snapshot)is dict and set(snapshot)=={'ledger','attempts'}
+        require(type(snapshot)is dict and set(snapshot)=={'ledger','attempts','watermark','identity_sha256'}
             and type(snapshot['attempts'])is list,'PREPARATION_LIFECYCLE_START_FIELDS')
         rows=snapshot['attempts']
         require(all(type(row)is dict and set(row)=={'attempt_id','kind','input_sha256','state','receipt_sha256'}for row in rows)
@@ -115,8 +119,14 @@ class PreparationLifecycle:
         closed=all(row['status']in('completed','failed','cancelled')
             and row['tail']['delivery_acknowledged']is True
             and not row['tail']['associated_history_jobs']for row in tails)
+        # Retain the native financial cutoff independently before the derived
+        # coverage report. Query enumerates the original DB range again; a
+        # report cannot choose a smaller saved subset to hide an INTENT.
+        end=dict(version=VERSION,kind='end',binding_sha256=self.costs.binding.key,
+            start_sha256=sha256(encode(start)).hexdigest(),snapshot=after)
+        self._write('end.json',end)
         record=dict(version=VERSION,kind='close',binding_sha256=self.costs.binding.key,
-            start_sha256=sha256(encode(start)).hexdigest(),snapshot=after,cost_inventory=cost,
+            start_sha256=end['start_sha256'],end_sha256=sha256(encode(end)).hexdigest(),snapshot=after,cost_inventory=cost,
             message_closure=tails,unmapped_original_attempt_ids=missing,
             selected_attempts_outside_interval=outside,
             coverage='ORIGINAL_SCOPE_FINANCIAL_INTERVAL_AND_DECLARED_MESSAGES',
@@ -128,14 +138,28 @@ class PreparationLifecycle:
 
     def read(self,*,deadline):
         token=self._guard(deadline);start=self._start();record=self._read('close.json')
-        require(set(record)=={'version','kind','binding_sha256','start_sha256','snapshot','cost_inventory',
+        require(set(record)=={'version','kind','binding_sha256','start_sha256','end_sha256','snapshot','cost_inventory',
             'message_closure','unmapped_original_attempt_ids','selected_attempts_outside_interval',
             'coverage','evidence_status','manual_trip_action_coverage','new_charge_attempts'}
             and record['version']==VERSION and record['kind']=='close'
             and record['binding_sha256']==self.costs.binding.key
             and record['start_sha256']==sha256(encode(start)).hexdigest(),'PREPARATION_LIFECYCLE_CLOSE_BINDING')
+        end=self._read('end.json')
+        require(set(end)=={'version','kind','binding_sha256','start_sha256','snapshot'}
+            and end['version']==VERSION and end['kind']=='end'
+            and end['binding_sha256']==self.costs.binding.key
+            and end['start_sha256']==record['start_sha256']
+            and sha256(encode(end)).hexdigest()==record['end_sha256']
+            and record['snapshot']==end['snapshot'],'PREPARATION_LIFECYCLE_ORIGINAL_CUTOFF_CHANGED')
+        watermark=end['snapshot']['watermark']
+        require(type(watermark)is int and watermark>=0,'PREPARATION_LIFECYCLE_ORIGINAL_CUTOFF')
+        interval=self._snapshot(watermark)
+        if (interval['identity_sha256']!=end['snapshot']['identity_sha256']or
+                {row['attempt_id']for row in interval['attempts']}!=
+                {row['attempt_id']for row in end['snapshot']['attempts']}):
+            raise Unavailable('PREPARATION_LIFECYCLE_ORIGINAL_RANGE_CHANGED')
         self.costs.verify_frozen(encode(record['cost_inventory']),deadline=deadline)
-        current={row['attempt_id']:row for row in self._snapshot()['attempts']}
+        current={row['attempt_id']:row for row in interval['attempts']}
         old_ids={row['attempt_id']for row in start['snapshot']['attempts']}
         # Later independent preparations do not rewrite this closed interval.
         for row in record['snapshot']['attempts']:

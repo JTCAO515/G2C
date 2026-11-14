@@ -81,3 +81,11 @@ preparation, creates no financial attempts, and issues no metadata or reservatio
 at boot. A final definition publisher is still not connected; reserve fails
 closed, E still lacks the full legal task set, F teacher stays disabled, and the
 existing RPC/G versions and default worker configuration remain unchanged.
+
+Lifecycle close retains an independent O_EXCL native end witness before writing
+the derived report. It fixes the original financial row watermark and immutable
+identity digest. Resolution enumerates that exact original database range again
+and verifies the complete producer-scope attempt set; removing a saved unmapped
+row and adjusting status cannot hide an original INTENT. New later rows remain
+outside this closed interval. End-witness ACK uncertainty leaves the original
+range intact and is query-only, without creating a replacement interval.

@@ -107,7 +107,7 @@ def test_old_unrelated_unknown_settlement_does_not_become_preparation_cost(lifec
 
 def test_unknown_close_ack_is_query_only_and_revocation_withholds(lifecycle):
     journal=lifecycle.build();journal.begin(deadline=100);lifecycle.prepare()
-    with patch('cj_api.runtime_preparation_lifecycle.os.fsync',side_effect=OSError('ACK unknown')):
+    with patch('cj_api.runtime_preparation_lifecycle.os.fsync',side_effect=[None,None,OSError('ACK unknown')]):
         with pytest.raises(OSError):journal.close(deadline=100)
     assert decode(lifecycle.build().read(deadline=100))['evidence_status']=='COMPLETE'
     with pytest.raises(FileExistsError):lifecycle.build().close(deadline=100)
@@ -140,3 +140,36 @@ def test_persisted_coverage_cannot_upgrade_unknown_or_hide_unmapped_attempts(lif
     record=decode(journal.close(deadline=100));record[field]=value
     (lifecycle.directory/'close.json').write_bytes(encode(record))
     with pytest.raises(ValueError):journal.read(deadline=100)
+
+
+def test_deleted_unmapped_row_and_recomputed_status_cannot_upgrade_original_range(lifecycle):
+    journal=lifecycle.build();journal.begin(deadline=100);lifecycle.prepare()
+    lifecycle.budget.begin(lifecycle.ids[2],'model',b'unmapped unknown')
+    original=decode(journal.close(deadline=100));assert original['evidence_status']=='UNKNOWN'
+    forged=decode(encode(original))
+    forged['snapshot']['attempts']=[r for r in forged['snapshot']['attempts']if r['attempt_id']!=lifecycle.ids[2]]
+    forged['unmapped_original_attempt_ids']=[];forged['evidence_status']='COMPLETE'
+    (lifecycle.directory/'close.json').write_bytes(encode(forged))
+    with pytest.raises(ValueError,match='ORIGINAL_CUTOFF_CHANGED'):journal.read(deadline=100)
+    assert len(lifecycle.budget.inspect())==3 and lifecycle.budget.inspect()[-1]['state']=='INTENT'
+
+
+def test_even_changed_end_subset_is_checked_against_native_original_range(lifecycle):
+    journal=lifecycle.build();journal.begin(deadline=100);lifecycle.prepare()
+    lifecycle.budget.begin(lifecycle.ids[2],'model',b'unmapped unknown')
+    record=decode(journal.close(deadline=100));end=decode((lifecycle.directory/'end.json').read_bytes())
+    end['snapshot']['attempts']=[r for r in end['snapshot']['attempts']if r['attempt_id']!=lifecycle.ids[2]]
+    record['snapshot']=end['snapshot'];record['end_sha256']=sha256(encode(end)).hexdigest()
+    record['unmapped_original_attempt_ids']=[];record['evidence_status']='COMPLETE'
+    (lifecycle.directory/'end.json').write_bytes(encode(end));(lifecycle.directory/'close.json').write_bytes(encode(record))
+    with pytest.raises(Unavailable,match='ORIGINAL_RANGE_CHANGED'):journal.read(deadline=100)
+
+
+def test_end_ack_unknown_retains_cutoff_and_never_recreates_interval(lifecycle):
+    journal=lifecycle.build();journal.begin(deadline=100);lifecycle.prepare()
+    with patch('cj_api.runtime_preparation_lifecycle.os.fsync',side_effect=OSError('end ACK unknown')):
+        with pytest.raises(OSError):journal.close(deadline=100)
+    assert (lifecycle.directory/'end.json').exists() and not (lifecycle.directory/'close.json').exists()
+    with pytest.raises(Unavailable,match='NOT_RECORDED'):journal.read(deadline=100)
+    with pytest.raises(FileExistsError):journal.close(deadline=100)
+    assert len(lifecycle.budget.inspect())==2
