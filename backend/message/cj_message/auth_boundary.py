@@ -141,6 +141,13 @@ class HistoryReadContext:
         self._check()
         return result
 
+    def require_lio_projection(self):
+        """Public lifetime/identity guard; exposes no repository or transaction."""
+        self._check()
+        if self._lio_projection_tx is None:
+            raise RuntimeError('canonical Lio projection frame required')
+        self._admission_guard('lio_projection_current')
+
     def query_lio_receipt(self, message_id):
         from .demo_dialogue import query
         self._check()
