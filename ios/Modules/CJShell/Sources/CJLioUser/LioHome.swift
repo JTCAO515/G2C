@@ -795,10 +795,14 @@ public struct LioHome<MenuContent: View>: View {
                 Button(language.text("Ask again", "重新问")) {
                     followsAnswer = true
                     conversation.askAgain(turn.id)
-                    timing.start(turn.id, language: timingLanguage)
+                    if let pending = conversation.pending {
+                        timing.start(pending.id, language: timingLanguage)
+                    }
                     recordPendingFirstQuestion()
                 }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.borderedProminent)
+                    .tint(LioTheme.vermilion)
+                    .foregroundStyle(LioTheme.onVermilion)
                     .controlSize(.large)
                     .disabled(conversation.pending != nil)
                     .accessibilityIdentifier("lio.askAgain")
