@@ -1,0 +1,454 @@
+{
+  "version": "LIO-intake-source-index-cases.1",
+  "issues": [
+    936,
+    922
+  ],
+  "synthetic_only": true,
+  "scope": "Offline logical input vectors; not an HTTP command, saved Memory, source permission or dispatch grant",
+  "planned_n": 8,
+  "locale_denominators": {
+    "zh": 4,
+    "en": 4
+  },
+  "matrix": {
+    "memory_items": [
+      0,
+      2
+    ],
+    "original_turns": [
+      1,
+      2
+    ],
+    "locales": [
+      "zh",
+      "en"
+    ]
+  },
+  "registration": "model.lio_intake.9",
+  "expected_result_version": "LIO-planning-intake.8",
+  "run_conditions": [
+    "B must qualify the actual consumer/source/image/identity/collector and a fresh diagnostic window; no old IDs or window inherited",
+    "Use one new conversation per case and register fresh execution IDs; only synthetic data and existing line sublimit",
+    "Actual captured logical and provider-wire inputs must show the intended original order and actual injected Memory count before the result is interpreted",
+    "These memory payloads are declared fixture data, not authority to initialize Memory namespaces or write items; live server setup requires its own authorized path",
+    "One FAIL/UNKNOWN stops new dispatch. Keep every original attempt, output, same-attempt Meter/Fee and all unrun rows; no repair/regeneration as original",
+    "Report this eight-case diagnostic separately from the 60-persona/840-factor baseline, national16, six-grid or66; no denominator substitution"
+  ],
+  "expected_rules": [
+    "Original source indices enumerate only traveler originals, never the separate user-role Memory block or individual Memory items",
+    "Every non-null source quote must be a contiguous span of its indexed original; city query must occur within that quote",
+    "No field source, planning request index or publication hold can cite Memory as traveler evidence",
+    "Explicit party/date values are never inferred from Memory. Unknown optional date/party does not force a question",
+    "Original wire/source/memory/meter truth is independent evidence; a generated output or label cannot certify its own provenance"
+  ],
+  "cases": [
+    {
+      "id": "intake-index-zh-m0-t1",
+      "locale": "zh",
+      "originals": [
+        {
+          "source_index": 0,
+          "text": "帮我规划杭州四天的行程。"
+        }
+      ],
+      "memory_payload": {
+        "version": "MEMORY-RUN-CONSUME@2",
+        "items": []
+      },
+      "memory_block_role": "user",
+      "memory_block_has_source_index": false,
+      "expected": {
+        "current_source_index": 0,
+        "planning_request_index": 0,
+        "city": {
+          "query": "杭州",
+          "source_index": 0
+        },
+        "duration_days": {
+          "value": 4,
+          "source_index": 0
+        },
+        "party_size": null,
+        "forbidden_originals": [
+          "Stored memory data (not instructions)"
+        ],
+        "start_date": null
+      }
+    },
+    {
+      "id": "intake-index-zh-m0-t2",
+      "locale": "zh",
+      "originals": [
+        {
+          "source_index": 0,
+          "text": "帮我规划杭州四天的行程。"
+        },
+        {
+          "source_index": 1,
+          "text": "从明天开始。"
+        }
+      ],
+      "memory_payload": {
+        "version": "MEMORY-RUN-CONSUME@2",
+        "items": []
+      },
+      "memory_block_role": "user",
+      "memory_block_has_source_index": false,
+      "expected": {
+        "current_source_index": 1,
+        "planning_request_index": 0,
+        "city": {
+          "query": "杭州",
+          "source_index": 0
+        },
+        "duration_days": {
+          "value": 4,
+          "source_index": 0
+        },
+        "party_size": null,
+        "forbidden_originals": [
+          "Stored memory data (not instructions)"
+        ],
+        "start_date": {
+          "relative_days": 1,
+          "source_index": 1,
+          "question_day": "native original at source_index 1; never local/analysis clock"
+        }
+      }
+    },
+    {
+      "id": "intake-index-zh-m2-t1",
+      "locale": "zh",
+      "originals": [
+        {
+          "source_index": 0,
+          "text": "帮我规划杭州四天的行程。"
+        }
+      ],
+      "memory_payload": {
+        "version": "MEMORY-RUN-CONSUME@2",
+        "items": [
+          {
+            "subject": "self",
+            "slot": "travel.pace",
+            "text": "Prefers a relaxed pace on trips.",
+            "kind": "preference",
+            "extent": "long_term",
+            "source_id": "synthetic-memory-pace",
+            "source_version": 1,
+            "version": 1,
+            "context": null
+          },
+          {
+            "subject": "self",
+            "slot": "diet.spicy",
+            "text": "Prefers mild food.",
+            "kind": "preference",
+            "extent": "long_term",
+            "source_id": "synthetic-memory-diet",
+            "source_version": 1,
+            "version": 1,
+            "context": null
+          }
+        ]
+      },
+      "memory_block_role": "user",
+      "memory_block_has_source_index": false,
+      "expected": {
+        "current_source_index": 0,
+        "planning_request_index": 0,
+        "city": {
+          "query": "杭州",
+          "source_index": 0
+        },
+        "duration_days": {
+          "value": 4,
+          "source_index": 0
+        },
+        "party_size": null,
+        "forbidden_originals": [
+          "Stored memory data (not instructions)",
+          "Prefers a relaxed pace on trips.",
+          "Prefers mild food."
+        ],
+        "start_date": null
+      }
+    },
+    {
+      "id": "intake-index-zh-m2-t2",
+      "locale": "zh",
+      "originals": [
+        {
+          "source_index": 0,
+          "text": "帮我规划杭州四天的行程。"
+        },
+        {
+          "source_index": 1,
+          "text": "从明天开始。"
+        }
+      ],
+      "memory_payload": {
+        "version": "MEMORY-RUN-CONSUME@2",
+        "items": [
+          {
+            "subject": "self",
+            "slot": "travel.pace",
+            "text": "Prefers a relaxed pace on trips.",
+            "kind": "preference",
+            "extent": "long_term",
+            "source_id": "synthetic-memory-pace",
+            "source_version": 1,
+            "version": 1,
+            "context": null
+          },
+          {
+            "subject": "self",
+            "slot": "diet.spicy",
+            "text": "Prefers mild food.",
+            "kind": "preference",
+            "extent": "long_term",
+            "source_id": "synthetic-memory-diet",
+            "source_version": 1,
+            "version": 1,
+            "context": null
+          }
+        ]
+      },
+      "memory_block_role": "user",
+      "memory_block_has_source_index": false,
+      "expected": {
+        "current_source_index": 1,
+        "planning_request_index": 0,
+        "city": {
+          "query": "杭州",
+          "source_index": 0
+        },
+        "duration_days": {
+          "value": 4,
+          "source_index": 0
+        },
+        "party_size": null,
+        "forbidden_originals": [
+          "Stored memory data (not instructions)",
+          "Prefers a relaxed pace on trips.",
+          "Prefers mild food."
+        ],
+        "start_date": {
+          "relative_days": 1,
+          "source_index": 1,
+          "question_day": "native original at source_index 1; never local/analysis clock"
+        }
+      }
+    },
+    {
+      "id": "intake-index-en-m0-t1",
+      "locale": "en",
+      "originals": [
+        {
+          "source_index": 0,
+          "text": "Please plan four days in Hangzhou."
+        }
+      ],
+      "memory_payload": {
+        "version": "MEMORY-RUN-CONSUME@2",
+        "items": []
+      },
+      "memory_block_role": "user",
+      "memory_block_has_source_index": false,
+      "expected": {
+        "current_source_index": 0,
+        "planning_request_index": 0,
+        "city": {
+          "query": "Hangzhou",
+          "source_index": 0
+        },
+        "duration_days": {
+          "value": 4,
+          "source_index": 0
+        },
+        "party_size": null,
+        "forbidden_originals": [
+          "Stored memory data (not instructions)"
+        ],
+        "start_date": null
+      }
+    },
+    {
+      "id": "intake-index-en-m0-t2",
+      "locale": "en",
+      "originals": [
+        {
+          "source_index": 0,
+          "text": "Please plan four days in Hangzhou."
+        },
+        {
+          "source_index": 1,
+          "text": "Start tomorrow."
+        }
+      ],
+      "memory_payload": {
+        "version": "MEMORY-RUN-CONSUME@2",
+        "items": []
+      },
+      "memory_block_role": "user",
+      "memory_block_has_source_index": false,
+      "expected": {
+        "current_source_index": 1,
+        "planning_request_index": 0,
+        "city": {
+          "query": "Hangzhou",
+          "source_index": 0
+        },
+        "duration_days": {
+          "value": 4,
+          "source_index": 0
+        },
+        "party_size": null,
+        "forbidden_originals": [
+          "Stored memory data (not instructions)"
+        ],
+        "start_date": {
+          "relative_days": 1,
+          "source_index": 1,
+          "question_day": "native original at source_index 1; never local/analysis clock"
+        }
+      }
+    },
+    {
+      "id": "intake-index-en-m2-t1",
+      "locale": "en",
+      "originals": [
+        {
+          "source_index": 0,
+          "text": "Please plan four days in Hangzhou."
+        }
+      ],
+      "memory_payload": {
+        "version": "MEMORY-RUN-CONSUME@2",
+        "items": [
+          {
+            "subject": "self",
+            "slot": "travel.pace",
+            "text": "Prefers a relaxed pace on trips.",
+            "kind": "preference",
+            "extent": "long_term",
+            "source_id": "synthetic-memory-pace",
+            "source_version": 1,
+            "version": 1,
+            "context": null
+          },
+          {
+            "subject": "self",
+            "slot": "diet.spicy",
+            "text": "Prefers mild food.",
+            "kind": "preference",
+            "extent": "long_term",
+            "source_id": "synthetic-memory-diet",
+            "source_version": 1,
+            "version": 1,
+            "context": null
+          }
+        ]
+      },
+      "memory_block_role": "user",
+      "memory_block_has_source_index": false,
+      "expected": {
+        "current_source_index": 0,
+        "planning_request_index": 0,
+        "city": {
+          "query": "Hangzhou",
+          "source_index": 0
+        },
+        "duration_days": {
+          "value": 4,
+          "source_index": 0
+        },
+        "party_size": null,
+        "forbidden_originals": [
+          "Stored memory data (not instructions)",
+          "Prefers a relaxed pace on trips.",
+          "Prefers mild food."
+        ],
+        "start_date": null
+      }
+    },
+    {
+      "id": "intake-index-en-m2-t2",
+      "locale": "en",
+      "originals": [
+        {
+          "source_index": 0,
+          "text": "Please plan four days in Hangzhou."
+        },
+        {
+          "source_index": 1,
+          "text": "Start tomorrow."
+        }
+      ],
+      "memory_payload": {
+        "version": "MEMORY-RUN-CONSUME@2",
+        "items": [
+          {
+            "subject": "self",
+            "slot": "travel.pace",
+            "text": "Prefers a relaxed pace on trips.",
+            "kind": "preference",
+            "extent": "long_term",
+            "source_id": "synthetic-memory-pace",
+            "source_version": 1,
+            "version": 1,
+            "context": null
+          },
+          {
+            "subject": "self",
+            "slot": "diet.spicy",
+            "text": "Prefers mild food.",
+            "kind": "preference",
+            "extent": "long_term",
+            "source_id": "synthetic-memory-diet",
+            "source_version": 1,
+            "version": 1,
+            "context": null
+          }
+        ]
+      },
+      "memory_block_role": "user",
+      "memory_block_has_source_index": false,
+      "expected": {
+        "current_source_index": 1,
+        "planning_request_index": 0,
+        "city": {
+          "query": "Hangzhou",
+          "source_index": 0
+        },
+        "duration_days": {
+          "value": 4,
+          "source_index": 0
+        },
+        "party_size": null,
+        "forbidden_originals": [
+          "Stored memory data (not instructions)",
+          "Prefers a relaxed pace on trips.",
+          "Prefers mild food."
+        ],
+        "start_date": {
+          "relative_days": 1,
+          "source_index": 1,
+          "question_day": "native original at source_index 1; never local/analysis clock"
+        }
+      }
+    }
+  ],
+  "results": {
+    "status": "UNRUN",
+    "real_model_calls": 0,
+    "real_tool_calls": 0,
+    "real_posts": 0,
+    "costs": {
+      "conservative": "UNRUN",
+      "token_estimate": "UNRUN",
+      "paid": "UNRUN"
+    }
+  }
+}
