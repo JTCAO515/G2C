@@ -35,12 +35,12 @@ CASE=json.loads((Path(__file__).parent/'fixtures/lio982-source-rejection.json').
 FIXED_CASE=json.loads((Path(__file__).parent/'fixtures/lio991-duplicate-fixed.json').read_bytes())
 
 
-def exercise(root,conninfo,*,basic_memory=False):
+def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24):
     auth=root/'auth';dev_auth.init(auth,[SUBJECT]);now=int(time.time())
     config=root/'connection.json';config.write_text(json.dumps(conninfo))
     meter=root/'meter.json';meter.write_text(json.dumps(dict(version='CJ-LOCAL-RUN@2',current=dict(meter=dict(
         unit='provider_call',budget=800,period_start=now-60,period_end=int(DEMO_DEADLINE.timestamp()),
-        max_steps=24,max_tools=12,max_output=65536,max_seconds=600),output_limits=dict(model=12000,tool=48000,memory=1000)),history=[])))
+        max_steps=max_steps,max_tools=12,max_output=65536,max_seconds=600),output_limits=dict(model=12000,tool=48000,memory=1000)),history=[])))
     context=load_run_context(meter);database=LocalDatabase(config,run_context=context,travel_context=True,needs_context=True)
     profile=dict(subjects=['self'],slots={'travel.pace':dict(kind='preference',collection_allowed=True,semantic_resolved=True)},extents=['long_term'],context_ids=[])
     memory=TypedRuntimeConfiguration.from_bytes(json.dumps(dict(version='local-memory-run.2',collection=dict(
@@ -99,6 +99,11 @@ def exercise(root,conninfo,*,basic_memory=False):
                                 start_timezone='Asia/Shanghai',end_timezone='Asia/Shanghai')
                     if locale=='zh':item['unknown_fields']=[] # original r09 intake: absent place, not a claimed name
                 if bad:value['city'].update(query='成都',quote='成都')
+        elif 'MEMORY-EXTRACT@2'in system:
+            value=dict(version='MEMORY-EXTRACT@2',entries=[])
+        elif body.get('tools'):
+            value=('我可以先帮你梳理这三天的方向。你想去哪个城市？'if locale=='zh'else
+                   'I can help shape those three days. Which city would you like to visit?')
         elif 'The traveler requested a complete 'in system:
             value=dict(answer=('Day 1: a neighborhood. Day 2: a museum. Day 3: a park. Which day should we adjust?'
                 if locale=='en'else'第1天逛街区，第2天看博物馆，第3天去公园。你想先调整哪一天？'))
@@ -125,7 +130,8 @@ def exercise(root,conninfo,*,basic_memory=False):
                 if duplicate:value['days'][0][1][0][0]=original_item['item_id']
                 else:value['days'][0][1].pop(0) # compliant fixture, never server-side repair
         identity=dict(id='cross-language-fixture-'+str(len(wire)),model=M4_MODEL)
-        frames=[dict(**identity,choices=[dict(index=0,delta=dict(content=json.dumps(value,ensure_ascii=False)),finish_reason=None)]),
+        content=value if type(value)is str else json.dumps(value,ensure_ascii=False)
+        frames=[dict(**identity,choices=[dict(index=0,delta=dict(content=content),finish_reason=None)]),
                 dict(**identity,choices=[dict(index=0,delta={},finish_reason='stop')]),
                 dict(**identity,choices=[],usage=dict(prompt_tokens=40,completion_tokens=10,total_tokens=50))]
         raw=''.join('data: '+json.dumps(frame)+'\n\n'for frame in frames)+'data: [DONE]\n\n'
@@ -153,13 +159,17 @@ def exercise(root,conninfo,*,basic_memory=False):
             assert seeded.json()['receipt']['status']=='active'
             seed_receipt=api.get('/v2/memory-receipts',headers=headers,params=dict(operation_id=seed['operation_id']))
             assert seed_receipt.status_code==200 and seed_receipt.json()['receipt']==seeded.json()['receipt']
-            for label,language,question,invalid in (
+            cases=(
                     ('zh-capability','zh','你能做啥',False),('en-capability','en','What can you do?',False),
                     ('zh-days','zh','三天怎么玩',False),('en-days','en','How should I spend three days?',False),
                     ('zh-model','zh','帮我规划三天的旅行',False),('en-model','en','Please help me plan for three days',False),
-                    ('bad-offset','zh','帮我规划三天的旅行',True)):
+                    ('bad-offset','zh','帮我规划三天的旅行',True))
+            if fallback_only:
+                cases=(('bad-offset-zh','zh','帮我规划三天的旅行',True),
+                       ('bad-offset-en','en','Please help me plan for three days',True))
+            for label,language,question,invalid in cases:
                 locale=language;text=question;basic=True;bad=invalid
-                before=len(wire);mid='basic-'+label
+                before=len(wire);before_attempts=len(journal.inspect());mid='basic-'+label
                 sent=api.post('/v2/lio/messages',headers=headers,content=json.dumps(dict(version='LIO-message.2',
                     message_id=mid,text=text,locale=locale,new_conversation=True),ensure_ascii=False).encode())
                 assert sent.status_code==200,sent.text
@@ -167,11 +177,25 @@ def exercise(root,conninfo,*,basic_memory=False):
                 outcome,=run_worker.run_once(database,model,auth,tools_configuration=tools,real_services=services,
                     memory_configuration_for_scope=lambda owner:memory if owner==scope else None,account_admission=True,
                     hk_demo_scopes=frozenset({scope}),lio_confirmation=signer)
-                assert outcome.status==('unknown'if bad else'completed'),outcome
+                denied=bad and max_steps==1
+                assert outcome.status==('failed'if denied else'completed'),outcome
                 timeline=api.get('/v2/lio/timeline',headers=headers,params=dict(conversation_id=cid)).json()
                 message,=timeline['messages']
                 if bad:
-                    assert message['status']=='failed'and message['answer']==''
+                    attempts=journal.inspect()[before_attempts:]
+                    assert message['status']==('failed'if denied else'completed')
+                    assert len(wire)==before+(1 if denied else 3) # intake, real generic path, existing Memory extraction
+                    assert len(attempts)==(1 if denied else 3)and all(row['state']=='RECEIVED'for row in attempts)
+                    assert len({row['attempt_id']for row in attempts})==len(attempts)
+                    assert (not message['answer'])if denied else('三天'in message['answer']if locale=='zh'else'three days'in message['answer'])
+                    with database.connect(scope)as db:
+                        rows=db.execute('SELECT kind,value FROM cj_run_event WHERE scope=%s AND run_id=%s ORDER BY sequence',
+                                        (scope,outcome.run_id)).fetchall()
+                        assert db.execute('SELECT count(*)FROM cj_message_needs_binding WHERE message_scope=%s AND message_id=%s',
+                                          (scope,mid)).fetchone()[0]==0
+                    saved=json.loads(next(v.split(':',1)[1]for _,v in rows if v.startswith('lio_planning_context.1:')))
+                    assert saved['authority']=='none'and saved['facts']=={}and saved['authority_barrier_message_id']==mid
+                    if denied:assert ('budget_denied','answer')in rows
                 else:
                     assert message['status']=='completed'and message['answer']
                     if 'capability'in label or label.endswith('-days'):assert len(wire)==before # code clarification, never model-health evidence
@@ -184,10 +208,13 @@ def exercise(root,conninfo,*,basic_memory=False):
                         saved=json.loads(row[0].split(':',1)[1]);assert saved['facts']['duration_days']['value']==3
                 current=api.get('/v2/lio/trip',headers=headers,params=dict(conversation_id=cid)).json()
                 assert current['current']is None
-                print(json.dumps(dict(case=label,mid=mid,cid=cid,run=outcome.run_id,status=outcome.status,memory='actual native active source')),flush=True)
+                print(json.dumps(dict(case=label,mid=mid,cid=cid,run=outcome.run_id,status=outcome.status,
+                    supplier_dispatches=len(wire)-before,budget_denied=denied,
+                    memory='actual native active source')),flush=True)
             basic=False;bad=False
-        for label,language,invalid in (('en','en',False),('zh','zh',False),('translated','en',True),
-                ('r09-zh','zh',False),('r09-en','en',False),('r09-duplicate','zh',False)):
+        plan_cases=()if fallback_only else(('en','en',False),('zh','zh',False),('translated','en',True),
+                ('r09-zh','zh',False),('r09-en','en',False),('r09-duplicate','zh',False))
+        for label,language,invalid in plan_cases:
             locale=language;bad=invalid;cid=None;regression=label.startswith('r09');duplicate=label=='r09-duplicate'
             texts=(CASE['turns']if locale=='en'else('我想去成都玩三天。','明天开始。'+fixed['zh']+'。酒店名称和位置尚未确定。不要声称已经预订。'))
             if regression and locale=='zh':
@@ -200,7 +227,7 @@ def exercise(root,conninfo,*,basic_memory=False):
                 outcome,=run_worker.run_once(database,model,auth,tools_configuration=tools,real_services=services,
                     memory_configuration_for_scope=lambda owner:memory if owner==scope else None,account_admission=True,
                     hk_demo_scopes=frozenset({scope}),lio_confirmation=signer)
-                expected='unknown'if bad and index==1 else'completed'
+                expected='completed'
                 assert outcome.status==expected,outcome
                 current=api.get('/v2/lio/trip',headers=headers,params=dict(conversation_id=cid)).json()
                 if index==0 or bad or duplicate:
@@ -232,10 +259,10 @@ def exercise(root,conninfo,*,basic_memory=False):
             detail=api.get('/v2/memory-items',headers=headers,params=dict(item_id='basic-memory-pace')).json()['item']
             assert detail['status']=='active'and detail['version']==1
             assert detail['command']['text']==seed['text']and detail['command']['slot']=='travel.pace'
-    print('PASS signed ZH/EN preview -> date/fixed self -> one saved version, including r09 fixed hotel; translated source UNKNOWN and duplicate original IDs remain rejected/zero Trip; no retries, HTTP fixtures only',flush=True)
+    print('PASS signed ZH/EN strict rejected intake -> charged generic/Memory path or pre-dispatch budget denial, zero NEEDS/Trip; valid plan/fixed-ID guards retained; HTTP fixtures only',flush=True)
 
 
-def main(*,basic_memory=False):
+def main(*,basic_memory=False,fallback_only=False,max_steps=24):
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
     from cryptography.hazmat.primitives.serialization import Encoding,PrivateFormat,PublicFormat,NoEncryption
     import base64
@@ -249,7 +276,8 @@ def main(*,basic_memory=False):
                 CJ_TRIAL_VALID_UNTIL='2026-12-31T16:00:00+00:00',CJ_BETA_DEMO_SUBJECTS_JSON=json.dumps([SUBJECT]),
                 CJ_BETA_RECOVERY_PRIVATE_B64=base64.b64encode(key.private_bytes(Encoding.Raw,PrivateFormat.Raw,NoEncryption())).decode(),
                 CJ_BETA_RECOVERY_PUBLIC_B64=base64.b64encode(key.public_key().public_bytes(Encoding.Raw,PublicFormat.Raw)).decode())
-            with patch.dict(os.environ,env):exercise(root,conninfo,basic_memory=basic_memory)
+            with patch.dict(os.environ,env):exercise(root,conninfo,basic_memory=basic_memory,
+                fallback_only=fallback_only,max_steps=max_steps)
 
 
 if __name__=='__main__':main()

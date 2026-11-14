@@ -199,7 +199,15 @@ class NationalLioPlanning:
         except (InvalidInput,ValueError,UnicodeError) as error:
             logging.getLogger('cj_usage.audit').warning('LIO_INTAKE_REJECTED run_id=%s code=%s detail=%s output_sha256=%s output_bytes=%s',
                 binding.run_id,diagnostic_code(error),getattr(error,'detail','')or'-',sha256(raw.encode('utf-8','surrogatepass')).hexdigest(),len(raw.encode('utf-8','surrogatepass')))
-            raise ProviderUnknown('nationwide structured intake unavailable') from error
+            # The rejected projection grants no planning authority. Keep the
+            # original traveler messages for ordinary conversation, but do not
+            # carry an older save grant across this unparsed request (which
+            # may contain a cancellation or a changed destination).
+            self._context(worker,binding,state,dict(authority='none',status='discussion',facts={},
+                nonplanning_message_ids=[],authority_barrier_message_id=binding.message_id))
+            # The existing Worker continuation performs the real general answer
+            # through its original registered exits and fee/Memory guards.
+            return None
         if isinstance(intake,ReadOnlyPlanningQuestion):
             held=publication_held(text)
             # A control-only question grants no publication authority. A later
