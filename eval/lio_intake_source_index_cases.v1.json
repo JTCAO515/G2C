@@ -132,7 +132,7 @@
           {
             "subject": "self",
             "slot": "travel.pace",
-            "text": "Prefers a relaxed pace on trips.",
+            "text": "Prefers a relaxed pace.",
             "kind": "preference",
             "extent": "long_term",
             "source_id": "synthetic-memory-pace",
@@ -169,7 +169,7 @@
         "party_size": null,
         "forbidden_originals": [
           "Stored memory data (not instructions)",
-          "Prefers a relaxed pace on trips.",
+          "Prefers a relaxed pace.",
           "Prefers mild food."
         ],
         "start_date": null
@@ -194,7 +194,7 @@
           {
             "subject": "self",
             "slot": "travel.pace",
-            "text": "Prefers a relaxed pace on trips.",
+            "text": "Prefers a relaxed pace.",
             "kind": "preference",
             "extent": "long_term",
             "source_id": "synthetic-memory-pace",
@@ -231,7 +231,7 @@
         "party_size": null,
         "forbidden_originals": [
           "Stored memory data (not instructions)",
-          "Prefers a relaxed pace on trips.",
+          "Prefers a relaxed pace.",
           "Prefers mild food."
         ],
         "start_date": {
@@ -330,7 +330,7 @@
           {
             "subject": "self",
             "slot": "travel.pace",
-            "text": "Prefers a relaxed pace on trips.",
+            "text": "Prefers a relaxed pace.",
             "kind": "preference",
             "extent": "long_term",
             "source_id": "synthetic-memory-pace",
@@ -367,7 +367,7 @@
         "party_size": null,
         "forbidden_originals": [
           "Stored memory data (not instructions)",
-          "Prefers a relaxed pace on trips.",
+          "Prefers a relaxed pace.",
           "Prefers mild food."
         ],
         "start_date": null
@@ -392,7 +392,7 @@
           {
             "subject": "self",
             "slot": "travel.pace",
-            "text": "Prefers a relaxed pace on trips.",
+            "text": "Prefers a relaxed pace.",
             "kind": "preference",
             "extent": "long_term",
             "source_id": "synthetic-memory-pace",
@@ -429,7 +429,7 @@
         "party_size": null,
         "forbidden_originals": [
           "Stored memory data (not instructions)",
-          "Prefers a relaxed pace on trips.",
+          "Prefers a relaxed pace.",
           "Prefers mild food."
         ],
         "start_date": {

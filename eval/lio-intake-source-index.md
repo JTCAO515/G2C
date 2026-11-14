@@ -25,6 +25,8 @@ client-side injection into the DUT. A live run needs an independently qualified
 server setup and must verify the actual injected count in its original input
 and provider-wire artifacts. If the required setup/observation is unavailable,
 the case stays UNRUN rather than treating the declared payload as evidence.
+The two fixture statements also pass the existing offline pilot phrase predicate;
+that check does not certify a live collection profile, scope, or successful save.
 
 Run only after B qualifies the actual source/image, consumer, existing identity
 and budget, original collector and fresh diagnostic window. Register new IDs
