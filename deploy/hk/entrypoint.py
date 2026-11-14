@@ -134,11 +134,15 @@ def _run_worker(runtime, *, tool_evidence=None,runtime_manifest=None):
 
 
 def _worker_loop(runtime,services,tools,database,lio_confirmation,bindings=None):
+    from cj_api.rejected_intake_capture import RejectedIntakeSink,use_rejected_intake_sink
+    rejected=RejectedIntakeSink('/rejected-intakes')
+    rejected.prune()
     while True:
         component='deployment_gate';status='unavailable'
         try:
             _runtime_gate(database,runtime)
-            with worker_pulse():
+            rejected.prune()
+            with use_rejected_intake_sink(rejected),worker_pulse():
                 outcomes=run_worker.run_once(database,services.model,runtime.auth,tools_configuration=tools,real_services=services,account_admission=True,
                     hk_beta_b_run_credential=True,
                     hk_assembly_scopes=frozenset(scope_for(ISSUER,subject) for subject in runtime.assembly_subjects),

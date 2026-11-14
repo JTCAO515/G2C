@@ -22,6 +22,7 @@ class InvocationInput:
     bind_operation: object = None
     receipt: object = None
     tool_output_limit: int | None = None
+    on_settled: object = None
 
     def __post_init__(self):
         if self.tool_output_limit is not None and (type(self.tool_output_limit) is not int or self.tool_output_limit < 1):
@@ -134,7 +135,8 @@ class RegisteredExit(MeteredExitCore):
         bind=(None if prepared_input.bind_operation is None else
               lambda guard:prepared_input.bind_operation(operation,guard))
         return _PreparedCall(operation,prepared_input.materialize,stage,lambda:runs.valid(binding),
-                             receipt=prepared_input.receipt,materialize_with_guard=bind,provider_kind=provider_kind)
+                             receipt=prepared_input.receipt,materialize_with_guard=bind,provider_kind=provider_kind,
+                             on_settled=prepared_input.on_settled)
 
     def prepare(self,runs,binding,step_key,messages,system,provider):
         registration_id='model.'+step_key

@@ -570,6 +570,17 @@ class RealTools:
                         **({'intake_source_index':inputs['current_source_index']} if 'current_source_index' in inputs else {}),
                         **({'draft_profile':inputs['draft_profile'],'draft_schema_sha256':inputs['response_format_sha256']}if 'draft_profile' in inputs else {}),
                         **capture)
+                    if national_intake and intake_profile=='LIO-planning-intake.9':
+                        from .rejected_intake_capture import observe_stream
+                        @contextmanager
+                        def rejection_lifetime():
+                            lease=provider.memory.hold(operation.binding)if wrapped else nullcontext(None)
+                            with lease as memory_check:
+                                def check():
+                                    if checked(memory_check=memory_check)is not True:
+                                        raise BudgetUnknown('original rejection source authority changed')
+                                check();yield check;check()
+                        stream=observe_stream(operation,stream,metadata,rejection_lifetime)
                     if capture_model:
                         # Preserve streaming latency. A complete artifact is
                         # written only after the original provider completes;
@@ -594,7 +605,9 @@ class RealTools:
                         yield result
                     else:yield from stream
             return invoke
-        return InvocationInput(raw,None,bind,_receipt(metadata))
+        from .rejected_intake_capture import acknowledge_settlement
+        settlement=(acknowledge_settlement if national_intake and intake_profile=='LIO-planning-intake.9'else None)
+        return InvocationInput(raw,None,bind,_receipt(metadata),on_settled=settlement)
 
     def _require_national(self,scope):
         from .local_app import ISSUER,scope_for
