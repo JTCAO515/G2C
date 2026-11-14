@@ -45,6 +45,10 @@ def _runtime_gate(database, runtime):
             marker=checkpoint.verified(control()/'demo-schema53.json')
             if marker['state']!='COMPLETE' or marker['lineage']!=release['lineage']:
                 raise ValueError('HK wire-origin cutover incomplete')
+        if checkpoint.versions()[-1]>=54:
+            marker=checkpoint.verified(control()/'demo-schema54.json')
+            if marker['state']!='COMPLETE' or marker['lineage']!=release['lineage']:
+                raise ValueError('HK exploration-origin cutover incomplete')
 
 
 def ready(database, runtime=None):

@@ -95,6 +95,13 @@ def test_schema53_readiness_requires_its_completed_signed_anchor_and_keeps_quota
         with pytest.raises(ValueError,match='wire-origin cutover incomplete'):
             entrypoint._runtime_gate(database,runtime)
     checkpoint.atomic(tmp_path/'demo-schema53.json',dict(state='COMPLETE',lineage='original-lineage'))
+    if schema==54:
+        for marker in ({'state':'INTENT','lineage':'original-lineage'},
+                       {'state':'COMPLETE','lineage':'foreign-lineage'}):
+            checkpoint.atomic(tmp_path/'demo-schema54.json',marker)
+            with pytest.raises(ValueError,match='exploration-origin cutover incomplete'):
+                entrypoint._runtime_gate(database,runtime)
+        checkpoint.atomic(tmp_path/'demo-schema54.json',dict(state='COMPLETE',lineage='original-lineage'))
     entrypoint._runtime_gate(database,runtime)
     runtime.context.current.meter.budget=80
     with pytest.raises(ValueError,match='quota cutover incomplete'):
