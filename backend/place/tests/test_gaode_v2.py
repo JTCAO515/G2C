@@ -19,7 +19,9 @@ def poi():
 
 
 def receipt(request,rows):
-    body=json.dumps(dict(status='1',infocode='10000',count=str(len(rows)),pois=rows),ensure_ascii=False).encode()
+    value=dict(status='1',infocode='10000',pois=rows)
+    if not isinstance(request.query,POIDetail):value['count']=str(len(rows))
+    body=json.dumps(value,ensure_ascii=False).encode()
     return Response(request.binding_digest,request.origin,request.path,200,body,NOW)
 
 
@@ -74,6 +76,22 @@ def test_unknown_opening_fields_stay_separate_and_are_never_parsed_as_clear():
 def test_wrong_city_duplicate_ids_wrong_detail_or_excess_count_refuse_the_receipt():
     request=prepare(CONFIG,TextSearch('博物馆','510100',1),'original-query',NOW)
     with pytest.raises(ValueError):parse(CONFIG,request,receipt(request,[poi()]),NOW)
+
+
+def test_detail_documented_response_needs_no_count_but_all_result_guards_remain():
+    request=prepare(CONFIG,POIDetail('B000SYNTH1'),'original-detail',NOW)
+    response=receipt(request,[poi()])
+    assert 'count'not in json.loads(response.body)
+    assert parse(CONFIG,request,response,NOW).pois[0].provider_id=='B000SYNTH1'
+    assert parse(CONFIG,request,receipt(request,[]),NOW).pois==()
+    for count in ('0','2',1,None):
+        value=json.loads(response.body);value['count']=count
+        with pytest.raises(ValueError):parse(CONFIG,request,replace(response,body=json.dumps(value).encode()),NOW)
+    with pytest.raises(ValueError):parse(CONFIG,request,receipt(request,[poi(),poi()]),NOW)
+    for query in (TextSearch('博物馆','北京',2),Nearby('博物馆','北京',Coordinate('116.4,39.9'),1500,2)):
+        page=prepare(CONFIG,query,'original-page',NOW)
+        original=receipt(page,[poi()]);value=json.loads(original.body);value.pop('count')
+        with pytest.raises(ValueError):parse(CONFIG,page,replace(original,body=json.dumps(value).encode()),NOW)
     request=prepare(CONFIG,TextSearch('博物馆','北京',2),'original-query',NOW)
     with pytest.raises(ValueError):parse(CONFIG,request,receipt(request,[poi(),poi()]),NOW)
     request=prepare(CONFIG,TextSearch('博物馆','北京',1),'original-query',NOW)

@@ -150,9 +150,13 @@ def parse(config:Config,request:PreparedRequest,response:Response,now:datetime):
     if value.get('status')!='1'or value.get('infocode')!='10000':raise ValueError('poi2_provider_rejected')
     rows=value.get('pois');maximum=1 if isinstance(request.query,POIDetail)else request.query.page_size
     if not isinstance(rows,list)or len(rows)>maximum:raise ValueError('bounded_poi2_records_required')
-    count=value.get('count')
-    if not isinstance(count,str)or re.fullmatch('[0-9]+',count)is None or int(count)!=len(rows):
-        raise ValueError('poi2_count_differs')
+    # Text/around count is the size of this returned page, not total hits.
+    # The documented ID-search response omits count; if supplied, it must
+    # still agree with the single-ID result rather than overriding its bound.
+    if not isinstance(request.query,POIDetail)or'count'in value:
+        count=value.get('count')
+        if not isinstance(count,str)or re.fullmatch('[0-9]+',count)is None or int(count)!=len(rows):
+            raise ValueError('poi2_count_differs')
     pois=[];ids=set()
     for row in rows:
         if not isinstance(row,dict):raise ValueError('poi2_record_required')
