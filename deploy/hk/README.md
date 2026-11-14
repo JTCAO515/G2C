@@ -412,7 +412,7 @@ Typed 保存、管理及既有 `/v1/memory-erasures` 不安装 V1 记忆写入�
 
 ### Demo 邀请码
 
-按 #685 指定的代号配置 `CJ_BETA_DEMO_SUBJECTS_JSON`，至多十个
+按 #685 指定的代号配置 `CJ_BETA_DEMO_SUBJECTS_JSON`，至多 205 个
 `m4-synthetic-demo-<12位代号>`，同时纳入原邀请、Typed API 策略和 worker 记忆选择。
 创建 UID10001 所有的 0700 `/srv/g2c-beta/demo-auth-socket`，worker 保留原签名私钥，
 API 只读挂载 Unix socket 目录。公网 `POST /v1/demo-invite-sessions` 的接口见 #685。
@@ -430,6 +430,29 @@ Lio 的本机追加迁移使用 `python -B -m deploy.hk.demo_schema --target 51`
 `python -B -m deploy.hk.demo_accounts bootstrap <subject> --digest <sha256> --expires-at <RFC3339>`，
 再运行 `insert <subject>` 做原 canonical Typed 预检和单次 profile 激活。
 邀请码原文只在开发 Mac 的 0600 文件，服务端仅保存摘要。
+长码 `D1-<12位账号代号>.<22位凭据>` 保持兼容。短码仅接受区分大小写的
+`G2C@<两位数字>` 和 `CJ_Tester@<两位数字>`（两组各 `01`–`99`，不含 `00`）；账号代号取完整短码 ASCII
+SHA-256 的前十二位十六进制。只有已配置主体且原数据库中的完整邀请码摘要、
+资格期限和撤销状态全部匹配时才签发会话；短码格式本身不创建账号或授予资格。
+
+批量账号的 API typed Memory 策略可显式使用 `CJ_BETA_TYPED_MEMORY_POLICY_GZIP_B64`：
+对原完整策略 JSON 做单个 gzip member 后 base64 编码，仍只放在 API 的原 0600 环境文件。
+它与旧 `CJ_BETA_TYPED_MEMORY_POLICY_B64` 互斥，旧格式继续支持；解压后仍逐项验证原策略和主体名单，
+不生成默认权限。环境文件仍限制 65,536 字节，解压策略仍限制 262,144 字节；
+截断、CRC 错误、额外 gzip member 或尾随数据均拒绝，worker 不接受该 API 配置。
+worker 的双层运行策略可单独显式使用 `CJ_BETA_MEMORY_RUN_POLICY_GZIP_B64`，与原
+`CJ_BETA_MEMORY_RUN_POLICY_B64` 互斥，仅进入原 worker 0600 文件；API 不接受该字段。
+它复用相同限长解压，结果仍经原 TypedRuntimeConfiguration 和全部主体/selection 校验，
+不会从 API 策略推断 worker 权限。批量配置必须同时核对两个角色的完整策略及原有身份不变。
+实际增加名单前先预检完整环境文件及原策略边界，不能仅凭 205 的名单容量宣布账号已开通。
+先以原名单和原配置发布兼容新表示的应用，再由 B 在独立维护阶段备份并启用批量名单和策略。
+启用新表示后，退到不识别该字段的旧镜像前，须先恢复其兼容配置；不能只用应用镜像切换入口回退。
+配置回退保留账号原件、资格/撤销记录、业务数据和唯一费用账，不恢复旧账或删除新账号来过门禁。
+新增手工测试主体的费用归属用 B-only `python -B -m deploy.hk.manual_test_allocations MANIFEST` 先只读核对，
+明确核同后才加 `--apply`。原 0600 清单格式为 `G2C-manual-test-allocation.1` 加 `subjects` 数组，
+只接受已配置 Demo 主体、每批最多 198 个；只向现有 A 组追加，不允许改绑已有其他线身份。
+该入口使用原账本事务和非恢复控制锚，不调用首次 `activate`、不改任何限额或费用/占用记录。
+结果不明先读取同一原账与控制状态，不重复初始化或建立另一账本。
 
 `revoke <subject>` 立即拒绝原邀请码和会话；确认原 scope 无在途后，`rotate <subject>` 可登记
 新摘要与有效期，旧会话继续拒绝，每日计数保留。结果不明先 `inspect <subject>` 和原动作日志。
@@ -473,6 +496,25 @@ MESSAGE 只对实际新接受的原件计数。0052 将北京时间每日上限�
 `python -B -m deploy.hk.demo_schema --resume-quota` 续结原签名备份，保留未发布的备份尝试。
 已轮换 identity 时，先核对原签名备份与活库行集、序列和 fence，再补发同一 release。
 API/worker 只在签名标记完成且运行配置为 800 后就绪。
+
+### 0053 原始 Lio 协议升级（B-only）
+
+0053 与日常应用发布分开：先保持原名单、原配置和原账，关闭入口、核空在途并暂停
+API/worker；B 用精确已审的同源 operator 镜像运行
+`python -B -m deploy.hk.demo_schema --target 53`。仅接受原 1..52 的已签名 release，
+追加已接受的 0053，保存原 lineage/fence 并生成新的签名备份锚 `demo-schema53`。
+原 quota52 标记与 800/400 配置保持；没有更新额度或修改邀请资格的隐含步骤。
+
+发生未知或中断先读取同一签名 INTENT、数据库版本、release 与原备份，
+再用同一镜像运行 `python -B -m deploy.hk.demo_schema --resume-schema53`：
+事务回滚时只续原升级，已提交时只补原备份/发布。部分备份和临时文件保留，
+已发布的备份不重复生成。服务要求 53 签名完成标记与当前 lineage 一致才就绪。
+
+切换使用含原始协议兼容守卫和当前配置编码的 schema53 应用；不通过 schema52 的
+app-only gate，不使用不识别当前 worker gzip 字段的旧镜像。失败后保持入口关闭，
+核同原动作并续接；完成后可回退到已核同的 schema53 兼容应用。已有 LIO-message.3
+原件时 0053 down 明确拒绝，不删原件、不恢复旧账本或覆盖删除 fence 来回退。
+
 Demo 及已启用流式的组装两主体使用 [STREAM@2](../../contracts/run/MODEL-TOOL-TURN-STREAM-V2.md)，
 可调用工具的轮次先收齐原回执。混合响应仅执行通过原门禁的工具，丢弃未核实的同轮正文。
 过旧服务期限后，实际模型和工具仅允许显式 Demo scope。首次开户同时在原 PG Meter 中准备

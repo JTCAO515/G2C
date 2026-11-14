@@ -658,6 +658,66 @@ def group_hk_typed_worker():
 GROUPS.update(hk_typed_worker=group_hk_typed_worker)
 
 
+def group_lio_projection():
+    return script('backend/cj_api/tests/lio_projection_pg.py')
+
+
+GROUPS.update(lio_projection=group_lio_projection)
+
+
+def group_lio_origin_compat():
+    pg=Path(os.environ.get('CJ_PG17_BINDIR',bindir()))
+    return script('backend/cj_api/tests/lio_origin_compat_pg.py',
+                  env=dict(clean_env(),CJ_PG_BINDIR=str(pg),PATH=str(pg)+os.pathsep+os.environ['PATH']))
+
+
+GROUPS.update(lio_origin_compat=group_lio_origin_compat)
+
+
+def group_lio_calendar():
+    pg=Path(os.environ.get('CJ_PG17_BINDIR',bindir()))
+    return script('backend/cj_api/tests/local_lio_calendar_pg.py',
+                  env=dict(clean_env(),CJ_PG_BINDIR=str(pg),PATH=str(pg)+os.pathsep+os.environ['PATH']))
+
+
+GROUPS.update(lio_calendar=group_lio_calendar)
+
+
+def group_runtime_fixture_registry():
+    return script('backend/cj_api/tests/runtime_fixture_registry_pg.py')
+
+
+GROUPS.update(runtime_fixture_registry=group_runtime_fixture_registry)
+
+
+def group_runtime_cancel():
+    return script('backend/cj_api/tests/runtime_native_dialogue_pg.py')
+
+
+GROUPS.update(runtime_cancel=group_runtime_cancel)
+
+
+def group_runtime_fixture_observer():
+    return script('backend/cj_api/tests/runtime_fixture_observer_pg.py')
+
+
+GROUPS.update(runtime_fixture_observer=group_runtime_fixture_observer)
+
+
+def group_runtime_release_witness():
+    return script('backend/cj_api/tests/runtime_release_witness_pg.py')
+
+
+GROUPS.update(runtime_release_witness=group_runtime_release_witness)
+
+
+def group_runtime_fixture_boundary():
+    return script('backend/cj_api/tests/runtime_fixture_boundary_pg.py')
+
+
+GROUPS.update(runtime_fixture_boundary=group_runtime_fixture_boundary)
+
+
 def main(argv):
     if argv[:1] == ['--shard']:
         index, count = map(int, argv[1].split('/'))

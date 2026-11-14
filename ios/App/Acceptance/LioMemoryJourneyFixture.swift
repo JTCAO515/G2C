@@ -79,7 +79,9 @@ private actor JourneyMemoryBackend: ClientTransport {
     private let gridPreview: Bool
     private let titledPreview: Bool
     private var version = 1
-    private var editReceipt: [String: Any]?
+    private var sourceVersion = 1
+    private var status = "active"
+    private var managementReceipts: [String: [String: Any]] = [:]
     private var deletion: MemoryErasureAction?
 
     init(language: LioLanguage) {
@@ -116,20 +118,33 @@ private actor JourneyMemoryBackend: ClientTransport {
             if operationID == "getTitledMemoryItem" { responseVersion = "MEMORY-result.3" }
             fields = ["item": parameter("item_id").flatMap(item).map { $0 as Any } ?? NSNull()]
         case "applyTypedMemoryManagement":
-            guard let body, preference != nil, editReceipt == nil else { throw MemoryFailure.invalidInput }
+            guard let body, preference != nil else { throw MemoryFailure.invalidInput }
             let raw = try await Data(collecting: body, upTo: 32_768)
             guard let command = try JSONSerialization.jsonObject(with: raw) as? [String: Any],
-                  command["operation"] as? String == "edit", command["item_id"] as? String == selectedID,
-                  command["expected_version"] as? Int == version, command["expected_source_version"] as? Int == version,
-                  let action = command["action_id"] as? String, let updated = command["text"] as? String else {
+                  command["item_id"] as? String == selectedID,
+                  command["expected_version"] as? Int == version, command["expected_source_version"] as? Int == sourceVersion,
+                  let action = command["action_id"] as? String, managementReceipts[action] == nil else {
                 throw MemoryFailure.invalidInput
             }
-            preference = updated
+            switch command["operation"] as? String {
+            case "edit":
+                guard let updated = command["text"] as? String else { throw MemoryFailure.invalidInput }
+                preference = updated
+                sourceVersion += 1
+            case "pause":
+                guard status == "active", command["text"] == nil else { throw MemoryFailure.invalidInput }
+                status = "disabled"
+            case "resume":
+                guard status == "disabled", command["text"] == nil else { throw MemoryFailure.invalidInput }
+                status = "active"
+            default:
+                throw MemoryFailure.invalidInput
+            }
             version += 1
-            editReceipt = ["action_id": action, "item_id": selectedID, "version": version, "status": "active", "input_sha256": digest(raw)]
+            managementReceipts[action] = ["action_id": action, "item_id": selectedID, "version": version, "status": status, "input_sha256": digest(raw)]
             throw URLError(.networkConnectionLost)
         case "getTypedMemoryManagementReceipt":
-            guard let receipt = editReceipt, parameter("action_id") == receipt["action_id"] as? String else {
+            guard let action = parameter("action_id"), let receipt = managementReceipts[action] else {
                 throw MemoryFailure.invalidInput
             }
             fields = ["receipt": receipt]
@@ -179,10 +194,12 @@ private actor JourneyMemoryBackend: ClientTransport {
         } else {
             return nil
         }
-        var result: [String: Any] = ["version": itemVersion, "status": gridPreview && id == "city-walks" ? "disabled" : "active", "recorded_at": "2026-11-03T00:00:00Z", "command": [
+        let itemSourceVersion = id == selectedID ? sourceVersion : 1
+        let itemStatus = id == selectedID ? status : (gridPreview && id == "city-walks" ? "disabled" : "active")
+        var result: [String: Any] = ["version": itemVersion, "status": itemStatus, "recorded_at": "2026-11-03T00:00:00Z", "command": [
             "operation_id": "remember-\(id)", "item_id": id, "subject": "self", "slot": id,
-            "text": text, "occurred_at": "2026-11-03T00:00:00Z", "source_id": "source-\(id)-\(itemVersion)",
-            "source_version": itemVersion, "kind": "preference", "extent": "long_term", "context": NSNull()
+            "text": text, "occurred_at": "2026-11-03T00:00:00Z", "source_id": "source-\(id)-\(itemSourceVersion)",
+            "source_version": itemSourceVersion, "kind": "preference", "extent": "long_term", "context": NSNull()
         ]]
         if titledPreview {
             // Fixed sample service responses, not client-generated summaries.

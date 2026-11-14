@@ -43,6 +43,7 @@ class HistoryReadContext:
         self._admission_guard = _guard
         self._active = True
         self._thread = threading.current_thread()
+        self._lio_projection_tx = None
 
     def _check(self):
         if (not self._active or threading.current_thread() is not self._thread
@@ -92,10 +93,36 @@ class HistoryReadContext:
         self._check()
         return result
 
+    def with_lio_timeline_projection(self, operation):
+        """One canonical M lock, same transaction, synchronous read projection.
+
+        This is not a processing/source permit or a cross-request cache. The
+        existing guarded repository checks canonical AUTH at entry and commit;
+        the enclosing history callback also checks immediately before return.
+        """
+        self._check()
+        if self._lio_projection_tx is not None:
+            raise RuntimeError('nested Lio projection unavailable')
+        with self._service.repository.transaction() as tx:
+            tx.lock_scope()
+            self._lio_projection_tx = tx
+            try:
+                result = operation()
+                self._check()
+                return result
+            finally:
+                self._lio_projection_tx = None
+
     def lio_timeline(self, conversation_id, before, *, multiple=False):
         from .lio_timeline import read
         self._check()
-        result = read(self._service, conversation_id, before, multiple=multiple)
+        if self._lio_projection_tx is None:
+            result = read(self._service, conversation_id, before, multiple=multiple)
+        else:
+            from .lio_timeline import read_in_transaction
+            self._admission_guard('lio_projection_page')
+            result = read_in_transaction(self._lio_projection_tx, conversation_id, before, multiple=multiple)
+            self._admission_guard('lio_projection_page_return')
         self._check()
         return result
 
@@ -103,7 +130,14 @@ class HistoryReadContext:
         from .demo_dialogue import message_id as validated_message_id
         from .lio_timeline import original
         self._check()
-        result = original(self._service, validated_message_id(message_id))
+        mid = validated_message_id(message_id)
+        if self._lio_projection_tx is None:
+            result = original(self._service, mid)
+        else:
+            from .lio_timeline import original_in_transaction
+            self._admission_guard('lio_projection_original')
+            result = original_in_transaction(self._lio_projection_tx, mid)
+            self._admission_guard('lio_projection_original_return')
         self._check()
         return result
 
@@ -150,7 +184,13 @@ class HistoryReadContext:
 
     def send_status(self, conversation_id, message_id=None):
         self._check()
-        result = self._service.send_status(conversation_id, message_id)
+        if self._lio_projection_tx is None:
+            result = self._service.send_status(conversation_id, message_id)
+        else:
+            self._admission_guard('lio_projection_status')
+            result = self._service._send_status(conversation_id, message_id, travel=False,
+                                               transaction=self._lio_projection_tx)
+            self._admission_guard('lio_projection_status_return')
         self._check()
         if result.stored is not None:
             stored = result.stored
@@ -182,6 +222,8 @@ class HistoryReadContext:
     def with_enabled_source(self, query, policy, project):
         from .source import with_source
         self._check()
+        if self._lio_projection_tx is not None:
+            raise RuntimeError('Lio projection is not a source processing permit')
         result = with_source(self._service, self._principal, query, policy, project)
         self._check()
         return result
@@ -212,6 +254,8 @@ class HistoryReadContext:
             self._check()
             self._admission_guard('current_source_lease')
             return self._principal
+        if self._lio_projection_tx is not None:
+            raise RuntimeError('Lio projection is not a source processing permit')
         result=with_source_and_travel(self._service,self._principal,query,policy,selection,admit,project)
         self._check()
         return result
