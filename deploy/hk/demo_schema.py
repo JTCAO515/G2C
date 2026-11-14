@@ -48,6 +48,13 @@ def _require_original_schema53(control,lineage):
             raise ValueError(f'complete original {name} upgrade before schema54')
 
 
+def _require_original_schema54(control,lineage):
+    _require_original_schema53(control,lineage)
+    prior=checkpoint.verified(control/'demo-schema54.json')
+    if prior['state']!='COMPLETE'or prior['lineage']!=lineage:
+        raise ValueError('complete original exploration-origin upgrade before schema55')
+
+
 def _migrate_quota_schema(db):
     migrate.up(db,migrate.load(),52)
     db.execute('INSERT INTO public.cj_demo_quota_upgrade VALUES (true)')
@@ -94,7 +101,7 @@ def upgrade(control,backups,*,target=49,schema_root=None):
     if not local_database_target():raise ValueError('HK local Demo upgrade required')
     local_postgres.require_serving(control)
     expected=checkpoint.versions()
-    if target not in (49,50,51,52,53,54) or expected!=list(range(1,target+1)):
+    if target not in (49,50,51,52,53,54,55) or expected!=list(range(1,target+1)):
         raise ValueError('exact Demo migration chain required')
     anchor=schema_anchor(target)
     marker=control/(anchor+'.json')
@@ -111,9 +118,10 @@ def upgrade(control,backups,*,target=49,schema_root=None):
             if quota['state']!='COMPLETE' or quota['lineage']!=release['lineage']:
                 raise ValueError('complete original quota upgrade before schema53')
         if target==54:_require_original_schema53(control,release['lineage'])
+        if target==55:_require_original_schema54(control,release['lineage'])
         _require_idle(db)
         intent=dict(state='INTENT',lineage=release['lineage'],original_fences=checkpoint.local.fence_state(db))
-        if target in (52,53,54):
+        if target in (52,53,54,55):
             latest=_original_latest(control)
             if latest is None:
                 if release['checkpoint']!='fresh':
@@ -197,6 +205,10 @@ def resume_schema54(control,backups,*,schema_root=None):
     return _resume_origin_schema(control,backups,target=54,schema_root=schema_root)
 
 
+def resume_schema55(control,backups,*,schema_root=None):
+    return _resume_origin_schema(control,backups,target=55,schema_root=schema_root)
+
+
 def _resume_origin_schema(control,backups,*,target,schema_root):
     """Reconcile the original signed wire-origin upgrade, never a new attempt."""
     if not local_database_target() or checkpoint.versions()!=list(range(1,target+1)):
@@ -211,6 +223,7 @@ def _resume_origin_schema(control,backups,*,target,schema_root):
         release=checkpoint.verified(control/'release.json')
         instance,lineage=checkpoint.identity(db)
         if target==54:_require_original_schema53(control,lineage)
+        if target==55:_require_original_schema54(control,lineage)
         applied=migrate.applied(db)
         expected=checkpoint.versions()
         if (intent['state']!='INTENT' or release['version']!='g2c-beta-release.1'
@@ -258,8 +271,8 @@ def daily_base(control,root,previous):
 if __name__=='__main__':
     try:
         arguments=sys.argv[1:]
-        if arguments not in ([],['--target','50'],['--target','51'],['--target','52'],['--target','53'],['--target','54'],
-                             ['--resume-quota'],['--resume-schema53'],['--resume-schema54']):
+        if arguments not in ([],['--target','50'],['--target','51'],['--target','52'],['--target','53'],['--target','54'],['--target','55'],
+                             ['--resume-quota'],['--resume-schema53'],['--resume-schema54'],['--resume-schema55']):
             raise ValueError('explicit Demo schema upgrade required')
         load_secret_environment('recovery')
         control=Path(os.environ['CJ_DEPLOY_CONTROL'])
@@ -272,6 +285,9 @@ if __name__=='__main__':
         elif arguments==['--resume-schema54']:
             resume_schema54(control,Path('/backups'))
             print('PASS original HK exploration-origin backup resumed')
+        elif arguments==['--resume-schema55']:
+            resume_schema55(control,Path('/backups'))
+            print('PASS original HK native4 accounting backup resumed')
         else:
             upgrade(control,Path('/backups'),target=int(arguments[1]) if arguments else 49)
     except (OSError,ValueError,KeyError,psycopg.Error):
