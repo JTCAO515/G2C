@@ -124,6 +124,9 @@ def exercise(auth, conninfo):
             if not send_allowed[0]:raise Unavailable('OUTSIDE_STANDING_DISPATCH_WINDOW')
             self.require(binding=binding, pins_sha256=pins_sha256, purpose='actor',
                          deadline=deadline, read_only=False)
+        def require_operation_clock(self, *, deadline):
+            if not send_allowed[0]:raise Unavailable('OUTSIDE_STANDING_DISPATCH_WINDOW')
+            if time.monotonic()>=deadline:raise Unavailable('DEADLINE_REACHED')
     directory = root/'canonical';directory.mkdir(mode=0o700)
     host = NativeActorHost(database, tools, ActorDutSource(boundary, database), spec,
         Authority(), directory, profile_id=profile['id'], attempt=1,

@@ -65,11 +65,12 @@ class ActorClaim(CanonicalClaims):
 
 class NativeActorRun:
     """One registered model operation; interrupted originals are query-only."""
-    def __init__(self, database, tools, argument, claim, *, guard, profile):
+    def __init__(self, database, tools, argument, claim, *, guard, profile, check_clock):
         if type(argument) is not ActorInput or claim.argument != argument:
             raise ValueError('same typed original actor required')
         self.database, self.tools, self.argument, self.claim = database, tools, argument, claim
         self.guard, self.profile = guard, profile
+        self.check_clock = check_clock
         # Existing original account only. This validates v1/v2 bytes and never
         # provisions or converts an account, and does not select native4 limits.
         database.require_budget_account(argument.binding.scope, profile=profile)
@@ -116,7 +117,10 @@ class NativeActorRun:
                     owned()
             def valid(binding):
                 owned()
-                return self._valid(binding)
+                valid = self._valid(binding)
+                owned()
+                self.check_clock()
+                return valid
             runs = Service(OwnedRepository(), valid)
             state = runs.accept(argument.binding)
             worker = RunWorker(scope=argument.binding.scope, messages=None, runs=runs,

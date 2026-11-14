@@ -112,7 +112,8 @@ class NativeActorHost:
             repository = self.database.run_repository(binding.scope, usage_profile=profile)
             claim = ActorClaim(self.directory, self.owner, argument, guard=self._guard, repository=repository)
             original = NativeActorRun(self.database, self.tools, argument, claim,
-                                     guard=self._guard, profile=profile)
+                guard=self._guard, profile=profile,
+                check_clock=lambda:self.authority.require_operation_clock(deadline=self.deadline))
             # Retain the original before claim/dispatch: even a claim or provider
             # ACK failure must leave the same IDs available to finally/accounting.
             retained = [item for item in self.originals if item.argument.binding == binding]
