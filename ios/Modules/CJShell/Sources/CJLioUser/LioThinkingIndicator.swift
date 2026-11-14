@@ -76,6 +76,7 @@ struct LioThinkingIndicator: View {
     let planningDays: Int?
     let language: LioLanguage
     var onVisible: () -> Void = {}
+    var onAnnouncement: (String) -> Void = { AccessibilityNotification.Announcement($0).post() }
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
@@ -84,10 +85,11 @@ struct LioThinkingIndicator: View {
     @State private var announcer = LioAnnouncementThrottle()
     @State private var reportedVisible = false
 
-    private var animating: Bool { onScreen && scenePhase == .active && !reduceMotion }
+    private var visible: Bool { onScreen && scenePhase == .active }
+    private var animating: Bool { visible && !reduceMotion }
 
     var body: some View {
-        TimelineView(.periodic(from: since, by: 0.25)) { context in
+        TimelineView(.animation(minimumInterval: 0.25, paused: !visible)) { context in
             let phase = LioThinkingPhase.at(context.date.timeIntervalSince(since), progress: progress, language: language)
             VStack(alignment: .leading, spacing: LioTheme.Spacing.sm) {
                 row(phase)
@@ -104,13 +106,10 @@ struct LioThinkingIndicator: View {
             .accessibilityAddTraits(.isStaticText)
             .accessibilityIdentifier("lio.progress")
             .onChange(of: phase, initial: true) { _, phase in
-                if phase != .hidden, !reportedVisible {
-                    reportedVisible = true
-                    onVisible()
-                }
-                if let text = phase.statusText, announcer.shouldAnnounce(text, at: context.date) {
-                    AccessibilityNotification.Announcement(text).post()
-                }
+                report(phase, at: context.date)
+            }
+            .onChange(of: visible) { _, visible in
+                if visible { report(phase, at: context.date) }
             }
         }
         .onAppear { onScreen = true }
@@ -123,6 +122,17 @@ struct LioThinkingIndicator: View {
                 still.disablesAnimations = true
                 withTransaction(still) { breath = false }
             }
+        }
+    }
+
+    private func report(_ phase: LioThinkingPhase, at now: Date) {
+        guard visible else { return }
+        if phase != .hidden, !reportedVisible {
+            reportedVisible = true
+            onVisible()
+        }
+        if let text = phase.statusText, announcer.shouldAnnounce(text, at: now) {
+            onAnnouncement(text)
         }
     }
 
@@ -209,7 +219,7 @@ struct LioItinerarySkeleton: View {
     let animating: Bool
 
     var body: some View {
-        TimelineView(.periodic(from: since, by: 0.6)) { context in
+        TimelineView(.animation(minimumInterval: 0.6, paused: !animating)) { context in
             let shown = animating ? min(days, 1 + Int(context.date.timeIntervalSince(since) / 0.6)) : days
             VStack(alignment: .leading, spacing: LioTheme.Spacing.sm) {
                 bar(width: 140, height: 16)
