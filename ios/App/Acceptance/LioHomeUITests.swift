@@ -1,6 +1,30 @@
 import XCTest
 
 @MainActor final class LioHomeUITests: XCTestCase {
+    func testSavedResultWaitsWhileCoveredAndCelebratesOnlyOnce() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-result-visibility-acceptance"]
+        app.launch()
+        let count = app.staticTexts["fixture.result.count"]
+        let card = app.staticTexts["fixture.result.card"]
+        let toggle = app.buttons["fixture.result.toggle"]
+        XCTAssertTrue(count.waitForExistence(timeout: 8))
+        let hidden = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == true"), object: card)
+        hidden.isInverted = true
+        XCTAssertEqual(XCTWaiter.wait(for: [hidden], timeout: 0.4), .completed)
+        XCTAssertEqual(count.label, "0")
+        toggle.tap()
+        XCTAssertTrue(card.waitForExistence(timeout: 5))
+        XCTAssertEqual(count.label, "1")
+        waitForStreamingControl(toggle); toggle.tap()
+        waitForStreamingControl(toggle); toggle.tap()
+        XCTAssertEqual(count.label, "1")
+        XCTAssertTrue(card.exists)
+        try app.performAccessibilityAudit(for: .all)
+        app.terminate()
+    }
+
     func testStreamingIncompleteMarkupKeepsTheAdmittedPrefix() throws {
         continueAfterFailure = false
         for chinese in [false, true] {

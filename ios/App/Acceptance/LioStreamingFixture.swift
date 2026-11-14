@@ -58,4 +58,33 @@ private struct LioStreamingFixture: View {
         .preferredColorScheme(ProcessInfo.processInfo.arguments.contains("--lio-streaming-dark-acceptance") ? .dark : .light)
     }
 }
+
+private struct LioResultVisibilityFixture: View {
+    @State private var active = false
+    @State private var celebrations = 0
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            LioResultEntrance(fresh: true, presentationActive: active, onShown: { celebrations += 1 }) { _ in
+                Text("Sample saved trip").accessibilityIdentifier("fixture.result.card")
+            }
+            Text(String(celebrations)).accessibilityIdentifier("fixture.result.count")
+            Button { active.toggle() } label: {
+                Text(active ? "Cover" : "Show")
+                    .foregroundStyle(LioTheme.ink)
+                    .frame(minHeight: 44)
+                    .padding(.horizontal, 16)
+                    .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
+            }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("fixture.result.toggle")
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(20)
+        .buttonStyle(.borderedProminent)
+        .controlSize(.large)
+        .tint(LioTheme.vermilion)
+        .background(LioTheme.paper)
+    }
+}
 #endif

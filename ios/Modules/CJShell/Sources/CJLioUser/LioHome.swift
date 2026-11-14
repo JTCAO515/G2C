@@ -744,10 +744,10 @@ public struct LioHome<MenuContent: View>: View {
                 let isLatest = card == latestTripCard
                 let current = isLatest ? tripPlan?.current(in: card) : nil
                 if !fresh || cardBodyReady(turn) {
-                    LioResultEntrance(fresh: fresh, onShown: {
+                    LioResultEntrance(fresh: fresh, presentationActive: !chatFading && !menuOpen && tab == .chat, onShown: {
                         guard conversation === owner else { return }
                         entering.remove(entrance)
-                        if scenePhase == .active, !chatFading, tab == .chat {
+                        if scenePhase == .active, !chatFading, !menuOpen, tab == .chat {
                             savedCelebrations += 1
                             if followsAnswer, conversation.turns.last?.id == turn.id { scroll.scrollTo("lio.bottom", anchor: .bottom) }
                         }
