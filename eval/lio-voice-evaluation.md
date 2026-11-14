@@ -105,6 +105,13 @@ original attempt, failures/UNKNOWN and actual fees. No credential is read by thi
 offline module. Real dispatch uses the existing approved runner and an exclusive B
 window; national16/A priority is not interrupted.
 
+B has confirmed that the current RuntimeAdapter has only three text slots and
+no named PERSONA dual-arm admission. A text slot is not a system-prompt override.
+The actual comparison is therefore registered as
+[UNRUN → L2 #32](https://github.com/JTCAO515/G2C/issues/32#issuecomment-6880988716),
+with the missing compliant actor/source entry explicit. No >=90% product score,
+length/timing result or paid-cost result is inferred from this offline delivery.
+
 Freeze this dataset SHA, the actual old/new prompt SHA, source/image, model/tool
 profiles, source/context fixtures, sample order and original window IDs **before**
 dispatch. Each arm runs all30 once; do not selectively rerun failures, reuse outputs

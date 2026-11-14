@@ -29,6 +29,8 @@
   },
   "actual_comparison": {
     "status": "UNRUN",
+    "deferred_to": "https://github.com/JTCAO515/G2C/issues/32#issuecomment-6880988716",
+    "blocker": "B confirms current RuntimeAdapter has three text slots but no named PERSONA dual-arm admission; client system override is forbidden",
     "real_posts": 0,
     "model_calls": 0,
     "tool_calls": 0,
