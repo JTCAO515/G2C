@@ -1,0 +1,705 @@
+{
+  "version": "LIO-voice-cases.1",
+  "issue": 844,
+  "synthetic_only": true,
+  "public_not_holdout": true,
+  "scope": "Model-written prose only; fixed #839 identity/capability text and UI cards/errors are excluded.",
+  "cases": [
+    {
+      "id": "voice-01-zh",
+      "scenario": "emergency",
+      "locale": "zh",
+      "length_band": "unlimited",
+      "question": "我的钱包刚被偷了，护照也在里面，我该怎么办？",
+      "context": "Synthetic visitor; no assumed booking, payment or remembered preference. Saved-trip context, if needed, must be supplied by the registered runner.",
+      "farewell": false,
+      "names": [],
+      "expects_chinese": false,
+      "pinyin": [
+        "xièxie",
+        "xiexie",
+        "nǐ hǎo",
+        "ni hao"
+      ]
+    },
+    {
+      "id": "voice-01-en",
+      "scenario": "emergency",
+      "locale": "en",
+      "length_band": "unlimited",
+      "question": "My wallet was just stolen with my passport inside. What should I do?",
+      "context": "Synthetic visitor; no assumed booking, payment or remembered preference. Saved-trip context, if needed, must be supplied by the registered runner.",
+      "farewell": false,
+      "names": [],
+      "expects_chinese": false,
+      "pinyin": [
+        "xièxie",
+        "xiexie",
+        "nǐ hǎo",
+        "ni hao"
+      ]
+    },
+    {
+      "id": "voice-02-zh",
+      "scenario": "in_china_today",
+      "locale": "zh",
+      "length_band": "default",
+      "question": "我现在在上海虹桥站，想先找点吃的再去酒店。",
+      "context": "Synthetic visitor; no assumed booking, payment or remembered preference. Saved-trip context, if needed, must be supplied by the registered runner.",
+      "farewell": false,
+      "names": [
+        {
+          "aliases": [
+            "Shanghai Hongqiao"
+          ],
+          "chinese": "上海虹桥站"
+        }
+      ],
+      "expects_chinese": false,
+      "pinyin": [
+        "xièxie",
+        "xiexie",
+        "nǐ hǎo",
+        "ni hao"
+      ]
+    },
+    {
+      "id": "voice-02-en",
+      "scenario": "in_china_today",
+      "locale": "en",
+      "length_band": "default",
+      "question": "I am at Shanghai Hongqiao station now. I would like food before heading to my hotel.",
+      "context": "Synthetic visitor; no assumed booking, payment or remembered preference. Saved-trip context, if needed, must be supplied by the registered runner.",
+      "farewell": false,
+      "names": [
+        {
+          "aliases": [
+            "Shanghai Hongqiao"
+          ],
+          "chinese": "上海虹桥站"
+        }
+      ],
+      "expects_chinese": false,
+      "pinyin": [
+        "xièxie",
+        "xiexie",
+        "nǐ hǎo",
+        "ni hao"
+      ]
+    },
+    {
+      "id": "voice-03-zh",
+      "scenario": "in_china_today",
+      "locale": "zh",
+      "length_band": "default",
+      "question": "我到杭州了，下午只有两个小时，去哪儿走走？",
+      "context": "Synthetic visitor; no assumed booking, payment or remembered preference. Saved-trip context, if needed, must be supplied by the registered runner.",
+      "farewell": false,
+      "names": [
+        {
+          "aliases": [
+            "West Lake"
+          ],
+          "chinese": "西湖"
+        },
+        {
+          "aliases": [
+            "Hangzhou"
+          ],
+          "chinese": "杭州"
+        }
+      ],
+      "expects_chinese": false,
+      "pinyin": [
+        "xièxie",
+        "xiexie",
+        "nǐ hǎo",
+        "ni hao"
+      ]
+    },
+    {
+      "id": "voice-03-en",
+      "scenario": "in_china_today",
+      "locale": "en",
+      "length_band": "default",
+      "question": "I have arrived in Hangzhou and have two hours this afternoon. Where could I walk?",
+      "context": "Synthetic visitor; no assumed booking, payment or remembered preference. Saved-trip context, if needed, must be supplied by the registered runner.",
+      "farewell": false,
+      "names": [
+        {
+          "aliases": [
+            "West Lake"
+          ],
+          "chinese": "西湖"
+        },
+        {
+          "aliases": [
+            "Hangzhou"
+          ],
+          "chinese": "杭州"
+        }
+      ],
+      "expects_chinese": false,
+      "pinyin": [
+        "xièxie",
+        "xiexie",
+        "nǐ hǎo",
+        "ni hao"
+      ]
+    },
+    {
+      "id": "voice-04-zh",
+      "scenario": "change",
+      "locale": "zh",
+      "length_band": "default",
+      "question": "成都今天一直下雨，下午那段能换成室内的吗？",
+      "context": "Synthetic visitor; no assumed booking, payment or remembered preference. Saved-trip context, if needed, must be supplied by the registered runner.",
+      "farewell": false,
+      "names": [
+        {
+          "aliases": [
+            "Chengdu Museum"
+          ],
+          "chinese": "成都博物馆"
+        },
+        {
+          "aliases": [
+            "Chengdu"
+          ],
+          "chinese": "成都"
+        }
+      ],
+      "expects_chinese": false,
+      "pinyin": [
+        "xièxie",
+        "xiexie",
+        "nǐ hǎo",
+        "ni hao"
+      ]
+    },
+    {
+      "id": "voice-04-en",
+      "scenario": "change",
+      "locale": "en",
+      "length_band": "default",
+      "question": "It has been raining in Chengdu. Could we switch this afternoon to something indoors?",
+      "context": "Synthetic visitor; no assumed booking, payment or remembered preference. Saved-trip context, if needed, must be supplied by the registered runner.",
+      "farewell": false,
+      "names": [
+        {
+          "aliases": [
+            "Chengdu Museum"
+          ],
+          "chinese": "成都博物馆"
+        },
+        {
+          "aliases": [
+            "Chengdu"
+          ],
+          "chinese": "成都"
+        }
+      ],
+      "expects_chinese": false,
+      "pinyin": [
+        "xièxie",
+        "xiexie",
+        "nǐ hǎo",
+        "ni hao"
+      ]
+    },
+    {
+      "id": "voice-05-zh",
+      "scenario": "change",
+      "locale": "zh",
+      "length_band": "default",
+      "question": "第二天走得太多了，能让我轻松一点吗？",
+      "context": "Synthetic visitor; no assumed booking, payment or remembered preference. Saved-trip context, if needed, must be supplied by the registered runner.",
+      "farewell": false,
+      "names": [],
+      "expects_chinese": false,
+      "pinyin": [
+        "xièxie",
+        "xiexie",
+        "nǐ hǎo",
+        "ni hao"
+      ]
+    },
+    {
+      "id": "voice-05-en",
+      "scenario": "change",
+      "locale": "en",
+      "length_band": "default",
+      "question": "Day two has too much walking. Can we make it easier?",
+      "context": "Synthetic visitor; no assumed booking, payment or remembered preference. Saved-trip context, if needed, must be supplied by the registered runner.",
+      "farewell": false,
+      "names": [],
+      "expects_chinese": false,
+      "pinyin": [
+        "xièxie",
+        "xiexie",
+        "nǐ hǎo",
+        "ni hao"
+      ]
+    },
+    {
+      "id": "voice-06-zh",
+      "scenario": "planning",
+      "locale": "zh",
+      "length_band": "default",
+      "question": "我下周一去西安玩四天，给我排一下吧。",
+      "context": "Synthetic visitor; no assumed booking, payment or remembered preference. Saved-trip context, if needed, must be supplied by the registered runner.",
+      "farewell": false,
+      "names": [
+        {
+          "aliases": [
+            "Xi’an"
+          ],
+          "chinese": "西安"
+        },
+        {
+          "aliases": [
+            "Xi'an"
+          ],
+          "chinese": "西安"
+        }
+      ],
+      "expects_chinese": false,
+      "pinyin": [
+        "xièxie",
+        "xiexie",
+        "nǐ hǎo",
+        "ni hao"
+      ]
+    },
+    {
+      "id": "voice-06-en",
+      "scenario": "planning",
+      "locale": "en",
+      "length_band": "default",
+      "question": "I am going to Xi’an for four days next Monday. Could you put a trip together?",
+      "context": "Synthetic visitor; no assumed booking, payment or remembered preference. Saved-trip context, if needed, must be supplied by the registered runner.",
+      "farewell": false,
+      "names": [
+        {
+          "aliases": [
+            "Xi’an"
+          ],
+          "chinese": "西安"
+        },
+        {
+          "aliases": [
+            "Xi'an"
+          ],
+          "chinese": "西安"
+        }
+      ],
+      "expects_chinese": false,
+      "pinyin": [
+        "xièxie",
+        "xiexie",
+        "nǐ hǎo",
+        "ni hao"
+      ]
+    },
+    {
+      "id": "voice-07-zh",
+      "scenario": "planning",
+      "locale": "zh",
+      "length_band": "default",
+      "question": "想带爸妈去深圳玩两天，节奏慢一点。",
+      "context": "Synthetic visitor; no assumed booking, payment or remembered preference. Saved-trip context, if needed, must be supplied by the registered runner.",
+      "farewell": false,
+      "names": [
+        {
+          "aliases": [
+            "Shenzhen"
+          ],
+          "chinese": "深圳"
+        }
+      ],
+      "expects_chinese": false,
+      "pinyin": [
+        "xièxie",
+        "xiexie",
+        "nǐ hǎo",
+        "ni hao"
+      ]
+    },
+    {
+      "id": "voice-07-en",
+      "scenario": "planning",
+      "locale": "en",
+      "length_band": "default",
+      "question": "I would like two easy days in Shenzhen with my parents.",
+      "context": "Synthetic visitor; no assumed booking, payment or remembered preference. Saved-trip context, if needed, must be supplied by the registered runner.",
+      "farewell": false,
+      "names": [
+        {
+          "aliases": [
+            "Shenzhen"
+          ],
+          "chinese": "深圳"
+        }
+      ],
+      "expects_chinese": false,
+      "pinyin": [
+        "xièxie",
+        "xiexie",
+        "nǐ hǎo",
+        "ni hao"
+      ]
+    },
+    {
+      "id": "voice-08-zh",
+      "scenario": "exploration",
+      "locale": "zh",
+      "length_band": "expanded",
+      "question": "第一次来中国，成都和杭州哪个更适合慢慢逛？",
+      "context": "Synthetic visitor; no assumed booking, payment or remembered preference. Saved-trip context, if needed, must be supplied by the registered runner.",
+      "farewell": false,
+      "names": [
+        {
+          "aliases": [
+            "Chengdu"
+          ],
+          "chinese": "成都"
+        },
+        {
+          "aliases": [
+            "Hangzhou"
+          ],
+          "chinese": "杭州"
+        }
+      ],
+      "expects_chinese": false,
+      "pinyin": [
+        "xièxie",
+        "xiexie",
+        "nǐ hǎo",
+        "ni hao"
+      ]
+    },
+    {
+      "id": "voice-08-en",
+      "scenario": "exploration",
+      "locale": "en",
+      "length_band": "expanded",
+      "question": "For my first visit to China, would Chengdu or Hangzhou suit a relaxed trip better?",
+      "context": "Synthetic visitor; no assumed booking, payment or remembered preference. Saved-trip context, if needed, must be supplied by the registered runner.",
+      "farewell": false,
+      "names": [
+        {
+          "aliases": [
+            "Chengdu"
+          ],
+          "chinese": "成都"
+        },
+        {
+          "aliases": [
+            "Hangzhou"
+          ],
+          "chinese": "杭州"
+        }
+      ],
+      "expects_chinese": false,
+      "pinyin": [
+        "xièxie",
+        "xiexie",
+        "nǐ hǎo",
+        "ni hao"
+      ]
+    },
+    {
+      "id": "voice-09-zh",
+      "scenario": "exploration",
+      "locale": "zh",
+      "length_band": "expanded",
+      "question": "我有三四天空闲，想看看老街和本地生活，去哪儿好？",
+      "context": "Synthetic visitor; no assumed booking, payment or remembered preference. Saved-trip context, if needed, must be supplied by the registered runner.",
+      "farewell": false,
+      "names": [],
+      "expects_chinese": false,
+      "pinyin": [
+        "xièxie",
+        "xiexie",
+        "nǐ hǎo",
+        "ni hao"
+      ]
+    },
+    {
+      "id": "voice-09-en",
+      "scenario": "exploration",
+      "locale": "en",
+      "length_band": "expanded",
+      "question": "I have three or four free days and enjoy old streets and local life. Where would you suggest?",
+      "context": "Synthetic visitor; no assumed booking, payment or remembered preference. Saved-trip context, if needed, must be supplied by the registered runner.",
+      "farewell": false,
+      "names": [],
+      "expects_chinese": false,
+      "pinyin": [
+        "xièxie",
+        "xiexie",
+        "nǐ hǎo",
+        "ni hao"
+      ]
+    },
+    {
+      "id": "voice-10-zh",
+      "scenario": "practical",
+      "locale": "zh",
+      "length_band": "default",
+      "question": "宫保鸡丁一般辣不辣？我不太能吃辣。",
+      "context": "Synthetic visitor; no assumed booking, payment or remembered preference. Saved-trip context, if needed, must be supplied by the registered runner.",
+      "farewell": false,
+      "names": [
+        {
+          "aliases": [
+            "Kung Pao chicken"
+          ],
+          "chinese": "宫保鸡丁"
+        }
+      ],
+      "expects_chinese": false,
+      "pinyin": [
+        "xièxie",
+        "xiexie",
+        "nǐ hǎo",
+        "ni hao"
+      ]
+    },
+    {
+      "id": "voice-10-en",
+      "scenario": "practical",
+      "locale": "en",
+      "length_band": "default",
+      "question": "Is Kung Pao chicken usually spicy? I cannot handle much heat.",
+      "context": "Synthetic visitor; no assumed booking, payment or remembered preference. Saved-trip context, if needed, must be supplied by the registered runner.",
+      "farewell": false,
+      "names": [
+        {
+          "aliases": [
+            "Kung Pao chicken"
+          ],
+          "chinese": "宫保鸡丁"
+        }
+      ],
+      "expects_chinese": false,
+      "pinyin": [
+        "xièxie",
+        "xiexie",
+        "nǐ hǎo",
+        "ni hao"
+      ]
+    },
+    {
+      "id": "voice-11-zh",
+      "scenario": "practical",
+      "locale": "zh",
+      "length_band": "default",
+      "question": "我要去故宫，怎么把名字给司机看？",
+      "context": "Synthetic visitor; no assumed booking, payment or remembered preference. Saved-trip context, if needed, must be supplied by the registered runner.",
+      "farewell": false,
+      "names": [
+        {
+          "aliases": [
+            "Forbidden City"
+          ],
+          "chinese": "故宫"
+        }
+      ],
+      "expects_chinese": false,
+      "pinyin": [
+        "xièxie",
+        "xiexie",
+        "nǐ hǎo",
+        "ni hao"
+      ]
+    },
+    {
+      "id": "voice-11-en",
+      "scenario": "practical",
+      "locale": "en",
+      "length_band": "default",
+      "question": "I am going to the Forbidden City. What name should I show my driver?",
+      "context": "Synthetic visitor; no assumed booking, payment or remembered preference. Saved-trip context, if needed, must be supplied by the registered runner.",
+      "farewell": false,
+      "names": [
+        {
+          "aliases": [
+            "Forbidden City"
+          ],
+          "chinese": "故宫"
+        }
+      ],
+      "expects_chinese": false,
+      "pinyin": [
+        "xièxie",
+        "xiexie",
+        "nǐ hǎo",
+        "ni hao"
+      ]
+    },
+    {
+      "id": "voice-12-zh",
+      "scenario": "practical",
+      "locale": "zh",
+      "length_band": "default",
+      "question": "我没有中国手机号，出门坐车和找路会不会很麻烦？",
+      "context": "Synthetic visitor; no assumed booking, payment or remembered preference. Saved-trip context, if needed, must be supplied by the registered runner.",
+      "farewell": false,
+      "names": [],
+      "expects_chinese": false,
+      "pinyin": [
+        "xièxie",
+        "xiexie",
+        "nǐ hǎo",
+        "ni hao"
+      ]
+    },
+    {
+      "id": "voice-12-en",
+      "scenario": "practical",
+      "locale": "en",
+      "length_band": "default",
+      "question": "I do not have a Chinese phone number. Will getting around and finding directions be difficult?",
+      "context": "Synthetic visitor; no assumed booking, payment or remembered preference. Saved-trip context, if needed, must be supplied by the registered runner.",
+      "farewell": false,
+      "names": [],
+      "expects_chinese": false,
+      "pinyin": [
+        "xièxie",
+        "xiexie",
+        "nǐ hǎo",
+        "ni hao"
+      ]
+    },
+    {
+      "id": "voice-13-zh",
+      "scenario": "out_of_scope",
+      "locale": "zh",
+      "length_band": "default",
+      "question": "你帮我把明天去北京的高铁票买了吧。",
+      "context": "Synthetic visitor; no assumed booking, payment or remembered preference. Saved-trip context, if needed, must be supplied by the registered runner.",
+      "farewell": false,
+      "names": [
+        {
+          "aliases": [
+            "Beijing"
+          ],
+          "chinese": "北京"
+        },
+        {
+          "aliases": [
+            "high-speed train"
+          ],
+          "chinese": "高铁"
+        }
+      ],
+      "expects_chinese": false,
+      "pinyin": [
+        "xièxie",
+        "xiexie",
+        "nǐ hǎo",
+        "ni hao"
+      ]
+    },
+    {
+      "id": "voice-13-en",
+      "scenario": "out_of_scope",
+      "locale": "en",
+      "length_band": "default",
+      "question": "Could you buy my high-speed train ticket to Beijing for tomorrow?",
+      "context": "Synthetic visitor; no assumed booking, payment or remembered preference. Saved-trip context, if needed, must be supplied by the registered runner.",
+      "farewell": false,
+      "names": [
+        {
+          "aliases": [
+            "Beijing"
+          ],
+          "chinese": "北京"
+        },
+        {
+          "aliases": [
+            "high-speed train"
+          ],
+          "chinese": "高铁"
+        }
+      ],
+      "expects_chinese": false,
+      "pinyin": [
+        "xièxie",
+        "xiexie",
+        "nǐ hǎo",
+        "ni hao"
+      ]
+    },
+    {
+      "id": "voice-14-zh",
+      "scenario": "greeting",
+      "locale": "zh",
+      "length_band": "short",
+      "question": "嗨，Lio！第一次用你。",
+      "context": "Synthetic visitor; no assumed booking, payment or remembered preference. Saved-trip context, if needed, must be supplied by the registered runner.",
+      "farewell": false,
+      "names": [],
+      "expects_chinese": false,
+      "pinyin": [
+        "xièxie",
+        "xiexie",
+        "nǐ hǎo",
+        "ni hao"
+      ]
+    },
+    {
+      "id": "voice-14-en",
+      "scenario": "greeting",
+      "locale": "en",
+      "length_band": "short",
+      "question": "Hi Lio! This is my first time here.",
+      "context": "Synthetic visitor; no assumed booking, payment or remembered preference. Saved-trip context, if needed, must be supplied by the registered runner.",
+      "farewell": false,
+      "names": [],
+      "expects_chinese": false,
+      "pinyin": [
+        "xièxie",
+        "xiexie",
+        "nǐ hǎo",
+        "ni hao"
+      ]
+    },
+    {
+      "id": "voice-15-zh",
+      "scenario": "greeting",
+      "locale": "zh",
+      "length_band": "short",
+      "question": "先聊到这儿，拜拜。",
+      "context": "Synthetic visitor; no assumed booking, payment or remembered preference. Saved-trip context, if needed, must be supplied by the registered runner.",
+      "farewell": true,
+      "names": [],
+      "expects_chinese": false,
+      "pinyin": [
+        "xièxie",
+        "xiexie",
+        "nǐ hǎo",
+        "ni hao"
+      ]
+    },
+    {
+      "id": "voice-15-en",
+      "scenario": "greeting",
+      "locale": "en",
+      "length_band": "short",
+      "question": "That is all for now. Bye!",
+      "context": "Synthetic visitor; no assumed booking, payment or remembered preference. Saved-trip context, if needed, must be supplied by the registered runner.",
+      "farewell": true,
+      "names": [],
+      "expects_chinese": false,
+      "pinyin": [
+        "xièxie",
+        "xiexie",
+        "nǐ hǎo",
+        "ni hao"
+      ]
+    }
+  ]
+}
