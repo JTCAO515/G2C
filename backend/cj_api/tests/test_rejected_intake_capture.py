@@ -140,6 +140,20 @@ class RejectedCapture(unittest.TestCase):
             RejectedIntakeSink(self.root,clock=lambda:self.now).prune()
         self.assertEqual(list(self.root.iterdir()),[])
 
+    def test_typed_corruption_cannot_block_later_expired_files(self):
+        with use_rejected_intake_sink(self.sink),capture_rejected_intake(self.binding,check_running=self.check)as capture:
+            self.observed();receipt=capture.reject('invalid_model_intake',self.raw)
+        original=json.loads((self.root/(receipt.reference+'.json')).read_bytes())
+        names=[]
+        for number,(field,value)in enumerate((('result_utf8',123),('result_utf8',None),('result_utf8',[]),
+                ('reference',True),('output_bytes',True),('captured_at',{}),('expires_at',123),('receipt',[])),1):
+            name=f'{number:064x}.json';bad=dict(original,reference=f'{number:064x}');bad[field]=value
+            path=self.root/name;path.write_text(json.dumps(bad));path.chmod(0o600);os.utime(path,(self.now,self.now));names.append(name)
+        self.now+=TTL_SECONDS+1
+        with patch('cj_api.rejected_intake_capture.os.listdir',return_value=names+[receipt.reference+'.json']):
+            RejectedIntakeSink(self.root,clock=lambda:self.now).prune()
+        self.assertEqual(list(self.root.iterdir()),[])
+
     def test_abandoned_partial_is_bounded_and_unpublished(self):
         name='.'+'a'*64+'.'+'b'*32+'.tmp';path=self.root/name;path.write_bytes(b'partial');path.chmod(0o600)
         os.utime(path,(self.now-61,self.now-61));self.sink.prune()

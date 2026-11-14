@@ -55,6 +55,18 @@ class RejectedIntakeSink:
         try:
             data=json.loads(read_private(name,MAX_ARTIFACT_BYTES,directory_fd=fd),
                 object_pairs_hook=reject_duplicates(CaptureUnavailable,'duplicate rejection field'))
+            fields={'version','reference','registration_id','operation_key','scope_sha256','message_id','run_id',
+                'attempt_id','operation_id','input_sha256','output_sha256','output_bytes','result_utf8','receipt','code',
+                'memory','kernel_sha256','captured_at','expires_at'}
+            strings=fields-{'output_bytes','receipt','memory'}
+            if type(data)is not dict or data.keys()!=fields or any(type(data[key])is not str for key in strings):
+                raise CaptureUnavailable('typed rejection fields required')
+            if type(data['output_bytes'])is not int or not 0<=data['output_bytes']<=MAX_OUTPUT_BYTES or type(data['receipt'])is not dict:
+                raise CaptureUnavailable('typed rejection count/receipt required')
+            memory=data['memory']
+            if memory is not None and(type(memory)is not dict or memory.keys()!={'epoch','payload_sha256'}or
+                    type(memory['epoch'])is not int or memory['epoch']<0 or type(memory['payload_sha256'])is not str):
+                raise CaptureUnavailable('typed rejection Memory association required')
             if data['version']!='G2C-rejected-intake.1'or data['reference']+'.json'!=name:
                 raise CaptureUnavailable('original rejection artifact differs')
             raw=data['result_utf8'].encode('utf-8')
