@@ -378,3 +378,15 @@ class MessageContextAuthority:
             raise LeaseUnavailable('active original message lease required')
         active.check(binding)
         return active._stored
+
+    def active_source_original(self,binding,message_id):
+        """Read historical original data through the already-held MESSAGE frame.
+
+        The genuine lease retains its transaction and all original selection,
+        context, identity and lifetime checks. No authority is reacquired.
+        """
+        active=self._active.get()
+        if active is None:
+            raise LeaseUnavailable('active original message lease required')
+        active.check(binding)
+        return active.source_original(message_id)
