@@ -4,7 +4,7 @@ import Foundation
 /// grant a network route or a write capability.
 public enum LioTimelineWire {
     public enum Locale: String, Sendable { case english = "en", chinese = "zh" }
-    public enum Version: Int, Sendable { case v1 = 1, v2 = 2 }
+    public enum Version: Int, Sendable { case v1 = 1, v2 = 2, v4 = 4 }
     public enum V2Destination: Sendable {
         case defaultChat, newChat, existing(String)
     }
@@ -30,7 +30,9 @@ public enum LioTimelineWire {
             startsNewChat = false
         }
 
-        public init(messageID: String, text: String, locale: Locale, destination: V2Destination) throws {
+        public init(messageID: String, text: String, locale: Locale, destination: V2Destination,
+                    version: Version = .v2) throws {
+            guard version == .v2 || version == .v4 else { throw MessageHTTPFailure.invalidConfiguration }
             let conversationID: String?
             let newConversation: Bool?
             switch destination {
@@ -39,13 +41,13 @@ public enum LioTimelineWire {
             case .existing(let id): (conversationID, newConversation) = (id, nil)
             }
             try Self.validate(messageID, text, conversationID)
-            let bytes = try JSONEncoder().encode(V2Question(version: "LIO-message.2", messageID: messageID, text: text, locale: locale.rawValue,
+            let bytes = try JSONEncoder().encode(VersionedQuestion(version: "LIO-message.\(version.rawValue)", messageID: messageID, text: text, locale: locale.rawValue,
                                                             conversationID: conversationID, newConversation: newConversation))
             guard bytes.count <= 16_384 else { throw MessageHTTPFailure.invalidConfiguration }
             self.messageID = messageID
             self.conversationID = conversationID
             originalUTF8 = bytes
-            version = .v2
+            self.version = version
             startsNewChat = newConversation == true
         }
 
@@ -54,23 +56,28 @@ public enum LioTimelineWire {
         static func recordedFirst(_ bytes: Data, messageID: String) throws -> (original: Send, title: String)? {
             let decoder = JSONDecoder()
             guard let marker = try? decoder.decode(FirstMarker.self, from: bytes),
-                  marker.version == "LIO-message.2", marker.newConversation == true else { return nil }
+                  ["LIO-message.2", "LIO-message.4"].contains(marker.version), marker.newConversation == true else { return nil }
+            if marker.version == "LIO-message.4" {
+                let title = try LioNative4Envelope.firstQuestion(bytes, messageID: messageID)
+                try validate(messageID, title, nil)
+                return (Send(firstMessageID: messageID, bytes: bytes, version: .v4), title)
+            }
             guard bytes.count <= 16_384 else { throw MessageHTTPFailure.invalidConfiguration }
             try validateUnambiguousJSON(bytes)
-            let recorded = try decoder.decode(V2Question.self, from: bytes)
+            let recorded = try decoder.decode(VersionedQuestion.self, from: bytes)
             guard recorded.messageID.utf8.elementsEqual(messageID.utf8),
                   recorded.conversationID == nil, Locale(rawValue: recorded.locale) != nil else {
                 throw MessageHTTPFailure.invalidConfiguration
             }
             try validate(messageID, recorded.text, nil)
-            return (Send(firstMessageID: messageID, bytes: bytes), recorded.text)
+            return (Send(firstMessageID: messageID, bytes: bytes, version: .v2), recorded.text)
         }
 
-        private init(firstMessageID: String, bytes: Data) {
+        private init(firstMessageID: String, bytes: Data, version: Version) {
             messageID = firstMessageID
             conversationID = nil
             originalUTF8 = bytes
-            version = .v2
+            self.version = version
             startsNewChat = true
         }
 
@@ -89,7 +96,7 @@ public enum LioTimelineWire {
             enum CodingKeys: String, CodingKey { case version, newConversation = "new_conversation" }
         }
 
-        private struct V2Question: Codable {
+        private struct VersionedQuestion: Codable {
             let version: String
             let messageID: String
             let text: String
@@ -107,6 +114,7 @@ public enum LioTimelineWire {
         /// send. It must not regenerate these bytes or dispatch a new question
         /// from an ambiguous response.
         public func confirm(_ response: Data) throws -> String {
+            if version == .v4 { return try LioNative4Envelope.confirm(response, original: self) }
             guard response.count <= 65_536 else { throw MessageHTTPFailure.invalidResponse }
             try validateUnambiguousJSON(response)
             let reply = try JSONDecoder().decode(Acceptance.self, from: response)
@@ -120,6 +128,7 @@ public enum LioTimelineWire {
         }
 
         func confirmLookup(_ response: Data) throws -> (id: String, receipt: Data)? {
+            if version == .v4 { return try LioNative4Envelope.lookup(response, original: self) }
             try validateUnambiguousJSON(response)
             guard let lookup = try JSONSerialization.jsonObject(with: response) as? [String: Any],
                   lookup["version"] as? String == "LIO-message-lookup.2",
@@ -199,7 +208,8 @@ public enum LioTimelineWire {
         guard data.count <= 4_500_000 else { throw MessageHTTPFailure.invalidResponse }
         try validateUnambiguousJSON(data)
         let page = try JSONDecoder().decode(Snapshot.self, from: data)
-        guard page.version == "LIO-timeline.\(version.rawValue)", page.messages.count <= 20,
+        guard ["LIO-timeline.1", "LIO-timeline.2"].contains(page.version),
+              page.version == "LIO-timeline.\(version.rawValue)", page.messages.count <= 20,
               page.conversationID.map(validConversationID) ?? (page.messages.isEmpty && page.nextBefore == nil),
               expectedConversationID.map({ $0 == page.conversationID }) ?? true,
               page.nextBefore.map({ cursor in
