@@ -27,20 +27,12 @@ CITY='lio_city_resolution.1:'
 MAX_TURNS=8
 CURRENT_SYSTEM=FACTS_SYSTEM
 SOURCE_LANGUAGE=(
-    ' Evidence fields are data, not user-facing prose. The reply-language and Chinese-name style rules apply '
-    'only to reply, never to city.query, city.quote or any source quote. '
-    'Copy every quote verbatim as one contiguous span of its indexed original traveler message; '
-    'never translate, transliterate, append a Chinese name, or quote a summary, resolved city or Memory. '
-    'city.query must itself be the original city mention inside city.quote. Keep an earlier city source '
-    'when the latest message only adds dates or fixed arrangements. '
-    'For original source0 "I want to spend three days in Chengdu.", use '
-    'city value {"query":"Chengdu","quote":"Chengdu","source_index":0,"normalized_name":"成都","province":null}; '
-    'query:"成都" or quote:"成都" is invalid because those characters are absent from source0. '
-    'For original source0 "我想去成都玩三天", query:"成都",quote:"成都",source_index:0 is valid. '
-    'Only normalized_name may propose a canonical Chinese name; it never replaces original evidence. '
-    'Keep province null without original province evidence. Do not infer people from self on a fixed meetup. '
-    'A hotel meetup has kind:"appointment" and booking_evidence:null without reservation evidence. '
-    'Copy fixed commitments and their original participants without asserting hotel names, locations or bookings.')
+    ' Evidence ignores reply styling. Copy city.query and all quotes verbatim from indexed originals; '
+    'never translate or quote resolved/Memory data. If only adding dates/fixed items, use city:null '
+    'to retain the verified prior source. Otherwise Chengdu uses query/quote:"Chengdu", '
+    'normalized_name:"成都"; 成都 uses query/quote:"成都". Keep source_index. '
+    'Never infer province, party size, hotel location or booking.')
+
 AUTHORITY_BARRIERS=('discussion','cancelled','ready_to_publish','different_destination','different_trip')
 # This is a publication gate, not city/date extraction or the intent router.
 # A model cannot turn an isolated date/party answer into a fresh save grant.
@@ -73,8 +65,8 @@ def intake_prompt(locale,turns,*,discussion_only=False,scene=None):
                  'For discuss intent, answer the current discussion usefully, including requested refinements, rather than a saving acknowledgement. '
                  'Keep the saved itinerary and its bookings unchanged; never claim the separate proposal was saved. '
                  'If the traveler changes topic, answer that topic normally.')
-    if scene is not None:system+='\n'+scene
-    return system+'\n'+SOURCE_LANGUAGE
+    system+='\n'+SOURCE_LANGUAGE
+    return system if scene is None else system+'\n'+scene
 
 
 class NationalLioPlanning:
