@@ -75,6 +75,8 @@ def main():
     results.append(run('eval/optimization', ['-B', '-m', 'unittest', '-v', 'eval.optimization.test_score']))
     results.append(run('eval/lio_simulated_user',
                        ['-B', '-m', 'unittest', 'discover', '-s', 'eval/lio_simulated_user/tests', '-v']))
+    results.append(run('eval/lio_calendar_transitions',
+                       [*pytest, 'eval/tests/test_lio_calendar_transitions.py']))
     results.append(run('tooling/datasets',
                        ['-B', '-m', 'unittest', 'discover', '-s', 'tooling/datasets',
                         '-t', '.', '-p', 'test_*.py', '-v']))
