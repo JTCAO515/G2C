@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from cj_message.lio_exploration_schema import QuestionGroup as ModelQuestionGroup
 
 from .lio_exploration_factors import BY_KEY, FACTORS
+from cj_message.lio_context import display_answer
 
 
 class Scene(str,Enum):
@@ -48,6 +49,8 @@ def candidates(profile,count,*,stage='exploration'):
 
 
 _CONTROL=re.compile(r'[\x00-\x1f\x7f-\x9f\u2028\u2029]')
+_ACTION_CLAIM=re.compile(r'已(?:经)?(?:为你|帮你)?(?:记住|记下|保存|预订|付款)|保存成功|'
+    r"\b(?:I(?: have|'ve)?|we have)\s+(?:saved|booked|paid|remembered)\b",re.I)
 
 
 class _DTO(BaseModel):
@@ -74,11 +77,15 @@ class Questions:
 
 
 def _bounded(text,locale):
-    return bool(text.strip()) and _CONTROL.search(text) is None and (
+    # The old filter uses Unicode word boundaries. Separate a Latin internal
+    # token from adjacent CJK text for detection, without rewriting user text.
+    check=re.sub(r'([A-Za-z0-9_])(?=[\u3400-\u9fff])',r'\1 ',text)
+    check=re.sub(r'([\u3400-\u9fff])(?=[A-Za-z0-9_])',r'\1 ',check)
+    return bool(text.strip()) and display_answer(check,locale)==check and _ACTION_CLAIM.search(text) is None and _CONTROL.search(text) is None and (
         len(text)<=80 if locale=='zh' else len(text.split())<=50)
 
 
-def questions(scene, selected, proposed, locale):
+def questions(scene, selected, proposed, locale,*,option_variants=None):
     """Validate the model's question wording at its boundary, otherwise use bank.
 
     Stable ids and canonical send_text preserve what a selected option means;
@@ -104,9 +111,13 @@ def questions(scene, selected, proposed, locale):
                 if (not _bounded(option.display_text,locale) or
                         option.display_text.strip().casefold() in ('other','其他')):
                     return Questions(fallback,True)
+                variants=(option_variants or {}).get(option.id,{})
+                if option.display_text!=bank[option.id]['display_text'] and option.display_text not in variants:
+                    return Questions(fallback,True)
             seen.add(group.factor_key)
             groups.append(dict(factor_key=group.factor_key,question=group.question,multiple=factor.multiple,
-                options=[dict(id=option.id,display_text=option.display_text,send_text=bank[option.id]['send_text']) for option in group.options]))
+                options=[dict(id=option.id,display_text=option.display_text,send_text=(option_variants or {}).get(option.id,{}).get(
+                    option.display_text,bank[option.id]['send_text'])) for option in group.options]))
     except ValidationError:
         return Questions(fallback,True)
     return Questions(tuple(groups),False)

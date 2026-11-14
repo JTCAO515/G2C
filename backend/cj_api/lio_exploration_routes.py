@@ -20,6 +20,14 @@ PRESENTATION='lio_presentation.1:'
 PROGRESS='lio_progress.1:'
 
 
+def merged_presentation(sections):
+    parts=[segment['text'] for segment in sections['segments']]
+    parts += [group['question']+'\n'+' / '.join(option['display_text'] for option in group['options']) for group in sections['question_groups']]
+    parts += [notice['text'] for notice in sections['notices']]
+    if sections['exits']:parts.append(' / '.join(button['display_text'] for button in sections['exits']))
+    return '\n\n'.join(parts)
+
+
 class _DTO(BaseModel):
     model_config=ConfigDict(strict=True,extra='forbid')
 
@@ -105,6 +113,8 @@ def timeline(boundary,resolve_runs,trip_cards,memory_cards,profile_cards,token,c
                 # plain answer rather than showing an empty replacement bubble.
                 if not sections['segments'] and value['answer']:
                     sections=dict(sections,segments=[dict(purpose='response',text=value['answer'])])
+                if any(sections.values()) and merged_presentation(sections)!=value['answer']:
+                    raise Unavailable('filtered answer differs from stored exploration presentation')
                 profile=profile_cards.project(context,token,binding,state,item.locale)
                 messages.append(dict(value,**sections,profile=profile,progress=_progress(state,item.locale)))
             if context.lio_exploration_timeline(cid,before)!=page:

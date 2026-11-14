@@ -17,8 +17,9 @@ from cj_needs.domain import decode,InvalidInput
 from .lio_exploration_factors import BY_KEY,FACTORS,defaults
 from .lio_exploration_profile import snapshot
 from .lio_exploration_policy import Scene,choose_scene,next_question_count,candidates,questions,exits,emergency_opening
-from .lio_exploration_routes import PRESENTATION,PROGRESS
+from .lio_exploration_routes import PRESENTATION,PROGRESS,merged_presentation
 from .local_lio_exploration_profile import ProfileContext
+from .lio_positive_trip import known_city_term
 
 ROUND='lio_question_round.1:'
 PREVIEW='lio_exploration_preview.1'
@@ -64,12 +65,10 @@ def exploration_enabled():
     return value=='1'
 
 
-def _merged(sections):
-    parts=[segment['text'] for segment in sections['segments']]
-    parts += [group['question']+'\n'+' / '.join(option['display_text'] for option in group['options']) for group in sections['question_groups']]
-    parts += [notice['text'] for notice in sections['notices']]
-    if sections['exits']:parts.append(' / '.join(button['display_text'] for button in sections['exits']))
-    return '\n\n'.join(parts)
+def _bubbles(text,locale):
+    if locale=='zh':return [text[index:index+80] for index in range(0,len(text),80)]
+    words=text.split()
+    return [' '.join(words[index:index+50]) for index in range(0,len(words),50)]
 
 
 class ExplorationPlanning:
@@ -134,11 +133,13 @@ class ExplorationPlanning:
     def _finish(self,worker,binding,state,body,scene,locale,groups=()):
         safe=display_answer(body,locale)
         if safe is None or not safe.strip():raise ProviderUnknown('safe exploration answer unavailable')
-        sections=dict(segments=[dict(purpose='direction' if scene==Scene.EXPLORATION else 'response',text=safe)],
+        texts=[safe] if scene==Scene.EMERGENCY else _bubbles(safe,locale)
+        if len(texts)>32:raise ProviderUnknown('bounded exploration bubbles required')
+        sections=dict(segments=[dict(purpose='direction' if scene==Scene.EXPLORATION else 'response',text=part) for part in texts],
                       question_groups=list(groups),notices=[],exits=list(exits(scene,locale)))
         state=worker._event(binding,state,'effect_committed',PRESENTATION+json.dumps(sections,ensure_ascii=False,separators=(',',':')))
         state=worker._event(binding,state,'effect_committed',ROUND+json.dumps(dict(keys=[group['factor_key'] for group in groups])))
-        state=worker._event(binding,state,'text_delta',_merged(sections))
+        state=worker._event(binding,state,'text_delta',merged_presentation(sections))
         return worker._event(binding,state,'completed')
 
     def _answer(self,worker,binding,state,text,original,view,scene):
@@ -191,6 +192,18 @@ class ExplorationPlanning:
         try:understood=Understanding.model_validate(decode(raw.encode()))
         except (ValidationError,InvalidInput) as error:raise ProviderUnknown('sourced understanding unavailable') from error
         if understood.current_source_index!=len(view.originals)-1:raise ProviderUnknown('understanding original index differs')
+        # Broader administrative spellings are learned from the existing
+        # registered provider resolver, never promoted from a model token.
+        for update in understood.updates:
+            if update.factor_key!='city' or update.state!='known' or not isinstance(update.value,str):continue
+            for reference in update.sources:
+                if reference.source_index>=len(view.originals) or reference.quote not in view.originals[reference.source_index].text:
+                    raise ProviderUnknown('city evidence is not an original span')
+                if update.value!=reference.quote:continue
+                if known_city_term(reference.quote) or reference.quote in view.city_terms:continue
+                resolution=worker.tools.resolve_city(worker,binding,dict(query=reference.quote,normalized_name=None,province=None))
+                state=worker.runs.snapshot(binding)
+                state=worker._event(binding,state,'effect_committed','lio_city_resolution.1:'+json.dumps(resolution,ensure_ascii=False,separators=(',',':')))
         state=worker.runs.snapshot(binding)
         state,profile=self.profiles.accept(worker,binding,state,json.dumps(dict(version='LIO-profile-update.1',
             updates=[update.model_dump() for update in understood.updates])),expected=view)
@@ -211,7 +224,11 @@ class ExplorationPlanning:
         value=decode(raw.encode())
         if not isinstance(value,dict) or value.keys()!={'version','body','groups'} or value['version']!=RESPONSE or not isinstance(value['body'],str):
             raise ProviderUnknown('exploration response unavailable')
-        proposed=questions(scene,selected,value['groups'],locale)
+        city=profile.get('city');variants={}
+        if city is not None and str(city.value).casefold() in ('成都','成都市','chengdu','chengdu (成都)'):
+            variants={'interests.nature':{'熊猫与自然':'兴趣: 熊猫与自然'} if locale=='zh' else
+                      {'Pandas and nature':'Interests: Pandas and nature'}}
+        proposed=questions(scene,selected,value['groups'],locale,option_variants=variants)
         state=worker.runs.snapshot(binding)
         return self._finish(worker,binding,state,value['body'],scene,locale,proposed.groups)
 

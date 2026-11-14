@@ -87,6 +87,11 @@ def exercise(root,conninfo):
                 updates=[packet('pace','relaxed','轻松' if locale=='zh' else 'relaxed',index=index)]
             elif current_text.startswith('规划三天北京'):
                 updates=[packet('city','北京','北京',index=index),packet('duration_days',3,'三天',index=index),packet('party_type','两个人','两个人',index=index)]
+            elif current_text=='规划三天苏州豪华游':
+                updates=[packet('city','苏州','苏州',index=index),packet('duration_days',3,'三天',index=index)]
+            elif current_text in ('规划不要三天','Plan not 3 days'):
+                name='不要'if locale=='zh'else'not';days='三天'if locale=='zh'else'3 days'
+                updates=[packet('city',name,name,index=index),packet('duration_days',3,days,index=index)]
             intent='emergency' if current_text=='有人受伤需要急救' else 'practical' if current_text=='在北京怎么坐地铁' else 'explore'
             value=dict(version=version,intent=intent,current_source_index=index,updates=updates)
         elif version==RESPONSE:
@@ -99,6 +104,8 @@ def exercise(root,conninfo):
                     options=[dict(id=option['id'],display_text=option['display_text'])for option in group['options']])
                     for group in extra['candidates']]
                 if fault=='bad_questions':groups=groups+groups[:1]
+                if fault=='unsafe_question':groups[0]['question']='message_id是什么？'
+                if fault=='mismatched_option':groups[0]['options'][0]['display_text']='上海'
                 value=dict(version=version,body='可以先围绕一座城市，按兴趣和节奏来细化。' if locale=='zh' else
                     'Start with one city, then fit the stops to your interests and pace.',groups=groups)
         else:raise AssertionError('unexpected native4 dispatch '+version)
@@ -125,7 +132,10 @@ def exercise(root,conninfo):
             memory_configuration_for_scope=lambda owner:memory if owner==scope else None,
             account_admission=True,hk_demo_scopes=frozenset({scope}),lio_confirmation=signer)
         assert [outcome.status for outcome in outcomes]==[expected],outcomes
-    with TestClient(app) as api:
+    async def administrative_catalog(key,guard):
+        assert key==KEY and guard() is True
+        return city_catalog()
+    with TestClient(app) as api,patch('cj_api.lio_city._catalog_exchange',side_effect=administrative_catalog):
         def send(mid,text,cid=None,*,expected='completed'):
             nonlocal current_text
             current_text=text
@@ -161,6 +171,22 @@ def exercise(root,conninfo):
         _,message=send('flow4-jt-original','规划三天北京豪华游 26.12.01出发 两个人')
         assert len(message['question_groups'])==4
         assert not {'city','duration_days','party_type'}&{group['factor_key']for group in message['question_groups']}
+        fault=None
+        suzhou,message=send('flow4-registered-city','规划三天苏州豪华游')
+        assert not {'city','duration_days'}&{group['factor_key']for group in message['question_groups']}
+        _,message=send('flow4-city-followup','节奏改为：轻松',suzhou)
+        assert not {'city','duration_days','pace'}&{group['factor_key']for group in message['question_groups']}
+        for bad in ('unsafe_question','mismatched_option'):
+            fault=bad
+            _,message=send('flow4-'+bad,'我想去中国玩几天')
+            assert len(message['question_groups'])==4 and message['status']=='completed'
+            assert 'message_id'not in message['answer']
+        fault=None
+        for language,text in (('zh','规划不要三天'),('en','Plan not 3 days')):
+            locale=language
+            _,message=send('flow4-poison-'+language,text,expected='unknown')
+            assert message['profile']==[] and message['question_groups']==[] and not message['answer']
+        locale='zh'
         fault=None
         _,message=send('flow4-practical','在北京怎么坐地铁')
         assert message['question_groups']==[] and message['exits']==[]

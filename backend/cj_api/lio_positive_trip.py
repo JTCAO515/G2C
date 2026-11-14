@@ -13,13 +13,14 @@ _DATE=(r'(?:[0-9]{2}(?:[0-9]{2})?[./-][0-9]{1,2}[./-][0-9]{1,2}|'
 _KNOWN_CITIES={'北京','上海','成都','杭州','西安','beijing','shanghai','chengdu','hangzhou',"xi'an"}
 
 
-def city_literal(value):
-    return isinstance(value,str) and re.fullmatch(r"[A-Za-z\u3400-\u9fff'’-]{1,80}",value) is not None
+def known_city_term(query):return query.casefold() in _KNOWN_CITIES
 
 
-def supports(key,clause,quote,cities):
+def supports(key,clause,quote,*,registered_city_terms=()):
     if key not in ('city','duration_days','party_type'):return False
-    cities=tuple(dict.fromkeys(city for city in cities if city_literal(city)))
+    # Only the source-owned catalogue is eligible. Model-proposed strings must
+    # never become grammar tokens: a proposed city "not" could swallow negation.
+    cities=tuple(sorted(_KNOWN_CITIES|set(registered_city_terms),key=len,reverse=True))
     city_pattern='|'.join(re.escape(city) for city in sorted(cities,key=len,reverse=True)) or r'(?!)'
     token=re.compile(
         r'(?P<request>规划|计划|安排|设计|我想去|我们想去|想去|要去|去|'
@@ -41,7 +42,7 @@ def supports(key,clause,quote,cities):
         if match.lastgroup in found:found[match.lastgroup].append(match[0])
         position=match.end()
     if len(set(city.casefold() for city in found['city']))>1:return False
-    if found['city'] and not requested and found['city'][0].casefold() not in _KNOWN_CITIES:return False
+    if found['city'] and not requested and found['city'][0].casefold() not in {city.casefold()for city in cities}:return False
     if key=='city':return len(found['city'])==1 and found['city'][0].casefold()==quote.casefold()
     if key=='duration_days':
         counts=[]

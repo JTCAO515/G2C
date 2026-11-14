@@ -22,11 +22,27 @@ class ProfileView:
     references:tuple
     profile:dict
     signature:str
+    city_terms:tuple=()
 
 
 class ProfileContext:
     def __init__(self, database):
         self.database = database
+
+    def _city_terms(self,binding):
+        from .lio_city import resolved_terms
+        with self.database.connect(binding.scope) as db:
+            rows=db.execute('SELECT e.value FROM cj_message_receipt m JOIN cj_run_record r USING(scope,run_id) '
+                'JOIN cj_run_event e USING(scope,run_id) WHERE m.scope=%s AND m.conversation_id=%s AND m.generation=%s '
+                "AND m.sequence<=%s AND (r.status='completed' OR m.run_id=%s) AND e.kind='effect_committed' "
+                'AND e.value LIKE %s ORDER BY m.sequence DESC,e.sequence DESC LIMIT 32',
+                (binding.scope,binding.conversation_id,binding.generation,binding.message_sequence,binding.run_id,
+                 'lio_city_resolution.1:%')).fetchall()
+        terms=set()
+        try:
+            for row in rows:terms.update(resolved_terms(json.loads(row[0].split(':',1)[1])))
+        except (ValueError,TypeError,KeyError) as error:raise RuntimeDenied('registered city evidence unavailable') from error
+        return tuple(sorted(terms))
 
     def capture(self, binding):
         with self.database.connect(binding.scope) as db:
@@ -70,11 +86,12 @@ class ProfileContext:
 
     def read(self,worker,binding):
         originals,refs,previous=self.capture(binding)
-        try:profile={} if previous is None else restore_context(previous,originals,worker.memory_run)
+        cities=self._city_terms(binding)
+        try:profile={} if previous is None else restore_context(previous,originals,worker.memory_run,registered_city_terms=cities)
         except InvalidInput as error:raise RuntimeDenied('stored profile source unavailable') from error
         profile=merge(profile,(),memory_prefill(worker.memory_run))
         encoded=json.dumps(dict(refs=refs,profile=snapshot(profile)),ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()
-        return ProfileView(originals,refs,profile,sha256(encoded).hexdigest())
+        return ProfileView(originals,refs,profile,sha256(encoded).hexdigest(),cities)
 
     def accept(self, worker, binding, state, raw_updates,*,expected=None,plan_now=False):
         """Accept one extraction, under original RUN/Memory/reference fences.
@@ -94,7 +111,7 @@ class ProfileContext:
                 [dict(role='user',content=o.text) for o in originals],
                 'Sourced internal planning profile data; no publication authority.',message_refs=refs)
         try:
-            updates = parse_updates(raw_updates,originals)
+            updates = parse_updates(raw_updates,originals,registered_city_terms=view.city_terms)
         except InvalidInput as error:
             raise ProviderUnknown('sourced profile extraction unavailable') from error
         profile = merge(profile,updates,memory_prefill(worker.memory_run))

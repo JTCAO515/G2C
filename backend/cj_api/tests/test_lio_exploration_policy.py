@@ -8,6 +8,7 @@ from cj_api.lio_exploration_factors import FACTORS
 from cj_api.lio_exploration_profile import Original,parse_updates
 from cj_api.lio_exploration_policy import (Scene,choose_scene,next_question_count,
     candidates,questions,exits,emergency_opening)
+from cj_api.local_lio_exploration import _bubbles
 
 
 def model_groups(selected,locale):
@@ -108,6 +109,37 @@ class ExplorationPolicyTests(unittest.TestCase):
                 sources=[dict(source_index=0,quote=quote)])])
             profile=parse_updates(json.dumps(raw),(Original('actual-option-message',1,text),))
             self.assertIs(profile[0].value,False)
+
+    def test_questions_apply_existing_display_redlines_and_option_meanings(self):
+        selected=candidates({},4)
+        for bad in ('message_id是什么？','我已记住你的偏好，接下来呢？'):
+            proposed=model_groups(selected,'zh');proposed[0]['question']=bad
+            result=questions(Scene.EXPLORATION,selected,proposed,'zh')
+            self.assertTrue(result.used_question_bank)
+            self.assertEqual(result.groups,tuple(factor.question('zh')for factor in selected))
+        proposed=model_groups(selected,'zh')
+        proposed[0]['options'][0]['display_text']='上海'
+        self.assertTrue(questions(Scene.EXPLORATION,selected,proposed,'zh').used_question_bank)
+
+    def test_context_option_variant_has_code_bound_display_and_matching_send_text(self):
+        selected=(next(factor for factor in FACTORS if factor.key=='interests'),)
+        proposed=model_groups(selected,'zh')
+        proposed[0]['options'][2]['display_text']='熊猫与自然'
+        variants={'interests.nature':{'熊猫与自然':'兴趣: 熊猫与自然'}}
+        self.assertTrue(questions(Scene.EXPLORATION,selected,proposed,'zh').used_question_bank)
+        result=questions(Scene.EXPLORATION,selected,proposed,'zh',option_variants=variants)
+        self.assertFalse(result.used_question_bank)
+        self.assertEqual(result.groups[0]['options'][2]['send_text'],'兴趣: 熊猫与自然')
+
+    def test_every_nonemergency_bubble_respects_the_language_tier_without_losing_content(self):
+        chinese='细化旅行安排'*40
+        parts=_bubbles(chinese,'zh')
+        self.assertEqual(''.join(parts),chinese)
+        self.assertTrue(all(len(part)<=80 for part in parts))
+        english=' '.join('word'+str(index)for index in range(130))
+        parts=_bubbles(english,'en')
+        self.assertEqual(' '.join(parts),english)
+        self.assertTrue(all(len(part.split())<=50 for part in parts))
 
 
 if __name__=='__main__':unittest.main()

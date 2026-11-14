@@ -2,6 +2,8 @@ import json
 import unittest
 from cj_needs.domain import InvalidInput
 from cj_api.lio_exploration_profile import Original,parse_updates
+from cj_api.lio_city import resolve,resolved_terms
+from test_lio_city import data
 
 
 def update(key,value,quote):
@@ -47,6 +49,23 @@ class PositiveTripTests(unittest.TestCase):
         for text,quote in (('3天后开始','3天'),('in 3 days','3 days')):
             with self.subTest(text=text),self.assertRaises(InvalidInput):
                 parse(text,[update('duration_days',3,quote)])
+
+    def test_model_city_strings_cannot_supply_grammar_permissions(self):
+        for text,city,day in (('规划不要三天','不要','三天'),('Plan not 3 days','not','3 days')):
+            with self.subTest(text=text),self.assertRaises(InvalidInput):
+                parse(text,[update('city',city,city),update('duration_days',3,day)])
+
+    def test_new_city_spelling_requires_registered_administrative_result(self):
+        text='规划三天苏州豪华游'
+        packet=dict(version='LIO-profile-update.1',updates=[update('city','苏州','苏州'),update('duration_days',3,'三天')])
+        originals=(Original('actual-mid',1,text),)
+        with self.assertRaises(InvalidInput):parse_updates(json.dumps(packet),originals)
+        terms=resolved_terms(resolve(data(),'苏州',province='江苏省'))
+        facts=parse_updates(json.dumps(packet),originals,registered_city_terms=terms)
+        self.assertEqual([fact.value for fact in facts],['苏州',3])
+        self.assertEqual(resolved_terms(resolve(data(),'not')),())
+        forged=resolve(data(),'北京');forged['requested_name']='not'
+        with self.assertRaises(ValueError):resolved_terms(forged)
 
 
 if __name__=='__main__':unittest.main()
