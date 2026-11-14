@@ -8,7 +8,7 @@ import json
 import os
 from time import monotonic
 
-from cj_run.core import Binding
+from cj_run.core import Binding, WorkerOwnershipLost
 from cj_message.auth_boundary import AccessBlocked, IdentityChanged
 from cj_strict_json import compact
 from runtime_adapter.contract import Unavailable, digest, label
@@ -103,8 +103,9 @@ class NativeActorHost:
             binding = Binding(self.owner.scope, 'actor-chat-'+key, 'actor-generation-'+key,
                               'actor-'+key, 'actor-run-'+key, 1)
             def original_check():
-                self._guard(read_only=True, purpose='query')
                 check()
+                self.authority.require_current_operation(binding=self.owner,
+                    pins_sha256=self.specification.key, deadline=self.deadline)
             argument = ActorInput(binding, self.profile_id, self.attempt, len(history)//2,
                 raw, source, self.specification, original_check)
             profile = self.database.run_context.current
@@ -137,3 +138,5 @@ class NativeActorHost:
             return self.source.use(token, message_id, history, run)
         except (AccessBlocked, IdentityChanged):
             raise Unavailable('ACTOR_ORIGINAL_AUTH_UNAVAILABLE') from None
+        except WorkerOwnershipLost:
+            raise Unavailable('ACTOR_ORIGINAL_WORKER_OWNERSHIP_LOST') from None

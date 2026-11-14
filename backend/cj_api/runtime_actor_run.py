@@ -88,8 +88,8 @@ class NativeActorRun:
         if binding != self.argument.binding:
             return False
         self.guard(read_only=True, purpose='query')
-        self.argument.check()
         self.claim.read(binding.message_id)
+        self.argument.check()
         return True
 
     def dispatch(self, capability):
@@ -114,7 +114,10 @@ class NativeActorRun:
                         yield transaction
                         owned()
                     owned()
-            runs = Service(OwnedRepository(), self._valid)
+            def valid(binding):
+                owned()
+                return self._valid(binding)
+            runs = Service(OwnedRepository(), valid)
             state = runs.accept(argument.binding)
             worker = RunWorker(scope=argument.binding.scope, messages=None, runs=runs,
                 provider=self.tools.services.model, budget_exit=self.exit)

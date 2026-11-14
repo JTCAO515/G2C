@@ -4,7 +4,7 @@ The C authority below is a local test guard, not a Hong Kong dispatch permit.
 JWT/M/RUN/Meter/financial and artifact storage are the real implementations.
 """
 from datetime import datetime, timedelta, timezone
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from hashlib import sha256
 import json
 from pathlib import Path
@@ -12,6 +12,7 @@ import sys
 import time
 from types import SimpleNamespace
 import uuid
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path[:0] = [str(ROOT), str(ROOT/'scripts')]
@@ -46,7 +47,8 @@ from test_lio_planning_flow import flow
 def exercise(auth, conninfo):
     root = auth.parent/'actor';root.mkdir(mode=0o700)
     subject = 'm4-synthetic-local-actor'
-    subjects = frozenset({subject, 'm4-synthetic-local-actor-foreign'})
+    exhausted_subject = 'm4-synthetic-local-actor-exhausted'
+    subjects = frozenset({subject, 'm4-synthetic-local-actor-foreign', exhausted_subject})
     dev_auth.init(auth, subjects)
     now = int(time.time());meter = root/'meter.json'
     meter.write_bytes(compact(dict(version='CJ-LOCAL-RUN@2', current=dict(meter=dict(
@@ -55,6 +57,7 @@ def exercise(auth, conninfo):
         output_limits=dict(model=12000, tool=24000, memory=2000)), history=[])))
     context = load_run_context(meter)
     for name in subjects:
+        if name == exhausted_subject:continue
         local_run_context.provision_budget(conninfo, context, name)
         dev_auth.activate_travel(conninfo, name, context, ABI)
     database = LocalDatabase(conninfo, run_context=context, travel_context=True, needs_context=True, trip_context=True)
@@ -104,6 +107,7 @@ def exercise(auth, conninfo):
         prepare_scope=database._provision_scope, version='LIO-message.2')
     assert [outcome.status for outcome in worker.process()] == ['completed']
     history = [dict(speaker='user', text=profile['opening']), dict(speaker='assistant', text='Which places interest you?')]
+    send_allowed = [True]
     class Authority:
         line = 'C'
         token_supplier = staticmethod(lambda: token)
@@ -116,6 +120,10 @@ def exercise(auth, conninfo):
         def require(self, *, binding, pins_sha256, purpose, deadline, read_only):
             assert time.monotonic() < deadline and pins_sha256 == spec.key
             if self.binding() != binding:raise Unavailable('ORIGINAL_AUTH_CHANGED')
+        def require_current_operation(self, *, binding, pins_sha256, deadline):
+            if not send_allowed[0]:raise Unavailable('OUTSIDE_STANDING_DISPATCH_WINDOW')
+            self.require(binding=binding, pins_sha256=pins_sha256, purpose='actor',
+                         deadline=deadline, read_only=False)
     directory = root/'canonical';directory.mkdir(mode=0o700)
     host = NativeActorHost(database, tools, ActorDutSource(boundary, database), spec,
         Authority(), directory, profile_id=profile['id'], attempt=1,
@@ -242,6 +250,76 @@ def exercise(auth, conninfo):
     assert rebuilt_unknown.recover(unknown_id).inspect().status == 'unknown' and len(sent) == 6
     with budget.connect() as db:
         assert db.execute('SELECT state,count(*) FROM attempt GROUP BY state ORDER BY state').fetchall() == [('INTENT',1),('RECEIVED',5)]
+    # Final-wire boundary controls for both R findings. The original paid INTENT
+    # remains even though the fixture HTTP POST must not happen.
+    actor_output[0] = dict(answers=['interests'], action='continue')
+    profiles = json.loads(spec.dataset)['profiles']
+    for index, fault in enumerate(('window', 'physical_lease'), 1):
+        selected = profiles[index]
+        mid = 'dut-final-'+fault
+        new_dut(mid, selected)
+        selected_history = [dict(speaker='user', text=selected['opening']), history[1]]
+        controlled = NativeActorHost(database, tools, host.source, spec, Authority(), directory,
+            profile_id=selected['id'], attempt=1, dut_message=lambda mid=mid:mid, deadline=time.monotonic()+120)
+        active_hosts.append(controlled)
+        record_wire = tools.tool_evidence.record_model_input
+        def revoke_after_wire(operation, raw):
+            record_wire(operation, raw)
+            if fault == 'window':send_allowed[0] = False
+            else:
+                raw_key = b'CJ-RUN-WORKER-LEASE@1\x00'+compact(operation.binding.chat, allow_nan=True)
+                number = int.from_bytes(sha256(raw_key).digest()[:8],'big')
+                with psycopg.connect(**json.loads(conninfo.read_bytes()),autocommit=True) as admin:
+                    found = admin.execute("SELECT pid FROM pg_locks WHERE locktype='advisory' AND granted "
+                        "AND objsubid=1 AND classid::bigint=%s AND objid::bigint=%s", (number>>32,number&0xffffffff)).fetchall()
+                    assert len(found)==1,found
+                    assert admin.execute('SELECT pg_terminate_backend(%s)', (found[0][0],)).fetchone()==(True,)
+        sent_before = len(sent)
+        with patch.object(ToolEvidence,'record_model_input',lambda self, operation, raw:revoke_after_wire(operation,raw)):
+            try:controlled.choose(simulator_messages(selected, selected_history, 1))
+            except Unavailable as error:
+                assert str(error)==('ACTOR_ORIGINAL_UNKNOWN'if fault=='window'else'ACTOR_ORIGINAL_WORKER_OWNERSHIP_LOST'),str(error)
+            else:raise AssertionError('revoked final actor authority still sent')
+        assert len(sent)==sent_before
+        send_allowed[0]=True
+        assert controlled.originals[0].inspect().status==('unknown'if fault=='window'else'running')
+
+    # A separate fresh original one-call fixture account is spent by its DUT.
+    # The actor must hit the real PG Meter ceiling without another financial
+    # INTENT or HTTP send. No existing account/config/history is reset.
+    one = replace(context, current=replace(context.current,meter=replace(context.current.meter,budget=1)))
+    local_run_context.provision_budget(conninfo,one,exhausted_subject)
+    dev_auth.activate_travel(conninfo,exhausted_subject,one,ABI)
+    limited_db = LocalDatabase(conninfo,run_context=one,travel_context=True,needs_context=True,trip_context=True)
+    limited_token = dev_auth.token(auth,exhausted_subject,300)
+    limited_scope = scope_for(ISSUER,exhausted_subject)
+    limited_boundary = Boundary(checker,lambda p:limited_db.message_repository(scope_for(p.issuer,p.subject)),lambda:str(uuid.uuid4()))
+    limited_worker = run_worker._worker_for_scope(limited_db,model,auth,limited_scope,checker,
+        tools_configuration=tools,draft_profile='needs-structured.1',assembly_planning=True,
+        demo_planning=True,national_planning=True,lio_confirmation=signer)
+    limited_boundary.receive_lio(limited_token,compact(dict(version='LIO-message.2',message_id='dut-exhausted',
+        text=profile['opening'],locale=profile['locale'],new_conversation=True)),
+        prepare_scope=limited_db._provision_scope,version='LIO-message.2')
+    assert [item.status for item in limited_worker.process()]==['completed']
+    class LimitedAuthority(Authority):
+        token_supplier=staticmethod(lambda:limited_token)
+        def binding(self):
+            decision=checker.check(limited_token)
+            if decision.status is not AdmissionStatus.ALLOWED:raise Unavailable('ORIGINAL_AUTH_UNAVAILABLE')
+            return OwnerBinding(scope_for(decision.principal.issuer,decision.principal.subject),
+                sha256(limited_token.encode()).hexdigest(),budget.ledger_id,budget.producer)
+    limited_directory=root/'limited-canonical';limited_directory.mkdir(mode=0o700)
+    limited = NativeActorHost(limited_db,tools,ActorDutSource(limited_boundary,limited_db),spec,LimitedAuthority(),
+        limited_directory,profile_id=profile['id'],attempt=1,dut_message=lambda:'dut-exhausted',deadline=time.monotonic()+120)
+    before_calls=len(sent);before_financial=budget.inspect()
+    try:limited.choose(simulator_messages(profile,history,1))
+    except Unavailable as error:assert str(error)=='ACTOR_ORIGINAL_FAILED'
+    else:raise AssertionError('spent original Meter permitted actor')
+    assert len(sent)==before_calls and budget.inspect()==before_financial
+    assert limited.originals[0].inspect().budget_exhausted_stage=='answer'
+    assert len(sent)==9
+    with budget.connect()as db:
+        assert db.execute('SELECT state,count(*) FROM attempt GROUP BY state ORDER BY state').fetchall()==[('INTENT',3),('RECEIVED',8)]
     # Native erasure-state negative, private initializer only. This is not a
     # product deletion API test; it proves no raw-read fallback from the cache.
     from cj_run.payload_evidence import owner_digest, key_digest
@@ -257,7 +335,7 @@ def exercise(auth, conninfo):
     else:raise AssertionError('erased DUT input reconstructed from actor cache')
     assert json.loads(reader.fee(token, binding.message_id, op))['state'] == 'RECEIVED'
     assert json.loads(reader.meter(token, binding.message_id, op))['state'] == 'settled'
-    assert len(sent) == 6
+    assert len(sent) == 9
     (auth/'invited.json').write_text(json.dumps(['m4-synthetic-local-actor-foreign']))
     try:original.inspect()
     except Unavailable:pass
@@ -265,8 +343,8 @@ def exercise(auth, conninfo):
     try:reader.fee(token, binding.message_id, op)
     except Unavailable:pass
     else:raise AssertionError('revoked actor financial original escaped')
-    assert len(sent) == 6
-    print('PASS actor independent native RUN/typed source/actual M lifetime, signed DUT, no actor MESSAGE or Memory job, registered model+same Meter/account/fee journal, exact wire/prompt/output custody, replay/fabricated history/cross-slot/revoke withheld, invalid choice paid/no repair, UNKNOWN original retained/no replay; 6 fixture model sends, 5 RECEIVED/1 INTENT, live0')
+    assert len(sent) == 9
+    print('PASS actor signed native source/RUN, v2 original800/unique fees, exact wire/output/reader, no actor MESSAGE/Memory, no replay/cross-slot/erased raw; final window revoke and real physical lease loss stop HTTP, spent original1 quota denies actor without new fee; 9 fixture HTTP attempts, 8 RECEIVED/3 INTENT in original journal, live0')
 
 
 if __name__ == '__main__':
