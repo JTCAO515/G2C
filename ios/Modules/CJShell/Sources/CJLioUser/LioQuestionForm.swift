@@ -13,9 +13,8 @@ struct LioQuestionForm: View {
         VStack(alignment: .leading, spacing: LioTheme.Spacing.lg) {
             ForEach(draft.questions) { question in
                 VStack(alignment: .leading, spacing: LioTheme.Spacing.sm) {
-                    Text(question.question)
-                        .font(.headline)
-                        .foregroundStyle(LioTheme.ink)
+                    RunReadableText(text: question.question, style: .headline, color: LioTheme.ink)
+                        .id(typeSize)
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityAddTraits(.isHeader)
                     if typeSize.isAccessibilitySize {
@@ -34,8 +33,10 @@ struct LioQuestionForm: View {
             Button {
                 onSend(draft.jointReply)
             } label: {
-                Text(language.text("Done, continue", "好了，继续"))
-                    .font(.headline)
+                RunReadableText(text: language.text("Done, continue", "好了，继续"), style: .headline,
+                                color: canSend && !draft.jointReply.isEmpty
+                                    ? LioTheme.onVermilion : LioTheme.inkSecondary)
+                    .id(typeSize)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.vertical, LioTheme.Spacing.sm)
                     .frame(maxWidth: .infinity, minHeight: 44)
@@ -43,6 +44,7 @@ struct LioQuestionForm: View {
             }
             .buttonStyle(LioQuestionSubmitStyle())
             .disabled(!canSend || draft.jointReply.isEmpty)
+            .accessibilityLabel(language.text("Done, continue", "好了，继续"))
             .accessibilityIdentifier("lio.questions.continue")
         }
         .accessibilityElement(children: .contain)

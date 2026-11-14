@@ -50,10 +50,32 @@ App's normal user entry. Native4 metadata can change on a later validated read
 even for a completed answer; an overlapping older page updates it instead of
 preserving stale profile/action data. Legacy immutable-result behavior remains.
 
+## Home presentation
+
+The ordinary `LioHome` consumes `LioTurn.exploration` through the existing
+segmented reply, question-form and profile editor components. The Home owns
+selection drafts and the profile editor so dismissing the menu, scrolling or
+entering the background does not discard an unfinished choice or edit. The editor
+is presented above the lazy message rows, whose recycling cannot dismiss it.
+Updated groups reconcile with the current typed
+snapshot; a conversation switch clears the old selection scope. Only the latest
+turn can send options, profile edits or exits. A delayed sheet action rechecks
+the conversation identity and current turn before sending the ordinary text.
+
+The composer and these controls share the existing ordinary-message submission
+path, including timing, first-question continuity and entrance state. Option taps
+do not send. A joint answer follows the snapshot order. The existing
+`LioThinkingInput` maps the same turn's validated progress and announced day count
+to the waiting component; the client does not invent a planning signal or days.
+Legacy turns retain their existing renderer and typed calendar/rich cards stay
+distinct from legacy saved-trip records.
+
 Public projection checks progress and trip labels as well as segments, question
 options and profile text. Typed metadata is not rendered as raw JSON or internal
 status text. No new user-facing copy, third-party rendering library, manual read
 button, source grant, signature or account setting is introduced. Textual remains
-an assessment only. Actual Home controls, memory-refresh wiring, protected rich
-readers and real-service/physical-device verification stay explicit remaining
-integration gates; model/transport tests do not prove those gates.
+an assessment only. Beta/Production protocol selection, protected rich readers
+and real-service/physical-device verification stay explicit remaining integration
+gates. The actual-App synthetic HTTP acceptance exercises the same signed native4
+client and Home, not a provider or deployed admission. It does not prove those
+remaining gates.
