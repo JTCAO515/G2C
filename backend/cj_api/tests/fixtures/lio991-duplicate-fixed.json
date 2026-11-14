@@ -1,0 +1,98 @@
+{
+  "version": "LIO-fixed-draft-regression.1",
+  "draft_utf8": "{\"days\":[[\"2026-11-15\",[[\"fixed-7dd0afb2754b2ff08cc6\",\"酒店集合\",\"09:00\",\"10:00\",[\"self\"]],[\"morning-1\",\"成都大熊猫繁育研究基地\",\"10:30\",\"12:30\",[\"party\"]],[\"afternoon-1\",\"宽窄巷子\",\"14:00\",\"16:30\",[\"party\"]],[\"evening-1\",\"春熙路\",\"17:30\",\"20:00\",[\"party\"]]]],[\"2026-11-16\",[[\"morning-2\",\"武侯祠\",\"09:00\",\"11:30\",[\"party\"]],[\"afternoon-2\",\"杜甫草堂\",\"14:00\",\"16:30\",[\"party\"]],[\"evening-2\",\"九眼桥酒吧街\",\"18:00\",\"20:30\",[\"party\"]]]],[\"2026-11-17\",[[\"morning-3\",\"文殊院\",\"09:00\",\"11:00\",[\"party\"]],[\"afternoon-3\",\"锦里古街\",\"13:30\",\"16:00\",[\"party\"]],[\"evening-3\",\"太古里\",\"17:00\",\"19:00\",[\"party\"]]]]],\"title\":\"成都三日休闲游\",\"version\":\"TRIP-lio-first-plan.2\"}",
+  "draft_sha256": "6dcf92d74c5f53e7c338435a4e0e8058d5d40aeb9057b4bf5d55ec2b8260dc1f",
+  "source_fields": {
+    "party_size": {
+      "state": "missing"
+    },
+    "fixed_items": [
+      {
+        "item_id": "fixed-7dd0afb2754b2ff08cc6",
+        "kind": "hotel",
+        "applies_to": [
+          "self"
+        ],
+        "locked": {
+          "state": "known",
+          "value": true
+        },
+        "booking_status": {
+          "state": "missing"
+        },
+        "start": {
+          "date": {
+            "state": "known",
+            "value": "2026-11-15"
+          },
+          "time": {
+            "state": "known",
+            "value": "09:00"
+          },
+          "timezone": {
+            "state": "known",
+            "value": "Asia/Shanghai"
+          },
+          "place": {
+            "state": "missing"
+          }
+        },
+        "end": {
+          "date": {
+            "state": "known",
+            "value": "2026-11-15"
+          },
+          "time": {
+            "state": "known",
+            "value": "10:00"
+          },
+          "timezone": {
+            "state": "known",
+            "value": "Asia/Shanghai"
+          },
+          "place": {
+            "state": "missing"
+          }
+        },
+        "description": "第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变；酒店名称和位置尚未确定。"
+      }
+    ],
+    "arrival": {
+      "date": {
+        "state": "known",
+        "value": "2026-11-15"
+      },
+      "time": {
+        "state": "missing"
+      },
+      "timezone": {
+        "state": "known",
+        "value": "Asia/Shanghai"
+      },
+      "place": {
+        "state": "known",
+        "value": "成都市"
+      }
+    },
+    "departure": {
+      "date": {
+        "state": "known",
+        "value": "2026-11-17"
+      },
+      "time": {
+        "state": "missing"
+      },
+      "timezone": {
+        "state": "known",
+        "value": "Asia/Shanghai"
+      },
+      "place": {
+        "state": "missing"
+      }
+    },
+    "destination_timezone": {
+      "state": "known",
+      "value": "Asia/Shanghai"
+    }
+  }
+}

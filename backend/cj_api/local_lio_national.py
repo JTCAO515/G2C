@@ -19,13 +19,26 @@ from .lio_city import CityReference,forms,_normalize
 from .lio_sourced_intake import BookingSourceUnclear
 from .lio_flow_intake import ReadOnlyPlanningQuestion,parse_flow
 from .lio_national_intake import NONPERSISTENT,fields_for,fixed_sources_complete,province_evidence,diagnostic_code,StartDateConflict,FixedTimezoneConflict,DateDurationConflict,DateSourceUnclear
-from .lio_planning_grounding import PlanningTurn,standalone_question
+from .lio_planning_grounding import PlanningTurn,standalone_question,NUMBER,_number
 from .local_lio_planning import PlanningDetails,register,discuss
 
 CONTEXT='lio_planning_context.1:'
 CITY='lio_city_resolution.1:'
 MAX_TURNS=8
 CURRENT_SYSTEM=FACTS_SYSTEM
+_DURATION_QUESTION=re.compile(
+    rf'(?:(?P<zh>(?P<zh_number>{NUMBER})[天日])(?:怎么玩|怎么安排)|'
+    rf'(?:how (?:should|can) I spend|what (?:can|should) I do (?:in|for))\s+'
+    rf'(?P<en>(?P<en_number>{NUMBER})\s+days?))[?？。.!！\s]*',re.I)
+
+
+def literal_duration_question(text):
+    """One complete unconditional trip question; no quotation/negation/default."""
+    match=_DURATION_QUESTION.fullmatch(text.strip())
+    if match is None:return None
+    number=_number(match['zh_number']or match['en_number'])
+    return (number,match['zh']or match['en'])if number>0 else None
+
 SOURCE_LANGUAGE=(
     ' Evidence ignores reply styling. Copy city.query and all quotes verbatim from indexed originals; '
     'never translate or quote resolved/Memory data. If only adding dates/fixed items, use city:null '
@@ -145,7 +158,24 @@ class NationalLioPlanning:
         if META_QUESTION.fullmatch(text):return None
         today=original.question_day or datetime.now(ZoneInfo('Asia/Shanghai')).date()
         turns,refs,previous=self.context(binding,PlanningTurn(text,today))
-        messages=[dict(role='user',content=t.text) for t in turns]
+        literal=literal_duration_question(text)
+        if (literal is not None and previous is None and binding.message_sequence==len(turns)
+                and all(self_description(turn.text,original.locale)is not None for turn in turns[:-1])
+                and not self.plan_and_save.has_saved_itinerary(binding)):
+            days,quote=literal
+            # This is sourced code-owned state, not a fabricated model result
+            # or publication grant. The ordinary compiler rechecks these exact
+            # originals if a later sourced follow-up supplies a destination.
+            state=self._context(worker,binding,state,dict(authority='none',status='needs_details',
+                facts={'duration_days':dict(value=days,sources=[dict(message_id=binding.message_id,quote=quote)])},
+                nonplanning_message_ids=[]))
+            reply=('你想去哪个城市玩'+str(days)+'天？'if original.locale=='zh'else
+                   'Which city would you like to visit for '+str(days)+(' day?'if days==1 else' days?'))
+            return self._reply(worker,binding,state,reply)
+        # Label originals independently of unindexed Memory packets. The
+        # accepted main parser and its Memory-offset rules remain unchanged.
+        messages=[dict(role='user',content='Original traveler source_index='+str(index)+
+            ' (quote only the following original text):\n'+turn.text)for index,turn in enumerate(turns)]
         memory_offset=0
         if worker.memory_run is not None:
             memory_messages=worker.memory_run.messages(text)
