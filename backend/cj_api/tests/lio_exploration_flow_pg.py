@@ -127,7 +127,7 @@ def exercise(root,conninfo):
     app=create_local_app(conninfo_path=None,auth_dir=auth,database=database,run_context=context,account_admission=True,
         confirmation_signer=signer,demo_dialogue_subjects=subjects,lio_dialogue_subjects=subjects,
         lio_calendar_subjects=subjects,lio_exploration_subjects=subjects,lio_memory_factory=cards,
-        lio_profile_epoch_reader=CurrentScopeEpochReader(database,memory))
+        lio_profile_epoch_reader=CurrentScopeEpochReader.for_api(database,memory.collection))
     register_typed_routes(app,database=database,auth_dir=auth,configuration=memory.collection)
     headers={'Authorization':'Bearer '+dev_auth.token(auth,SUBJECT,3600),'Content-Type':'application/octet-stream'}
     def process(expected='completed'):

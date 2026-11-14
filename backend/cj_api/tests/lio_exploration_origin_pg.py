@@ -133,7 +133,7 @@ def exercise(root,conninfo):
     app=create_local_app(conninfo_path=None,auth_dir=auth,database=database,run_context=context,account_admission=True,
         confirmation_signer=load_confirmation_signer(auth),demo_dialogue_subjects=subjects,
         lio_dialogue_subjects=subjects,lio_calendar_subjects=subjects,lio_exploration_subjects=subjects,
-        lio_profile_epoch_reader=CurrentScopeEpochReader(database,memory))
+        lio_profile_epoch_reader=CurrentScopeEpochReader.for_api(database,memory.collection))
     headers={'Authorization':'Bearer '+token,'Content-Type':'application/octet-stream'}
     with TestClient(app) as api:
         lookup=api.get('/v4/lio/messages',params=dict(message_id=receipt.message_id,input_sha256=sha256(raw4).hexdigest()),headers=headers)
