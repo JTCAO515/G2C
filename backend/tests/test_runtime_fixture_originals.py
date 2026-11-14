@@ -196,3 +196,26 @@ def test_cost_reference_resolves_only_retained_original_and_requalifies(source,t
     foreign=SimpleNamespace(inventory=SimpleNamespace(binding=source.registry.consumer),read=read)
     with pytest.raises(Invalid,match='PRODUCER_BINDING'):
         FixtureOriginalReferences(source.directory,source.registry,preparation_cost=foreign)
+
+
+def test_lifecycle_original_has_its_own_version_and_current_source_withhold(source):
+    source.registry.preparation_guard=lambda:None
+    state={'raw':encode({'version':'G2C-preparation-lifecycle.1','coverage':'controlled-source'})}
+    journal=SimpleNamespace(costs=SimpleNamespace(binding=source.registry.producer),
+        read=lambda **kw:state['raw'])
+    reader=FixtureOriginalReferences(source.directory,source.registry,
+        preparation_lifecycle=journal,clock=lambda:1)
+    ref=reader.issue(source.token,'preparation_lifecycle')
+    assert reader.resolve(source.token,ref['ref'])==state['raw']
+    descriptor=decode((source.directory/(ref['ref']+'.json')).read_bytes())
+    assert descriptor['source']['version']=='G2C-fixture-preparation-lifecycle-reference.1'
+    source.fixture.state['consumer_allowed']=False
+    with pytest.raises(Unavailable):reader.resolve(source.token,ref['ref'])
+    source.fixture.state['consumer_allowed']=True
+    state['raw']=encode({'version':'G2C-preparation-lifecycle.1','coverage':'replaced'})
+    with pytest.raises(Unavailable,match='SOURCE_CHANGED'):reader.resolve(source.token,ref['ref'])
+    with pytest.raises(Unavailable,match='NOT_CONNECTED'):
+        source.refs(None).issue(source.token,'preparation_lifecycle')
+    wrong=SimpleNamespace(costs=SimpleNamespace(binding=source.registry.consumer),read=journal.read)
+    with pytest.raises(Invalid,match='LIFECYCLE_PRODUCER_BINDING'):
+        FixtureOriginalReferences(source.directory,source.registry,preparation_lifecycle=wrong)

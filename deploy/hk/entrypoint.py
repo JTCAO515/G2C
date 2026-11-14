@@ -123,7 +123,8 @@ def _run_worker(runtime, *, tool_evidence=None,runtime_manifest=None):
     from cj_api.runtime_worker_bindings import RuntimeWorkerBindings
     from cj_api.runtime_rpc import runtime_socket
     from cj_api.tool_evidence import ToolEvidence
-    bindings=RuntimeWorkerBindings(runtime_manifest,runtime,services,tools,confirmation_signer=lio_confirmation)
+    bindings=RuntimeWorkerBindings(runtime_manifest,runtime,services,tools,confirmation_signer=lio_confirmation,
+        release=checkpoint)
     evidence=ToolEvidence.load(bindings.evidence_manifest,runtime.demo_subjects,runtime_selection=bindings.selects)
     bindings.attach_evidence(evidence)
     if tool_evidence is not None:

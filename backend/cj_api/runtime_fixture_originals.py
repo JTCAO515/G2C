@@ -18,8 +18,9 @@ VERSION='G2C-fixture-original-reference.1'
 SCAN_VERSION='G2C-fixture-scan-reference.1'
 PREPARATION_VERSION='G2C-fixture-preparation-policy-reference.1'
 COST_VERSION='G2C-fixture-preparation-cost-reference.1'
-KINDS=frozenset({'registry','reservation','scan','preparation_policy','preparation_cost'})
-PREPARATION_KINDS=frozenset({'preparation_policy','preparation_cost'})
+LIFECYCLE_VERSION='G2C-fixture-preparation-lifecycle-reference.1'
+KINDS=frozenset({'registry','reservation','scan','preparation_policy','preparation_cost','preparation_lifecycle'})
+PREPARATION_KINDS=frozenset({'preparation_policy','preparation_cost','preparation_lifecycle'})
 UNSCOPED_KINDS=frozenset({'registry'})|PREPARATION_KINDS
 
 
@@ -27,16 +28,20 @@ def reference_version(kind):
     if kind=='scan':return SCAN_VERSION
     if kind=='preparation_policy':return PREPARATION_VERSION
     if kind=='preparation_cost':return COST_VERSION
+    if kind=='preparation_lifecycle':return LIFECYCLE_VERSION
     return VERSION
 
 
 class FixtureOriginalReferences:
-    def __init__(self,directory,registry,use=None,*,scan_journal=None,preparation_cost=None,clock=monotonic):
+    def __init__(self,directory,registry,use=None,*,scan_journal=None,preparation_cost=None,preparation_lifecycle=None,clock=monotonic):
         self.directory,self.registry,self.use=Path(directory),registry,use
         self.scan_journal,self.clock=scan_journal,clock
         self.preparation_cost=preparation_cost
         if preparation_cost is not None:
             require(preparation_cost.inventory.binding==registry.producer,'FIXTURE_COST_PRODUCER_BINDING')
+        self.preparation_lifecycle=preparation_lifecycle
+        if preparation_lifecycle is not None:
+            require(preparation_lifecycle.costs.binding==registry.producer,'FIXTURE_LIFECYCLE_PRODUCER_BINDING')
         self.binding=registry.consumer
         with self._directory()as fd:
             info=os.fstat(fd);self.identity=(info.st_dev,info.st_ino)
@@ -55,6 +60,12 @@ class FixtureOriginalReferences:
             self.registry.preparation_policy_source()
             if self.preparation_cost is None:raise Unavailable('FIXTURE_COST_READER_NOT_CONNECTED')
             raw=self.preparation_cost.read(deadline=self.clock()+30)
+            self.registry.preparation_policy_source()
+            return raw
+        if kind=='preparation_lifecycle':
+            self.registry.preparation_policy_source()
+            if self.preparation_lifecycle is None:raise Unavailable('FIXTURE_LIFECYCLE_READER_NOT_CONNECTED')
+            raw=self.preparation_lifecycle.read(deadline=self.clock()+30)
             self.registry.preparation_policy_source()
             return raw
         selected=self.use if use is None else use

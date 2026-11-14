@@ -4,6 +4,8 @@ from hashlib import sha256
 from types import SimpleNamespace
 import base64
 import json,time,uuid
+from unittest.mock import patch
+import os
 import httpx
 import local_history_pg as harness
 import dev_auth,local_run_context,run_worker
@@ -15,11 +17,12 @@ from cj_api.tool_evidence import ToolEvidence
 from cj_api.runtime_originals import RuntimeOriginals
 from cj_api.runtime_surface_inventory import NativeSurfaceInventory
 from cj_api.runtime_preparation_cost import PreparationCostInventory,FrozenPreparationCost
+from cj_api.runtime_preparation_lifecycle import PreparationLifecycle
 from cj_agent.provider import DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,M4_REAL_OUTPUT_TOKENS
 from cj_memory.typed_runtime import TypedRuntimeConfiguration
 from cj_message.auth_boundary import Boundary
 from cj_message.travel import ABI
-from cj_usage.authorization_budget import AuthorizationBudget
+from cj_usage.authorization_budget import AuthorizationBudget,HK_PRODUCER
 from runtime_adapter.contract import encode,decode,Unavailable
 from test_lio_planning_flow import flow
 
@@ -71,13 +74,29 @@ def exercise(root,conninfo):
         observed_history.append(actual)
         return actual
     worker.history_adapter.before_model=observe_history
+    from runtime_adapter import Binding
+    from cj_auth.interfaces import AdmissionStatus
+    producer_binding=Binding(owner,sha256(token.encode()).hexdigest(),budget.ledger_id,budget.producer)
+    def qualified(**args):
+        assert args['binding']==producer_binding and args['pins_sha256']=='b'*64 and args['read_only']is True
+        if checker.check(token).status is not AdmissionStatus.ALLOWED:raise Unavailable('LOCAL_ORIGINAL_AUTH_WITHHELD')
+    originals=RuntimeOriginals(boundary,database,budget,directory,query_original=lambda ctx,mid:ctx.query_lio_message(mid))
+    costs=PreparationCostInventory(originals,SimpleNamespace(require=qualified),producer_binding,
+        SimpleNamespace(key='b'*64),lambda:token,tuple(mids))
+    lifecycle_directory=root/'preparation-lifecycle';lifecycle_directory.mkdir(mode=0o700)
+    lifecycle=PreparationLifecycle(lifecycle_directory,costs)
+    lifecycle_start=lifecycle.begin(deadline=time.monotonic()+30)
     receipts=[]
     for i,mid in enumerate(mids):
         request=dict(version='LIO-message.2',message_id=mid,text='Could you help me with a travel question?'if i==0 else 'Please tell me more.',locale='en')
         if i==0:request['new_conversation']=True
         else:request['conversation_id']=receipts[0].conversation_id
         receipt=boundary.receive_lio(token,encode(request),prepare_scope=database._provision_scope,version='LIO-message.2');receipts.append(receipt)
-        assert [o.status for o in worker.process()]==['completed']
+        # Exercise the native HK scoped operation-id constructor, while the
+        # actual financial producer remains this test's private Mac journal.
+        # No HK database/control/credential is accessed or emulated.
+        with patch.dict(os.environ,{'CJ_M4_BUDGET_PRODUCER':HK_PRODUCER}):
+            assert [o.status for o in worker.process()]==['completed']
     assert len(sent)==model.calls==2 and len(budget.inspect())==2
     assert all(row['state']=='RECEIVED'for row in budget.inspect())
     assert len(observed_history)==2 and len(observed_history[-1].references.messages)==2,'intake9 must retain prior original MESSAGE references'
@@ -121,14 +140,6 @@ def exercise(root,conninfo):
         assert model.calls==calls_before and len(budget.inspect())==fees_before
     # Read the actual native original Meter/financial sources; no artifact or
     # successful-output dependency is required by this accounting reader.
-    from runtime_adapter import Binding
-    from cj_auth.interfaces import AdmissionStatus
-    binding=Binding(owner,sha256(token.encode()).hexdigest(),budget.ledger_id,budget.producer)
-    def qualified(**args):
-        assert args['binding']==binding and args['pins_sha256']=='b'*64 and args['read_only']is True
-        if checker.check(token).status is not AdmissionStatus.ALLOWED:raise Unavailable('LOCAL_ORIGINAL_AUTH_WITHHELD')
-    costs=PreparationCostInventory(originals,SimpleNamespace(require=qualified),binding,
-        SimpleNamespace(key='b'*64),lambda:token,tuple(mids))
     calls_before=model.calls;fees_before=budget.inspect()
     cost_bytes=costs.collect(deadline=time.monotonic()+30);cost=decode(cost_bytes)
     assert cost['accounting_status']=='SETTLED'and cost['missing']==[]
@@ -136,6 +147,14 @@ def exercise(root,conninfo):
     assert cost['totals']['known_estimated_cny_1e7']==7000
     assert cost['totals']['known_parent_conservative_hold_cny_1e7']==cost['totals']['unknown_hold_attempts']==0
     assert costs.collect(deadline=time.monotonic()+30)==cost_bytes
+    assert model.calls==calls_before and budget.inspect()==fees_before
+    lifecycle_close=lifecycle.close(deadline=time.monotonic()+30)
+    closure=decode(lifecycle_close)
+    assert closure['evidence_status']=='COMPLETE'and closure['unmapped_original_attempt_ids']==[]
+    assert closure['selected_attempts_outside_interval']==[]and closure['manual_trip_action_coverage']=='UNRUN'
+    assert len(closure['cost_inventory']['attempts'])==2
+    assert closure['start_sha256']==sha256(lifecycle_start).hexdigest()
+    assert PreparationLifecycle(lifecycle_directory,costs).read(deadline=time.monotonic()+30)==lifecycle_close
     assert model.calls==calls_before and budget.inspect()==fees_before
     frozen_directory=root/'preparation-close';frozen_directory.mkdir(mode=0o700)
     frozen=FrozenPreparationCost(frozen_directory,costs)
@@ -162,6 +181,9 @@ def exercise(root,conninfo):
     try:restarted.read(deadline=time.monotonic()+30)
     except Unavailable:pass
     else:raise AssertionError('revoked identity read frozen preparation costs')
+    try:lifecycle.read(deadline=time.monotonic()+30)
+    except Unavailable:pass
+    else:raise AssertionError('revoked identity read original lifecycle closure')
     try:NativeSurfaceInventory(originals,lambda:token,guard=lambda:None).collect(receipts[0].message_id)
     except Unavailable:pass
     else:raise AssertionError('revoked identity collected cached native surfaces')

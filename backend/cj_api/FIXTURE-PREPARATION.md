@@ -43,3 +43,41 @@ and unrelated financial activity. Signed private PostgreSQL controls exercise
 actual AUTH/MESSAGE admission and original registered Meter/financial reads with
 fixture HTTP. Hong Kong preparation, full definition/use publication, isolation
 across a live probe and runtime experiment eligibility remain UNRUN.
+
+`PreparationLifecycle.begin()` retains the actual original financial start before
+preparation. `close()` compares every new HK scoped financial attempt with the
+selected native MESSAGE operations, including failed/unknown attempts, and
+checks terminal delivery ACK and associated-history coverage. Missing operations,
+borrowed pre-start attempts, unacknowledged tails or uncollected history jobs
+remain UNKNOWN. The start cannot be replaced to reset the interval. Close ACK
+uncertainty is query-only. Later independent activity does not rewrite a closed
+interval; selected original changes still withhold it. The separate descriptor
+`G2C-fixture-preparation-lifecycle-reference.1` reads only this retained source
+under current producer/consumer qualification.
+
+This coverage is explicitly the original scope financial interval plus declared
+messages. It is not manual Trip-action coverage, a complete definition/use,
+concurrency isolation or task PASS. The accepted definition publisher must also
+bind its original manual actions, native Trip receipt and current source before
+it can admit reuse. A legacy unscoped financial ID cannot prove this scope
+coverage and remains outside-interval UNKNOWN.
+
+Worker manifest `G2C-runtime-host.2` adds one explicit `fixture_preparation`
+configuration; frozen host.1 accepts no extra field. Its exact
+`G2C-fixture-preparation-host.1` record selects the already authenticated C and E
+bindings, the approved purpose digest, at most three original MESSAGE IDs, an
+original policy, pinned private directories, a frozen native source-state file
+and the existing release control path. This is B deployment configuration, not
+RPC/task input. The existing HK entrypoint injects its native checkpoint reader;
+there is no new standalone deployment authority or implicit import dependency.
+
+After evidence attachment, the factory connects preparation policy, frozen cost
+and lifecycle original readers to E's existing collector. Each read requalifies
+both bindings/current pins and the exact native source state. Changing the
+retained state file, Trip baseline, source/session or qualification withholds
+metadata. Inactive original credentials do not attach a fixture reader and keep
+the existing ordinary-traffic startup isolation. The factory starts no
+preparation, creates no financial attempts, and issues no metadata or reservation
+at boot. A final definition publisher is still not connected; reserve fails
+closed, E still lacks the full legal task set, F teacher stays disabled, and the
+existing RPC/G versions and default worker configuration remain unchanged.

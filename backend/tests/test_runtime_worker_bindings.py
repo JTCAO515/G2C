@@ -63,3 +63,17 @@ def test_cancel_observer_preserves_existing_unavailable_original_rejection(failu
     assert controls.pauses=={}
     other=Binding('foreign','chat','generation',binding.message_id,'run',1)
     assert bindings.exit_observer(other) is None
+
+
+@pytest.mark.parametrize('version,extra,reason',[
+    ('G2C-runtime-host.1',{'fixture_preparation':{}},'RUNTIME_WORKER_MANIFEST'),
+    ('G2C-runtime-host.2',{},'RUNTIME_WORKER_MANIFEST'),
+    ('G2C-runtime-host.2',{'fixture_preparation':None},'FIXTURE_PREPARATION_HOST_REQUIRED'),
+])
+def test_fixture_configuration_is_explicit_and_does_not_change_frozen_v1(tmp_path,version,extra,reason):
+    from runtime_adapter import Invalid
+    path=tmp_path/'host.json'
+    path.write_bytes(encode(dict(version=version,baseline='national.2',resource_root=None,
+        runtime_card=None,evidence_manifest=None,lines=[],**extra)));path.chmod(0o600)
+    with pytest.raises(Invalid,match=reason):
+        RuntimeWorkerBindings(path,None,None,None,confirmation_signer=None)

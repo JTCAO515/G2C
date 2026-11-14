@@ -52,10 +52,16 @@ def pinned_directory(value):
 
 class RuntimeWorkerBindings:
     def __init__(self,path,runtime,services,tools,*,confirmation_signer,clock=monotonic,
-                 wall_clock=lambda:datetime.now(timezone.utc)):
+                 wall_clock=lambda:datetime.now(timezone.utc),release=None):
         data=decode(read_private(path,131072))
-        require(type(data) is dict and set(data)=={'version','baseline','resource_root','runtime_card','evidence_manifest','lines'}
-            and data['version']=='G2C-runtime-host.1' and data['baseline']=='national.2','RUNTIME_WORKER_MANIFEST')
+        fields={'version','baseline','resource_root','runtime_card','evidence_manifest','lines'}
+        require(type(data)is dict and type(data.get('version'))is str
+            and data['version']in('G2C-runtime-host.1','G2C-runtime-host.2')
+            and set(data)==fields|({'fixture_preparation'}if data['version']=='G2C-runtime-host.2'else set())
+            and data['baseline']=='national.2','RUNTIME_WORKER_MANIFEST')
+        self.fixture_preparation=data['fixture_preparation']if data['version']=='G2C-runtime-host.2'else None
+        self.fixture_preparation_status='NOT_CONFIGURED'
+        if data['version']=='G2C-runtime-host.2':require(type(self.fixture_preparation)is dict,'FIXTURE_PREPARATION_HOST_REQUIRED')
         require(type(data['lines']) is list and 1<=len(data['lines'])<=4,'RUNTIME_WORKER_LINE_BOUND')
         require(type(data['resource_root']) is str and Path(data['resource_root']).is_absolute() and
             type(data['evidence_manifest']) is str and Path(data['evidence_manifest']).is_absolute(),'RUNTIME_WORKER_PATHS')
@@ -64,6 +70,8 @@ class RuntimeWorkerBindings:
         require(self.pins.value['model']==configured_model(services.model,M4_NATIVE_TURN_BUFFERED),
             'RUNTIME_ACTUAL_MODEL_CONFIGURATION_CHANGED')
         self.runtime,self.services,self.tools,self.clock=runtime,services,tools,clock
+        self.wall_clock=wall_clock
+        self.release=release
         self.database=runtime.database();self.by_scope={};self.inactive_scopes={};self.evidence_manifest=Path(data['evidence_manifest'])
         self.artifact_directory=None
         lines=set()
@@ -240,9 +248,97 @@ class RuntimeWorkerBindings:
             backend=NativeRuntimeBackend(authority,claims,collector,boundary,token,
                 require_worker=require_worker,wait_original=wait,admit_reflection=admit_reflection,dialogue=dialogue)
             session['backend']=backend
+            session['collector']=collector
+            session['originals']=originals
             session['dialogue']=dialogue
             session['adapter']=RuntimeAdapter(backend,session['binding'],self.pins,session['mapping_directory'],
                 dataset_path=self.public_root/'eval/optimization/cases.v2.json')
+        if self.fixture_preparation is not None:
+            self._attach_fixture_preparation(self.fixture_preparation)
+
+    def _attach_fixture_preparation(self,data):
+        """B's fixed preparation readers, never an E-selected source/path.
+
+        No begin/close/issue, preparation dispatch or use reservation occurs
+        during startup. Missing originals stay unavailable. The final use
+        publisher remains a separate required dependency.
+        """
+        from .runtime_fixture_registry import FixtureUseRegistry
+        from .runtime_fixture_boundary import FixtureSourceBoundary
+        from .runtime_release_witness import NativeReleaseWitness
+        from .runtime_preparation_cost import PreparationCostInventory,FrozenPreparationCost
+        from .runtime_preparation_lifecycle import PreparationLifecycle
+        from .runtime_fixture_originals import FixtureOriginalReferences
+        fields={'version','purpose_approval_sha256','producer_binding_sha256','consumer_binding_sha256',
+            'preparation_message_ids','preparation_message_id','policy_file','reservations_directory',
+            'references_directory','cost_directory','lifecycle_directory','release_control_directory','source_state_file'}
+        require(type(data)is dict and set(data)==fields
+            and data['version']=='G2C-fixture-preparation-host.1'
+            and data['purpose_approval_sha256']=='32dd0d098fde23b93b2625fc341afc34e561588ffb9f1e1128577648e08f194c',
+            'FIXTURE_PREPARATION_HOST_FIELDS')
+        sessions={s['line']:s for s in self.by_scope.values()}
+        if not {'C','E'}<=sessions.keys():
+            # Preserve startup's existing revoked-identity isolation: no
+            # fixture metadata reader is attached, while ordinary A/L traffic
+            # keeps its original worker and registration path.
+            self.fixture_preparation_status='FIXTURE_ORIGINAL_SESSIONS_NOT_CONNECTED'
+            return
+        if self.release is None:raise Unavailable('FIXTURE_NATIVE_RELEASE_NOT_CONNECTED')
+        producer,consumer=sessions['C'],sessions['E']
+        require(data['producer_binding_sha256']==producer['binding'].key
+            and data['consumer_binding_sha256']==consumer['binding'].key,'FIXTURE_PREPARATION_HOST_BINDINGS')
+        mids=data['preparation_message_ids']
+        require(type(mids)is list and 0<len(mids)<=3 and data['preparation_message_id']in mids,
+            'FIXTURE_PREPARATION_APPROVED_MESSAGES')
+        require(type(data['policy_file'])is str and Path(data['policy_file']).is_absolute(),
+            'FIXTURE_PREPARATION_POLICY_PATH')
+        require(type(data['release_control_directory'])is str and Path(data['release_control_directory']).is_absolute(),
+            'FIXTURE_PREPARATION_RELEASE_PATH')
+        require(type(data['source_state_file'])is str and Path(data['source_state_file']).is_absolute(),
+            'FIXTURE_PREPARATION_STATE_PATH')
+        expected=read_private(data['source_state_file'],1048576)
+        frame=decode(expected)
+        require(type(frame)is dict and frame['binding_sha256']==producer['binding'].key
+            and frame['preparation']['message_id']==data['preparation_message_id'],'FIXTURE_PREPARATION_STATE_BINDING')
+        directories={key:pinned_directory(data[key])for key in (
+            'reservations_directory','references_directory','cost_directory','lifecycle_directory')}
+        def guard(*,read_only,deadline=None):
+            deadline=self.clock()+30 if deadline is None else deadline
+            for session in (producer,consumer):
+                session['authority'].require(binding=session['binding'],pins_sha256=self.pins.key,
+                    purpose='query',deadline=deadline,read_only=True)
+                if session['authority'].pins()!=self.pins.raw:
+                    raise Unavailable('FIXTURE_CURRENT_SOURCE_CHANGED')
+            if not read_only:
+                consumer['authority'].require(binding=consumer['binding'],pins_sha256=self.pins.key,
+                    purpose='query',deadline=deadline,read_only=False)
+        release=NativeReleaseWitness(self.database,producer['binding'].scope,Path(data['release_control_directory']),
+            guard=lambda:guard(read_only=True),release=self.release)
+        source=FixtureSourceBoundary(producer['authority'],producer['binding'],self.pins,
+            producer['boundary'],self._trip_boundary(producer),producer['token'],data['preparation_message_id'],
+            release,qualification_guard=lambda deadline:guard(read_only=True,deadline=deadline))
+        def definition():raise Unavailable('FIXTURE_DEFINITION_PUBLISHER_NOT_CONNECTED')
+        def admission():return consumer['claims']._admission()
+        def preparation_guard():
+            if read_private(data['source_state_file'],1048576)!=expected:
+                raise Unavailable('FIXTURE_PREPARATION_STATE_CHANGED')
+            source.with_current(expected,lambda state,private:b'qualified',deadline=self.clock()+30)
+        registry=FixtureUseRegistry(directories['reservations_directory'],data['policy_file'],
+            producer['binding'],producer['binding'],consumer['binding'],self.pins,
+            guard=guard,source_guard=definition,admission_lock=admission,clock=self.wall_clock,
+            preparation_guard=preparation_guard)
+        baseline=registry.policy['baseline']
+        require(frame['trip']==dict(trip_id_sha256=baseline['trip_id_sha256'],version=baseline['trip_version'],
+            content_sha256=baseline['content_sha256']),'FIXTURE_PREPARATION_BASELINE_CHANGED')
+        costs=PreparationCostInventory(producer['originals'],producer['authority'],producer['binding'],
+            self.pins,producer['token'],tuple(mids))
+        lifecycle=PreparationLifecycle(directories['lifecycle_directory'],costs)
+        frozen=FrozenPreparationCost(directories['cost_directory'],costs)
+        reader=FixtureOriginalReferences(directories['references_directory'],registry,
+            preparation_cost=frozen,preparation_lifecycle=lifecycle,clock=self.clock)
+        consumer['collector'].fixture_originals=reader
+        consumer['fixture_preparation']=dict(registry=registry,source=source,cost=frozen,lifecycle=lifecycle,originals=reader)
+        self.fixture_preparation_status='PREPARATION_READERS_ONLY_USE_PUBLISHER_UNRUN'
 
     def _trip_boundary(self,session):
         from .lio_trip_routes import LioTripBoundary
