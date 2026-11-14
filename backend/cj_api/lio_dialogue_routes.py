@@ -31,7 +31,7 @@ def _failure(status):
     return _json({'failure': 'quota' if status == 429 else 'unavailable'}, status)
 
 
-def _message(item, state, *, expired=False, trip=None, memory=None):
+def _message(item, state, *, expired=False, trip=None, memory=None, identity=True):
     failure = None
     if trip is not None:
         status = 'completed'
@@ -72,7 +72,7 @@ def _message(item, state, *, expired=False, trip=None, memory=None):
                      else 'Weather China · Current '+name+' forecast (reference)')
             sources.append(dict(title=title,url=url,observed_at=None))
     answer = display_answer(state.text, item.locale) if state is not None else ''
-    if status == 'completed' and answer is not None:
+    if identity and status == 'completed' and answer is not None:
         introduction = self_description(item.text, item.locale)
         if introduction is not None:
             answer = introduction

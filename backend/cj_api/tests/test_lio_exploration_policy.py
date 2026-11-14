@@ -112,11 +112,14 @@ class ExplorationPolicyTests(unittest.TestCase):
 
     def test_questions_apply_existing_display_redlines_and_option_meanings(self):
         selected=candidates({},4)
-        for bad in ('message_id是什么？','我已记住你的偏好，接下来呢？'):
-            proposed=model_groups(selected,'zh');proposed[0]['question']=bad
-            result=questions(Scene.EXPLORATION,selected,proposed,'zh')
+        for locale,bad in (('zh','message_id是什么？'),('zh','我已记住你的偏好，接下来呢？'),
+                           ('zh','偏好已被保存，接下来去哪里？'),('en','I’ve booked your hotel. Which city next?'),
+                           ('en','Your preferences are saved. Which city next?'),
+                           ('en',"We've remembered your preferences. Which city next?")):
+            proposed=model_groups(selected,locale);proposed[0]['question']=bad
+            result=questions(Scene.EXPLORATION,selected,proposed,locale)
             self.assertTrue(result.used_question_bank)
-            self.assertEqual(result.groups,tuple(factor.question('zh')for factor in selected))
+            self.assertEqual(result.groups,tuple(factor.question(locale)for factor in selected))
         proposed=model_groups(selected,'zh')
         proposed[0]['options'][0]['display_text']='上海'
         self.assertTrue(questions(Scene.EXPLORATION,selected,proposed,'zh').used_question_bank)

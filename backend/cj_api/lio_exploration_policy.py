@@ -49,8 +49,9 @@ def candidates(profile,count,*,stage='exploration'):
 
 
 _CONTROL=re.compile(r'[\x00-\x1f\x7f-\x9f\u2028\u2029]')
-_ACTION_CLAIM=re.compile(r'已(?:经)?(?:为你|帮你)?(?:记住|记下|保存|预订|付款)|保存成功|'
-    r"\b(?:I(?: have|'ve)?|we have)\s+(?:saved|booked|paid|remembered)\b",re.I)
+_ACTION_CLAIM=re.compile(r'已(?:经)?(?:被|为你|帮你)?(?:记住|记下|保存|预订|付款)|保存成功|'
+    r"\b(?:I|we)(?: have|'ve)?\s+(?:saved|booked|paid|remembered)\b|"
+    r"\b(?:is|are|was|were|has been|have been)\s+(?:saved|booked|paid|remembered)\b",re.I)
 
 
 class _DTO(BaseModel):
@@ -81,7 +82,7 @@ def _bounded(text,locale):
     # token from adjacent CJK text for detection, without rewriting user text.
     check=re.sub(r'([A-Za-z0-9_])(?=[\u3400-\u9fff])',r'\1 ',text)
     check=re.sub(r'([\u3400-\u9fff])(?=[A-Za-z0-9_])',r'\1 ',check)
-    return bool(text.strip()) and display_answer(check,locale)==check and _ACTION_CLAIM.search(text) is None and _CONTROL.search(text) is None and (
+    return bool(text.strip()) and display_answer(check,locale)==check and _ACTION_CLAIM.search(text.replace('’',"'")) is None and _CONTROL.search(text) is None and (
         len(text)<=80 if locale=='zh' else len(text.split())<=50)
 
 

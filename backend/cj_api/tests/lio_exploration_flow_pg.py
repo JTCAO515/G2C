@@ -105,6 +105,7 @@ def exercise(root,conninfo):
                     for group in extra['candidates']]
                 if fault=='bad_questions':groups=groups+groups[:1]
                 if fault=='unsafe_question':groups[0]['question']='message_id是什么？'
+                if fault=='false_save_claim':groups[0]['question']='偏好已被保存，接下来去哪里？'if locale=='zh'else'I’ve booked your hotel. Which city next?'
                 if fault=='mismatched_option':groups[0]['options'][0]['display_text']='上海'
                 value=dict(version=version,body='可以先围绕一座城市，按兴趣和节奏来细化。' if locale=='zh' else
                     'Start with one city, then fit the stops to your interests and pace.',groups=groups)
@@ -176,11 +177,20 @@ def exercise(root,conninfo):
         assert not {'city','duration_days'}&{group['factor_key']for group in message['question_groups']}
         _,message=send('flow4-city-followup','节奏改为：轻松',suzhou)
         assert not {'city','duration_days','pace'}&{group['factor_key']for group in message['question_groups']}
-        for bad in ('unsafe_question','mismatched_option'):
+        for bad in ('unsafe_question','mismatched_option','false_save_claim'):
             fault=bad
             _,message=send('flow4-'+bad,'我想去中国玩几天')
             assert len(message['question_groups'])==4 and message['status']=='completed'
             assert 'message_id'not in message['answer']
+            assert '已被保存'not in message['answer'] and 'I’ve booked'not in message['answer']
+        for language,text in (('zh','你是谁'),('en','Who are you?')):
+            locale=language;before=len(wire)
+            _,message=send('flow4-identity-'+language,text)
+            assert message['status']=='completed' and len(wire)==before
+            assert 'Lio'in message['answer'] and message['question_groups']==[]
+            assert message['exits']==[]
+            assert all(len(segment['text'])<=80 if locale=='zh'else len(segment['text'].split())<=50
+                       for segment in message['segments'])
         fault=None
         for language,text in (('zh','规划不要三天'),('en','Plan not 3 days')):
             locale=language

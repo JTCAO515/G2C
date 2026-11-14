@@ -107,7 +107,10 @@ def timeline(boundary,resolve_runs,trip_cards,memory_cards,profile_cards,token,c
                     trip=trip_cards.read(token,binding,protocol=item.protocol)
                 memory=(memory_cards.project(context,token,item.message_id,item.run_id)
                         if memory_cards is not None and state is not None and state.status=='completed' else None)
-                value=_message(item,state,expired=expired,trip=trip,memory=memory)
+                # Native4 stores the deterministic identity as real sections.
+                # Only legacy originals need the historical read-time override.
+                value=_message(item,state,expired=expired,trip=trip,memory=memory,
+                               identity=item.protocol!=LIO_VERSION_V4)
                 sections=_presentation(state,item.locale)
                 # Until the new producer publishes sections, preserve the real
                 # plain answer rather than showing an empty replacement bubble.

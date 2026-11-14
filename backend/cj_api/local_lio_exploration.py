@@ -9,7 +9,7 @@ from zoneinfo import ZoneInfo
 from pydantic import ValidationError
 from cj_agent.provider import ProviderUnknown
 from cj_message.demo_dialogue import LIO_VERSION_V4
-from cj_message.lio_context import LioCitation,LioToolProgress,display_answer
+from cj_message.lio_context import LioCitation,LioToolProgress,display_answer,self_description
 from cj_message.lio_exploration_schema import UNDERSTANDING,RESPONSE,Understanding,ExplorationInput
 from cj_message.lio_wire import ExplorationOrigin
 from cj_needs.domain import decode,InvalidInput
@@ -160,6 +160,9 @@ class ExplorationPlanning:
     def execute(self,worker,binding,state,text,original):
         if original.protocol!=LIO_VERSION_V4:return self.legacy.execute(worker,binding,state,text,original)
         view=self.profiles.read(worker,binding);locale=original.locale
+        identity=self_description(text,locale)
+        if identity is not None:
+            return self._finish(worker,binding,state,identity,Scene.PRACTICAL,locale)
         direct=text.strip().casefold() in ('直接出方案','plan now')
         if direct:
             state,profile=self.profiles.accept(worker,binding,state,json.dumps(dict(version='LIO-profile-update.1',updates=[])),expected=view,plan_now=True)
