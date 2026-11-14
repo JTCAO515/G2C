@@ -599,3 +599,24 @@ docker compose --env-file /srv/g2c-beta/compose.env -f /srv/g2c-beta/deploy/hk/c
 ```
 
 续结在同命令追加 `--resume`，仍用原ID；先由PG17 `pg_controldata`只读核system ID，wrong/unknown集群不得启停。失败不销毁目标。
+
+### Native4 accounting schema55
+
+Schema55 and original-account qualification are separate B operations. With the
+API and worker stopped in the announced, empty maintenance window, B uses the
+reviewed operator image's `deploy.hk.demo_schema --target 55`; existing signed
+52/53/54 COMPLETE anchors and the original lineage are required. A partial
+upgrade stays unavailable until `--resume-schema55` reconciles that same intent,
+exports the complete signed55 backup and marks its original anchor COMPLETE.
+Readiness requires that anchor. Never repeat an unknown write or restore a
+ledger/database to make a check pass.
+
+Keep an immutable compatible55 application/worker rollback image before
+qualifying any original account. Format2 data, native RUN profiles and UNKNOWN
+holds must remain readable after deactivation; a schema54/v1-only image is not a
+rollback target. Qualification preserves the original Config, period and all
+attempts and is not a quota grant. Only B changes ledger metadata, deployment
+policy or Hong Kong configuration. L can resume the normal idle app-deployment
+flow after B updates and verifies the standing55 gate; API and worker must share
+the actual qualified source/image. Local migration/fixture results do not enable
+Home default4 or prove live-provider/native4 acceptance.
