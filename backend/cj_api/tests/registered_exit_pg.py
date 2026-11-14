@@ -645,3 +645,5 @@ def exercise(auth,conninfo):
 if __name__=='__main__':
     harness.exercise=exercise
     harness.main()
+    from native4_usage_pg import main as native4_main
+    native4_main()

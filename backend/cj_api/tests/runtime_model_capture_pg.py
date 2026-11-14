@@ -34,6 +34,18 @@ def exercise(root,conninfo):
     context=load_run_context(meter)
     for actor in (subject,foreign):
         local_run_context.provision_budget(conninfo,context,actor);dev_auth.activate_travel(conninfo,actor,context,ABI)
+    # The protected collector must retain actual original bytes/status for v2
+    # accounts too, without enabling native4 policy for this old Lio2 fixture.
+    from dataclasses import asdict
+    import psycopg
+    from cj_usage.codec import decode_stored,decode_v2,encode_v2
+    from cj_run.step_usage import ledger_scope_for
+    with psycopg.connect(**json.loads(conninfo.read_text()))as db:
+        for actor in(subject,foreign):
+            account=ledger_scope_for(scope_for(ISSUER,actor),context.current.meter)
+            version,raw=db.execute('SELECT format_version,ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(account,)).fetchone()
+            original=asdict(decode_stored(version,raw));original.update(run_profiles={},attempt_providers={})
+            db.execute('UPDATE cj_usage_ledger_candidate SET format_version=2,ledger=%s::jsonb WHERE scope_id=%s',(encode_v2(decode_v2(original)),account))
     database=LocalDatabase(conninfo,run_context=context,travel_context=True,needs_context=True,trip_context=True)
     expiry=(datetime.now(timezone.utc)+timedelta(hours=1)).isoformat()
     profile=dict(subjects=['self'],extents=['long_term'],context_ids=[],slots={'travel.pace':dict(kind='preference',collection_allowed=True,semantic_resolved=True)})

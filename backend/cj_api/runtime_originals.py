@@ -19,7 +19,7 @@ from cj_message.domain import Unavailable as MessageUnavailable,InvalidInput,Com
 from cj_run.usage_binding import UsageBinding
 from cj_run.core import Denied as RunDenied
 from cj_run.step_usage import ledger_scope_for
-from cj_usage.codec import decode
+from cj_usage.codec import decode_stored
 from cj_usage.authorization_budget import canonical
 from cj_usage.metered_exit import BudgetUnknown
 from runtime_adapter.contract import Unavailable,decode as original_json,require
@@ -143,9 +143,9 @@ class RuntimeOriginals:
         if len(profiles)!=1 or row[5]!=period[0]:raise Unavailable('ORIGINAL_PERIOD_NOT_RETAINED')
         with self.database.connect(scope,usage_profile=profiles[0]) as db:
             db.execute('SET TRANSACTION READ ONLY')
-            stored=db.execute('SELECT ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(row[5],)).fetchone()
+            stored=db.execute('SELECT format_version,ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(row[5],)).fetchone()
         if stored is None:raise Unavailable('ORIGINAL_METER_UNAVAILABLE')
-        attempt=decode(stored[0]).attempts.get(usage.command.attempt_id)
+        attempt=decode_stored(stored[0],stored[1]).attempts.get(usage.command.attempt_id)
         if attempt is None:raise Unavailable('ORIGINAL_METER_ATTEMPT_UNAVAILABLE')
         return canonical(asdict(attempt))
 

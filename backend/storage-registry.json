@@ -1,5 +1,5 @@
 {
-  "version": "1.27.0",
+  "version": "1.28.0",
   "stores": [
     {
       "id": "business",
@@ -74,7 +74,8 @@
           "id": "usage",
           "owner": "CJ-008",
           "objects": [
-            "cj_usage_ledger_candidate"
+            "cj_usage_ledger_candidate",
+            "cj_native4_usage_profile"
           ],
           "source": "backend/usage/sql/001_candidate.sql@5c248ad22f449aef8e42d7f4256bfc19e6c346a2",
           "status": "candidate_or_local_only; production_not_provisioned",
@@ -82,10 +83,11 @@
           "sensitive_fields": [
             "budget scope/configuration",
             "attempt and reservation identifiers",
-            "charges and usage ledger JSON"
+            "charges and usage ledger JSON",
+            "operator-qualified native4 policy and original ledger scope; codec2 per-RUN profile/provider counters"
           ],
           "retention": "Account reconciliation until account deletion; not diagnostic logs; no 90-day TTL",
-          "cleanup_hook": "cj_cleanup.account_hooks.UsageHook; explicit code-owned tables, original persisted intent, account fence, verified physical erasure and atomic original result; no owner/C data guessing",
+          "cleanup_hook": "cj_cleanup.account_hooks.UsageHook; explicit code-owned tables, original persisted intent, account fence, verified physical erasure and atomic original result; no owner/C data guessing; native4 eligibility metadata cascades only with an approved original account-parent cleanup, without new DELETE grants",
           "restore_fence": "Replay cj_account_fence hashed namespace before runtime access; restrictive account_retired RLS prevents sensitive read/write/reconstruction; backup validation remains #30",
           "read_consumers": [
             {
