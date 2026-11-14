@@ -64,7 +64,7 @@ class NationalLioIdentity(unittest.TestCase):
         self.assertEqual(_message(user,complete(text))['answer'],text)
 
     def test_capability_whole_sentence_variants_project_exact_markdown(self):
-        variants=(('zh',('你能做什么','你可以做什么？','你会什么。','你有什么能力'),EXPECTED_CAPABILITIES_ZH),
+        variants=(('zh',('你能做什么','你能做啥','你能做啥？','你可以做什么？','你会什么。','你有什么能力'),EXPECTED_CAPABILITIES_ZH),
                   ('en',('What can you do?','What do you do.'),EXPECTED_CAPABILITIES_EN))
         for locale,questions,expected in variants:
             for question in questions:
@@ -74,8 +74,14 @@ class NationalLioIdentity(unittest.TestCase):
                     self.assert_public_copy(reply['answer'],expected)
 
     def test_matching_does_not_expand_to_longer_requests(self):
-        for question in ('你能做什么来规划成都三日游？','What can you do about this itinerary?','Hello'):
+        for question in ('你能做什么来规划成都三日游？','你能做啥来规划成都三日游？','What can you do about this itinerary?','Hello'):
             self.assertIsNone(self_description(question,'en'))
+
+    def test_capability_alias_never_relabels_an_original_unknown_as_a_success(self):
+        item=TimelineMessage('original-capability','original-run',1,'你能做啥','zh')
+        state=complete('');state.status='unknown'
+        value=_message(item,state)
+        self.assertEqual((value['status'],value['answer']),('failed',''))
 
     def test_internal_output_still_fails_before_fixed_projection(self):
         for question in ('你是谁','你能做什么'):
