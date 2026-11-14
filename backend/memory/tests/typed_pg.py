@@ -243,7 +243,11 @@ class TypedStorageChecks(TitleProjectionPG,Harness):
         boundary=Boundary(account_checker_for(auth,database,selected_subjects=subjects),
             lambda principal:database.message_repository(scope_for(principal.issuer,principal.subject)),lambda:'unused',
             checker_in_transaction=transaction_checker)
-        reader=CurrentScopeEpochReader(database,configuration)
+        # Actual API supplies only TypedConfiguration; worker selections and
+        # MEMORY_RUN_POLICY are deliberately not passed to this constructor.
+        reader=CurrentScopeEpochReader.for_api(database,configuration.collection)
+        self.assertIsNone(reader.selections)
+        with self.assertRaises(RuntimeDenied):CurrentScopeEpochReader.for_api(database,None)
         locks=[];lock=MessageTransaction.lock_scope
         def counted(tx):locks.append(tx.scope);return lock(tx)
         observed=[]
@@ -270,6 +274,18 @@ class TypedStorageChecks(TitleProjectionPG,Harness):
                 return context.with_lio_timeline_projection(lambda:reader.project(context,observed[0],
                     lambda epoch:payload,max_result_bytes=limit))
             with self.assertRaises(RuntimeDenied):boundary.with_history_context(token,invalid_projection)
+        # A live API policy can expire while the complete profile is encoded.
+        # The final check must withhold those bytes, without a worker selection.
+        from datetime import datetime,timezone
+        with patch('cj_memory.epoch_projection.datetime') as clock:
+            clock.now.return_value=datetime.now(timezone.utc)
+            def expire_after_encode(context):
+                def encoded(epoch):
+                    clock.now.return_value=configuration.collection.collection.profiles[identity].expires_at
+                    return b'{"private":"must be withheld"}'
+                return context.with_lio_timeline_projection(lambda:reader.project(context,observed[0],encoded,max_result_bytes=1000))
+            with self.assertRaises(RuntimeDenied):boundary.with_history_context(token,expire_after_encode)
+        self.assertEqual(snapshot(),(before,[]))
         invited=auth/'invited.json';original=invited.read_bytes()
         try:
             from cj_message.auth_boundary import AccessBlocked,IdentityChanged
