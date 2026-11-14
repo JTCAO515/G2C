@@ -42,20 +42,22 @@ class RuntimeAuthority:
         if self.clock()>=deadline:raise Unavailable('DEADLINE_REACHED')
         if self.binding()!=binding:raise Unavailable('ORIGINAL_AUTH_CONTEXT_CHANGED')
         if pins_sha256!=self.original_pins.key:raise Unavailable('ORIGINAL_PIN_BINDING_CHANGED')
+        new_work=not read_only and purpose!='cancel_original'
         with self.budget.connect() as db:
             db.execute('BEGIN');self.budget.require_producer(db)
             row=db.execute('SELECT line FROM scope_sublimit WHERE scope_hash=?',(scope_hash(binding.scope),)).fetchone()
             if row!=(self.line,):raise Unavailable('ORIGINAL_LINE_ALLOCATION_CHANGED')
-            if not read_only:
+            if new_work:
                 import json
                 limits=json.loads(db.execute('SELECT policy FROM sublimit WHERE line=?',(self.line,)).fetchone()[0])
                 spent=usage(db,self.line)
                 if (limits['active_cap'] is not None and spent['total']+CNY_SCALE>limits['active_cap'] or
                         limits['max_calls'] is not None and spent['calls']>=limits['max_calls']):
                     raise Unavailable('ORIGINAL_LINE_ALLOWANCE_EXHAUSTED')
-        if not read_only:
+        if not read_only and self.current_pins()!=self.original_pins.raw:
+            raise Unavailable('RUNTIME_PIN_CHANGED')
+        if new_work:
             self.budget.check_date()
-            if self.current_pins()!=self.original_pins.raw:raise Unavailable('RUNTIME_PIN_CHANGED')
             now=self.wall_clock()
             if not isinstance(now,datetime) or now.tzinfo is None:
                 raise Unavailable('RESOURCE_CLOCK_UNAVAILABLE')

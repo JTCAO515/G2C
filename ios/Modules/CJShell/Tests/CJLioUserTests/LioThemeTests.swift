@@ -121,4 +121,32 @@ struct LioThemeTests {
             #expect(forbidden.firstMatch(in: sample, range: NSRange(sample.startIndex..., in: sample)) != nil, "\(sample)")
         }
     }
+
+    @Test func launchScreenUsesThePaperColorInBothAppearances() throws {
+        let ios = Self.shell.deletingLastPathComponent().deletingLastPathComponent()
+        let plist = try String(contentsOf: ios.appendingPathComponent("App/Info.plist"), encoding: .utf8)
+        #expect(plist.contains("<key>UILaunchScreen</key><dict><key>UIColorName</key><string>LaunchPaper</string></dict>"))
+        let file = ios.appendingPathComponent("Branding/LaunchAssets.xcassets/LaunchPaper.colorset/Contents.json")
+        let set = try JSONDecoder().decode(ColorSet.self, from: Data(contentsOf: file))
+        let paper = try Self.swatch("paper")
+        #expect(set.colors.count == 2)
+        let light = try #require(set.colors.first { $0.appearances == nil })
+        let dark = try #require(set.colors.first { $0.appearances?.first?.value == "dark" })
+        #expect(try Self.hex(light) == paper.light)
+        #expect(try Self.hex(dark) == paper.dark)
+        let project = try String(contentsOf: ios.appendingPathComponent("CJProbeApp.xcodeproj/project.pbxproj"), encoding: .utf8)
+        #expect(project.contains("path = Branding/LaunchAssets.xcassets;"))
+        // Every configuration ships the launch colour: no exclusion list may name its catalog.
+        #expect(!project.contains("LaunchAssets.xcassets\""))
+        #expect(!project.contains("LaunchAssets.xcassets "))
+    }
+
+    @Test func motionTimingsAndReduceMotion() {
+        #expect(LioTheme.Motion.breathingCycle == 1.6)
+        #expect(LioTheme.Motion.chatFadeOut == 0.15)
+        #expect(LioTheme.Motion.animation(LioTheme.Motion.enter, reduceMotion: true) == nil)
+        #expect(LioTheme.Motion.animation(LioTheme.Motion.enter, reduceMotion: false) != nil)
+        #expect(LioEntranceStyle.rise.offset == 8 && LioEntranceStyle.fade.offset == 0)
+        #expect(LioEntranceStyle.launch.scale == 0.8 && LioEntranceStyle.rise.scale == 1)
+    }
 }

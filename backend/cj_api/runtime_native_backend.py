@@ -41,7 +41,7 @@ class NativeRuntimeBackend:
     def claim(self,request,*,deadline):
         value=decode(request)
         if type(value) is not dict or (value.get('kind')!='reflection' and
-                (self.dialogue is None or value.get('kind') not in ('task_setup','message','new_conversation_message','lio_undo_current_trip'))):
+                (self.dialogue is None or value.get('kind') not in ('task_setup','message','new_conversation_message','lio_undo_current_trip','start_controlled_generation','cancel_original_run'))):
             raise Unavailable('NATIVE_ACTION_NOT_CONNECTED')
         self.require_worker(self.claims.binding,self.claims.pins,deadline)
         return self.claims.claim(request,deadline=deadline)
@@ -58,7 +58,8 @@ class NativeRuntimeBackend:
     def _dispatch(self,request,*,capability,deadline):
         original=self.claims.consume(request,capability,deadline=deadline)
         self.require(binding=self.claims.binding,pins_sha256=self.claims.pins.key,
-            purpose='reflection',deadline=deadline,read_only=False)
+            purpose='cancel_original' if original['kind']=='cancel_original_run' else 'reflection',
+            deadline=deadline,read_only=False)
         if original['kind']!='reflection':
             if self.dialogue is None:raise Unavailable('NATIVE_ACTION_NOT_CONNECTED')
             self.dialogue.dispatch(original,deadline=deadline)

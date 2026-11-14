@@ -347,7 +347,8 @@ class NationalLioPlanning:
             return self._clarify(worker,binding,state,original.locale,intake.reply,question_fields,required)
         if authority=='none':return self._reply(worker,binding,state,intake.reply)
         state=context(worker,binding,state,dict(authority='none',status='ready_to_publish',city=resolution))
-        details=PlanningDetails(city.name,fields,None,refs)
+        from .lio_plan_pace import from_needs_fields
+        details=PlanningDetails(city.name,fields,None,refs,pace=from_needs_fields(fields))
         state=register(worker,binding,state,details)
         if calendar is not None:
             from datetime import date

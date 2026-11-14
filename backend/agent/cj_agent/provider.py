@@ -461,6 +461,7 @@ class MeteredDashScopeProvider:
         if structured_profile not in (None,'LIO-planning-intake.1','LIO-planning-intake.2','LIO-planning-intake.3','LIO-planning-intake.4','LIO-planning-intake.5','LIO-planning-intake.6','LIO-planning-intake.7','LIO-planning-intake.8','LIO-planning-intake.9') or structured_profile is not None and (native_tools or system is None):
             raise ProviderFailed('explicit nationwide structured profile required')
         grouped_format=None
+        rich_draft=False
         if draft_profile is not None or draft_schema_sha256 is not None:
             from cj_draft.grouped_plan import GENERATION_PROFILES,response_format,response_format_sha256
             if (draft_profile not in GENERATION_PROFILES or native_tools or system is None
@@ -468,6 +469,8 @@ class MeteredDashScopeProvider:
                     or draft_schema_sha256!=response_format_sha256(draft_profile)):
                 raise ProviderFailed('explicit source-bound grouped schema required')
             grouped_format=response_format(draft_profile)
+            from cj_draft.rich_schema import GENERATION_PROFILES as rich_profiles
+            rich_draft=draft_profile in rich_profiles
         if release_after_send and (native_tools or system is None):
             raise ProviderFailed('explicit structured model input required')
         if tool_choice is not None and (tool_choice!='none' or not native_tools):
@@ -504,7 +507,7 @@ class MeteredDashScopeProvider:
             prompt+='\nReturn a single JSON object matching the requested output format.'
         body=dict(model=M4_MODEL,messages=[dict(role='system',content=prompt),*wire_messages],stream=True,
                   stream_options={'include_usage':True},enable_thinking=False,
-                  max_tokens=self.config.max_output_tokens if compact or incremental or structured_profile is not None else min(1024,self.config.max_output_tokens))
+                  max_tokens=self.config.max_output_tokens if compact or incremental or structured_profile is not None or rich_draft else min(1024,self.config.max_output_tokens))
         if proxy:
             definition=(_m4_compact_turn_function(native_tools,final_answer) if compact else
                         _m4_turn_function(native_tools,final_answer))

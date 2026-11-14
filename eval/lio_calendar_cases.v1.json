@@ -1,0 +1,248 @@
+{
+  "version": "LIO-calendar-cases.1",
+  "issue": 864,
+  "parent": 859,
+  "synthetic_only": true,
+  "public_acceptance_not_holdout": true,
+  "planned_n": 6,
+  "locale_denominators": {
+    "zh": 3,
+    "en": 3
+  },
+  "scope": {
+    "message_wire": "LIO-message.3",
+    "history_wire": "LIO-trip-history.3",
+    "source_contract": "structured.3",
+    "consumer": "native undated/calendar consumer; no legacy2/fallback routing",
+    "runtime": "B must qualify actual same-source API/worker, modes, original collectors, original identities/C sublimit and exclusive window"
+  },
+  "length_gate": {
+    "reference": "docs/lio-voice.md section3.2",
+    "state": "UNRUN",
+    "reason": "File is absent from accepted main; PR894 is not merged. This slice does not set a substitute threshold."
+  },
+  "cases": [
+    {
+      "id": "undated-save-zh",
+      "locale": "zh",
+      "fresh_conversation": true,
+      "steps": [
+        {
+          "kind": "message",
+          "text": "规划成都三天的行程。",
+          "assertions": [
+            "one formal Trip version; calendar.state=undated; contiguous day_indices 1..3; no day.date fields",
+            "date_checks weather/day_opening both not_checked/date_not_set; no fabricated dates or required date/party question"
+          ]
+        }
+      ],
+      "assertions": [
+        "Same original MESSAGE/RUN and receipt; complete answer and truthful saved-card/current/history relationship",
+        "No invented date or party, no silent memory save, no fabricated booking/source; fixed items and historical original bytes preserved",
+        "Each MESSAGE answer ends in one specific question; native undo receipts have no assistant-answer assertion. Length checking remains UNRUN until accepted main contains docs/lio-voice.md section3.2; no substitute threshold.",
+        "Report every planned trajectory, language, per-step PASS/FAIL/UNKNOWN/UNRUN, first progress/body/completion and conservative/token-estimate/paid fees",
+        "Any FAIL/UNKNOWN stops new dispatch; uncertain actions reconcile by original ID only; old stages and holds retained"
+      ]
+    },
+    {
+      "id": "day-edit-undo-zh",
+      "locale": "zh",
+      "fresh_conversation": true,
+      "steps": [
+        {
+          "kind": "message",
+          "text": "规划成都三天的行程。",
+          "assertions": [
+            "initial undated v1"
+          ]
+        },
+        {
+          "kind": "message-template",
+          "text": "把第2天下午「{actual_full_label}」（{actual_time_range}）换成成都博物馆，其他安排不变。",
+          "assertions": [
+            "new v2, one actual day2 target changed, all other content preserved"
+          ],
+          "dynamic_selection": "Read actual complete unique unlocked day2 afternoon item. Necessary POI ambiguity requires actual explicit user answer, no hidden first-result selection."
+        },
+        {
+          "kind": "native-undo",
+          "assertions": [
+            "append v3 restoring exact v1 content; preserve v1/v2; zero model call for undo"
+          ],
+          "target": "Actual current native3 undo_target; same original receipt and action ID reconciliation"
+        }
+      ],
+      "assertions": [
+        "Same original MESSAGE/RUN and receipt; complete answer and truthful saved-card/current/history relationship",
+        "No invented date or party, no silent memory save, no fabricated booking/source; fixed items and historical original bytes preserved",
+        "Each MESSAGE answer ends in one specific question; native undo receipts have no assistant-answer assertion. Length checking remains UNRUN until accepted main contains docs/lio-voice.md section3.2; no substitute threshold.",
+        "Report every planned trajectory, language, per-step PASS/FAIL/UNKNOWN/UNRUN, first progress/body/completion and conservative/token-estimate/paid fees",
+        "Any FAIL/UNKNOWN stops new dispatch; uncertain actions reconcile by original ID only; old stages and holds retained"
+      ]
+    },
+    {
+      "id": "date-conversion-zh",
+      "locale": "zh",
+      "fresh_conversation": true,
+      "steps": [
+        {
+          "kind": "message",
+          "text": "规划成都三天。第1天下午14:00–15:00我有固定的酒店集合，这项安排不变；酒店名称和位置未知。",
+          "assertions": [
+            "undated v1, source fixed day1 meetup exact; no fabricated hotel/booking"
+          ]
+        },
+        {
+          "kind": "message",
+          "text": "明天开始。",
+          "assertions": [
+            "dated v2, dayN=date-bearing-original question_day+1+(N-1), original fixed clock/location unknown unchanged",
+            "date-dependent checks recomputed; conflicts explicit, never silently erased"
+          ]
+        },
+        {
+          "kind": "native-undo",
+          "assertions": [
+            "undated v3 restoring exact v1 bytes; history preserved"
+          ],
+          "target": "Actual current native3 undo_target"
+        },
+        {
+          "kind": "message",
+          "text": "2026年12月1日出发。",
+          "assertions": [
+            "dated v4, dates 2026-12-01..03; same Trip ID; fixed item unchanged",
+            "date-dependent checks recomputed; known conflicts expressed"
+          ]
+        },
+        {
+          "kind": "native-undo",
+          "assertions": [
+            "undated v5 restoring exact v3/v1 bytes; all historical versions retained"
+          ],
+          "target": "Actual current native3 undo_target"
+        }
+      ],
+      "assertions": [
+        "Same original MESSAGE/RUN and receipt; complete answer and truthful saved-card/current/history relationship",
+        "No invented date or party, no silent memory save, no fabricated booking/source; fixed items and historical original bytes preserved",
+        "Each MESSAGE answer ends in one specific question; native undo receipts have no assistant-answer assertion. Length checking remains UNRUN until accepted main contains docs/lio-voice.md section3.2; no substitute threshold.",
+        "Report every planned trajectory, language, per-step PASS/FAIL/UNKNOWN/UNRUN, first progress/body/completion and conservative/token-estimate/paid fees",
+        "Any FAIL/UNKNOWN stops new dispatch; uncertain actions reconcile by original ID only; old stages and holds retained"
+      ]
+    },
+    {
+      "id": "undated-save-en",
+      "locale": "en",
+      "fresh_conversation": true,
+      "steps": [
+        {
+          "kind": "message",
+          "text": "Plan a three-day trip in Chengdu.",
+          "assertions": [
+            "one formal Trip version; calendar.state=undated; contiguous day_indices 1..3; no day.date fields",
+            "date_checks weather/day_opening both not_checked/date_not_set; no fabricated dates or required date/party question"
+          ]
+        }
+      ],
+      "assertions": [
+        "Same original MESSAGE/RUN and receipt; complete answer and truthful saved-card/current/history relationship",
+        "No invented date or party, no silent memory save, no fabricated booking/source; fixed items and historical original bytes preserved",
+        "Each MESSAGE answer ends in one specific question; native undo receipts have no assistant-answer assertion. Length checking remains UNRUN until accepted main contains docs/lio-voice.md section3.2; no substitute threshold.",
+        "Report every planned trajectory, language, per-step PASS/FAIL/UNKNOWN/UNRUN, first progress/body/completion and conservative/token-estimate/paid fees",
+        "Any FAIL/UNKNOWN stops new dispatch; uncertain actions reconcile by original ID only; old stages and holds retained"
+      ]
+    },
+    {
+      "id": "day-edit-undo-en",
+      "locale": "en",
+      "fresh_conversation": true,
+      "steps": [
+        {
+          "kind": "message",
+          "text": "Plan a three-day trip in Chengdu.",
+          "assertions": [
+            "initial undated v1"
+          ]
+        },
+        {
+          "kind": "message-template",
+          "text": "Replace '{actual_full_label}' on the afternoon of day 2 ({actual_time_range}) with Chengdu Museum; keep everything else unchanged.",
+          "assertions": [
+            "new v2, one actual day2 target changed, all other content preserved"
+          ],
+          "dynamic_selection": "Read actual complete unique unlocked day2 afternoon item. Necessary POI ambiguity requires actual explicit user answer, no hidden first-result selection."
+        },
+        {
+          "kind": "native-undo",
+          "assertions": [
+            "append v3 restoring exact v1 content; preserve v1/v2; zero model call for undo"
+          ],
+          "target": "Actual current native3 undo_target; same original receipt and action ID reconciliation"
+        }
+      ],
+      "assertions": [
+        "Same original MESSAGE/RUN and receipt; complete answer and truthful saved-card/current/history relationship",
+        "No invented date or party, no silent memory save, no fabricated booking/source; fixed items and historical original bytes preserved",
+        "Each MESSAGE answer ends in one specific question; native undo receipts have no assistant-answer assertion. Length checking remains UNRUN until accepted main contains docs/lio-voice.md section3.2; no substitute threshold.",
+        "Report every planned trajectory, language, per-step PASS/FAIL/UNKNOWN/UNRUN, first progress/body/completion and conservative/token-estimate/paid fees",
+        "Any FAIL/UNKNOWN stops new dispatch; uncertain actions reconcile by original ID only; old stages and holds retained"
+      ]
+    },
+    {
+      "id": "date-conversion-en",
+      "locale": "en",
+      "fresh_conversation": true,
+      "steps": [
+        {
+          "kind": "message",
+          "text": "Plan three days in Chengdu. On day 1 I have a fixed hotel meetup from 14:00 to 15:00; keep it unchanged. The hotel name and location are unknown.",
+          "assertions": [
+            "undated v1, source fixed day1 meetup exact; no fabricated hotel/booking"
+          ]
+        },
+        {
+          "kind": "message",
+          "text": "Start tomorrow.",
+          "assertions": [
+            "dated v2, dayN=date-bearing-original question_day+1+(N-1), original fixed clock/location unknown unchanged",
+            "date-dependent checks recomputed; conflicts explicit, never silently erased"
+          ]
+        },
+        {
+          "kind": "native-undo",
+          "assertions": [
+            "undated v3 restoring exact v1 bytes; history preserved"
+          ],
+          "target": "Actual current native3 undo_target"
+        },
+        {
+          "kind": "message",
+          "text": "Start on December 1, 2026.",
+          "assertions": [
+            "dated v4, dates 2026-12-01..03; same Trip ID; fixed item unchanged",
+            "date-dependent checks recomputed; known conflicts expressed"
+          ]
+        },
+        {
+          "kind": "native-undo",
+          "assertions": [
+            "undated v5 restoring exact v3/v1 bytes; all historical versions retained"
+          ],
+          "target": "Actual current native3 undo_target"
+        }
+      ],
+      "assertions": [
+        "Same original MESSAGE/RUN and receipt; complete answer and truthful saved-card/current/history relationship",
+        "No invented date or party, no silent memory save, no fabricated booking/source; fixed items and historical original bytes preserved",
+        "Each MESSAGE answer ends in one specific question; native undo receipts have no assistant-answer assertion. Length checking remains UNRUN until accepted main contains docs/lio-voice.md section3.2; no substitute threshold.",
+        "Report every planned trajectory, language, per-step PASS/FAIL/UNKNOWN/UNRUN, first progress/body/completion and conservative/token-estimate/paid fees",
+        "Any FAIL/UNKNOWN stops new dispatch; uncertain actions reconcile by original ID only; old stages and holds retained"
+      ]
+    }
+  ],
+  "results": {
+    "state": "UNRUN",
+    "note": "Frozen recipes/assertions, not executed traces or evidence of product PASS. Each date-conversion trajectory contains both relative and absolute conversions separated by append-only undo; denominator remains six full trajectories."
+  }
+}

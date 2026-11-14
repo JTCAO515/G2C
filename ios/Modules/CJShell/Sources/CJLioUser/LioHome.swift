@@ -36,6 +36,8 @@ public struct LioHome<MenuContent: View>: View {
     @State private var refreshRequest = 0
     @State private var jumpRequest = 0
     @State private var sendCount = 0
+    @State private var entering: Set<LioEntranceKey> = []
+    @State private var chatFading = false
     private struct Observation: Equatable {
         let active: Bool
         let request: Int
@@ -227,6 +229,7 @@ public struct LioHome<MenuContent: View>: View {
                 .padding(.top, 12)
                 .padding(.bottom, 12)
                 .frame(maxWidth: .infinity)
+                .opacity(chatFading ? 0 : 1)
             }
             .scrollClipDisabled(false)
             .scrollDismissesKeyboard(.interactively)
@@ -273,8 +276,7 @@ public struct LioHome<MenuContent: View>: View {
                     if let chatLibrary {
                         Section {
                             Button {
-                                guard canSwitchChat else { return }
-                                switchChat(chatLibrary.newChat(), opening: .beforeNext)
+                                startNewChat(chatLibrary)
                             } label: {
                                 Label(language.text("New chat", "新对话"), systemImage: "square.and.pencil")
                             }
@@ -310,6 +312,23 @@ public struct LioHome<MenuContent: View>: View {
             && tripPlan?.busy != true && tripPlan?.pending != true
     }
 
+    /// Fades the current conversation out for `chatFadeOut` seconds, switches, then fades the opening in.
+    /// The switch itself and its guard are unchanged; Reduce Motion switches at once.
+    private func startNewChat(_ library: LioChatLibrary) {
+        guard canSwitchChat, !chatFading else { return }
+        guard !reduceMotion else {
+            switchChat(library.newChat(), opening: .beforeNext)
+            return
+        }
+        menuOpen = false
+        withAnimation(.easeOut(duration: LioTheme.Motion.chatFadeOut)) { chatFading = true }
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(LioTheme.Motion.chatFadeOut))
+            switchChat(library.newChat(), opening: .beforeNext)
+            withAnimation(LioTheme.Motion.change) { chatFading = false }
+        }
+    }
+
     private func switchChat(_ chat: LioChatSession, opening: Opening = .hidden) {
         guard canSwitchChat else { return }
         if chat.id != chatID {
@@ -322,6 +341,7 @@ public struct LioHome<MenuContent: View>: View {
             tripPath = []
             memoryNotice = nil
             followsAnswer = true
+            entering = []
             refreshRequest += 1
         }
         menuOpen = false
@@ -361,6 +381,7 @@ public struct LioHome<MenuContent: View>: View {
             Spacer(minLength: 0)
             VStack(spacing: LioTheme.Spacing.xxs) {
                 LioPortrait(size: 44)
+                    .lioEntrance(.launch, active: !LioLaunchMotion.played) { LioLaunchMotion.played = true }
                 // The identifier sits on the name alone so the accessibility frame doesn't include the avatar.
                 Text("Lio")
                     .font(.subheadline.weight(.semibold))
@@ -370,8 +391,7 @@ public struct LioHome<MenuContent: View>: View {
             Spacer(minLength: 0)
             if let chatLibrary {
                 Button {
-                    guard canSwitchChat else { return }
-                    switchChat(chatLibrary.newChat(), opening: .beforeNext)
+                    startNewChat(chatLibrary)
                 } label: {
                     controlIcon("square.and.pencil")
                 }
@@ -506,6 +526,9 @@ public struct LioHome<MenuContent: View>: View {
                 followsAnswer = true
                 sendCount += 1
                 conversation.send(draft, language: language)
+                if let id = conversation.pending?.id {
+                    entering.formUnion([LioEntranceKey(turn: id, part: .question), LioEntranceKey(turn: id, part: .answer)])
+                }
                 recordPendingFirstQuestion()
                 if showedWelcome, let id = conversation.pending?.id { opening = .before(id) }
                 else if opening == .beforeNext { opening = .hidden }
@@ -652,24 +675,31 @@ public struct LioHome<MenuContent: View>: View {
                                                            bottomTrailingRadius: LioTheme.Radius.tail, topTrailingRadius: LioTheme.Radius.card))
                     .textSelection(.enabled)
                     .accessibilityIdentifier("lio.question")
+                    .lioEntrance(.rise, active: entering.contains(LioEntranceKey(turn: turn.id, part: .question))) {
+                        entering.remove(LioEntranceKey(turn: turn.id, part: .question))
+                    }
             }
             if case .failed = turn.status {
                 EmptyView()
             } else if !turn.answer.isEmpty {
-                if let answer = LioReplyMarkdown.render(turn.answer) {
-                    if !answer.characters.isEmpty {
+                let answerKey = LioEntranceKey(turn: turn.id, part: .answer)
+                Group {
+                    if let answer = LioReplyMarkdown.render(turn.answer) {
+                        if !answer.characters.isEmpty {
+                            lioReply {
+                                replyText(Text(answer))
+                                    .textSelection(.enabled)
+                                    .accessibilityIdentifier("lio.answer")
+                            }
+                        }
+                    } else {
                         lioReply {
-                            replyText(Text(answer))
-                                .textSelection(.enabled)
-                                .accessibilityIdentifier("lio.answer")
+                            replyText(Text(language.text("This reply can’t be shown right now.", "这条回答暂时无法显示。")))
+                                .accessibilityIdentifier("lio.reply.unavailable")
                         }
                     }
-                } else {
-                    lioReply {
-                        replyText(Text(language.text("This reply can’t be shown right now.", "这条回答暂时无法显示。")))
-                            .accessibilityIdentifier("lio.reply.unavailable")
-                    }
                 }
+                .lioEntrance(.fade, active: entering.contains(answerKey)) { entering.remove(answerKey) }
             }
             messageStatus(turn)
             if let memoryActions {

@@ -1601,6 +1601,97 @@ import XCTest
         app.launch()
     }
 
+ func testRichItineraryEnglishLight() throws { try exerciseRichItinerary(false,false) }
+ func testRichItineraryChineseLight() throws { try exerciseRichItinerary(true,false) }
+ func testRichItineraryEnglishDark() throws { try exerciseRichItinerary(false,true) }
+ func testRichItineraryChineseDark() throws { try exerciseRichItinerary(true,true) }
+ private func exerciseRichItinerary(_ chinese:Bool,_ dark:Bool) throws {
+  continueAfterFailure=false
+  let app=XCUIApplication(bundleIdentifier:"space.go2china.lio.acceptance")
+  app.launchArguments=["--lio-preview", "--lio-rich-itinerary-acceptance", "-cj.ui.language.v1", chinese ? "zh-Hans":"en"]+(dark ? ["--lio-rich-dark-acceptance"]:[])
+  app.launchEnvironment=["G2C_ACCEPTANCE_MAP_LOADING":"synthetic-delegate-failure"]
+  app.launch();defer{app.terminate()}
+  func reveal(_ element:XCUIElement) {
+   for _ in 0..<8 { if element.isHittable{return};app.swipeUp() }
+   XCTAssertTrue(element.isHittable,app.debugDescription)
+  }
+  let first=app.buttons["lio.rich.stop.sight"]
+  XCTAssertTrue(first.waitForExistence(timeout:10))
+  try app.performAccessibilityAudit(for:.all)
+  captureRichItinerary(app,"rich-day",chinese,dark)
+  first.tap()
+  let driver=app.buttons["lio.rich.driver"]
+  XCTAssertTrue(driver.waitForExistence(timeout:5));XCTAssertTrue(driver.isEnabled)
+  try app.performAccessibilityAudit(for:.all)
+  driver.tap()
+  let name=app.staticTexts["lio.rich.driver.name"]
+  XCTAssertTrue(name.waitForExistence(timeout:5));XCTAssertEqual(name.label,"示例花园")
+  XCTAssertEqual(app.staticTexts["lio.rich.driver.address"].label,"演示市示例路 1 号")
+  try app.performAccessibilityAudit(for:.all)
+  captureRichItinerary(app,"driver-card",chinese,dark)
+  app.buttons["lio.rich.driver.done"].tap();app.buttons["lio.rich.detail.done"].tap()
+  app.buttons["lio.rich.show-map"].tap()
+  XCTAssertTrue(app.staticTexts[chinese ? "暂时无法显示地图":"Map unavailable"].waitForExistence(timeout:8))
+  XCTAssertTrue(app.otherElements["lio.rich.map"].exists || app.images["lio.rich.map"].exists)
+  let second=app.buttons["lio.rich.stop.meal"]
+  reveal(second);second.tap()
+  XCTAssertTrue(driver.waitForExistence(timeout:5));XCTAssertFalse(driver.isEnabled)
+  try app.performAccessibilityAudit(for:.all)
+  app.buttons["lio.rich.detail.done"].tap()
+  let hotel=app.staticTexts[chinese ? "示例酒店甲":"Sample stay A"]
+  reveal(hotel)
+  try app.performAccessibilityAudit(for:.all)
+  captureRichItinerary(app,"lodging",chinese,dark)
+  for _ in 0..<8 { if app.buttons["lio.rich.day.2"].isHittable {break};app.swipeDown() }
+  app.buttons["lio.rich.day.2"].tap()
+  XCTAssertTrue(app.buttons["lio.rich.stop.transport"].exists)
+  XCTAssertTrue(app.buttons["lio.rich.stop.free"].exists)
+  try app.performAccessibilityAudit(for:.all)
+  captureRichItinerary(app,"transport",chinese,dark)
+  app.buttons["lio.rich.day.3"].tap()
+  XCTAssertTrue(app.staticTexts[chinese ? "这一天还没有安排。":"No activities planned for this day yet."].exists)
+  XCTAssertFalse(app.buttons["lio.rich.show-map"].exists)
+  try app.performAccessibilityAudit(for:.all)
+ }
+ private func captureRichItinerary(_ app:XCUIApplication,_ label:String,_ chinese:Bool,_ dark:Bool) {
+  let a=XCTAttachment(screenshot:app.screenshot());a.name=label+(chinese ? "-zh":"-en")+(dark ? "-dark":"-light");a.lifetime = .keepAlways;add(a)
+ }
+
+    func testExplorationReadEnglish() throws { try exerciseExplorationRead(false) }
+    func testExplorationReadChinese() throws { try exerciseExplorationRead(true) }
+    private func exerciseExplorationRead(_ chinese: Bool) throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        for dark in [false, true] {
+            app.launchArguments = ["--lio-preview", "--lio-exploration-read-acceptance", "-cj.ui.language.v1", chinese ? "zh-Hans" : "en"]
+                + (dark ? ["--lio-read-dark-acceptance"] : [])
+            app.launch()
+            let prefix = "lio.questions.explore-" + (chinese ? "zh" : "en") + "."
+            let first = app.buttons[prefix + "interests.history"]
+            XCTAssertTrue(first.waitForExistence(timeout: 10), app.debugDescription)
+            XCTAssertFalse(app.staticTexts["lio.exploration.fixture.unavailable"].exists)
+            XCTAssertEqual(app.staticTexts["lio.exploration.send-count"].label, "0")
+            try app.performAccessibilityAudit(for: .all)
+            first.tap()
+            app.buttons[prefix + "interests.nature"].tap()
+            let submit = app.buttons["lio.questions.continue"]
+            for _ in 0..<6 { if submit.isHittable { break }; app.swipeUp() }
+            XCTAssertTrue(submit.isHittable, app.debugDescription)
+            submit.tap()
+            XCTAssertEqual(app.staticTexts["lio.exploration.send-count"].label, "1")
+            XCTAssertEqual(app.staticTexts["lio.exploration.sent"].label, chinese ? "兴趣：历史\n兴趣：自然" : "Interests: History\nInterests: Nature")
+            let rain = app.staticTexts[chinese ? "带一件雨衣。" : "Bring a raincoat."]
+            for _ in 0..<6 { if rain.isHittable { break }; app.swipeUp() }
+            XCTAssertTrue(rain.exists)
+            try app.performAccessibilityAudit(for: .all)
+            let attachment = XCTAttachment(screenshot: app.screenshot())
+            attachment.name = "decoded-exploration-" + (chinese ? "zh" : "en") + (dark ? "-dark" : "-light")
+            attachment.lifetime = .keepAlways; add(attachment)
+            app.terminate()
+        }
+    }
+
+
  func testCalendarWireEnglish() throws { try exerciseCalendarWire(false) }
  func testCalendarWireChinese() throws { try exerciseCalendarWire(true) }
  private func exerciseCalendarWire(_ chinese:Bool) throws {

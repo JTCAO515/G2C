@@ -6,6 +6,8 @@ are authenticated against the original financial journal by RuntimeOriginals.
 from cj_agent.provider import (M4_NATIVE_TURN_BUFFERED,M4_NATIVE_TURN_PROFILE_V2,
                                M4_NATIVE_TURN_STREAM)
 from runtime_adapter.contract import decode,Unavailable
+from cj_draft.grouped_plan import GENERATION_PROFILES
+from cj_draft.rich_schema import GENERATION_PROFILES as RICH_PROFILES
 
 
 def configured_model(provider,native_turn_profile):
@@ -13,7 +15,10 @@ def configured_model(provider,native_turn_profile):
     return dict(endpoint=config.base_url,id=config.model_id,parameters=dict(stream=True,
         stream_options={'include_usage':True},enable_thinking=False,
         max_tokens_by_profile=dict(answer=config.max_output_tokens,intake=config.max_output_tokens,
-                                   reflection=min(1024,config.max_output_tokens)),
+                                   reflection=min(1024,config.max_output_tokens),
+                                   **{profile:config.max_output_tokens if profile in RICH_PROFILES
+                                      else min(1024,config.max_output_tokens)
+                                      for profile in GENERATION_PROFILES}),
         native_turn_profile=native_turn_profile))
 
 
@@ -31,7 +36,8 @@ class RuntimeModel:
         if profile is not None and profile!=self.native_turn_profile:
             raise Unavailable('ACTUAL_NATIVE_MODEL_PROFILE_CHANGED')
         full_output=(profile in (M4_NATIVE_TURN_BUFFERED,M4_NATIVE_TURN_STREAM,M4_NATIVE_TURN_PROFILE_V2)
-                     or logical.get('structured_profile') is not None)
+                     or logical.get('structured_profile') is not None
+                     or logical.get('draft_profile') in RICH_PROFILES)
         maximum=config.max_output_tokens if full_output else min(1024,config.max_output_tokens)
         if (body['model']!=config.model_id or body['stream'] is not True or
                 body['stream_options']!={'include_usage':True} or body['enable_thinking'] is not False or

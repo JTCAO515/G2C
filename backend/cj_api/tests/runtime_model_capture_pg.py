@@ -1,6 +1,7 @@
 """Native Lio/Typed Memory/registered capture; private signed PG and fixture HTTP."""
 from datetime import datetime,timedelta,timezone
 from hashlib import sha256
+import base64
 import json,time,uuid
 import httpx
 import local_history_pg as harness
@@ -11,12 +12,13 @@ from cj_api.local_worker_context import checker_for
 from cj_api.real_services import RealServices,RealTools
 from cj_api.tool_evidence import ToolEvidence
 from cj_api.runtime_originals import RuntimeOriginals
+from cj_api.runtime_surface_inventory import NativeSurfaceInventory
 from cj_agent.provider import DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,M4_REAL_OUTPUT_TOKENS
 from cj_memory.typed_runtime import TypedRuntimeConfiguration
 from cj_message.auth_boundary import Boundary
 from cj_message.travel import ABI
 from cj_usage.authorization_budget import AuthorizationBudget
-from runtime_adapter.contract import encode,decode
+from runtime_adapter.contract import encode,decode,Unavailable
 from test_lio_planning_flow import flow
 
 
@@ -87,7 +89,22 @@ def exercise(root,conninfo):
         assert wire['wire_input_sha256']==original['receipt']['input_sha256']
         meter=decode(originals.meter(token,receipt.message_id,operation['operation_id']))
         assert meter['state']=='settled'and meter['receipt']is not None and not meter['cancelled']
+        calls_before=model.calls;fees_before=len(budget.inspect())
+        surfaces=decode(NativeSurfaceInventory(originals,lambda:token,guard=lambda:None).collect(receipt.message_id))
+        assert surfaces['evidence_status']=='COMPLETE'and surfaces['missing']==[]
+        raw=[base64.b64decode(s['bytes_base64'])for s in surfaces['surfaces']]
+        assert wire['wire_input_utf8'].encode()in raw and original['result_utf8'].encode()in raw
+        assert model.calls==calls_before and len(budget.inspect())==fees_before
     assert len(list(directory.glob('*.json')))==4
+    foreign_token=dev_auth.token(auth,foreign,30)
+    try:originals.visible_original(foreign_token,receipts[0].message_id)
+    except Unavailable:pass
+    else:raise AssertionError('foreign identity read private visible surfaces')
+    (auth/'invited.json').write_text(json.dumps([foreign]))
+    try:NativeSurfaceInventory(originals,lambda:token,guard=lambda:None).collect(receipts[0].message_id)
+    except Unavailable:pass
+    else:raise AssertionError('revoked identity collected cached native surfaces')
+    print('PASS private native surface collection, actual input/events/model wire/output, original ACK/terminal, zero new model/fees and foreign/revoke withheld')
     print('PASS native signed Lio2/two same-chat profile9 intakes through actual Typed Memory and registered PG Meter; original Memory reheld for full model capture, both financial RECEIVED/Meter settled, four protected model/wire originals, previous MESSAGE reference retained; fixture HTTP only')
 
 

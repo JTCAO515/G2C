@@ -16,6 +16,10 @@ from cj_draft.grouped_plan import (GENERATION_PROFILES, LioGroupedCalendarPublis
     grouped_input, response_format, response_format_sha256, system_for)
 from cj_usage.authorization_budget import AuthorizationBudget
 from cj_usage.local_provider_exit import BudgetUnknown
+from cj_trip.domain import packed
+from cj_draft.grouped_plan import GroupedDraftInput
+from cj_draft.rich_schema import PROFILES,SIGHT_COUNTS
+from cj_draft.rich_first import rich_system_for
 
 
 class GroupedGeneration(unittest.TestCase):
@@ -25,28 +29,51 @@ class GroupedGeneration(unittest.TestCase):
         host.system=system_for(retained=retained,ordinal=ordinal)
         return grouped_input(host,SimpleNamespace(binding='original'),[dict(role='user',content='Plan three days')],provider)
 
-    def setup_model(self, folder, *, reject=False):
+    def setup_model(self, folder, *, reject=False,max_output_tokens=1536):
         journal=AuthorizationBudget(Path(folder)/'journal',clock=lambda:datetime(2026,11,9,tzinfo=timezone.utc))
         sent=[]
         def respond(request):
             body=json.loads(request.content);sent.append(body)
             if reject:return httpx.Response(400,json=dict(error=dict(code='invalid_response_format')))
             profile=body['response_format']['json_schema']['schema']['properties']['version']['const']
-            ordinal=profile in GENERATION_PROFILES[2:];retained=profile in (GENERATION_PROFILES[1],GENERATION_PROFILES[3])
-            value=dict(version=profile,days=[[1 if ordinal else'2026-12-01', [['a','Museum','14:00','15:00',['self']]]]])
-            if not retained:value['title']='Trip'
+            if profile in PROFILES.values():
+                ordinal,pace=next(key for key,name in PROFILES.items()if name==profile)
+                row=lambda label:['id-'+label,label,'14:00','15:00',['self']]
+                value=dict(version=profile,title='Trip',days=[[1 if ordinal else'2026-12-01',
+                    [row('Museum'+str(i))for i in range(SIGHT_COUNTS[pace])],[row('Lunch'),row('Dinner')]]])
+            else:
+                ordinal=profile in GENERATION_PROFILES[2:4];retained=profile in (GENERATION_PROFILES[1],GENERATION_PROFILES[3])
+                value=dict(version=profile,days=[[1 if ordinal else'2026-12-01', [['a','Museum','14:00','15:00',['self']]]]])
+                if not retained:value['title']='Trip'
             common=dict(id='fixture-grouped',model=M4_MODEL)
             events=[dict(**common,choices=[dict(index=0,delta=dict(content=json.dumps(value)),finish_reason=None)]),
                 dict(**common,choices=[dict(index=0,delta={},finish_reason='stop')]),
                 dict(**common,choices=[],usage=dict(prompt_tokens=40,completion_tokens=10,total_tokens=50))]
             raw=''.join('data: '+json.dumps(event)+'\n\n'for event in events)+'data: [DONE]\n\n'
             return httpx.Response(200,stream=httpx.ByteStream(raw.encode()))
-        provider=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,'offline-only',max_output_tokens=1536),
+        provider=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,'offline-only',max_output_tokens=max_output_tokens),
             journal,transport=httpx.MockTransport(respond))
         subjects=frozenset({'m4-synthetic-one','m4-synthetic-two'})
         tools=RealTools(RealServices(provider,'offline-grouped-key-only',subjects,demo_subjects=subjects,
             national_subjects=frozenset({'m4-synthetic-one'})))
         return provider,tools,journal,sent
+
+    def test_only_new_rich_profiles_use_the_configured_output_ceiling(self):
+        for (ordinal,pace),profile in PROFILES.items():
+            for limit in (768,1536):
+                with self.subTest(profile=profile,limit=limit),tempfile.TemporaryDirectory() as folder:
+                    provider,tools,journal,sent=self.setup_model(folder,max_output_tokens=limit)
+                    packet=GroupedDraftInput(packed([dict(role='user',content='Plan three days')]),
+                        rich_system_for(ordinal=ordinal,pace=pace),provider,profile)
+                    prepared=tools.registrations['model.draft'].prepare_input(packet)
+                    declared=json.loads(prepared.original_bytes)
+                    self.assertEqual(declared['draft_profile'],profile)
+                    operation=SimpleNamespace(binding=SimpleNamespace(scope=scope_for(ISSUER,'m4-synthetic-one')),command=SimpleNamespace(attempt_id='original-rich'))
+                    self.assertEqual(json.loads(''.join(prepared.bind_operation(operation,lambda:True)()))['version'],profile)
+                    self.assertEqual(sent[0]['max_tokens'],limit)
+                    self.assertEqual(sent[0]['response_format'],response_format(profile))
+                    self.assertEqual(len(sent),1)
+                    self.assertEqual(journal.inspect()[0]['state'],'RECEIVED')
 
     def test_canonical_schema_matches_actual_wire_and_old_registration_stays_unchanged(self):
         for ordinal in (False,True):

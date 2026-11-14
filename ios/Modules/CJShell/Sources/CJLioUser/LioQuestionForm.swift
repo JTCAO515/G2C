@@ -40,10 +40,8 @@ struct LioQuestionForm: View {
                     .padding(.vertical, LioTheme.Spacing.sm)
                     .frame(maxWidth: .infinity, minHeight: 44)
                     .padding(.horizontal, LioTheme.Spacing.sm)
-                    .foregroundStyle(LioTheme.onVermilion)
-                    .background(LioTheme.vermilion, in: Capsule())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(LioQuestionSubmitStyle())
             .disabled(!canSend || draft.jointReply.isEmpty)
             .accessibilityIdentifier("lio.questions.continue")
         }
@@ -89,5 +87,16 @@ struct LioQuestionForm: View {
         .accessibilityLabel(option.displayText)
         .accessibilityAddTraits(selected ? .isSelected : [])
         .accessibilityIdentifier("lio.questions.\(draft.messageID).\(option.id)")
+    }
+}
+
+/// Keep the label readable without changing native disabled interaction.
+private struct LioQuestionSubmitStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundStyle(isEnabled ? LioTheme.onVermilion : LioTheme.inkSecondary)
+            .background(isEnabled ? LioTheme.vermilion : LioTheme.surfaceSunken, in: Capsule())
+            .opacity(configuration.isPressed && isEnabled ? 0.85 : 1)
     }
 }

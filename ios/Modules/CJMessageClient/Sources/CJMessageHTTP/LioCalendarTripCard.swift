@@ -218,7 +218,7 @@ enum CardJSON {
 }
 
 /// Gregorian date arithmetic only; it never observes the clock or invents a trip timezone.
-private struct CardDate {
+struct CardDate {
     private var year: Int
     private var month: Int
     private var day: Int

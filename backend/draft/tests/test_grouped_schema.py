@@ -9,6 +9,7 @@ import pytest
 from cj_agent.provider import DashScopeConfig, MeteredDashScopeProvider, M4_BASE, M4_MODEL, ProviderFailed
 from cj_draft.grouped_plan import (GENERATION_PROFILES, expand, grouped_input,
     response_format, response_format_sha256)
+from cj_draft.rich_schema import GENERATION_PROFILES as RICH_GENERATION_PROFILES
 from cj_trip.domain import packed
 from cj_trip.structured import FieldRejected
 from grouped_draft_fixtures import reply
@@ -87,7 +88,7 @@ def test_unknown_profile_has_no_generated_format():
     with pytest.raises(KeyError):response_format('unselected-profile')
 
 
-@pytest.mark.parametrize('profile', GENERATION_PROFILES)
+@pytest.mark.parametrize('profile', GENERATION_PROFILES[:4])
 def test_provider_wire_binds_schema_and_keeps_original_1024_cap(profile):
     class Captured(Exception):pass
     class Ledger:
@@ -99,6 +100,22 @@ def test_provider_wire_binds_schema_and_keeps_original_1024_cap(profile):
     body=json.loads(ledger.raw)
     assert body['response_format']==response_format(profile)
     assert body['max_tokens']==1024 and body['model']==M4_MODEL and body['enable_thinking'] is False
+
+
+@pytest.mark.parametrize('profile', RICH_GENERATION_PROFILES)
+@pytest.mark.parametrize('configured,expected', [(1536,1536),(768,768)])
+def test_rich_provider_wire_binds_schema_and_respects_exact_profile_and_config_caps(profile,configured,expected):
+    class Captured(Exception):pass
+    class Ledger:
+        def begin(self,attempt,kind,raw):self.raw=raw;raise Captured()
+    ledger=Ledger();provider=MeteredDashScopeProvider(DashScopeConfig(
+        M4_BASE,M4_MODEL,'offline-only',max_output_tokens=configured),ledger)
+    stream=provider.invoke([dict(role='user',content='plan')],'trusted system','one-original',receipt={},guard=lambda:None,
+        draft_profile=profile,draft_schema_sha256=response_format_sha256(profile))
+    with pytest.raises(Captured):next(stream)
+    body=json.loads(ledger.raw)
+    assert body['response_format']==response_format(profile)
+    assert body['max_tokens']==expected and body['model']==M4_MODEL and body['enable_thinking'] is False
 
 
 @pytest.mark.parametrize('options', [dict(draft_profile='forged',draft_schema_sha256='0'*64),

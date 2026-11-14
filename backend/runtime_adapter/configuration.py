@@ -16,10 +16,12 @@ def source_c0(*,resource_root=None):
     root=ROOT if resource_root is None else Path(resource_root)
     from cj_agent.provider import M4_BASE, M4_MODEL, M4_REAL_OUTPUT_TOKENS, M4_NATIVE_TURN_BUFFERED
     from cj_api.real_services import NATIONAL_TOOLS, TOOL_SYSTEM
-    from cj_api.local_lio_planning import DISCUSSION_PROMPT,NATIONAL_GROUPED_DRAFT
+    from cj_api.local_lio_planning import DISCUSSION_PROMPT,NATIONAL_GROUPED_DRAFT,RICH_FIRST_DRAFT
     from cj_message.lio_context import PERSONA
     from cj_draft.lio_plan import INITIAL_SYSTEM, REPLAN_SYSTEM
-    from cj_draft.grouped_plan import system_for
+    from cj_draft.grouped_plan import system_for,GENERATION_PROFILES
+    from cj_draft.rich_first import rich_system_for
+    from cj_draft.rich_schema import PROFILES,GENERATION_PROFILES as RICH_PROFILES
     policy_files = ('backend/agent/cj_agent/provider.py', 'backend/agent/cj_agent/worker.py', 'backend/cj_api/real_services.py',
              'backend/cj_api/local_lio_planning.py', 'backend/cj_api/local_lio_national.py',
              'backend/cj_api/lio_scene.py',
@@ -44,7 +46,10 @@ def source_c0(*,resource_root=None):
              'backend/cj_api/lio_planning_grounding.py',
              'backend/cj_api/local_memory_history.py',
              'backend/cj_api/local_app.py',
-             'backend/draft/cj_draft/lio_plan.py', 'backend/draft/cj_draft/grouped_plan.py')
+             'backend/draft/cj_draft/lio_plan.py', 'backend/draft/cj_draft/grouped_plan.py',
+             'backend/draft/cj_draft/rich_first.py',
+             'backend/draft/cj_draft/rich_schema.py',
+             'backend/cj_api/lio_plan_pace.py')
     files = (*policy_files,
              'eval/optimization/cases.v2.json',
              'eval/optimization/score_v2.py', 'tooling/optimization/uv.lock')
@@ -61,6 +66,10 @@ def source_c0(*,resource_root=None):
                     national_dated_replan=system_for(retained=True,ordinal=False,guidance=NATIONAL_GROUPED_DRAFT),
                     national_ordinal_initial=system_for(retained=False,ordinal=True),
                     national_ordinal_replan=system_for(retained=True,ordinal=True),
+                    national_rich_guidance=RICH_FIRST_DRAFT,
+                    national_rich_first={profile:rich_system_for(ordinal=ordinal,pace=pace,
+                        guidance='' if ordinal else RICH_FIRST_DRAFT)
+                        for (ordinal,pace),profile in PROFILES.items()},
                     policy_source_sha256={name:sha256((root/name).read_bytes()).hexdigest() for name in policy_files})
     return dict(version=VERSION, configuration='C0-source-national.1', activation_status='UNRUN',
         source_hashes={name: sha256((root/name).read_bytes()).hexdigest() for name in files},
@@ -73,7 +82,10 @@ def source_c0(*,resource_root=None):
         model=dict(endpoint=M4_BASE,id=M4_MODEL,parameters=dict(stream=True,
             stream_options={'include_usage':True},enable_thinking=False,
             max_tokens_by_profile=dict(answer=M4_REAL_OUTPUT_TOKENS,intake=M4_REAL_OUTPUT_TOKENS,
-                                       reflection=min(1024,M4_REAL_OUTPUT_TOKENS)),
+                                       reflection=min(1024,M4_REAL_OUTPUT_TOKENS),
+                                       **{profile:M4_REAL_OUTPUT_TOKENS if profile in RICH_PROFILES
+                                          else min(1024,M4_REAL_OUTPUT_TOKENS)
+                                          for profile in GENERATION_PROFILES}),
             native_turn_profile=M4_NATIVE_TURN_BUFFERED)),
         tool_schema_sha256=structural_tools_sha256(NATIONAL_TOOLS),
         full_c0_tools_sha256=digest(NATIONAL_TOOLS),
