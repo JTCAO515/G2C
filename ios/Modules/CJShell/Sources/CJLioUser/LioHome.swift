@@ -216,59 +216,57 @@ public struct LioHome<MenuContent: View>: View {
         let pending = conversation.pending
         let latest = conversation.turns.last
         return ScrollViewReader { scroll in
-            ScrollView {
-                Group {
-                    if dynamicTypeSize.isAccessibilitySize {
-                        // Eager measurement keeps a tall card's bottom reachable at accessibility sizes.
-                        VStack(alignment: .leading, spacing: 22) { chatMessages(scroll) }
-                    } else {
-                        LazyVStack(alignment: .leading, spacing: 22) { chatMessages(scroll) }
+            VStack(spacing: 0) {
+                floatingControls
+                GeometryReader { viewport in
+                    ScrollView {
+                        Group {
+                            if dynamicTypeSize.isAccessibilitySize {
+                                // Eager measurement keeps a tall card's bottom reachable at accessibility sizes.
+                                VStack(alignment: .leading, spacing: 22) { chatMessages(scroll) }
+                            } else {
+                                LazyVStack(alignment: .leading, spacing: 22) { chatMessages(scroll) }
+                            }
+                        }
+                        .frame(maxWidth: 680)
+                        .padding(.horizontal, 18)
+                        .padding(.top, 12)
+                        .padding(.bottom, 12)
+                        .frame(maxWidth: .infinity)
+                        .opacity(chatFading ? 0 : 1)
+                        .allowsHitTesting(!chatFading)
+                    }
+                    .frame(width: viewport.size.width, height: viewport.size.height)
+                    .clipped()
+                    .contentShape(Rectangle())
+                    .scrollClipDisabled(false)
+                    .scrollDismissesKeyboard(.interactively)
+                    .simultaneousGesture(DragGesture(minimumDistance: 12).onChanged { _ in
+                        followsAnswer = false
+                    })
+                    .onChange(of: latest?.id) { _, _ in
+                        guard followsAnswer else { return }
+                        if reduceMotion { scroll.scrollTo("lio.bottom", anchor: .bottom) }
+                        else { withAnimation(LioTheme.Motion.change) { scroll.scrollTo("lio.bottom", anchor: .bottom) } }
+                    }
+                    .onChange(of: latest?.answer) { _, _ in
+                        if followsAnswer, let pending, latest?.id == pending.id { scroll.scrollTo("lio.bottom", anchor: .bottom) }
+                    }
+                    .onChange(of: latest?.status) { _, status in
+                        if status == .finished, let id = latest?.id { timing.mark(.finished, id) }
+                        if followsAnswer && status == .finished { scroll.scrollTo("lio.bottom", anchor: .bottom) }
+                    }
+                    .onChange(of: jumpRequest) { _, _ in
+                        followsAnswer = true
+                        withAnimation(LioTheme.Motion.animation(LioTheme.Motion.change, reduceMotion: reduceMotion)) {
+                            scroll.scrollTo("lio.bottom", anchor: .bottom)
+                        }
                     }
                 }
-                .frame(maxWidth: 680)
-                .padding(.horizontal, 18)
-                .padding(.top, 12)
-                .padding(.bottom, 12)
-                .frame(maxWidth: .infinity)
-                .opacity(chatFading ? 0 : 1)
-                .allowsHitTesting(!chatFading)
-            }
-            .scrollClipDisabled(false)
-            .scrollDismissesKeyboard(.interactively)
-            .simultaneousGesture(DragGesture(minimumDistance: 12).onChanged { _ in
-                followsAnswer = false
-            })
-            .onChange(of: latest?.id) { _, _ in
-                guard followsAnswer else { return }
-                if reduceMotion { scroll.scrollTo("lio.bottom", anchor: .bottom) }
-                else { withAnimation(LioTheme.Motion.change) { scroll.scrollTo("lio.bottom", anchor: .bottom) } }
-            }
-            .onChange(of: latest?.answer) { _, _ in
-                if followsAnswer, let pending, latest?.id == pending.id { scroll.scrollTo("lio.bottom", anchor: .bottom) }
-            }
-            .onChange(of: latest?.status) { _, status in
-                if status == .finished, let id = latest?.id { timing.mark(.finished, id) }
-                if followsAnswer && status == .finished { scroll.scrollTo("lio.bottom", anchor: .bottom) }
-            }
-            .onChange(of: jumpRequest) { _, _ in
-                followsAnswer = true
-                withAnimation(LioTheme.Motion.animation(LioTheme.Motion.change, reduceMotion: reduceMotion)) {
-                    scroll.scrollTo("lio.bottom", anchor: .bottom)
-                }
+                composer
             }
         }
         .background(LioTheme.paper)
-        .safeAreaInset(edge: .top, spacing: 0) {
-            floatingControls
-                .background {
-                    LioTheme.paper
-                        .ignoresSafeArea(edges: .top)
-                        .overlay(alignment: .bottom) { fade(from: .top) }
-                        .allowsHitTesting(false)
-                        .accessibilityHidden(true)
-                }
-        }
-        .safeAreaInset(edge: .bottom, spacing: 0) { composer }
         .sheet(isPresented: $menuOpen) {
             NavigationStack {
                 List {
@@ -431,14 +429,6 @@ public struct LioHome<MenuContent: View>: View {
             .contentShape(Circle())
     }
 
-    /// A short paper-to-clear fade where content scrolls under the top controls or the composer.
-    private func fade(from edge: VerticalEdge) -> some View {
-        LinearGradient(colors: [LioTheme.paper, LioTheme.paper.opacity(0)],
-                       startPoint: edge == .top ? .top : .bottom, endPoint: edge == .top ? .bottom : .top)
-            .frame(height: LioTheme.Spacing.sm)
-            .offset(y: edge == .top ? LioTheme.Spacing.sm : -LioTheme.Spacing.sm)
-    }
-
     private var openingMessage: some View {
         lioReply {
             replyText(Text(language.text("Hi, I'm Lio. Tell me the city, how many days you have and what you enjoy, and I'll plan where to go and how to get around each day. Where are you headed?",
@@ -582,7 +572,6 @@ public struct LioHome<MenuContent: View>: View {
         .frame(maxWidth: .infinity)
         .background {
             LioTheme.paper
-                .overlay(alignment: .top) { fade(from: .bottom) }
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
         }
