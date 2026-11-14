@@ -1,10 +1,67 @@
 import CJMessageClient
 import Foundation
 import Testing
+import HTTPTypes
+import OpenAPIRuntime
 @testable import CJMessageHTTP
 
 @MainActor
 struct LioTripHistoryTests {
+    @Test func defaultCalendarHistoryWaitsForObservedIdentityAndRejectsAReplacement() async throws {
+        let store = UndoFixtureStore()
+        let scope = try StorageScope(environment: "synthetic", account: UUID().uuidString)
+        let recovery = MessageRecovery(storage: store), lease = try recovery.activate(scope)
+        let exit = DefaultCalendarExit(), timeline = try defaultTimeline(scope, lease, recovery, exit)
+        let history = LioTripHistoryClient(timeline: timeline, recovery: recovery, scope: scope, lease: lease, version: .v3)
+        await #expect(throws: MessageHTTPFailure.exchangeUnknown) { try await history.history() }
+        #expect(await exit.paths.isEmpty)
+        _ = try await timeline.timeline(version: .v3)
+        #expect(try await history.history().current == nil)
+        #expect(await exit.paths == ["/v3/lio/timeline", "/v3/lio/trip?conversation_id=\(DefaultCalendarExit.conversation)"])
+        await exit.replaceIdentity()
+        await #expect(throws: MessageHTTPFailure.invalidResponse) { try await timeline.timeline(version: .v3) }
+    }
+
+    @Test func defaultCalendarSendReceiptCanBindBeforeTheFirstReadCompletes() async throws {
+        let scope = try StorageScope(environment: "synthetic", account: UUID().uuidString)
+        let recovery = MessageRecovery(storage: UndoFixtureStore()), lease = try recovery.activate(scope)
+        let exit = DefaultCalendarExit(), timeline = try defaultTimeline(scope, lease, recovery, exit)
+        let original = try LioTimelineWire.Send(messageID: "default-first", text: "Plan", locale: .english,
+                                               destination: .defaultChat, version: .v3)
+        guard case .accepted = try await timeline.submit(original) else { Issue.record("default not accepted"); return }
+        let history = LioTripHistoryClient(timeline: timeline, recovery: recovery, scope: scope, lease: lease, version: .v3)
+        #expect(try await history.history().current == nil)
+        #expect(await exit.paths == ["/v3/lio/messages", "/v3/lio/trip?conversation_id=\(DefaultCalendarExit.conversation)"])
+    }
+
+    @Test func upgradedDefaultClientCanOnlyReadTheOldUnknownUndoOriginal() async throws {
+        let page = try history(), target = try #require(page.undoTarget)
+        let store = UndoFixtureStore()
+        let scope = try StorageScope(environment: "synthetic", account: UUID().uuidString)
+        let first = MessageRecovery(storage: store), firstLease = try first.activate(scope)
+        let originalClient = LioTripHistoryClient(recovery: first, scope: scope, lease: firstLease,
+            readHistory: { _ in page }, submit: { _ in throw URLError(.networkConnectionLost) }, readReceipt: { _ in nil })
+        #expect(try await originalClient.undo(target) == .pending)
+        let next = MessageRecovery(storage: store), nextLease = try next.activate(scope)
+        let exit = DefaultCalendarExit(), timeline = try defaultTimeline(scope, nextLease, next, exit)
+        let upgraded = LioTripHistoryClient(timeline: timeline, recovery: next, scope: scope, lease: nextLease, version: .v3)
+        #expect(try upgraded.hasPendingUndo())
+        #expect(try await upgraded.reconcileUndo() == .committed)
+        #expect(try !upgraded.hasPendingUndo())
+        let paths = await exit.paths
+        #expect(paths.count == 1)
+        #expect(paths[0].hasPrefix("/v1/lio/trip/undo?"))
+        #expect(await exit.posts == 0)
+    }
+
+    private func defaultTimeline(_ scope: StorageScope, _ lease: Lease, _ recovery: MessageRecovery,
+                                 _ exit: DefaultCalendarExit) throws -> LioTimelineHTTP {
+        let endpoint = try MessageEndpoint(url: #require(URL(string: "https://synthetic.invalid")),
+                                           maximumRequestBytes: 16_384, maximumResponseBytes: 4_500_000)
+        let transport = try NoRedirectTransport(interceptedTransport: exit, messageEndpoint: endpoint, validateMessage: {}, lio: true)
+        return LioTimelineHTTP(scope: scope, lease: lease, credentials: DefaultCalendarCredentials(),
+                               transport: transport, firstChatRecovery: recovery)
+    }
     @Test func uncertainUndoSurvivesReactivationAndIsOnlyRead() async throws {
         let page = try history()
         let target = try #require(page.undoTarget)
@@ -130,6 +187,42 @@ struct LioTripHistoryTests {
              ]}],
              "undo_target":"fixture_target","next_before":null}
             """.utf8)
+    }
+}
+
+@MainActor private final class DefaultCalendarCredentials: MessageCredentialsProvider {
+    func bearer(for scope: StorageScope, lease: Lease) async throws -> String? { "fixture" }
+}
+
+private actor DefaultCalendarExit: ClientTransport {
+    static let conversation = "lio-dialogue-0123456789abcdef0123456789abcdef"
+    private var alternate = false
+    private(set) var paths: [String] = []
+    private(set) var posts = 0
+    func replaceIdentity() { alternate = true }
+    func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
+        let path = try #require(request.path)
+        paths.append(path)
+        let cid = alternate ? "lio-dialogue-00000000000000000000000000000000" : Self.conversation
+        let json: String
+        if request.method == .post {
+            posts += 1
+            let bytes = try await Data(collecting: #require(body), upTo: 16_384)
+            let input = try #require(JSONSerialization.jsonObject(with: bytes) as? [String: Any])
+            let id = try #require(input["message_id"] as? String)
+            json = "{\"version\":\"LIO-message-receipt.3\",\"message_id\":\"\(id)\",\"conversation_id\":\"\(cid)\"}"
+        } else if path.hasPrefix("/v1/lio/trip/undo?") {
+            let query = try #require(URLComponents(string: path)?.queryItems)
+            let id = try #require(query.first { $0.name == "action_id" }?.value)
+            json = "{\"version\":\"LIO-trip-undo-receipt.1\",\"action_id\":\"\(id)\",\"committed\":true}"
+        } else if path.hasPrefix("/v3/lio/trip?") {
+            json = "{\"version\":\"LIO-trip-history.3\",\"conversation_id\":\"\(cid)\",\"current\":null,\"history\":[],\"undo_target\":null,\"next_before\":null}"
+        } else {
+            json = "{\"version\":\"LIO-timeline.3\",\"conversation_id\":\"\(cid)\",\"messages\":[],\"next_before\":null}"
+        }
+        var response = HTTPResponse(status: .ok)
+        response.headerFields[.contentType] = "application/json"
+        return (response, HTTPBody(json))
     }
 }
 

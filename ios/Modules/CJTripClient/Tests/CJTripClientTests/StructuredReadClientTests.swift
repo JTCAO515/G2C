@@ -26,6 +26,86 @@ private actor StructuredReadWire: ClientTransport {
 }
 
 @Suite @MainActor struct StructuredReadClientTests {
+    private func calendarResponse(_ name: String) throws -> Data {
+        var root = URL(fileURLWithPath: #filePath)
+        for _ in 0..<6 { root.deleteLastPathComponent() }
+        let data = try Data(contentsOf: root.appendingPathComponent("contracts/trip/structured-read-examples.2.json"))
+        let file = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let rows = try #require(file["positive"] as? [[String: Any]])
+        var value = try #require(rows.first { $0["name"] as? String == name }?["value"] as? [String: Any])
+        value["request_id"] = trace
+        return try JSONSerialization.data(withJSONObject: value, options: [.sortedKeys, .withoutEscapingSlashes])
+    }
+
+    @Test func calendarProtectedReadIsOpaqueBoundAndCannotBecomeTheLegacyEditorSource() async throws {
+        let h = try Harness(); defer { h.clean() }
+        let data = try calendarResponse("base detail")
+        let wire = StructuredReadWire { request, operation in
+            #expect(request.path == "/v6/trip-structured?trip_id=demo-trip")
+            #expect(operation == "readStructuredTripV2")
+            return data
+        }
+        let owner = client(h, wire), other = client(h, wire)
+        let request = try owner.prepareCalendarStructuredDetail(id: "demo-trip", binding: h.binding)
+        let value = try await owner.calendarStructuredDetail(for: request)
+        let source = try #require(value)
+        #expect(Mirror(reflecting: source).children.isEmpty)
+        #expect(try owner.withCurrentCalendarStructuredSnapshot(source) { _, record, _, _ in record.version } == 1)
+        #expect(throws: TripFailure.staleBinding) {
+            try other.withCurrentCalendarStructuredSnapshot(source) { _, _, _, _ in () }
+        }
+        #expect(throws: TripFailure.staleBinding) {
+            try owner.withCurrentCalendarStructuredSnapshot(source) { _, _, _, _ in owner.invalidate() }
+        }
+    }
+
+    @Test func calendarReadDiscardsLateRepliesAndRevokedCredentials() async throws {
+        let h = try Harness(); defer { h.clean() }
+        let data = try calendarResponse("base detail"), gate = Gate()
+        let wire = StructuredReadWire { _, _ in await gate.park(); return data }, owner = client(h, wire)
+        let request = try owner.prepareCalendarStructuredDetail(id: "demo-trip", binding: h.binding)
+        let task = Task { try await owner.calendarStructuredDetail(for: request) }
+        await gate.waitForEntry()
+        _ = try owner.prepareCalendarStructuredDetail(id: "another-trip", binding: h.binding)
+        await gate.release()
+        do { _ = try await task.value; Issue.record("late calendar source escaped") }
+        catch { #expect(error as? TripFailure == .staleBinding) }
+        let revokedWire = StructuredReadWire { _, _ in data }
+        let revoked = client(h, revokedWire, credentials: { _ in h.current = nil; return "synthetic-test-token" })
+        let queued = try revoked.prepareCalendarStructuredDetail(id: "demo-trip", binding: h.binding)
+        do { _ = try await revoked.calendarStructuredDetail(for: queued); Issue.record("revoked calendar request escaped") }
+        catch { #expect(error as? TripFailure == .staleBinding) }
+        #expect(await revokedWire.calls.isEmpty)
+    }
+
+    @Test func calendarPagesKeepTheirOwnCursorAndRefuseCacheablePrivateReads() async throws {
+        let h = try Harness(); defer { h.clean() }
+        let first = Data("{\"version\":\"TRIP-structured-read.2\",\"request_id\":\"\(trace)\",\"trips\":[],\"next_after\":\"legacy1\"}".utf8)
+        let last = Data("{\"version\":\"TRIP-structured-read.2\",\"request_id\":\"\(trace)\",\"trips\":[],\"next_after\":null}".utf8)
+        let wire = StructuredReadWire { request, operation in
+            #expect(operation == "listStructuredTripsV2")
+            #expect(request.path?.hasPrefix("/v2/trip-structured-list?") == true)
+            return request.path!.contains("after=legacy1") ? last : first
+        }
+        let owner = client(h, wire), other = client(h, wire)
+        let request = try owner.prepareCalendarStructuredPage(limit: 1, binding: h.binding)
+        let page = try await owner.calendarStructuredPage(for: request)
+        let cursor = try #require(page.next)
+        #expect(throws: TripFailure.staleBinding) {
+            try other.prepareCalendarStructuredPage(limit: 1, after: cursor, binding: h.binding)
+        }
+        let next = try owner.prepareCalendarStructuredPage(limit: 1, after: cursor, binding: h.binding)
+        #expect(try await owner.calendarStructuredPage(for: next).next == nil)
+        _ = try owner.prepareCalendarStructuredPage(limit: 1, binding: h.binding)
+        #expect(throws: TripFailure.staleBinding) {
+            try owner.prepareCalendarStructuredPage(limit: 1, after: cursor, binding: h.binding)
+        }
+        let cacheable = StructuredReadWire(noStore: false) { _, _ in last }, reader = client(h, cacheable)
+        let unsafe = try reader.prepareCalendarStructuredPage(limit: 1, binding: h.binding)
+        do { _ = try await reader.calendarStructuredPage(for: unsafe); Issue.record("cacheable calendar bytes accepted") }
+        catch { #expect(error as? TripFailure == .invalidResponse) }
+    }
+
     func detail(_ version: Int = 2, id: String = "trip1") throws -> Data {
         let fixture = try StructuredTripTests().fixture("minute"), content = String(decoding: fixture.bytes, as: UTF8.self)
         return Data("{\"version\":\"TRIP-structured-read.1\",\"request_id\":\"\(trace)\",\"trip\":{\"trip_id\":\"\(id)\",\"version\":\(version),\"content_sha256\":\"\(fixture.sha256)\",\"content\":\(content)}}".utf8)

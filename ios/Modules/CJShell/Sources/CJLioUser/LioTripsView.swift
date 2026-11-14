@@ -19,15 +19,18 @@ struct LioItineraryCard<Actions: View>: View {
                 .foregroundStyle(LioTheme.ink)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
+            LioTripCalendarLabel(calendar: itinerary.calendar, language: language)
             ForEach(itinerary.days) { day in
                 DisclosureGroup {
                     LioDayStops(day: day, language: language)
                         .padding(.vertical, 6)
                 } label: {
-                    Text(dayTitle(day, language))
+                    Text(dayTitle(day, language, calendar: itinerary.calendar))
+                        .foregroundStyle(LioTheme.ink)
                         .frame(minHeight: 44, alignment: .leading)
                 }
-                .accessibilityIdentifier("lio.trip.day.\(day.number)")
+                .disclosureGroupStyle(LioDayDisclosureStyle(language: language,
+                    identifier: "lio.trip.day.\(day.number)"))
             }
             Button(action: showTrips) {
                 RunReadableText(text: language.text("Saved to Trips · View", "已保存到行程 · 查看"))
@@ -40,6 +43,40 @@ struct LioItineraryCard<Actions: View>: View {
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+    }
+}
+
+private struct LioDayDisclosureStyle: DisclosureGroupStyle {
+    let language: LioLanguage
+    let identifier: String
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func makeBody(configuration: Configuration) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(LioTheme.Motion.animation(LioTheme.Motion.change, reduceMotion: reduceMotion)) {
+                    configuration.isExpanded.toggle()
+                }
+            } label: {
+                HStack {
+                    configuration.label
+                    Spacer(minLength: LioTheme.Spacing.sm)
+                    Image(systemName: "chevron.right")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(LioTheme.inkSecondary)
+                        .rotationEffect(.degrees(configuration.isExpanded ? 90 : 0))
+                        .accessibilityHidden(true)
+                }
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityValue(configuration.isExpanded
+                ? language.text("Expanded", "已展开") : language.text("Collapsed", "已收起"))
+            .accessibilityIdentifier(identifier)
+            if configuration.isExpanded { configuration.content }
+        }
+        .accessibilityElement(children: .contain)
     }
 }
 
@@ -63,7 +100,7 @@ struct LioTripsView: View {
     let recordedMap: (@MainActor (StructuredTripDocument) -> AnyView)?
     @Binding var path: [LioTripRoute]
     let openChat: () -> Void
-    @State private var saved: [StructuredTripSummary]?
+    @State private var saved: [LioTripLibrary.Entry]?
     @State private var listUnavailable = false
     @State private var listAttempt = 0
     @Environment(\.colorScheme) private var colorScheme
@@ -99,7 +136,8 @@ struct LioTripsView: View {
                             tripList {
                                 ForEach(saved, id: \.tripID) { trip in
                                     NavigationLink(value: LioTripRoute(id: trip.tripID)) {
-                                        LioTripListCard(title: trip.title, itinerary: nil, language: language)
+                                        LioTripListCard(title: trip.title, itinerary: nil, language: language,
+                                                       calendar: trip.calendar, dayCount: trip.dayCount)
                                     }
                                     .buttonStyle(.plain)
                                 }
@@ -140,6 +178,7 @@ struct LioTripsView: View {
                             Text(itinerary.title)
                                 .font(LioTheme.display(.title).weight(.semibold))
                                 .foregroundStyle(LioTheme.ink)
+                                .background(LioTheme.paper)
                                 .fixedSize(horizontal: false, vertical: true)
                                 .accessibilityAddTraits(.isHeader)
                             LioTripTimeline(itinerary: itinerary, language: language)
@@ -214,7 +253,7 @@ private struct LioTripDetail: View {
     let library: LioTripLibrary
     let language: LioLanguage
     let recordedMap: (@MainActor (StructuredTripDocument) -> AnyView)?
-    @State private var record: StructuredTripRecord?
+    @State private var record: LioTripLibrary.Record?
     @State private var unavailable = false
     @State private var attempt = 0
 
@@ -223,14 +262,20 @@ private struct LioTripDetail: View {
             if let record {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
-                        Text(record.document.title)
+                        Text(record.title)
                             .font(LioTheme.display(.title).weight(.semibold))
                             .foregroundStyle(LioTheme.ink)
                             .background(LioTheme.paper)
                             .fixedSize(horizontal: false, vertical: true)
                             .accessibilityAddTraits(.isHeader)
-                        LioSavedTripTimeline(record: record, language: language)
-                        if let recordedMap { recordedMap(record.document) }
+                        switch record {
+                        case .legacy(let value):
+                            LioSavedTripTimeline(record: value, language: language)
+                            if let recordedMap { recordedMap(value.document) }
+                        case .calendar(let value):
+                            LioCalendarSavedTripTimeline(record: value, language: language)
+                            if case .legacy(let document) = value.content, let recordedMap { recordedMap(document) }
+                        }
                     }
                     .padding(16)
                 }
@@ -267,6 +312,33 @@ private struct LioTripDetail: View {
     }
 }
 
+private struct LioCalendarSavedTripTimeline: View {
+    let record: CalendarStructuredTripRecord
+    let language: LioLanguage
+    private let places: Result<[TripPlaceProjection], any Error>
+
+    init(record: CalendarStructuredTripRecord, language: LioLanguage) {
+        self.record = record
+        self.language = language
+        places = Result {
+            switch record.content {
+            case .legacy(let document): try TripPlaceProjection.read(from: document)
+            case .calendar(let document): try TripPlaceProjection.read(from: document)
+            }
+        }
+    }
+
+    var body: some View {
+        switch places {
+        case .success(let places):
+            LioTripTimeline(itinerary: LioItinerary(record, places: places), language: language)
+        case .failure:
+            Text(language.text("Map unavailable", "暂时无法显示地图"))
+            LioTripTimeline(itinerary: LioItinerary(record), language: language)
+        }
+    }
+}
+
 private struct LioSavedTripTimeline: View {
     let record: StructuredTripRecord
     let language: LioLanguage
@@ -295,9 +367,10 @@ struct LioTripDays: View {
     let showMap: (LioItinerary.Day) -> Void
 
     var body: some View {
+        LioTripCalendarLabel(calendar: itinerary.calendar, language: language)
         ForEach(itinerary.days) { day in
             VStack(alignment: .leading, spacing: 10) {
-                Text(dayTitle(day, language))
+                Text(dayTitle(day, language, calendar: itinerary.calendar))
                     .font(.headline)
                     .accessibilityAddTraits(.isHeader)
                 LioDayStops(day: day, language: language)
@@ -344,9 +417,7 @@ private struct LioDayStops: View {
     }
 }
 
-func dayTitle(_ day: LioItinerary.Day, _ language: LioLanguage) -> String {
-    if let date = day.date { return date }
-    if day.datePending { return language.text("Date to be decided", "日期待定") }
-    return language.text("Day \(day.number)", "第 \(day.number) 天")
+func dayTitle(_ day: LioItinerary.Day, _ language: LioLanguage, calendar: LioItinerary.CalendarState? = nil) -> String {
+    day.title(language, calendar: calendar)
 }
 #endif

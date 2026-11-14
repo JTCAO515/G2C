@@ -108,12 +108,13 @@ extension LioService {
     }
 
     public static func signedConversation(_ client: LioTimelineHTTP, destination: LioTimelineWire.V2Destination,
+                                          version: LioTimelineWire.Version = .v2,
                                           didCreate: @escaping @Sendable (String) async -> Void) -> LioService {
         timeline(send: { original in
             try await signedSend(client, original)
         }, read: { id, before in
-            try await client.timeline(conversationID: id, before: before, version: .v2)
-        }, destination: destination, recoverFirst: { id in
+            try await client.timeline(conversationID: id, before: before, version: version)
+        }, destination: destination, scopedVersion: version, recoverFirst: { id in
             try await client.reconcileFirstChat(messageID: id)
         }, didCreate: didCreate)
     }
@@ -148,6 +149,7 @@ extension LioService {
         send: @escaping @Sendable (LioTimelineWire.Send) async throws -> SendResult,
         read: @escaping @Sendable (String?, String?) async throws -> LioTimelineWire.Page,
         destination: LioTimelineWire.V2Destination? = nil,
+        scopedVersion: LioTimelineWire.Version = .v2,
         recoverFirst: @escaping @Sendable (String) async throws -> String? = { _ in nil },
         didCreate: @escaping @Sendable (String) async -> Void = { _ in },
         pollInterval: Duration = .seconds(2),
@@ -156,7 +158,7 @@ extension LioService {
     ) -> LioService {
         let session = LioTimelineSession(send: send, read: { id, before in
             LioTimelinePage(try await read(id, before))
-        }, destination: destination, recoverFirst: recoverFirst, didCreate: didCreate)
+        }, destination: destination, recoverFirst: recoverFirst, didCreate: didCreate, messageVersion: scopedVersion)
         return service(session: session, pollInterval: pollInterval, observationWindow: observationWindow,
                        recoveryInterval: recoveryInterval)
     }
