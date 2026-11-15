@@ -53,6 +53,25 @@ class PlanningFlow(unittest.TestCase):
                     self.assertEqual(context(events)['status'],'plan_preview')
                     self.assertIsNotNone(result)
 
+    def test_completed_explicit_request_after_hold_can_finish_on_later_followup(self):
+        hold='先别保存';request='规划上海四天豪华游 2026-11-17出发一个人';current='具体的行程呢'
+        wire=flow(current,city='上海',days=4,start='2026-11-17',party=1,index=2,questions=(),reply='已了解。')
+        wire['planning_request_index']=1;wire['city'].update(source_index=1,quote='上海')
+        wire['field_sources']=[dict(ref,source_index=1,quote=request)for ref in wire['field_sources']]
+        previous=dict(authority='none',status='consult',facts={},authority_barrier_message_id='prior-0',nonplanning_message_ids=[])
+        published,_,_,_=run(wire,current,turns=tuple(map(original,(hold,request,current))),previous=previous)
+        self.assertEqual(len(published),1)
+
+    def test_known_nonplanning_message_cannot_be_a_new_root_after_hold(self):
+        first='规划上海三天';translation='请翻译“规划旅行”';current='从2026-12-01开始'
+        wire=flow(current,city='上海',days=3,start='2026-12-01',index=2,questions=())
+        wire['planning_request_index']=1;wire['city'].update(source_index=0,quote='上海')
+        wire['field_sources'][0].update(source_index=0,quote='三天')
+        previous=dict(authority='none',status='consult',facts={},authority_barrier_message_id='prior-0',
+            nonplanning_message_ids=['prior-1'])
+        published,_,_,_=run(wire,current,turns=tuple(map(original,(first,translation,current))),previous=previous)
+        self.assertEqual(published,[])
+
     def test_missing_semantic_request_index_does_not_grant_save(self):
         text='去成都玩三天';wire=flow(text,questions=(),reply='成都适合安排街区散步。')
         wire.update(planning_request_index=None,needs_tools=False)
