@@ -49,12 +49,13 @@ def main():
                'ARCHS=arm64','ONLY_ACTIVE_ARCH=YES','CODE_SIGNING_ALLOWED=YES','CODE_SIGN_IDENTITY=-',f'CURRENT_PROJECT_VERSION={current}',*selectors,'test']
     (output/'command.json').write_text(json.dumps(command, indent=2)+'\n')
     env = {k:v for k,v in os.environ.items() if not k.startswith(('G2C_DEV_','SIMCTL_CHILD_'))}
+    expected = len(args.case) if args.case else 5
     with (output/'updates.log').open('w') as log:
-        subprocess.run(command,cwd=ROOT,env=env,stdout=log,stderr=subprocess.STDOUT,check=True,timeout=900)
+        subprocess.run(command,cwd=ROOT,env=env,stdout=log,stderr=subprocess.STDOUT,check=True,timeout=900 * expected)
     summary = subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)])
     (output/'summary.json').write_bytes(summary)
     parsed = json.loads(summary)
-    assert parsed['passedTests'] == (len(args.case) if args.case else 4) and parsed['failedTests'] == 0 and parsed['skippedTests'] == 0,summary
+    assert parsed['passedTests'] == expected and parsed['failedTests'] == 0 and parsed['skippedTests'] == 0,summary
 
 
 if __name__ == '__main__':

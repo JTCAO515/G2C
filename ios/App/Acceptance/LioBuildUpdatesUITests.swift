@@ -9,6 +9,30 @@ import XCTest
     func testEnglishLargest() throws { try exercise(chinese: false, largest: true) }
     func testChineseLargest() throws { try exercise(chinese: true, largest: true) }
 
+    func testLargestDarkScrollContrastInBothLanguages() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.updates.acceptance")
+        for chinese in [false, true] {
+            app.launchArguments = ["--lio-preview", "-cj.ui.language.v1", chinese ? "zh-Hans" : "en",
+                "-lio.ui.appearance.v1", "dark", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+            app.launch()
+            defer { app.terminate() }
+            XCTAssertTrue(app.buttons["lio.menu"].waitForExistence(timeout: 12))
+            app.buttons["lio.menu"].tap()
+            XCTAssertTrue(app.buttons["lio.information"].waitForExistence(timeout: 5))
+            app.buttons["lio.information"].tap()
+            for identifier in ["lio.updates.\(currentBuild).comparison.0", "lio.updates.\(currentBuild).service.0",
+                               "lio.updates.\(previousBuild).changes.0"] {
+                reveal(app.textViews[identifier], app: app)
+                try audit(app)
+            }
+            let shot = XCTAttachment(screenshot: app.screenshot())
+            shot.name = "updates-deep-scroll-\(chinese ? "zh" : "en")-dark-largest"
+            shot.lifetime = .keepAlways; add(shot)
+            app.terminate()
+        }
+    }
+
     private func exercise(chinese: Bool, largest: Bool) throws {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.updates.acceptance")
@@ -51,8 +75,9 @@ import XCTest
                 let heading = app.staticTexts["lio.updates.\(currentBuild)." + section]
                 reveal(heading, app: app)
                 XCTAssertTrue(heading.exists)
-                let paragraph = app.staticTexts["lio.updates.\(currentBuild)." + section + ".0"]
+                let paragraph = app.textViews["lio.updates.\(currentBuild)." + section + ".0"]
                 reveal(paragraph, app: app)
+                XCTAssertFalse((paragraph.value as? String ?? "").isEmpty)
                 try audit(app)
                 let image = XCTAttachment(screenshot: app.screenshot())
                 image.name = "updates-\(chinese ? "zh" : "en")-\(appearance)-\(largest ? "largest" : "normal")-\(section)"
@@ -62,7 +87,7 @@ import XCTest
             reveal(previous, app: app)
             XCTAssertEqual(previous.label, chinese ? "上一构建：\(previousBuild)" : "Previous build: \(previousBuild)")
             for section in ["changes", "comparison", "testing", "known", "service"] {
-                reveal(app.staticTexts["lio.updates.\(previousBuild)." + section + ".0"], app: app)
+                reveal(app.textViews["lio.updates.\(previousBuild)." + section + ".0"], app: app)
                 try audit(app)
             }
             XCTAssertFalse(app.staticTexts["lio.updates.\(olderBuild).changes"].exists)
@@ -78,7 +103,17 @@ import XCTest
 
     private func reveal(_ element: XCUIElement, app: XCUIApplication) {
         let scroll = app.scrollViews["lio.information.scroll"]
-        for _ in 0..<30 {
+        var returnedToHeading = false
+        for _ in 0..<80 {
+            if !returnedToHeading && (!element.exists || element.frame.isEmpty) {
+                let heading = app.staticTexts["lio.updates.heading"]
+                for _ in 0..<30 {
+                    if heading.exists && scroll.frame.contains(heading.frame) { break }
+                    scroll.swipeDown(velocity: .fast)
+                }
+                XCTAssertTrue(heading.exists && scroll.frame.contains(heading.frame), app.debugDescription)
+                returnedToHeading = true
+            }
             if element.exists && element.isHittable && scroll.frame.contains(element.frame) {
                 var lastFrame: CGRect?
                 let stable = NSPredicate { _, _ in
@@ -91,9 +126,9 @@ import XCTest
                 return
             }
             let frame = scroll.frame
-            let target = element.exists ? element.frame : CGRect(x: frame.midX, y: frame.maxY + frame.height, width: 1, height: 1)
-            let delta = target.minY < frame.minY ? min(frame.height * 0.55, frame.minY - target.minY + 12)
-                : -min(frame.height * 0.55, target.maxY - frame.maxY + 12)
+            let target = element.exists && !element.frame.isEmpty ? element.frame : CGRect(x: frame.midX, y: frame.maxY + frame.height, width: 1, height: 1)
+            let delta = target.minY < frame.minY ? min(frame.height * 0.4, frame.minY - target.minY + 12)
+                : -min(frame.height * 0.4, target.maxY - frame.maxY + 12)
             let start = scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
             start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: delta)))
         }

@@ -91,18 +91,32 @@ private struct LioBuildUpdatesSection: View {
             .accessibilityIdentifier("lio.updates.unavailable")
     }
 
+    private struct ReleaseRow: Identifiable {
+        let id: String
+        let text: String
+        let isHeading: Bool
+    }
+
     private func release(_ release: LioBuildUpdates.Release) -> some View {
-        VStack(alignment: .leading, spacing: LioTheme.Spacing.lg) {
-            ForEach(release.sections) { section in
-                VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
-                    RunReadableText(text: section.title.value(language), style: .headline, color: LioTheme.ink)
-                        .accessibilityAddTraits(.isHeader)
-                        .accessibilityIdentifier("lio.updates.\(release.build).\(section.id.rawValue)")
-                    ForEach(Array(section.items.values(language).enumerated()), id: \.offset) { index, text in
-                        RunReadableText(text: "• " + text, color: LioTheme.ink, lineSpacing: 4)
-                            .accessibilityIdentifier("lio.updates.\(release.build).\(section.id.rawValue).\(index)")
+        let rows = release.sections.flatMap { section in
+            let prefix = "lio.updates.\(release.build).\(section.id.rawValue)"
+            return [ReleaseRow(id: prefix, text: section.title.value(language), isHeading: true)]
+                + section.items.values(language).enumerated().map { index, text in
+                    ReleaseRow(id: "\(prefix).\(index)", text: "• " + text, isHeading: false)
+                }
+        }
+        return LazyVStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
+            ForEach(rows) { row in
+                Group {
+                    if row.isHeading {
+                        RunReadableText(text: row.text, style: .headline, color: LioTheme.ink)
+                            .accessibilityAddTraits(.isHeader)
+                    } else {
+                        RunSelectableText(text: row.text, color: LioTheme.ink)
                     }
                 }
+                .accessibilityIdentifier(row.id)
+                .padding(.top, row.isHeading ? LioTheme.Spacing.md : 0)
             }
         }
     }
