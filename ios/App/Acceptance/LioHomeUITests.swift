@@ -1752,6 +1752,44 @@ import XCTest
         }
     }
 
+    func testOrdinaryHomeLegacyMessagesEnglish() throws { try exerciseOrdinaryHomeLegacy(chinese: false) }
+    func testOrdinaryHomeLegacyMessagesChinese() throws { try exerciseOrdinaryHomeLegacy(chinese: true) }
+
+    private func exerciseOrdinaryHomeLegacy(chinese: Bool) throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        for version in [1, 2] {
+            app.launchArguments = ["--lio-preview", "--lio-exploration-home-acceptance",
+                                   "--lio-home-legacy\(version)-acceptance", "-cj.ui.language.v1", chinese ? "zh-Hans" : "en",
+                                   "-lio.ui.appearance.v1", "light"]
+            app.launch()
+            defer { app.terminate() }
+            let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+            XCTAssertTrue(composer.waitForExistence(timeout: 12), app.debugDescription)
+            composer.tap(); composer.typeText("Some travel ideas")
+            app.buttons["lio.send"].tap()
+            let answer = app.descendants(matching: .any).matching(identifier: "lio.answer").firstMatch
+            XCTAssertTrue(answer.waitForExistence(timeout: 12), app.debugDescription)
+            let expected = chinese ? "日期可以之后再定。" : "Dates can stay open."
+            let complete = NSPredicate { _, _ in
+                answer.label.contains(expected) || answer.descendants(matching: .staticText)
+                    .allElementsBoundByIndex.contains { $0.label.contains(expected) }
+            }
+            XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: complete, object: nil)], timeout: 12), .completed)
+            let visible = answer.label + answer.descendants(matching: .staticText).allElementsBoundByIndex.map(\.label).joined(separator: "\n")
+            XCTAssertTrue(visible.contains(chinese ? "之前的回答" : "Earlier reply"))
+            XCTAssertTrue(visible.contains(chinese ? "大致安排" : "outline"))
+            XCTAssertFalse(visible.contains("##")); XCTAssertFalse(visible.contains("**"))
+            XCTAssertEqual(app.staticTexts.matching(identifier: "lio.question").count, 1)
+            XCTAssertFalse(app.buttons["lio.questions.continue"].exists)
+            XCTAssertFalse(app.descendants(matching: .any).matching(identifier: "lio.segment.0").firstMatch.exists)
+            try app.performAccessibilityAudit(for: .all)
+            let image = XCTAttachment(screenshot: app.screenshot())
+            image.name = "ordinary-legacy\(version)-\(chinese ? "zh" : "en")"; image.lifetime = .keepAlways; add(image)
+            app.terminate()
+        }
+    }
+
     func testExplorationHomeEnglish() throws { try exerciseExplorationHome(chinese: false) }
     func testExplorationHomeChinese() throws { try exerciseExplorationHome(chinese: true) }
 

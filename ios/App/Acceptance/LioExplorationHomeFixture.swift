@@ -55,7 +55,10 @@ private struct ExplorationHomeCounts: View {
     let wire: ExplorationHomeWire
     let service: LioService
     init() throws {
-        let wire = ExplorationHomeWire(showsProgress: ProcessInfo.processInfo.arguments.contains("--lio-home-progress-acceptance"))
+        let arguments = ProcessInfo.processInfo.arguments
+        let version = arguments.contains("--lio-home-legacy1-acceptance") ? 1
+            : arguments.contains("--lio-home-legacy2-acceptance") ? 2 : 4
+        let wire = ExplorationHomeWire(showsProgress: arguments.contains("--lio-home-progress-acceptance"), version: version)
         self.wire = wire
         let recovery = MessageRecovery(storage: ExplorationHomeStorage())
         let scope = try StorageScope(environment: "synthetic", account: UUID().uuidString)
@@ -66,18 +69,23 @@ private struct ExplorationHomeCounts: View {
                                                validateMessage: {}, lio: true)
         let client = LioTimelineHTTP(scope: scope, lease: lease, credentials: ExplorationHomeCredentials(),
                                      transport: transport, firstChatRecovery: recovery)
-        service = .signedExplorationConversation(client, destination: .defaultChat) { _ in }
+        switch version {
+        case 1: service = .signedTimeline(client)
+        case 2: service = .signedConversation(client, destination: .defaultChat) { _ in }
+        default: service = .signedExplorationConversation(client, destination: .defaultChat) { _ in }
+        }
     }
 }
 
 private actor ExplorationHomeWire: ClientTransport {
     private static let conversation = "lio-dialogue-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     private let showsProgress: Bool
+    private let version: Int
     private var progressReads = 0
     private var chinese = false
     private var messages: [[String: Any]] = []
     private var sent: [String] = []
-    init(showsProgress: Bool) { self.showsProgress = showsProgress }
+    init(showsProgress: Bool, version: Int) { self.showsProgress = showsProgress; self.version = version }
     func counts() -> (String, String, String) {
         ("\(sent.count)", sent.last ?? "", messages.last?["message_id"] as? String ?? "")
     }
@@ -86,16 +94,18 @@ private actor ExplorationHomeWire: ClientTransport {
               operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
         let path = request.path!, null = NSNull()
         let output: [String: Any]
-        if request.method == .post, path == "/v4/lio/messages" {
+        if request.method == .post, path == "/v\(version)/lio/messages" {
             let input = try JSONSerialization.jsonObject(with: await Data(collecting: body!, upTo: 16384)) as! [String: Any]
-            precondition(input["version"] as? String == "LIO-message.4")
+            let inputVersion = input["version"] as? String
+            let expectedVersion = "LIO-message.\(version)"
+            precondition(inputVersion == expectedVersion)
             let text = input["text"] as! String
             chinese = input["locale"] as? String == "zh"
             sent.append(text)
             messages.append(message(input, chinese: chinese, first: sent.count == 1))
-            output = ["version": "LIO-message-receipt.4", "message_id": input["message_id"]!,
+            output = ["version": "LIO-message-receipt.\(version)", "message_id": input["message_id"]!,
                       "conversation_id": Self.conversation]
-        } else if request.method == .get, path.hasPrefix("/v4/lio/timeline") {
+        } else if request.method == .get, path.hasPrefix("/v\(version)/lio/timeline") {
             var visible = messages
             if showsProgress, !messages.isEmpty {
                 progressReads += 1
@@ -110,7 +120,7 @@ private actor ExplorationHomeWire: ClientTransport {
                     visible = [waiting]
                 }
             }
-            output = ["version": "LIO-timeline.4", "conversation_id": Self.conversation,
+            output = ["version": "LIO-timeline.\(version)", "conversation_id": Self.conversation,
                       "messages": visible, "next_before": null]
         } else { throw URLError(.unsupportedURL) }
         let data = try JSONSerialization.data(withJSONObject: output, options: [.sortedKeys])
@@ -123,6 +133,13 @@ private actor ExplorationHomeWire: ClientTransport {
     private func message(_ input: [String: Any], chinese: Bool, first: Bool) -> [String: Any] {
         let null = NSNull()
         func text(_ en: String, _ zh: String) -> String { chinese ? zh : en }
+        if version != 4 {
+            let answer = text("## Earlier reply\n\nYou can start with an **outline**.\n\nDates can stay open.",
+                              "## 之前的回答\n\n可以先聊一个**大致安排**。\n\n日期可以之后再定。")
+            return ["message_id": input["message_id"]!, "text": input["text"]!,
+                    "answer": answer, "status": "completed", "failure": null,
+                    "activity": null, "sources": [], "trip": null, "memory": null]
+        }
         let response = first ? text("We can start with an outline.", "可以先聊一个大致安排。")
             : text("I’ll use your choices for the next step.", "接下来我会按你的选择安排。")
         let second = text("Dates can stay open for now.", "日期可以之后再定。")

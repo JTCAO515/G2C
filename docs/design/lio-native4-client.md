@@ -80,6 +80,16 @@ gates. The actual-App synthetic HTTP acceptance exercises the same signed native
 client and Home, not a provider or deployed admission. It does not prove those
 remaining gates.
 
+## Ordinary Home legacy compatibility
+
+The bilingual ordinary-Home acceptance also selects the existing signed timeline
+(version 1) and signed conversation (version 2) factories explicitly. Intercepted
+HTTP replies use their original receipt/timeline envelopes and unstructured
+Markdown answer strings. The tests check the complete answer, rendered heading
+and emphasis, one traveller message, absence of native4 controls, and the same
+unfiltered `.all` audit. These are local synthetic checks; they do not activate
+native4 or prove compatibility against a deployed service.
+
 ## VoiceOver interaction acceptance
 
 `check_lio_home.py --voiceover` runs a separate bilingual walk through Apple's
