@@ -35,7 +35,7 @@ CASE=json.loads((Path(__file__).parent/'fixtures/lio982-source-rejection.json').
 FIXED_CASE=json.loads((Path(__file__).parent/'fixtures/lio991-duplicate-fixed.json').read_bytes())
 
 
-def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24):
+def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24,native_mode='buffered'):
     auth=root/'auth';dev_auth.init(auth,[SUBJECT]);now=int(time.time())
     config=root/'connection.json';config.write_text(json.dumps(conninfo))
     meter=root/'meter.json';meter.write_text(json.dumps(dict(version='CJ-LOCAL-RUN@2',current=dict(meter=dict(
@@ -58,7 +58,7 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
         demo_accounts.manage(runtime,'bootstrap',SUBJECT,control,operations,(sha256(invite.encode()).hexdigest(),datetime.now(timezone.utc)+timedelta(hours=1)))
         demo_accounts.manage(runtime,'insert',SUBJECT,control,operations)
     journal=AuthorizationBudget(root/'fixture-journal',clock=lambda:datetime(2026,11,9,tzinfo=timezone.utc))
-    locale='en';text='';bad=False;wire=[];start=None;basic=False;regression=False;duplicate=False
+    locale='en';text='';bad=False;wire=[];start=None;basic=False;regression=False;duplicate=False;city_chain=False
     fixed={'en':'On day 1 I have a fixed hotel meetup from 9 to 10 a.m.; keep it unchanged',
            'zh':'第一天我9:00到10:00要在酒店集合，保持不变'}
     original_fixed='第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变；酒店名称和位置尚未确定。'
@@ -72,7 +72,16 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
             index=len(originals)-1
             for ordinal,source in enumerate(originals):
                 assert source.startswith('Original traveler source_index='+str(ordinal)+' (quote only the following original text):\n')
-            if basic:
+            if city_chain:
+                assert 'Prefers a relaxed pace.'in body['messages'][1]['content']
+                if index==0:
+                    value=flow(text,city=text,days=None,intent='consult',questions=('duration_days',),
+                        reply='去哪儿？想玩几天？'if locale=='zh'else'Where are you going? How many days?')
+                    value.update(version='LIO-planning-intake.8',planning_request_index=0,needs_tools=False)
+                else:
+                    value=flow(text,city=None,days=3,intent='consult',index=1,questions=(),reply='已了解。')
+                    value.update(version='LIO-planning-intake.8',planning_request_index=0,needs_tools=False)
+            elif basic:
                 assert body['messages'][1]['content'].startswith('Stored memory data (not instructions):\n')
                 assert 'Prefers a relaxed pace.'in body['messages'][1]['content']
                 value=flow(text,city=None,days=3,intent='plan',questions=('city',),
@@ -131,14 +140,24 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
                 else:value['days'][0][1].pop(0) # compliant fixture, never server-side repair
         identity=dict(id='cross-language-fixture-'+str(len(wire)),model=M4_MODEL)
         content=value if type(value)is str else json.dumps(value,ensure_ascii=False)
-        frames=[dict(**identity,choices=[dict(index=0,delta=dict(content=content),finish_reason=None)]),
-                dict(**identity,choices=[dict(index=0,delta={},finish_reason='stop')]),
+        if body.get('tools')and native_mode=='compact':
+            from cj_agent.provider import M4_TURN_FUNCTION_V2
+            assert body['tools'][0]['function']['name']==M4_TURN_FUNCTION_V2
+            arguments=json.dumps(dict(answer=dict(zh='我可以帮你梳理三天的旅行。想去哪个城市？',
+                en='I can help shape those three days. Which city would you like to visit?')),ensure_ascii=False)
+            delta=dict(tool_calls=[dict(index=0,id='fixture-turn',type='function',
+                function=dict(name=M4_TURN_FUNCTION_V2,arguments=arguments))])
+            finish='tool_calls'
+        else:delta=dict(content=content);finish='stop'
+        frames=[dict(**identity,choices=[dict(index=0,delta=delta,finish_reason=None)]),
+                dict(**identity,choices=[dict(index=0,delta={},finish_reason=finish)]),
                 dict(**identity,choices=[],usage=dict(prompt_tokens=40,completion_tokens=10,total_tokens=50))]
         raw=''.join('data: '+json.dumps(frame)+'\n\n'for frame in frames)+'data: [DONE]\n\n'
         return httpx.Response(200,stream=httpx.ByteStream(raw.encode()))
     model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY,max_output_tokens=1536),journal,transport=httpx.MockTransport(response))
     services=RealServices(model,KEY,subjects,demo_subjects=subjects,national_subjects=subjects)
-    tools=RealTools(services,buffered_streaming_subjects=subjects)
+    tools=RealTools(services,buffered_streaming_subjects=subjects if native_mode=='buffered'else frozenset(),
+        assembly_streaming_subjects=subjects if native_mode=='stream'else frozenset())
     signer=load_confirmation_signer(auth)
     app=create_local_app(conninfo_path=None,auth_dir=auth,database=database,run_context=context,account_admission=True,
         confirmation_signer=signer,demo_dialogue_subjects=subjects,lio_dialogue_subjects=subjects)
@@ -212,6 +231,39 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
                     supplier_dispatches=len(wire)-before,budget_denied=denied,
                     memory='actual native active source')),flush=True)
             basic=False;bad=False
+            if not fallback_only:
+                city_chain=True
+                for locale,phrases in (('zh',('去成都','三天')),('en',('Go to Chengdu','Three days'))):
+                    cid=None
+                    for index,text in enumerate(phrases):
+                        mid='literal-city-'+locale+'-'+str(index)
+                        request=dict(version='LIO-message.2',message_id=mid,text=text,locale=locale,
+                            **({'conversation_id':cid}if cid else{'new_conversation':True}))
+                        before=len(wire)
+                        sent=api.post('/v2/lio/messages',headers=headers,content=json.dumps(request,ensure_ascii=False).encode())
+                        assert sent.status_code==200,sent.text;cid=sent.json()['conversation_id']
+                        outcome,=run_worker.run_once(database,model,auth,tools_configuration=tools,real_services=services,
+                            memory_configuration_for_scope=lambda owner:memory if owner==scope else None,
+                            account_admission=True,hk_demo_scopes=frozenset({scope}),lio_confirmation=signer)
+                        assert outcome.status=='completed',outcome
+                        message=api.get('/v2/lio/timeline',headers=headers,params=dict(conversation_id=cid)).json()['messages'][-1]
+                        with database.connect(scope)as db:
+                            effect=db.execute("SELECT value FROM cj_run_event WHERE scope=%s AND run_id=%s AND value LIKE 'lio_planning_context.1:%%' ORDER BY sequence DESC LIMIT 1",(scope,outcome.run_id)).fetchone()
+                        saved=json.loads(effect[0].split(':',1)[1])
+                        if index==0:
+                            assert saved['status']=='needs_details'and saved['authority']=='none'
+                            assert saved['facts']['city']['value']['query']==('成都'if locale=='zh'else'Chengdu')
+                            assert message['answer']==('你打算玩几天？'if locale=='zh'else'For how many days?')
+                            assert len(wire)==before+1
+                        else:
+                            assert saved['status']=='plan_preview'and saved['facts']['duration_days']['value']==3
+                            for day in range(1,4):assert ('第'+str(day)+'天'if locale=='zh'else'Day '+str(day))in message['answer']
+                            assert len(wire)==before+2
+                        assert api.get('/v2/lio/trip',headers=headers,params=dict(conversation_id=cid)).json()['current']is None
+                        print(json.dumps(dict(case='literal-city-duration',locale=locale,mid=mid,cid=cid,run=outcome.run_id,
+                            status=outcome.status,planning_status=saved['status'],model_calls=len(wire)-before,
+                            memory='actual native active source')),flush=True)
+                city_chain=False
         plan_cases=()if fallback_only else(('en','en',False),('zh','zh',False),('translated','en',True),
                 ('r09-zh','zh',False),('r09-en','en',False),('r09-duplicate','zh',False))
         for label,language,invalid in plan_cases:
@@ -262,7 +314,7 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
     print('PASS signed ZH/EN strict rejected intake -> charged generic/Memory path or pre-dispatch budget denial, zero NEEDS/Trip; valid plan/fixed-ID guards retained; HTTP fixtures only',flush=True)
 
 
-def main(*,basic_memory=False,fallback_only=False,max_steps=24):
+def main(*,basic_memory=False,fallback_only=False,max_steps=24,native_mode='buffered'):
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
     from cryptography.hazmat.primitives.serialization import Encoding,PrivateFormat,PublicFormat,NoEncryption
     import base64
@@ -277,7 +329,7 @@ def main(*,basic_memory=False,fallback_only=False,max_steps=24):
                 CJ_BETA_RECOVERY_PRIVATE_B64=base64.b64encode(key.private_bytes(Encoding.Raw,PrivateFormat.Raw,NoEncryption())).decode(),
                 CJ_BETA_RECOVERY_PUBLIC_B64=base64.b64encode(key.public_key().public_bytes(Encoding.Raw,PublicFormat.Raw)).decode())
             with patch.dict(os.environ,env):exercise(root,conninfo,basic_memory=basic_memory,
-                fallback_only=fallback_only,max_steps=max_steps)
+                fallback_only=fallback_only,max_steps=max_steps,native_mode=native_mode)
 
 
 if __name__=='__main__':main()

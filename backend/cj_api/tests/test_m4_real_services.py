@@ -570,6 +570,48 @@ class Boundaries(unittest.TestCase):
         ordinary=tools._model_input(([dict(role='user',content='Synthetic draft')],'existing structured system',provider))
         self.assertNotIn('answer_format_profile',json.loads(ordinary.original_bytes))
 
+    def test_unconfirmed_destination_still_rejects_a_forged_tool_turn_without_dispatch(self):
+        from cj_api.local_app import ISSUER,scope_for
+        subject='m4-synthetic-one';subjects=frozenset({subject})
+        provider=self.provider(sse());tools=RealTools(RealServices(provider,KEY,subjects,demo_subjects=subjects,national_subjects=subjects))
+        dispatched=[]
+        class Worker:
+            lio_planning=None
+            def _model_history(self,*args,**kwargs):pass
+            def _registered_stream(self,binding,key,registration,argument,**kwargs):
+                dispatched.append(registration)
+                self.assert_argument=argument
+                argument.native_reply['assistant']=dict(role='assistant',content=None,tool_calls=[])
+                return iter((json.dumps(dict(version='MODEL-tool-turn.1',kind='tool',answer=None,
+                    calls=[dict(name='place_search',arguments={'private-marker':'must-not-log'})])),))
+        worker=Worker();worker.provider=provider
+        binding=SimpleNamespace(scope=scope_for(ISSUER,subject),run_id='local-unconfirmed')
+        with self.assertLogs('cj_usage.audit',level='WARNING')as logs:
+            with self.assertRaises(ProviderUnknown):list(tools.answer(worker,binding,[dict(role='user',content='Synthetic')],lio_locale='zh'))
+        self.assertEqual(dispatched,['model.tool_turn'])
+        self.assertFalse(worker.assert_argument.confirmed_destination)
+        self.assertIn('code=unconfirmed_destination',' '.join(logs.output))
+        self.assertNotIn('must-not-log',' '.join(logs.output));self.assertEqual(self.sent,[])
+
+    def test_unconfirmed_national_destination_only_offers_already_permitted_fact_tool(self):
+        provider=self.provider(sse());services=RealServices(provider,KEY,frozenset({'m4-synthetic-one'}))
+        for allowed,expected in ((None,{'fact'}),(frozenset({'place_search'}),{'place_search'})):
+            with self.subTest(allowed=allowed):
+                tools=RealTools(services,**({}if allowed is None else dict(allowed_native=allowed)))
+                question=ModelInput([dict(role='user',content='Synthetic question')],TOOL_SYSTEM,provider,{},
+                    national=True,confirmed_destination=False)
+                frozen=json.loads(tools._model_input(question).original_bytes)
+                self.assertEqual({t['function']['name']for t in frozen['native_tools']},expected)
+                self.assertEqual(frozen['external_tools_disabled'],allowed is not None)
+                known=json.loads(tools._model_input(ModelInput(question.messages,TOOL_SYSTEM,provider,{},
+                    national=True,confirmed_destination=True)).original_bytes)
+                self.assertEqual(known['native_tools'],tools.national_tools)
+                ordinary=json.loads(tools._model_input(ModelInput(question.messages,TOOL_SYSTEM,provider,{},
+                    national=False,confirmed_destination=False)).original_bytes)
+                self.assertEqual(ordinary['native_tools'],tools.native_tools)
+                self.assertFalse(ordinary['external_tools_disabled'])
+        self.assertEqual(self.sent,[])
+
     def test_national_structured_intake_is_pinned_and_keeps_the_configured_ceiling(self):
         from cj_api.local_app import ISSUER,scope_for
         provider=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY,max_output_tokens=M4_REAL_OUTPUT_TOKENS),

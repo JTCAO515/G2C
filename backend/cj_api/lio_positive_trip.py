@@ -1,7 +1,7 @@
 """Finite positive trip syntax; never infer a fact from a keyword occurrence."""
 import re
 
-from .lio_planning_grounding import NUMBERS
+from .lio_planning_grounding import NUMBERS,NEGATED
 
 _NUMBER=r'(?:[0-9]{1,3}|[一二两三四五六七八九十]|one|two|three|four|five|six|seven|eight|nine|ten)'
 _WEEKDAY=r'(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)'
@@ -11,6 +11,29 @@ _DATE=(r'(?:[0-9]{2}(?:[0-9]{2})?[./-][0-9]{1,2}[./-][0-9]{1,2}|'
        r'next\s+'+_WEEKDAY+r'|tomorrow|today|'
        r'in\s+'+_NUMBER+r'\s+days?|'+_NUMBER+r'天(?:之|以)?后)')
 _KNOWN_CITIES={'北京','上海','成都','杭州','西安','beijing','shanghai','chengdu','hangzhou',"xi'an"}
+
+
+_DESTINATION_REQUEST=re.compile(r'\s*(?:去\s*|(?:go\s+to|visit)\s+)'
+    r'(?P<city>[^?？。.!！,，;；\n“”"「」『』]+?)\s*[。.!！]?\s*',re.I)
+
+
+def destination_query(text,query):
+    """Read a literal destination span, without an identity or save grant.
+
+    Accept a model locator for either the named place or this whole short
+    request. The extracted name remains an exact original substring; source
+    quote/index validation and administrative resolution are still required.
+    """
+    match=_DESTINATION_REQUEST.fullmatch(text)
+    if match is None or NEGATED.search(text)is not None:return None
+    mention=match['city'].strip()
+    complete=text.strip().rstrip('。.!！').strip()
+    return mention if query.strip().casefold()in (mention.casefold(),complete.casefold())else None
+
+
+def destination_request(text,query):
+    """This positive data request cannot override any existing hold."""
+    return destination_query(text,query)is not None
 
 
 def known_city_term(query):return query.casefold() in _KNOWN_CITIES

@@ -41,6 +41,8 @@ App 对外名称统一为 **Go2China**（JT 2026-11-13）；桌面名称和用�
 
 真实 VoiceOver 交互走查用 `ios/App/Acceptance/check_lio_home.py --voiceover`，需要 Xcode 和 iOS 27 或更新的模拟器，并记录系统实际朗读文本与交互后的合成消息数；该模式独立于原完整 `.all` 审计，不能替代它，也不提高 App 的最低 iOS 17 要求。走查结束或失败后由 XCTest teardown 恢复读屏设置；真机效果仍单独验收。
 
+行程详情标题通过显式文本颜色 `foregroundColor(LioTheme.ink)` 绑定 D5 墨色，保留系统展示字体、字重、动态字号和完整标题；不得通过过滤审计、截断文字或限制字号来处理对比度失败。
+
 ### 原 Demo v2 · 打开就能问（#702 历史）
 
 
