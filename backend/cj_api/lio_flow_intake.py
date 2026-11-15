@@ -12,6 +12,66 @@ from .lio_sourced_intake import parse_sourced,BookingSourceUnclear
 from .lio_positive_trip import destination_query
 
 CORE=('start_date','duration_days','party_size')
+_META_REQUEST=re.compile(r'^\s*(?:(?:请帮我|请|帮我)?(?:(?:把|将)[^。！？!?\n]{0,40})?(?:翻译|复述|改写|引用)|'
+    r'(?:(?:can|could|would) you\s+)?(?:please\s+)?(?:help(?: (?:me|us))?(?: to)?\s+)?'
+    r'(?:translate|rephrase|paraphrase|repeat|quote)\b|how (?:do|would) (?:you|I) say\b|'
+    r'(?:例如|示例|举例|假设|假如|如果|他说|她说|有人说)|'
+    r'\b(?:for example|suppose|assuming|if|(?:he|she|they|someone) (?:said|says))\b)',re.I)
+_META_SUFFIX=re.compile(r'^\s*(?:这(?:句|段)(?:话|内容)?|该句)?\s*(?:怎么|如何|怎样)(?:翻译|复述|改写|引用)',re.I)
+_SOURCE_BREAK=re.compile(r'[。！？!?；;\n]|\.(?=\s+[A-Z]|$)|\b(?:but|however)\b|但是|不过|而是',re.I)
+_SELF_FACT=re.compile(r'^\s*(?:(?:and|but)\s+)?(?:(?:I|we)\s+(?:actually\s+)?(?:start|depart|leave|arrive|are|will|plan|have)\b|'
+    r'(?:我(?:们)?|本次行程)(?:实际|确定|将|会|要|计划|从|是|有|共|一共))',re.I)
+_META_TASK_WORD=re.compile(r'翻译|复述|改写|引用|\b(?:translat\w*|rephras\w*|paraphras\w*|repeat\w*|quot\w*)\b',re.I)
+
+
+def _quoted_data_spans(text):
+    pairs={'“':'”','「':'」','『':'』','‘':'’'};stack=[];spans=[];start=0
+    for index,char in enumerate(text):
+        if char in ("'",'’')and index>0 and index+1<len(text)and text[index-1].isalnum()and text[index+1].isalnum():continue
+        if index>0 and text[index-1]=='\\'and char in ('"',"'",*pairs,*pairs.values()):continue
+        if stack and char==stack[-1]:
+            stack.pop()
+            if not stack:spans.append((start,index+1))
+        elif char in pairs or char in ('"',"'"):
+            if not stack:start=index
+            stack.append(pairs.get(char,char))
+    if stack:spans.append((start,len(text)))
+    return tuple(spans)
+
+
+def _nonplanning_fact_source(text,quote):
+    """Classify the cited span's task scope, not the whole message's first task.
+
+    Translation data remains dialogue; later affirmative traveler facts remain
+    data even in the same original. The schema/literal source validators run
+    first, and no value or locator is repaired here.
+    """
+    spans=_quoted_data_spans(text)
+    stripped=text.strip().rstrip('。.!！').strip()
+    if any(text[start:end]==stripped for start,end in spans):return True
+    breaks=tuple(part for part in _SOURCE_BREAK.finditer(text)
+        if not any(start<=part.start()<end for start,end in spans))
+    for found in re.finditer(re.escape(quote),text):
+        before=[part.end()for part in breaks if part.end()<=found.start()]
+        after=[part.start()for part in breaks if part.start()>=found.end()]
+        start=before[-1]if before else 0;end=after[0]if after else len(text)
+        if _META_REQUEST.search(text[start:found.end()]):
+            # A quoted task object has ended. A separate explicit first-person
+            # assertion after its separator is not part of that quoted task.
+            ended=[right for left,right in spans if start<=left and right<=found.start()
+                and _META_REQUEST.fullmatch(text[start:left].strip().rstrip(':：').strip())]
+            declaration=''if not ended else text[ended[-1]:found.end()].lstrip(' ,，')
+            if not (_SELF_FACT.search(declaration)and not _META_TASK_WORD.search(declaration)):
+                return True
+        for left,right in spans:
+            if not left<=found.start()or not found.end()<=right:continue
+            prefixes=re.split(r'[,，]',text[start:left])
+            suffix=text[right:end].lstrip(' ,，:：')
+            if (any(_META_REQUEST.search(prefix)for prefix in prefixes)or
+                    _META_REQUEST.search(suffix)or _META_SUFFIX.search(suffix)):return True
+    return False
+
+
 # Presence check only, never a date extractor or a default. The original
 # compiler independently checks exact ISO/relative dates against their day.
 DATE_EVIDENCE=re.compile(r'\d{4}[-/年]\d{1,2}|[0-9一二三四五六七八九十]+月|[0-9]+[日号]|'
@@ -147,6 +207,13 @@ def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake,memory_off
     # only facts whose original MESSAGE is still present and checked by context.
     # The normal source/compiler boundary checks restored values and quotes too.
     saved={}if previous is None else previous.get('facts',{})
+    if dto.version=='LIO-planning-intake.8':
+        # Historical snapshots may predate the task-scope filter. Reuse only
+        # affirmative source spans; returning an unchanged cache must not keep
+        # translated facts alive after the execution projection withheld them.
+        saved={field:fact for field,fact in saved.items()if not any(
+            ref['message_id']in source_ids and _nonplanning_fact_source(
+                turns[source_ids.index(ref['message_id'])].text,ref['quote'])for ref in fact['sources'])}
     city=data['city'];old_city=saved.get('city')
     same_city=(city is None or old_city is None or
         city['query'].casefold()==old_city['value']['query'].casefold()and
@@ -178,8 +245,18 @@ def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake,memory_off
     # Validate the received sources first, then withhold these known nonplanning
     # facts. This is a semantic hold, not repair of an invalid source/DTO.
     excluded=set()if previous is None else set(previous.get('nonplanning_message_ids',[]))
-    blocked={field for field,sources in intake.sources.items()if any(source_ids[ref['source_index']]in excluded for ref in sources)}
-    if intake.city is not None and source_ids[intake.city['source_index']]in excluded:
+    meta_blocked=set();meta_city=False
+    if dto.version=='LIO-planning-intake.8':
+        # Meta-text remains ordinary dialogue, regardless of its RUN outcome.
+        # Its otherwise valid quotes cannot become affirmative planning facts.
+        meta_blocked={field for field,sources in intake.sources.items()if any(
+            _nonplanning_fact_source(turns[ref['source_index']].text,ref['quote'])for ref in sources)}
+        meta_city=intake.city is not None and _nonplanning_fact_source(
+            turns[intake.city['source_index']].text,intake.city['quote'])
+        if request_index is not None and _nonplanning_fact_source(turns[request_index].text,turns[request_index].text):
+            intake=replace(intake,planning_request_index=None)
+    blocked=meta_blocked|{field for field,sources in intake.sources.items()if any(source_ids[ref['source_index']]in excluded for ref in sources)}
+    if intake.city is not None and (meta_city or source_ids[intake.city['source_index']]in excluded):
         intake=replace(intake,city=None);data['city']=None
     if blocked:
         fields=dict(intake.extraction['fields']);changes={}
