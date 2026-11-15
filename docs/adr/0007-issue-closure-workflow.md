@@ -46,8 +46,7 @@
   - 有依赖的改动用堆叠 PR：后一个 PR 的 base 指向前一个 PR 的分支，按顺序合并；前一个合并后，把后一个改到 `main` 并在新 head 重跑 CI，审查和锁 head 以最终 head 为准；
   - 每个 PR 各自满足第 3 条的合并条件（精确 head CI 全绿、独立审查、`--match-head-commit`），不因同线其他 PR 已通过而豁免；
   - 不设个数上限。
-
-线与队列以 [issue-plan](../plan/issue-plan.md) 为准；未被 JT 指派的工作不自行扩展。
+- 线与队列以 [issue-plan](../plan/issue-plan.md) 为准；未被 JT 指派的工作不自行扩展。
 - 只改本线拥有的文件；共享文件按文件加锁，清单及分组见 issue-plan。开 PR 前用 `gh pr list`，对每个 OPEN PR 跑 `gh pr diff --name-only` 检查占用。协调文件无同文件冲突即可修改，在 PR 正文写明范围，不等别线确认。
 - 拆子票和修改 issue-plan 可直接做，与本线 handoff 合在一个文档 PR。设计写在 PR 正文或票评论，写完继续本线获准实现，不另设设计审批。
 - **预授权，不停下来等 JT：**
