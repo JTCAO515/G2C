@@ -68,7 +68,15 @@ def exercise(root,config):
     def response(request):
         body=json.loads(request.content);system=body['messages'][0]['content'];requests.append((phase[0],system))
         if 'LIO-planning-intake.8'in system:
-            if phase[0]=='first':
+            if phase[0]=='translation':
+                raise httpx.ReadTimeout('synthetic translation UNKNOWN; no candidate bytes',request=request)
+            if phase[0]=='after-translation':
+                value=flow('请继续规划三天',city='成都',days=3,start='2026-12-10',party=2,intent='plan',questions=(),index=3)
+                value.update(version='LIO-planning-intake.8',planning_request_index=3,needs_tools=False)
+                value['city'].update(source_index=0,quote='成都')
+                value['field_sources']=[dict(field='duration_days',source_index=3,quote='三天'),
+                    dict(field='start_date',source_index=2,quote='2026-12-10'),dict(field='party_size',source_index=2,quote='两个人')]
+            elif phase[0]=='first':
                 value=flow('去成都玩三天',city='成都',days=3,intent='plan',questions=(),index=0)
                 value.update(version='LIO-planning-intake.8',planning_request_index=0,needs_tools=False)
                 value['field_sources']=[dict(field='duration_days',source_index=0,quote='三天')]
@@ -79,8 +87,11 @@ def exercise(root,config):
                 value['city'].update(source_index=0,quote='成都')
                 value['field_sources']=[dict(field='duration_days',source_index=0,quote='三天'),dict(field='start_date',source_index=1,quote='2026-12-01')]
         elif 'The traveler requested a complete 'in system:
-            assert phase[0]=='first'
-            raise httpx.ReadTimeout('one synthetic original discussion UNKNOWN; never retried',request=request)
+            if phase[0]=='after-translation':
+                value=dict(answer='第1天逛街区，第2天看博物馆，第3天试当地美食。想先细化哪一天？')
+            else:
+                assert phase[0]=='first'
+                raise httpx.ReadTimeout('one synthetic original discussion UNKNOWN; never retried',request=request)
         elif 'MEMORY-EXTRACT@2'in system:value=dict(version='MEMORY-EXTRACT@2',entries=[])
         else:
             profile=body['response_format']['json_schema']['schema']['properties']['version']['const']
@@ -126,6 +137,29 @@ def exercise(root,config):
     assert len([s for p,s in requests if p=='first'and'The traveler requested a complete 'in s])==1
     print('PASS genuine failed user bytes -> M2 source_original -> actual Memory history message_refs -> current NEEDS attach -> actual C source/publisher -> one formal Trip v1',flush=True)
     print('PASS no old planning effects inherited; old native UNKNOWN/financial bytes unchanged; no original unknown resend; all HTTP fixtures,0 real service calls',flush=True)
+    phase[0]='translation'
+    translated=boundary.receive_lio(token,json.dumps(dict(version='LIO-message.2',message_id='unknown-translation',
+        text='请翻译“从2026-12-10开始，两个人”',locale='zh',conversation_id=first.conversation_id)).encode(),
+        prepare_scope=database._provision_scope,version='LIO-message.2')
+    third=worker();outcome,=third.process();assert outcome.status=='unknown',outcome
+    phase[0]='after-translation'
+    boundary.receive_lio(token,json.dumps(dict(version='LIO-message.2',message_id='after-translation',
+        text='请继续规划三天',locale='zh',conversation_id=first.conversation_id)).encode(),
+        prepare_scope=database._provision_scope,version='LIO-message.2')
+    with patch('cj_api.lio_city._catalog_exchange',side_effect=catalogue):
+        fourth=worker();outcome,=fourth.process();assert outcome.status=='completed',outcome
+    with repository.connect()as db:
+        after=db.execute('SELECT trip_id,version,content FROM cj_trip_record WHERE scope=%s',(repository.scope,)).fetchall()
+    assert after==rows,'translated facts changed the original saved Trip'
+    with database.connect(owner)as db:
+        context_rows=db.execute("SELECT e.value FROM cj_message_receipt m JOIN cj_run_event e USING(scope,run_id) "
+            "WHERE m.scope=%s AND m.message_id=%s AND e.kind='effect_committed' AND e.value LIKE %s ORDER BY e.sequence",
+            (owner,'after-translation',CONTEXT+'%')).fetchall()
+    contexts=[json.loads(value.removeprefix(CONTEXT))for value, in context_rows]
+    assert contexts and all(not {'start_date','party_size'}&set(value.get('facts',{}))for value in contexts)
+    assert next(r for r in budget.inspect()if r['attempt_id']==unknowns[0]['attempt_id'])==unknowns[0]
+    print('PASS actual UNKNOWN translation original never supplies date/party/cache to the next explicit plan; original Trip/version/content unchanged and old UNKNOWN fee unchanged; 0 real',flush=True)
+
 
 def main():
     with patch.object(harness,'exercise',exercise):harness.main()
