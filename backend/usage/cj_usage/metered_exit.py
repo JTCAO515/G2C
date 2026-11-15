@@ -13,6 +13,17 @@ class BudgetUnknown(Exception):
     pass
 
 
+class ExitAdmissionDenied(Exception):
+    """Known host refusal carrying the original cleanup-only metered context.
+
+    The worker owns RUN mutation/ACK. An ordinary BudgetUnknown never supplies
+    this context and keeps its existing original-action reconciliation rules.
+    """
+    def __init__(self, original_exit):
+        super().__init__('registered exit admission denied')
+        self.original_exit = original_exit
+
+
 class BudgetExceeded(Exception):
     def __init__(self, step_key):
         super().__init__('local run budget exhausted')

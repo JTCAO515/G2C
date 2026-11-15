@@ -49,8 +49,16 @@ class DutSpecification:
             raise ValueError('actual DUT runtime card required')
 
     @property
+    def claim_version(self):
+        return VERSION
+
+    @property
+    def wire_version(self):
+        return LIO_VERSION_V4
+
+    @property
     def raw(self):
-        return compact(dict(version=VERSION, stage=self.stage, opening=self.opening,
+        return compact(dict(version=self.claim_version, stage=self.stage, opening=self.opening,
             locale=self.locale, message_ids=list(self.message_ids),
             runtime_card=json.loads(self.runtime_card)), sort_keys=True)
 
@@ -66,7 +74,7 @@ class DutClaims(CanonicalClaims):
         value = decode(raw)
         if (type(value) is not dict or set(value) != {'version', 'step_id', 'kind',
                 'binding_sha256', 'pins_sha256', 'prior_step_ids', 'native_input_utf8', 'actor_link'}
-                or value['version'] != VERSION or value['kind'] != 'simulator_dut'
+                or value['version'] != self.pins.claim_version or value['kind'] != 'simulator_dut'
                 or value['binding_sha256'] != self.binding.key
                 or value['pins_sha256'] != self.pins.key
                 or type(value['prior_step_ids']) is not list
@@ -78,7 +86,7 @@ class DutClaims(CanonicalClaims):
                 or value['step_id'] != self.pins.message_ids[index]
                 or compact(value, sort_keys=True) != raw):
             raise Unavailable('SIMULATOR_DUT_ORIGINAL_SEQUENCE_CHANGED')
-        command = DialogueMessage.parse(value['native_input_utf8'].encode(), version=LIO_VERSION_V4)
+        command = DialogueMessage.parse(value['native_input_utf8'].encode(), version=self.pins.wire_version)
         if command.id != value['step_id'] or command.locale != self.pins.locale:
             raise Unavailable('SIMULATOR_DUT_NATIVE_INPUT_CHANGED')
         if index == 0:
@@ -142,13 +150,13 @@ class NativeSimulatorDut:
         self.authority.require(binding=self.owner, pins_sha256=self.specification.key,
             purpose='message', deadline=self.deadline, read_only=False)
         mid = self.specification.message_ids[index]
-        native = dict(version=LIO_VERSION_V4, message_id=mid, text=text, locale=locale)
+        native = dict(version=self.specification.wire_version, message_id=mid, text=text, locale=locale)
         if first:
             native['new_conversation'] = True
         else:
             native['conversation_id'] = self.conversation_id
         wire = compact(native)
-        value = dict(version=VERSION, step_id=mid, kind='simulator_dut',
+        value = dict(version=self.specification.claim_version, step_id=mid, kind='simulator_dut',
             binding_sha256=self.owner.key, pins_sha256=self.specification.key,
             prior_step_ids=list(self.specification.message_ids[:index]),
             native_input_utf8=wire.decode(), actor_link=None if first else self.pending[1])
@@ -187,7 +195,7 @@ class NativeSimulatorDut:
             if sha256(dispatch_token.encode()).hexdigest() != self.owner.auth_session_id:
                 raise Unavailable('SIMULATOR_DUT_ADMISSION_SESSION_CHANGED')
             receipt = self.boundary.receive_lio(dispatch_token, wire,
-                prepare_scope=prepare, version=LIO_VERSION_V4)
+                prepare_scope=prepare, version=self.specification.wire_version)
             stored = self.query(mid)
             if stored is None or (stored.receipt.run_id, stored.receipt.conversation_id) != (
                     receipt.run_id, receipt.conversation_id):
