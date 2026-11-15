@@ -53,9 +53,11 @@ def episode(tmp_path,monkeypatch):
 def test_all_three_roles_original_costs_and_duplicate_job_associations_count_once(episode):
  e=episode;e.add('d1','dut','fee1');e.add('d2','dut','fee2');e.add('a1','actor','fee3');e.background()
  before=e.budget.inspect();r=e.accounting.collect(deadline=100)
- assert r['coverage_status']=='COMPLETE'and r['accounting_status']=='SETTLED'
+ assert r['observed_coverage_status']=='COMPLETE'and r['observed_accounting_status']=='SETTLED'
+ assert r['coverage_status']==r['accounting_status']=='UNKNOWN'
  assert len(r['attempts'])==4 and {x['role']for x in r['attempts']}=={'dut','actor','background'}
- assert r['cost']==dict(conservative_cny='0.0000536',token_estimate_cny='0.0000536',actual_paid_cny=None)
+ assert r['cost']==dict(conservative_cny=None,token_estimate_cny=None,actual_paid_cny=None)
+ assert r['known_estimated_cny_1e7']==r['known_conservative_cny_1e7']==536
  assert r['episode_before']['count']==0 and r['episode_after']['count']==4
  assert e.accounting()==r['cost']and e.budget.inspect()==before
 
@@ -73,7 +75,7 @@ def test_missing_associated_job_does_not_become_an_empty_free_background(episode
  e=episode;e.add('d1','dut','fee1');e.background();e.backgrounds.clear()
  r=e.accounting.collect(deadline=100)
  assert r['coverage_status']=='UNKNOWN'and r['cost']['conservative_cny']is None
- assert {x['field']for x in r['missing']}=={'background_original','episode_journal_delta_coverage'}
+ assert {x['field']for x in r['missing']}=={'background_original','episode_journal_delta_coverage','native_producer_lifecycle_closure'}
 
 
 def test_missing_one_fee_keeps_other_originals_and_unknown_amount(episode):
@@ -86,7 +88,7 @@ def test_missing_one_fee_keeps_other_originals_and_unknown_amount(episode):
 def test_unrelated_journal_delta_and_lost_ack_keep_coverage_unknown(episode):
  e=episode;e.add('d1','dut','fee1');e.charge('unrelated');e.tails['d1']['delivery_acknowledged']=False
  r=e.accounting.collect(deadline=100)
- assert {x['field']for x in r['missing']}=={'delivery_acknowledgement','episode_journal_delta_coverage'}
+ assert {x['field']for x in r['missing']}=={'delivery_acknowledgement','episode_journal_delta_coverage','native_producer_lifecycle_closure'}
  assert r['cost']['conservative_cny']is None
 
 
@@ -95,3 +97,24 @@ def test_duplicate_native_attempt_never_double_counts_and_auth_withholds(episode
  with pytest.raises(Unavailable,match='DUPLICATE'):e.accounting.collect(deadline=100)
  e.state['allowed']=False
  with pytest.raises(HostUnavailable):e.accounting()
+
+
+def test_late_unpaid_enqueue_cannot_certify_full_cost_from_equal_journal_delta(episode):
+ e=episode;e.add('d1','dut','fee1')
+ read=e.accounting._read;count=[0]
+ def late(selection,deadline):
+  value=read(selection,deadline);count[0]+=1
+  if count[0]==2:
+   e.tails['d1']['associated_history_jobs']=[dict(job_id='late',attempt_id='late-attempt',state='pending')]
+  return value
+ e.accounting._read=late
+ r=e.accounting.collect(deadline=100)
+ assert r['coverage_status']==r['accounting_status']=='UNKNOWN'
+ assert r['cost']==dict(conservative_cny=None,token_estimate_cny=None,actual_paid_cny=None)
+ assert 'native_producer_lifecycle_closure'in {x['field']for x in r['missing']}
+
+
+def test_empty_observation_is_not_a_closed_free_episode(episode):
+ r=episode.accounting.collect(deadline=100)
+ assert r['attempts']==[]and r['coverage_status']=='UNKNOWN'
+ assert r['cost']['conservative_cny']is None

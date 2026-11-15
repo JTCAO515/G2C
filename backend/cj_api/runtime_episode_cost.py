@@ -1,11 +1,11 @@
-"""Local episode accounting from native DUT, actor and associated background originals.
+"""Observed accounting from native DUT, actor and associated background originals.
 
 No dispatch or new ledger. The journal anchor starts before the first original;
-coverage requires the exact journal delta and every original ACK/job/attempt.
+an exact observed delta is not proof that the native producer cannot enqueue
+later. Full episode amounts remain UNKNOWN until that lifecycle is qualified.
 """
 from dataclasses import asdict
 from hashlib import sha256
-from decimal import Decimal
 from psycopg import Error as DatabaseError
 
 from cj_message.auth_boundary import AccessBlocked,IdentityChanged
@@ -145,19 +145,17 @@ class EpisodeCostInventory:
         covered=(delta==ids and all(after_rows.get(k)==v for k,v in before_rows.items()))
         missing=observed['missing']
         if not covered:missing.append(dict(field='episode_journal_delta_coverage'))
-        entries=observed['attempts'];complete=not missing
-        priced=all(row['estimated_cny_1e7']is not None for row in entries)
-        holds=all(row['parent_conservative_hold_cny_1e7']is not None for row in entries)
+        entries=observed['attempts'];point_complete=not missing
         estimated=sum(row['estimated_cny_1e7']or 0 for row in entries)
         conservative=estimated+sum(row['parent_conservative_hold_cny_1e7']or 0 for row in entries)
-        money=lambda n:format(Decimal(n)/Decimal(CNY_SCALE),'f')
+        missing.append(dict(field='native_producer_lifecycle_closure'))
         result=dict(version='G2C-simulator-episode-cost.1',binding_sha256=self.binding.key,
             episode_before=self.before['anchor'],episode_after=after['anchor'],
-            coverage_scope='NATIVE_DUT_ACTOR_ASSOCIATED_BACKGROUND_AND_JOURNAL_DELTA',
-            **observed,coverage_status='COMPLETE'if complete else'UNKNOWN',
-            accounting_status='SETTLED'if complete and all(r['accounting_settled']for r in entries)else'UNKNOWN',
-            cost=dict(conservative_cny=money(conservative)if complete and holds else None,
-                token_estimate_cny=money(estimated)if complete and priced else None,actual_paid_cny=None),
+            coverage_scope='OBSERVED_NATIVE_ATTEMPTS_NOT_CLOSED_PRODUCER_LIFECYCLE',
+            **observed,coverage_status='UNKNOWN',accounting_status='UNKNOWN',
+            observed_coverage_status='COMPLETE'if point_complete else'UNKNOWN',
+            observed_accounting_status='SETTLED'if point_complete and all(r['accounting_settled']for r in entries)else'UNKNOWN',
+            cost=dict(conservative_cny=None,token_estimate_cny=None,actual_paid_cny=None),
             known_estimated_cny_1e7=estimated,known_conservative_cny_1e7=conservative,
             actual_supplier_paid='UNKNOWN',new_charge_attempts=0)
         self.last_report=result
