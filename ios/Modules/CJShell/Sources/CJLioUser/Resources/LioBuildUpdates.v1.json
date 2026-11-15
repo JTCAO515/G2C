@@ -100,7 +100,8 @@
           },
           "items": {
             "en": [
-              "Latest verified Hong Kong service source: 41eac143.",
+              "Latest verified Hong Kong service source: 60095d1d.",
+              "Follow-up planning retains the stated destination and trip length.",
               "Translated text is isolated from trip dates and party size.",
               "Stale translated facts are filtered from the old cache.",
               "Designated test accounts have additional conversation safeguards.",
@@ -110,7 +111,8 @@
               "Planning retest remains on hold."
             ],
             "zh": [
-              "最近核对的香港在线服务来源为 41eac143。",
+              "最近核对的香港在线服务来源为 60095d1d。",
+              "改善目的地追问后的续答衔接，保留已给出的城市和天数。",
               "翻译文本与行程日期、人数继续隔离。",
               "旧缓存中的翻译污染信息会被过滤。",
               "指定测试账号增加了对话保护。",
