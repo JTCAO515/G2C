@@ -24,7 +24,7 @@ def issued(tmp_path,monkeypatch):
     return tmp_path,q
 
 
-@pytest.mark.parametrize('kind',['nonzero','timeout','malformed_native','extra_private'])
+@pytest.mark.parametrize('kind',['nonzero','timeout','malformed_native','extra_private','phase_list','phase_object','kind_list'])
 def test_failed_observation_saves_exact_bound_metadata_without_raw_bytes(issued,monkeypatch,kind):
     root,q=issued
     data=dict(phase='proof',return_code=137,error_kind='native_exit',
@@ -32,6 +32,9 @@ def test_failed_observation_saves_exact_bound_metadata_without_raw_bytes(issued,
         stderr_bytes=14,stderr_sha256=sha256(b'private-stderr').hexdigest())
     if kind=='extra_private':data['secret']='must-not-publish'
     if kind=='malformed_native':data['return_code']=False
+    if kind=='phase_list':data['phase']=[]
+    if kind=='phase_object':data['phase']={}
+    if kind=='kind_list':data['error_kind']=[]
     stderr=('G2C_STATUS_FAILURE '+json.dumps(data)+'\nprivate-stderr').encode()
     def failed(*args,**kwargs):
         assert kwargs['timeout']==90
@@ -50,6 +53,17 @@ def test_failed_observation_saves_exact_bound_metadata_without_raw_bytes(issued,
     assert 'raw-body'not in raw and'private-stderr'not in raw and'must-not-publish'not in raw
     assert 'raw-body'not in str(error.value)
     assert (value['native']is not None)is(kind=='nonzero')
+
+
+def test_failure_binds_the_original_request_qualification_after_rotation(issued,monkeypatch):
+    root,q=issued;original=(root/'qualification.json').read_bytes()
+    def changed(*args,**kwargs):
+        rotated=dict(q,lease_id='next-lease');(root/'qualification.json').write_text(json.dumps(rotated))
+        return SimpleNamespace(returncode=1,stdout=b'',stderr=b'private')
+    monkeypatch.setattr(client.subprocess,'run',changed)
+    with pytest.raises(SystemExit):client.main()
+    path,=(root/'readiness-failures').glob('*.json');value=json.loads(path.read_bytes())
+    assert value['lease_id']==q['lease_id']and value['qualification_sha256']==sha256(original).hexdigest()
 
 
 @pytest.mark.parametrize('phase',['inspect_api_before','inspect_worker_before','proof','financial','inspect_api_after','inspect_worker_after'])
