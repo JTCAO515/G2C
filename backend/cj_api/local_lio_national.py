@@ -17,6 +17,7 @@ from cj_needs.domain import InvalidInput
 
 from .lio_city import CityReference,forms,_normalize
 from .lio_sourced_intake import BookingSourceUnclear
+from .lio_positive_trip import destination_request
 from .lio_flow_intake import ReadOnlyPlanningQuestion,parse_flow
 from .lio_national_intake import NONPERSISTENT,fields_for,fixed_sources_complete,province_evidence,diagnostic_code,StartDateConflict,FixedTimezoneConflict,DateDurationConflict,DateSourceUnclear
 from .lio_planning_grounding import PlanningTurn,standalone_question,NUMBER,_number
@@ -222,7 +223,7 @@ class NationalLioPlanning:
             state=self._context(worker,binding,state,dict(authority='none',
                 status='discussion'if held else'needs_details',facts=facts,nonplanning_message_ids=[],
                 **({'authority_barrier_message_id':binding.message_id}if held else {})))
-            return self._reply(worker,binding,state,intake.reply)
+            return self._clarify(worker,binding,state,original.locale,intake.reply,question_fields,['duration_days'])
         calendar=self.calendar if self.calendar is not None and original.protocol==LIO_VERSION_V3 else None
         if calendar is not None:
             converted=calendar.convert(worker,binding,state,intake,original,turns,refs)
@@ -459,7 +460,9 @@ class NationalLioPlanning:
         # not revoke an original refusal or create a fresh publication grant.
         denied=barrier is not None or previous is not None and previous.get('status')in AUTHORITY_BARRIERS
         fresh_fact=any(ref['source_index']==request_index for ref in intake.sources.get('duration_days',[]))
-        current_trip=(intake.city is not None and intake.duration_days is not None and fresh_fact)
+        destination=(request is not None and intake.city is not None
+            and intake.city['source_index']==request_index and destination_request(request,intake.city['query']))
+        current_trip=(intake.city is not None and (destination or intake.duration_days is not None and fresh_fact))
         if request is not None and not publication_held(request)and (explicit or current_trip):
             if not denied or explicit and (request_index==current_index or barrier is not None and request_index>source_ids.index(barrier)):
                 return 'save'if intake.intent=='save'else'plan'
@@ -470,7 +473,11 @@ class NationalLioPlanning:
     def _clarify(self,worker,binding,state,locale,reply,question_fields,missing,*,arrival=None):
         # Preserve the model's natural wording when it asks exactly what is
         # missing. The host repairs omissions/repeated known fields, not style.
-        if set(question_fields)==set(missing):return self._reply(worker,binding,state,reply)
+        if set(question_fields)==set(missing):
+            if missing!=['duration_days']or reply.count('?')+reply.count('？')<=1:
+                return self._reply(worker,binding,state,reply)
+            logging.getLogger('cj_usage.audit').info(
+                'LIO_CLARIFICATION_REPAIRED run_id=%s field=duration_days reason=multiple_questions',binding.run_id)
         zh={'city':'想去哪个城市？','duration_days':'你打算玩几天？','start_date':'你打算哪天开始？','party_size':'一共几个人出行？',
             'fixed_items':'固定安排谁参加、哪天以及开始和结束时间分别是什么？'}
         en={'city':'Which city would you like to visit?','duration_days':'For how many days?',
