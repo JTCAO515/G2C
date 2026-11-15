@@ -97,10 +97,11 @@ class PlanningFlow(unittest.TestCase):
                 self.assertNotIn('哪天',answer(events));self.assertNotIn('几个人',answer(events))
 
     def test_bare_destination_after_fixed_answers_continues_in_the_question_language(self):
-        # #994 r08 item 7: after fixed identity/capability answers, the English
-        # bare destination was labelled consult/root=None and fell to a generic
+        # #994 r08 item 7 (a new single-turn chat): the English bare
+        # destination was labelled consult/root=None and fell to a generic
         # answer. The intake instruction names the bare form as a planning
         # request; the host still requires the model root and original source.
+        # The single-turn form is covered above; this covers earlier fixed turns.
         from cj_api.local_lio_national import CURRENT_SYSTEM
         self.assertIn('Go to Chengdu',CURRENT_SYSTEM);self.assertIn('去成都 ',CURRENT_SYSTEM)
         for first,last,city,locale,fixed,reply in [

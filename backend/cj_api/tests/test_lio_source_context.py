@@ -90,9 +90,25 @@ class SourceContext(unittest.TestCase):
     def test_source_holder_and_original_day_fail_closed(self):
         rows=[row('failed',2,'去成都玩三天','unknown')]
         with self.assertRaises(Unavailable):self.context(rows,denied=True)
-        with self.assertRaises(Unavailable):self.context([row('failed',2,'下周二开始','unknown',day=None)])
-        with self.assertRaises(Unavailable):
-            self.context([row('failed',2,'下周二开始','unknown',day=None),row('earlier',1,'你好',day=None)])
+
+    def test_failed_original_without_its_own_day_only_breaks_continuity(self):
+        # Review of #1025 P1-C: outside Demo scopes no receipt has
+        # demo_question_day. A failed/unknown/cancelled original without its own
+        # day is unusable DATA: it ends the history window like main, grants
+        # nothing, and never turns every later turn into UNKNOWN.
+        for status in ('unknown','failed','cancelled'):
+            with self.subTest(status=status):
+                rows=[row('failed',2,'下周二开始',status,day=None),row('earlier',1,'你好',day=None)]
+                (turns,refs,previous),calls=self.context(rows)
+                self.assertEqual([t.text for t in turns],['具体的行程呢']);self.assertEqual(refs,())
+                self.assertEqual(calls,[])
+                self.assertTrue(previous is None or previous.get('authority')=='none')
+                self.assertNotIn('uncompleted_request_message_ids',previous or {})
+                # A completed turn after it is history again, exactly as on main.
+                rows=[row('later',3,'Could you help me?',day=None),*rows]
+                (turns,refs,_),calls=self.context(rows)
+                self.assertEqual([t.text for t in turns],['Could you help me?','具体的行程呢'])
+                self.assertEqual(calls,['later'])
 
     def test_completed_history_without_demo_day_keeps_the_accepted_path(self):
         # Only Demo receipts carry demo_question_day. Completed M2 history in
@@ -118,10 +134,18 @@ class SourceContext(unittest.TestCase):
             with self.subTest(text=texts[0]):
                 turns=tuple(PlanningTurn(t,DAY)for t in texts)
                 ids=['failed','root','current']
-                previous=dict(authority='plan',status='plan_preview',facts={},
+                city_query='Chengdu'if' 'in texts[0]else'成都'
+                previous=dict(authority='plan',status='plan_preview',
+                    facts={'city':dict(value=dict(query=city_query,source_index=0,quote=city_query),sources=[dict(message_id='failed',quote=city_query)])},
                     resolved_city_source_message_id='root',uncompleted_request_message_ids=['failed'])
-                intake=self.intake(root=1,city=0,days_index=1,start_index=2)
+                intake=self.intake(root=1,city=0,days_index=1,start_index=2,query=city_query)
                 self.assertEqual(NationalLioPlanning._authority(intake,previous,current_index=2,turns=turns,source_ids=ids),'plan')
+                # Review P2: before the city is resolved, the completed root keeps
+                # only the city it adopted; another failed city, or a root that
+                # never adopted one, inherits nothing.
+                other=self.intake(root=1,city=0,days_index=1,start_index=2,query='北京')
+                self.assertEqual(NationalLioPlanning._authority(other,previous,current_index=2,turns=turns,source_ids=ids),'none')
+                self.assertEqual(NationalLioPlanning._authority(intake,dict(previous,facts={}),current_index=2,turns=turns,source_ids=ids),'none')
                 # The failed root itself still cannot be continued.
                 self.assertEqual(NationalLioPlanning._authority(self.intake(root=0,city=0,days_index=0),previous,
                     current_index=2,turns=turns,source_ids=ids),'none')
