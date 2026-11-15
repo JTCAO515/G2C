@@ -56,7 +56,7 @@ def _nonplanning_fact_source(text,quote):
         for left,right in spans:
             if not left<=found.start()or not found.end()<=right:continue
             prefixes=re.split(r'[,，]',text[start:left])
-            suffix=text[right:end]
+            suffix=text[right:end].lstrip(' ,，:：')
             if (any(_META_REQUEST.search(prefix)for prefix in prefixes)or
                     _META_REQUEST.search(suffix)or _META_SUFFIX.search(suffix)):return True
     return False

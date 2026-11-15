@@ -105,6 +105,22 @@ class OptionalIntakeChecks(unittest.TestCase):
         self.assertEqual(intake.extraction['fields']['party_size'],dict(state='missing'))
         self.assertNotIn('start_date',snapshot);self.assertNotIn('party_size',snapshot)
 
+    def test_quotation_followed_by_comma_translation_request_is_not_a_fact(self):
+        for text,quote,city,request,days in (
+                ('“从2026-12-01开始，两个人”，请翻译成英文。','两个人','北京','规划北京三天','三天'),
+                ('"Start on 2026-12-01, two people", please translate into Chinese.',
+                 'two people','Beijing','Plan Beijing for three days','three days')):
+            value=flow('Continue',city=city,days=3,start='2026-12-01',party=2,index=2,questions=())
+            value.update(version='LIO-planning-intake.8',planning_request_index=0)
+            value['city'].update(source_index=0,quote=city)
+            value['field_sources']=[dict(field='duration_days',source_index=0,quote=days),
+                dict(field='start_date',source_index=1,quote='2026-12-01'),dict(field='party_size',source_index=1,quote=quote)]
+            intake,_,snapshot=parse_flow(json.dumps(value),tuple(map(original,(request,text,'Continue'))),
+                ({'message_id':'real-request'},{'message_id':'translation'}),'current',None,schema=OptionalIntake)
+            self.assertEqual(intake.start_date,dict(state='missing'))
+            self.assertEqual(intake.extraction['fields']['party_size'],dict(state='missing'))
+            self.assertNotIn('start_date',snapshot);self.assertNotIn('party_size',snapshot)
+
     def test_explicit_version_and_original_index_do_not_mutate_old_profile(self):
         before=old_format(0)
         wire=flow('去成都玩三天');wire['version']='LIO-planning-intake.8'
