@@ -91,6 +91,66 @@ class SourceContext(unittest.TestCase):
         rows=[row('failed',2,'去成都玩三天','unknown')]
         with self.assertRaises(Unavailable):self.context(rows,denied=True)
         with self.assertRaises(Unavailable):self.context([row('failed',2,'下周二开始','unknown',day=None)])
+        with self.assertRaises(Unavailable):
+            self.context([row('failed',2,'下周二开始','unknown',day=None),row('earlier',1,'你好',day=None)])
+
+    def test_completed_history_without_demo_day_keeps_the_accepted_path(self):
+        # Only Demo receipts carry demo_question_day. Completed M2 history in
+        # any other scope keeps main's existing completed-only day behavior;
+        # the stricter original-day rule applies to newly admitted failed data.
+        rows=[row('earlier',1,'Could you help me with a travel question?',day=None)]
+        (turns,refs,previous),calls=self.context(rows)
+        self.assertEqual([t.text for t in turns],['Could you help me with a travel question?','具体的行程呢'])
+        self.assertEqual([t.question_day for t in turns],[DAY,DAY])
+        self.assertIsNone(previous);self.assertEqual(calls,['earlier'])
+
+    def intake(self,*,root,city,days_index=None,start_index=None,query='成都'):
+        return SimpleNamespace(intent='plan',publication_hold=False,current_request='',
+            planning_request_index=root,city=dict(source_index=city,query=query),duration_days=3,
+            sources={'duration_days':[]if days_index is None else [dict(source_index=days_index)],
+                     **({'start_date':[dict(source_index=start_index)]}if start_index is not None else {})})
+
+    def test_later_completed_root_survives_parameter_reply_with_failed_city_data(self):
+        # Review of #1025 P1: UNKNOWN city DATA -> completed explicit root (preview)
+        # -> date reply. The completed root continues; the failed root never does.
+        for texts in (('去成都玩三天','请用前面信息重新规划三天','从2026-12-01开始'),
+                      ('Go to Chengdu for three days','Please use the earlier information to plan three days','Start on 2026-12-01')):
+            with self.subTest(text=texts[0]):
+                turns=tuple(PlanningTurn(t,DAY)for t in texts)
+                ids=['failed','root','current']
+                previous=dict(authority='plan',status='plan_preview',facts={},
+                    resolved_city_source_message_id='root',uncompleted_request_message_ids=['failed'])
+                intake=self.intake(root=1,city=0,days_index=1,start_index=2)
+                self.assertEqual(NationalLioPlanning._authority(intake,previous,current_index=2,turns=turns,source_ids=ids),'plan')
+                # The failed root itself still cannot be continued.
+                self.assertEqual(NationalLioPlanning._authority(self.intake(root=0,city=0,days_index=0),previous,
+                    current_index=2,turns=turns,source_ids=ids),'none')
+                # Without a completed grant on that root nothing is inherited.
+                for denied in (dict(previous,authority='none',status='consult'),
+                               dict(previous,authority='none',status='discussion',authority_barrier_message_id='root')):
+                    self.assertEqual(NationalLioPlanning._authority(intake,denied,current_index=2,turns=turns,source_ids=ids),'none')
+                # The completed root's resolved destination is the one it keeps;
+                # another failed city quote cannot be swapped in under it.
+                chengdu=dict(adcode='510100',name='成都市',province='四川省',district=None,level='city',timezone='Asia/Shanghai')
+                resolved=dict(previous,city=dict(status='resolved',candidates=[chengdu]))
+                same=self.intake(root=1,city=0,days_index=1,start_index=2,query=texts[0].split()[2]if' 'in texts[0]else'成都')
+                self.assertEqual(NationalLioPlanning._authority(same,resolved,current_index=2,turns=turns,source_ids=ids),'plan')
+                other=self.intake(root=1,city=0,days_index=1,start_index=2,query='北京')
+                self.assertEqual(NationalLioPlanning._authority(other,resolved,current_index=2,turns=turns,source_ids=ids),'none')
+
+    def test_failed_destination_after_a_completed_root_never_inherits_its_grant(self):
+        turns=tuple(PlanningTurn(t,DAY)for t in ('规划北京三天','改去成都','从2026-12-01开始'))
+        ids=['root','failed','current']
+        previous=dict(authority='plan',status='needs_details',facts={},uncompleted_request_message_ids=['failed'])
+        intake=self.intake(root=0,city=1,days_index=0,start_index=2)
+        self.assertEqual(NationalLioPlanning._authority(intake,previous,current_index=2,turns=turns,source_ids=ids),'none')
+        # A later failed denial is still a barrier for the earlier root.
+        turns=tuple(PlanningTurn(t,DAY)for t in ('去成都玩三天','请用前面信息重新规划三天','先不保存','从2026-12-01开始'))
+        ids=['failed','root','hold','current']
+        previous=dict(authority='none',status='discussion',facts={},authority_barrier_message_id='hold',
+            uncompleted_request_message_ids=['failed','hold'])
+        intake=self.intake(root=1,city=0,days_index=1,start_index=3)
+        self.assertEqual(NationalLioPlanning._authority(intake,previous,current_index=3,turns=turns,source_ids=ids),'none')
 
 
 if __name__=='__main__':unittest.main()

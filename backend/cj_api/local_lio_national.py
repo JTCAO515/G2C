@@ -173,7 +173,9 @@ class NationalLioPlanning:
                 original=self.message_context.active_source_original(binding,mid)
                 raw=original.stored.raw
                 digest=original.reference.input_sha256
-                if day is None:raise Unavailable('original nationwide source day unavailable')
+                # Newly admitted failed/unknown originals need their own day.
+                # Completed history keeps the accepted completed-only fallback.
+                if day is None and status!='completed':raise Unavailable('original nationwide source day unavailable')
             if raw is None:raise Unavailable('original nationwide context was erased')
             command=Command.parse_original(bytes(raw))
             if command.conversation_id!=binding.conversation_id or command.message_id!=mid or sha256(command.raw).hexdigest()!=digest:
@@ -494,6 +496,14 @@ class NationalLioPlanning:
         return None
 
     @staticmethod
+    def _same_prior_city(intake,previous):
+        old=previous.get('city')
+        if old is None:return True
+        if old.get('status')!='resolved'or len(old.get('candidates',[]))!=1:return False
+        city=old['candidates'][0]
+        return _normalize(intake.city['query'])in forms(city['name'],city['level'])
+
+    @staticmethod
     def _authority(intake,previous,*,current_index=None,turns=(),source_ids=()):
         if intake.intent=='cancel' or intake.publication_hold or publication_held(intake.current_request):return 'none'
         # Publication still requires a traveler request, not a model label.
@@ -504,8 +514,12 @@ class NationalLioPlanning:
         if request_index is not None and source_ids[request_index]in uncompleted|excluded:return 'none'
         # Uncompleted text can supply checked data, never an execution root or
         # permission to transfer an earlier request to a different destination.
+        # A later completed root that already adopted that DATA keeps its own
+        # positive grant for short parameter replies, for its own destination.
         if (intake.city is not None and source_ids[intake.city['source_index']]in uncompleted
-                and request_index!=current_index):return 'none'
+                and request_index!=current_index and not (request_index is not None
+                    and request_index>intake.city['source_index'] and previous.get('authority','none')!='none'
+                    and NationalLioPlanning._same_prior_city(intake,previous))):return 'none'
         barrier=None if previous is None else previous.get('authority_barrier_message_id')
         if request_index is not None and barrier is not None and request_index<=source_ids.index(barrier):return 'none'
         request=None if request_index is None else turns[request_index].text

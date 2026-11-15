@@ -27,11 +27,12 @@ from fastapi.testclient import TestClient
 from test_lio_planning_flow import flow
 from test_lio_city import data as city_catalog
 
-def exercise(root,config,*,locale):
+def exercise(root,config,*,locale,scenario='publish'):
     auth=root/'auth';conninfo=root/'connection.json';conninfo.write_text(json.dumps(config))
     subject='m4-synthetic-demo-0123456789ab';owner=scope_for(ISSUER,subject)
     english=locale=='en';city='Chengdu'if english else'成都';days_quote='three days'if english else'三天'
     first_text='Go to Chengdu for three days'if english else'去成都玩三天'
+    if scenario=='other-city':first_text='Go to Chengdu or Beijing for three days'if english else'去成都还是北京玩三天'
     second_text='Please plan my trip starting 2026-12-01'if english else'从2026-12-01开始，请继续规划'
     translated_text='Please translate "Start on 2026-12-10, two people"'if english else'请翻译“从2026-12-10开始，两个人”'
     after_text='Please plan my trip for three days'if english else'请继续规划三天'
@@ -72,12 +73,29 @@ def exercise(root,config,*,locale):
             text='I prefer a relaxed pace.',extent='long_term',occurred_at='synthetic',context=None)).encode())
         assert seed.status_code==200,seed.text
     phase=['first'];requests=[]
+    preview_text='Please use the earlier information to plan three days'if english else'请用前面信息重新规划三天'
+    date_text='Start on 2026-12-01'if english else'从2026-12-01开始'
+    other_city='Beijing'if english else'北京'
+    def sourced(text,index,root,city_index,city_quote,field_sources,**kwargs):
+        value=flow(text,city=city_quote,days=3,intent='plan',questions=(),index=index,**kwargs)
+        value.update(version='LIO-planning-intake.8',planning_request_index=root,needs_tools=False)
+        value['city'].update(source_index=city_index,quote=city_quote)
+        value['field_sources']=field_sources
+        return value
     def response(request):
         body=json.loads(request.content);system=body['messages'][0]['content'];requests.append((phase[0],system))
         if 'LIO-planning-intake.8'in system:
-            if phase[0]=='translation':
+            if phase[0]=='preview':
+                # New explicit request at index 1; city DATA quotes the UNKNOWN original.
+                value=sourced(preview_text,1,1,0,city,[dict(field='duration_days',source_index=1,quote=days_quote)])
+            elif phase[0]in('date','date-other-city'):
+                # A short parameter reply keeps the completed root at index 1.
+                value=sourced(date_text,2,1,0,city if phase[0]=='date'else other_city,
+                    [dict(field='duration_days',source_index=1,quote=days_quote),dict(field='start_date',source_index=2,quote='2026-12-01')],
+                    start='2026-12-01')
+            elif phase[0]=='translation':
                 raise httpx.ReadTimeout('synthetic translation UNKNOWN; no candidate bytes',request=request)
-            if phase[0]=='after-translation':
+            elif phase[0]=='after-translation':
                 value=flow(after_text,city=city,days=3,start='2026-12-10',party=2,intent='plan',questions=(),index=3)
                 value.update(version='LIO-planning-intake.8',planning_request_index=3,needs_tools=False)
                 value['city'].update(source_index=0,quote=city)
@@ -94,7 +112,7 @@ def exercise(root,config,*,locale):
                 value['city'].update(source_index=0,quote=city)
                 value['field_sources']=[dict(field='duration_days',source_index=0,quote=days_quote),dict(field='start_date',source_index=1,quote='2026-12-01')]
         elif 'The traveler requested a complete 'in system:
-            if phase[0]=='after-translation':
+            if phase[0]in('after-translation','preview'):
                 value=dict(answer='Day 1: neighbourhoods. Day 2: museums. Day 3: local food. Which day should I expand?'if english else'第1天逛街区，第2天看博物馆，第3天试当地美食。想先细化哪一天？')
             else:
                 assert phase[0]=='first'
@@ -127,6 +145,37 @@ def exercise(root,config,*,locale):
     assert any(json.loads(v.split(':',1)[1])['authority']=='plan'for v, in old_effects)
     old_fees=budget.inspect();unknowns=[r for r in old_fees if r['state']!='RECEIVED'];assert len(unknowns)==1
     print('PASS baseline native UNKNOWN retains a committed plan effect and original unknown financial attempt',flush=True)
+    if scenario!='publish':
+        def send(mid,text,stage):
+            phase[0]=stage
+            boundary.receive_lio(token,json.dumps(dict(version='LIO-message.2',message_id=mid,text=text,locale=locale,
+                conversation_id=first.conversation_id)).encode(),prepare_scope=database._provision_scope,version='LIO-message.2')
+            with patch('cj_api.lio_city._catalog_exchange',side_effect=catalogue):
+                current=worker();outcome,=current.process();assert outcome.status=='completed',outcome
+            with database.connect(owner)as db:
+                values=db.execute("SELECT e.value FROM cj_message_receipt m JOIN cj_run_event e USING(scope,run_id) "
+                    "WHERE m.scope=%s AND m.message_id=%s AND e.kind='effect_committed' AND e.value LIKE %s ORDER BY e.sequence",
+                    (owner,mid,CONTEXT+'%')).fetchall()
+            with current.drafts.repository.connect()as db:
+                trips=db.execute('SELECT trip_id,version FROM cj_trip_record WHERE scope=%s',(current.drafts.repository.scope,)).fetchall()
+            return [json.loads(v.removeprefix(CONTEXT))for v, in values],trips,current
+        contexts,trips,_=send('preview',preview_text,'preview')
+        assert contexts[-1]['authority']=='plan'and contexts[-1]['status']=='plan_preview'and trips==[],(contexts,trips)
+        print('PASS UNKNOWN city DATA -> completed new explicit request -> unsaved three-day preview, authority=plan, no Trip',flush=True)
+        stage='date'if scenario=='preview-date'else'date-other-city'
+        contexts,trips,current=send('date',date_text,stage)
+        if scenario=='preview-date':
+            assert len(trips)==1 and trips[0][1]==1,(trips,contexts)
+            assert any(c['status']=='ready_to_publish'for c in contexts),contexts
+            print('PASS short date reply keeps the completed root: original source/NEEDS/sole publisher -> one formal Trip v1',flush=True)
+        else:
+            assert trips==[]and all(c['authority']=='none'for c in contexts),(contexts,trips)
+            assert not [p for p,s in requests if p==stage and 'The traveler requested a complete 'in s]
+            print('PASS failed-text city swapped under the completed root grants nothing: no lookup grant, no Trip',flush=True)
+        assert one.runs.snapshot(Binding(owner,old_receipt.conversation_id,old_receipt.generation,old_receipt.message_id,old_receipt.run_id,old_receipt.sequence)).status=='unknown'
+        assert next(r for r in budget.inspect()if r['attempt_id']==unknowns[0]['attempt_id'])==unknowns[0]
+        print('PASS old native UNKNOWN RUN and financial bytes unchanged; no resend; fixture HTTP only, 0 real calls',flush=True)
+        return
     second=boundary.receive_lio(token,json.dumps(dict(version='LIO-message.2',message_id='new-plan',text=second_text,locale=locale,conversation_id=first.conversation_id)).encode(),prepare_scope=database._provision_scope,version='LIO-message.2')
     phase[0]='second';history=HistoryMemory.before_model;references_seen=[]
     def record_history(self,binding,original,messages,system,*,message_refs=()):
@@ -169,10 +218,11 @@ def exercise(root,config,*,locale):
 
 
 def main():
-    for locale in ('zh','en'):
-        def run(root,config):return exercise(root,config,locale=locale)
-        with patch.object(harness,'exercise',run):harness.main()
-        print('PASS signed failed-history locale '+locale,flush=True)
+    for scenario in ('publish','preview-date','other-city'):
+        for locale in ('zh','en'):
+            def run(root,config):return exercise(root,config,locale=locale,scenario=scenario)
+            with patch.object(harness,'exercise',run):harness.main()
+            print('PASS signed failed-history '+scenario+' locale '+locale,flush=True)
 
 
 if __name__=='__main__':main()
