@@ -97,3 +97,22 @@ class SimulatorDutBridge:
             return self.dut.reply(text, locale, first=first)
         except Unavailable as error:
             raise self.host_unavailable('original DUT unavailable; query only') from error
+
+
+def run_native_episode(dut, actor, links, original_cost, *, candidate,
+                       evidence_layer, run_episode, renderer, input_error,
+                       host_unavailable):
+    """Compose one local episode with C's unchanged evaluator and renderer.
+
+    Profile, attempt and dataset come from the already pinned actor, never from
+    a second caller-supplied persona. Observations and costs remain the native
+    components' responsibility; this join creates no qualification or retry.
+    C's evaluator receives the profile, while only its ordinary rendered text
+    reaches SimulatorDutBridge.reply.
+    """
+    profile = actor.specification.profile(actor.profile_id)
+    dataset_sha256 = sha256(actor.specification.dataset).hexdigest()
+    return run_episode(profile, actor.attempt, dataset_sha256, candidate,
+        evidence_layer, SimulatorDutBridge(dut, host_unavailable),
+        SimulatorActorBridge(actor, dut, links, renderer, input_error,
+                             host_unavailable), original_cost)

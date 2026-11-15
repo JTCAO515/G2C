@@ -32,6 +32,70 @@ import Testing
         #expect(other.continuity?.selectedID == nil && other.continuity?.draft == "")
     }
 
+    @Test func acceptedChatRestoresWithoutLookingUpAnUnrelatedUncertainFirstSend() async throws {
+        let fixture = try ChatContinuityFixture()
+        let library = try fixture.library()
+        let accepted = library.newChat()
+        let position = try #require(library.continuity)
+        let first = LioConversation(service: accepted.service)
+        first.send("A synthetic saved question", language: .english)
+        await first.receive(try #require(first.pending))
+        let unrelated = library.newChat()
+        let uncertain = try LioTimelineWire.Send(messageID: UUID().uuidString, text: "Another synthetic question",
+                                                 locale: .english, destination: .newChat)
+        position.firstQuestions[unrelated.id] = LioQuestion(messageID: uncertain.messageID,
+                                                         text: "Another synthetic question", language: .english)
+        await fixture.transport.loseNextReceipt()
+        do {
+            _ = try await fixture.client().submit(uncertain)
+            Issue.record("The second synthetic receipt must be lost")
+        } catch let error as URLError { #expect(error.code == .networkConnectionLost) }
+        position.selectedID = accepted.id
+        position.draft = "An unsent synthetic follow-up"
+        await fixture.transport.failLookups(true)
+        let transferred = LioChatContinuity()
+        transferred.inherit(position)
+        let renewed = try fixture.library(continuity: transferred)
+        let restored = try #require(try await renewed.restore?())
+        #expect(restored.id == accepted.id)
+        #expect(transferred.draft == position.draft)
+        #expect(transferred.firstQuestions[unrelated.id]?.messageID == uncertain.messageID)
+        #expect(await fixture.transport.lookups == 0)
+        #expect(await fixture.transport.posts == 2)
+        let retained = try #require(try fixture.recovery.action(messageID: uncertain.messageID, lease: fixture.lease))
+        #expect(retained.phase == .queryRequired)
+        #expect(retained.originalUTF8 == uncertain.originalUTF8)
+        let anotherFirst = try LioTimelineWire.Send(messageID: UUID().uuidString, text: "A third synthetic question",
+                                                   locale: .english, destination: .newChat)
+        await #expect(throws: RecoveryError.queryOnly) { _ = try await fixture.client().submit(anotherFirst) }
+        #expect(await fixture.transport.posts == 2)
+    }
+
+    @Test func selectedUncertainFirstSendStillRequiresItsOwnReceiptLookup() async throws {
+        let fixture = try ChatContinuityFixture()
+        let library = try fixture.library()
+        let selected = library.newChat()
+        let position = try #require(library.continuity)
+        let first = try LioTimelineWire.Send(messageID: UUID().uuidString, text: "An uncertain synthetic question",
+                                            locale: .english, destination: .newChat)
+        position.selectedID = selected.id
+        position.firstQuestions[selected.id] = LioQuestion(messageID: first.messageID,
+                                                         text: "An uncertain synthetic question", language: .english)
+        await fixture.transport.loseNextReceipt()
+        do {
+            _ = try await fixture.client().submit(first)
+            Issue.record("The selected synthetic receipt must be lost")
+        } catch let error as URLError { #expect(error.code == .networkConnectionLost) }
+        await fixture.transport.failLookups(true)
+        await #expect(throws: MessageHTTPFailure.exchangeUnknown) { _ = try await library.restore?() }
+        #expect(position.selectedID == selected.id)
+        #expect(position.firstQuestions[selected.id]?.messageID == first.messageID)
+        let retained = try #require(try fixture.recovery.action(messageID: first.messageID, lease: fixture.lease))
+        #expect(retained.originalUTF8 == first.originalUTF8 && retained.phase == .queryRequired)
+        #expect(await fixture.transport.posts == 1)
+        #expect(await fixture.transport.lookups == 1)
+    }
+
     @Test func lostFirstReceiptIsReadByItsOriginalIDBeforeReturningToTheChat() async throws {
         let fixture = try ChatContinuityFixture()
         let old = try fixture.library()
@@ -125,10 +189,12 @@ private actor ChatContinuityTransport: ClientTransport {
     private var originalDigest: String?
     private var loseReceipt = false
     private var lookupHeld = false
+    private var lookupsFail = false
     private(set) var posts = 0
     private(set) var lookups = 0
     func loseNextReceipt() { loseReceipt = true }
     func holdLookup(_ held: Bool) { lookupHeld = held }
+    func failLookups(_ value: Bool) { lookupsFail = value }
 
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
         let route = try #require(URLComponents(string: request.path ?? ""))
@@ -145,6 +211,7 @@ private actor ChatContinuityTransport: ClientTransport {
             return try reply(["version": "LIO-message-receipt.2", "message_id": #require(original?.messageID), "conversation_id": id])
         case (.get, "/v2/lio/messages"):
             lookups += 1
+            if lookupsFail { return try reply(["failure": "unavailable"], status: .serviceUnavailable) }
             let original = try #require(original)
             #expect(route.queryItems?.contains(.init(name: "message_id", value: original.messageID)) == true)
             let digest = try #require(originalDigest)

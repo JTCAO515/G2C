@@ -2,7 +2,7 @@ import Foundation
 import Testing
 
 struct LioCopyTests {
-    // Scan Swift string literals on the entire app-owned user surface, including
+    // Scan Swift literals and decoded resource strings on the app-owned user surface, including
     // both languages, accessibility labels, invite and consent. Do not inspect
     // traveller text or server answer content. Never pass raw statuses to views.
     private let banned = #"原|运行|投递|上下文|回执|候选|版本号|核实|对账|读取|查询|确认结果|待\s*#\d+|(?<![A-Za-z])(?:run|needs|unknown|scope|receipt|delivery|context|candidate|query|reconcil(?:e|iation)|backend|payload|idempotenc(?:y|e)|(?:version|request)\s+(?:number|id)|original\s+(?:request|action|operation)|(?:check|read|verify)\s+(?:the\s+)?result|pending\s+#\d+)(?![A-Za-z])"#
@@ -18,13 +18,20 @@ struct LioCopyTests {
         }
     }
 
+    private func resourceStrings(_ value: Any) -> [String] {
+        if let text = value as? String { return [text] }
+        if let array = value as? [Any] { return array.flatMap(resourceStrings) }
+        if let object = value as? [String: Any] { return object.values.flatMap(resourceStrings) }
+        return []
+    }
+
     @Test func userCopyHasZeroBackendTerms() throws {
         let shell = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let ios = shell.deletingLastPathComponent().deletingLastPathComponent()
         let userSources = shell.appendingPathComponent("Sources/CJLioUser")
         let enumerator = try #require(FileManager.default.enumerator(at: userSources, includingPropertiesForKeys: nil))
-        let userFiles = enumerator.compactMap { $0 as? URL }.filter { $0.pathExtension == "swift" }
+        let userFiles = enumerator.compactMap { $0 as? URL }.filter { ["swift", "json"].contains($0.pathExtension) }
         #expect(!userFiles.isEmpty)
         let files = userFiles + [
             shell.appendingPathComponent("Sources/CJShell/DemoV2ConsentView.swift"),
@@ -38,6 +45,12 @@ struct LioCopyTests {
         let vocabulary = try NSRegularExpression(pattern: banned, options: [.caseInsensitive])
         let matches = try files.flatMap { file -> [String] in
             let text = try String(contentsOf: file, encoding: .utf8)
+            if file.pathExtension == "json" {
+                let object = try JSONSerialization.jsonObject(with: Data(text.utf8))
+                return resourceStrings(object).filter { value in
+                    vocabulary.firstMatch(in: value, range: NSRange(value.startIndex..., in: value)) != nil
+                }.map { "\(file.lastPathComponent): \($0)" }
+            }
             return literals.matches(in: text, range: NSRange(text.startIndex..., in: text)).compactMap { match in
                 guard let span = Range(match.range, in: text) else { return nil }
                 let literal = String(text[span])
@@ -49,6 +62,6 @@ struct LioCopyTests {
             }
         }
         #expect(matches.isEmpty, "Forbidden copy: \(matches.joined(separator: "\n"))")
-        print("Lio user copy: \(matches.count) forbidden terms in \(files.count) Swift files")
+        print("Lio user copy: \(matches.count) forbidden terms in \(files.count) source/resource files")
     }
 }
