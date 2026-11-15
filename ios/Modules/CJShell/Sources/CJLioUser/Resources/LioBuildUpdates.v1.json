@@ -17,13 +17,15 @@
               "Added offline build updates to the internal demo information page.",
               "Reopen the same information page from the Lio menu.",
               "Improved greetings and sent-message display at larger text sizes.",
-              "Copy a whole greeting or select part of a sent message."
+              "Copy a whole greeting or select part of a sent message.",
+              "Saved chats can reopen while another chat awaits recovery."
             ],
             "zh": [
               "内部演示说明中新增离线的本版更新。",
               "可以从 Lio 菜单重新打开同一页面。",
               "改善开场白和已发消息的显示，保留大字号和浅深色。",
-              "开场白可整段复制，已发消息可选择部分文字复制。"
+              "开场白可整段复制，已发消息可选择部分文字复制。",
+              "改善已保存对话的恢复，另一段未完成聊天不再阻塞它。"
             ]
           }
         },
@@ -35,11 +37,11 @@
           },
           "items": {
             "en": [
-              "Since build 43: offline notes and clearer, selectable chat text.",
+              "Since build 43: offline notes, clearer chat text and a saved-chat recovery fix.",
               "Trip planning and default chat access remain unchanged."
             ],
             "zh": [
-              "与构建 43 相比，新增离线说明，改善对话文字显示和复制。",
+              "与构建 43 相比，新增离线说明、改善文字复制，并修复一种已有对话打不开的情况。",
               "规划功能没有因此修好，日常账号的默认对话方式没有改变。"
             ]
           }
@@ -77,14 +79,16 @@
               "Planning, saving, edits, undo and preferences await live checks.",
               "Please hold off on accepting that complete trip journey.",
               "Segmented replies, choices and profile tags are designated tests.",
-              "They are not on by default for everyday accounts."
+              "They are not on by default for everyday accounts.",
+              "A reported connection failure is still being investigated."
             ],
             "zh": [
               "规划功能仍在修复，暂不建议测试规划。",
               "规划、保存、修改、撤销和记住偏好尚待本轮真实验证。",
               "请暂不进行这组完整流程的验收。",
               "新版分段、多选和画像交互目前仅供指定测试。",
-              "这些交互未向日常账号默认开启。"
+              "这些交互未向日常账号默认开启。",
+              "另有连接失败反馈仍在排查。"
             ]
           }
         },
