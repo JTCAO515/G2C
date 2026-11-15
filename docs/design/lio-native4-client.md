@@ -79,3 +79,17 @@ and real-service/physical-device verification stay explicit remaining integratio
 gates. The actual-App synthetic HTTP acceptance exercises the same signed native4
 client and Home, not a provider or deployed admission. It does not prove those
 remaining gates.
+
+## VoiceOver interaction acceptance
+
+`check_lio_home.py --voiceover` runs a separate bilingual walk through Apple's
+real VoiceOver service on an iOS27-or-newer simulator. It records actual spoken
+output, selects two interests, checks one joint message, edits the profile,
+reads the notice and source, follows an exit and sends from the composer. Each
+language checks five intercepted messages. XCTest teardown restores the original
+VoiceOver state even when an assertion fails. Earlier runtimes fail this explicit
+mode instead of substituting accessibility-tree text. The App still supports
+iOS17; this test-only API does not enter the App or replace the normal complete
+audit suite. Run that suite separately without `--voiceover`. Both modes keep
+builds, results and media outside the repository; neither enables native4 in Beta
+or proves a deployed service or physical-device experience.
