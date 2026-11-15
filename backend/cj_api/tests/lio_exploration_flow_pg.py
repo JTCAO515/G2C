@@ -24,7 +24,7 @@ from cj_api.real_services import RealServices,RealTools
 from cj_memory.typed_runtime import TypedRuntimeConfiguration
 from cj_memory.epoch_projection import CurrentScopeEpochReader
 from cj_usage.authorization_budget import AuthorizationBudget,DEMO_DEADLINE
-from deploy.hk import checkpoint,demo_accounts
+from deploy.hk import checkpoint,demo_accounts,native4_usage
 from deploy.hk.configuration import Runtime
 import dev_auth,local_run_context,migrate,pg_suites,run_worker
 from test_lio_city import data as city_catalog
@@ -61,6 +61,15 @@ def exercise(root,conninfo):
         demo_accounts.manage(runtime,'bootstrap',SUBJECT,control,operation,
             (sha256(invite.encode()).hexdigest(),datetime.now(timezone.utc)+timedelta(hours=1)))
         demo_accounts.manage(runtime,'insert',SUBJECT,control,operation)
+        # Real4 is admitted only after the official operator qualification.
+        # Empty fixture accounts retain their original limits and attempts;
+        # runtime code receives no qualification writer or replacement ledger.
+        with checkpoint.lock(control),operator()as(connection,_),connection.transaction():
+            preview=native4_usage.qualify(connection,runtime,SUBJECT,control)
+            assert preview['status']=='NATIVE4_USAGE_PREFLIGHT_ONLY'
+            qualified=native4_usage.qualify(connection,runtime,SUBJECT,control,apply=True)
+            assert qualified['status']=='NATIVE4_USAGE_QUALIFIED_TRANSACTION_PENDING'
+            assert all(account['new_budget_units']==0 for account in qualified['accounts'])
     from cj_api.local_lio_memory import lio_candidates
     from cj_api.lio_memory_routes import LioMemoryCards
     from cj_memory.typed_api import register_typed_routes
