@@ -76,6 +76,11 @@ public enum LioTheme {
     public static let outlineWidth: CGFloat = 1
 
     public enum Motion {
+        public static let streamingStep = Duration.milliseconds(20)
+        public static let reducedStreamingStep = Duration.milliseconds(100)
+        public static let markdownStep = Duration.milliseconds(40)
+        public static let glyphFade = Duration.milliseconds(150)
+        public static let resultDelay = Duration.milliseconds(200)
         /// Something appearing.
         public static let appear = Animation.spring(duration: 0.3)
         /// A change of state.
