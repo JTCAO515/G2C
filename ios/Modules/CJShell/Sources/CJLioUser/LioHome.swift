@@ -21,6 +21,8 @@ public struct LioHome<MenuContent: View>: View {
     @State private var restoreChatRequest = 0
     @State private var draft = ""
     @State private var chatDrafts: [Data: String] = [:]
+    @State private var questionDrafts: [Data: LioQuestionDraft] = [:]
+    @State private var profileEdit: ProfileEdit?
     @State private var menuOpen = false
     @State private var followsAnswer = true
     @State private var opening = Opening.beforeNext
@@ -50,10 +52,17 @@ public struct LioHome<MenuContent: View>: View {
     }
     private enum Tab { case chat, trips, memory }
     private enum Opening: Equatable { case beforeNext, before(Data), hidden }
+    private struct ProfileEdit: Identifiable {
+        let id = UUID()
+        let owner: LioConversation
+        let turnID: Data
+        let entry: LioExplorationPresentation.ProfileEntry
+    }
     @FocusState private var typing: Bool
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.colorScheme) private var colorScheme
 
     public init(language: LioLanguage, service: LioService, isDemo: Bool, chatLibrary: LioChatLibrary? = nil,
                 tripLibrary: LioTripLibrary? = nil,
@@ -174,6 +183,13 @@ public struct LioHome<MenuContent: View>: View {
         }
         .task(id: pending?.id) {
             if let pending { await conversation.receive(pending) }
+        }
+        .sheet(item: $profileEdit) { edit in
+            LioProfileChangeSheet(entry: edit.entry, language: language,
+                                  canSend: canRespond(to: edit.turnID, in: edit.owner)) { text in
+                guard canRespond(to: edit.turnID, in: edit.owner) else { return }
+                _ = sendQuestion(text)
+            }
         }
     }
 
@@ -296,15 +312,29 @@ public struct LioHome<MenuContent: View>: View {
                     menu.lioRow()
                 }
                 .lioPage()
+                .toolbarBackground(LioTheme.paper, for: .navigationBar)
+                .toolbarBackground(.visible, for: .navigationBar)
+                .toolbarColorScheme(colorScheme, for: .navigationBar)
                 .navigationTitle(language.text("Menu", "菜单"))
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
+                    ToolbarItem(placement: .principal) {
+                        RunReadableText(text: language.text("Menu", "菜单"), style: .headline)
+                            .fixedSize()
+                            .accessibilityAddTraits(.isHeader)
+                    }
                     ToolbarItem(placement: .confirmationAction) {
-                        Button(language.text("Done", "完成")) { menuOpen = false }
+                        Button { menuOpen = false } label: {
+                            RunReadableText(text: language.text("Done", "完成"))
+                                .fixedSize()
+                                .frame(minHeight: 44)
+                        }
+                        .accessibilityLabel(language.text("Done", "完成"))
                     }
                 }
             }
             .tint(LioTheme.vermilion)
+            .preferredColorScheme(colorScheme)
         }
     }
 
@@ -343,6 +373,8 @@ public struct LioHome<MenuContent: View>: View {
             selectedChat = chat
             chatLibrary?.continuity?.selectedID = chat.id
             conversation = LioConversation(service: chat.service)
+            questionDrafts = [:]
+            profileEdit = nil
             self.opening = opening
             draft = chatDrafts.removeValue(forKey: chat.id) ?? ""
             tripPath = []
@@ -513,6 +545,24 @@ public struct LioHome<MenuContent: View>: View {
         }
     }
 
+    private func sendQuestion(_ text: String) -> Bool {
+        guard conversation.pending == nil, !chatFading, scenePhase == .active,
+              !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
+        let showedWelcome = opening == .beforeNext && conversation.turns.isEmpty && conversation.hasLoadedTimeline
+        followsAnswer = true
+        sendCount += 1
+        conversation.send(text, language: language)
+        if let id = conversation.pending?.id {
+            timing.start(id, language: timingLanguage)
+            entering.formUnion([LioEntranceKey(turn: id, part: .question), LioEntranceKey(turn: id, part: .answer)])
+        }
+        recordPendingFirstQuestion()
+        if showedWelcome, let id = conversation.pending?.id { opening = .before(id) }
+        else if opening == .beforeNext { opening = .hidden }
+        typing = false
+        return true
+    }
+
     private var composer: some View {
         let placeholder = language.text("Start chatting", "开始聊天")
         let canSend = !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && conversation.pending == nil
@@ -520,24 +570,13 @@ public struct LioHome<MenuContent: View>: View {
         let showsJump = !followsAnswer && !conversation.turns.isEmpty
         return HStack(alignment: .center, spacing: 10) {
             TextField(placeholder, text: $draft, prompt: Text(placeholder).foregroundStyle(LioTheme.inkSecondary), axis: .vertical)
+                .font(.body)
                 .lineLimit(1...5)
                 .frame(minHeight: 44)
                 .focused($typing)
                 .accessibilityIdentifier("lio.composer")
             Button {
-                let showedWelcome = opening == .beforeNext && conversation.turns.isEmpty && conversation.hasLoadedTimeline
-                followsAnswer = true
-                sendCount += 1
-                conversation.send(draft, language: language)
-                if let id = conversation.pending?.id {
-                    timing.start(id, language: timingLanguage)
-                    entering.formUnion([LioEntranceKey(turn: id, part: .question), LioEntranceKey(turn: id, part: .answer)])
-                }
-                recordPendingFirstQuestion()
-                if showedWelcome, let id = conversation.pending?.id { opening = .before(id) }
-                else if opening == .beforeNext { opening = .hidden }
-                draft = ""
-                typing = false
+                if sendQuestion(draft) { draft = "" }
             } label: {
                 Image(systemName: "arrow.up")
                     .font(.body.weight(.semibold))
@@ -672,7 +711,9 @@ public struct LioHome<MenuContent: View>: View {
                     .accessibilityIdentifier("lio.resend")
                 }
                 Text(turn.question.text)
+                    .font(.body)
                     .foregroundStyle(LioTheme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
                     .background(LioTheme.surfaceSunken,
@@ -686,6 +727,8 @@ public struct LioHome<MenuContent: View>: View {
             }
             if case .failed = turn.status {
                 EmptyView()
+            } else if let display = turn.exploration {
+                explorationReply(turn, display: display)
             } else if !turn.answer.isEmpty {
                 let answerKey = LioEntranceKey(turn: turn.id, part: .answer)
                 Group {
@@ -756,6 +799,44 @@ public struct LioHome<MenuContent: View>: View {
         }
     }
 
+    @ViewBuilder
+    private func explorationReply(_ turn: LioTurn, display: LioExplorationDisplay) -> some View {
+        let presentation = display.presentation
+        if !presentation.segments.isEmpty || !presentation.profile.isEmpty || !presentation.notices.isEmpty
+            || !presentation.exits.isEmpty || !presentation.answer.isEmpty || !display.questions.isEmpty {
+            let owner = conversation
+            let questions = Binding<LioQuestionDraft> {
+                var value = questionDrafts[turn.id] ?? display.draft()
+                value.apply(messageID: display.messageID, questions: display.questions)
+                return value
+            } set: { value in
+                if conversation === owner { questionDrafts[turn.id] = value }
+            }
+            LioExplorationReplyView(presentation: presentation, questions: questions, language: language,
+                                    canSend: canRespond(to: turn.id, in: owner), editProfile: { entry in
+                guard canRespond(to: turn.id, in: owner) else { return }
+                profileEdit = ProfileEdit(owner: owner, turnID: turn.id, entry: entry)
+            }) { text in
+                guard canRespond(to: turn.id, in: owner) else { return }
+                _ = sendQuestion(text)
+            }
+            .accessibilityIdentifier("lio.exploration.\(display.messageID)")
+            .onChange(of: display, initial: true) { _, value in
+                guard conversation === owner else { return }
+                var selection = questionDrafts[turn.id] ?? value.draft()
+                selection.apply(messageID: value.messageID, questions: value.questions)
+                questionDrafts[turn.id] = selection
+                if !value.presentation.segments.isEmpty || !value.presentation.answer.isEmpty {
+                    timing.mark(.firstText, turn.id)
+                }
+            }
+        }
+    }
+
+    private func canRespond(to turnID: Data, in owner: LioConversation) -> Bool {
+        conversation === owner && conversation.turns.last?.id == turnID && canSwitchChat
+    }
+
     private func memorySuggestion(_ tag: LioMemoryWire.Tag, turnID: Data,
                                   client: LioMemoryActionsClient) -> some View {
         LioMemoryConfirmation(text: tag.text, language: language, disabled: memoryBusy || memoryPending,
@@ -769,7 +850,8 @@ public struct LioHome<MenuContent: View>: View {
     private func messageStatus(_ turn: LioTurn) -> some View {
         switch turn.status {
         case .thinking, .working:
-            LioThinkingIndicator(since: timing.indicatorStart(turn.id), progress: nil, planningDays: nil,
+            let input = LioThinkingInput(turn.exploration?.progress)
+            LioThinkingIndicator(since: timing.indicatorStart(turn.id), progress: input.progress, planningDays: input.planningDays,
                                  language: language) { timing.mark(.indicator, turn.id) }
         case .failed(let failure):
             let message = switch failure {

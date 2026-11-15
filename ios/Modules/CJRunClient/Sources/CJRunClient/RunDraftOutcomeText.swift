@@ -11,7 +11,10 @@ import UIKit
 public struct RunReadableText: UIViewRepresentable {
     let text: String
     let style: RunReadableTextStyle
-    public init(text: String, style: RunReadableTextStyle = .body) { self.text = text; self.style = style }
+    let color: Color?
+    public init(text: String, style: RunReadableTextStyle = .body, color: Color? = nil) {
+        self.text = text; self.style = style; self.color = color
+    }
     @Environment(\.dynamicTypeSize) private var size
     public func makeUIView(context: Context) -> UILabel {
         let label = UILabel()
@@ -24,6 +27,8 @@ public struct RunReadableText: UIViewRepresentable {
     }
     public func updateUIView(_ label: UILabel, context: Context) {
         label.text = text
+        if let color { label.textColor = UIColor(color) }
+        else { label.textColor = .label }
         let textStyle: UIFont.TextStyle
         switch style { case .body:textStyle = .body;case .caption:textStyle = .caption1;case .headline:textStyle = .headline }
         label.font = UIFont.preferredFont(forTextStyle:textStyle,
@@ -66,8 +71,15 @@ public struct RunSelectableText: UIViewRepresentable {
 public struct RunReadableText: View {
     let text: String
     let style: RunReadableTextStyle
-    public init(text: String, style: RunReadableTextStyle = .body) { self.text = text; self.style = style }
-    public var body: some View { Text(text).font(style == .body ? .body : style == .headline ? .headline : .caption).fixedSize(horizontal: false, vertical: true) }
+    let color: Color?
+    public init(text: String, style: RunReadableTextStyle = .body, color: Color? = nil) {
+        self.text = text; self.style = style; self.color = color
+    }
+    private var label: some View { Text(text).font(style == .body ? .body : style == .headline ? .headline : .caption).fixedSize(horizontal: false, vertical: true) }
+    @ViewBuilder public var body: some View {
+        if let color { label.foregroundStyle(color) }
+        else { label }
+    }
 }
 public struct RunSelectableText: View {
     let text: String

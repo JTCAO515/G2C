@@ -1595,6 +1595,139 @@ import XCTest
             app.terminate()
         }
     }
+    func testExplorationHomeEnglish() throws { try exerciseExplorationHome(chinese: false) }
+    func testExplorationHomeChinese() throws { try exerciseExplorationHome(chinese: true) }
+
+    private func exerciseExplorationHome(chinese: Bool) throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        func ready(_ element: XCUIElement) {
+            var previousFrame: CGRect?
+            let settled = NSPredicate { _, _ in
+                guard element.exists, element.isEnabled, element.isHittable else {
+                    previousFrame = nil
+                    return false
+                }
+                let frame = element.frame
+                defer { previousFrame = frame }
+                return previousFrame == frame
+            }
+            let condition = XCTNSPredicateExpectation(predicate: settled, object: nil)
+            XCTAssertEqual(XCTWaiter.wait(for: [condition], timeout: 15), .completed)
+        }
+        func audit() throws {
+            try app.performAccessibilityAudit(for: .all) { issue in
+                let detail = XCTAttachment(string: issue.compactDescription + "\n" + issue.detailedDescription + "\n"
+                    + (issue.element?.debugDescription ?? "No element supplied") + "\n" + app.debugDescription)
+                detail.name = "exploration-home-audit"
+                detail.lifetime = .keepAlways
+                self.add(detail)
+                return false
+            }
+        }
+        func reveal(_ element: XCUIElement) {
+            for _ in 0..<8 {
+                if element.exists && element.isHittable && app.scrollViews.firstMatch.frame.contains(element.frame) {
+                    ready(element)
+                    if app.scrollViews.firstMatch.frame.contains(element.frame) { return }
+                }
+                if element.exists && element.frame.midY < app.frame.midY { app.swipeDown() }
+                else { app.swipeUp() }
+            }
+            XCTAssertTrue(element.isHittable, app.debugDescription)
+            XCTAssertTrue(app.scrollViews.firstMatch.frame.contains(element.frame), app.debugDescription)
+        }
+        func count(_ expected: Int, last: String? = nil) throws -> String {
+            let menu = app.buttons["lio.menu"]
+            ready(menu)
+            menu.tap()
+            let value = app.staticTexts["fixture.send-count"]
+            XCTAssertTrue(value.waitForExistence(timeout: 5))
+            XCTAssertEqual(value.label, String(expected))
+            let messageID = value.value as! String
+            XCTAssertFalse(messageID.isEmpty)
+            if let last { XCTAssertEqual(app.staticTexts["fixture.last-text"].label, last) }
+            try audit()
+            app.buttons[chinese ? "完成" : "Done"].tap()
+            XCTAssertTrue(value.waitForNonExistence(timeout: 5))
+            ready(menu)
+            return "lio.exploration." + messageID
+        }
+        func reply(_ id: String) -> XCUIElement {
+            app.descendants(matching: .any).matching(identifier: id).firstMatch
+        }
+        func showPrevious(_ element: XCUIElement) {
+            for _ in 0..<8 {
+                if element.exists { break }
+                app.swipeDown()
+            }
+            XCTAssertTrue(element.exists, app.debugDescription)
+        }
+        for appearance in ["light", "dark"] {
+            app.launchArguments = ["--lio-preview", "--lio-exploration-home-acceptance",
+                                   "-cj.ui.language.v1", chinese ? "zh-Hans" : "en",
+                                   "-lio.ui.appearance.v1", appearance]
+            app.launch()
+            let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+            XCTAssertTrue(composer.waitForExistence(timeout: 12), app.debugDescription)
+            composer.tap(); composer.typeText("I would like some travel ideas")
+            app.buttons["lio.send"].tap()
+            let first = app.descendants(matching: .any).matching(identifier: "lio.segment.0").firstMatch
+            XCTAssertTrue(first.waitForExistence(timeout: 12), app.debugDescription)
+            let second = app.descendants(matching: .any).matching(identifier: "lio.segment.1").firstMatch
+            XCTAssertLessThan(first.frame.minY, second.frame.minY)
+            XCTAssertFalse(app.buttons.matching(NSPredicate(format: "identifier CONTAINS %@", "interests.other")).firstMatch.exists)
+            let nature = app.buttons.matching(NSPredicate(format: "identifier ENDSWITH %@", ".interests.nature")).firstMatch
+            let history = app.buttons.matching(NSPredicate(format: "identifier ENDSWITH %@", ".interests.history")).firstMatch
+            reveal(nature); nature.tap(); reveal(history); history.tap()
+            XCTAssertTrue(nature.isSelected && history.isSelected)
+            let firstID = try count(1)
+            XCTAssertTrue(nature.isSelected && history.isSelected)
+            let firstProfile = reply(firstID).buttons["lio.profile.pace"]
+            showPrevious(firstProfile)
+            reveal(firstProfile)
+            XCTAssertEqual(firstProfile.label, chinese ? "慢慢逛" : "An easy pace")
+            XCTAssertEqual(firstProfile.value as? String, chinese ? "我的理解" : "My understanding")
+            let submit = app.buttons["lio.questions.continue"]
+            reveal(submit)
+            try audit()
+            let shot = XCTAttachment(screenshot: app.screenshot())
+            shot.name = "native-home-\(chinese ? "zh" : "en")-\(appearance)"
+            shot.lifetime = .keepAlways; add(shot)
+            submit.tap()
+            let joint = chinese ? "兴趣：历史\n兴趣：自然" : "Interests: History\nInterests: Nature"
+            let secondID = try count(2, last: joint)
+            XCTAssertTrue(reply(secondID).waitForExistence(timeout: 12))
+            let earlierProfile = reply(firstID).buttons["lio.profile.pace"]
+            showPrevious(earlierProfile)
+            XCTAssertFalse(earlierProfile.isEnabled)
+            let profile = reply(secondID).buttons["lio.profile.pace"]
+            reveal(profile); profile.tap()
+            let field = app.descendants(matching: .any).matching(identifier: "lio.profile.edit.text").firstMatch
+            XCTAssertTrue(field.waitForExistence(timeout: 5))
+            field.tap()
+            let previous = field.value as! String
+            let change = chinese ? "节奏改为轻松" : "Prefer a relaxed pace"
+            field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: previous.count) + change)
+            try audit()
+            XCUIDevice.shared.press(.home); app.activate()
+            XCTAssertEqual(field.value as? String, change)
+            ready(app.buttons["lio.profile.edit.send"])
+            app.buttons["lio.profile.edit.send"].tap()
+            XCTAssertTrue(field.waitForNonExistence(timeout: 5))
+            let thirdID = try count(3, last: change)
+            XCTAssertTrue(reply(thirdID).waitForExistence(timeout: 12))
+            let earlierExit = reply(firstID).buttons["lio.exit.plan_now"]
+            showPrevious(earlierExit)
+            XCTAssertFalse(earlierExit.isEnabled)
+            let exit = reply(thirdID).buttons["lio.exit.plan_now"]
+            reveal(exit); ready(exit); exit.tap()
+            let fourthID = try count(4, last: chinese ? "直接出方案" : "Make a plan now")
+            XCTAssertTrue(reply(fourthID).waitForExistence(timeout: 12))
+            app.terminate()
+        }
+    }
+
     func testExplorationReplyEnglish() throws { try exerciseExplorationReply(chinese: false) }
     func testExplorationReplyChinese() throws { try exerciseExplorationReply(chinese: true) }
 
