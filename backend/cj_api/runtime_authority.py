@@ -38,6 +38,43 @@ class RuntimeAuthority:
 
     def pins(self):return self.current_pins()
 
+    def _dispatch_window(self):
+        self.budget.check_date()
+        self._window_clock()
+
+    def _window_clock(self):
+        now=self.wall_clock()
+        if not isinstance(now,datetime) or now.tzinfo is None:
+            raise Unavailable('RESOURCE_CLOCK_UNAVAILABLE')
+        local=now.astimezone(ZoneInfo('Asia/Shanghai'))
+        minute=local.hour*60+local.minute+local.second/60
+        if not any(start*60<=minute<end*60-10 for start,end in WINDOWS[self.line]):
+            raise Unavailable('OUTSIDE_STANDING_DISPATCH_WINDOW')
+
+    def require_current_operation(self,*,binding,pins_sha256,deadline):
+        """Final actor send/continuation check, without a second fee hold.
+
+        Admission still uses require(read_only=False). The original registered
+        attempt's AuthorizationBudget.begin owns its atomic allowance check;
+        checking a further +1 here would double-count that same reserved call.
+        Current pins/window/date/AUTH never become read-only reconciliation.
+        """
+        self.require(binding=binding,pins_sha256=pins_sha256,purpose='query',
+                     deadline=deadline,read_only=True)
+        self.budget.check_date()
+        if self.current_pins()!=self.original_pins.raw:
+            raise Unavailable('RUNTIME_PIN_CHANGED')
+        if self.binding()!=binding:
+            raise Unavailable('ORIGINAL_AUTH_CONTEXT_CHANGED')
+        # The final wall/deadline check follows all AUTH/ledger callbacks.
+        # It is not a fresh reservation and does not re-add the original hold.
+        self.require_operation_clock(deadline=deadline)
+
+    def require_operation_clock(self,*,deadline):
+        """Pure time tail after the final physical-lease database check."""
+        self._window_clock()
+        if self.clock()>=deadline:raise Unavailable('DEADLINE_REACHED')
+
     def require(self,*,binding,pins_sha256,purpose,deadline,read_only):
         if self.clock()>=deadline:raise Unavailable('DEADLINE_REACHED')
         if self.binding()!=binding:raise Unavailable('ORIGINAL_AUTH_CONTEXT_CHANGED')
@@ -57,14 +94,7 @@ class RuntimeAuthority:
         if not read_only and self.current_pins()!=self.original_pins.raw:
             raise Unavailable('RUNTIME_PIN_CHANGED')
         if new_work:
-            self.budget.check_date()
-            now=self.wall_clock()
-            if not isinstance(now,datetime) or now.tzinfo is None:
-                raise Unavailable('RESOURCE_CLOCK_UNAVAILABLE')
-            local=now.astimezone(ZoneInfo('Asia/Shanghai'))
-            minute=local.hour*60+local.minute+local.second/60
-            if not any(start*60<=minute<end*60-10 for start,end in WINDOWS[self.line]):
-                raise Unavailable('OUTSIDE_STANDING_DISPATCH_WINDOW')
+            self._dispatch_window()
         # AUTH/clock may change while reading the original financial snapshot.
         if self.binding()!=binding:raise Unavailable('ORIGINAL_AUTH_CONTEXT_CHANGED')
         if self.clock()>=deadline:raise Unavailable('DEADLINE_REACHED')
