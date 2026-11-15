@@ -14,6 +14,8 @@ from .runtime_claims import CanonicalClaims
 
 
 class MessageClaims:
+    claim_type = CanonicalClaims
+
     def __init__(self,directory,boundary,token_supplier,authority,pins,*,history_profile='message.1'):
         self.boundary,self.token_supplier,self.authority=boundary,token_supplier,authority
         self.binding,self.pins=authority.binding(),pins
@@ -21,7 +23,7 @@ class MessageClaims:
         self.history_profile=history_profile
         self._deadline=ContextVar('runtime_message_claim_deadline')
         self._transaction=ContextVar('runtime_message_claim_transaction')
-        self.claims=CanonicalClaims(directory,self.binding,pins,guard=self._guard,
+        self.claims=self.claim_type(directory,self.binding,pins,guard=self._guard,
             original_exists=self._exists,admission_lock=self._admission)
 
     def query(self,context,message_id):

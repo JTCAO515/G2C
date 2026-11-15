@@ -3,6 +3,7 @@
 The canonical M lock remains outside all actor RUN transactions. No Memory
 snapshot is reconstructed and no input can replace a missing original source.
 """
+from dataclasses import dataclass
 from hashlib import sha256
 
 from cj_message.demo_dialogue import LIO_VERSION_V4
@@ -12,6 +13,14 @@ from runtime_adapter.contract import Unavailable
 
 from .lio_dialogue_routes import _message
 from .lio_exploration_routes import _presentation, merged_presentation
+
+
+@dataclass(frozen=True)
+class DutProjection:
+    context: object
+    page: object
+    states: tuple
+    history: tuple
 
 
 class ActorDutSource:
@@ -25,6 +34,16 @@ class ActorDutSource:
         holds M before RUN, including provider send and result publication, so
         deletion cannot race a copied public-history cache into a new call.
         """
+        if len(history) > 8:
+            raise Unavailable('ACTOR_DUT_HISTORY_INCOMPLETE')
+        def exact(source, check, projection):
+            if list(projection.history) != history:
+                raise Unavailable('ACTOR_DUT_HISTORY_CHANGED')
+            return operation(source, check)
+        return self.observe(token, message_id, exact)
+
+    def observe(self, token, message_id, operation):
+        """Project current native state only while its original M lease is held."""
         def read(context):
             def project():
                 original = context.query_lio_message(message_id)
@@ -38,7 +57,7 @@ class ActorDutSource:
                         raise Unavailable('ACTOR_DUT_ORIGINAL_CHANGED')
                     page = context.lio_exploration_timeline(receipt.conversation_id, None)
                     if (page.generation != receipt.generation or page.next_before is not None
-                            or not 1 <= len(page.messages) <= 4
+                            or not 1 <= len(page.messages) <= 5
                             or tuple(item.sequence for item in page.messages) != tuple(range(1, receipt.sequence+1))
                             or page.messages[-1].message_id != message_id):
                         raise Unavailable('ACTOR_DUT_HISTORY_INCOMPLETE')
@@ -67,10 +86,9 @@ class ActorDutSource:
                                 raise Unavailable('ACTOR_DUT_PRESENTATION_CHANGED')
                         shown += [dict(speaker='user', text=item.text),
                                   dict(speaker='assistant', text=value['answer'])]
-                    if shown != history:
-                        raise Unavailable('ACTOR_DUT_HISTORY_CHANGED')
-                    return page, states
+                    return DutProjection(context, page, tuple(states), tuple(shown))
                 frozen = snapshot()
+                history = list(frozen.history)
                 source = dict(scope_sha256=sha256(context.scope.encode()).hexdigest(),
                     conversation_id=receipt.conversation_id, generation=receipt.generation,
                     message_id=message_id, run_id=receipt.run_id, input_sha256=receipt.input_sha256,
@@ -80,7 +98,7 @@ class ActorDutSource:
                 def check():
                     if snapshot() != frozen:
                         raise Unavailable('ACTOR_DUT_SNAPSHOT_CHANGED')
-                result = operation(compact(source, sort_keys=True), check)
+                result = operation(compact(source, sort_keys=True), check, frozen)
                 check()
                 return result
             return context.with_lio_timeline_projection(project)
