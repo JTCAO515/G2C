@@ -12,31 +12,56 @@ from .lio_sourced_intake import parse_sourced,BookingSourceUnclear
 from .lio_positive_trip import destination_query
 
 CORE=('start_date','duration_days','party_size')
-_META_REQUEST=re.compile(r'^\s*(?:(?:请帮我|请|帮我)?(?:把|将)?[^。！？!?\n]{0,40}(?:翻译|复述|改写|引用)|'
-    r'(?:(?:can|could|would) you\s+)?(?:please\s+)?(?:translate|rephrase|paraphrase|repeat|quote)\b|'
-    r'how (?:do|would) (?:you|I) say\b|(?:例如|示例|举例|假设|假如|如果|他说|她说|有人说)|'
+_META_REQUEST=re.compile(r'^\s*(?:(?:请帮我|请|帮我)?(?:(?:把|将)[^。！？!?\n]{0,40})?(?:翻译|复述|改写|引用)|'
+    r'(?:(?:can|could|would) you\s+)?(?:please\s+)?(?:help(?: (?:me|us))?(?: to)?\s+)?'
+    r'(?:translate|rephrase|paraphrase|repeat|quote)\b|how (?:do|would) (?:you|I) say\b|'
+    r'(?:例如|示例|举例|假设|假如|如果|他说|她说|有人说)|'
     r'\b(?:for example|suppose|assuming|if|(?:he|she|they|someone) (?:said|says))\b)',re.I)
-_META_WORD=re.compile(r'翻译|复述|改写|引用|示例|\b(?:translat\w*|rephras\w*|paraphras\w*|quot\w*|example)\b',re.I)
-_QUOTED_DATA=re.compile(r'"[^"\n]*"|“[^”]*”|「[^」]*」|『[^』]*』')
-_SOURCE_BREAK=re.compile(r'[。！？!?；;\n]|\.(?=\s+[A-Z]|$)')
+_META_SUFFIX=re.compile(r'^\s*(?:这(?:句|段)(?:话|内容)?|该句)?\s*(?:怎么|如何|怎样)(?:翻译|复述|改写|引用)',re.I)
+_SOURCE_BREAK=re.compile(r'[。！？!?；;\n]|\.(?=\s+[A-Z]|$)|\b(?:but|however)\b|但是|不过|而是',re.I)
+
+
+def _quoted_data_spans(text):
+    pairs={'“':'”','「':'」','『':'』','‘':'’'};stack=[];spans=[];start=0
+    for index,char in enumerate(text):
+        if char in ("'",'’')and index>0 and index+1<len(text)and text[index-1].isalnum()and text[index+1].isalnum():continue
+        if index>0 and text[index-1]=='\\'and char in ('"',"'",*pairs,*pairs.values()):continue
+        if stack and char==stack[-1]:
+            stack.pop()
+            if not stack:spans.append((start,index+1))
+        elif char in pairs or char in ('"',"'"):
+            if not stack:start=index
+            stack.append(pairs.get(char,char))
+    if stack:spans.append((start,len(text)))
+    return tuple(spans)
 
 
 def _nonplanning_fact_source(text,quote):
-    """Text may remain in dialogue without becoming affirmative trip evidence.
+    """Classify the cited span's task scope, not the whole message's first task.
 
-    A failed translator/quotation RUN is not a source of traveler dates/party.
-    Ordinary failed parameter answers remain eligible for the full validators.
-    This selects provenance only; no value, locator, date or subject is repaired.
+    Translation data remains dialogue; later affirmative traveler facts remain
+    data even in the same original. The schema/literal source validators run
+    first, and no value or locator is repaired here.
     """
-    if _META_REQUEST.search(text):return True
-    if _QUOTED_DATA.fullmatch(text.strip().rstrip('。.!！').strip()):return True
+    spans=_quoted_data_spans(text)
+    stripped=text.strip().rstrip('。.!！').strip()
+    if any(text[start:end]==stripped for start,end in spans):return True
+    breaks=tuple(part for part in _SOURCE_BREAK.finditer(text)
+        if not any(start<=part.start()<end for start,end in spans))
     for found in re.finditer(re.escape(quote),text):
-        before=[part.end()for part in _SOURCE_BREAK.finditer(text,0,found.start())]
-        clause=text[before[-1]if before else 0:found.end()]
-        if _META_REQUEST.search(clause):return True
-        if _META_WORD.search(text)and any(span.start()<=found.start()and found.end()<=span.end()
-                for span in _QUOTED_DATA.finditer(text)):return True
+        before=[part.end()for part in breaks if part.end()<=found.start()]
+        after=[part.start()for part in breaks if part.start()>=found.end()]
+        start=before[-1]if before else 0;end=after[0]if after else len(text)
+        if _META_REQUEST.search(text[start:found.end()]):return True
+        for left,right in spans:
+            if not left<=found.start()or not found.end()<=right:continue
+            prefixes=re.split(r'[,，]',text[start:left])
+            suffix=text[right:end]
+            if (any(_META_REQUEST.search(prefix)for prefix in prefixes)or
+                    _META_REQUEST.search(suffix)or _META_SUFFIX.search(suffix)):return True
     return False
+
+
 # Presence check only, never a date extractor or a default. The original
 # compiler independently checks exact ISO/relative dates against their day.
 DATE_EVIDENCE=re.compile(r'\d{4}[-/年]\d{1,2}|[0-9一二三四五六七八九十]+月|[0-9]+[日号]|'

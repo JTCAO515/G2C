@@ -69,6 +69,42 @@ class OptionalIntakeChecks(unittest.TestCase):
         self.assertEqual(intake.extraction['fields']['party_size'],dict(state='missing'))
         self.assertIn('start_date',snapshot);self.assertNotIn('party_size',snapshot)
 
+    def test_translation_first_then_real_parameter_has_independent_source_scope(self):
+        from cj_api.lio_flow_intake import _nonplanning_fact_source
+        for text,real,translated in (
+                ('请翻译“从2026-12-01开始，两个人”。我从2026-12-10出发，三个人。','2026-12-10','2026-12-01'),
+                ('Please translate "Start on 2026-12-01, two people". I start on 2026-12-10 with three people.',
+                 '2026-12-10','2026-12-01')):
+            with self.subTest(text=text):
+                self.assertFalse(_nonplanning_fact_source(text,real))
+                self.assertTrue(_nonplanning_fact_source(text,translated))
+                english=text.startswith('Please')
+                value=flow('Continue',city='Beijing'if english else'北京',days=3,start=real,party=3,index=2,questions=())
+                value.update(version='LIO-planning-intake.8',planning_request_index=0)
+                value['city'].update(source_index=0,quote='Beijing'if english else'北京')
+                value['field_sources']=[dict(field='duration_days',source_index=0,quote='three days'if english else'三天'),
+                    dict(field='start_date',source_index=1,quote=real),
+                    dict(field='party_size',source_index=1,quote='three people'if english else'三个人')]
+                request='Plan Beijing for three days'if english else'规划北京三天'
+                intake,_,snapshot=parse_flow(json.dumps(value),tuple(map(original,(request,text,'Continue'))),
+                    ({'message_id':'real-request'},{'message_id':'mixed'}),'current',None,schema=OptionalIntake)
+                self.assertEqual(intake.start_date,dict(state='known',value=real))
+                self.assertEqual(intake.extraction['fields']['party_size'],dict(state='known',value=3))
+                self.assertEqual(snapshot['start_date']['value'],real)
+
+    def test_help_translate_wrapper_never_makes_translated_fields_executable(self):
+        text="Could you help me translate 'Start on 2026-12-01, two people'?"
+        value=flow('Continue',city='Beijing',days=3,start='2026-12-01',party=2,index=2,questions=())
+        value.update(version='LIO-planning-intake.8',planning_request_index=0)
+        value['city'].update(source_index=0,quote='Beijing')
+        value['field_sources']=[dict(field='duration_days',source_index=0,quote='three days'),
+            dict(field='start_date',source_index=1,quote='2026-12-01'),dict(field='party_size',source_index=1,quote='two people')]
+        intake,_,snapshot=parse_flow(json.dumps(value),tuple(map(original,('Plan Beijing for three days',text,'Continue'))),
+            ({'message_id':'real-request'},{'message_id':'translation'}),'current',None,schema=OptionalIntake)
+        self.assertEqual(intake.start_date,dict(state='missing'))
+        self.assertEqual(intake.extraction['fields']['party_size'],dict(state='missing'))
+        self.assertNotIn('start_date',snapshot);self.assertNotIn('party_size',snapshot)
+
     def test_explicit_version_and_original_index_do_not_mutate_old_profile(self):
         before=old_format(0)
         wire=flow('去成都玩三天');wire['version']='LIO-planning-intake.8'
