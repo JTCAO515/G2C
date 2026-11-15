@@ -59,6 +59,10 @@ def main():
     fixture_routes = (
         '        if ProcessInfo.processInfo.arguments.contains("--lio-exploration-home-acceptance") {\n'
         '            LioExplorationHomeFixture(shell: shell)\n'
+        '        } else if ProcessInfo.processInfo.arguments.contains("--lio-result-visibility-acceptance") {\n'
+        '            LioResultVisibilityFixture()\n'
+        '        } else if ProcessInfo.processInfo.arguments.contains("--lio-streaming-acceptance") {\n'
+        '            LioStreamingFixture(chinese: UserDefaults.standard.string(forKey: "cj.ui.language.v1") == "zh-Hans")\n'
         '        } else if ProcessInfo.processInfo.arguments.contains("--lio-thinking-lifecycle-acceptance") {\n'
         '            LioThinkingLifecycleFixture()\n'
         '        } else if ProcessInfo.processInfo.arguments.contains("--lio-retry-timing-acceptance") {\n'
@@ -91,7 +95,7 @@ def main():
     )
     fixtures = ("LioScrollFixture.swift", "LioTimelineFixture.swift", "LioJourneyFixture.swift",
                 "LioMemoryJourneyFixture.swift", "LioChatHistoryFixture.swift", "LioSessionRecoveryFixture.swift",
-                "LioScenePrivacyFixture.swift", "LioExplorationQuestionsFixture.swift", "LioExplorationReplyFixture.swift", "LioRichItineraryFixture.swift", "LioExplorationReadFixture.swift", "LioThinkingFixture.swift", "LioExplorationHomeFixture.swift", "LioCalendarWireFixture.swift")
+                "LioScenePrivacyFixture.swift", "LioExplorationQuestionsFixture.swift", "LioExplorationReplyFixture.swift", "LioRichItineraryFixture.swift", "LioExplorationReadFixture.swift", "LioThinkingFixture.swift", "LioExplorationHomeFixture.swift", "LioCalendarWireFixture.swift", "LioStreamingFixture.swift")
     generated_source.write_text(app.replace(preview, fixture_routes)
                                 .replace("import CJLioUser\n", "@testable import CJLioUser\n")
                                 + "\n" + "\n".join((HERE / name).read_text() for name in fixtures))
@@ -113,7 +117,7 @@ def main():
         subprocess.run(command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=600)
     summary = subprocess.check_output(["xcrun", "xcresulttool", "get", "test-results", "summary", "--path", str(result)])
     (output / "summary.json").write_bytes(summary)
-    assert json.loads(summary)["passedTests"] == (len(args.case) if args.case else 66), summary
+    assert json.loads(summary)["passedTests"] == (len(args.case) if args.case else 70), summary
 
 
 if __name__ == "__main__":

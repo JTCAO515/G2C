@@ -8,17 +8,20 @@ enum LioEntranceStyle: Equatable {
     case fade
     /// The first frame's avatar grows from 80% and fades in.
     case launch
+    /// A saved result grows from 98% after the answer finishes.
+    case result
 
     var animation: Animation {
         switch self {
         case .rise: LioTheme.Motion.enter
         case .fade: LioTheme.Motion.change
         case .launch: LioTheme.Motion.launch
+        case .result: LioTheme.Motion.emphasis
         }
     }
 
     var offset: CGFloat { self == .rise ? 8 : 0 }
-    var scale: CGFloat { self == .launch ? 0.8 : 1 }
+    var scale: CGFloat { self == .launch ? 0.8 : self == .result ? 0.98 : 1 }
 }
 
 /// Plays an entrance once, the first time the view appears while `active`. Views that appear later
@@ -56,7 +59,7 @@ extension View {
 
 /// Which part of a turn is still waiting for its entrance.
 struct LioEntranceKey: Hashable {
-    enum Part: Hashable { case question, answer }
+    enum Part: Hashable { case question, answer, card, memory }
     let turn: Data
     let part: Part
 }

@@ -8,8 +8,11 @@ import CJTripClient
 struct LioItineraryCard<Actions: View>: View {
     let itinerary: LioItinerary
     let language: LioLanguage
+    var celebrate = false
     let showTrips: () -> Void
     @ViewBuilder let actions: () -> Actions
+    @State private var savedAppeared = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -33,8 +36,14 @@ struct LioItineraryCard<Actions: View>: View {
                     identifier: "lio.trip.day.\(day.number)"))
             }
             Button(action: showTrips) {
-                RunReadableText(text: language.text("Saved to Trips · View", "已保存到行程 · 查看"))
-                    .frame(minHeight: 44, alignment: .leading)
+                HStack {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(LioTheme.jade)
+                        .symbolEffect(.bounce, options: .nonRepeating, value: savedAppeared)
+                        .accessibilityHidden(true)
+                    RunReadableText(text: language.text("Saved to Trips · View", "已保存到行程 · 查看"))
+                        .frame(minHeight: 44, alignment: .leading)
+                }
             }
             .buttonStyle(.bordered)
             .accessibilityIdentifier("lio.trip.show")
@@ -43,6 +52,7 @@ struct LioItineraryCard<Actions: View>: View {
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+        .onAppear { if celebrate && !reduceMotion { savedAppeared = true } }
     }
 }
 

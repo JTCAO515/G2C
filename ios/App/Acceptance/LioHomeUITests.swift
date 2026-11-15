@@ -1,6 +1,131 @@
 import XCTest
 
 @MainActor final class LioHomeUITests: XCTestCase {
+    func testSavedResultWaitsWhileCoveredAndCelebratesOnlyOnce() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-result-visibility-acceptance"]
+        app.launch()
+        let count = app.staticTexts["fixture.result.count"]
+        let card = app.staticTexts["fixture.result.card"]
+        let toggle = app.buttons["fixture.result.toggle"]
+        XCTAssertTrue(count.waitForExistence(timeout: 8))
+        let hidden = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == true"), object: card)
+        hidden.isInverted = true
+        XCTAssertEqual(XCTWaiter.wait(for: [hidden], timeout: 0.4), .completed)
+        XCTAssertEqual(count.label, "0")
+        toggle.tap()
+        XCTAssertTrue(card.waitForExistence(timeout: 5))
+        XCTAssertEqual(count.label, "1")
+        waitForStreamingControl(toggle); toggle.tap()
+        waitForStreamingControl(toggle); toggle.tap()
+        XCTAssertEqual(count.label, "1")
+        XCTAssertTrue(card.exists)
+        try app.performAccessibilityAudit(for: .all)
+        app.terminate()
+    }
+
+    func testStreamingIncompleteMarkupKeepsTheAdmittedPrefix() throws {
+        continueAfterFailure = false
+        for chinese in [false, true] {
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "--lio-streaming-acceptance", "--lio-streaming-inline-acceptance",
+                                   "-cj.ui.language.v1", chinese ? "zh-Hans" : "en"]
+            app.launch()
+            let answer = app.staticTexts["lio.answer"]
+            XCTAssertTrue(answer.waitForExistence(timeout: 8))
+            let prefix = answer.label
+            app.buttons["fixture.streaming.heading"].tap()
+            let raw = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS '**'"), object: answer)
+            raw.isInverted = true
+            XCTAssertEqual(XCTWaiter.wait(for: [raw], timeout: 0.3), .completed)
+            XCTAssertEqual(answer.label, prefix)
+            app.buttons["fixture.streaming.body"].tap()
+            app.buttons["fixture.streaming.finish"].tap()
+            let final = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", chinese ? "轻松的安排" : "an easy pace"), object: answer)
+            XCTAssertEqual(XCTWaiter.wait(for: [final], timeout: 8), .completed)
+            XCTAssertFalse(answer.label.contains("**"))
+            XCTAssertFalse(answer.label.contains("["))
+            try app.performAccessibilityAudit(for: .all)
+            app.terminate()
+        }
+    }
+
+    func testStreamingMarkdownAndAdmissionInBothLanguages() throws {
+        try exerciseStreamingMarkdown(reduceMotion: false)
+    }
+
+    func testStreamingMarkdownWithSystemReduceMotion() throws {
+        continueAfterFailure = false
+        let original = setSimulatorReduceMotion(true)
+        defer { _ = setSimulatorReduceMotion(original) }
+        try exerciseStreamingMarkdown(reduceMotion: true)
+    }
+
+    private func exerciseStreamingMarkdown(reduceMotion: Bool) throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        for chinese in [false, true] {
+            for dark in [false, true] {
+                app.launchArguments = ["--lio-preview", "--lio-streaming-acceptance",
+                                       "-cj.ui.language.v1", chinese ? "zh-Hans" : "en",
+                                       "-lio.ui.appearance.v1", dark ? "dark" : "light"]
+                if dark { app.launchArguments.append("--lio-streaming-dark-acceptance") }
+                app.launch()
+                let answer = app.staticTexts["lio.answer"]
+                XCTAssertTrue(answer.waitForExistence(timeout: 8))
+                XCTAssertEqual(app.staticTexts["fixture.streaming.scheme"].label, dark ? "dark" : "light", app.debugDescription)
+                app.buttons["fixture.streaming.heading"].tap()
+                let heading = chinese ? "第1天" : "Day 1"
+                let partialHeading = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", heading), object: answer)
+                partialHeading.isInverted = true
+                XCTAssertEqual(XCTWaiter.wait(for: [partialHeading], timeout: 0.3), .completed)
+                app.buttons["fixture.streaming.body"].tap()
+                let wholeHeading = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", heading), object: answer)
+                XCTAssertEqual(XCTWaiter.wait(for: [wholeHeading], timeout: 8), .completed)
+                app.buttons["fixture.streaming.finish"].tap()
+                let completed = app.staticTexts["fixture.streaming.complete"]
+                XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == '1'"), object: completed)], timeout: 8), .completed)
+                XCTAssertEqual(app.staticTexts["fixture.streaming.first"].label, "1")
+                XCTAssertTrue(answer.label.contains(chinese ? "博物馆" : "Museum"))
+                XCTAssertTrue(answer.label.contains(chinese ? "轻松的安排" : "an easy pace"))
+                XCTAssertFalse(answer.label.contains("#"))
+                XCTAssertFalse(answer.label.contains("**"))
+                XCTAssertFalse(answer.label.contains("https://"))
+                try app.performAccessibilityAudit(for: .all)
+                let image = XCTAttachment(screenshot: app.screenshot())
+                image.name = "streaming-\(chinese ? "zh" : "en")-\(dark ? "dark" : "light")-\(reduceMotion ? "reduced" : "normal")"
+                image.lifetime = .keepAlways; add(image)
+                let final = answer.label
+                let show = app.buttons["fixture.streaming.show"]
+                waitForStreamingControl(show)
+                show.tap()
+                XCTAssertFalse(answer.exists)
+                XCTAssertEqual(app.staticTexts["fixture.streaming.shown"].label, "0")
+                waitForStreamingControl(show)
+                show.tap()
+                XCTAssertEqual(app.staticTexts["fixture.streaming.shown"].label, "1")
+                XCTAssertTrue(answer.waitForExistence(timeout: 2), app.debugDescription)
+                XCTAssertEqual(answer.label, final)
+                app.buttons["fixture.streaming.unsafe"].tap()
+                XCTAssertTrue(app.staticTexts["lio.reply.unavailable"].waitForExistence(timeout: 5))
+                XCTAssertFalse(answer.exists)
+                app.terminate()
+            }
+        }
+    }
+
+    private func waitForStreamingControl(_ element: XCUIElement) {
+        var previous: CGRect?
+        let stable = NSPredicate { _, _ in
+            guard element.exists, element.isEnabled, element.isHittable else { previous = nil; return false }
+            let frame = element.frame
+            defer { previous = frame }
+            return frame == previous
+        }
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: stable, object: nil)], timeout: 8), .completed)
+    }
+
     func testWaitingReportsOnlyWhileVisibleAndActive() throws {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
