@@ -88,19 +88,32 @@ def intake_prompt(locale,turns,*,discussion_only=False,scene=None):
                  'For discuss intent, answer the current discussion usefully, including requested refinements, rather than a saving acknowledgement. '
                  'Keep the saved itinerary and its bookings unchanged; never claim the separate proposal was saved. '
                  'If the traveler changes topic, answer that topic normally.')
+    system+=(' A new complete/repeated request uses latest source_index='+str(len(turns)-1)+
+             ' as planning_request_index; short parameter replies keep the earlier root. '
+             'Fact quotes keep original indices. Refusal holds until a new explicit request; '
+             'translation, quotation and consultation grant nothing.')
     system+='\n'+SOURCE_LANGUAGE
     return system if scene is None else system+'\n'+scene
 
 
 class NationalLioPlanning:
-    def __init__(self,database,plan_and_save,*,calendar=None):
+    def __init__(self,database,plan_and_save,*,calendar=None,message_context=None):
         self.database,self.plan_and_save=database,plan_and_save
         self.calendar=calendar
+        self.message_context=message_context
 
     def scene_context(self,binding,now):
         return self.plan_and_save.scene_context(binding,now)
 
     def context(self,binding,current):
+        if self.message_context is None:return self._read_context(binding,current,sourced=False)
+        # Hold the current MESSAGE's genuine authority while reading its own
+        # segment. This never acquires an old RUN/Memory holder or replays it.
+        with self.message_context.hold_for_effect(binding)as holder:
+            return self._read_context(binding,current,sourced=holder.reference.message_version=='MESSAGE-send.2')
+
+    def _read_context(self,binding,current,*,sourced):
+        # Older MESSAGE paths retain their existing completed-only behavior.
         with self.database.connect(binding.scope) as db:
             rows=db.execute('SELECT m.message_id,m.sequence,m.raw_input,m.input_sha256,m.demo_question_day,r.status '
                 'FROM cj_message_receipt m JOIN cj_run_record r USING(scope,run_id) '
@@ -108,19 +121,39 @@ class NationalLioPlanning:
                 'AND m.demo_dialogue_protocol=%s AND m.sequence<%s ORDER BY m.sequence DESC LIMIT %s',
                 (binding.scope,binding.conversation_id,binding.generation,LIO_VERSION,binding.message_sequence,MAX_TURNS)).fetchall()
             pending=db.execute('SELECT m.message_id,e.value FROM cj_message_receipt m JOIN cj_run_event e USING(scope,run_id) '
+                + ('JOIN cj_run_record r USING(scope,run_id) 'if sourced else '')+
                 "WHERE m.scope=%s AND m.conversation_id=%s AND m.generation=%s AND m.sequence<%s "
+                + ("AND r.status='completed' "if sourced else '')+
                 "AND e.kind='effect_committed' AND e.value LIKE %s ORDER BY m.sequence DESC,e.sequence DESC LIMIT 1",
                 (binding.scope,binding.conversation_id,binding.generation,binding.message_sequence,CONTEXT+'%')).fetchone()
             continuous=[]
             for row in rows:
                 if row[-1]!='completed':break
                 continuous.append(row)
-            previous=(None if pending is None or pending[0]not in {row[0]for row in continuous}
-                      else json.loads(pending[1].removeprefix(CONTEXT)))
+            previous=(None if pending is None else json.loads(pending[1].removeprefix(CONTEXT)))
             if previous is not None and previous.get('status')in AUTHORITY_BARRIERS and previous.get('authority_barrier_message_id')is None:
                 previous=dict(previous,authority_barrier_message_id=pending[0])
             if previous is not None and previous.get('city',{}).get('status')=='resolved'and previous.get('resolved_city_source_message_id')is None:
                 previous=dict(previous,resolved_city_source_message_id=pending[0])
+            if pending is not None and pending[0]not in {row[0]for row in continuous}:
+                if sourced:
+                    # A failed answer is not a human revocation. Keep known
+                    # denials across it, but no cached facts or planning grant.
+                    previous=dict(authority='none',status='consult',facts={},
+                        **{key:previous[key]for key in ('authority_barrier_message_id',
+                            'date_boundary_message_id','resolved_city_source_message_id',
+                            'nonplanning_message_ids')if key in previous})
+                else:previous=None
+            if sourced:
+                from cj_run.core import TERMINAL
+                continuous=[]
+                for row in rows:
+                    if row[-1]not in TERMINAL:break
+                    # A failed original without its own question day (every
+                    # receipt outside Demo scopes) is unusable DATA: it ends
+                    # the window as on main and grants nothing (#1025 P1-C).
+                    if row[-1]!='completed'and row[4]is None:break
+                    continuous.append(row)
             anchors=set()if previous is None else {ref['message_id']for fact in previous.get('facts',{}).values()for ref in fact['sources']}
             for key in ('date_boundary_message_id','resolved_city_source_message_id','authority_barrier_message_id'):
                 if previous is not None and previous.get(key)is not None:anchors.add(previous[key])
@@ -128,24 +161,45 @@ class NationalLioPlanning:
             if older:
                 # Keep the originals backing already answered facts even after
                 # they leave the recent window. Scope/generation/erasure and
-                # completed status remain the original protected read fence.
+                # the original completed-only path remain unchanged; M2 reads below
+                # additionally require the genuine current source holder.
                 saved=db.execute('SELECT m.message_id,m.sequence,m.raw_input,m.input_sha256,m.demo_question_day,r.status '
                     'FROM cj_message_receipt m JOIN cj_run_record r USING(scope,run_id) '
                     'WHERE m.scope=%s AND m.conversation_id=%s AND m.generation=%s '
                     'AND m.demo_dialogue_protocol=%s AND m.sequence<%s AND m.message_id=ANY(%s)',
                     (binding.scope,binding.conversation_id,binding.generation,LIO_VERSION,binding.message_sequence,list(older))).fetchall()
-                if {row[0]for row in saved}!=older or any(row[-1]!='completed'for row in saved):
+                if {row[0]for row in saved}!=older or not sourced and any(row[-1]!='completed'for row in saved):
                     raise Unavailable('original nationwide fact source unavailable')
                 continuous=sorted([*continuous,*saved],key=lambda row:row[1],reverse=True)
         turns=[];refs=[]
         for mid,sequence,raw,digest,day,status in continuous:
+            if sourced:
+                original=self.message_context.active_source_original(binding,mid)
+                raw=original.stored.raw
+                digest=original.reference.input_sha256
+                # Newly admitted failed/unknown originals need their own day.
+                # Completed history keeps the accepted completed-only fallback.
+                if day is None and status!='completed':raise Unavailable('original nationwide source day unavailable')
             if raw is None:raise Unavailable('original nationwide context was erased')
             command=Command.parse_original(bytes(raw))
             if command.conversation_id!=binding.conversation_id or command.message_id!=mid or sha256(command.raw).hexdigest()!=digest:
                 raise Unavailable('original nationwide context differs')
             turns.append(PlanningTurn(json.loads(command.raw)['text'],day or current.question_day))
             refs.append(dict(conversation_id=binding.conversation_id,generation=binding.generation,message_id=mid,sequence=sequence,input_sha256=digest))
-        return (*reversed(turns),current),tuple(reversed(refs)),previous
+        turns=tuple(reversed(turns));refs=tuple(reversed(refs))
+        if sourced:
+            uncompleted=[mid for mid,_,_,_,_,status in continuous if status!='completed']
+            if uncompleted:
+                previous=(dict(authority='none',status='consult',facts={})if previous is None else dict(previous))
+                previous['uncompleted_request_message_ids']=uncompleted
+            holds=[ref['message_id']for turn,ref in zip(turns,refs)if publication_held(turn.text)]
+            if holds:
+                previous={}if previous is None else previous
+                existing=previous.get('authority_barrier_message_id')
+                ids=[ref['message_id']for ref in refs]
+                barrier=max([*holds,*([existing]if existing is not None else [])],key=ids.index)
+                previous=dict(previous,authority='none',status='discussion',authority_barrier_message_id=barrier)
+        return (*turns,current),refs,previous
 
     def answer_context(self,binding,messages):
         # This profile already classifies complete original user context. The
@@ -446,12 +500,33 @@ class NationalLioPlanning:
         return None
 
     @staticmethod
+    def _same_prior_city(intake,previous):
+        old=previous.get('city')
+        if old is None:
+            # Before resolution, keep only the city the completed root adopted.
+            adopted=previous.get('facts',{}).get('city',{}).get('value')
+            return adopted is not None and _normalize(intake.city['query'])==_normalize(adopted['query'])
+        if old.get('status')!='resolved'or len(old.get('candidates',[]))!=1:return False
+        city=old['candidates'][0]
+        return _normalize(intake.city['query'])in forms(city['name'],city['level'])
+
+    @staticmethod
     def _authority(intake,previous,*,current_index=None,turns=(),source_ids=()):
         if intake.intent=='cancel' or intake.publication_hold or publication_held(intake.current_request):return 'none'
         # Publication still requires a traveler request, not a model label.
         # The semantic request is separate from facts mentioned in consultation.
         request_index=intake.planning_request_index
-        if (request_index is not None and previous is not None and source_ids[request_index]in previous.get('nonplanning_message_ids',[])):return 'none'
+        uncompleted=set()if previous is None else set(previous.get('uncompleted_request_message_ids',[]))
+        excluded=set()if previous is None else set(previous.get('nonplanning_message_ids',[]))
+        if request_index is not None and source_ids[request_index]in uncompleted|excluded:return 'none'
+        # Uncompleted text can supply checked data, never an execution root or
+        # permission to transfer an earlier request to a different destination.
+        # A later completed root that already adopted that DATA keeps its own
+        # positive grant for short parameter replies, for its own destination.
+        if (intake.city is not None and source_ids[intake.city['source_index']]in uncompleted
+                and request_index!=current_index and not (request_index is not None
+                    and request_index>intake.city['source_index'] and previous.get('authority','none')!='none'
+                    and NationalLioPlanning._same_prior_city(intake,previous))):return 'none'
         barrier=None if previous is None else previous.get('authority_barrier_message_id')
         if request_index is not None and barrier is not None and request_index<=source_ids.index(barrier):return 'none'
         request=None if request_index is None else turns[request_index].text
