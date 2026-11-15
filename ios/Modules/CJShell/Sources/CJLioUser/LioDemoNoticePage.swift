@@ -68,7 +68,7 @@ struct LioProblemNotesSection: View {
                 .accessibilityIdentifier("lio.problems.heading")
             RunReadableText(text: language.text(
                 "Kept only on this device, up to \(LioDiagnosticLog.limit) notes. No message text or sign-in details.",
-                "只保存在本机，最多 \(LioDiagnosticLog.limit) 条，不含消息内容或登录信息。"), color: LioTheme.inkSecondary)
+                "只保存在本机，最多 \(LioDiagnosticLog.limit) 条，不含消息内容或登录信息。"), color: LioTheme.ink)
                 .accessibilityIdentifier("lio.problems.privacy")
             RunSelectableText(text: text, color: LioTheme.ink)
                 .accessibilityIdentifier("lio.problems.list")
@@ -78,8 +78,12 @@ struct LioProblemNotesSection: View {
                     copied = true
                 } label: {
                     Text(copied ? language.text("Copied", "已复制") : language.text("Copy notes", "复制记录"))
+                        .foregroundStyle(LioTheme.ink)
+                        .padding(.horizontal, LioTheme.Spacing.md)
                         .frame(minHeight: 44)
+                        .overlay(RoundedRectangle(cornerRadius: LioTheme.Radius.small).stroke(LioTheme.inkSecondary, lineWidth: 1))
                 }
+                .buttonStyle(.plain)
                 .accessibilityIdentifier("lio.problems.copy")
             }
         }

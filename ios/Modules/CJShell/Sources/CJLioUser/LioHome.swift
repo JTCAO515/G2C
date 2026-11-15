@@ -134,36 +134,53 @@ public struct LioHome<MenuContent: View>: View {
                 VStack(spacing: 20) {
                     if let failure = restoreChatFailure {
                         Text(failure.message(language))
+                            .foregroundStyle(LioTheme.ink)
+                            .fixedSize(horizontal: false, vertical: true)
                         Text(failure.nextStep(language))
                             .foregroundStyle(LioTheme.inkSecondary)
-                        Button(language.text("Try again", "重试")) { restoreChatRequest += 1 }
-                            .frame(minHeight: 44)
-                        Button(language.text("View problem notes", "查看问题记录")) { showsProblemNotes = true }
-                            .frame(minHeight: 44)
-                            .accessibilityIdentifier("lio.chat.recovery.notes")
+                            .fixedSize(horizontal: false, vertical: true)
+                        // Same accessible actions as the saved sign-in recovery page.
+                        Button { restoreChatRequest += 1 } label: {
+                            Text(language.text("Try again", "重试")).frame(minHeight: 44)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .foregroundStyle(LioTheme.onVermilion)
+                        Button { showsProblemNotes = true } label: {
+                            Text(language.text("View problem notes", "查看问题记录"))
+                                .foregroundStyle(LioTheme.inkSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .frame(minHeight: 44)
+                        }
+                        .buttonStyle(.plain)
                     } else {
                         ProgressView(language.text("Opening your conversation…", "正在打开你的对话…"))
                     }
                 }
                 .multilineTextAlignment(.center)
+                .frame(maxWidth: 420)
                 .padding(28)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(LioTheme.paper)
+                .tint(LioTheme.vermilion)
                 .accessibilityIdentifier("lio.chat.recovery")
                 .sheet(isPresented: $showsProblemNotes) {
-                    NavigationStack {
-                        ScrollView {
-                            LioProblemNotesSection(language: language, notes: .shared)
-                                .frame(maxWidth: 480, alignment: .leading)
-                                .padding(24)
-                                .frame(maxWidth: .infinity)
-                        }
-                        .background(LioTheme.paper)
-                        .toolbar {
-                            ToolbarItem(placement: .confirmationAction) {
-                                Button(language.text("Done", "完成")) { showsProblemNotes = false }
-                                    .accessibilityIdentifier("lio.problems.done")
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: LioTheme.Spacing.md) {
+                            Button { showsProblemNotes = false } label: {
+                                Text(language.text("Done", "完成"))
+                                    .foregroundStyle(LioTheme.ink)
+                                    .frame(minWidth: 44, minHeight: 44)
                             }
+                            .buttonStyle(.plain)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                            .accessibilityIdentifier("lio.problems.done")
+                            LioProblemNotesSection(language: language, notes: .shared)
                         }
+                        .frame(maxWidth: 480, alignment: .leading)
+                        .padding(24)
+                        .frame(maxWidth: .infinity)
                     }
+                    .background(LioTheme.paper)
                 }
             }
         }
