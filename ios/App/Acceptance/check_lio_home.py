@@ -34,6 +34,7 @@ def main():
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--build-dir", required=True, type=Path)
     parser.add_argument("--case", action="append", help="Run just this XCTest method. May be repeated.")
+    parser.add_argument("--voiceover", action="store_true", help="Run the separate real VoiceOver engine walk; requires Xcode/iOS 27. The normal audit suite is unchanged.")
     args = parser.parse_args()
     output, build = args.output.resolve(), args.build_dir.resolve()
     if output.is_relative_to(ROOT) or build.is_relative_to(ROOT):
@@ -46,7 +47,7 @@ def main():
     builder = object.__new__(module.XCTestDriver)
     builder.directory = output
     builder.write_project(0)
-    tests = (HERE / "LioHomeUITests.swift").read_text()
+    tests = (HERE / ("LioVoiceOverUITests.swift" if args.voiceover else "LioHomeUITests.swift")).read_text()
     (output / "G2CControl.swift").write_text(tests.replace("__LIO_RECORDED_TRIP_FIXTURE__", recorded_trip_fixture()))
     project = output / "G2CAcceptance.xcodeproj"
     settings = project / "project.pbxproj"
@@ -57,7 +58,9 @@ def main():
     if app.count(preview) != 1:
         raise ValueError("Expected a single sample preview")
     fixture_routes = (
-        '        if ProcessInfo.processInfo.arguments.contains("--lio-result-visibility-acceptance") {\n'
+        '        if ProcessInfo.processInfo.arguments.contains("--lio-exploration-home-acceptance") {\n'
+        '            LioExplorationHomeFixture(shell: shell)\n'
+        '        } else if ProcessInfo.processInfo.arguments.contains("--lio-result-visibility-acceptance") {\n'
         '            LioResultVisibilityFixture()\n'
         '        } else if ProcessInfo.processInfo.arguments.contains("--lio-streaming-acceptance") {\n'
         '            LioStreamingFixture(chinese: UserDefaults.standard.string(forKey: "cj.ui.language.v1") == "zh-Hans")\n'
@@ -93,7 +96,7 @@ def main():
     )
     fixtures = ("LioScrollFixture.swift", "LioTimelineFixture.swift", "LioJourneyFixture.swift",
                 "LioMemoryJourneyFixture.swift", "LioChatHistoryFixture.swift", "LioSessionRecoveryFixture.swift",
-                "LioScenePrivacyFixture.swift", "LioExplorationQuestionsFixture.swift", "LioExplorationReplyFixture.swift", "LioRichItineraryFixture.swift", "LioExplorationReadFixture.swift", "LioCalendarWireFixture.swift", "LioThinkingFixture.swift", "LioStreamingFixture.swift")
+                "LioScenePrivacyFixture.swift", "LioExplorationQuestionsFixture.swift", "LioExplorationReplyFixture.swift", "LioRichItineraryFixture.swift", "LioExplorationReadFixture.swift", "LioThinkingFixture.swift", "LioExplorationHomeFixture.swift", "LioCalendarWireFixture.swift", "LioStreamingFixture.swift")
     generated_source.write_text(app.replace(preview, fixture_routes)
                                 .replace("import CJLioUser\n", "@testable import CJLioUser\n")
                                 + "\n" + "\n".join((HERE / name).read_text() for name in fixtures))
@@ -101,7 +104,7 @@ def main():
                         .replace(json.dumps(str(app_source)), json.dumps(str(generated_source))))
     result = output / "lio-home.xcresult"
     env = {key: value for key, value in os.environ.items() if not key.startswith(("G2C_DEV_", "SIMCTL_CHILD_"))}
-    suite = "G2CControl/LioHomeUITests"
+    suite = "G2CControl/LioVoiceOverUITests" if args.voiceover else "G2CControl/LioHomeUITests"
     selectors = [f"-only-testing:{suite}/{case}" for case in args.case] if args.case else [f"-only-testing:{suite}"]
     command = [
         "xcodebuild", "-project", str(project), "-scheme", "G2CControl",
@@ -115,7 +118,8 @@ def main():
         subprocess.run(command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=600)
     summary = subprocess.check_output(["xcrun", "xcresulttool", "get", "test-results", "summary", "--path", str(result)])
     (output / "summary.json").write_bytes(summary)
-    assert json.loads(summary)["passedTests"] == (len(args.case) if args.case else 68), summary
+    expected = 1 if args.voiceover else 74
+    assert json.loads(summary)["passedTests"] == (len(args.case) if args.case else expected), summary
 
 
 if __name__ == "__main__":

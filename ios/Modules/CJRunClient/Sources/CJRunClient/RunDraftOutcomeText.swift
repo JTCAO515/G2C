@@ -11,7 +11,11 @@ import UIKit
 public struct RunReadableText: UIViewRepresentable {
     let text: String
     let style: RunReadableTextStyle
-    public init(text: String, style: RunReadableTextStyle = .body) { self.text = text; self.style = style }
+    let color: Color?
+    let lineSpacing: CGFloat
+    public init(text: String, style: RunReadableTextStyle = .body, color: Color? = nil, lineSpacing: CGFloat = 0) {
+        self.text = text; self.style = style; self.color = color; self.lineSpacing = lineSpacing
+    }
     @Environment(\.dynamicTypeSize) private var size
     public func makeUIView(context: Context) -> UILabel {
         let label = UILabel()
@@ -23,7 +27,15 @@ public struct RunReadableText: UIViewRepresentable {
         return label
     }
     public func updateUIView(_ label: UILabel, context: Context) {
-        label.text = text
+        if lineSpacing == 0 {
+            label.text = text
+        } else {
+            let paragraph = NSMutableParagraphStyle()
+            paragraph.lineSpacing = lineSpacing
+            label.attributedText = NSAttributedString(string: text, attributes: [.paragraphStyle: paragraph])
+        }
+        if let color { label.textColor = UIColor(color) }
+        else { label.textColor = .label }
         let textStyle: UIFont.TextStyle
         switch style { case .body:textStyle = .body;case .caption:textStyle = .caption1;case .headline:textStyle = .headline }
         label.font = UIFont.preferredFont(forTextStyle:textStyle,
@@ -39,7 +51,11 @@ public struct RunReadableText: UIViewRepresentable {
 public struct RunSelectableText: UIViewRepresentable {
     let text: String
     let minimumHeight: CGFloat
-    public init(text: String, minimumHeight: CGFloat = 0) { self.text = text; self.minimumHeight = minimumHeight }
+    let color: Color?
+    let fitsContentWidth: Bool
+    public init(text: String, minimumHeight: CGFloat = 0, color: Color? = nil, fitsContentWidth: Bool = false) {
+        self.text = text; self.minimumHeight = minimumHeight; self.color = color; self.fitsContentWidth = fitsContentWidth
+    }
     @Environment(\.dynamicTypeSize) private var size
     public func makeUIView(context: Context) -> UITextView {
         let view = UITextView()
@@ -52,12 +68,22 @@ public struct RunSelectableText: UIViewRepresentable {
     }
     public func updateUIView(_ view: UITextView, context: Context) {
         if view.text?.utf8.elementsEqual(text.utf8) != true { view.text = text }
+        if let color { view.textColor = UIColor(color) }
+        else { view.textColor = .label }
         view.font = UIFont.preferredFont(forTextStyle: .body,
             compatibleWith: UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(size)))
     }
     public func sizeThatFits(_ proposal: ProposedViewSize, uiView: UITextView, context: Context) -> CGSize? {
         guard let width = proposal.width, width.isFinite, width > 0 else { return nil }
-        let measured = uiView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
+        let fittingWidth: CGFloat
+        if fitsContentWidth {
+            let bounds = uiView.attributedText.boundingRect(with: CGSize(width: width, height: .greatestFiniteMagnitude),
+                                                           options: [.usesLineFragmentOrigin, .usesFontLeading], context: nil)
+            fittingWidth = max(1, min(width, ceil(bounds.width)))
+        } else {
+            fittingWidth = width
+        }
+        let measured = uiView.sizeThatFits(CGSize(width: fittingWidth, height: .greatestFiniteMagnitude))
         return CGSize(width: measured.width, height: max(minimumHeight, measured.height))
     }
     public static func dismantleUIView(_ uiView: UITextView, coordinator: ()) { uiView.text = nil }
@@ -66,13 +92,29 @@ public struct RunSelectableText: UIViewRepresentable {
 public struct RunReadableText: View {
     let text: String
     let style: RunReadableTextStyle
-    public init(text: String, style: RunReadableTextStyle = .body) { self.text = text; self.style = style }
-    public var body: some View { Text(text).font(style == .body ? .body : style == .headline ? .headline : .caption).fixedSize(horizontal: false, vertical: true) }
+    let color: Color?
+    let lineSpacing: CGFloat
+    public init(text: String, style: RunReadableTextStyle = .body, color: Color? = nil, lineSpacing: CGFloat = 0) {
+        self.text = text; self.style = style; self.color = color; self.lineSpacing = lineSpacing
+    }
+    private var label: some View { Text(text).font(style == .body ? .body : style == .headline ? .headline : .caption).lineSpacing(lineSpacing).fixedSize(horizontal: false, vertical: true) }
+    @ViewBuilder public var body: some View {
+        if let color { label.foregroundStyle(color) }
+        else { label }
+    }
 }
 public struct RunSelectableText: View {
     let text: String
     let minimumHeight: CGFloat
-    public init(text: String, minimumHeight: CGFloat = 0) { self.text = text; self.minimumHeight = minimumHeight }
-    public var body: some View { Text(text).textSelection(.enabled).fixedSize(horizontal: false, vertical: true).frame(minHeight: minimumHeight) }
+    let color: Color?
+    let fitsContentWidth: Bool
+    public init(text: String, minimumHeight: CGFloat = 0, color: Color? = nil, fitsContentWidth: Bool = false) {
+        self.text = text; self.minimumHeight = minimumHeight; self.color = color; self.fitsContentWidth = fitsContentWidth
+    }
+    private var content: some View { Text(text).textSelection(.enabled).fixedSize(horizontal: false, vertical: true).frame(minHeight: minimumHeight) }
+    @ViewBuilder public var body: some View {
+        if let color { content.foregroundStyle(color) }
+        else { content }
+    }
 }
 #endif

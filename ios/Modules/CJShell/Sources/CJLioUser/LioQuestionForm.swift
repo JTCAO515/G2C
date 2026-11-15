@@ -13,20 +13,13 @@ struct LioQuestionForm: View {
         VStack(alignment: .leading, spacing: LioTheme.Spacing.lg) {
             ForEach(draft.questions) { question in
                 VStack(alignment: .leading, spacing: LioTheme.Spacing.sm) {
-                    Text(question.question)
-                        .font(.headline)
-                        .foregroundStyle(LioTheme.ink)
+                    RunReadableText(text: question.question, style: .headline, color: LioTheme.ink)
+
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityAddTraits(.isHeader)
-                    if typeSize.isAccessibilitySize {
-                        VStack(spacing: LioTheme.Spacing.xs) {
-                            options(in: question)
-                        }
-                    } else {
-                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())],
-                                  alignment: .leading, spacing: LioTheme.Spacing.xs) {
-                            options(in: question)
-                        }
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: typeSize.isAccessibilitySize ? 1 : 2),
+                              alignment: .leading, spacing: LioTheme.Spacing.xs) {
+                        options(in: question)
                     }
                 }
                 .accessibilityElement(children: .contain)
@@ -34,8 +27,10 @@ struct LioQuestionForm: View {
             Button {
                 onSend(draft.jointReply)
             } label: {
-                Text(language.text("Done, continue", "好了，继续"))
-                    .font(.headline)
+                RunReadableText(text: language.text("Done, continue", "好了，继续"), style: .headline,
+                                color: canSend && !draft.jointReply.isEmpty
+                                    ? LioTheme.onVermilion : LioTheme.inkSecondary)
+
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.vertical, LioTheme.Spacing.sm)
                     .frame(maxWidth: .infinity, minHeight: 44)
@@ -43,6 +38,7 @@ struct LioQuestionForm: View {
             }
             .buttonStyle(LioQuestionSubmitStyle())
             .disabled(!canSend || draft.jointReply.isEmpty)
+            .accessibilityLabel(language.text("Done, continue", "好了，继续"))
             .accessibilityIdentifier("lio.questions.continue")
         }
         .accessibilityElement(children: .contain)
@@ -62,7 +58,7 @@ struct LioQuestionForm: View {
         } label: {
             HStack(alignment: .firstTextBaseline, spacing: LioTheme.Spacing.xs) {
                 RunReadableText(text: option.displayText)
-                    .id(typeSize)
+
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
                 Image(systemName: selected ? "checkmark.circle.fill" : "circle")
