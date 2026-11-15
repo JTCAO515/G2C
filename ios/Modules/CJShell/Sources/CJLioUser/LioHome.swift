@@ -323,13 +323,13 @@ public struct LioHome<MenuContent: View>: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .principal) {
-                        RunReadableText(text: language.text("Menu", "菜单"), style: .headline)
+                        RunReadableText(text: language.text("Menu", "菜单"), style: .headline, color: LioTheme.ink)
                             .fixedSize()
                             .accessibilityAddTraits(.isHeader)
                     }
                     ToolbarItem(placement: .confirmationAction) {
                         Button { menuOpen = false } label: {
-                            RunReadableText(text: language.text("Done", "完成"))
+                            RunReadableText(text: language.text("Done", "完成"), color: LioTheme.vermilion)
                                 .fixedSize()
                                 .frame(minHeight: 44)
                         }
