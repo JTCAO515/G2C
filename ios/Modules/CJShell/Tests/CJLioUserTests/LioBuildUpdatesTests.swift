@@ -5,15 +5,15 @@ import Testing
 struct LioBuildUpdatesTests {
     @Test func bundledBookKeepsOnlyCurrentAndPreviousAndBothLanguages() throws {
         let book = try LioBuildUpdates.bundled.get()
-        #expect(book.currentBuild == 44)
-        #expect(book.releases.map(\.build) == [44, 43])
-        let current = try book.release(for: 44)
-        #expect(current.previousBuild == 43)
+        #expect(book.currentBuild == 45)
+        #expect(book.releases.map(\.build) == [45, 44])
+        let current = try book.release(for: 45)
+        #expect(current.previousBuild == 44)
         #expect(current.sections.map(\.id) == [.changes, .comparison, .testing, .known, .service])
         #expect(current.whatToTest(.chinese).contains("规划功能仍在修复，暂不建议测试规划。"))
         #expect(current.whatToTest(.english).contains("Trip planning is still being fixed"))
-        #expect(current.whatToTest(.chinese).contains("构建 43"))
-        #expect(throws: LioBuildUpdates.Failure.unlistedBuild) { try book.release(for: 45) }
+        #expect(current.whatToTest(.chinese).contains("构建 44"))
+        #expect(throws: LioBuildUpdates.Failure.unlistedBuild) { try book.release(for: 46) }
     }
 
     @Test func malformedOrIncompleteReleaseContentIsNotAccepted() throws {

@@ -1,7 +1,112 @@
 {
   "schema": 1,
-  "currentBuild": 44,
+  "currentBuild": 45,
   "releases": [
+    {
+      "build": 45,
+      "previousBuild": 44,
+      "sections": [
+        {
+          "id": "changes",
+          "title": {
+            "en": "New and improved",
+            "zh": "本版新增和修改"
+          },
+          "items": {
+            "en": [
+              "When a chat won’t open, the message now names the situation: offline, sign-in expired or turned off, service problem or maintenance, saved record on this device unreadable, or not yet clear, with a next step.",
+              "The failure page has View problem notes: kept only on this device, up to 20, with time, build, category, step and the service reference. No message text or sign-in details; you can copy them.",
+              "The same problem notes are also at the end of Internal demo information."
+            ],
+            "zh": [
+              "对话打不开时，提示会说明具体情况：网络不通、登录过期或停用、服务出错或维护、本机保存的记录打不开、具体情况还不清楚，并给出下一步。",
+              "失败页新增“查看问题记录”：只存在本机，最多 20 条，含时间、构建号、类别、环节和服务端参考号，不含消息内容或登录信息，可以复制。",
+              "内部演示说明末尾也能查看同一份问题记录。"
+            ]
+          }
+        },
+        {
+          "id": "comparison",
+          "title": {
+            "en": "Changes since the previous build",
+            "zh": "与上一版的区别"
+          },
+          "items": {
+            "en": [
+              "Since build 44: situation-specific messages and on-device problem notes; how chats reopen and send is unchanged.",
+              "Trip planning and default chat access remain unchanged."
+            ],
+            "zh": [
+              "与构建 44 相比：新增按情况区分的提示和本机问题记录；对话恢复和发送方式没有改变。",
+              "规划功能没有因此修好，日常账号的默认对话方式没有改变。"
+            ]
+          }
+        },
+        {
+          "id": "testing",
+          "title": {
+            "en": "Suggested checks",
+            "zh": "建议怎么测"
+          },
+          "items": {
+            "en": [
+              "Open an existing chat, leave an unsent draft, switch away and lock the phone, then return to the same chat and draft.",
+              "Force-quit from the app switcher and reopen; check the same chat and draft come back.",
+              "If a chat won’t open, screenshot that page, tap View problem notes, screenshot or copy them and note the time.",
+              "Open Internal demo information from the menu and scroll to Problem notes at the end."
+            ],
+            "zh": [
+              "打开一段已有对话，留一段未发送的文字，切后台并锁屏后返回，检查同一对话和草稿。",
+              "从多任务界面强制关闭应用后重新打开，检查能否回到同一对话和草稿。",
+              "如果对话打不开，请截图该页，再点“查看问题记录”截图或复制，并记下大概时间。",
+              "从菜单打开内部演示说明，翻到最后查看问题记录。"
+            ]
+          }
+        },
+        {
+          "id": "known",
+          "title": {
+            "en": "Known issues and checks to avoid",
+            "zh": "已知问题和暂不测试内容"
+          },
+          "items": {
+            "en": [
+              "Trip planning is still being fixed. Please do not test it yet.",
+              "Planning, saving, edits, undo and preferences await live checks.",
+              "Why chats would not open on build 43 is still not identified; the new messages help show the next failure clearly.",
+              "Segmented replies, choices and profile tags are designated tests, not on by default."
+            ],
+            "zh": [
+              "规划功能仍在修复，暂不建议测试规划。",
+              "规划、保存、修改、撤销和记住偏好尚待本轮真实验证。",
+              "构建 43 上对话打不开的具体起因仍未查明；新提示用于看清下一次失败的情况。",
+              "新版分段、多选和画像交互目前仅供指定测试，未向日常账号默认开启。"
+            ]
+          }
+        },
+        {
+          "id": "service",
+          "title": {
+            "en": "Online service changes",
+            "zh": "在线服务变化"
+          },
+          "items": {
+            "en": [
+              "Hong Kong service source 2e5560cf now keeps a minimal request log: time, endpoint type, status code and app build only, no content.",
+              "The service reference in problem notes matches that log, so a failure can be traced by time.",
+              "No server change you can see; these server updates do not require an app update.",
+              "Planning and English city request fixes are still in progress; planning retest remains on hold."
+            ],
+            "zh": [
+              "香港在线服务来源 2e5560cf 新增最小请求记录：只记时间、接口类型、状态码和应用构建号，不记内容。",
+              "问题记录里的服务端参考号可与这份记录对应，便于按时间查到失败的情况。",
+              "没有用户可感知的服务端变化；这些服务端更新不需要更新应用。",
+              "规划和英文城市请求的修复仍在进行，规划复试继续暂缓。"
+            ]
+          }
+        }
+      ]
+    },
     {
       "build": 44,
       "previousBuild": 43,
@@ -108,93 +213,6 @@
               "指定测试账号增加了对话保护，日常账号保留现有的对话方式。",
               "这些服务端更新不需要更新应用；之后的服务端变化另行说明。",
               "真实基础问答和全国规划验证尚未完成，规划复试继续暂缓。"
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "build": 43,
-      "previousBuild": 42,
-      "sections": [
-        {
-          "id": "changes",
-          "title": {
-            "en": "New and improved",
-            "zh": "本版新增和修改"
-          },
-          "items": {
-            "en": [
-              "Improved trip detail titles at larger text sizes."
-            ],
-            "zh": [
-              "改善行程详情标题显示，保留完整标题和大字号。"
-            ]
-          }
-        },
-        {
-          "id": "comparison",
-          "title": {
-            "en": "Changes since the previous build",
-            "zh": "与上一版的区别"
-          },
-          "items": {
-            "en": [
-              "Since build 42: title display only; planning remained unfixed."
-            ],
-            "zh": [
-              "与构建 42 相比，仅调整标题显示，未宣告规划修复。"
-            ]
-          }
-        },
-        {
-          "id": "testing",
-          "title": {
-            "en": "Suggested checks",
-            "zh": "建议怎么测"
-          },
-          "items": {
-            "en": [
-              "Open an existing trip; check its title in light and dark.",
-              "Increase system text size; check that the full title is readable."
-            ],
-            "zh": [
-              "打开已有行程，在浅深色下查看标题。",
-              "调大系统文字，查看是否仍能读到完整标题。"
-            ]
-          }
-        },
-        {
-          "id": "known",
-          "title": {
-            "en": "Known issues and checks to avoid",
-            "zh": "已知问题和暂不测试内容"
-          },
-          "items": {
-            "en": [
-              "Trip planning was still being fixed; planning acceptance was on hold."
-            ],
-            "zh": [
-              "规划功能当时仍在修复，规划验收暂未开放。"
-            ]
-          }
-        },
-        {
-          "id": "service",
-          "title": {
-            "en": "Online service changes",
-            "zh": "在线服务变化"
-          },
-          "items": {
-            "en": [
-              "These notes for build 43 were added later.",
-              "Server work was tracked separately and did not prove successful planning.",
-              "That app update did not establish that the server was fixed."
-            ],
-            "zh": [
-              "这是构建 43 的补记说明。",
-              "在线服务进展单独记录，不代表规划已经通过。",
-              "不应把该次应用更新理解为服务端已经修复。"
             ]
           }
         }

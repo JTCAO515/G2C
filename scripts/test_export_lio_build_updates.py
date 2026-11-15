@@ -19,7 +19,7 @@ class ExportBuildUpdatesTests(unittest.TestCase):
 
     def test_export_uses_packaged_current_and_previous_content(self):
         book = EXPORT.load_book(EXPORT.RESOURCE)
-        self.assertEqual([release['build'] for release in book['releases']], [44,43])
+        self.assertEqual([release['build'] for release in book['releases']], [45,44])
         for release in book['releases']:
             for language in ['en','zh']:
                 rendered = EXPORT.render(release, language)
