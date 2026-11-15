@@ -14,7 +14,7 @@ struct LioExplorationReplyView: View {
     @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
-        LazyVStack(alignment: .leading, spacing: LioTheme.Spacing.sm) {
+        VStack(alignment: .leading, spacing: LioTheme.Spacing.sm) {
             HStack(spacing: LioTheme.Spacing.xs) {
                 LioPortrait(size: 22)
                 Text("Lio").font(.subheadline.weight(.semibold)).foregroundStyle(LioTheme.ink)
@@ -36,7 +36,7 @@ struct LioExplorationReplyView: View {
                         Image(systemName: notice.severity == .warning ? "exclamationmark.circle" : "bell")
                             .font(.headline).foregroundStyle(LioTheme.ink).accessibilityHidden(true)
                         RunReadableText(text: language.text("Lio noticed", "Lio 注意到"), style: .headline, color: LioTheme.ink)
-                            .id(typeSize).fixedSize(horizontal: false, vertical: true)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                         .accessibilityAddTraits(.isHeader)
                     replyText(notice.text)
@@ -46,7 +46,7 @@ struct LioExplorationReplyView: View {
                                 Image(systemName: "link").font(.body).foregroundStyle(LioTheme.vermilion)
                                     .accessibilityHidden(true)
                                 RunReadableText(text: language.text("Source", "来源"), color: LioTheme.vermilion)
-                                    .id(typeSize)
+
                             }
                                 .fixedSize(horizontal: false, vertical: true)
                                 .frame(minHeight: 44, alignment: .leading)
@@ -68,7 +68,7 @@ struct LioExplorationReplyView: View {
                             .foregroundStyle(canSend ? LioTheme.vermilion : LioTheme.inkSecondary)
                             .accessibilityHidden(true)
                         RunReadableText(text: exit.displayText, color: canSend ? LioTheme.vermilion : LioTheme.inkSecondary)
-                            .id(typeSize)
+
                     }
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
@@ -87,19 +87,16 @@ struct LioExplorationReplyView: View {
                 .accessibilityIdentifier("lio.exit.\(exit.id)")
             }
         }
+        .accessibilityElement(children: .contain)
         .font(.body)
         .sheet(item: $editing) { entry in
             LioProfileChangeSheet(entry: entry, language: language, canSend: canSend, onSend: onSend)
         }
     }
 
-    @ViewBuilder private var profile: some View {
-        if typeSize.isAccessibilitySize {
-            VStack(spacing: LioTheme.Spacing.xs) { profileEntries }
-        } else {
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())],
-                      alignment: .leading, spacing: LioTheme.Spacing.xs) { profileEntries }
-        }
+    private var profile: some View {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: typeSize.isAccessibilitySize ? 1 : 2),
+                  alignment: .leading, spacing: LioTheme.Spacing.xs) { profileEntries }
     }
 
     private var profileEntries: some View {
@@ -111,14 +108,14 @@ struct LioExplorationReplyView: View {
                 VStack(alignment: .leading, spacing: LioTheme.Spacing.xxs) {
                     HStack(alignment: .firstTextBaseline, spacing: LioTheme.Spacing.xs) {
                         RunReadableText(text: entry.displayText)
-                            .id(typeSize)
+
                             .fixedSize(horizontal: false, vertical: true)
                         Image(systemName: "pencil").foregroundStyle(LioTheme.inkSecondary)
                             .accessibilityHidden(true)
                     }
                     if let annotation = entry.annotation(language) {
                         RunReadableText(text: annotation, style: .caption, color: LioTheme.inkSecondary)
-                            .id(typeSize)
+
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
@@ -156,7 +153,7 @@ struct LioExplorationReplyView: View {
                         .font(blocks[index].font ?? .body)
                         .foregroundStyle(LioTheme.ink)
                         .lineSpacing(4)
-                        .id(typeSize)
+
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityAddTraits(blocks[index].font == nil ? [] : .isHeader)
                         .padding(.top, CGFloat(max(0, blocks[index].leadingSeparator.count - 1)) * LioTheme.Spacing.sm)

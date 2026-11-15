@@ -241,7 +241,7 @@ public struct LioHome<MenuContent: View>: View {
                 GeometryReader { viewport in
                     ScrollView {
                         Group {
-                            if dynamicTypeSize.isAccessibilitySize {
+                            if dynamicTypeSize.isAccessibilitySize && !conversation.turns.contains(where: { $0.exploration != nil }) {
                                 // Eager measurement keeps a tall card's bottom reachable at accessibility sizes.
                                 VStack(alignment: .leading, spacing: 22) { chatMessages(scroll) }
                             } else {

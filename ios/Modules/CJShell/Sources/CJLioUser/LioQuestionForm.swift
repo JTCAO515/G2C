@@ -14,18 +14,12 @@ struct LioQuestionForm: View {
             ForEach(draft.questions) { question in
                 VStack(alignment: .leading, spacing: LioTheme.Spacing.sm) {
                     RunReadableText(text: question.question, style: .headline, color: LioTheme.ink)
-                        .id(typeSize)
+
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityAddTraits(.isHeader)
-                    if typeSize.isAccessibilitySize {
-                        VStack(spacing: LioTheme.Spacing.xs) {
-                            options(in: question)
-                        }
-                    } else {
-                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())],
-                                  alignment: .leading, spacing: LioTheme.Spacing.xs) {
-                            options(in: question)
-                        }
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: typeSize.isAccessibilitySize ? 1 : 2),
+                              alignment: .leading, spacing: LioTheme.Spacing.xs) {
+                        options(in: question)
                     }
                 }
                 .accessibilityElement(children: .contain)
@@ -36,7 +30,7 @@ struct LioQuestionForm: View {
                 RunReadableText(text: language.text("Done, continue", "好了，继续"), style: .headline,
                                 color: canSend && !draft.jointReply.isEmpty
                                     ? LioTheme.onVermilion : LioTheme.inkSecondary)
-                    .id(typeSize)
+
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.vertical, LioTheme.Spacing.sm)
                     .frame(maxWidth: .infinity, minHeight: 44)
@@ -64,7 +58,7 @@ struct LioQuestionForm: View {
         } label: {
             HStack(alignment: .firstTextBaseline, spacing: LioTheme.Spacing.xs) {
                 RunReadableText(text: option.displayText)
-                    .id(typeSize)
+
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
                 Image(systemName: selected ? "checkmark.circle.fill" : "circle")
