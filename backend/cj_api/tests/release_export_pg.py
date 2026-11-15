@@ -1,9 +1,11 @@
 """Real signed admission before RUN creation; readonly proof and versioned ledgers."""
 from contextlib import contextmanager
 from datetime import datetime,timezone
-import base64,json,os,time,uuid
+import base64,json,os,sys,time,uuid
 from pathlib import Path
 from unittest.mock import patch
+ROOT=Path(__file__).resolve().parents[3]
+sys.path[:0]=[str(ROOT),str(ROOT/'scripts')]
 import httpx,psycopg
 import dev_auth,local_history_pg as harness,local_run_context,run_worker
 from cj_agent.provider import DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL
