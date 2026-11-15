@@ -469,8 +469,10 @@ public struct LioHome<MenuContent: View>: View {
 
     private var openingMessage: some View {
         lioReply {
-            replyText(Text(language.text("Hi, I'm Lio. Tell me the city, how many days you have and what you enjoy, and I'll plan where to go and how to get around each day. Where are you headed?",
-                                         "你好，我是 Lio。告诉我城市、天数和喜好，我帮你排好每天去哪、怎么走。这次想去哪儿？")))
+            RunReadableText(text: language.text("Hi, I'm Lio. Tell me the city, how many days you have and what you enjoy, and I'll plan where to go and how to get around each day. Where are you headed?",
+                                               "你好，我是 Lio。告诉我城市、天数和喜好，我帮你排好每天去哪、怎么走。这次想去哪儿？"),
+                            color: LioTheme.ink, lineSpacing: 4)
+                .fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("lio.opening")
         }
     }

@@ -12,8 +12,9 @@ public struct RunReadableText: UIViewRepresentable {
     let text: String
     let style: RunReadableTextStyle
     let color: Color?
-    public init(text: String, style: RunReadableTextStyle = .body, color: Color? = nil) {
-        self.text = text; self.style = style; self.color = color
+    let lineSpacing: CGFloat
+    public init(text: String, style: RunReadableTextStyle = .body, color: Color? = nil, lineSpacing: CGFloat = 0) {
+        self.text = text; self.style = style; self.color = color; self.lineSpacing = lineSpacing
     }
     @Environment(\.dynamicTypeSize) private var size
     public func makeUIView(context: Context) -> UILabel {
@@ -26,7 +27,13 @@ public struct RunReadableText: UIViewRepresentable {
         return label
     }
     public func updateUIView(_ label: UILabel, context: Context) {
-        label.text = text
+        if lineSpacing == 0 {
+            label.text = text
+        } else {
+            let paragraph = NSMutableParagraphStyle()
+            paragraph.lineSpacing = lineSpacing
+            label.attributedText = NSAttributedString(string: text, attributes: [.paragraphStyle: paragraph])
+        }
         if let color { label.textColor = UIColor(color) }
         else { label.textColor = .label }
         let textStyle: UIFont.TextStyle
@@ -72,10 +79,11 @@ public struct RunReadableText: View {
     let text: String
     let style: RunReadableTextStyle
     let color: Color?
-    public init(text: String, style: RunReadableTextStyle = .body, color: Color? = nil) {
-        self.text = text; self.style = style; self.color = color
+    let lineSpacing: CGFloat
+    public init(text: String, style: RunReadableTextStyle = .body, color: Color? = nil, lineSpacing: CGFloat = 0) {
+        self.text = text; self.style = style; self.color = color; self.lineSpacing = lineSpacing
     }
-    private var label: some View { Text(text).font(style == .body ? .body : style == .headline ? .headline : .caption).fixedSize(horizontal: false, vertical: true) }
+    private var label: some View { Text(text).font(style == .body ? .body : style == .headline ? .headline : .caption).lineSpacing(lineSpacing).fixedSize(horizontal: false, vertical: true) }
     @ViewBuilder public var body: some View {
         if let color { label.foregroundStyle(color) }
         else { label }
