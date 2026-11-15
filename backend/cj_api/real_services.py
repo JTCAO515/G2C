@@ -115,6 +115,7 @@ class ModelInput:
     turn_profile:str=M4_NATIVE_TURN_PROFILE_V2
     lio_answer:bool=False
     national:bool=False
+    confirmed_destination:bool=True
 
 
 def canonical_tool(name,raw,*,city=None):
@@ -506,6 +507,10 @@ class RealTools:
         indexed_sha=(optional_sha256 if intake_profile=='LIO-planning-intake.9' else flow_sha256 if intake_profile=='LIO-planning-intake.8' else facts_sha256 if intake_profile=='LIO-planning-intake.7' else flat_sha256 if intake_profile=='LIO-planning-intake.6' else start_sha256 if intake_profile=='LIO-planning-intake.5' else
                      modes_sha256 if intake_profile=='LIO-planning-intake.4' else response_format_sha256)
         selected_tools=(self.national_tools if argument.national else self.native_tools) if native_turn else None
+        if native_turn and argument.national and not argument.confirmed_destination:
+            eligible=[tool for tool in selected_tools if tool['function']['name']=='fact']
+            if eligible:selected_tools=eligible
+            else:final_answer=True
         if self.runtime_fragments is not None:
             if exploration:raise BudgetUnknown('native4 is not a legacy national runtime text slot')
             from runtime_adapter.contract import decode,Invalid
@@ -755,7 +760,7 @@ class RealTools:
             chunks=worker._registered_stream(binding,'model.tool_turn.'+str(round_index),'model.tool_turn',
                 ModelInput(messages,system,worker.provider,native_reply,
                     final_answer=round_index==turns-1 or len(seen)==tool_limit,turn_profile=profile,
-                    lio_answer=lio_locale is not None,national=national))
+                    lio_answer=lio_locale is not None,national=national,confirmed_destination=city is not None))
             if incremental:
                 raw=None
                 saw_answer = False
@@ -776,7 +781,16 @@ class RealTools:
             else:raw=''.join(chunks)
             names=self.names|{'visitor_fact'}if national and 'fact'in self.names else self.names
             try:turn=parse_turn(raw.encode(),names)
-            except ValueError:raise ProviderUnknown('live model tool turn unavailable') from None
+            except ValueError as error:
+                # parse_turn exposes only these fixed contract codes. Never log
+                # model values, exception text or Memory-bearing output.
+                code=(error.args[0]if error.args in tuple((value,)for value in (
+                    'bounded_tool_turn_required','invalid_tool_turn','unsupported_tool_turn',
+                    'invalid_bilingual_answer','invalid_tool_calls','unregistered_tool'))else'other_contract_error')
+                logging.getLogger('cj_usage.audit').warning(
+                    'LIO_TOOL_TURN_REJECTED run_id=%s code=%s output_chars=%s output_sha256=%s',
+                    binding.run_id,code,len(raw),hashlib.sha256(raw.encode('utf-8','surrogatepass')).hexdigest())
+                raise ProviderUnknown('live model tool turn unavailable') from None
             if not turn.calls:
                 answer = turn.answer_zh if chinese else turn.answer_en
                 yield _lio_transit_answer(chinese, transit_evidence) if transit_request or transit_evidence else answer
@@ -790,6 +804,8 @@ class RealTools:
                 key='tool.'+str(round_index)+'.'+str(index)
                 ref='op-'+hashlib.sha256((binding.run_id+'\0'+key).encode()).hexdigest()
                 if national and city is None and call.name not in ('fact',):
+                    logging.getLogger('cj_usage.audit').warning(
+                        'LIO_TOOL_CALL_WITHHELD run_id=%s code=unconfirmed_destination tool=%s',binding.run_id,call.name)
                     raise ProviderUnknown('original destination must be confirmed before this tool')
                 name,arguments=canonical_tool(call.name,call.arguments,city=city if national else None)
                 if name == 'weather' and weather_day is not None:

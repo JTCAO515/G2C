@@ -26,7 +26,9 @@ from .rejected_intake_capture import capture_rejected_intake
 CONTEXT='lio_planning_context.1:'
 CITY='lio_city_resolution.1:'
 MAX_TURNS=8
-CURRENT_SYSTEM=FACTS_SYSTEM
+CURRENT_SYSTEM=FACTS_SYSTEM.replace(
+    'A short reply to a pending request continues that original request; never replace its source index.',
+    'A complete new request, even repeated, uses the latest planning_request_index. Only a short parameter answer keeps the earlier request index.')
 _DURATION_QUESTION=re.compile(
     rf'(?:(?P<zh>(?P<zh_number>{NUMBER})[天日])(?:怎么玩|怎么安排)|'
     rf'(?:how (?:should|can) I spend|what (?:can|should) I do (?:in|for))\s+'
@@ -78,7 +80,7 @@ def intake_prompt(locale,turns,*,discussion_only=False,scene=None):
              'Return every supplied day count with its own field_sources entry: for 三天, '
              'duration_days=3 and {field:"duration_days",source_index:<its original index>,quote:"三天"}. '
              'A known duration without that exact original source entry is invalid. '
-             'Likewise return original start_date and party_size source entries for supplied dates and people. '
+             'Every known observation needs its own original field_sources entry; unstated values stay missing. '
              'No fixed commitments means fixed_items:[]; luxury describes a preference, not a fixed booking.')
     if discussion_only:
         system+=(' This conversation is discussing a separate proposal after a conflict with the saved itinerary. '
@@ -245,6 +247,11 @@ class NationalLioPlanning:
                 **({'resolved_city_source_message_id':resolved_mid}if resolved_mid is not None else {}),
                 **({'authority_barrier_message_id':barrier_mid}if barrier_mid is not None else {})))
         authority=self._authority(intake,previous,current_index=len(turns)-1,turns=turns,source_ids=source_ids)
+        logging.getLogger('cj_usage.audit').info(
+            'LIO_PLANNING_DISPOSITION run_id=%s current_index=%s request_index=%s intent=%s '
+            'publication_hold=%s barrier_index=%s authority=%s',
+            binding.run_id,len(turns)-1,intake.planning_request_index,intake.intent,
+            intake.publication_hold,source_ids.index(barrier_mid)if barrier_mid is not None else None,authority)
         if intake.intent=='cancel':
             state=context(worker,binding,state,dict(authority='none',status='cancelled'))
             return self._answer(worker,binding,state,original.locale,'好，先不保存或修改行程。',"Okay, I won't save or change an itinerary.")
@@ -443,6 +450,7 @@ class NationalLioPlanning:
         # Publication still requires a traveler request, not a model label.
         # The semantic request is separate from facts mentioned in consultation.
         request_index=intake.planning_request_index
+        if (request_index is not None and previous is not None and source_ids[request_index]in previous.get('nonplanning_message_ids',[])):return 'none'
         barrier=None if previous is None else previous.get('authority_barrier_message_id')
         if request_index is not None and barrier is not None and request_index<=source_ids.index(barrier):return 'none'
         request=None if request_index is None else turns[request_index].text
@@ -453,7 +461,7 @@ class NationalLioPlanning:
         fresh_fact=any(ref['source_index']==request_index for ref in intake.sources.get('duration_days',[]))
         current_trip=(intake.city is not None and intake.duration_days is not None and fresh_fact)
         if request is not None and not publication_held(request)and (explicit or current_trip):
-            if not denied or request_index==current_index and explicit:
+            if not denied or explicit and (request_index==current_index or barrier is not None and request_index>source_ids.index(barrier)):
                 return 'save'if intake.intent=='save'else'plan'
         if previous is not None and previous.get('status')in ('needs_city','needs_details','ambiguous','confirmation_required','not_found','plan_preview'):
             return previous['authority']

@@ -11,6 +11,7 @@ owner or scope from request data. Recovery rules (ADR-0003):
 from dataclasses import dataclass
 from contextlib import contextmanager, ExitStack, nullcontext
 import json
+import logging
 
 # The worker must be ready (or fail startup) before accepting any work (#176).
 from cj_feasibility import solver as _solver_runtime
@@ -506,17 +507,21 @@ class RunWorker:
             return execute(self,receipt,binding,state,inputs,deadline=result_deadline) if self.edit_results else execute(self,receipt,binding,state,inputs)
         proposal_id = None
         buffer = ''
+        phase='answer_preparation'
         try:
             from cj_message.lio_context import LioCitation, LioToolProgress, answer_prompt
 
             if lio_replacement:
+                phase='lio_edit'
                 edited = self.lio_edit.execute(self, binding, state, stored, text, locale, result_deadline)
                 return self._finish(receipt, edited)
             if locale is not None and self.lio_planning is not None:
+                phase='lio_planning'
                 planning = self.lio_planning.execute(self, binding, state, text, original)
                 if planning is not None:
                     return self._finish(receipt, planning)
                 state=self.runs.snapshot(binding)
+            phase='answer_context'
             inputs = ([{'role': 'user', 'content': text}] if self.memory_run is None
                       else self.memory_run.messages(text))
             if self.message_context is not None:
@@ -531,6 +536,7 @@ class RunWorker:
             else:
                 chunks = self.tools.answer(self, binding, inputs, lio_locale=locale, lio_question_day=original.question_day,**({'message_refs':message_refs} if message_refs else {}),
                                            **({'lio_city':self.lio_city_context} if self.lio_city_context is not None else {}))
+            phase='answer_stream'
             for chunk in chunks:
                 if isinstance(chunk, (LioCitation, LioToolProgress)):
                     state = self._event(binding, state, 'effect_committed', chunk.effect())
@@ -541,17 +547,24 @@ class RunWorker:
             if buffer:
                 state = self._event(binding, state, 'text_delta', buffer)
             if self.drafts is not None and command['creation_intent'] == 'consider_trip':
+                phase='draft'
                 state, proposal_id = self._draft(binding, state, text, stored)
+            phase='memory_extract'
             publish_memory = (self.lio_memory.extract(self, binding)
                               if locale is not None and self.lio_memory is not None else None)
+            phase='completion_event'
             state = self._event(binding, state, 'completed')
             if publish_memory is not None:
+                phase='memory_publish'
                 publish_memory()
         except BudgetExceeded:
             state = self._budget_rejection(binding,'answer')
         except ProviderFailed:
             state = self._event(binding, self.runs.snapshot(binding), 'failed')
-        except ProviderUnknown:
+        except ProviderUnknown as error:
+            if locale is not None:
+                logging.getLogger('cj_usage.audit').warning(
+                    'LIO_RUN_UNKNOWN run_id=%s phase=%s error_class=%s',binding.run_id,phase,type(error).__name__)
             state = self._event(binding, self.runs.snapshot(binding), 'unknown')
         return self._finish(receipt, state, proposal_id)
 
