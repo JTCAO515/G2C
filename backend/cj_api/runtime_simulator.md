@@ -4,6 +4,16 @@ This source interface joins C's unchanged `choose(messages)` / `render_choice`
 to native DUT admission. It is not an installed worker factory or a Hong Kong
 qualification, and does not authorize any provider call.
 
+For the current legacy baseline, `BaselineDutSpecification` selects actual
+`LIO-message.2` with additive private claim `LIO-simulator-dut.2`. It pins that
+wire version explicitly; a candidate label does not choose the protocol. The
+original `DutSpecification` remains actual `.4` / private claim `.1`, with its
+serialized bytes unchanged. Claims, native parsing, admission and readback all
+use the same fixed specification. Legacy normalized storage is verified against
+the durable outer claim and native stored outer hash; it is not presented as a
+stored full `.2` outer byte column or proof of historical code equivalence.
+Missing baseline profile/census/Memory/ending observations remain incomplete.
+
 ```text
 fixed public opening -> native DUT MESSAGE/RUN
   -> actual current-M public observation
