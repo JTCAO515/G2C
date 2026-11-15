@@ -61,6 +61,50 @@ def turn_sse(*,tool=False,usage=True,model=M4_MODEL,done=True,turn=None,compact=
 
 
 class Boundaries(unittest.TestCase):
+    def test_stream_identity_failures_keep_original_intent_and_only_log_fingerprints(self):
+        private_model='private-supplier-model-do-not-publish'
+        private_id='private_supplier_receipt_do_not_publish'
+        for label,expected in (('model','model_mismatch'),('missing-model','model_mismatch'),
+                               ('null-model','model_mismatch'),('object-model','model_mismatch'),
+                               ('id-shape','receipt_identity_unavailable'),
+                               ('id-change','response_identity_changed')):
+            with self.subTest(label=label):
+                events=[json.loads(line[6:])for line in sse().splitlines()if line.startswith('data: {')]
+                # Fail after a genuine content chunk, before terminal usage/DONE.
+                if label=='model':events[1]['model']=private_model
+                elif label=='missing-model':
+                    del events[1]['model'];events[1]['error']={'detail':'private-error-body'}
+                elif label=='null-model':events[1]['model']=None
+                elif label=='object-model':events[1]['model']={'private':'private-error-body'}
+                elif label=='id-shape':events[1]['id']='private invalid receipt / not logged'
+                else:events[1]['id']=private_id
+                body=''.join('data: '+json.dumps(event)+'\n\n'for event in events)+'data: [DONE]\n\n'
+                provider=self.provider(body);receipt={};before=len(self.sent)
+                with self.assertLogs('cj_provider.audit',level='WARNING')as captured,self.assertRaises(ProviderUnknown):
+                    list(provider.invoke([dict(role='user',content='private-prompt-body')],TOOL_SYSTEM,
+                        'identity-observe-'+label,receipt=receipt,guard=lambda:True))
+                logs='\n'.join(captured.output)
+                self.assertIn('M4_MODEL_UNKNOWN',logs)
+                self.assertIn('M4_MODEL_IDENTITY_REJECTION',logs)
+                self.assertIn('code='+expected,logs)
+                self.assertIn('done=False finished=False usage=False',logs)
+                if label=='model':self.assertIn('model_sha256='+hashlib.sha256(private_model.encode()).hexdigest(),logs)
+                if label=='null-model':self.assertIn('model_state=null',logs)
+                if label=='object-model':self.assertIn('model_state=other_type',logs)
+                if label=='missing-model':self.assertIn('model_state=missing',logs);self.assertIn('error_envelope=True',logs)
+                for hidden in (private_model,private_id,'private invalid receipt','private-error-body','private-prompt-body',KEY):self.assertNotIn(hidden,logs)
+                self.assertEqual(len(self.sent),before+1)
+                self.assertEqual(receipt,{})
+                self.assertEqual(self.budget.inspect()[-1]['state'],'INTENT')
+
+    def test_valid_stream_does_not_emit_identity_rejection(self):
+        provider=self.provider(sse());receipt={}
+        with patch.object(logging.getLogger('cj_provider.audit'),'warning')as warning:
+            value=''.join(provider.invoke([],TOOL_SYSTEM,'identity-observe-valid',receipt=receipt,guard=lambda:True))
+        self.assertTrue(value);self.assertEqual(receipt['usage']['total_tokens'],50)
+        self.assertEqual(self.budget.inspect()[-1]['state'],'RECEIVED')
+        self.assertFalse(any('M4_MODEL_IDENTITY_REJECTION'in call.args[0]for call in warning.call_args_list))
+
     def test_slow_protected_body_writes_leave_time_to_read_terminal_usage(self):
         # Hong Kong observed about 17 s for each protected partial write.
         # Model transport is paused while each yielded fragment is persisted.

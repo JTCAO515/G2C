@@ -568,7 +568,7 @@ class MeteredDashScopeProvider:
         finished=False;done=False;response_ids=set();usage=None;calls={};texts=[];pending='';first_output=None
         observation=dict(http_status=None)
         phase='transport';committed=False;failure_reason='none';observed_finish='unseen';choice_rejection='none'
-        envelope_shape=None
+        envelope_shape=None;identity_rejection=None
         try:
             with self._chunks(raw,guard,observation) as chunks:
                 if self.transport is None:
@@ -593,12 +593,17 @@ class MeteredDashScopeProvider:
                     if self.config.api_key in json.dumps(value,ensure_ascii=False):
                         raise ProviderUnknown('M4 model secret echo rejected')
                     phase='model_identity'
-                    if value.get('model')!=M4_MODEL:raise ProviderUnknown('M4 model identity mismatch')
+                    if value.get('model')!=M4_MODEL:
+                        identity_rejection='model_mismatch'
+                        raise ProviderUnknown('M4 model identity mismatch')
                     rid=value.get('id')
                     if type(rid) is not str or not re.fullmatch(r'[A-Za-z0-9_-]{1,128}',rid):
+                        identity_rejection='receipt_identity_unavailable'
                         raise ProviderUnknown('M4 model receipt identity unavailable')
                     response_ids.add(rid)
-                    if len(response_ids)!=1:raise ProviderUnknown('M4 model response identity changed')
+                    if len(response_ids)!=1:
+                        identity_rejection='response_identity_changed'
+                        raise ProviderUnknown('M4 model response identity changed')
                     phase='usage'
                     supplied=value.get('usage')
                     if supplied is not None:
@@ -791,6 +796,21 @@ class MeteredDashScopeProvider:
                     attempt_sha,phase,observation['http_status'],done,finished,
                     usage is not None,sum(map(len,texts)),len(calls),failure_reason,choice_rejection,observed_finish,
                     sum(len(call['arguments']) for call in calls.values()))
+                if identity_rejection is not None:
+                    # Fingerprints distinguish missing/changed stream metadata
+                    # without publishing provider IDs, error bodies or deltas.
+                    observed_model=value.get('model')
+                    model_state=('missing' if 'model' not in value else
+                        'string' if type(observed_model) is str else
+                        'null' if observed_model is None else 'other_type')
+                    model_chars=len(observed_model) if type(observed_model) is str else 0
+                    model_sha=(hashlib.sha256(observed_model.encode('utf-8','surrogatepass')).hexdigest()
+                        if type(observed_model) is str else 'NONE')
+                    rid_state=('missing' if 'id' not in value else
+                        'valid_string' if type(value['id']) is str and re.fullmatch(r'[A-Za-z0-9_-]{1,128}',value['id']) else
+                        'invalid_string' if type(value['id']) is str else 'other_type')
+                    audit.warning('M4_MODEL_IDENTITY_REJECTION attempt_sha256=%s code=%s model_state=%s model_chars=%d model_sha256=%s receipt_state=%s error_envelope=%s',
+                        attempt_sha,identity_rejection,model_state,model_chars,model_sha,rid_state,'error' in value)
                 if envelope_shape is not None:
                     # Separate event preserves the existing UNKNOWN log format.
                     audit.warning('M4_NATIVE_ENVELOPE_SHAPE attempt_sha256=%s present_mask=%d extra_count=%d',
