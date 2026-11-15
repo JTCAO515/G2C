@@ -72,7 +72,7 @@ def exercise(auth, conninfo):
         body = json.loads(request.content);sent.append(body)
         if body['messages'][0]['content'].startswith(SIMULATOR_SYSTEM+'\n'):
             value=dict(answers=['interests'],action='continue')
-            event=dict(id='chatcmpl-c936-actor',model=M4_MODEL,
+            event=dict(id='chatcmpl-c936-actor-'+str(len(sent)),model=M4_MODEL,
                 choices=[dict(index=0,delta=dict(content=json.dumps(value)),finish_reason='stop')],
                 usage=dict(prompt_tokens=100,completion_tokens=100,total_tokens=200))
             return httpx.Response(200,stream=httpx.ByteStream(('data: '+json.dumps(event)+'\n\ndata: [DONE]\n\n').encode()))
@@ -99,6 +99,9 @@ def exercise(auth, conninfo):
     ids = tuple('c936-'+sha256(('local-dut-'+str(n)).encode()).hexdigest() for n in range(3))
     spec = DutSpecification('local-episode', profile['opening'], 'en', ids,
         compact(dict(code_sha='a'*40, image_digest='sha256:'+'b'*64, model=dict(endpoint=M4_BASE, id=M4_MODEL))))
+    allowed_keys={spec.key,actor_spec.key}
+    admission_hook=[None]
+    message_guards=[0]
     class Authority:
         line = 'C'
         token_supplier = staticmethod(lambda:current_token[0])
@@ -108,8 +111,12 @@ def exercise(auth, conninfo):
             return Binding(scope_for(decision.principal.issuer, decision.principal.subject),
                 sha256(current_token[0].encode()).hexdigest(), budget.ledger_id, budget.producer)
         def require(self, *, binding, pins_sha256, purpose, deadline, read_only):
-            assert time.monotonic() < deadline and pins_sha256 in (spec.key,actor_spec.key)
+            assert time.monotonic() < deadline and pins_sha256 in allowed_keys
             if self.binding() != binding:raise Unavailable('ORIGINAL_AUTH_CHANGED')
+            if purpose=='message'and not read_only:
+                message_guards[0]+=1
+                if admission_hook[0]is not None and admission_hook[0][0]==message_guards[0]:
+                    _,callback=admission_hook[0];admission_hook[0]=None;callback()
         def require_current_operation(self, *, binding, pins_sha256, deadline):
             self.require(binding=binding,pins_sha256=pins_sha256,purpose='actor',deadline=deadline,read_only=False)
         def require_operation_clock(self, *, deadline):
@@ -193,7 +200,60 @@ def exercise(auth, conninfo):
     except Unavailable:pass
     else:raise AssertionError('changed identity read original')
     assert len(sent) == 5
-    print('PASS signed native4 DUT -> original actor RUN -> unchanged C renderer -> next native DUT, same CID/gen, hidden profile only actor, 4 DUT/1 actor distinct original fee attempts; partial observation stays UNKNOWN, restart and lost ACK query-only, cross-identity denied; 5 fixture HTTP, live0')
+    current_token[0]=token
+    # Complete only the already admitted original from the lost-ACK fixture.
+    # This worker reconciliation creates no new MESSAGE or replacement claim.
+    assert [outcome.status for outcome in worker.process()]==['completed']
+    assert len(sent)==7
+    def scenario(name):
+        selected=DutSpecification(name,profile['opening'],'en',
+            tuple('c936-'+sha256((name+str(n)).encode()).hexdigest()for n in range(2)),spec.runtime_card)
+        allowed_keys.add(selected.key)
+        return NativeSimulatorDut(database,boundary,Authority(),selected,lambda:current_token[0],
+            directory,wait_original,PartialObserver(),deadline=time.monotonic()+120)
+    changed_identity=scenario('identity-race')
+    admission_hook[0]=(message_guards[0]+2,
+        lambda:current_token.__setitem__(0,dev_auth.token(auth,foreign,300)))
+    before_calls=len(sent)
+    try:changed_identity.reply(profile['opening'],'en',first=True)
+    except Unavailable as error:assert str(error)=='SIMULATOR_DUT_ADMISSION_SESSION_CHANGED'
+    else:raise AssertionError('post-guard identity change admitted a MESSAGE')
+    assert changed_identity.stopped and len(sent)==before_calls
+    for owner in(scope,scope_for(ISSUER,foreign)):
+        with database.connect(owner)as db:
+            db.execute('SET TRANSACTION READ ONLY')
+            assert db.execute('SELECT count(*) FROM cj_message_receipt WHERE scope=%s AND message_id=%s',
+                (owner,changed_identity.specification.message_ids[0])).fetchone()==(0,)
+    current_token[0]=token
+    changed_head=scenario('head-race')
+    opening=changed_head.reply(profile['opening'],'en',first=True)
+    race_actor=NativeActorHost(database,tools,source,actor_spec,Authority(),directory,
+        profile_id=profile['id'],attempt=1,dut_message=lambda:changed_head.latest,deadline=time.monotonic()+120)
+    race_bridge=SimulatorActorBridge(race_actor,changed_head,
+        EpisodeLinks(directory,race_actor.owner,actor_spec,guard=race_actor._guard),
+        render_choice,InputError,HostUnavailable)
+    public=[dict(speaker='user',text=profile['opening']),dict(speaker='assistant',text=opening['text'])]
+    race_bridge.choose(simulator_messages(profile,public,1))
+    continuation=changed_head.pending[0]
+    def ordinary_message():
+        boundary.receive_lio(token,compact(dict(version='LIO-message.4',message_id='ordinary-interleaved',
+            text='I have another question.',locale='en',conversation_id=changed_head.conversation_id)),
+            prepare_scope=database._provision_scope,version='LIO-message.4')
+    # Insert after the final authority callback, later than claim consumption.
+    # Both ordinary admission and the bridge must use the same native M lock.
+    admission_hook[0]=(message_guards[0]+2,ordinary_message)
+    before_calls=len(sent);before_journal=budget.inspect()
+    try:changed_head.reply(continuation,'en',first=False)
+    except Unavailable as error:assert str(error)=='SIMULATOR_DUT_ADMISSION_SOURCE_CHANGED'
+    else:raise AssertionError('actor text appended after an intervening native message')
+    assert changed_head.stopped and changed_head.query(changed_head.specification.message_ids[1])is None
+    assert len(sent)==before_calls and budget.inspect()==before_journal
+    with database.connect(scope)as db:
+        db.execute('SET TRANSACTION READ ONLY')
+        assert db.execute('SELECT last_sequence FROM cj_message_chat WHERE scope=%s AND conversation_id=%s AND active',
+            (scope,changed_head.conversation_id)).fetchone()==(2,)
+    assert len(sent)==10
+    print('PASS signed native4 DUT -> original actor RUN -> unchanged C renderer -> next native DUT, same CID/gen, hidden profile only actor, 4 DUT/1 actor distinct original fee attempts; partial observation stays UNKNOWN, restart and lost ACK query-only, cross-identity denied; final-authority identity switch and intervening ordinary MESSAGE both deny new admission/fees under original M; 10 fixture HTTP including explicit original reconciliation and race setup, live0')
 
 
 if __name__ == '__main__':

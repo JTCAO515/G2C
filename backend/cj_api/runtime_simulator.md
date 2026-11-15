@@ -17,6 +17,11 @@ fixed public opening -> native DUT MESSAGE/RUN
 is separate from G's `runtime-` recipes. `DutMessageClaims` reuses the original
 MESSAGE scope lock, durable exclusive claim, and one-use capability. A prior
 claim or uncertain admission is query-only; it cannot mint a replacement send.
+The send captures the original session token. Inside the native scope-locked
+admission transaction, it also checks the original owner and, for a continuation,
+the previous MID/RUN/generation/sequence/raw input against the current active
+head. An intervening ordinary message or changed owner rejects admission before
+writing a new MESSAGE; its consumed claim remains query-only.
 `LIO-simulator-dut.1` is a new private claim version, not a change to frozen
 MESSAGE or timeline wire contracts. Native admission uses `LIO-message.4`.
 

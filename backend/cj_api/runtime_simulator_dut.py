@@ -118,6 +118,7 @@ class NativeSimulatorDut:
                                       specification, history_profile='lio.2')
         self.originals = []
         self.latest = None
+        self.previous = None
         self.last_observation = None
         self.conversation_id = None
         self.generation = None
@@ -162,8 +163,31 @@ class NativeSimulatorDut:
             self.claims.consume(raw, prepared.capability, deadline=self.deadline)
             self.authority.require(binding=self.owner, pins_sha256=self.specification.key,
                 purpose='message', deadline=self.deadline, read_only=False)
-            receipt = self.boundary.receive_lio(self.token_supplier(), wire,
-                prepare_scope=self.database._provision_scope, version=LIO_VERSION_V4)
+            previous = self.previous
+            def prepare(cursor, scope):
+                # receive_lio invokes this inside its original tx.lock_scope,
+                # before any native admission. AUTH may have changed since the
+                # prior callback, and ordinary MESSAGE writers use this lock.
+                if scope != self.owner.scope:
+                    raise Unavailable('SIMULATOR_DUT_ADMISSION_OWNER_CHANGED')
+                if previous is not None:
+                    parent = previous.receipt
+                    row = cursor.execute('SELECT c.generation,c.last_sequence,r.run_id,r.input_sha256,r.raw_input '
+                        'FROM cj_message_chat c JOIN cj_message_receipt r '
+                        'ON r.scope=c.scope AND r.conversation_id=c.conversation_id '
+                        'AND r.generation=c.generation AND r.sequence=c.last_sequence '
+                        'WHERE c.scope=%s AND c.conversation_id=%s AND c.active '
+                        'AND r.message_id=%s FOR UPDATE OF c',
+                        (scope,parent.conversation_id,parent.message_id)).fetchone()
+                    if (row is None or row[:4] != (parent.generation,parent.sequence,parent.run_id,parent.input_sha256)
+                            or row[4] is None or bytes(row[4]) != previous.raw):
+                        raise Unavailable('SIMULATOR_DUT_ADMISSION_SOURCE_CHANGED')
+                self.database._provision_scope(cursor,scope)
+            dispatch_token = self.token_supplier()
+            if sha256(dispatch_token.encode()).hexdigest() != self.owner.auth_session_id:
+                raise Unavailable('SIMULATOR_DUT_ADMISSION_SESSION_CHANGED')
+            receipt = self.boundary.receive_lio(dispatch_token, wire,
+                prepare_scope=prepare, version=LIO_VERSION_V4)
             stored = self.query(mid)
             if stored is None or (stored.receipt.run_id, stored.receipt.conversation_id) != (
                     receipt.run_id, receipt.conversation_id):
@@ -178,6 +202,7 @@ class NativeSimulatorDut:
             self.authority.require(binding=self.owner, pins_sha256=self.specification.key,
                 purpose='query', deadline=self.clock()+30, read_only=True)
             self.latest = mid
+            self.previous = stored
             self.last_observation = observation
             return observation
         except (AccessBlocked, IdentityChanged, CommitUnknown, InputConflict, InvalidInput) as error:
