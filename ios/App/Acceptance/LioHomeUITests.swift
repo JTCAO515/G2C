@@ -1747,6 +1747,17 @@ import XCTest
             let reply = app.descendants(matching: .any).matching(identifier: "lio.segment.0").firstMatch
             XCTAssertTrue(reply.waitForExistence(timeout: 20))
             XCTAssertTrue(indicator.waitForNonExistence(timeout: 5))
+            let second = app.descendants(matching: .any).matching(identifier: "lio.segment.1").firstMatch
+            var previousFrames: [CGRect]?
+            let settled = NSPredicate { _, _ in
+                guard reply.exists, second.exists else { previousFrames = nil; return false }
+                let frames = [reply.frame, second.frame]
+                let viewport = app.scrollViews.firstMatch.frame
+                guard frames.allSatisfy({ viewport.contains($0) }) else { previousFrames = nil; return false }
+                defer { previousFrames = frames }
+                return previousFrames == frames
+            }
+            XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: settled, object: nil)], timeout: 12), .completed)
             try app.performAccessibilityAudit(for: .all)
             app.terminate()
         }

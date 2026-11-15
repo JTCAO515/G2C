@@ -270,11 +270,11 @@ public struct LioHome<MenuContent: View>: View {
                         else { withAnimation(LioTheme.Motion.change) { scroll.scrollTo("lio.bottom", anchor: .bottom) } }
                     }
                     .onChange(of: latest?.answer) { _, _ in
-                        if followsAnswer, let pending, latest?.id == pending.id { scroll.scrollTo("lio.bottom", anchor: .bottom) }
+                        if followsAnswer, let pending, let latest, latest.id == pending.id { followReply(latest, scroll: scroll) }
                     }
                     .onChange(of: latest?.status) { _, status in
                         if status == .finished, let latest, latest.answer.isEmpty { timing.mark(.finished, latest.id) }
-                        if followsAnswer && status == .finished { scroll.scrollTo("lio.bottom", anchor: .bottom) }
+                        if followsAnswer, status == .finished, let latest { followReply(latest, scroll: scroll) }
                     }
                     .onChange(of: jumpRequest) { _, _ in
                         followsAnswer = true
@@ -722,9 +722,7 @@ public struct LioHome<MenuContent: View>: View {
                     .accessibilityLabel(language.text("Send again", "重新发送"))
                     .accessibilityIdentifier("lio.resend")
                 }
-                Text(turn.question.text)
-                    .font(.body)
-                    .foregroundStyle(LioTheme.ink)
+                RunReadableText(text: turn.question.text, color: LioTheme.ink)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
@@ -740,7 +738,7 @@ public struct LioHome<MenuContent: View>: View {
             if case .failed = turn.status {
                 EmptyView()
             } else if let display = turn.exploration {
-                explorationReply(turn, display: display)
+                explorationReply(turn, display: display, scroll: scroll)
             } else if !turn.answer.isEmpty {
                 let answerKey = LioEntranceKey(turn: turn.id, part: .answer)
                 lioReply {
@@ -828,7 +826,7 @@ public struct LioHome<MenuContent: View>: View {
     }
 
     @ViewBuilder
-    private func explorationReply(_ turn: LioTurn, display: LioExplorationDisplay) -> some View {
+    private func explorationReply(_ turn: LioTurn, display: LioExplorationDisplay, scroll: ScrollViewProxy) -> some View {
         let presentation = display.presentation
         if !presentation.segments.isEmpty || !presentation.profile.isEmpty || !presentation.notices.isEmpty
             || !presentation.exits.isEmpty || !presentation.answer.isEmpty || !display.questions.isEmpty {
@@ -849,6 +847,7 @@ public struct LioHome<MenuContent: View>: View {
                 _ = sendQuestion(text)
             }
             .accessibilityIdentifier("lio.exploration.\(display.messageID)")
+            .id(LioEntranceKey(turn: turn.id, part: .answer))
             .onChange(of: display, initial: true) { _, value in
                 guard conversation === owner else { return }
                 var selection = questionDrafts[turn.id] ?? value.draft()
@@ -856,8 +855,17 @@ public struct LioHome<MenuContent: View>: View {
                 questionDrafts[turn.id] = selection
                 if !value.presentation.segments.isEmpty || !value.presentation.answer.isEmpty {
                     timing.mark(.firstText, turn.id)
+                    if followsAnswer, owner.turns.last?.id == turn.id { followReply(turn, scroll: scroll) }
                 }
             }
+        }
+    }
+
+    private func followReply(_ turn: LioTurn, scroll: ScrollViewProxy) {
+        if turn.exploration != nil {
+            scroll.scrollTo(LioEntranceKey(turn: turn.id, part: .answer), anchor: .top)
+        } else {
+            scroll.scrollTo("lio.bottom", anchor: .bottom)
         }
     }
 
