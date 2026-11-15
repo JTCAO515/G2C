@@ -90,11 +90,13 @@
           },
           "items": {
             "en": [
-              "Hong Kong online service source: 7750871. Failure diagnostics have been added; this server update is already live and does not require an app update.",
-              "Basic Q&A has not passed every check. These diagnostics do not mean planning has been fixed."
+              "The Hong Kong online service is using source 7750871.",
+              "Failure diagnostics are live; this server update does not require an app update.",
+              "Basic questions have not passed every check; diagnostics do not mean planning is fixed."
             ],
             "zh": [
-              "香港在线服务来源为 7750871，已增加失败诊断。这项在线更新已单独生效，不需要更新应用。",
+              "香港在线服务来源为 7750871。",
+              "失败诊断已上线，这项在线更新不需要更新应用。",
               "基础问答尚未全部通过，新增诊断不代表规划已经修复。"
             ]
           }
@@ -175,10 +177,14 @@
           },
           "items": {
             "en": [
-              "This is a retrospective note for build 43. Server work was tracked separately and was not proof of successful planning. No server fix should be inferred from that app update."
+              "These notes for build 43 were added later.",
+              "Server work was tracked separately and did not prove successful planning.",
+              "That app update did not establish that the server was fixed."
             ],
             "zh": [
-              "这是构建 43 的补记说明。在线服务进展单独记录，不应把该次应用更新理解为规划已经修复。"
+              "这是构建 43 的补记说明。",
+              "在线服务进展单独记录，不代表规划已经通过。",
+              "不应把该次应用更新理解为服务端已经修复。"
             ]
           }
         }
